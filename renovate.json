@@ -1,0 +1,21 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:base",
+    ":prNotPending",
+    ":rebaseStalePrs",
+    ":semanticCommits"
+  ],
+  "branchConcurrentLimit": 1,
+  "packageRules": [
+    {
+      "matchManagers": ["maven"],
+      "allowedVersions": "!/-jboss-|-redhat-|redhat-|-jenkins-|-patch-|-atlassian-|-NODEP$|-atlassian$|-jbossorg-|-SNAPSHOT$|-PFD-|-jbossas-|-does-not-exist|-tc$|-jahia1$/"
+    },
+    {
+      "matchManagers": ["maven"],
+      "matchDepTypes": ["provided", "runtime"],
+      "enabled": false
+    }
+  ]
+}

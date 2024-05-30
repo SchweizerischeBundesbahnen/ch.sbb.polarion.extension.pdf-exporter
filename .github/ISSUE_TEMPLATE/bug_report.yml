@@ -1,0 +1,63 @@
+---
+name: Bug report
+description: File a new bug
+labels: [bug, triage]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before requesting: search [existing issues](../../../../labels/bug).
+
+  - type: textarea
+    attributes:
+      label: Current Behavior
+      description: "Description of the current behavior."
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: Expected Behavior
+      description: "Description of the expected behavior."
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: Steps To Reproduce
+      description: "Example steps to reproduce the behavior:"
+      placeholder: |
+        1. In this environment...
+        2. With this config...
+        3. Run '...'
+        4. See error...
+    validations:
+      required: true
+
+  - type: input
+    attributes:
+      label: Environment - OS
+      description: "Linux or Windows"
+    validations:
+      required: true
+
+  - type: input
+    attributes:
+      label: Polarion version
+      description: "2310, 2404, etc..."
+    validations:
+      required: true
+
+  - type: input
+    attributes:
+      label: Extension Version
+      description: "It can be found under https://<<host>>/polarion/#/project/dev/administration/<<Extension Name>>/About"
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: Anything else
+      description: "Further hints, links, or references? Any additional information probably helping in root cause analysis."
+    validations:
+      required: false
