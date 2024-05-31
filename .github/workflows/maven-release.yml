@@ -40,6 +40,7 @@ jobs:
                   "altDeploymentRepository": "github::default::https://maven.pkg.github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.extension-name"
                 }
               }
+            ]
           servers: >
             [
               {
