@@ -102,7 +102,7 @@ public class PlaceholderValues {
     }
 
     private String getDocumentTimeZone(@NotNull IModule document) {
-        Object timeZone = document.getCustomField(DOC_LANGUAGE_FIELD);
+        Object timeZone = document.getCustomField(DOC_TIME_ZONE_FIELD);
         return (timeZone instanceof String string) ? string : null;
     }
 
