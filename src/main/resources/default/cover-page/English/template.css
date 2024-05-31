@@ -1,0 +1,126 @@
+#cover {
+    height: 100%;
+    color: black;
+}
+
+#top {
+    width: 100%;
+    margin-top: 2cm;
+}
+
+#center {
+    width: 100%;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+#center p {
+    padding: 0 2cm;
+    font-size: 22pt;
+    font-weight: bold;
+    text-align: center;
+}
+
+#center table {
+    padding-top: 1cm;
+    width: 80%;
+    margin: 0 auto;
+}
+
+#center th {
+    vertical-align: top;
+    text-align: right;
+    padding-right: 0.5cm;
+}
+
+#center td {
+    text-align: left;
+    padding-left: 0.5cm;
+}
+
+#bottom {
+    width: 100%;
+    position: absolute;
+    bottom: 3cm;
+}
+
+#bottom table {
+    width: 80%;
+    margin: 0 auto;
+    border-collapse: collapse;
+}
+
+#bottom tr:first-child {
+    border-bottom: solid 1px;
+    text-align: center;
+}
+
+#bottom th:first-child {
+    vertical-align: top;
+    text-align: right;
+    padding-right: 0.5cm;
+}
+
+#bottom td {
+    text-align: center;
+}
+
+
+@page {
+    margin: 0;
+    background: url('/polarion/icons/group/sbb-headerlogo.png') no-repeat center 25%;
+    background-size: contain;
+}
+
+@font-face {
+    font-family: "Selawik";
+    src: url("/polarion/ria/fonts/selawik/selawk.ttf");
+}
+
+@font-face {
+    font-family: "Selawik";
+    src: url("/polarion/ria/fonts/selawik/selawkb.ttf");
+    font-weight: bold;
+}
+
+@font-face {
+    font-family: "Open Sans";
+    src: url("/polarion/ria/fonts/opensans/OpenSans-Regular.ttf");
+}
+
+@font-face {
+    font-family: "Open Sans";
+    src: url("/polarion/ria/fonts/opensans/OpenSans-Bold.ttf");
+    font-weight: bold;
+}
+
+@font-face {
+    font-family: "Open Sans";
+    src: url("/polarion/ria/fonts/opensans/OpenSans-Italic.ttf");
+    font-style: italic;
+}
+
+@font-face {
+    font-family: "Open Sans";
+    src: url("/polarion/ria/fonts/opensans/OpenSans-BoldItalic.ttf");
+    font-weight: bold;
+    font-style: italic;
+}
+
+@font-face {
+    font-family: 'FontAwesome';
+    src: url('/polarion/ria/font-awesome-4.0.3/fonts/fontawesome-webfont.eot?v=4.0.3');
+    src: url('/polarion/ria/font-awesome-4.0.3/fonts/fontawesome-webfont.eot?#iefix&v=4.0.3') format('embedded-opentype'),
+    url('/polarion/ria/font-awesome-4.0.3/fonts/fontawesome-webfont.woff?v=4.0.3') format('woff'),
+    url('/polarion/ria/font-awesome-4.0.3/fonts/fontawesome-webfont.ttf?v=4.0.3') format('truetype'),
+    url('/polarion/ria/font-awesome-4.0.3/fonts/fontawesome-webfont.svg?v=4.0.3#fontawesomeregular') format('svg');
+    font-weight: normal;
+    font-style: normal;
+}
+
+* {
+    font-family: "Segoe UI", "Selawik", "Open Sans", Ubuntu, Arial, sans-serif !important;
+    font-size: 11pt;
+}

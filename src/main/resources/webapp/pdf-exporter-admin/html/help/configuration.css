@@ -1,0 +1,33 @@
+.cm-builtin {
+    color: #09326C;
+}
+.cm-attribute {
+    color: #216E4E;
+}
+.cm-string {
+    color: #974F0C;
+}
+.cm-property {
+    color: #216E4E;
+}
+.cm-keyword {
+    color: #AE2A19;
+}
+.cm-operator {
+    color: #172B4D;
+}
+.cm-tag {
+    color: #0C66E4;
+}
+.cm-bracket {
+    color: #172B4D;
+}
+.cm-def {
+    color: #216E4E;
+}
+.cm-variable {
+    color: #44546F;
+}
+.cm-variable-2 {
+    color: #44546F;
+}

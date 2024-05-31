@@ -1,0 +1,89 @@
+<?xml version="1.0"?>
+<xliff xmlns="urn:oasis:names:tc:xliff:document:2.0" version="2.0" srcLang="en" trgLang="it">
+    <file id="1" original="it.xlf">
+        <unit id="0">
+            <segment>
+                <source>Accepted</source>
+                <target>Accettato</target>
+            </segment>
+        </unit>
+        <unit id="1">
+            <segment>
+                <source>Done</source>
+                <target>Fatto</target>
+            </segment>
+        </unit>
+        <unit id="2">
+            <segment>
+                <source>Draft</source>
+                <target>Bozza</target>
+            </segment>
+        </unit>
+        <unit id="3">
+            <segment>
+                <source>Implemented</source>
+                <target>Implementato</target>
+            </segment>
+        </unit>
+        <unit id="4">
+            <segment>
+                <source>In Progress</source>
+                <target>In elaborazione</target>
+            </segment>
+        </unit>
+        <unit id="5">
+            <segment>
+                <source>Must Have</source>
+                <target>Deve avere</target>
+            </segment>
+        </unit>
+        <unit id="6">
+            <segment>
+                <source>Nice to Have</source>
+                <target>Bello da avere</target>
+            </segment>
+        </unit>
+        <unit id="7">
+            <segment>
+                <source>Open</source>
+                <target>Apri</target>
+            </segment>
+        </unit>
+        <unit id="8">
+            <segment>
+                <source>Rejected</source>
+                <target>Rifiutata</target>
+            </segment>
+        </unit>
+        <unit id="9">
+            <segment>
+                <source>Reopened</source>
+                <target>Riaperto</target>
+            </segment>
+        </unit>
+        <unit id="10">
+            <segment>
+                <source>Reviewed</source>
+                <target>Recensito</target>
+            </segment>
+        </unit>
+        <unit id="11">
+            <segment>
+                <source>Should Have</source>
+                <target>Avrebbe dovuto</target>
+            </segment>
+        </unit>
+        <unit id="12">
+            <segment>
+                <source>Verified</source>
+                <target>Verificato</target>
+            </segment>
+        </unit>
+        <unit id="13">
+            <segment>
+                <source>Will not Have</source>
+                <target>Non avrà</target>
+            </segment>
+        </unit>
+    </file>
+</xliff>

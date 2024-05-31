@@ -1,0 +1,20 @@
+<article id="cover">
+    <div id="top"></div>
+    <div id="center">
+        <p>{{ PROJECT_NAME }}</p>
+        <p>{{ DOCUMENT_TITLE }}</p>
+        <table>
+            <tr><th>Author</th><td>{{ author }}</td></tr>
+            <tr><th>Status</th><td>{{ status }}</td></tr>
+            <tr><th>Confidentiality</th><td>{{ docConfidentiality }}</td></tr>
+            <tr><th>Copyright</th><td>This document is protected by copyright. Any further use requires prior explicit permission from the copyright holder.</td></tr>
+        </table>
+    </div>
+    <div id="bottom">
+        <table>
+            <tr><th></th><th>Created</th><th>Checked</th><th>Released</th></tr>
+            <tr><th>Name</th><td>{{ docCreatedBy }}</td><td>{{ docCheckedBy }}</td><td>{{ docReleasedBy }}</td></tr>
+            <tr><th>Date</th><td>{{ docCreationDate }}</td><td>{{ docCheckDate }}</td><td>{{ docReleaseDate }}</td></tr>
+        </table>
+    </div>
+</article>

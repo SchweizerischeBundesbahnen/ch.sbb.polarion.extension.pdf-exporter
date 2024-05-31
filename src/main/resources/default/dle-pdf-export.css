@@ -1,0 +1,962 @@
+/* FONT DEFINITIONS */
+@font-face {
+    font-family: "Open Sans";
+    src: url("/polarion/ria/fonts/opensans/OpenSans-Regular.ttf");
+}
+
+@font-face {
+    font-family: "Open Sans";
+    src: url("/polarion/ria/fonts/opensans/OpenSans-Bold.ttf");
+    font-weight: bold;
+}
+
+@font-face {
+    font-family: "Open Sans";
+    src: url("/polarion/ria/fonts/opensans/OpenSans-Italic.ttf");
+    font-style: italic;
+}
+
+@font-face {
+    font-family: "Open Sans";
+    src: url("/polarion/ria/fonts/opensans/OpenSans-BoldItalic.ttf");
+    font-weight: bold;
+    font-style: italic;
+}
+
+@font-face {
+    font-family: 'FontAwesome';
+    src: url('/polarion/ria/font-awesome-4.0.3/fonts/fontawesome-webfont.eot?v=4.0.3');
+    src: url('/polarion/ria/font-awesome-4.0.3/fonts/fontawesome-webfont.eot?#iefix&v=4.0.3') format('embedded-opentype'),
+    url('/polarion/ria/font-awesome-4.0.3/fonts/fontawesome-webfont.woff?v=4.0.3') format('woff'),
+    url('/polarion/ria/font-awesome-4.0.3/fonts/fontawesome-webfont.ttf?v=4.0.3') format('truetype'),
+    url('/polarion/ria/font-awesome-4.0.3/fonts/fontawesome-webfont.svg?v=4.0.3#fontawesomeregular') format('svg');
+    font-weight: normal;
+    font-style: normal;
+}
+
+body {
+    font-size: 10pt;
+    font-family: Arial, "Open Sans", sans-serif !important;
+    box-sizing: border-box;
+}
+
+.content .title {
+    font-size: 2em;
+    font-weight: 600;
+    padding-bottom: 0.5em;
+    border-bottom: 1px solid #ccc;
+}
+
+p, ul, ol {
+    margin-top: .8em;
+    margin-bottom: .8em;
+}
+
+a {
+    text-decoration: none;
+    color: #197FA2;
+}
+
+th {
+    background: #eee;
+}
+
+.header, .footer {
+    display: none;
+    font-size: .6em;
+    font-weight: normal;
+    color: #7F7F7F;
+}
+
+.header {
+    margin-top: 0;
+    border: none;
+}
+
+.footer {
+    margin-top: 10px;
+    margin-bottom: 50px;
+}
+
+.page-number .number::after {
+    content: counter(page);
+    margin-right: 2px;
+}
+
+.page-number .pages::after {
+    content: counter(pages);
+    margin-left: 2px;
+}
+
+ul.toc {
+    padding: 0;
+    line-height: 1.4em;
+}
+
+ul.toc, ul.toc ul {
+    list-style-type: none;
+}
+
+ul.toc ul {
+    padding-inline-start: .6em;
+    margin-top: .2em;
+    margin-bottom: .2em;
+}
+
+ul.toc li {
+    border-bottom: 1px dotted black;
+}
+
+ul.toc li > a {
+    text-decoration: none;
+    color: inherit;
+}
+
+a.toc-item {
+    display: grid;
+    grid-template-columns: auto 1fr;
+}
+
+ul.toc li a .number {
+    margin-right: .4em;
+}
+
+ul.toc li a .text {
+    margin-right: 10em;
+}
+
+ul.toc li > a.page-number {
+    float: right;
+}
+
+ul.toc li > a.page-number::after {
+    content: target-counter(attr(href), page);
+}
+
+@page {
+    margin: 120px 60px 90px 80px;
+    border-bottom: 1px solid #aaa;
+    @top-left {
+        content: element(top-left);
+        display: none;
+    }
+    @top-center {
+        content: element(top-center);
+        width: 100%;
+    }
+    @top-right {
+        content: element(top-right);
+        display: none;
+    }
+    @bottom-left {
+        content: element(bottom-left);
+        display: none;
+    }
+    @bottom-center {
+        content: element(bottom-center);
+        width: 100%;
+    }
+    @bottom-right {
+        content: element(bottom-right);
+        display: none;
+    }
+}
+
+.portA5 {
+    page: portA5;
+}
+.landA5 {
+    page: landA5;
+}
+.portA4 {
+    page: portA4;
+}
+.landA4 {
+    page: landA4;
+}
+.portA3 {
+    page: portA3;
+}
+.landA3 {
+    page: landA3;
+}
+.portB5 {
+    page: portB5;
+}
+.landB5 {
+    page: landB5;
+}
+.portB4 {
+    page: portB4;
+}
+.landB4 {
+    page: landB4;
+}
+.portJIS_B5 {
+    page: portJIS_B5;
+}
+.landJIS_B5 {
+    page: landJIS_B5;
+}
+.portJIS_B4 {
+    page: portJIS_B4;
+}
+.landJIS_B4 {
+    page: landJIS_B4;
+}
+.portLETTER {
+    page: portLETTER;
+}
+.landLETTER {
+    page: landLETTER;
+}
+.portLEGAL {
+    page: portLEGAL;
+}
+.landLEGAL {
+    page: landLEGAL;
+}
+.portLEDGER {
+    page: portLEDGER;
+}
+.landLEDGER {
+    page: landLEDGER;
+}
+
+@page landA5 {
+    size: A5 landscape;
+    margin: 90px 40px 60px 60px;
+}
+@page portA5 {
+    size: A5 portrait;
+    margin: 90px 40px 60px 60px;
+}
+@page landA4 {
+    size: A4 landscape;
+}
+@page portA4 {
+    size: A4 portrait;
+}
+@page landA3 {
+    size: A3 landscape;
+    margin: 140px 80px 110px 100px;
+}
+@page portA3 {
+    size: A3 portrait;
+    margin: 140px 80px 110px 100px;
+}
+@page landB5 {
+    size: B5 landscape;
+    margin: 90px 40px 60px 60px;
+}
+@page portB5 {
+    size: B5 portrait;
+    margin: 90px 40px 60px 60px;
+}
+@page landB4 {
+    size: B4 landscape;
+}
+@page portB4 {
+    size: B4 portrait;
+}
+@page landJIS_B5 {
+    size: JIS-B5 landscape;
+    margin: 90px 40px 60px 60px;
+}
+@page portJIS_B5 {
+    size: JIS-B5 portrait;
+    margin: 90px 40px 60px 60px;
+}
+@page landJIS_B4 {
+    size: JIS-B4 landscape;
+}
+@page portJIS_B4 {
+    size: JIS-B4 portrait;
+}
+@page landLETTER {
+    size: letter landscape;
+}
+@page portLETTER {
+    size: letter portrait;
+}
+@page landLEGAL {
+    size: legal landscape;
+    margin: 140px 80px 110px 100px;
+}
+@page portLEGAL {
+    size: legal portrait;
+    margin: 140px 80px 110px 100px;
+}
+@page landLEDGER {
+    size: ledger landscape;
+    margin: 140px 80px 110px 100px;
+}
+@page portLEDGER {
+    size: ledger portrait;
+    margin: 140px 80px 110px 100px;
+}
+
+@media print {
+    body {
+        padding-right: 10px;
+    }
+
+    .header, .footer {
+        display: inline-block;
+    }
+
+    .header.top-left {
+        position: running(top-left);
+    }
+
+    .header.top-center {
+        position: running(top-center);
+    }
+
+    .header.top-right {
+        position: running(top-right);
+    }
+
+    .footer.bottom-left {
+        position: running(bottom-left);
+    }
+
+    .footer.bottom-center {
+        position: running(bottom-center);
+    }
+
+    .footer.bottom-right {
+        position: running(bottom-right);
+    }
+
+    h1 {
+        margin-top: 1em;
+        font-size: 1.2em;
+        break-after: avoid;
+    }
+
+    h2, h3, h4, h5, h6 {
+        font-size: 1em;
+        break-after: avoid;
+    }
+
+    table {
+        border-collapse: collapse;
+    }
+
+    table tr:first-child {
+        break-after: avoid;
+    }
+
+    table tr:last-child {
+        break-before: avoid;
+    }
+
+    .polarion-dle-workitem-title {
+        break-after: avoid;
+    }
+
+    img {
+        break-before: auto;
+        break-inside: avoid;
+        break-after: auto;
+    }
+}
+
+.sbb_page_break {
+    page-break-before: always;
+}
+
+.polarion-WorkItemsMacro-table td {
+    word-break: break-all;
+}
+
+.polarion-Document-table td {
+    overflow-wrap: anywhere;
+    white-space: normal;
+}
+
+div.errormessage, div.warningmessage, div.infomessage, div.plainmessage {
+    text-align: left;
+    width: 95%;
+    margin: 4px 5px;
+    padding: 16px 4px 16px 36px;
+    background: #F5F5F5 url(/polarion/wiki/skins/sidecar/msg.png) 10px 18px no-repeat;
+}
+
+div.infomessage {
+    background-image: url(/polarion/ria/images/msginfo.png);
+    background-color: #D8E4F1;
+}
+
+div.warningmessage {
+    background-image: url("/polarion/ria/images/error_occured.gif");
+    background-color: #FFFFCE;
+}
+
+div.errormessage {
+    background-image: url("/polarion/ria/images/warning.gif");
+    background-color: #FFCCCC;
+}
+
+div.plainmessage {
+    background-image: none;
+}
+
+div.hint {
+    font-style: italic;
+    color: gray;
+    margin: 10px;
+    padding: 10px;
+    border: 1px dotted #DDDDDD;
+}
+
+div.code {
+    border: 1px dashed #3c78b5;
+    white-space: pre;
+    width: 98%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    margin: 10px 0 10px 10px;
+    padding: 10px 0 0 0;
+    background-color: #ffffff;
+    font-family: courier, courier new, monospace;
+    font-size: 13px;
+    line-height: 1.3;
+}
+
+pre {
+    font-family: "Bitstream Vera Sans Mono", "Courier New", Monaco, Courier, monospace;
+    overflow: auto;
+    background-color: #FFFFFF;
+    margin: 0 12px;
+}
+
+.polarion-dle-workitem-title {
+    font-weight: bold;
+}
+
+.polarion-dle-workitem-fields-start {
+    font-weight: bold;
+}
+
+.polarion-dle-workitem-fields-end-table {
+    border-collapse: collapse;
+    border: 1px solid #CCCCCC;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+.polarion-dle-workitem-fields-end-table-label {
+    padding: 4px;
+    padding-right: 20px;
+    border: 1px solid #CCCCCC;
+}
+
+.polarion-dle-workitem-fields-end-table-value {
+    padding: 4px;
+    padding-right: 20px;
+    border: 1px solid #CCCCCC;
+}
+
+.polarion-dle-captionContainer {
+    text-align: center;
+}
+
+.polarion-dle-captionContainer-caption {
+    text-align: center;
+}
+
+.polarion-dle-tableCaptionContainer-caption {
+    text-align: center;
+}
+
+.polarion-rte-caption-paragraph {
+    font-style: italic;
+    font-size: 8pt;
+}
+
+.polarion-dle-tof-link {
+    color: black;
+}
+
+.heading-31, .heading-30, .heading-29, .heading-28, .heading-27, .heading-26, .heading-25, .heading-24, .heading-23, .heading-22, .heading-21, .heading-20, .heading-19, .heading-18, .heading-17, .heading-16, .heading-15, .heading-14, .heading-13, .heading-12, .heading-11, .heading-10, .heading-9, .heading-8, .heading-7 {
+    margin: 0.83em 0 0.41em;
+    font-size: 10pt;
+    line-height: 1.5;
+    color: black;
+    font-weight: bold;
+    font-family: Arial, Helvetica, sans-serif !important;
+}
+
+.polarion-BaseDialog {
+    background-color: white;
+    -webkit-box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.3);
+    box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.3);
+    -moz-border-radius: 6px 6px 4px 4px;
+    -webkit-border-radius: 6px 6px 4px 4px;
+    border-radius: 6px 6px 4px 4px;
+}
+
+.polarion-BaseDialogGlass {
+    background-color: rgba(0, 0, 0, 0.749);
+}
+
+.polarion-BaseDialogCaption {
+    height: 48px;
+    cursor: move;
+    background-color: #005F87;
+    width: 100%;
+    padding: 0 16px;
+    -moz-border-radius: 4px 4px 0 0;
+    -webkit-border-radius: 4px 4px 0 0;
+    border-radius: 4px 4px 0 0;
+    font-size: 18px;
+    table-layout: fixed;
+}
+
+.polarion-BaseDialog-BaseButton {
+    display: inline-block;
+    color: #005F87;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+    border: 1px solid #005F87;
+    border-radius: 2px;
+    background-color: white;
+    min-width: 80px;
+    text-align: center;
+    white-space: nowrap;
+    box-sizing: border-box;
+}
+
+.polarion-BaseDialog-BaseButton:hover {
+    background-color: #DAECF0;
+    box-shadow: 0 3px 6px 0 rgba(0, 0, 0, 0.3);
+}
+
+.polarion-BaseDialog-BaseButton:active {
+    background-color: #AFD7E1;
+}
+
+.polarion-BaseDialog-HighContrastButton {
+    color: white;
+    background-color: #005F87;
+    border: 1px solid #003750;
+}
+
+.polarion-BaseDialog-HighContrastButton:hover {
+    background-color: #004669;
+    box-shadow: 0 3px 6px 0 rgba(0, 0, 0, 0.3);
+}
+
+.polarion-BaseDialog-HighContrastButton:active {
+    background-color: #003750;
+}
+
+.polarion-ellipsis {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.polarion-History-Title {
+    padding: 6px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+    background-color: #EBF0F5;
+    white-space: nowrap;
+}
+
+.polarion-History-HighlightedTitle {
+    padding: 6px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+    background-color: #F2B9CF;
+    white-space: nowrap;
+}
+
+.diff-html-added {
+    background-color: #ccffcc;
+}
+
+tr:over {
+    background-color: #ccffcc;
+    border: 2px;
+    border-style: dashed;
+    border-collapse: collapse;
+    z-index: 100000;
+}
+
+.diff-html-added-highcontrast {
+    background-color: #ccffcc;
+    border: 2px solid green;
+    padding: 2px;
+}
+
+.diff-html-removed {
+    background-color: #fdc6c6;
+}
+
+.diff-html-removed-highcontrast {
+    background-color: #fdc6c6;
+    border: 2px dashed red;
+    padding: 2px;
+}
+
+.diff-html-changed {
+    background-color: #c6c6fd;
+}
+
+.diff-html-changed-highcontrast {
+    background-color: #c6c6fd;
+    border: 2px dotted purple;
+    padding: 2px;
+}
+
+.diff-added-image {
+    border: 2px solid #ccffcc;
+    background-color: white;
+}
+
+.diff-added-image-highcontrast {
+    background-color: #ccffcc;
+    border: 2px solid green;
+    padding: 2px;
+}
+
+.diff-removed-image {
+    border: 2px solid #fdc6c6;
+    background-color: white;
+}
+
+.diff-removed-image-highcontrast {
+    background-color: #fdc6c6;
+    border: 2px dashed red;
+    padding: 2px;
+}
+
+.diff-changed-image {
+    border: 2px solid #c6c6fd;
+    background-color: white;
+}
+
+.polarion-Comment-Heading {
+    padding-top: 4px;
+    background-color: #F5F7FA;
+}
+
+.polarion-dle-workitem-basic-0 {
+    padding-left: 0px;
+    padding-top: 3px;
+    padding-bottom: 4px;
+}
+
+.polarion-dle-workitem-basic-1 {
+    padding-left: 14px;
+    padding-top: 3px;
+    padding-bottom: 4px;
+}
+
+.polarion-dle-workitem-basic-2 {
+    padding-left: 28px;
+    padding-top: 3px;
+    padding-bottom: 4px;
+}
+
+.polarion-dle-workitem-basic-3 {
+    padding-left: 42px;
+    padding-top: 3px;
+    padding-bottom: 4px;
+}
+
+.polarion-dle-workitem-basic-4 {
+    padding-left: 56px;
+    padding-top: 3px;
+    padding-bottom: 4px;
+}
+
+.polarion-dle-workitem-basic-5 {
+    padding-left: 70px;
+    padding-top: 3px;
+    padding-bottom: 4px;
+}
+
+.polarion-dle-workitem-basic-6 {
+    padding-left: 84px;
+    padding-top: 3px;
+    padding-bottom: 4px;
+}
+
+.polarion-dle-workitem-basic-7 {
+    padding-left: 98px;
+    padding-top: 3px;
+    padding-bottom: 4px;
+}
+
+.polarion-dle-workitem-basic-8 {
+    padding-left: 112px;
+    padding-top: 3px;
+    padding-bottom: 4px;
+}
+
+.polarion-dle-workitem-basic-9 {
+    padding-left: 126px;
+    padding-top: 3px;
+    padding-bottom: 4px;
+}
+
+.polarion-dle-workitem-basic-10 {
+    padding-left: 140px;
+    padding-top: 3px;
+    padding-bottom: 4px;
+}
+
+.polarion-dle-workitem-basic-11 {
+    padding-left: 154px;
+    padding-top: 3px;
+    padding-bottom: 4px;
+}
+
+.polarion-dle-workitem-basic-12 {
+    padding-left: 168px;
+    padding-top: 3px;
+    padding-bottom: 4px;
+}
+
+.polarion-dle-workitem-basic-13 {
+    padding-left: 182px;
+    padding-top: 3px;
+    padding-bottom: 4px;
+}
+
+.polarion-dle-workitem-basic-14 {
+    padding-left: 196px;
+    padding-top: 3px;
+    padding-bottom: 4px;
+}
+
+.polarion-dle-workitem-basic-15 {
+    padding-left: 210px;
+    padding-top: 3px;
+    padding-bottom: 4px;
+}
+
+.polarion-dle-workitem-basic-16 {
+    padding-left: 224px;
+    padding-top: 3px;
+    padding-bottom: 4px;
+}
+
+.polarion-dle-workitem-basic-17 {
+    padding-left: 238px;
+    padding-top: 3px;
+    padding-bottom: 4px;
+}
+
+.polarion-dle-workitem-basic-18 {
+    padding-left: 252px;
+    padding-top: 3px;
+    padding-bottom: 4px;
+}
+
+.polarion-dle-workitem-basic-19 {
+    padding-left: 266px;
+    padding-top: 3px;
+    padding-bottom: 4px;
+}
+
+.polarion-dle-workitem-basic-20 {
+    padding-left: 280px;
+    padding-top: 3px;
+    padding-bottom: 4px;
+}
+
+.polarion-dle-workitem-basic-21 {
+    padding-left: 294px;
+    padding-top: 3px;
+    padding-bottom: 4px;
+}
+
+.polarion-dle-workitem-basic-22 {
+    padding-left: 308px;
+    padding-top: 3px;
+    padding-bottom: 4px;
+}
+
+.polarion-dle-workitem-basic-23 {
+    padding-left: 322px;
+    padding-top: 3px;
+    padding-bottom: 4px;
+}
+
+.polarion-dle-workitem-basic-24 {
+    padding-left: 336px;
+    padding-top: 3px;
+    padding-bottom: 4px;
+}
+
+.polarion-dle-workitem-basic-25 {
+    padding-left: 350px;
+    padding-top: 3px;
+    padding-bottom: 4px;
+}
+
+.polarion-dle-workitem-basic-26 {
+    padding-left: 364px;
+    padding-top: 3px;
+    padding-bottom: 4px;
+}
+
+.polarion-dle-workitem-basic-27 {
+    padding-left: 378px;
+    padding-top: 3px;
+    padding-bottom: 4px;
+}
+
+.polarion-dle-workitem-basic-28 {
+    padding-left: 392px;
+    padding-top: 3px;
+    padding-bottom: 4px;
+}
+
+.polarion-dle-workitem-basic-29 {
+    padding-left: 406px;
+    padding-top: 3px;
+    padding-bottom: 4px;
+}
+
+.polarion-dle-workitem-basic-30 {
+    padding-left: 420px;
+    padding-top: 3px;
+    padding-bottom: 4px;
+}
+
+.polarion-cross-reference-label {
+    color: black !important;
+    text-decoration: underline !important;
+}
+
+.polarion-cross-reference-link-external {
+    color: black !important;
+    text-decoration: underline !important;
+}
+
+.polarion-dle-pdf {
+    word-wrap: break-word;
+}
+
+.noBreakWord {
+    word-wrap: normal;
+}
+
+.polarion-Icons {
+    vertical-align: bottom;
+    margin-right: 2px;
+}
+
+li span {
+    line-height: 1em !important;
+}
+
+.header-footer-wrapper {
+    display: flex;
+}
+
+.header-footer-left {
+    flex: 1;
+}
+
+.header-footer-center {
+    max-width: 30%;
+    text-align: center;
+    /*    display: flex;
+        flex: 0 0 auto;
+        justify-content: center;
+        align-items: center;
+    */
+}
+
+.header-footer-right {
+    flex: 1;
+    text-align: right;
+}
+
+.comment {
+    background: #eee;
+    border-left: 5px solid #aaa;
+    display: block;
+    font-size: small;
+    margin: 2px 0 2px 5px;
+    width: auto;
+    position: relative;
+}
+
+.comment .meta {
+    font-size: x-small;
+    color: gray;
+    padding: 2px 5px;
+    display: flex;
+    justify-content: space-between;
+}
+
+.comment .text {
+    display: block;
+    font-size: x-small;
+    padding: 5px;
+}
+
+.comment.level-0 {
+    margin-left: 30px;
+}
+.comment.level-1 {
+    margin-left: 50px;
+}
+.comment.level-2 {
+    margin-left: 70px;
+}
+.comment.level-3 {
+    margin-left: 90px;
+}
+.comment.level-4 {
+    margin-left: 110px;
+}
+.comment.level-5 {
+    margin-left: 130px;
+}
+.comment.level-7 {
+    margin-left: 150px;
+}
+.comment.level-8 {
+    margin-left: 170px;
+}
+.comment.level-9 {
+    margin-left: 190px;
+}
+.comment.level-10 {
+    margin-left: 210px;
+}
+.polarion-rp-column-layout-cell {
+    font-size: 12px;
+}
+.polarion-errormessage, .polarion-warningmessage, .polarion-infomessage, .polarion-infomessage-noSideMargin, .polarion-plainmessage {
+    text-align: left;
+    margin: 4px 5px;
+    padding: 8px 18px 8px 36px;
+    background-color: #F5F5F5;
+}
+.polarion-infomessage, .polarion-infomessage-noSideMargin {
+    background-color: #D8E4F1;
+}
+.polarion-rp-parameters-view {
+    padding: 10px 5px;
+    border: 1px solid #ccc;
+}
+table.polarion-rp-column-layout td {
+    padding: 5px;
+    vertical-align: top;
+}
+.polarion-rp-widget-parameters {
+    display: none;
+}
+#polarion-rp-parameters, #polarion-rp-page-script {
+    display: none;
+}

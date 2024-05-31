@@ -1,0 +1,368 @@
+.dleToolBarContainer {
+    width: fit-content;
+    height: 45px;
+    background-color: #f5f5f5;
+    z-index: 1;
+    position: absolute;
+    right: 0;
+    border-bottom: 1px solid #DEDEDE;
+    border-right: 1px solid #DEDEDE;
+    border-left: 1px solid #DEDEDE;
+    padding-left: 8px;
+    padding-right: 3px;
+    vertical-align: middle;
+    display: flex;
+}
+
+.dleToolBarTable {
+    align-self: center;
+    border-spacing: 0;
+}
+
+.dleToolBarRow {
+    display: table-row;
+    vertical-align: middle;
+}
+
+.dleToolBarTableCell {
+    padding: 0;
+}
+
+.dleToolBarButton {
+    cursor: pointer;
+    opacity: .6;
+}
+
+.dleToolBarButton:hover {
+    opacity: 1;
+}
+
+.dleToolBarSingleButton {
+    border: 1px solid #DEDEDE;
+    padding: 5px;
+    border-radius: 2px;
+    margin-right: 5px;
+}
+
+.dleToolBarLeftButton {
+    border: 1px solid #DEDEDE;
+    padding: 5px;
+    border-top-left-radius: 2px;
+    border-bottom-left-radius: 2px;
+}
+
+.dleToolBarRightButton {
+    border-width: 1px 1px 1px 0px;
+    border-style: solid;
+    border-color: #DEDEDE;
+    padding: 5px;
+    border-top-right-radius: 2px;
+    border-bottom-right-radius: 2px;
+    margin-right: 5px;
+}
+
+.modal__overlay {
+    z-index: 2;
+}
+
+.modal__container.pdf-exporter {
+    padding: 0;
+    min-width: 300px;
+    max-width: 750px;
+    width: 80vw;
+    opacity: 1;
+}
+
+.modal__container.pdf-exporter .modal__header {
+    justify-content: start;
+    height: 48px;
+    background-color: #005F87;
+    padding: 0 16px;
+    border-radius: 4px 4px 0 0;
+    font-size: 18px;
+}
+
+.modal__container.pdf-exporter .modal__footer {
+    justify-content: end;
+    margin-bottom: 14px;
+    margin-right: 6px;
+}
+
+.modal__container.pdf-exporter .modal__title {
+    font-size: 18px;
+    color: white;
+}
+
+.modal__container.pdf-exporter .modal__content {
+    margin: 0;
+    padding: 16px;
+    color: black;
+}
+
+.form-wrapper {
+    position: relative;
+}
+
+.modal__container.pdf-exporter .in-progress-overlay {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background: white;
+    opacity: 80%;
+    display: none;
+    flex-flow: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.modal__container.pdf-exporter .in-progress-overlay.show {
+    display: flex;
+}
+
+.modal__container.pdf-exporter .notifications {
+    padding: 0 0 10px;
+}
+
+.modal__container.pdf-exporter .notifications .alert {
+    margin-bottom: 10px;
+    padding: 6px 12px;
+    border-radius: 3px;
+}
+
+.modal__container.pdf-exporter .notifications .alert-error {
+    background-color: #f8d7da;
+    border: 1px solid #b3626a;
+}
+
+.modal__container.pdf-exporter .notifications .alert-warning {
+    background-color: #fff7cd;
+    border: 1px solid #ffc328;
+}
+
+.modal__container.pdf-exporter .notifications .alert-success {
+    background-color: #d1e7dd;
+    border: 1px solid #75b598;
+}
+
+.modal__container.pdf-exporter .validation-alerts {
+    display: inline-block;
+    padding: 0 10px;
+}
+
+.modal__container.pdf-exporter .validation-alerts .alert {
+    font-weight: bold;
+}
+
+.modal__container.pdf-exporter .validation-alerts .alert-error {
+    color: red;
+}
+
+.modal__container.pdf-exporter .validation-alerts .alert-success {
+    color: green;
+}
+
+.modal__container.pdf-exporter .polarion-JSWizardButton-Primary.action-button:disabled,
+.modal__container.pdf-exporter .polarion-JSWizardButton-Primary.action-button:disabled:hover {
+    box-shadow: none;
+    cursor: auto;
+    color: #eee;
+    background-color: #81a1af;
+    border-color: #527889;
+}
+
+.modal__container.pdf-exporter .flex-container {
+    display: flex;
+    column-gap: 20px;
+    flex-wrap: wrap;
+}
+
+.modal__container.pdf-exporter .flex-column {
+    width: 340px;
+}
+
+.modal__container.pdf-exporter .preview {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.property-wrapper {
+    margin-top: 8px;
+    padding-right: 10px;
+    display: flex;
+    align-items: center;
+    column-gap: 5px;
+}
+
+.property-wrapper label {
+    margin-top: 2px;
+    margin-bottom: 3px;
+}
+
+.property-wrapper label.fixed-width {
+    display: inline-block;
+}
+
+.pdf-exporter .property-wrapper label.fixed-width.w-1 {
+    width: 100px;
+}
+
+.pdf-exporter .property-wrapper label.fixed-width.w-2 {
+    width: 200px;
+}
+
+.property-wrapper label input[type="checkbox"] {
+    vertical-align: middle;
+}
+
+.property-wrapper select, .property-wrapper input {
+    font-weight: 600;
+    font-family: "Segoe UI", "Selawik", "Open Sans", Arial, sans-serif;
+    font-size: 13px;
+    border: 1px solid #cccccc;
+    border-radius: 2px;
+}
+
+.property-wrapper select, .property-wrapper input[type="color"] {
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+    background: transparent url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAYAAAAGCAYAAADgzO9IAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAOUlEQVR4nGNgwAOKGRgY/qNhkBgDCwMDw0UkwasMDAysMF22DAwM/6ASjuhGLmVgYFiCzS5JKAYDACJtDIY1VpdwAAAAAElFTkSuQmCC") no-repeat;
+    background-position: calc(100% - 1rem) 55% !important;
+}
+
+.property-wrapper input {
+    padding: 2px 4px 4px .4rem;
+}
+
+.property-wrapper input.error {
+    border-color: red;
+    color: red;
+}
+
+.property-wrapper select {
+    padding: 2px 2rem 4px .4rem;
+}
+
+.modal__container.pdf-exporter .property-wrapper select {
+    width: 200px;
+}
+
+.property-wrapper input[type="color"] {
+    padding: 2px 2rem 2px 2px;
+}
+
+.buttons-wrapper {
+    margin: 10px 0;
+}
+
+.buttons-wrapper button {
+    background-color: transparent;
+    border: 1px solid #DEDEDE;
+    color: #555;
+    padding: 4px 8px;
+    font-size: 12px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.buttons-wrapper button:not(:first-child) {
+    margin-left: 5px;
+}
+
+.buttons-wrapper button:disabled {
+    text-shadow: white 1px 1px 0.01em;
+    color: #C9D1D7;
+    cursor: default;
+}
+
+.buttons-wrapper .divider {
+    padding: 4px 0;
+    width: 1px;
+    border-right-color: #fff;
+    border-left-color: #ccc;
+}
+
+.buttons-wrapper button img {
+    margin-right: 6px;
+    vertical-align: bottom;
+}
+
+.buttons-wrapper button:disabled img {
+    opacity: 0.3;
+}
+
+#export-pdf-progress, #validate-pdf-progress {
+    display: none;
+    width: 20px;
+    vertical-align: middle;
+}
+
+#export-error, #validate-error, #style-package-error {
+    display: inline-block;
+    color: red;
+    font-weight: bold;
+}
+
+#export-warning {
+    display: inline-block;
+    color: orange;
+    font-weight: bold;
+}
+
+#validate-ok {
+    display: inline-block;
+    color: green;
+    font-weight: bold;
+}
+
+.validate-result-img {
+    width: 200px;
+    border: solid 1px red;
+    cursor: zoom-in;
+}
+
+.popup-validate-result-img {
+    width: 22%;
+    border: solid 1px red;
+    cursor: zoom-in;
+    margin: 5px;
+}
+
+.img-zoomed {
+    border: 5px solid red;
+    z-index: 999;
+    cursor: zoom-out;
+    display: block;
+    width: auto;
+    height: auto;
+    position: fixed;
+    right: 30px;
+    top: 30px;
+}
+
+.popup-img-zoomed {
+    border: 3px solid red;
+    z-index: 999;
+    cursor: zoom-out;
+    display: block;
+    position: fixed;
+    top: 0;
+    width: auto;
+    height: 90%;
+    margin: 5% auto;
+}
+
+.suspicious-list {
+    margin: 0;
+    color: black;
+}
+
+#localization-area {
+    width: 100%;
+    height: 70px;
+}
+
+.hidden {
+    display: none;
+}

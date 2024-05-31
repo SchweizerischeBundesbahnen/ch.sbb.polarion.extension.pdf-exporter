@@ -1,0 +1,195 @@
+<div class="form-wrapper">
+    <div class="in-progress-overlay"><img src='/polarion/ria/images/progress.gif'/><span id="in-progress-message"></span></div>
+
+    <div class="notifications">
+        <div class="alert alert-warning" style="display: none"></div>
+        <div class="alert alert-error" style="display: none"></div>
+        <div class="alert alert-success" style="display: none"></div>
+    </div>
+
+    <div class="flex-container">
+        <p>Select one of style packages in dropdown below which you wish to use during export.</p>
+        <div class="flex-column">
+            <div class='property-wrapper'>
+                <label for='popup-style-package-select' class="fixed-width w-1">Style package:</label>
+                <select id='popup-style-package-select' onchange="PdfExporter.onStylePackageChanged()"></select>
+            </div>
+        </div>
+    </div>
+
+    <div id='popup-style-package-content' style='border-top: 1px solid #eee; margin-top: 10px; padding-top: 10px;'>
+        <p>Selected style package exposes its settings, so you can redefine them.</p>
+        <div class="flex-container">
+            <div class="flex-column">
+                <div class='property-wrapper'>
+                    <label for='popup-cover-page-checkbox' class="fixed-width w-1">
+                        <input id='popup-cover-page-checkbox' onchange='document.getElementById("popup-cover-page-selector").style.visibility = this.checked ? "visible" : "hidden"' type='checkbox'/>
+                        Cover page:
+                    </label>
+                    <select id='popup-cover-page-selector'></select>
+                </div>
+                <div class='property-wrapper'>
+                    <label for='popup-css-selector' class="fixed-width w-1">CSS:</label>
+                    <select id='popup-css-selector'></select>
+                </div>
+            </div>
+            <div class="flex-column">
+                <div class='property-wrapper'>
+                    <label for='popup-header-footer-selector' class="fixed-width w-1">Header/Footer:</label>
+                    <select id='popup-header-footer-selector'></select>
+                </div>
+                <div class='property-wrapper'>
+                    <label for='popup-localization-selector' class="fixed-width w-1">Localization:</label>
+                    <select id='popup-localization-selector'></select>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex-container" style='border-top: 1px solid #eee; margin-top: 15px; padding-top: 5px;'>
+            <div class="flex-column">
+                <div class='property-wrapper'>
+                    <label for='popup-headers-color' class="fixed-width w-1">Headers color:</label>
+                    <input id='popup-headers-color' type='color'/>
+                </div>
+            </div>
+            <div class="flex-column">
+                <div class='property-wrapper'>
+                    <label for='popup-paper-size-selector' class="fixed-width w-1">Paper size:</label>
+                    <select id='popup-paper-size-selector'>
+                        <option value='A5'>A5</option>
+                        <option value='A4'>A4</option>
+                        <option value='A3'>A3</option>
+                        <option value='B5'>B5</option>
+                        <option value='B4'>B4</option>
+                        <option value='JIS_B5'>JIS-B5</option>
+                        <option value='JIS_B4'>JIS-B4</option>
+                        <option value='LETTER'>Letter</option>
+                        <option value='LEGAL'>Legal</option>
+                        <option value='LEDGER'>Ledger</option>
+                    </select>
+                </div>
+                <div class='property-wrapper'>
+                    <label for='popup-orientation-selector' class="fixed-width w-1">Orientation:</label>
+                    <select id='popup-orientation-selector'>
+                        <option value='PORTRAIT'>Portrait</option>
+                        <option value='LANDSCAPE'>Landscape</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex-container">
+            <div class="flex-column">
+                <div class='property-wrapper only-live-doc'>
+                    <label for='popup-fit-to-page'>
+                        <input id='popup-fit-to-page' type='checkbox'/>
+                        Fit images and tables to page
+                    </label>
+                </div>
+                <div class='property-wrapper'>
+                    <label for='popup-presentational-hints'>
+                        <input id='popup-presentational-hints' type='checkbox'/>
+                        Follow HTML presentational hints
+                    </label>
+                </div>
+                <div class='property-wrapper only-live-doc'>
+                    <label for='popup-enable-comments-rendering'>
+                        <input id='popup-enable-comments-rendering' type='checkbox'/>
+                        Comments rendering
+                    </label>
+                </div>
+                <div class='property-wrapper'>
+                    <label for='popup-watermark'>
+                        <input id='popup-watermark' type='checkbox'/>
+                        Watermark
+                    </label>
+                </div>
+            </div>
+            <div class="flex-column">
+                <div class='property-wrapper only-live-doc'>
+                    <label for='popup-cut-empty-chapters'>
+                        <input id='popup-cut-empty-chapters' type='checkbox'/>
+                        Cut empty chapters (any level)
+                    </label>
+                </div>
+                <div class='property-wrapper only-live-doc'>
+                    <label for='popup-cut-empty-wi-attributes'>
+                        <input id='popup-cut-empty-wi-attributes' type='checkbox'/>
+                        Cut empty Workitem attributes
+                    </label>
+                </div>
+                <div class='property-wrapper'>
+                    <label for='popup-cut-urls'>
+                        <input id='popup-cut-urls' type='checkbox'/>
+                        Cut local Polarion URLs
+                    </label>
+                </div>
+                <div class='property-wrapper only-live-doc'>
+                    <label for='popup-mark-referenced-workitems'>
+                        <input id='popup-mark-referenced-workitems' type='checkbox'/>
+                        Mark referenced Workitems
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex-container">
+            <div class="flex-column">
+                <div class='property-wrapper only-live-doc'>
+                    <label for='popup-custom-list-styles'>
+                        <input id='popup-custom-list-styles' onchange='document.getElementById("popup-numbered-list-styles").style.visibility = this.checked ? "visible" : "hidden"' type='checkbox'/>
+                        Custom styles of numbered lists
+                    </label>
+                    <input id='popup-numbered-list-styles' placeholder='eg. 1ai' style='width: 84px' type='text'/>
+                </div>
+                <div class='property-wrapper only-live-doc'>
+                    <label for='popup-specific-chapters'>
+                        <input id='popup-specific-chapters' onchange='document.getElementById("popup-chapters").style.visibility = this.checked ? "visible" : "hidden"' type='checkbox'/>
+                        Specific higher level chapters
+                    </label>
+                    <input id='popup-chapters' placeholder='eg. 1,2,4 etc.' style='width: 101px' type='text'/>
+                </div>
+            </div>
+            <div class="flex-column">
+                <div class='property-wrapper only-live-doc'>
+                    <label for='popup-localization'>
+                        <input id='popup-localization' onchange='document.getElementById("popup-language").style.visibility = this.checked ? "visible" : "hidden"' type='checkbox'/>
+                        Localize enums
+                    </label>
+                    <select id="popup-language" style="width: 190px">
+                        <option value='de'>Deutsch</option>
+                        <option value='fr'>Français</option>
+                        <option value='it'>Italiano</option>
+                    </select>
+                </div>
+                <div class='property-wrapper only-live-doc'>
+                    <label for='popup-selected-roles' style="align-self: flex-start;">
+                        <input id='popup-selected-roles' onchange='document.getElementById("popup-roles-selector").style.display = this.checked ? "inline-block" : "none"' type='checkbox'/>
+                        Specific Workitem roles
+                    </label>
+                    <select id='popup-roles-selector' multiple style="width: 142px"></select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class='property-wrapper'>
+        <label for='popup-filename'>File name:</label>
+        <input id='popup-filename' type='text' style="width: 594px" />
+    </div>
+
+</div>
+
+<div class='buttons-wrapper' id="popup-page-width-validation" style='display: none; padding-top: 10px;'>
+    <button type='button' id='popup-validate-pdf' class="action-button" onclick="PdfExporter.validatePdf()">
+        <img class='append-build-number' src='/polarion/ria/images/dle/align_center.png'/>Validate pages width
+    </button>
+    <div class="validation-alerts">
+        <div class='alert alert-error'></div>
+        <div class='alert alert-success'></div>
+    </div>
+</div>
+
+<div id="page-previews" class="preview"></div>
+
+<div id="suspicious-wi"></div>
