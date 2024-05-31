@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE web-app
+        PUBLIC "-//Sun Microsystems, Inc.//DTD Web Application 2.3//EN"
+        "http://java.sun.com/dtd/web-app_2_3.dtd">
+<web-app xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="http://xmlns.jcp.org/xml/ns/javaee"
+         xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee
+         http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd"
+         version="3.1">
+    <display-name>pdf-exporter-admin</display-name>
+
+    <filter>
+        <filter-name>DoAsFilter</filter-name>
+        <filter-class>com.polarion.portal.tomcat.servlets.DoAsFilter</filter-class>
+    </filter>
+    <filter-mapping>
+        <filter-name>DoAsFilter</filter-name>
+        <url-pattern>/*</url-pattern>
+    </filter-mapping>
+
+    <servlet>
+        <servlet-name>pdf-exporter-admin-ui</servlet-name>
+        <servlet-class>ch.sbb.polarion.extension.pdf.exporter.PdfExporterAdminUiServlet</servlet-class>
+
+        <init-param>
+            <param-name>debug</param-name>
+            <param-value>0</param-value>
+        </init-param>
+        <load-on-startup>1</load-on-startup>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>pdf-exporter-admin-ui</servlet-name>
+        <url-pattern>/ui/*</url-pattern>
+    </servlet-mapping>
+
+    <security-constraint>
+        <web-resource-collection>
+            <web-resource-name>All</web-resource-name>
+            <url-pattern>/*</url-pattern>
+        </web-resource-collection>
+    </security-constraint>
+
+    <login-config>
+        <auth-method>BASIC</auth-method>
+        <realm-name>PolarionRealm</realm-name>
+    </login-config>
+
+</web-app>

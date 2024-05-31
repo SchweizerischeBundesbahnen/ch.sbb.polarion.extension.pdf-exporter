@@ -1,5 +1,5 @@
 Support-Email: polarion-opensource@sbb.ch
-Bundle-Name: Extension for Polarion ALM
+Bundle-Name: PDF Exporter Extension for Polarion ALM
 Require-Bundle: com.polarion.portal.tomcat,
  com.polarion.alm.ui,
  com.polarion.platform.guice,
@@ -11,4 +11,10 @@ Require-Bundle: com.polarion.portal.tomcat,
  org.apache.commons.logging,
  slf4j.api,
  org.springframework.spring-core,
- org.springframework.spring-web
+ org.springframework.spring-web,
+ com.polarion.alm.wiki
+Guice-Modules: ch.sbb.polarion.extension.pdf.exporter.PdfExporterModule
+Export-Package: ch.sbb.polarion.extension.pdf.exporter,
+ ch.sbb.polarion.extension.pdf.exporter.converter,
+ ch.sbb.polarion.extension.pdf.exporter.rest.model,
+ ch.sbb.polarion.extension.pdf.exporter.rest.model.conversion

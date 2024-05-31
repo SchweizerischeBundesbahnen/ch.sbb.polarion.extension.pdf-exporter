@@ -1,0 +1,2951 @@
+/*
+This is the combination of two css files which is used by Polarion on wiki/doc generation:
+ - src/main/webapp/skins/sidecar/pdf.css
+ - war/gwt/polarion/ui_wiki_pdf_common_Unknown.css
+Note: there was made some slight modifications to some entries (e.g. fonts & velocity scripts removals). Please refer to original files to see the difference.
+*/
+
+/*------------------ pdf.css ------------------ */
+body {
+    line-height: 150% !important;
+    font-size: 10pt !important;
+    cursor: text;
+}
+
+p {
+    line-height: 150% !important;
+    margin: 0px !important;
+}
+
+a,a:link,a:visited {
+    color: #0277BB;
+    text-decoration: none !important;
+}
+
+table {
+    font-size: 12px !important;
+    border-collapse: collapse !important;
+    empty-cells: show;
+}
+
+/* Dedicated styles for pdf4ml tables which creates TOC in generated document to avoid regressions related TOC and table styling */
+   .ptoc-table td {
+       line-height: 100% !important;
+       border: none !important;
+       padding: 0 0 10px 0;
+       margin: 0;
+       font-size: 12px !important;
+   }
+
+.heading-1 {
+    font-size: 26px !important;
+    font-weight: bold !important;
+    margin-bottom: 18px !important;
+    border-bottom: 1px solid lightGrey !important;
+    color: black !important;
+    padding-bottom: 5px !important;
+    margin-top: 0px !important;
+    padding-left: 0px !important;
+    background-color: white !important;
+}
+
+H1 {
+    font-size: 17px !important;
+    padding-left: 0px !important;
+    color: black !important;
+    background-color: white !important;
+    padding-top: 25px !important;
+    margin-bottom: 0px !important;
+}
+
+H2, .heading-1-1 {
+    font-size: 17px !important;
+    font-weight: bold !important;
+    margin-bottom: 0px !important;
+    padding-left: 0px !important;
+    color: black !important;
+    background-color: white !important;
+    padding-bottom: 1px !important;
+    margin-top: 15px !important;
+}
+
+H3, .heading-1-1-1 {
+    font-size: 14px !important;
+    font-weight: bold !important;
+    padding-left: 0px !important;
+    color: black !important;
+    background-color: white !important;
+    padding-bottom: 1px !important;
+    margin-bottom: 1px !important;
+    margin-top: 10px !important;
+}
+
+H4, .heading-1-1-1-1 {
+    font-size: 14px !important;
+    font-weight: bold !important;
+    padding-left: 0px !important;
+    color: black !important;
+    background-color: white !important;
+    padding-bottom: 1px !important;
+    margin-bottom: 1px !important;
+}
+
+H5, .heading-1-1-1-1-1 {
+    font-size: 12px !important;
+    font-weight: bold !important;
+    padding-left: 0px !important;
+    color: black !important;
+    background-color: white !important;
+    padding-bottom: 1px !important;
+    margin-bottom: 1px !important;
+}
+
+H6, .heading-1-1-1-1-1-1 {
+    font-size: 12px !important;
+    font-weight: bold !important;
+    padding-left: 0px !important;
+    color: black !important;
+    background-color: white !important;
+    padding-bottom: 1px !important;
+    margin-bottom: 1px !important;
+}
+
+/* END OF DEFAULT STYLES THAT ARE SPECIFIC FOR DOCUMENT OR WIKI EXPORT
+
+ BEGINNING OF COPY'N'PASTE STYLES from wiki.css (lists, tables, code, hint, polarion-Document-workitem...)*/
+
+p {
+    padding-top: 10px !important;
+}
+
+ul {
+    margin: 1em 0 !important;
+    padding: 0px 0px 0px 40px !important;
+    list-style-type: disc !important;
+}
+
+ul ul,ol ul {
+    margin: 0 !important;
+    padding: 0px 0px 0px 40px !important;
+    list-style-type: disc !important;
+}
+
+ol {
+    margin: 1em 0 !important;
+    padding: 0px 0px 0px 40px !important;
+}
+
+ol ol,ul ol {
+    margin: 0 !important;
+    padding: 0px 0px 0px 40px !important;
+}
+
+.polarion-Document-table {
+    margin: auto !important;
+    margin-top: 10px !important;
+    empty-cells: show !important;
+    font-size: 100% !important;
+    text-align: left !important;
+    border-collapse: collapse !important;
+    border: none;
+}
+
+.polarion-Document-table th {
+    margin-top: 0px !important;
+    padding-top: 0px !important;
+    font-weight: bold !important;
+    border: none;
+    background-color: #F0F0F0 !important;
+    text-align: left !important;
+}
+
+.polarion-Document-table td {
+    font-size: 12px !important;
+}
+
+.MsoTableGrid, .MsoTableGrid td {
+    margin: auto !important;
+    font-size: 100% !important;
+    border: 1px solid #CCCCCC !important;
+}
+
+.MsoTableGrid tr td {
+    margin-top: 0px !important;
+    padding-top: 0px !important;
+}
+.MsoTableGrid td {
+    margin-top: 0px !important;
+    padding-top: 0px !important;
+}
+
+.polarion-Document-workitem {
+    margin-top: 8px !important;
+    line-height: 130% !important;
+}
+
+.polarion-Document-workitem ul{
+    margin-top: 5px !important;
+}
+
+.polarion-WorkItemsMacro-table {
+    font-size: 12px !important;
+}
+
+.hint {
+    font-style: italic;
+    color: gray;
+    margin: 10px;
+    padding: 10px;
+    border: 1px dotted #DDDDDD;
+}
+
+.regiondescription {
+    font-size: 12px;
+    color: gray;
+    line-height: 17px;
+}
+
+div.regiondescription {
+    margin: 0 15px 20px 15px;
+}
+
+.regiontitle {
+    border-bottom: 4px solid #E1F0FF;
+    color: #0E4A90;
+    font-family: Arial, helvetica, sans-serif;
+    font-size: 23px;
+    font-weight: bold;
+    line-height: 42px;
+    margin: 8px 0 10px;
+    padding: 0;
+}
+
+/* special formatting of a wiki table */
+.wiki-table {
+    margin: auto;
+    empty-cells: show;
+    width: 80%;
+    font-size: 100%;
+    text-align: left;
+    /*border: 1px solid #5b5b5b;
+  border-width: 1px;
+  border-style: outset;*/
+    border-collapse: collapse;
+    border: 1px solid #CCCCCC;
+}
+
+.wiki-table td {
+    padding: 5px;
+    border: 1px solid #CCCCCC;
+    line-height: 18px;
+    text-align: left;
+    vertical-align: top;
+}
+
+.wiki-table th,.accordionTabContentBox .wiki-table th {
+    font-weight: bold;
+    border: 1px solid #CCCCCC;
+    padding: 5px;
+    background-color: #F0F0F0;
+    text-align: left;
+    vertical-align: top;
+}
+
+.wiki-table .table-odd {
+
+}
+
+.wiki-table .table-even {
+
+}
+
+.wiki-table-no-border {
+    margin: auto;
+    empty-cells: show;
+    width: 80%;
+    font-size: 100%;
+    border-collapse: collapse;
+    border-style: none;
+    line-height: 18px;
+}
+
+.wiki-table-no-border td { /*border: 1px solid #5b5b5b;
+  border-width: 1px;
+  border-style: inset;
+  padding: 2px;*/
+    padding: 2px;
+    border-style: none;
+    line-height: 18px;
+    text-align: left;
+    vertical-align: top;
+}
+
+.wiki-table-no-border th { /*border: 1px solid;
+  border-width: 1px;
+  border-style: inset;*/
+    font-weight: bold;
+    /*padding: 2px;
+  background-color:#EEEEEE;*/
+    border-style: none;
+    padding: 2px;
+    background-color: #F0F0F0;
+    text-align: left;
+    vertical-align: top;
+}
+
+.polarion-wiki-table {
+    margin: auto;
+    empty-cells: show;
+    width: 80%;
+    font-size: 100%;
+    text-align: left;
+    border-collapse: collapse;
+    border: 1px solid #CCCCCC;
+}
+
+.polarion-wiki-table-td {
+    padding: 5px;
+    border: 1px solid #CCCCCC;
+    line-height: 18px;
+    text-align: left;
+    vertical-align: top;
+}
+
+.polarion-wiki-table-th {
+    font-weight: bold;
+    border: 1px solid #CCCCCC;
+    padding: 5px;
+    background-color: #F0F0F0;
+    text-align: left;
+    vertical-align: top;
+}
+
+.polarion-wiki-table-noborder {
+    margin: auto;
+    empty-cells: show;
+    width: 80%;
+    font-size: 100%;
+    text-align: left;
+    border-style: none;
+}
+
+.polarion-wiki-table-noborder-td {
+    padding: 5px;
+    border-style: none;
+    line-height: 18px;
+    text-align: left;
+    vertical-align: top;
+}
+
+.polarion-wiki-table-noborder-th {
+    font-weight: bold;
+    border-style: none;
+    padding: 5px;
+    background-color: #F0F0F0;
+    text-align: left;
+    vertical-align: top;
+}
+
+.code {
+    border: 1px dashed #3c78b5;
+    white-space: pre;
+    width: 98%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    margin: 10px 0px 10px 10px;
+    padding: 10px 0px 0px 0px;
+    background-color: #ffffff;
+    font-family: courier, courier new, monospace;
+    font-size: 13px;
+    line-height: 1.3;
+}
+
+.quote {
+    font-style: italic;
+    background-color: inherit;
+    font-family: inherit;
+    font-size: inherit;
+}
+
+/*------------------ ui_wiki_pdf_common_Unknown.css ------------------ */
+/* POLARION CLASSIC COLORS */
+/* tool-bar background, also some drop down panels like bubble filter or floating linking panel */
+/* i-frame resizable dividers */
+/* table rows separators */
+/* tool-bar bottom borders, borders of buttons in the tool-bar */
+/* table column label separators */
+/* drop-down panel borders */
+/* placeholder text in inputs */
+/* borders of inputs and form elements */
+/* subtle hint texts */
+/* right side-bar section headings */
+/* bubble tags backgrounds */
+/* inline widget rich page border */
+/* drag-n-drop background */
+/* drag-n-drop border */
+/* warning infobar background */
+/* warning infobar border */
+/* success infobar background */
+/* success infobar border */
+/* general infobar background */
+/* general infobar border */
+/* error infobar background */
+/* error infobar border */
+/* diff changes comparison - added - background highlight */
+/* diff changes comparison - added - border highlight */
+/* diff changes comparison - removed - background highlight */
+/* diff changes comparison - removed - border highlight */
+/* diff changes comparison - adjusted - background highlight */
+/* diff changes comparison - adjusted - border highlight */
+/* SIEMENS BRAND COLORS */
+/* Content COLORS */
+/* Selection Colours */
+/* Status Colours */
+/* Tags*/
+/*Images*/
+/*Tooltip*/
+/*Headings */
+/*Comments*/
+/*Unused*/
+/*Context tags*/
+/*Links*/
+/* Dialogs */
+/* Tables */
+html {
+    font-size: 62.5%;
+    box-sizing: border-box;
+}
+
+.polarion-BaseDialog {
+    background-color: white;
+    -webkit-box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.3);
+    box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.3);
+    -moz-border-radius: 6px 6px 4px 4px;
+    -webkit-border-radius: 6px 6px 4px 4px;
+    border-radius: 6px 6px 4px 4px;
+}
+
+.polarion-BaseDialogGlass {
+    background-color: rgba(0, 0, 0, 0.749);
+}
+
+.polarion-BaseDialogCaption {
+    height: 48px;
+    cursor: move;
+    background-color: #005F87;
+    width: 100%;
+    padding: 0 16px;
+    -moz-border-radius: 4px 4px 0 0;
+    -webkit-border-radius: 4px 4px 0 0;
+    border-radius: 4px 4px 0 0;
+    font-size: 18px;
+    table-layout: fixed;
+}
+
+.polarion-BaseDialog-BaseButton {
+    display: inline-block;
+    color: #005F87;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+    border: 1px solid #005F87;
+    border-radius: 2px;
+    background-color: white;
+    min-width: 80px;
+    text-align: center;
+    white-space: nowrap;
+    box-sizing: border-box;
+}
+
+.polarion-BaseDialog-BaseButton:hover {
+    background-color: #DAECF0;
+    box-shadow: 0 3px 6px 0 rgba(0, 0, 0, 0.3);
+}
+
+.polarion-BaseDialog-BaseButton:active {
+    background-color: #AFD7E1;
+}
+
+.polarion-BaseDialog-HighContrastButton {
+    color: white;
+    background-color: #005F87;
+    border: 1px solid #003750;
+}
+
+.polarion-BaseDialog-HighContrastButton:hover {
+    background-color: #004669;
+    box-shadow: 0 3px 6px 0 rgba(0, 0, 0, 0.3);
+}
+
+.polarion-BaseDialog-HighContrastButton:active {
+    background-color: #003750;
+}
+
+.polarion-ellipsis {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.polarion-Hyperlink, .polarion-HistoryTable-cell a, .polarion-rpw-table-content-row a, .polarion-dle-document .polarion-PlanLabelMacro-mainAnchor,
+.polarion-dle-document .polarion-PlanLabelMacro-mainAnchor:link,
+.polarion-dle-document .polarion-PlanLabelMacro-mainAnchor:visited,
+.polarion-dle-document .polarion-PlanLabelMacro-anchor,
+.polarion-dle-document .polarion-PlanLabelMacro-anchor:link,
+.polarion-dle-document .polarion-PlanLabelMacro-anchor:visited, a.polarion-dle-toc-link:visited, a.polarion-dle-toc-link:link, a.descriptionLink, .polarion-cross-reference-label,
+.polarion-rte-link[data-type="polarion"] .polarion-cross-reference-link-external, .polarion-rte-link a:visited, .polarion-TestRecordsTable a:visited, .polarion-rte-link a, .polarion-TestRecordsTable a, .polarion-rpe-content a, .polarion-ShowMoreLinkedWorkItems-Header-Link, .polarion-SearchResults-WorkItemLink a {
+    color: #197FA2;
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.polarion-Hyperlink-disabled, .polarion-RpeWorkItemPropertiesSidebar-cancelButton, .polarion-Hyperlink-disabled:hover, .polarion-RpeWorkItemPropertiesSidebar-cancelButton:hover {
+    color: #AAAAAA;
+    text-decoration: none;
+}
+
+.polarion-Hyperlink:hover, .polarion-HistoryTable-cell a:hover, .polarion-rpw-table-content-row a:hover, .polarion-dle-document .polarion-PlanLabelMacro-mainAnchor:hover,
+.polarion-dle-document .polarion-PlanLabelMacro-anchor:hover, a.polarion-dle-toc-link:hover:visited, a.polarion-dle-toc-link:hover:link, a.descriptionLink:hover, .polarion-cross-reference-label:hover,
+.polarion-rte-link[data-type="polarion"] .polarion-cross-reference-link-external:hover, .polarion-rte-link a:hover, .polarion-TestRecordsTable a:hover, .polarion-rpe-content a:hover, .polarion-ShowMoreLinkedWorkItems-Header-Link:hover, .polarion-SearchResults-WorkItemLink a:hover {
+    color: #E3700F;
+    text-decoration: none;
+}
+
+.polarion-ShowMoreLinkedWorkItems-Header-Link {
+    float: left;
+    padding: 2px 6px 6px 4px;
+}
+
+.polarion-ShowMoreLinkedWorkItems-Table-link {
+    height: 32px;
+    font-size: 13px;
+    font-weight: bold;
+}
+
+.polarion-ShowMoreLinkedWorkItems-Sidebar-link {
+    font-weight: bold;
+    padding-left: 0px;
+    line-height: 2;
+}
+
+.dnd-drag-item-dragged, .polarion-PlanProgressMacro-mainDiv, .polarion-PlanProgressMacro-mainRelativeDiv {
+    -webkit-box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    box-sizing: border-box;
+}
+
+.polarion-HistoryTable-mainPanel {
+    position: absolute !important;
+    left: 0px;
+    right: 0px;
+}
+
+.polarion-HistoryTable-mainPanel {
+    position: absolute !important;
+    top: 0px;
+    bottom: 0px;
+}
+
+.polarion-rpw-table-main {
+    width: 100%;
+}
+
+.polarion-rpw-table-content {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.polarion-rpw-table-header-row > th {
+    vertical-align: top;
+    text-align: left;
+    padding: 0px 4px;
+    height: 28px;
+    color: #757575;
+    font-weight: normal;
+    border-bottom: 1px solid #D2D7DA;
+}
+
+.polarion-rpw-table-content-row > td {
+    vertical-align: top;
+    padding: 9px 14px 9px 4px;
+    border-bottom: 1px solid #F0F0F0;
+}
+
+.polarion-rpw-table-not-readable-cell {
+    font-style: italic;
+}
+
+.polarion-rpw-table-footer {
+    text-align: center;
+    font-style: italic;
+    width: 100%;
+    vertical-align: top;
+}
+
+.polarion-rpw-table-counts {
+    display: inline-block;
+    padding: 0 7px;
+    vertical-align: middle;
+}
+
+.polarion-rpw-table-open-in-table {
+    display: inline-block;
+    color: #1D5696 !important;
+    padding: 0px 7px;
+    cursor: pointer;
+    vertical-align: middle;
+}
+
+.polarion-rpw-table-open-in-table > a > img {
+    border: 0px;
+    opacity: 0.3;
+}
+
+.polarion-rpw-table-open-in-table > a > img:hover {
+    opacity: 1;
+}
+
+.polarion-rpw-table-show-query {
+    display: inline-block;
+    cursor: pointer;
+    vertical-align: middle;
+    opacity: 0.3;
+}
+
+.polarion-rpw-table-show-query:hover {
+    opacity: 1;
+}
+
+.polarion-rpw-table-query {
+    display: none;
+    padding-top: 5px;
+    color: #717171;
+}
+
+.polarion-errormessage,
+.polarion-warningmessage,
+.polarion-infomessage,
+.polarion-infomessage-noSideMargin,
+.polarion-plainmessage {
+    text-align: left;
+    margin: 4px 5px;
+    padding: 16px 4px 16px 36px;
+    background: #F5F5F5 url("/polarion/wiki/skins/sidecar/msg.png") 10px 18px no-repeat;
+}
+
+.polarion-infomessage, .polarion-infomessage-noSideMargin {
+    background-image: url("/polarion/wiki/skins/sidecar/images/msginfo.png");
+    background-color: #D8E4F1;
+}
+
+.polarion-infomessage-noSideMargin {
+    margin: 4px 0px;
+}
+
+.polarion-warningmessage {
+    background-image: url("/polarion/wiki/skins/sidecar/images/msgwarning.png");
+    background-color: #FFFFCE;
+}
+
+.polarion-errormessage {
+    background-image: url("/polarion/wiki/skins/sidecar/images/msgerror.png");
+    background-color: #FFCCCC;
+}
+
+.polarion-plainmessage {
+    background-image: none;
+}
+
+.polarion-quick-create-column {
+    display: block;
+}
+
+.polarion-quick-create-column-item {
+    display: block;
+    padding: 6px;
+    color: #1E1E1E;
+}
+
+.polarion-quick-create-column-item:hover {
+    cursor: pointer;
+    background-color: #DAECF0;
+    color: #1E1E1E;
+}
+
+.polarion-quick-create-column-item .polarion-Icons {
+    margin-right: 6px;
+    vertical-align: middle;
+}
+
+.polarion-quick-create-column-item-disabled {
+    opacity: 30%;
+}
+
+.polarion-quick-create-column-item-disabled:hover {
+    cursor: default;
+    background-color: white;
+}
+
+.polarion-quick-create-column-item-img {
+    display: inline-block;
+    margin-right: 3px;
+    vertical-align: middle;
+}
+
+.polarion-quick-create-column-item-separator {
+    position: relative;
+    display: block;
+    width: 100%;
+    height: 1px;
+    background: #eee;
+    margin-top: 12px;
+    margin-bottom: 12px;
+}
+
+.polarion-quick-create-context-document-img {
+    width: auto;
+    max-width: 16px;
+    height: auto;
+    max-height: 16px;
+}
+
+.polarion-quick-create-separator-with-icons {
+    background: #FFF;
+    display: flex;
+    align-items: center;
+    flex-direction: row;
+    font-weight: bold;
+    gap: 3px;
+    margin-top: 20px;
+    margin-bottom: 20px;
+    height: 1px;
+}
+
+.polarion-quick-create-separator-with-icons:after {
+    content: "";
+    height: 1px;
+    background: #eee;
+    flex: 1;
+    margin-left: 10px;
+}
+
+.polarion-quick-create-context-aware-buttons {
+    display: inline-flex;
+    font-weight: normal;
+    border: 1px solid #C8C8C8;
+    color: black;
+    box-shadow: none;
+    box-sizing: border-box;
+    border-radius: 5px;
+    background-color: white;
+    text-align: center;
+    white-space: nowrap;
+    font-size: 14px;
+    cursor: pointer;
+    margin-bottom: 5px;
+    padding: 5px 8px 8px 8px;
+}
+
+.polarion-quick-create-context-aware-buttons:hover {
+    background-color: #DAECF0;
+}
+
+.polarion-quick-create-context-aware-button {
+    display: flex;
+    font-weight: normal;
+    border: 1px solid #C8C8C8;
+    color: black;
+    box-shadow: none;
+    box-sizing: border-box;
+    border-radius: 5px;
+    background-color: white;
+    text-align: center;
+    white-space: nowrap;
+    font-size: 14px;
+    cursor: pointer;
+    margin-bottom: 5px;
+    padding: 8px 12px 8px 12px;
+}
+
+.polarion-quick-create-context-aware-button:hover {
+    background-color: #DAECF0;
+}
+
+.polarion-quick-create-context-aware-button img {
+    margin-right: 5px;
+}
+
+.polarion-RpeWorkItemPropertiesSidebar-wrapper {
+    position: absolute !important;
+    bottom: 10px;
+    /* place for bottom panel */
+    top: 0px;
+    left: 0px;
+    right: 0px;
+    overflow-x: auto;
+    overflow-y: auto;
+}
+
+.polarion-RpeWorkItemPropertiesSidebar-bottomPanel {
+    padding: 0 16px;
+}
+
+.polarion-RpeWorkItemPropertiesSidebar-cancelButton {
+    font-size: 11px;
+    text-align: center;
+    margin-top: 8px;
+}
+
+/* Table Headings for GitLab Merge Request */
+.polarion-ShowGitLabMergeRequests-table-heading {
+    padding-top: 28px;
+}
+
+.polarion-ShowGitLabMergeRequests-table {
+    border-collapse: collapse;
+    width: 100%;
+    table-layout: fixed;
+    padding-left: 10px;
+    padding-right: 10px;
+}
+
+.polarion-ShowGitLabMergeRequests-heading {
+    text-shadow: white 1px 1px 0.01em;
+    padding: 10px 4px 0px 4px;
+    white-space: nowrap;
+    color: #757575;
+    font-weight: normal;
+    border-bottom: 1px solid #d5d6da;
+    height: 28px;
+    vertical-align: middle;
+    text-align: left;
+}
+
+.polarion-ShowGitLabMergeRequests-data {
+    white-space: nowrap;
+    border-bottom: 1px solid #D2D7DA;
+    padding-left: 4px;
+    padding-right: 4px;
+    height: 31px;
+    vertical-align: middle;
+    overflow-x: hidden;
+    text-overflow: ellipsis;
+}
+
+.polarion-CreateGitLabMergeRequests-button {
+    font-size: 12px;
+    font-weight: bold;
+    padding-left: 6px;
+    text-align: left;
+    vertical-align: middle;
+    white-space: nowrap;
+    width: 100%;
+    text-shadow: white 1px 1px 0.01em;
+    cursor: pointer;
+    height: 28px;
+    border: 1px solid #dedede;
+    border-radius: 2px;
+    display: table-cell;
+    color: #595959 !important;
+    position: relative;
+    left: 11px;
+    top: 9px;
+    bottom: 5px;
+}
+
+.polarion-CreateGitLabMergeRequests-icon {
+    padding-top: 3px;
+    padding-right: 4px;
+    width: 7%;
+    left: 100px;
+}
+
+.polarion-CreateGitLabMergeRequests-button:hover {
+    background: #f7f7f7;
+    cursor: pointer;
+    border: 1px solid #cecece;
+    box-shadow: 0 0 2px #e0dede;
+    border-radius: 2px;
+    text-decoration: none !important;
+}
+
+.polarion-ShowGitLabMergeRequests-link {
+    cursor: pointer;
+    color: black;
+    font-weight: normal;
+}
+
+.polarion-ShowGitLabMergeRequests-statusIcon {
+    position: relative;
+    top: 3px;
+    right: 3px;
+}
+
+.polarion-NoGitLabMergeRequests-text {
+    padding-top: 15px;
+    padding-left: 11px;
+}
+
+.polarion-MergeRequestMerged-icon {
+    width: 9% !important;
+}
+
+.polarion-MergeRequestOpen-icon {
+    position: relative;
+    right: 5px;
+}
+
+.polarion-MergeRequestClosed-icon {
+    position: relative;
+    right: 7px;
+}
+
+.polarion-dle-clipboard-container {
+    position: absolute;
+    height: 1px;
+    width: 1px;
+    overflow: hidden;
+    left: 1px;
+}
+
+.polarion-rpe-content {
+    padding: 5px;
+    font-size: 10pt;
+}
+
+.polarion-dle-document p, .polarion-rpe-content p {
+    line-height: 1.5;
+    margin-top: 8px;
+    margin-bottom: 8px;
+}
+
+.polarion-TestRecordsTable {
+    width: 100%;
+}
+
+.polarion-cross-reference-label,
+.polarion-rte-link[data-type="polarion"] .polarion-cross-reference-link-external {
+    border-bottom: 1px dashed #A9A9A9 !important;
+}
+
+.polarion-rte-link[data-type="crossReference"] a:hover,
+.polarion-rte-link[data-type="polarion"] .polarion-cross-reference-link-external:hover {
+    text-decoration: none !important;
+}
+
+a:hover .polarion-cross-reference-label,
+.polarion-rte-link[data-type="polarion"] .polarion-cross-reference-link-external:hover {
+    border-bottom: 1px solid black !important;
+}
+
+.polarion-TestRecordsTable tr.arrow:hover {
+    cursor: pointer !important;
+}
+
+.polarion-BurnMacro-warning {
+    background-color: #ffffce;
+    padding: 10px;
+    text-align: left;
+}
+
+.polarion-dle-document .polarion-PlanLabelMacro-mainAnchor,
+.polarion-dle-document .polarion-PlanLabelMacro-mainAnchor:link,
+.polarion-dle-document .polarion-PlanLabelMacro-mainAnchor:visited,
+.polarion-dle-document .polarion-PlanLabelMacro-anchor,
+.polarion-dle-document .polarion-PlanLabelMacro-anchor:link,
+.polarion-dle-document .polarion-PlanLabelMacro-anchor:visited {
+    margin-right: 10px;
+    white-space: nowrap;
+}
+
+.polarion-dle-document .polarion-PlanLabelMacro-anchor:hover,
+.polarion-dle-document .polarion-PlanLabelMacro-mainAnchor:hover {
+    margin-right: 10px;
+    white-space: nowrap;
+}
+
+.polarion-PlanLabelMacro-mainAnchor i, .polarion-PlanLabelMacro-anchor i, .polarion-PlanningSidebar-label i, .polarion-PlanningSidebar-treeNodeButton i, .dataCell .fa {
+    padding-right: 0.3em;
+}
+
+.polarion-PlanLabelMacro-container, .polarion-TestRunLabelWidget-container {
+    margin-top: 10px;
+    margin-bottom: 10px;
+    border-bottom: 4px solid #EBF0F5;
+}
+
+.polarion-PlanLabelMacro-mainLabel span, .polarion-TestRunLabelWidget-container span {
+    font-weight: bold;
+    font-size: 30px;
+    line-height: 50px;
+}
+
+.polarion-PlanLabelMacro-mainLabel a, .polarion-TestRunLabelWidget-container a {
+    color: #004D73;
+}
+
+.polarion-PlanLabelMacro-mainLabel a:hover, .polarion-TestRunLabelWidget-container a:hover {
+    color: #E3700F;
+}
+
+.polarion-PlanLabelMacro-parents {
+    font-size: 12px;
+    padding-bottom: 7px;
+}
+
+.polarion-PlanLabelMacro-childrenTable {
+    table-layout: fixed;
+}
+
+.polarion-PlanLabelMacro-children {
+    font-size: 12px;
+    padding-top: 7px;
+}
+
+.polarion-PlanLabelMacro-createChild {
+    cursor: pointer;
+}
+
+.polarion-PlanLabelMacro-parentsSeparator {
+    color: #777777;
+    margin-right: 10px;
+}
+
+.polarion-PlanLabelMacro-planFinishedDivGreen {
+    color: #FFFFFF;
+    font-size: 15px;
+    padding: 17px;
+    margin-bottom: 7px;
+    cursor: pointer;
+}
+
+.polarion-PlanLabelMacro-planFinishedDivGreen {
+    background: #27AE60;
+}
+
+.polarion-PlanLabelMacro-planFinishedDivGreen:hover {
+    background: #009248;
+}
+
+.polarion-PlanLabelMacro-planFinishedNormalSpan, .polarion-PlanLabelMacro-planFinishedBoldSpan, .polarion-PlanLabelMacro-planFinishedDotSpan {
+    vertical-align: middle;
+}
+
+.polarion-PlanLabelMacro-planFinishedBoldSpan {
+    font-weight: bold;
+}
+
+.polarion-PlanLabelMacro-planFinishedNormalSpan {
+    text-decoration: underline;
+}
+
+.polarion-PlanProgressMacro-mainDiv, .polarion-PlanProgressMacro-mainRelativeDiv {
+    padding-left: 10px;
+    width: 100%;
+}
+
+.polarion-PlanProgressMacro-mainRelativeDiv {
+    position: relative;
+    height: 75px;
+}
+
+/* width is defined as inline style for the div*/
+.polarion-PlanProgressMacro-mainRelativeDiv > div {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    margin-right: auto;
+    margin-left: auto;
+}
+
+.polarion-PlanProgressMacro-mainTable {
+    border-width: 0px;
+    margin-right: 10px;
+}
+
+.polarion-PlansMacro-mainTable {
+    border-width: 0px;
+    margin-right: 23px;
+    height: 48px;
+}
+
+.polarion-PlanProgressMacro-arrowTopLeft, .polarion-PlanProgressMacro-arrowTopRight, .polarion-PlanProgressMacro-arrowBottomLeft, .polarion-PlanProgressMacro-arrowBottomLeftAligned, .polarion-PlanProgressMacro-arrowBottomRight {
+    position: absolute;
+    width: 0;
+    height: 0;
+    border-left: 7px solid transparent;
+    border-right: 7px solid transparent;
+    pd4ml-display: none;
+}
+
+.polarion-PlansMacro-arrowTopLeft, .polarion-PlansMacro-arrowTopRight {
+    position: absolute;
+    width: 0;
+    height: 0;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    pd4ml-display: none;
+}
+
+.polarion-PlanProgressMacro-arrowTopLeft, .polarion-PlanProgressMacro-arrowTopRight, .polarion-PlansMacro-arrowTopLeft, .polarion-PlansMacro-arrowTopRight {
+    border-top-color: #3A7523;
+    border-top-style: solid;
+}
+
+.polarion-PlanProgressMacro-arrowTopLeft, .polarion-PlanProgressMacro-arrowTopRight {
+    top: -6px;
+}
+
+.polarion-PlansMacro-arrowTopLeft, .polarion-PlansMacro-arrowTopRight {
+    top: -5px;
+}
+
+.polarion-PlanProgressMacro-arrowBottomRight {
+    border-bottom-color: #DE6768;
+}
+
+.polarion-PlanProgressMacro-arrowBottomLeft, .polarion-PlanProgressMacro-arrowBottomLeftAligned {
+    border-bottom-color: #3A7523;
+}
+
+.polarion-PlanProgressMacro-arrowTopLeft, .polarion-PlanProgressMacro-arrowTopRight {
+    border-top-width: 11px;
+}
+
+.polarion-PlansMacro-arrowTopLeft, .polarion-PlansMacro-arrowTopRight {
+    border-top-width: 8px;
+}
+
+.polarion-PlanProgressMacro-arrowBottomLeft, .polarion-PlanProgressMacro-arrowBottomLeftAligned, .polarion-PlanProgressMacro-arrowBottomRight {
+    border-bottom-width: 11px;
+    border-bottom-style: solid;
+    bottom: -26px;
+}
+
+.polarion-PlanProgressMacro-arrowTopLeft, .polarion-PlanProgressMacro-arrowBottomLeft {
+    left: -8px;
+}
+
+.polarion-PlansMacro-arrowTopLeft {
+    left: -6px;
+}
+
+.polarion-PlanProgressMacro-arrowBottomLeftAligned {
+    left: -6px;
+}
+
+.polarion-PlanProgressMacro-arrowTopRight, .polarion-PlanProgressMacro-arrowBottomRight {
+    right: -8px;
+}
+
+.polarion-PlansMacro-arrowTopRight {
+    right: -6px;
+}
+
+.polarion-PlanProgressMacro-leftCellGrey, .polarion-PlanProgressMacro-leftCellGreen, .polarion-PlanProgressMacro-leftCellRed, .polarion-PlanProgressMacro-rightCell, .polarion-PlanProgressMacro-leftCellBlack {
+    border-width: 0px;
+}
+
+.polarion-PlanProgressMacro-leftCellGrey, .polarion-PlanProgressMacro-leftCellGreen, .polarion-PlanProgressMacro-leftCellRed, .polarion-PlanProgressMacro-leftCellBlack {
+    vertical-align: middle;
+    font-family: helvetica;
+    font-size: 28px;
+    font-weight: bold;
+    white-space: nowrap;
+    padding-right: 10px;
+}
+
+.polarion-PlansMacro-leftCellGrey {
+    vertical-align: middle;
+    font-family: helvetica;
+    font-size: 13px;
+    font-weight: bold;
+    white-space: nowrap;
+    padding-right: 10px;
+}
+
+.polarion-PlanProgressMacro-leftCellGrey, .polarion-PlansMacro-leftCellGrey {
+    color: #888888;
+}
+
+.polarion-PlanProgressMacro-leftCellGreen {
+    color: #3A7523;
+}
+
+.polarion-PlanProgressMacro-leftCellRed {
+    color: #CA0814;
+}
+
+.polarion-PlanProgressMacro-rightCell {
+    width: 100%;
+}
+
+.polarion-PlanProgressMacro-infoDoneDiv, .polarion-PlanProgressMacro-infoIdealDiv {
+    min-height: 10px;
+}
+
+.polarion-PlansMacro-infoDoneDiv {
+    max-height: 11px;
+    min-height: 11px;
+}
+
+.polarion-PlansMacro-infoIdealDiv {
+    min-height: 11px;
+}
+
+.polarion-PlanProgressMacro-progressBarDiv, .polarion-PlansMacro-progressBarDiv {
+    border-color: #CCCCCC;
+    border-style: solid;
+    border-width: 1px;
+    padding: 2px;
+}
+
+.polarion-PlansMacro-progressBarDiv {
+    padding: 1px;
+}
+
+.polarion-PlanProgressMacro-progressBarInnerTable, .polarion-PlanProgressMacro-infoInnerTable {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.polarion-PlanProgressMacro-progressBarInnerTable {
+    height: 16px;
+}
+
+.polarion-PlanProgressMacro-leftProgressBar, .polarion-PlanProgressMacro-centerProgressBar, .polarion-PlanProgressMacro-centerProgressBarOutpaced, .polarion-PlanProgressMacro-rightProgressBar {
+    border-style: solid;
+    border-width: 0 0 20px;
+}
+
+.polarion-PlansMacro-leftProgressBar, .polarion-PlansMacro-centerProgressBar, .polarion-PlansMacro-centerProgressBarOutpaced, .polarion-PlansMacro-rightProgressBar {
+    border-style: solid;
+    border-width: 0 0 14px;
+}
+
+.polarion-PlanProgressMacro-leftProgressBar, .polarion-PlansMacro-leftProgressBar, .polarion-PlansMacro-centerProgressBarOutpaced {
+    background-color: #AED77E;
+    border-color: #AED77E;
+}
+
+.polarion-PlanProgressMacro-centerProgressBar {
+    background-color: #FFD8D9;
+    border-color: #FFD8D9;
+}
+
+.polarion-PlanProgressMacro-centerProgressBarOutpaced {
+    background-color: #86C142;
+    border-color: #86C142;
+}
+
+.polarion-PlanProgressMacro-rightProgressBar, .polarion-PlansMacro-rightProgressBar, .polarion-PlansMacro-centerProgressBar {
+    background-color: #F1F1F1;
+    border-color: #F1F1F1;
+}
+
+.polarion-PlanProgressMacro-infoMiddleCell {
+    width: 1%;
+}
+
+.polarion-PlanProgressMacro-infoDivGreen, .polarion-PlanProgressMacro-infoDivRed, .polarion-PlansMacro-infoDivGreen, .polarion-PlansMacro-infoDivRed {
+    text-align: center;
+    white-space: nowrap;
+}
+
+.polarion-PlanProgressMacro-infoDivGreen, .polarion-PlanProgressMacro-infoDivRed {
+    font-weight: bold;
+    font-size: 11px;
+}
+
+.polarion-PlansMacro-infoDivGreen {
+    font-size: 9px;
+    line-height: 1em;
+    font-family: helvetica;
+}
+
+.polarion-PlanProgressMacro-infoDivGreen, .polarion-PlansMacro-infoDivGreen {
+    color: #3A7523;
+}
+
+.polarion-PlanProgressMacro-infoDivRed {
+    color: #DE6768;
+}
+
+.polarion-PlanProgressMacro-relativeDivContainer {
+    position: relative;
+}
+
+.polarion-PlanProgressMacro-displayNone {
+    display: none;
+}
+
+.polarion-PlansMacro-smallCirle {
+    background: none repeat scroll 0 0 #E1F0FF;
+    border-radius: 50%;
+    height: 16px;
+    left: 4px;
+    top: 18px;
+    position: absolute;
+    width: 16px;
+}
+
+.polarion-PlansMacro-smallPlus {
+    height: 16px;
+    left: 7px;
+    top: 2px;
+    position: absolute;
+    width: 16px;
+}
+
+.polarion-PlansMacro-contentTable {
+    border-radius: 6px;
+    background-color: #F5F5F5;
+    width: 100%;
+    border-collapse: separate;
+    height: 54px;
+}
+
+.polarion-PlansMacro-plansTable {
+    width: 100%;
+    max-width: 800px;
+}
+
+.polarion-PlansMacro-leftCell {
+    width: 30px;
+    min-width: 30px;
+}
+
+.polarion-PlansMacro-leftCell, .polarion-PlansMacro-rightCell {
+    border-bottom: 12px solid white;
+}
+
+.polarion-PlansMacro-errorDiv {
+    color: #888888;
+    float: right;
+    margin-right: 15px;
+    font-weight: bold;
+}
+
+.polarion-PlansMacro-noPlansSpan {
+    color: #888888;
+    float: left;
+    font-weight: bold;
+}
+
+.polarion-PlansMacro-errorInvalidPlans {
+    color: #FF0000;
+    font-weight: bold;
+}
+
+.polarion-PlansMacro-progressBarCell {
+    width: 50%;
+    vertical-align: middle;
+}
+
+.polarion-PlansMacro-planNameCell, .polarion-PlansMacro-planNewTable {
+    font-size: 15px;
+    color: #0F4B8F;
+    white-space: nowrap;
+    font-weight: bold;
+}
+
+.polarion-PlansMacro-planNewTable:hover {
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.polarion-PlansMacro-planNameCell {
+    padding-left: 13px;
+    max-width: 200px;
+    vertical-align: middle;
+}
+
+.polarion-PlansMacro-planNameDiv, .polarion-PlansMacro-planNameDivStriked {
+    text-overflow: ellipsis;
+    overflow: hidden;
+}
+
+.polarion-PlansMacro-planNameDivStriked {
+    text-decoration: line-through;
+}
+
+.polarion-PlansMacro-planNameDiv i, .polarion-PlansMacro-planNameDivStriked i {
+    margin-right: 10px;
+    vertical-align: -5px;
+}
+
+.polarion-PlansMacro-contentRow {
+    height: 50px;
+    background-color: #F5F5F5;
+}
+
+.polarion-PlansMacro-contentRow .polarion-PlanProgressMacro-mainRelativeDiv {
+    height: 50px;
+}
+
+.polarion-PlansMacro-verticalLine, .polarion-PlansMacro-verticalLineShort {
+    border-right: 2px solid #E1F0FF;
+    position: absolute;
+    left: 11px;
+    top: 32px;
+}
+
+.polarion-PlansMacro-verticalLine {
+    height: 58px;
+}
+
+.polarion-PlansMacro-verticalLineShort {
+    height: 36px;
+}
+
+.polarion-PlansMacro-figuresContainer {
+    position: absolute;
+}
+
+.polarion-WorkItemsBoardMacro-Table {
+    border-collapse: separate;
+    border-spacing: 0px;
+    table-layout: fixed;
+    cellspacing: 0px;
+}
+
+.polarion-WorkItemsBoardMacro-BorderSmallCell {
+    min-width: 4px;
+}
+
+.polarion-WorkItemsBoardMacro-MiddleEmptyCell {
+    min-width: 16px;
+}
+
+.polarion-WorkItemsBoardMacro-HeaderCell {
+    border-radius: 10px 10px 0 0;
+    text-align: center;
+    vertical-align: middle;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    background-color: #ecf0f1;
+    font-size: 15px;
+    font-weight: bold;
+}
+
+.polarion-WorkItemsBoardMacro-FooterCell {
+    height: 15px;
+    border-radius: 0 0 10px 10px;
+    background-color: #ecf0f1;
+}
+
+.polarion-WorkItemsBoardMacro-FooterCell .polarion-rpw-table-footer {
+    padding-bottom: 5px;
+}
+
+.polarion-WorkItemsBoardMacro-LeftSmallCell {
+    border-top-left-radius: 5px;
+    border-bottom-left-radius: 5px;
+}
+
+.polarion-WorkItemsBoardMacro-RightSmallCell {
+    border-radius: 5px;
+    border-top-right-radius: 5px;
+    border-bottom-right-radius: 5px;
+    border: 1px solid #eeeeee;
+}
+
+.polarion-WorkItemsBoardMacro-TopLeveWICell {
+    padding: 2px;
+    border: solid #eeeeee;
+    border-width: 1px 1px 1px 0px;
+    border-top-right-radius: 5px;
+    border-bottom-right-radius: 5px;
+    vertical-align: middle;
+    background-color: white;
+    cursor: pointer;
+}
+
+.polarion-WorkItemsBoardMacro-TopLeveWICell tr,
+.polarion-WorkItemsBoardMacro-ChildWiCell tr,
+.polarion-WorkItemsBoardMacro-ChildWiCell-compact tr {
+    page-break-inside: avoid;
+}
+
+.polarion-WorkItemsBoardMacro-TopLevelWICell-WorkitemTable, .polarion-WorkItemsBoardMacro-ChildWiCell-WiTable {
+    height: 38px;
+}
+
+.polarion-WorkItemsBoardMacro-TopLevelWICell-WorkitemTable,
+.polarion-WorkItemsBoardMacro-ChildWiCell-WiTable,
+.polarion-WorkItemsBoardMacro-ChildWiCell-WiTable-compact {
+    border-spacing: 2px;
+    width: 100%;
+    table-layout: fixed;
+}
+
+/* Class for tables cells. It prevents changing sizes(extending) of parent table column, in case if cell contains some long text wit out spaces. */
+.polarion-WorkItemsBoardMacro-NonExtendable, .polarion-WorkItemsBoardMacro-ChildWiCell-RemainingEstimate,
+.polarion-WorkItemsBoardMacro-ChildWiCell-CompactInfo, .polarion-WorkItemsBoardMacro-TopLevelWICell-CustomFieldBasedEstimate, .polarion-WorkItemsBoardMacro-TopLevelWICell-Workitem {
+    vertical-align: middle;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    word-break: break-all;
+    word-wrap: break-word;
+}
+
+.polarion-WorkItemsBoardMacro-TopLevelWICell-Workitem {
+    font-size: 15px;
+}
+
+.polarion-WorkItemsBoardMacro-TopLevelWICell-WorkitemTable a {
+    white-space: nowrap;
+}
+
+.polarion-WorkItemsBoardMacro-TopLevelWICell-CustomFieldBasedEstimate {
+    vertical-align: middle;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.polarion-WorkItemsBoardMacro-EmptyTableCell {
+    padding: 5px;
+    border: 1px solid #eeeeee;
+    border-radius: 5px;
+    vertical-align: middle;
+    text-align: center;
+    background-color: white;
+    font-size: 15px;
+    font-weight: bold;
+    color: #a2a2a2;
+}
+
+.polarion-WorkItemsBoardMacro-ChildCell {
+    background-color: #ecf0f1;
+    overflow: hidden;
+    vertical-align: top;
+    padding: 0;
+    height: 100%;
+}
+
+.polarion-WorkItemsBoardMacro-Limit {
+    font-size: 10px;
+    white-space: nowrap;
+    color: #9F6000;
+    display: block;
+}
+
+.polarion-WorkItemsBoardMacro-Limit-OK {
+    font-size: 10px;
+    white-space: nowrap;
+    color: #7f8c8d;
+    display: block;
+}
+
+.polarion-WorkItemsBoardMacro-Limit-Over {
+    border-left: 3px #F1C40F solid;
+    border-right: 3px #F1C40F solid;
+}
+
+.polarion-WorkItemsBoardMacro-Limit-Over-Top {
+    border-left: 3px #F1C40F solid;
+    border-right: 3px #F1C40F solid;
+    border-top: 3px #F1C40F solid;
+}
+
+.polarion-WorkItemsBoardMacro-Limit-Over-Bottom {
+    border-left: 3px #F1C40F solid;
+    border-right: 3px #F1C40F solid;
+    border-bottom: 3px #F1C40F solid;
+}
+
+.polarion-WorkItemsBoardMacro-ChildCell:empty {
+    padding: 5px;
+}
+
+.polarion-WorkItemsBoardMacro-ChildCell-container, .polarion-WorkItemsBoardMacro-ChildWiCell, .polarion-WorkItemsBoardMacro-ChildWiCell-compact {
+    margin: 5px;
+    background-color: white;
+    border-radius: 5px;
+}
+
+.polarion-WorkItemsBoardMacro-ChildWiCell, .polarion-WorkItemsBoardMacro-ChildWiCell-compact {
+    border-left: 5px solid;
+    border-right: 1px solid #eeeeee;
+    border-top: 1px solid #eeeeee;
+    border-bottom: 1px solid #eeeeee;
+    position: relative;
+}
+
+.polarion-WorkItemsBoardMacro-ChildWiCell {
+    padding: 7px 3px 3px 7px;
+}
+
+.polarion-WorkItemsBoardMacro-ChildWiCell-compact {
+    padding: 2px;
+}
+
+.polarion-WorkItemsBoardMacro-ChildWiCell img, .polarion-WorkItemsBoardMacro-ChildWiCell a {
+    vertical-align: middle;
+}
+
+.polarion-WorkItemsBoardMacro-AvatarContainer {
+    vertical-align: middle;
+    width: 36px;
+    height: 36px;
+    overflow: hidden;
+    position: relative;
+    padding: 2px;
+}
+
+.polarion-WorkItemsBoardMacro-AvatarContainer-Avatar {
+    width: 36px;
+    height: 36px;
+    float: right;
+    border-radius: 18px;
+}
+
+.polarion-WorkItemsBoardMacro-NumberDecorator, .polarion-WorkItemsBoardMacro-NumberDecorator-pdf {
+    margin: 0px;
+    padding: 0px;
+    font-weight: bold;
+    color: white;
+    border: solid 1px white;
+    background-color: grey;
+    position: absolute;
+    overflow: hidden;
+}
+
+.polarion-WorkItemsBoardMacro-NumberDecorator {
+    border-radius: 6px;
+    line-height: 12px;
+    font-size: 9px;
+    text-align: center;
+    top: 26px;
+    left: 26px;
+    height: 12px;
+    width: 12px;
+}
+
+.polarion-WorkItemsBoardMacro-NumberDecorator-pdf {
+    line-height: 9px;
+    font-size: 8px;
+    text-align: right;
+    top: 28px;
+    left: 28px;
+    height: 10px;
+    width: 10px;
+}
+
+.polarion-WorkItemsBoardMacro-ChildWiCell-NumberDecorator > span {
+    margin: 0px;
+    padding: 0px;
+    width: 100%;
+    height: 100%;
+}
+
+.polarion-WorkItemsBoardMacro-ChildWiCell-Title {
+    vertical-align: top;
+    overflow: hidden;
+    font-size: 12px;
+    color: #0e4a90;
+    padding: 2px 4px 0px 2px;
+    position: relative;
+    line-height: 15px;
+    word-break: break-all;
+    word-wrap: break-word;
+}
+
+.polarion-WorkItemsBoardMacro-ChildWiCell-Title-nonForPdf {
+    height: 38px;
+}
+
+.polarion-WorkItemsBoardMacro-ChildWiCell-RemainingEstimate,
+.polarion-WorkItemsBoardMacro-ChildWiCell-CompactInfo,
+.polarion-WorkItemsBoardMacro-TopLevelWICell-CustomFieldBasedEstimate {
+    font-size: 11px;
+    color: #a2a2a2;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    padding-right: 4px;
+}
+
+.polarion-WorkItemsBoardMacro-currentUser {
+    font-weight: bold;
+}
+
+.polarion-WorkItemsBoardMacro-gradient {
+    background: linear-gradient(to bottom, rgba(255, 255, 255, 0), #FFFFFF) repeat scroll 0 0 rgba(0, 0, 0, 0);
+    filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#00FFFFFF', endColorstr='#FFFFFFFF',GradientType=0 );
+    bottom: 0px;
+    height: 12px;
+    left: 0;
+    position: absolute;
+    width: 100%;
+    display: inline-block;
+}
+
+.polarion-WorkItemsBoardMacro-TimeSpentProgressValue {
+    height: 16px;
+    background-color: #acd879;
+}
+
+.polarion-WorkItemsBoardMacro-RemainingEstimateProgressValue {
+    height: 16px;
+    background-color: #e5e5e5;
+}
+
+.polarion-sidebar-highlight {
+    background-color: #CDE6EB;
+}
+
+.polarion-sidebar-click-item.polarion-rpw-table-content-row.polarion-sidebar-highlight:hover {
+    background-color: #DAECF0;
+}
+
+.polarion-WorkItemsBoardMacro-Table .polarion-sidebar-highlight {
+    border-top: 1px solid #93DCED;
+    border-right: 1px solid #93DCED;
+    border-bottom: 1px solid #93DCED;
+}
+
+.polarion-KanbanBoardWidget-header-no-swimlane {
+    padding-bottom: 0px;
+}
+
+.polarion-sidebar-highlight .polarion-WorkItemsBoardMacro-gradient {
+    background: none;
+}
+
+.polarion-sidebar-click-item {
+    cursor: pointer;
+}
+
+.polarion-sidebar-click-item.polarion-rpw-table-content-row {
+    cursor: default;
+}
+
+.polarion-sidebar-click-item.polarion-rpw-table-content-row:hover {
+    background-color: #DAECF0;
+}
+
+.dnd-drag-item {
+    cursor: url(/polarion/ria/images/cursor/dnd_select.cur), auto;
+    /* IE */
+    cursor: -moz-grab;
+    /* older Firefox */
+    cursor: -webkit-grab;
+    /* Chrome */
+    cursor: grab;
+    /* W3C standard */
+}
+
+.dnd-drag-item-dragged {
+    position: fixed;
+    z-index: 1010;
+    opacity: 0.9;
+    box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.1);
+    cursor: url(/polarion/ria/images/cursor/dnd_drag.cur), auto;
+    cursor: -moz-grabbing;
+    cursor: -webkit-grabbing;
+    cursor: grabbing;
+}
+
+.dnd-drag-item-placeholder {
+    visibility: hidden;
+}
+
+.dnd-action-container {
+    position: relative;
+}
+
+.dnd-action-table {
+    position: absolute;
+    width: 100%;
+    z-index: 1000;
+    table-layout: fixed;
+}
+
+.dnd-action-table-cell {
+    padding: 10px;
+    border: 3px dashed #ff9900;
+    color: #ff9900;
+    background: #fff;
+    text-align: center;
+    vertical-align: middle;
+}
+
+.dnd-drop-target-action-highlight {
+    background: #ffeccf;
+    border-style: solid;
+}
+
+.polarion-padded-font-icon-16 {
+    font-size: 16px;
+    padding-right: 6px;
+}
+
+.polarion-plain-font-icon-16 {
+    font-size: 16px;
+}
+
+.polarion-font-icon-16 {
+    font-size: 16px;
+    text-shadow: 1px 1px 0 white;
+}
+
+.polarion-font-icon-24 {
+    font-size: 24px;
+    text-shadow: 1px 1px 0 white;
+    vertical-align: -0.115384em;
+}
+
+.polarion-font-icon-32 {
+    font-size: 32px;
+    text-shadow: 1px 1px 0 white;
+}
+
+.polarion-font-icon-topicTree {
+    font-size: 25px;
+    text-shadow: 1px 1px 0 white;
+    margin: 2px;
+}
+
+.polarion-font-icon-relative {
+    font-size: 1.230769em;
+    vertical-align: -0.115384em;
+    text-shadow: 1px 1px 0 white;
+    padding-right: 0.3em;
+}
+
+.polarion-font-icon-relative-ActivityStream {
+    font-size: 1.230769em;
+    vertical-align: -0.115384em;
+    text-shadow: 1px 1px 0 white;
+    padding-left: 0.3em;
+    padding-right: 0.3em;
+}
+
+.polarion-font-icon-combo {
+    font-size: 13px;
+    text-shadow: 1px 1px 0 white;
+    padding-right: 4px;
+}
+
+.polarion-dle-document h6, .polarion-dle-document h5, .polarion-dle-document h4, .polarion-dle-document h3, .polarion-dle-document h2, .polarion-dle-document h1 {
+    color: #004D73;
+    font-weight: bold;
+    line-height: 1.2;
+    font-family: "Segoe UI", "Selawik", "Open Sans", Arial, sans-serif;
+    margin: 0.83em 0 0.41em;
+}
+
+.polarion-dle-document h1 {
+    border-bottom: 1px solid lightgrey;
+    font-size: 26pt;
+    padding-bottom: 5px;
+}
+
+.polarion-dle-document h2 {
+    font-size: 22pt;
+}
+
+.polarion-dle-document h3 {
+    font-size: 18pt;
+}
+
+.polarion-dle-document h4 {
+    font-size: 14pt;
+}
+
+.polarion-dle-document h5 {
+    font-size: 12pt;
+    line-height: 1.5;
+}
+
+.polarion-dle-document h6 {
+    font-size: 10pt;
+    line-height: 1.5;
+}
+
+.polarion-rpe-content h6, .polarion-rpe-content h5, .polarion-rpe-content h4, .polarion-rpe-content h3, .polarion-rpe-content h2, .polarion-rpe-content h1 {
+    color: #004D73;
+    font-weight: bold;
+    font-family: "Segoe UI", "Selawik", "Open Sans", Arial, sans-serif;
+    margin: 20px 0 10px 0;
+}
+
+.polarion-rpe-content h1 {
+    font-size: 30px;
+    line-height: 50px;
+    border-bottom: 4px solid #EBF0F5;
+}
+
+.polarion-rpe-pdf.polarion-rpe-content h1 {
+    border-bottom: none !important;
+}
+
+.polarion-rpe-content h2 {
+    font-size: 23px;
+    background-color: #EBF0F5;
+    padding: 8px 14px 8px 14px;
+}
+
+.polarion-rpe-content h3 {
+    font-size: 23px;
+}
+
+.polarion-rpe-content h4 {
+    font-size: 15px;
+    line-height: normal;
+    padding: 0px;
+}
+
+.polarion-rpe-content h5 {
+    font-size: 13px;
+    line-height: normal;
+    padding: 0px;
+}
+
+.polarion-rpe-content h6 {
+    font-size: 13px;
+    line-height: normal;
+    padding: 0px;
+}
+
+.heading-31, .heading-30, .heading-29, .heading-28, .heading-27, .heading-26, .heading-25, .heading-24, .heading-23, .heading-22, .heading-21, .heading-20, .heading-19, .heading-18, .heading-17, .heading-16, .heading-15, .heading-14, .heading-13, .heading-12, .heading-11, .heading-10, .heading-9, .heading-8, .heading-7 {
+    font-size: 10pt;
+    line-height: 1.5;
+    color: #004D73;
+    font-family: Arial, Helvetica, sans-serif !important;
+}
+
+.polarion-rp-column-layout {
+    width: 100%;
+    table-layout: fixed;
+    border-spacing: 0;
+    border-collapse: separate;
+}
+
+.polarion-rp-column-layout-cell {
+    vertical-align: top;
+    padding-left: 5px;
+    padding-right: 5px;
+}
+
+.polarion-rpe-view .polarion-rp-column-layout-cell > :last-child {
+    margin-bottom: 0px;
+}
+
+.polarion-dle-toc-pdf-compare {
+    margin-top: 1px;
+    padding-top: 3px;
+    padding-bottom: 4px;
+}
+
+.polarion-rpe-edit .polarion-rp-parameters-view {
+    margin-top: 1px;
+}
+
+.polarion-rp-parameters-view {
+    border: 1px solid #BDC3C7;
+    padding: 15px;
+    line-height: 1.5;
+}
+
+.polarion-rp-parameters-view-cell {
+    vertical-align: top;
+}
+
+.polarion-rp-parameters-scope-icon img {
+    vertical-align: bottom;
+    padding-right: 3px;
+}
+
+.polarion-rp-parameters-view-title, .polarion-rpe-pageParametersForm-title, .polarion-rp-parameters-view-value {
+    font-weight: bold;
+}
+
+.polarion-rpe-pageParametersForm-title {
+    margin-bottom: 10px;
+}
+
+#polarion-rp-parameters, #polarion-rp-page-script {
+    display: none;
+}
+
+.polarion-rp-widget-parameters {
+    display: none;
+}
+
+.polarion-HistoryTable-mainPanel {
+    background-color: #FFF;
+}
+
+.polarion-HistoryTable-table {
+    width: 100%;
+}
+
+.polarion-HistoryTable-headerCell {
+    background: url("/polarion/ria/images/backgrounds/table_header.gif") repeat scroll 0 0 transparent;
+    border-bottom: 1px solid #D5D6DA;
+    color: #595959;
+    font-size: 12px;
+    font-weight: bold;
+    text-shadow: 1px 1px 0.01em white;
+    height: 24px;
+    padding: 8px;
+}
+
+.polarion-HistoryTable-cell {
+    padding: 8px;
+    border-bottom: 1px solid #F0F0F0;
+}
+
+.polarion-HistoryTable-cell.actualBaseline {
+    background-color: #F2B9CF;
+}
+
+.polarion-HistoryTable-cell.baseline {
+    background-color: #FAE3ED;
+}
+
+.polarion-HistoryTable-cell.objectBaseline {
+    background-color: #C8F5FF;
+}
+
+.polarion-HistoryTable-table tr:hover > .polarion-HistoryTable-cell {
+    background-color: #DAECF0;
+}
+
+.polarion-rp-widget-error, .polarion-rp-widget-warning, .polarion-rp-widget-info {
+    position: relative;
+    display: inline-block;
+    padding-top: 12px;
+    padding-bottom: 12px;
+    padding-right: 12px;
+    padding-left: 30px;
+    border-radius: 5px;
+}
+
+.polarion-rpe-pdf .polarion-rp-widget-info,
+.polarion-rpe-pdf .polarion-rp-widget-warning,
+.polarion-rpe-pdf .polarion-rp-widget-error {
+    padding-left: 12px;
+}
+
+.polarion-rp-inline-widget .polarion-rp-widget-info,
+.polarion-rp-inline-widget .polarion-rp-widget-warning,
+.polarion-rp-inline-widget .polarion-rp-widget-error {
+    padding-top: 0px;
+    padding-bottom: 0px;
+    text-align: left;
+}
+
+.polarion-rp-widget-info {
+    color: #00529B;
+    background-color: #BDE5F8;
+}
+
+.polarion-rp-widget-warning {
+    color: #9F6000;
+    background-color: #FEEFB3;
+}
+
+.polarion-rp-widget-error {
+    color: #D8000C;
+    background-color: #FFBABA;
+}
+
+.polarion-rp-widget-info i,
+.polarion-rp-widget-warning i,
+.polarion-rp-widget-error i {
+    position: absolute;
+    margin: auto;
+    left: 10px;
+    top: calc(50% - 6px);
+    bottom: 0;
+    right: 0;
+}
+
+.polarion-htmlTooltip-content .polarion-rp-widget-info,
+.polarion-htmlTooltip-content .polarion-rp-widget-warning,
+.polarion-htmlTooltip-content .polarion-rp-widget-error {
+    display: block;
+}
+
+.polarion-StatusButtonExtension-buttonsPanel {
+    height: 100%;
+    vertical-align: middle;
+    text-align: center;
+    border-collapse: collapse;
+    border-spacing: 0px;
+}
+
+.polarion-StatusButtonExtension-tableRow td {
+    padding: 0px;
+}
+
+.polarion-StatusButtonExtension-buttons {
+    width: 100px !important;
+    table-layout: fixed;
+    font-size: 18px;
+    font-family: Arial;
+    cursor: pointer;
+    height: 50px;
+    text-align: center;
+    border-top: 1px solid;
+    border-right: 1px solid;
+    border-bottom: 1px solid;
+    padding-left: 2px;
+    padding-right: 2px;
+    overflow: hidden;
+    -webkit-box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    -moz-box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    text-align: center;
+}
+
+.polarion-StatusButtonExtension-buttons-readOnly {
+    cursor: default;
+}
+
+.polarion-StatusButtonExtension-buttons-isFirst {
+    border-left: 1px solid;
+    border-top-left-radius: 6px;
+    border-bottom-left-radius: 6px;
+}
+
+.polarion-StatusButtonExtension-buttons-isLast {
+    border-top-right-radius: 6px;
+    border-bottom-right-radius: 6px;
+}
+
+.polarion-StatusButtonExtension-buttons-standAlone {
+    border-left: 1px solid;
+    border-top-left-radius: 6px;
+    border-bottom-left-radius: 6px;
+    border-top-right-radius: 6px;
+    border-bottom-right-radius: 6px;
+}
+
+.polarion-StatusButtonExtension-buttons-print {
+    -webkit-box-shadow: none;
+    -moz-box-shadow: none;
+    box-shadow: none;
+}
+
+.polarion-StatusButtonExtension-buttons-pdf {
+    border: 1px solid;
+    width: 100px !important;
+    table-layout: fixed;
+    font-size: 18px;
+    font-family: Arial;
+    height: 50px;
+    text-align: center;
+    padding-left: 2px;
+    padding-right: 2px;
+    margin: 1px;
+}
+
+.polarion-StatusButtonExtension-buttons-content {
+    border-collapse: collapse;
+    padding: 0px;
+    table-layout: fixed;
+    width: 100%;
+    height: 100%;
+}
+
+.polarion-StatusButtonExtension-buttons-content-labelCell {
+    vertical-align: bottom;
+    line-height: 1;
+    text-align: center;
+    height: 65%;
+}
+
+.polarion-StatusButtonExtension-buttons-content-dateCell {
+    vertical-align: middle;
+    text-align: center;
+}
+
+.polarion-StatusButtonExtension-buttons-labelText {
+    font-size: 15px;
+    font-weight: bold;
+    font-family: Arial, Helvetica;
+    white-space: normal;
+}
+
+.polarion-StatusButtonExtension-buttons-labelText-small {
+    font-size: 12px;
+    font-weight: bold;
+    font-family: Arial, Helvetica;
+    white-space: normal;
+}
+
+.polarion-StatusButtonExtension-buttons-dateText {
+    font-size: 10px;
+    font-family: Arial, Helvetica;
+    white-space: nowrap;
+}
+
+.polarion-rte-caption-paragraph {
+    font-style: italic;
+    font-size: 8pt;
+}
+
+.polarion-rte-caption {
+    font-style: italic;
+    font-size: 8pt;
+}
+
+.polarion-TestsExecutionButton-buttonPanel {
+    width: 100%;
+    vertical-align: middle;
+    text-align: center;
+    border-collapse: collapse;
+    /*width:213px;
+      height:75px*/
+}
+
+.polarion-TestsExecutionButton-button {
+    margin: 5px;
+}
+
+.polarion-TestsExecutionButton-link a:hover {
+    text-decoration: none !important;
+}
+
+.polarion-TestsExecutionButton-buttons.polarion-TestsExecutionButton-buttons-defaultCursor {
+    cursor: default;
+}
+
+.polarion-TestsExecutionButton-buttons, .polarion-TestsExecutionButton-buttons-pdf {
+    table-layout: fixed;
+    font-size: 18px;
+    font-family: Arial;
+    cursor: pointer;
+    text-align: center;
+    border: 1px solid;
+    border-radius: 6px;
+    padding-left: 2px;
+    padding-right: 2px;
+    overflow: hidden;
+    -webkit-box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    -moz-box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    text-align: center;
+    white-space: normal;
+    word-wrap: break-word;
+}
+
+.polarion-TestsExecutionButton-buttons-pdf {
+    width: 213px;
+    box-shadow: none;
+    border: 1px solid;
+    padding: 0px;
+}
+
+.polarion-TestsExecutionButton-buttons-content {
+    border-collapse: collapse;
+    padding: 0px;
+    table-layout: fixed;
+    min-width: 213px;
+}
+
+.polarion-TestsExecutionButton-buttons-content-labelCell {
+    vertical-align: middle;
+    line-height: 1;
+    text-align: center;
+    padding: 20px 10px 6px;
+}
+
+.polarion-TestsExecutionButton-buttons-content-labelCell-noSumText {
+    padding-bottom: 10px;
+}
+
+.polarion-TestsExecutionButton-labelTextNew, .polarion-TestsExecutionButton-labelText {
+    font-size: 26px;
+    font-weight: bold;
+    color: #43a134;
+    font-family: Arial;
+    text-align: center;
+    text-shadow: 1px 1px 0 white;
+    padding-bottom: 1px;
+}
+
+.polarion-TestsExecutionButton-labelText {
+    padding-bottom: 7px;
+}
+
+.polarion-TestsExecutionButton-sumText {
+    font-size: 11px;
+    color: #5f5f5f;
+    font-family: Arial;
+    text-align: center;
+    text-shadow: 1px 1px 0 white;
+    padding: 0 10px 7px;
+}
+
+.polarion-activity_stream_editMode .polarion-activity_stream_showmore, .polarion-activity_stream_filterbutton {
+    cursor: default;
+}
+
+.polarion-activity_stream_editMode a:HOVER {
+    text-decoration: none !important;
+}
+
+.polarion-activity_stream {
+    font-size: 11px;
+}
+
+.polarion-activity_stream a, .polarion-activity_stream p, .polarion-activity_stream table, .polarion-activity_stream tr, .polarion-activity_stream td, .polarion-activity_stream textarea, .polarion-activity_stream input, .polarion-activity_stream div {
+    font-size: 11px;
+    zoom: 1;
+}
+
+.polarion-activity_stream td {
+    font-size: 11px;
+}
+
+.polarion-activity_stream span {
+    font-size: 11px;
+}
+
+.polarion-activity_stream_mainContent {
+    margin-top: 8px;
+    margin-bottom: 6px;
+    min-width: 300px;
+}
+
+.polarion-activity_stream_imageCol {
+    padding-right: 9px;
+    padding-left: 5px;
+    width: 50px;
+    float: left;
+}
+
+.polarion-activity_stream_image {
+    width: 50px;
+    height: 50px;
+}
+
+.polarion-activity_stream_content {
+    margin-left: 65px;
+}
+
+.polarion-activity_stream_label {
+    height: 16px;
+    width: 100%;
+    color: gray;
+}
+
+.polarion-activity_stream_label span {
+    white-space: nowrap;
+}
+
+.polarion-activity_stream_user {
+    color: #3B5998;
+}
+
+.polarion-activity_stream_item_content, .polarion-activity_stream_item_content SPAN, .polarion-activity_stream_item_content A, .polarion-activity_stream_item_content DIV {
+    font-size: 11px;
+}
+
+.polarion-activity_item_content {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.polarion-activity_stream_norecentactivity {
+    font-style: italic;
+}
+
+.polarion-activity_stream_activity:hover,
+.polarion-activity_stream_activity_collapsed:hover,
+.polarion-activity_stream_activity_expanded:hover {
+    border-bottom: 1px solid #E9E9E9;
+    background-color: #DAECF0;
+    padding-top: 1px;
+}
+
+.polarion-activity_stream_activity-contentCell {
+    width: 100%;
+    overflow: hidden;
+    overflow-wrap: break-word;
+}
+
+.polarion-activity_stream_item {
+    width: auto;
+    margin-top: 5px;
+    line-height: 20px !important;
+}
+
+.polarion-activity_stream_dots {
+    color: #3B5998;
+    font-size: 10px !important;
+    cursor: pointer;
+    text-align: left;
+    padding-top: 1px;
+    line-height: 20px;
+    display: block;
+}
+
+.polarion-activity_stream_activity_expanded, .polarion-activity_stream_activity_collapsed, .polarion-activity_stream_activity {
+    border-bottom: 1px solid #E9E9E9;
+    padding-top: 1px;
+    position: relative;
+    line-height: 20px;
+    min-height: 64px;
+    overflow: hidden;
+}
+
+.polarion-activity_stream_activity {
+    max-height: 92px;
+}
+
+.polarion-activity_stream_activity .polarion-activity_stream_dots {
+    display: none;
+}
+
+.polarion-activity_stream_activity_collapsed {
+    max-height: 92px;
+}
+
+.polarion-activity_stream_activity_collapsed .polarion-activity_stream_dots {
+    display: block !important;
+}
+
+.polarion-activity_stream_activity_collapsed .polarion-activity_stream_activity-contentCell {
+    height: 38px;
+}
+
+.polarion-activity_stream_activity-contentCell a img {
+    max-width: 100px;
+}
+
+.polarion-activity_stream_activity_expanded .polarion-activity_stream_dots, .polarion-activity_stream_activity .polarion-activity_stream_dots, .polarion-activity_stream_activity_collapsed .polarion-activity_stream_dots {
+    display: none;
+}
+
+.polarion-activity_stream_showmore {
+    margin-top: 5px;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    background: #E9E9E9;
+    text-decoration: underline;
+    color: #3B5998;
+    cursor: pointer;
+    font-weight: bold;
+    text-align: center;
+}
+
+.polarion-activity_stream_showmore_loading {
+    margin-top: 5px;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    background: #E9E9E9;
+    color: #3B5998;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.polarion-activity_stream_topArea {
+    position: relative;
+    height: 32px;
+    margin-bottom: 2px;
+}
+
+.polarion-activity_stream_filter_wrap {
+    position: absolute;
+    left: 0px;
+    right: 28px;
+}
+
+.polarion-activity_stream_button_wrap {
+    width: 20px;
+    position: absolute;
+    float: right;
+    top: 0px;
+    right: 0px;
+}
+
+.polarion-activity_stream_filterbutton {
+    cursor: pointer;
+    position: absolute;
+    top: 7px;
+    right: 4px;
+}
+
+.polarion-activity_stream_progressBar {
+    position: absolute;
+    top: 7px;
+    right: 4px;
+    display: none;
+}
+
+.polarion-activity_stream_filterField {
+    border: 1px solid #c9c9c9;
+    -moz-border-radius: 2px;
+    border-radius: 2px;
+    -moz-box-shadow: 1px 2px #F2F2F2 inset;
+    -webkit-box-shadow: 1px 2px #F2F2F2 inset;
+    box-shadow: 1px 2px #F2F2F2 inset;
+    height: 28px;
+    padding: 1px;
+    padding-left: 5px;
+    position: relative;
+    z-index: 1;
+}
+
+.polarion-activity_stream_filterField_input {
+    position: relative;
+    border: 0px;
+    height: 28px;
+    outline: none;
+    background-color: transparent;
+    z-index: 5;
+    width: 100%;
+    padding-right: 15px;
+    box-sizing: border-box;
+}
+
+.polarion-activity_stream_filterField_input::-ms-clear {
+    display: none;
+}
+
+.polarion-activity_stream_filterField_clear {
+    display: none;
+    cursor: pointer;
+    position: absolute;
+    right: 2px;
+    top: 7px;
+    z-index: 10;
+}
+
+.polarion-activity_stream_overlayColumn {
+    max-width: 0px;
+    position: absolute;
+    left: 9px;
+    top: 8px;
+    z-index: 2;
+}
+
+.polarion-activity_stream_overlayPanel {
+    overflow: visible;
+    width: 50px;
+    cursor: text;
+}
+
+.polarion-activity_stream_overlayText {
+    color: #cfcfcf;
+    font-size: 12px;
+    font-weight: bold;
+    position: absolute;
+    top: 2px;
+    left: 15px;
+    white-space: nowrap;
+}
+
+.polarion-rpw-recentlyUpdatedPages-misc {
+    color: gray;
+    font-size: 11px;
+}
+
+.polarion-TestRunLabelWidget-templateLabel {
+    font-weight: normal;
+}
+
+.polarion-TestRunImportTestResultsWidget-link,
+.polarion-TestRunExportTestResultsWidget-link {
+    cursor: pointer;
+}
+
+.polarion-TestRunOverviewWidget-linkContainer {
+    width: 96px;
+}
+
+.polarion-TestRunOverviewWidget-linkContainer a:hover {
+    text-decoration: none !important;
+}
+
+.polarion-TestRunOverviewWidget-linkContent {
+    border-radius: 6px;
+    background-repeat: no-repeat;
+    background-image: url("/polarion/ria/images/backgrounds/btnTesting.png");
+}
+
+.polarion-TestRunOverviewWidget-table {
+    width: 100%;
+    table-layout: fixed;
+}
+
+.polarion-TestRunOverviewWidget-buttonsContainer {
+    width: 100%;
+    overflow: auto;
+}
+
+.polarion-TestRunOverviewWidget-count {
+    line-height: 0;
+    font-weight: bold;
+    font-family: Arial;
+    text-align: center;
+}
+
+.polarion-TestRunOverviewWidget-buttonName {
+    line-height: 1em;
+    font-size: 11px;
+    font-family: Arial;
+    text-align: center;
+}
+
+.polarion-TestRunStatusButtonWidget-content {
+    display: inline-block;
+    padding: 12px 10px;
+    cursor: pointer;
+    line-height: 1 !important;
+    border-radius: 5px;
+    text-align: center;
+    vertical-align: bottom;
+    text-decoration: none !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    min-width: 190px;
+}
+
+.polarion-TestRunStatusButtonWidget-content-light {
+    color: #fff !important;
+}
+
+.polarion-TestRunStatusButtonWidget-content-dark {
+    color: #333 !important;
+}
+
+.polarion-TestRunStatusButtonWidget-content-disabled {
+    cursor: default;
+}
+
+.polarion-TestRunStatusButtonWidget-content-tall {
+    padding: 18px 0 19px;
+}
+
+.polarion-TestRunStatusButtonWidget-content-pdf {
+    display: inline-block;
+    padding: 12px 10px;
+    cursor: pointer;
+    line-height: 1.5 !important;
+    border-radius: 6px;
+    text-align: center;
+    vertical-align: bottom;
+    text-decoration: none !important;
+    box-shadow: none;
+    width: 190px;
+}
+
+.polarion-TestRunStatusButtonWidget-icon {
+    vertical-align: bottom;
+    padding-bottom: 2px;
+}
+
+.polarion-TestRunStatusButtonWidget-label {
+    font-size: 16px;
+    font-weight: bold;
+}
+
+.polarion-TestRunStatusButtonWidget-description {
+    font-size: 10px;
+}
+
+.polarion-TestRunWidgets-disabled-label {
+    color: gray;
+}
+
+.polarion-SignaturesWidget-table {
+    width: 100%;
+}
+
+.polarion-SignaturesWidget-tableHeader {
+    border-bottom: thin solid lightgray;
+    height: 40px;
+    font-size: 15px;
+    vertical-align: bottom;
+}
+
+.polarion-SignaturesWidget-statusImage {
+    height: 16px;
+    padding-right: 5px;
+    margin-bottom: -1px;
+}
+
+.polarion-SignaturesWidget-imageCell {
+    width: 20px;
+    padding-left: 10px;
+    vertical-align: middle;
+}
+
+.polarion-SignaturesWidget-image {
+    height: 16px;
+}
+
+.polarion-SignaturesWidget-userCell {
+    vertical-align: middle;
+}
+
+.polarion-SignaturesWidget-signerRole {
+    font-size: 11px;
+}
+
+.polarion-SignaturesWidget-verdictCell {
+    width: 100px;
+    vertical-align: middle;
+}
+
+.polarion-SignaturesWidget-dateCell {
+    width: 150px;
+    vertical-align: middle;
+}
+
+.polarion-SignaturesWidget-noSignatures {
+    color: #888888;
+    font-size: 18px;
+    font-weight: bold;
+    padding-left: 20px;
+}
+
+.polarion-SignaturesWidget-link {
+    font-size: 12px;
+}
+
+.polarion-rt-linkblock-headpart {
+    padding-left: 2px;
+    padding-bottom: 2px;
+}
+
+.polarion-rt-linkblock-element {
+    color: #666666;
+    font-weight: bold;
+    display: inline-block;
+    padding-right: 10px;
+}
+
+.polarion-rt-linkblock-role {
+    display: inline-block;
+    color: #999999;
+    font-weight: bold;
+}
+
+.polarion-rt-linkblock-category, .polarion-rt-linkblock-repository, .polarion-rt-linkblock-parser {
+    color: #666666;
+    font-size: 11px;
+    display: inline-block;
+}
+
+.polarion-rt-linkblock-linkstable td {
+    vertical-align: top;
+    white-space: nowrap;
+}
+
+.polarion-rt-linkblock-branch {
+    color: #666666;
+}
+
+.polarion-rt-linkblock-link {
+    padding-left: 5px;
+}
+
+.polarion-rt-linkblock-revision {
+    padding: 2px 0 2px 0;
+    color: #999999;
+    font-size: 11px;
+    word-break: break-all;
+    white-space: normal;
+}
+
+.polarion-rt-linkblock-revision div {
+    float: left;
+    margin-right: 5px;
+}
+
+.polarion-rt-linkblock-message {
+    padding: 2px 0 2px 0;
+    color: #999999;
+    font-size: 11px;
+    font-style: italic;
+    word-break: break-all;
+    white-space: normal;
+}
+
+.polarion-rt-linkblock-line {
+    display: inline-block;
+    padding-left: 5px;
+    color: #999999;
+}
+
+.polarion-rt-linkblock-warning {
+    margin-top: 5px;
+}
+
+.polarion-shared-administration-table {
+    margin: auto;
+    empty-cells: show;
+    border-collapse: collapse;
+    border: 1px solid #CCCCCC;
+}
+
+.polarion-shared-administration-table td {
+    height: 12px;
+    padding: 5px;
+    text-align: left;
+    border: 1px solid #CCCCCC;
+}
+
+img.inline-icon {
+    position: relative;
+    bottom: -3px;
+}
+
+.polarion-shared-administration-table-th {
+    font-weight: bold;
+    vertical-align: top;
+    white-space: nowrap;
+    background-color: #F0F0F0;
+}
+
+.polarion-shared-administration-table-td {
+    line-height: 18px;
+}
+
+.polarion-shared-administration-table.hover tr:hover {
+    background: #DAECF0;
+}
+
+.polarion-shared-administration-table a {
+    cursor: pointer !important;
+    color: #197FA2 !important;
+    text-decoration: none !important;
+}
+
+.polarion-shared-administration-table a:hover {
+    cursor: pointer !important;
+    color: #E3700F !important;
+    text-decoration: none !important;
+}
+
+.polarion-shared-administration-table-floting-div, .polarion-shared-administration-buttonsPanel {
+    display: flex;
+    align-items: center;
+}
+
+.polarion-shared-administration-spaced-text {
+    margin-top: 10px;
+    margin-bottom: 5px;
+}
+
+.polarion-shared-administration-button {
+    background: #f6f6f6;
+    background: linear-gradient(180deg, #f6f6f6 0%, #e1e1e1 100%);
+    border: 1px solid #c5c5c5;
+    border-radius: 2px 2px 2px 2px;
+    color: #595959;
+    cursor: pointer;
+    height: 18px;
+    width: auto;
+    width: max-content;
+    width: fit-content;
+    width: -moz-fit-content;
+    padding: 2px 5px;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    margin-right: 4px;
+    line-height: 18px;
+}
+
+.polarion-shared-administration-button.polarion-ClientButton-disabled {
+    cursor: default;
+    opacity: 0.6;
+}
+
+.polarion-shared-administration-buttonsPanel {
+    margin-top: 10px;
+    margin-bottom: 20px;
+}
+
+.polarion-shared-administration-subheader {
+    margin-top: 30px;
+    margin-bottom: 5px;
+}
+
+.polarion-shared-administration-subsection {
+    padding-top: 10px;
+    padding-left: 15px;
+}
+
+.polarion-shared-administration-content {
+    width: 100%;
+}
+
+.polarion-shared-administration-content H5, .polarion-shared-administration-content H2, .polarion-shared-administration-content H1 {
+    color: #004D73;
+    margin: 0px;
+    padding: 0px;
+    padding-left: 4px;
+    padding-bottom: 0px;
+    font-weight: bold;
+}
+
+.polarion-shared-administration-content H1 {
+    color: #004D73;
+    font-weight: bold;
+    font-size: 30px;
+    line-height: 38px;
+    border-bottom: 4px solid #EBF0F5;
+    margin-top: 10px;
+}
+
+.polarion-shared-administration-content H2 {
+    color: #004D73;
+    font-weight: bold;
+    font-size: 23px;
+    line-height: 31px;
+    background-color: #EBF0F5;
+    padding: 8px 14px;
+    margin-top: 24px;
+}
+
+.polarion-shared-administration-content H5 {
+    margin-top: 30px;
+    margin-bottom: 5px;
+}
+
+.polarion-administration-header {
+    color: #004D73;
+    font-weight: bold;
+    font-size: 30px;
+    line-height: 38px;
+    border-bottom: 4px solid #EBF0F5;
+}
+
+.scrollable {
+    overflow: auto;
+}
+
+.spacing-right {
+    margin-right: 5px;
+}
+
+.spacing-top {
+    margin-top: 20px;
+}
+
+.spacing-bottom {
+    margin-bottom: 20px;
+}
+
+.no-margin-top {
+    margin-top: 0 !important;
+}
+
+.width-80 {
+    width: 80%;
+    margin-left: auto !important;
+    margin-right: auto !important;
+}
+
+.polarion-draggable {
+    cursor: url(/polarion/ria/images/cursor/dnd_select.cur), default;
+}

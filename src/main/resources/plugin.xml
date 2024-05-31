@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.0"?>
+<plugin>
+    <extension
+            point="com.polarion.portal.tomcat.webapps">
+        <webapp
+                name="polarion/pdf-exporter"
+                contextRoot="webapp/pdf-exporter">
+        </webapp>
+    </extension>
+
+    <extension
+            point="com.polarion.portal.tomcat.webapps">
+        <webapp
+                name="polarion/pdf-exporter-admin"
+                contextRoot="webapp/pdf-exporter-admin">
+        </webapp>
+    </extension>
+</plugin>

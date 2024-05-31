@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<?xml version='1.0' encoding='UTF-8'?>
+<head>
+    <style>
+        .sbb_page_break {
+            page-break-before: always;
+            max-height: 0;
+        }
+
+        .port {
+            page: port;
+        }
+
+        .land {
+            page: land;
+        }
+
+        @page land {
+            size: a4 landscape;
+        }
+
+        @page port {
+            size: a4 portrait;
+        }
+
+        @page {
+            size: landscape;
+        }
+    </style>
+</head>
+<body>
+<div>
+    <style>
+        body {
+            page: land;
+        }
+    </style>
+    <div>
+        <p>This must be landscape</p>
+        <div class="sbb_page_break port"><p>This - portrait</p></div>
+        <div class="sbb_page_break land"><p>And this is landscape again</p></div>
+    </div>
+</div>
+</body>
+</html>

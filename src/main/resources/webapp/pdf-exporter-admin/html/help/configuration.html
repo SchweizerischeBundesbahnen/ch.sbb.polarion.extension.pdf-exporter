@@ -1,0 +1,236 @@
+<h1>Polarion ALM extension to convert Documents to PDF files</h1>
+
+<p>This Polarion extension provides possibility to convert Polarion Documents to PDF files.</p>
+<p>This is an alternative to native Polarion's solution.</p>
+<p>The extension uses <a rel="nofollow" href="https://weasyprint.org/">WeasyPrint</a> as a PDF engine and requires it either to be installed as a system's command-line tool or to run from Docker container (as CLI or as Service, see below).</p>
+
+<h2>Polarion configuration</h2>
+
+<h3>WeasyPrint Configuration</h3>
+
+<h4>WeasyPrint CLI</h4>
+
+<p>To run WeasyPrint as a system's command-line tool specify following properties in file <code>&lt;POLARION_HOME&gt;/etc/polarion.properties</code>:</p>
+<pre>
+    <code data-language="properties">
+<span class="cm-def">ch.sbb.polarion.extension.pdf-exporter.weasyprint.connector</span><span class=".cm-operator">=</span>cli
+<span class="cm-def">ch.sbb.polarion.extension.pdf-exporter.weasyprint.executable</span><span class=".cm-operator">=</span>weasyprint
+<span class="cm-def">ch.sbb.polarion.extension.pdf-exporter.weasyprint.pdf.variant</span><span class=".cm-operator">=</span>pdf/a-2b
+    </code>
+</pre>
+
+<p>And then install WeasyPrint. On Linux system it can be done following way:</p>
+<pre>
+    <code data-language="bash">
+pip install weasyprint
+    </code>
+</pre>
+<p>For more information on WeasyPrint Installation see <a rel="nofollow" href="https://doc.courtbouillon.org/weasyprint/stable/first_steps.html#installation">these instructions</a></p>
+
+<h4>WeasyPrint CLI in Docker</h4>
+
+<p>This extension supports using WeasyPrint running in Docker container. This feature can be switched on with help of following properties in file <code>&lt;POLARION_HOME&gt;/etc/polarion.properties</code>:</p>
+<pre>
+    <code data-language="properties">
+<span class="cm-def">ch.sbb.polarion.extension.pdf-exporter.weasyprint.connector</span><span class=".cm-operator">=</span>cli
+<span class="cm-def">ch.sbb.polarion.extension.pdf-exporter.weasyprint.executable</span><span class=".cm-operator">=</span>docker run --interactive --rm docker.io/library/weasyprint:61.2
+<span class="cm-def">ch.sbb.polarion.extension.pdf-exporter.weasyprint.pdf.variant</span><span class=".cm-operator">=</span>pdf/a-2b
+    </code>
+</pre>
+
+<h4>WeasyPrint as Service in Docker</h4>
+
+<p>This extension supports using WeasyPrint running as a REST Service in Docker container. This feature can be switched on with help of following properties in file <code>&lt;POLARION_HOME&gt;/etc/polarion.properties</code>:</p>
+<pre>
+    <code data-language="properties">
+<span class="cm-def">ch.sbb.polarion.extension.pdf-exporter.weasyprint.connector</span><span class=".cm-operator">=</span>service
+<span class="cm-def">ch.sbb.polarion.extension.pdf-exporter.weasyprint.service</span><span class=".cm-operator">=</span>http://localhost:9080
+<span class="cm-def">ch.sbb.polarion.extension.pdf-exporter.weasyprint.pdf.variant</span><span class=".cm-operator">=</span>pdf/a-2b
+    </code>
+</pre>
+
+<h3>PDF exporter extension to appear on a Document's properties pane</h3>
+
+<ol>
+    <li>Open a project where you wish PDF Exporter to be available</li>
+    <li>On the top of the project's navigation pane click ⚙ (Actions) ➙ 🔧 Administration. Project's administration page will be opened.</li>
+    <li>On the administration's navigation pane select Documents &amp; Pages ➙ Document Properties Sidebar.</li>
+    <li>In opened Edit Project Configuration editor find <code>sections</code>-element:
+        <pre>
+            <code data-language="xml">
+…
+<span class="cm-tag cm-bracket">&lt;</span><span class="cm-tag">sections</span><span class="cm-tag cm-bracket">&gt;</span>
+<span class="cm-tag cm-bracket">  &lt;</span><span class="cm-tag">section</span> <span class="cm-attribute">id</span>=<span class="cm-string">"fields"</span><span class="cm-tag cm-bracket">/&gt;</span>
+  …
+<span class="cm-tag cm-bracket">&lt;/</span><span class="cm-tag">sections</span><span class="cm-tag cm-bracket">&gt;</span>
+…
+            </code>
+        </pre>
+    </li>
+    <li>And insert following new line inside this element:
+        <pre>
+            <code data-language="xml">
+…
+<span class="cm-tag cm-bracket">&lt;</span><span class="cm-tag">extension</span> <span class="cm-attribute">id</span>=<span class="cm-string">"pdf-exporter"</span> <span class="cm-attribute">label</span>=<span class="cm-string">"PDF Exporter"</span> <span class="cm-tag cm-bracket">/&gt;</span>
+…
+            </code>
+        </pre>
+    </li>
+    <li>Save changes by clicking 💾 Save</li>
+</ol>
+
+<h3>PDF exporter view to open via button in toolbar</h3>
+
+<p>Alternatively you can configure PDF Exporter such a way that additional toolbar will appear in document's editor with a button to open a popup with PDF Exporter view.</p>
+<ol>
+    <li>Open "Default Repository".</li>
+    <li>On the top of its navigation pane click ⚙ (Actions) ➙ 🔧 Administration. Global administration page will be opened.</li>
+    <li>On the administration's navigation pane select Configuration Properties.</li>
+    <li>In editor of opened page add following line:
+        <pre>
+            <code data-language="properties">
+<span class="cm-def">scriptInjection.dleEditorHead</span><span class=".cm-operator">=</span>&lt;script src=&quot;/polarion/pdf-exporter/js/starter.js&quot;&gt;&lt;/script&gt;&lt;script&gt;PdfExporterStarter.injectToolbar();&lt;/script&gt;
+            </code>
+        </pre>
+        There's an alternate approach adding PDF Exporter button into native Polarion's toolbar, which has a drawback at the moment -
+        button disappears in some cases (for example when document is saved), so using this approach is not advisable:
+        <pre>
+            <code data-language="properties">
+<span class="cm-def">scriptInjection.dleEditorHead</span><span class=".cm-operator">=</span>&lt;script src=&quot;/polarion/pdf-exporter/js/starter.js&quot;&gt;&lt;/script&gt;&lt;script&gt;PdfExporterStarter.injectToolbar({alternate: true});&lt;/script&gt;
+            </code>
+        </pre>
+    </li>
+    <li>Save changes by clicking 💾 Save</li>
+</ol>
+
+<h3>PDF exporter view to open in Live Reports</h3>
+
+<p>Live Reports also can be converted to PDF with help of this extension.</p>
+<p>First of all you need to inject appropriate JavaScript code into Polarion:</p>
+<ol>
+    <li>Open "Default Repository".</li>
+    <li>On the top of its navigation pane click ⚙ (Actions) ➙ 🔧 Administration. Global administration page will be opened.</li>
+    <li>On the administration's navigation pane select Configuration Properties.</li>
+    <li>In editor of opened page add following line:
+        <pre>
+            <code data-language="properties">
+<span class="cm-def">scriptInjection.mainHead</span><span class=".cm-operator">=</span>&lt;script src=&quot;/polarion/pdf-exporter/js/starter.js&quot;&gt;&lt;/script&gt;
+            </code>
+        </pre>
+    </li>
+    <li>Save changes by clicking 💾 Save</li>
+</ol>
+<p>Then open a project, its Live Report you wish to export, and click "Expand Tools" on top of the page.
+    As a result report's toolbar will appear. Click "Edit" button in a toolbar, as a result the report will be switched into an edit mode. Add an empty region on top
+    of the report, place cursor there, choose "Generic" tag on "Widgets" sidebar on right hand side of the page, find "Export to PDF Button" widget there and click it
+    to add to the report. Then save a report clicking 💾 in a toolbar and then return to a view mode clicking "Back" button. When you click "Export to PDF" button just added
+    to the report, PDF Exporter view will be opened in a popup and you will be able to proceed with exporting the report to PDF. Be aware that in report's context limited
+    set of properties are available for configuration in PDF popup, the rest of them are relevant only in Live Document context.</p>
+
+<h3>Configuring Logs</h3>
+
+<p>For better problem analyses extended logging can be configured in Polarion. By default, Polarion log level is set to INFO. It can be changed to debug in <code>log4j2.xml</code> file.
+    Find <code>/opt/polarion/polarion/plugins/com.polarion.core.util_&lt;version&gt;/log4j2.xml</code> file and add the following line into <code>Loggers</code>section:</p>
+<pre>
+    <code data-language="xml">
+<span class="cm-tag cm-bracket">&lt;</span><span class="cm-tag">Logger</span> <span class="cm-attribute">name</span>=<span class="cm-string">"ch.sbb.polarion.extension"</span> <span class="cm-attribute">level</span>=<span class="cm-string">"debug"</span><span class="cm-tag cm-bracket">/&gt;</span>
+    </code>
+</pre>
+
+<p>It is also possible to write all messages of SBB extensions info separate log file which can be useful to report a problem. In this case new <code>Appender</code> should be added:</p>
+<pre>
+    <code data-language="xml">
+<span class="cm-tag cm-bracket">&lt;</span><span class="cm-tag">RollingFile</span> <span class="cm-attribute">name</span>=<span class="cm-string">"SBB"</span> <span class="cm-attribute">fileName</span>=<span class="cm-string">"${sys:logDir}/log4j-sbb${fileNameSuffix}"</span> <span class="cm-attribute">filePattern</span>=<span class="cm-string">"${sys:logDir}/log4j-sbb${filePatternSuffix}"</span><span class="cm-tag cm-bracket">&gt;</span>
+    <span class="cm-tag cm-bracket">&lt;</span><span class="cm-tag">PatternLayout</span> <span class="cm-attribute">pattern</span>=<span class="cm-string">"${layoutPattern}"</span><span class="cm-tag cm-bracket">/&gt;</span>
+    <span class="cm-tag cm-bracket">&lt;</span><span class="cm-tag">Policies</span><span class="cm-tag cm-bracket">&gt;</span>
+        <span class="cm-tag cm-bracket">&lt;</span><span class="cm-tag">TimeBasedTriggeringPolicy</span> <span class="cm-attribute">interval</span>=<span class="cm-string">"1"</span><span class="cm-tag cm-bracket">/&gt;</span>
+    <span class="cm-tag cm-bracket">&lt;/</span><span class="cm-tag">Policies</span><span class="cm-tag cm-bracket">&gt;</span>
+<span class="cm-tag cm-bracket">&lt;/</span><span class="cm-tag">RollingFile</span><span class="cm-tag cm-bracket">&gt;</span>
+    </code>
+</pre>
+<p>and the following <code>Logger</code>:</p>
+<pre>
+    <code data-language="xml">
+<span class="cm-tag cm-bracket">&lt;</span><span class="cm-tag">Logger</span> <span class="cm-attribute">name</span>=<span class="cm-string">"ch.sbb.polarion.extension"</span> <span class="cm-attribute">level</span>=<span class="cm-string">"debug"</span><span class="cm-tag cm-bracket">&gt;</span>
+    <span class="cm-tag cm-bracket">&lt;</span><span class="cm-tag">AppenderRef</span> <span class="cm-attribute">ref</span>=<span class="cm-string">"SBB"</span><span class="cm-tag cm-bracket">/&gt;</span>
+<span class="cm-tag cm-bracket">&lt;/</span><span class="cm-tag">Logger</span><span class="cm-tag cm-bracket">&gt;</span>
+    </code>
+</pre>
+
+<h3>Enabling CORS</h3>
+
+<p>Cross-Origin Resource Sharing could be enabled using standard configuration of Polarion REST API. In <code>&lt;POLARION_HOME&gt;/etc/polarion.properties</code> the following lines should be added:</p>
+<pre>
+    <code data-language="properties">
+<span class="cm-def">com.siemens.polarion.rest.enabled</span><span class=".cm-operator">=</span>true
+<span class="cm-def">com.siemens.polarion.rest.cors.allowedOrigins</span><span class=".cm-operator">=</span>http://localhost:8888,https://anotherdomain.com
+    </code>
+</pre>
+
+<h3>Debug option</h3>
+
+<p>This extension makes intensive HTML processing to extend similar standard Polarion functionality. There is a possibility to log
+    original and resulting HTML to see potential problems in this processing. This logging can be switched on (<code>true</code> value)
+    and off (<code>false</code> value) with help of following property in file <code>&lt;POLARION_HOME&gt;/etc/polarion.properties</code>:</p>
+<pre>
+    <code data-language="properties">
+<span class="cm-def">ch.sbb.polarion.extension.pdf-exporter.debug</span><span class=".cm-operator">=</span>true
+    </code>
+</pre>
+
+<p>If HTML logging is switched on, then in standard polarion log file there will be following lines:</p>
+<pre>
+    <code data-language="text">
+2023-09-20 08:42:13,911 [ForkJoinPool.commonPool-worker-2] INFO  ch.sbb.polarion.extension.pdf.exporter.util.HtmlLogger - Original HTML fragment provided by Polarion was stored in file /tmp/pdf-exporter10000032892830031969/original-4734772539141140796.html
+2023-09-20 08:42:13,914 [ForkJoinPool.commonPool-worker-2] INFO  ch.sbb.polarion.extension.pdf.exporter.util.HtmlLogger - Final HTML page obtained as a result of PDF exporter processing was stored in file /tmp/pdf-exporter10000032892830031969/processed-5773281490308773124.html
+    </code>
+</pre>
+<p>Here you can find out in which files HTML was stored.</p>
+
+<h2>Extension Configuration</h2>
+
+<ol>
+    <li>On the top of the project's navigation pane click ⚙ (Actions) ➙ 🔧 Administration. Project's administration page will be opened.</li>
+    <li>On the administration's navigation pane select <code>PDF Export</code>. There are 5 sub-menus with different configuration options for PDF Exporter.</li>
+    <li>For 3 of these options (Cover page, Header and Footer and Localization) <code>Quick Help</code> section available with option short description. For the rest 2
+        (Style package, Stylesheets) there's no <code>Quick Help</code> section, but their content is self-evident.
+    </li>
+    <li>To change configuration of PDF exporter extension just edit corresponding section and press <code>Save</code> button.</li>
+</ol>
+
+<h2>Usage</h2>
+
+<ol>
+    <li>Open a document in Polarion.</li>
+    <li>In the toolbar choose Show Sidebar ➙ Document Properties.</li>
+    <li>Choose desired options in the <code>PDF Exporter</code> block and click <code>Export to PDF</code>.
+        For the options details please refer <a rel="nofollow" href="https://polarion.sbb.ch/polarion/#/project/mcTestInt/wiki/Specification/PDF%20Exporter?selection=MCTI-426">plugin documentation</a>.
+    </li>
+</ol>
+
+<h2>Known issues</h2>
+
+<h3>SVG rendering issue</h3>
+
+<h4>Details</h4>
+
+<p>Weasyprint doesn't fully support all SVG features. One of the most frequently used feature by Polarion which isn't supported by Weasyprint is <a rel="nofollow" href="https://www.w3.org/TR/SVG11/extend.html#ForeignObjectElement">'foreignObject'
+    element</a>. This leads to some visual bugs in resulting pdf (missing font colors, rich text formatting etc.)</p>
+
+<h4>Solution</h4>
+
+<p>Usage of <code>WeasyPrint as Service in Docker</code> (see above) is suggested. It has built-in SVG to PNG images conversion using Chromium browser (which supports more SVG features, including <code>foreignObjects</code>).</p>
+
+<h2>Upgrade</h2>
+
+<h3>Upgrade from version 4.x.x to 5.0.0</h3>
+
+<p>
+    In version 5.0.0 not only label of configuration parameter "Fit images and tables to page width" was modified to be "Fit images and tables to page",
+    but also underlying parameter was renamed to reflect this change. As a result if you had "Fit images and tables to page width" ticked in your configuration prior to version 5.0.0,
+    after installation of this version you will have to go to configuration again and re-tick property "Fit images and tables to page", both on global repository level and on level of projects.
+</p>
+<p>
+    Another change is default CSS which was modified to reflect different possible paper sizes as well as additional styling for images to jump into next page if they can't be fully displayed on current one.
+    Thus please either reset your saved CSS into last version if you didn't have your own CSS definitions or merge your saved version with new default version.
+</p>
