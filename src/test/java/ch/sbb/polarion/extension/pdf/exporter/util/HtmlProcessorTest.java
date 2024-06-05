@@ -9,6 +9,7 @@ import ch.sbb.polarion.extension.pdf.exporter.rest.model.conversion.PaperSize;
 import ch.sbb.polarion.extension.pdf.exporter.rest.model.settings.localization.Language;
 import ch.sbb.polarion.extension.pdf.exporter.rest.model.settings.localization.LocalizationModel;
 import ch.sbb.polarion.extension.pdf.exporter.settings.LocalizationSettings;
+import ch.sbb.polarion.extension.pdf.exporter.util.html.HtmlLinksHelper;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -25,7 +26,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -37,12 +39,14 @@ class HtmlProcessorTest {
     private FileResourceProvider fileResourceProvider;
     @Mock
     private LocalizationSettings localizationSettings;
+    @Mock
+    private HtmlLinksHelper htmlLinksHelper;
 
     private HtmlProcessor processor;
 
     @BeforeEach
     void init() {
-        processor = new HtmlProcessor(fileResourceProvider, localizationSettings);
+        processor = new HtmlProcessor(fileResourceProvider, localizationSettings, htmlLinksHelper);
         Map<String, String> deTranslations = Map.of(
                 "draft", "Entwurf",
                 "not reviewed", "Nicht überprüft"
@@ -75,6 +79,7 @@ class HtmlProcessorTest {
     @SneakyThrows
     void cutLocalUrlsWithRolesFilteringTest() {
         when(localizationSettings.load(any(), any(SettingId.class))).thenReturn(new LocalizationModel(Collections.emptyMap(), Collections.emptyMap(), Collections.emptyMap()));
+        when(htmlLinksHelper.internalizeLinks(anyString())).thenAnswer(a -> a.getArgument(0));
 
         try (InputStream isInvalidHtml = this.getClass().getResourceAsStream("/cutLocalUrlsWithRolesFilteringBeforeProcessing.html");
              InputStream isValidHtml = this.getClass().getResourceAsStream("/cutLocalUrlsWithRolesFilteringAfterProcessing.html")) {
@@ -263,6 +268,7 @@ class HtmlProcessorTest {
     @Test
     @SneakyThrows
     void processHtmlForPDFTestCutEmptyWorkItemAttributesDisabled() {
+        when(htmlLinksHelper.internalizeLinks(anyString())).thenAnswer(a -> a.getArgument(0));
         try (InputStream isHtml = this.getClass().getResourceAsStream("/emptyWIAttributesBeforeProcessing.html")) {
 
             String html = new String(isHtml.readAllBytes(), StandardCharsets.UTF_8);
@@ -282,6 +288,7 @@ class HtmlProcessorTest {
     @Test
     void adjustHeadingForPDFTestH1ReplacedWithDiv() {
         String html = "<h1>First level heading</h1>";
+        when(htmlLinksHelper.internalizeLinks(anyString())).thenAnswer(a -> a.getArgument(0));
         String result = processor.processHtmlForPDF(html, getExportParams(), List.of());
         assertEquals("<div class=\"title\">First level heading</div>", result);
     }
@@ -289,6 +296,7 @@ class HtmlProcessorTest {
     @Test
     void adjustHeadingForPDFTestLiftHeadingTag() {
         String html = "<h2>First level heading</h2>";
+        when(htmlLinksHelper.internalizeLinks(anyString())).thenAnswer(a -> a.getArgument(0));
         String result = processor.processHtmlForPDF(html, getExportParams(), List.of());
         assertEquals("<h1>First level heading</h1>", result);
     }

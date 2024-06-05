@@ -8,6 +8,7 @@ import ch.sbb.polarion.extension.pdf.exporter.util.HtmlLogger;
 import ch.sbb.polarion.extension.pdf.exporter.util.HtmlProcessor;
 import ch.sbb.polarion.extension.pdf.exporter.util.PdfExporterFileResourceProvider;
 import ch.sbb.polarion.extension.pdf.exporter.util.PdfTemplateProcessor;
+import ch.sbb.polarion.extension.pdf.exporter.util.html.HtmlLinksHelper;
 import ch.sbb.polarion.extension.pdf.exporter.weasyprint.WeasyPrintConverter;
 import ch.sbb.polarion.extension.pdf.exporter.weasyprint.WeasyPrintConnectorFactory;
 import ch.sbb.polarion.extension.pdf.exporter.weasyprint.WeasyPrintOptions;
@@ -26,10 +27,12 @@ public class HtmlToPdfConverter {
 
     public HtmlToPdfConverter() {
         this.pdfTemplateProcessor = new PdfTemplateProcessor();
-        this.htmlProcessor = new HtmlProcessor(new PdfExporterFileResourceProvider(), new LocalizationSettings());
+        PdfExporterFileResourceProvider fileResourceProvider = new PdfExporterFileResourceProvider();
+        this.htmlProcessor = new HtmlProcessor(fileResourceProvider, new LocalizationSettings(), new HtmlLinksHelper(fileResourceProvider));
         this.weasyPrintConverter = WeasyPrintConnectorFactory.getWeasyPrintExecutor();
     }
 
+    @VisibleForTesting
     public HtmlToPdfConverter(PdfTemplateProcessor pdfTemplateProcessor, HtmlProcessor htmlProcessor, WeasyPrintConverter weasyPrintConverter) {
         this.pdfTemplateProcessor = pdfTemplateProcessor;
         this.htmlProcessor = htmlProcessor;
@@ -76,7 +79,10 @@ public class HtmlToPdfConverter {
         } else {
             html = replaceTagContent(origHtml, "head", head);
         }
-        return htmlProcessor.replaceImagesAsBase64Encoded(html);
+        html = htmlProcessor.replaceImagesAsBase64Encoded(html);
+        html = htmlProcessor.internalizeCssLinks(html);
+
+        return html;
     }
 
     private String extractTagContent(String html, String tag) {

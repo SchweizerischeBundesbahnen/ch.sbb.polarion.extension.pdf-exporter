@@ -178,6 +178,20 @@ If HTML logging is switched on, then in standard polarion log file there will be
 
 Here you can find out in which files HTML was stored.
 
+### Enabling internalization of CSS Links
+The converting HTML can contain some external CSS links referencing Polarion Server, like:
+```
+<link rel="stylesheet" href="/polarion/diff-tool-app/ui/app/_next/static/css/3c374f9daffd361a.css" data-precedence="next">
+```
+In case if Polarion Server is not reachable from Weasyprint service, such links cannot be successfully resolved during Weasyprint PDF transformation.
+The solution is to replace external CSS <links> to internal CSS <style> tags with CSS content, embedded into HTML document.
+By default, CSS links internalization is disabled. 
+To enable internalization of CSS links it is necessary to activate the following property in file `<POLARION_HOME>/etc/polarion.properties`:
+
+```properties
+ch.sbb.polarion.extension.pdf-exporter.internalize-css-links=true
+```
+
 ## Extension Configuration
 
 1. On the top of the project's navigation pane click ⚙ (Actions) ➙ 🔧 Administration. Project's administration page will be opened.
