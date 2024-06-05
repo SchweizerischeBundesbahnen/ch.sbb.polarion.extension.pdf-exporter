@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.1.1](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v5.1.0...v5.1.1) (2024-06-05)
+
+
+### Documentation
+
+* changelog history moved from README.md to CHANGELOG.md ([#9](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/9)) ([84c4234](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/84c4234245bc3c08ea4d00bf1db3ef352ecf0308))
+
 ## 5.1.0 (2024-06-05)
 
 
