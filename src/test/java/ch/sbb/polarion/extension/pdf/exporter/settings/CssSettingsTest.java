@@ -1,5 +1,6 @@
 package ch.sbb.polarion.extension.pdf.exporter.settings;
 
+import ch.sbb.polarion.extension.generic.exception.ObjectNotFoundException;
 import ch.sbb.polarion.extension.generic.settings.GenericNamedSettings;
 import ch.sbb.polarion.extension.generic.settings.SettingId;
 import ch.sbb.polarion.extension.generic.settings.SettingsService;
@@ -13,8 +14,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -27,10 +27,9 @@ class CssSettingsTest {
     }
 
     @Test
-    void testLoadDefaultWhenSettingDoesNotExist() {
+    void testSettingDoesNotExist() {
         try (MockedStatic<ScopeUtils> mockScopeUtils = mockStatic(ScopeUtils.class)) {
             SettingsService mockedSettingsService = mock(SettingsService.class);
-            when(mockedSettingsService.exists(any())).thenReturn(true);
             mockScopeUtils.when(() -> ScopeUtils.getFileContent(any())).thenCallRealMethod();
 
             GenericNamedSettings<CssModel> cssSettings = new CssSettings(mockedSettingsService);
@@ -40,7 +39,6 @@ class CssSettingsTest {
             ILocation mockProjectLocation = mock(ILocation.class);
             when(mockProjectLocation.append(anyString())).thenReturn(mockProjectLocation);
             mockScopeUtils.when(() -> ScopeUtils.getContextLocationByProject(projectName)).thenReturn(mockProjectLocation);
-            when(mockedSettingsService.read(eq(mockProjectLocation), any())).thenReturn(null);
             mockScopeUtils.when(() -> ScopeUtils.getScopeFromProject(projectName)).thenCallRealMethod();
             mockScopeUtils.when(() -> ScopeUtils.getContextLocation("project/test_project/")).thenReturn(mockProjectLocation);
 
@@ -48,13 +46,10 @@ class CssSettingsTest {
             when(mockDefaultLocation.append(anyString())).thenReturn(mockDefaultLocation);
             mockScopeUtils.when(ScopeUtils::getDefaultLocation).thenReturn(mockDefaultLocation);
             mockScopeUtils.when(() -> ScopeUtils.getContextLocation("")).thenReturn(mockDefaultLocation);
-            CssModel cssModel = cssSettings.defaultValues();
-            cssModel.setBundleTimestamp("default");
-            when(mockedSettingsService.read(eq(mockDefaultLocation), any())).thenReturn(cssModel.serialize());
 
-            CssModel loadedModel = cssSettings.load(projectName, SettingId.fromName("Any setting name"));
-            assertEquals(cssModel.getCss(), loadedModel.getCss());
-            assertEquals("default", loadedModel.getBundleTimestamp());
+            assertThrows(ObjectNotFoundException.class, () -> {
+                CssModel loadedModel = cssSettings.load(projectName, SettingId.fromName("Any setting name"));
+            });
         }
     }
 
@@ -81,6 +76,9 @@ class CssSettingsTest {
             CssModel customProjectModel = CssModel.builder().css("customCss").build();
             customProjectModel.setBundleTimestamp("custom");
             when(mockedSettingsService.read(eq(mockProjectLocation), any())).thenReturn(customProjectModel.serialize());
+
+            when(mockedSettingsService.getLastRevision(mockProjectLocation)).thenReturn("345");
+            when(mockedSettingsService.getPersistedSettingFileNames(mockProjectLocation)).thenReturn(List.of("Any setting name"));
 
             CssModel defaultProjectModel = CssModel.builder().css("defaultCss").build();
             defaultProjectModel.setBundleTimestamp("default");

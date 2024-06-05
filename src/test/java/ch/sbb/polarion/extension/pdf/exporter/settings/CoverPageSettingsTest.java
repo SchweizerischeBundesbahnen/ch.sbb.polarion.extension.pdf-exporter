@@ -1,5 +1,6 @@
 package ch.sbb.polarion.extension.pdf.exporter.settings;
 
+import ch.sbb.polarion.extension.generic.exception.ObjectNotFoundException;
 import ch.sbb.polarion.extension.generic.settings.GenericNamedSettings;
 import ch.sbb.polarion.extension.generic.settings.SettingId;
 import ch.sbb.polarion.extension.generic.settings.SettingsService;
@@ -53,10 +54,9 @@ class CoverPageSettingsTest {
     }
 
     @Test
-    void testLoadDefaultWhenSettingDoesNotExist() {
+    void testSettingDoesNotExist() {
         try (MockedStatic<ScopeUtils> mockScopeUtils = mockStatic(ScopeUtils.class)) {
             SettingsService mockedSettingsService = mock(SettingsService.class);
-            when(mockedSettingsService.exists(any())).thenReturn(true);
             mockScopeUtils.when(() -> ScopeUtils.getFileContent(any())).thenCallRealMethod();
 
             GenericNamedSettings<CoverPageModel> coverPageSettings = new CoverPageSettings(mockedSettingsService, mockedPdfExporterPolarionService);
@@ -66,7 +66,6 @@ class CoverPageSettingsTest {
             ILocation mockProjectLocation = mock(ILocation.class);
             when(mockProjectLocation.append(anyString())).thenReturn(mockProjectLocation);
             mockScopeUtils.when(() -> ScopeUtils.getContextLocationByProject(projectName)).thenReturn(mockProjectLocation);
-            when(mockedSettingsService.read(eq(mockProjectLocation), any())).thenReturn(null);
             mockScopeUtils.when(() -> ScopeUtils.getScopeFromProject(projectName)).thenCallRealMethod();
             mockScopeUtils.when(() -> ScopeUtils.getContextLocation("project/test_project/")).thenReturn(mockProjectLocation);
 
@@ -74,14 +73,10 @@ class CoverPageSettingsTest {
             when(mockDefaultLocation.append(anyString())).thenReturn(mockDefaultLocation);
             mockScopeUtils.when(ScopeUtils::getDefaultLocation).thenReturn(mockDefaultLocation);
             mockScopeUtils.when(() -> ScopeUtils.getContextLocation("")).thenReturn(mockDefaultLocation);
-            CoverPageModel coverPageModel = coverPageSettings.defaultValues();
-            coverPageModel.setBundleTimestamp("default");
-            when(mockedSettingsService.read(eq(mockDefaultLocation), any())).thenReturn(coverPageModel.serialize());
 
-            CoverPageModel loadedModel = coverPageSettings.load(projectName, SettingId.fromName("Any setting name"));
-            assertEquals(coverPageModel.getTemplateHtml(), loadedModel.getTemplateHtml());
-            assertEquals(coverPageModel.getTemplateCss(), loadedModel.getTemplateCss());
-            assertEquals("default", loadedModel.getBundleTimestamp());
+            assertThrows(ObjectNotFoundException.class, () -> {
+                CoverPageModel loadedModel = coverPageSettings.load(projectName, SettingId.fromName("Any setting name"));
+            });
         }
     }
 
@@ -109,8 +104,8 @@ class CoverPageSettingsTest {
             customModel.setBundleTimestamp("custom");
             when(mockedSettingsService.read(eq(mockProjectLocation), any())).thenReturn(customModel.serialize());
 
-            CoverPageModel defaultProjectModel = CoverPageModel.builder().templateHtml("defaultHtml").templateCss("defaultCss").build();
-            defaultProjectModel.setBundleTimestamp("default");
+            when(mockedSettingsService.getLastRevision(mockProjectLocation)).thenReturn("345");
+            when(mockedSettingsService.getPersistedSettingFileNames(mockProjectLocation)).thenReturn(List.of("Any setting name"));
 
             CoverPageModel loadedModel = coverPageSettings.load(projectName, SettingId.fromName("Any setting name"));
             assertEquals(customModel.getTemplateHtml(), loadedModel.getTemplateHtml());
