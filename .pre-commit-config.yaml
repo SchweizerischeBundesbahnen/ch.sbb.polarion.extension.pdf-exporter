@@ -2,23 +2,22 @@
 default_install_hook_types: [pre-commit, commit-msg]
 repos:
   - repo: https://github.com/lyz-code/yamlfix
-    rev: 1.13.0
+    rev: 1.16.0
     hooks:
       - id: yamlfix
-        args: [-c .yamlfix]
+        args: [-c, .yamlfix.toml]
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.5.0
+    rev: v4.6.0
     hooks:
       - id: check-merge-conflict
       - id: trailing-whitespace
       - id: check-xml
       - id: check-json
       - id: check-yaml
-      - id: detect-private-key
       - id: no-commit-to-branch
       - id: mixed-line-ending
   - repo: https://github.com/zricethezav/gitleaks
-    rev: v8.18.0
+    rev: v8.18.3
     hooks:
       - id: gitleaks
   - repo: https://github.com/grigoriev/pre-commit-check-git-user
@@ -27,6 +26,6 @@ repos:
       - id: check-git-config-user-email
         args: [--templates, ^\S+\.\S+@sbb\.ch$]
   - repo: https://github.com/commitizen-tools/commitizen
-    rev: v3.13.0
+    rev: v3.27.0
     hooks:
       - id: commitizen
