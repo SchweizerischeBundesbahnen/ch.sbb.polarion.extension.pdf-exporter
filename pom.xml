@@ -9,7 +9,7 @@
     </parent>
 
     <artifactId>ch.sbb.polarion.extension.pdf-exporter</artifactId>
-    <version>5.0.2-SNAPSHOT</version>
+    <version>5.1.0</version>
     <packaging>jar</packaging>
 
     <properties>
