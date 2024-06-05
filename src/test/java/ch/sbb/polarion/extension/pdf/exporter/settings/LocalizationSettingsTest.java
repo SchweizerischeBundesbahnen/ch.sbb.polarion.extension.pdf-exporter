@@ -67,7 +67,6 @@ class LocalizationSettingsTest {
             mockScopeUtils.when(() -> ScopeUtils.getContextLocationByProject(projectName)).thenReturn(mockProjectLocation);
             mockScopeUtils.when(ScopeUtils::getDefaultLocation).thenReturn(mockDefaultLocation);
             mockScopeUtils.when(() -> ScopeUtils.getContextLocation("")).thenReturn(mockDefaultLocation);
-            when(mockedSettingsService.exists(any())).thenReturn(true);
             mockScopeUtils.when(() -> ScopeUtils.getFileContent(any())).thenCallRealMethod();
 
             LocalizationSettings localizationSettings = new LocalizationSettings(mockedSettingsService);
