@@ -1,18 +1,10 @@
 ---
 name: PR checks
-
 on:
   pull_request:
-    types:
-      - opened
-      - edited
-      - synchronize
-      - reopened
-      - unlocked
-
+    types: [opened, edited, synchronize, reopened, unlocked]
 permissions:
   contents: read
-
 jobs:
   check-conventional-commit:
     name: Check commit messages
@@ -20,12 +12,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: "${{ github.event.pull_request.head.ref }}"
-          repository: "${{ github.event.pull_request.head.repo.full_name }}"
+          ref: ${{ github.event.pull_request.head.ref }}
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
           fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
-          cache: "pip" # caching pip dependencies
+          cache: pip  # caching pip dependencies
       - run: pip install commitizen
       - name: Check commit messages
         run: cz check --rev-range origin/${GITHUB_BASE_REF}..

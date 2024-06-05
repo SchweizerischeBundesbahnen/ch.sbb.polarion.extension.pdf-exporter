@@ -2,7 +2,7 @@
 name: maven-release
 on:
   push:
-    branches: [main, feature/**, renovate/**]
+    branches: ['**/**']
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -37,7 +37,7 @@ jobs:
                 "id": "githubDeploy",
                 "properties":
                 {
-                  "altDeploymentRepository": "github::default::https://maven.pkg.github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter"
+                  "altDeploymentRepository": "github::default::https://maven.pkg.github.com/${{ github.repository }}"
                 }
               }
             ]
@@ -60,8 +60,7 @@ jobs:
         run: mvn --batch-mode clean package
       - name: Extract artefact version
         id: artefact_version
-        run: echo "version=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)"
-          >> $GITHUB_OUTPUT
+        run: echo "version=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)" >> $GITHUB_OUTPUT
       - name: Publish to GitHub Packages
         if: ${{ !endsWith(steps.artefact_version.outputs.version, '-SNAPSHOT') }}
         run: mvn --batch-mode deploy -PgithubDeploy
