@@ -49,6 +49,24 @@ pip install weasyprint
     </code>
 </pre>
 
+<h4>Enabling Internalization of CSS Links</h4>
+
+<p>The converting HTML can contain some external CSS links referencing Polarion Server, like:</p>
+<pre>
+    <code data-language="html">
+<span class="cm-tag cm-bracket">&lt;</span><span class="cm-tag">link</span> <span class="cm-attribute">rel</span>=<span class="cm-string">"stylesheet"</span> <span class="cm-attribute">href</span>=<span class="cm-string">"/polarion/diff-tool-app/ui/app/_next/static/css/3c374f9daffd361a.css"</span> <span class="cm-attribute">data-precedence</span>=<span class="cm-string">"next"</span><span class="cm-tag cm-bracket">&gt;</span>
+    </code>
+</pre>
+<p>In case the Polarion Server is not reachable from the Weasyprint service, such links cannot be successfully resolved during the Weasyprint PDF transformation.
+    The solution is to replace external CSS &lt;link&gt; elements with internal CSS &lt;style&gt; tags containing the CSS content embedded into the HTML document.
+    By default, CSS link internalization is disabled. To enable internalization of CSS links, it is necessary to activate the following property in file <code>&lt;POLARION_HOME&gt;/etc/polarion.properties</code>:</p>
+<pre>
+    <code data-language="properties">
+<span class="cm-def">ch.sbb.polarion.extension.pdf-exporter.html.internalize-css-links</span><span class=".cm-operator">=</span>true
+    </code>
+</pre>
+
+
 <h3>PDF exporter extension to appear on a Document's properties pane</h3>
 
 <ol>

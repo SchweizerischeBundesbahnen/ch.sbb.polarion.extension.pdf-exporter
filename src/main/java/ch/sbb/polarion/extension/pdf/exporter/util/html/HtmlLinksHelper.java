@@ -1,7 +1,7 @@
 package ch.sbb.polarion.extension.pdf.exporter.util.html;
 
+import ch.sbb.polarion.extension.pdf.exporter.properties.PdfExporterExtensionConfiguration;
 import ch.sbb.polarion.extension.pdf.exporter.util.FileResourceProvider;
-import com.polarion.core.config.impl.SystemValueReader;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -10,10 +10,7 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static com.polarion.core.util.StringUtils.isEmpty;
-
 public class HtmlLinksHelper {
-    private static final String INTERNALIZE_CSS_LINKS_SYSTEM_PROPERTY = "ch.sbb.polarion.extension.pdf-exporter.internalize-css-links";
     private static final Pattern LINK_PATTERN = Pattern.compile("<link\\s*[^>]*>", Pattern.CASE_INSENSITIVE);
     private static final Pattern ATTRIBUTE_PATTERN = Pattern.compile("([\\w-]+)\\s*=\\s*(['\"])(.*?)\\2");
 
@@ -30,8 +27,8 @@ public class HtmlLinksHelper {
     }
 
     public String internalizeLinks(String htmlContent) {
-        String enablingProperty = SystemValueReader.getInstance().readString(INTERNALIZE_CSS_LINKS_SYSTEM_PROPERTY, "false");
-        if (isEmpty(enablingProperty) || !Boolean.parseBoolean(enablingProperty)) {
+        boolean enablingProperty = PdfExporterExtensionConfiguration.getInstance().htmlInternalizeCssLinks();
+        if (!enablingProperty) {
             return htmlContent;
         }
 

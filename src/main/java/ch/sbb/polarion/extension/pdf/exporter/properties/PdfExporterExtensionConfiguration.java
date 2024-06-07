@@ -19,6 +19,7 @@ public class PdfExporterExtensionConfiguration extends ExtensionConfiguration {
     public static final String WEASYPRINT_EXECUTABLE = "weasyprint.executable";
     public static final String WEASYPRINT_EXECUTABLE_DEFAULT = "weasyprint";
     public static final String WEASYPRINT_PDF_VARIANT = "weasyprint.pdf.variant";
+    public static final String HTML_INTERNALIZE_CSS_LINKS = "html.internalize-css-links";
 
     public WeasyPrintConnector getWeasyprintConnector() {
         String value = SystemValueReader.getInstance().readString(getPropertyPrefix() + WEASYPRINT_CONNECTOR, WEASYPRINT_CONNECTOR_DEFAULT);
@@ -37,6 +38,11 @@ public class PdfExporterExtensionConfiguration extends ExtensionConfiguration {
         return SystemValueReader.getInstance().readString(getPropertyPrefix() + WEASYPRINT_PDF_VARIANT, null);
     }
 
+    public Boolean htmlInternalizeCssLinks() {
+        System.out.println("***: " + getPropertyPrefix() + HTML_INTERNALIZE_CSS_LINKS);
+        return SystemValueReader.getInstance().readBoolean(getPropertyPrefix() + HTML_INTERNALIZE_CSS_LINKS, false);
+    }
+
     @Override
     public @NotNull List<String> getSupportedProperties() {
         List<String> supportedProperties = new ArrayList<>(super.getSupportedProperties());
@@ -44,6 +50,7 @@ public class PdfExporterExtensionConfiguration extends ExtensionConfiguration {
         supportedProperties.add(WEASYPRINT_SERVICE);
         supportedProperties.add(WEASYPRINT_EXECUTABLE);
         supportedProperties.add(WEASYPRINT_PDF_VARIANT);
+        supportedProperties.add(HTML_INTERNALIZE_CSS_LINKS);
         return supportedProperties;
     }
 
