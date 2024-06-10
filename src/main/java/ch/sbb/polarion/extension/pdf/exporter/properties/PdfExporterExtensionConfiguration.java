@@ -39,7 +39,6 @@ public class PdfExporterExtensionConfiguration extends ExtensionConfiguration {
     }
 
     public Boolean htmlInternalizeCssLinks() {
-        System.out.println("***: " + getPropertyPrefix() + HTML_INTERNALIZE_CSS_LINKS);
         return SystemValueReader.getInstance().readBoolean(getPropertyPrefix() + HTML_INTERNALIZE_CSS_LINKS, false);
     }
 
