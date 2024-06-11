@@ -57,7 +57,8 @@ ch.sbb.polarion.extension.pdf-exporter.weasyprint.pdf.variant=pdf/a-2b
 
 #### WeasyPrint as Service in Docker
 
-This extension supports using WeasyPrint running as a REST Service in Docker container. This feature can be switched on with help of following properties in file `<POLARION_HOME>/etc/polarion.properties`:
+This extension supports the use of WeasyPrint as a REST service within a Docker container, as implemented [here](https://github.com/SchweizerischeBundesbahnen/weasyprint-service). To activate this feature, adjust the following properties in the `<POLARION_HOME>/etc/polarion.properties` file:
+
 
 ```properties
 ch.sbb.polarion.extension.pdf-exporter.weasyprint.connector=service
