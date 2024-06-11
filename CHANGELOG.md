@@ -1,5 +1,18 @@
 # Changelog
 
+## [5.1.2](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v5.1.1...v5.1.2) (2024-06-11)
+
+
+### Bug Fixes
+
+* deployment to packages only from main branch possible [#19](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/19) ([#20](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/20)) ([4a8fcb6](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/4a8fcb65c9264ca56c31800a68e5600334b82628))
+* remove some specific parts ([#15](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/15)) ([e6aa41a](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/e6aa41a4555934fa909542f39d435d7f4643b229))
+
+
+### Documentation
+
+* add link to weasyprint-service in readme ([#21](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/21)) ([a4c8e27](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/a4c8e274cfd15fac71d8b012211cb20a780d375a))
+
 ## [5.1.1](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v5.1.0...v5.1.1) (2024-06-05)
 
 
