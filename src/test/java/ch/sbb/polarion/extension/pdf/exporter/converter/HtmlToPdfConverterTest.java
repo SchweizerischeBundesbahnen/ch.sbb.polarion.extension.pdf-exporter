@@ -45,7 +45,7 @@ class HtmlToPdfConverterTest {
         when(pdfTemplateProcessor.buildSizeCss(Orientation.PORTRAIT, PaperSize.A4)).thenReturn("@page {size: test;}");
         when(htmlProcessor.replaceImagesAsBase64Encoded(anyString())).thenAnswer(invocation ->
                 invocation.getArgument(0));
-        when(htmlProcessor.internalizeCssLinks(anyString())).thenAnswer(a -> a.getArgument(0));
+        when(htmlProcessor.internalizeLinks(anyString())).thenAnswer(a -> a.getArgument(0));
         String resultHtml = htmlToPdfConverter.preprocessHtml(html, Orientation.PORTRAIT, PaperSize.A4);
 
         assertThat(resultHtml).isEqualTo("""
@@ -75,7 +75,7 @@ class HtmlToPdfConverterTest {
         when(pdfTemplateProcessor.buildSizeCss(Orientation.LANDSCAPE, PaperSize.A3)).thenReturn(" @page {size: test;}");
         when(htmlProcessor.replaceImagesAsBase64Encoded(anyString())).thenAnswer(invocation ->
                 invocation.getArgument(0));
-        when(htmlProcessor.internalizeCssLinks(anyString())).thenAnswer(a -> a.getArgument(0));
+        when(htmlProcessor.internalizeLinks(anyString())).thenAnswer(a -> a.getArgument(0));
         String resultHtml = htmlToPdfConverter.preprocessHtml(html, Orientation.LANDSCAPE, PaperSize.A3);
 
         assertThat(resultHtml).isEqualTo("""
@@ -108,7 +108,7 @@ class HtmlToPdfConverterTest {
         when(pdfTemplateProcessor.buildSizeCss(Orientation.LANDSCAPE, PaperSize.A3)).thenReturn(" @page {size: test;}");
         when(htmlProcessor.replaceImagesAsBase64Encoded(anyString())).thenAnswer(invocation ->
                 invocation.getArgument(0));
-        when(htmlProcessor.internalizeCssLinks(anyString())).thenAnswer(a -> a.getArgument(0));
+        when(htmlProcessor.internalizeLinks(anyString())).thenAnswer(a -> a.getArgument(0));
         String resultHtml = htmlToPdfConverter.preprocessHtml(html, Orientation.LANDSCAPE, PaperSize.A3);
 
         assertThat(resultHtml).isEqualTo("""
@@ -144,7 +144,7 @@ class HtmlToPdfConverterTest {
         when(pdfTemplateProcessor.buildSizeCss(Orientation.PORTRAIT, PaperSize.A4)).thenReturn("@page {size: test;}");
         when(htmlProcessor.replaceImagesAsBase64Encoded(anyString())).thenAnswer(invocation ->
                 invocation.getArgument(0));
-        when(htmlProcessor.internalizeCssLinks(anyString())).thenAnswer(a -> a.getArgument(0));
+        when(htmlProcessor.internalizeLinks(anyString())).thenAnswer(a -> a.getArgument(0));
         String resultHtml = htmlToPdfConverter.preprocessHtml(html, Orientation.PORTRAIT, PaperSize.A4);
 
         assertThat(resultHtml).isEqualTo("""
@@ -165,7 +165,7 @@ class HtmlToPdfConverterTest {
         when(pdfTemplateProcessor.buildSizeCss(Orientation.LANDSCAPE, PaperSize.A3)).thenReturn("@page {size: test;}");
         when(htmlProcessor.replaceImagesAsBase64Encoded(anyString())).thenAnswer(invocation ->
                 invocation.getArgument(0));
-        when(htmlProcessor.internalizeCssLinks(anyString())).thenAnswer(a -> a.getArgument(0));
+        when(htmlProcessor.internalizeLinks(anyString())).thenAnswer(a -> a.getArgument(0));
         when(weasyPrintConverter.convertToPdf(resultHtml, new WeasyPrintOptions(true))).thenReturn("test content".getBytes());
 
         byte[] result = htmlToPdfConverter.convert(origHtml, Orientation.LANDSCAPE, PaperSize.A3);

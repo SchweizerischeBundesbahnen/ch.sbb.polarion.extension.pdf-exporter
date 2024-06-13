@@ -18,7 +18,7 @@ public class HtmlLinksHelper {
 
     public HtmlLinksHelper(FileResourceProvider fileResourceProvider) {
         this (Set.of(
-                new CssLinkInternalizer(fileResourceProvider)
+                new ExternalCssInternalizer(fileResourceProvider)
         ));
     }
 
@@ -27,7 +27,7 @@ public class HtmlLinksHelper {
     }
 
     public String internalizeLinks(String htmlContent) {
-        boolean enablingProperty = PdfExporterExtensionConfiguration.getInstance().htmlInternalizeCssLinks();
+        boolean enablingProperty = PdfExporterExtensionConfiguration.getInstance().getInternalizeExternalCss();
         if (!enablingProperty) {
             return htmlContent;
         }

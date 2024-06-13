@@ -5,11 +5,11 @@ import ch.sbb.polarion.extension.pdf.exporter.util.FileResourceProvider;
 import java.util.Map;
 import java.util.Optional;
 
-public class CssLinkInternalizer implements LinkInternalizer {
+public class ExternalCssInternalizer implements LinkInternalizer {
     private static final String DATA_PRECEDENCE = "data-precedence";
     private final FileResourceProvider fileResourceProvider;
 
-    public CssLinkInternalizer(FileResourceProvider fileResourceProvider) {
+    public ExternalCssInternalizer(FileResourceProvider fileResourceProvider) {
         this.fileResourceProvider = fileResourceProvider;
     }
 

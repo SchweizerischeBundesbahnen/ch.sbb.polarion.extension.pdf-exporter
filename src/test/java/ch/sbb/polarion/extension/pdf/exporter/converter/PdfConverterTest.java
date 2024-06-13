@@ -90,6 +90,7 @@ class PdfConverterTest {
         when(velocityEvaluator.evaluateVelocityExpressions(eq(documentData), anyString())).thenAnswer(a -> a.getArguments()[1]);
         when(pdfTemplateProcessor.processUsing(eq(exportParams), eq("testDocument"), eq("css content"), anyString())).thenReturn("test html content");
         when(weasyPrintConverter.convertToPdf("test html content", new WeasyPrintOptions())).thenReturn("test document content".getBytes());
+        when(htmlProcessor.internalizeLinks(anyString())).thenAnswer(a -> a.getArgument(0));
 
         // Act
         byte[] result = pdfConverter.convertToPdf(exportParams, null);

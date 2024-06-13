@@ -231,7 +231,6 @@ public class HtmlProcessor {
 
         // Do not change this entry order, '&nbsp;' can be used in the logic above, so we must cut them off as the last step
         html = cutExtraNbsp(html);
-        html = internalizeCssLinks(html);
         return html;
     }
 
@@ -1141,7 +1140,7 @@ public class HtmlProcessor {
         return html;
     }
 
-    public String internalizeCssLinks(String html) {
+    public String internalizeLinks(String html) {
         return httpLinksHelper.internalizeLinks(html);
     }
 

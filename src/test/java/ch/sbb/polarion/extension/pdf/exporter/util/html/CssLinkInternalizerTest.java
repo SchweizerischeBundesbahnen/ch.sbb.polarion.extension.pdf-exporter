@@ -19,7 +19,7 @@ class CssLinkInternalizerTest {
     private FileResourceProvider fileResourceProvider;
 
     @InjectMocks
-    private CssLinkInternalizer cssLinkInliner;
+    private ExternalCssInternalizer cssLinkInliner;
 
 
     @Test

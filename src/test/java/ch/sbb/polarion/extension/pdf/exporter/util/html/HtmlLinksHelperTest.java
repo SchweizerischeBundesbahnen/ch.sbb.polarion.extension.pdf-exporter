@@ -34,7 +34,7 @@ class HtmlLinksHelperTest {
     void setup() {
         extensionConfigurationMockedStatic = mockStatic(PdfExporterExtensionConfiguration.class);
         extensionConfigurationMockedStatic.when(PdfExporterExtensionConfiguration::getInstance).thenReturn(pdfExporterExtensionConfiguration);
-        when(pdfExporterExtensionConfiguration.htmlInternalizeCssLinks()).thenReturn(true);
+        when(pdfExporterExtensionConfiguration.getInternalizeExternalCss()).thenReturn(true);
         htmlLinksHelper = new HtmlLinksHelper(Set.of(linkInternalizer1, linkInternalizer2));
     }
 
@@ -68,7 +68,7 @@ class HtmlLinksHelperTest {
 
     @Test
     void shouldReturnUnchangedHtmlWhenPropertyNotSet() {
-        when(pdfExporterExtensionConfiguration.htmlInternalizeCssLinks()).thenReturn(false);
+        when(pdfExporterExtensionConfiguration.getInternalizeExternalCss()).thenReturn(false);
         String resultHtml = htmlLinksHelper.internalizeLinks("""
                     <html lang='en'><head><link attr1="value1" attr2="value2">some content</head>""");
         assertThat(resultHtml).isEqualTo("""

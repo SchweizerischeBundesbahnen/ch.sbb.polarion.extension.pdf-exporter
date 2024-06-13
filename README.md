@@ -185,7 +185,7 @@ The converting HTML can contain some external CSS links referencing Polarion Ser
 ```
 In case the Polarion Server is not reachable from the Weasyprint service, such links cannot be successfully resolved during the Weasyprint PDF transformation. The solution is to replace external CSS <link> elements with internal CSS <style> tags containing the CSS content embedded into the HTML document. By default, CSS link internalization is disabled. To enable internalization of CSS links, it is necessary to activate the following property in the configuration file:
 ```properties
-ch.sbb.polarion.extension.pdf-exporter.html.internalize-css-links=true
+ch.sbb.polarion.extension.pdf-exporter.internalizeExternalCss=true
 ```
 
 ## Extension Configuration

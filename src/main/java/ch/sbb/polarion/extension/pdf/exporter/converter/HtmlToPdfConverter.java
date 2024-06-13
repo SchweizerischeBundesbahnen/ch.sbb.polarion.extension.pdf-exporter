@@ -80,7 +80,7 @@ public class HtmlToPdfConverter {
             html = replaceTagContent(origHtml, "head", head);
         }
         html = htmlProcessor.replaceImagesAsBase64Encoded(html);
-        html = htmlProcessor.internalizeCssLinks(html);
+        html = htmlProcessor.internalizeLinks(html);
 
         return html;
     }

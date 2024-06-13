@@ -97,6 +97,7 @@ public class PdfConverter {
         if (metaInfoCallback != null) {
             metaInfoCallback.setLinkedWorkItems(WorkItemRefData.extractListFromHtml(htmlContent, exportParams.getProjectId()));
         }
+        htmlContent = htmlProcessor.internalizeLinks(htmlContent);
 
         generationLog.log("Html is ready, starting pdf generation");
         byte[] bytes = generatePdf(documentData, exportParams, metaInfoCallback, htmlContent, generationLog);

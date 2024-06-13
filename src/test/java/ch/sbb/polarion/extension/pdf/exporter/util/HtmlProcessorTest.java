@@ -79,7 +79,6 @@ class HtmlProcessorTest {
     @SneakyThrows
     void cutLocalUrlsWithRolesFilteringTest() {
         when(localizationSettings.load(any(), any(SettingId.class))).thenReturn(new LocalizationModel(Collections.emptyMap(), Collections.emptyMap(), Collections.emptyMap()));
-        when(htmlLinksHelper.internalizeLinks(anyString())).thenAnswer(a -> a.getArgument(0));
 
         try (InputStream isInvalidHtml = this.getClass().getResourceAsStream("/cutLocalUrlsWithRolesFilteringBeforeProcessing.html");
              InputStream isValidHtml = this.getClass().getResourceAsStream("/cutLocalUrlsWithRolesFilteringAfterProcessing.html")) {
@@ -268,7 +267,6 @@ class HtmlProcessorTest {
     @Test
     @SneakyThrows
     void processHtmlForPDFTestCutEmptyWorkItemAttributesDisabled() {
-        when(htmlLinksHelper.internalizeLinks(anyString())).thenAnswer(a -> a.getArgument(0));
         try (InputStream isHtml = this.getClass().getResourceAsStream("/emptyWIAttributesBeforeProcessing.html")) {
 
             String html = new String(isHtml.readAllBytes(), StandardCharsets.UTF_8);
@@ -288,7 +286,6 @@ class HtmlProcessorTest {
     @Test
     void adjustHeadingForPDFTestH1ReplacedWithDiv() {
         String html = "<h1>First level heading</h1>";
-        when(htmlLinksHelper.internalizeLinks(anyString())).thenAnswer(a -> a.getArgument(0));
         String result = processor.processHtmlForPDF(html, getExportParams(), List.of());
         assertEquals("<div class=\"title\">First level heading</div>", result);
     }
@@ -296,7 +293,6 @@ class HtmlProcessorTest {
     @Test
     void adjustHeadingForPDFTestLiftHeadingTag() {
         String html = "<h2>First level heading</h2>";
-        when(htmlLinksHelper.internalizeLinks(anyString())).thenAnswer(a -> a.getArgument(0));
         String result = processor.processHtmlForPDF(html, getExportParams(), List.of());
         assertEquals("<h1>First level heading</h1>", result);
     }
