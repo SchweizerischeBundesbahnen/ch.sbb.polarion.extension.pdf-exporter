@@ -2,7 +2,7 @@
 name: maven-release
 on:
   push:
-    branches: [main, feature/**, renovate/**]
+    branches: ['**/**']
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -37,7 +37,7 @@ jobs:
                 "id": "githubDeploy",
                 "properties":
                 {
-                  "altDeploymentRepository": "github::default::https://maven.pkg.github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.extension-name"
+                  "altDeploymentRepository": "github::default::https://maven.pkg.github.com/${{ github.repository }}"
                 }
               }
             ]
@@ -57,13 +57,12 @@ jobs:
       - name: Print settings.xml
         run: cat /home/runner/.m2/settings.xml
       - name: Build with Maven
-        run: mvn --batch-mode clean package
+        run: mvn --batch-mode -DwpExporterImpl=docker clean package -P polarion2404,tests-with-weasyprint-docker
       - name: Extract artefact version
         id: artefact_version
-        run: echo "version=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)"
-          >> $GITHUB_OUTPUT
+        run: echo "version=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)" >> $GITHUB_OUTPUT
       - name: Publish to GitHub Packages
-        if: ${{ !endsWith(steps.artefact_version.outputs.version, '-SNAPSHOT') }}
+        if: ${{ !endsWith(steps.artefact_version.outputs.version, '-SNAPSHOT') && github.ref == 'refs/heads/main' }}
         run: mvn --batch-mode deploy -PgithubDeploy
         env:
           GITHUB_TOKEN: ${{ github.token }}

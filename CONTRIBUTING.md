@@ -84,7 +84,7 @@ Before you submit your Pull Request (PR) consider the following guidelines:
   Note: The optional commit `-a` command line option will automatically "add" and "rm" edited files.
 
   Note: The command line option `-S` generates a signed commit, which is required to make a contribution (See [Developer Certificate of Origin](./LICENSES/DCO.txt))
-  
+
 * Push your branch to GitHub:
 
     ```shell

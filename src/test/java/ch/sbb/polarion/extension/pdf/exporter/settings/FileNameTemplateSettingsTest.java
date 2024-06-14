@@ -1,5 +1,6 @@
 package ch.sbb.polarion.extension.pdf.exporter.settings;
 
+import ch.sbb.polarion.extension.generic.exception.ObjectNotFoundException;
 import ch.sbb.polarion.extension.generic.settings.GenericNamedSettings;
 import ch.sbb.polarion.extension.generic.settings.SettingId;
 import ch.sbb.polarion.extension.generic.settings.SettingsService;
@@ -14,6 +15,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.contains;
 import static org.mockito.Mockito.*;
@@ -21,10 +23,9 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class FileNameTemplateSettingsTest {
     @Test
-    void testLoadDefaultWhenSettingDoesNotExist() {
+    void testSettingDoesNotExist() {
         try (MockedStatic<ScopeUtils> mockScopeUtils = mockStatic(ScopeUtils.class)) {
             SettingsService mockedSettingsService = mock(SettingsService.class);
-            when(mockedSettingsService.exists(any())).thenReturn(true);
             mockScopeUtils.when(() -> ScopeUtils.getFileContent(any())).thenCallRealMethod();
 
             FileNameTemplateSettings fileNameTemplateSettings = new FileNameTemplateSettings(mockedSettingsService);
@@ -34,7 +35,6 @@ class FileNameTemplateSettingsTest {
             ILocation mockProjectLocation = mock(ILocation.class);
             when(mockProjectLocation.append(anyString())).thenReturn(mockProjectLocation);
             mockScopeUtils.when(() -> ScopeUtils.getContextLocationByProject(projectName)).thenReturn(mockProjectLocation);
-            when(mockedSettingsService.read(eq(mockProjectLocation), any())).thenReturn(null);
             mockScopeUtils.when(() -> ScopeUtils.getScopeFromProject(projectName)).thenCallRealMethod();
             mockScopeUtils.when(() -> ScopeUtils.getContextLocation("project/test_project/")).thenReturn(mockProjectLocation);
 
@@ -42,14 +42,10 @@ class FileNameTemplateSettingsTest {
             when(mockDefaultLocation.append(anyString())).thenReturn(mockDefaultLocation);
             mockScopeUtils.when(ScopeUtils::getDefaultLocation).thenReturn(mockDefaultLocation);
             mockScopeUtils.when(() -> ScopeUtils.getContextLocation("")).thenReturn(mockDefaultLocation);
-            FileNameTemplateModel model = fileNameTemplateSettings.defaultValues();
-            model.setBundleTimestamp("default");
-            when(mockedSettingsService.read(eq(mockDefaultLocation), any())).thenReturn(model.serialize());
 
-            FileNameTemplateModel loadedModel = fileNameTemplateSettings.load(projectName, SettingId.fromName("Any setting name"));
-            assertEquals(model.getDocumentNameTemplate(), loadedModel.getDocumentNameTemplate());
-            assertEquals(model.getReportNameTemplate(), loadedModel.getReportNameTemplate());
-            assertEquals("default", loadedModel.getBundleTimestamp());
+            assertThrows(ObjectNotFoundException.class, () -> {
+                FileNameTemplateModel loadedModel = fileNameTemplateSettings.load(projectName, SettingId.fromName("Any setting name"));
+            });
         }
     }
 
@@ -80,11 +76,8 @@ class FileNameTemplateSettingsTest {
             customProjectModel.setBundleTimestamp("custom");
             when(mockedSettingsService.read(eq(mockProjectLocation), any())).thenReturn(customProjectModel.serialize());
 
-            FileNameTemplateModel defaultProjectModel = FileNameTemplateModel.builder()
-                    .documentNameTemplate("defaultDocumentNameTemplate")
-                    .reportNameTemplate("defaultReportTemplate")
-                    .build();
-            defaultProjectModel.setBundleTimestamp("default");
+            when(mockedSettingsService.getLastRevision(mockProjectLocation)).thenReturn("345");
+            when(mockedSettingsService.getPersistedSettingFileNames(mockProjectLocation)).thenReturn(List.of("Any setting name"));
 
             FileNameTemplateModel loadedModel = exporterSettings.load(projectName, SettingId.fromName("Any setting name"));
             assertEquals("customDocumentNameTemplate", loadedModel.getDocumentNameTemplate());

@@ -1,5 +1,6 @@
 package ch.sbb.polarion.extension.pdf.exporter.settings;
 
+import ch.sbb.polarion.extension.generic.exception.ObjectNotFoundException;
 import ch.sbb.polarion.extension.generic.settings.GenericNamedSettings;
 import ch.sbb.polarion.extension.generic.settings.SettingId;
 import ch.sbb.polarion.extension.generic.settings.SettingsService;
@@ -17,6 +18,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.contains;
@@ -27,10 +29,9 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class StylePackageSettingsTest {
     @Test
-    void testLoadDefaultWhenSettingDoesNotExist() {
+    void testSettingDoesNotExist() {
         try (MockedStatic<ScopeUtils> mockScopeUtils = mockStatic(ScopeUtils.class)) {
             SettingsService mockedSettingsService = mock(SettingsService.class);
-            when(mockedSettingsService.exists(any())).thenReturn(true);
             mockScopeUtils.when(() -> ScopeUtils.getFileContent(any())).thenCallRealMethod();
 
             StylePackageSettings stylePackageSettings = new StylePackageSettings(mockedSettingsService);
@@ -40,7 +41,6 @@ class StylePackageSettingsTest {
             ILocation mockProjectLocation = mock(ILocation.class);
             when(mockProjectLocation.append(anyString())).thenReturn(mockProjectLocation);
             mockScopeUtils.when(() -> ScopeUtils.getContextLocationByProject(projectName)).thenReturn(mockProjectLocation);
-            when(mockedSettingsService.read(eq(mockProjectLocation), any())).thenReturn(null);
             mockScopeUtils.when(() -> ScopeUtils.getScopeFromProject(projectName)).thenCallRealMethod();
             mockScopeUtils.when(() -> ScopeUtils.getContextLocation("project/test_project/")).thenReturn(mockProjectLocation);
 
@@ -48,18 +48,10 @@ class StylePackageSettingsTest {
             when(mockDefaultLocation.append(anyString())).thenReturn(mockDefaultLocation);
             mockScopeUtils.when(ScopeUtils::getDefaultLocation).thenReturn(mockDefaultLocation);
             mockScopeUtils.when(() -> ScopeUtils.getContextLocation("")).thenReturn(mockDefaultLocation);
-            StylePackageModel model = stylePackageSettings.defaultValues();
-            model.setBundleTimestamp("default");
-            when(mockedSettingsService.read(eq(mockDefaultLocation), any())).thenReturn(model.serialize());
 
-            StylePackageModel loadedModel = stylePackageSettings.load(projectName, SettingId.fromName("Any setting name"));
-            assertEquals(model.getCss(), loadedModel.getCss());
-            assertEquals(model.getCoverPage(), loadedModel.getCoverPage());
-            assertEquals(model.getLanguage(), loadedModel.getLanguage());
-            assertEquals(model.getOrientation(), loadedModel.getOrientation());
-            assertEquals(model.getHeaderFooter(), loadedModel.getHeaderFooter());
-            assertEquals(model.getPaperSize(), loadedModel.getPaperSize());
-            assertEquals("default", loadedModel.getBundleTimestamp());
+            assertThrows(ObjectNotFoundException.class, () -> {
+                StylePackageModel loadedModel = stylePackageSettings.load(projectName, SettingId.fromName("Any setting name"));
+            });
         }
     }
 
@@ -90,6 +82,9 @@ class StylePackageSettingsTest {
                     .build();
             customProjectModel.setBundleTimestamp("custom");
             when(mockedSettingsService.read(eq(mockProjectLocation), any())).thenReturn(customProjectModel.serialize());
+
+            when(mockedSettingsService.getLastRevision(mockProjectLocation)).thenReturn("345");
+            when(mockedSettingsService.getPersistedSettingFileNames(mockProjectLocation)).thenReturn(List.of("Any setting name"));
 
             StylePackageModel loadedModel = stylePackageSettings.load(projectName, SettingId.fromName("Any setting name"));
             assertEquals("customCSS", loadedModel.getCss());
