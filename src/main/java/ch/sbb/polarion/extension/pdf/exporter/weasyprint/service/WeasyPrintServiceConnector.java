@@ -106,7 +106,7 @@ public class WeasyPrintServiceConnector implements WeasyPrintConverter {
     }
 
     public boolean hasVersionChanged(String actualVersion, AtomicReference<String> version) {
-        return (!isEmpty(actualVersion)
-                && !actualVersion.equals(version.getAndSet(actualVersion)));
+        return !isEmpty(actualVersion)
+                && !actualVersion.equals(version.getAndSet(actualVersion));
     }
 }
