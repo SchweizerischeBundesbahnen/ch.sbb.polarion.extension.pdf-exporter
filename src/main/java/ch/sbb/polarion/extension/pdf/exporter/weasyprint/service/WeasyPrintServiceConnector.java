@@ -97,7 +97,7 @@ public class WeasyPrintServiceConnector implements WeasyPrintConverter {
         String actualWeasyprintVersion = response.getHeaderString(WEASYPRINT_VERSION_HEADER);
         String actualPythonVersion = response.getHeaderString(PYTHON_VERSION_HEADER);
 
-        logWeasyPrintVersion(actualWeasyprintVersion, weasyPrintVersion, "Weasyprint");
+        logWeasyPrintVersion(actualWeasyprintVersion, weasyPrintVersion, "WeasyPrint");
         logWeasyPrintVersion(actualPythonVersion, pythonVersion, "Python");
     }
 
