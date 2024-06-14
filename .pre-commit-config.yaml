@@ -17,7 +17,7 @@ repos:
       - id: no-commit-to-branch
       - id: mixed-line-ending
   - repo: https://github.com/zricethezav/gitleaks
-    rev: v8.18.3
+    rev: v8.18.4
     hooks:
       - id: gitleaks
   - repo: https://github.com/grigoriev/pre-commit-check-git-user
