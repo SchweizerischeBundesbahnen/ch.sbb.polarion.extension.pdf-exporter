@@ -97,14 +97,16 @@ public class WeasyPrintServiceConnector implements WeasyPrintConverter {
         String actualWeasyPrintVersion = response.getHeaderString(WEASYPRINT_VERSION_HEADER);
         String actualPythonVersion = response.getHeaderString(PYTHON_VERSION_HEADER);
 
-        logWeasyPrintVersion(actualWeasyPrintVersion, weasyPrintVersion, "WeasyPrint");
-        logWeasyPrintVersion(actualPythonVersion, pythonVersion, "Python");
+        boolean hasWeasyPrintVersionChanged = hasVersionChanged(actualWeasyPrintVersion, weasyPrintVersion);
+        boolean hasPythonVersionChanged = hasVersionChanged(actualPythonVersion, pythonVersion);
+
+        if (hasWeasyPrintVersionChanged || hasPythonVersionChanged) {
+            logger.info(String.format("WeasyPrintService uses WeasyPrint version '%s' and Python version '%s'", actualWeasyPrintVersion, actualPythonVersion));
+        }
     }
 
-    public void logWeasyPrintVersion(String actualVersion, AtomicReference<String> version, String nameInMessage) {
-        if (!isEmpty(actualVersion)
-                && !actualVersion.equals(version.getAndSet(actualVersion))) {
-            logger.info(String.format("Using WeasyPrint Service with %s version: %s", nameInMessage, actualVersion));
-        }
+    public boolean hasVersionChanged(String actualVersion, AtomicReference<String> version) {
+        return (!isEmpty(actualVersion)
+                && !actualVersion.equals(version.getAndSet(actualVersion)));
     }
 }
