@@ -8,6 +8,7 @@ import ch.sbb.polarion.extension.pdf.exporter.rest.model.conversion.Orientation;
 import ch.sbb.polarion.extension.pdf.exporter.rest.model.conversion.PaperSize;
 import ch.sbb.polarion.extension.pdf.exporter.settings.LocalizationSettings;
 import ch.sbb.polarion.extension.pdf.exporter.util.exporter.CustomPageBreakPart;
+import ch.sbb.polarion.extension.pdf.exporter.util.html.HtmlLinksHelper;
 import com.polarion.alm.shared.util.StringUtils;
 import com.polarion.core.util.xml.CSSStyle;
 import lombok.SneakyThrows;
@@ -146,10 +147,12 @@ public class HtmlProcessor {
 
     private final FileResourceProvider fileResourceProvider;
     private final LocalizationSettings localizationSettings;
+    private final HtmlLinksHelper httpLinksHelper;
 
-    public HtmlProcessor(FileResourceProvider fileResourceProvider, LocalizationSettings localizationSettings) {
+    public HtmlProcessor(FileResourceProvider fileResourceProvider, LocalizationSettings localizationSettings, HtmlLinksHelper httpLinksHelper) {
         this.fileResourceProvider = fileResourceProvider;
         this.localizationSettings = localizationSettings;
+        this.httpLinksHelper = httpLinksHelper;
     }
 
     public String processHtmlForPDF(@NotNull String html, @NotNull ExportParams exportParams, @NotNull List<String> selectedRoleEnumValues) {
@@ -469,7 +472,7 @@ public class HtmlProcessor {
             String role = matcher.group("role");
             String roleSpan = matcher.group("roleSpan");
             if (selectedRoleEnumValues.contains(role)) {
-                if (filteredContent.length() > 0) {
+                if (!filteredContent.isEmpty()) {
                     filteredContent.append(",<br>");
                 }
                 filteredContent.append(roleSpan);
@@ -1135,6 +1138,10 @@ public class HtmlProcessor {
             }
         }
         return html;
+    }
+
+    public String internalizeLinks(String html) {
+        return httpLinksHelper.internalizeLinks(html);
     }
 
     @VisibleForTesting
