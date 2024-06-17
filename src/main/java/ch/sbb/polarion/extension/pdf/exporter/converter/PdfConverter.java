@@ -21,6 +21,7 @@ import ch.sbb.polarion.extension.pdf.exporter.util.PdfExporterFileResourceProvid
 import ch.sbb.polarion.extension.pdf.exporter.util.PdfExporterListStyleProvider;
 import ch.sbb.polarion.extension.pdf.exporter.util.PdfGenerationLog;
 import ch.sbb.polarion.extension.pdf.exporter.util.PdfTemplateProcessor;
+import ch.sbb.polarion.extension.pdf.exporter.util.html.HtmlLinksHelper;
 import ch.sbb.polarion.extension.pdf.exporter.util.placeholder.PlaceholderProcessor;
 import ch.sbb.polarion.extension.pdf.exporter.util.velocity.VelocityEvaluator;
 import ch.sbb.polarion.extension.pdf.exporter.weasyprint.WeasyPrintConverter;
@@ -65,7 +66,8 @@ public class PdfConverter {
         velocityEvaluator = new VelocityEvaluator();
         coverPageProcessor = new CoverPageProcessor();
         weasyPrintConverter = WeasyPrintConnectorFactory.getWeasyPrintExecutor();
-        htmlProcessor = new HtmlProcessor(new PdfExporterFileResourceProvider(), new LocalizationSettings());
+        PdfExporterFileResourceProvider fileResourceProvider = new PdfExporterFileResourceProvider();
+        htmlProcessor = new HtmlProcessor(fileResourceProvider, new LocalizationSettings(), new HtmlLinksHelper(fileResourceProvider));
         pdfTemplateProcessor = new PdfTemplateProcessor();
     }
 
@@ -95,6 +97,7 @@ public class PdfConverter {
         if (metaInfoCallback != null) {
             metaInfoCallback.setLinkedWorkItems(WorkItemRefData.extractListFromHtml(htmlContent, exportParams.getProjectId()));
         }
+        htmlContent = htmlProcessor.internalizeLinks(htmlContent);
 
         generationLog.log("Html is ready, starting pdf generation");
         byte[] bytes = generatePdf(documentData, exportParams, metaInfoCallback, htmlContent, generationLog);

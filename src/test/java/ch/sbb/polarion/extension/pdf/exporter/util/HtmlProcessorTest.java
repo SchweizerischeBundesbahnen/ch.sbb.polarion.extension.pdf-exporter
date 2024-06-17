@@ -9,6 +9,7 @@ import ch.sbb.polarion.extension.pdf.exporter.rest.model.conversion.PaperSize;
 import ch.sbb.polarion.extension.pdf.exporter.rest.model.settings.localization.Language;
 import ch.sbb.polarion.extension.pdf.exporter.rest.model.settings.localization.LocalizationModel;
 import ch.sbb.polarion.extension.pdf.exporter.settings.LocalizationSettings;
+import ch.sbb.polarion.extension.pdf.exporter.util.html.HtmlLinksHelper;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -25,7 +26,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -37,12 +39,14 @@ class HtmlProcessorTest {
     private FileResourceProvider fileResourceProvider;
     @Mock
     private LocalizationSettings localizationSettings;
+    @Mock
+    private HtmlLinksHelper htmlLinksHelper;
 
     private HtmlProcessor processor;
 
     @BeforeEach
     void init() {
-        processor = new HtmlProcessor(fileResourceProvider, localizationSettings);
+        processor = new HtmlProcessor(fileResourceProvider, localizationSettings, htmlLinksHelper);
         Map<String, String> deTranslations = Map.of(
                 "draft", "Entwurf",
                 "not reviewed", "Nicht überprüft"

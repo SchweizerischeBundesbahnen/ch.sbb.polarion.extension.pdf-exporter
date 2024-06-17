@@ -19,6 +19,7 @@ import ch.sbb.polarion.extension.pdf.exporter.util.HtmlProcessor;
 import ch.sbb.polarion.extension.pdf.exporter.util.LiveDocHelper;
 import ch.sbb.polarion.extension.pdf.exporter.util.MediaUtils;
 import ch.sbb.polarion.extension.pdf.exporter.util.PdfTemplateProcessor;
+import ch.sbb.polarion.extension.pdf.exporter.util.html.HtmlLinksHelper;
 import ch.sbb.polarion.extension.pdf.exporter.util.placeholder.PlaceholderProcessor;
 import ch.sbb.polarion.extension.pdf.exporter.util.velocity.VelocityEvaluator;
 import com.polarion.alm.projects.IProjectService;
@@ -100,9 +101,12 @@ class PdfConverterWeasyPrintTest extends BaseWeasyPrintTest {
 
         CoverPageProcessor coverPageProcessor = new CoverPageProcessor(placeholderProcessor, velocityEvaluator, weasyPrintConverter, coverPageSettings, new PdfTemplateProcessor());
 
+        HtmlLinksHelper htmlLinksHelper = mock(HtmlLinksHelper.class);
+        when(htmlLinksHelper.internalizeLinks(anyString())).thenAnswer(invocation -> invocation.getArgument(0));
+
         ExportParams params = ExportParams.builder().projectId("test").locationPath("testLocation").orientation(Orientation.PORTRAIT).paperSize(PaperSize.A4).build();
         PdfConverter converter = new PdfConverter(pdfExporterPolarionService, headerFooterSettings, cssSettings, liveDocHelper, placeholderProcessor, velocityEvaluator,
-                coverPageProcessor, weasyPrintConverter, new HtmlProcessor(null, localizationSettings), new PdfTemplateProcessor());
+                coverPageProcessor, weasyPrintConverter, new HtmlProcessor(null, localizationSettings, htmlLinksHelper), new PdfTemplateProcessor());
 
         compareContentUsingReferenceImages(testName + "_simple", converter.convertToPdf(params, null));
 
