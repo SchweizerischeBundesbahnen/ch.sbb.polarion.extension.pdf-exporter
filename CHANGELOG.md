@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.2.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v5.1.2...v5.2.0) (2024-06-18)
+
+
+### Features
+
+* Added links internalization ([#10](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/10)) ([8b75f41](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/8b75f41168a11c8f7f50d6660f83fc8dbf0e8f68))
+
 ## [5.1.2](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v5.1.1...v5.1.2) (2024-06-11)
 
 
