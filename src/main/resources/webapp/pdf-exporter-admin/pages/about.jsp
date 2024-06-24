@@ -28,7 +28,7 @@
     <title></title>
     <link rel="stylesheet" href="../ui/generic/css/common.css?bundle=<%= version.getBundleBuildTimestampDigitsOnly() %>">
     <link rel="stylesheet" href="../ui/generic/css/about.css?bundle=<%= version.getBundleBuildTimestampDigitsOnly() %>">
-    <link rel="stylesheet" href="../ui/html/help/configuration.css?bundle=<%= version.getBundleBuildTimestampDigitsOnly() %>">
+    <link rel="stylesheet" href="../ui/generic/css/github-markdown-light.css?bundle=<%= version.getBundleBuildTimestampDigitsOnly() %>">
 </head>
 
 <body>
@@ -126,13 +126,15 @@
 
         <input id="scope" type="hidden" value="<%= request.getParameter("scope")%>"/>
 
+        <article class="markdown-body">
         <%
-            try (InputStream inputStream = ExtensionInfo.class.getResourceAsStream("/webapp/pdf-exporter-admin/html/help/configuration.html")) {
+            try (InputStream inputStream = ExtensionInfo.class.getResourceAsStream("/webapp/pdf-exporter-admin/html/about.html")) {
                 assert inputStream != null;
                 String configurationHelp = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
                 out.println(configurationHelp);
             }
         %>
+        </article>
     </div>
 </div>
 </body>
