@@ -56,14 +56,8 @@ jobs:
             ]
       - name: Print settings.xml
         run: cat /home/runner/.m2/settings.xml
-      - name: Test Run of convert-readme.sh
-        run: .scripts/convert-readme.sh
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
       - name: Build with Maven
         run: mvn --batch-mode -DwpExporterImpl=docker clean package -P tests-with-weasyprint-docker
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
       - name: Extract artefact version
         id: artefact_version
         run: echo "version=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)" >> $GITHUB_OUTPUT
