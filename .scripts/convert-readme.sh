@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -xv
 
 INPUT_FILE=$1
 OUTPUT_FILE=$2
