@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 INPUT_FILE="${1:-README.md}"
 OUTPUT_FILE="${2:-README.html}"
 

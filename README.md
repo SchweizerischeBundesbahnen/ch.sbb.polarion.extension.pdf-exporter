@@ -17,7 +17,7 @@ To install the extension to Polarion `ch.sbb.polarion.extension.pdf-exporter-<ve
 should be copied to `<polarion_home>/polarion/extensions/ch.sbb.polarion.extension.pdf-exporter/eclipse/plugins`
 It can be done manually or automated using maven build:
 ```bash
-mvn clean install -P polarion2404,install-to-local-polarion
+mvn clean install -P install-to-local-polarion
 ```
 For automated installation with maven env variable `POLARION_HOME` should be defined and point to folder where Polarion is installed.
 
