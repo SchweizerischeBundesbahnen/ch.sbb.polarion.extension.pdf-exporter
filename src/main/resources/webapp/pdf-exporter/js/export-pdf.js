@@ -1,5 +1,7 @@
-const DEFAULT_SETTING_NAME = "Default";
-const DOC_PDF_CONVERSION_PULL_INTERVAL = 1000;
+consts = {
+    DEFAULT_SETTING_NAME: "Default",
+    DOC_PDF_CONVERSION_PULL_INTERVAL: 1000
+}
 
 function stylePackageChanged() {
     console.log("stylePackageChanged");
@@ -38,17 +40,17 @@ function stylePackageSelected(stylePackage) {
 
         document.getElementById("cover-page-checkbox").checked = !!stylePackage.coverPage;
         const coverPageSelector = document.getElementById("cover-page-selector");
-        coverPageSelector.value = containsOption(coverPageSelector, stylePackage.coverPage) ? stylePackage.coverPage : DEFAULT_SETTING_NAME;
+        coverPageSelector.value = containsOption(coverPageSelector, stylePackage.coverPage) ? stylePackage.coverPage : consts.DEFAULT_SETTING_NAME;
         coverPageSelector.style.display = !!stylePackage.coverPage ? "inline-block" : "none";
 
         const cssSelector = document.getElementById("css-selector");
-        cssSelector.value = containsOption(cssSelector, stylePackage.css) ? stylePackage.css : DEFAULT_SETTING_NAME;
+        cssSelector.value = containsOption(cssSelector, stylePackage.css) ? stylePackage.css : consts.DEFAULT_SETTING_NAME;
 
         const headerFooterSelector = document.getElementById("header-footer-selector");
-        headerFooterSelector.value = containsOption(headerFooterSelector, stylePackage.headerFooter) ? stylePackage.headerFooter : DEFAULT_SETTING_NAME;
+        headerFooterSelector.value = containsOption(headerFooterSelector, stylePackage.headerFooter) ? stylePackage.headerFooter : consts.DEFAULT_SETTING_NAME;
 
         const localizationSelector = document.getElementById("localization-selector");
-        localizationSelector.value = containsOption(localizationSelector, stylePackage.localization) ? stylePackage.localization : DEFAULT_SETTING_NAME;
+        localizationSelector.value = containsOption(localizationSelector, stylePackage.localization) ? stylePackage.localization : consts.DEFAULT_SETTING_NAME;
 
         document.getElementById("headers-color").value = stylePackage.headersColor;
         document.getElementById("paper-size-selector").value = stylePackage.paperSize || 'A4';
@@ -243,7 +245,7 @@ async function asyncConvertPdf(request, successCallback, errorCallback) {
 }
 
 async function pullAndGetResultPdf(url, successCallback, errorCallback) {
-    await new Promise(resolve => setTimeout(resolve, DOC_PDF_CONVERSION_PULL_INTERVAL));
+    await new Promise(resolve => setTimeout(resolve, consts.DOC_PDF_CONVERSION_PULL_INTERVAL));
     const xhr = new XMLHttpRequest();
     xhr.responseType = "blob";
     xhr.open("GET", url, true);
