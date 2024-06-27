@@ -156,6 +156,8 @@ public class HtmlProcessor {
     }
 
     public String processHtmlForPDF(@NotNull String html, @NotNull ExportParams exportParams, @NotNull List<String> selectedRoleEnumValues) {
+        html = html.replaceAll("\\$", "&dollar;");
+
         html = removePd4mlTags(html);
         html = html.replace("/ria/images/enums/", "/icons/default/enums/");
         html = html.replace("<p><br></p>", "<br/>");
@@ -559,13 +561,13 @@ public class HtmlProcessor {
     @SuppressWarnings({"java:S5869", "java:S6019"})
     String properTableHeads(@NotNull String html) {
         // Searches for all subsequent table rows (<tr>-tags) inside <tbody> which contain <th>-tags
-        // followed by a row which doesn't contain <th>.
+        // followed by a row which doesn't contain <th> (or closing </tbody> tag).
         // There are 2 groups in this regexp, first one is unnamed, containing <tbody> and <tr>-tags containing <th>-tags,
         // second one is named ("header") and contains those <tr>-tags which include <th>-tags. The regexp is ending
         // by positive lookahead "(?=<tr)" which doesn't take part in replacement.
         // The sense in this regexp is to find <tr>-tags containing <th>-tags and move it from <tbody> into <thead>,
         // for table headers to repeat on each page.
-        Pattern pattern = Pattern.compile("(<tbody>[^<]*(?<header><tr>[^<]*<th[\\s|\\S]*?))(?=<tr)");
+        Pattern pattern = Pattern.compile("(<tbody>[^<]*(?<header><tr>[^<]*<th[\\s|\\S]*?))(?=(<tr|</tbody))");
         Matcher matcher = pattern.matcher(html);
 
         StringBuilder buf = new StringBuilder();
