@@ -17,7 +17,7 @@ function check_command() {
 }
 
 # Check if required commands are installed
-check_command jq1
+check_command jq
 check_command curl
 check_command awk
 
