@@ -1,5 +1,19 @@
 # Changelog
 
+## [5.3.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v5.2.0...v5.3.0) (2024-06-27)
+
+
+### Features
+
+* content of about page now generated based on information from README.md ([#36](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/36)) ([46628ef](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/46628ef1372a6dd20a73016edf63924f7ed1605e))
+
+
+### Bug Fixes
+
+* repeated export leads to 'SyntaxError: Identifier as already been declared' ([2dd641d](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/2dd641dd21e0251031e1e8a7c502ac190324e31b))
+* repeated export leads to 'SyntaxError: Identifier as already been declared' ([#41](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/41)) ([2dd641d](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/2dd641dd21e0251031e1e8a7c502ac190324e31b)), closes [#34](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/34)
+* Replace dollar character by appropriate HTML entity ([#46](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/46)) ([28a8a89](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/28a8a89e46879241f24c66b440504f99ac5290f0)), closes [#42](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/42)
+
 ## [5.2.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v5.1.2...v5.2.0) (2024-06-18)
 
 
