@@ -168,7 +168,7 @@ public class PdfConverter {
         String content = placeholderProcessor.replacePlaceholders(documentData, exportParams, css);
         String processed = velocityEvaluator.evaluateVelocityExpressions(documentData, content);
 
-        return (exportParams.getDocumentType() == DocumentType.WIKI) ? appendWikiCss(processed) : processed;
+        return (exportParams.getDocumentType() != DocumentType.DOCUMENT) ? appendWikiCss(processed) : processed;
     }
 
     @VisibleForTesting
