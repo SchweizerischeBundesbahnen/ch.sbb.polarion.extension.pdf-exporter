@@ -34,7 +34,7 @@ jobs:
           profiles: >
             [
               {
-                "id": "githubDeploy",
+                "id": "deploy-github-packages",
                 "properties":
                 {
                   "altDeploymentRepository": "github::default::https://maven.pkg.github.com/${{ github.repository }}"
@@ -63,8 +63,11 @@ jobs:
       - name: Extract artefact version
         id: artefact_version
         run: echo "version=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)" >> $GITHUB_OUTPUT
+      - name: Publish to Maven Central
+        if: ${{ !endsWith(steps.artefact_version.outputs.version, '-SNAPSHOT') && github.ref == 'refs/heads/main' }}
+        run: mvn --batch-mode deploy -P gpg-sign -P nexus-staging
       - name: Publish to GitHub Packages
         if: ${{ !endsWith(steps.artefact_version.outputs.version, '-SNAPSHOT') && github.ref == 'refs/heads/main' }}
-        run: mvn --batch-mode deploy -PgithubDeploy
+        run: mvn --batch-mode deploy -P gpg-sign -P deploy-github-packages
         env:
           GITHUB_TOKEN: ${{ github.token }}

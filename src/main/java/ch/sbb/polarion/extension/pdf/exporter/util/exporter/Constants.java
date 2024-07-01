@@ -3,7 +3,7 @@ package ch.sbb.polarion.extension.pdf.exporter.util.exporter;
 public final class Constants {
 
     /**
-     * Heading tag minimum priority (<h6>).
+     * Heading tag minimum priority (&lt;h6&gt;).
      */
     public static final int H_TAG_MIN_PRIORITY = 6;
 
