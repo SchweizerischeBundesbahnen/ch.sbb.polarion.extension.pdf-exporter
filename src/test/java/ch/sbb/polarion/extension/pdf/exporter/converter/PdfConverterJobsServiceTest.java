@@ -73,6 +73,13 @@ class PdfConverterJobsServiceTest {
         JobState jobState = pdfConverterJobsService.getJobState(jobId);
         assertThat(jobState.isCompletedExceptionally()).isFalse();
         assertThat(jobState.isCancelled()).isFalse();
+        Optional<byte[]> jobResult = pdfConverterJobsService.getJobResult(jobId);
+        assertThat(jobResult).isNotEmpty();
+        assertThat(new String(jobResult.get())).isEqualTo("test pdf");
+
+        assertThatThrownBy(() -> pdfConverterJobsService.getJobState(jobId))
+                .isInstanceOf(NoSuchElementException.class)
+                .hasMessageContaining(jobId);
         verify(securityService).logout(subject);
     }
 
@@ -95,31 +102,10 @@ class PdfConverterJobsServiceTest {
     }
 
     @Test
-    void shouldReturnResultAndCleanJob() {
-        prepareSecurityServiceSubject(subject);
-        when(requestAttributes.getAttribute(LogoutFilter.ASYNC_SKIP_LOGOUT, RequestAttributes.SCOPE_REQUEST)).thenReturn(Boolean.TRUE);
-        ExportParams exportParams = ExportParams.builder().build();
-        when(pdfConverter.convertToPdf(exportParams, null)).thenReturn("test pdf".getBytes());
-
-        String jobId = pdfConverterJobsService.startJob(exportParams, 60);
-
-        assertThat(jobId).isNotBlank();
-        waitToFinishJob(jobId);
-        Optional<byte[]> jobResult = pdfConverterJobsService.getJobResult(jobId);
-        assertThat(jobResult).isNotEmpty();
-        assertThat(new String(jobResult.get())).isEqualTo("test pdf");
-
-        assertThatThrownBy(() -> pdfConverterJobsService.getJobState(jobId))
-                .isInstanceOf(NoSuchElementException.class)
-                .hasMessageContaining(jobId);
-        verify(securityService).logout(subject);
-    }
-
-    @Test
     void shouldGetAllJobsStatuses() {
         prepareSecurityServiceSubject(subject);
         ExportParams exportParams = ExportParams.builder().build();
-        when(pdfConverter.convertToPdf(exportParams, null)).thenReturn("test pdf".getBytes());
+        lenient().when(pdfConverter.convertToPdf(exportParams, null)).thenReturn("test pdf".getBytes());
 
         String jobId1 = pdfConverterJobsService.startJob(exportParams, 60);
         String jobId2 = pdfConverterJobsService.startJob(exportParams, 60);
