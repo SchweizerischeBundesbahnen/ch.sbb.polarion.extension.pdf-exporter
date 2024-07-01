@@ -25,6 +25,8 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class PdfExporterRestApplication extends GenericRestApplication {
     private final Logger logger = Logger.getLogger(PdfExporterRestApplication.class);
@@ -56,34 +58,34 @@ public class PdfExporterRestApplication extends GenericRestApplication {
         logger.debug("PDF-Exporter REST Application has been created");
     }
 
-    // By default, separate instance of controllers will be created per request
-    // To use single controller instance for all requests, the Application.getSingletons() must be overriden and return controller instances
     @Override
     @NotNull
-    protected Set<Class<?>> getControllerClasses() {
-        final Set<Class<?>> controllerClasses = super.getControllerClasses();
-        controllerClasses.addAll(Set.of(
-                ConverterApiController.class,
-                ConverterInternalController.class,
-                SettingsApiController.class,
-                SettingsInternalController.class,
-                UtilityResourcesApiController.class,
-                UtilityResourcesInternalController.class
-        ));
-        return controllerClasses;
+    protected Set<Object> getControllerSingletons() {
+        final Set<Object> standardControllers = super.getControllerSingletons();
+        final Set<Object> extensionControllers = Set.of(
+                new ConverterApiController(),
+                new ConverterInternalController(),
+                new SettingsApiController(),
+                new SettingsInternalController(),
+                new UtilityResourcesApiController(),
+                new UtilityResourcesInternalController()
+        );
+        return Stream.concat(standardControllers.stream(), extensionControllers.stream())
+                .collect(Collectors.toSet());
     }
 
     @Override
     @NotNull
-    protected Set<Class<?>> getExceptionMappers() {
-        final Set<Class<?>> exceptionMappers = super.getExceptionMappers();
-        exceptionMappers.addAll(Set.of(
-                XLIFFExceptionMapper.class,
-                UnresolvableObjectExceptionMapper.class,
-                WrapperExceptionMapper.class,
-                IllegalStateExceptionMapper.class,
-                NoSuchElementExceptionMapper.class
-        ));
-        return exceptionMappers;
+    protected Set<Object> getExceptionMapperSingletons() {
+        final Set<Object> standardExceptionMappers = super.getExceptionMapperSingletons();
+        final Set<Object> extensionExceptionMappers = Set.of(
+                new XLIFFExceptionMapper(),
+                new UnresolvableObjectExceptionMapper(),
+                new WrapperExceptionMapper(),
+                new IllegalStateExceptionMapper(),
+                new NoSuchElementExceptionMapper()
+        );
+        return Stream.concat(standardExceptionMappers.stream(), extensionExceptionMappers.stream())
+                .collect(Collectors.toSet());
     }
 }
