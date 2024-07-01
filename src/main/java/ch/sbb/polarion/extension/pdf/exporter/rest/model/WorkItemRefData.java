@@ -24,7 +24,7 @@ public class WorkItemRefData {
     private String revision;
 
     /**
-     * Finds tags like <div id="polarion_wiki macro name=module-workitem;params=id=DP-477|layout=1|external=true|project=drivepilot|revision=7871|anchor=babb7126-c0a80111-651e5b30-4062292e"></div>
+     * Finds tags like &lt;div id="polarion_wiki macro name=module-workitem;params=id=DP-477|layout=1|external=true|project=drivepilot|revision=7871|anchor=babb7126-c0a80111-651e5b30-4062292e"&gt;&lt;/div&gt;
      * and extracts WorkItem references data.
      */
     @SuppressWarnings({"java:S5843", "java:S5855"}) //this regex is necessary according to logic

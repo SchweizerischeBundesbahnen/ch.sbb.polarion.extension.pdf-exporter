@@ -9,7 +9,6 @@ import ch.sbb.polarion.extension.pdf.exporter.rest.controller.SettingsApiControl
 import ch.sbb.polarion.extension.pdf.exporter.rest.controller.SettingsInternalController;
 import ch.sbb.polarion.extension.pdf.exporter.rest.controller.UtilityResourcesApiController;
 import ch.sbb.polarion.extension.pdf.exporter.rest.controller.UtilityResourcesInternalController;
-import ch.sbb.polarion.extension.pdf.exporter.rest.exception.IllegalStateExceptionMapper;
 import ch.sbb.polarion.extension.pdf.exporter.rest.exception.NoSuchElementExceptionMapper;
 import ch.sbb.polarion.extension.pdf.exporter.rest.exception.UnresolvableObjectExceptionMapper;
 import ch.sbb.polarion.extension.pdf.exporter.rest.exception.WrapperExceptionMapper;
@@ -56,34 +55,25 @@ public class PdfExporterRestApplication extends GenericRestApplication {
         logger.debug("PDF-Exporter REST Application has been created");
     }
 
-    // By default, separate instance of controllers will be created per request
-    // To use single controller instance for all requests, the Application.getSingletons() must be overriden and return controller instances
     @Override
-    @NotNull
-    protected Set<Class<?>> getControllerClasses() {
-        final Set<Class<?>> controllerClasses = super.getControllerClasses();
-        controllerClasses.addAll(Set.of(
-                ConverterApiController.class,
-                ConverterInternalController.class,
-                SettingsApiController.class,
-                SettingsInternalController.class,
-                UtilityResourcesApiController.class,
-                UtilityResourcesInternalController.class
-        ));
-        return controllerClasses;
+    protected @NotNull Set<Object> getExtensionControllerSingletons() {
+        return Set.of(
+                new ConverterApiController(),
+                new ConverterInternalController(),
+                new SettingsApiController(),
+                new SettingsInternalController(),
+                new UtilityResourcesApiController(),
+                new UtilityResourcesInternalController()
+        );
     }
 
     @Override
-    @NotNull
-    protected Set<Class<?>> getExceptionMappers() {
-        final Set<Class<?>> exceptionMappers = super.getExceptionMappers();
-        exceptionMappers.addAll(Set.of(
-                XLIFFExceptionMapper.class,
-                UnresolvableObjectExceptionMapper.class,
-                WrapperExceptionMapper.class,
-                IllegalStateExceptionMapper.class,
-                NoSuchElementExceptionMapper.class
-        ));
-        return exceptionMappers;
+    protected @NotNull Set<Object> getExtensionExceptionMapperSingletons() {
+        return Set.of(
+                new XLIFFExceptionMapper(),
+                new UnresolvableObjectExceptionMapper(),
+                new WrapperExceptionMapper(),
+                new NoSuchElementExceptionMapper()
+        );
     }
 }

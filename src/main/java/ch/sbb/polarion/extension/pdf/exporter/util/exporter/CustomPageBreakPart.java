@@ -25,8 +25,8 @@ public class CustomPageBreakPart extends PageBreakPart {
     }
 
     /**
-     * Initially polarion inserts <pd4ml:page.break> loosing orientation selected by user.
-     * So instead of <pd4ml:page.break> we put specific markers which later will help us to generate proper html.
+     * Initially polarion inserts &lt;pd4ml:page.break&gt; loosing orientation selected by user.
+     * So instead of &lt;pd4ml:page.break&gt; we put specific markers which later will help us to generate proper html.
      */
     @Override
     @SneakyThrows
