@@ -12,6 +12,37 @@
     <version>5.3.1-SNAPSHOT</version>
     <packaging>jar</packaging>
 
+    <name>Polarion ALM extension to convert Documents to PDF files</name>
+    <description>This Polarion extension provides possibility to convert Polarion Documents to PDF files. This is an alternative to native Polarion's solution.</description>
+    <url>https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter</url>
+
+    <licenses>
+        <license>
+            <name>The SBB License, Version 1.0</name>
+            <url>https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/blob/main/LICENSES/SBB.txt</url>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <name>SBB Polarion Team</name>
+            <email>polarion-opensource@sbb.ch</email>
+            <organization>SBB AG</organization>
+            <organizationUrl>http://www.sbb.ch</organizationUrl>
+        </developer>
+    </developers>
+
+    <scm>
+        <connection>scm:git:git://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter.git</connection>
+        <developerConnection>scm:git:ssh://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter.git</developerConnection>
+        <url>http://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/tree/main</url>
+    </scm>
+
+    <issueManagement>
+        <system>GitHub</system>
+        <url>https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues</url>
+    </issueManagement>
+
     <properties>
         <pdfbox.version>3.0.2</pdfbox.version>
         <okapi.xliff.version>1.46.0</okapi.xliff.version>
