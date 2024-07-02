@@ -17,6 +17,7 @@ jobs:
           distribution: adopt
           java-version: 17
           cache: maven
+          gpg-private-key: ${{ secrets.COM_SONATYPE_CENTRAL_POLARION_OPENSOURCE_GPG_PRIVATE_KEY }}
       - uses: whelk-io/maven-settings-xml-action@9dc09b23833fa9aa7f27b63db287951856f3433d  # v22
         with:
           repositories: >
@@ -31,16 +32,6 @@ jobs:
                 }
               }
             ]
-          profiles: >
-            [
-              {
-                "id": "deploy-github-packages",
-                "properties":
-                {
-                  "altDeploymentRepository": "github::default::https://maven.pkg.github.com/${{ github.repository }}"
-                }
-              }
-            ]
           servers: >
             [
               {
@@ -52,6 +43,25 @@ jobs:
                 "id": "github",
                 "username": "${env.GITHUB_ACTOR}",
                 "password": "${env.GITHUB_TOKEN}"
+              },
+              {
+                "id": "ossrh",
+                "username": "${{ secrets.COM_SONATYPE_CENTRAL_POLARION_OPENSOURCE_USERNAME }}",
+                "password": "${{ secrets.COM_SONATYPE_CENTRAL_POLARION_OPENSOURCE_TOKEN }}"
+              },
+              {
+                "id": "gpg.passphrase",
+                "passphrase": "${{ secrets.COM_SONATYPE_CENTRAL_POLARION_OPENSOURCE_GPG_PASSPHRASE }}"
+              }
+            ]
+          profiles: >
+            [
+              {
+                "id": "deploy-github-packages",
+                "properties":
+                {
+                  "altDeploymentRepository": "github::default::https://maven.pkg.github.com/${{ github.repository }}"
+                }
               }
             ]
       - name: Print settings.xml
