@@ -144,7 +144,7 @@ const PdfExporter = {
                 this.actionInProgress({inProgress: false});
             });
         }).catch((error) => {
-            this.showNotification({alertType: "error", message: "Error occurred loading form data" + (error.responseText ? ":<br>" + error.responseText : "")});
+            this.showNotification({alertType: "error", message: "Error occurred loading form data" + (error.response.message ? ":<br>" + error.response.message : "")});
             this.actionInProgress({inProgress: false});
         });
     },
@@ -268,7 +268,7 @@ const PdfExporter = {
 
                 this.actionInProgress({inProgress: false});
             }).catch((error) => {
-                this.showNotification({alertType: "error", message: "Error occurred loading style package data" + (error.responseText ? ":<br>" + error.responseText : "")});
+                this.showNotification({alertType: "error", message: "Error occurred loading style package data" + (error.response.message ? ":<br>" + error.response.message : "")});
                 this.actionInProgress({inProgress: false});
             });
         }
@@ -372,9 +372,7 @@ const PdfExporter = {
                 this.showValidationResult({alertType: "success", message: "All pages are valid"});
             }
         }).catch((error) => {
-            error.response.text().then(text => {
-                this.showNotification({alertType: "error", message: "Error occurred validating pages width" + (text ? ":<br>" + text : "")});
-            });
+            this.showNotification({alertType: "error", message: "Error occurred validating pages width" + (error.response.message ? ":<br>" + error.response.message : "")});
             this.actionInProgress({inProgress: false});
         })
     },
@@ -438,8 +436,8 @@ const PdfExporter = {
             this.checkNestedListsAsync(requestBody);
         }
 
-        this.asyncConvertPdf(requestBody, response => {
-            const objectURL = (window.URL ? window.URL : window.webkitURL).createObjectURL(response);
+        this.asyncConvertPdf(requestBody, successResponse => {
+            const objectURL = (window.URL ? window.URL : window.webkitURL).createObjectURL(successResponse);
             const anchorElement = document.createElement("a");
             anchorElement.href = objectURL;
             anchorElement.download = filename;
@@ -450,9 +448,11 @@ const PdfExporter = {
 
             this.showNotification({alertType: "success", message: "PDF was successfully generated"});
             this.actionInProgress({inProgress: false});
-        }, response => {
-            response.text().then(text => {
-                this.showNotification({alertType: "error", message: "Error occurred during PDF generation" + (text ? ":<br>" + text : "")});
+        }, errorResponse => {
+            errorResponse.text().then(errorJson => {
+                const error = errorJson && JSON.parse(errorJson);
+                const errorMessage = error && (error.message ? error.message : error.errorMessage);
+                this.showNotification({alertType: "error", message: "Error occurred during PDF generation" + (errorMessage ? ":<br>" + errorMessage : "")});
             });
             this.actionInProgress({inProgress: false});
         });
@@ -504,7 +504,7 @@ const PdfExporter = {
                 this.showNotification({alertType: "warning", message: "Document contains nested numbered lists which structures were not valid. We tried to fix this, but be aware of it."});
             }
         }).catch((error) => {
-            this.showNotification({alertType: "error", message: "Error occurred validating nested lists" + (error.responseText ? ":<br>" + error.responseText : "")});
+            this.showNotification({alertType: "error", message: "Error occurred validating nested lists" + (error.response.message ? ":<br>" + error.response.message : "")});
         })
     },
 
