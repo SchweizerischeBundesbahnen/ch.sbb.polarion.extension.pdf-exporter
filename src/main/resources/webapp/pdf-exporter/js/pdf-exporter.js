@@ -436,8 +436,8 @@ const PdfExporter = {
             this.checkNestedListsAsync(requestBody);
         }
 
-        this.asyncConvertPdf(requestBody, response => {
-            const objectURL = (window.URL ? window.URL : window.webkitURL).createObjectURL(response);
+        this.asyncConvertPdf(requestBody, successResponse => {
+            const objectURL = (window.URL ? window.URL : window.webkitURL).createObjectURL(successResponse);
             const anchorElement = document.createElement("a");
             anchorElement.href = objectURL;
             anchorElement.download = filename;
@@ -448,12 +448,11 @@ const PdfExporter = {
 
             this.showNotification({alertType: "success", message: "PDF was successfully generated"});
             this.actionInProgress({inProgress: false});
-        }, response => {
-            response.text().then(text => {
-                if (response.type === "application/json") {
-                    text = JSON.parse(text).message
-                }
-                this.showNotification({alertType: "error", message: "Error occurred during PDF generation" + (text ? ":<br>" + text : "")});
+        }, errorResponse => {
+            errorResponse.text().then(errorJson => {
+                const error = errorJson && JSON.parse(errorJson);
+                const errorMessage = error && (error.message ? error.message : error.errorMessage);
+                this.showNotification({alertType: "error", message: "Error occurred during PDF generation" + (errorMessage ? ":<br>" + errorMessage : "")});
             });
             this.actionInProgress({inProgress: false});
         });

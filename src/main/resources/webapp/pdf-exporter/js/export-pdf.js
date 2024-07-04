@@ -204,13 +204,13 @@ function loadPdf(projectId, locationPath) {
                 "We did our best to fix it, but be aware of it.");
         } else {
             //display error body content
-            $("#export-error").append(listsCheckXhr.response.message);
+            $("#export-error").append("Error occurred validating nested lists" + (listsCheckXhr.response.message ? ":<br>" + listsCheckXhr.response.message : ""));
         }
     }
 
-    asyncConvertPdf(request, response => {
+    asyncConvertPdf(request, successResponse => {
         actionInProgress(false);
-        const objectURL = (window.URL ? window.URL : window.webkitURL).createObjectURL(response);
+        const objectURL = (window.URL ? window.URL : window.webkitURL).createObjectURL(successResponse);
         const anchorElement = document.createElement("a");
         anchorElement.href = objectURL;
         anchorElement.download = filename;
@@ -218,14 +218,12 @@ function loadPdf(projectId, locationPath) {
         anchorElement.click();
         anchorElement.remove();
         setTimeout(() => URL.revokeObjectURL(objectURL), 100);
-    }, response => {
+    }, errorResponse => {
         actionInProgress(false);
-        response.text().then(text => {
-            if (response.type === "application/json") {
-                json = JSON.parse(text)
-                text =  json.message ? json.message : json.errorMessage
-            }
-            $("#export-error").append(text);
+        errorResponse.text().then(errorJson => {
+            const error = errorJson && JSON.parse(errorJson);
+            const errorMessage = error && (error.message ? error.message : error.errorMessage);
+            $("#export-error").append("Error occurred during PDF generation" + (errorMessage ? ":<br>" + errorMessage : ""));
         });
     });
 }
@@ -348,7 +346,7 @@ function validatePdf(projectId, locationPath) {
             }
         } else {
             //display error body content
-            $("#validate-error").append(xhr.response.message);
+            $("#validate-error").append("Error occurred validating pages width" + (xhr.response.message ? ":<br>" + xhr.response.message : ""));
         }
     };
 }
