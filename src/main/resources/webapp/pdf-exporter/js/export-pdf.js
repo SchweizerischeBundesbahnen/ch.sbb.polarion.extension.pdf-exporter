@@ -204,9 +204,7 @@ function loadPdf(projectId, locationPath) {
                 "We did our best to fix it, but be aware of it.");
         } else {
             //display error body content
-            listsCheckXhr.response.text().then(text => {
-                $("#export-error").append(text);
-            });
+            $("#export-error").append(listsCheckXhr.response.message);
         }
     }
 
@@ -223,7 +221,10 @@ function loadPdf(projectId, locationPath) {
     }, response => {
         actionInProgress(false);
         response.text().then(text => {
-             $("#export-error").append(text);
+            if (response.type === "application/json") {
+                text = JSON.parse(text).message
+            }
+            $("#export-error").append(text);
         });
     });
 }
@@ -346,9 +347,7 @@ function validatePdf(projectId, locationPath) {
             }
         } else {
             //display error body content
-            xhr.response.text().then(text => {
-                $("#validate-error").append(text);
-            });
+            $("#validate-error").append(xhr.response.message);
         }
     };
 }
