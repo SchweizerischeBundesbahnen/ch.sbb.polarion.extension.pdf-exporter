@@ -1,5 +1,21 @@
 # Changelog
 
+## [5.4.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v5.3.0...v5.4.0) (2024-07-04)
+
+
+### Features
+
+* migrate to generic v6.0.1 ([#55](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/55)) ([266f527](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/266f52703dbc5aefe7e337ea5a832402eedfefc6))
+
+
+### Bug Fixes
+
+* check if required commands are available ([#49](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/49)) ([b7d702a](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/b7d702afa526b36c2cfc6f00ac97d02c765b40e0))
+* **deps:** update dependency ch.sbb.polarion.extensions:ch.sbb.polarion.extension.generic to v6.0.2 ([797ae72](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/797ae7263a9424a74f069ff0cf6dc28a9f993e8b))
+* Fixed exception handling. ([#60](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/60)) ([5192e8a](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/5192e8a94fac2f3eec1ca19c246eeee49fedef7b))
+* Fixed unstable JobsService test ([#52](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/52)) ([3fb7fdc](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/3fb7fdc391aea8aebc3571e22dca23fe6e30b86f)), closes [#51](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/51)
+* missing styles for some reports components ([#54](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/54)) ([9b54da4](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/9b54da4bee44d9befe93514a28fda2a1b53e589b)), closes [#35](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/35)
+
 ## [5.3.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v5.2.0...v5.3.0) (2024-06-27)
 
 
