@@ -222,7 +222,8 @@ function loadPdf(projectId, locationPath) {
         actionInProgress(false);
         response.text().then(text => {
             if (response.type === "application/json") {
-                text = JSON.parse(text).message
+                json = JSON.parse(text)
+                text =  json.message ? json.message : json.errorMessage
             }
             $("#export-error").append(text);
         });
