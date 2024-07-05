@@ -1,6 +1,7 @@
 package ch.sbb.polarion.extension.pdf.exporter.util;
 
 import ch.sbb.polarion.extension.pdf.exporter.model.LiveDocComment;
+import ch.sbb.polarion.extension.pdf.exporter.util.regex.RegexMatcher;
 import com.polarion.alm.server.api.model.document.ProxyDocument;
 import com.polarion.alm.shared.api.model.comment.CommentBase;
 import com.polarion.alm.shared.api.model.comment.CommentBaseFields;
@@ -22,8 +23,6 @@ import java.text.SimpleDateFormat;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 @SuppressWarnings("java:S1200")
 public class LiveDocCommentsProcessor {
@@ -82,18 +81,11 @@ public class LiveDocCommentsProcessor {
         //<span id="polarion-comment:1"></span>"
         //Following expression retrieves such spans.
         final Map<String, LiveDocComment> liveDocComments = getCommentsFromDocument(document);
-        Pattern pattern = Pattern.compile("(?s)(<span id=\"polarion-comment:(?<commentId>\\d+)\"></span>)");
-        Matcher matcher = pattern.matcher(html);
-        StringBuilder buf = new StringBuilder();
-        while (matcher.find()) {
-            String commentId = matcher.group("commentId");
+        return RegexMatcher.get("(?s)(<span id=\"polarion-comment:(?<commentId>\\d+)\"></span>)").replace(html, regexEngine -> {
+            String commentId = regexEngine.group("commentId");
             LiveDocComment liveDocComment = liveDocComments.get(commentId);
-            if (liveDocComment != null) {
-                matcher.appendReplacement(buf, renderComment(liveDocComment, 0));
-            }
-        }
-        matcher.appendTail(buf);
-        return buf.toString();
+            return liveDocComment == null ? null : renderComment(liveDocComment, 0);
+        });
     }
 
     private String renderComment(LiveDocComment liveDocComment, int nestingLevel) {

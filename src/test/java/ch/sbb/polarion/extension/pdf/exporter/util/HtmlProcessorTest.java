@@ -220,6 +220,23 @@ class HtmlProcessorTest {
 
     @Test
     @SneakyThrows
+    void replaceImagesUrlUnderscoreReplacementTest() {
+        // feed the url with the encoded underscore in the src attribute
+        String html = "<div><img id=\"image\" src=\"http://localhost/some-path/img%5Fname.png\"/></div>";
+        byte[] imgBytes;
+        try (InputStream is = this.getClass().getResourceAsStream("/test_img.png")) {
+            imgBytes = is != null ? is.readAllBytes() : new byte[0];
+        }
+        // return proper data only for URL containing decoded underscore symbol
+        lenient().doReturn(imgBytes).when(fileResourceProvider).getResourceAsBytes(eq("http://localhost/some-path/img_name.png"));
+        // return empty content for non-escaped URL
+        lenient().doReturn(new byte[0]).when(fileResourceProvider).getResourceAsBytes("http://localhost/some-path/img%5Fname.png");
+        String result = processor.replaceImagesAsBase64Encoded(html);
+        assertEquals("<div><img id=\"image\" src=\"data:image/png;base64, " + Base64.getEncoder().encodeToString(imgBytes) + "\"/></div>", result);
+    }
+
+    @Test
+    @SneakyThrows
     void replaceSvgImagesAsBase64EncodedTest() {
         String html = "<div><img id=\"image\" src=\"http://localhost/some-path/img.svg\"/></div>";
         byte[] imgBytes;

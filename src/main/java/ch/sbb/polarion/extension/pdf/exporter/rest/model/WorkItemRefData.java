@@ -1,5 +1,6 @@
 package ch.sbb.polarion.extension.pdf.exporter.rest.model;
 
+import ch.sbb.polarion.extension.pdf.exporter.util.regex.RegexMatcher;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -11,8 +12,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 @Data
 @AllArgsConstructor
@@ -30,16 +29,15 @@ public class WorkItemRefData {
     @SuppressWarnings({"java:S5843", "java:S5855"}) //this regex is necessary according to logic
     public static List<WorkItemRefData> extractListFromHtml(String html, String defaultProject) {
         Set<WorkItemRefData> refs = new LinkedHashSet<>();
-        Pattern pattern = Pattern.compile("name=module-workitem;params=(id=(?<id>[\\w\\-]+)|[|]|layout=(?<layout>[\\w\\-]+)|project=(?<project>[\\w\\-]+)|revision=(?<revision>[\\w\\-]+)|[^\"])+");
-        Matcher matcher = pattern.matcher(html);
-        while (matcher.find()) {
-            WorkItemRefData ref = new WorkItemRefData();
-            ref.setId(matcher.group("id"));
-            ref.setProject(Optional.ofNullable(matcher.group("project")).orElse(defaultProject));
-            ref.setLayout(matcher.group("layout"));
-            ref.setRevision(matcher.group("revision"));
-            refs.add(ref);
-        }
+        RegexMatcher.get("name=module-workitem;params=(id=(?<id>[\\w\\-]+)|[|]|layout=(?<layout>[\\w\\-]+)|project=(?<project>[\\w\\-]+)|revision=(?<revision>[\\w\\-]+)|[^\"])+")
+                .processEntry(html, regexEngine -> {
+                    WorkItemRefData ref = new WorkItemRefData();
+                    ref.setId(regexEngine.group("id"));
+                    ref.setProject(Optional.ofNullable(regexEngine.group("project")).orElse(defaultProject));
+                    ref.setLayout(regexEngine.group("layout"));
+                    ref.setRevision(regexEngine.group("revision"));
+                    refs.add(ref);
+        });
         return new ArrayList<>(refs);
     }
 

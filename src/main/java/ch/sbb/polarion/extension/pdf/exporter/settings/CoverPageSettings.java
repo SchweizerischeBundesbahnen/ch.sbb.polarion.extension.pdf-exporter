@@ -7,6 +7,7 @@ import ch.sbb.polarion.extension.generic.util.ScopeUtils;
 import ch.sbb.polarion.extension.pdf.exporter.rest.model.settings.coverpage.CoverPageModel;
 import ch.sbb.polarion.extension.pdf.exporter.service.PdfExporterPolarionService;
 import ch.sbb.polarion.extension.pdf.exporter.util.MediaUtils;
+import ch.sbb.polarion.extension.pdf.exporter.util.regex.RegexMatcher;
 import com.polarion.core.util.logging.Logger;
 import com.polarion.platform.service.repository.IRepositoryReadOnlyConnection;
 import com.polarion.subterra.base.location.ILocation;
@@ -19,13 +20,14 @@ import java.security.CodeSource;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -66,21 +68,20 @@ public class CoverPageSettings extends GenericNamedSettings<CoverPageModel> {
     public String getNonClashingName(@NotNull String template, @NotNull Collection<SettingName> persistedNames) {
         boolean namesClashing = persistedNames.stream().map(SettingName::getName).anyMatch(name -> name.equals(template));
         if (namesClashing) {
-            Pattern pattern = Pattern.compile(template + " \\((?<index>\\d+?)\\)");
+            RegexMatcher matcher = RegexMatcher.get(RegexMatcher.quote(template) + " \\((?<index>\\d+?)\\)");
 
-            int index = 1;
+            AtomicInteger index = new AtomicInteger(1);
             for (SettingName persistedName : persistedNames) {
-                Matcher matcher = pattern.matcher(persistedName.getName());
-                if (matcher.find()) {
+                matcher.processEntry(persistedName.getName(), regexEngine -> {
                     try {
-                        int persistedIndex = Integer.parseInt(matcher.group("index"));
-                        if (persistedIndex >= index) {
-                            index = persistedIndex + 1;
+                        int persistedIndex = Integer.parseInt(regexEngine.group("index"));
+                        if (persistedIndex >= index.get()) {
+                            index.set(persistedIndex + 1);
                         }
                     } catch (NumberFormatException ex) {
                         // Just ignore
                     }
-                }
+                });
             }
             return String.format("%s (%s)", template, index);
         } else {
@@ -92,16 +93,13 @@ public class CoverPageSettings extends GenericNamedSettings<CoverPageModel> {
     public Set<String> getPredefinedTemplates() {
         Set<String> predefinedTemplates = new TreeSet<>();
 
-        Pattern pattern = Pattern.compile(String.format("%s/(?<template>[\\S ]+?)/template.html", TEMPLATES_JAR_PATH));
+        RegexMatcher matcher = RegexMatcher.get(String.format("%s/(?<template>[\\S ]+?)/template.html", TEMPLATES_JAR_PATH));
 
         CodeSource src = CoverPageSettings.class.getProtectionDomain().getCodeSource();
         try (ZipInputStream zip = new ZipInputStream(src.getLocation().openStream())) {
             ZipEntry ze;
             while ((ze = zip.getNextEntry()) != null) {
-                Matcher matcher = pattern.matcher(ze.getName());
-                if (matcher.find()) {
-                    predefinedTemplates.add(matcher.group("template"));
-                }
+                matcher.processEntry(ze.getName(), regexEngine -> predefinedTemplates.add(regexEngine.group("template")));
             }
         } catch (IOException ex) {
             throw new InternalServerErrorException(ex);
@@ -125,17 +123,14 @@ public class CoverPageSettings extends GenericNamedSettings<CoverPageModel> {
 
     @SuppressWarnings("java:S5042")
     public Set<String> getTemplateImageFileNames(String template) {
-        Pattern pattern = Pattern.compile(String.format("%s/%s/(?<image>[\\S ]+(?:\\.jpg|\\.jpeg|\\.png))", TEMPLATES_JAR_PATH, template));
+        RegexMatcher matcher = RegexMatcher.get(String.format("%s/%s/(?<image>[\\S ]+(?:\\.jpg|\\.jpeg|\\.png))", RegexMatcher.quote(TEMPLATES_JAR_PATH), RegexMatcher.quote(template)));
 
         Set<String> fileNames = new HashSet<>();
         CodeSource src = CoverPageSettings.class.getProtectionDomain().getCodeSource();
         try (ZipInputStream zip = new ZipInputStream(src.getLocation().openStream())) {
             ZipEntry ze;
             while ((ze = zip.getNextEntry()) != null) {
-                Matcher matcher = pattern.matcher(ze.getName());
-                if (matcher.find()) {
-                    fileNames.add(matcher.group("image"));
-                }
+                matcher.processEntry(ze.getName(), regexEngine -> fileNames.add(regexEngine.group("image")));
             }
         } catch (IOException ex) {
             throw new InternalServerErrorException(ex);
@@ -171,14 +166,18 @@ public class CoverPageSettings extends GenericNamedSettings<CoverPageModel> {
     }
 
     public String processImagePlaceholders(@NotNull String css) {
-        Pattern pattern = Pattern.compile("(?<placeholder>\\{\\{\\s*IMAGE:\\s*'(?<imagePath>.+)'\\s*\\}\\})");
-        Matcher matcher = pattern.matcher(css);
-        while (matcher.find()) {
-            String imagePath = matcher.group("imagePath");
+
+        Map<String, String> placeholders = new HashMap<>();
+
+        RegexMatcher.get("(?<placeholder>\\{\\{\\s*IMAGE:\\s*'(?<imagePath>.+)'\\s*\\}\\})")
+                .processEntry(css, regexEngine -> placeholders.put(regexEngine.group("placeholder"), regexEngine.group("imagePath")));
+
+        for (Map.Entry<String, String> placeholderEntry : placeholders.entrySet()) {
+            String imagePath = placeholderEntry.getValue();
             String imageFormat = MediaUtils.getImageFormat(imagePath);
             byte[] fileContent = MediaUtils.getBinaryFileFromSvn(imagePath);
             if (fileContent != null) {
-                String placeholder = matcher.group("placeholder");
+                String placeholder = placeholderEntry.getKey();
                 String imageInBase64 = Base64.getEncoder().encodeToString(fileContent);
                 css = css.replace(placeholder, String.format("url('data:%s;base64,%s')", imageFormat, imageInBase64));
             }

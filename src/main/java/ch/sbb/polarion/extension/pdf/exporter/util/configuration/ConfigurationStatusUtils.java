@@ -9,6 +9,7 @@ import ch.sbb.polarion.extension.pdf.exporter.rest.model.configuration.Status;
 import ch.sbb.polarion.extension.pdf.exporter.rest.model.configuration.ConfigurationStatus;
 import ch.sbb.polarion.extension.pdf.exporter.rest.model.conversion.Orientation;
 import ch.sbb.polarion.extension.pdf.exporter.rest.model.conversion.PaperSize;
+import ch.sbb.polarion.extension.pdf.exporter.util.regex.RegexMatcher;
 import ch.sbb.polarion.extension.pdf.exporter.weasyprint.WeasyPrintConverter;
 import com.polarion.core.config.Configuration;
 import com.polarion.subterra.base.location.ILocation;
@@ -18,8 +19,6 @@ import org.jetbrains.annotations.Nullable;
 
 import java.lang.module.ModuleDescriptor;
 import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 @UtilityClass
 public class ConfigurationStatusUtils {
@@ -110,8 +109,6 @@ public class ConfigurationStatusUtils {
     }
 
     private static boolean contains(@NotNull String input, @NotNull String regex) {
-        Pattern pattern = Pattern.compile(regex);
-        Matcher matcher = pattern.matcher(input);
-        return matcher.find();
+        return RegexMatcher.get(regex).anyMatch(input);
     }
 }
