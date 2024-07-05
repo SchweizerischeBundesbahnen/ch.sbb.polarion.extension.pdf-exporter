@@ -9,15 +9,13 @@ import ch.sbb.polarion.extension.pdf.exporter.util.HtmlProcessor;
 import ch.sbb.polarion.extension.pdf.exporter.util.PdfExporterFileResourceProvider;
 import ch.sbb.polarion.extension.pdf.exporter.util.PdfTemplateProcessor;
 import ch.sbb.polarion.extension.pdf.exporter.util.html.HtmlLinksHelper;
+import ch.sbb.polarion.extension.pdf.exporter.util.regex.RegexMatcher;
 import ch.sbb.polarion.extension.pdf.exporter.weasyprint.WeasyPrintConverter;
 import ch.sbb.polarion.extension.pdf.exporter.weasyprint.WeasyPrintConnectorFactory;
 import ch.sbb.polarion.extension.pdf.exporter.weasyprint.WeasyPrintOptions;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.VisibleForTesting;
-
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class HtmlToPdfConverter {
     private final PdfTemplateProcessor pdfTemplateProcessor;
@@ -53,11 +51,9 @@ public class HtmlToPdfConverter {
             throw new IllegalArgumentException("Input html is malformed, expected html and body tags");
         }
     }
+
     public boolean checkTagExists(String html, String tagName) {
-        String regex = "<" + tagName + "(\\s[^>]*)?\\s*/?>";
-        Pattern pattern = Pattern.compile(regex);
-        Matcher matcher = pattern.matcher(html);
-        return matcher.find();
+        return RegexMatcher.get("<" + tagName + "(\\s[^>]*)?\\s*/?>").anyMatch(html);
     }
 
     @NotNull
@@ -86,27 +82,17 @@ public class HtmlToPdfConverter {
     }
 
     private String extractTagContent(String html, String tag) {
-        String regex = "<" + tag + ">(.*?)</" + tag + ">";
-
-        Pattern pattern = Pattern.compile(regex, Pattern.DOTALL);
-        Matcher matcher = pattern.matcher(html);
-
-        if (matcher.find()) {
-            return matcher.group(1);
-        } else {
-            return "";
-        }
+        return RegexMatcher.get("<" + tag + ">(.*?)</" + tag + ">", RegexMatcher.DOTALL)
+                .findFirst(html, regexEngine -> regexEngine.group(1)).orElse("");
     }
 
     private String replaceTagContent(String container, String tag, String newContent) {
-        String regex = "<" + tag + ">(.*?)</" + tag + ">";
-        Pattern pattern = Pattern.compile(regex, Pattern.DOTALL);
-        Matcher matcher = pattern.matcher(container);
-        return matcher.replaceAll("<" + tag + ">" + newContent + "</" + tag + ">");
+        return RegexMatcher.get("<" + tag + ">(.*?)</" + tag + ">", RegexMatcher.DOTALL)
+                .replaceAll(container, "<" + tag + ">" + newContent + "</" + tag + ">");
     }
 
     private String addHeadTag(String html, String headContent) {
-        String pattern = "(<html[^>]*>)";
+        String pattern = "(<html[^<>]*>)";
         return html.replaceAll(pattern, "$1<head>" + headContent + "</head>");
     }
 }

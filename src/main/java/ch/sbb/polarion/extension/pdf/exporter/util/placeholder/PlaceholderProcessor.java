@@ -4,6 +4,7 @@ import ch.sbb.polarion.extension.pdf.exporter.rest.model.conversion.ExportParams
 import ch.sbb.polarion.extension.pdf.exporter.rest.model.settings.headerfooter.Placeholder;
 import ch.sbb.polarion.extension.pdf.exporter.service.PdfExporterPolarionService;
 import ch.sbb.polarion.extension.pdf.exporter.util.LiveDocHelper;
+import ch.sbb.polarion.extension.pdf.exporter.util.regex.RegexMatcher;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.HashSet;
@@ -11,8 +12,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class PlaceholderProcessor {
 
@@ -73,14 +72,12 @@ public class PlaceholderProcessor {
 
     public Set<String> extractCustomPlaceholders(String section) {
         Set<String> placeholders = new HashSet<>();
-        Pattern pattern = Pattern.compile("\\{\\{\\s*(?<placeholder>\\w+)\\s*\\}\\}");
-        Matcher matcher = pattern.matcher(section);
-        while (matcher.find()) {
-            String placeholder = matcher.group("placeholder");
+        RegexMatcher.get("\\{\\{\\s*(?<placeholder>\\w+)\\s*\\}\\}").processEntry(section, regexEngine -> {
+            String placeholder = regexEngine.group("placeholder");
             if (!Placeholder.contains(placeholder)) {
                 placeholders.add(placeholder);
             }
-        }
+        });
         return placeholders;
     }
 

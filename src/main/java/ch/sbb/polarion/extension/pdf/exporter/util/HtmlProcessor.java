@@ -9,6 +9,8 @@ import ch.sbb.polarion.extension.pdf.exporter.rest.model.conversion.PaperSize;
 import ch.sbb.polarion.extension.pdf.exporter.settings.LocalizationSettings;
 import ch.sbb.polarion.extension.pdf.exporter.util.exporter.CustomPageBreakPart;
 import ch.sbb.polarion.extension.pdf.exporter.util.html.HtmlLinksHelper;
+import ch.sbb.polarion.extension.pdf.exporter.util.regex.IRegexEngine;
+import ch.sbb.polarion.extension.pdf.exporter.util.regex.RegexMatcher;
 import com.polarion.alm.shared.util.StringUtils;
 import com.polarion.core.util.xml.CSSStyle;
 import lombok.SneakyThrows;
@@ -30,8 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static ch.sbb.polarion.extension.pdf.exporter.util.exporter.Constants.*;
 
@@ -247,18 +248,11 @@ public class HtmlProcessor {
         // and matches a content inside of this <a> into named group "imgContent". The sense of this regexp is to find
         // all links (as text-link or images) linking to local Polarion resources and to cut these links off, though leaving
         // their content in text.
-        Pattern pattern = Pattern.compile("<a[^>]+?href=[^>]*?/polarion/#[^>]*?>(?<content>[\\s\\S]+?)</a>|<a[^>]+?href=\"http[^>]+?>(?<imgContent><img[^>]+?src=\"data:[^>]+?>)</a>");
-        Matcher matcher = pattern.matcher(html);
-        StringBuilder buf = new StringBuilder();
-        while (matcher.find()) {
-            String content = matcher.group("content");
-            if (content == null) {
-                content = matcher.group("imgContent");
-            }
-            matcher.appendReplacement(buf, content);
-        }
-        matcher.appendTail(buf);
-        return buf.toString();
+        return RegexMatcher.get("<a[^>]+?href=[^>]*?/polarion/#[^>]*?>(?<content>[\\s\\S]+?)</a>|<a[^>]+?href=\"http[^>]+?>(?<imgContent><img[^>]+?src=\"data:[^>]+?>)</a>")
+                .replace(html, regexEngine -> {
+                    String content = regexEngine.group("content");
+                    return content != null ? content : regexEngine.group("imgContent");
+                });
     }
 
     /**
@@ -270,14 +264,10 @@ public class HtmlProcessor {
     @SuppressWarnings("java:S3776")
     String processPageBrakes(@NotNull String html, ExportParams exportParams) {
         //remove repeated page breaks, leave just the first one
-        Matcher matcher = Pattern.compile(String.format("(%s|%s){2,}", PAGE_BREAK_PORTRAIT_ABOVE, PAGE_BREAK_LANDSCAPE_ABOVE)).matcher(html);
-        StringBuilder buf = new StringBuilder();
-        while (matcher.find()) {
-            String sequence = matcher.group();
-            matcher.appendReplacement(buf, sequence.startsWith(PAGE_BREAK_PORTRAIT_ABOVE) ? PAGE_BREAK_PORTRAIT_ABOVE : PAGE_BREAK_LANDSCAPE_ABOVE);
-        }
-        matcher.appendTail(buf);
-        html = buf.toString();
+        html = RegexMatcher.get(String.format("(%s|%s){2,}", PAGE_BREAK_PORTRAIT_ABOVE, PAGE_BREAK_LANDSCAPE_ABOVE)).replace(html, regexEngine -> {
+            String sequence = regexEngine.group();
+            return sequence.startsWith(PAGE_BREAK_PORTRAIT_ABOVE) ? PAGE_BREAK_PORTRAIT_ABOVE : PAGE_BREAK_LANDSCAPE_ABOVE;
+        });
 
         StringBuilder resultBuf = new StringBuilder();
         LinkedList<String> areas = new LinkedList<>(Arrays.asList(html.split(PAGE_BREAK_MARK))); //use linked list for processing list in backward order
@@ -325,16 +315,11 @@ public class HtmlProcessor {
         //'Empty chapter' is the area which starts from heading tag and followed by any number of empty 'p', 'br' or page brake related tags.
         //Area must be followed either by the next opening heading tag with the same or higher importance or any closing tag except 'p'.
         for (int i = H_TAG_MIN_PRIORITY; i >= 1; i--) {
-            Pattern pattern = Pattern.compile(String.format("(?s)(?><h%1$d.*?</h%1$d>)(\\s|<p[^>]*?>|<br/>|</p>|%2$s)*?(?=<h[1-%1$d]|</[^p])",
-                    i, String.join("|", PAGE_BREAK_MARK, PORTRAIT_ABOVE_MARK, LANDSCAPE_ABOVE_MARK)));
-            Matcher matcher = pattern.matcher(html);
-            StringBuilder buf = new StringBuilder();
-            while (matcher.find()) {
-                String areaToDelete = matcher.group();
-                matcher.appendReplacement(buf, getTopPageBrake(areaToDelete));
-            }
-            matcher.appendTail(buf);
-            html = buf.toString();
+            html = RegexMatcher.get(String.format("(?s)(?><h%1$d.*?</h%1$d>)(\\s|<p[^>]*?>|<br/>|</p>|%2$s)*?(?=<h[1-%1$d]|</[^p])",
+                    i, String.join("|", PAGE_BREAK_MARK, PORTRAIT_ABOVE_MARK, LANDSCAPE_ABOVE_MARK))).useJavaUtil().replace(html, regexEngine -> {
+                String areaToDelete = regexEngine.group();
+                return getTopPageBrake(areaToDelete);
+            });
         }
         return html;
     }
@@ -343,19 +328,16 @@ public class HtmlProcessor {
     @VisibleForTesting
     @SuppressWarnings("java:S5852") //regex checked
     String cutNotNeededChapters(@NotNull String html, List<String> selectedChapters) {
-        // This regexp searches for most high level chapters (<h1>-elements) extracting their numbers into
-        // named group "number" and extracting whole <h1>-element into named group "chapter"
-        Pattern pattern = Pattern.compile("(?<chapter><h1[^>]*?>.*?<span[^>]*?><span[^>]*?>(?<number>.+?)</span>.*?</span>.+?</h1>)");
-        Matcher matcher = pattern.matcher(html);
-
         // LinkedHashMap is chosen intentionally to keep an order of insertion
         Map<String, Boolean> chaptersMapping = new LinkedHashMap<>();
 
-        while (matcher.find()) {
-            String number = matcher.group(NUMBER);
-            String chapter = matcher.group("chapter");
+        // This regexp searches for most high level chapters (<h1>-elements) extracting their numbers into
+        // named group "number" and extracting whole <h1>-element into named group "chapter"
+        RegexMatcher.get("(?<chapter><h1[^>]*?>.*?<span[^>]*?><span[^>]*?>(?<number>.+?)</span>.*?</span>.+?</h1>)").processEntry(html, regexEngine -> {
+            String number = regexEngine.group(NUMBER);
+            String chapter = regexEngine.group("chapter");
             chaptersMapping.put(chapter, selectedChapters.contains(number));
-        }
+        });
 
         StringBuilder buf = new StringBuilder(html);
         Integer cutStart = null;
@@ -464,24 +446,21 @@ public class HtmlProcessor {
     @NotNull
     @SuppressWarnings("squid:S5843")
     private String filterByRoles(@NotNull String linkedWorkItems, @NotNull List<String> selectedRoleEnumValues) {
+        StringBuilder filteredContent = new StringBuilder();
         // This regexp searches for spans (named group "roleSpan") containing linked WorkItem with its role (named group "role").
         // If linked WorkItem role is not among ones selected by user we cut it from resulted HTML
-        Pattern pattern = Pattern.compile("(?<roleSpan><span>\\s*<span class=\"polarion-JSEnumOption\"[^>]*?>(?<role>[^<]*?)</span>" +
-                ":\\s*<a[^>]*?>\\s*<span[^>]*?>\\s*<img[^>]*?>\\s*<span[^>]*?>[^<]*?</span>\\s*-\\s*<span[^>]*?>[^<]*?</span>\\s*</span>\\s*</a>\\s*</span>)");
-        Matcher matcher = pattern.matcher(linkedWorkItems);
-
-        StringBuilder filteredContent = new StringBuilder();
-        while (matcher.find()) {
-            String role = matcher.group("role");
-            String roleSpan = matcher.group("roleSpan");
-            if (selectedRoleEnumValues.contains(role)) {
-                if (!filteredContent.isEmpty()) {
-                    filteredContent.append(",<br>");
-                }
-                filteredContent.append(roleSpan);
-            }
-        }
-
+        RegexMatcher.get("(?<roleSpan><span>\\s*<span class=\"polarion-JSEnumOption\"[^>]*?>(?<role>[^<]*?)</span>" +
+                ":\\s*<a[^>]*?>\\s*<span[^>]*?>\\s*<img[^>]*?>\\s*<span[^>]*?>[^<]*?</span>\\s*-\\s*<span[^>]*?>[^<]*?</span>\\s*</span>\\s*</a>\\s*</span>)")
+                .processEntry(linkedWorkItems, regexEngine -> {
+                    String role = regexEngine.group("role");
+                    String roleSpan = regexEngine.group("roleSpan");
+                    if (selectedRoleEnumValues.contains(role)) {
+                        if (!filteredContent.isEmpty()) {
+                            filteredContent.append(",<br>");
+                        }
+                        filteredContent.append(roleSpan);
+                    }
+        });
         // filteredContent - is literally content of td or span element, we need to prepend <td>/<span> with its attributes and append </td>/</span> to it
         return linkedWorkItems.substring(0, linkedWorkItems.indexOf(">") + 1)
                 + filteredContent
@@ -496,19 +475,13 @@ public class HtmlProcessor {
 
         //Polarion document usually keeps enumerated text values inside of spans marked with class 'polarion-JSEnumOption'.
         //Following expression retrieves such spans.
-        Pattern pattern = Pattern.compile("(?s)<span class=\"polarion-JSEnumOption\".+?>(?<enum>[\\w\\s]+)</span>");
-        Matcher matcher = pattern.matcher(html);
-        StringBuilder buf = new StringBuilder();
-        while (matcher.find()) {
-            String enumContainingSpan = matcher.group();
-            String enumName = matcher.group("enum");
+        return RegexMatcher.get("(?s)<span class=\"polarion-JSEnumOption\".+?>(?<enum>[\\w\\s]+)</span>").replace(html, regexEngine -> {
+            String enumContainingSpan = regexEngine.group();
+            String enumName = regexEngine.group("enum");
             String replacementString = localizationMap.get(enumName);
-            if (!StringUtils.isEmptyTrimmed(replacementString)) {
-                matcher.appendReplacement(buf, enumContainingSpan.replace(enumName + SPAN_END_TAG, replacementString + SPAN_END_TAG));
-            }
-        }
-        matcher.appendTail(buf);
-        return buf.toString();
+            return StringUtils.isEmptyTrimmed(replacementString) ? null :
+                    enumContainingSpan.replace(enumName + SPAN_END_TAG, replacementString + SPAN_END_TAG);
+        });
     }
 
     @NotNull
@@ -545,16 +518,7 @@ public class HtmlProcessor {
 
     @NotNull
     private String removePd4mlTags(@NotNull String html) {
-        Pattern pattern = Pattern.compile("(<pd4ml:page.*>)(.)");
-        Matcher matcher = pattern.matcher(html);
-
-        StringBuilder buf = new StringBuilder();
-        while (matcher.find()) {
-            String ending = matcher.group(2);
-            matcher.appendReplacement(buf, ending);
-        }
-        matcher.appendTail(buf);
-        return buf.toString();
+        return RegexMatcher.get("(<pd4ml:page.*>)(.)").replace(html, regexEngine -> regexEngine.group(2));
     }
 
     @NotNull
@@ -568,16 +532,10 @@ public class HtmlProcessor {
         // by positive lookahead "(?=<tr)" which doesn't take part in replacement.
         // The sense in this regexp is to find <tr>-tags containing <th>-tags and move it from <tbody> into <thead>,
         // for table headers to repeat on each page.
-        Pattern pattern = Pattern.compile("(<tbody>[^<]*(?<header><tr>[^<]*<th[\\s|\\S]*?))(?=(<tr|</tbody))");
-        Matcher matcher = pattern.matcher(html);
-
-        StringBuilder buf = new StringBuilder();
-        while (matcher.find()) {
-            String header = matcher.group("header");
-            matcher.appendReplacement(buf, "<thead>" + header + "</thead><tbody>");
-        }
-        matcher.appendTail(buf);
-        return buf.toString();
+        return RegexMatcher.get("(<tbody>[^<]*(?<header><tr>[^<]*<th[\\s|\\S]*?))(?=(<tr|</tbody))").useJavaUtil().replace(html, regexEngine -> {
+            String header = regexEngine.group("header");
+            return  "<thead>" + header + "</thead><tbody>";
+        });
     }
 
     @NotNull
@@ -587,46 +545,20 @@ public class HtmlProcessor {
         // This regexp searches for <td> or <th> elements of regular tables which width in styles specified in pixels ("px").
         // <td> or <th> element till "width:" in styles matched into first unnamed group and width value - into second unnamed group.
         // Then we replace matched content by first group content plus "auto" instead of value in pixels.
-        Pattern pattern = Pattern.compile("(<t[dh].+?width:.*?)(\\d+px)");
-        Matcher matcher = pattern.matcher(html);
-        StringBuilder buf = new StringBuilder();
-        while (matcher.find()) {
-            String starting = matcher.group(1);
-            matcher.appendReplacement(buf, starting + "auto");
-        }
-        matcher.appendTail(buf);
+        html = RegexMatcher.get("(<t[dh].+?width:.*?)(\\d+px)")
+                .replace(html, regexEngine -> regexEngine.group(1) + "auto");
 
         // Next step we look for tables which represent WorkItem attributes and force them to take 100% of available width
-        pattern = Pattern.compile("(class=\"polarion-dle-workitem-fields-end-table\")");
-        matcher = pattern.matcher(buf.toString());
-        buf = new StringBuilder();
-        while (matcher.find()) {
-            String attributesTableClass = matcher.group();
-            matcher.appendReplacement(buf, attributesTableClass + " style=\"width: 100%;\"");
-        }
-        matcher.appendTail(buf);
+        html = RegexMatcher.get("(class=\"polarion-dle-workitem-fields-end-table\")")
+                .replace(html, regexEngine -> regexEngine.group() + " style=\"width: 100%;\"");
 
         // Then for column with attribute name we specify to take 20% of table width
-        pattern = Pattern.compile("(class=\"polarion-dle-workitem-fields-end-table-label\")");
-        matcher = pattern.matcher(buf.toString());
-        buf = new StringBuilder();
-        while (matcher.find()) {
-            String attributeLabelClass = matcher.group();
-            matcher.appendReplacement(buf, attributeLabelClass + " style=\"width: 20%;\"");
-        }
-        matcher.appendTail(buf);
+        html = RegexMatcher.get("(class=\"polarion-dle-workitem-fields-end-table-label\")")
+                .replace(html, regexEngine -> regexEngine.group() + " style=\"width: 20%;\"");
 
         // ...and for column with attribute value we specify to take 80% of table width
-        pattern = Pattern.compile("(class=\"polarion-dle-workitem-fields-end-table-value\")");
-        matcher = pattern.matcher(buf.toString());
-        buf = new StringBuilder();
-        while (matcher.find()) {
-            String attributeValueClass = matcher.group();
-            matcher.appendReplacement(buf, attributeValueClass + " style=\"width: 80%;\"");
-        }
-        matcher.appendTail(buf);
-
-        return buf.toString();
+        return RegexMatcher.get("(class=\"polarion-dle-workitem-fields-end-table-value\")")
+                .replace(html, regexEngine -> regexEngine.group() + " style=\"width: 80%;\"");
     }
 
     @NotNull
@@ -648,15 +580,10 @@ public class HtmlProcessor {
     @NotNull
     @VisibleForTesting
     String processComments(@NotNull String html) {
-        Pattern pattern = Pattern.compile("\\[span class=comment level-(?<level>\\d+)\\]");
-        Matcher matcher = pattern.matcher(html);
-        StringBuilder buf = new StringBuilder();
-        while (matcher.find()) {
-            String nestingLevel = matcher.group("level");
-            matcher.appendReplacement(buf, String.format("<span class='comment level-%s'>", nestingLevel));
-        }
-        matcher.appendTail(buf);
-        html = buf.toString();
+        html = RegexMatcher.get("\\[span class=comment level-(?<level>\\d+)\\]").replace(html, regexEngine -> {
+            String nestingLevel = regexEngine.group("level");
+            return String.format("<span class='comment level-%s'>", nestingLevel);
+        });
         html = html.replace("[span class=meta]", "<span class='meta'>");
         html = html.replace("[span class=date]", "<span class='date'>");
         html = html.replace("[span class=author]", "<span class='author'>");
@@ -679,23 +606,17 @@ public class HtmlProcessor {
         final int MAX_DEFAULT_NODE_NESTING = 6;
 
         int startIndex = html.indexOf("<pd4ml:toc");
-        Pattern tocInitPattern = Pattern.compile("tocInit=\"(?<startLevel>\\d+)\"");
-        Pattern tocMaxPattern = Pattern.compile("tocMax=\"(?<maxLevel>\\d+)\"");
+        RegexMatcher tocInitMatcher = RegexMatcher.get("tocInit=\"(?<startLevel>\\d+)\"");
+        RegexMatcher tocMaxMatcher = RegexMatcher.get("tocMax=\"(?<maxLevel>\\d+)\"");
         while (startIndex >= 0) {
             int endIndex = html.indexOf(">", startIndex);
             String tocMacro = html.substring(startIndex, endIndex);
 
-            int startLevel = 1;
-            Matcher matcher = tocInitPattern.matcher(tocMacro);
-            if (matcher.find()) {
-                startLevel = Integer.parseInt(matcher.group("startLevel"));
-            }
+            int startLevel = tocInitMatcher.findFirst(tocMacro, regexEngine -> regexEngine.group("startLevel"))
+                    .map(Integer::parseInt).orElse(1);
 
-            int maxLevel = MAX_DEFAULT_NODE_NESTING;
-            matcher = tocMaxPattern.matcher(tocMacro);
-            if (matcher.find()) {
-                maxLevel = Integer.parseInt(matcher.group("maxLevel"));
-            }
+            int maxLevel = tocMaxMatcher.findFirst(tocMacro, regexEngine -> regexEngine.group("maxLevel"))
+                    .map(Integer::parseInt).orElse(MAX_DEFAULT_NODE_NESTING);
 
             String toc = generateTableOfContent(html, startLevel, maxLevel);
 
@@ -712,30 +633,28 @@ public class HtmlProcessor {
     @SuppressWarnings("java:S5852") //regex checked
     private String generateTableOfContent(@NotNull String html, int startLevel, int maxLevel) {
         TocLeaf root = new TocLeaf(null, 0, null, null, null);
-        TocLeaf current = root;
+        AtomicReference<TocLeaf> current = new AtomicReference<>(root);
 
         // This regexp searches for headers of any level (elements <h1>, <h2> etc.). Level of chapter is extracted into
         // named group "level", id of <a> element inside of it (to reference from TOC) - into named group "id",
         // number of this chapter - into named group "number" and text of this header - into named group "text"
         // Also we search for wiki headers, they have slightly different structure + don't have numbers
-        Pattern itemsPattern = Pattern.compile("<h(?<level>[1-6])[^>]*?>[^<]*(<a id=\"(?<id>[^\"]+?)\"[^>]*?></a>[^<]*<span[^>]*>\\s*<span[^>]*>(?<number>.+?)</span>[^<]*</span>\\s*(?<text>.+?)\\s*" +
-                "|<span id=\"(?<wikiHeaderId>[^\"]+?)\"[^>]*?>(?<wikiHeaderText>.+?)</span>)</h[1-6]>");
-        Matcher itemsMatcher = itemsPattern.matcher(html);
-        while (itemsMatcher.find()) {
+        RegexMatcher.get("<h(?<level>[1-6])[^>]*?>[^<]*(<a id=\"(?<id>[^\"]+?)\"[^>]*?></a>[^<]*<span[^>]*>\\s*<span[^>]*>(?<number>.+?)</span>[^<]*</span>\\s*(?<text>.+?)\\s*" +
+                "|<span id=\"(?<wikiHeaderId>[^\"]+?)\"[^>]*?>(?<wikiHeaderText>.+?)</span>)</h[1-6]>").processEntry(html, regexEngine -> {
             // Then we take all these named groups of certain chapter and generate appropriate element of table of content
-            int level = Integer.parseInt(itemsMatcher.group("level"));
-            String id = itemsMatcher.group("id");
-            String number = itemsMatcher.group(NUMBER);
-            String text = itemsMatcher.group("text");
-            String wikiHeaderId = itemsMatcher.group("wikiHeaderId");
-            String wikiHeaderText = itemsMatcher.group("wikiHeaderText");
+            int level = Integer.parseInt(regexEngine.group("level"));
+            String id = regexEngine.group("id");
+            String number = regexEngine.group(NUMBER);
+            String text = regexEngine.group("text");
+            String wikiHeaderId = regexEngine.group("wikiHeaderId");
+            String wikiHeaderText = regexEngine.group("wikiHeaderText");
 
             TocLeaf parent;
             TocLeaf newLeaf;
-            if (current.getLevel() < level) {
-                parent = current;
+            if (current.get().getLevel() < level) {
+                parent = current.get();
             } else {
-                parent = current.getParent();
+                parent = current.get().getParent();
                 while (parent.getLevel() >= level) {
                     parent = parent.getParent();
                 }
@@ -744,26 +663,19 @@ public class HtmlProcessor {
             newLeaf = new TocLeaf(parent, level, id != null ? id : wikiHeaderId, number, text != null ? text : wikiHeaderText);
             parent.getChildren().add(newLeaf);
 
-            current = newLeaf;
-        }
+            current.set(newLeaf);
+        });
 
         return root.asString(startLevel, maxLevel);
     }
 
     @NotNull
     String addTableOfFigures(@NotNull final String html) {
-        Pattern pattern = Pattern.compile("<div data-sequence=\"(?<label>[^\"]+)\" id=\"polarion_wiki macro name=tof[^>]*></div>");
-        Matcher matcher = pattern.matcher(html);
-        StringBuilder buf = new StringBuilder();
         Map<String, String> tofByLabel = new HashMap<>();
-        while (matcher.find()) {
-            String label = matcher.group("label");
-            String tof = tofByLabel.computeIfAbsent(label, notYetGeneratedLabel -> generateTableOfFigures(html, notYetGeneratedLabel));
-            matcher.appendReplacement(buf, tof);
-        }
-        matcher.appendTail(buf);
-
-        return buf.toString();
+        return RegexMatcher.get("<div data-sequence=\"(?<label>[^\"]+)\" id=\"polarion_wiki macro name=tof[^>]*></div>").replace(html, regexEngine -> {
+            String label = regexEngine.group("label");
+            return tofByLabel.computeIfAbsent(label, notYetGeneratedLabel -> generateTableOfFigures(html, notYetGeneratedLabel));
+        });
     }
 
     @NotNull
@@ -773,13 +685,11 @@ public class HtmlProcessor {
         // This regexp searches for paragraphs with class 'polarion-rte-caption-paragraph'
         // with text contained in 'label' parameter in it followed by span-element with class 'polarion-rte-caption' and number inside it (number of figure),
         // which in its turn followed by a-element with name 'dlecaption_<N>' (where <N> - is figure number), which in its turn is followed by figure caption
-        Pattern figureCaptionPattern = Pattern.compile(String.format("<p[^>]+?class=\"polarion-rte-caption-paragraph\"[^>]*>\\s*?.*?%s[^<]*<span data-sequence=\"%s\" " +
-                "class=\"polarion-rte-caption\">(?<number>\\d+)<a name=\"dlecaption_(?<id>\\d+)\"></a></span>(?<caption>[^<]+)", label, label));
-        Matcher figureCaptionMatcher = figureCaptionPattern.matcher(html);
-        while (figureCaptionMatcher.find()) {
-            String number = figureCaptionMatcher.group(NUMBER);
-            String id = figureCaptionMatcher.group("id");
-            String caption = figureCaptionMatcher.group("caption");
+        RegexMatcher.get(String.format("<p[^>]+?class=\"polarion-rte-caption-paragraph\"[^>]*>\\s*?.*?%s[^<]*<span data-sequence=\"%s\" " +
+                "class=\"polarion-rte-caption\">(?<number>\\d+)<a name=\"dlecaption_(?<id>\\d+)\"></a></span>(?<caption>[^<]+)", label, label)).processEntry(html, regexEngine -> {
+            String number = regexEngine.group(NUMBER);
+            String id = regexEngine.group("id");
+            String caption = regexEngine.group("caption");
             if (caption.contains(SPAN_END_TAG)) {
                 caption = caption.substring(0, caption.indexOf(SPAN_END_TAG));
             }
@@ -791,7 +701,7 @@ public class HtmlProcessor {
                 caption = captionBuf.toString();
             }
             buf.append(String.format("<a href=\"#dlecaption_%s\">%s %s. %s</a><br>", id, label, number, caption.trim()));
-        }
+        });
         buf.append(DIV_END_TAG);
         return buf.toString();
     }
@@ -800,18 +710,11 @@ public class HtmlProcessor {
     @VisibleForTesting
     String adjustReportedBy(@NotNull String html) {
         // This regexp searches for div containing 'Reported by' text and adjusts its styles
-        Pattern pattern = Pattern.compile("<div style=\"(?<style>[^\"]*)\">Reported by");
-        Matcher matcher = pattern.matcher(html);
-        StringBuilder buf = new StringBuilder();
-        while (matcher.find()) {
-            String initialStyle = matcher.group("style");
+        return RegexMatcher.get("<div style=\"(?<style>[^\"]*)\">Reported by").replace(html, regexEngine -> {
+            String initialStyle = regexEngine.group("style");
             String styleAdjustment = "top: 0; font-size: 8px;";
-
-            matcher.appendReplacement(buf, String.format("<div style=\"%s;%s\">Reported by", initialStyle, styleAdjustment));
-        }
-        matcher.appendTail(buf);
-
-        return buf.toString();
+            return String.format("<div style=\"%s;%s\">Reported by", initialStyle, styleAdjustment);
+        });
     }
 
     @NotNull
@@ -820,17 +723,9 @@ public class HtmlProcessor {
     String cutExportToPdfButton(@NotNull String html) {
         // This regexp searches for 'Export to PDF' button enclosed into table-element with class 'polarion-TestsExecutionButton-buttons-content',
         // which in its turn enclosed into div-element with class 'polarion-TestsExecutionButton-buttons-pdf'
-        Pattern pattern = Pattern.compile("<div[^>]*class=\"polarion-TestsExecutionButton-buttons-pdf\">" +
-                "[\\w|\\W]*<table class=\"polarion-TestsExecutionButton-buttons-content\">[\\w|\\W]*<div[^>]*>Export to PDF</div>[\\w|\\W]*?</div>");
-        Matcher matcher = pattern.matcher(html);
-        StringBuilder buf = new StringBuilder();
-        while (matcher.find()) {
-            matcher.appendReplacement(buf, "");
-        }
-        matcher.appendTail(buf);
-
-        return buf.toString();
-
+        return RegexMatcher.get("<div[^>]*class=\"polarion-TestsExecutionButton-buttons-pdf\">" +
+                "[\\w|\\W]*<table class=\"polarion-TestsExecutionButton-buttons-content\">[\\w|\\W]*<div[^>]*>Export to PDF</div>[\\w|\\W]*?</div>")
+                .removeAll(html);
     }
 
     @NotNull
@@ -845,52 +740,21 @@ public class HtmlProcessor {
     @VisibleForTesting
     String removeFloatLeftFromReports(@NotNull String html) {
         // Remove "float: left;" style definition from tables
-        Pattern pattern = Pattern.compile("(?<table><table[^>]*)style=\"float: left;\"");
-        Matcher matcher = pattern.matcher(html);
-        StringBuilder buf = new StringBuilder();
-        while (matcher.find()) {
-            String tableWithoutFloating = matcher.group("table");
-            matcher.appendReplacement(buf, tableWithoutFloating);
-        }
-        matcher.appendTail(buf);
-
-        return buf.toString();
+        return RegexMatcher.get("(?<table><table[^>]*)style=\"float: left;\"")
+                .replace(html, regexEngine -> regexEngine.group("table"));
     }
 
     @NotNull
     private String adjustHeadingsForPDF(@NotNull String html) {
-        Pattern startPattern = Pattern.compile("<(h[1-6])");
-        Matcher startMatcher = startPattern.matcher(html);
+        html = RegexMatcher.get("<(h[1-6])").replace(html, regexEngine -> {
+            String tag = regexEngine.group(1);
+            return tag.equals("h1") ? "<div class=\"title\"" : ("<" + liftHeadingTag(tag));
+        });
 
-        StringBuilder startBuff;
-        String replacement;
-        for (startBuff = new StringBuilder(); startMatcher.find(); startMatcher.appendReplacement(startBuff, replacement)) {
-            String tag = startMatcher.group(1);
-            if (tag.equals("h1")) {
-                replacement = "<div class=\"title\"";
-            } else {
-                replacement = "<" + liftHeadingTag(tag);
-            }
-        }
-
-        startMatcher.appendTail(startBuff);
-        html = startBuff.toString();
-        Pattern endPattern = Pattern.compile("</(h[1-6])>");
-        Matcher endMatcher = endPattern.matcher(html);
-
-        StringBuilder endBuff;
-        for (endBuff = new StringBuilder(); endMatcher.find(); endMatcher.appendReplacement(endBuff, replacement)) {
-            String tag = endMatcher.group(1);
-            if (tag.equals("h1")) {
-                replacement = DIV_END_TAG;
-            } else {
-                replacement = "</" + liftHeadingTag(tag) + ">";
-            }
-        }
-
-        endMatcher.appendTail(endBuff);
-        html = endBuff.toString();
-        return html;
+        return RegexMatcher.get("</(h[1-6])>").replace(html, regexEngine -> {
+            String tag = regexEngine.group(1);
+            return tag.equals("h1") ? DIV_END_TAG : ("</" + liftHeadingTag(tag) + ">");
+        });
     }
 
     @NotNull
@@ -913,8 +777,7 @@ public class HtmlProcessor {
     @SuppressWarnings({"java:S5852", "java:S5857"}) //need by design
     private String adjustImageAlignmentForPDF(@NotNull String html) {
         String startImgPattern = "<img [^>]*style=\"([^>]*)\".*?>";
-        Pattern pattern = Pattern.compile(startImgPattern);
-        Matcher matcher = pattern.matcher(html);
+        IRegexEngine regexEngine = RegexMatcher.get(startImgPattern).createEngine(html);
         StringBuilder sb = new StringBuilder();
 
         while (true) {
@@ -923,13 +786,13 @@ public class HtmlProcessor {
             CSSStyle.Rule displayRule;
             do {
                 do {
-                    if (!matcher.find()) {
-                        matcher.appendTail(sb);
+                    if (!regexEngine.find()) {
+                        regexEngine.appendTail(sb);
                         return sb.toString();
                     }
 
-                    group = matcher.group();
-                    String style = matcher.group(1);
+                    group = regexEngine.group();
+                    String style = regexEngine.group(1);
                     css = CSSStyle.parse(style);
                     displayRule = css.getRule("display");
                 } while (displayRule == null);
@@ -944,7 +807,7 @@ public class HtmlProcessor {
             }
 
             group = "<div style=\"text-align: " + align + "\">" + group + DIV_END_TAG;
-            matcher.appendReplacement(sb, group);
+            regexEngine.appendReplacement(sb, group);
         }
     }
 
@@ -955,42 +818,39 @@ public class HtmlProcessor {
         // We are looking here for images which widths and heights are explicitly specified.
         // Named group "prepend" - is everything which stands before width/height and named group "append" - after.
         // Then we check if width (named group "width") exceeds limit we override it by value "100%"
-        Pattern pattern = Pattern.compile("(<img(?<prepend>[^>]+?)width:\\s*?(?<width>[\\d.]*?)(?<measureWidth>px|ex);\\s*?height:\\s*?(?<height>[\\d.]*?)(?<measureHeight>px|ex)(?<append>[^>]*?)>)");
-        Matcher matcher = pattern.matcher(html);
+        return RegexMatcher.get("(<img(?<prepend>[^>]+?)width:\\s*?(?<width>[\\d.]*?)(?<measureWidth>px|ex);\\s*?height:\\s*?(?<height>[\\d.]*?)(?<measureHeight>px|ex)(?<append>[^>]*?)>)")
+                .replace(html, regexEngine -> {
+                    float maxWidth = orientation == Orientation.PORTRAIT ? MAX_PORTRAIT_WIDTHS.get(paperSize) : MAX_LANDSCAPE_WIDTHS.get(paperSize);
+                    float maxHeight = orientation == Orientation.PORTRAIT ? MAX_PORTRAIT_HEIGHTS.get(paperSize) : MAX_LANDSCAPE_HEIGHTS.get(paperSize);
 
-        StringBuilder buf = new StringBuilder();
-        while (matcher.find()) {
-            float maxWidth = orientation == Orientation.PORTRAIT ? MAX_PORTRAIT_WIDTHS.get(paperSize) : MAX_LANDSCAPE_WIDTHS.get(paperSize);
-            float maxHeight = orientation == Orientation.PORTRAIT ? MAX_PORTRAIT_HEIGHTS.get(paperSize) : MAX_LANDSCAPE_HEIGHTS.get(paperSize);
+                    float width = Float.parseFloat(regexEngine.group(WIDTH));
+                    if (MEASURE_EX.equals(regexEngine.group(MEASURE_WIDTH))) {
+                        width = width * EX_TO_PX_RATIO;
+                    }
+                    float height = Float.parseFloat(regexEngine.group(HEIGHT));
+                    if (MEASURE_EX.equals(regexEngine.group(MEASURE_HEIGHT))) {
+                        height = height * EX_TO_PX_RATIO;
+                    }
 
-            float width = Float.parseFloat(matcher.group(WIDTH));
-            if (MEASURE_EX.equals(matcher.group(MEASURE_WIDTH))) {
-                width = width * EX_TO_PX_RATIO;
-            }
-            float height = Float.parseFloat(matcher.group(HEIGHT));
-            if (MEASURE_EX.equals(matcher.group(MEASURE_HEIGHT))) {
-                height = height * EX_TO_PX_RATIO;
-            }
-
-            float widthExceedingRatio = width / maxWidth;
-            float heightExceedingRatio = height / maxHeight;
-            if (widthExceedingRatio > 1 || heightExceedingRatio > 1) {
-                String prepend = matcher.group("prepend");
-                String append = matcher.group("append");
-                final float adjustedWidth;
-                final float adjustedHeight;
-                if (widthExceedingRatio > heightExceedingRatio) {
-                    adjustedWidth = width / widthExceedingRatio;
-                    adjustedHeight = height / widthExceedingRatio;
-                } else {
-                    adjustedWidth = width / heightExceedingRatio;
-                    adjustedHeight = height / heightExceedingRatio;
-                }
-                matcher.appendReplacement(buf, "<img" + prepend + "width: " + ((int) adjustedWidth) + "px; height: " + ((int) adjustedHeight) + "px" + append + ">");
-            }
-        }
-        matcher.appendTail(buf);
-        return buf.toString();
+                    float widthExceedingRatio = width / maxWidth;
+                    float heightExceedingRatio = height / maxHeight;
+                    if (widthExceedingRatio > 1 || heightExceedingRatio > 1) {
+                        String prepend = regexEngine.group("prepend");
+                        String append = regexEngine.group("append");
+                        final float adjustedWidth;
+                        final float adjustedHeight;
+                        if (widthExceedingRatio > heightExceedingRatio) {
+                            adjustedWidth = width / widthExceedingRatio;
+                            adjustedHeight = height / widthExceedingRatio;
+                        } else {
+                            adjustedWidth = width / heightExceedingRatio;
+                            adjustedHeight = height / heightExceedingRatio;
+                        }
+                        return "<img" + prepend + "width: " + ((int) adjustedWidth) + "px; height: " + ((int) adjustedHeight) + "px" + append + ">";
+                    } else {
+                        return null;
+                    }
+                });
     }
 
     @NotNull
@@ -998,21 +858,17 @@ public class HtmlProcessor {
     public String adjustTableSize(@NotNull String html, @NotNull Orientation orientation, @NotNull PaperSize paperSize) {
         // We are looking here for tables which widths are explicitly specified.
         // When width exceeds limit we override it by value "100%"
-        Pattern pattern = Pattern.compile("<table[^>]+?width:\\s*?(?<width>[\\d.]+?)(?<measure>px|%)");
-        Matcher matcher = pattern.matcher(html);
-
-        StringBuilder buf = new StringBuilder();
-        while (matcher.find()) {
-            String width = matcher.group(WIDTH);
-            String measure = matcher.group(MEASURE);
+        return RegexMatcher.get("<table[^>]+?width:\\s*?(?<width>[\\d.]+?)(?<measure>px|%)").replace(html, regexEngine -> {
+            String width = regexEngine.group(WIDTH);
+            String measure = regexEngine.group(MEASURE);
             float widthParsed = Float.parseFloat(width);
             float maxWidth = orientation == Orientation.PORTRAIT ? MAX_PORTRAIT_WIDTHS.get(paperSize) : MAX_LANDSCAPE_WIDTHS.get(paperSize);
             if (MEASURE_PX.equals(measure) && widthParsed > maxWidth || MEASURE_PERCENT.equals(measure) && widthParsed > FULL_WIDTH_PERCENT) {
-                matcher.appendReplacement(buf, matcher.group().replace(width + measure, "100%"));
+                return regexEngine.group().replace(width + measure, "100%");
+            } else {
+                return null;
             }
-        }
-        matcher.appendTail(buf);
-        return buf.toString();
+        });
     }
 
     @NotNull
@@ -1044,33 +900,24 @@ public class HtmlProcessor {
             }
             String tableHtml = html.substring(tableStart, tableEnd);
 
-            Pattern pattern = Pattern.compile("(<img[^>]+?width:\\s*?(?<widthValue>(?<width>[\\d.]*?)(?<measure>px|ex)|auto);[^>]+?>)");
-            Matcher matcher = pattern.matcher(tableHtml);
-
-            StringBuilder tableBuf = new StringBuilder();
-            while (matcher.find()) {
-                String widthValue = matcher.group("widthValue");
+            String modifiedTableContent = RegexMatcher.get("(<img[^>]+?width:\\s*?(?<widthValue>(?<width>[\\d.]*?)(?<measure>px|ex)|auto);[^>]+?>)").replace(tableHtml, regexEngine -> {
+                String widthValue = regexEngine.group("widthValue");
                 float width;
                 if (widthValue.equals("auto")) {
                     width = Float.MAX_VALUE;
                 } else {
-                    width = Float.parseFloat(matcher.group(WIDTH));
-                    if (MEASURE_EX.equals(matcher.group(MEASURE))) {
+                    width = Float.parseFloat(regexEngine.group(WIDTH));
+                    if (MEASURE_EX.equals(regexEngine.group(MEASURE))) {
                         width = width * EX_TO_PX_RATIO;
                     }
                 }
                 float maxWidth = orientation == Orientation.PORTRAIT ? MAX_PORTRAIT_WIDTHS_IN_TABLES.get(paperSize) : MAX_LANDSCAPE_WIDTHS_IN_TABLES.get(paperSize);
-                if (width > maxWidth) {
-                    String img = matcher.group()
-                            .replaceAll("max-width:\\s*?([\\d.]*?(px|ex)|auto);", "") //it seems that max-width doesn't work in WP
-                            .replaceAll("width:\\s*?([\\d.]*?(px|ex)|auto);", "")     //remove width too, we will add it later
-                            .replaceAll("height:\\s*?[\\d.]*?(px|ex);", "")           //remove height completely in order to keep image ratio
-                            .replace("style=\"", "style=\"width: " + ((int) maxWidth) + "px;");
-                    matcher.appendReplacement(tableBuf, img);
-                }
-            }
-            matcher.appendTail(tableBuf);
-            String modifiedTableContent = tableBuf.toString();
+                return width <= maxWidth ? null : regexEngine.group()
+                        .replaceAll("max-width:\\s*?([\\d.]*?(px|ex)|auto);", "") //it seems that max-width doesn't work in WP
+                        .replaceAll("width:\\s*?([\\d.]*?(px|ex)|auto);", "")     //remove width too, we will add it later
+                        .replaceAll("height:\\s*?[\\d.]*?(px|ex);", "")           //remove height completely in order to keep image ratio
+                        .replace("style=\"", "style=\"width: " + ((int) maxWidth) + "px;");
+            });
 
             buf.append(modifiedTableContent);
             pos = tableEnd;
@@ -1106,26 +953,16 @@ public class HtmlProcessor {
     @SneakyThrows
     @SuppressWarnings({"java:S5852", "java:S5857"}) //need by design
     public String replaceImagesAsBase64Encoded(String html) {
-        // Replace encoded underscore symbol in 'src' attribute of images
-        Matcher encodedUnderscoreMatcher = Pattern.compile("(src=\".*?%5F.*?\")").matcher(html);
-        StringBuilder buf = new StringBuilder();
-        while (encodedUnderscoreMatcher.find()) {
-            String group = encodedUnderscoreMatcher.group();
-            encodedUnderscoreMatcher.appendReplacement(buf, group.replace("%5F", "_"));
-        }
-        encodedUnderscoreMatcher.appendTail(buf);
-        html = buf.toString();
-
         //Retrieves data of 'src' attribute from 'img' tags
-        Matcher imageMatcher = Pattern.compile("<img[^<>]*src=\"([^\"]*)\"").matcher(html);
+        IRegexEngine imageRegexEngine = RegexMatcher.get("<img[^<>]*src=\"([^\"]*)\"").createEngine(html);
         Set<String> replacedUrlList = new HashSet<>();
-        while (imageMatcher.find()) {
-            String url = imageMatcher.group(1);
+        while (imageRegexEngine.find()) {
+            String url = imageRegexEngine.group(1);
             if (replacedUrlList.contains(url) || url.startsWith("data:")) {
                 continue;
             }
             replacedUrlList.add(url);
-            byte[] imgBytes = fileResourceProvider.getResourceAsBytes(url);
+            byte[] imgBytes = fileResourceProvider.getResourceAsBytes(url.replace("%5F", "_")); // Replace encoded underscore symbol in 'src' attribute of images
             if (imgBytes != null) { // Don't make any manipulations if image wasn't resolved
                 try (InputStream is = new BufferedInputStream(new ByteArrayInputStream(imgBytes))) {
                     String mimeType = URLConnection.guessContentTypeFromStream(is);

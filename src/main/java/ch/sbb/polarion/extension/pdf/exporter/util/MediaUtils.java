@@ -28,6 +28,7 @@ public class MediaUtils {
     private static final int RIGHT_WHITE_AREA_PX = 30;
     private static final int PDF_TO_PNG_DPI = 72;
     private static final String IMG_FORMAT_PNG = "png";
+    private static final String ALLOWED_FOLDER_FOR_BINARY_FILES = "/default/";
 
     @SneakyThrows
     public BufferedImage pdfPageToImage(PDDocument document, int page) {
@@ -113,6 +114,9 @@ public class MediaUtils {
 
     @SuppressWarnings("java:S1168")
     public byte[] getBinaryFileFromJar(@NotNull String filePath) {
+        if (filePath.contains("..") || !filePath.startsWith(ALLOWED_FOLDER_FOR_BINARY_FILES)) {
+            throw new IllegalArgumentException("Attempt to read from restricted path: " + filePath);
+        }
         try (InputStream is = ScopeUtils.class.getClassLoader().getResourceAsStream(filePath)) {
             return is != null ? is.readAllBytes() : null;
         } catch (IOException e) {

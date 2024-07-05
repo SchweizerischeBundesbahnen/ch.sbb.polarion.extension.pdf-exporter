@@ -2,6 +2,7 @@ package ch.sbb.polarion.extension.pdf.exporter.weasyprint.cli;
 
 import ch.sbb.polarion.extension.pdf.exporter.PdfExportException;
 import ch.sbb.polarion.extension.pdf.exporter.properties.PdfExporterExtensionConfiguration;
+import ch.sbb.polarion.extension.pdf.exporter.util.regex.RegexMatcher;
 import ch.sbb.polarion.extension.pdf.exporter.weasyprint.WeasyPrintConverter;
 import ch.sbb.polarion.extension.pdf.exporter.weasyprint.WeasyPrintOptions;
 import com.polarion.core.util.logging.Logger;
@@ -31,14 +32,12 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class WeasyPrintExecutor implements WeasyPrintConverter {
     private static final String STDINOUT = "-";
     private static final int TIMEOUT = 10;
     private static final ModuleDescriptor.Version FORMAT_PARAM_REMOVED_VERSION = ModuleDescriptor.Version.parse("53.0");
-    private static final Pattern WEASYPRINT_VERSION_PATTERN = Pattern.compile("version (?<version>.+)", Pattern.CASE_INSENSITIVE);
+    private static final RegexMatcher WEASYPRINT_VERSION_MATCHER = RegexMatcher.get("version (?<version>.+)", RegexMatcher.CASE_INSENSITIVE);
 
     private final List<Integer> successValues = new ArrayList<>(Collections.singletonList(0));
     private final Logger logger = Logger.getLogger(WeasyPrintExecutor.class);
@@ -168,13 +167,10 @@ public class WeasyPrintExecutor implements WeasyPrintConverter {
     @Nullable
     @VisibleForTesting
     ModuleDescriptor.Version parseVersion(String line) {
-        Matcher matcher = WEASYPRINT_VERSION_PATTERN.matcher(line);
-        if (matcher.find()) {
-            String version = matcher.group("version");
-            logger.debug("weasyprint executable version: " + version);
-            return ModuleDescriptor.Version.parse(version);
-        }
-        return null;
+        ModuleDescriptor.Version version = WEASYPRINT_VERSION_MATCHER.findFirst(line, regexEngine -> regexEngine.group("version"))
+                .map(ModuleDescriptor.Version::parse).orElse(null);
+        logger.debug("weasyprint executable version: " + version);
+        return version;
     }
 
     @NotNull
