@@ -199,9 +199,11 @@ function loadPdf(projectId, locationPath) {
     listsCheckXhr.responseType = "json";
     listsCheckXhr.send(request);
     listsCheckXhr.onload = () => {
-        if (listsCheckXhr.status === 200 && listsCheckXhr.response.containsNestedLists) {
-            $("#export-warning").append("Document contains nested numbered lists which structures were not valid. " +
-                "We did our best to fix it, but be aware of it.");
+        if (listsCheckXhr.status === 200) {
+            if (listsCheckXhr.response.containsNestedLists) {
+                $("#export-warning").append("Document contains nested numbered lists which structures were not valid. " +
+                    "We did our best to fix it, but be aware of it.");
+            }
         } else {
             //display error body content
             $("#export-error").append("Error occurred validating nested lists" + (listsCheckXhr.response.message ? ":<br>" + listsCheckXhr.response.message : ""));
