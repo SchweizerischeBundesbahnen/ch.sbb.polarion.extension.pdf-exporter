@@ -169,6 +169,7 @@ function prepareRequest(projectId, locationPath) {
         numberedListStyles: document.getElementById("numbered-list-styles").value,
         chapters: selectedChapters,
         language: document.getElementById('localization').checked ? document.getElementById("language").value : null,
+        liveDocumentLanguage: new URL(window.location.href.replace('#', '/')).searchParams.get('language'),
         linkedWorkitemRoles: selectedRoles,
     });
 }

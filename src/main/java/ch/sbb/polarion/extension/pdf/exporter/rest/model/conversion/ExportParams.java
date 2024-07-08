@@ -34,6 +34,7 @@ public class ExportParams {
     private String numberedListStyles;
     private List<String> chapters;
     private String language;
+    private String liveDocumentLanguage;
     private List<String> linkedWorkitemRoles;
     private String internalContent; //overrides existing content in doc
 
