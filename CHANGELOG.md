@@ -1,5 +1,19 @@
 # Changelog
 
+## [5.5.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v5.4.1...v5.5.0) (2024-07-09)
+
+
+### Features
+
+* portal language for LiveDoc is supported for PDF export ([#69](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/69)) ([d3fd678](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/d3fd6789448749902247a02e671c553bcb1448f7)), closes [#58](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/58)
+
+
+### Bug Fixes
+
+* **deps:** update dependency net.bytebuddy:byte-buddy to v1.14.18 ([80a5272](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/80a5272a5b09fd3758e8daf7ce358b225c4bd8be))
+* HTTP Status 500 in About page by migration to generic v6.1.0 ([#73](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/73)) ([45cf6fe](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/45cf6fef038f7065051a2b3a40232676c3d45688)), closes [#71](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/71)
+* misaligned TOC numbers fix ([#72](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/72)) ([1271359](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/1271359a84de9c605ca78556538332a011d24839))
+
 ## [5.4.1](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v5.4.0...v5.4.1) (2024-07-08)
 
 
