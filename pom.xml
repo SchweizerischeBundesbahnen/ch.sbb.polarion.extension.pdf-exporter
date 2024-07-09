@@ -5,7 +5,7 @@
     <parent>
         <groupId>ch.sbb.polarion.extensions</groupId>
         <artifactId>ch.sbb.polarion.extension.generic</artifactId>
-        <version>6.0.3</version>
+        <version>6.1.0</version>
     </parent>
 
     <artifactId>ch.sbb.polarion.extension.pdf-exporter</artifactId>
@@ -35,7 +35,7 @@
     <scm>
         <connection>scm:git:git://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter.git</connection>
         <developerConnection>scm:git:ssh://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter.git</developerConnection>
-        <url>http://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/tree/main</url>
+        <url>https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/tree/main</url>
     </scm>
 
     <issueManagement>

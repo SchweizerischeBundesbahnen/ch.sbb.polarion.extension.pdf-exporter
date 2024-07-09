@@ -9,6 +9,8 @@ jobs:
     permissions:
       contents: read
       packages: write
+    env:
+      GITHUB_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332  # v4
       - name: Set up JDK and Maven
@@ -79,5 +81,3 @@ jobs:
       - name: Publish to GitHub Packages
         if: ${{ !endsWith(steps.artefact_version.outputs.version, '-SNAPSHOT') && github.ref == 'refs/heads/main' }}
         run: mvn --batch-mode deploy -P gpg-sign -P deploy-github-packages
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
