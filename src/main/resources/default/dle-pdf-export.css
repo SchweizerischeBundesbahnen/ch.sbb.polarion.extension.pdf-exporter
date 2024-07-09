@@ -105,9 +105,14 @@ ul.toc ul {
 
 ul.toc li {
     border-bottom: 1px dotted black;
+    display: table;
+    width: 100%;
+    position: relative;
 }
 
 ul.toc li > a {
+    display: table-cell;
+    padding-right: 5em;
     text-decoration: none;
     color: inherit;
 }
@@ -121,12 +126,11 @@ ul.toc li a .number {
     margin-right: .4em;
 }
 
-ul.toc li a .text {
-    margin-right: 10em;
-}
-
 ul.toc li > a.page-number {
-    float: right;
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    padding-right: 0;
 }
 
 ul.toc li > a.page-number::after {
