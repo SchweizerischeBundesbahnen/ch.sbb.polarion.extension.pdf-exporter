@@ -5,7 +5,7 @@
     <parent>
         <groupId>ch.sbb.polarion.extensions</groupId>
         <artifactId>ch.sbb.polarion.extension.generic</artifactId>
-        <version>6.1.0</version>
+        <version>6.2.0</version>
     </parent>
 
     <artifactId>ch.sbb.polarion.extension.pdf-exporter</artifactId>
@@ -28,7 +28,7 @@
             <name>SBB Polarion Team</name>
             <email>polarion-opensource@sbb.ch</email>
             <organization>SBB AG</organization>
-            <organizationUrl>http://www.sbb.ch</organizationUrl>
+            <organizationUrl>https://www.sbb.ch</organizationUrl>
         </developer>
     </developers>
 
@@ -149,6 +149,16 @@
 
     <build>
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-clean-plugin</artifactId>
+            </plugin>
+
+            <plugin>
+                <groupId>ch.sbb.maven.plugins</groupId>
+                <artifactId>markdown2html-maven-plugin</artifactId>
+            </plugin>
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-dependency-plugin</artifactId>
