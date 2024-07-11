@@ -1,5 +1,13 @@
 # Changelog
 
+## [5.5.1](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v5.5.0...v5.5.1) (2024-07-11)
+
+
+### Bug Fixes
+
+* **deps:** update dependency ch.sbb.polarion.extensions:ch.sbb.polarion.extension.generic to v6.2.0 ([c40db4b](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/c40db4bdeca3558b0187e81744241ee4a8a0f277))
+* Fixed export of a live document from a collection ([#87](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/87)) ([f5b0f0d](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/f5b0f0d39e95f236d9cbce980408b8a946d4607a)), closes [#77](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/77)
+
 ## [5.5.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v5.4.1...v5.5.0) (2024-07-09)
 
 
