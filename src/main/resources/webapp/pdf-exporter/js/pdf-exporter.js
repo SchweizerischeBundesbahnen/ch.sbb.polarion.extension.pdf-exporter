@@ -29,16 +29,15 @@ function ExportContext() {
             ? window.location.hash.substring(2, window.location.hash.indexOf("?"))
             : window.location.hash.substring(2)
     );
-    const hashParts = locationHash.split("wiki/");
-    if (hashParts.length > 0) {
-        this.scope = hashParts[0];
-    }
-    if (hashParts.length > 1) {
-        if (hashParts[1].includes("/")) {
-            this.path = hashParts[1];
+    const locationParts = locationHash.match("(project/[^/]+/).*wiki/(.*)")
+    if (locationParts) {
+        this.scope = locationParts[1]
+
+        if (locationParts[2].includes("/")) {
+            this.path = locationParts[2];
         } else {
             //in this case path contains only document name
-            this.path = "_default/" + hashParts[1];
+            this.path = "_default/" + locationParts[1];
         }
     }
 
