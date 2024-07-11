@@ -37,7 +37,7 @@ function ExportContext() {
             this.path = locationParts[2];
         } else {
             //in this case path contains only document name
-            this.path = "_default/" + locationParts[1];
+            this.path = "_default/" + locationParts[2];
         }
     }
 
