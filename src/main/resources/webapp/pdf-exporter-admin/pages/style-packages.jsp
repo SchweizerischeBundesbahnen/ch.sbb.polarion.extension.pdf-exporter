@@ -86,17 +86,17 @@
                     <div id="cover-page-select" style="display: none"></div>
                 </div>
                 <div class="input-group">
-                    <label id="css-select-label">CSS:</label>
+                    <label for="css-select" id="css-select-label">CSS:</label>
                     <div id="css-select"></div>
                 </div>
             </div>
             <div class="flex-column">
                 <div class="input-group">
-                    <label id="header-footer-select-label">Header/Footer:</label>
+                    <label for="header-footer-select" id="header-footer-select-label">Header/Footer:</label>
                     <div id="header-footer-select"></div>
                 </div>
                 <div class="input-group">
-                    <label id="localization-select-label">Localization:</label>
+                    <label for="localization-select" id="localization-select-label">Localization:</label>
                     <div id="localization-select"></div>
                 </div>
             </div>
@@ -111,11 +111,11 @@
             </div>
             <div class="flex-column">
                 <div class='input-group'>
-                    <label id='paper-size-label'>Paper Size:</label>
+                    <label for="paper-size-select" id='paper-size-label'>Paper Size:</label>
                     <div id="paper-size-select"></div>
                 </div>
                 <div class='input-group'>
-                    <label id='orientation-label'>Orientation:</label>
+                    <label for="orientation-select" id='orientation-label'>Orientation:</label>
                     <div id="orientation-select"></div>
                 </div>
             </div>

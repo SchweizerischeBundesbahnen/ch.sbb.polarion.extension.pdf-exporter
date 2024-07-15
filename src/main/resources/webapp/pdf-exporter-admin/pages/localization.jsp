@@ -42,7 +42,7 @@
             display: none;
         }
 
-        td.action {
+        td.action, div.action {
             border: none !important;
             cursor: pointer;
             vertical-align: middle !important;
@@ -77,10 +77,10 @@
 
     <div id="translation-table" style="width: 100%; display: inline-block; margin-top: 15px" class="pdf-admin-text">
     </div>
-    <table id="export-import-table" width="100%" style="border-collapse: collapse">
-        <tr>
-            <td style="width: 24%; text-align: center"></td>
-            <td style="width: 24%; text-align: center">
+    <div id="export-import-table" style="display: table; width: 100%; border-collapse: collapse">
+        <div style="display: table-row;">
+            <div style="display: table-cell; width: 24%; text-align: center"></div>
+            <div style="display: table-cell; width: 24%; text-align: center">
                 <span>
                     <button class="toolbar-button" id="lang-de" onclick="downloadLocalization('de')">Export</button>
                 </span>
@@ -88,8 +88,8 @@
                     <label for="file-de" class="toolbar-button label">Import</label>
                     <input id="file-de" name="file" type="file"/>
                 </span>
-            </td>
-            <td style="width: 24%; text-align: center">
+            </div>
+            <div style="display: table-cell; width: 24%; text-align: center">
                 <span>
                     <button class="toolbar-button" id="lang-fr" onclick="downloadLocalization('fr')">Export</button>
                 </span>
@@ -97,8 +97,8 @@
                     <label for="file-fr" class="toolbar-button label">Import</label>
                     <input id="file-fr" name="file" type="file"/>
                 </span>
-            </td>
-            <td style="width: 24%; text-align: center">
+            </div>
+            <div style="display: table-cell; width: 24%; text-align: center">
                 <span>
                     <button class="toolbar-button" id="lang-it" onclick="downloadLocalization('it')">Export</button>
                 </span>
@@ -107,12 +107,12 @@
                     <input id="file-it" name="file" type="file"/>
                 </span>
 
-            </td>
-            <td class="action" onclick="createEmptyTableRow()" title="Add">
-                <img src="/polarion/ria/images/control/tablePlus.png">
-            </td>
-        </tr>
-    </table>
+            </div>
+            <div style="display: table-cell;" class="action" onclick="createEmptyTableRow()" onkeypress="createEmptyTableRow()" title="Add">
+                <img src="/polarion/ria/images/control/tablePlus.png" alt="">
+            </div>
+        </div>
+    </div>
 
     <input id="scope" type="hidden" value="<%= request.getParameter("scope")%>"/>
 </div>

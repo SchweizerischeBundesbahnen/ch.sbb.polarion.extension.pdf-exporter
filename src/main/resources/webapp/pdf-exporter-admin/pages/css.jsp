@@ -54,7 +54,7 @@
 
     <div class="input-container">
         <div class="input-block wide">
-            <div class="label-block"><label>CSS</label></div>
+            <div class="label-block"><span>CSS</span></div>
             <code-input class="html-input" id="css-input" lang="css" placeholder=""></code-input>
         </div>
     </div>

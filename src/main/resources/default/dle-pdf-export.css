@@ -582,7 +582,7 @@ pre {
     background-color: #ccffcc;
 }
 
-tr:over {
+tr:hover {
     background-color: #ccffcc;
     border: 2px;
     border-style: dashed;

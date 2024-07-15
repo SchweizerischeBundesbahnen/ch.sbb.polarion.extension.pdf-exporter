@@ -72,11 +72,11 @@
     <h2 class="align-left">Cover Page Template</h2>
     <div class="input-container">
         <div class="input-block left w-48">
-            <div class="label-block"><label>Template HTML</label></div>
+            <div class="label-block"><span>Template HTML</span></div>
             <code-input class="html-input" id="template-html-input" lang="HTML" placeholder=""></code-input>
         </div>
         <div class="input-block right w-48">
-            <div class="label-block"><label>Template CSS</label></div>
+            <div class="label-block"><span>Template CSS</span></div>
             <code-input class="html-input" id="template-css-input" lang="CSS" placeholder=""></code-input>
         </div>
     </div>
@@ -96,11 +96,11 @@
     <div>
         <p>In addition to a default template, there are more predefined ones which you can persist. Please select one from the dropdown below and click 'Persist' button.</p>
 
-        <label id="templates-label">Predefined Templates:</label>
+        <label for="templates-select" id="templates-label">Predefined Templates:</label>
         <div id="templates-select"></div>
         <div class="action-buttons">
             <button class="toolbar-button" onclick="Templates.persistSelected()">
-                <img class="button-image" src="/polarion/ria/images/actions/save.gif?bundle=<%= bundleTimestamp %>">Persist
+                <img class="button-image" src="/polarion/ria/images/actions/save.gif?bundle=<%= bundleTimestamp %>" alt="">Persist
             </button>
         </div>
         <div class="action-alerts" style="display: inline-block">
