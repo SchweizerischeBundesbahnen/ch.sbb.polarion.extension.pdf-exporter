@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.5.2](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v5.5.1...v5.5.2) (2024-07-16)
+
+
+### Bug Fixes
+
+* migrate to generic v6.3.0 to use the markdown2html-maven-plugin v1.1.0 ([#92](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/92)) ([ba80029](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/ba80029b5f51c265762151a0bed559a90caacfc5)), closes [#76](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/76)
+
 ## [5.5.1](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v5.5.0...v5.5.1) (2024-07-11)
 
 
