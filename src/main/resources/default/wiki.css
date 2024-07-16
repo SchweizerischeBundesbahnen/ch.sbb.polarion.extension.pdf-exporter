@@ -227,9 +227,6 @@ div.regiondescription {
     width: 80%;
     font-size: 100%;
     text-align: left;
-    /*border: 1px solid #5b5b5b;
-  border-width: 1px;
-  border-style: outset;*/
     border-collapse: collapse;
     border: 1px solid #CCCCCC;
 }
@@ -251,14 +248,6 @@ div.regiondescription {
     vertical-align: top;
 }
 
-.wiki-table .table-odd {
-
-}
-
-.wiki-table .table-even {
-
-}
-
 .wiki-table-no-border {
     margin: auto;
     empty-cells: show;
@@ -269,10 +258,7 @@ div.regiondescription {
     line-height: 18px;
 }
 
-.wiki-table-no-border td { /*border: 1px solid #5b5b5b;
-  border-width: 1px;
-  border-style: inset;
-  padding: 2px;*/
+.wiki-table-no-border td {
     padding: 2px;
     border-style: none;
     line-height: 18px;
@@ -280,12 +266,8 @@ div.regiondescription {
     vertical-align: top;
 }
 
-.wiki-table-no-border th { /*border: 1px solid;
-  border-width: 1px;
-  border-style: inset;*/
+.wiki-table-no-border th {
     font-weight: bold;
-    /*padding: 2px;
-  background-color:#EEEEEE;*/
     border-style: none;
     padding: 2px;
     background-color: #F0F0F0;
@@ -536,12 +518,6 @@ html {
     position: absolute !important;
     left: 0px;
     right: 0px;
-}
-
-.polarion-HistoryTable-mainPanel {
-    position: absolute !important;
-    top: 0px;
-    bottom: 0px;
 }
 
 .polarion-rpw-table-main {
@@ -1015,9 +991,6 @@ a:hover .polarion-cross-reference-label,
     padding: 17px;
     margin-bottom: 7px;
     cursor: pointer;
-}
-
-.polarion-PlanLabelMacro-planFinishedDivGreen {
     background: #27AE60;
 }
 
@@ -2194,10 +2167,7 @@ a:hover .polarion-cross-reference-label,
     width: 100%;
     vertical-align: middle;
     text-align: center;
-    border-collapse: collapse;
-    /*width:213px;
-      height:75px*/
-}
+    border-collapse: collapse;}
 
 .polarion-TestsExecutionButton-button {
     margin: 5px;

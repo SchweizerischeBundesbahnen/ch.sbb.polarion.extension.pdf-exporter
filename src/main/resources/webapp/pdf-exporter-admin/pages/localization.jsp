@@ -108,7 +108,7 @@
                 </span>
 
             </div>
-            <div style="display: table-cell;" class="action" onclick="createEmptyTableRow()" onkeypress="createEmptyTableRow()" title="Add">
+            <div style="display: table-cell;" class="action" onclick="createEmptyTableRow()" onkeypress="createEmptyTableRow()" role="button" title="Add">
                 <img src="/polarion/ria/images/control/tablePlus.png" alt="">
             </div>
         </div>

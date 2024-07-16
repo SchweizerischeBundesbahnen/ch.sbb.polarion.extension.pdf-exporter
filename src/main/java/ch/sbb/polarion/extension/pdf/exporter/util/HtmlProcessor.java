@@ -158,7 +158,7 @@ public class HtmlProcessor {
 
     public String processHtmlForPDF(@NotNull String html, @NotNull ExportParams exportParams, @NotNull List<String> selectedRoleEnumValues) {
         // Replace all dollar-characters in HTML document before applying any regular expressions, as it has special meaning there
-        html = html.replaceAll("\\$", "&dollar;");
+        html = html.replace("$", "&dollar;");
 
         html = removePd4mlTags(html);
         html = html.replace("/ria/images/enums/", "/icons/default/enums/");
@@ -823,34 +823,44 @@ public class HtmlProcessor {
                     float maxWidth = orientation == Orientation.PORTRAIT ? MAX_PORTRAIT_WIDTHS.get(paperSize) : MAX_LANDSCAPE_WIDTHS.get(paperSize);
                     float maxHeight = orientation == Orientation.PORTRAIT ? MAX_PORTRAIT_HEIGHTS.get(paperSize) : MAX_LANDSCAPE_HEIGHTS.get(paperSize);
 
-                    float width = Float.parseFloat(regexEngine.group(WIDTH));
-                    if (MEASURE_EX.equals(regexEngine.group(MEASURE_WIDTH))) {
-                        width = width * EX_TO_PX_RATIO;
-                    }
-                    float height = Float.parseFloat(regexEngine.group(HEIGHT));
-                    if (MEASURE_EX.equals(regexEngine.group(MEASURE_HEIGHT))) {
-                        height = height * EX_TO_PX_RATIO;
-                    }
+                    float width = parseDimension(regexEngine, WIDTH, MEASURE_WIDTH);
+                    float height = parseDimension(regexEngine, HEIGHT, MEASURE_HEIGHT);
 
-                    float widthExceedingRatio = width / maxWidth;
-                    float heightExceedingRatio = height / maxHeight;
-                    if (widthExceedingRatio > 1 || heightExceedingRatio > 1) {
-                        String prepend = regexEngine.group("prepend");
-                        String append = regexEngine.group("append");
-                        final float adjustedWidth;
-                        final float adjustedHeight;
-                        if (widthExceedingRatio > heightExceedingRatio) {
-                            adjustedWidth = width / widthExceedingRatio;
-                            adjustedHeight = height / widthExceedingRatio;
-                        } else {
-                            adjustedWidth = width / heightExceedingRatio;
-                            adjustedHeight = height / heightExceedingRatio;
-                        }
-                        return "<img" + prepend + "width: " + ((int) adjustedWidth) + "px; height: " + ((int) adjustedHeight) + "px" + append + ">";
-                    } else {
-                        return null;
-                    }
+                    String prepend = regexEngine.group("prepend");
+                    String append = regexEngine.group("append");
+
+                    return generateAdjustedImageTag(prepend, append, width, height, maxWidth, maxHeight);
                 });
+    }
+
+    private float parseDimension(IRegexEngine regexEngine, String dimension, String measure) {
+        float value = Float.parseFloat(regexEngine.group(dimension));
+        if (MEASURE_EX.equals(regexEngine.group(measure))) {
+            value *= EX_TO_PX_RATIO;
+        }
+        return value;
+    }
+
+    private String generateAdjustedImageTag(String prepend, String append, float width, float height, float maxWidth, float maxHeight) {
+        float widthExceedingRatio = width / maxWidth;
+        float heightExceedingRatio = height / maxHeight;
+
+        if (widthExceedingRatio <= 1 && heightExceedingRatio <= 1) {
+            return null;
+        }
+
+        final float adjustedWidth;
+        final float adjustedHeight;
+
+        if (widthExceedingRatio > heightExceedingRatio) {
+            adjustedWidth = width / widthExceedingRatio;
+            adjustedHeight = height / widthExceedingRatio;
+        } else {
+            adjustedWidth = width / heightExceedingRatio;
+            adjustedHeight = height / heightExceedingRatio;
+        }
+
+        return "<img" + prepend + "width: " + ((int) adjustedWidth) + "px; height: " + ((int) adjustedHeight) + "px" + append + ">";
     }
 
     @NotNull
