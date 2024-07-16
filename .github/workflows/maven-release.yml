@@ -68,8 +68,10 @@ jobs:
             ]
       - name: Print settings.xml
         run: cat /home/runner/.m2/settings.xml
+      - name: Install weasyprint
+        run: sudo apt update && sudo apt install weasyprint
       - name: Build with Maven
-        run: mvn --batch-mode -DwpExporterImpl=docker clean package -P tests-with-weasyprint-docker -Dmarkdown2html-maven-plugin.failOnError=true
+        run: mvn --batch-mode -Dmarkdown2html-maven-plugin.failOnError=true -Dmaven-surefire-plugin.wpCommand=weasyprint clean package -P tests-with-weasyprint-cli
       - name: Extract artefact version
         id: artefact_version
         run: echo "version=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)" >> $GITHUB_OUTPUT
