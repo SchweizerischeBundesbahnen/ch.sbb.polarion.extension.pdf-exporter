@@ -6,8 +6,6 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.images.builder.ImageFromDockerfile;
 import org.testcontainers.images.builder.Transferable;
 
-import java.io.IOException;
-
 public class WeasyPrintExporterDockerImpl implements WeasyPrintExporter {
 
     private static final String DOCKER_IMAGE_NAME = "weasyprint_test";
@@ -23,14 +21,7 @@ public class WeasyPrintExporterDockerImpl implements WeasyPrintExporter {
                     .withCopyToContainer(Transferable.of(html), INPUT_FILE_PATH)
                     .waitingFor(fileWaitStrategy)
                     .start();
-
-            return container.copyFileFromContainer(OUTPUT_FILE_PATH, inputStream -> {
-                try {
-                    return inputStream.readAllBytes();
-                } catch (IOException e) {
-                    throw new RuntimeException("Error reading PDF file from container", e);
-                }
-            });
+            return fileWaitStrategy.getPdfFileData();
         }
     }
 }
