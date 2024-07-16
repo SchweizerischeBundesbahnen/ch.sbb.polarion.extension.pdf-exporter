@@ -11,6 +11,7 @@ jobs:
       packages: write
     env:
       GITHUB_TOKEN: ${{ github.token }}
+      MARKDOWN2HTML_MAVEN_PLUGIN_FAIL_ON_ERROR: true
     steps:
       - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332  # v4
       - name: Set up JDK and Maven
@@ -69,7 +70,7 @@ jobs:
       - name: Print settings.xml
         run: cat /home/runner/.m2/settings.xml
       - name: Build with Maven
-        run: mvn --batch-mode -Dmarkdown2html-maven-plugin.failOnError=true clean package -P tests-with-weasyprint-docker
+        run: mvn --batch-mode clean package -P tests-with-weasyprint-docker
       - name: Extract artefact version
         id: artefact_version
         run: echo "version=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)" >> $GITHUB_OUTPUT
