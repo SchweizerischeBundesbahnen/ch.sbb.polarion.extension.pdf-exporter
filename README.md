@@ -6,7 +6,7 @@ The extension uses [WeasyPrint](https://weasyprint.org/) as a PDF engine and req
 
 ## Build
 
-PDF exporter extension can be produced using maven:
+This extension can be produced using maven:
 ```bash
 mvn clean package
 ```
