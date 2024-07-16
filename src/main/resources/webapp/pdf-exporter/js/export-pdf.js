@@ -104,7 +104,7 @@ function setSelector(elementId, value) {
 }
 
 function displayIf(elementId, condition, displayStyle = "block") {
-    document.getElementById(elementId).style.display = !!condition ? displayStyle : "none";
+    document.getElementById(elementId).style.display = condition ? displayStyle : "none";
 }
 
 function setClass(elementId, className) {
@@ -174,7 +174,7 @@ function prepareRequest(projectId, locationPath) {
 
 function getSelectedChapters() {
     const chaptersValue = document.getElementById("chapters").value;
-    let chapters = ((chaptersValue && chaptersValue.replaceAll(" ", "")) || "").split(",");
+    let chapters = (chaptersValue?.replaceAll(" ", "") || "").split(",");
     if (chapters && chapters.length > 0) {
         for (const chapter of chapters) {
             const parsedValue = Number.parseInt(chapter);

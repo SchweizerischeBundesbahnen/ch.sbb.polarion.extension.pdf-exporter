@@ -316,7 +316,7 @@ const PdfExporter = {
             languageValue = stylePackage.language;
         } else {
             const firstOption = document.getElementById("popup-language").querySelector("option:first-child");
-            languageValue = firstOption && firstOption.value;
+            languageValue = firstOption?.value;
         }
         this.setValue("popup-language", languageValue);
         this.visibleIf("popup-language", stylePackage.language);
@@ -566,7 +566,7 @@ const PdfExporter = {
 
     getSelectedChapters: function () {
         const chaptersValue = document.getElementById("popup-chapters").value;
-        let selectedChapters = ((chaptersValue && chaptersValue.replaceAll(" ", "")) || "").split(",");
+        let selectedChapters = (chaptersValue?.replaceAll(" ", "") || "").split(",");
         if (selectedChapters && selectedChapters.length > 0) {
             for (const chapter of selectedChapters) {
                 const parsedValue = Number.parseInt(chapter);
@@ -600,11 +600,11 @@ const PdfExporter = {
     },
 
     displayIf: function (elementId, condition, displayStyle = "block") {
-        document.getElementById(elementId).style.display = !!condition ? displayStyle : "none";
+        document.getElementById(elementId).style.display = condition ? displayStyle : "none";
     },
 
     visibleIf: function (elementId, condition) {
-        document.getElementById(elementId).style.display = !!condition ? "visible" : "hidden";
+        document.getElementById(elementId).style.display = condition ? "visible" : "hidden";
     },
 
     setSelector: function (elementId, value) {
