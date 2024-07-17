@@ -80,7 +80,7 @@ public abstract class BaseWeasyPrintTest {
         if (pdfBytes != null) {
             return getAllPagesAsImagesAndLogAsReports(fileName, pdfBytes);
         } else {
-            logger.warn("No pdf file generated for name " + fileName);
+            logger.warn("No pdf file generated for name {}", fileName);
             return new ArrayList<>();
         }
     }

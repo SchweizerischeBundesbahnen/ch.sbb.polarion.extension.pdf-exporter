@@ -35,7 +35,7 @@ public class FileWaitStrategy implements WaitStrategy {
                 .untilAsserted(() -> {
                     logger.info("Check file existence...");
                     pdfFileData = waitStrategyTarget.copyFileFromContainer(filePath, InputStream::readAllBytes);
-                    logger.info("Pdf file is ready, size = " + pdfFileData.length);
+                    logger.info("Pdf file is ready, size = {}", pdfFileData.length);
                 });
     }
 

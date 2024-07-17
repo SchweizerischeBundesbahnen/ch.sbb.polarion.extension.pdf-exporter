@@ -227,9 +227,6 @@ div.regiondescription {
     width: 80%;
     font-size: 100%;
     text-align: left;
-    /*border: 1px solid #5b5b5b;
-  border-width: 1px;
-  border-style: outset;*/
     border-collapse: collapse;
     border: 1px solid #CCCCCC;
 }
@@ -251,14 +248,6 @@ div.regiondescription {
     vertical-align: top;
 }
 
-.wiki-table .table-odd {
-
-}
-
-.wiki-table .table-even {
-
-}
-
 .wiki-table-no-border {
     margin: auto;
     empty-cells: show;
@@ -269,10 +258,7 @@ div.regiondescription {
     line-height: 18px;
 }
 
-.wiki-table-no-border td { /*border: 1px solid #5b5b5b;
-  border-width: 1px;
-  border-style: inset;
-  padding: 2px;*/
+.wiki-table-no-border td {
     padding: 2px;
     border-style: none;
     line-height: 18px;
@@ -280,12 +266,8 @@ div.regiondescription {
     vertical-align: top;
 }
 
-.wiki-table-no-border th { /*border: 1px solid;
-  border-width: 1px;
-  border-style: inset;*/
+.wiki-table-no-border th {
     font-weight: bold;
-    /*padding: 2px;
-  background-color:#EEEEEE;*/
     border-style: none;
     padding: 2px;
     background-color: #F0F0F0;
@@ -536,12 +518,7 @@ html {
     position: absolute !important;
     left: 0px;
     right: 0px;
-}
-
-.polarion-HistoryTable-mainPanel {
-    position: absolute !important;
-    top: 0px;
-    bottom: 0px;
+    background-color: #FFF;
 }
 
 .polarion-rpw-table-main {
@@ -1015,9 +992,6 @@ a:hover .polarion-cross-reference-label,
     padding: 17px;
     margin-bottom: 7px;
     cursor: pointer;
-}
-
-.polarion-PlanLabelMacro-planFinishedDivGreen {
     background: #27AE60;
 }
 
@@ -1075,7 +1049,6 @@ a:hover .polarion-cross-reference-label,
     height: 0;
     border-left: 7px solid transparent;
     border-right: 7px solid transparent;
-    pd4ml-display: none;
 }
 
 .polarion-PlansMacro-arrowTopLeft, .polarion-PlansMacro-arrowTopRight {
@@ -1084,7 +1057,8 @@ a:hover .polarion-cross-reference-label,
     height: 0;
     border-left: 5px solid transparent;
     border-right: 5px solid transparent;
-    pd4ml-display: none;
+    top: -5px;
+    border-top-width: 8px;
 }
 
 .polarion-PlanProgressMacro-arrowTopLeft, .polarion-PlanProgressMacro-arrowTopRight, .polarion-PlansMacro-arrowTopLeft, .polarion-PlansMacro-arrowTopRight {
@@ -1094,10 +1068,7 @@ a:hover .polarion-cross-reference-label,
 
 .polarion-PlanProgressMacro-arrowTopLeft, .polarion-PlanProgressMacro-arrowTopRight {
     top: -6px;
-}
-
-.polarion-PlansMacro-arrowTopLeft, .polarion-PlansMacro-arrowTopRight {
-    top: -5px;
+    border-top-width: 11px;
 }
 
 .polarion-PlanProgressMacro-arrowBottomRight {
@@ -1106,14 +1077,6 @@ a:hover .polarion-cross-reference-label,
 
 .polarion-PlanProgressMacro-arrowBottomLeft, .polarion-PlanProgressMacro-arrowBottomLeftAligned {
     border-bottom-color: #3A7523;
-}
-
-.polarion-PlanProgressMacro-arrowTopLeft, .polarion-PlanProgressMacro-arrowTopRight {
-    border-top-width: 11px;
-}
-
-.polarion-PlansMacro-arrowTopLeft, .polarion-PlansMacro-arrowTopRight {
-    border-top-width: 8px;
 }
 
 .polarion-PlanProgressMacro-arrowBottomLeft, .polarion-PlanProgressMacro-arrowBottomLeftAligned, .polarion-PlanProgressMacro-arrowBottomRight {
@@ -1148,7 +1111,7 @@ a:hover .polarion-cross-reference-label,
 
 .polarion-PlanProgressMacro-leftCellGrey, .polarion-PlanProgressMacro-leftCellGreen, .polarion-PlanProgressMacro-leftCellRed, .polarion-PlanProgressMacro-leftCellBlack {
     vertical-align: middle;
-    font-family: helvetica;
+    font-family: helvetica, sans-serif;
     font-size: 28px;
     font-weight: bold;
     white-space: nowrap;
@@ -1157,7 +1120,7 @@ a:hover .polarion-cross-reference-label,
 
 .polarion-PlansMacro-leftCellGrey {
     vertical-align: middle;
-    font-family: helvetica;
+    font-family: helvetica, sans-serif;
     font-size: 13px;
     font-weight: bold;
     white-space: nowrap;
@@ -1260,7 +1223,7 @@ a:hover .polarion-cross-reference-label,
 .polarion-PlansMacro-infoDivGreen {
     font-size: 9px;
     line-height: 1em;
-    font-family: helvetica;
+    font-family: helvetica, sans-serif;
 }
 
 .polarion-PlanProgressMacro-infoDivGreen, .polarion-PlansMacro-infoDivGreen {
@@ -1406,7 +1369,6 @@ a:hover .polarion-cross-reference-label,
     border-collapse: separate;
     border-spacing: 0px;
     table-layout: fixed;
-    cellspacing: 0px;
 }
 
 .polarion-WorkItemsBoardMacro-BorderSmallCell {
@@ -1974,10 +1936,6 @@ a:hover .polarion-cross-reference-label,
     display: none;
 }
 
-.polarion-HistoryTable-mainPanel {
-    background-color: #FFF;
-}
-
 .polarion-HistoryTable-table {
     width: 100%;
 }
@@ -2086,7 +2044,7 @@ a:hover .polarion-cross-reference-label,
     width: 100px !important;
     table-layout: fixed;
     font-size: 18px;
-    font-family: Arial;
+    font-family: Arial, sans-serif;
     cursor: pointer;
     height: 50px;
     text-align: center;
@@ -2099,7 +2057,6 @@ a:hover .polarion-cross-reference-label,
     -webkit-box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
     -moz-box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-    text-align: center;
 }
 
 .polarion-StatusButtonExtension-buttons-readOnly {
@@ -2136,7 +2093,7 @@ a:hover .polarion-cross-reference-label,
     width: 100px !important;
     table-layout: fixed;
     font-size: 18px;
-    font-family: Arial;
+    font-family: Arial, sans-serif;
     height: 50px;
     text-align: center;
     padding-left: 2px;
@@ -2167,20 +2124,20 @@ a:hover .polarion-cross-reference-label,
 .polarion-StatusButtonExtension-buttons-labelText {
     font-size: 15px;
     font-weight: bold;
-    font-family: Arial, Helvetica;
+    font-family: Arial, Helvetica, sans-serif;
     white-space: normal;
 }
 
 .polarion-StatusButtonExtension-buttons-labelText-small {
     font-size: 12px;
     font-weight: bold;
-    font-family: Arial, Helvetica;
+    font-family: Arial, Helvetica, sans-serif;
     white-space: normal;
 }
 
 .polarion-StatusButtonExtension-buttons-dateText {
     font-size: 10px;
-    font-family: Arial, Helvetica;
+    font-family: Arial, Helvetica, sans-serif;
     white-space: nowrap;
 }
 
@@ -2198,10 +2155,7 @@ a:hover .polarion-cross-reference-label,
     width: 100%;
     vertical-align: middle;
     text-align: center;
-    border-collapse: collapse;
-    /*width:213px;
-      height:75px*/
-}
+    border-collapse: collapse;}
 
 .polarion-TestsExecutionButton-button {
     margin: 5px;
@@ -2218,7 +2172,7 @@ a:hover .polarion-cross-reference-label,
 .polarion-TestsExecutionButton-buttons, .polarion-TestsExecutionButton-buttons-pdf {
     table-layout: fixed;
     font-size: 18px;
-    font-family: Arial;
+    font-family: Arial, sans-serif;
     cursor: pointer;
     text-align: center;
     border: 1px solid;
@@ -2229,7 +2183,6 @@ a:hover .polarion-cross-reference-label,
     -webkit-box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
     -moz-box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-    text-align: center;
     white-space: normal;
     word-wrap: break-word;
 }
@@ -2263,7 +2216,7 @@ a:hover .polarion-cross-reference-label,
     font-size: 26px;
     font-weight: bold;
     color: #43a134;
-    font-family: Arial;
+    font-family: Arial, sans-serif;
     text-align: center;
     text-shadow: 1px 1px 0 white;
     padding-bottom: 1px;
@@ -2276,7 +2229,7 @@ a:hover .polarion-cross-reference-label,
 .polarion-TestsExecutionButton-sumText {
     font-size: 11px;
     color: #5f5f5f;
-    font-family: Arial;
+    font-family: Arial, sans-serif;
     text-align: center;
     text-shadow: 1px 1px 0 white;
     padding: 0 10px 7px;
@@ -2583,14 +2536,14 @@ a:hover .polarion-cross-reference-label,
 .polarion-TestRunOverviewWidget-count {
     line-height: 0;
     font-weight: bold;
-    font-family: Arial;
+    font-family: Arial, sans-serif;
     text-align: center;
 }
 
 .polarion-TestRunOverviewWidget-buttonName {
     line-height: 1em;
     font-size: 11px;
-    font-family: Arial;
+    font-family: Arial, sans-serif;
     text-align: center;
 }
 

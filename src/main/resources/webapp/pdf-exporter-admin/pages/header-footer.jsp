@@ -60,15 +60,15 @@
     <h2 class="align-left">Header Template</h2>
     <div class="input-container">
         <div class="input-block left">
-            <div class="label-block"><label>Left</label></div>
+            <div class="label-block"><span>Left</span></div>
             <code-input class="html-input" id="top-left" lang="HTML" placeholder=""></code-input>
         </div>
         <div class="input-block">
-            <div class="label-block"><label>Center</label></div>
+            <div class="label-block"><span>Center</span></div>
             <code-input class="html-input" id="top-center" lang="HTML" placeholder=""></code-input>
         </div>
         <div class="input-block right">
-            <div class="label-block"><label>Right</label></div>
+            <div class="label-block"><span>Right</span></div>
             <code-input class="html-input" id="top-right" lang="HTML" placeholder=""></code-input>
         </div>
     </div>
@@ -76,15 +76,15 @@
     <h2 class="align-left">Footer Template</h2>
     <div class="input-container">
         <div class="input-block left">
-            <div class="label-block"><label>Left</label></div>
+            <div class="label-block"><span>Left</span></div>
             <code-input class="html-input" id="bottom-left" lang="HTML" placeholder=""></code-input>
         </div>
         <div class="input-block">
-            <div class="label-block"><label>Center</label></div>
+            <div class="label-block"><span>Center</span></div>
             <code-input class="html-input" id="bottom-center" lang="HTML" placeholder=""></code-input>
         </div>
         <div class="input-block right">
-            <div class="label-block"><label>Right</label></div>
+            <div class="label-block"><span>Right</span></div>
             <code-input class="html-input" id="bottom-right" lang="HTML" placeholder=""></code-input>
         </div>
     </div>

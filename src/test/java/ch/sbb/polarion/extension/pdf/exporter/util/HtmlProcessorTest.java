@@ -315,6 +315,13 @@ class HtmlProcessorTest {
     }
 
     @Test
+    void replaceDollars() {
+        String html = "<div>100$</div>";
+        String result = processor.processHtmlForPDF(html, getExportParams(), List.of());
+        assertEquals("<div>100&dollar;</div>", result);
+    }
+
+    @Test
     @SneakyThrows
     void adjustContentToFitPageTest() {
         try (InputStream isInvalidHtml = this.getClass().getResourceAsStream("/fitToPageBeforeProcessing.html");

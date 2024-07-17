@@ -59,12 +59,12 @@
 
     <div class="input-container">
         <div class="input-block left w-48">
-            <div class="label-block"><label>Document filename template:</label></div>
+            <div class="label-block"><span>Document filename template:</span></div>
             <code-input class="html-input" id="document-name-template" lang="velocity" placeholder=""></code-input>
         </div>
 
         <div class="input-block right w-48">
-            <div class="label-block"><label>Report filename template:</label></div>
+            <div class="label-block"><span>Report filename template:</span></div>
             <code-input class="html-input" id="report-name-template" lang="velocity" placeholder=""></code-input>
         </div>
     </div>

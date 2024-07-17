@@ -32,7 +32,7 @@ const PdfExporterStarter = {
     inject: function () {
         this.loadExtensionVersion()
             .then((response) => {
-                this.bundleTimestamp = response && response.bundleBuildTimestampDigitsOnly;
+                this.bundleTimestamp = response?.bundleBuildTimestampDigitsOnly;
                 this.injectAll(this.bundleTimestamp ? `?bundle=${this.bundleTimestamp}` : "");
             }).catch(() => {
                 // Fallback to load resources without timestamp in case of error
@@ -71,7 +71,7 @@ const PdfExporterStarter = {
     injectToolbar: function (params) {
         const bundleTimestampParam = this.bundleTimestamp ? `?bundle=${this.bundleTimestamp}` : "";
 
-        if (params && params.alternate) {
+        if (params?.alternate) {
             const toolbarParent = top.document.querySelector('div.polarion-content-container div.polarion-Container div.polarion-dle-Container > div.polarion-dle-Wrapper > div.polarion-dle-RpcPanel > div.polarion-dle-MainDockPanel div.polarion-rte-ToolbarPanelWrapper table.polarion-dle-ToolbarPanel tr');
             const toolbarContainer = document.createElement('td');
             toolbarContainer.innerHTML = ALTERNATE_TOOLBAR_HTML.replaceAll("{BUNDLE_TIMESTAMP}", bundleTimestampParam);

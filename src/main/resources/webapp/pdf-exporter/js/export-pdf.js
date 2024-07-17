@@ -1,4 +1,4 @@
-consts = {
+let consts = {
     DEFAULT_SETTING_NAME: "Default",
     DOC_PDF_CONVERSION_PULL_INTERVAL: 1000
 }
@@ -35,66 +35,80 @@ function stylePackageChanged() {
 }
 
 function stylePackageSelected(stylePackage) {
-    if (stylePackage) {
-        const documentLanguage = document.getElementById("document-language").value;
-
-        document.getElementById("cover-page-checkbox").checked = !!stylePackage.coverPage;
-        const coverPageSelector = document.getElementById("cover-page-selector");
-        coverPageSelector.value = containsOption(coverPageSelector, stylePackage.coverPage) ? stylePackage.coverPage : consts.DEFAULT_SETTING_NAME;
-        coverPageSelector.style.display = !!stylePackage.coverPage ? "inline-block" : "none";
-
-        const cssSelector = document.getElementById("css-selector");
-        cssSelector.value = containsOption(cssSelector, stylePackage.css) ? stylePackage.css : consts.DEFAULT_SETTING_NAME;
-
-        const headerFooterSelector = document.getElementById("header-footer-selector");
-        headerFooterSelector.value = containsOption(headerFooterSelector, stylePackage.headerFooter) ? stylePackage.headerFooter : consts.DEFAULT_SETTING_NAME;
-
-        const localizationSelector = document.getElementById("localization-selector");
-        localizationSelector.value = containsOption(localizationSelector, stylePackage.localization) ? stylePackage.localization : consts.DEFAULT_SETTING_NAME;
-
-        document.getElementById("headers-color").value = stylePackage.headersColor;
-        document.getElementById("paper-size-selector").value = stylePackage.paperSize || 'A4';
-        document.getElementById("orientation-selector").value = stylePackage.orientation || 'PORTRAIT';
-        document.getElementById("fit-to-page").checked = stylePackage.fitToPage;
-        document.getElementById("enable-comments-rendering").checked = stylePackage.renderComments;
-        document.getElementById("watermark").checked = stylePackage.watermark;
-        document.getElementById("mark-referenced-workitems").checked = stylePackage.markReferencedWorkitems;
-        document.getElementById("cut-empty-chapters").checked = stylePackage.cutEmptyChapters;
-        document.getElementById("cut-empty-wi-attributes").checked = stylePackage.cutEmptyWorkitemAttributes;
-        document.getElementById("cut-urls").checked = stylePackage.cutLocalURLs;
-        document.getElementById("presentational-hints").checked = stylePackage.followHTMLPresentationalHints;
-
-        document.getElementById("custom-list-styles").checked = !!stylePackage.customNumberedListStyles;
-        const numberedListStyles = document.getElementById("numbered-list-styles");
-        numberedListStyles.value = stylePackage.customNumberedListStyles || "";
-        numberedListStyles.style.display = !!stylePackage.customNumberedListStyles ? "block" : "none";
-
-        document.getElementById("specific-chapters").checked = !!stylePackage.specificChapters;
-        const chapters = document.getElementById("chapters");
-        chapters.value = stylePackage.specificChapters || "";
-        chapters.style.display = !!stylePackage.specificChapters ? "block" : "none";
-
-        document.getElementById("localization").checked = !!stylePackage.language;
-        const language = document.getElementById("language");
-        language.value = (stylePackage.exposeSettings && !!stylePackage.language && documentLanguage) ? documentLanguage : stylePackage.language;
-        language.style.display = !!stylePackage.language ? "block" : "none";
-
-        document.getElementById("selected-roles").checked = !!stylePackage.linkedWorkitemRoles;
-        document.querySelectorAll(`#roles-selector option`).forEach(roleOption => {
-            roleOption.selected = false;
-        });
-        if (stylePackage.linkedWorkitemRoles) {
-            for (const role of stylePackage.linkedWorkitemRoles) {
-                document.querySelectorAll(`#roles-selector option[value='${role}']`).forEach(roleOption => {
-                    roleOption.selected = true;
-                });
-            }
-        }
-        document.getElementById("roles-wrapper").style.display = !!stylePackage.linkedWorkitemRoles ? "block" : "none";
-
-        document.getElementById("style-package-content").style.display = stylePackage.exposeSettings ? "block" : "none";
-        document.getElementById("page-width-validation").style.display = stylePackage.exposePageWidthValidation ? "block" : "none";
+    if (!stylePackage) {
+        return;
     }
+    const documentLanguage = document.getElementById("document-language").value;
+
+    setCheckbox("cover-page-checkbox", stylePackage.coverPage);
+
+    setSelector("cover-page-selector", stylePackage.coverPage);
+    displayIf("cover-page-selector", stylePackage.coverPage, "inline-block")
+
+    setSelector("css-selector", stylePackage.css);
+    setSelector("header-footer-selector", stylePackage.headerFooter);
+    setSelector("localization-selector", stylePackage.localization);
+
+    setValue("headers-color", stylePackage.headersColor);
+    setValue("paper-size-selector", stylePackage.paperSize || 'A4');
+    setValue("orientation-selector", stylePackage.orientation || 'PORTRAIT');
+    setCheckbox("fit-to-page", stylePackage.fitToPage);
+    setCheckbox("enable-comments-rendering", stylePackage.renderComments);
+    setCheckbox("watermark", stylePackage.watermark);
+    setCheckbox("mark-referenced-workitems", stylePackage.markReferencedWorkitems);
+    setCheckbox("cut-empty-chapters", stylePackage.cutEmptyChapters);
+    setCheckbox("cut-empty-wi-attributes", stylePackage.cutEmptyWorkitemAttributes);
+    setCheckbox("cut-urls", stylePackage.cutLocalURLs);
+    setCheckbox("presentational-hints", stylePackage.followHTMLPresentationalHints);
+
+    setCheckbox("custom-list-styles", stylePackage.customNumberedListStyles);
+    setValue("numbered-list-styles", stylePackage.customNumberedListStyles || "");
+    displayIf("numbered-list-styles", stylePackage.customNumberedListStyles);
+
+    setCheckbox("specific-chapters", stylePackage.specificChapters);
+    setValue("chapters", stylePackage.specificChapters || "");
+    displayIf("chapters", stylePackage.specificChapters);
+
+    setCheckbox("localization", stylePackage.language);
+    setValue("language", (stylePackage.exposeSettings && stylePackage.language && documentLanguage) ? documentLanguage : stylePackage.language);
+    displayIf("language", stylePackage.language);
+
+    setCheckbox("selected-roles", stylePackage.linkedWorkitemRoles);
+    document.querySelectorAll(`#roles-selector option`).forEach(roleOption => {
+        roleOption.selected = false;
+    });
+    if (stylePackage.linkedWorkitemRoles) {
+        for (const role of stylePackage.linkedWorkitemRoles) {
+            document.querySelectorAll(`#roles-selector option[value='${role}']`).forEach(roleOption => {
+                roleOption.selected = true;
+            });
+        }
+    }
+    displayIf("roles-wrapper", stylePackage.linkedWorkitemRoles);
+
+    displayIf("style-package-content", stylePackage.exposeSettings);
+    displayIf("page-width-validation", stylePackage.exposePageWidthValidation);
+}
+
+function setCheckbox(elementId, value) {
+    document.getElementById(elementId).checked = !!value;
+}
+
+function setValue(elementId, value) {
+    document.getElementById(elementId).value = value;
+}
+
+function setSelector(elementId, value) {
+    const selector = document.getElementById(elementId);
+    selector.value = containsOption(selector, value) ? value : consts.DEFAULT_SETTING_NAME;
+}
+
+function displayIf(elementId, condition, displayStyle = "block") {
+    document.getElementById(elementId).style.display = condition ? displayStyle : "none";
+}
+
+function setClass(elementId, className) {
+    document.getElementById(elementId).className = className;
 }
 
 function containsOption(selectElement, option) {
@@ -104,36 +118,20 @@ function containsOption(selectElement, option) {
 function prepareRequest(projectId, locationPath) {
     let selectedChapters = null;
     if (document.getElementById("specific-chapters").checked) {
-        const selectedChaptersField = document.getElementById("chapters");
-        selectedChaptersField.className = "";
-        const selectedChaptersValue = selectedChaptersField.value;
-
-        selectedChapters = ((selectedChaptersValue && selectedChaptersValue.replaceAll(" ", "")) || "").split(",");
-        if (selectedChapters && selectedChapters.length > 0) {
-            for (const chapter of selectedChapters) {
-                const parsedValue = Number.parseInt(chapter);
-                if (Number.isNaN(parsedValue) || parsedValue < 1 || String(parsedValue) !== chapter) {
-                    selectedChaptersField.className = "error";
-                    $("#export-error").append("Please, provide comma separated list of integer values in chapters field");
-                    // Stop processing if not valid numbers
-                    return undefined;
-                }
-            }
-        }
-    }
-    if (document.getElementById("custom-list-styles").checked) {
-        const numberedListStylesField = document.getElementById("numbered-list-styles");
-        numberedListStylesField.className = "";
-        if (!numberedListStylesField.value || numberedListStylesField.value.trim().length === 0) {
-            numberedListStylesField.className = "error";
-            $("#export-error").append("Please, provide some value");
-            // Stop processing if empty
+        selectedChapters = getSelectedChapters();
+        setClass("chapters", selectedChapters ? "" : "error");
+        if (!selectedChapters) {
+            $("#export-error").append("Please, provide comma separated list of integer values in chapters field");
             return undefined;
         }
-        if (numberedListStylesField.value.match("[^1aAiI]+")) {
-            numberedListStylesField.className = "error";
-            $("#export-error").append("Please, provide any combination of characters '1aAiI'");
-            // Stop processing if not valid styles
+    }
+    let numberedListStyles = null;
+    if (document.getElementById("custom-list-styles").checked) {
+        numberedListStyles = document.getElementById("numbered-list-styles").value;
+        const error = validateNumberedListStyles(numberedListStyles);
+        setClass("numbered-list-styles", error ? "error" : "");
+        if (error) {
+            $("#export-error").append(error);
             return undefined;
         }
     }
@@ -166,12 +164,39 @@ function prepareRequest(projectId, locationPath) {
         cutEmptyWIAttributes: document.getElementById('cut-empty-wi-attributes').checked,
         cutLocalUrls: document.getElementById("cut-urls").checked,
         followHTMLPresentationalHints: document.getElementById("presentational-hints").checked,
-        numberedListStyles: document.getElementById("numbered-list-styles").value,
+        numberedListStyles: numberedListStyles,
         chapters: selectedChapters,
         language: document.getElementById('localization').checked ? document.getElementById("language").value : null,
         liveDocumentLanguage: new URL(window.location.href.replace('#', '/')).searchParams.get('language'),
         linkedWorkitemRoles: selectedRoles,
     });
+}
+
+function getSelectedChapters() {
+    const chaptersValue = document.getElementById("chapters").value;
+    let chapters = (chaptersValue?.replaceAll(" ", "") || "").split(",");
+    if (chapters && chapters.length > 0) {
+        for (const chapter of chapters) {
+            const parsedValue = Number.parseInt(chapter);
+            if (Number.isNaN(parsedValue) || parsedValue < 1 || String(parsedValue) !== chapter) {
+                // Stop processing if not valid numbers
+                return undefined;
+            }
+        }
+    }
+    return chapters;
+}
+
+function validateNumberedListStyles(numberedListStyles) {
+    if (!numberedListStyles || numberedListStyles.trim().length === 0) {
+        // Stop processing if empty
+        return "Please, provide some value";
+    } else if (numberedListStyles.match("[^1aAiI]+")) {
+        // Stop processing if not valid styles
+        return "Please, provide any combination of characters '1aAiI'";
+
+    }
+    return undefined;
 }
 
 function loadPdf(projectId, locationPath) {
@@ -311,45 +336,45 @@ function validatePdf(projectId, locationPath) {
         const container = document.getElementById('validate-error');
         container.replaceChildren(); //remove div content
 
-        if (xhr.status === 200) {
-            let result = xhr.response;
-            let pages = result.invalidPages.length;
-            if (pages > 0) {
-                let message = (pages > 5 ? 'More than 5' : pages) + ' invalid page' + (pages === 1 ? '' : 's') + ' found:';
-                container.appendChild(document.createTextNode(message));
-                container.appendChild(document.createElement("br"));
-                for (const page of result.invalidPages) {
-                    let img = document.createElement("img");
-                    img.className = 'validate-result-img';
-                    img.src = 'data:image/png;base64, ' + page.content;
-                    img.onclick = function () {
-                        this.classList.toggle("img-zoomed");
-                    };
-                    container.appendChild(img);
-                }
-                let suspects = result.suspiciousWorkItems.length;
-                if (suspects > 0) {
-                    container.appendChild(document.createElement("br"));
-                    container.appendChild(document.createTextNode("Suspicious work items:"));
-                    let ul = document.createElement('ul');
-                    ul.className = 'suspicious-list';
-                    for (const suspect of result.suspiciousWorkItems) {
-                        let li = document.createElement('li');
-                        let link = document.createElement("a");
-                        link.href = suspect.link;
-                        link.text = suspect.id;
-                        link.target = '_blank';
-                        li.appendChild(link);
-                        ul.appendChild(li);
-                    }
-                    container.appendChild(ul);
-                }
-            } else {
-                $("#validate-ok").append("OK");
-            }
-        } else {
+        if (xhr.status !== 200) {
             //display error body content
             $("#validate-error").append("Error occurred validating pages width" + (xhr.response.message ? ":<br>" + xhr.response.message : ""));
+            return;
+        }
+        let result = xhr.response;
+        let pages = result.invalidPages.length;
+        if (pages === 0) {
+            $("#validate-ok").append("OK");
+            return;
+        }
+        let message = (pages > 5 ? 'More than 5' : pages) + ' invalid page' + (pages === 1 ? '' : 's') + ' found:';
+        container.appendChild(document.createTextNode(message));
+        container.appendChild(document.createElement("br"));
+        for (const page of result.invalidPages) {
+            let img = document.createElement("img");
+            img.className = 'validate-result-img';
+            img.src = 'data:image/png;base64, ' + page.content;
+            img.onclick = function () {
+                this.classList.toggle("img-zoomed");
+            };
+            container.appendChild(img);
+        }
+        let suspects = result.suspiciousWorkItems.length;
+        if (suspects > 0) {
+            container.appendChild(document.createElement("br"));
+            container.appendChild(document.createTextNode("Suspicious work items:"));
+            let ul = document.createElement('ul');
+            ul.className = 'suspicious-list';
+            for (const suspect of result.suspiciousWorkItems) {
+                let li = document.createElement('li');
+                let link = document.createElement("a");
+                link.href = suspect.link;
+                link.text = suspect.id;
+                link.target = '_blank';
+                li.appendChild(link);
+                ul.appendChild(li);
+            }
+            container.appendChild(ul);
         }
     };
 }

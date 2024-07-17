@@ -582,7 +582,7 @@ pre {
     background-color: #ccffcc;
 }
 
-tr:over {
+tr:hover {
     background-color: #ccffcc;
     border: 2px;
     border-style: dashed;
@@ -872,11 +872,6 @@ li span {
 .header-footer-center {
     max-width: 30%;
     text-align: center;
-    /*    display: flex;
-        flex: 0 0 auto;
-        justify-content: center;
-        align-items: center;
-    */
 }
 
 .header-footer-right {

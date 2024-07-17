@@ -29,7 +29,7 @@ function ExportContext() {
             ? window.location.hash.substring(2, window.location.hash.indexOf("?"))
             : window.location.hash.substring(2)
     );
-    const locationParts = locationHash.match("(project/[^/]+/).*wiki/(.*)")
+    const locationParts = /(project\/[^/]+\/).*wiki\/(.*)/.exec(locationHash);
     if (locationParts) {
         this.scope = locationParts[1]
 
@@ -49,7 +49,7 @@ function ExportContext() {
 }
 
 ExportContext.prototype.getProjectId = function() {
-    const foundValues = this.scope.match("project/(.*)/");
+    const foundValues = /project\/(.*)\//.exec(this.scope);
     return foundValues !== null ? foundValues[1] : null;
 }
 
@@ -275,71 +275,67 @@ const PdfExporter = {
     },
 
     stylePackageSelected: function (stylePackage) {
-        if (stylePackage) {
-            document.getElementById("popup-cover-page-checkbox").checked = !!stylePackage.coverPage;
-            const coverPageSelector = document.getElementById("popup-cover-page-selector");
-            coverPageSelector.value = this.containsOption(coverPageSelector, stylePackage.coverPage) ? stylePackage.coverPage : POPUP_DEFAULT_SETTING_NAME;
-            coverPageSelector.style.visibility = !!stylePackage.coverPage ? "visible" : "hidden";
-
-            const cssSelector = document.getElementById("popup-css-selector");
-            cssSelector.value = this.containsOption(cssSelector, stylePackage.css) ? stylePackage.css : POPUP_DEFAULT_SETTING_NAME;
-
-            const headerFooterSelector = document.getElementById("popup-header-footer-selector");
-            headerFooterSelector.value = this.containsOption(headerFooterSelector, stylePackage.headerFooter) ? stylePackage.headerFooter : POPUP_DEFAULT_SETTING_NAME;
-
-            const localizationSelector = document.getElementById("popup-localization-selector");
-            localizationSelector.value = this.containsOption(localizationSelector, stylePackage.localization) ? stylePackage.localization : POPUP_DEFAULT_SETTING_NAME;
-
-            document.getElementById("popup-headers-color").value = stylePackage.headersColor;
-            document.getElementById("popup-paper-size-selector").value = stylePackage.paperSize || 'A4';
-            document.getElementById("popup-orientation-selector").value = stylePackage.orientation || 'PORTRAIT';
-            document.getElementById("popup-fit-to-page").checked = stylePackage.fitToPage;
-            document.getElementById("popup-enable-comments-rendering").checked = stylePackage.renderComments;
-            document.getElementById("popup-watermark").checked = stylePackage.watermark;
-            document.getElementById("popup-mark-referenced-workitems").checked = stylePackage.markReferencedWorkitems;
-            document.getElementById("popup-cut-urls").checked = stylePackage.cutLocalURLs;
-            document.getElementById("popup-cut-empty-chapters").checked = stylePackage.cutEmptyChapters;
-            document.getElementById("popup-cut-empty-wi-attributes").checked = stylePackage.cutEmptyWorkitemAttributes;
-            document.getElementById("popup-presentational-hints").checked = stylePackage.followHTMLPresentationalHints;
-
-            document.getElementById("popup-custom-list-styles").checked = !!stylePackage.customNumberedListStyles;
-            const numberedListStylesInput = document.getElementById("popup-numbered-list-styles");
-            numberedListStylesInput.value = stylePackage.customNumberedListStyles || "";
-            numberedListStylesInput.style.visibility = !!stylePackage.customNumberedListStyles ? "visible" : "hidden";
-
-            document.getElementById("popup-specific-chapters").checked = !!stylePackage.specificChapters;
-            const chaptersInput = document.getElementById("popup-chapters");
-            chaptersInput.value = stylePackage.specificChapters || "";
-            chaptersInput.style.visibility = !!stylePackage.specificChapters ? "visible" : "hidden";
-
-            document.getElementById("popup-localization").checked = !!stylePackage.language;
-            const languageSelector = document.getElementById("popup-language");
-            if (stylePackage.exposeSettings && !!stylePackage.language && this.documentLanguage) {
-                languageSelector.value = this.documentLanguage;
-            } else if (stylePackage.language) {
-                languageSelector.value = stylePackage.language;
-            } else {
-                const firstOption = languageSelector.querySelector("option:first-child");
-                languageSelector.value = firstOption && firstOption.value;
-            }
-            languageSelector.style.visibility = !!stylePackage.language ? "visible" : "hidden";
-
-            document.getElementById("popup-selected-roles").checked = !!stylePackage.linkedWorkitemRoles;
-            document.querySelectorAll(`#popup-roles-selector option`).forEach(roleOption => {
-                roleOption.selected = false;
-            });
-            if (stylePackage.linkedWorkitemRoles) {
-                for (const role of stylePackage.linkedWorkitemRoles) {
-                    document.querySelectorAll(`#popup-roles-selector option[value='${role}']`).forEach(roleOption => {
-                        roleOption.selected = true;
-                    });
-                }
-            }
-            document.getElementById("popup-roles-selector").style.display = !!stylePackage.linkedWorkitemRoles ? "inline-block" : "none";
-
-            document.getElementById("popup-style-package-content").style.display = stylePackage.exposeSettings ? "block" : "none";
-            document.getElementById("popup-page-width-validation").style.display = stylePackage.exposePageWidthValidation ? "block" : "none";
+        if (!stylePackage) {
+            return;
         }
+
+        this.setCheckbox("popup-cover-page-checkbox", stylePackage.coverPage);
+
+        this.setSelector("popup-cover-page-selector", stylePackage.coverPage);
+        this.visibleIf("popup-cover-page-selector", stylePackage.coverPage)
+
+        this.setSelector("popup-css-selector", stylePackage.css);
+        this.setSelector("popup-header-footer-selector", stylePackage.headerFooter);
+        this.setSelector("popup-localization-selector", stylePackage.localization);
+
+        this.setValue("popup-headers-color", stylePackage.headersColor);
+        this.setValue("popup-paper-size-selector", stylePackage.paperSize || 'A4');
+        this.setValue("popup-orientation-selector", stylePackage.orientation || 'PORTRAIT');
+        this.setCheckbox("popup-fit-to-page", stylePackage.fitToPage);
+        this.setCheckbox("popup-enable-comments-rendering", stylePackage.renderComments);
+        this.setCheckbox("popup-watermark", stylePackage.watermark);
+        this.setCheckbox("popup-mark-referenced-workitems", stylePackage.markReferencedWorkitems);
+        this.setCheckbox("popup-cut-urls", stylePackage.cutLocalURLs);
+        this.setCheckbox("popup-cut-empty-chapters", stylePackage.cutEmptyChapters);
+        this.setCheckbox("popup-cut-empty-wi-attributes", stylePackage.cutEmptyWorkitemAttributes);
+        this.setCheckbox("popup-presentational-hints", stylePackage.followHTMLPresentationalHints);
+
+        this.setCheckbox("popup-custom-list-styles", stylePackage.customNumberedListStyles);
+        this.setValue("popup-numbered-list-styles", stylePackage.customNumberedListStyles || "");
+        this.visibleIf("popup-numbered-list-styles", stylePackage.customNumberedListStyles);
+
+        this.setCheckbox("popup-specific-chapters", stylePackage.specificChapters);
+        this.setValue("popup-chapters", stylePackage.specificChapters || "");
+        this.visibleIf("popup-chapters", stylePackage.specificChapters);
+
+        this.setCheckbox("popup-localization", stylePackage.language);
+        let languageValue;
+        if (stylePackage.exposeSettings && stylePackage.language && this.documentLanguage) {
+            languageValue = this.documentLanguage;
+        } else if (stylePackage.language) {
+            languageValue = stylePackage.language;
+        } else {
+            const firstOption = document.getElementById("popup-language").querySelector("option:first-child");
+            languageValue = firstOption?.value;
+        }
+        this.setValue("popup-language", languageValue);
+        this.visibleIf("popup-language", stylePackage.language);
+
+        this.setCheckbox("popup-selected-roles", stylePackage.linkedWorkitemRoles);
+        document.querySelectorAll(`#popup-roles-selector option`).forEach(roleOption => {
+            roleOption.selected = false;
+        });
+        if (stylePackage.linkedWorkitemRoles) {
+            for (const role of stylePackage.linkedWorkitemRoles) {
+                document.querySelectorAll(`#popup-roles-selector option[value='${role}']`).forEach(roleOption => {
+                    roleOption.selected = true;
+                });
+            }
+        }
+        this.displayIf("popup-roles-selector", stylePackage.linkedWorkitemRoles, "inline-block");
+
+        this.displayIf("popup-style-package-content", stylePackage.exposeSettings);
+        this.displayIf("popup-page-width-validation", stylePackage.exposePageWidthValidation);
     },
 
     validatePdf: function () {
@@ -359,15 +355,16 @@ const PdfExporter = {
         }).then(({response}) => {
             this.actionInProgress({inProgress: false});
 
-            const pages = response.invalidPages && response.invalidPages.length;
+            const pages = response.invalidPages?.length;
             if (pages && pages > 0) {
+                const pagesWord = 'page' + (pages === 1 ? '' : 's');
                 this.showValidationResult({
                     alertType: "error",
                     message: pages > MAX_PAGE_PREVIEWS
                         ? `Invalid pages found. First ${MAX_PAGE_PREVIEWS} of them:`
-                        : `${MAX_PAGE_PREVIEWS} invalid page${pages === 1 ? '' : 's'} found:`
+                        : `${MAX_PAGE_PREVIEWS} invalid ${pagesWord} found:`
                 });
-                this.createPreviews(result);
+                this.createPreviews(response);
             } else {
                 this.showValidationResult({alertType: "success", message: "All pages are valid"});
             }
@@ -500,7 +497,7 @@ const PdfExporter = {
             body: requestBody,
             responseType: "json"
         }).then(({response}) => {
-            if (response && response.containsNestedLists) {
+            if (response?.containsNestedLists) {
                 this.showNotification({alertType: "warning", message: "Document contains nested numbered lists which structures were not valid. We tried to fix this, but be aware of it."});
             }
         }).catch((error) => {
@@ -511,35 +508,21 @@ const PdfExporter = {
     prepareRequestBody: function () {
         let selectedChapters = null;
         if (document.getElementById("popup-specific-chapters").checked) {
-            const selectedChaptersField = document.getElementById("popup-chapters");
-            const selectedChaptersValue = selectedChaptersField.value;
-
-            selectedChapters = ((selectedChaptersValue && selectedChaptersValue.replaceAll(" ", "")) || "").split(",");
-            if (selectedChapters && selectedChapters.length > 0) {
-                for (const chapter of selectedChapters) {
-                    const parsedValue = Number.parseInt(chapter);
-                    if (Number.isNaN(parsedValue) || parsedValue < 1 || String(parsedValue) !== chapter) {
-                        selectedChaptersField.classList.add("error");
-                        this.showNotification({alertType: "error", message: "Please, provide comma separated list of integer values in 'Specific higher level chapters' field"});
-                        // Stop processing if not valid numbers
-                        return undefined;
-                    }
-                }
-            }
-        }
-
-        if (document.getElementById("popup-custom-list-styles").checked) {
-            const numberedListStylesField = document.getElementById("popup-numbered-list-styles");
-            if (!numberedListStylesField.value || numberedListStylesField.value.trim().length === 0) {
-                numberedListStylesField.classList.add("error");
-                this.showNotification({alertType: "error", message: "Please, provide some value in 'Custom styles of numbered lists' field"});
-                // Stop processing if empty
+            selectedChapters = this.getSelectedChapters();
+            if (!selectedChapters) {
+                document.getElementById("popup-chapters").classList.add("error");
+                this.showNotification({alertType: "error", message: "Please, provide comma separated list of integer values in 'Specific higher level chapters' field"});
+                // Stop processing if not valid numbers
                 return undefined;
             }
-            if (numberedListStylesField.value.match("[^1aAiI]+")) {
-                numberedListStylesField.classList.add("error");
-                this.showNotification({alertType: "error", message: "Please, provide any combination of characters '1aAiI'"});
-                // Stop processing if not valid styles
+        }
+        let numberedListStyles = null;
+        if (document.getElementById("popup-custom-list-styles").checked) {
+            numberedListStyles = document.getElementById("popup-numbered-list-styles").value;
+            const error = this.validateNumberedListStyles(numberedListStyles);
+            if (error) {
+                document.getElementById("popup-numbered-list-styles").classList.add("error");
+                this.showNotification({alertType: "error", message: error});
                 return undefined;
             }
         }
@@ -582,8 +565,56 @@ const PdfExporter = {
         });
     },
 
+    getSelectedChapters: function () {
+        const chaptersValue = document.getElementById("popup-chapters").value;
+        let selectedChapters = (chaptersValue?.replaceAll(" ", "") || "").split(",");
+        if (selectedChapters && selectedChapters.length > 0) {
+            for (const chapter of selectedChapters) {
+                const parsedValue = Number.parseInt(chapter);
+                if (Number.isNaN(parsedValue) || parsedValue < 1 || String(parsedValue) !== chapter) {
+                    // Stop processing if not valid numbers
+                    return undefined;
+                }
+            }
+        }
+        return selectedChapters;
+    },
+
+    validateNumberedListStyles: function (numberedListStyles) {
+        if (!numberedListStyles || numberedListStyles.trim().length === 0) {
+            // Stop processing if empty
+            return "Please, provide some value";
+        } else if (numberedListStyles.match("[^1aAiI]+")) {
+            // Stop processing if not valid styles
+            return "Please, provide any combination of characters '1aAiI'";
+
+        }
+        return undefined;
+    },
+
     containsOption: function (selectElement, option) {
         return [...selectElement.options].map(o => o.value).includes(option);
+    },
+
+    setValue: function (elementId, value) {
+        document.getElementById(elementId).value = value;
+    },
+
+    displayIf: function (elementId, condition, displayStyle = "block") {
+        document.getElementById(elementId).style.display = condition ? displayStyle : "none";
+    },
+
+    visibleIf: function (elementId, condition) {
+        document.getElementById(elementId).style.display = condition ? "visible" : "hidden";
+    },
+
+    setSelector: function (elementId, value) {
+        const selector = document.getElementById(elementId);
+        selector.value = this.containsOption(selector, value) ? value : POPUP_DEFAULT_SETTING_NAME;
+    },
+
+    setCheckbox: function (elementId, value) {
+        document.getElementById(elementId).checked = !!value;
     },
 
     actionInProgress: function ({inProgress, message}) {
@@ -671,13 +702,10 @@ const PdfExporter = {
     getCookie: function (name) {
         const nameEQ = name + '=';
         const cookiesArray = document.cookie.split(';');
-        for (let i = 0; i < cookiesArray.length; i++) {
-            let cookie = cookiesArray[i];
-            while (cookie.charAt(0) === ' ') {
-                cookie = cookie.substring(1, cookie.length);
-            }
-            if (cookie.indexOf(nameEQ) === 0) {
-                return decodeURIComponent(cookie.substring(nameEQ.length, cookie.length));
+        for (let cookie of cookiesArray) {
+            const cleanedCookie = cookie.trim();
+            if (cleanedCookie.startsWith(nameEQ)) {
+                return decodeURIComponent(cleanedCookie.substring(nameEQ.length, cleanedCookie.length));
             }
         }
         return null;

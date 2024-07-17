@@ -141,9 +141,9 @@ class PdfConverterTest {
 
         CssModel cssModel = CssModel.builder().css("my test css: {{ DOCUMENT_TITLE }} {{DOCUMENT_REVISION}} {{ REVISION }} {{ PRODUCT_NAME }} {{ PRODUCT_VERSION }} {{customField}}").build();
         when(cssSettings.load("testProjectId", SettingId.fromName("testCssSetting"))).thenReturn(cssModel);
-        PlaceholderProcessor placeholderProcessor = new PlaceholderProcessor(pdfExporterPolarionService, liveDocHelper);
+        PlaceholderProcessor processor = new PlaceholderProcessor(pdfExporterPolarionService, liveDocHelper);
         when(velocityEvaluator.evaluateVelocityExpressions(eq(documentData), anyString())).thenAnswer(a -> a.getArguments()[1]);
-        PdfConverter pdfConverter = new PdfConverter(null, null, cssSettings, null, placeholderProcessor, velocityEvaluator, null, null, null, pdfTemplateProcessor);
+        PdfConverter pdfConverter = new PdfConverter(null, null, cssSettings, null, processor, velocityEvaluator, null, null, null, pdfTemplateProcessor);
 
         when(liveDocHelper.getDocumentStatus("testRevision", documentData)).thenReturn("testStatus");
         when(pdfExporterPolarionService.getPolarionProductName()).thenReturn("testProductName");
