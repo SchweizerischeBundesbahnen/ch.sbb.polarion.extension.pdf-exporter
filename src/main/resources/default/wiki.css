@@ -518,6 +518,7 @@ html {
     position: absolute !important;
     left: 0px;
     right: 0px;
+    background-color: #FFF;
 }
 
 .polarion-rpw-table-main {
@@ -1056,6 +1057,8 @@ a:hover .polarion-cross-reference-label,
     height: 0;
     border-left: 5px solid transparent;
     border-right: 5px solid transparent;
+    top: -5px;
+    border-top-width: 8px;
 }
 
 .polarion-PlanProgressMacro-arrowTopLeft, .polarion-PlanProgressMacro-arrowTopRight, .polarion-PlansMacro-arrowTopLeft, .polarion-PlansMacro-arrowTopRight {
@@ -1065,10 +1068,7 @@ a:hover .polarion-cross-reference-label,
 
 .polarion-PlanProgressMacro-arrowTopLeft, .polarion-PlanProgressMacro-arrowTopRight {
     top: -6px;
-}
-
-.polarion-PlansMacro-arrowTopLeft, .polarion-PlansMacro-arrowTopRight {
-    top: -5px;
+    border-top-width: 11px;
 }
 
 .polarion-PlanProgressMacro-arrowBottomRight {
@@ -1077,14 +1077,6 @@ a:hover .polarion-cross-reference-label,
 
 .polarion-PlanProgressMacro-arrowBottomLeft, .polarion-PlanProgressMacro-arrowBottomLeftAligned {
     border-bottom-color: #3A7523;
-}
-
-.polarion-PlanProgressMacro-arrowTopLeft, .polarion-PlanProgressMacro-arrowTopRight {
-    border-top-width: 11px;
-}
-
-.polarion-PlansMacro-arrowTopLeft, .polarion-PlansMacro-arrowTopRight {
-    border-top-width: 8px;
 }
 
 .polarion-PlanProgressMacro-arrowBottomLeft, .polarion-PlanProgressMacro-arrowBottomLeftAligned, .polarion-PlanProgressMacro-arrowBottomRight {
@@ -1942,10 +1934,6 @@ a:hover .polarion-cross-reference-label,
 
 .polarion-rp-widget-parameters {
     display: none;
-}
-
-.polarion-HistoryTable-mainPanel {
-    background-color: #FFF;
 }
 
 .polarion-HistoryTable-table {

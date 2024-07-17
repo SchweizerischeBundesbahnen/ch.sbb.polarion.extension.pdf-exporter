@@ -42,11 +42,15 @@
             display: none;
         }
 
-        td.action, div.action {
+        td.action, button.action {
             border: none !important;
             cursor: pointer;
             vertical-align: middle !important;
             text-align: center !important;
+            background: none;
+            min-width: 60px;
+            padding: 0 !important;
+            margin: 0 !important;
         }
 
         input.red-border {

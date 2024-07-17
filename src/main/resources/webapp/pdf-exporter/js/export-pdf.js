@@ -70,7 +70,7 @@ function stylePackageSelected(stylePackage) {
     displayIf("chapters", stylePackage.specificChapters);
 
     setCheckbox("localization", stylePackage.language);
-    setValue("language", (stylePackage.exposeSettings && !!stylePackage.language && documentLanguage) ? documentLanguage : stylePackage.language);
+    setValue("language", (stylePackage.exposeSettings && stylePackage.language && documentLanguage) ? documentLanguage : stylePackage.language);
     displayIf("language", stylePackage.language);
 
     setCheckbox("selected-roles", stylePackage.linkedWorkitemRoles);

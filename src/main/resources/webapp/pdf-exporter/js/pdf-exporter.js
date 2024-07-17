@@ -29,7 +29,7 @@ function ExportContext() {
             ? window.location.hash.substring(2, window.location.hash.indexOf("?"))
             : window.location.hash.substring(2)
     );
-    const locationParts = locationHash.match("(project/[^/]+/).*wiki/(.*)")
+    const locationParts = new RegExp("(project/[^/]+/).*wiki/(.*)").exec(locationHash);
     if (locationParts) {
         this.scope = locationParts[1]
 
@@ -49,7 +49,7 @@ function ExportContext() {
 }
 
 ExportContext.prototype.getProjectId = function() {
-    const foundValues = this.scope.match("project/(.*)/");
+    const foundValues = new RegExp("project/(.*)/").exec(this.scope);
     return foundValues !== null ? foundValues[1] : null;
 }
 
@@ -310,7 +310,7 @@ const PdfExporter = {
 
         this.setCheckbox("popup-localization", stylePackage.language);
         let languageValue;
-        if (stylePackage.exposeSettings && !!stylePackage.language && this.documentLanguage) {
+        if (stylePackage.exposeSettings && stylePackage.language && this.documentLanguage) {
             languageValue = this.documentLanguage;
         } else if (stylePackage.language) {
             languageValue = stylePackage.language;
@@ -355,15 +355,16 @@ const PdfExporter = {
         }).then(({response}) => {
             this.actionInProgress({inProgress: false});
 
-            const pages = response.invalidPages && response.invalidPages.length;
+            const pages = response.invalidPages?.length;
             if (pages && pages > 0) {
+                const pagesWord = 'page' + (pages === 1 ? '' : 's');
                 this.showValidationResult({
                     alertType: "error",
                     message: pages > MAX_PAGE_PREVIEWS
                         ? `Invalid pages found. First ${MAX_PAGE_PREVIEWS} of them:`
-                        : `${MAX_PAGE_PREVIEWS} invalid page${pages === 1 ? '' : 's'} found:`
+                        : `${MAX_PAGE_PREVIEWS} invalid ${pagesWord} found:`
                 });
-                this.createPreviews(result);
+                this.createPreviews(response);
             } else {
                 this.showValidationResult({alertType: "success", message: "All pages are valid"});
             }
@@ -496,7 +497,7 @@ const PdfExporter = {
             body: requestBody,
             responseType: "json"
         }).then(({response}) => {
-            if (response && response.containsNestedLists) {
+            if (response?.containsNestedLists) {
                 this.showNotification({alertType: "warning", message: "Document contains nested numbered lists which structures were not valid. We tried to fix this, but be aware of it."});
             }
         }).catch((error) => {
@@ -609,7 +610,7 @@ const PdfExporter = {
 
     setSelector: function (elementId, value) {
         const selector = document.getElementById(elementId);
-        selector.value = containsOption(selector, value) ? value : POPUP_DEFAULT_SETTING_NAME;
+        selector.value = this.containsOption(selector, value) ? value : POPUP_DEFAULT_SETTING_NAME;
     },
 
     setCheckbox: function (elementId, value) {
@@ -701,12 +702,11 @@ const PdfExporter = {
     getCookie: function (name) {
         const nameEQ = name + '=';
         const cookiesArray = document.cookie.split(';');
-        for (let i = 0; i < cookiesArray.length; i++) {
-            let cookie = cookiesArray[i];
-            while (cookie.charAt(0) === ' ') {
+        for (let cookie of cookiesArray) {
+            while (cookie.startsWith(' ')) {
                 cookie = cookie.substring(1, cookie.length);
             }
-            if (cookie.indexOf(nameEQ) === 0) {
+            if (cookie.startsWith(nameEQ)) {
                 return decodeURIComponent(cookie.substring(nameEQ.length, cookie.length));
             }
         }
