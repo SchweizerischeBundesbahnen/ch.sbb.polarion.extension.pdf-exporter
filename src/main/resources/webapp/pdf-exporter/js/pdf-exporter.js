@@ -49,7 +49,7 @@ function ExportContext() {
 }
 
 ExportContext.prototype.getProjectId = function() {
-    const foundValues = /"project\/(.*)\/"/.exec(this.scope);
+    const foundValues = /project\/(.*)\//.exec(this.scope);
     return foundValues !== null ? foundValues[1] : null;
 }
 
