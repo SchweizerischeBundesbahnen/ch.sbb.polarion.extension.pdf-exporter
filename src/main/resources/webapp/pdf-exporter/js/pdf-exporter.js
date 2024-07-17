@@ -29,7 +29,7 @@ function ExportContext() {
             ? window.location.hash.substring(2, window.location.hash.indexOf("?"))
             : window.location.hash.substring(2)
     );
-    const locationParts = new RegExp("(project/[^/]+/).*wiki/(.*)").exec(locationHash);
+    const locationParts = /(project\/[^/]+\/).*wiki\/(.*)/.exec(locationHash);
     if (locationParts) {
         this.scope = locationParts[1]
 
@@ -49,7 +49,7 @@ function ExportContext() {
 }
 
 ExportContext.prototype.getProjectId = function() {
-    const foundValues = new RegExp("project/(.*)/").exec(this.scope);
+    const foundValues = /"project\/(.*)\/"/.exec(this.scope);
     return foundValues !== null ? foundValues[1] : null;
 }
 
@@ -703,11 +703,9 @@ const PdfExporter = {
         const nameEQ = name + '=';
         const cookiesArray = document.cookie.split(';');
         for (let cookie of cookiesArray) {
-            while (cookie.startsWith(' ')) {
-                cookie = cookie.substring(1, cookie.length);
-            }
-            if (cookie.startsWith(nameEQ)) {
-                return decodeURIComponent(cookie.substring(nameEQ.length, cookie.length));
+            const cleanedCookie = cookie.trim();
+            if (cleanedCookie.startsWith(nameEQ)) {
+                return decodeURIComponent(cleanedCookie.substring(nameEQ.length, cleanedCookie.length));
             }
         }
         return null;
