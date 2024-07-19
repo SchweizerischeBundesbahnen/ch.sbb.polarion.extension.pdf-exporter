@@ -516,6 +516,7 @@ const PdfExporter = {
                 return undefined;
             }
         }
+
         let numberedListStyles = null;
         if (document.getElementById("popup-custom-list-styles").checked) {
             numberedListStyles = document.getElementById("popup-numbered-list-styles").value;
@@ -529,13 +530,14 @@ const PdfExporter = {
 
         const selectedRoles = [];
         if (document.getElementById("popup-selected-roles").checked) {
-            for (const opt of document.getElementById("popup-roles-selector").options) {
-                if (opt.selected) {
-                    selectedRoles.push(opt.value);
-                }
-            }
+            const selectedOptions = Array.from(document.getElementById("popup-roles-selector").options).filter(opt => opt.selected);
+            selectedRoles.push(...selectedOptions.map(opt => opt.value));
         }
 
+        return this.buildRequestJson(selectedChapters, numberedListStyles, selectedRoles);
+    },
+
+    buildRequestJson: function (selectedChapters, numberedListStyles, selectedRoles) {
         const report = this.exportContext.documentType === "report";
         return JSON.stringify({
             projectId: this.exportContext.getProjectId(),
@@ -557,7 +559,7 @@ const PdfExporter = {
             cutEmptyWIAttributes: !report && document.getElementById('popup-cut-empty-wi-attributes').checked,
             cutLocalUrls: document.getElementById("popup-cut-urls").checked,
             followHTMLPresentationalHints: document.getElementById("popup-presentational-hints").checked,
-            numberedListStyles: document.getElementById("popup-numbered-list-styles").value,
+            numberedListStyles: numberedListStyles,
             chapters: selectedChapters,
             language: !report && document.getElementById('popup-localization').checked ? document.getElementById("popup-language").value : null,
             liveDocumentLanguage: this.exportContext.liveDocumentLanguage,
@@ -605,7 +607,7 @@ const PdfExporter = {
     },
 
     visibleIf: function (elementId, condition) {
-        document.getElementById(elementId).style.display = condition ? "visible" : "hidden";
+        document.getElementById(elementId).style.visibility = condition ? "visible" : "hidden";
     },
 
     setSelector: function (elementId, value) {
