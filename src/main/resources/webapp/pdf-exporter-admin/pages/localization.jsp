@@ -135,7 +135,7 @@
 
         <p>Supported localizations for workitems statuses and severities.</p>
         <p>Supported languages are German, French and Italian.</p>
-        <p>Localization for each language can be imported in XLIFF 2.0 format <a href="https://docs.oasis-open.org/xliff/xliff-core/v2.0/os/xliff-core-v2.0-os.html" target="_blank">XLIFF 2.0 specification</a></p>
+        <p>Localization for each language can be imported in XLIFF 2.0 format <a href="https://docs.oasis-open.org/xliff/xliff-core/v2.0/os/xliff-core-v2.0-os.html" target="_blank" rel="noopener">XLIFF 2.0 specification</a></p>
 
     </div>
 </div>

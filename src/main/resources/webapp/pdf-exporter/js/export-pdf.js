@@ -125,6 +125,7 @@ function prepareRequest(projectId, locationPath) {
             return undefined;
         }
     }
+
     let numberedListStyles = null;
     if (document.getElementById("custom-list-styles").checked) {
         numberedListStyles = document.getElementById("numbered-list-styles").value;
@@ -138,13 +139,14 @@ function prepareRequest(projectId, locationPath) {
 
     const selectedRoles = [];
     if (document.getElementById("selected-roles").checked) {
-        for (const opt of document.getElementById("roles-selector").options) {
-            if (opt.selected) {
-                selectedRoles.push(opt.value);
-            }
-        }
+        const selectedOptions = Array.from(document.getElementById("roles-selector").options).filter(opt => opt.selected);
+        selectedRoles.push(...selectedOptions.map(opt => opt.value));
     }
 
+    return buildRequestJson(projectId, locationPath, selectedChapters, numberedListStyles, selectedRoles);
+}
+
+function buildRequestJson(projectId, locationPath, selectedChapters, numberedListStyles, selectedRoles) {
     return JSON.stringify({
         projectId: projectId,
         locationPath: locationPath,

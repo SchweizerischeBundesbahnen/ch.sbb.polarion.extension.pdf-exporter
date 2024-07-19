@@ -15,6 +15,7 @@ body {
 p {
     line-height: 150% !important;
     margin: 0px !important;
+    padding-top: 10px !important;
 }
 
 a,a:link,a:visited {
@@ -113,10 +114,6 @@ H6, .heading-1-1-1-1-1-1 {
 /* END OF DEFAULT STYLES THAT ARE SPECIFIC FOR DOCUMENT OR WIKI EXPORT
 
  BEGINNING OF COPY'N'PASTE STYLES from wiki.css (lists, tables, code, hint, polarion-Document-workitem...)*/
-
-p {
-    padding-top: 10px !important;
-}
 
 ul {
     margin: 1em 0 !important;
