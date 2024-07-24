@@ -100,15 +100,15 @@ public class PdfConverter {
         htmlContent = htmlProcessor.internalizeLinks(htmlContent);
 
         generationLog.log("Html is ready, starting pdf generation");
+        if (PdfExporterExtensionConfiguration.getInstance().isDebug()) {
+            new HtmlLogger().log(documentData.getDocumentContent(), htmlContent, generationLog.getLog());
+        }
         byte[] bytes = generatePdf(documentData, exportParams, metaInfoCallback, htmlContent, generationLog);
 
         if (exportParams.getInternalContent() == null) { //do not log time for internal parts processing
             String finalMessage = "PDF document '" + documentData.getDocumentTitle() + "' has been generated within " + (System.currentTimeMillis() - startTime) + " milliseconds";
             logger.info(finalMessage);
             generationLog.log(finalMessage);
-            if (PdfExporterExtensionConfiguration.getInstance().isDebug()) {
-                new HtmlLogger().log(documentData.getDocumentContent(), htmlContent, generationLog.getLog());
-            }
         }
         return bytes;
     }
