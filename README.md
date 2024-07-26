@@ -29,7 +29,7 @@ Changes only take effect after restart of Polarion.
 
 #### WeasyPrint CLI
 
-To run WeasyPrint as a system's command-line tool specify following properties in file `<POLARION_HOME>/etc/polarion.properties`:
+To run WeasyPrint as a system's command-line tool specify following properties in file `polarion.properties`:
 
 ```properties
 ch.sbb.polarion.extension.pdf-exporter.weasyprint.connector=cli
@@ -47,7 +47,7 @@ For more information on WeasyPrint Installation see [these instructions](https:/
 
 #### WeasyPrint CLI in Docker
 
-This extension supports using WeasyPrint running in Docker container. This feature can be switched on with help of following properties in file `<POLARION_HOME>/etc/polarion.properties`:
+This extension supports using WeasyPrint running in Docker container. This feature can be switched on with help of following properties in file `polarion.properties`:
 
 ```properties
 ch.sbb.polarion.extension.pdf-exporter.weasyprint.connector=cli
@@ -57,7 +57,7 @@ ch.sbb.polarion.extension.pdf-exporter.weasyprint.pdf.variant=pdf/a-2b
 
 #### WeasyPrint as Service in Docker
 
-This extension supports the use of WeasyPrint as a REST service within a Docker container, as implemented [here](https://github.com/SchweizerischeBundesbahnen/weasyprint-service). To activate this feature, adjust the following properties in the `<POLARION_HOME>/etc/polarion.properties` file:
+This extension supports the use of WeasyPrint as a REST service within a Docker container, as implemented [here](https://github.com/SchweizerischeBundesbahnen/weasyprint-service). To activate this feature, adjust the following properties in the `polarion.properties` file:
 
 
 ```properties
@@ -154,7 +154,7 @@ and the following `Logger`:
 
 ### Enabling CORS
 
-Cross-Origin Resource Sharing could be enabled using standard configuration of Polarion REST API. In `<POLARION_HOME>/etc/polarion.properties` the following lines should be added:
+Cross-Origin Resource Sharing could be enabled using standard configuration of Polarion REST API. In `polarion.properties` the following lines should be added:
 ```properties
 com.siemens.polarion.rest.enabled=true
 com.siemens.polarion.rest.cors.allowedOrigins=http://localhost:8888,https://anotherdomain.com
@@ -164,7 +164,7 @@ com.siemens.polarion.rest.cors.allowedOrigins=http://localhost:8888,https://anot
 
 This extension makes intensive HTML processing to extend similar standard Polarion functionality. There is a possibility to log
 original and resulting HTML to see potential problems in this processing. This logging can be switched on (`true` value)
-and off (`false` value) with help of following property in file `<POLARION_HOME>/etc/polarion.properties`:
+and off (`false` value) with help of following property in file `polarion.properties`:
 
 ```properties
 ch.sbb.polarion.extension.pdf-exporter.debug=true
@@ -184,7 +184,7 @@ The converting HTML can contain some external CSS links referencing Polarion Ser
 ```html
 <link rel="stylesheet" href="/polarion/diff-tool-app/ui/app/_next/static/css/3c374f9daffd361a.css" data-precedence="next">
 ```
-In case the Polarion Server is not reachable from the Weasyprint service, such links cannot be successfully resolved during the Weasyprint PDF transformation. The solution is to replace external CSS <link> elements with internal CSS <style> tags containing the CSS content embedded into the HTML document. By default, CSS link internalization is disabled. To enable internalization of CSS links, it is necessary to activate the following property in file `<POLARION_HOME>/etc/polarion.properties`:
+In case the Polarion Server is not reachable from the Weasyprint service, such links cannot be successfully resolved during the Weasyprint PDF transformation. The solution is to replace external CSS <link> elements with internal CSS <style> tags containing the CSS content embedded into the HTML document. By default, CSS link internalization is disabled. To enable internalization of CSS links, it is necessary to activate the following property in file `polarion.properties`:
 ```properties
 ch.sbb.polarion.extension.pdf-exporter.internalizeExternalCss=true
 ```
