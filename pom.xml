@@ -196,7 +196,7 @@
                 <groupId>io.swagger.core.v3</groupId>
                 <artifactId>swagger-maven-plugin</artifactId>
                 <configuration>
-                    <outputFormat>YAML</outputFormat>
+                    <outputFormat>JSON</outputFormat>
                     <resourcePackages>
                         <package>ch.sbb.polarion.extension.generic.rest.controller</package>
                         <package>ch.sbb.polarion.extension.generic.rest.model</package>
