@@ -963,15 +963,15 @@ public class HtmlProcessor {
     @SneakyThrows
     @SuppressWarnings({"java:S5852", "java:S5857"}) //need by design
     public String replaceImagesAsBase64Encoded(String html) {
+        StringBuilder result = new StringBuilder();
+
         //Retrieves data of 'src' attribute from 'img' tags
-        IRegexEngine imageRegexEngine = RegexMatcher.get("<img[^<>]*src=\"([^\"]*)\"").createEngine(html);
-        Set<String> replacedUrlList = new HashSet<>();
+        IRegexEngine imageRegexEngine = RegexMatcher.get("<img[^<>]*src=(\"|')(?<url>[^(\"|')]*)(\"|')").createEngine(html);
         while (imageRegexEngine.find()) {
-            String url = imageRegexEngine.group(1);
-            if (replacedUrlList.contains(url) || url.startsWith("data:")) {
+            String url = imageRegexEngine.group("url");
+            if (url.startsWith("data:")) {
                 continue;
             }
-            replacedUrlList.add(url);
             byte[] imgBytes = fileResourceProvider.getResourceAsBytes(url.replace("%5F", "_")); // Replace encoded underscore symbol in 'src' attribute of images
             if (imgBytes != null) { // Don't make any manipulations if image wasn't resolved
                 try (InputStream is = new BufferedInputStream(new ByteArrayInputStream(imgBytes))) {
@@ -982,12 +982,15 @@ public class HtmlProcessor {
                         imgBytes = processPossibleSvgImage(imgBytes);
                     }
 
-                    String resultSrcPart = String.format("src=\"data:%s;base64, %s\"", mimeType, Base64.getEncoder().encodeToString(imgBytes));
-                    html = html.replace("src=\"" + url + "\"", resultSrcPart);
+                    String encodedImage = String.format("data:%s;base64, %s", mimeType, Base64.getEncoder().encodeToString(imgBytes));
+
+                    imageRegexEngine.appendReplacement(result, imageRegexEngine.group().replace(url, encodedImage));
                 }
             }
         }
-        return html;
+        imageRegexEngine.appendTail(result);
+
+        return result.toString();
     }
 
     public String internalizeLinks(String html) {

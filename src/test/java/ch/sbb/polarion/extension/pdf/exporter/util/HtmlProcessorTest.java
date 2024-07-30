@@ -207,6 +207,14 @@ class HtmlProcessorTest {
 
     @Test
     @SneakyThrows
+    void nothingToReplaceTest() {
+        String html = "<div></div>";
+        String result = processor.replaceImagesAsBase64Encoded(html);
+        assertEquals("<div></div>", result);
+    }
+
+    @Test
+    @SneakyThrows
     void replaceImagesAsBase64EncodedTest() {
         String html = "<div><img id=\"image\" src=\"http://localhost/some-path/img.png\"/></div>";
         byte[] imgBytes;
@@ -238,14 +246,17 @@ class HtmlProcessorTest {
     @Test
     @SneakyThrows
     void replaceSvgImagesAsBase64EncodedTest() {
-        String html = "<div><img id=\"image\" src=\"http://localhost/some-path/img.svg\"/></div>";
+        String html = "<div><img id=\"image1\" src=\"http://localhost/some-path/img1.svg\"/> <img id='image2' src='http://localhost/some-path/img2.svg'/> <img id='image1' src='http://localhost/some-path/img1.svg'/></div>";
         byte[] imgBytes;
         try (InputStream is = new ByteArrayInputStream("<svg><switch><g requiredFeatures=\"http://www.w3.org/TR/SVG11/feature#Extensibility\"/></switch></svg>".getBytes(StandardCharsets.UTF_8))) {
             imgBytes = is != null ? is.readAllBytes() : new byte[0];
         }
         when(fileResourceProvider.getResourceAsBytes(any())).thenReturn(imgBytes);
         String result = processor.replaceImagesAsBase64Encoded(html);
-        assertEquals("<div><img id=\"image\" src=\"data:null;base64, " + Base64.getEncoder().encodeToString("<svg></svg>".getBytes(StandardCharsets.UTF_8)) + "\"/></div>", result);
+        String expected = "<div><img id=\"image1\" src=\"data:null;base64, " + Base64.getEncoder().encodeToString("<svg></svg>".getBytes(StandardCharsets.UTF_8)) + "\"/> " +
+                "<img id='image2' src='data:null;base64, " + Base64.getEncoder().encodeToString("<svg></svg>".getBytes(StandardCharsets.UTF_8)) + "'/> " +
+                "<img id='image1' src='data:null;base64, " + Base64.getEncoder().encodeToString("<svg></svg>".getBytes(StandardCharsets.UTF_8)) + "'/></div>";
+        assertEquals(expected, result);
     }
 
     @Test

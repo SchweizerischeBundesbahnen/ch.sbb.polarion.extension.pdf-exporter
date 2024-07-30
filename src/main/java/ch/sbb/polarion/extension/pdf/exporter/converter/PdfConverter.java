@@ -168,7 +168,8 @@ public class PdfConverter {
         String content = placeholderProcessor.replacePlaceholders(documentData, exportParams, css);
         String processed = velocityEvaluator.evaluateVelocityExpressions(documentData, content);
 
-        return (exportParams.getDocumentType() != DocumentType.DOCUMENT) ? appendWikiCss(processed) : processed;
+        String cssContent = (exportParams.getDocumentType() != DocumentType.DOCUMENT) ? appendWikiCss(processed) : processed;
+        return htmlProcessor.replaceImagesAsBase64Encoded(cssContent);
     }
 
     @VisibleForTesting
@@ -193,8 +194,8 @@ public class PdfConverter {
                 .map(c -> velocityEvaluator.evaluateVelocityExpressions(documentData, c))
                 .toList();
 
-        return String.format(ScopeUtils.getFileContent("webapp/pdf-exporter/html/headerAndFooter.html"),
-                nonNullHeaderFooterContents.toArray());
+        String headerFooterContent = String.format(ScopeUtils.getFileContent("webapp/pdf-exporter/html/headerAndFooter.html"), nonNullHeaderFooterContents.toArray());
+        return htmlProcessor.replaceImagesAsBase64Encoded(headerFooterContent);
     }
 
     private String appendWikiCss(String css) {
