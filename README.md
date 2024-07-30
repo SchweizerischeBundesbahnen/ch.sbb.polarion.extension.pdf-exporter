@@ -202,7 +202,8 @@ ch.sbb.polarion.extension.pdf-exporter.internalizeExternalCss=true
 1. Open a document in Polarion.
 2. In the toolbar choose Show Sidebar ➙ Document Properties.
 3. Choose desired options in the `PDF Exporter` block and click `Export to PDF`.
-   For the options details please refer [plugin documentation](https://polarion.sbb.ch/polarion/#/project/mcTestInt/wiki/Specification/PDF%20Exporter?selection=MCTI-426).
+   For the options details please refer [plugin documentation](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/blob/main/docs/pdf-exporter.pdf).
+   OpenAPI Specification can be obtained [here](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/blob/main/docs/openapi.yaml).
 
 ## Known issues
 
