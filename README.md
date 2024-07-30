@@ -205,7 +205,7 @@ ch.sbb.polarion.extension.pdf-exporter.internalizeExternalCss=true
    For the options details please refer [plugin documentation](docs/pdf-exporter.pdf).
 
 ## REST API
-This extension provides REST API. OpenAPI Specification can be obtained [here](docs/openapi.yaml).
+This extension provides REST API. OpenAPI Specification can be obtained [here](docs/openapi.json).
 
 ## Known issues
 
