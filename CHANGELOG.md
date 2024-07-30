@@ -1,5 +1,17 @@
 # Changelog
 
+## [5.6.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v5.5.4...v5.6.0) (2024-07-30)
+
+
+### Features
+
+* embed all the images in header/footer as base64 data ([#113](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/113)) ([1eb930c](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/1eb930c2c75f8a5feba33504055f40ca0ba0460e)), closes [#112](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/112)
+
+
+### Bug Fixes
+
+* plugin documentation link doesn't work ([#110](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/110)) ([685d548](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/685d5488c302aa5bd0c37ae2848e26d1d89adc3c)), closes [#97](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/97)
+
 ## [5.5.4](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v5.5.3...v5.5.4) (2024-07-25)
 
 
