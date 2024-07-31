@@ -11,6 +11,7 @@ import ch.sbb.polarion.extension.pdf.exporter.rest.model.conversion.Orientation;
 import ch.sbb.polarion.extension.pdf.exporter.rest.model.conversion.PaperSize;
 import ch.sbb.polarion.extension.pdf.exporter.util.regex.RegexMatcher;
 import ch.sbb.polarion.extension.pdf.exporter.weasyprint.WeasyPrintConverter;
+import ch.sbb.polarion.extension.pdf.exporter.weasyprint.service.WeasyPrintServiceConnector;
 import com.polarion.core.config.Configuration;
 import com.polarion.subterra.base.location.ILocation;
 import lombok.experimental.UtilityClass;
@@ -77,6 +78,21 @@ public class ConfigurationStatusUtils {
             ModuleDescriptor.Version weasyPrintVersion = weasyPrintConverter.getWeasyPrintVersion();
             htmlToPdfConverter.convert("<html><body>test html</body></html>", Orientation.PORTRAIT, PaperSize.A4);
             return new ConfigurationStatus(Status.OK, "Version: %s".formatted(weasyPrintVersion.toString()));
+        } catch (Exception e) {
+            return new ConfigurationStatus(Status.ERROR, e.getMessage());
+        }
+    }
+
+    public static @NotNull ConfigurationStatus getWeasyPrintServiceStatus() {
+        try {
+            HtmlToPdfConverter htmlToPdfConverter = new HtmlToPdfConverter();
+            WeasyPrintConverter weasyPrintConverter = htmlToPdfConverter.getWeasyPrintConverter();
+            if (weasyPrintConverter instanceof WeasyPrintServiceConnector) {
+                ModuleDescriptor.Version weasyPrintServiceVersion = ((WeasyPrintServiceConnector) weasyPrintConverter).getWeasyPrintServiceVersion();
+                return new ConfigurationStatus(Status.OK, "Version: %s".formatted(weasyPrintServiceVersion.toString()));
+            } else {
+                return new ConfigurationStatus(Status.WARNING, "WeasyPrint Service not configured");
+            }
         } catch (Exception e) {
             return new ConfigurationStatus(Status.ERROR, e.getMessage());
         }

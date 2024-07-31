@@ -3,7 +3,7 @@ package ch.sbb.polarion.extension.pdf.exporter.weasyprint.service;
 import ch.sbb.polarion.extension.pdf.exporter.properties.PdfExporterExtensionConfiguration;
 import ch.sbb.polarion.extension.pdf.exporter.weasyprint.WeasyPrintConverter;
 import ch.sbb.polarion.extension.pdf.exporter.weasyprint.WeasyPrintOptions;
-import ch.sbb.polarion.extension.pdf.exporter.weasyprint.service.model.WeasyPrintServiceVersion;
+import ch.sbb.polarion.extension.pdf.exporter.weasyprint.service.model.WeasyPrintServiceInfo;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.polarion.core.util.logging.Logger;
@@ -63,6 +63,14 @@ public class WeasyPrintServiceConnector implements WeasyPrintConverter {
 
     @Override
     public ModuleDescriptor.Version getWeasyPrintVersion() {
+        return ModuleDescriptor.Version.parse(getWeasyPrintInfo().getWeasyprint());
+    }
+
+    public ModuleDescriptor.Version getWeasyPrintServiceVersion() {
+        return ModuleDescriptor.Version.parse(getWeasyPrintInfo().getWeasyprintServiceVersion());
+    }
+
+    private WeasyPrintServiceInfo getWeasyPrintInfo() {
         Client client = null;
         try {
             client = ClientBuilder.newClient();
@@ -73,8 +81,7 @@ public class WeasyPrintServiceConnector implements WeasyPrintConverter {
                     String responseContent = response.readEntity(String.class);
 
                     try {
-                        WeasyPrintServiceVersion weasyPrintServiceVersion = new ObjectMapper().readValue(responseContent, WeasyPrintServiceVersion.class);
-                        return ModuleDescriptor.Version.parse(weasyPrintServiceVersion.getWeasyprint());
+                        return new ObjectMapper().readValue(responseContent, WeasyPrintServiceInfo.class);
                     } catch (JsonProcessingException e) {
                         throw new IllegalStateException("Could not parse response", e);
                     }

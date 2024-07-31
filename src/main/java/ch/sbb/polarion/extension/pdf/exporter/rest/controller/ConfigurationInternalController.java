@@ -64,4 +64,12 @@ public class ConfigurationInternalController {
     public @NotNull ConfigurationStatus checkWeasyPrint() {
         return ConfigurationStatusUtils.getWeasyPrintStatus();
     }
+
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path("/configuration/weasyprint-service-version")
+    @Operation(summary = "Checks WeasyPrint Service configuration")
+    public @NotNull ConfigurationStatus checkWeasyPrintServiceVersion() {
+        return ConfigurationStatusUtils.getWeasyPrintStatus();
+    }
 }

@@ -109,6 +109,7 @@
                 ConfigurationStatus dleToolbarStatus = ConfigurationStatusUtils.getDleToolbarStatus();
                 ConfigurationStatus liveReportMainHeadStatus = ConfigurationStatusUtils.getLiveReportMainHeadStatus();
                 ConfigurationStatus weasyPrintStatus = ConfigurationStatusUtils.getWeasyPrintStatus();
+                ConfigurationStatus weasyPrintServiceStatus = ConfigurationStatusUtils.getWeasyPrintServiceStatus();
                 ConfigurationStatus corsStatus = ConfigurationStatusUtils.getCORSStatus();
 
                 List<String> rows = new ArrayList<>(4);
@@ -117,6 +118,7 @@
                 rows.add(CHECK_CONFIGURATION_TABLE_ROW.formatted("DLE Toolbar", dleToolbarStatus.getStatus().toHtml(), dleToolbarStatus.getDetails()));
                 rows.add(CHECK_CONFIGURATION_TABLE_ROW.formatted("LiveReport Button", liveReportMainHeadStatus.getStatus().toHtml(), liveReportMainHeadStatus.getDetails()));
                 rows.add(CHECK_CONFIGURATION_TABLE_ROW.formatted("WeasyPrint", weasyPrintStatus.getStatus().toHtml(), weasyPrintStatus.getDetails()));
+                rows.add(CHECK_CONFIGURATION_TABLE_ROW.formatted("WeasyPrint Service", weasyPrintServiceStatus.getStatus().toHtml(), weasyPrintServiceStatus.getDetails()));
                 rows.add(CHECK_CONFIGURATION_TABLE_ROW.formatted("CORS (Cross-Origin Resource Sharing)", corsStatus.getStatus().toHtml(), corsStatus.getDetails()));
 
                 for (String row : rows) {
