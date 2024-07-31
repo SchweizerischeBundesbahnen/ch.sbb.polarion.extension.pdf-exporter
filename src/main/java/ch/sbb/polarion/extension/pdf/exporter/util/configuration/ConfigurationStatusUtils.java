@@ -91,7 +91,7 @@ public class ConfigurationStatusUtils {
                     createWeasyPrintStatus(WEASY_PRINT.get(2), weasyPrintInfo.getWeasyprintService())
             );
         } catch (Exception e) {
-            return List.of(new ConfigurationStatus(WEASY_PRINT.get(0), Status.ERROR, e.getMessage()));
+            return List.of(new ConfigurationStatus(WEASY_PRINT.get(1), Status.ERROR, e.getMessage()));
         }
     }
 
