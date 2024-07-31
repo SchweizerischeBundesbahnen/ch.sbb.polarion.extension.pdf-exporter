@@ -12,6 +12,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
+import java.util.List;
 
 @Hidden
 @Path("/internal")
@@ -61,7 +62,7 @@ public class ConfigurationInternalController {
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/configuration/weasyprint")
     @Operation(summary = "Checks WeasyPrint configuration")
-    public @NotNull ConfigurationStatus checkWeasyPrint() {
+    public @NotNull List<ConfigurationStatus> checkWeasyPrint() {
         return ConfigurationStatusUtils.getWeasyPrintStatus();
     }
 }

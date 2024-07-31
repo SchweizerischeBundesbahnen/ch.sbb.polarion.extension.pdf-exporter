@@ -12,6 +12,7 @@
 <%@ page import="ch.sbb.polarion.extension.generic.rest.model.Context" %>
 <%@ page import="ch.sbb.polarion.extension.pdf.exporter.util.configuration.ConfigurationStatusUtils" %>
 <%@ page import="ch.sbb.polarion.extension.pdf.exporter.rest.model.configuration.ConfigurationStatus" %>
+<%@ page import="java.util.Arrays" %>
 <%@ page contentType="text/html; charset=UTF-8" %>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
@@ -104,24 +105,19 @@
             <tbody>
             <%
                 String scope = request.getParameter("scope");
-                ConfigurationStatus settingsStatus = ConfigurationStatusUtils.getSettingsStatus(scope);
-                ConfigurationStatus documentPropertiesPaneStatus = ConfigurationStatusUtils.getDocumentPropertiesPaneStatus(scope);
-                ConfigurationStatus dleToolbarStatus = ConfigurationStatusUtils.getDleToolbarStatus();
-                ConfigurationStatus liveReportMainHeadStatus = ConfigurationStatusUtils.getLiveReportMainHeadStatus();
-                ConfigurationStatus weasyPrintStatus = ConfigurationStatusUtils.getWeasyPrintStatus();
-                ConfigurationStatus weasyPrintServiceStatus = ConfigurationStatusUtils.getWeasyPrintServiceStatus();
-                ConfigurationStatus corsStatus = ConfigurationStatusUtils.getCORSStatus();
 
-                List<String> rows = new ArrayList<>(4);
-                rows.add(CHECK_CONFIGURATION_TABLE_ROW.formatted("Default Settings", settingsStatus.getStatus().toHtml(), settingsStatus.getDetails()));
-                rows.add(CHECK_CONFIGURATION_TABLE_ROW.formatted("Document Properties Pane", documentPropertiesPaneStatus.getStatus().toHtml(), documentPropertiesPaneStatus.getDetails()));
-                rows.add(CHECK_CONFIGURATION_TABLE_ROW.formatted("DLE Toolbar", dleToolbarStatus.getStatus().toHtml(), dleToolbarStatus.getDetails()));
-                rows.add(CHECK_CONFIGURATION_TABLE_ROW.formatted("LiveReport Button", liveReportMainHeadStatus.getStatus().toHtml(), liveReportMainHeadStatus.getDetails()));
-                rows.add(CHECK_CONFIGURATION_TABLE_ROW.formatted("WeasyPrint", weasyPrintStatus.getStatus().toHtml(), weasyPrintStatus.getDetails()));
-                rows.add(CHECK_CONFIGURATION_TABLE_ROW.formatted("WeasyPrint Service", weasyPrintServiceStatus.getStatus().toHtml(), weasyPrintServiceStatus.getDetails()));
-                rows.add(CHECK_CONFIGURATION_TABLE_ROW.formatted("CORS (Cross-Origin Resource Sharing)", corsStatus.getStatus().toHtml(), corsStatus.getDetails()));
+                List<ConfigurationStatus> statusList = new ArrayList<>(Arrays.asList(
+                        ConfigurationStatusUtils.getSettingsStatus(scope),
+                        ConfigurationStatusUtils.getDocumentPropertiesPaneStatus(scope),
+                        ConfigurationStatusUtils.getDleToolbarStatus(),
+                        ConfigurationStatusUtils.getLiveReportMainHeadStatus(),
+                        ConfigurationStatusUtils.getCORSStatus()
+                ));
 
-                for (String row : rows) {
+                statusList.addAll(ConfigurationStatusUtils.getWeasyPrintStatus());
+
+                for (ConfigurationStatus configurationStatus : statusList) {
+                    String row = CHECK_CONFIGURATION_TABLE_ROW.formatted(configurationStatus.getName(), configurationStatus.getStatus().toHtml(), configurationStatus.getDetails());
                     out.println(row);
                 }
             %>

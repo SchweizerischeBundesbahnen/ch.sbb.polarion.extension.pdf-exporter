@@ -6,6 +6,7 @@ import ch.sbb.polarion.extension.pdf.exporter.rest.model.configuration.Configura
 import org.jetbrains.annotations.NotNull;
 
 import javax.ws.rs.Path;
+import java.util.List;
 
 @Secured
 @Path("/api")
@@ -39,7 +40,7 @@ public class ConfigurationApiController extends ConfigurationInternalController 
     }
 
     @Override
-    public @NotNull ConfigurationStatus checkWeasyPrint() {
+    public @NotNull List<ConfigurationStatus> checkWeasyPrint() {
         return polarionService.callPrivileged(super::checkWeasyPrint);
     }
 
