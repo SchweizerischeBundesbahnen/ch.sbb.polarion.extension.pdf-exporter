@@ -6,5 +6,5 @@ import lombok.Data;
 public class WeasyPrintServiceInfo {
     private String python;
     private String weasyprint;
-    private String weasyprintServiceVersion;
+    private String weasyprintService;
 }

@@ -87,8 +87,8 @@ public class ConfigurationStatusUtils {
         try {
             HtmlToPdfConverter htmlToPdfConverter = new HtmlToPdfConverter();
             WeasyPrintConverter weasyPrintConverter = htmlToPdfConverter.getWeasyPrintConverter();
-            if (weasyPrintConverter instanceof WeasyPrintServiceConnector) {
-                ModuleDescriptor.Version weasyPrintServiceVersion = ((WeasyPrintServiceConnector) weasyPrintConverter).getWeasyPrintServiceVersion();
+            if (weasyPrintConverter instanceof WeasyPrintServiceConnector weasyPrintServiceConnector) {
+                ModuleDescriptor.Version weasyPrintServiceVersion = weasyPrintServiceConnector.getWeasyPrintServiceVersion();
                 return new ConfigurationStatus(Status.OK, "Version: %s".formatted(weasyPrintServiceVersion.toString()));
             } else {
                 return new ConfigurationStatus(Status.WARNING, "WeasyPrint Service not configured");

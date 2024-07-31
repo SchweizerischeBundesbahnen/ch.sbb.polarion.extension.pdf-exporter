@@ -67,7 +67,7 @@ public class WeasyPrintServiceConnector implements WeasyPrintConverter {
     }
 
     public ModuleDescriptor.Version getWeasyPrintServiceVersion() {
-        return ModuleDescriptor.Version.parse(getWeasyPrintInfo().getWeasyprintServiceVersion());
+        return ModuleDescriptor.Version.parse(getWeasyPrintInfo().getWeasyprintService());
     }
 
     private WeasyPrintServiceInfo getWeasyPrintInfo() {
