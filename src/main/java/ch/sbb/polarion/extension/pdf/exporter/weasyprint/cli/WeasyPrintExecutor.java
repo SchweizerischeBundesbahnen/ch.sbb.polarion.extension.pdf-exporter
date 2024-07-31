@@ -5,6 +5,7 @@ import ch.sbb.polarion.extension.pdf.exporter.properties.PdfExporterExtensionCon
 import ch.sbb.polarion.extension.pdf.exporter.util.regex.RegexMatcher;
 import ch.sbb.polarion.extension.pdf.exporter.weasyprint.WeasyPrintConverter;
 import ch.sbb.polarion.extension.pdf.exporter.weasyprint.WeasyPrintOptions;
+import ch.sbb.polarion.extension.pdf.exporter.weasyprint.service.model.WeasyPrintInfo;
 import com.polarion.core.util.logging.Logger;
 import lombok.SneakyThrows;
 import org.apache.commons.io.IOUtils;
@@ -88,10 +89,14 @@ public class WeasyPrintExecutor implements WeasyPrintConverter {
     }
 
     @Override
-    public ModuleDescriptor.Version getWeasyPrintVersion() {
+    public WeasyPrintInfo getWeasyPrintInfo() {
         String weasyPrintExecutable = PdfExporterExtensionConfiguration.getInstance().getWeasyprintExecutable();
         String[] executable = weasyPrintExecutable.split(" ");
-        return getExecutableVersion(executable);
+        ModuleDescriptor.Version executableVersion = getExecutableVersion(executable);
+
+        WeasyPrintInfo weasyPrintInfo = new WeasyPrintInfo();
+        weasyPrintInfo.setWeasyprint(executableVersion.toString());
+        return weasyPrintInfo;
     }
 
     @VisibleForTesting

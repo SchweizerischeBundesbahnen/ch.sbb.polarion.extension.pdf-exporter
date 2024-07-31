@@ -4,16 +4,18 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.jetbrains.annotations.NotNull;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class ConfigurationStatus {
-    private Status status;
-    private String details;
+    private @NotNull String name;
+    private @NotNull Status status;
+    private @NotNull String details;
 
-    public ConfigurationStatus(Status status) {
-        this(status, "");
+    public ConfigurationStatus(@NotNull String name, @NotNull Status status) {
+        this(name, status, "");
     }
 }
