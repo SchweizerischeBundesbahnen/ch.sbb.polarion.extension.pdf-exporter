@@ -95,7 +95,7 @@ public class PdfConverter {
         return bytes;
     }
 
-    public @NotNull String prepareHtmlContentForWeasyPrint(@NotNull ExportParams exportParams, @Nullable ExportMetaInfoCallback metaInfoCallback) {
+    public @NotNull String prepareHtmlContent(@NotNull ExportParams exportParams, @Nullable ExportMetaInfoCallback metaInfoCallback) {
         @Nullable ITrackerProject project = getTrackerProject(exportParams);
         @NotNull final LiveDocHelper.DocumentData documentData = getDocumentData(exportParams, project);
         return prepareHtmlContent(exportParams, project, documentData, metaInfoCallback);

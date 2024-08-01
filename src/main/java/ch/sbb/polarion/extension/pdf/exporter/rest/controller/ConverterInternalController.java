@@ -122,9 +122,9 @@ public class ConverterInternalController {
                             content = {@Content(mediaType = MediaType.TEXT_HTML)}
                     )
             })
-    public String prepareHtmlContentForWeasyPrint(ExportParams exportParams) {
+    public String prepareHtmlContent(ExportParams exportParams) {
         validateExportParameters(exportParams);
-        return pdfConverter.prepareHtmlContentForWeasyPrint(exportParams, null);
+        return pdfConverter.prepareHtmlContent(exportParams, null);
     }
 
     @POST

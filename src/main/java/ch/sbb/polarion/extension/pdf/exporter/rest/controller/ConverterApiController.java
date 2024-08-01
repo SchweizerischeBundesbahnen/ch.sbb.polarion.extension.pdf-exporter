@@ -50,8 +50,8 @@ public class ConverterApiController extends ConverterInternalController {
     }
 
     @Override
-    public String prepareHtmlContentForWeasyPrint(ExportParams exportParams) {
-        return polarionService.callPrivileged(() -> super.prepareHtmlContentForWeasyPrint(exportParams));
+    public String prepareHtmlContent(ExportParams exportParams) {
+        return polarionService.callPrivileged(() -> super.prepareHtmlContent(exportParams));
     }
 
     @Override
