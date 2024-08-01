@@ -1,5 +1,18 @@
 # Changelog
 
+## [5.7.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v5.6.0...v5.7.0) (2024-08-01)
+
+
+### Features
+
+* info about the used weasyprint docker-image version ([#115](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/115)) ([0669e8b](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/0669e8be5d702cab3e277444ff0fc8213dfbca67)), closes [#104](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/104)
+* REST API for getting prepared HTML content for WeasyPrint ([#119](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/119)) ([41aea17](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/41aea179b5e2e145ff9cd62c582dfa4b63375411)), closes [#116](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/116)
+
+
+### Bug Fixes
+
+* update dependency ch.sbb.polarion.extensions:ch.sbb.polarion.extension.generic to v6.5.2 ([#120](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/120)) ([bf9003e](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/bf9003e2150228034739312b711d05e0090a7bf7))
+
 ## [5.6.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v5.5.4...v5.6.0) (2024-07-30)
 
 
