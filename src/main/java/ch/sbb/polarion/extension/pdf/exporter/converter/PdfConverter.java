@@ -77,27 +77,9 @@ public class PdfConverter {
         PdfGenerationLog generationLog = new PdfGenerationLog();
         generationLog.log("Starting html generation");
 
-        ITrackerProject project = null;
-        if (!StringUtils.isEmpty(exportParams.getProjectId())) {
-            project = pdfExporterPolarionService.getTrackerProject(exportParams.getProjectId());
-        }
-
-        final LiveDocHelper.DocumentData documentData =
-                switch (exportParams.getDocumentType()) {
-                    case WIKI -> liveDocHelper.getWikiDocument(project, exportParams);
-                    case REPORT -> liveDocHelper.getLiveReport(project, exportParams);
-                    case DOCUMENT -> liveDocHelper.getLiveDocument(Objects.requireNonNull(project), exportParams, true);
-                };
-
-        String cssContent = getCssContent(documentData, exportParams);
-        String preparedDocumentContent = postProcessDocumentContent(exportParams, project, documentData.getDocumentContent());
-        String headerFooterContent = getHeaderFooterContent(documentData, exportParams);
-        HtmlData htmlData = new HtmlData(cssContent, preparedDocumentContent, headerFooterContent);
-        String htmlContent = composeHtml(documentData.getDocumentTitle(), htmlData, exportParams);
-        if (metaInfoCallback != null) {
-            metaInfoCallback.setLinkedWorkItems(WorkItemRefData.extractListFromHtml(htmlContent, exportParams.getProjectId()));
-        }
-        htmlContent = htmlProcessor.internalizeLinks(htmlContent);
+        @Nullable ITrackerProject project = getTrackerProject(exportParams);
+        @NotNull final LiveDocHelper.DocumentData documentData = getDocumentData(exportParams, project);
+        @NotNull String htmlContent = prepareHtmlContent(exportParams, project, documentData, metaInfoCallback);
 
         generationLog.log("Html is ready, starting pdf generation");
         if (PdfExporterExtensionConfiguration.getInstance().isDebug()) {
@@ -111,6 +93,40 @@ public class PdfConverter {
             generationLog.log(finalMessage);
         }
         return bytes;
+    }
+
+    public @NotNull String prepareHtmlContent(@NotNull ExportParams exportParams, @Nullable ExportMetaInfoCallback metaInfoCallback) {
+        @Nullable ITrackerProject project = getTrackerProject(exportParams);
+        @NotNull final LiveDocHelper.DocumentData documentData = getDocumentData(exportParams, project);
+        return prepareHtmlContent(exportParams, project, documentData, metaInfoCallback);
+    }
+
+    private @Nullable ITrackerProject getTrackerProject(@NotNull ExportParams exportParams) {
+        ITrackerProject project = null;
+        if (!StringUtils.isEmpty(exportParams.getProjectId())) {
+            project = pdfExporterPolarionService.getTrackerProject(exportParams.getProjectId());
+        }
+        return project;
+    }
+
+    private @NotNull LiveDocHelper.DocumentData getDocumentData(@NotNull ExportParams exportParams, @Nullable ITrackerProject project) {
+        return switch (exportParams.getDocumentType()) {
+            case WIKI -> liveDocHelper.getWikiDocument(project, exportParams);
+            case REPORT -> liveDocHelper.getLiveReport(project, exportParams);
+            case DOCUMENT -> liveDocHelper.getLiveDocument(Objects.requireNonNull(project), exportParams, true);
+        };
+    }
+
+    private @NotNull String prepareHtmlContent(@NotNull ExportParams exportParams, @Nullable ITrackerProject project, @NotNull LiveDocHelper.DocumentData documentData, @Nullable ExportMetaInfoCallback metaInfoCallback) {
+        String cssContent = getCssContent(documentData, exportParams);
+        String preparedDocumentContent = postProcessDocumentContent(exportParams, project, documentData.getDocumentContent());
+        String headerFooterContent = getHeaderFooterContent(documentData, exportParams);
+        HtmlData htmlData = new HtmlData(cssContent, preparedDocumentContent, headerFooterContent);
+        String htmlContent = composeHtml(documentData.getDocumentTitle(), htmlData, exportParams);
+        if (metaInfoCallback != null) {
+            metaInfoCallback.setLinkedWorkItems(WorkItemRefData.extractListFromHtml(htmlContent, exportParams.getProjectId()));
+        }
+        return htmlProcessor.internalizeLinks(htmlContent);
     }
 
     @VisibleForTesting

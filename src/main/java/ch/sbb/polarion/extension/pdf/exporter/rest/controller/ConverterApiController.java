@@ -50,6 +50,11 @@ public class ConverterApiController extends ConverterInternalController {
     }
 
     @Override
+    public String prepareHtmlContent(ExportParams exportParams) {
+        return polarionService.callPrivileged(() -> super.prepareHtmlContent(exportParams));
+    }
+
+    @Override
     public Response startPdfConverterJob(ExportParams exportParams) {
         // In async case logout inside the filter must be deactivated. Async Job itself will care about logout after finishing
         deactivateLogoutFilter();

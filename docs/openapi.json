@@ -419,7 +419,10 @@
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/ConfigurationStatus"
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/ConfigurationStatus"
+                  }
                 }
               }
             }
@@ -628,6 +631,30 @@
           },
           "404" : {
             "description" : "Conversion job id is unknown"
+          }
+        }
+      }
+    },
+    "/api/prepared-html-content" : {
+      "post" : {
+        "tags" : [ "PDF Processing" ],
+        "summary" : "Returns prepared HTML which will be used for PDF conversion using WeasyPrint",
+        "operationId" : "prepareHtmlContent",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ExportParams"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Prepared HTML content",
+            "content" : {
+              "text/html" : { }
+            }
           }
         }
       }
@@ -1078,6 +1105,9 @@
       "ConfigurationStatus" : {
         "type" : "object",
         "properties" : {
+          "name" : {
+            "type" : "string"
+          },
           "status" : {
             "type" : "string",
             "enum" : [ "OK", "WARNING", "ERROR" ]
@@ -1266,10 +1296,10 @@
                   "type" : "string"
                 }
               },
-              "wildcardSubtype" : {
+              "wildcardType" : {
                 "type" : "boolean"
               },
-              "wildcardType" : {
+              "wildcardSubtype" : {
                 "type" : "boolean"
               }
             }
@@ -1360,10 +1390,10 @@
                   "type" : "string"
                 }
               },
-              "wildcardSubtype" : {
+              "wildcardType" : {
                 "type" : "boolean"
               },
-              "wildcardType" : {
+              "wildcardSubtype" : {
                 "type" : "boolean"
               }
             }
@@ -1472,10 +1502,10 @@
                   "type" : "string"
                 }
               },
-              "wildcardSubtype" : {
+              "wildcardType" : {
                 "type" : "boolean"
               },
-              "wildcardType" : {
+              "wildcardSubtype" : {
                 "type" : "boolean"
               }
             }
