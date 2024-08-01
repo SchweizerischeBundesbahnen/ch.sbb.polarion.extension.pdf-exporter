@@ -111,6 +111,23 @@ public class ConverterInternalController {
     }
 
     @POST
+    @Path("/prepared-html-content")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.TEXT_HTML)
+    @Tag(name = "PDF Processing")
+    @Operation(summary = "Returns prepared HTML which will be used for PDF conversion using WeasyPrint",
+            responses = {
+                    @ApiResponse(responseCode = "200",
+                            description = "Prepared HTML content",
+                            content = {@Content(mediaType = MediaType.TEXT_HTML)}
+                    )
+            })
+    public String prepareHtmlContentForWeasyPrint(ExportParams exportParams) {
+        validateExportParameters(exportParams);
+        return pdfConverter.prepareHtmlContentForWeasyPrint(exportParams, null);
+    }
+
+    @POST
     @Path("/convert/jobs")
     @Consumes(MediaType.APPLICATION_JSON)
     @Tag(name = "PDF Processing")
