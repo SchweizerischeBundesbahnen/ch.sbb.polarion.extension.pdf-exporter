@@ -3,6 +3,7 @@ const PdfExporterSidePanelStarter = {
 
     injectAll: function () {
         this.injectScript("common-script", `/polarion/pdf-exporter/ui/generic/js/common.js${this.timestampParam}`);
+        this.injectScript("export-common-script", `/polarion/pdf-exporter/ui/js/export-common.js${this.timestampParam}`);
         this.injectScript("export-pdf-script", `/polarion/pdf-exporter/ui/js/export-pdf.js${this.timestampParam}`);
     },
 

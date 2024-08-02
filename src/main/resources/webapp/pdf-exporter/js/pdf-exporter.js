@@ -1,7 +1,5 @@
 const SELECTED_STYLE_PACKAGE_COOKIE = 'selected-style-package';
-const POPUP_DEFAULT_SETTING_NAME = "Default";
 const MAX_PAGE_PREVIEWS = 4;
-const REPORT_PDF_CONVERSION_PULL_INTERVAL = 1000;
 
 const POPUP_HTML = `
     <div class="modal__overlay" tabindex="-1" data-micromodal-close>
@@ -279,36 +277,36 @@ const PdfExporter = {
             return;
         }
 
-        this.setCheckbox("popup-cover-page-checkbox", stylePackage.coverPage);
+        ExportCommon.setCheckbox("popup-cover-page-checkbox", stylePackage.coverPage);
 
-        this.setSelector("popup-cover-page-selector", stylePackage.coverPage);
-        this.visibleIf("popup-cover-page-selector", stylePackage.coverPage)
+        ExportCommon.setSelector("popup-cover-page-selector", stylePackage.coverPage);
+        ExportCommon.visibleIf("popup-cover-page-selector", stylePackage.coverPage)
 
-        this.setSelector("popup-css-selector", stylePackage.css);
-        this.setSelector("popup-header-footer-selector", stylePackage.headerFooter);
-        this.setSelector("popup-localization-selector", stylePackage.localization);
+        ExportCommon.setSelector("popup-css-selector", stylePackage.css);
+        ExportCommon.setSelector("popup-header-footer-selector", stylePackage.headerFooter);
+        ExportCommon.setSelector("popup-localization-selector", stylePackage.localization);
 
-        this.setValue("popup-headers-color", stylePackage.headersColor);
-        this.setValue("popup-paper-size-selector", stylePackage.paperSize || 'A4');
-        this.setValue("popup-orientation-selector", stylePackage.orientation || 'PORTRAIT');
-        this.setCheckbox("popup-fit-to-page", stylePackage.fitToPage);
-        this.setCheckbox("popup-enable-comments-rendering", stylePackage.renderComments);
-        this.setCheckbox("popup-watermark", stylePackage.watermark);
-        this.setCheckbox("popup-mark-referenced-workitems", stylePackage.markReferencedWorkitems);
-        this.setCheckbox("popup-cut-urls", stylePackage.cutLocalURLs);
-        this.setCheckbox("popup-cut-empty-chapters", stylePackage.cutEmptyChapters);
-        this.setCheckbox("popup-cut-empty-wi-attributes", stylePackage.cutEmptyWorkitemAttributes);
-        this.setCheckbox("popup-presentational-hints", stylePackage.followHTMLPresentationalHints);
+        ExportCommon.setValue("popup-headers-color", stylePackage.headersColor);
+        ExportCommon.setValue("popup-paper-size-selector", stylePackage.paperSize || 'A4');
+        ExportCommon.setValue("popup-orientation-selector", stylePackage.orientation || 'PORTRAIT');
+        ExportCommon.setCheckbox("popup-fit-to-page", stylePackage.fitToPage);
+        ExportCommon.setCheckbox("popup-enable-comments-rendering", stylePackage.renderComments);
+        ExportCommon.setCheckbox("popup-watermark", stylePackage.watermark);
+        ExportCommon.setCheckbox("popup-mark-referenced-workitems", stylePackage.markReferencedWorkitems);
+        ExportCommon.setCheckbox("popup-cut-urls", stylePackage.cutLocalURLs);
+        ExportCommon.setCheckbox("popup-cut-empty-chapters", stylePackage.cutEmptyChapters);
+        ExportCommon.setCheckbox("popup-cut-empty-wi-attributes", stylePackage.cutEmptyWorkitemAttributes);
+        ExportCommon.setCheckbox("popup-presentational-hints", stylePackage.followHTMLPresentationalHints);
 
-        this.setCheckbox("popup-custom-list-styles", stylePackage.customNumberedListStyles);
-        this.setValue("popup-numbered-list-styles", stylePackage.customNumberedListStyles || "");
-        this.visibleIf("popup-numbered-list-styles", stylePackage.customNumberedListStyles);
+        ExportCommon.setCheckbox("popup-custom-list-styles", stylePackage.customNumberedListStyles);
+        ExportCommon.setValue("popup-numbered-list-styles", stylePackage.customNumberedListStyles || "");
+        ExportCommon.visibleIf("popup-numbered-list-styles", stylePackage.customNumberedListStyles);
 
-        this.setCheckbox("popup-specific-chapters", stylePackage.specificChapters);
-        this.setValue("popup-chapters", stylePackage.specificChapters || "");
-        this.visibleIf("popup-chapters", stylePackage.specificChapters);
+        ExportCommon.setCheckbox("popup-specific-chapters", stylePackage.specificChapters);
+        ExportCommon.setValue("popup-chapters", stylePackage.specificChapters || "");
+        ExportCommon.visibleIf("popup-chapters", stylePackage.specificChapters);
 
-        this.setCheckbox("popup-localization", stylePackage.language);
+        ExportCommon.setCheckbox("popup-localization", stylePackage.language);
         let languageValue;
         if (stylePackage.exposeSettings && stylePackage.language && this.documentLanguage) {
             languageValue = this.documentLanguage;
@@ -318,10 +316,10 @@ const PdfExporter = {
             const firstOption = document.getElementById("popup-language").querySelector("option:first-child");
             languageValue = firstOption?.value;
         }
-        this.setValue("popup-language", languageValue);
-        this.visibleIf("popup-language", stylePackage.language);
+        ExportCommon.setValue("popup-language", languageValue);
+        ExportCommon.visibleIf("popup-language", stylePackage.language);
 
-        this.setCheckbox("popup-selected-roles", stylePackage.linkedWorkitemRoles);
+        ExportCommon.setCheckbox("popup-selected-roles", stylePackage.linkedWorkitemRoles);
         document.querySelectorAll(`#popup-roles-selector option`).forEach(roleOption => {
             roleOption.selected = false;
         });
@@ -332,10 +330,10 @@ const PdfExporter = {
                 });
             }
         }
-        this.displayIf("popup-roles-selector", stylePackage.linkedWorkitemRoles, "inline-block");
+        ExportCommon.displayIf("popup-roles-selector", stylePackage.linkedWorkitemRoles, "inline-block");
 
-        this.displayIf("popup-style-package-content", stylePackage.exposeSettings);
-        this.displayIf("popup-page-width-validation", stylePackage.exposePageWidthValidation);
+        ExportCommon.displayIf("popup-style-package-content", stylePackage.exposeSettings);
+        ExportCommon.displayIf("popup-page-width-validation", stylePackage.exposePageWidthValidation);
     },
 
     validatePdf: function () {
@@ -433,7 +431,7 @@ const PdfExporter = {
             this.checkNestedListsAsync(requestBody);
         }
 
-        this.asyncConvertPdf(requestBody, successResponse => {
+        ExportCommon.asyncConvertPdf(requestBody, successResponse => {
             const objectURL = (window.URL ? window.URL : window.webkitURL).createObjectURL(successResponse);
             const anchorElement = document.createElement("a");
             anchorElement.href = objectURL;
@@ -452,48 +450,6 @@ const PdfExporter = {
                 this.showNotification({alertType: "error", message: "Error occurred during PDF generation" + (errorMessage ? ":<br>" + errorMessage : "")});
             });
             this.actionInProgress({inProgress: false});
-        });
-    },
-
-    asyncConvertPdf: function (body, successCallback, errorCallback) {
-        SbbCommon.callAsync({
-            method: "POST",
-            url: "/polarion/pdf-exporter/rest/internal/convert/jobs",
-            contentType: "application/json",
-            responseType: "blob",
-            body: body,
-            onOk: (responseText, request) => {
-                if (request.status === 202) {
-                    this.pullAndGetResultPdf(request.getResponseHeader("Location"), successCallback, errorCallback);
-                } else {
-                    errorCallback(request.response);
-                }
-            },
-            onError: (status, errorMessage, request) => {
-                errorCallback(request?.response);
-            }
-        });
-    },
-
-    pullAndGetResultPdf: async function (url, successCallback, errorCallback) {
-        await new Promise(resolve => setTimeout(resolve, REPORT_PDF_CONVERSION_PULL_INTERVAL));
-        SbbCommon.callAsync({
-            method: "GET",
-            url: url,
-            responseType: "blob",
-            onOk: (responseText, request) => {
-                if (request.status === 202) {
-                    console.log('Async PDF conversion: still in progress, retrying ...');
-                    this.pullAndGetResultPdf(url, successCallback, errorCallback);
-                } else if (request.status === 200) {
-                    successCallback(request.response);
-                } else {
-                    errorCallback(request.response);
-                }
-            },
-            onError: (status, errorMessage, request) => {
-                errorCallback(request?.response);
-            }
         });
     },
 
@@ -603,27 +559,6 @@ const PdfExporter = {
 
     containsOption: function (selectElement, option) {
         return [...selectElement.options].map(o => o.value).includes(option);
-    },
-
-    setValue: function (elementId, value) {
-        document.getElementById(elementId).value = value;
-    },
-
-    displayIf: function (elementId, condition, displayStyle = "block") {
-        document.getElementById(elementId).style.display = condition ? displayStyle : "none";
-    },
-
-    visibleIf: function (elementId, condition) {
-        document.getElementById(elementId).style.visibility = condition ? "visible" : "hidden";
-    },
-
-    setSelector: function (elementId, value) {
-        const selector = document.getElementById(elementId);
-        selector.value = this.containsOption(selector, value) ? value : POPUP_DEFAULT_SETTING_NAME;
-    },
-
-    setCheckbox: function (elementId, value) {
-        document.getElementById(elementId).checked = !!value;
     },
 
     actionInProgress: function ({inProgress, message}) {

@@ -1,8 +1,3 @@
-const consts = {
-    DEFAULT_SETTING_NAME: "Default",
-    DOC_PDF_CONVERSION_PULL_INTERVAL: 1000
-}
-
 const ExportPdf = {
     stylePackageChanged: function () {
         console.log("stylePackageChanged");
@@ -39,40 +34,40 @@ const ExportPdf = {
         }
         const documentLanguage = document.getElementById("document-language").value;
 
-        this.setCheckbox("cover-page-checkbox", stylePackage.coverPage);
+        ExportCommon.setCheckbox("cover-page-checkbox", stylePackage.coverPage);
 
-        this.setSelector("cover-page-selector", stylePackage.coverPage);
-        this.displayIf("cover-page-selector", stylePackage.coverPage, "inline-block")
+        ExportCommon.setSelector("cover-page-selector", stylePackage.coverPage);
+        ExportCommon.displayIf("cover-page-selector", stylePackage.coverPage, "inline-block")
 
-        this.setSelector("css-selector", stylePackage.css);
-        this.setSelector("header-footer-selector", stylePackage.headerFooter);
-        this.setSelector("localization-selector", stylePackage.localization);
+        ExportCommon.setSelector("css-selector", stylePackage.css);
+        ExportCommon.setSelector("header-footer-selector", stylePackage.headerFooter);
+        ExportCommon.setSelector("localization-selector", stylePackage.localization);
 
-        this.setValue("headers-color", stylePackage.headersColor);
-        this.setValue("paper-size-selector", stylePackage.paperSize || 'A4');
-        this.setValue("orientation-selector", stylePackage.orientation || 'PORTRAIT');
-        this.setCheckbox("fit-to-page", stylePackage.fitToPage);
-        this.setCheckbox("enable-comments-rendering", stylePackage.renderComments);
-        this.setCheckbox("watermark", stylePackage.watermark);
-        this.setCheckbox("mark-referenced-workitems", stylePackage.markReferencedWorkitems);
-        this.setCheckbox("cut-empty-chapters", stylePackage.cutEmptyChapters);
-        this.setCheckbox("cut-empty-wi-attributes", stylePackage.cutEmptyWorkitemAttributes);
-        this.setCheckbox("cut-urls", stylePackage.cutLocalURLs);
-        this.setCheckbox("presentational-hints", stylePackage.followHTMLPresentationalHints);
+        ExportCommon.setValue("headers-color", stylePackage.headersColor);
+        ExportCommon.setValue("paper-size-selector", stylePackage.paperSize || 'A4');
+        ExportCommon.setValue("orientation-selector", stylePackage.orientation || 'PORTRAIT');
+        ExportCommon.setCheckbox("fit-to-page", stylePackage.fitToPage);
+        ExportCommon.setCheckbox("enable-comments-rendering", stylePackage.renderComments);
+        ExportCommon.setCheckbox("watermark", stylePackage.watermark);
+        ExportCommon.setCheckbox("mark-referenced-workitems", stylePackage.markReferencedWorkitems);
+        ExportCommon.setCheckbox("cut-empty-chapters", stylePackage.cutEmptyChapters);
+        ExportCommon.setCheckbox("cut-empty-wi-attributes", stylePackage.cutEmptyWorkitemAttributes);
+        ExportCommon.setCheckbox("cut-urls", stylePackage.cutLocalURLs);
+        ExportCommon.setCheckbox("presentational-hints", stylePackage.followHTMLPresentationalHints);
 
-        this.setCheckbox("custom-list-styles", stylePackage.customNumberedListStyles);
-        this.setValue("numbered-list-styles", stylePackage.customNumberedListStyles || "");
-        this.displayIf("numbered-list-styles", stylePackage.customNumberedListStyles);
+        ExportCommon.setCheckbox("custom-list-styles", stylePackage.customNumberedListStyles);
+        ExportCommon.setValue("numbered-list-styles", stylePackage.customNumberedListStyles || "");
+        ExportCommon.displayIf("numbered-list-styles", stylePackage.customNumberedListStyles);
 
-        this.setCheckbox("specific-chapters", stylePackage.specificChapters);
-        this.setValue("chapters", stylePackage.specificChapters || "");
-        this.displayIf("chapters", stylePackage.specificChapters);
+        ExportCommon.setCheckbox("specific-chapters", stylePackage.specificChapters);
+        ExportCommon.setValue("chapters", stylePackage.specificChapters || "");
+        ExportCommon.displayIf("chapters", stylePackage.specificChapters);
 
-        this.setCheckbox("localization", stylePackage.language);
-        this.setValue("language", (stylePackage.exposeSettings && stylePackage.language && documentLanguage) ? documentLanguage : stylePackage.language);
-        this.displayIf("language", stylePackage.language);
+        ExportCommon.setCheckbox("localization", stylePackage.language);
+        ExportCommon.setValue("language", (stylePackage.exposeSettings && stylePackage.language && documentLanguage) ? documentLanguage : stylePackage.language);
+        ExportCommon.displayIf("language", stylePackage.language);
 
-        this.setCheckbox("selected-roles", stylePackage.linkedWorkitemRoles);
+        ExportCommon.setCheckbox("selected-roles", stylePackage.linkedWorkitemRoles);
         document.querySelectorAll(`#roles-selector option`).forEach(roleOption => {
             roleOption.selected = false;
         });
@@ -83,35 +78,14 @@ const ExportPdf = {
                 });
             }
         }
-        this.displayIf("roles-wrapper", stylePackage.linkedWorkitemRoles);
+        ExportCommon.displayIf("roles-wrapper", stylePackage.linkedWorkitemRoles);
 
-        this.displayIf("style-package-content", stylePackage.exposeSettings);
-        this.displayIf("page-width-validation", stylePackage.exposePageWidthValidation);
-    },
-
-    setCheckbox: function (elementId, value) {
-        document.getElementById(elementId).checked = !!value;
-    },
-
-    setValue: function (elementId, value) {
-        document.getElementById(elementId).value = value;
-    },
-
-    setSelector: function (elementId, value) {
-        const selector = document.getElementById(elementId);
-        selector.value = this.containsOption(selector, value) ? value : consts.DEFAULT_SETTING_NAME;
-    },
-
-    displayIf: function (elementId, condition, displayStyle = "block") {
-        document.getElementById(elementId).style.display = condition ? displayStyle : "none";
+        ExportCommon.displayIf("style-package-content", stylePackage.exposeSettings);
+        ExportCommon.displayIf("page-width-validation", stylePackage.exposePageWidthValidation);
     },
 
     setClass: function (elementId, className) {
         document.getElementById(elementId).className = className;
-    },
-
-    containsOption: function (selectElement, option) {
-        return [...selectElement.options].map(o => o.value).includes(option);
     },
 
     prepareRequest: function (projectId, locationPath) {
@@ -237,7 +211,7 @@ const ExportPdf = {
             }
         });
 
-        this.asyncConvertPdf(request, successResponse => {
+        ExportCommon.asyncConvertPdf(request, successResponse => {
             this.actionInProgress(false);
             const objectURL = (window.URL ? window.URL : window.webkitURL).createObjectURL(successResponse);
             const anchorElement = document.createElement("a");
@@ -254,42 +228,6 @@ const ExportPdf = {
                 const errorMessage = error && (error.message ? error.message : error.errorMessage);
                 $("#export-error").append("Error occurred during PDF generation" + (errorMessage ? ":<br>" + errorMessage : ""));
             });
-        });
-    },
-
-    asyncConvertPdf: async function (request, successCallback, errorCallback) {
-        SbbCommon.callAsync({
-            method: "POST",
-            url: "/polarion/pdf-exporter/rest/internal/convert/jobs",
-            contentType: "application/json",
-            responseType: "blob",
-            body: request,
-            onOk: (responseText, request) => {
-                this.pullAndGetResultPdf(request.getResponseHeader("Location"), successCallback, errorCallback);
-            },
-            onError: (status, errorMessage, request) => {
-                errorCallback(request.response);
-            }
-        });
-    },
-
-    pullAndGetResultPdf: async function (url, successCallback, errorCallback) {
-        await new Promise(resolve => setTimeout(resolve, consts.DOC_PDF_CONVERSION_PULL_INTERVAL));
-        SbbCommon.callAsync({
-            method: "GET",
-            url: url,
-            responseType: "blob",
-            onOk: (responseText, request) => {
-                if (request.status === 202) {
-                    console.log('Async PDF conversion: still in progress, retrying...');
-                    this.pullAndGetResultPdf(url, successCallback, errorCallback);
-                } else if (request.status === 200) {
-                    successCallback(request.response);
-                }
-            },
-            onError: (status, errorMessage, request) => {
-                errorCallback(request.response);
-            }
         });
     },
 

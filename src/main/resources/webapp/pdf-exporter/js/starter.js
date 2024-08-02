@@ -35,6 +35,7 @@ const PdfExporterStarter = {
 
         this.injectScript("common-script", `/polarion/pdf-exporter/ui/generic/js/common.js${this.timestampParam}`);
         this.injectScript("pdf-micromodal-script", `/polarion/pdf-exporter/js/micromodal.min.js${this.timestampParam}`);
+        this.injectScript("export-common-script", `/polarion/pdf-exporter/js/export-common.js${this.timestampParam}`);
         this.injectScript("pdf-exporter-script", `/polarion/pdf-exporter/js/pdf-exporter.js${this.timestampParam}`);
     },
 
