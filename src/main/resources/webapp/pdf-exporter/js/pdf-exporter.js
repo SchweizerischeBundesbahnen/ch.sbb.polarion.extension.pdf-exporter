@@ -608,7 +608,7 @@ const PdfExporter = {
             SbbCommon.callAsync({
                 method: method,
                 url: url,
-                contentType: contentType ? contentType : 'application/json',
+                contentType: contentType || 'application/json',
                 responseType: responseType,
                 body: body,
                 onOk: (responseText, request) => {
