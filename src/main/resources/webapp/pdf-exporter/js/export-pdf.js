@@ -43,8 +43,8 @@ const ExportPdf = {
         ExportCommon.setSelector("header-footer-selector", stylePackage.headerFooter);
         ExportCommon.setSelector("localization-selector", stylePackage.localization);
 
-        ExportCommon.setValue("headers-color", stylePackage.headersColor);
         ExportCommon.setValue("paper-size-selector", stylePackage.paperSize || 'A4');
+        ExportCommon.setValue("headers-color", stylePackage.headersColor);
         ExportCommon.setValue("orientation-selector", stylePackage.orientation || 'PORTRAIT');
         ExportCommon.setCheckbox("fit-to-page", stylePackage.fitToPage);
         ExportCommon.setCheckbox("enable-comments-rendering", stylePackage.renderComments);
