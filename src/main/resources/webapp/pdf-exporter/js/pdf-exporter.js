@@ -134,7 +134,7 @@ const PdfExporter = {
                 scope: this.exportContext.scope,
                 selectElement: document.getElementById("popup-style-package-select")
             }).then(() => {
-                let valueToPreselect = this.getCookie(SELECTED_STYLE_PACKAGE_COOKIE);
+                let valueToPreselect = SbbCommon.getCookie(SELECTED_STYLE_PACKAGE_COOKIE);
                 const stylePackageSelect = document.getElementById("popup-style-package-select");
                 if (valueToPreselect && this.containsOption(stylePackageSelect, valueToPreselect)) {
                     stylePackageSelect.value = valueToPreselect;
@@ -255,7 +255,7 @@ const PdfExporter = {
     onStylePackageChanged: function () {
         const selectedStylePackageName = document.getElementById("popup-style-package-select").value;
         if (selectedStylePackageName) {
-            this.setCookie(SELECTED_STYLE_PACKAGE_COOKIE, selectedStylePackageName);
+            SbbCommon.setCookie(SELECTED_STYLE_PACKAGE_COOKIE, selectedStylePackageName);
 
             this.actionInProgress({inProgress: true, message: "Loading style package data"});
 
@@ -268,7 +268,7 @@ const PdfExporter = {
 
                 this.actionInProgress({inProgress: false});
             }).catch((error) => {
-                this.showNotification({alertType: "error", message: "Error occurred loading style package data" + (error.response.message ? ":<br>" + error.response.message : "")});
+                this.showNotification({alertType: "error", message: "Error occurred loading style package data" + (error?.response.message ? ":<br>" + error.response.message : "")});
                 this.actionInProgress({inProgress: false});
             });
         }
@@ -362,14 +362,14 @@ const PdfExporter = {
                     alertType: "error",
                     message: pages > MAX_PAGE_PREVIEWS
                         ? `Invalid pages found. First ${MAX_PAGE_PREVIEWS} of them:`
-                        : `${MAX_PAGE_PREVIEWS} invalid ${pagesWord} found:`
+                        : `${pages} invalid ${pagesWord} found:`
                 });
                 this.createPreviews(response);
             } else {
                 this.showValidationResult({alertType: "success", message: "All pages are valid"});
             }
         }).catch((error) => {
-            this.showNotification({alertType: "error", message: "Error occurred validating pages width" + (error.response.message ? ":<br>" + error.response.message : "")});
+            this.showNotification({alertType: "error", message: "Error occurred validating pages width" + (error?.response.message ? ":<br>" + error.response.message : "")});
             this.actionInProgress({inProgress: false});
         })
     },
@@ -455,39 +455,46 @@ const PdfExporter = {
         });
     },
 
-    asyncConvertPdf: function (request, successCallback, errorCallback) {
-        const xhr = new XMLHttpRequest();
-        xhr.open("POST", "/polarion/pdf-exporter/rest/internal/convert/jobs", true);
-        xhr.setRequestHeader("Content-Type", "application/json");
-        xhr.responseType = "blob";
-        xhr.send(request);
-
-        xhr.onload = () => {
-            if (xhr.status === 202) {
-                this.pullAndGetResultPdf(xhr.getResponseHeader("Location"), successCallback, errorCallback);
-            } else {
-                errorCallback(xhr.response);
+    asyncConvertPdf: function (body, successCallback, errorCallback) {
+        SbbCommon.callAsync({
+            method: "POST",
+            url: "/polarion/pdf-exporter/rest/internal/convert/jobs",
+            contentType: "application/json",
+            responseType: "blob",
+            body: body,
+            onOk: (responseText, request) => {
+                if (request.status === 202) {
+                    this.pullAndGetResultPdf(request.getResponseHeader("Location"), successCallback, errorCallback);
+                } else {
+                    errorCallback(request.response);
+                }
+            },
+            onError: (status, errorMessage, request) => {
+                errorCallback(request?.response);
             }
-        };
+        });
     },
 
     pullAndGetResultPdf: async function (url, successCallback, errorCallback) {
         await new Promise(resolve => setTimeout(resolve, REPORT_PDF_CONVERSION_PULL_INTERVAL));
-        const xhr = new XMLHttpRequest();
-        xhr.responseType = "blob";
-        xhr.open("GET", url, true);
-        xhr.send();
-
-        xhr.onload = () => {
-            if (xhr.status === 202) {
-                console.log('Async PDF convertion: still in progress, retrying ...');
-                this.pullAndGetResultPdf(url, successCallback, errorCallback);
-            } else if (xhr.status === 200) {
-                successCallback(xhr.response);
-            } else {
-                errorCallback(xhr.response);
+        SbbCommon.callAsync({
+            method: "GET",
+            url: url,
+            responseType: "blob",
+            onOk: (responseText, request) => {
+                if (request.status === 202) {
+                    console.log('Async PDF conversion: still in progress, retrying ...');
+                    this.pullAndGetResultPdf(url, successCallback, errorCallback);
+                } else if (request.status === 200) {
+                    successCallback(request.response);
+                } else {
+                    errorCallback(request.response);
+                }
+            },
+            onError: (status, errorMessage, request) => {
+                errorCallback(request?.response);
             }
-        }
+        });
     },
 
     checkNestedListsAsync: function (requestBody) {
@@ -501,7 +508,7 @@ const PdfExporter = {
                 this.showNotification({alertType: "warning", message: "Document contains nested numbered lists which structures were not valid. We tried to fix this, but be aware of it."});
             }
         }).catch((error) => {
-            this.showNotification({alertType: "error", message: "Error occurred validating nested lists" + (error.response.message ? ":<br>" + error.response.message : "")});
+            this.showNotification({alertType: "error", message: "Error occurred validating nested lists" + (error?.response.message ? ":<br>" + error.response.message : "")});
         })
     },
 
@@ -663,54 +670,20 @@ const PdfExporter = {
 
     callAsync: function ({method, url, contentType, responseType, body}) {
         return new Promise((resolve, reject) => {
-            const xhr = new XMLHttpRequest();
-            xhr.open(method, url, true);
-            if (contentType) {
-                xhr.setRequestHeader('Content-Type', contentType);
-            } else {
-                xhr.setRequestHeader('Content-Type', 'application/json')
-            }
-            if (responseType) {
-                xhr.responseType = responseType;
-            }
-
-            xhr.send(body);
-
-            xhr.onreadystatechange = function () {
-                if (xhr.readyState === 4) {
-                    if (xhr.status === 200 || xhr.status === 204) {
-                        resolve(responseType === "blob" || responseType === "json" ? {response: xhr.response} : {responseText: xhr.responseText});
-                    } else {
-                        reject(xhr)
-                    }
+            SbbCommon.callAsync({
+                method: method,
+                url: url,
+                contentType: contentType ? contentType : 'application/json',
+                responseType: responseType,
+                body: body,
+                onOk: (responseText, request) => {
+                    resolve(responseType === "blob" || responseType === "json" ? {response: request.response} : {responseText: responseText});
+                },
+                onError: (status, errorMessage, request) => {
+                    reject(request);
                 }
-            };
-            xhr.onerror = function () {
-                reject();
-            };
+            });
         });
-    },
-
-    setCookie: function (name, value, daysToExpire = 1) {
-        let expires = '';
-        if (daysToExpire) {
-            const date = new Date();
-            date.setTime(date.getTime() + (daysToExpire * 24 * 60 * 60 * 1000));
-            expires = '; expires=' + date.toUTCString();
-        }
-        document.cookie = name + '=' + encodeURIComponent(value) + expires + '; path=/';
-    },
-
-    getCookie: function (name) {
-        const nameEQ = name + '=';
-        const cookiesArray = document.cookie.split(';');
-        for (let cookie of cookiesArray) {
-            const cleanedCookie = cookie.trim();
-            if (cleanedCookie.startsWith(nameEQ)) {
-                return decodeURIComponent(cleanedCookie.substring(nameEQ.length, cleanedCookie.length));
-            }
-        }
-        return null;
     },
 }
 
