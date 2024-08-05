@@ -21,7 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class PdfWidthTest extends BaseWeasyPrintTest {
 
     public static final String FIXED_POSTFIX = "Fixed";
-    private static final HtmlProcessor htmlProcessor = new HtmlProcessor(null, null, null);
+    private static final HtmlProcessor htmlProcessor = new HtmlProcessor(null, null, null, null);
 
     private static Stream<Arguments> testWidthViolationParams() {
         return Stream.of(

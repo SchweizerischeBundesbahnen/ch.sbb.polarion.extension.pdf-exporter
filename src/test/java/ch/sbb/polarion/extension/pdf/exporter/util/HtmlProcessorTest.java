@@ -8,6 +8,7 @@ import ch.sbb.polarion.extension.pdf.exporter.rest.model.conversion.Orientation;
 import ch.sbb.polarion.extension.pdf.exporter.rest.model.conversion.PaperSize;
 import ch.sbb.polarion.extension.pdf.exporter.rest.model.settings.localization.Language;
 import ch.sbb.polarion.extension.pdf.exporter.rest.model.settings.localization.LocalizationModel;
+import ch.sbb.polarion.extension.pdf.exporter.service.PdfExporterPolarionService;
 import ch.sbb.polarion.extension.pdf.exporter.settings.LocalizationSettings;
 import ch.sbb.polarion.extension.pdf.exporter.util.html.HtmlLinksHelper;
 import lombok.SneakyThrows;
@@ -41,12 +42,14 @@ class HtmlProcessorTest {
     private LocalizationSettings localizationSettings;
     @Mock
     private HtmlLinksHelper htmlLinksHelper;
+    @Mock
+    private PdfExporterPolarionService pdfExporterPolarionService;
 
     private HtmlProcessor processor;
 
     @BeforeEach
     void init() {
-        processor = new HtmlProcessor(fileResourceProvider, localizationSettings, htmlLinksHelper);
+        processor = new HtmlProcessor(fileResourceProvider, localizationSettings, htmlLinksHelper, pdfExporterPolarionService);
         Map<String, String> deTranslations = Map.of(
                 "draft", "Entwurf",
                 "not reviewed", "Nicht überprüft"
@@ -79,6 +82,7 @@ class HtmlProcessorTest {
     @SneakyThrows
     void cutLocalUrlsWithRolesFilteringTest() {
         when(localizationSettings.load(any(), any(SettingId.class))).thenReturn(new LocalizationModel(Collections.emptyMap(), Collections.emptyMap(), Collections.emptyMap()));
+        when(pdfExporterPolarionService.getPolarionVersion()).thenReturn("2310");
 
         try (InputStream isInvalidHtml = this.getClass().getResourceAsStream("/cutLocalUrlsWithRolesFilteringBeforeProcessing.html");
              InputStream isValidHtml = this.getClass().getResourceAsStream("/cutLocalUrlsWithRolesFilteringAfterProcessing.html")) {
@@ -90,9 +94,9 @@ class HtmlProcessorTest {
 
             List<String> selectedRoles = Arrays.asList("has parent", "is parent of", "depends on", "blocks", "verifies", "is verified by");
             // Spaces and new lines are removed to exclude difference in space characters
-            String fixedHtml = processor.processHtmlForPDF(invalidHtml, exportParams, selectedRoles).replaceAll(" ", "");
-            String validHtml = new String(isValidHtml.readAllBytes(), StandardCharsets.UTF_8).replaceAll(" ", "");
-            assertEquals(TestStringUtils.removeLineEndings(validHtml), TestStringUtils.removeLineEndings(fixedHtml));
+            String fixedHtml = processor.processHtmlForPDF(invalidHtml, exportParams, selectedRoles);
+            String validHtml = new String(isValidHtml.readAllBytes(), StandardCharsets.UTF_8);
+            assertEquals(TestStringUtils.removeNonsensicalSymbols(validHtml), TestStringUtils.removeNonsensicalSymbols(fixedHtml));
         }
     }
 
@@ -109,9 +113,9 @@ class HtmlProcessorTest {
             String invalidHtml = new String(isInvalidHtml.readAllBytes(), StandardCharsets.UTF_8);
 
             // Spaces and new lines are removed to exclude difference in space characters
-            String fixedHtml = processor.processPageBrakes(invalidHtml, context).replaceAll(" ", "");
-            String validHtml = new String(isValidHtml.readAllBytes(), StandardCharsets.UTF_8).replaceAll(" ", "");
-            assertEquals(TestStringUtils.removeLineEndings(validHtml), TestStringUtils.removeLineEndings(fixedHtml));
+            String fixedHtml = processor.processPageBrakes(invalidHtml, context);
+            String validHtml = new String(isValidHtml.readAllBytes(), StandardCharsets.UTF_8);
+            assertEquals(TestStringUtils.removeNonsensicalSymbols(validHtml), TestStringUtils.removeNonsensicalSymbols(fixedHtml));
         }
     }
 
@@ -124,9 +128,9 @@ class HtmlProcessorTest {
             String invalidHtml = new String(isInvalidHtml.readAllBytes(), StandardCharsets.UTF_8);
 
             // Spaces and new lines are removed to exclude difference in space characters
-            String fixedHtml = processor.cutEmptyChapters(invalidHtml).replaceAll(" ", "");
-            String validHtml = new String(isValidHtml.readAllBytes(), StandardCharsets.UTF_8).replaceAll(" ", "");
-            assertEquals(TestStringUtils.removeLineEndings(validHtml), TestStringUtils.removeLineEndings(fixedHtml));
+            String fixedHtml = processor.cutEmptyChapters(invalidHtml);
+            String validHtml = new String(isValidHtml.readAllBytes(), StandardCharsets.UTF_8);
+            assertEquals(TestStringUtils.removeNonsensicalSymbols(validHtml), TestStringUtils.removeNonsensicalSymbols(fixedHtml));
         }
     }
 
@@ -139,9 +143,9 @@ class HtmlProcessorTest {
             String invalidHtml = new String(isInvalidHtml.readAllBytes(), StandardCharsets.UTF_8);
 
             // Spaces and new lines are removed to exclude difference in space characters
-            String fixedHtml = processor.cutEmptyWIAttributes(invalidHtml).replaceAll(" ", "");
-            String validHtml = new String(isValidHtml.readAllBytes(), StandardCharsets.UTF_8).replaceAll(" ", "");
-            assertEquals(TestStringUtils.removeLineEndings(validHtml), TestStringUtils.removeLineEndings(fixedHtml));
+            String fixedHtml = processor.cutEmptyWIAttributes(invalidHtml);
+            String validHtml = new String(isValidHtml.readAllBytes(), StandardCharsets.UTF_8);
+            assertEquals(TestStringUtils.removeNonsensicalSymbols(validHtml), TestStringUtils.removeNonsensicalSymbols(fixedHtml));
         }
     }
 
@@ -154,9 +158,9 @@ class HtmlProcessorTest {
             String invalidHtml = new String(isInvalidHtml.readAllBytes(), StandardCharsets.UTF_8);
 
             // Spaces and new lines are removed to exclude difference in space characters
-            String fixedHtml = processor.properTableHeads(invalidHtml).replaceAll(" ", "");
-            String validHtml = new String(isValidHtml.readAllBytes(), StandardCharsets.UTF_8).replaceAll(" ", "");
-            assertEquals(TestStringUtils.removeLineEndings(validHtml), TestStringUtils.removeLineEndings(fixedHtml));
+            String fixedHtml = processor.properTableHeads(invalidHtml);
+            String validHtml = new String(isValidHtml.readAllBytes(), StandardCharsets.UTF_8);
+            assertEquals(TestStringUtils.removeNonsensicalSymbols(validHtml), TestStringUtils.removeNonsensicalSymbols(fixedHtml));
         }
     }
 
@@ -169,9 +173,9 @@ class HtmlProcessorTest {
             String invalidHtml = new String(isInvalidHtml.readAllBytes(), StandardCharsets.UTF_8);
 
             // Spaces and new lines are removed to exclude difference in space characters
-            String fixedHtml = processor.adjustCellWidth(invalidHtml).replaceAll(" ", "");
-            String validHtml = new String(isValidHtml.readAllBytes(), StandardCharsets.UTF_8).replaceAll(" ", "");
-            assertEquals(TestStringUtils.removeLineEndings(validHtml), TestStringUtils.removeLineEndings(fixedHtml));
+            String fixedHtml = processor.adjustCellWidth(invalidHtml);
+            String validHtml = new String(isValidHtml.readAllBytes(), StandardCharsets.UTF_8);
+            assertEquals(TestStringUtils.removeNonsensicalSymbols(validHtml), TestStringUtils.removeNonsensicalSymbols(fixedHtml));
         }
     }
 
@@ -184,9 +188,9 @@ class HtmlProcessorTest {
             String invalidHtml = new String(isInvalidHtml.readAllBytes(), StandardCharsets.UTF_8);
 
             // Spaces and new lines are removed to exclude difference in space characters
-            String fixedHtml = processor.cutNotNeededChapters(invalidHtml, Collections.singletonList("2")).replaceAll(" ", "");
-            String validHtml = new String(isValidHtml.readAllBytes(), StandardCharsets.UTF_8).replaceAll(" ", "");
-            assertEquals(TestStringUtils.removeLineEndings(validHtml), TestStringUtils.removeLineEndings(fixedHtml));
+            String fixedHtml = processor.cutNotNeededChapters(invalidHtml, Collections.singletonList("2"));
+            String validHtml = new String(isValidHtml.readAllBytes(), StandardCharsets.UTF_8);
+            assertEquals(TestStringUtils.removeNonsensicalSymbols(validHtml), TestStringUtils.removeNonsensicalSymbols(fixedHtml));
         }
     }
 
@@ -199,9 +203,53 @@ class HtmlProcessorTest {
             String invalidHtml = new String(isInvalidHtml.readAllBytes(), StandardCharsets.UTF_8);
 
             // Spaces and new lines are removed to exclude difference in space characters
-            String fixedHtml = processor.localizeEnums(invalidHtml, getExportParams()).replaceAll(" ", "");
-            String validHtml = new String(isValidHtml.readAllBytes(), StandardCharsets.UTF_8).replaceAll(" ", "");
-            assertEquals(TestStringUtils.removeLineEndings(validHtml), TestStringUtils.removeLineEndings(fixedHtml));
+            String fixedHtml = processor.localizeEnums(invalidHtml, getExportParams());
+            String validHtml = new String(isValidHtml.readAllBytes(), StandardCharsets.UTF_8);
+            assertEquals(TestStringUtils.removeNonsensicalSymbols(validHtml), TestStringUtils.removeNonsensicalSymbols(fixedHtml));
+        }
+    }
+
+    @Test
+    @SneakyThrows
+    void selectLinkedWorkItemTypesTableTest() {
+        when(pdfExporterPolarionService.getPolarionVersion()).thenReturn("2404");
+
+        try (InputStream isInvalidHtml = this.getClass().getResourceAsStream("/linkedWorkItemsTableBeforeProcessing.html");
+             InputStream isValidHtml = this.getClass().getResourceAsStream("/linkedWorkItemsTableAfterProcessing.html")) {
+
+            String invalidHtml = new String(isInvalidHtml.readAllBytes(), StandardCharsets.UTF_8);
+
+            ExportParams exportParams = getExportParams();
+            exportParams.setLinkedWorkitemRoles(List.of("has parent"));
+
+            List<String> selectedRoleEnumValues = Arrays.asList("has parent", "is parent of");
+
+            // Spaces and new lines are removed to exclude difference in space characters
+            String fixedHtml = processor.processHtmlForPDF(invalidHtml, exportParams, selectedRoleEnumValues);
+            String validHtml = new String(isValidHtml.readAllBytes(), StandardCharsets.UTF_8);
+            assertEquals(TestStringUtils.removeNonsensicalSymbols(validHtml), TestStringUtils.removeNonsensicalSymbols(fixedHtml));
+        }
+    }
+
+    @Test
+    @SneakyThrows
+    void selectLinkedWorkItemTypesTest() {
+        when(pdfExporterPolarionService.getPolarionVersion()).thenReturn(null);
+
+        try (InputStream isInvalidHtml = this.getClass().getResourceAsStream("/linkedWorkItemsBeforeProcessing.html");
+             InputStream isValidHtml = this.getClass().getResourceAsStream("/linkedWorkItemsAfterProcessing.html")) {
+
+            String invalidHtml = new String(isInvalidHtml.readAllBytes(), StandardCharsets.UTF_8);
+
+            ExportParams exportParams = getExportParams();
+            exportParams.setLinkedWorkitemRoles(List.of("has parent"));
+
+            List<String> selectedRoleEnumValues = Arrays.asList("has parent", "is parent of");
+
+            // Spaces and new lines are removed to exclude difference in space characters
+            String fixedHtml = processor.processHtmlForPDF(invalidHtml, exportParams, selectedRoleEnumValues);
+            String validHtml = new String(isValidHtml.readAllBytes(), StandardCharsets.UTF_8);
+            assertEquals(TestStringUtils.removeNonsensicalSymbols(validHtml), TestStringUtils.removeNonsensicalSymbols(fixedHtml));
         }
     }
 
@@ -306,8 +354,8 @@ class HtmlProcessorTest {
             exportParams.setCutEmptyChapters(false);
 
             // Spaces, new lines & nbsp symbols are removed to exclude difference in space characters
-            String result = spyHtmlProcessor.processHtmlForPDF(html, exportParams, List.of()).replaceAll(" ", "");
-            assertEquals(TestStringUtils.removeLineEndings(html.replaceAll("&nbsp;|\u00A0", " ").replaceAll(" ", "")), TestStringUtils.removeLineEndings(result));
+            String result = spyHtmlProcessor.processHtmlForPDF(html, exportParams, List.of());
+            assertEquals(TestStringUtils.removeNonsensicalSymbols(html.replaceAll("&nbsp;|\u00A0", " ").replaceAll(" ", "")), TestStringUtils.removeNonsensicalSymbols(result));
         }
     }
 
@@ -342,13 +390,13 @@ class HtmlProcessorTest {
             String invalidHtml = new String(isInvalidHtml.readAllBytes(), StandardCharsets.UTF_8);
 
             // Spaces and new lines are removed to exclude difference in space characters
-            String fixedHtml = processor.adjustContentToFitPage(invalidHtml, Orientation.PORTRAIT, PaperSize.A4).replaceAll(" ", "");
-            String validHtml = new String(isValidPortraitHtml.readAllBytes(), StandardCharsets.UTF_8).replaceAll(" ", "");
-            assertEquals(TestStringUtils.removeLineEndings(validHtml), TestStringUtils.removeLineEndings(fixedHtml));
+            String fixedHtml = processor.adjustContentToFitPage(invalidHtml, Orientation.PORTRAIT, PaperSize.A4);
+            String validHtml = new String(isValidPortraitHtml.readAllBytes(), StandardCharsets.UTF_8);
+            assertEquals(TestStringUtils.removeNonsensicalSymbols(validHtml), TestStringUtils.removeNonsensicalSymbols(fixedHtml));
 
-            fixedHtml = processor.adjustContentToFitPage(invalidHtml, Orientation.LANDSCAPE, PaperSize.A4).replaceAll(" ", "");
-            validHtml = new String(isValidLandscapeHtml.readAllBytes(), StandardCharsets.UTF_8).replaceAll(" ", "");
-            assertEquals(TestStringUtils.removeLineEndings(validHtml), TestStringUtils.removeLineEndings(fixedHtml));
+            fixedHtml = processor.adjustContentToFitPage(invalidHtml, Orientation.LANDSCAPE, PaperSize.A4);
+            validHtml = new String(isValidLandscapeHtml.readAllBytes(), StandardCharsets.UTF_8);
+            assertEquals(TestStringUtils.removeNonsensicalSymbols(validHtml), TestStringUtils.removeNonsensicalSymbols(fixedHtml));
         }
     }
 
@@ -361,9 +409,9 @@ class HtmlProcessorTest {
             String invalidHtml = new String(isInvalidHtml.readAllBytes(), StandardCharsets.UTF_8);
 
             // Spaces and new lines are removed to exclude difference in space characters
-            String fixedHtml = processor.adjustContentToFitPage(invalidHtml, Orientation.PORTRAIT, PaperSize.A4).replaceAll(" ", "");
-            String validHtml = new String(isValidHtml.readAllBytes(), StandardCharsets.UTF_8).replaceAll(" ", "");
-            assertEquals(TestStringUtils.removeLineEndings(validHtml), TestStringUtils.removeLineEndings(fixedHtml));
+            String fixedHtml = processor.adjustContentToFitPage(invalidHtml, Orientation.PORTRAIT, PaperSize.A4);
+            String validHtml = new String(isValidHtml.readAllBytes(), StandardCharsets.UTF_8);
+            assertEquals(TestStringUtils.removeNonsensicalSymbols(validHtml), TestStringUtils.removeNonsensicalSymbols(fixedHtml));
         }
     }
 
@@ -377,7 +425,7 @@ class HtmlProcessorTest {
 
             String fixedHtml = processor.cutExtraNbsp(initialHtmlString);
             String expectedHtml = new String(resultHtml.readAllBytes(), StandardCharsets.UTF_8);
-            assertEquals(TestStringUtils.removeLineEndings(expectedHtml), TestStringUtils.removeLineEndings(fixedHtml));
+            assertEquals(TestStringUtils.removeNonsensicalSymbols(expectedHtml), TestStringUtils.removeNonsensicalSymbols(fixedHtml));
         }
     }
 
@@ -392,12 +440,12 @@ class HtmlProcessorTest {
             String invalidFormattedHtml = new String(isInvalidFormattedHtml.readAllBytes(), StandardCharsets.UTF_8);
 
             // Spaces and new lines are removed to exclude difference in space characters
-            String fixedHtml = processor.addTableOfContent(invalidHtml).replaceAll(" ", "");
-            String validHtml = new String(isValidHtml.readAllBytes(), StandardCharsets.UTF_8).replaceAll(" ", "");
-            assertEquals(TestStringUtils.removeLineEndings(validHtml), TestStringUtils.removeLineEndings(fixedHtml));
+            String fixedHtml = processor.addTableOfContent(invalidHtml);
+            String validHtml = new String(isValidHtml.readAllBytes(), StandardCharsets.UTF_8);
+            assertEquals(TestStringUtils.removeNonsensicalSymbols(validHtml), TestStringUtils.removeNonsensicalSymbols(fixedHtml));
 
-            String fixedFormattedHtml = processor.addTableOfContent(invalidFormattedHtml).replaceAll(" ", "");
-            assertEquals(TestStringUtils.removeLineEndings(validHtml), TestStringUtils.removeLineEndings(fixedFormattedHtml));
+            String fixedFormattedHtml = processor.addTableOfContent(invalidFormattedHtml);
+            assertEquals(TestStringUtils.removeNonsensicalSymbols(validHtml), TestStringUtils.removeNonsensicalSymbols(fixedFormattedHtml));
         }
     }
 
@@ -410,9 +458,9 @@ class HtmlProcessorTest {
             String invalidHtml = new String(isInvalidHtml.readAllBytes(), StandardCharsets.UTF_8);
 
             // Spaces and new lines are removed to exclude difference in space characters
-            String fixedHtml = processor.addTableOfFigures(invalidHtml).replaceAll(" ", "");
-            String validHtml = new String(isValidHtml.readAllBytes(), StandardCharsets.UTF_8).replaceAll(" ", "");
-            assertEquals(TestStringUtils.removeLineEndings(validHtml), TestStringUtils.removeLineEndings(fixedHtml));
+            String fixedHtml = processor.addTableOfFigures(invalidHtml);
+            String validHtml = new String(isValidHtml.readAllBytes(), StandardCharsets.UTF_8);
+            assertEquals(TestStringUtils.removeNonsensicalSymbols(validHtml), TestStringUtils.removeNonsensicalSymbols(fixedHtml));
         }
     }
 
@@ -425,9 +473,9 @@ class HtmlProcessorTest {
             String invalidHtml = new String(isInvalidHtml.readAllBytes(), StandardCharsets.UTF_8);
 
             // Spaces and new lines are removed to exclude difference in space characters
-            String fixedHtml = processor.addTableOfFigures(invalidHtml).replaceAll(" ", "");
-            String validHtml = new String(isValidHtml.readAllBytes(), StandardCharsets.UTF_8).replaceAll(" ", "");
-            assertEquals(TestStringUtils.removeLineEndings(validHtml), TestStringUtils.removeLineEndings(fixedHtml));
+            String fixedHtml = processor.addTableOfFigures(invalidHtml);
+            String validHtml = new String(isValidHtml.readAllBytes(), StandardCharsets.UTF_8);
+            assertEquals(TestStringUtils.removeNonsensicalSymbols(validHtml), TestStringUtils.removeNonsensicalSymbols(fixedHtml));
         }
     }
 
@@ -435,149 +483,149 @@ class HtmlProcessorTest {
     @SneakyThrows
     void adjustReportedByTest() {
         String initialHtml = """
-                <p id="polarion_1">
-                  <span class="polarion-rp-inline-widget" data-widget="com.polarion.scriptInline" id="polarion_1_iw_1">
-                    <span id="polarion-rp-widget-content">
-                      <div style="color: grey; text-align: right; position: absolute; top: 22px; right: 10px">Reported by
-                        <span class="polarion-no-style-cleanup">System Administrator</span>
-                        <br/>
-                        January 12, 2024 at 4:19:27 PM UTC
-                      </div>
-                    </span>
-                  </span>
-                </p>
-            """;
+                    <p id="polarion_1">
+                      <span class="polarion-rp-inline-widget" data-widget="com.polarion.scriptInline" id="polarion_1_iw_1">
+                        <span id="polarion-rp-widget-content">
+                          <div style="color: grey; text-align: right; position: absolute; top: 22px; right: 10px">Reported by
+                            <span class="polarion-no-style-cleanup">System Administrator</span>
+                            <br/>
+                            January 12, 2024 at 4:19:27 PM UTC
+                          </div>
+                        </span>
+                      </span>
+                    </p>
+                """;
         String processedHtml = processor.adjustReportedBy(initialHtml);
 
         String expectedHtml = """
-                <p id="polarion_1">
-                  <span class="polarion-rp-inline-widget" data-widget="com.polarion.scriptInline" id="polarion_1_iw_1">
-                    <span id="polarion-rp-widget-content">
-                      <div style="color: grey; text-align: right; position: absolute; top: 22px; right: 10px; top: 0; font-size: 8px;">Reported by
-                        <span class="polarion-no-style-cleanup">System Administrator</span>
-                        <br/>
-                        January 12, 2024 at 4:19:27 PM UTC
-                      </div>
-                    </span>
-                  </span>
-                </p>
-            """.replaceAll(" ", "");
-        assertEquals(TestStringUtils.removeLineEndings(expectedHtml), TestStringUtils.removeLineEndings(processedHtml.replaceAll(" ", "")));
+                    <p id="polarion_1">
+                      <span class="polarion-rp-inline-widget" data-widget="com.polarion.scriptInline" id="polarion_1_iw_1">
+                        <span id="polarion-rp-widget-content">
+                          <div style="color: grey; text-align: right; position: absolute; top: 22px; right: 10px; top: 0; font-size: 8px;">Reported by
+                            <span class="polarion-no-style-cleanup">System Administrator</span>
+                            <br/>
+                            January 12, 2024 at 4:19:27 PM UTC
+                          </div>
+                        </span>
+                      </span>
+                    </p>
+                """;
+        assertEquals(TestStringUtils.removeNonsensicalSymbols(expectedHtml), TestStringUtils.removeNonsensicalSymbols(processedHtml.replaceAll(" ", "")));
     }
 
     @Test
     @SneakyThrows
     void cutExportToPdfButtonTest() {
         String initialHtml = """
-                <p id="polarion_client33">
-                  <span class="polarion-rp-inline-widget" data-widget="ch.sbb.polarion.extension.pdf.exporter.widgets.exportToPdfButton" id="polarion_client33_iw_1">
-                    <span id="polarion-rp-widget-content">
-                      <span class="polarion-TestsExecutionButton-link">
-                        <a onclick="PdfExporter.openPopup({context: &#39;report&#39;})">
-                          <div style="color:#5E5E5E; text-shadow:#FCFCFC 1px 1px; border-color:#C2C2C2; background-color:#F0F0F0; " class="polarion-TestsExecutionButton-buttons-pdf">
-                            <div style="height: 10px;"></div>
-                            <table class="polarion-TestsExecutionButton-buttons-content">
-                              <tr>
-                                <td class="polarion-TestsExecutionButton-buttons-content-labelCell polarion-TestsExecutionButton-buttons-content-labelCell-noSumText">
-                                  <div class="polarion-TestsExecutionButton-labelTextNew">Export to PDF</div>
-                                </td>
-                              </tr>
-                              <tr>
-                                <td style="color:#5E5E5E; text-shadow:#FCFCFC 1px 1px; " class="polarion-TestsExecutionButton-sumText"></td>
-                              </tr>
-                            </table>
-                          </div>
-                        </a>
+                    <p id="polarion_client33">
+                      <span class="polarion-rp-inline-widget" data-widget="ch.sbb.polarion.extension.pdf.exporter.widgets.exportToPdfButton" id="polarion_client33_iw_1">
+                        <span id="polarion-rp-widget-content">
+                          <span class="polarion-TestsExecutionButton-link">
+                            <a onclick="PdfExporter.openPopup({context: &#39;report&#39;})">
+                              <div style="color:#5E5E5E; text-shadow:#FCFCFC 1px 1px; border-color:#C2C2C2; background-color:#F0F0F0; " class="polarion-TestsExecutionButton-buttons-pdf">
+                                <div style="height: 10px;"></div>
+                                <table class="polarion-TestsExecutionButton-buttons-content">
+                                  <tr>
+                                    <td class="polarion-TestsExecutionButton-buttons-content-labelCell polarion-TestsExecutionButton-buttons-content-labelCell-noSumText">
+                                      <div class="polarion-TestsExecutionButton-labelTextNew">Export to PDF</div>
+                                    </td>
+                                  </tr>
+                                  <tr>
+                                    <td style="color:#5E5E5E; text-shadow:#FCFCFC 1px 1px; " class="polarion-TestsExecutionButton-sumText"></td>
+                                  </tr>
+                                </table>
+                              </div>
+                            </a>
+                          </span>
+                        </span>
                       </span>
-                    </span>
-                  </span>
-                </p>
-            """;
+                    </p>
+                """;
         String processedHtml = processor.cutExportToPdfButton(initialHtml);
 
         String expectedHtml = """
-                <p id="polarion_client33">
-                  <span class="polarion-rp-inline-widget" data-widget="ch.sbb.polarion.extension.pdf.exporter.widgets.exportToPdfButton" id="polarion_client33_iw_1">
-                    <span id="polarion-rp-widget-content">
-                      <span class="polarion-TestsExecutionButton-link">
-                        <a onclick="PdfExporter.openPopup({context: &#39;report&#39;})">
-                        </a>
+                    <p id="polarion_client33">
+                      <span class="polarion-rp-inline-widget" data-widget="ch.sbb.polarion.extension.pdf.exporter.widgets.exportToPdfButton" id="polarion_client33_iw_1">
+                        <span id="polarion-rp-widget-content">
+                          <span class="polarion-TestsExecutionButton-link">
+                            <a onclick="PdfExporter.openPopup({context: &#39;report&#39;})">
+                            </a>
+                          </span>
+                        </span>
                       </span>
-                    </span>
-                  </span>
-                </p>
-            """.replaceAll(" ", "");
-        assertEquals(TestStringUtils.removeLineEndings(expectedHtml), TestStringUtils.removeLineEndings(processedHtml.replaceAll(" ", "")));
+                    </p>
+                """;
+        assertEquals(TestStringUtils.removeNonsensicalSymbols(expectedHtml), TestStringUtils.removeNonsensicalSymbols(processedHtml.replaceAll(" ", "")));
     }
 
     @Test
     @SneakyThrows
     void adjustColumnWidthInReportsTest() {
         String initialHtml = """
-                <table class="polarion-rp-column-layout" style="width: 1000px;">
-                  <tbody>
-                    <tr>
-                      <td class="polarion-rp-column-layout-cell" style="width: 100%;">
-                        <h1 id="polarion_hardcoded_0">PDF Tests</h1>
-                        <p id="polarion_hardcoded_1">This Page has no content yet</p>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-            """;
+                    <table class="polarion-rp-column-layout" style="width: 1000px;">
+                      <tbody>
+                        <tr>
+                          <td class="polarion-rp-column-layout-cell" style="width: 100%;">
+                            <h1 id="polarion_hardcoded_0">PDF Tests</h1>
+                            <p id="polarion_hardcoded_1">This Page has no content yet</p>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                """;
         String processedHtml = processor.adjustColumnWidthInReports(initialHtml);
 
         String expectedHtml = """
-                <table class="polarion-rp-column-layout" style="width: 100%;">
-                  <tbody>
-                    <tr>
-                      <td class="polarion-rp-column-layout-cell" style="width: 100%;">
-                        <h1 id="polarion_hardcoded_0">PDF Tests</h1>
-                        <p id="polarion_hardcoded_1">This Page has no content yet</p>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-            """.replaceAll(" ", "");
-        assertEquals(TestStringUtils.removeLineEndings(expectedHtml), TestStringUtils.removeLineEndings(processedHtml.replaceAll(" ", "")));
+                    <table class="polarion-rp-column-layout" style="width: 100%;">
+                      <tbody>
+                        <tr>
+                          <td class="polarion-rp-column-layout-cell" style="width: 100%;">
+                            <h1 id="polarion_hardcoded_0">PDF Tests</h1>
+                            <p id="polarion_hardcoded_1">This Page has no content yet</p>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                """;
+        assertEquals(TestStringUtils.removeNonsensicalSymbols(expectedHtml), TestStringUtils.removeNonsensicalSymbols(processedHtml.replaceAll(" ", "")));
     }
 
     @Test
     @SneakyThrows
     void removeFloatLeftFromReportsTest() {
         String initialHtml = """
-                <table id="polarion_client20" style="float: left;">
-                  <tbody>
-                    <tr>
-                      <td>Status</td>
-                      <td><span title="Accepted">Accepted</span></td>
-                    </tr>
-                    <tr>
-                      <td>Severity</td>
-                      <td><span title="Nice to Have">Nice to Have</span></td>
-                    </tr>
-                  </tbody>
-                </table>
-                <div style="clear: both;"></div>
-            """;
+                    <table id="polarion_client20" style="float: left;">
+                      <tbody>
+                        <tr>
+                          <td>Status</td>
+                          <td><span title="Accepted">Accepted</span></td>
+                        </tr>
+                        <tr>
+                          <td>Severity</td>
+                          <td><span title="Nice to Have">Nice to Have</span></td>
+                        </tr>
+                      </tbody>
+                    </table>
+                    <div style="clear: both;"></div>
+                """;
         String processedHtml = processor.removeFloatLeftFromReports(initialHtml);
 
         String expectedHtml = """
-                <table id="polarion_client20" >
-                  <tbody>
-                    <tr>
-                      <td>Status</td>
-                      <td><span title="Accepted">Accepted</span></td>
-                    </tr>
-                    <tr>
-                      <td>Severity</td>
-                      <td><span title="Nice to Have">Nice to Have</span></td>
-                    </tr>
-                  </tbody>
-                </table>
-                <div style="clear: both;"></div>
-            """.replaceAll(" ", "");
-        assertEquals(TestStringUtils.removeLineEndings(expectedHtml), TestStringUtils.removeLineEndings(processedHtml.replaceAll(" ", "")));
+                    <table id="polarion_client20" >
+                      <tbody>
+                        <tr>
+                          <td>Status</td>
+                          <td><span title="Accepted">Accepted</span></td>
+                        </tr>
+                        <tr>
+                          <td>Severity</td>
+                          <td><span title="Nice to Have">Nice to Have</span></td>
+                        </tr>
+                      </tbody>
+                    </table>
+                    <div style="clear: both;"></div>
+                """;
+        assertEquals(TestStringUtils.removeNonsensicalSymbols(expectedHtml), TestStringUtils.removeNonsensicalSymbols(processedHtml.replaceAll(" ", "")));
     }
 
     private ExportParams getExportParams() {

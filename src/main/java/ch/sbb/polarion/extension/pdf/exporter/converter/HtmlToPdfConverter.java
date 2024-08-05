@@ -26,7 +26,7 @@ public class HtmlToPdfConverter {
     public HtmlToPdfConverter() {
         this.pdfTemplateProcessor = new PdfTemplateProcessor();
         PdfExporterFileResourceProvider fileResourceProvider = new PdfExporterFileResourceProvider();
-        this.htmlProcessor = new HtmlProcessor(fileResourceProvider, new LocalizationSettings(), new HtmlLinksHelper(fileResourceProvider));
+        this.htmlProcessor = new HtmlProcessor(fileResourceProvider, new LocalizationSettings(), new HtmlLinksHelper(fileResourceProvider), null);
         this.weasyPrintConverter = WeasyPrintConnectorFactory.getWeasyPrintExecutor();
     }
 
