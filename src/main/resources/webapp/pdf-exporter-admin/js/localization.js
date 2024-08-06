@@ -45,14 +45,12 @@ function getTranslationsMap() {
 }
 
 function downloadLocalization(language) {
-    const xhr = new XMLHttpRequest();
-    xhr.open('GET',
-        `/polarion/${SbbCommon.extension}/rest/internal/settings/${SbbCommon.setting}/names/${Configurations.getSelectedConfiguration()}/download?language=${language}&scope=${SbbCommon.scope}`,
-        true);
-    xhr.responseType = 'blob';
-    xhr.onload = () => {
-        if (xhr.status === 200) {
-            const objectURL = (window.URL ? window.URL : window.webkitURL).createObjectURL(xhr.response);
+    SbbCommon.callAsync({
+        method: "GET",
+        url: `/polarion/${SbbCommon.extension}/rest/internal/settings/${SbbCommon.setting}/names/${Configurations.getSelectedConfiguration()}/download?language=${language}&scope=${SbbCommon.scope}`,
+        responseType: "blob",
+        onOk: (responseText, request) => {
+            const objectURL = (window.URL ? window.URL : window.webkitURL).createObjectURL(request.response);
             const anchorElement = document.createElement('a');
             anchorElement.href = objectURL;
             anchorElement.download = language + '.xlf';
@@ -60,16 +58,14 @@ function downloadLocalization(language) {
             anchorElement.click();
             anchorElement.remove();
             setTimeout(() => URL.revokeObjectURL(objectURL), 100);
-        } else {
-            //display error body content
-            console.log('error occurred');
+        },
+        onError: () => {
+            SbbCommon.showActionAlert({
+                containerId: 'action-error',
+                message: 'Error downloading translations file for language ' + language
+            });
         }
-    };
-    xhr.onerror = () => SbbCommon.showActionAlert({
-        containerId: 'action-error',
-        message: 'Error downloading translations file for language ' + language
     });
-    xhr.send();
 }
 
 function revertToDefault() {
