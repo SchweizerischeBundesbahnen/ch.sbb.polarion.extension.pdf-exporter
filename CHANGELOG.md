@@ -1,5 +1,14 @@
 # Changelog
 
+## [5.7.1](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v5.7.0...v5.7.1) (2024-08-06)
+
+
+### Bug Fixes
+
+* CSS fixes for tables which split over multiple pages ([#131](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/131)) ([d77444e](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/d77444ec0c99d7478a18ea90eb3a7e3889df5f09)), closes [#130](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/130)
+* filtering linked WI for Polarion 2404 ([#126](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/126)) ([d3aa6f1](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/d3aa6f14567dc92f4472ec717df222e48483a5d2)), closes [#125](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/125)
+* link converting table columns width to 'auto' with 'Fit to page' property ([#123](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/123)) ([b728ec9](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/b728ec94afd2d071e09134efb87bd864354bc0d3)), closes [#122](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/122)
+
 ## [5.7.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v5.6.0...v5.7.0) (2024-08-01)
 
 
