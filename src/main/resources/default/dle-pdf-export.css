@@ -346,13 +346,20 @@ ul.toc li > a.page-number::after {
 
     table {
         border-collapse: collapse;
+        max-width: 100% !important;
+        float: none !importatnt; /* Fixes content inside of table breaking bug */
     }
 
-    table tr:first-child {
+    tr { /* Fixes breaking of work item custom field tables */
+        page-break-inside: avoid;
+        break-inside: avoid;
+    }
+
+    tr:first-child {
         break-after: avoid;
     }
 
-    table tr:last-child {
+    tr:last-child {
         break-before: avoid;
     }
 

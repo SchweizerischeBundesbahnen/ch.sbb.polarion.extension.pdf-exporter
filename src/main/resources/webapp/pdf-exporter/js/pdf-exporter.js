@@ -1,7 +1,5 @@
 const SELECTED_STYLE_PACKAGE_COOKIE = 'selected-style-package';
-const POPUP_DEFAULT_SETTING_NAME = "Default";
 const MAX_PAGE_PREVIEWS = 4;
-const REPORT_PDF_CONVERSION_PULL_INTERVAL = 1000;
 
 const POPUP_HTML = `
     <div class="modal__overlay" tabindex="-1" data-micromodal-close>
@@ -134,7 +132,7 @@ const PdfExporter = {
                 scope: this.exportContext.scope,
                 selectElement: document.getElementById("popup-style-package-select")
             }).then(() => {
-                let valueToPreselect = this.getCookie(SELECTED_STYLE_PACKAGE_COOKIE);
+                let valueToPreselect = SbbCommon.getCookie(SELECTED_STYLE_PACKAGE_COOKIE);
                 const stylePackageSelect = document.getElementById("popup-style-package-select");
                 if (valueToPreselect && this.containsOption(stylePackageSelect, valueToPreselect)) {
                     stylePackageSelect.value = valueToPreselect;
@@ -255,7 +253,7 @@ const PdfExporter = {
     onStylePackageChanged: function () {
         const selectedStylePackageName = document.getElementById("popup-style-package-select").value;
         if (selectedStylePackageName) {
-            this.setCookie(SELECTED_STYLE_PACKAGE_COOKIE, selectedStylePackageName);
+            SbbCommon.setCookie(SELECTED_STYLE_PACKAGE_COOKIE, selectedStylePackageName);
 
             this.actionInProgress({inProgress: true, message: "Loading style package data"});
 
@@ -268,7 +266,7 @@ const PdfExporter = {
 
                 this.actionInProgress({inProgress: false});
             }).catch((error) => {
-                this.showNotification({alertType: "error", message: "Error occurred loading style package data" + (error.response.message ? ":<br>" + error.response.message : "")});
+                this.showNotification({alertType: "error", message: "Error occurred loading style package data" + (error?.response.message ? ":<br>" + error.response.message : "")});
                 this.actionInProgress({inProgress: false});
             });
         }
@@ -279,36 +277,36 @@ const PdfExporter = {
             return;
         }
 
-        this.setCheckbox("popup-cover-page-checkbox", stylePackage.coverPage);
+        ExportCommon.setCheckbox("popup-cover-page-checkbox", stylePackage.coverPage);
 
-        this.setSelector("popup-cover-page-selector", stylePackage.coverPage);
-        this.visibleIf("popup-cover-page-selector", stylePackage.coverPage)
+        ExportCommon.setSelector("popup-cover-page-selector", stylePackage.coverPage);
+        ExportCommon.visibleIf("popup-cover-page-selector", stylePackage.coverPage)
 
-        this.setSelector("popup-css-selector", stylePackage.css);
-        this.setSelector("popup-header-footer-selector", stylePackage.headerFooter);
-        this.setSelector("popup-localization-selector", stylePackage.localization);
+        ExportCommon.setSelector("popup-css-selector", stylePackage.css);
+        ExportCommon.setSelector("popup-header-footer-selector", stylePackage.headerFooter);
+        ExportCommon.setSelector("popup-localization-selector", stylePackage.localization);
 
-        this.setValue("popup-headers-color", stylePackage.headersColor);
-        this.setValue("popup-paper-size-selector", stylePackage.paperSize || 'A4');
-        this.setValue("popup-orientation-selector", stylePackage.orientation || 'PORTRAIT');
-        this.setCheckbox("popup-fit-to-page", stylePackage.fitToPage);
-        this.setCheckbox("popup-enable-comments-rendering", stylePackage.renderComments);
-        this.setCheckbox("popup-watermark", stylePackage.watermark);
-        this.setCheckbox("popup-mark-referenced-workitems", stylePackage.markReferencedWorkitems);
-        this.setCheckbox("popup-cut-urls", stylePackage.cutLocalURLs);
-        this.setCheckbox("popup-cut-empty-chapters", stylePackage.cutEmptyChapters);
-        this.setCheckbox("popup-cut-empty-wi-attributes", stylePackage.cutEmptyWorkitemAttributes);
-        this.setCheckbox("popup-presentational-hints", stylePackage.followHTMLPresentationalHints);
+        ExportCommon.setValue("popup-headers-color", stylePackage.headersColor);
+        ExportCommon.setValue("popup-paper-size-selector", stylePackage.paperSize || 'A4');
+        ExportCommon.setValue("popup-orientation-selector", stylePackage.orientation || 'PORTRAIT');
+        ExportCommon.setCheckbox("popup-fit-to-page", stylePackage.fitToPage);
+        ExportCommon.setCheckbox("popup-enable-comments-rendering", stylePackage.renderComments);
+        ExportCommon.setCheckbox("popup-watermark", stylePackage.watermark);
+        ExportCommon.setCheckbox("popup-mark-referenced-workitems", stylePackage.markReferencedWorkitems);
+        ExportCommon.setCheckbox("popup-cut-urls", stylePackage.cutLocalURLs);
+        ExportCommon.setCheckbox("popup-cut-empty-chapters", stylePackage.cutEmptyChapters);
+        ExportCommon.setCheckbox("popup-cut-empty-wi-attributes", stylePackage.cutEmptyWorkitemAttributes);
+        ExportCommon.setCheckbox("popup-presentational-hints", stylePackage.followHTMLPresentationalHints);
 
-        this.setCheckbox("popup-custom-list-styles", stylePackage.customNumberedListStyles);
-        this.setValue("popup-numbered-list-styles", stylePackage.customNumberedListStyles || "");
-        this.visibleIf("popup-numbered-list-styles", stylePackage.customNumberedListStyles);
+        ExportCommon.setCheckbox("popup-custom-list-styles", stylePackage.customNumberedListStyles);
+        ExportCommon.setValue("popup-numbered-list-styles", stylePackage.customNumberedListStyles || "");
+        ExportCommon.visibleIf("popup-numbered-list-styles", stylePackage.customNumberedListStyles);
 
-        this.setCheckbox("popup-specific-chapters", stylePackage.specificChapters);
-        this.setValue("popup-chapters", stylePackage.specificChapters || "");
-        this.visibleIf("popup-chapters", stylePackage.specificChapters);
+        ExportCommon.setCheckbox("popup-specific-chapters", stylePackage.specificChapters);
+        ExportCommon.setValue("popup-chapters", stylePackage.specificChapters || "");
+        ExportCommon.visibleIf("popup-chapters", stylePackage.specificChapters);
 
-        this.setCheckbox("popup-localization", stylePackage.language);
+        ExportCommon.setCheckbox("popup-localization", stylePackage.language);
         let languageValue;
         if (stylePackage.exposeSettings && stylePackage.language && this.documentLanguage) {
             languageValue = this.documentLanguage;
@@ -318,10 +316,10 @@ const PdfExporter = {
             const firstOption = document.getElementById("popup-language").querySelector("option:first-child");
             languageValue = firstOption?.value;
         }
-        this.setValue("popup-language", languageValue);
-        this.visibleIf("popup-language", stylePackage.language);
+        ExportCommon.setValue("popup-language", languageValue);
+        ExportCommon.visibleIf("popup-language", stylePackage.language);
 
-        this.setCheckbox("popup-selected-roles", stylePackage.linkedWorkitemRoles);
+        ExportCommon.setCheckbox("popup-selected-roles", stylePackage.linkedWorkitemRoles);
         document.querySelectorAll(`#popup-roles-selector option`).forEach(roleOption => {
             roleOption.selected = false;
         });
@@ -332,10 +330,10 @@ const PdfExporter = {
                 });
             }
         }
-        this.displayIf("popup-roles-selector", stylePackage.linkedWorkitemRoles, "inline-block");
+        ExportCommon.displayIf("popup-roles-selector", stylePackage.linkedWorkitemRoles, "inline-block");
 
-        this.displayIf("popup-style-package-content", stylePackage.exposeSettings);
-        this.displayIf("popup-page-width-validation", stylePackage.exposePageWidthValidation);
+        ExportCommon.displayIf("popup-style-package-content", stylePackage.exposeSettings);
+        ExportCommon.displayIf("popup-page-width-validation", stylePackage.exposePageWidthValidation);
     },
 
     validatePdf: function () {
@@ -362,14 +360,14 @@ const PdfExporter = {
                     alertType: "error",
                     message: pages > MAX_PAGE_PREVIEWS
                         ? `Invalid pages found. First ${MAX_PAGE_PREVIEWS} of them:`
-                        : `${MAX_PAGE_PREVIEWS} invalid ${pagesWord} found:`
+                        : `${pages} invalid ${pagesWord} found:`
                 });
                 this.createPreviews(response);
             } else {
                 this.showValidationResult({alertType: "success", message: "All pages are valid"});
             }
         }).catch((error) => {
-            this.showNotification({alertType: "error", message: "Error occurred validating pages width" + (error.response.message ? ":<br>" + error.response.message : "")});
+            this.showNotification({alertType: "error", message: "Error occurred validating pages width" + (error?.response.message ? ":<br>" + error.response.message : "")});
             this.actionInProgress({inProgress: false});
         })
     },
@@ -433,7 +431,7 @@ const PdfExporter = {
             this.checkNestedListsAsync(requestBody);
         }
 
-        this.asyncConvertPdf(requestBody, successResponse => {
+        ExportCommon.asyncConvertPdf(requestBody, successResponse => {
             const objectURL = (window.URL ? window.URL : window.webkitURL).createObjectURL(successResponse);
             const anchorElement = document.createElement("a");
             anchorElement.href = objectURL;
@@ -455,41 +453,6 @@ const PdfExporter = {
         });
     },
 
-    asyncConvertPdf: function (request, successCallback, errorCallback) {
-        const xhr = new XMLHttpRequest();
-        xhr.open("POST", "/polarion/pdf-exporter/rest/internal/convert/jobs", true);
-        xhr.setRequestHeader("Content-Type", "application/json");
-        xhr.responseType = "blob";
-        xhr.send(request);
-
-        xhr.onload = () => {
-            if (xhr.status === 202) {
-                this.pullAndGetResultPdf(xhr.getResponseHeader("Location"), successCallback, errorCallback);
-            } else {
-                errorCallback(xhr.response);
-            }
-        };
-    },
-
-    pullAndGetResultPdf: async function (url, successCallback, errorCallback) {
-        await new Promise(resolve => setTimeout(resolve, REPORT_PDF_CONVERSION_PULL_INTERVAL));
-        const xhr = new XMLHttpRequest();
-        xhr.responseType = "blob";
-        xhr.open("GET", url, true);
-        xhr.send();
-
-        xhr.onload = () => {
-            if (xhr.status === 202) {
-                console.log('Async PDF convertion: still in progress, retrying ...');
-                this.pullAndGetResultPdf(url, successCallback, errorCallback);
-            } else if (xhr.status === 200) {
-                successCallback(xhr.response);
-            } else {
-                errorCallback(xhr.response);
-            }
-        }
-    },
-
     checkNestedListsAsync: function (requestBody) {
         this.callAsync({
             method: "POST",
@@ -501,7 +464,7 @@ const PdfExporter = {
                 this.showNotification({alertType: "warning", message: "Document contains nested numbered lists which structures were not valid. We tried to fix this, but be aware of it."});
             }
         }).catch((error) => {
-            this.showNotification({alertType: "error", message: "Error occurred validating nested lists" + (error.response.message ? ":<br>" + error.response.message : "")});
+            this.showNotification({alertType: "error", message: "Error occurred validating nested lists" + (error?.response.message ? ":<br>" + error.response.message : "")});
         })
     },
 
@@ -598,27 +561,6 @@ const PdfExporter = {
         return [...selectElement.options].map(o => o.value).includes(option);
     },
 
-    setValue: function (elementId, value) {
-        document.getElementById(elementId).value = value;
-    },
-
-    displayIf: function (elementId, condition, displayStyle = "block") {
-        document.getElementById(elementId).style.display = condition ? displayStyle : "none";
-    },
-
-    visibleIf: function (elementId, condition) {
-        document.getElementById(elementId).style.visibility = condition ? "visible" : "hidden";
-    },
-
-    setSelector: function (elementId, value) {
-        const selector = document.getElementById(elementId);
-        selector.value = this.containsOption(selector, value) ? value : POPUP_DEFAULT_SETTING_NAME;
-    },
-
-    setCheckbox: function (elementId, value) {
-        document.getElementById(elementId).checked = !!value;
-    },
-
     actionInProgress: function ({inProgress, message}) {
         if (inProgress) {
             this.hideAlerts();
@@ -663,54 +605,20 @@ const PdfExporter = {
 
     callAsync: function ({method, url, contentType, responseType, body}) {
         return new Promise((resolve, reject) => {
-            const xhr = new XMLHttpRequest();
-            xhr.open(method, url, true);
-            if (contentType) {
-                xhr.setRequestHeader('Content-Type', contentType);
-            } else {
-                xhr.setRequestHeader('Content-Type', 'application/json')
-            }
-            if (responseType) {
-                xhr.responseType = responseType;
-            }
-
-            xhr.send(body);
-
-            xhr.onreadystatechange = function () {
-                if (xhr.readyState === 4) {
-                    if (xhr.status === 200 || xhr.status === 204) {
-                        resolve(responseType === "blob" || responseType === "json" ? {response: xhr.response} : {responseText: xhr.responseText});
-                    } else {
-                        reject(xhr)
-                    }
+            SbbCommon.callAsync({
+                method: method,
+                url: url,
+                contentType: contentType || 'application/json',
+                responseType: responseType,
+                body: body,
+                onOk: (responseText, request) => {
+                    resolve(responseType === "blob" || responseType === "json" ? {response: request.response} : {responseText: responseText});
+                },
+                onError: (status, errorMessage, request) => {
+                    reject(request);
                 }
-            };
-            xhr.onerror = function () {
-                reject();
-            };
+            });
         });
-    },
-
-    setCookie: function (name, value, daysToExpire = 1) {
-        let expires = '';
-        if (daysToExpire) {
-            const date = new Date();
-            date.setTime(date.getTime() + (daysToExpire * 24 * 60 * 60 * 1000));
-            expires = '; expires=' + date.toUTCString();
-        }
-        document.cookie = name + '=' + encodeURIComponent(value) + expires + '; path=/';
-    },
-
-    getCookie: function (name) {
-        const nameEQ = name + '=';
-        const cookiesArray = document.cookie.split(';');
-        for (let cookie of cookiesArray) {
-            const cleanedCookie = cookie.trim();
-            if (cleanedCookie.startsWith(nameEQ)) {
-                return decodeURIComponent(cleanedCookie.substring(nameEQ.length, cleanedCookie.length));
-            }
-        }
-        return null;
     },
 }
 

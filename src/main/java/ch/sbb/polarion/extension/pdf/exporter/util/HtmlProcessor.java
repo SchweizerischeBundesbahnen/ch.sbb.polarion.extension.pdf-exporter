@@ -6,6 +6,7 @@ import ch.sbb.polarion.extension.generic.util.HtmlUtils;
 import ch.sbb.polarion.extension.pdf.exporter.rest.model.conversion.ExportParams;
 import ch.sbb.polarion.extension.pdf.exporter.rest.model.conversion.Orientation;
 import ch.sbb.polarion.extension.pdf.exporter.rest.model.conversion.PaperSize;
+import ch.sbb.polarion.extension.pdf.exporter.service.PdfExporterPolarionService;
 import ch.sbb.polarion.extension.pdf.exporter.settings.LocalizationSettings;
 import ch.sbb.polarion.extension.pdf.exporter.util.exporter.CustomPageBreakPart;
 import ch.sbb.polarion.extension.pdf.exporter.util.html.HtmlLinksHelper;
@@ -15,6 +16,7 @@ import com.polarion.alm.shared.util.StringUtils;
 import com.polarion.core.util.xml.CSSStyle;
 import lombok.SneakyThrows;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
 
 import java.io.BufferedInputStream;
@@ -25,13 +27,11 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static ch.sbb.polarion.extension.pdf.exporter.util.exporter.Constants.*;
@@ -149,11 +149,13 @@ public class HtmlProcessor {
     private final FileResourceProvider fileResourceProvider;
     private final LocalizationSettings localizationSettings;
     private final HtmlLinksHelper httpLinksHelper;
+    private final PdfExporterPolarionService pdfExporterPolarionService;
 
-    public HtmlProcessor(FileResourceProvider fileResourceProvider, LocalizationSettings localizationSettings, HtmlLinksHelper httpLinksHelper) {
+    public HtmlProcessor(FileResourceProvider fileResourceProvider, LocalizationSettings localizationSettings, HtmlLinksHelper httpLinksHelper, PdfExporterPolarionService pdfExporterPolarionService) {
         this.fileResourceProvider = fileResourceProvider;
         this.localizationSettings = localizationSettings;
         this.httpLinksHelper = httpLinksHelper;
+        this.pdfExporterPolarionService = pdfExporterPolarionService;
     }
 
     public String processHtmlForPDF(@NotNull String html, @NotNull ExportParams exportParams, @NotNull List<String> selectedRoleEnumValues) {
@@ -171,7 +173,7 @@ public class HtmlProcessor {
             html = cutEmptyChapters(html);
         }
 
-        html = adjustCellWidth(html);
+        html = adjustCellWidth(html, exportParams);
         html = html.replace(">\n ", "> ");
         html = html.replace("\n</", "</");
         if (exportParams.getChapters() != null) {
@@ -446,25 +448,39 @@ public class HtmlProcessor {
     @NotNull
     @SuppressWarnings("squid:S5843")
     private String filterByRoles(@NotNull String linkedWorkItems, @NotNull List<String> selectedRoleEnumValues) {
-        StringBuilder filteredContent = new StringBuilder();
-        // This regexp searches for spans (named group "roleSpan") containing linked WorkItem with its role (named group "role").
+        String polarionVersion = pdfExporterPolarionService.getPolarionVersion();
+        // This regexp searches for spans (named group "row") containing linked WorkItem with its role (named group "role").
         // If linked WorkItem role is not among ones selected by user we cut it from resulted HTML
-        RegexMatcher.get("(?<roleSpan><span>\\s*<span class=\"polarion-JSEnumOption\"[^>]*?>(?<role>[^<]*?)</span>" +
-                ":\\s*<a[^>]*?>\\s*<span[^>]*?>\\s*<img[^>]*?>\\s*<span[^>]*?>[^<]*?</span>\\s*-\\s*<span[^>]*?>[^<]*?</span>\\s*</span>\\s*</a>\\s*</span>)")
+        String regex = getRegexp(polarionVersion);
+
+        StringBuilder filteredContent = new StringBuilder();
+
+        RegexMatcher.get(regex)
                 .processEntry(linkedWorkItems, regexEngine -> {
                     String role = regexEngine.group("role");
-                    String roleSpan = regexEngine.group("roleSpan");
+                    String row = regexEngine.group("row");
                     if (selectedRoleEnumValues.contains(role)) {
                         if (!filteredContent.isEmpty()) {
                             filteredContent.append(",<br>");
                         }
-                        filteredContent.append(roleSpan);
+                        filteredContent.append(row);
                     }
         });
         // filteredContent - is literally content of td or span element, we need to prepend <td>/<span> with its attributes and append </td>/</span> to it
         return linkedWorkItems.substring(0, linkedWorkItems.indexOf(">") + 1)
                 + filteredContent
                 + linkedWorkItems.substring(linkedWorkItems.lastIndexOf("</"));
+    }
+
+    private @NotNull String getRegexp(@Nullable String polarionVersion) {
+        String filterByRolesRegexBeforePolarion2404 = "(?<row><span>\\s*<span class=\"polarion-JSEnumOption\"[^>]*?>(?<role>[^<]*?)</span>:\\s*<a[^>]*?>\\s*<span[^>]*?>\\s*<img[^>]*?>\\s*<span[^>]*?>[^<]*?</span>\\s*-\\s*<span[^>]*?>[^<]*?</span>\\s*</span>\\s*</a>\\s*</span>)";
+        String filterByRolesRegexAfterPolarion2404 = "(?<row><div\\s*[^>]*?>\\s*<span\\s*[^>]*?>(?<role>[^<]*?)<\\/span>\\s*<\\/div>\\s*:\\s*.*?<\\/span><\\/a><\\/span>)";
+
+        if (polarionVersion == null) {
+            return filterByRolesRegexAfterPolarion2404;
+        }
+
+        return polarionVersion.compareTo("2404") < 0 ? filterByRolesRegexBeforePolarion2404 : filterByRolesRegexAfterPolarion2404;
     }
 
     @NotNull
@@ -541,12 +557,14 @@ public class HtmlProcessor {
     @NotNull
     @VisibleForTesting
     @SuppressWarnings("java:S5852") //regex checked
-    String adjustCellWidth(@NotNull String html) {
-        // This regexp searches for <td> or <th> elements of regular tables which width in styles specified in pixels ("px").
-        // <td> or <th> element till "width:" in styles matched into first unnamed group and width value - into second unnamed group.
-        // Then we replace matched content by first group content plus "auto" instead of value in pixels.
-        html = RegexMatcher.get("(<t[dh].+?width:.*?)(\\d+px)")
-                .replace(html, regexEngine -> regexEngine.group(1) + "auto");
+    String adjustCellWidth(@NotNull String html, @NotNull ExportParams exportParams) {
+        if (exportParams.isFitToPage()) {
+            // This regexp searches for <td> or <th> elements of regular tables which width in styles specified in pixels ("px").
+            // <td> or <th> element till "width:" in styles matched into first unnamed group and width value - into second unnamed group.
+            // Then we replace matched content by first group content plus "auto" instead of value in pixels.
+            html = RegexMatcher.get("(<t[dh].+?width:.*?)(\\d+px)")
+                    .replace(html, regexEngine -> regexEngine.group(1) + "auto");
+        }
 
         // Next step we look for tables which represent WorkItem attributes and force them to take 100% of available width
         html = RegexMatcher.get("(class=\"polarion-dle-workitem-fields-end-table\")")

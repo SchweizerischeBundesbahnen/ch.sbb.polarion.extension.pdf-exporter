@@ -193,7 +193,7 @@ class PdfConverterTest {
         String headerFooterContent = pdfConverter.getHeaderFooterContent(documentData, exportParams);
 
         // Assert
-        assertThat(TestStringUtils.removeLineEndings(headerFooterContent)).isEqualTo(TestStringUtils.removeLineEndings("""
+        assertThat(TestStringUtils.removeNonsensicalSymbols(headerFooterContent)).isEqualTo(TestStringUtils.removeNonsensicalSymbols("""
                 <div class='header top-center header-footer-wrapper'>
                     <div class='header-footer-left'>
                         -xheader-left-

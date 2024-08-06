@@ -10,4 +10,12 @@ public class TestStringUtils {
         return input.replaceAll("\\r\\n|\\r|\\n", "");
     }
 
+    public static @NotNull String removeSpaces(@NotNull String input) {
+        return input.replaceAll(" ", "");
+    }
+
+    public static @NotNull String removeNonsensicalSymbols(@NotNull String input) {
+        String result = removeLineEndings(input);
+        return removeSpaces(result);
+    }
 }
