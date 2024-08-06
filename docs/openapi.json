@@ -1026,10 +1026,10 @@
           "swaggerUiUrl" : {
             "type" : "string"
           },
-          "restUrl" : {
+          "baseUrl" : {
             "type" : "string"
           },
-          "baseUrl" : {
+          "restUrl" : {
             "type" : "string"
           }
         }
@@ -1296,10 +1296,10 @@
                   "type" : "string"
                 }
               },
-              "wildcardType" : {
+              "wildcardSubtype" : {
                 "type" : "boolean"
               },
-              "wildcardSubtype" : {
+              "wildcardType" : {
                 "type" : "boolean"
               }
             }
@@ -1390,10 +1390,10 @@
                   "type" : "string"
                 }
               },
-              "wildcardType" : {
+              "wildcardSubtype" : {
                 "type" : "boolean"
               },
-              "wildcardSubtype" : {
+              "wildcardType" : {
                 "type" : "boolean"
               }
             }
@@ -1413,11 +1413,11 @@
           "value" : {
             "type" : "string"
           },
-          "formDataContentDisposition" : {
-            "$ref" : "#/components/schemas/FormDataContentDisposition"
-          },
           "simple" : {
             "type" : "boolean"
+          },
+          "formDataContentDisposition" : {
+            "$ref" : "#/components/schemas/FormDataContentDisposition"
           },
           "parameterizedHeaders" : {
             "type" : "object",
@@ -1502,10 +1502,10 @@
                   "type" : "string"
                 }
               },
-              "wildcardType" : {
+              "wildcardSubtype" : {
                 "type" : "boolean"
               },
-              "wildcardSubtype" : {
+              "wildcardType" : {
                 "type" : "boolean"
               }
             }
