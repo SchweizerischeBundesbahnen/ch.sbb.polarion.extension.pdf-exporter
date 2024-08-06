@@ -173,7 +173,7 @@ class HtmlProcessorTest {
             String invalidHtml = new String(isInvalidHtml.readAllBytes(), StandardCharsets.UTF_8);
 
             // Spaces and new lines are removed to exclude difference in space characters
-            String fixedHtml = processor.adjustCellWidth(invalidHtml);
+            String fixedHtml = processor.adjustCellWidth(invalidHtml, new ExportParams());
             String validHtml = new String(isValidHtml.readAllBytes(), StandardCharsets.UTF_8);
             assertEquals(TestStringUtils.removeNonsensicalSymbols(validHtml), TestStringUtils.removeNonsensicalSymbols(fixedHtml));
         }
@@ -348,9 +348,9 @@ class HtmlProcessorTest {
             String html = new String(isHtml.readAllBytes(), StandardCharsets.UTF_8);
 
             HtmlProcessor spyHtmlProcessor = spy(processor);
-            // to avoid changing input html and check with regular equals
-            when(spyHtmlProcessor.adjustCellWidth(html)).thenReturn(html);
             ExportParams exportParams = getExportParams();
+            // to avoid changing input html and check with regular equals
+            when(spyHtmlProcessor.adjustCellWidth(html, exportParams)).thenReturn(html);
             exportParams.setCutEmptyChapters(false);
 
             // Spaces, new lines & nbsp symbols are removed to exclude difference in space characters
