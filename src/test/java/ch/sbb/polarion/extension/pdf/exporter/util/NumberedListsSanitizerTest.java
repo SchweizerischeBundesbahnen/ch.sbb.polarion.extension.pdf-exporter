@@ -35,10 +35,10 @@ class NumberedListsSanitizerTest {
             // Spaces and new lines are removed to exclude difference in space characters
             assertNotNull(isInvalidHtml);
             String invalidHtml = new String(isInvalidHtml.readAllBytes(), StandardCharsets.UTF_8);
-            String fixedHtml = sanitizer.fixNumberedLists(invalidHtml).replaceAll(" ", "");
+            String fixedHtml = sanitizer.fixNumberedLists(invalidHtml);
             assertNotNull(isValidHtml);
-            String validHtml = new String(isValidHtml.readAllBytes(), StandardCharsets.UTF_8).replaceAll(" ", "");
-            assertEquals(TestStringUtils.removeLineEndings(validHtml), TestStringUtils.removeLineEndings(fixedHtml));
+            String validHtml = new String(isValidHtml.readAllBytes(), StandardCharsets.UTF_8);
+            assertEquals(TestStringUtils.removeNonsensicalSymbols(validHtml), TestStringUtils.removeNonsensicalSymbols(fixedHtml));
         }
     }
 

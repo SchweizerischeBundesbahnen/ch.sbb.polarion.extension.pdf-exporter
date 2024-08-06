@@ -67,7 +67,7 @@ public class PdfConverter {
         coverPageProcessor = new CoverPageProcessor();
         weasyPrintConverter = WeasyPrintConnectorFactory.getWeasyPrintExecutor();
         PdfExporterFileResourceProvider fileResourceProvider = new PdfExporterFileResourceProvider();
-        htmlProcessor = new HtmlProcessor(fileResourceProvider, new LocalizationSettings(), new HtmlLinksHelper(fileResourceProvider));
+        htmlProcessor = new HtmlProcessor(fileResourceProvider, new LocalizationSettings(), new HtmlLinksHelper(fileResourceProvider), pdfExporterPolarionService);
         pdfTemplateProcessor = new PdfTemplateProcessor();
     }
 
