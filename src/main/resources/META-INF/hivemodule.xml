@@ -50,6 +50,13 @@
                   pageUrl="/polarion/pdf-exporter-admin/pages/css.jsp?scope=$scope$"
                   projectScope="true"
                   repositoryScope="true"/>
+        <extender name="Web hooks"
+                  parentNodeName="PDF Export"
+                  parentNodeIconUrl="/polarion/icons/default/topicIcons/documentsAndWiki.svg"
+                  iconUrl="/polarion/icons/default/topicIconsSmall/documentsAndWiki.svg"
+                  pageUrl="/polarion/pdf-exporter-admin/pages/hooks.jsp?scope=$scope$"
+                  projectScope="true"
+                  repositoryScope="true"/>
         <extender name="Filename template"
                   parentNodeName="PDF Export"
                   parentNodeIconUrl="/polarion/icons/default/topicIcons/documentsAndWiki.svg"
