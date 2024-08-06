@@ -1,14 +1,12 @@
-<link href='/polarion/pdf-exporter/ui/css/pdf-exporter.css' rel='stylesheet'>
+<!-- If we put javascript code just in inline 'script' block it won't be initialized,
+  but the attribute 'onload' below allows to execute our javascript which will load the rest needed js files.  -->
+<link href='/polarion/pdf-exporter/ui/css/pdf-exporter.css' rel='stylesheet' onload='$.getScript("/polarion/pdf-exporter/ui/js/side-panel-starter.js");'>
 
 <p>Select one of style packages in dropdown below which you wish to use during export.</p>
 <div class='property-wrapper'>
     <input type='hidden' name='scope' value='{SCOPE_VALUE}'/>
     <label for='style-package-select'>Style package:</label>
-    <select id='style-package-select' onchange='
-        $.getScript("/polarion/pdf-exporter/ui/js/export-pdf.js").done(function() {
-            stylePackageChanged();
-        });
-    '>
+    <select id='style-package-select' onchange='ExportPdf.stylePackageChanged()'>
         {STYLE_PACKAGE_OPTIONS}
     </select>
 </div>
@@ -164,11 +162,7 @@
 </div>
 
 <div class='buttons-wrapper'>
-    <button type='button' id='export-pdf' onclick='
-        $.getScript("/polarion/pdf-exporter/ui/js/export-pdf.js").done(function() {
-            loadPdf({LOAD_PDF_PARAMS});
-        });
-    '>
+    <button type='button' id='export-pdf' onclick='ExportPdf.loadPdf({LOAD_PDF_PARAMS})'>
         <img class='append-build-number' src='/polarion/ria/images/dle/operations/actionPdfExport16.svg' alt=''/>Export to PDF
     </button>
     <img id='export-pdf-progress' src='/polarion/ria/images/progress_grey.gif' alt=''/>
@@ -176,11 +170,7 @@
     <div id='export-warning'></div>
 </div>
 <div class='buttons-wrapper' id='page-width-validation'>
-    <button type='button' id='validate-pdf' onclick='
-        $.getScript("/polarion/pdf-exporter/ui/js/export-pdf.js").done(function() {
-            validatePdf({VALIDATE_PDF_PARAMS});
-        });
-    '>
+    <button type='button' id='validate-pdf' onclick='ExportPdf.validatePdf({VALIDATE_PDF_PARAMS})'>
         <img class='append-build-number' src='/polarion/ria/images/dle/align_center.png' alt=''/>Validate pages width
     </button>
     <div id='validate-ok'></div>

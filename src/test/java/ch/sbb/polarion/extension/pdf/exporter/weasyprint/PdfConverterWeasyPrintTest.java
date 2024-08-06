@@ -106,7 +106,7 @@ class PdfConverterWeasyPrintTest extends BaseWeasyPrintTest {
 
         ExportParams params = ExportParams.builder().projectId("test").locationPath("testLocation").orientation(Orientation.PORTRAIT).paperSize(PaperSize.A4).build();
         PdfConverter converter = new PdfConverter(pdfExporterPolarionService, headerFooterSettings, cssSettings, liveDocHelper, placeholderProcessor, velocityEvaluator,
-                coverPageProcessor, weasyPrintConverter, new HtmlProcessor(null, localizationSettings, htmlLinksHelper), new PdfTemplateProcessor());
+                coverPageProcessor, weasyPrintConverter, new HtmlProcessor(null, localizationSettings, htmlLinksHelper, pdfExporterPolarionService), new PdfTemplateProcessor());
 
         compareContentUsingReferenceImages(testName + "_simple", converter.convertToPdf(params, null));
 

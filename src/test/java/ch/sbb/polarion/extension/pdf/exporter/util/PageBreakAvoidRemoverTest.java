@@ -30,9 +30,9 @@ class PageBreakAvoidRemoverTest {
             String invalidHtml = new String(isInvalidHtml.readAllBytes(), StandardCharsets.UTF_8);
 
             // Spaces and new lines are removed to exclude difference in space characters
-            String fixedHtml = remover.removePageBreakAvoids(invalidHtml).replaceAll(" ", "");
-            String validHtml = new String(isValidHtml.readAllBytes(), StandardCharsets.UTF_8).replaceAll(" ", "");
-            assertEquals(TestStringUtils.removeLineEndings(validHtml), TestStringUtils.removeLineEndings(fixedHtml));
+            String fixedHtml = remover.removePageBreakAvoids(invalidHtml);
+            String validHtml = new String(isValidHtml.readAllBytes(), StandardCharsets.UTF_8);
+            assertEquals(TestStringUtils.removeNonsensicalSymbols(validHtml), TestStringUtils.removeNonsensicalSymbols(fixedHtml));
         }
     }
 }

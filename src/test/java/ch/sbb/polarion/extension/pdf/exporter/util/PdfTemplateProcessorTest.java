@@ -46,8 +46,8 @@ class PdfTemplateProcessorTest {
             String resultHtml = pdfTemplateProcessor.processUsing(exportParams, "testDocumentName", "test css content", "test html content");
 
             // Assert
-            assertThat(TestStringUtils.removeLineEndings(resultHtml).replaceAll(" ", ""))
-                    .isEqualTo(TestStringUtils.removeLineEndings(expectedResult).replaceAll(" ", ""));
+            assertThat(TestStringUtils.removeNonsensicalSymbols(resultHtml).replaceAll(" ", ""))
+                    .isEqualTo(TestStringUtils.removeNonsensicalSymbols(expectedResult).replaceAll(" ", ""));
         } finally {
             if (configuration != null) {
                 configuration.close();
