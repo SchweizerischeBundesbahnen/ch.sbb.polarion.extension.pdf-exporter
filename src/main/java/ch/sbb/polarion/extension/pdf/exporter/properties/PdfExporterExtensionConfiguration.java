@@ -11,17 +11,11 @@ public class PdfExporterExtensionConfiguration extends ExtensionConfiguration {
 
     public static final String WEASYPRINT_SERVICE = "weasyprint.service";
     public static final String WEASYPRINT_SERVICE_DEFAULT = "http://localhost:9080";
-    public static final String WEASYPRINT_EXECUTABLE = "weasyprint.executable";
-    public static final String WEASYPRINT_EXECUTABLE_DEFAULT = "weasyprint";
     public static final String WEASYPRINT_PDF_VARIANT = "weasyprint.pdf.variant";
     public static final String INTERNALIZE_EXTERNAL_CSS = "internalizeExternalCss";
 
     public String getWeasyprintService() {
         return SystemValueReader.getInstance().readString(getPropertyPrefix() + WEASYPRINT_SERVICE, WEASYPRINT_SERVICE_DEFAULT);
-    }
-
-    public String getWeasyprintExecutable() {
-        return SystemValueReader.getInstance().readString(getPropertyPrefix() + WEASYPRINT_EXECUTABLE, WEASYPRINT_EXECUTABLE_DEFAULT);
     }
 
     public String getWeasyprintPdfVariant() {
@@ -36,7 +30,6 @@ public class PdfExporterExtensionConfiguration extends ExtensionConfiguration {
     public @NotNull List<String> getSupportedProperties() {
         List<String> supportedProperties = new ArrayList<>(super.getSupportedProperties());
         supportedProperties.add(WEASYPRINT_SERVICE);
-        supportedProperties.add(WEASYPRINT_EXECUTABLE);
         supportedProperties.add(WEASYPRINT_PDF_VARIANT);
         supportedProperties.add(INTERNALIZE_EXTERNAL_CSS);
         return supportedProperties;
