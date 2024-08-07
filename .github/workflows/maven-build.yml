@@ -1,0 +1,154 @@
+---
+name: maven-build
+on:
+  push:
+    branches: ['**/**']
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      S3_SBB_POLARION_MAVEN_REPO_RW_ACCESS_KEY: ${{ secrets.S3_SBB_POLARION_MAVEN_REPO_RW_ACCESS_KEY }}
+      S3_SBB_POLARION_MAVEN_REPO_RW_SECRET_ACCESS_KEY: ${{ secrets.S3_SBB_POLARION_MAVEN_REPO_RW_SECRET_ACCESS_KEY }}
+      COM_SONATYPE_CENTRAL_POLARION_OPENSOURCE_USERNAME: ${{ secrets.COM_SONATYPE_CENTRAL_POLARION_OPENSOURCE_USERNAME }}
+      COM_SONATYPE_CENTRAL_POLARION_OPENSOURCE_TOKEN: ${{ secrets.COM_SONATYPE_CENTRAL_POLARION_OPENSOURCE_TOKEN }}
+      COM_SONATYPE_CENTRAL_POLARION_OPENSOURCE_GPG_PASSPHRASE: ${{ secrets.COM_SONATYPE_CENTRAL_POLARION_OPENSOURCE_GPG_PASSPHRASE }}
+      GITHUB_TOKEN: ${{ github.token }}
+      MARKDOWN2HTML_MAVEN_PLUGIN_FAIL_ON_ERROR: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332  # v4
+      - name: Set up JDK and Maven
+        uses: actions/setup-java@6a0805fcefea3d4657a47ac4c165951e33482018  # v4
+        with:
+          distribution: adopt
+          java-version: 17
+          gpg-private-key: ${{ secrets.COM_SONATYPE_CENTRAL_POLARION_OPENSOURCE_GPG_PRIVATE_KEY }}
+      - name: Prepare Cache
+        id: prepare-cache
+        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9  # v4
+        with:
+          path: |
+            /home/runner/.m2
+            /home/runner/work
+          key: ${{ runner.os }}-mvn-${{ hashFiles('**/pom.xml') }}
+      - name: Generate settings.xml
+        uses: whelk-io/maven-settings-xml-action@9dc09b23833fa9aa7f27b63db287951856f3433d  # v22
+        with:
+          repositories: >
+            [
+              {
+                "id": "s3",
+                "name": "s3.sbb.polarion.maven.repo",
+                "url": "s3://sbb-polarion-maven-repo/polarion.mvn",
+                "releases": {
+                  "enabled": "true",
+                  "updatePolicy": "never"
+                }
+              }
+            ]
+          servers: >
+            [
+              {
+                "id": "s3",
+                "username": "${env.S3_SBB_POLARION_MAVEN_REPO_RW_ACCESS_KEY}",
+                "password": "${env.S3_SBB_POLARION_MAVEN_REPO_RW_SECRET_ACCESS_KEY}"
+              },
+              {
+                "id": "github",
+                "username": "${env.GITHUB_ACTOR}",
+                "password": "${env.GITHUB_TOKEN}"
+              },
+              {
+                "id": "ossrh",
+                "username": "${env.COM_SONATYPE_CENTRAL_POLARION_OPENSOURCE_USERNAME}",
+                "password": "${env.COM_SONATYPE_CENTRAL_POLARION_OPENSOURCE_TOKEN}"
+              },
+              {
+                "id": "gpg.passphrase",
+                "passphrase": "${env.COM_SONATYPE_CENTRAL_POLARION_OPENSOURCE_GPG_PASSPHRASE}"
+              }
+            ]
+          profiles: >
+            [
+              {
+                "id": "deploy-github-packages",
+                "properties":
+                {
+                  "altDeploymentRepository": "github::default::https://maven.pkg.github.com/${{ github.repository }}"
+                }
+              }
+            ]
+      - name: Print settings.xml
+        run: cat /home/runner/.m2/settings.xml
+      - name: Build with Maven
+        run: mvn --batch-mode clean package
+      - name: Store project version
+        id: project_version
+        run: echo "project_version=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)" >> $GITHUB_OUTPUT
+      - name: Store cache key
+        id: cache_key
+        run: echo "cache_key=${{ runner.os }}-mvn-${{ hashFiles('**/pom.xml') }}" >> $GITHUB_OUTPUT
+    outputs:
+      project_version: ${{ steps.project_version.outputs.project_version }}
+      cache_key: ${{ steps.cache_key.outputs.cache_key }}
+
+  # deploy to Maven Central
+  deploy-maven-central:
+    needs: build
+    runs-on: ubuntu-latest
+    if: ${{ !endsWith(needs.build.outputs.project_version, '-SNAPSHOT') && github.ref == 'refs/heads/main' }}
+    env:
+      S3_SBB_POLARION_MAVEN_REPO_RW_ACCESS_KEY: ${{ secrets.S3_SBB_POLARION_MAVEN_REPO_RW_ACCESS_KEY }}
+      S3_SBB_POLARION_MAVEN_REPO_RW_SECRET_ACCESS_KEY: ${{ secrets.S3_SBB_POLARION_MAVEN_REPO_RW_SECRET_ACCESS_KEY }}
+      COM_SONATYPE_CENTRAL_POLARION_OPENSOURCE_USERNAME: ${{ secrets.COM_SONATYPE_CENTRAL_POLARION_OPENSOURCE_USERNAME }}
+      COM_SONATYPE_CENTRAL_POLARION_OPENSOURCE_TOKEN: ${{ secrets.COM_SONATYPE_CENTRAL_POLARION_OPENSOURCE_TOKEN }}
+      COM_SONATYPE_CENTRAL_POLARION_OPENSOURCE_GPG_PASSPHRASE: ${{ secrets.COM_SONATYPE_CENTRAL_POLARION_OPENSOURCE_GPG_PASSPHRASE }}
+    steps:
+      - name: Set up JDK and Maven
+        uses: actions/setup-java@99b8673ff64fbf99d8d325f52d9a5bdedb8483e9  # v4
+        with:
+          distribution: adopt
+          java-version: 17
+          gpg-private-key: ${{ secrets.COM_SONATYPE_CENTRAL_POLARION_OPENSOURCE_GPG_PRIVATE_KEY }}
+      - name: Restore Cache
+        id: restore-cache
+        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9  # v4
+        with:
+          path: |
+            /home/runner/.m2
+            /home/runner/work
+          key: ${{ needs.build.outputs.cache_key }}
+      - name: Publish to Maven Central
+        run: mvn --batch-mode -Dmaven.test.skip=true deploy -P gpg-sign -P nexus-staging
+
+  # deploy to GitHub Packages
+  deploy-github-packages:
+    needs: build
+    runs-on: ubuntu-latest
+    if: ${{ !endsWith(needs.build.outputs.project_version, '-SNAPSHOT') && github.ref == 'refs/heads/main' }}
+    permissions:
+      contents: write
+      packages: write
+    env:
+      S3_SBB_POLARION_MAVEN_REPO_RW_ACCESS_KEY: ${{ secrets.S3_SBB_POLARION_MAVEN_REPO_RW_ACCESS_KEY }}
+      S3_SBB_POLARION_MAVEN_REPO_RW_SECRET_ACCESS_KEY: ${{ secrets.S3_SBB_POLARION_MAVEN_REPO_RW_SECRET_ACCESS_KEY }}
+      GITHUB_TOKEN: ${{ github.token }}
+    steps:
+      - name: Set up JDK and Maven
+        uses: actions/setup-java@99b8673ff64fbf99d8d325f52d9a5bdedb8483e9  # v4
+        with:
+          distribution: adopt
+          java-version: 17
+      - name: Cache
+        id: cache
+        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9  # v4
+        with:
+          path: |
+            /home/runner/.m2
+            /home/runner/work
+          key: ${{ needs.build.outputs.cache_key }}
+      - name: Publish to GitHub Packages
+        run: mvn --batch-mode -Dmaven.test.skip=true -Dmaven.javadoc.skip=true -Dmaven.source.skip=true deploy -P deploy-github-packages
+      - name: Upload assets
+        run: cd ${{github.workspace}} && gh release upload v${{ needs.build.outputs.project_version }} target/*-${{ needs.build.outputs.project_version }}.jar
+        shell: bash
