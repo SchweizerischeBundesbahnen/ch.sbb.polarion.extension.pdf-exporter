@@ -89,6 +89,13 @@
                     <label for="css-select" id="css-select-label">CSS:</label>
                     <div id="css-select"></div>
                 </div>
+                <div class="input-group">
+                    <label for='webhooks-checkbox' style="width: 120px;">
+                        <input id="webhooks-checkbox" onchange='document.getElementById("webhooks-select").style.display = this.checked ? "inline-block" : "none"' type='checkbox'/>
+                        Use webhooks
+                    </label>
+                    <div id="webhooks-select"></div>
+                </div>
             </div>
             <div class="flex-column">
                 <div class="input-group">

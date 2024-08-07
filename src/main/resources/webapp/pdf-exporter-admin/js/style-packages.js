@@ -26,6 +26,9 @@ const ChildConfigurations = {
     coverPageSelect: new SbbCustomSelect({
         selectContainer: document.getElementById("cover-page-select")
     }),
+    webhooksSelect: new SbbCustomSelect({
+        selectContainer: document.getElementById("webhooks-select")
+    }),
 
     load: function () {
         document.getElementById("child-configs-load-error").style.display = "none";
@@ -35,7 +38,8 @@ const ChildConfigurations = {
                 this.loadSettingNames("css", this.cssSelect),
                 this.loadSettingNames("header-footer", this.headerFooterSelect),
                 this.loadSettingNames("localization", this.localizationSelect),
-                this.loadSettingNames("cover-page", this.coverPageSelect)
+                this.loadSettingNames("cover-page", this.coverPageSelect),
+                this.loadSettingNames("webhooks", this.webhooksSelect)
             ]).then(() => {
                 resolve();
             }).catch(() => {
@@ -159,6 +163,7 @@ function saveStylePackage() {
             'css': ChildConfigurations.cssSelect.getSelectedValue(),
             'headerFooter': ChildConfigurations.headerFooterSelect.getSelectedValue(),
             'localization': ChildConfigurations.localizationSelect.getSelectedValue(),
+            'webhooks': SbbCommon.getCheckboxValueById('webhooks-checkbox') ? ChildConfigurations.webhooksSelect.getSelectedValue() : [],
             'headersColor': SbbCommon.getValueById('headers-color'),
             'paperSize': PaperSizes.paperSizeSelect.getSelectedValue(),
             'orientation': Orientations.orientationSelect.getSelectedValue(),
@@ -212,6 +217,9 @@ function setStylePackage(content) {
     ChildConfigurations.cssSelect.selectValue(ChildConfigurations.cssSelect.containsOption(stylePackage.css) ? stylePackage.css : DEFAULT_SETTING_NAME);
     ChildConfigurations.headerFooterSelect.selectValue(ChildConfigurations.headerFooterSelect.containsOption(stylePackage.headerFooter) ? stylePackage.headerFooter : DEFAULT_SETTING_NAME);
     ChildConfigurations.localizationSelect.selectValue(ChildConfigurations.localizationSelect.containsOption(stylePackage.localization) ? stylePackage.localization : DEFAULT_SETTING_NAME);
+    SbbCommon.setCheckboxValueById('webhooks-checkbox', !!stylePackage.webhooks);
+    document.getElementById('webhooks-checkbox').dispatchEvent(new Event('change'));
+    ChildConfigurations.webhooksSelect.selectValue(ChildConfigurations.webhooksSelect.containsOption(stylePackage.webhooks) ? stylePackage.webhooks : DEFAULT_SETTING_NAME);
 
     SbbCommon.setValueById('headers-color', stylePackage.headersColor);
     PaperSizes.paperSizeSelect.selectValue(stylePackage.paperSize || 'A4');

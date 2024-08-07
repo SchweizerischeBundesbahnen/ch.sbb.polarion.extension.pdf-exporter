@@ -9,9 +9,11 @@ import ch.sbb.polarion.extension.pdf.exporter.rest.model.WorkItemRefData;
 import ch.sbb.polarion.extension.pdf.exporter.rest.model.conversion.DocumentType;
 import ch.sbb.polarion.extension.pdf.exporter.rest.model.conversion.ExportParams;
 import ch.sbb.polarion.extension.pdf.exporter.rest.model.settings.headerfooter.HeaderFooterModel;
+import ch.sbb.polarion.extension.pdf.exporter.rest.model.settings.hooks.WebhooksModel;
 import ch.sbb.polarion.extension.pdf.exporter.service.PdfExporterPolarionService;
 import ch.sbb.polarion.extension.pdf.exporter.settings.CssSettings;
 import ch.sbb.polarion.extension.pdf.exporter.settings.HeaderFooterSettings;
+import ch.sbb.polarion.extension.pdf.exporter.settings.WebhooksSettings;
 import ch.sbb.polarion.extension.pdf.exporter.settings.LocalizationSettings;
 import ch.sbb.polarion.extension.pdf.exporter.util.EnumValuesProvider;
 import ch.sbb.polarion.extension.pdf.exporter.util.HtmlLogger;
@@ -35,6 +37,15 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
 
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.Entity;
+import javax.ws.rs.client.WebTarget;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -126,7 +137,49 @@ public class PdfConverter {
         if (metaInfoCallback != null) {
             metaInfoCallback.setLinkedWorkItems(WorkItemRefData.extractListFromHtml(htmlContent, exportParams.getProjectId()));
         }
-        return htmlProcessor.internalizeLinks(htmlContent);
+        htmlContent = htmlProcessor.internalizeLinks(htmlContent);
+        htmlContent = applyHooks(exportParams, htmlContent);
+        return htmlContent;
+    }
+
+    private @NotNull String applyHooks(@NotNull ExportParams exportParams, @NotNull String htmlContent) {
+        if (exportParams.getWebhooks() == null) {
+            return htmlContent;
+        }
+
+        WebhooksModel hooksModel = new WebhooksSettings().load(exportParams.getProjectId(), SettingId.fromName(exportParams.getWebhooks()));
+        String result = htmlContent;
+        for (String hook : hooksModel.getWebhooks()) {
+            result = applyHook(hook, result);
+        }
+        return result;
+    }
+
+    private @NotNull String applyHook(@NotNull String hook, @NotNull String htmlContent) {
+        Client client = null;
+        try {
+            client = ClientBuilder.newClient();
+            WebTarget webTarget = client.target(hook);
+
+            try (Response response = webTarget.request(MediaType.TEXT_PLAIN).post(Entity.entity(htmlContent, MediaType.TEXT_PLAIN))) {
+                if (response.getStatus() == Response.Status.OK.getStatusCode()) {
+                    try (InputStream inputStream = response.readEntity(InputStream.class)) {
+                        return new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
+                    } catch (IOException e) {
+                        logger.error(String.format("Could not read response stream of web hook [%s]", hook), e);
+                    }
+                } else {
+                    logger.error(String.format("Could not get proper response from web hook [%s]: response status %s", hook, response.getStatus()));
+                }
+            }
+        } finally {
+            if (client != null) {
+                client.close();
+            }
+        }
+
+        // In case of errors return initial HTML without modification
+        return htmlContent;
     }
 
     @VisibleForTesting

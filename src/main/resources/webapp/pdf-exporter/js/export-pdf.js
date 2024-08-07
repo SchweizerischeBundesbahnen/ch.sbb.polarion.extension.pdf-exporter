@@ -43,6 +43,10 @@ const ExportPdf = {
         ExportCommon.setSelector("header-footer-selector", stylePackage.headerFooter);
         ExportCommon.setSelector("localization-selector", stylePackage.localization);
 
+        ExportCommon.setCheckbox("webhooks-checkbox", !!stylePackage.webhooks);
+        ExportCommon.setSelector("webhooks-selector", stylePackage.webhooks);
+        ExportCommon.displayIf("webhooks-selector", !!stylePackage.webhooks, "inline-block")
+
         ExportCommon.setValue("paper-size-selector", stylePackage.paperSize || 'A4');
         ExportCommon.setValue("headers-color", stylePackage.headersColor);
         ExportCommon.setValue("orientation-selector", stylePackage.orientation || 'PORTRAIT');
@@ -128,6 +132,7 @@ const ExportPdf = {
             css: document.getElementById("css-selector").value,
             headerFooter: document.getElementById("header-footer-selector").value,
             localization: document.getElementById("localization-selector").value,
+            webhooks: document.getElementById("webhooks-checkbox").checked ? document.getElementById("webhooks-selector").value : null,
             headersColor: document.getElementById("headers-color").value,
             paperSize: document.getElementById("paper-size-selector").value,
             orientation: document.getElementById("orientation-selector").value,

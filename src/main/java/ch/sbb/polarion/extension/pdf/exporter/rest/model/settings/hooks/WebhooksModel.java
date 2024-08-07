@@ -22,25 +22,25 @@ import java.util.List;
 @ToString
 @EqualsAndHashCode(callSuper = false)
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class HooksModel extends SettingsModel {
-    public static final String HOOKS = "HOOKS";
+public class WebhooksModel extends SettingsModel {
+    public static final String WEBHOOKS = "WEBHOOKS";
 
-    private List<String> hooks = new ArrayList<>();
+    private List<String> webhooks = new ArrayList<>();
 
     @Override
     protected String serializeModelData() {
-        return serializeEntry(HOOKS, hooks);
+        return serializeEntry(WEBHOOKS, webhooks);
     }
 
     @Override
     protected void deserializeModelData(String serializedString) {
-        String hooksString = deserializeEntry(HOOKS, serializedString);
-        if (hooksString != null) {
+        String webhooksString = deserializeEntry(WEBHOOKS, serializedString);
+        if (webhooksString != null) {
             try {
-                String[] hooksArray = new ObjectMapper().readValue(hooksString, String[].class);
-                hooks = new ArrayList<>(Arrays.asList(hooksArray));
+                String[] webhooksArray = new ObjectMapper().readValue(webhooksString, String[].class);
+                webhooks = new ArrayList<>(Arrays.asList(webhooksArray));
             } catch (JsonProcessingException e) {
-                throw new IllegalArgumentException("Hooks value couldn't be parsed", e);
+                throw new IllegalArgumentException("Webhooks value couldn't be parsed", e);
             }
         }
     }

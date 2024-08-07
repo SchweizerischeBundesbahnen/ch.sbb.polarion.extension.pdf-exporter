@@ -11,6 +11,7 @@ import ch.sbb.polarion.extension.pdf.exporter.rest.model.settings.stylepackage.S
 import ch.sbb.polarion.extension.pdf.exporter.service.PdfExporterPolarionService;
 import ch.sbb.polarion.extension.pdf.exporter.settings.CssSettings;
 import ch.sbb.polarion.extension.pdf.exporter.settings.HeaderFooterSettings;
+import ch.sbb.polarion.extension.pdf.exporter.settings.WebhooksSettings;
 import ch.sbb.polarion.extension.pdf.exporter.settings.LocalizationSettings;
 import ch.sbb.polarion.extension.pdf.exporter.settings.StylePackageSettings;
 import ch.sbb.polarion.extension.pdf.exporter.settings.CoverPageSettings;
@@ -79,6 +80,7 @@ public class PdfExporterFormExtension implements IFormExtension {
             form = adjustCss(scope, form, selectedStylePackage);
             form = adjustHeaderFooter(scope, form, selectedStylePackage);
             form = adjustLocalization(scope, form, selectedStylePackage);
+            form = adjustWebhooks(scope, form, selectedStylePackage);
             form = form.replace("{HEADERS_COLOR_VALUE}", selectedStylePackage.getHeadersColor());
             form = adjustPaperSize(form, selectedStylePackage);
             form = adjustOrientation(form, selectedStylePackage);
@@ -146,6 +148,15 @@ public class PdfExporterFormExtension implements IFormExtension {
         Collection<SettingName> localizationNames = getSettingNames(LocalizationSettings.FEATURE_NAME, scope);
         String localizationOptions = generateSelectOptions(localizationNames, stylePackage.getLocalization());
         return form.replace("{LOCALIZATION_OPTIONS}", localizationOptions);
+    }
+
+    private String adjustWebhooks(String scope, String form, StylePackageModel stylePackage) {
+        Collection<SettingName> webhooksNames = getSettingNames(WebhooksSettings.FEATURE_NAME, scope);
+        boolean noHooks = StringUtils.isEmpty(stylePackage.getWebhooks());
+        String webhooksOptions = generateSelectOptions(webhooksNames, noHooks ? NamedSettings.DEFAULT_NAME : stylePackage.getWebhooks());
+        form = form.replace("{WEBHOOKS_OPTIONS}", webhooksOptions);
+        form = form.replace("{WEBHOOKS_DISPLAY}", noHooks ? "none" : "inline-block");
+        return form.replace("{WEBHOOKS_SELECTED}", noHooks ? "" : "checked");
     }
 
     private Collection<SettingName> getSettingNames(@NotNull String featureName, @NotNull String scope) {

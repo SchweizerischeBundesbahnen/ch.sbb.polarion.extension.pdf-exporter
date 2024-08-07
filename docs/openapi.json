@@ -1153,6 +1153,9 @@
           "localization" : {
             "type" : "string"
           },
+          "webhooks" : {
+            "type" : "string"
+          },
           "headersColor" : {
             "type" : "string"
           },

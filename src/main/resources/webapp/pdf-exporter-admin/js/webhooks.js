@@ -1,4 +1,5 @@
 const WebHooks = {
+
     saveHooks : function () {
         SbbCommon.hideActionAlerts();
 
@@ -7,7 +8,7 @@ const WebHooks = {
             url: `/polarion/${SbbCommon.extension}/rest/internal/settings/${SbbCommon.setting}/names/${Configurations.getSelectedConfiguration()}/content?scope=${SbbCommon.scope}`,
             contentType: 'application/json',
             body: JSON.stringify({
-                'hooks': Array.from(document.getElementsByClassName("hook")).map(input => input.value).filter(value => value),
+                'webhooks': Array.from(document.getElementsByClassName("webhook")).map(input => input.value).filter(value => value),
             }),
             onOk: () => {
                 SbbCommon.showSaveSuccessAlert();
@@ -19,20 +20,20 @@ const WebHooks = {
     },
 
     setHooks: function(text) {
-        document.getElementById('hooks-table').innerHTML = ""; // Remove all records currently displayed first
-        const hooksModel = JSON.parse(text);
-        if (hooksModel.hooks) {
-            hooksModel.hooks.forEach(hook => {
+        document.getElementById('webhooks-table').innerHTML = ""; // Remove all records currently displayed first
+        const webhooksModel = JSON.parse(text);
+        if (webhooksModel.webhooks) {
+            webhooksModel.webhooks.forEach(hook => {
                 WebHooks.addHook(hook);
             });
         }
-        if (hooksModel.bundleTimestamp !== SbbCommon.getValueById('bundle-timestamp')) {
+        if (webhooksModel.bundleTimestamp !== SbbCommon.getValueById('bundle-timestamp')) {
             WebHooks.loadDefaultContent()
                 .then((responseText) => {
                     const defaultHooksModel = JSON.parse(responseText);
-                    SbbCommon.setNewerVersionNotificationVisible(hooksModel.hooks && defaultHooksModel.hooks
-                        && (hooksModel.hooks.length !== defaultHooksModel.hooks.length
-                            || hooksModel.hooks.every(function(value, index) { return value === defaultHooksModel.hooks[index]})));
+                    SbbCommon.setNewerVersionNotificationVisible(webhooksModel.webhooks && defaultHooksModel.webhooks
+                        && (webhooksModel.webhooks.length !== defaultHooksModel.webhooks.length
+                            || webhooksModel.webhooks.every(function(value, index) { return value === defaultHooksModel.hooks[index]})));
                 })
         }
     },
@@ -66,14 +67,14 @@ const WebHooks = {
     },
 
     addHook: function(value) {
-        const table = document.getElementById('hooks-table');
+        const table = document.getElementById('webhooks-table');
         const tableRow = document.createElement('tr');
-        tableRow.classList.add('hook-row');
+        tableRow.classList.add('webhook-row');
 
         const buttonCell = document.createElement('td');
         const removeButton = document.createElement('div');
-        removeButton.classList.add('hook-button');
-        removeButton.setAttribute('title', 'Delete this hook');
+        removeButton.classList.add('webhook-button');
+        removeButton.setAttribute('title', 'Delete this webhook');
         const image = document.createElement('img');
         image.setAttribute('src', '/polarion/ria/images/control/tableMinus.png');
         removeButton.appendChild(image);
@@ -83,27 +84,42 @@ const WebHooks = {
         buttonCell.appendChild(removeButton);
         tableRow.appendChild(buttonCell);
 
-        const fieldCell = document.createElement('td');
+        const labelCell = document.createElement('td');
         const fieldLabel = document.createElement('label');
-        fieldLabel.innerHTML = 'Hook URL: ';
-        fieldCell.appendChild(fieldLabel);
+        fieldLabel.innerHTML = 'Webhook URL: ';
+        labelCell.appendChild(fieldLabel);
+        tableRow.appendChild(labelCell);
 
+        const fieldCell = document.createElement('td');
         const field = document.createElement('input');
-        field.classList.add('fs-14', 'hook');
+        field.classList.add('fs-14', 'webhook');
         if (value) {
             field.setAttribute("value", value);
         }
         fieldCell.appendChild(field);
+
+        const invalidUrlError = document.createElement('div');
+        invalidUrlError.innerHTML = "WARNING: Entered value doesn't seem to be a valid URL";
+        invalidUrlError.classList.add('invalid-webhook', 'hidden');
+        field.addEventListener("keyup", (event) => {
+            const urlPattern = /^(http(s)?:\/\/.)[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)$/g;
+            if (!event.target.value || urlPattern.test(event.target.value)) {
+                invalidUrlError.classList.add('hidden');
+            } else {
+                invalidUrlError.classList.remove('hidden');
+            }
+        });
+        fieldCell.appendChild(invalidUrlError);
+
         tableRow.appendChild(fieldCell);
 
         table.appendChild(tableRow);
     },
-
 }
 
 SbbCommon.init({
     extension: 'pdf-exporter',
-    setting: 'hooks',
+    setting: 'webhooks',
     scope: SbbCommon.getValueById('scope')
 });
 
