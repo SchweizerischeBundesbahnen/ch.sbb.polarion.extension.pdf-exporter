@@ -208,36 +208,6 @@
 
     <profiles>
         <profile>
-            <id>install-weasyprint</id>
-
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.codehaus.mojo</groupId>
-                        <artifactId>exec-maven-plugin</artifactId>
-                        <version>${exec-maven-plugin.version}</version>
-                        <executions>
-                            <execution>
-                                <id>pip-install</id>
-                                <phase>generate-resources</phase>
-                                <goals>
-                                    <goal>exec</goal>
-                                </goals>
-                                <configuration>
-                                    <executable>pip</executable>
-                                    <arguments>
-                                        <argument>install</argument>
-                                        <argument>weasyprint==${weasyprint.version}</argument>
-                                    </arguments>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-
-        <profile>
             <id>tests-with-weasyprint-docker</id>
 
             <build>
