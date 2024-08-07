@@ -5,11 +5,11 @@
     <parent>
         <groupId>ch.sbb.polarion.extensions</groupId>
         <artifactId>ch.sbb.polarion.extension.generic</artifactId>
-        <version>6.6.0</version>
+        <version>6.6.1</version>
     </parent>
 
     <artifactId>ch.sbb.polarion.extension.pdf-exporter</artifactId>
-    <version>5.7.2-SNAPSHOT</version>
+    <version>5.7.2</version>
     <packaging>jar</packaging>
 
     <name>Polarion ALM extension to convert Documents to PDF files</name>
