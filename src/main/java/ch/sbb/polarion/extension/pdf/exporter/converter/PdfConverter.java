@@ -24,9 +24,8 @@ import ch.sbb.polarion.extension.pdf.exporter.util.PdfTemplateProcessor;
 import ch.sbb.polarion.extension.pdf.exporter.util.html.HtmlLinksHelper;
 import ch.sbb.polarion.extension.pdf.exporter.util.placeholder.PlaceholderProcessor;
 import ch.sbb.polarion.extension.pdf.exporter.util.velocity.VelocityEvaluator;
-import ch.sbb.polarion.extension.pdf.exporter.weasyprint.WeasyPrintConverter;
-import ch.sbb.polarion.extension.pdf.exporter.weasyprint.WeasyPrintConnectorFactory;
 import ch.sbb.polarion.extension.pdf.exporter.weasyprint.WeasyPrintOptions;
+import ch.sbb.polarion.extension.pdf.exporter.weasyprint.service.WeasyPrintServiceConnector;
 import com.polarion.alm.tracker.model.ITrackerProject;
 import com.polarion.core.util.StringUtils;
 import com.polarion.core.util.logging.Logger;
@@ -53,7 +52,7 @@ public class PdfConverter {
     private final PlaceholderProcessor placeholderProcessor;
     private final VelocityEvaluator velocityEvaluator;
     private final CoverPageProcessor coverPageProcessor;
-    private final WeasyPrintConverter weasyPrintConverter;
+    private final WeasyPrintServiceConnector weasyPrintServiceConnector;
     private final HtmlProcessor htmlProcessor;
     private final PdfTemplateProcessor pdfTemplateProcessor;
 
@@ -65,7 +64,7 @@ public class PdfConverter {
         placeholderProcessor = new PlaceholderProcessor();
         velocityEvaluator = new VelocityEvaluator();
         coverPageProcessor = new CoverPageProcessor();
-        weasyPrintConverter = WeasyPrintConnectorFactory.getWeasyPrintExecutor();
+        weasyPrintServiceConnector = new WeasyPrintServiceConnector();
         PdfExporterFileResourceProvider fileResourceProvider = new PdfExporterFileResourceProvider();
         htmlProcessor = new HtmlProcessor(fileResourceProvider, new LocalizationSettings(), new HtmlLinksHelper(fileResourceProvider), pdfExporterPolarionService);
         pdfTemplateProcessor = new PdfTemplateProcessor();
@@ -140,7 +139,7 @@ public class PdfConverter {
             return coverPageProcessor.generatePdfWithTitle(documentData, exportParams, htmlPage, generationLog);
         } else {
             WeasyPrintOptions weasyPrintOptions = WeasyPrintOptions.builder().followHTMLPresentationalHints(exportParams.isFollowHTMLPresentationalHints()).build();
-            return weasyPrintConverter.convertToPdf(htmlPage, weasyPrintOptions);
+            return weasyPrintServiceConnector.convertToPdf(htmlPage, weasyPrintOptions);
         }
     }
 

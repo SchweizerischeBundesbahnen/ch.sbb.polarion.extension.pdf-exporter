@@ -10,9 +10,8 @@ import ch.sbb.polarion.extension.pdf.exporter.util.PdfExporterFileResourceProvid
 import ch.sbb.polarion.extension.pdf.exporter.util.PdfTemplateProcessor;
 import ch.sbb.polarion.extension.pdf.exporter.util.html.HtmlLinksHelper;
 import ch.sbb.polarion.extension.pdf.exporter.util.regex.RegexMatcher;
-import ch.sbb.polarion.extension.pdf.exporter.weasyprint.WeasyPrintConverter;
-import ch.sbb.polarion.extension.pdf.exporter.weasyprint.WeasyPrintConnectorFactory;
 import ch.sbb.polarion.extension.pdf.exporter.weasyprint.WeasyPrintOptions;
+import ch.sbb.polarion.extension.pdf.exporter.weasyprint.service.WeasyPrintServiceConnector;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.VisibleForTesting;
@@ -21,20 +20,20 @@ public class HtmlToPdfConverter {
     private final PdfTemplateProcessor pdfTemplateProcessor;
     private final HtmlProcessor htmlProcessor;
     @Getter
-    private final WeasyPrintConverter weasyPrintConverter;
+    private final WeasyPrintServiceConnector weasyPrintServiceConnector;
 
     public HtmlToPdfConverter() {
         this.pdfTemplateProcessor = new PdfTemplateProcessor();
         PdfExporterFileResourceProvider fileResourceProvider = new PdfExporterFileResourceProvider();
         this.htmlProcessor = new HtmlProcessor(fileResourceProvider, new LocalizationSettings(), new HtmlLinksHelper(fileResourceProvider), null);
-        this.weasyPrintConverter = WeasyPrintConnectorFactory.getWeasyPrintExecutor();
+        this.weasyPrintServiceConnector = new WeasyPrintServiceConnector();
     }
 
     @VisibleForTesting
-    public HtmlToPdfConverter(PdfTemplateProcessor pdfTemplateProcessor, HtmlProcessor htmlProcessor, WeasyPrintConverter weasyPrintConverter) {
+    public HtmlToPdfConverter(PdfTemplateProcessor pdfTemplateProcessor, HtmlProcessor htmlProcessor, WeasyPrintServiceConnector weasyPrintServiceConnector) {
         this.pdfTemplateProcessor = pdfTemplateProcessor;
         this.htmlProcessor = htmlProcessor;
-        this.weasyPrintConverter = weasyPrintConverter;
+        this.weasyPrintServiceConnector = weasyPrintServiceConnector;
     }
 
     public byte[] convert(String origHtml, Orientation orientation, PaperSize paperSize) {
@@ -43,7 +42,7 @@ public class HtmlToPdfConverter {
         if (PdfExporterExtensionConfiguration.getInstance().isDebug()) {
             new HtmlLogger().log(origHtml, html, "");
         }
-        return weasyPrintConverter.convertToPdf(html, WeasyPrintOptions.builder().followHTMLPresentationalHints(true).build());
+        return weasyPrintServiceConnector.convertToPdf(html, WeasyPrintOptions.builder().followHTMLPresentationalHints(true).build());
     }
 
     private void validateHtml(String origHtml) {

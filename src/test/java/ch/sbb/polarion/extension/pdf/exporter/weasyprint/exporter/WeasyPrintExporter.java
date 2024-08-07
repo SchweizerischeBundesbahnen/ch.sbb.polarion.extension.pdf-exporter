@@ -8,8 +8,7 @@ import java.util.Map;
 public interface WeasyPrintExporter {
 
     Map<String, WeasyPrintExporter> IMPL_REGISTRY = Map.of(
-            "docker", new WeasyPrintExporterDockerImpl(),
-            "command", new WeasyPrintExporterCommandImpl()
+            "docker", new WeasyPrintExporterDockerImpl()
     );
 
     byte[] exportToPdf(@NotNull String html, @NotNull WeasyPrintOptions weasyPrintOptions);

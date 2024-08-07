@@ -14,10 +14,10 @@ import ch.sbb.polarion.extension.pdf.exporter.util.HtmlProcessor;
 import ch.sbb.polarion.extension.pdf.exporter.util.LiveDocHelper;
 import ch.sbb.polarion.extension.pdf.exporter.util.PdfGenerationLog;
 import ch.sbb.polarion.extension.pdf.exporter.util.PdfTemplateProcessor;
-import ch.sbb.polarion.extension.pdf.exporter.weasyprint.WeasyPrintConverter;
 import ch.sbb.polarion.extension.pdf.exporter.util.placeholder.PlaceholderProcessor;
 import ch.sbb.polarion.extension.pdf.exporter.util.velocity.VelocityEvaluator;
 import ch.sbb.polarion.extension.pdf.exporter.weasyprint.WeasyPrintOptions;
+import ch.sbb.polarion.extension.pdf.exporter.weasyprint.service.WeasyPrintServiceConnector;
 import com.polarion.alm.tracker.internal.model.LinkRoleOpt;
 import com.polarion.alm.tracker.internal.model.TypeOpt;
 import com.polarion.alm.tracker.model.ILinkRoleOpt;
@@ -61,7 +61,7 @@ class PdfConverterTest {
     @Mock
     private CoverPageProcessor coverPageProcessor;
     @Mock
-    private WeasyPrintConverter weasyPrintConverter;
+    private WeasyPrintServiceConnector weasyPrintServiceConnector;
     @Mock
     private HtmlProcessor htmlProcessor;
     @Mock
@@ -76,7 +76,7 @@ class PdfConverterTest {
                 .build();
         ITrackerProject project = mock(ITrackerProject.class);
         lenient().when(pdfExporterPolarionService.getTrackerProject("test project")).thenReturn(project);
-        PdfConverter pdfConverter = new PdfConverter(pdfExporterPolarionService, headerFooterSettings, cssSettings, liveDocHelper, placeholderProcessor, velocityEvaluator, coverPageProcessor, weasyPrintConverter, htmlProcessor, pdfTemplateProcessor);
+        PdfConverter pdfConverter = new PdfConverter(pdfExporterPolarionService, headerFooterSettings, cssSettings, liveDocHelper, placeholderProcessor, velocityEvaluator, coverPageProcessor, weasyPrintServiceConnector, htmlProcessor, pdfTemplateProcessor);
         CssModel cssModel = CssModel.builder().css("test css").build();
         when(cssSettings.load("test project", SettingId.fromName("Default"))).thenReturn(cssModel);
         LiveDocHelper.DocumentData documentData = LiveDocHelper.DocumentData
@@ -89,7 +89,7 @@ class PdfConverterTest {
         when(placeholderProcessor.replacePlaceholders(eq(documentData), eq(exportParams), anyList())).thenReturn(List.of("hl", "hc", "hr", "fl", "fc", "fr"));
         when(velocityEvaluator.evaluateVelocityExpressions(eq(documentData), anyString())).thenAnswer(a -> a.getArguments()[1]);
         when(pdfTemplateProcessor.processUsing(eq(exportParams), eq("testDocument"), eq("css content"), anyString())).thenReturn("test html content");
-        when(weasyPrintConverter.convertToPdf("test html content", new WeasyPrintOptions())).thenReturn("test document content".getBytes());
+        when(weasyPrintServiceConnector.convertToPdf("test html content", new WeasyPrintOptions())).thenReturn("test document content".getBytes());
         when(htmlProcessor.internalizeLinks(anyString())).thenAnswer(a -> a.getArgument(0));
         when(htmlProcessor.replaceImagesAsBase64Encoded(anyString())).thenAnswer(a -> a.getArgument(0));
 
@@ -282,11 +282,11 @@ class PdfConverterTest {
         if (useCoverPageProcessor) {
             when(coverPageProcessor.generatePdfWithTitle(documentData, exportParams, "test html content", pdfGenerationLog)).thenReturn("pdf result".getBytes());
         } else {
-            when(weasyPrintConverter.convertToPdf("test html content", new WeasyPrintOptions())).thenReturn("pdf result".getBytes());
+            when(weasyPrintServiceConnector.convertToPdf("test html content", new WeasyPrintOptions())).thenReturn("pdf result".getBytes());
         }
 
         // Act
-        PdfConverter pdfConverter = new PdfConverter(null, null, null, null, null, null, coverPageProcessor, weasyPrintConverter, null, null);
+        PdfConverter pdfConverter = new PdfConverter(null, null, null, null, null, null, coverPageProcessor, weasyPrintServiceConnector, null, null);
         byte[] result = pdfConverter.generatePdf(documentData, exportParams, metaInfoCallback, "test html content", pdfGenerationLog);
 
         // Assert
@@ -294,7 +294,7 @@ class PdfConverterTest {
         if (useCoverPageProcessor) {
             verify(coverPageProcessor).generatePdfWithTitle(documentData, exportParams, "test html content", pdfGenerationLog);
         } else {
-            verify(weasyPrintConverter).convertToPdf("test html content", new WeasyPrintOptions());
+            verify(weasyPrintServiceConnector).convertToPdf("test html content", new WeasyPrintOptions());
         }
     }
 
