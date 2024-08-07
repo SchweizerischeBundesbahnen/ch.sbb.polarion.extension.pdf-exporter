@@ -1,4 +1,4 @@
-package ch.sbb.polarion.extension.pdf.exporter.weasyprint;
+package ch.sbb.polarion.extension.pdf.exporter.weasyprint.base;
 
 import org.junit.jupiter.api.extension.ConditionEvaluationResult;
 import org.junit.jupiter.api.extension.ExecutionCondition;

@@ -4,6 +4,7 @@ import ch.sbb.polarion.extension.pdf.exporter.rest.model.conversion.Orientation;
 import ch.sbb.polarion.extension.pdf.exporter.rest.model.conversion.PaperSize;
 import ch.sbb.polarion.extension.pdf.exporter.util.HtmlProcessor;
 import ch.sbb.polarion.extension.pdf.exporter.util.MediaUtils;
+import ch.sbb.polarion.extension.pdf.exporter.weasyprint.base.BaseWeasyPrintTest;
 import lombok.SneakyThrows;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;

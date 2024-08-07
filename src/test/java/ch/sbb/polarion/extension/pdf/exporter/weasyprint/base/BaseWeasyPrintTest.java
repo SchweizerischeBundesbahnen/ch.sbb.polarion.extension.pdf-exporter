@@ -1,6 +1,7 @@
-package ch.sbb.polarion.extension.pdf.exporter.weasyprint;
+package ch.sbb.polarion.extension.pdf.exporter.weasyprint.base;
 
 import ch.sbb.polarion.extension.pdf.exporter.util.MediaUtils;
+import ch.sbb.polarion.extension.pdf.exporter.weasyprint.WeasyPrintOptions;
 import ch.sbb.polarion.extension.pdf.exporter.weasyprint.service.WeasyPrintServiceConnector;
 import com.polarion.core.util.StringUtils;
 import lombok.SneakyThrows;
