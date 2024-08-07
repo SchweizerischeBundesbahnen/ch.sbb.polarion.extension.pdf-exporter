@@ -10,7 +10,6 @@ import ch.sbb.polarion.extension.pdf.exporter.util.PdfGenerationLog;
 import ch.sbb.polarion.extension.pdf.exporter.util.PdfTemplateProcessor;
 import ch.sbb.polarion.extension.pdf.exporter.util.placeholder.PlaceholderProcessor;
 import ch.sbb.polarion.extension.pdf.exporter.util.velocity.VelocityEvaluator;
-import ch.sbb.polarion.extension.pdf.exporter.weasyprint.WeasyPrintConverter;
 import ch.sbb.polarion.extension.pdf.exporter.weasyprint.WeasyPrintOptions;
 import ch.sbb.polarion.extension.pdf.exporter.weasyprint.service.WeasyPrintServiceConnector;
 import lombok.SneakyThrows;
