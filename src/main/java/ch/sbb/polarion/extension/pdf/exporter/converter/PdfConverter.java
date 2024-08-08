@@ -153,20 +153,20 @@ public class PdfConverter {
         WebhooksModel hooksModel = new WebhooksSettings().load(exportParams.getProjectId(), SettingId.fromName(exportParams.getWebhooks()));
         String result = htmlContent;
         for (String hook : hooksModel.getWebhooks()) {
-            result = applyHook(hook, result);
+            result = applyHook(hook, exportParams, result);
         }
         return result;
     }
 
-    private @NotNull String applyHook(@NotNull String hook, @NotNull String htmlContent) {
+    private @NotNull String applyHook(@NotNull String hook, @NotNull ExportParams exportParams, @NotNull String htmlContent) {
         Client client = null;
         try {
             client = ClientBuilder.newClient();
             WebTarget webTarget = client.target(hook).register(MultiPartFeature.class);
 
             FormDataMultiPart multipart = new FormDataMultiPart();
+            multipart.bodyPart(new FormDataBodyPart("exportParams", new ObjectMapper().writeValueAsString(exportParams), MediaType.APPLICATION_JSON_TYPE));
             multipart.bodyPart(new FormDataBodyPart("html", htmlContent.getBytes(StandardCharsets.UTF_8), MediaType.APPLICATION_OCTET_STREAM_TYPE));
-            multipart.bodyPart(new FormDataBodyPart("exportParams", new ObjectMapper().writeValueAsString(new ExportParams()), MediaType.APPLICATION_JSON_TYPE));
 
             try (Response response = webTarget.request(MediaType.TEXT_PLAIN).post(Entity.entity(multipart, multipart.getMediaType()))) {
                 if (response.getStatus() == Response.Status.OK.getStatusCode()) {

@@ -1299,10 +1299,10 @@
                   "type" : "string"
                 }
               },
-              "wildcardType" : {
+              "wildcardSubtype" : {
                 "type" : "boolean"
               },
-              "wildcardSubtype" : {
+              "wildcardType" : {
                 "type" : "boolean"
               }
             }
@@ -1393,10 +1393,10 @@
                   "type" : "string"
                 }
               },
-              "wildcardType" : {
+              "wildcardSubtype" : {
                 "type" : "boolean"
               },
-              "wildcardSubtype" : {
+              "wildcardType" : {
                 "type" : "boolean"
               }
             }
@@ -1505,10 +1505,10 @@
                   "type" : "string"
                 }
               },
-              "wildcardType" : {
+              "wildcardSubtype" : {
                 "type" : "boolean"
               },
-              "wildcardSubtype" : {
+              "wildcardType" : {
                 "type" : "boolean"
               }
             }
