@@ -29,10 +29,14 @@ import ch.sbb.polarion.extension.pdf.exporter.util.velocity.VelocityEvaluator;
 import ch.sbb.polarion.extension.pdf.exporter.weasyprint.WeasyPrintConverter;
 import ch.sbb.polarion.extension.pdf.exporter.weasyprint.WeasyPrintConnectorFactory;
 import ch.sbb.polarion.extension.pdf.exporter.weasyprint.WeasyPrintOptions;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.polarion.alm.tracker.model.ITrackerProject;
 import com.polarion.core.util.StringUtils;
 import com.polarion.core.util.logging.Logger;
 import lombok.AllArgsConstructor;
+import org.glassfish.jersey.media.multipart.FormDataBodyPart;
+import org.glassfish.jersey.media.multipart.FormDataMultiPart;
+import org.glassfish.jersey.media.multipart.MultiPartFeature;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
@@ -43,7 +47,6 @@ import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -159,19 +162,23 @@ public class PdfConverter {
         Client client = null;
         try {
             client = ClientBuilder.newClient();
-            WebTarget webTarget = client.target(hook);
+            WebTarget webTarget = client.target(hook).register(MultiPartFeature.class);
 
-            try (Response response = webTarget.request(MediaType.TEXT_PLAIN).post(Entity.entity(htmlContent, MediaType.TEXT_PLAIN))) {
+            FormDataMultiPart multipart = new FormDataMultiPart();
+            multipart.bodyPart(new FormDataBodyPart("html", htmlContent.getBytes(StandardCharsets.UTF_8), MediaType.APPLICATION_OCTET_STREAM_TYPE));
+            multipart.bodyPart(new FormDataBodyPart("exportParams", new ObjectMapper().writeValueAsString(new ExportParams()), MediaType.APPLICATION_JSON_TYPE));
+
+            try (Response response = webTarget.request(MediaType.TEXT_PLAIN).post(Entity.entity(multipart, multipart.getMediaType()))) {
                 if (response.getStatus() == Response.Status.OK.getStatusCode()) {
                     try (InputStream inputStream = response.readEntity(InputStream.class)) {
                         return new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
-                    } catch (IOException e) {
-                        logger.error(String.format("Could not read response stream of web hook [%s]", hook), e);
                     }
                 } else {
                     logger.error(String.format("Could not get proper response from web hook [%s]: response status %s", hook, response.getStatus()));
                 }
             }
+        } catch (Exception e) {
+            logger.error(String.format("Could not get response from web hook [%s]", hook), e);
         } finally {
             if (client != null) {
                 client.close();
