@@ -1,5 +1,6 @@
 package ch.sbb.polarion.extension.pdf.exporter.weasyprint;
 
+import ch.sbb.polarion.extension.pdf.exporter.weasyprint.base.BaseWeasyPrintTest;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
 

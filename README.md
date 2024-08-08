@@ -2,7 +2,7 @@
 
 This Polarion extension provides possibility to convert Polarion Documents to PDF files.
 This is an alternative to native Polarion's solution.
-The extension uses [WeasyPrint](https://weasyprint.org/) as a PDF engine and requires it either to be installed as a system's command-line tool or to run from Docker container (as CLI or as Service, see below).
+The extension uses [WeasyPrint](https://weasyprint.org/) as a PDF engine and requires it to run in [Docker as Service](#weasyprint-configuration).
 
 ## Build
 
@@ -27,43 +27,11 @@ Changes only take effect after restart of Polarion.
 
 ### WeasyPrint Configuration
 
-#### WeasyPrint CLI
-
-To run WeasyPrint as a system's command-line tool specify following properties in file `polarion.properties`:
-
-```properties
-ch.sbb.polarion.extension.pdf-exporter.weasyprint.connector=cli
-ch.sbb.polarion.extension.pdf-exporter.weasyprint.executable=weasyprint
-ch.sbb.polarion.extension.pdf-exporter.weasyprint.pdf.variant=pdf/a-2b
-```
-
-And then install WeasyPrint. On Linux system it can be done following way:
-
-```bash
-pip install weasyprint
-```
-
-For more information on WeasyPrint Installation see [these instructions](https://doc.courtbouillon.org/weasyprint/stable/first_steps.html#installation)
-
-#### WeasyPrint CLI in Docker
-
-This extension supports using WeasyPrint running in Docker container. This feature can be switched on with help of following properties in file `polarion.properties`:
+This extension supports the use of WeasyPrint as a REST service within a Docker container, as implemented [here](https://github.com/SchweizerischeBundesbahnen/weasyprint-service).
+To change WeasyPrint Service URL, adjust the following property in the `polarion.properties` file:
 
 ```properties
-ch.sbb.polarion.extension.pdf-exporter.weasyprint.connector=cli
-ch.sbb.polarion.extension.pdf-exporter.weasyprint.executable=docker run --interactive --rm docker.io/library/weasyprint:61.2
-ch.sbb.polarion.extension.pdf-exporter.weasyprint.pdf.variant=pdf/a-2b
-```
-
-#### WeasyPrint as Service in Docker
-
-This extension supports the use of WeasyPrint as a REST service within a Docker container, as implemented [here](https://github.com/SchweizerischeBundesbahnen/weasyprint-service). To activate this feature, adjust the following properties in the `polarion.properties` file:
-
-
-```properties
-ch.sbb.polarion.extension.pdf-exporter.weasyprint.connector=service
 ch.sbb.polarion.extension.pdf-exporter.weasyprint.service=http://localhost:9080
-ch.sbb.polarion.extension.pdf-exporter.weasyprint.pdf.variant=pdf/a-2b
 ```
 
 ### PDF exporter extension to appear on a Document's properties pane
@@ -180,11 +148,15 @@ If HTML logging is switched on, then in standard polarion log file there will be
 Here you can find out in which files HTML was stored.
 
 ### Enabling Internalization of CSS Links
+
 The converting HTML can contain some external CSS links referencing Polarion Server, like:
+
 ```html
 <link rel="stylesheet" href="/polarion/diff-tool-app/ui/app/_next/static/css/3c374f9daffd361a.css" data-precedence="next">
 ```
-In case the Polarion Server is not reachable from the Weasyprint service, such links cannot be successfully resolved during the Weasyprint PDF transformation. The solution is to replace external CSS <link> elements with internal CSS <style> tags containing the CSS content embedded into the HTML document. By default, CSS link internalization is disabled. To enable internalization of CSS links, it is necessary to activate the following property in file `polarion.properties`:
+
+In case the Polarion Server is not reachable from the WeasyPrint Service, such links cannot be successfully resolved during the WeasyPrint PDF transformation. The solution is to replace external CSS <link> elements with internal CSS <style> tags containing the CSS content embedded into the HTML document. By default, CSS link internalization is disabled. To enable internalization of CSS links, it is necessary to activate the following property in file `polarion.properties`:
+
 ```properties
 ch.sbb.polarion.extension.pdf-exporter.internalizeExternalCss=true
 ```
@@ -209,13 +181,13 @@ This extension provides REST API. OpenAPI Specification can be obtained [here](d
 
 ## Known issues
 
-### SVG rendering issue
-#### Details
-Weasyprint doesn't fully support all SVG features. One of the most frequently used feature by Polarion which isn't supported by Weasyprint is ['foreignObject' element](https://www.w3.org/TR/SVG11/extend.html#ForeignObjectElement). This leads to some visual bugs in resulting pdf (missing font colors, rich text formatting etc.)
-#### Solution
-Usage of `WeasyPrint as Service in Docker` (see above) is suggested. It has built-in SVG to PNG images conversion using Chromium browser (which supports more SVG features, including `foreignObjects`).
+All good so far.
 
 ## Upgrade
+
+### Upgrade from version 5.x.x to 6.0.0
+
+In version 6.0.0 WeasyPrint CLI support was removed. As a result, if WeasyPrint CLI has been using to generate PDFs, it's required to switch to [WeasyPrint Service](#weasyprint-configuration).
 
 ### Upgrade from version 4.x.x to 5.0.0
 In version 5.0.0 not only label of configuration parameter "Fit images and tables to page width" was modified to be "Fit images and tables to page",

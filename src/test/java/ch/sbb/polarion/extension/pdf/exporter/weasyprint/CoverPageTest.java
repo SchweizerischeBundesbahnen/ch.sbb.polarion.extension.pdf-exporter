@@ -1,6 +1,7 @@
 package ch.sbb.polarion.extension.pdf.exporter.weasyprint;
 
 import ch.sbb.polarion.extension.pdf.exporter.util.MediaUtils;
+import ch.sbb.polarion.extension.pdf.exporter.weasyprint.base.BaseWeasyPrintTest;
 import lombok.SneakyThrows;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;

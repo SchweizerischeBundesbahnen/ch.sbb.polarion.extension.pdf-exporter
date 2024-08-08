@@ -1,7 +1,8 @@
-package ch.sbb.polarion.extension.pdf.exporter.weasyprint;
+package ch.sbb.polarion.extension.pdf.exporter.weasyprint.base;
 
 import ch.sbb.polarion.extension.pdf.exporter.util.MediaUtils;
-import ch.sbb.polarion.extension.pdf.exporter.weasyprint.exporter.WeasyPrintExporter;
+import ch.sbb.polarion.extension.pdf.exporter.weasyprint.WeasyPrintOptions;
+import ch.sbb.polarion.extension.pdf.exporter.weasyprint.service.WeasyPrintServiceConnector;
 import com.polarion.core.util.StringUtils;
 import lombok.SneakyThrows;
 import org.apache.pdfbox.Loader;
@@ -9,6 +10,8 @@ import org.apache.pdfbox.pdmodel.PDDocument;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.wait.strategy.Wait;
 
 import java.awt.image.BufferedImage;
 import java.io.FileOutputStream;
@@ -17,8 +20,12 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 @SkipTestWhenParamNotSet
 public abstract class BaseWeasyPrintTest {
+
+    public static final String DOCKER_IMAGE_NAME = "ghcr.io/schweizerischebundesbahnen/weasyprint-service:latest";
 
     public static final String IMPL_NAME_PARAM = "wpExporterImpl";
     public static final String PAGE_SUFFIX = "_page_";
@@ -29,12 +36,14 @@ public abstract class BaseWeasyPrintTest {
     public static final String FONT_BASE64_REPLACE_PARAM = "{FONT_BASE64}";
     public static final String CSS_BASIC = "basic";
     public static final String FONT_REGULAR = "OpenSans-Regular";
+
     protected static final String REPORTS_FOLDER_PATH = "target/surefire-reports/";
     protected static final String EXT_HTML = ".html";
     protected static final String EXT_PNG = ".png";
     protected static final String EXT_PDF = ".pdf";
     protected static final String EXT_CSS = ".css";
     protected static final String EXT_WOFF = ".woff";
+
     private static final Logger logger = LoggerFactory.getLogger(BaseWeasyPrintTest.class);
 
     @SneakyThrows
@@ -66,7 +75,18 @@ public abstract class BaseWeasyPrintTest {
     }
 
     protected byte[] exportToPdf(String html, @NotNull WeasyPrintOptions weasyPrintOptions) {
-        return WeasyPrintExporter.IMPL_REGISTRY.get(System.getProperty(IMPL_NAME_PARAM).toLowerCase()).exportToPdf(html, weasyPrintOptions);
+        try (GenericContainer<?> weasyPrintService = new GenericContainer<>(DOCKER_IMAGE_NAME)) {
+            weasyPrintService
+                    .withExposedPorts(9080)
+                    .waitingFor(Wait.forHttp("/version").forPort(9080))
+                    .start();
+
+            assertTrue(weasyPrintService.isRunning());
+
+            String weasyPrintServiceBaseUrl = "http://" + weasyPrintService.getHost() + ":" + weasyPrintService.getFirstMappedPort();
+            WeasyPrintServiceConnector weasyPrintServiceConnector = new WeasyPrintServiceConnector(weasyPrintServiceBaseUrl);
+            return weasyPrintServiceConnector.convertToPdf(html, weasyPrintOptions);
+        }
     }
 
     protected List<BufferedImage> exportAndGetAsImages(String fileName) {
