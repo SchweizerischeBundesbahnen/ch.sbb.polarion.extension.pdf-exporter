@@ -7,6 +7,8 @@ import ch.sbb.polarion.extension.pdf.exporter.weasyprint.service.model.WeasyPrin
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.polarion.core.util.logging.Logger;
+import lombok.Getter;
+import org.jetbrains.annotations.NotNull;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
@@ -30,6 +32,17 @@ public class WeasyPrintServiceConnector implements WeasyPrintConverter {
     private static final AtomicReference<String> pythonVersion = new AtomicReference<>();
     private static final AtomicReference<String> weasyPrintVersion = new AtomicReference<>();
     private static final AtomicReference<String> weasyPrintServiceVersion = new AtomicReference<>();
+
+    @Getter
+    private final @NotNull String weasyPrintServiceBaseUrl;
+
+    public WeasyPrintServiceConnector() {
+        this(PdfExporterExtensionConfiguration.getInstance().getWeasyprintService());
+    }
+
+    public WeasyPrintServiceConnector(@NotNull String weasyPrintServiceBaseUrl) {
+        this.weasyPrintServiceBaseUrl = weasyPrintServiceBaseUrl;
+    }
 
     @Override
     public byte[] convertToPdf(String htmlPage, WeasyPrintOptions weasyPrintOptions) {
@@ -89,10 +102,6 @@ public class WeasyPrintServiceConnector implements WeasyPrintConverter {
                 client.close();
             }
         }
-    }
-
-    private String getWeasyPrintServiceBaseUrl() {
-        return PdfExporterExtensionConfiguration.getInstance().getWeasyprintService();
     }
 
     private void logWeasyPrintVersionFromHeader(Response response) {

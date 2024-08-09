@@ -51,11 +51,11 @@ const PdfExporterStarter = {
     },
 
     injectScript: function (id, componentScriptPath) {
-        if (top.document.body && !top.document.getElementById(id)) {
+        if (!top.document.getElementById(id)) {
             const scriptElement = document.createElement("script");
             scriptElement.id = id;
             scriptElement.setAttribute("src", componentScriptPath);
-            top.document.body.appendChild(scriptElement);
+            top.document.head.appendChild(scriptElement);
         }
     },
 

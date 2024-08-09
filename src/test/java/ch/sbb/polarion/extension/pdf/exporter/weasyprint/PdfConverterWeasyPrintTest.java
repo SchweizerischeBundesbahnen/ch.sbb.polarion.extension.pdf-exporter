@@ -22,6 +22,8 @@ import ch.sbb.polarion.extension.pdf.exporter.util.PdfTemplateProcessor;
 import ch.sbb.polarion.extension.pdf.exporter.util.html.HtmlLinksHelper;
 import ch.sbb.polarion.extension.pdf.exporter.util.placeholder.PlaceholderProcessor;
 import ch.sbb.polarion.extension.pdf.exporter.util.velocity.VelocityEvaluator;
+import ch.sbb.polarion.extension.pdf.exporter.weasyprint.base.BaseWeasyPrintTest;
+import ch.sbb.polarion.extension.pdf.exporter.weasyprint.service.WeasyPrintServiceConnector;
 import com.polarion.alm.projects.IProjectService;
 import com.polarion.alm.projects.model.IProject;
 import com.polarion.alm.tracker.ITrackerService;
@@ -86,8 +88,8 @@ class PdfConverterWeasyPrintTest extends BaseWeasyPrintTest {
         //here we concatenate basic css witch the default one in order to override font everywhere (also we have to cut some lines to achieve that)
         when(cssSettings.load(any(), any())).thenReturn(new CssModel(basicCss + defaultCss.replaceAll("font-family:[^;]+;", "")));
 
-        WeasyPrintConverter weasyPrintConverter = mock(WeasyPrintConverter.class);
-        when(weasyPrintConverter.convertToPdf(anyString(), any())).thenAnswer((Answer<byte[]>) invocation -> exportToPdf(invocation.getArgument(0), invocation.getArgument(1)));
+        WeasyPrintServiceConnector weasyPrintServiceConnector = mock(WeasyPrintServiceConnector.class);
+        when(weasyPrintServiceConnector.convertToPdf(anyString(), any())).thenAnswer((Answer<byte[]>) invocation -> exportToPdf(invocation.getArgument(0), invocation.getArgument(1)));
 
         PlaceholderProcessor placeholderProcessor = new PlaceholderProcessor(pdfExporterPolarionService, liveDocHelper);
 
@@ -99,14 +101,14 @@ class PdfConverterWeasyPrintTest extends BaseWeasyPrintTest {
         when(coverPageSettings.load(any(), any())).thenReturn(new CoverPageModel("<dev>TITLE {{ testFieldKey }}</div>", basicCss));
         when(coverPageSettings.processImagePlaceholders(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
-        CoverPageProcessor coverPageProcessor = new CoverPageProcessor(placeholderProcessor, velocityEvaluator, weasyPrintConverter, coverPageSettings, new PdfTemplateProcessor());
+        CoverPageProcessor coverPageProcessor = new CoverPageProcessor(placeholderProcessor, velocityEvaluator, weasyPrintServiceConnector, coverPageSettings, new PdfTemplateProcessor());
 
         HtmlLinksHelper htmlLinksHelper = mock(HtmlLinksHelper.class);
         when(htmlLinksHelper.internalizeLinks(anyString())).thenAnswer(invocation -> invocation.getArgument(0));
 
         ExportParams params = ExportParams.builder().projectId("test").locationPath("testLocation").orientation(Orientation.PORTRAIT).paperSize(PaperSize.A4).build();
         PdfConverter converter = new PdfConverter(pdfExporterPolarionService, headerFooterSettings, cssSettings, liveDocHelper, placeholderProcessor, velocityEvaluator,
-                coverPageProcessor, weasyPrintConverter, new HtmlProcessor(null, localizationSettings, htmlLinksHelper, pdfExporterPolarionService), new PdfTemplateProcessor());
+                coverPageProcessor, weasyPrintServiceConnector, new HtmlProcessor(null, localizationSettings, htmlLinksHelper, pdfExporterPolarionService), new PdfTemplateProcessor());
 
         compareContentUsingReferenceImages(testName + "_simple", converter.convertToPdf(params, null));
 

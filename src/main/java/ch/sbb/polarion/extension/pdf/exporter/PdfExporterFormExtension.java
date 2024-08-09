@@ -9,14 +9,14 @@ import ch.sbb.polarion.extension.pdf.exporter.rest.model.conversion.DocumentType
 import ch.sbb.polarion.extension.pdf.exporter.rest.model.settings.localization.Language;
 import ch.sbb.polarion.extension.pdf.exporter.rest.model.settings.stylepackage.StylePackageModel;
 import ch.sbb.polarion.extension.pdf.exporter.service.PdfExporterPolarionService;
+import ch.sbb.polarion.extension.pdf.exporter.settings.CoverPageSettings;
 import ch.sbb.polarion.extension.pdf.exporter.settings.CssSettings;
 import ch.sbb.polarion.extension.pdf.exporter.settings.HeaderFooterSettings;
 import ch.sbb.polarion.extension.pdf.exporter.settings.WebhooksSettings;
 import ch.sbb.polarion.extension.pdf.exporter.settings.LocalizationSettings;
 import ch.sbb.polarion.extension.pdf.exporter.settings.StylePackageSettings;
-import ch.sbb.polarion.extension.pdf.exporter.settings.CoverPageSettings;
-import ch.sbb.polarion.extension.pdf.exporter.util.EnumValuesProvider;
 import ch.sbb.polarion.extension.pdf.exporter.util.DocumentFileNameHelper;
+import ch.sbb.polarion.extension.pdf.exporter.util.EnumValuesProvider;
 import ch.sbb.polarion.extension.pdf.exporter.util.ExceptionHandler;
 import com.polarion.alm.projects.model.IProject;
 import com.polarion.alm.shared.api.SharedContext;

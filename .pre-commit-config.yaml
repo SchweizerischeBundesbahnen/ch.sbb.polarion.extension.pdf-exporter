@@ -16,6 +16,8 @@ repos:
       - id: check-yaml
       - id: no-commit-to-branch
       - id: mixed-line-ending
+      - id: pretty-format-json
+        args: [--autofix, --no-ensure-ascii, '--top-keys=openapi,info,servers,paths,components']
   - repo: https://github.com/zricethezav/gitleaks
     rev: v8.18.4
     hooks:

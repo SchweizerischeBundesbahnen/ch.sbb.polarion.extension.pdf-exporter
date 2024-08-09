@@ -4,8 +4,8 @@ import ch.sbb.polarion.extension.pdf.exporter.rest.model.conversion.Orientation;
 import ch.sbb.polarion.extension.pdf.exporter.rest.model.conversion.PaperSize;
 import ch.sbb.polarion.extension.pdf.exporter.util.HtmlProcessor;
 import ch.sbb.polarion.extension.pdf.exporter.util.PdfTemplateProcessor;
-import ch.sbb.polarion.extension.pdf.exporter.weasyprint.WeasyPrintConverter;
 import ch.sbb.polarion.extension.pdf.exporter.weasyprint.WeasyPrintOptions;
+import ch.sbb.polarion.extension.pdf.exporter.weasyprint.service.WeasyPrintServiceConnector;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -27,7 +27,7 @@ class HtmlToPdfConverterTest {
     private HtmlProcessor htmlProcessor;
 
     @Mock
-    private WeasyPrintConverter weasyPrintConverter;
+    private WeasyPrintServiceConnector weasyPrintServiceConnector;
 
     @InjectMocks
     private HtmlToPdfConverter htmlToPdfConverter;
@@ -166,7 +166,7 @@ class HtmlToPdfConverterTest {
         when(htmlProcessor.replaceImagesAsBase64Encoded(anyString())).thenAnswer(invocation ->
                 invocation.getArgument(0));
         when(htmlProcessor.internalizeLinks(anyString())).thenAnswer(a -> a.getArgument(0));
-        when(weasyPrintConverter.convertToPdf(resultHtml, new WeasyPrintOptions(true))).thenReturn("test content".getBytes());
+        when(weasyPrintServiceConnector.convertToPdf(resultHtml, new WeasyPrintOptions(true))).thenReturn("test content".getBytes());
 
         byte[] result = htmlToPdfConverter.convert(origHtml, Orientation.LANDSCAPE, PaperSize.A3);
         assertThat(result).isEqualTo("test content".getBytes());

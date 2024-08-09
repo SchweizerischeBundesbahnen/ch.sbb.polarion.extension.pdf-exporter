@@ -7,10 +7,10 @@ import ch.sbb.polarion.extension.pdf.exporter.settings.CoverPageSettings;
 import ch.sbb.polarion.extension.pdf.exporter.util.LiveDocHelper;
 import ch.sbb.polarion.extension.pdf.exporter.util.PdfGenerationLog;
 import ch.sbb.polarion.extension.pdf.exporter.util.PdfTemplateProcessor;
-import ch.sbb.polarion.extension.pdf.exporter.weasyprint.WeasyPrintConverter;
 import ch.sbb.polarion.extension.pdf.exporter.util.placeholder.PlaceholderProcessor;
 import ch.sbb.polarion.extension.pdf.exporter.util.velocity.VelocityEvaluator;
 import ch.sbb.polarion.extension.pdf.exporter.weasyprint.WeasyPrintOptions;
+import ch.sbb.polarion.extension.pdf.exporter.weasyprint.service.WeasyPrintServiceConnector;
 import lombok.SneakyThrows;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -36,7 +36,7 @@ class CoverPageProcessorTest {
     @Mock
     private VelocityEvaluator velocityEvaluator;
     @Mock
-    private WeasyPrintConverter weasyPrintConverter;
+    private WeasyPrintServiceConnector weasyPrintServiceConnector;
     @Mock
     private CoverPageSettings coverPageSettings;
     @Mock
@@ -58,8 +58,8 @@ class CoverPageProcessorTest {
                 .templateCss("test template css")
                 .build();
         LiveDocHelper.DocumentData documentData = prepareMocks(coverPageModel, exportParams);
-        when(weasyPrintConverter.convertToPdf("result title html", new WeasyPrintOptions())).thenReturn(createEmptyPdf(2));
-        when(weasyPrintConverter.convertToPdf("test content", new WeasyPrintOptions())).thenReturn(createEmptyPdf(3));
+        when(weasyPrintServiceConnector.convertToPdf("result title html", new WeasyPrintOptions())).thenReturn(createEmptyPdf(2));
+        when(weasyPrintServiceConnector.convertToPdf("test content", new WeasyPrintOptions())).thenReturn(createEmptyPdf(3));
 
         // Act
         byte[] result = coverPageProcessor.generatePdfWithTitle(documentData, exportParams, "test content", new PdfGenerationLog());

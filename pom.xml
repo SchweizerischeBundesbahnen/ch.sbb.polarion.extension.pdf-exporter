@@ -5,11 +5,11 @@
     <parent>
         <groupId>ch.sbb.polarion.extensions</groupId>
         <artifactId>ch.sbb.polarion.extension.generic</artifactId>
-        <version>6.5.2</version>
+        <version>6.6.1</version>
     </parent>
 
     <artifactId>ch.sbb.polarion.extension.pdf-exporter</artifactId>
-    <version>5.7.2-SNAPSHOT</version>
+    <version>6.0.1-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>Polarion ALM extension to convert Documents to PDF files</name>
@@ -55,14 +55,12 @@
 
         <exec-maven-plugin.version>3.3.0</exec-maven-plugin.version>
         <weasyprint.version>62.3</weasyprint.version>
-        <awaitility.version>4.2.1</awaitility.version>
+        <awaitility.version>4.2.2</awaitility.version>
 
         <maven-jar-plugin.Extension-Context>pdf-exporter</maven-jar-plugin.Extension-Context>
         <maven-jar-plugin.Automatic-Module-Name>ch.sbb.polarion.extension.pdf_exporter</maven-jar-plugin.Automatic-Module-Name>
         <web.app.name>${maven-jar-plugin.Extension-Context}</web.app.name>
 
-        <!--suppress UnresolvedMavenProperty -->
-        <maven-surefire-plugin.wpCommand>${HOME}/.local/bin/weasyprint</maven-surefire-plugin.wpCommand>
         <!--suppress UnresolvedMavenProperty -->
         <markdown2html-maven-plugin.failOnError>${env.MARKDOWN2HTML_MAVEN_PLUGIN_FAIL_ON_ERROR}</markdown2html-maven-plugin.failOnError>
         <swagger-maven-plugin.version>2.2.22</swagger-maven-plugin.version>
@@ -209,58 +207,6 @@
     </build>
 
     <profiles>
-        <profile>
-            <id>install-weasyprint</id>
-
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.codehaus.mojo</groupId>
-                        <artifactId>exec-maven-plugin</artifactId>
-                        <version>${exec-maven-plugin.version}</version>
-                        <executions>
-                            <execution>
-                                <id>pip-install</id>
-                                <phase>generate-resources</phase>
-                                <goals>
-                                    <goal>exec</goal>
-                                </goals>
-                                <configuration>
-                                    <executable>pip</executable>
-                                    <arguments>
-                                        <argument>install</argument>
-                                        <argument>weasyprint==${weasyprint.version}</argument>
-                                    </arguments>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-
-        <profile>
-            <id>tests-with-weasyprint-cli</id>
-
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-surefire-plugin</artifactId>
-                        <version>${maven-surefire-plugin.version}</version>
-                        <configuration>
-                            <!-- hide unwanted exceptions logging -->
-                            <redirectTestOutputToFile>true</redirectTestOutputToFile>
-                            <systemPropertyVariables>
-                                <wpExporterImpl>command</wpExporterImpl>
-                                <wpCommand>${maven-surefire-plugin.wpCommand}</wpCommand>
-                            </systemPropertyVariables>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-
         <profile>
             <id>tests-with-weasyprint-docker</id>
 

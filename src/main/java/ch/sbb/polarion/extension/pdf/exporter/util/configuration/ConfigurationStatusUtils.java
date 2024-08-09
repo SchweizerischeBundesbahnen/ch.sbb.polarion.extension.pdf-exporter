@@ -10,7 +10,7 @@ import ch.sbb.polarion.extension.pdf.exporter.rest.model.configuration.Status;
 import ch.sbb.polarion.extension.pdf.exporter.rest.model.conversion.Orientation;
 import ch.sbb.polarion.extension.pdf.exporter.rest.model.conversion.PaperSize;
 import ch.sbb.polarion.extension.pdf.exporter.util.regex.RegexMatcher;
-import ch.sbb.polarion.extension.pdf.exporter.weasyprint.WeasyPrintConverter;
+import ch.sbb.polarion.extension.pdf.exporter.weasyprint.service.WeasyPrintServiceConnector;
 import ch.sbb.polarion.extension.pdf.exporter.weasyprint.service.model.WeasyPrintInfo;
 import com.polarion.core.config.Configuration;
 import com.polarion.subterra.base.location.ILocation;
@@ -80,9 +80,9 @@ public class ConfigurationStatusUtils {
     public static @NotNull List<ConfigurationStatus> getWeasyPrintStatus() {
         try {
             HtmlToPdfConverter htmlToPdfConverter = new HtmlToPdfConverter();
-            WeasyPrintConverter weasyPrintConverter = htmlToPdfConverter.getWeasyPrintConverter();
+            WeasyPrintServiceConnector weasyPrintServiceConnector = new WeasyPrintServiceConnector();
 
-            WeasyPrintInfo weasyPrintInfo = weasyPrintConverter.getWeasyPrintInfo();
+            WeasyPrintInfo weasyPrintInfo = weasyPrintServiceConnector.getWeasyPrintInfo();
             htmlToPdfConverter.convert("<html><body>test html</body></html>", Orientation.PORTRAIT, PaperSize.A4);
 
             return List.of(

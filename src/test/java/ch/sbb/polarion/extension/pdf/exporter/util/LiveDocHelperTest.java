@@ -1,8 +1,6 @@
 package ch.sbb.polarion.extension.pdf.exporter.util;
 
-import ch.sbb.polarion.extension.generic.service.PolarionService;
 import com.polarion.alm.tracker.model.IModule;
-import com.polarion.platform.persistence.model.IPObject;
 import com.polarion.subterra.base.location.ILocation;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

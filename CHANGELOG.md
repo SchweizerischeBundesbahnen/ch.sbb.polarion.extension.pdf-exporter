@@ -1,5 +1,29 @@
 # Changelog
 
+## [6.0.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v5.7.2...v6.0.0) (2024-08-08)
+
+
+### ⚠ BREAKING CHANGES
+
+* remove WeasyPrint CLI support  ([#134](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/134))
+
+### Features
+
+* remove WeasyPrint CLI support  ([#134](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/134)) ([c94ade3](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/c94ade319408285a9042e033086dfb7723382834)), closes [#129](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/129)
+
+
+### Bug Fixes
+
+* Export to PDF button on LiveReport page works as expected again ([#143](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/143)) ([d162c80](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/d162c80bfefe2083ec1d5294a06a66d447c860e4)), closes [#142](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/142)
+
+## [5.7.2](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v5.7.1...v5.7.2) (2024-08-07)
+
+
+### Bug Fixes
+
+* **deps:** update dependency ch.sbb.polarion.extensions:ch.sbb.polarion.extension.generic to v6.6.1 ([#136](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/136)) ([e1f3ecb](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/e1f3ecb7aaa059b994c42b252ebf6b70a8720f07))
+* update dependency ch.sbb.polarion.extensions:ch.sbb.polarion.extension.generic to v6.6.1 ([#135](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/135)) ([4a65890](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/4a65890d2a61db1312295e0be5be34d660a3c649))
+
 ## [5.7.1](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v5.7.0...v5.7.1) (2024-08-06)
 
 

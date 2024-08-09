@@ -10,9 +10,8 @@ import ch.sbb.polarion.extension.pdf.exporter.util.PdfGenerationLog;
 import ch.sbb.polarion.extension.pdf.exporter.util.PdfTemplateProcessor;
 import ch.sbb.polarion.extension.pdf.exporter.util.placeholder.PlaceholderProcessor;
 import ch.sbb.polarion.extension.pdf.exporter.util.velocity.VelocityEvaluator;
-import ch.sbb.polarion.extension.pdf.exporter.weasyprint.WeasyPrintConnectorFactory;
-import ch.sbb.polarion.extension.pdf.exporter.weasyprint.WeasyPrintConverter;
 import ch.sbb.polarion.extension.pdf.exporter.weasyprint.WeasyPrintOptions;
+import ch.sbb.polarion.extension.pdf.exporter.weasyprint.service.WeasyPrintServiceConnector;
 import lombok.SneakyThrows;
 import org.jetbrains.annotations.VisibleForTesting;
 
@@ -21,7 +20,7 @@ import java.util.concurrent.CompletableFuture;
 public class CoverPageProcessor {
     private final PlaceholderProcessor placeholderProcessor;
     private final VelocityEvaluator velocityEvaluator;
-    private final WeasyPrintConverter weasyPrintConverter;
+    private final WeasyPrintServiceConnector weasyPrintServiceConnector;
     private final CoverPageSettings coverPageSettings;
     private final PdfTemplateProcessor pdfTemplateProcessor;
 
@@ -29,19 +28,19 @@ public class CoverPageProcessor {
     public CoverPageProcessor() {
         placeholderProcessor = new PlaceholderProcessor();
         velocityEvaluator = new VelocityEvaluator();
-        weasyPrintConverter = WeasyPrintConnectorFactory.getWeasyPrintExecutor();
+        weasyPrintServiceConnector = new WeasyPrintServiceConnector();
         coverPageSettings = new CoverPageSettings();
         pdfTemplateProcessor = new PdfTemplateProcessor();
     }
 
     public CoverPageProcessor(PlaceholderProcessor placeholderProcessor,
                               VelocityEvaluator velocityEvaluator,
-                              WeasyPrintConverter weasyPrintConverter,
+                              WeasyPrintServiceConnector weasyPrintServiceConnector,
                               CoverPageSettings coverPageSettings,
                               PdfTemplateProcessor pdfTemplateProcessor) {
         this.placeholderProcessor = placeholderProcessor;
         this.velocityEvaluator = velocityEvaluator;
-        this.weasyPrintConverter = weasyPrintConverter;
+        this.weasyPrintServiceConnector = weasyPrintServiceConnector;
         this.coverPageSettings = coverPageSettings;
         this.pdfTemplateProcessor = pdfTemplateProcessor;
     }
@@ -52,8 +51,8 @@ public class CoverPageProcessor {
         String titleHtml = composeTitleHtml(documentData, exportParams);
         generationLog.log("Starting concurrent generation for cover page and content");
         WeasyPrintOptions weasyPrintOptions = WeasyPrintOptions.builder().followHTMLPresentationalHints(exportParams.isFollowHTMLPresentationalHints()).build();
-        CompletableFuture<byte[]> generateTitleFuture = CompletableFuture.supplyAsync(() -> weasyPrintConverter.convertToPdf(titleHtml, weasyPrintOptions));
-        CompletableFuture<byte[]> generateContentFuture = CompletableFuture.supplyAsync(() -> weasyPrintConverter.convertToPdf(contentHtml, weasyPrintOptions));
+        CompletableFuture<byte[]> generateTitleFuture = CompletableFuture.supplyAsync(() -> weasyPrintServiceConnector.convertToPdf(titleHtml, weasyPrintOptions));
+        CompletableFuture<byte[]> generateContentFuture = CompletableFuture.supplyAsync(() -> weasyPrintServiceConnector.convertToPdf(contentHtml, weasyPrintOptions));
         CompletableFuture.allOf(generateTitleFuture, generateContentFuture).join();
         generationLog.log("Both generations are completed, starting pages merge");
 

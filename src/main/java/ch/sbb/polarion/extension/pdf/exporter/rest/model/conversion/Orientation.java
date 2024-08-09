@@ -1,6 +1,7 @@
 package ch.sbb.polarion.extension.pdf.exporter.rest.model.conversion;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
 
