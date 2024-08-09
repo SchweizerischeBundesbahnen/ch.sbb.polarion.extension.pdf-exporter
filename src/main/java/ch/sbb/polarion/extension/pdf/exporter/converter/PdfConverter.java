@@ -141,28 +141,28 @@ public class PdfConverter {
             metaInfoCallback.setLinkedWorkItems(WorkItemRefData.extractListFromHtml(htmlContent, exportParams.getProjectId()));
         }
         htmlContent = htmlProcessor.internalizeLinks(htmlContent);
-        htmlContent = applyHooks(exportParams, htmlContent);
+        htmlContent = applyWebooks(exportParams, htmlContent);
         return htmlContent;
     }
 
-    private @NotNull String applyHooks(@NotNull ExportParams exportParams, @NotNull String htmlContent) {
+    private @NotNull String applyWebooks(@NotNull ExportParams exportParams, @NotNull String htmlContent) {
         if (exportParams.getWebhooks() == null) {
             return htmlContent;
         }
 
-        WebhooksModel hooksModel = new WebhooksSettings().load(exportParams.getProjectId(), SettingId.fromName(exportParams.getWebhooks()));
+        WebhooksModel webhooksModel = new WebhooksSettings().load(exportParams.getProjectId(), SettingId.fromName(exportParams.getWebhooks()));
         String result = htmlContent;
-        for (String hook : hooksModel.getWebhooks()) {
-            result = applyHook(hook, exportParams, result);
+        for (String webhook : webhooksModel.getWebhooks()) {
+            result = applyWebhook(webhook, exportParams, result);
         }
         return result;
     }
 
-    private @NotNull String applyHook(@NotNull String hook, @NotNull ExportParams exportParams, @NotNull String htmlContent) {
+    private @NotNull String applyWebhook(@NotNull String webhook, @NotNull ExportParams exportParams, @NotNull String htmlContent) {
         Client client = null;
         try {
             client = ClientBuilder.newClient();
-            WebTarget webTarget = client.target(hook).register(MultiPartFeature.class);
+            WebTarget webTarget = client.target(webhook).register(MultiPartFeature.class);
 
             FormDataMultiPart multipart = new FormDataMultiPart();
             multipart.bodyPart(new FormDataBodyPart("exportParams", new ObjectMapper().writeValueAsString(exportParams), MediaType.APPLICATION_JSON_TYPE));
@@ -174,11 +174,11 @@ public class PdfConverter {
                         return new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
                     }
                 } else {
-                    logger.error(String.format("Could not get proper response from web hook [%s]: response status %s", hook, response.getStatus()));
+                    logger.error(String.format("Could not get proper response from webhook [%s]: response status %s", webhook, response.getStatus()));
                 }
             }
         } catch (Exception e) {
-            logger.error(String.format("Could not get response from web hook [%s]", hook), e);
+            logger.error(String.format("Could not get response from webhook [%s]", webhook), e);
         } finally {
             if (client != null) {
                 client.close();
