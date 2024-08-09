@@ -44,7 +44,7 @@
     </issueManagement>
 
     <properties>
-        <pdfbox.version>3.0.2</pdfbox.version>
+        <pdfbox.version>3.0.3</pdfbox.version>
         <okapi.xliff.version>1.46.0</okapi.xliff.version>
         <byte-buddy.version>1.14.18</byte-buddy.version>
         <re2j.version>1.7</re2j.version>
