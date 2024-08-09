@@ -28,6 +28,7 @@ public class StylePackageModel extends SettingsModel {
     private static final String HEADER_FOOTER_ENTRY_NAME = "HEADER FOOTER";
     private static final String CSS_ENTRY_NAME = "CSS";
     private static final String LOCALIZATION_ENTRY_NAME = "LOCALIZATION";
+    private static final String WEBHOOKS_ENTRY_NAME = "WEBHOOKS";
     private static final String HEADERS_COLOR_ENTRY_NAME = "HEADERS COLOR";
     private static final String PAPER_SIZE_ENTRY_NAME = "PAPER SIZE";
     private static final String ORIENTATION_ENTRY_NAME = "ORIENTATION";
@@ -50,6 +51,7 @@ public class StylePackageModel extends SettingsModel {
     private String headerFooter;
     private String css;
     private String localization;
+    private String webhooks;
     private String headersColor;
     private String paperSize;
     private String orientation;
@@ -74,6 +76,7 @@ public class StylePackageModel extends SettingsModel {
                 serializeEntry(HEADER_FOOTER_ENTRY_NAME, headerFooter) +
                 serializeEntry(CSS_ENTRY_NAME, css) +
                 serializeEntry(LOCALIZATION_ENTRY_NAME, localization) +
+                serializeEntry(WEBHOOKS_ENTRY_NAME, webhooks) +
                 serializeEntry(HEADERS_COLOR_ENTRY_NAME, headersColor) +
                 serializeEntry(PAPER_SIZE_ENTRY_NAME, paperSize) +
                 serializeEntry(ORIENTATION_ENTRY_NAME, orientation) +
@@ -99,6 +102,7 @@ public class StylePackageModel extends SettingsModel {
         headerFooter = deserializeEntry(HEADER_FOOTER_ENTRY_NAME, serializedString);
         css = deserializeEntry(CSS_ENTRY_NAME, serializedString);
         localization = deserializeEntry(LOCALIZATION_ENTRY_NAME, serializedString);
+        webhooks = deserializeEntry(WEBHOOKS_ENTRY_NAME, serializedString);
         headersColor = deserializeEntry(HEADERS_COLOR_ENTRY_NAME, serializedString);
         paperSize = deserializeEntry(PAPER_SIZE_ENTRY_NAME, serializedString);
         orientation = deserializeEntry(ORIENTATION_ENTRY_NAME, serializedString);

@@ -17,6 +17,7 @@ import ch.sbb.polarion.extension.pdf.exporter.settings.CoverPageSettings;
 import ch.sbb.polarion.extension.pdf.exporter.settings.CssSettings;
 import ch.sbb.polarion.extension.pdf.exporter.settings.FileNameTemplateSettings;
 import ch.sbb.polarion.extension.pdf.exporter.settings.HeaderFooterSettings;
+import ch.sbb.polarion.extension.pdf.exporter.settings.WebhooksSettings;
 import ch.sbb.polarion.extension.pdf.exporter.settings.LocalizationSettings;
 import ch.sbb.polarion.extension.pdf.exporter.settings.StylePackageSettings;
 import com.polarion.core.util.logging.Logger;
@@ -39,6 +40,7 @@ public class PdfExporterRestApplication extends GenericRestApplication {
                             new CssSettings(),
                             new LocalizationSettings(),
                             new CoverPageSettings(),
+                            new WebhooksSettings(),
                             new FileNameTemplateSettings()
                     )
             );

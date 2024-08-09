@@ -48,6 +48,18 @@
         <div class="flex-container" style='border-top: 1px solid #eee; margin-top: 15px; padding-top: 5px;'>
             <div class="flex-column">
                 <div class='property-wrapper'>
+                    <label for='popup-webhooks-checkbox' class="fixed-width w-1">
+                        <input id='popup-webhooks-checkbox' onchange='document.getElementById("popup-webhooks-selector").style.visibility = this.checked ? "visible" : "hidden"' type='checkbox'/>
+                        Webhooks:
+                    </label>
+                    <select id='popup-webhooks-selector'></select>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex-container" style='border-top: 1px solid #eee; margin-top: 15px; padding-top: 5px;'>
+            <div class="flex-column">
+                <div class='property-wrapper'>
                     <label for='popup-headers-color' class="fixed-width w-1">Headers color:</label>
                     <input id='popup-headers-color' type='color'/>
                 </div>

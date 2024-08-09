@@ -9,9 +9,11 @@ import ch.sbb.polarion.extension.pdf.exporter.rest.model.WorkItemRefData;
 import ch.sbb.polarion.extension.pdf.exporter.rest.model.conversion.DocumentType;
 import ch.sbb.polarion.extension.pdf.exporter.rest.model.conversion.ExportParams;
 import ch.sbb.polarion.extension.pdf.exporter.rest.model.settings.headerfooter.HeaderFooterModel;
+import ch.sbb.polarion.extension.pdf.exporter.rest.model.settings.hooks.WebhooksModel;
 import ch.sbb.polarion.extension.pdf.exporter.service.PdfExporterPolarionService;
 import ch.sbb.polarion.extension.pdf.exporter.settings.CssSettings;
 import ch.sbb.polarion.extension.pdf.exporter.settings.HeaderFooterSettings;
+import ch.sbb.polarion.extension.pdf.exporter.settings.WebhooksSettings;
 import ch.sbb.polarion.extension.pdf.exporter.settings.LocalizationSettings;
 import ch.sbb.polarion.extension.pdf.exporter.util.EnumValuesProvider;
 import ch.sbb.polarion.extension.pdf.exporter.util.HtmlLogger;
@@ -25,15 +27,27 @@ import ch.sbb.polarion.extension.pdf.exporter.util.html.HtmlLinksHelper;
 import ch.sbb.polarion.extension.pdf.exporter.util.placeholder.PlaceholderProcessor;
 import ch.sbb.polarion.extension.pdf.exporter.util.velocity.VelocityEvaluator;
 import ch.sbb.polarion.extension.pdf.exporter.weasyprint.WeasyPrintOptions;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import ch.sbb.polarion.extension.pdf.exporter.weasyprint.service.WeasyPrintServiceConnector;
 import com.polarion.alm.tracker.model.ITrackerProject;
 import com.polarion.core.util.StringUtils;
 import com.polarion.core.util.logging.Logger;
 import lombok.AllArgsConstructor;
+import org.glassfish.jersey.media.multipart.FormDataBodyPart;
+import org.glassfish.jersey.media.multipart.FormDataMultiPart;
+import org.glassfish.jersey.media.multipart.MultiPartFeature;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
 
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.Entity;
+import javax.ws.rs.client.WebTarget;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -125,7 +139,53 @@ public class PdfConverter {
         if (metaInfoCallback != null) {
             metaInfoCallback.setLinkedWorkItems(WorkItemRefData.extractListFromHtml(htmlContent, exportParams.getProjectId()));
         }
-        return htmlProcessor.internalizeLinks(htmlContent);
+        htmlContent = htmlProcessor.internalizeLinks(htmlContent);
+        htmlContent = applyWebooks(exportParams, htmlContent);
+        return htmlContent;
+    }
+
+    private @NotNull String applyWebooks(@NotNull ExportParams exportParams, @NotNull String htmlContent) {
+        if (exportParams.getWebhooks() == null) {
+            return htmlContent;
+        }
+
+        WebhooksModel webhooksModel = new WebhooksSettings().load(exportParams.getProjectId(), SettingId.fromName(exportParams.getWebhooks()));
+        String result = htmlContent;
+        for (String webhook : webhooksModel.getWebhooks()) {
+            result = applyWebhook(webhook, exportParams, result);
+        }
+        return result;
+    }
+
+    private @NotNull String applyWebhook(@NotNull String webhook, @NotNull ExportParams exportParams, @NotNull String htmlContent) {
+        Client client = null;
+        try {
+            client = ClientBuilder.newClient();
+            WebTarget webTarget = client.target(webhook).register(MultiPartFeature.class);
+
+            FormDataMultiPart multipart = new FormDataMultiPart();
+            multipart.bodyPart(new FormDataBodyPart("exportParams", new ObjectMapper().writeValueAsString(exportParams), MediaType.APPLICATION_JSON_TYPE));
+            multipart.bodyPart(new FormDataBodyPart("html", htmlContent.getBytes(StandardCharsets.UTF_8), MediaType.APPLICATION_OCTET_STREAM_TYPE));
+
+            try (Response response = webTarget.request(MediaType.TEXT_PLAIN).post(Entity.entity(multipart, multipart.getMediaType()))) {
+                if (response.getStatus() == Response.Status.OK.getStatusCode()) {
+                    try (InputStream inputStream = response.readEntity(InputStream.class)) {
+                        return new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
+                    }
+                } else {
+                    logger.error(String.format("Could not get proper response from webhook [%s]: response status %s", webhook, response.getStatus()));
+                }
+            }
+        } catch (Exception e) {
+            logger.error(String.format("Could not get response from webhook [%s]", webhook), e);
+        } finally {
+            if (client != null) {
+                client.close();
+            }
+        }
+
+        // In case of errors return initial HTML without modification
+        return htmlContent;
     }
 
     @VisibleForTesting
