@@ -14,6 +14,7 @@ import com.polarion.alm.shared.api.model.wiki.WikiPage;
 import com.polarion.alm.shared.api.model.wiki.WikiPageReference;
 import com.polarion.alm.shared.api.transaction.TransactionalExecutor;
 import com.polarion.alm.shared.api.transaction.internal.InternalReadOnlyTransaction;
+import com.polarion.alm.shared.api.utils.collections.StrictMap;
 import com.polarion.alm.shared.api.utils.collections.StrictMapImpl;
 import com.polarion.alm.shared.api.utils.html.RichTextRenderTarget;
 import com.polarion.alm.shared.dle.document.DocumentRendererParameters;
@@ -34,9 +35,12 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
 
+import java.util.Map;
+
 @SuppressWarnings("java:S1200")
 public class LiveDocHelper {
     private static final String DOC_REVISION_CUSTOM_FIELD = "docRevision";
+    private static final String URL_QUERY_PARAM_LANGUAGE = "language";
 
     private final PdfExporterPolarionService pdfExporterPolarionService;
 
@@ -45,6 +49,10 @@ public class LiveDocHelper {
     }
 
     public DocumentData getLiveReport(@Nullable ITrackerProject project, @NotNull ExportParams exportParams) {
+        return getLiveReport(project, exportParams, true);
+    }
+
+    public DocumentData getLiveReport(@Nullable ITrackerProject project, @NotNull ExportParams exportParams, boolean withContent) {
         return TransactionalExecutor.executeSafelyInReadOnlyTransaction(transaction -> {
             String projectId = project != null ? project.getId() : "";
             RichPageReference richPageReference = RichPageReference.fromPath(createPath(projectId, exportParams.getLocationPath()));
@@ -53,10 +61,15 @@ public class LiveDocHelper {
             }
 
             RichPage richPage = richPageReference.getOriginal(transaction);
-            String html = RpeModelAspect.getPageHtml(richPage);
 
-            RpeRenderer richPageRenderer = new RpeRenderer((InternalReadOnlyTransaction) transaction, html, RichTextRenderTarget.PDF_EXPORT, richPageReference, richPageReference.scope(), new StrictMapImpl<>());
-            String reportContent = richPageRenderer.render(null);
+            String documentContent = null;
+            if (withContent) {
+                String html = RpeModelAspect.getPageHtml(richPage);
+                Map<String, String> liveReportParameters = exportParams.getUrlQueryParameters() == null ? Map.of() : exportParams.getUrlQueryParameters();
+                StrictMap<String, String> urlParameters = new StrictMapImpl<>(liveReportParameters);
+                RpeRenderer richPageRenderer = new RpeRenderer((InternalReadOnlyTransaction) transaction, html, RichTextRenderTarget.PDF_EXPORT, richPageReference, richPageReference.scope(), urlParameters);
+                documentContent = richPageRenderer.render(null);
+            }
 
             return DocumentData.builder()
                     .projectName(project != null ? project.getName() : "")
@@ -65,12 +78,16 @@ public class LiveDocHelper {
                     .richPage(richPage.getOldApi())
                     .documentId(richPage.getOldApi().getId())
                     .documentTitle(richPage.getOldApi().getTitle())
-                    .documentContent(reportContent)
+                    .documentContent(documentContent)
                     .build();
         });
     }
 
     public DocumentData getWikiDocument(@Nullable ITrackerProject project, @NotNull ExportParams exportParams) {
+        return getWikiDocument(project, exportParams, true);
+    }
+
+    public DocumentData getWikiDocument(@Nullable ITrackerProject project, @NotNull ExportParams exportParams, boolean withContent) {
         return TransactionalExecutor.executeSafelyInReadOnlyTransaction(transaction -> {
 
             String projectId = project != null ? project.getId() : "";
@@ -81,7 +98,10 @@ public class LiveDocHelper {
 
             WikiPage wikiPage = wikiPageReference.getOriginal(transaction);
 
-            String content = new WikiRenderer().render(projectId, exportParams.getLocationPath(), exportParams.getRevision());
+            String documentContent = null;
+            if (withContent) {
+                documentContent = new WikiRenderer().render(projectId, exportParams.getLocationPath(), exportParams.getRevision());
+            }
 
             return DocumentData.builder()
                     .projectName(project != null ? project.getName() : "")
@@ -90,9 +110,13 @@ public class LiveDocHelper {
                     .wikiPage(wikiPage.getOldApi())
                     .documentId(wikiPage.getOldApi().getId())
                     .documentTitle(wikiPage.getOldApi().getTitle())
-                    .documentContent(content)
+                    .documentContent(documentContent)
                     .build();
         });
+    }
+
+    public DocumentData getLiveDocument(@NotNull ITrackerProject project, @NotNull ExportParams exportParams) {
+        return getLiveDocument(project, exportParams, true);
     }
 
     public DocumentData getLiveDocument(@NotNull ITrackerProject project, @NotNull ExportParams exportParams, boolean withContent) {
@@ -129,7 +153,7 @@ public class LiveDocHelper {
             // Add inline comments into document content
             internalContent = new LiveDocCommentsProcessor().addLiveDocComments(document, internalContent);
         }
-        DocumentRendererParameters parameters = new DocumentRendererParameters(null, exportParams.getLiveDocumentLanguage());
+        DocumentRendererParameters parameters = new DocumentRendererParameters(null, exportParams.getUrlQueryParameters().get(URL_QUERY_PARAM_LANGUAGE));
         ModifiedDocumentRenderer documentRenderer = new ModifiedDocumentRenderer(transaction, document, RichTextRenderTarget.PDF_EXPORT, parameters);
         return documentRenderer.render(internalContent != null ? internalContent : "");
     }
@@ -175,7 +199,7 @@ public class LiveDocHelper {
     @Nullable
     private String getRevisionBaseline(@NotNull String projectId, @NotNull IPObject iPObject, @Nullable String revision) {
         IInternalBaselinesManager baselinesManager = (IInternalBaselinesManager) pdfExporterPolarionService.getTrackerProject(projectId).getBaselinesManager();
-        IBaseline baseline = baselinesManager.getRevisionBaseline(iPObject,  revision != null ? revision : iPObject.getLastRevision());
+        IBaseline baseline = baselinesManager.getRevisionBaseline(iPObject, revision != null ? revision : iPObject.getLastRevision());
         return baseline != null ? baseline.getName() : null;
     }
 

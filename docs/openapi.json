@@ -1341,9 +1341,6 @@
             },
             "type": "array"
           },
-          "liveDocumentLanguage": {
-            "type": "string"
-          },
           "localization": {
             "type": "string"
           },
@@ -1383,6 +1380,12 @@
           },
           "revision": {
             "type": "string"
+          },
+          "urlQueryParameters": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object"
           },
           "watermark": {
             "type": "boolean"

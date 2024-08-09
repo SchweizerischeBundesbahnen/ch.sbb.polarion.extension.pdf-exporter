@@ -41,8 +41,9 @@ function ExportContext() {
 
     if (window.location.hash.includes("?")) {
         const searchParams = decodeURI(window.location.hash.substring(window.location.hash.indexOf("?")));
-        this.revision = new URLSearchParams(searchParams).get("revision");
-        this.liveDocumentLanguage = new URLSearchParams(searchParams).get("language");
+        const urlSearchParams = new URLSearchParams(searchParams);
+        this.revision = urlSearchParams.get("revision");
+        this.urlQueryParameters = Object.fromEntries([...urlSearchParams]);
     }
 }
 
@@ -525,8 +526,8 @@ const PdfExporter = {
             numberedListStyles: numberedListStyles,
             chapters: selectedChapters,
             language: !report && document.getElementById('popup-localization').checked ? document.getElementById("popup-language").value : null,
-            liveDocumentLanguage: this.exportContext.liveDocumentLanguage,
             linkedWorkitemRoles: selectedRoles,
+            urlQueryParameters: this.exportContext.urlQueryParameters,
         });
     },
 
