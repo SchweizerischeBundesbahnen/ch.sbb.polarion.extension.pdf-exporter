@@ -347,10 +347,10 @@ ul.toc li > a.page-number::after {
     table {
         border-collapse: collapse;
         max-width: 100% !important;
-        float: none !importatnt; /* Fixes content inside of table breaking bug */
+        float: none !important; /* Fixes content inside of table breaking bug */
     }
 
-    tr { /* Fixes breaking of work item custom field tables */
+    table.polarion-dle-workitem-fields-end-table tr { /* Fixes breaking of work item custom field tables */
         page-break-inside: avoid;
         break-inside: avoid;
     }
