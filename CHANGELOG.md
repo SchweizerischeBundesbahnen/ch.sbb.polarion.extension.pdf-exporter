@@ -1,5 +1,13 @@
 # Changelog
 
+## [6.0.1](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v6.0.0...v6.0.1) (2024-08-09)
+
+
+### Bug Fixes
+
+* fix CSS ([#148](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/148)) ([87e8e12](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/87e8e12bdc3fe5113064c8a1befe39eaba0dc207)), closes [#145](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/145)
+* LiveReport Page now respects URL Parameters ([#150](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/150)) ([31fd642](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/31fd642549d18ff8170e33e2398719f9147ffb17)), closes [#147](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/147)
+
 ## [6.0.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v5.7.2...v6.0.0) (2024-08-08)
 
 
