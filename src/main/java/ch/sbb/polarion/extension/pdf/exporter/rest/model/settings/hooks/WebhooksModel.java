@@ -23,18 +23,18 @@ import java.util.List;
 @EqualsAndHashCode(callSuper = false)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class WebhooksModel extends SettingsModel {
-    public static final String WEBHOOKS = "WEBHOOKS";
+    public static final String WEBHOOKS_ENTRY_NAME = "WEBHOOKS";
 
     private List<String> webhooks = new ArrayList<>();
 
     @Override
     protected String serializeModelData() {
-        return serializeEntry(WEBHOOKS, webhooks);
+        return serializeEntry(WEBHOOKS_ENTRY_NAME, webhooks);
     }
 
     @Override
     protected void deserializeModelData(String serializedString) {
-        String webhooksString = deserializeEntry(WEBHOOKS, serializedString);
+        String webhooksString = deserializeEntry(WEBHOOKS_ENTRY_NAME, serializedString);
         if (webhooksString != null) {
             try {
                 String[] webhooksArray = new ObjectMapper().readValue(webhooksString, String[].class);
