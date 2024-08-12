@@ -67,7 +67,8 @@ public class WeasyPrintServiceConnector implements WeasyPrintConverter {
                         throw new IllegalStateException("Could not read response stream", e);
                     }
                 } else {
-                    throw new IllegalStateException("Could not get proper response from WeasyPrint Service. Status: " + response.getStatus());
+                    String errorMessage = response.readEntity(String.class);
+                    throw new IllegalStateException(String.format("Not expected response from WeasyPrint Service. Status: %s, Message: [%s]", response.getStatus(), errorMessage));
                 }
             }
         } finally {
