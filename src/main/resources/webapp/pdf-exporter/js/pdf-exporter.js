@@ -123,6 +123,11 @@ const PdfExporter = {
                 scope: this.exportContext.scope,
                 selectElement: document.getElementById("popup-localization-selector")
             }),
+            this.loadSettingNames({
+                setting: "webhooks",
+                scope: this.exportContext.scope,
+                selectElement: document.getElementById("popup-webhooks-selector")
+            }),
             this.loadLinkRoles(this.exportContext),
             this.loadProjectName(this.exportContext),
             this.loadDocumentLanguage(this.exportContext),
@@ -286,6 +291,10 @@ const PdfExporter = {
         ExportCommon.setSelector("popup-css-selector", stylePackage.css);
         ExportCommon.setSelector("popup-header-footer-selector", stylePackage.headerFooter);
         ExportCommon.setSelector("popup-localization-selector", stylePackage.localization);
+
+        ExportCommon.setCheckbox("popup-webhooks-checkbox", !!stylePackage.webhooks);
+        ExportCommon.setSelector("popup-webhooks-selector", stylePackage.webhooks);
+        ExportCommon.visibleIf("popup-webhooks-selector", !!stylePackage.webhooks)
 
         ExportCommon.setValue("popup-headers-color", stylePackage.headersColor);
         ExportCommon.setValue("popup-paper-size-selector", stylePackage.paperSize || 'A4');
@@ -512,6 +521,7 @@ const PdfExporter = {
             css: document.getElementById("popup-css-selector").value,
             headerFooter: document.getElementById("popup-header-footer-selector").value,
             localization: document.getElementById("popup-localization-selector").value,
+            webhooks: document.getElementById("popup-webhooks-checkbox").checked ? document.getElementById("popup-webhooks-selector").value : null,
             headersColor: document.getElementById("popup-headers-color").value,
             paperSize: document.getElementById("popup-paper-size-selector").value,
             orientation: document.getElementById("popup-orientation-selector").value,

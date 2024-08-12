@@ -26,6 +26,7 @@ public class StylePackageSettings extends GenericNamedSettings<StylePackageModel
                 .headerFooter(DEFAULT_NAME)
                 .css(DEFAULT_NAME)
                 .localization(DEFAULT_NAME)
+                .webhooks(DEFAULT_NAME)
                 .headersColor(DEFAULT_HEADERS_COLOR)
                 .paperSize(PaperSize.A4.name())
                 .orientation(Orientation.PORTRAIT.name())

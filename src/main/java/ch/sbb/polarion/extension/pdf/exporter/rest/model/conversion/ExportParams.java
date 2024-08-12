@@ -21,6 +21,7 @@ public class ExportParams {
     private String css;
     private String headerFooter;
     private String localization;
+    private String webhooks;
     private String headersColor;
     private Orientation orientation = Orientation.PORTRAIT;
     private PaperSize paperSize = PaperSize.A4;
