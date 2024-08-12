@@ -153,7 +153,8 @@ public class LiveDocHelper {
             // Add inline comments into document content
             internalContent = new LiveDocCommentsProcessor().addLiveDocComments(document, internalContent);
         }
-        DocumentRendererParameters parameters = new DocumentRendererParameters(null, exportParams.getUrlQueryParameters().get(URL_QUERY_PARAM_LANGUAGE));
+        Map<String, String> documentParameters = exportParams.getUrlQueryParameters() == null ? Map.of() : exportParams.getUrlQueryParameters();
+        DocumentRendererParameters parameters = new DocumentRendererParameters(null, documentParameters.get(URL_QUERY_PARAM_LANGUAGE));
         ModifiedDocumentRenderer documentRenderer = new ModifiedDocumentRenderer(transaction, document, RichTextRenderTarget.PDF_EXPORT, parameters);
         return documentRenderer.render(internalContent != null ? internalContent : "");
     }
