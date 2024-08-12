@@ -126,7 +126,7 @@ public class PdfConverter {
         return switch (exportParams.getDocumentType()) {
             case WIKI -> liveDocHelper.getWikiDocument(project, exportParams);
             case REPORT -> liveDocHelper.getLiveReport(project, exportParams);
-            case DOCUMENT -> liveDocHelper.getLiveDocument(Objects.requireNonNull(project), exportParams, true);
+            case DOCUMENT -> liveDocHelper.getLiveDocument(Objects.requireNonNull(project), exportParams);
         };
     }
 

@@ -41,8 +41,8 @@ public class DocumentFileNameHelper {
         LiveDocHelper liveDocHelper = new LiveDocHelper(pdfExporterPolarionService);
         final LiveDocHelper.DocumentData documentData =
                 switch (exportParams.getDocumentType()) {
-                    case WIKI -> liveDocHelper.getWikiDocument(project, exportParams);
-                    case REPORT -> liveDocHelper.getLiveReport(project, exportParams);
+                    case WIKI -> liveDocHelper.getWikiDocument(project, exportParams, false);
+                    case REPORT -> liveDocHelper.getLiveReport(project, exportParams, false);
                     case DOCUMENT -> liveDocHelper.getLiveDocument(project, exportParams, false);
                 };
 

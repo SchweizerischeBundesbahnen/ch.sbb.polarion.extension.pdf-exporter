@@ -124,10 +124,11 @@ const ExportPdf = {
     },
 
     buildRequestJson: function (projectId, locationPath, selectedChapters, numberedListStyles, selectedRoles) {
+        const urlSearchParams = new URL(window.location.href.replace('#', '/')).searchParams;
         return JSON.stringify({
             projectId: projectId,
             locationPath: locationPath,
-            revision: new URL(window.location.href.replace('#', '/')).searchParams.get('revision'),
+            revision: urlSearchParams.get('revision'),
             coverPage: document.getElementById("cover-page-checkbox").checked ? document.getElementById("cover-page-selector").value : null,
             css: document.getElementById("css-selector").value,
             headerFooter: document.getElementById("header-footer-selector").value,
@@ -147,8 +148,8 @@ const ExportPdf = {
             numberedListStyles: numberedListStyles,
             chapters: selectedChapters,
             language: document.getElementById('localization').checked ? document.getElementById("language").value : null,
-            liveDocumentLanguage: new URL(window.location.href.replace('#', '/')).searchParams.get('language'),
             linkedWorkitemRoles: selectedRoles,
+            urlQueryParameters: Object.fromEntries([...urlSearchParams]),
         });
     },
 

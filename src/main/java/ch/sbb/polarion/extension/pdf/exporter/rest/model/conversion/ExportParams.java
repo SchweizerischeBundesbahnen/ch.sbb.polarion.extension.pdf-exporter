@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
+import java.util.Map;
 
 @Data
 @Builder
@@ -35,8 +36,8 @@ public class ExportParams {
     private String numberedListStyles;
     private List<String> chapters;
     private String language;
-    private String liveDocumentLanguage;
     private List<String> linkedWorkitemRoles;
+    private Map<String, String> urlQueryParameters;
     private String internalContent; //overrides existing content in doc
 
     public DocumentType getDocumentType() {
