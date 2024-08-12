@@ -28,7 +28,6 @@
         .webhook-row td:first-child {
             width: 20px;
             vertical-align: top;
-            padding-top: 6px;
         }
         .webhook-row td:nth-child(2) {
             width: 96px;
@@ -38,8 +37,9 @@
         .webhook-row td input {
             width: 400px;
         }
-        .webhook-button:hover {
-            cursor: pointer;
+        .webhook-button {
+            padding: 5px;
+            width: 29px;
         }
         .invalid-webhook {
             color: #ddab19;
@@ -63,7 +63,7 @@
         making some modification to this HTML and returning resulting HTML as a string back. Webhooks are invoked in an order they entered on this page.
         If certain webhook fails with an error, it's just skipped, remaining webhooks will still be invoked. Webhooks will be invoked during PDF export in the order they are entered on this page.</p>
     <table id="webhooks-table"><!-- Filled by JS --></table>
-    <div class="webhook-button" onclick="WebHooks.addHook()" title="Add a webhook" style="margin-top: 10px; width: 20px; text-align: center"><img src='/polarion/ria/images/control/tablePlus.png' alt="Plus"></div>
+    <button class="toolbar-button webhook-button" onclick="WebHooks.addHook()" title="Add a webhook" style="margin-top: 10px; margin-left: 3px;"><img src='/polarion/ria/images/control/tablePlus.png' alt="Plus"></button>
 
     <input id="scope" type="hidden" value="<%= request.getParameter("scope")%>"/>
     <input id="bundle-timestamp" type="hidden" value="<%= ch.sbb.polarion.extension.generic.util.VersionUtils.getVersion().getBundleBuildTimestamp() %>"/>

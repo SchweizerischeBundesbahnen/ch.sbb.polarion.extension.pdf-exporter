@@ -72,8 +72,8 @@ const WebHooks = {
         tableRow.classList.add('webhook-row');
 
         const buttonCell = document.createElement('td');
-        const removeButton = document.createElement('div');
-        removeButton.classList.add('webhook-button');
+        const removeButton = document.createElement('button');
+        removeButton.classList.add('toolbar-button', 'webhook-button');
         removeButton.setAttribute('title', 'Delete this webhook');
         const image = document.createElement('img');
         image.setAttribute('src', '/polarion/ria/images/control/tableMinus.png');
@@ -102,7 +102,7 @@ const WebHooks = {
         invalidUrlError.innerHTML = "WARNING: Entered value doesn't seem to be a valid URL";
         invalidUrlError.classList.add('invalid-webhook', 'hidden');
         field.addEventListener("keyup", (event) => {
-            const urlPattern = /^(http(s)?:\/\/.)[-a-zA-Z0-9@:%._\+~#=]{2,256}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)$/g;
+            const urlPattern = /^(http(s)?:\/\/.)[-a-zA-Z0-9@:%._+~#=]{2,256}\b([-a-zA-Z0-9@:%_+.~#?&/=]*)$/g;
             if (!event.target.value || urlPattern.test(event.target.value)) {
                 invalidUrlError.classList.add('hidden');
             } else {
