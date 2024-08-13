@@ -59,9 +59,6 @@
     <jsp:include page='/common/jsp/configurations.jsp' />
 
     <h2 class="align-left">List of webhooks</h2>
-    <p>Here you can add, edit or remove a webhook applied to selected configuration. A webhook is a REST endpoint (POST) accepting initial HTML as a string,
-        making some modification to this HTML and returning resulting HTML as a string back. Webhooks are invoked in an order they entered on this page.
-        If certain webhook fails with an error, it's just skipped, remaining webhooks will still be invoked. Webhooks will be invoked during PDF export in the order they are entered on this page.</p>
     <table id="webhooks-table"><!-- Filled by JS --></table>
     <button class="toolbar-button webhook-button" onclick="WebHooks.addHook()" title="Add a webhook" style="margin-top: 10px; margin-left: 3px;"><img src='/polarion/ria/images/control/tablePlus.png' alt="Plus"></button>
 
@@ -74,6 +71,24 @@
     <jsp:param name="cancelFunction" value="SbbCommon.cancelEdit()"/>
     <jsp:param name="defaultFunction" value="WebHooks.revertToDefault()"/>
 </jsp:include>
+
+<div class="standard-admin-page help">
+    <h2 class="align-left">Quick Help</h2>
+
+    <div>
+        <p>On this page you can add, edit or remove a webhook applied to selected configuration.</p>
+
+        <h3>What is a webhook</h3>
+        <p>
+            A webhook is a REST endpoint accepting initial HTML as a string (POST request), making some modification to this HTML and returning resulting HTML as a string back in body of response.
+            A webhook endpoint can locate anywhere, either within Polarion itself or outside of it.
+        </p>
+        <h3>Webhooks processing</h3>
+        <p>
+            Webhooks are invoked in an order they entered on this page. If certain webhook fails with an error, it's just skipped, remaining webhooks will still be invoked.
+        </p>
+    </div>
+</div>
 
 <script type="text/javascript" src="../ui/generic/js/common.js?bundle=<%= bundleTimestamp %>"></script>
 <script type="text/javascript" src="../ui/generic/js/custom-select.js?bundle=<%= bundleTimestamp %>"></script>
