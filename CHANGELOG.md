@@ -1,5 +1,23 @@
 # Changelog
 
+## [6.1.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v6.0.1...v6.1.0) (2024-08-13)
+
+
+### Features
+
+* Webhooks framework added ([#155](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/155)) ([c151b10](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/c151b106b3dbcc776934abd0d5523f4cbf9b69d3))
+
+
+### Bug Fixes
+
+* **deps:** update dependency ch.sbb.polarion.extensions:ch.sbb.polarion.extension.generic to v6.6.2 ([#154](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/154)) ([a04dc58](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/a04dc58d1bdb0f69be7452c63386af92793bdffd))
+* **deps:** update dependency org.apache.pdfbox:pdfbox to v3.0.3 ([#152](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/152)) ([07162f8](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/07162f88848ebeb819cfc298b5658fdf92e2a225))
+
+
+### Documentation
+
+* Webhooks documentation extended ([#156](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/156)) ([28f4299](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/28f4299a88b965dcf9b68c986937a3100fd6c7fa)), closes [#91](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/91)
+
 ## [6.0.1](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v6.0.0...v6.0.1) (2024-08-09)
 
 
