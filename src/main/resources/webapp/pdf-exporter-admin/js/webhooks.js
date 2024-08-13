@@ -93,6 +93,7 @@ const WebHooks = {
         const fieldCell = document.createElement('td');
         const field = document.createElement('input');
         field.classList.add('fs-14', 'webhook');
+        field.setAttribute("placeholder", "https://my.domain.com/my-webhook");
         if (value) {
             field.setAttribute("value", value);
         }

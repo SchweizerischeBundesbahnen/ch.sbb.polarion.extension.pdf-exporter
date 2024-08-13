@@ -165,8 +165,8 @@ ch.sbb.polarion.extension.pdf-exporter.internalizeExternalCss=true
 
 1. On the top of the project's navigation pane click ⚙ (Actions) ➙ 🔧 Administration. Project's administration page will be opened.
 2. On the administration's navigation pane select `PDF Export`. There are 5 sub-menus with different configuration options for PDF Exporter.
-3. For 3 of these options (Cover page, Header and Footer and Localization) `Quick Help` section available with option short description. For the rest 2
-   (Style package, Stylesheets) there's no `Quick Help` section, but their content is self-evident.
+3. For 5 of these options (Cover page, Header and Footer, Localization, Webhooks and Filename template) `Quick Help` section available with option short description. For the rest 2
+   (Style package, Stylesheets) there's no `Quick Help` section as their content is self-evident.
 4. To change configuration of PDF exporter extension just edit corresponding section and press `Save` button.
 
 ## Usage
