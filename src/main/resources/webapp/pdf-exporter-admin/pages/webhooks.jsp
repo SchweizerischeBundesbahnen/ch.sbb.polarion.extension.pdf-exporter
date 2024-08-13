@@ -85,7 +85,8 @@
         </p>
         <h3>Webhooks processing</h3>
         <p>
-            Webhooks are invoked in an order they entered on this page. If certain webhook fails with an error, it's just skipped, remaining webhooks will still be invoked.
+            Webhooks to run they should be selected in appropriate style package, or during PDF exporting. They are invoked in an order they entered on this page.
+            If certain webhook fails with an error, it's just skipped, remaining webhooks will still be invoked.
         </p>
     </div>
 </div>
