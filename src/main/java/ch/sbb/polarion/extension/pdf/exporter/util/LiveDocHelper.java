@@ -200,7 +200,12 @@ public class LiveDocHelper {
     @Nullable
     private String getRevisionBaseline(@NotNull String projectId, @NotNull IPObject iPObject, @Nullable String revision) {
         IInternalBaselinesManager baselinesManager = (IInternalBaselinesManager) pdfExporterPolarionService.getTrackerProject(projectId).getBaselinesManager();
-        IBaseline baseline = baselinesManager.getRevisionBaseline(iPObject, revision != null ? revision : iPObject.getLastRevision());
+        revision = revision == null ? iPObject.getLastRevision() : revision;
+
+        IBaseline baseline = baselinesManager.getRevisionBaseline(revision);
+        if (baseline == null) {
+            baseline = baselinesManager.getRevisionBaseline(iPObject, revision);
+        }
         return baseline != null ? baseline.getName() : null;
     }
 
