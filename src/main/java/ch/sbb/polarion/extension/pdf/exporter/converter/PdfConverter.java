@@ -140,11 +140,13 @@ public class PdfConverter {
             metaInfoCallback.setLinkedWorkItems(WorkItemRefData.extractListFromHtml(htmlContent, exportParams.getProjectId()));
         }
         htmlContent = htmlProcessor.internalizeLinks(htmlContent);
-        htmlContent = applyWebooks(exportParams, htmlContent);
-        return htmlContent;
+        htmlContent = applyWebhooks(exportParams, htmlContent);
+
+        // Add a fake page which later will be replaced with cover page. This should be done post-webhooks not to break this approach.
+        return (exportParams.getCoverPage() != null ? "<div style='break-after:page'>page to be removed</div>" : "") + htmlContent;
     }
 
-    private @NotNull String applyWebooks(@NotNull ExportParams exportParams, @NotNull String htmlContent) {
+    private @NotNull String applyWebhooks(@NotNull ExportParams exportParams, @NotNull String htmlContent) {
         if (exportParams.getWebhooks() == null) {
             return htmlContent;
         }
@@ -219,7 +221,6 @@ public class PdfConverter {
                                @NotNull HtmlData htmlData,
                                @NotNull ExportParams exportParams) {
         String content = htmlData.headerFooterContent
-                + (exportParams.getCoverPage() != null ? "<div style='break-after:page'>page to be removed</div>" : "") //add fake page which later will be replaced with title
                 + "<div class='content'>" + htmlData.documentContent + "</div>";
         return pdfTemplateProcessor.processUsing(exportParams, documentName, htmlData.cssContent, content);
     }
