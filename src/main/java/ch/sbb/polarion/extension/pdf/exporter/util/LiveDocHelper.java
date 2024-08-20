@@ -197,16 +197,27 @@ public class LiveDocHelper {
         return String.format("%s/%s", projectId, locationPath);
     }
 
-    @Nullable
+    @NotNull
     private String getRevisionBaseline(@NotNull String projectId, @NotNull IPObject iPObject, @Nullable String revision) {
         IInternalBaselinesManager baselinesManager = (IInternalBaselinesManager) pdfExporterPolarionService.getTrackerProject(projectId).getBaselinesManager();
         revision = revision == null ? iPObject.getLastRevision() : revision;
 
-        IBaseline baseline = baselinesManager.getRevisionBaseline(revision);
-        if (baseline == null) {
-            baseline = baselinesManager.getRevisionBaseline(iPObject, revision);
+        StringBuilder baselineNameBuilder = new StringBuilder();
+
+        IBaseline projectBaseline = baselinesManager.getRevisionBaseline(revision);
+        if (projectBaseline != null) {
+            baselineNameBuilder.append("pb. ").append(projectBaseline.getName());
         }
-        return baseline != null ? baseline.getName() : null;
+
+        IBaseline moduleBaseline = baselinesManager.getRevisionBaseline(iPObject, revision);
+        if (moduleBaseline != null) {
+            if (!baselineNameBuilder.isEmpty()) {
+                baselineNameBuilder.append(" | ");
+            }
+            baselineNameBuilder.append("db. ").append(moduleBaseline.getName());
+        }
+
+        return baselineNameBuilder.toString();
     }
 
     @Builder
