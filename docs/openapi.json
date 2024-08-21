@@ -1389,6 +1389,9 @@
           },
           "watermark": {
             "type": "boolean"
+          },
+          "webhooks": {
+            "type": "string"
           }
         },
         "type": "object"

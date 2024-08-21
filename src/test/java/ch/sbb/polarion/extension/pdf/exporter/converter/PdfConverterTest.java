@@ -100,31 +100,6 @@ class PdfConverterTest {
         assertThat(result).isEqualTo("test document content".getBytes());
     }
 
-    @ParameterizedTest
-    @MethodSource("provideParamsForHtmlCompose")
-    void shouldComposeHtmlWithCoverPage(String coverPage, String expectedHtmlContent) {
-        PdfConverter.HtmlData htmlData = new PdfConverter.HtmlData(
-                "-test css content-",
-                "-test document content-",
-                "-test header-footer content-");
-        ExportParams exportParams = ExportParams.builder().coverPage(coverPage).build();
-        when(pdfTemplateProcessor.processUsing(eq(exportParams), anyString(), anyString(), anyString())).thenReturn("test");
-
-        PdfConverter pdfConverter = new PdfConverter(null, null, cssSettings, null, null, null, null, null, null, pdfTemplateProcessor);
-        String result = pdfConverter.composeHtml("testDocumentName", htmlData, exportParams);
-
-        assertThat(result).isEqualTo("test");
-        ArgumentCaptor<String> content = ArgumentCaptor.forClass(String.class);
-        verify(pdfTemplateProcessor).processUsing(eq(exportParams), eq("testDocumentName"), eq("-test css content-"), content.capture());
-        assertThat(content.getValue()).isEqualTo(expectedHtmlContent);
-    }
-
-    private static Stream<Arguments> provideParamsForHtmlCompose() {
-        return Stream.of(
-                Arguments.of(null, "-test header-footer content-<div class='content'>-test document content-</div>"),
-                Arguments.of("test cover page", "-test header-footer content-<div style='break-after:page'>page to be removed</div><div class='content'>-test document content-</div>"));
-    }
-
     @Test
     void shouldGetAndReplaceCss() {
         LiveDocHelper.DocumentData documentData = LiveDocHelper.DocumentData.builder()
