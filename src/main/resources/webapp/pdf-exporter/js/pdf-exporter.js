@@ -148,7 +148,7 @@ const PdfExporter = {
                 this.actionInProgress({inProgress: false});
             });
         }).catch((error) => {
-            this.showNotification({alertType: "error", message: "Error occurred loading form data" + (error.response.message ? ":<br>" + error.response.message : "")});
+            this.showNotification({alertType: "error", message: "Error occurred loading form data" + (error.response.message ? ": " + error.response.message : "")});
             this.actionInProgress({inProgress: false});
         });
     },
@@ -272,7 +272,7 @@ const PdfExporter = {
 
                 this.actionInProgress({inProgress: false});
             }).catch((error) => {
-                this.showNotification({alertType: "error", message: "Error occurred loading style package data" + (error?.response.message ? ":<br>" + error.response.message : "")});
+                this.showNotification({alertType: "error", message: "Error occurred loading style package data" + (error?.response.message ? ": " + error.response.message : "")});
                 this.actionInProgress({inProgress: false});
             });
         }
@@ -377,7 +377,7 @@ const PdfExporter = {
                 this.showValidationResult({alertType: "success", message: "All pages are valid"});
             }
         }).catch((error) => {
-            this.showNotification({alertType: "error", message: "Error occurred validating pages width" + (error?.response.message ? ":<br>" + error.response.message : "")});
+            this.showNotification({alertType: "error", message: "Error occurred validating pages width" + (error?.response.message ? ": " + error.response.message : "")});
             this.actionInProgress({inProgress: false});
         })
     },
@@ -457,7 +457,7 @@ const PdfExporter = {
             errorResponse.text().then(errorJson => {
                 const error = errorJson && JSON.parse(errorJson);
                 const errorMessage = error && (error.message ? error.message : error.errorMessage);
-                this.showNotification({alertType: "error", message: "Error occurred during PDF generation" + (errorMessage ? ":<br>" + errorMessage : "")});
+                this.showNotification({alertType: "error", message: "Error occurred during PDF generation" + (errorMessage ? ": " + errorMessage : "")});
             });
             this.actionInProgress({inProgress: false});
         });
@@ -474,7 +474,7 @@ const PdfExporter = {
                 this.showNotification({alertType: "warning", message: "Document contains nested numbered lists which structures were not valid. We tried to fix this, but be aware of it."});
             }
         }).catch((error) => {
-            this.showNotification({alertType: "error", message: "Error occurred validating nested lists" + (error?.response.message ? ":<br>" + error.response.message : "")});
+            this.showNotification({alertType: "error", message: "Error occurred validating nested lists" + (error?.response.message ? ": " + error.response.message : "")});
         })
     },
 
@@ -590,7 +590,7 @@ const PdfExporter = {
     showNotification: function ({alertType, message}) {
         const alert = document.querySelector(`.modal__container.pdf-exporter .notifications .alert.alert-${alertType}`);
         if (alert) {
-            alert.innerHTML = message;
+            alert.textContent = message; // to avoid XSS do not use innerHTML here because message may contain arbitrary error response data
             alert.style.display = "block";
         }
     },
