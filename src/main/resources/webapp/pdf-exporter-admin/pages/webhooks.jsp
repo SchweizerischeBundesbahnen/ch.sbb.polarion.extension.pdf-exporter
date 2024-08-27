@@ -13,6 +13,7 @@
         html {
             height: 100%;
         }
+
         body {
             height: 100%;
             padding-left: 10px;
@@ -21,30 +22,60 @@
             display: flex;
             flex-direction: column;
         }
+
         .standard-admin-page {
             flex: 1;
             display: flex;
             flex-direction: column;
         }
+
+        #webhooks-table {
+            width: 1100px;
+        }
+
+        .webhook-row td {
+            vertical-align: top;
+        }
+
         .webhook-row td:first-child {
             width: 20px;
-            vertical-align: top;
         }
+
         .webhook-row td:nth-child(2) {
-            width: 96px;
-            vertical-align: top;
             padding-top: 6px;
+            width: 30px;
         }
-        .webhook-row td input {
+
+        .webhook-row td:nth-child(3),
+        .webhook-row td:nth-child(3) input {
             width: 400px;
         }
+
+
+        .webhook-row td:nth-child(4) {
+            padding-top: 4px;
+            width: 55px;
+            min-width: 55px;
+        }
+
+        .webhook-row td:nth-child(5) {
+            width: 100px;
+        }
+
+        .webhook-row td:nth-child(6),
+        .webhook-row td:nth-child(6) input {
+            width: 400px;
+        }
+
         .webhook-button {
             padding: 5px;
             width: 29px;
         }
+
         .invalid-webhook {
             color: #ddab19;
         }
+
         .invalid-webhook.hidden {
             visibility: hidden;
         }
@@ -56,13 +87,14 @@
     <div class="standard-admin-page">
         <h1>PDF Exporter: Webhooks</h1>
 
-        <jsp:include page='/common/jsp/notifications.jsp' />
+        <jsp:include page='/common/jsp/notifications.jsp'/>
 
-        <jsp:include page='/common/jsp/configurations.jsp' />
+        <jsp:include page='/common/jsp/configurations.jsp'/>
 
-        <h2 class="align-left">List of webhooks <%= ch.sbb.polarion.extension.pdf.exporter.properties.PdfExporterExtensionConfiguration.getInstance().areWebhooksEnabled() %></h2>
+        <h2 class="align-left">List of webhooks <%= ch.sbb.polarion.extension.pdf.exporter.properties.PdfExporterExtensionConfiguration.getInstance().areWebhooksEnabled() %>
+        </h2>
         <table id="webhooks-table"><!-- Filled by JS --></table>
-        <button class="toolbar-button webhook-button" onclick="WebHooks.addHook()" title="Add a webhook" style="margin-top: 10px; margin-left: 3px;">
+        <button class="toolbar-button webhook-button" onclick="Webhooks.addWebhook()" title="Add a webhook" style="margin-top: 10px; margin-left: 3px;">
             <img src='/polarion/ria/images/control/tablePlus.png' alt="Plus">
         </button>
 
@@ -71,9 +103,9 @@
     </div>
 
     <jsp:include page='/common/jsp/buttons.jsp'>
-        <jsp:param name="saveFunction" value="WebHooks.saveHooks()"/>
+        <jsp:param name="saveFunction" value="Webhooks.saveWebhooks()"/>
         <jsp:param name="cancelFunction" value="SbbCommon.cancelEdit()"/>
-        <jsp:param name="defaultFunction" value="WebHooks.revertToDefault()"/>
+        <jsp:param name="defaultFunction" value="Webhooks.revertToDefault()"/>
     </jsp:include>
 
     <div class="standard-admin-page help">
