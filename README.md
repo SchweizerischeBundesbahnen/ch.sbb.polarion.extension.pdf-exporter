@@ -128,6 +128,13 @@ com.siemens.polarion.rest.enabled=true
 com.siemens.polarion.rest.cors.allowedOrigins=http://localhost:8888,https://anotherdomain.com
 ```
 
+### Enabling Webhooks
+
+By default, webhooks functionality is not enabled in PDF Exporter. If you want to make it available the following line should be added in `polarion.properties`:
+```properties
+ch.sbb.polarion.extension.pdf-exporter.webhooks.enabled=true
+```
+
 ### Debug option
 
 This extension makes intensive HTML processing to extend similar standard Polarion functionality. There is a possibility to log

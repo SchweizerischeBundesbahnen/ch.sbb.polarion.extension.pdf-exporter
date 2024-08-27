@@ -131,7 +131,8 @@ const PdfExporter = {
             this.loadLinkRoles(this.exportContext),
             this.loadProjectName(this.exportContext),
             this.loadDocumentLanguage(this.exportContext),
-            this.loadFileName(this.exportContext)
+            this.loadFileName(this.exportContext),
+            this.adjustWebhooksVisibility()
         ]).then(() => {
             return this.loadSettingNames({
                 setting: "style-package",
@@ -231,6 +232,19 @@ const PdfExporter = {
             }).then(({responseText}) => {
                 document.getElementById("popup-filename").value = responseText;
                 document.getElementById("popup-filename").dataset.default = responseText;
+                resolve()
+            }).catch((error) => reject(error));
+        });
+    },
+
+    adjustWebhooksVisibility: function () {
+        return new Promise((resolve, reject) => {
+            this.callAsync({
+                method: "GET",
+                url: `/polarion/pdf-exporter/rest/internal/webhooks/status`,
+                responseType: "json",
+            }).then(({response}) => {
+                document.getElementById("webhooks-container").style.display = response.enabled ? "flex" : "none";
                 resolve()
             }).catch((error) => reject(error));
         });

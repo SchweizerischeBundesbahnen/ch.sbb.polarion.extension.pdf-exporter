@@ -1149,6 +1149,27 @@
           "Extension Information"
         ]
       }
+    },
+    "/api/webhooks/status": {
+      "get": {
+        "operationId": "getWebhooksStatus",
+        "responses": {
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhooksStatus"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "summary": "Returns boolean value telling if webhooks are enabled or not",
+        "tags": [
+          "Utility resources"
+        ]
+      }
     }
   },
   "components": {
@@ -1673,6 +1694,14 @@
           },
           "supportEmail": {
             "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "WebhooksStatus": {
+        "properties": {
+          "enabled": {
+            "type": "boolean"
           }
         },
         "type": "object"

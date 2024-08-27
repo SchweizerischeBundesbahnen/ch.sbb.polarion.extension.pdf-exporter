@@ -5,6 +5,7 @@ import ch.sbb.polarion.extension.generic.settings.NamedSettingsRegistry;
 import ch.sbb.polarion.extension.generic.settings.SettingId;
 import ch.sbb.polarion.extension.generic.settings.SettingName;
 import ch.sbb.polarion.extension.generic.util.ScopeUtils;
+import ch.sbb.polarion.extension.pdf.exporter.properties.PdfExporterExtensionConfiguration;
 import ch.sbb.polarion.extension.pdf.exporter.rest.model.conversion.DocumentType;
 import ch.sbb.polarion.extension.pdf.exporter.rest.model.settings.localization.Language;
 import ch.sbb.polarion.extension.pdf.exporter.rest.model.settings.stylepackage.StylePackageModel;
@@ -154,8 +155,9 @@ public class PdfExporterFormExtension implements IFormExtension {
         Collection<SettingName> webhooksNames = getSettingNames(WebhooksSettings.FEATURE_NAME, scope);
         boolean noHooks = StringUtils.isEmpty(stylePackage.getWebhooks());
         String webhooksOptions = generateSelectOptions(webhooksNames, noHooks ? NamedSettings.DEFAULT_NAME : stylePackage.getWebhooks());
+        form = form.replace("{WEBHOOKS_DISPLAY}", PdfExporterExtensionConfiguration.getInstance().areWebhooksEnabled() ? "" : "hidden");
         form = form.replace("{WEBHOOKS_OPTIONS}", webhooksOptions);
-        form = form.replace("{WEBHOOKS_DISPLAY}", noHooks ? "none" : "inline-block");
+        form = form.replace("{WEBHOOKS_SELECTOR_DISPLAY}", noHooks ? "none" : "inline-block");
         return form.replace("{WEBHOOKS_SELECTED}", noHooks ? "" : "checked");
     }
 
