@@ -41,12 +41,12 @@
             {LOCALIZATION_OPTIONS}
         </select>
     </div>
-    <div class='property-wrapper' style='border-top: 1px solid #eee; padding-top: 10px;'>
+    <div class='property-wrapper {WEBHOOKS_DISPLAY}' style='border-top: 1px solid #eee; padding-top: 10px;'>
         <label for='webhooks-selector'>
             <input id='webhooks-checkbox' onchange='document.getElementById("webhooks-selector").style.display = this.checked ? "inline-block" : "none"' type='checkbox' {WEBHOOKS_SELECTED}/>
             Webhooks:
         </label>
-        <select id='webhooks-selector' style="display: {WEBHOOKS_DISPLAY}">
+        <select id='webhooks-selector' style="display: {WEBHOOKS_SELECTOR_DISPLAY}">
             {WEBHOOKS_OPTIONS}
         </select>
     </div>

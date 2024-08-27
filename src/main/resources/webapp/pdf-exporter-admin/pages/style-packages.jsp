@@ -2,6 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 
 <%! String bundleTimestamp = ch.sbb.polarion.extension.generic.util.VersionUtils.getVersion().getBundleBuildTimestampDigitsOnly(); %>
+<%! Boolean webhooksEnabled = ch.sbb.polarion.extension.pdf.exporter.properties.PdfExporterExtensionConfiguration.getInstance().areWebhooksEnabled(); %>
 
 <head>
     <title>PDF Exporter: Style Packages</title>
@@ -102,7 +103,7 @@
             </div>
         </div>
 
-        <div class="flex-container" style="border-top: 1px solid #ccc; margin-top: 20px; padding-top: 15px;">
+        <div class="flex-container" style="border-top: 1px solid #ccc; margin-top: 20px; padding-top: 15px; display: <%= webhooksEnabled ? "flex" : "none" %>;">
             <div class="flex-column">
                 <div class="input-group">
                     <label for='webhooks-checkbox' style="width: 120px;">

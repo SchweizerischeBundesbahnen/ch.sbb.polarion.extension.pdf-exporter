@@ -147,7 +147,8 @@ public class PdfConverter {
     }
 
     private @NotNull String applyWebhooks(@NotNull ExportParams exportParams, @NotNull String htmlContent) {
-        if (exportParams.getWebhooks() == null) {
+        // Skip webhooks processing among other if this functionality is not enabled by system administrator
+        if (!PdfExporterExtensionConfiguration.getInstance().areWebhooksEnabled() || exportParams.getWebhooks() == null) {
             return htmlContent;
         }
 

@@ -1,5 +1,7 @@
 package ch.sbb.polarion.extension.pdf.exporter.rest.controller;
 
+import ch.sbb.polarion.extension.pdf.exporter.model.WebhooksStatus;
+import ch.sbb.polarion.extension.pdf.exporter.properties.PdfExporterExtensionConfiguration;
 import ch.sbb.polarion.extension.pdf.exporter.rest.model.conversion.DocumentType;
 import ch.sbb.polarion.extension.pdf.exporter.service.PdfExporterPolarionService;
 import ch.sbb.polarion.extension.pdf.exporter.util.DocumentFileNameHelper;
@@ -80,5 +82,14 @@ public class UtilityResourcesInternalController {
     @Operation(summary = "Gets a filename, prepared with velocity and placeholders")
     public String getFileName(@QueryParam("locationPath") String locationPath, @QueryParam("revision") String revision, @QueryParam("documentType") DocumentType documentType, @QueryParam("scope") String scope) {
         return new DocumentFileNameHelper(pdfExporterPolarionService).getDocumentFileName(locationPath, revision, documentType, scope);
+    }
+
+    @GET
+    @Path("/webhooks/status")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Tag(name = "Utility resources")
+    @Operation(summary = "Gets webhooks status - if they are enabled or not")
+    public WebhooksStatus getWebhooksStatus() {
+        return WebhooksStatus.builder().enabled(PdfExporterExtensionConfiguration.getInstance().areWebhooksEnabled()).build();
     }
 }
