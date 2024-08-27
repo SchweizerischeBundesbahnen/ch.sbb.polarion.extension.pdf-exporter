@@ -27,6 +27,7 @@ public class PdfExporterExtensionConfiguration extends ExtensionConfiguration {
         return SystemValueReader.getInstance().readBoolean(getPropertyPrefix() + INTERNALIZE_EXTERNAL_CSS, false);
     }
 
+    @NotNull
     public Boolean areWebhooksEnabled() {
         return SystemValueReader.getInstance().readBoolean(getPropertyPrefix() + WEBHOOKS_ENABLED, false);
     }
