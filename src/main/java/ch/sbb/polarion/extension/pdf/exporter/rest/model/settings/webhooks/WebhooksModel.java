@@ -1,4 +1,4 @@
-package ch.sbb.polarion.extension.pdf.exporter.rest.model.settings.hooks;
+package ch.sbb.polarion.extension.pdf.exporter.rest.model.settings.webhooks;
 
 import ch.sbb.polarion.extension.generic.settings.SettingsModel;
 import com.fasterxml.jackson.annotation.JsonInclude;

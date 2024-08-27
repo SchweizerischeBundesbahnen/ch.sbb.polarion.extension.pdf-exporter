@@ -2,7 +2,7 @@ package ch.sbb.polarion.extension.pdf.exporter.settings;
 
 import ch.sbb.polarion.extension.generic.settings.GenericNamedSettings;
 import ch.sbb.polarion.extension.generic.settings.SettingsService;
-import ch.sbb.polarion.extension.pdf.exporter.rest.model.settings.hooks.WebhooksModel;
+import ch.sbb.polarion.extension.pdf.exporter.rest.model.settings.webhooks.WebhooksModel;
 import org.jetbrains.annotations.NotNull;
 
 public class WebhooksSettings extends GenericNamedSettings<WebhooksModel> {
