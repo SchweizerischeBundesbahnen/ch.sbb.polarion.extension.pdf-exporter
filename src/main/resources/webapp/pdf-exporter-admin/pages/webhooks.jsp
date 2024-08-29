@@ -31,6 +31,7 @@
 
         #webhooks-table {
             width: 1100px;
+            table-layout: fixed;
         }
 
         .webhook-row td {
@@ -38,7 +39,7 @@
         }
 
         .webhook-row td:first-child {
-            width: 20px;
+            width: 30px;
         }
 
         .webhook-row td:nth-child(2) {
@@ -118,6 +119,12 @@
             <p>
                 A webhook is a REST endpoint accepting initial HTML as a string (POST request), making some modification to this HTML and returning resulting HTML as a string back in body of response.
                 A webhook endpoint can locate anywhere, either within Polarion itself or outside of it.
+            </p>
+            <h3>Webhook configuration</h3>
+            <p>
+                Each webhook has an URL and optional auth info. The URL is the endpoint to invoke. The auth info is a authentication for this endpoint.
+                The auth info can be either a basic auth with username and password or a Bearer token. The auth info should be stored in Polarion Vault.
+                Here should be provided a name of the vault entry with auth info.
             </p>
             <h3>Webhooks processing</h3>
             <p>

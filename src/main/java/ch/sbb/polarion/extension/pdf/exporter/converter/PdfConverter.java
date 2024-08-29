@@ -1,6 +1,5 @@
 package ch.sbb.polarion.extension.pdf.exporter.converter;
 
-import ch.sbb.polarion.extension.generic.rest.filter.AuthenticationFilter;
 import ch.sbb.polarion.extension.generic.settings.NamedSettings;
 import ch.sbb.polarion.extension.generic.settings.SettingId;
 import ch.sbb.polarion.extension.generic.util.ScopeUtils;
@@ -10,6 +9,7 @@ import ch.sbb.polarion.extension.pdf.exporter.rest.model.WorkItemRefData;
 import ch.sbb.polarion.extension.pdf.exporter.rest.model.conversion.DocumentType;
 import ch.sbb.polarion.extension.pdf.exporter.rest.model.conversion.ExportParams;
 import ch.sbb.polarion.extension.pdf.exporter.rest.model.settings.headerfooter.HeaderFooterModel;
+import ch.sbb.polarion.extension.pdf.exporter.rest.model.settings.webhooks.AuthType;
 import ch.sbb.polarion.extension.pdf.exporter.rest.model.settings.webhooks.WebhookConfig;
 import ch.sbb.polarion.extension.pdf.exporter.rest.model.settings.webhooks.WebhooksModel;
 import ch.sbb.polarion.extension.pdf.exporter.service.PdfExporterPolarionService;
@@ -54,6 +54,7 @@ import javax.ws.rs.core.Response;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -205,24 +206,24 @@ public class PdfConverter {
             return;
         }
 
-        String authInfoFromUserAccountVault = getAuthInfoFromUserAccountVault(webhookConfig.getAuthTokenName());
-        switch (webhookConfig.getAuthType()) {
-            case BEARER_TOKEN -> requestBuilder.header(HttpHeaders.AUTHORIZATION, AuthenticationFilter.BEARER + " " + authInfoFromUserAccountVault);
-            case XSRF_TOKEN -> requestBuilder.header(AuthenticationFilter.X_POLARION_REST_TOKEN_HEADER, webhookConfig.getAuthTokenName());
+        String authInfoFromUserAccountVault = getAuthInfoFromUserAccountVault(webhookConfig.getAuthType(), webhookConfig.getAuthTokenName());
+        if (authInfoFromUserAccountVault == null) {
+            return;
         }
 
-        if (webhookConfig.getAuthType() != null && webhookConfig.getAuthTokenName() != null) {
-            requestBuilder.header(HttpHeaders.AUTHORIZATION, webhookConfig.getAuthType() + " " + webhookConfig.getAuthTokenName());
-        }
+        requestBuilder.header(HttpHeaders.AUTHORIZATION, webhookConfig.getAuthType().getAuthHeaderPrefix() + " " + authInfoFromUserAccountVault);
     }
 
-    private static String getAuthInfoFromUserAccountVault(String authTokenName) {
-        if (authTokenName != null && authTokenName.isEmpty()) {
-            return UserAccountVault.getInstance()
-                    .getCredentialsForKey(authTokenName)
-                    .getPassword();
-        }
-        return null;
+    private static @Nullable String getAuthInfoFromUserAccountVault(@NotNull AuthType authType, @NotNull String authTokenName) {
+        @NotNull UserAccountVault.Credentials credentials = UserAccountVault.getInstance().getCredentialsForKey(authTokenName);
+
+        return switch (authType) {
+            case BASIC_AUTH -> {
+                String authInfo = credentials.getUser() + ":" + credentials.getPassword();
+                yield Base64.getEncoder().encodeToString(authInfo.getBytes());
+            }
+            case BEARER_TOKEN -> credentials.getPassword();
+        };
     }
 
     @VisibleForTesting

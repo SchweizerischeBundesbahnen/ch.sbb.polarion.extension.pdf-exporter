@@ -40,11 +40,11 @@ const Webhooks = {
         if (webhooksModel.bundleTimestamp !== SbbCommon.getValueById('bundle-timestamp')) {
             Webhooks.loadDefaultContent()
                 .then((responseText) => {
-                    const defaultHooksModel = JSON.parse(responseText);
-                    SbbCommon.setNewerVersionNotificationVisible(webhooksModel.webhooks && defaultHooksModel.webhooks
-                        && (webhooksModel.webhooks.length !== defaultHooksModel.webhooks.length
+                    const defaultWebhooksModel = JSON.parse(responseText);
+                    SbbCommon.setNewerVersionNotificationVisible(webhooksModel.webhooks && defaultWebhooksModel.webhooks
+                        && (webhooksModel.webhooks.length !== defaultWebhooksModel.webhooks.length
                             || webhooksModel.webhooks.every(function (value, index) {
-                                return value === defaultHooksModel.hooks[index]
+                                return value === defaultWebhooksModel.hooks[index]
                             })));
                 })
         }
@@ -172,11 +172,11 @@ const Webhooks = {
 
             const authTypeCombobox = document.createElement('select');
             authTypeCombobox.setAttribute('name', 'auth_type');
-            authTypeCombobox.innerHTML = '<option value="BEARER_TOKEN">Bearer Token</option><option value="XSRF_TOKEN">XSRF Token</option>';
+            authTypeCombobox.innerHTML = '<option value="BEARER_TOKEN">Bearer Token</option><option value="BASIC_AUTH">Basic</option>';
             if (webhookConfig?.authType) {
                 switch (webhookConfig.authType) {
                     case 'BEARER_TOKEN': authTypeCombobox.selectedIndex = 0; break;
-                    case 'XSRF_TOKEN': authTypeCombobox.selectedIndex = 1; break;
+                    case 'BASIC_AUTH': authTypeCombobox.selectedIndex = 1; break;
                 }
             } else {
                 authTypeCombobox.style.display = 'none';
@@ -191,6 +191,7 @@ const Webhooks = {
 
             const authTokenNameField = document.createElement('input');
             authTokenNameField.setAttribute('name', 'auth_token_name');
+            authTokenNameField.setAttribute('placeholder', 'Polarion Vault entry name');
             if (webhookConfig?.authType) {
                 authTokenNameField.setAttribute('value', webhookConfig.authTokenName ? webhookConfig.authTokenName : '');
             } else {
