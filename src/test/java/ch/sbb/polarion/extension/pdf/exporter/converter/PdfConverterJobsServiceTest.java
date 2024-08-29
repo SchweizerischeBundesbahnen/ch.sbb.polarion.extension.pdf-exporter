@@ -21,7 +21,6 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 import javax.security.auth.Subject;
 import java.security.PrivilegedAction;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
@@ -77,9 +76,14 @@ class PdfConverterJobsServiceTest {
         assertThat(jobResult).isNotEmpty();
         assertThat(new String(jobResult.get())).isEqualTo("test pdf");
 
-        assertThatThrownBy(() -> pdfConverterJobsService.getJobState(jobId))
-                .isInstanceOf(NoSuchElementException.class)
-                .hasMessageContaining(jobId);
+        // Second attempt to ensure that job is not removed
+        jobState = pdfConverterJobsService.getJobState(jobId);
+        assertThat(jobState.isDone()).isTrue();
+        assertThat(jobState.isCompletedExceptionally()).isFalse();
+        assertThat(jobState.isCancelled()).isFalse();
+        jobResult = pdfConverterJobsService.getJobResult(jobId);
+        assertThat(jobResult).isNotEmpty();
+
         verify(securityService).logout(subject);
     }
 
@@ -98,6 +102,10 @@ class PdfConverterJobsServiceTest {
         assertThat(jobState.isCompletedExceptionally()).isTrue();
         assertThat(jobState.isCancelled()).isFalse();
         assertThat(jobState.errorMessage()).contains("test error");
+
+        assertThatThrownBy(() -> pdfConverterJobsService.getJobResult(jobId))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("test error");
         verify(securityService).logout(subject);
     }
 
@@ -175,10 +183,28 @@ class PdfConverterJobsServiceTest {
 
     @ParameterizedTest
     @CsvSource({"0,0", "1,1"})
-    void shouldCleanupTimedOutFinishedJobs(int timeout, int expectedJobsCount) {
+    void shouldCleanupSuccessfullyFinishedJobs(int timeout, int expectedJobsCount) {
         ExportParams exportParams = ExportParams.builder().build();
         String finishedJobId = pdfConverterJobsService.startJob(exportParams, 1);
         waitToFinishJob(finishedJobId);
+
+        PdfConverterJobsService.cleanupExpiredJobs(timeout);
+
+        assertThat(pdfConverterJobsService.getAllJobsStates()).hasSize(expectedJobsCount);
+    }
+
+    @ParameterizedTest
+    @CsvSource({"0,0", "1,1"})
+    void shouldCleanupFailedJobs(int timeout, int expectedJobsCount) {
+        lenient().when(securityService.doAsUser(any(), any(PrivilegedAction.class))).thenThrow(new RuntimeException("test error"));
+        ExportParams exportParams = ExportParams.builder().build();
+        String failedJobId = pdfConverterJobsService.startJob(exportParams, 1);
+        waitToFinishJob(failedJobId);
+
+        JobState jobState = pdfConverterJobsService.getJobState(failedJobId);
+        assertThat(jobState.isDone()).isTrue();
+        assertThat(jobState.isCompletedExceptionally()).isTrue();
+        assertThat(jobState.errorMessage()).contains("test error");
 
         PdfConverterJobsService.cleanupExpiredJobs(timeout);
 
