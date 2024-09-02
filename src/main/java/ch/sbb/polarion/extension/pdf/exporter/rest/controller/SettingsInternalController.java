@@ -4,6 +4,7 @@ import ch.sbb.polarion.extension.generic.settings.SettingId;
 import ch.sbb.polarion.extension.generic.settings.SettingName;
 import ch.sbb.polarion.extension.pdf.exporter.rest.model.settings.coverpage.CoverPageModel;
 import ch.sbb.polarion.extension.pdf.exporter.rest.model.settings.localization.LocalizationModel;
+import ch.sbb.polarion.extension.pdf.exporter.service.PdfExporterPolarionService;
 import ch.sbb.polarion.extension.pdf.exporter.settings.CoverPageSettings;
 import ch.sbb.polarion.extension.pdf.exporter.settings.LocalizationSettings;
 import ch.sbb.polarion.extension.pdf.exporter.util.LocalizationHelper;
@@ -14,6 +15,7 @@ import net.sf.okapi.lib.xliff2.reader.XLIFFReader;
 import org.glassfish.jersey.media.multipart.FormDataBodyPart;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 
+import javax.ws.rs.BadRequestException;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.DefaultValue;
@@ -38,6 +40,7 @@ import java.util.UUID;
 public class SettingsInternalController {
 
     private Set<String> predefinedCoverPageTemplates;
+    private final PdfExporterPolarionService pdfExporterPolarionService = new PdfExporterPolarionService();
 
     @GET
     @Path("/settings/localization/names/{name}/download")
@@ -116,4 +119,17 @@ public class SettingsInternalController {
     public void deleteImages(@PathParam("name") String coverPageName, @QueryParam("scope") @DefaultValue("") String scope) {
         new CoverPageSettings().deleteCoverPageImages(coverPageName, scope);
     }
+
+    @GET
+    @Path("/settings/style-package/suitable-names")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Tag(name = "Settings")
+    @Operation(summary = "Get list of style packages suitable for a document")
+    public Collection<SettingName> getSuitableStylePackageNames(@QueryParam("projectId") String projectId, @QueryParam("spaceId") String spaceId, @QueryParam("documentName") String documentName) {
+        if (projectId == null || spaceId == null || documentName == null) {
+            throw new BadRequestException("Parameters 'projectId', 'spaceId', 'documentName' are required'");
+        }
+        return pdfExporterPolarionService.getSuitableStylePackages(projectId, spaceId, documentName);
+    }
+
 }
