@@ -1,12 +1,15 @@
 package ch.sbb.polarion.extension.pdf.exporter.properties;
 
+import ch.sbb.polarion.extension.generic.properties.CurrentExtensionConfiguration;
 import ch.sbb.polarion.extension.generic.properties.ExtensionConfiguration;
+import ch.sbb.polarion.extension.generic.util.Discoverable;
 import com.polarion.core.config.impl.SystemValueReader;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
 
+@Discoverable
 public class PdfExporterExtensionConfiguration extends ExtensionConfiguration {
 
     public static final String WEASYPRINT_SERVICE = "weasyprint.service";
@@ -28,7 +31,7 @@ public class PdfExporterExtensionConfiguration extends ExtensionConfiguration {
     }
 
     @NotNull
-    public Boolean areWebhooksEnabled() {
+    public Boolean getWebhooksEnabled() {
         return SystemValueReader.getInstance().readBoolean(getPropertyPrefix() + WEBHOOKS_ENABLED, false);
     }
 
@@ -42,16 +45,7 @@ public class PdfExporterExtensionConfiguration extends ExtensionConfiguration {
         return supportedProperties;
     }
 
-    public PdfExporterExtensionConfiguration() {
-        super();
-    }
-
     public static PdfExporterExtensionConfiguration getInstance() {
-        return PdfExporterExtensionConfigurationHolder.INSTANCE;
+        return (PdfExporterExtensionConfiguration) CurrentExtensionConfiguration.getInstance().getExtensionConfiguration();
     }
-
-    private static class PdfExporterExtensionConfigurationHolder {
-        private static final PdfExporterExtensionConfiguration INSTANCE = new PdfExporterExtensionConfiguration();
-    }
-
 }

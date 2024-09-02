@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 
 <%! String bundleTimestamp = ch.sbb.polarion.extension.generic.util.VersionUtils.getVersion().getBundleBuildTimestampDigitsOnly(); %>
-<%! Boolean webhooksEnabled = ch.sbb.polarion.extension.pdf.exporter.properties.PdfExporterExtensionConfiguration.getInstance().areWebhooksEnabled(); %>
+<%! Boolean webhooksEnabled = ch.sbb.polarion.extension.pdf.exporter.properties.PdfExporterExtensionConfiguration.getInstance().getWebhooksEnabled(); %>
 
 <head>
     <title>PDF Exporter: Style Packages</title>
@@ -62,7 +62,7 @@
 
     <jsp:include page='/common/jsp/configurations.jsp' />
 
-    <div class="content-area" style="border-top: 1px solid #ccc; margin-top: 20px; padding-top: 15px;">
+    <div class="content-area">
         <div id="child-configs-load-error" class="style-package-error" style="display: none; margin-bottom: 15px">
             There was an error loading names of children configurations. Please, contact project/system administrator to solve the issue, a style package can't be configured without them.
         </div>
@@ -70,11 +70,24 @@
             There was an error loading link role names.
         </div>
 
-        <div class='checkbox input-group'>
-            <label for='exposeSettings'>
-                <input id='exposeSettings' type='checkbox'/>
-                Expose style package settings to be redefined on UI
-            </label>
+        <div class="flex-container" id="matching-query-container" style="border-top: 1px solid #ccc; margin-top: 20px; padding-top: 15px;">
+            <p>Here you can specify a query to select documents to which this style package will be relevant. For documents not matching this query the style package won't be visible.
+                If you want to make this style package be available to all documents, just leave this field empty.</p>
+            <div class='input-group'>
+                <label for='matching-query'>Matching query:</label>
+                <input id='matching-query' style="width: 725px;"/>
+            </div>
+        </div>
+
+        <div class="flex-container" style="border-top: 1px solid #ccc; margin-top: 20px; padding-top: 15px;">
+            <div class="flex-column">
+                <div class='checkbox input-group'>
+                    <label for='exposeSettings'>
+                        <input id='exposeSettings' type='checkbox'/>
+                        Expose style package settings to be redefined on UI
+                    </label>
+                </div>
+            </div>
         </div>
 
         <div class="flex-container">

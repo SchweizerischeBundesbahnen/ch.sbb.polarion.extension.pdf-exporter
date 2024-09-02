@@ -135,14 +135,16 @@ const PdfExporter = {
             this.adjustWebhooksVisibility()
         ]).then(() => {
             return this.loadSettingNames({
-                setting: "style-package",
-                scope: this.exportContext.scope,
+                customUrl: `/polarion/pdf-exporter/rest/internal/settings/style-package/suitable-names?projectId=${this.exportContext.getProjectId()}`
+                    + `&spaceId=${this.exportContext.getSpaceId()}&documentName=${this.exportContext.getDocumentName()}`,
                 selectElement: document.getElementById("popup-style-package-select")
             }).then(() => {
-                let valueToPreselect = SbbCommon.getCookie(SELECTED_STYLE_PACKAGE_COOKIE);
                 const stylePackageSelect = document.getElementById("popup-style-package-select");
+                const valueToPreselect = SbbCommon.getCookie(SELECTED_STYLE_PACKAGE_COOKIE);
                 if (valueToPreselect && this.containsOption(stylePackageSelect, valueToPreselect)) {
                     stylePackageSelect.value = valueToPreselect;
+                } else if (stylePackageSelect.options.length > 1) {
+                    stylePackageSelect.value = stylePackageSelect.options[1].value;
                 }
 
                 this.onStylePackageChanged();
@@ -154,11 +156,11 @@ const PdfExporter = {
         });
     },
 
-    loadSettingNames: function ({setting, scope, selectElement}) {
+    loadSettingNames: function ({setting, scope, selectElement, customUrl}) {
         return new Promise((resolve, reject) => {
             this.callAsync({
                 method: "GET",
-                url: `/polarion/pdf-exporter/rest/internal/settings/${setting}/names?scope=${scope}`,
+                url: customUrl ? customUrl : `/polarion/pdf-exporter/rest/internal/settings/${setting}/names?scope=${scope}`,
                 responseType: "json",
             }).then(({response}) => {
                 selectElement.innerHTML = ""; // Clear previously loaded content

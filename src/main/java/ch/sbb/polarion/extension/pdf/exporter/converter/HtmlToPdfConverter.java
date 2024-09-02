@@ -9,7 +9,7 @@ import ch.sbb.polarion.extension.pdf.exporter.util.HtmlProcessor;
 import ch.sbb.polarion.extension.pdf.exporter.util.PdfExporterFileResourceProvider;
 import ch.sbb.polarion.extension.pdf.exporter.util.PdfTemplateProcessor;
 import ch.sbb.polarion.extension.pdf.exporter.util.html.HtmlLinksHelper;
-import ch.sbb.polarion.extension.pdf.exporter.util.regex.RegexMatcher;
+import ch.sbb.polarion.extension.generic.regex.RegexMatcher;
 import ch.sbb.polarion.extension.pdf.exporter.weasyprint.WeasyPrintOptions;
 import ch.sbb.polarion.extension.pdf.exporter.weasyprint.service.WeasyPrintServiceConnector;
 import lombok.Getter;

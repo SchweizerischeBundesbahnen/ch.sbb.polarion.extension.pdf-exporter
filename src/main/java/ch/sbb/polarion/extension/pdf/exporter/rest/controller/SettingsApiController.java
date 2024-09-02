@@ -2,6 +2,7 @@ package ch.sbb.polarion.extension.pdf.exporter.rest.controller;
 
 import ch.sbb.polarion.extension.generic.rest.filter.Secured;
 import ch.sbb.polarion.extension.generic.service.PolarionService;
+import ch.sbb.polarion.extension.generic.settings.SettingName;
 import org.glassfish.jersey.media.multipart.FormDataBodyPart;
 
 import javax.ws.rs.Path;
@@ -38,5 +39,10 @@ public class SettingsApiController extends SettingsInternalController {
     @Override
     public void deleteImages(String coverPageName, String scope) {
         polarionService.callPrivileged(() -> super.deleteImages(coverPageName, scope));
+    }
+
+    @Override
+    public Collection<SettingName> getSuitableStylePackageNames(String projectId, String spaceId, String documentName) {
+        return polarionService.callPrivileged(() -> super.getSuitableStylePackageNames(projectId, spaceId, documentName));
     }
 }
