@@ -2,6 +2,7 @@ package ch.sbb.polarion.extension.pdf.exporter.rest.model;
 
 import ch.sbb.polarion.extension.generic.regex.RegexMatcher;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -16,10 +17,18 @@ import java.util.Set;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
+@Schema(description = "Data class representing a reference to a work item, including ID, project, layout, and revision")
 public class WorkItemRefData {
+    @Schema(description = "The unique identifier of the Work item")
     private String id;
+
+    @Schema(description = "The unique identifier of the project to which the Work item belongs")
     private String project;
+
+    @Schema(description = "Work item layout")
     private String layout;
+
+    @Schema(description = "The revision number of the Work item")
     private String revision;
 
     /**
@@ -37,7 +46,7 @@ public class WorkItemRefData {
                     ref.setLayout(regexEngine.group("layout"));
                     ref.setRevision(regexEngine.group("revision"));
                     refs.add(ref);
-        });
+                });
         return new ArrayList<>(refs);
     }
 

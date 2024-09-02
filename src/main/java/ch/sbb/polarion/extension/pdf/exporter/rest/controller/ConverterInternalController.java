@@ -22,6 +22,8 @@ import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.jetbrains.annotations.VisibleForTesting;
@@ -30,7 +32,6 @@ import org.springframework.http.HttpStatus;
 import javax.ws.rs.BadRequestException;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
-import javax.ws.rs.InternalServerErrorException;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
@@ -49,6 +50,7 @@ import java.util.stream.Collectors;
 
 @Hidden
 @Path("/internal")
+@Tag(name = "PDF Processing")
 @SuppressWarnings("java:S1200")
 public class ConverterInternalController {
 
@@ -96,8 +98,13 @@ public class ConverterInternalController {
     @Path("/convert")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces("application/pdf")
-    @Tag(name = "PDF Processing")
     @Operation(summary = "Returns requested Polarion's document converted to PDF",
+            requestBody = @RequestBody(description = "Export parameters to generate the PDF",
+                    required = true,
+                    content = @Content(schema = @Schema(implementation = ExportParams.class),
+                            mediaType = MediaType.APPLICATION_JSON
+                    )
+            ),
             responses = {
                     @ApiResponse(responseCode = "200",
                             description = "Content of PDF document as a byte array",
@@ -114,8 +121,14 @@ public class ConverterInternalController {
     @Path("/prepared-html-content")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.TEXT_HTML)
-    @Tag(name = "PDF Processing")
     @Operation(summary = "Returns prepared HTML which will be used for PDF conversion using WeasyPrint",
+            requestBody = @RequestBody(description = "Export parameters to generate the PDF",
+                    required = true,
+                    content = @Content(
+                            schema = @Schema(implementation = ExportParams.class),
+                            mediaType = MediaType.APPLICATION_JSON
+                    )
+            ),
             responses = {
                     @ApiResponse(responseCode = "200",
                             description = "Prepared HTML content",
@@ -130,8 +143,13 @@ public class ConverterInternalController {
     @POST
     @Path("/convert/jobs")
     @Consumes(MediaType.APPLICATION_JSON)
-    @Tag(name = "PDF Processing")
     @Operation(summary = "Starts asynchronous conversion job of Polarion's document to PDF",
+            requestBody = @RequestBody(description = "Export parameters to generate the PDF",
+                    required = true,
+                    content = @Content(schema = @Schema(implementation = ExportParams.class),
+                            mediaType = MediaType.APPLICATION_JSON
+                    )
+            ),
             responses = {
                     @ApiResponse(responseCode = "202",
                             description = "Conversion process is started, job URI is returned in Location header"
@@ -149,21 +167,19 @@ public class ConverterInternalController {
     @GET
     @Path("/convert/jobs/{id}")
     @Produces(MediaType.APPLICATION_JSON)
-    @Tag(name = "PDF Processing")
     @Operation(summary = "Returns PDF conversion job status",
             responses = {
                     // OpenAPI response MediaTypes for 303 and 202 response codes are generic to satisfy automatic redirect in SwaggerUI
                     @ApiResponse(responseCode = "303",
                             description = "Conversion job is finished successfully, Location header contains result URL",
-                            content = {@Content(mediaType = "application/*")}
+                            content = {@Content(mediaType = "application/*", schema = @Schema(implementation = ConverterJobDetails.class))}
                     ),
                     @ApiResponse(responseCode = "202",
                             description = "Conversion job is still in progress",
-                            content = {@Content(mediaType = "application/*")}
+                            content = {@Content(mediaType = "application/*", schema = @Schema(implementation = ConverterJobDetails.class))}
                     ),
                     @ApiResponse(responseCode = "409",
-                            description = "Conversion job is failed or cancelled",
-                            content = {@Content(mediaType = MediaType.APPLICATION_JSON)}
+                            description = "Conversion job is failed or cancelled"
                     ),
                     @ApiResponse(responseCode = "404",
                             description = "Conversion job id is unknown"
@@ -192,7 +208,6 @@ public class ConverterInternalController {
     @GET
     @Path("/convert/jobs/{id}/result")
     @Produces("application/pdf")
-    @Tag(name = "PDF Processing")
     @Operation(summary = "Returns PDF conversion job result",
             responses = {
                     @ApiResponse(responseCode = "200",
@@ -220,12 +235,11 @@ public class ConverterInternalController {
     @GET
     @Path("/convert/jobs")
     @Produces("application/json")
-    @Tag(name = "PDF Processing")
     @Operation(summary = "Returns all active PDF conversion jobs statuses",
             responses = {
                     @ApiResponse(responseCode = "200",
                             description = "Conversion jobs statuses",
-                            content = {@Content(mediaType = "application/json")}
+                            content = {@Content(mediaType = "application/json", schema = @Schema(implementation = Map.class))}
                     )
             })
     public Response getAllPdfConverterJobs() {
@@ -243,7 +257,6 @@ public class ConverterInternalController {
     @Path("/convert/html")
     @Consumes(MediaType.TEXT_HTML)
     @Produces("application/pdf")
-    @Tag(name = "PDF Processing")
     @Operation(summary = "Converts input HTML to PDF",
             responses = {
                     @ApiResponse(responseCode = "200",
@@ -265,8 +278,13 @@ public class ConverterInternalController {
     @Path("/validate")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    @Tag(name = "PDF Processing")
-    @Operation(summary = "Validates if requested Polarion's document been converted to PDF doesn't contain pages which content exceeds page's width")
+    @Operation(summary = "Validates if requested Polarion's document been converted to PDF doesn't contain pages which content exceeds page's width",
+            responses = {
+                    @ApiResponse(responseCode = "200",
+                            description = "Validation result",
+                            content = {@Content(mediaType = "application/json", schema = @Schema(implementation = WidthValidationResult.class))}
+                    )
+            })
     public WidthValidationResult validatePdfWidth(
             ExportParams exportParams,
             @Parameter(description = "Limit of 'invalid' pages in response", required = true) @QueryParam("max-results") int maxResults) {
@@ -280,16 +298,26 @@ public class ConverterInternalController {
     @Path("/checknestedlists")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    @Tag(name = "PDF Processing")
-    @Operation(summary = "Checks whether document contains nested lists")
+    @Operation(
+            summary = "Checks whether document contains nested lists",
+            requestBody = @RequestBody(
+                    description = "Export parameters used to locate and check the document for nested lists",
+                    required = true,
+                    content = @Content(schema = @Schema(implementation = ExportParams.class)
+                    )
+            ),
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Check completed successfully, returning whether nested lists are present",
+                            content = @Content(mediaType = "application/json", schema = @Schema(implementation = NestedListsCheck.class))
+                    )
+            }
+    )
     @SuppressWarnings("java:S1166")
     public NestedListsCheck checkNestedLists(ExportParams exportParams) {
-        try {
-            boolean containsNestedLists = liveDocHelper.documentContainsNestedNumberedLists(exportParams);
-            return NestedListsCheck.builder().containsNestedLists(containsNestedLists).build();
-        } catch (Exception e) {
-            throw new InternalServerErrorException(e.getMessage());
-        }
+        boolean containsNestedLists = liveDocHelper.documentContainsNestedNumberedLists(exportParams);
+        return NestedListsCheck.builder().containsNestedLists(containsNestedLists).build();
     }
 
     private void validateExportParameters(ExportParams exportParams) {
