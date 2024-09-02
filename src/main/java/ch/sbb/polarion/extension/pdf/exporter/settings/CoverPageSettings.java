@@ -7,7 +7,7 @@ import ch.sbb.polarion.extension.generic.util.ScopeUtils;
 import ch.sbb.polarion.extension.pdf.exporter.rest.model.settings.coverpage.CoverPageModel;
 import ch.sbb.polarion.extension.pdf.exporter.service.PdfExporterPolarionService;
 import ch.sbb.polarion.extension.pdf.exporter.util.MediaUtils;
-import ch.sbb.polarion.extension.pdf.exporter.util.regex.RegexMatcher;
+import ch.sbb.polarion.extension.generic.regex.RegexMatcher;
 import com.polarion.core.util.logging.Logger;
 import com.polarion.platform.service.repository.IRepositoryReadOnlyConnection;
 import com.polarion.subterra.base.location.ILocation;

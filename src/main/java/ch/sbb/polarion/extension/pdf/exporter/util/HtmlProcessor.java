@@ -10,8 +10,8 @@ import ch.sbb.polarion.extension.pdf.exporter.service.PdfExporterPolarionService
 import ch.sbb.polarion.extension.pdf.exporter.settings.LocalizationSettings;
 import ch.sbb.polarion.extension.pdf.exporter.util.exporter.CustomPageBreakPart;
 import ch.sbb.polarion.extension.pdf.exporter.util.html.HtmlLinksHelper;
-import ch.sbb.polarion.extension.pdf.exporter.util.regex.IRegexEngine;
-import ch.sbb.polarion.extension.pdf.exporter.util.regex.RegexMatcher;
+import ch.sbb.polarion.extension.generic.regex.IRegexEngine;
+import ch.sbb.polarion.extension.generic.regex.RegexMatcher;
 import com.polarion.alm.shared.util.StringUtils;
 import com.polarion.core.util.xml.CSSStyle;
 import lombok.SneakyThrows;

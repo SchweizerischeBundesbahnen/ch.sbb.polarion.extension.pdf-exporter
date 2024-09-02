@@ -1,6 +1,6 @@
 package ch.sbb.polarion.extension.pdf.exporter.rest.model;
 
-import ch.sbb.polarion.extension.pdf.exporter.util.regex.RegexMatcher;
+import ch.sbb.polarion.extension.generic.regex.RegexMatcher;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
