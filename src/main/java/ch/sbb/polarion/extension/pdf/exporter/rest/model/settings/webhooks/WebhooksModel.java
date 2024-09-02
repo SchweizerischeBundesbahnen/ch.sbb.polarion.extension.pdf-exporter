@@ -1,4 +1,4 @@
-package ch.sbb.polarion.extension.pdf.exporter.rest.model.settings.hooks;
+package ch.sbb.polarion.extension.pdf.exporter.rest.model.settings.webhooks;
 
 import ch.sbb.polarion.extension.generic.settings.SettingsModel;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -25,22 +25,22 @@ import java.util.List;
 public class WebhooksModel extends SettingsModel {
     public static final String WEBHOOKS_ENTRY_NAME = "WEBHOOKS";
 
-    private List<String> webhooks = new ArrayList<>();
+    private List<WebhookConfig> webhookConfigs = new ArrayList<>();
 
     @Override
     protected String serializeModelData() {
-        return serializeEntry(WEBHOOKS_ENTRY_NAME, webhooks);
+        return serializeEntry(WEBHOOKS_ENTRY_NAME, webhookConfigs);
     }
 
     @Override
     protected void deserializeModelData(String serializedString) {
-        String webhooksString = deserializeEntry(WEBHOOKS_ENTRY_NAME, serializedString);
-        if (webhooksString != null) {
+        String content = deserializeEntry(WEBHOOKS_ENTRY_NAME, serializedString);
+        if (content != null) {
             try {
-                String[] webhooksArray = new ObjectMapper().readValue(webhooksString, String[].class);
-                webhooks = new ArrayList<>(Arrays.asList(webhooksArray));
+                WebhookConfig[] configs = new ObjectMapper().readValue(content, WebhookConfig[].class);
+                this.webhookConfigs = new ArrayList<>(Arrays.asList(configs));
             } catch (JsonProcessingException e) {
-                throw new IllegalArgumentException("Webhooks value couldn't be parsed", e);
+                throw new IllegalArgumentException(WEBHOOKS_ENTRY_NAME + " value couldn't be parsed", e);
             }
         }
     }

@@ -2,7 +2,7 @@ package ch.sbb.polarion.extension.pdf.exporter.util.html;
 
 import ch.sbb.polarion.extension.pdf.exporter.properties.PdfExporterExtensionConfiguration;
 import ch.sbb.polarion.extension.pdf.exporter.util.FileResourceProvider;
-import ch.sbb.polarion.extension.pdf.exporter.util.regex.RegexMatcher;
+import ch.sbb.polarion.extension.generic.regex.RegexMatcher;
 
 import java.util.LinkedHashMap;
 import java.util.Map;

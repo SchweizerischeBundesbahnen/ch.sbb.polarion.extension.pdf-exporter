@@ -90,6 +90,6 @@ public class UtilityResourcesInternalController {
     @Tag(name = "Utility resources")
     @Operation(summary = "Gets webhooks status - if they are enabled or not")
     public WebhooksStatus getWebhooksStatus() {
-        return WebhooksStatus.builder().enabled(PdfExporterExtensionConfiguration.getInstance().areWebhooksEnabled()).build();
+        return WebhooksStatus.builder().enabled(PdfExporterExtensionConfiguration.getInstance().getWebhooksEnabled()).build();
     }
 }

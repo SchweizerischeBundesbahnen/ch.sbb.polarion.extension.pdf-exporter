@@ -157,7 +157,7 @@ public class PdfExporterFormExtension implements IFormExtension {
         Collection<SettingName> webhooksNames = getSettingNames(WebhooksSettings.FEATURE_NAME, scope);
         boolean noHooks = StringUtils.isEmpty(stylePackage.getWebhooks());
         String webhooksOptions = generateSelectOptions(webhooksNames, noHooks ? NamedSettings.DEFAULT_NAME : stylePackage.getWebhooks());
-        form = form.replace("{WEBHOOKS_DISPLAY}", PdfExporterExtensionConfiguration.getInstance().areWebhooksEnabled() ? "" : "hidden");
+        form = form.replace("{WEBHOOKS_DISPLAY}", PdfExporterExtensionConfiguration.getInstance().getWebhooksEnabled() ? "" : "hidden");
         form = form.replace("{WEBHOOKS_OPTIONS}", webhooksOptions);
         form = form.replace("{WEBHOOKS_SELECTOR_DISPLAY}", noHooks ? "none" : "inline-block");
         return form.replace("{WEBHOOKS_SELECTED}", noHooks ? "" : "checked");
