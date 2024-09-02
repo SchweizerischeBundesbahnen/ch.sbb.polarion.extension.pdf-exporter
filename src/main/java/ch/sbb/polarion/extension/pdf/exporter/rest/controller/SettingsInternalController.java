@@ -10,6 +10,8 @@ import ch.sbb.polarion.extension.pdf.exporter.settings.LocalizationSettings;
 import ch.sbb.polarion.extension.pdf.exporter.util.LocalizationHelper;
 import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import net.sf.okapi.lib.xliff2.reader.XLIFFReader;
 import org.glassfish.jersey.media.multipart.FormDataBodyPart;
@@ -37,16 +39,21 @@ import java.util.UUID;
 
 @Hidden
 @Path("/internal")
+@Tag(name = "Settings", description = "Operations related to PDF-exporter settings management")
+@SecurityRequirement(name = "bearerAuth")
 public class SettingsInternalController {
 
-    private Set<String> predefinedCoverPageTemplates;
     private final PdfExporterPolarionService pdfExporterPolarionService = new PdfExporterPolarionService();
+    private Set<String> predefinedCoverPageTemplates;
 
     @GET
     @Path("/settings/localization/names/{name}/download")
     @Produces(MediaType.APPLICATION_XML)
-    @Tag(name = "Settings")
-    @Operation(summary = "Downloads localization values by name of localization settings")
+    @Operation(summary = "Downloads localization values by name of localization settings",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Localization file downloaded successfully")
+            }
+    )
     public Response downloadTranslations(
             @PathParam("name") String name,
             @QueryParam("language") String language,
@@ -67,8 +74,11 @@ public class SettingsInternalController {
     @Path("/settings/localization/upload")
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     @Produces(MediaType.APPLICATION_JSON)
-    @Tag(name = "Settings")
-    @Operation(summary = "Uploads localization values")
+    @Operation(summary = "Uploads localization values",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Localization file uploaded successfully")
+            }
+    )
     public Map<String, String> uploadTranslations(
             @FormDataParam("file") FormDataBodyPart file,
             @QueryParam("language") String language,
@@ -83,8 +93,11 @@ public class SettingsInternalController {
     @GET
     @Path("/settings/cover-page/templates")
     @Produces(MediaType.APPLICATION_JSON)
-    @Tag(name = "Settings")
-    @Operation(summary = "Get list of cover page predefined template names")
+    @Operation(summary = "Get list of cover page predefined template names",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Template names retrieved successfully")
+            }
+    )
     public Collection<String> getCoverPageTemplateNames() {
         if (predefinedCoverPageTemplates == null) {
             predefinedCoverPageTemplates = new CoverPageSettings().getPredefinedTemplates();
@@ -94,8 +107,11 @@ public class SettingsInternalController {
 
     @POST
     @Path("/settings/cover-page/templates/{template}")
-    @Tag(name = "Settings")
-    @Operation(summary = "Persist content of cover page predefined template")
+    @Operation(summary = "Persist content of cover page predefined template",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Template persisted successfully")
+            }
+    )
     public void persistCoverPageTemplate(@PathParam("template") String template, @QueryParam("scope") String scope) {
         if (!getCoverPageTemplateNames().contains(template)) {
             throw new NotFoundException(String.format("There's no predefined template with name '%s'", template));
@@ -114,8 +130,11 @@ public class SettingsInternalController {
     @DELETE
     @Path("/settings/cover-page/names/{name}/images")
     @Produces(MediaType.APPLICATION_JSON)
-    @Tag(name = "Settings")
-    @Operation(summary = "Deletes images in SVN linked to specified cover page within specified scope (global or certain project)")
+    @Operation(summary = "Deletes images in SVN linked to specified cover page within specified scope (global or certain project)",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Images deleted successfully")
+            }
+    )
     public void deleteImages(@PathParam("name") String coverPageName, @QueryParam("scope") @DefaultValue("") String scope) {
         new CoverPageSettings().deleteCoverPageImages(coverPageName, scope);
     }
@@ -124,7 +143,11 @@ public class SettingsInternalController {
     @Path("/settings/style-package/suitable-names")
     @Produces(MediaType.APPLICATION_JSON)
     @Tag(name = "Settings")
-    @Operation(summary = "Get list of style packages suitable for a document")
+    @Operation(summary = "Get list of style packages suitable for a document",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Successfully retrieved the list of style package names")
+            }
+    )
     public Collection<SettingName> getSuitableStylePackageNames(@QueryParam("projectId") String projectId, @QueryParam("spaceId") String spaceId, @QueryParam("documentName") String documentName) {
         if (projectId == null || spaceId == null || documentName == null) {
             throw new BadRequestException("Parameters 'projectId', 'spaceId', 'documentName' are required'");

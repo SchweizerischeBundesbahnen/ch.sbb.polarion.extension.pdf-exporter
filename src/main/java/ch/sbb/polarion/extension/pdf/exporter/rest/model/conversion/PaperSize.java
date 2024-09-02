@@ -1,6 +1,7 @@
 package ch.sbb.polarion.extension.pdf.exporter.rest.model.conversion;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import io.swagger.v3.oas.annotations.media.Schema;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
@@ -8,6 +9,7 @@ import javax.ws.rs.core.Response;
 /**
  * Enumeration of paper sizes <a href="https://developer.mozilla.org/en-US/docs/Web/CSS/@page/size">supported by CSS</a>
  */
+@Schema(description = "Standard paper sizes")
 public enum PaperSize {
     A5,
     A4,
@@ -20,15 +22,6 @@ public enum PaperSize {
     LEGAL,
     LEDGER;
 
-    public String toCssString() {
-        return switch (this) {
-            case JIS_B5 -> "JIS-B5";
-            case JIS_B4 -> "JIS-B4";
-            case LETTER, LEGAL, LEDGER -> toString().toLowerCase();
-            default -> toString();
-        };
-    }
-
     @JsonCreator
     public static PaperSize fromString(String name) {
         try {
@@ -40,5 +33,14 @@ public enum PaperSize {
                     .entity("Unsupported value for paperSize parameter: " + name)
                     .build());
         }
+    }
+
+    public String toCssString() {
+        return switch (this) {
+            case JIS_B5 -> "JIS-B5";
+            case JIS_B4 -> "JIS-B4";
+            case LETTER, LEGAL, LEDGER -> toString().toLowerCase();
+            default -> toString();
+        };
     }
 }
