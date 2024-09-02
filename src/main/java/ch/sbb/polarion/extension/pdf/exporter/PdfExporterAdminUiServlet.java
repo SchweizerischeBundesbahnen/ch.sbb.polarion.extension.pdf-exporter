@@ -1,8 +1,6 @@
 package ch.sbb.polarion.extension.pdf.exporter;
 
 import ch.sbb.polarion.extension.generic.GenericUiServlet;
-import ch.sbb.polarion.extension.generic.properties.CurrentExtensionConfiguration;
-import ch.sbb.polarion.extension.pdf.exporter.properties.PdfExporterExtensionConfiguration;
 
 import java.io.Serial;
 
@@ -13,6 +11,5 @@ public class PdfExporterAdminUiServlet extends GenericUiServlet {
 
     public PdfExporterAdminUiServlet() {
         super("pdf-exporter-admin");
-        CurrentExtensionConfiguration.getInstance().setExtensionConfiguration(PdfExporterExtensionConfiguration.getInstance());
     }
 }

@@ -4,7 +4,7 @@ import ch.sbb.polarion.extension.pdf.exporter.rest.model.conversion.ExportParams
 import ch.sbb.polarion.extension.pdf.exporter.rest.model.settings.headerfooter.Placeholder;
 import ch.sbb.polarion.extension.pdf.exporter.service.PdfExporterPolarionService;
 import ch.sbb.polarion.extension.pdf.exporter.util.LiveDocHelper;
-import ch.sbb.polarion.extension.pdf.exporter.util.regex.RegexMatcher;
+import ch.sbb.polarion.extension.generic.regex.RegexMatcher;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.HashSet;
