@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 
 <%! String bundleTimestamp = ch.sbb.polarion.extension.generic.util.VersionUtils.getVersion().getBundleBuildTimestampDigitsOnly(); %>
-<%! Boolean webhooksEnabled = ch.sbb.polarion.extension.pdf.exporter.properties.PdfExporterExtensionConfiguration.getInstance().areWebhooksEnabled(); %>
+<%! Boolean webhooksEnabled = ch.sbb.polarion.extension.pdf.exporter.properties.PdfExporterExtensionConfiguration.getInstance().getWebhooksEnabled(); %>
 
 <head>
     <title>PDF Exporter: Webhooks</title>
@@ -60,7 +60,7 @@
 
         <jsp:include page='/common/jsp/configurations.jsp' />
 
-        <h2 class="align-left">List of webhooks <%= ch.sbb.polarion.extension.pdf.exporter.properties.PdfExporterExtensionConfiguration.getInstance().areWebhooksEnabled() %></h2>
+        <h2 class="align-left">List of webhooks <%= ch.sbb.polarion.extension.pdf.exporter.properties.PdfExporterExtensionConfiguration.getInstance().getWebhooksEnabled() %></h2>
         <table id="webhooks-table"><!-- Filled by JS --></table>
         <button class="toolbar-button webhook-button" onclick="WebHooks.addHook()" title="Add a webhook" style="margin-top: 10px; margin-left: 3px;">
             <img src='/polarion/ria/images/control/tablePlus.png' alt="Plus">
