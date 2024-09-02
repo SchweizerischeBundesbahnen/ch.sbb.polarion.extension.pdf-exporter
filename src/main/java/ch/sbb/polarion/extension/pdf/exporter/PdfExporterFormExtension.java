@@ -49,6 +49,8 @@ public class PdfExporterFormExtension implements IFormExtension {
     private static final String OPTION_SELECTED = "<option value='%s' selected";
     private static final String SELECTED = "selected";
 
+    private final PdfExporterPolarionService polarionService = new PdfExporterPolarionService();
+
     @Override
     @Nullable
     public String render(@NotNull IFormExtensionContext context) {
@@ -66,7 +68,7 @@ public class PdfExporterFormExtension implements IFormExtension {
             String scope = ScopeUtils.getScopeFromProject(module.getProject().getId());
             form = form.replace("{SCOPE_VALUE}", scope);
 
-            Collection<SettingName> stylePackageNames = getSettingNames(StylePackageSettings.FEATURE_NAME, scope);
+            Collection<SettingName> stylePackageNames = getSuitableStylePackages(module);
             SettingName stylePackageNameToSelect = getStylePackageNameToSelect(stylePackageNames); // Either default (if exists) or first from list
 
             form = form.replace("{STYLE_PACKAGE_OPTIONS}", generateSelectOptions(stylePackageNames, stylePackageNameToSelect != null ? stylePackageNameToSelect.getName() : null));
@@ -109,7 +111,7 @@ public class PdfExporterFormExtension implements IFormExtension {
 
     private SettingName getStylePackageNameToSelect(Collection<SettingName> stylePackageNames) {
         return stylePackageNames.stream()
-                .filter(stylePackageName -> NamedSettings.DEFAULT_NAME.equals(stylePackageName.getName()))
+                .filter(stylePackageName -> !NamedSettings.DEFAULT_NAME.equals(stylePackageName.getName()))
                 .findFirst()
                 .orElse(stylePackageNames.stream()
                         .findFirst()
@@ -159,6 +161,19 @@ public class PdfExporterFormExtension implements IFormExtension {
         form = form.replace("{WEBHOOKS_OPTIONS}", webhooksOptions);
         form = form.replace("{WEBHOOKS_SELECTOR_DISPLAY}", noHooks ? "none" : "inline-block");
         return form.replace("{WEBHOOKS_SELECTED}", noHooks ? "" : "checked");
+    }
+
+    private Collection<SettingName> getSuitableStylePackages(@NotNull IModule module) {
+        String locationPath = module.getModuleLocation().getLocationPath();
+        String spaceId = "";
+        final String documentName;
+        if (locationPath.contains("/")) {
+            spaceId = locationPath.substring(0, locationPath.lastIndexOf('/'));
+            documentName = locationPath.substring(locationPath.lastIndexOf('/') + 1);
+        } else {
+            documentName = locationPath;
+        }
+        return polarionService.getSuitableStylePackages(module.getProject().getId(), spaceId, documentName);
     }
 
     private Collection<SettingName> getSettingNames(@NotNull String featureName, @NotNull String scope) {

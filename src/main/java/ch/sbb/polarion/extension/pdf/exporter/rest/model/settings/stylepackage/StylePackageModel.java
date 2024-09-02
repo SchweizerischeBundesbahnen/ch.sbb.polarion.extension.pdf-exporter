@@ -23,6 +23,7 @@ import java.util.List;
 @EqualsAndHashCode(callSuper = false)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class StylePackageModel extends SettingsModel {
+    private static final String MATCHING_QUERY_ENTRY_NAME = "MATCHING QUERY";
     private static final String EXPOSE_SETTINGS_ENTRY_NAME = "EXPOSE SETTINGS";
     private static final String COVER_PAGE_ENTRY_NAME = "COVER PAGE";
     private static final String HEADER_FOOTER_ENTRY_NAME = "HEADER FOOTER";
@@ -46,6 +47,7 @@ public class StylePackageModel extends SettingsModel {
     private static final String LINKED_WORKITEM_ROLES_ENTRY_NAME = "LINKED WORKITEM ROLES";
     private static final String EXPOSE_PAGE_WIDTH_VALIDATION_ENTRY_NAME = "EXPOSE PAGE WIDTH VALIDATION";
 
+    private String matchingQuery;
     private boolean exposeSettings;
     private String coverPage;
     private String headerFooter;
@@ -71,7 +73,8 @@ public class StylePackageModel extends SettingsModel {
 
     @Override
     protected String serializeModelData() {
-        return serializeEntry(EXPOSE_SETTINGS_ENTRY_NAME, exposeSettings) +
+        return serializeEntry(MATCHING_QUERY_ENTRY_NAME, matchingQuery) +
+                serializeEntry(EXPOSE_SETTINGS_ENTRY_NAME, exposeSettings) +
                 serializeEntry(COVER_PAGE_ENTRY_NAME, coverPage) +
                 serializeEntry(HEADER_FOOTER_ENTRY_NAME, headerFooter) +
                 serializeEntry(CSS_ENTRY_NAME, css) +
@@ -97,6 +100,7 @@ public class StylePackageModel extends SettingsModel {
 
     @Override
     protected void deserializeModelData(String serializedString) {
+        matchingQuery = deserializeEntry(MATCHING_QUERY_ENTRY_NAME, serializedString);
         exposeSettings = Boolean.parseBoolean(deserializeEntry(EXPOSE_SETTINGS_ENTRY_NAME, serializedString));
         coverPage = deserializeEntry(COVER_PAGE_ENTRY_NAME, serializedString);
         headerFooter = deserializeEntry(HEADER_FOOTER_ENTRY_NAME, serializedString);

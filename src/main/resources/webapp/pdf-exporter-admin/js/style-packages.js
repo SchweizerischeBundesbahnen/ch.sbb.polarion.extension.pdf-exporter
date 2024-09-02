@@ -158,6 +158,7 @@ function saveStylePackage() {
         url: `/polarion/${SbbCommon.extension}/rest/internal/settings/${SbbCommon.setting}/names/${Configurations.getSelectedConfiguration()}/content?scope=${SbbCommon.scope}`,
         contentType: 'application/json',
         body: JSON.stringify({
+            'matchingQuery': SbbCommon.getValueById('matching-query'),
             'exposeSettings': SbbCommon.getCheckboxValueById('exposeSettings'),
             'coverPage': SbbCommon.getCheckboxValueById('cover-page-checkbox') ? ChildConfigurations.coverPageSelect.getSelectedValue() : null,
             'css': ChildConfigurations.cssSelect.getSelectedValue(),
@@ -210,6 +211,10 @@ function revertToDefault() {
 
 function setStylePackage(content) {
     const stylePackage = JSON.parse(content);
+
+    SbbCommon.setValueById('matching-query', stylePackage.matchingQuery || "");
+    document.getElementById('matching-query-container').style.display = DEFAULT_SETTING_NAME === Configurations.getSelectedConfiguration() ? "none" : "flex";
+
     SbbCommon.setCheckboxValueById('exposeSettings', stylePackage.exposeSettings);
     SbbCommon.setCheckboxValueById('cover-page-checkbox', !!stylePackage.coverPage);
     document.getElementById('cover-page-checkbox').dispatchEvent(new Event('change'));

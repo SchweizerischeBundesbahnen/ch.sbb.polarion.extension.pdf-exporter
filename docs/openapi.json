@@ -815,6 +815,53 @@
         ]
       }
     },
+    "/api/settings/style-package/suitable-names": {
+      "get": {
+        "operationId": "getSuitableStylePackageNames",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "projectId",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "spaceId",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "documentName",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SettingName"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "summary": "Get list of style packages suitable for a document",
+        "tags": [
+          "Settings"
+        ]
+      }
+    },
     "/api/settings/{feature}/default-content": {
       "get": {
         "operationId": "getDefaultValues_1",
@@ -1165,7 +1212,7 @@
             "description": "default response"
           }
         },
-        "summary": "Returns boolean value telling if webhooks are enabled or not",
+        "summary": "Gets webhooks status - if they are enabled or not",
         "tags": [
           "Utility resources"
         ]
