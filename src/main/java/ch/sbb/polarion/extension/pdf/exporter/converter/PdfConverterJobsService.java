@@ -154,7 +154,12 @@ public class PdfConverterJobsService {
 
     private boolean isJobLogoutRequired() {
         RequestAttributes requestAttributes = RequestContextHolder.getRequestAttributes();
-        return (requestAttributes != null) &&
-                (requestAttributes.getAttribute(LogoutFilter.ASYNC_SKIP_LOGOUT, RequestAttributes.SCOPE_REQUEST) == Boolean.TRUE);
+        if (requestAttributes != null) {
+            if (requestAttributes.getAttribute(LogoutFilter.XSRF_SKIP_LOGOUT, RequestAttributes.SCOPE_REQUEST) == Boolean.TRUE) {
+                return false;
+            }
+            return requestAttributes.getAttribute(LogoutFilter.ASYNC_SKIP_LOGOUT, RequestAttributes.SCOPE_REQUEST) == Boolean.TRUE;
+        }
+        return false;
     }
 }

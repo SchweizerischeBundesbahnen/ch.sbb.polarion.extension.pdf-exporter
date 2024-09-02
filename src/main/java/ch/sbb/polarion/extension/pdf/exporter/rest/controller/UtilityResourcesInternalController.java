@@ -12,6 +12,10 @@ import com.polarion.platform.persistence.IEnumOption;
 import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 import javax.ws.rs.Consumes;
@@ -28,6 +32,7 @@ import static ch.sbb.polarion.extension.pdf.exporter.util.placeholder.Placeholde
 
 @Hidden
 @Path("/internal")
+@Tag(name = "Utility resources")
 public class UtilityResourcesInternalController {
 
     private final PdfExporterPolarionService pdfExporterPolarionService;
@@ -43,9 +48,15 @@ public class UtilityResourcesInternalController {
     @GET
     @Path("/link-role-names")
     @Produces(MediaType.APPLICATION_JSON)
-    @Tag(name = "Utility resources")
-    @Operation(summary = "Gets list of possible WorkItem link role names in specified project scope")
-    public List<String> readLinkRoleNames(@Parameter(description = "Project scope in form project/<PROJECT_ID>/") @QueryParam("scope") String scope) {
+    @Operation(summary = "Gets list of possible WorkItem link role names in specified project scope",
+            responses = {
+                    @ApiResponse(responseCode = "200",
+                            description = "Successfully retrieved list of link role names",
+                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = String.class)))
+                    )
+            }
+    )
+    public List<String> readLinkRoleNames(@Parameter(description = "Project scope in form project/<PROJECT_ID>/", required = true) @QueryParam("scope") String scope) {
         ITrackerProject project = pdfExporterPolarionService.getProjectFromScope(scope);
         if (project != null) {
             return EnumValuesProvider.getAllLinkRoleNames(project);
@@ -56,8 +67,11 @@ public class UtilityResourcesInternalController {
     @GET
     @Path("/document-language")
     @Produces(MediaType.TEXT_PLAIN)
-    @Tag(name = "Utility resources")
-    @Operation(summary = "Gets language of specified Polarion's document, defined in its custom field 'docLanguage'")
+    @Operation(summary = "Gets language of specified Polarion's document, defined in its custom field 'docLanguage'",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Successfully retrieved document language")
+            }
+    )
     public String getDocumentLanguage(@QueryParam("projectId") String projectId, @QueryParam("spaceId") String spaceId,
                                       @QueryParam("documentName") String documentName, @QueryParam("revision") String revision) {
         IModule module = pdfExporterPolarionService.getModule(projectId, spaceId, documentName, revision);
@@ -68,8 +82,11 @@ public class UtilityResourcesInternalController {
     @GET
     @Path("/projects/{projectId}/name")
     @Produces(MediaType.TEXT_PLAIN)
-    @Tag(name = "Utility resources")
-    @Operation(summary = "Gets name of specified Polarion's project")
+    @Operation(summary = "Gets name of specified Polarion's project",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Successfully retrieved project name")
+            }
+    )
     public String getProjectName(@PathParam("projectId") String projectId) {
         return pdfExporterPolarionService.getProject(projectId).getName();
     }
@@ -78,8 +95,11 @@ public class UtilityResourcesInternalController {
     @Path("/export-filename")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.TEXT_PLAIN)
-    @Tag(name = "Utility resources")
-    @Operation(summary = "Gets a filename, prepared with velocity and placeholders")
+    @Operation(summary = "Gets a filename, prepared with velocity and placeholders",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Successfully generated filename")
+            }
+    )
     public String getFileName(@QueryParam("locationPath") String locationPath, @QueryParam("revision") String revision, @QueryParam("documentType") DocumentType documentType, @QueryParam("scope") String scope) {
         return new DocumentFileNameHelper(pdfExporterPolarionService).getDocumentFileName(locationPath, revision, documentType, scope);
     }
@@ -88,7 +108,11 @@ public class UtilityResourcesInternalController {
     @Path("/webhooks/status")
     @Produces(MediaType.APPLICATION_JSON)
     @Tag(name = "Utility resources")
-    @Operation(summary = "Gets webhooks status - if they are enabled or not")
+    @Operation(summary = "Gets webhooks status - if they are enabled or not",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Webhooks status")
+            }
+    )
     public WebhooksStatus getWebhooksStatus() {
         return WebhooksStatus.builder().enabled(PdfExporterExtensionConfiguration.getInstance().getWebhooksEnabled()).build();
     }
