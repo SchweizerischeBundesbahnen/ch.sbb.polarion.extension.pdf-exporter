@@ -1165,7 +1165,7 @@
             "description": "default response"
           }
         },
-        "summary": "Returns boolean value telling if webhooks are enabled or not",
+        "summary": "Gets webhooks status - if they are enabled or not",
         "tags": [
           "Utility resources"
         ]
