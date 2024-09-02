@@ -62,6 +62,7 @@ class PdfConverterJobsServiceTest {
     @Test
     void shouldStartJobAndGetStatus() {
         prepareSecurityServiceSubject(subject);
+        when(requestAttributes.getAttribute(LogoutFilter.XSRF_SKIP_LOGOUT, RequestAttributes.SCOPE_REQUEST)).thenReturn(Boolean.FALSE);
         when(requestAttributes.getAttribute(LogoutFilter.ASYNC_SKIP_LOGOUT, RequestAttributes.SCOPE_REQUEST)).thenReturn(Boolean.TRUE);
         ExportParams exportParams = ExportParams.builder().build();
         when(pdfConverter.convertToPdf(exportParams, null)).thenReturn("test pdf".getBytes());
@@ -86,6 +87,7 @@ class PdfConverterJobsServiceTest {
     @Test
     void shouldReturnFailInExceptionalCase() {
         prepareSecurityServiceSubject(subject);
+        when(requestAttributes.getAttribute(LogoutFilter.XSRF_SKIP_LOGOUT, RequestAttributes.SCOPE_REQUEST)).thenReturn(Boolean.FALSE);
         when(requestAttributes.getAttribute(LogoutFilter.ASYNC_SKIP_LOGOUT, RequestAttributes.SCOPE_REQUEST)).thenReturn(Boolean.TRUE);
         ExportParams exportParams = ExportParams.builder().build();
         when(pdfConverter.convertToPdf(exportParams, null)).thenThrow(new RuntimeException("test error"));
@@ -131,11 +133,16 @@ class PdfConverterJobsServiceTest {
         verify(securityService, never()).logout(null);
     }
 
-    @Test
-    void shouldNotLogoutWithoutLogoutProperty() {
+    @ParameterizedTest
+    @CsvSource({
+            "true,true",
+            "true,false",
+            "false,false"
+    })
+    void shouldNotLogoutWithoutAsyncSkipLogoutProperty(boolean xsrfSkipLogout, boolean asyncSkipLogout) {
         prepareSecurityServiceSubject(subject);
-        when(requestAttributes.getAttribute(LogoutFilter.ASYNC_SKIP_LOGOUT, RequestAttributes.SCOPE_REQUEST)).thenReturn(null);
-
+        lenient().when(requestAttributes.getAttribute(LogoutFilter.XSRF_SKIP_LOGOUT, RequestAttributes.SCOPE_REQUEST)).thenReturn(xsrfSkipLogout);
+        lenient().when(requestAttributes.getAttribute(LogoutFilter.ASYNC_SKIP_LOGOUT, RequestAttributes.SCOPE_REQUEST)).thenReturn(asyncSkipLogout);
 
         ExportParams exportParams = ExportParams.builder().build();
         when(pdfConverter.convertToPdf(exportParams, null)).thenReturn("test pdf".getBytes());
@@ -147,7 +154,7 @@ class PdfConverterJobsServiceTest {
         JobState jobState = pdfConverterJobsService.getJobState(jobId);
         assertThat(jobState.isCompletedExceptionally()).isFalse();
         assertThat(jobState.isCancelled()).isFalse();
-        verify(securityService, never()).logout(null);
+        verify(securityService, never()).logout(subject);
     }
 
     @ParameterizedTest
