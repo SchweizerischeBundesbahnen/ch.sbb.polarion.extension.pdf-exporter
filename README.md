@@ -34,6 +34,16 @@ To change WeasyPrint Service URL, adjust the following property in the `polarion
 ch.sbb.polarion.extension.pdf-exporter.weasyprint.service=http://localhost:9080
 ```
 
+### Asynchronous PDF Export: export jobs timeout
+This extension provides REST API to export PDF asynchronously. Using this API, it is possible to start export job, observe their status and get result.
+Finished (succeed or failed) and in-progress export jobs will be preserved in memory until configured timeout. To change this timeout, adjust the following property in the local `pdf-converter-jobs.properties` file:
+```properties
+# Timeout in minutes to keep finished async conversion jobs results in memory
+jobs.timeout.finished.minutes=30
+# Timeout in minutes to wait until async conversion jobs is finished
+jobs.timeout.in-progress.minutes=60
+```
+
 ### PDF exporter extension to appear on a Document's properties pane
 
 1. Open a project where you wish PDF Exporter to be available

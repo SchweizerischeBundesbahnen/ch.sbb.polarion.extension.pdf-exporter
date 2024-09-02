@@ -100,7 +100,7 @@ public class PdfConverterJobsService {
             return Optional.empty();
         }
         if (future.isCancelled() || future.isCompletedExceptionally()) {
-            throw new IllegalStateException("Job was cancelled or failed: " + jobId);
+            throw new IllegalStateException("Job was cancelled or failed: " + failedJobsReasons.get(jobId));
         }
         try {
             return Optional.of(future.get());
@@ -109,8 +109,6 @@ public class PdfConverterJobsService {
             throw new IllegalStateException("Cannot extract result for job " + jobId + " :" + e.getMessage(), e);
         } catch (Exception e) {
             throw new IllegalStateException("Cannot extract result for job " + jobId + " :" + e.getMessage(), e);
-        } finally {
-            jobs.remove(jobId);
         }
     }
 
