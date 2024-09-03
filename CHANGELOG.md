@@ -1,5 +1,30 @@
 # Changelog
 
+## [6.2.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v6.1.0...v6.2.0) (2024-09-03)
+
+
+### Features
+
+* authorization for webhooks ([#177](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/177)) ([4da2ee2](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/4da2ee277f080aff9012192f82a8e70ee751ad28)), closes [#169](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/169)
+* Auto assign style packages ([#178](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/178)) ([77a76d4](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/77a76d413b1c176e1d820c80612adfc05648de41)), closes [#64](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/64)
+* Cleanup successfully finished jobs by timeout like failed jobs ([#176](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/176)) ([a26d5d6](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/a26d5d6d821406fdb391e1274c62922d2d3e4277)), closes [#175](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/175)
+* Extended REST API annotation ([#182](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/182)) ([9a89ff6](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/9a89ff6e9c5403045bf3926696965abd39272364)), closes [#180](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/180)
+
+
+### Bug Fixes
+
+* **deps:** update dependency ch.sbb.polarion.extensions:ch.sbb.polarion.extension.generic to v6.6.3 ([484aeea](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/484aeead23a202ceb53381e89868ea79642ad785))
+* **deps:** update dependency ch.sbb.polarion.extensions:ch.sbb.polarion.extension.generic to v6.7.0 ([8bd8e2a](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/8bd8e2abaaac49d0b1c4ea0ac7a00310571923b0))
+* **deps:** update dependency ch.sbb.polarion.extensions:ch.sbb.polarion.extension.generic to v7.0.1 ([928d126](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/928d126abe5c048d93e99c8264fef9275ac09d1c))
+* **deps:** update dependency net.bytebuddy:byte-buddy to v1.14.19 ([#163](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/163)) ([457dd05](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/457dd058af1afdf73f3680ab53843688017a8435))
+* **deps:** update dependency net.bytebuddy:byte-buddy to v1.15.0 ([55f995a](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/55f995a095a6279e9e703db866884beb152356a5))
+* **deps:** update dependency net.bytebuddy:byte-buddy to v1.15.1 ([d759830](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/d759830e33c87bc032ce4ea7561588e474ed841f))
+* do not logout the user if XSRF token is used in async operation ([#181](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/181)) ([97ce5f4](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/97ce5f4a806d69cd55380e7c7e37d1c57674e2ad)), closes [#170](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/170)
+* Feature/fix cover page ([#166](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/166)) ([5fb657c](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/5fb657c3d17e126d863de33d9f41af5aba623196))
+* Fixed getting project baseline ([#161](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/161)) ([d3163c5](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/d3163c5c6dc7e00e89f3e8a0987eb4d736b877c0))
+* link on About page work as expected ([#185](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/185)) ([225b964](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/225b96483458d1ee21bf6f4f21743566744bd278)), closes [#171](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/171)
+* Possibility for global admin to hide webhook functionality at all via polarion.properties ([#168](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/168)) ([437b1a5](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/437b1a51791be697eff150294ad84cdb44a27adb)), closes [#91](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/91)
+
 ## [6.1.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v6.0.1...v6.1.0) (2024-08-13)
 
 
