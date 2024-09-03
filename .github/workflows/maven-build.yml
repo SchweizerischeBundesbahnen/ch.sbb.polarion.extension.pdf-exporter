@@ -153,4 +153,4 @@ jobs:
         run: mvn --batch-mode -Dmaven.test.skip=true -Dmaven.javadoc.skip=true -Dmaven.source.skip=true deploy -P deploy-github-packages
       - name: 📦 Upload assets
         run: |-
-          gh release upload v${{ needs.build.outputs.project_version }} **/target/*-${{ needs.build.outputs.project_version }}.jar
+          gh release upload v${{ needs.build.outputs.project_version }} target/*-${{ needs.build.outputs.project_version }}.jar
