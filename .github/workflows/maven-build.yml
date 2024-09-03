@@ -15,31 +15,22 @@ jobs:
       GITHUB_TOKEN: ${{ github.token }}
       MARKDOWN2HTML_MAVEN_PLUGIN_FAIL_ON_ERROR: true
     steps:
-      # Checkout the repository
       - name: 📄 Checkout
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332  # v4
         with:
           fetch-depth: 0
-
-      # Set up JDK and Maven
       - name: 🧱 Set up JDK and Maven
         uses: actions/setup-java@6a0805fcefea3d4657a47ac4c165951e33482018  # v4
         with:
           distribution: adopt
           java-version: 17
           gpg-private-key: ${{ secrets.COM_SONATYPE_CENTRAL_POLARION_OPENSOURCE_GPG_PRIVATE_KEY }}
-
-      # Get the project version
       - name: 📝 Store project version
         id: project_version
         run: echo "project_version=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)" >> $GITHUB_OUTPUT
-
-      # Generate cache key
       - name: 📝 Store cache key
         id: cache_key
         run: echo "cache_key=${{ runner.os }}-mvn-${{ hashFiles('**/pom.xml') }}-${{ github.sha }}" >> $GITHUB_OUTPUT
-
-      # Prepare cache using cache key
       - name: 💾 Prepare Cache
         id: prepare-cache
         uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9  # v4
@@ -48,8 +39,6 @@ jobs:
             /home/runner/.m2
             /home/runner/work
           key: ${{ steps.cache_key.outputs.cache_key }}
-
-      # Generate settings.xml for Maven
       - name: 🔘 Generate settings.xml
         uses: whelk-io/maven-settings-xml-action@9dc09b23833fa9aa7f27b63db287951856f3433d  # v22
         with:
@@ -97,12 +86,8 @@ jobs:
                 }
               }
             ]
-
-      # Print settings.xml
       - name: 🔘 Print settings.xml
         run: cat /home/runner/.m2/settings.xml
-
-      # Build with Maven
       - name: 📦 Build with Maven
         run: mvn --batch-mode clean package -P tests-with-weasyprint-docker
     outputs:
@@ -121,15 +106,12 @@ jobs:
       COM_SONATYPE_CENTRAL_POLARION_OPENSOURCE_TOKEN: ${{ secrets.COM_SONATYPE_CENTRAL_POLARION_OPENSOURCE_TOKEN }}
       COM_SONATYPE_CENTRAL_POLARION_OPENSOURCE_GPG_PASSPHRASE: ${{ secrets.COM_SONATYPE_CENTRAL_POLARION_OPENSOURCE_GPG_PASSPHRASE }}
     steps:
-      # Set up JDK and Maven
       - name: 🧱 Set up JDK and Maven
         uses: actions/setup-java@6a0805fcefea3d4657a47ac4c165951e33482018  # v4
         with:
           distribution: adopt
           java-version: 17
           gpg-private-key: ${{ secrets.COM_SONATYPE_CENTRAL_POLARION_OPENSOURCE_GPG_PRIVATE_KEY }}
-
-      # Restore cache using cache key
       - name: 💾 Restore Cache
         id: restore-cache
         uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9  # v4
@@ -138,12 +120,10 @@ jobs:
             /home/runner/.m2
             /home/runner/work
           key: ${{ needs.build.outputs.cache_key }}
-
-      # Deploy artifacts to Maven Central
       - name: 📦 Publish to Maven Central
         run: mvn --batch-mode -Dmaven.test.skip=true deploy -P gpg-sign -P nexus-staging
 
-  # deploy to GitHub Packages
+  # Deploy release to GitHub Packages
   deploy-github-packages:
     needs: build
     runs-on: ubuntu-latest
@@ -156,14 +136,11 @@ jobs:
       S3_SBB_POLARION_MAVEN_REPO_RW_SECRET_ACCESS_KEY: ${{ secrets.S3_SBB_POLARION_MAVEN_REPO_RW_SECRET_ACCESS_KEY }}
       GITHUB_TOKEN: ${{ github.token }}
     steps:
-      # Set up JDK and Maven
       - name: 🧱 Set up JDK and Maven
         uses: actions/setup-java@6a0805fcefea3d4657a47ac4c165951e33482018  # v4
         with:
           distribution: adopt
           java-version: 17
-
-      # Restore cache using cache key
       - name: 💾 Restore Cache
         id: restore-cache
         uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9  # v4
@@ -172,12 +149,8 @@ jobs:
             /home/runner/.m2
             /home/runner/work
           key: ${{ needs.build.outputs.cache_key }}
-
-      # Deploy artifacts to GitHub Packages
       - name: 📦 Publish to GitHub Packages
         run: mvn --batch-mode -Dmaven.test.skip=true -Dmaven.javadoc.skip=true -Dmaven.source.skip=true deploy -P deploy-github-packages
-
-      # Upload assets to GitHub Release
       - name: 📦 Upload assets
         run: |-
           gh release upload v${{ needs.build.outputs.project_version }} **/target/*-${{ needs.build.outputs.project_version }}.jar
