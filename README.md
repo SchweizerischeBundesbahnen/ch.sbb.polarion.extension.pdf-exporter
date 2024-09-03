@@ -6,7 +6,7 @@ The extension uses [WeasyPrint](https://weasyprint.org/) as a PDF engine and req
 
 ## Quick start
 
-Please see separate [quick start page](QUICK_START.md) were briefly summarized all most important and applicable steps and configurations.
+Please see separate [quick start page](QUICK_START.md) where briefly summarized all most important and applicable steps and configurations.
 
 If you need deeper knowledge about all possible steps, configurations and their descriptions, please see sections below.
 

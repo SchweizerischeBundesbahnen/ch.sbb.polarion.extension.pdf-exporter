@@ -1,4 +1,4 @@
-# PDF Exporter quick start
+# Quick start
 
 ### Run WeasyPrint in Docker
 
@@ -11,17 +11,17 @@ and copy it to `<polarion_home>/polarion/extensions/ch.sbb.polarion.extension.pd
 
 ## Specify required properties in polarion.properties file
 
-Open file `<polarion_home>/etc/polarion.properties` in a file editor of your choice and add following properties to it:
+Add following properties to file `polarion.properties`:
 
 ```properties
 com.siemens.polarion.rest.enabled=true
-com.siemens.polarion.rest.cors.allowedOrigins=<ANY ORIGINS WHICH ALLOWED TO REACH REST ENDPOINTS, COMMA SEPARATED>
+com.siemens.polarion.rest.swaggerUi.enabled=true
 ch.sbb.polarion.extension.pdf-exporter.weasyprint.service=http://localhost:9080
 ```
 
 ## Restart Polarion
 
-Restart Polarion services, either yourself if you have such rights, or ask a system administrator.
+Restart Polarion.
 
 ## Configure PDF Exporter for Live Reports
 
@@ -43,4 +43,5 @@ On admin pane of appropriate project select menu "Documents & Pages ➙ Document
 
 ## Ready to go
 
-You are now ready to use PDF Exporter in your Polarion.
+PDF Exporter is now installed and configured. You can now open a Live Document and on Documents Sidebar you will see PDF Exporter section. Also open About page of PDF Exporter on admin pane
+and make sure that there are no errors in Extension configuration status table.
