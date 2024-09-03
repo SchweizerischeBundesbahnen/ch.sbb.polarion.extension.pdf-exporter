@@ -4,6 +4,12 @@ This Polarion extension provides possibility to convert Polarion Documents to PD
 This is an alternative to native Polarion's solution.
 The extension uses [WeasyPrint](https://weasyprint.org/) as a PDF engine and requires it to run in [Docker as Service](#weasyprint-configuration).
 
+## Quick start
+
+Please see separate [quick start page](QUICK_START.md) were briefly summarized all most important and applicable steps and configurations.
+
+If you need deeper knowledge about all possible steps, configurations and their descriptions, please see sections below.
+
 ## Build
 
 This extension can be produced using maven:
@@ -25,7 +31,7 @@ Changes only take effect after restart of Polarion.
 
 ## Polarion configuration
 
-### WeasyPrint Configuration
+### WeasyPrint configuration
 
 This extension supports the use of WeasyPrint as a REST service within a Docker container, as implemented [here](https://github.com/SchweizerischeBundesbahnen/weasyprint-service).
 To change WeasyPrint Service URL, adjust the following property in the `polarion.properties` file:
@@ -56,7 +62,7 @@ ch.sbb.polarion.extension.pdf-exporter.weasyprint.service=http://localhost:9080
    ```
 6. Save changes by clicking 💾 Save
 
-### PDF exporter view to open via button in toolbar
+### PDF Exporter view to open via button in toolbar
 
 Alternatively you can configure PDF Exporter such a way that additional toolbar will appear in document's editor with a button to open a popup with PDF Exporter view.
 
@@ -74,7 +80,7 @@ Alternatively you can configure PDF Exporter such a way that additional toolbar 
    ```
 5. Save changes by clicking 💾 Save
 
-### PDF exporter view to open in Live Reports
+### PDF Exporter view to open in Live Reports
 
 Live Reports also can be converted to PDF with help of this extension.
 
@@ -96,7 +102,7 @@ to add to the report. Then save a report clicking 💾 in a toolbar and then ret
 to the report, PDF Exporter view will be opened in a popup and you will be able to proceed with exporting the report to PDF. Be aware that in report's context limited
 set of properties are available for configuration in PDF popup, the rest of them are relevant only in Live Document context.
 
-### Configuring Logs
+### Configuring logs
 
 For better problem analyses extended logging can be configured in Polarion. By default, Polarion log level is set to INFO. It can be changed to debug in `log4j2.xml` file.
 Find `/opt/polarion/polarion/plugins/com.polarion.core.util_<version>/log4j2.xml` file and add the following line into `Loggers`section:
@@ -128,7 +134,7 @@ com.siemens.polarion.rest.enabled=true
 com.siemens.polarion.rest.cors.allowedOrigins=http://localhost:8888,https://anotherdomain.com
 ```
 
-### Enabling Webhooks
+### Enabling webhooks
 
 By default, webhooks functionality is not enabled in PDF Exporter. If you want to make it available the following line should be added in `polarion.properties`:
 ```properties
@@ -154,7 +160,7 @@ If HTML logging is switched on, then in standard polarion log file there will be
 
 Here you can find out in which files HTML was stored.
 
-### Enabling Internalization of CSS Links
+### Enabling internalization of CSS links
 
 The converting HTML can contain some external CSS links referencing Polarion Server, like:
 
@@ -168,7 +174,7 @@ In case the Polarion Server is not reachable from the WeasyPrint Service, such l
 ch.sbb.polarion.extension.pdf-exporter.internalizeExternalCss=true
 ```
 
-## Extension Configuration
+## Extension configuration
 
 1. On the top of the project's navigation pane click ⚙ (Actions) ➙ 🔧 Administration. Project's administration page will be opened.
 2. On the administration's navigation pane select `PDF Export`. There are expandable sub-menus with different configuration options for PDF Exporter.
@@ -186,7 +192,7 @@ ch.sbb.polarion.extension.pdf-exporter.internalizeExternalCss=true
 ## REST API
 This extension provides REST API. OpenAPI Specification can be obtained [here](docs/openapi.json).
 
-## Advanced Configuration
+## Advanced configuration
 
 ### Asynchronous PDF Export: export jobs timeout
 This extension provides REST API to export PDF asynchronously. Using this API, it is possible to start export job, observe their status and get result.
