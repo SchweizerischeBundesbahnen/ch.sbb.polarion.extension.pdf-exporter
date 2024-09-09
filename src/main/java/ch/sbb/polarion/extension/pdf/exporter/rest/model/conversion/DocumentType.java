@@ -8,11 +8,14 @@ public enum DocumentType {
     @Schema(description = "Live document")
     DOCUMENT,
 
-    @Schema(description = "Wiki page")
-    WIKI,
-
     @Schema(description = "Live report")
-    REPORT;
+    REPORT,
+
+    @Schema(description = "Test run")
+    TESTRUN,
+
+    @Schema(description = "Wiki page")
+    WIKI;
 
     @SuppressWarnings("unused")
     @JsonCreator

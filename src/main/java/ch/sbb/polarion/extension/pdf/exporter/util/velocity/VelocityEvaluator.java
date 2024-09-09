@@ -41,11 +41,14 @@ public class VelocityEvaluator {
         if (documentData.getDocument() != null) {
             velocityContext.put("document", documentData.getDocument());
         }
-        if (documentData.getWikiPage() != null) {
-            velocityContext.put("page", documentData.getWikiPage());
-        }
         if (documentData.getRichPage() != null) {
             velocityContext.put("page", documentData.getRichPage());
+        }
+        if (documentData.getTestRun() != null) {
+            velocityContext.put("testrun", documentData.getTestRun());
+        }
+        if (documentData.getWikiPage() != null) {
+            velocityContext.put("page", documentData.getWikiPage());
         }
         velocityContext.put("projectName", documentData.getProjectName());
         return velocityContext;

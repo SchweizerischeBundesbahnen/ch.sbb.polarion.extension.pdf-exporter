@@ -2,8 +2,6 @@ package ch.sbb.polarion.extension.pdf.exporter.rest.model.settings.stylepackage;
 
 import ch.sbb.polarion.extension.generic.settings.SettingsModel;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -11,8 +9,6 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 @Data
@@ -121,17 +117,7 @@ public class StylePackageModel extends SettingsModel {
         specificChapters = deserializeEntry(SPECIFIC_CHAPTERS_ENTRY_NAME, serializedString);
         customNumberedListStyles = deserializeEntry(CUSTOM_NUMBERED_LIST_STYLES_ENTRY_NAME, serializedString);
         language = deserializeEntry(LANGUAGE_ENTRY_NAME, serializedString);
+        linkedWorkitemRoles = deserializeListEntry(LINKED_WORKITEM_ROLES_ENTRY_NAME, serializedString, String.class);
         exposePageWidthValidation = Boolean.parseBoolean(deserializeEntry(EXPOSE_PAGE_WIDTH_VALIDATION_ENTRY_NAME, serializedString));
-
-        String rolesString = deserializeEntry(LINKED_WORKITEM_ROLES_ENTRY_NAME, serializedString);
-
-        if (rolesString != null) {
-            try {
-                String[] rolesArray = new ObjectMapper().readValue(rolesString, String[].class);
-                linkedWorkitemRoles = new ArrayList<>(Arrays.asList(rolesArray));
-            } catch (JsonProcessingException e) {
-                throw new IllegalArgumentException("Linked WorkItem roles value couldn't be parsed", e);
-            }
-        }
     }
 }

@@ -27,11 +27,13 @@ function ExportContext() {
             ? window.location.hash.substring(2, window.location.hash.indexOf("?"))
             : window.location.hash.substring(2)
     );
-    const locationParts = /(project\/[^/]+\/).*wiki\/(.*)/.exec(locationHash);
+    const locationParts = /(project\/[^/]+\/)(testrun|.*wiki\/(.*))/.exec(locationHash);
     if (locationParts) {
         this.scope = locationParts[1]
 
-        if (locationParts[2].includes("/")) {
+        if (locationParts[2] === "testrun") {
+            this.path = "testrun";
+        } else if (locationParts[2].includes("/")) {
             this.path = locationParts[2];
         } else {
             //in this case path contains only document name
@@ -96,9 +98,9 @@ const PdfExporter = {
         MicroModal.show('pdf-export-modal-popup');
     },
 
-    loadFormData: function (params) {
+loadFormData: function (params) {
         this.exportContext = new ExportContext();
-        this.exportContext.documentType = params && params.context === "report" ? "report" : "document";
+        this.exportContext.documentType = params && params.context ? params.context : "document";
 
         this.actionInProgress({inProgress: true, message: "Loading form data"});
 
@@ -223,13 +225,22 @@ const PdfExporter = {
     },
 
     loadFileName: function (exportContext) {
-        let url = `/polarion/pdf-exporter/rest/internal/export-filename?locationPath=${exportContext.path}&documentType=${exportContext.documentType}&scope=${exportContext.scope}`
+        let url = `/polarion/pdf-exporter/rest/internal/export-filename`
         if (exportContext.revision) {
             url += `&revision=${exportContext.revision}`;
         }
+        const requestBody = JSON.stringify({
+            projectId: this.exportContext.getProjectId(),
+            locationPath: this.exportContext.path,
+            revision: this.exportContext.revision,
+            documentType: this.exportContext.documentType,
+            urlQueryParameters: this.exportContext.urlQueryParameters,
+        });
+
         return new Promise((resolve, reject) => {
             this.callAsync({
-                method: "GET",
+                method: "POST",
+                body: requestBody,
                 url: url,
             }).then(({responseText}) => {
                 document.getElementById("popup-filename").value = responseText;
@@ -253,7 +264,7 @@ const PdfExporter = {
     },
 
     loadDocumentLanguage: function (exportContext) {
-        if (exportContext.documentType === "report") {
+        if (exportContext.documentType === "report" || exportContext.documentType === "testrun") {
             return Promise.resolve(); // Skip loading language for report
         }
 
@@ -453,7 +464,7 @@ const PdfExporter = {
 
         this.actionInProgress({inProgress: true, message: "Generating PDF"})
 
-        if (this.exportContext.documentType !== "report") {
+        if (this.exportContext.documentType !== "report" && this.exportContext.documentType !== "testrun") {
             this.checkNestedListsAsync(requestBody);
         }
 

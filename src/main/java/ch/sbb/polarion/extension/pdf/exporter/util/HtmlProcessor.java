@@ -185,7 +185,7 @@ public class HtmlProcessor {
                 String processingHtml = addTableOfContent(html);
                 yield addTableOfFigures(processingHtml);
             }
-            case REPORT -> {
+            case REPORT, TESTRUN -> {
                 String processingHtml = adjustReportedBy(html);
                 processingHtml = cutExportToPdfButton(processingHtml);
                 processingHtml = adjustColumnWidthInReports(processingHtml);
@@ -201,7 +201,7 @@ public class HtmlProcessor {
                 String processingHtml = new PageBreakAvoidRemover().removePageBreakAvoids(html);
                 yield new NumberedListsSanitizer().fixNumberedLists(processingHtml);
             }
-            case REPORT -> html;
+            case REPORT, TESTRUN -> html;
         };
 
         // ----
@@ -222,7 +222,7 @@ public class HtmlProcessor {
 
         html = switch (exportParams.getDocumentType()) {
             case DOCUMENT, WIKI -> localizeEnums(html, exportParams);
-            case REPORT -> html;
+            case REPORT, TESTRUN -> html;
         };
 
         if (exportParams.isEnableCommentsRendering()) {

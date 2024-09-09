@@ -7,6 +7,7 @@ import ch.sbb.polarion.extension.generic.settings.SettingName;
 import ch.sbb.polarion.extension.generic.util.ScopeUtils;
 import ch.sbb.polarion.extension.pdf.exporter.properties.PdfExporterExtensionConfiguration;
 import ch.sbb.polarion.extension.pdf.exporter.rest.model.conversion.DocumentType;
+import ch.sbb.polarion.extension.pdf.exporter.rest.model.conversion.ExportParams;
 import ch.sbb.polarion.extension.pdf.exporter.rest.model.settings.localization.Language;
 import ch.sbb.polarion.extension.pdf.exporter.rest.model.settings.stylepackage.StylePackageModel;
 import ch.sbb.polarion.extension.pdf.exporter.service.PdfExporterPolarionService;
@@ -36,6 +37,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -99,7 +101,7 @@ public class PdfExporterFormExtension implements IFormExtension {
             form = adjustChapters(form, selectedStylePackage);
             form = adjustLocalizeEnums(form, selectedStylePackage, module.getCustomField(DOC_LANGUAGE_FIELD));
             form = adjustLinkRoles(form, EnumValuesProvider.getAllLinkRoleNames(module.getProject()), selectedStylePackage);
-            form = adjustFilename(scope, form, module);
+            form = adjustFilename(form, module);
             form = adjustButtons(form, module, selectedStylePackage);
 
             builder.html(form);
@@ -300,8 +302,8 @@ public class PdfExporterFormExtension implements IFormExtension {
         }
     }
 
-    private String adjustFilename(@NotNull String scope, @NotNull String form, @NotNull IModule module) {
-        String filename = getFilename(scope, module);
+    private String adjustFilename(@NotNull String form, @NotNull IModule module) {
+        String filename = getFilename(module);
         return form.replace("{FILENAME}", filename).replace("{DATA_FILENAME}", filename);
     }
 
@@ -320,9 +322,17 @@ public class PdfExporterFormExtension implements IFormExtension {
         return form;
     }
 
-    private String getFilename(@NotNull String scope, @NotNull IModule module) {
+    private String getFilename(@NotNull IModule module) {
         DocumentFileNameHelper documentFileNameHelper = new DocumentFileNameHelper(new PdfExporterPolarionService());
-        return documentFileNameHelper.getDocumentFileName(module.getModuleLocation().getLocationPath(), module.getRevision(), DocumentType.DOCUMENT, scope);
+
+        ExportParams exportParams = ExportParams.builder()
+                .projectId(module.getProject().getId())
+                .locationPath(module.getModuleLocation().getLocationPath())
+                .revision(module.getRevision())
+                .documentType(DocumentType.DOCUMENT)
+                .build();
+
+        return documentFileNameHelper.getDocumentFileName(exportParams);
     }
 
     @Override
