@@ -164,7 +164,7 @@ function saveStylePackage() {
             'css': ChildConfigurations.cssSelect.getSelectedValue(),
             'headerFooter': ChildConfigurations.headerFooterSelect.getSelectedValue(),
             'localization': ChildConfigurations.localizationSelect.getSelectedValue(),
-            'webhooks': SbbCommon.getCheckboxValueById('webhooks-checkbox') ? ChildConfigurations.webhooksSelect.getSelectedValue() : [],
+            'webhooks': SbbCommon.getCheckboxValueById('webhooks-checkbox') ? ChildConfigurations.webhooksSelect.getSelectedValue() : null,
             'headersColor': SbbCommon.getValueById('headers-color'),
             'paperSize': PaperSizes.paperSizeSelect.getSelectedValue(),
             'orientation': Orientations.orientationSelect.getSelectedValue(),
