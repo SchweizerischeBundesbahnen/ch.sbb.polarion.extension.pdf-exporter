@@ -13,8 +13,8 @@ Require-Bundle: com.polarion.portal.tomcat,
  org.springframework.spring-core,
  org.springframework.spring-web,
  com.polarion.alm.wiki
-Guice-Modules: ch.sbb.polarion.extension.pdf.exporter.PdfExporterModule
-Export-Package: ch.sbb.polarion.extension.pdf.exporter,
- ch.sbb.polarion.extension.pdf.exporter.converter,
- ch.sbb.polarion.extension.pdf.exporter.rest.model,
- ch.sbb.polarion.extension.pdf.exporter.rest.model.conversion
+Guice-Modules: ch.sbb.polarion.extension.pdf_exporter.PdfExporterModule
+Export-Package: ch.sbb.polarion.extension.pdf_exporter,
+ ch.sbb.polarion.extension.pdf_exporter.converter,
+ ch.sbb.polarion.extension.pdf_exporter.rest.model,
+ ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion

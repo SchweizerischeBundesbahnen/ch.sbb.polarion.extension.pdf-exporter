@@ -23,7 +23,7 @@
 
     <servlet>
         <servlet-name>pdf-exporter-ui</servlet-name>
-        <servlet-class>ch.sbb.polarion.extension.pdf.exporter.PdfExporterUiServlet</servlet-class>
+        <servlet-class>ch.sbb.polarion.extension.pdf_exporter.PdfExporterUiServlet</servlet-class>
 
         <init-param>
             <param-name>debug</param-name>
@@ -43,7 +43,7 @@
 
         <init-param>
             <param-name>javax.ws.rs.Application</param-name>
-            <param-value>ch.sbb.polarion.extension.pdf.exporter.rest.PdfExporterRestApplication</param-value>
+            <param-value>ch.sbb.polarion.extension.pdf_exporter.rest.PdfExporterRestApplication</param-value>
         </init-param>
 
         <init-param>
