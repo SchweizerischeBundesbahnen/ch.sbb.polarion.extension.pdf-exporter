@@ -1,5 +1,6 @@
 package ch.sbb.polarion.extension.pdf.exporter.util;
 
+import ch.sbb.polarion.extension.pdf.exporter.rest.model.DocumentData;
 import ch.sbb.polarion.extension.pdf.exporter.rest.model.settings.filename.FileNameTemplateModel;
 import ch.sbb.polarion.extension.pdf.exporter.util.velocity.VelocityEvaluator;
 import org.junit.jupiter.api.Test;
@@ -21,7 +22,7 @@ class DocumentFileNameHelperTest {
 
     @Test
     void evaluateVelocity() {
-        LiveDocHelper.DocumentData documentData = LiveDocHelper.DocumentData.builder()
+        DocumentData documentData = DocumentData.builder()
                 .projectName("Test Project")
                 .build();
         FileNameTemplateModel settingOneModel = FileNameTemplateModel.builder()

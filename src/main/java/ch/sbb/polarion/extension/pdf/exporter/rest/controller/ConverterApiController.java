@@ -11,7 +11,7 @@ import ch.sbb.polarion.extension.pdf.exporter.rest.model.conversion.ExportParams
 import ch.sbb.polarion.extension.pdf.exporter.rest.model.conversion.Orientation;
 import ch.sbb.polarion.extension.pdf.exporter.rest.model.conversion.PaperSize;
 import ch.sbb.polarion.extension.pdf.exporter.service.PdfExporterPolarionService;
-import ch.sbb.polarion.extension.pdf.exporter.util.LiveDocHelper;
+import ch.sbb.polarion.extension.pdf.exporter.util.DocumentDataHelper;
 import ch.sbb.polarion.extension.pdf.exporter.util.PdfValidationService;
 import org.jetbrains.annotations.VisibleForTesting;
 import org.springframework.web.context.request.RequestAttributes;
@@ -36,11 +36,11 @@ public class ConverterApiController extends ConverterInternalController {
     ConverterApiController(PdfExporterPolarionService pdfExporterPolarionService,
                            PdfConverter pdfConverter,
                            PdfValidationService pdfValidationService,
-                           LiveDocHelper liveDocHelper,
+                           DocumentDataHelper documentDataHelper,
                            PdfConverterJobsService pdfConverterJobService,
                            UriInfo uriInfo,
                            HtmlToPdfConverter htmlToPdfConverter) {
-        super(pdfExporterPolarionService, pdfConverter, pdfValidationService, liveDocHelper, pdfConverterJobService, uriInfo, htmlToPdfConverter);
+        super(pdfExporterPolarionService, pdfConverter, pdfValidationService, documentDataHelper, pdfConverterJobService, uriInfo, htmlToPdfConverter);
         this.polarionService = pdfExporterPolarionService;
     }
 

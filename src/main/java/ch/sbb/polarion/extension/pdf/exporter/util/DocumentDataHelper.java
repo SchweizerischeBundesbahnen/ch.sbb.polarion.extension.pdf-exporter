@@ -1,5 +1,6 @@
 package ch.sbb.polarion.extension.pdf.exporter.util;
 
+import ch.sbb.polarion.extension.pdf.exporter.rest.model.DocumentData;
 import ch.sbb.polarion.extension.pdf.exporter.rest.model.conversion.ExportParams;
 import ch.sbb.polarion.extension.pdf.exporter.service.PdfExporterPolarionService;
 import ch.sbb.polarion.extension.pdf.exporter.util.exporter.ModifiedDocumentRenderer;
@@ -23,17 +24,11 @@ import com.polarion.alm.shared.dle.document.DocumentRendererParameters;
 import com.polarion.alm.shared.rpe.RpeModelAspect;
 import com.polarion.alm.shared.rpe.RpeRenderer;
 import com.polarion.alm.tracker.model.IBaseline;
-import com.polarion.alm.tracker.model.IModule;
-import com.polarion.alm.tracker.model.IRichPage;
-import com.polarion.alm.tracker.model.ITestRun;
 import com.polarion.alm.tracker.model.ITrackerProject;
-import com.polarion.alm.tracker.model.IWikiPage;
 import com.polarion.alm.tracker.model.ipi.IInternalBaselinesManager;
 import com.polarion.platform.persistence.model.IPObject;
 import com.polarion.subterra.base.location.ILocation;
 import com.polarion.subterra.base.location.Location;
-import lombok.Builder;
-import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
@@ -41,14 +36,14 @@ import org.jetbrains.annotations.VisibleForTesting;
 import java.util.Map;
 
 @SuppressWarnings("java:S1200")
-public class LiveDocHelper {
+public class DocumentDataHelper {
     private static final String DOC_REVISION_CUSTOM_FIELD = "docRevision";
     private static final String URL_QUERY_PARAM_LANGUAGE = "language";
     private static final String URL_QUERY_PARAM_ID = "id";
 
     private final PdfExporterPolarionService pdfExporterPolarionService;
 
-    public LiveDocHelper(PdfExporterPolarionService pdfExporterPolarionService) {
+    public DocumentDataHelper(PdfExporterPolarionService pdfExporterPolarionService) {
         this.pdfExporterPolarionService = pdfExporterPolarionService;
     }
 
@@ -198,11 +193,11 @@ public class LiveDocHelper {
     }
 
     public String getDocumentStatus(String revision, @NotNull DocumentData documentData) {
-        String documentStatus = documentData.lastRevision;
+        String documentStatus = documentData.getLastRevision();
         if (revision != null) {
             documentStatus = revision;
-        } else if (documentData.document != null) { //document is null for wiki pages
-            Object docRevision = documentData.document.getCustomField(DOC_REVISION_CUSTOM_FIELD);
+        } else if (documentData.getDocument() != null) { //document is null for wiki pages
+            Object docRevision = documentData.getDocument().getCustomField(DOC_REVISION_CUSTOM_FIELD);
             if (docRevision != null) {
                 documentStatus = docRevision.toString();
             }
@@ -256,20 +251,5 @@ public class LiveDocHelper {
         }
 
         return baselineNameBuilder.toString();
-    }
-
-    @Builder
-    @Getter
-    public static class DocumentData {
-        private String projectName;
-        private IModule document;
-        private IWikiPage wikiPage;
-        private IRichPage richPage;
-        private ITestRun testRun;
-        private String lastRevision;
-        private String baselineName;
-        private String documentId;
-        private String documentTitle;
-        private String documentContent;
     }
 }

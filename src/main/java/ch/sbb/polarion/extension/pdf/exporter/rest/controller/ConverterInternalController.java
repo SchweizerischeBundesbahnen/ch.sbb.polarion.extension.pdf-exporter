@@ -14,7 +14,7 @@ import ch.sbb.polarion.extension.pdf.exporter.rest.model.conversion.PaperSize;
 import ch.sbb.polarion.extension.pdf.exporter.rest.model.jobs.ConverterJobDetails;
 import ch.sbb.polarion.extension.pdf.exporter.rest.model.jobs.ConverterJobStatus;
 import ch.sbb.polarion.extension.pdf.exporter.service.PdfExporterPolarionService;
-import ch.sbb.polarion.extension.pdf.exporter.util.LiveDocHelper;
+import ch.sbb.polarion.extension.pdf.exporter.util.DocumentDataHelper;
 import ch.sbb.polarion.extension.pdf.exporter.util.PdfValidationService;
 import com.polarion.platform.core.PlatformContext;
 import com.polarion.platform.security.ISecurityService;
@@ -57,7 +57,7 @@ public class ConverterInternalController {
     private final PdfExporterPolarionService pdfExporterPolarionService;
     private final PdfConverter pdfConverter;
     private final PdfValidationService pdfValidationService;
-    private final LiveDocHelper liveDocHelper;
+    private final DocumentDataHelper documentDataHelper;
     private final PdfConverterJobsService pdfConverterJobService;
     private final PropertiesUtility propertiesUtility;
     private final HtmlToPdfConverter htmlToPdfConverter;
@@ -69,7 +69,7 @@ public class ConverterInternalController {
         this.pdfExporterPolarionService = new PdfExporterPolarionService();
         this.pdfConverter = new PdfConverter();
         this.pdfValidationService = new PdfValidationService(pdfConverter);
-        this.liveDocHelper = new LiveDocHelper(pdfExporterPolarionService);
+        this.documentDataHelper = new DocumentDataHelper(pdfExporterPolarionService);
         ISecurityService securityService = PlatformContext.getPlatform().lookupService(ISecurityService.class);
         this.pdfConverterJobService = new PdfConverterJobsService(pdfConverter, securityService);
         this.propertiesUtility = new PropertiesUtility();
@@ -80,14 +80,14 @@ public class ConverterInternalController {
     ConverterInternalController(PdfExporterPolarionService pdfExporterPolarionService,
                                 PdfConverter pdfConverter,
                                 PdfValidationService pdfValidationService,
-                                LiveDocHelper liveDocHelper,
+                                DocumentDataHelper documentDataHelper,
                                 PdfConverterJobsService pdfConverterJobService,
                                 UriInfo uriInfo,
                                 HtmlToPdfConverter htmlToPdfConverter) {
         this.pdfExporterPolarionService = pdfExporterPolarionService;
         this.pdfConverter = pdfConverter;
         this.pdfValidationService = pdfValidationService;
-        this.liveDocHelper = liveDocHelper;
+        this.documentDataHelper = documentDataHelper;
         this.pdfConverterJobService = pdfConverterJobService;
         this.uriInfo = uriInfo;
         this.propertiesUtility = new PropertiesUtility();
@@ -316,7 +316,7 @@ public class ConverterInternalController {
     )
     @SuppressWarnings("java:S1166")
     public NestedListsCheck checkNestedLists(ExportParams exportParams) {
-        boolean containsNestedLists = liveDocHelper.documentContainsNestedNumberedLists(exportParams);
+        boolean containsNestedLists = documentDataHelper.documentContainsNestedNumberedLists(exportParams);
         return NestedListsCheck.builder().containsNestedLists(containsNestedLists).build();
     }
 

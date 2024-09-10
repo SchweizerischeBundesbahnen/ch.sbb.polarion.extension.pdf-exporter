@@ -4,6 +4,7 @@ import ch.sbb.polarion.extension.generic.settings.NamedSettings;
 import ch.sbb.polarion.extension.generic.settings.NamedSettingsRegistry;
 import ch.sbb.polarion.extension.generic.settings.SettingId;
 import ch.sbb.polarion.extension.generic.util.ScopeUtils;
+import ch.sbb.polarion.extension.pdf.exporter.rest.model.DocumentData;
 import ch.sbb.polarion.extension.pdf.exporter.rest.model.conversion.DocumentType;
 import ch.sbb.polarion.extension.pdf.exporter.rest.model.conversion.ExportParams;
 import ch.sbb.polarion.extension.pdf.exporter.rest.model.settings.filename.FileNameTemplateModel;
@@ -34,13 +35,13 @@ public class DocumentFileNameHelper {
     public String getDocumentFileName(@NotNull ExportParams exportParams) {
         ITrackerProject project = pdfExporterPolarionService.getTrackerProject(exportParams.getProjectId());
 
-        LiveDocHelper liveDocHelper = new LiveDocHelper(pdfExporterPolarionService);
-        final LiveDocHelper.DocumentData documentData =
+        DocumentDataHelper documentDataHelper = new DocumentDataHelper(pdfExporterPolarionService);
+        final DocumentData documentData =
                 switch (exportParams.getDocumentType()) {
-                    case DOCUMENT -> liveDocHelper.getLiveDocument(project, exportParams, false);
-                    case REPORT -> liveDocHelper.getLiveReport(project, exportParams, false);
-                    case TESTRUN -> liveDocHelper.getTestRun(project, exportParams, false);
-                    case WIKI -> liveDocHelper.getWikiDocument(project, exportParams, false);
+                    case DOCUMENT -> documentDataHelper.getLiveDocument(project, exportParams, false);
+                    case REPORT -> documentDataHelper.getLiveReport(project, exportParams, false);
+                    case TESTRUN -> documentDataHelper.getTestRun(project, exportParams, false);
+                    case WIKI -> documentDataHelper.getWikiDocument(project, exportParams, false);
                 };
 
         FileNameTemplateModel fileNameTemplateModel = getFileNameTemplateModel(ScopeUtils.getScopeFromProject(exportParams.getProjectId()));
@@ -51,7 +52,7 @@ public class DocumentFileNameHelper {
     }
 
     @VisibleForTesting
-    String evaluateVelocity(LiveDocHelper.DocumentData documentData, String fileNameTemplate) {
+    String evaluateVelocity(DocumentData documentData, String fileNameTemplate) {
         String evaluatedName = velocityEvaluator.evaluateVelocityExpressions(documentData, fileNameTemplate);
         return String.format("%s.pdf", evaluatedName);
     }

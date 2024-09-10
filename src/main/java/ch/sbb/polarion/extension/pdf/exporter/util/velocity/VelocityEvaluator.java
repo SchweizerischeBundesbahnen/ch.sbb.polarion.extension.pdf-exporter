@@ -1,7 +1,7 @@
 package ch.sbb.polarion.extension.pdf.exporter.util.velocity;
 
 import ch.sbb.polarion.extension.generic.util.ObjectUtils;
-import ch.sbb.polarion.extension.pdf.exporter.util.LiveDocHelper;
+import ch.sbb.polarion.extension.pdf.exporter.rest.model.DocumentData;
 import com.polarion.alm.shared.api.transaction.ReadOnlyTransaction;
 import com.polarion.alm.shared.api.transaction.TransactionalExecutor;
 import com.polarion.alm.shared.util.VelocityContextInitializer;
@@ -20,7 +20,7 @@ public class VelocityEvaluator {
 
     private static final Logger log = Logger.getLogger(VelocityEvaluator.class);
 
-    public @NotNull String evaluateVelocityExpressions(@NotNull LiveDocHelper.DocumentData documentData, @NotNull String template) {
+    public @NotNull String evaluateVelocityExpressions(@NotNull DocumentData documentData, @NotNull String template) {
         return ObjectUtils.requireNotNull(TransactionalExecutor.executeSafelyInReadOnlyTransaction(transaction -> {
             VelocityContext velocityContext = createVelocityContext(transaction, documentData);
             StringWriter writer = new StringWriter();
@@ -36,7 +36,7 @@ public class VelocityEvaluator {
         }));
     }
 
-    private @NotNull VelocityContext createVelocityContext(@NotNull ReadOnlyTransaction transaction, @NotNull LiveDocHelper.DocumentData documentData) {
+    private @NotNull VelocityContext createVelocityContext(@NotNull ReadOnlyTransaction transaction, @NotNull DocumentData documentData) {
         VelocityContext velocityContext = new VelocityContextInitializer(transaction).create();
         if (documentData.getDocument() != null) {
             velocityContext.put("document", documentData.getDocument());

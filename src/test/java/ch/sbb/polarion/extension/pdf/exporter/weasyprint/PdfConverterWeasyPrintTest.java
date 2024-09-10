@@ -15,8 +15,9 @@ import ch.sbb.polarion.extension.pdf.exporter.settings.CoverPageSettings;
 import ch.sbb.polarion.extension.pdf.exporter.settings.CssSettings;
 import ch.sbb.polarion.extension.pdf.exporter.settings.HeaderFooterSettings;
 import ch.sbb.polarion.extension.pdf.exporter.settings.LocalizationSettings;
+import ch.sbb.polarion.extension.pdf.exporter.rest.model.DocumentData;
 import ch.sbb.polarion.extension.pdf.exporter.util.HtmlProcessor;
-import ch.sbb.polarion.extension.pdf.exporter.util.LiveDocHelper;
+import ch.sbb.polarion.extension.pdf.exporter.util.DocumentDataHelper;
 import ch.sbb.polarion.extension.pdf.exporter.util.MediaUtils;
 import ch.sbb.polarion.extension.pdf.exporter.util.PdfTemplateProcessor;
 import ch.sbb.polarion.extension.pdf.exporter.util.html.HtmlLinksHelper;
@@ -70,9 +71,9 @@ class PdfConverterWeasyPrintTest extends BaseWeasyPrintTest {
         when(module.getCustomField(anyString())).thenAnswer((Answer<String>) invocation ->
                 "testFieldKey".equals(invocation.getArgument(0)) ? "testFieldValue" : null);
 
-        LiveDocHelper liveDocHelper = mock(LiveDocHelper.class);
-        when(liveDocHelper.getLiveDocument(any(), any())).thenReturn(
-                LiveDocHelper.DocumentData.builder().projectName("Test").document(module).documentTitle("testTitle").documentContent("<div>TEST</div>").lastRevision("42").build());
+        DocumentDataHelper documentDataHelper = mock(DocumentDataHelper.class);
+        when(documentDataHelper.getLiveDocument(any(), any())).thenReturn(
+                DocumentData.builder().projectName("Test").document(module).documentTitle("testTitle").documentContent("<div>TEST</div>").lastRevision("42").build());
 
         LocalizationSettings localizationSettings = mock(LocalizationSettings.class);
         when(localizationSettings.load(any(), any())).thenReturn(new LocalizationModel(null, null, null));
@@ -91,7 +92,7 @@ class PdfConverterWeasyPrintTest extends BaseWeasyPrintTest {
         WeasyPrintServiceConnector weasyPrintServiceConnector = mock(WeasyPrintServiceConnector.class);
         when(weasyPrintServiceConnector.convertToPdf(anyString(), any())).thenAnswer((Answer<byte[]>) invocation -> exportToPdf(invocation.getArgument(0), invocation.getArgument(1)));
 
-        PlaceholderProcessor placeholderProcessor = new PlaceholderProcessor(pdfExporterPolarionService, liveDocHelper);
+        PlaceholderProcessor placeholderProcessor = new PlaceholderProcessor(pdfExporterPolarionService, documentDataHelper);
 
         VelocityEvaluator velocityEvaluator = mock(VelocityEvaluator.class);
         when(velocityEvaluator.evaluateVelocityExpressions(any(), anyString())).thenAnswer(a -> a.getArguments()[1]);
@@ -107,22 +108,25 @@ class PdfConverterWeasyPrintTest extends BaseWeasyPrintTest {
         when(htmlLinksHelper.internalizeLinks(anyString())).thenAnswer(invocation -> invocation.getArgument(0));
 
         ExportParams params = ExportParams.builder().projectId("test").locationPath("testLocation").orientation(Orientation.PORTRAIT).paperSize(PaperSize.A4).build();
-        PdfConverter converter = new PdfConverter(pdfExporterPolarionService, headerFooterSettings, cssSettings, liveDocHelper, placeholderProcessor, velocityEvaluator,
+        PdfConverter converter = new PdfConverter(pdfExporterPolarionService, headerFooterSettings, cssSettings, documentDataHelper, placeholderProcessor, velocityEvaluator,
                 coverPageProcessor, weasyPrintServiceConnector, new HtmlProcessor(null, localizationSettings, htmlLinksHelper, pdfExporterPolarionService), new PdfTemplateProcessor());
 
         compareContentUsingReferenceImages(testName + "_simple", converter.convertToPdf(params, null));
 
         params.setCoverPage("test");
-        when(liveDocHelper.getLiveDocument(any(), any())).thenReturn(
-                LiveDocHelper.DocumentData.builder().projectName("Test").document(module).documentTitle("testTitle")
+        when(documentDataHelper.getLiveDocument(any(), any())).thenReturn(
+                DocumentData.builder()
+                        .projectName("Test")
+                        .document(module)
+                        .documentTitle("testTitle")
                         .documentContent("<div>TEST page 1</div><!--PAGE_BREAK--><!--PORTRAIT_ABOVE--><div>TEST page 2</div><!--PAGE_BREAK--><!--LANDSCAPE_ABOVE--><div>TEST page 3</div>")
                         .lastRevision("42")
                         .build());
         compareContentUsingReferenceImages(testName + "_complex_with_title", converter.convertToPdf(params, null));
 
         //test wiki page export + {{ REVISION }} placeholder usage
-        when(liveDocHelper.getWikiDocument(any(), any())).thenReturn(
-                LiveDocHelper.DocumentData.builder().projectName("Test").documentTitle("wikiPage").documentContent("<div>TEST</div>").lastRevision("42").build());
+        when(documentDataHelper.getWikiDocument(any(), any())).thenReturn(
+                DocumentData.builder().projectName("Test").documentTitle("wikiPage").documentContent("<div>TEST</div>").lastRevision("42").build());
         when(headerFooterSettings.load(any(), any())).thenReturn(new HeaderFooterModel("HL", "HC  {{ REVISION }}", "HR", "FL", "FC", "FR {{ PAGE_NUMBER }}"));
         params.setCoverPage(null);
         params.setDocumentType(DocumentType.WIKI);
