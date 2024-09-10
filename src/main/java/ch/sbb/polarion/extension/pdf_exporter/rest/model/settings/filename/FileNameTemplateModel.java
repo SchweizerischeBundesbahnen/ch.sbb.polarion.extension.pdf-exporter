@@ -38,9 +38,9 @@ public class FileNameTemplateModel extends SettingsModel {
 
     @Override
     protected void deserializeModelData(String serializedString) {
-        documentNameTemplate = deserializeEntry(LIVE_DOC_NAME_TEMPLATE, serializedString, FileNameTemplateSettings.DEFAULT_DOCUMENT_NAME_TEMPLATE);
-        reportNameTemplate = deserializeEntry(LIVE_REPORT_NAME_TEMPLATE, serializedString, FileNameTemplateSettings.DEFAULT_REPORT_NAME_TEMPLATE);
-        testRunNameTemplate = deserializeEntry(TEST_RUN_NAME_TEMPLATE, serializedString, FileNameTemplateSettings.DEFAULT_TESTRUN_NAME_TEMPLATE);
-        wikiNameTemplate = deserializeEntry(WIKI_PAGE_NAME_TEMPLATE, serializedString, FileNameTemplateSettings.DEFAULT_WIKI_NAME_TEMPLATE);
+        documentNameTemplate = deserializeEntry(LIVE_DOC_NAME_TEMPLATE, serializedString, FileNameTemplateSettings.DEFAULT_LIVE_DOC_NAME_TEMPLATE);
+        reportNameTemplate = deserializeEntry(LIVE_REPORT_NAME_TEMPLATE, serializedString, FileNameTemplateSettings.DEFAULT_LIVE_REPORT_NAME_TEMPLATE);
+        testRunNameTemplate = deserializeEntry(TEST_RUN_NAME_TEMPLATE, serializedString, FileNameTemplateSettings.DEFAULT_TEST_RUN_NAME_TEMPLATE);
+        wikiNameTemplate = deserializeEntry(WIKI_PAGE_NAME_TEMPLATE, serializedString, FileNameTemplateSettings.DEFAULT_WIKI_PAGE_NAME_TEMPLATE);
     }
 }
