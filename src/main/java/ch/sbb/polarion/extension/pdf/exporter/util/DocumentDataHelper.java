@@ -1,5 +1,6 @@
 package ch.sbb.polarion.extension.pdf.exporter.util;
 
+import ch.sbb.polarion.extension.pdf.exporter.rest.model.DocumentData;
 import ch.sbb.polarion.extension.pdf.exporter.rest.model.conversion.ExportParams;
 import ch.sbb.polarion.extension.pdf.exporter.service.PdfExporterPolarionService;
 import ch.sbb.polarion.extension.pdf.exporter.util.exporter.ModifiedDocumentRenderer;
@@ -23,17 +24,11 @@ import com.polarion.alm.shared.dle.document.DocumentRendererParameters;
 import com.polarion.alm.shared.rpe.RpeModelAspect;
 import com.polarion.alm.shared.rpe.RpeRenderer;
 import com.polarion.alm.tracker.model.IBaseline;
-import com.polarion.alm.tracker.model.IModule;
-import com.polarion.alm.tracker.model.IRichPage;
-import com.polarion.alm.tracker.model.ITestRun;
 import com.polarion.alm.tracker.model.ITrackerProject;
-import com.polarion.alm.tracker.model.IWikiPage;
 import com.polarion.alm.tracker.model.ipi.IInternalBaselinesManager;
 import com.polarion.platform.persistence.model.IPObject;
 import com.polarion.subterra.base.location.ILocation;
 import com.polarion.subterra.base.location.Location;
-import lombok.Builder;
-import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;

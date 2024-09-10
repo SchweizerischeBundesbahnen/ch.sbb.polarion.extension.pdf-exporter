@@ -1,5 +1,6 @@
 package ch.sbb.polarion.extension.pdf.exporter.util;
 
+import ch.sbb.polarion.extension.pdf.exporter.rest.model.DocumentData;
 import com.polarion.alm.tracker.model.IModule;
 import com.polarion.subterra.base.location.ILocation;
 import org.junit.jupiter.api.BeforeEach;

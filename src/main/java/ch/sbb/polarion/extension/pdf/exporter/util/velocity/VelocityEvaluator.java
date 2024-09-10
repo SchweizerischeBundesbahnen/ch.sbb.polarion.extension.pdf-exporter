@@ -1,7 +1,7 @@
 package ch.sbb.polarion.extension.pdf.exporter.util.velocity;
 
 import ch.sbb.polarion.extension.generic.util.ObjectUtils;
-import ch.sbb.polarion.extension.pdf.exporter.util.DocumentData;
+import ch.sbb.polarion.extension.pdf.exporter.rest.model.DocumentData;
 import com.polarion.alm.shared.api.transaction.ReadOnlyTransaction;
 import com.polarion.alm.shared.api.transaction.TransactionalExecutor;
 import com.polarion.alm.shared.util.VelocityContextInitializer;

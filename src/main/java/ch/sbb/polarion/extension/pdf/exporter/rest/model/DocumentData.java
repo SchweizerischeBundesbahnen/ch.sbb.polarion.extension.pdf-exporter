@@ -1,4 +1,4 @@
-package ch.sbb.polarion.extension.pdf.exporter.util;
+package ch.sbb.polarion.extension.pdf.exporter.rest.model;
 
 import com.polarion.alm.tracker.model.IModule;
 import com.polarion.alm.tracker.model.IRichPage;

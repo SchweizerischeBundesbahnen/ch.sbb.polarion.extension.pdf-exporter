@@ -3,7 +3,7 @@ package ch.sbb.polarion.extension.pdf.exporter.util.placeholder;
 import ch.sbb.polarion.extension.pdf.exporter.rest.model.conversion.ExportParams;
 import ch.sbb.polarion.extension.pdf.exporter.rest.model.settings.headerfooter.Placeholder;
 import ch.sbb.polarion.extension.pdf.exporter.service.PdfExporterPolarionService;
-import ch.sbb.polarion.extension.pdf.exporter.util.DocumentData;
+import ch.sbb.polarion.extension.pdf.exporter.rest.model.DocumentData;
 import ch.sbb.polarion.extension.pdf.exporter.util.DocumentDataHelper;
 import ch.sbb.polarion.extension.generic.regex.RegexMatcher;
 import org.jetbrains.annotations.NotNull;
