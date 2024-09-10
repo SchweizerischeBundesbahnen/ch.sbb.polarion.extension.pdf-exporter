@@ -23,7 +23,7 @@ public class ExportParams {
     @Schema(description = "The specific revision of the document to export")
     private String revision;
 
-    @Schema(description = "The type of document to export", example = "DOCUMENT")
+    @Schema(description = "The type of document to export", example = "LIVE_DOC")
     private DocumentType documentType;
 
     @Schema(description = "Cover page settings name")
