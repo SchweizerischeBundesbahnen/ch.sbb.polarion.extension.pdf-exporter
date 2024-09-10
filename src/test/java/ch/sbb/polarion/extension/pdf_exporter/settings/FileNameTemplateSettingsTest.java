@@ -72,7 +72,7 @@ class FileNameTemplateSettingsTest {
             FileNameTemplateModel customProjectModel = FileNameTemplateModel.builder()
                     .documentNameTemplate("customDocumentNameTemplate")
                     .reportNameTemplate("customReportTemplate")
-                    .testrunNameTemplate("customTestrunTemplate")
+                    .testRunNameTemplate("customTestrunTemplate")
                     .wikiNameTemplate("customWikiTemplate")
                     .build();
             customProjectModel.setBundleTimestamp("custom");
@@ -84,7 +84,7 @@ class FileNameTemplateSettingsTest {
             FileNameTemplateModel loadedModel = exporterSettings.load(projectName, SettingId.fromName("Any setting name"));
             assertEquals("customDocumentNameTemplate", loadedModel.getDocumentNameTemplate());
             assertEquals("customReportTemplate", loadedModel.getReportNameTemplate());
-            assertEquals("customTestrunTemplate", loadedModel.getTestrunNameTemplate());
+            assertEquals("customTestrunTemplate", loadedModel.getTestRunNameTemplate());
             assertEquals("customWikiTemplate", loadedModel.getWikiNameTemplate());
             assertEquals("custom", loadedModel.getBundleTimestamp());
         }
@@ -123,7 +123,7 @@ class FileNameTemplateSettingsTest {
             FileNameTemplateModel settingOneModel = FileNameTemplateModel.builder()
                     .documentNameTemplate("setting_oneDocumentNameTemplate")
                     .reportNameTemplate("setting_oneReportTemplate")
-                    .testrunNameTemplate("setting_oneTestrunTemplate")
+                    .testRunNameTemplate("setting_oneTestrunTemplate")
                     .wikiNameTemplate("setting_oneWikiTemplate")
                     .build();
             settingOneModel.setBundleTimestamp("setting_one");
@@ -132,7 +132,7 @@ class FileNameTemplateSettingsTest {
             FileNameTemplateModel settingTwoModel = FileNameTemplateModel.builder()
                     .documentNameTemplate("setting_twoDocumentNameTemplate")
                     .reportNameTemplate("setting_twoReportTemplate")
-                    .testrunNameTemplate("setting_twoTestrunTemplate")
+                    .testRunNameTemplate("setting_twoTestrunTemplate")
                     .wikiNameTemplate("setting_twoWikiTemplate")
                     .build();
             settingTwoModel.setBundleTimestamp("setting_two");
@@ -141,14 +141,14 @@ class FileNameTemplateSettingsTest {
             FileNameTemplateModel loadedOneModel = settings.load(projectName, SettingId.fromName(settingOne));
             assertEquals("setting_oneDocumentNameTemplate", loadedOneModel.getDocumentNameTemplate());
             assertEquals("setting_oneReportTemplate", loadedOneModel.getReportNameTemplate());
-            assertEquals("setting_oneTestrunTemplate", loadedOneModel.getTestrunNameTemplate());
+            assertEquals("setting_oneTestrunTemplate", loadedOneModel.getTestRunNameTemplate());
             assertEquals("setting_oneWikiTemplate", loadedOneModel.getWikiNameTemplate());
             assertEquals("setting_one", loadedOneModel.getBundleTimestamp());
 
             FileNameTemplateModel loadedTwoModel = settings.load(projectName, SettingId.fromName(settingTwo));
             assertEquals("setting_twoDocumentNameTemplate", loadedTwoModel.getDocumentNameTemplate());
             assertEquals("setting_twoReportTemplate", loadedTwoModel.getReportNameTemplate());
-            assertEquals("setting_twoTestrunTemplate", loadedTwoModel.getTestrunNameTemplate());
+            assertEquals("setting_twoTestrunTemplate", loadedTwoModel.getTestRunNameTemplate());
             assertEquals("setting_twoWikiTemplate", loadedTwoModel.getWikiNameTemplate());
             assertEquals("setting_two", loadedTwoModel.getBundleTimestamp());
         }

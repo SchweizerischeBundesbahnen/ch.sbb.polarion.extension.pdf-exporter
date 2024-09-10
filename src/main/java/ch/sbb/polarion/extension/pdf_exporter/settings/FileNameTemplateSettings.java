@@ -25,7 +25,7 @@ public class FileNameTemplateSettings extends GenericNamedSettings<FileNameTempl
         return FileNameTemplateModel.builder()
                 .documentNameTemplate(DEFAULT_DOCUMENT_NAME_TEMPLATE)
                 .reportNameTemplate(DEFAULT_REPORT_NAME_TEMPLATE)
-                .testrunNameTemplate(DEFAULT_TESTRUN_NAME_TEMPLATE)
+                .testRunNameTemplate(DEFAULT_TESTRUN_NAME_TEMPLATE)
                 .wikiNameTemplate(DEFAULT_WIKI_NAME_TEMPLATE)
                 .build();
     }

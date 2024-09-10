@@ -70,7 +70,7 @@ public class DocumentFileNameHelper {
             case LIVE_REPORT:
                 yield fileNameTemplateModel.getReportNameTemplate();
             case TEST_RUN:
-                yield fileNameTemplateModel.getTestrunNameTemplate();
+                yield fileNameTemplateModel.getTestRunNameTemplate();
             case WIKI_PAGE:
                 yield fileNameTemplateModel.getWikiNameTemplate();
         };
