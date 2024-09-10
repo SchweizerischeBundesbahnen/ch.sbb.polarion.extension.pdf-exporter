@@ -149,7 +149,7 @@ public class DocumentDataHelper {
                     .lastRevision(wikiPage.getOldApi().getLastRevision())
                     .baselineName(project != null ? getRevisionBaseline(projectId, wikiPage.getOldApi(), exportParams.getRevision()) : "")
                     .id(wikiPage.getOldApi().getId())
-                    .title(wikiPage.getOldApi().getTitle())
+                    .title(wikiPage.getOldApi().getTitleOrName())
                     .content(documentContent)
                     .build();
         });
