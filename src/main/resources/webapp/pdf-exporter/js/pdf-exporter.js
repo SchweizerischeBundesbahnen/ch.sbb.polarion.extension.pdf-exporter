@@ -31,9 +31,7 @@ function ExportContext() {
     if (locationParts) {
         this.scope = locationParts[1]
 
-        if (locationParts[2] === "testrun") {
-            this.path = "testrun";
-        } else if (locationParts[2].includes("/")) {
+        if (locationParts[2] === "testrun" || locationParts[2].includes("/")) {
             this.path = locationParts[2];
         } else {
             //in this case path contains only document name
@@ -49,22 +47,22 @@ function ExportContext() {
     }
 }
 
-ExportContext.prototype.getProjectId = function() {
+ExportContext.prototype.getProjectId = function () {
     const foundValues = /project\/(.*)\//.exec(this.scope);
     return foundValues !== null ? foundValues[1] : null;
 }
 
-ExportContext.prototype.getSpaceId = function() {
+ExportContext.prototype.getSpaceId = function () {
     const pathParts = this.path.split("/");
     return pathParts && pathParts.length > 0 && pathParts[0];
 }
 
-ExportContext.prototype.getDocumentName = function() {
+ExportContext.prototype.getDocumentName = function () {
     const pathParts = this.path.split("/");
     return pathParts && pathParts.length > 1 && pathParts[1];
 }
 
-ExportContext.prototype.setProjectName = function(projectName) {
+ExportContext.prototype.setProjectName = function (projectName) {
     this.projectName = projectName;
 }
 
@@ -98,7 +96,7 @@ const PdfExporter = {
         MicroModal.show('pdf-export-modal-popup');
     },
 
-loadFormData: function (params) {
+    loadFormData: function (params) {
         this.exportContext = new ExportContext();
         this.exportContext.documentType = params && params.context ? params.context : "document";
 
