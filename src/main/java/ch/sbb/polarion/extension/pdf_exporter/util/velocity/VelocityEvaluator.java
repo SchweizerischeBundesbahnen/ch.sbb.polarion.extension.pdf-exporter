@@ -71,4 +71,5 @@ public class VelocityEvaluator {
         velocityContext.put("projectName", documentData.getProjectName());
 
         return velocityContext;
-    }}
+    }
+}
