@@ -85,7 +85,7 @@ class PdfConverterTest {
                 .title("testDocument")
                 .content("test document content")
                 .build();
-        when(documentDataHelper.getLiveDocument(project, exportParams)).thenReturn(documentData);
+        when(documentDataHelper.getLiveDoc(project, exportParams)).thenReturn(documentData);
         when(headerFooterSettings.load("test project", SettingId.fromName("Default"))).thenReturn(HeaderFooterModel.builder().build());
         when(placeholderProcessor.replacePlaceholders(documentData, exportParams, "test css")).thenReturn("css content");
         when(placeholderProcessor.replacePlaceholders(eq(documentData), eq(exportParams), anyList())).thenReturn(List.of("hl", "hc", "hr", "fl", "fc", "fr"));

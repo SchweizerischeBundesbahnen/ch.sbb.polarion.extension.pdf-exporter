@@ -124,11 +124,11 @@ public class DocumentDataHelper {
     }
 
 
-    public DocumentData<IWikiPage> getWikiDocument(@Nullable ITrackerProject project, @NotNull ExportParams exportParams) {
-        return getWikiDocument(project, exportParams, true);
+    public DocumentData<IWikiPage> getWikiPage(@Nullable ITrackerProject project, @NotNull ExportParams exportParams) {
+        return getWikiPage(project, exportParams, true);
     }
 
-    public DocumentData<IWikiPage> getWikiDocument(@Nullable ITrackerProject project, @NotNull ExportParams exportParams, boolean withContent) {
+    public DocumentData<IWikiPage> getWikiPage(@Nullable ITrackerProject project, @NotNull ExportParams exportParams, boolean withContent) {
         return TransactionalExecutor.executeSafelyInReadOnlyTransaction(transaction -> {
 
             String projectId = project != null ? project.getId() : "";
@@ -155,11 +155,11 @@ public class DocumentDataHelper {
         });
     }
 
-    public DocumentData<IModule> getLiveDocument(@NotNull ITrackerProject project, @NotNull ExportParams exportParams) {
-        return getLiveDocument(project, exportParams, true);
+    public DocumentData<IModule> getLiveDoc(@NotNull ITrackerProject project, @NotNull ExportParams exportParams) {
+        return getLiveDoc(project, exportParams, true);
     }
 
-    public DocumentData<IModule> getLiveDocument(@NotNull ITrackerProject project, @NotNull ExportParams exportParams, boolean withContent) {
+    public DocumentData<IModule> getLiveDoc(@NotNull ITrackerProject project, @NotNull ExportParams exportParams, boolean withContent) {
         return TransactionalExecutor.executeSafelyInReadOnlyTransaction(transaction -> {
 
             DocumentReference documentReference = DocumentReference.fromPath(createPath(project.getId(), exportParams.getLocationPath()));
@@ -211,7 +211,7 @@ public class DocumentDataHelper {
         return documentStatus;
     }
 
-    public boolean documentContainsNestedNumberedLists(ExportParams exportParams) {
+    public boolean hasLiveDocNestedNumberedLists(@NotNull ExportParams exportParams) {
         return Boolean.TRUE.equals(TransactionalExecutor.executeSafelyInReadOnlyTransaction(transaction -> {
             IProject project = pdfExporterPolarionService.getProject(exportParams.getProjectId());
             ILocation location = getDocumentLocation(exportParams.getLocationPath(), exportParams.getRevision());
@@ -226,7 +226,7 @@ public class DocumentDataHelper {
         }));
     }
 
-    public ILocation getDocumentLocation(String locationPath, String revision) {
+    public ILocation getDocumentLocation(String locationPath, @Nullable String revision) {
         return revision == null ? Location.getLocation(locationPath) : Location.getLocationWithRevision(locationPath, revision);
     }
 

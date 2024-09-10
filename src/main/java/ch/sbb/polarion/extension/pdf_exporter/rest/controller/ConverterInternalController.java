@@ -316,7 +316,7 @@ public class ConverterInternalController {
     )
     @SuppressWarnings("java:S1166")
     public NestedListsCheck checkNestedLists(ExportParams exportParams) {
-        boolean containsNestedLists = documentDataHelper.documentContainsNestedNumberedLists(exportParams);
+        boolean containsNestedLists = documentDataHelper.hasLiveDocNestedNumberedLists(exportParams);
         return NestedListsCheck.builder().containsNestedLists(containsNestedLists).build();
     }
 

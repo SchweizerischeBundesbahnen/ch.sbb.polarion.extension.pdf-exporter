@@ -39,10 +39,10 @@ public class DocumentFileNameHelper {
         DocumentDataHelper documentDataHelper = new DocumentDataHelper(pdfExporterPolarionService);
         final DocumentData<? extends IUniqueObject> documentData =
                 switch (exportParams.getDocumentType()) {
-                    case DOCUMENT -> documentDataHelper.getLiveDocument(project, exportParams, false);
+                    case DOCUMENT -> documentDataHelper.getLiveDoc(project, exportParams, false);
                     case REPORT -> documentDataHelper.getLiveReport(project, exportParams, false);
                     case TESTRUN -> documentDataHelper.getTestRun(project, exportParams, false);
-                    case WIKI -> documentDataHelper.getWikiDocument(project, exportParams, false);
+                    case WIKI -> documentDataHelper.getWikiPage(project, exportParams, false);
                 };
 
         FileNameTemplateModel fileNameTemplateModel = getFileNameTemplateModel(ScopeUtils.getScopeFromProject(exportParams.getProjectId()));

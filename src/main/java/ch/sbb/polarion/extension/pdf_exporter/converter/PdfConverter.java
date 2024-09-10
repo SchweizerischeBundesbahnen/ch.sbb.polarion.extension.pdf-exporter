@@ -132,10 +132,10 @@ public class PdfConverter {
 
     private @NotNull DocumentData<? extends IUniqueObject> getDocumentData(@NotNull ExportParams exportParams, @Nullable ITrackerProject project) {
         return switch (exportParams.getDocumentType()) {
-            case DOCUMENT -> documentDataHelper.getLiveDocument(Objects.requireNonNull(project), exportParams);
+            case DOCUMENT -> documentDataHelper.getLiveDoc(Objects.requireNonNull(project), exportParams);
             case REPORT -> documentDataHelper.getLiveReport(project, exportParams);
             case TESTRUN -> documentDataHelper.getTestRun(project, exportParams);
-            case WIKI -> documentDataHelper.getWikiDocument(project, exportParams);
+            case WIKI -> documentDataHelper.getWikiPage(project, exportParams);
         };
     }
 

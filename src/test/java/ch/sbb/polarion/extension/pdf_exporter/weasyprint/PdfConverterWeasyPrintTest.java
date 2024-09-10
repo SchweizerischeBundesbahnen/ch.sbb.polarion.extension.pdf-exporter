@@ -80,7 +80,7 @@ class PdfConverterWeasyPrintTest extends BaseWeasyPrintTest {
                 .content("<div>TEST</div>")
                 .lastRevision("42")
                 .build();
-        when(documentDataHelper.getLiveDocument(any(), any())).thenReturn(liveDoc1);
+        when(documentDataHelper.getLiveDoc(any(), any())).thenReturn(liveDoc1);
 
         LocalizationSettings localizationSettings = mock(LocalizationSettings.class);
         when(localizationSettings.load(any(), any())).thenReturn(new LocalizationModel(null, null, null));
@@ -128,7 +128,7 @@ class PdfConverterWeasyPrintTest extends BaseWeasyPrintTest {
                 .content("<div>TEST page 1</div><!--PAGE_BREAK--><!--PORTRAIT_ABOVE--><div>TEST page 2</div><!--PAGE_BREAK--><!--LANDSCAPE_ABOVE--><div>TEST page 3</div>")
                 .lastRevision("42")
                 .build();
-        when(documentDataHelper.getLiveDocument(any(), any())).thenReturn(liveDoc2);
+        when(documentDataHelper.getLiveDoc(any(), any())).thenReturn(liveDoc2);
         compareContentUsingReferenceImages(testName + "_complex_with_title", converter.convertToPdf(params, null));
 
         //test wiki page export + {{ REVISION }} placeholder usage
@@ -139,7 +139,7 @@ class PdfConverterWeasyPrintTest extends BaseWeasyPrintTest {
                 .content("<div>TEST</div>")
                 .lastRevision("42")
                 .build();
-        when(documentDataHelper.getWikiDocument(any(), any())).thenReturn(wikiPage);
+        when(documentDataHelper.getWikiPage(any(), any())).thenReturn(wikiPage);
         when(headerFooterSettings.load(any(), any())).thenReturn(new HeaderFooterModel("HL", "HC  {{ REVISION }}", "HR", "FL", "FC", "FR {{ PAGE_NUMBER }}"));
         params.setCoverPage(null);
         params.setDocumentType(DocumentType.WIKI);
