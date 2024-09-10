@@ -1,6 +1,7 @@
 package ch.sbb.polarion.extension.pdf_exporter.converter;
 
 import ch.sbb.polarion.extension.generic.settings.SettingId;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.DocumentType;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.coverpage.CoverPageModel;
 import ch.sbb.polarion.extension.pdf_exporter.settings.CoverPageSettings;
@@ -11,6 +12,7 @@ import ch.sbb.polarion.extension.pdf_exporter.util.placeholder.PlaceholderProces
 import ch.sbb.polarion.extension.pdf_exporter.util.velocity.VelocityEvaluator;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.WeasyPrintOptions;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.service.WeasyPrintServiceConnector;
+import com.polarion.alm.tracker.model.IModule;
 import lombok.SneakyThrows;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -27,6 +29,7 @@ import java.util.stream.IntStream;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -57,7 +60,7 @@ class CoverPageProcessorTest {
                 .templateHtml("test template html")
                 .templateCss("test template css")
                 .build();
-        DocumentData documentData = prepareMocks(coverPageModel, exportParams);
+        DocumentData<IModule> documentData = prepareMocks(coverPageModel, exportParams);
         when(weasyPrintServiceConnector.convertToPdf("result title html", new WeasyPrintOptions())).thenReturn(createEmptyPdf(2));
         when(weasyPrintServiceConnector.convertToPdf("test content", new WeasyPrintOptions())).thenReturn(createEmptyPdf(3));
 
@@ -96,7 +99,7 @@ class CoverPageProcessorTest {
                 .templateHtml("test template html")
                 .templateCss("test template css")
                 .build();
-        DocumentData documentData = prepareMocks(coverPageModel, exportParams);
+        DocumentData<IModule> documentData = prepareMocks(coverPageModel, exportParams);
 
         // Act
         String result = coverPageProcessor.composeTitleHtml(documentData, exportParams);
@@ -105,9 +108,13 @@ class CoverPageProcessorTest {
         assertThat(result).isEqualTo("result title html");
     }
 
-    private DocumentData prepareMocks(CoverPageModel coverPageModel, ExportParams exportParams) {
+    private DocumentData<IModule> prepareMocks(CoverPageModel coverPageModel, ExportParams exportParams) {
         when(coverPageSettings.load("testProjectId", SettingId.fromName("test cover page"))).thenReturn(coverPageModel);
-        DocumentData documentData = DocumentData.builder().documentTitle("test document").build();
+        DocumentData<IModule> documentData = DocumentData.<IModule>builder()
+                .documentType(DocumentType.DOCUMENT)
+                .documentObject(mock(IModule.class))
+                .documentTitle("test document")
+                .build();
         when(placeholderProcessor.replacePlaceholders(documentData, exportParams, "test template html")).thenReturn("replaced template html");
         when(velocityEvaluator.evaluateVelocityExpressions(eq(documentData), anyString())).thenAnswer(a -> a.getArguments()[1]);
         when(coverPageSettings.processImagePlaceholders("test template css")).thenCallRealMethod();

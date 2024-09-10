@@ -12,6 +12,7 @@ import ch.sbb.polarion.extension.pdf_exporter.service.PdfExporterPolarionService
 import ch.sbb.polarion.extension.pdf_exporter.settings.FileNameTemplateSettings;
 import ch.sbb.polarion.extension.pdf_exporter.util.placeholder.PlaceholderProcessor;
 import ch.sbb.polarion.extension.pdf_exporter.util.velocity.VelocityEvaluator;
+import com.polarion.alm.projects.model.IUniqueObject;
 import com.polarion.alm.tracker.model.ITrackerProject;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.VisibleForTesting;
@@ -36,7 +37,7 @@ public class DocumentFileNameHelper {
         ITrackerProject project = pdfExporterPolarionService.getTrackerProject(exportParams.getProjectId());
 
         DocumentDataHelper documentDataHelper = new DocumentDataHelper(pdfExporterPolarionService);
-        final DocumentData documentData =
+        final DocumentData<? extends IUniqueObject> documentData =
                 switch (exportParams.getDocumentType()) {
                     case DOCUMENT -> documentDataHelper.getLiveDocument(project, exportParams, false);
                     case REPORT -> documentDataHelper.getLiveReport(project, exportParams, false);
@@ -52,7 +53,7 @@ public class DocumentFileNameHelper {
     }
 
     @VisibleForTesting
-    String evaluateVelocity(DocumentData documentData, String fileNameTemplate) {
+    String evaluateVelocity(DocumentData<? extends IUniqueObject> documentData, String fileNameTemplate) {
         String evaluatedName = velocityEvaluator.evaluateVelocityExpressions(documentData, fileNameTemplate);
         return String.format("%s.pdf", evaluatedName);
     }

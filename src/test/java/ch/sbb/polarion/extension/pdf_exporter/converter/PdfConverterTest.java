@@ -80,7 +80,9 @@ class PdfConverterTest {
         PdfConverter pdfConverter = new PdfConverter(pdfExporterPolarionService, headerFooterSettings, cssSettings, documentDataHelper, placeholderProcessor, velocityEvaluator, coverPageProcessor, weasyPrintServiceConnector, htmlProcessor, pdfTemplateProcessor);
         CssModel cssModel = CssModel.builder().css("test css").build();
         when(cssSettings.load("test project", SettingId.fromName("Default"))).thenReturn(cssModel);
-        DocumentData documentData = DocumentData.builder()
+        DocumentData<IModule> documentData = DocumentData.<IModule>builder()
+                .documentType(DocumentType.DOCUMENT)
+                .documentObject(module)
                 .documentTitle("testDocument")
                 .documentContent("test document content")
                 .build();
@@ -103,11 +105,12 @@ class PdfConverterTest {
 
     @Test
     void shouldGetAndReplaceCss() {
-        DocumentData documentData = DocumentData.builder()
+        DocumentData<IModule> documentData = DocumentData.<IModule>builder()
                 .projectName("testProjectName")
                 .lastRevision("testLastRevision")
                 .documentTitle("testDocumentTitle")
-                .document(module)
+                .documentType(DocumentType.DOCUMENT)
+                .documentObject(module)
                 .build();
 
         ExportParams exportParams = ExportParams.builder()
@@ -139,7 +142,9 @@ class PdfConverterTest {
     @SuppressWarnings("unchecked")
     void shouldGetAndProcessHeaderFooterContent(String settingName, String settingArgument) {
         // Arrange
-        DocumentData documentData = DocumentData.builder()
+        DocumentData<IModule> documentData = DocumentData.<IModule>builder()
+                .documentType(DocumentType.DOCUMENT)
+                .documentObject(module)
                 .build();
         ExportParams exportParams = ExportParams.builder()
                 .headerFooter(settingName)
@@ -251,7 +256,9 @@ class PdfConverterTest {
     @MethodSource("paramsForGeneratePdf")
     void shouldGeneratePdf(String internalContent, String coverPage, ExportMetaInfoCallback metaInfoCallback, boolean useCoverPageProcessor) {
         // Arrange
-        DocumentData documentData = DocumentData.builder()
+        DocumentData<IModule> documentData = DocumentData.<IModule>builder()
+                .documentType(DocumentType.DOCUMENT)
+                .documentObject(module)
                 .build();
         ExportParams exportParams = ExportParams.builder()
                 .internalContent(internalContent)

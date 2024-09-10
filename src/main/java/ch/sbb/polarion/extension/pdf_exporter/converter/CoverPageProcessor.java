@@ -12,6 +12,7 @@ import ch.sbb.polarion.extension.pdf_exporter.util.placeholder.PlaceholderProces
 import ch.sbb.polarion.extension.pdf_exporter.util.velocity.VelocityEvaluator;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.WeasyPrintOptions;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.service.WeasyPrintServiceConnector;
+import com.polarion.alm.projects.model.IUniqueObject;
 import lombok.SneakyThrows;
 import org.jetbrains.annotations.VisibleForTesting;
 
@@ -46,7 +47,7 @@ public class CoverPageProcessor {
     }
 
     @SneakyThrows
-    public byte[] generatePdfWithTitle(DocumentData documentData, ExportParams exportParams,
+    public byte[] generatePdfWithTitle(DocumentData<? extends IUniqueObject> documentData, ExportParams exportParams,
                                        String contentHtml, PdfGenerationLog generationLog) {
         String titleHtml = composeTitleHtml(documentData, exportParams);
         generationLog.log("Starting concurrent generation for cover page and content");
@@ -62,7 +63,7 @@ public class CoverPageProcessor {
     }
 
     @VisibleForTesting
-    String composeTitleHtml(DocumentData documentData, ExportParams exportParams) {
+    String composeTitleHtml(DocumentData<? extends IUniqueObject> documentData, ExportParams exportParams) {
         CoverPageModel settings = coverPageSettings.load(exportParams.getProjectId(), SettingId.fromName(exportParams.getCoverPage()));
         String templateHtml = settings.getTemplateHtml();
         String content = placeholderProcessor.replacePlaceholders(documentData, exportParams, templateHtml);
