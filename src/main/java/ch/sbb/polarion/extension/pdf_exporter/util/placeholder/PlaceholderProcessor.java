@@ -53,8 +53,8 @@ public class PlaceholderProcessor {
                 .revision(revision)
                 .revisionAndBaseLineName(baseLineName != null ? (revision + " " + baseLineName) : revision)
                 .baseLineName(baseLineName)
-                .documentId(documentData.getDocumentId())
-                .documentTitle(documentData.getDocumentTitle())
+                .documentId(documentData.getId())
+                .documentTitle(documentData.getTitle())
                 .documentRevision(documentDataHelper.getDocumentStatus(exportParams.getRevision(), documentData))
                 .build();
         if (documentData.getDocumentObject() instanceof IModule module) {

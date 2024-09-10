@@ -68,7 +68,7 @@ public class CoverPageProcessor {
         String templateHtml = settings.getTemplateHtml();
         String content = placeholderProcessor.replacePlaceholders(documentData, exportParams, templateHtml);
         String evaluatedContent = velocityEvaluator.evaluateVelocityExpressions(documentData, content);
-        return pdfTemplateProcessor.processUsing(exportParams, documentData.getDocumentTitle(), coverPageSettings.processImagePlaceholders(settings.getTemplateCss()), evaluatedContent);
+        return pdfTemplateProcessor.processUsing(exportParams, documentData.getTitle(), coverPageSettings.processImagePlaceholders(settings.getTemplateCss()), evaluatedContent);
     }
 
 }

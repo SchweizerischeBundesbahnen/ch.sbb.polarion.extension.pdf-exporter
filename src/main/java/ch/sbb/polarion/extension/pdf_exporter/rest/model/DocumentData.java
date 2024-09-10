@@ -10,14 +10,16 @@ import org.jetbrains.annotations.Nullable;
 @Builder(builderMethodName = "create")
 @Getter
 public class DocumentData<T extends IUniqueObject> {
-    private @Nullable String projectName;
     private final @NotNull DocumentType documentType;
     private final @NotNull T documentObject;
-    private String lastRevision;
-    private String baselineName;
-    private String documentId;
-    private String documentTitle;
-    private String documentContent;
+
+    private @NotNull String id;
+    private @NotNull String title;
+    private @Nullable String content;
+
+    private @Nullable String projectName;
+    private @Nullable String lastRevision;
+    private @Nullable String baselineName;
 
     public static <T extends IUniqueObject> DocumentDataBuilder<T> builder(@NotNull DocumentType documentType, @NotNull T documentObject) {
         return DocumentData.<T>create()

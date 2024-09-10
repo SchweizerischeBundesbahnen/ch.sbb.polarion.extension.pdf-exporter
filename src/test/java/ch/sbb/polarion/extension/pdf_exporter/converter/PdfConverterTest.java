@@ -81,8 +81,9 @@ class PdfConverterTest {
         CssModel cssModel = CssModel.builder().css("test css").build();
         when(cssSettings.load("test project", SettingId.fromName("Default"))).thenReturn(cssModel);
         DocumentData<IModule> documentData = DocumentData.builder(DocumentType.DOCUMENT, module)
-                .documentTitle("testDocument")
-                .documentContent("test document content")
+                .id("testDocumentId")
+                .title("testDocument")
+                .content("test document content")
                 .build();
         when(documentDataHelper.getLiveDocument(project, exportParams)).thenReturn(documentData);
         when(headerFooterSettings.load("test project", SettingId.fromName("Default"))).thenReturn(HeaderFooterModel.builder().build());
@@ -104,9 +105,10 @@ class PdfConverterTest {
     @Test
     void shouldGetAndReplaceCss() {
         DocumentData<IModule> documentData = DocumentData.builder(DocumentType.DOCUMENT, module)
+                .id("testDocumentId")
                 .projectName("testProjectName")
                 .lastRevision("testLastRevision")
-                .documentTitle("testDocumentTitle")
+                .title("testDocumentTitle")
                 .build();
 
         ExportParams exportParams = ExportParams.builder()
@@ -139,6 +141,8 @@ class PdfConverterTest {
     void shouldGetAndProcessHeaderFooterContent(String settingName, String settingArgument) {
         // Arrange
         DocumentData<IModule> documentData = DocumentData.builder(DocumentType.DOCUMENT, module)
+                .id("testDocumentId")
+                .title("testDocumentTitle")
                 .build();
         ExportParams exportParams = ExportParams.builder()
                 .headerFooter(settingName)
@@ -251,6 +255,8 @@ class PdfConverterTest {
     void shouldGeneratePdf(String internalContent, String coverPage, ExportMetaInfoCallback metaInfoCallback, boolean useCoverPageProcessor) {
         // Arrange
         DocumentData<IModule> documentData = DocumentData.builder(DocumentType.DOCUMENT, module)
+                .id("testDocumentId")
+                .title("testDocumentTitle")
                 .build();
         ExportParams exportParams = ExportParams.builder()
                 .internalContent(internalContent)

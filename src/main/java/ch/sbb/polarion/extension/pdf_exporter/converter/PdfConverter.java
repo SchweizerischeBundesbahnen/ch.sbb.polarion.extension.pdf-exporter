@@ -104,12 +104,12 @@ public class PdfConverter {
 
         generationLog.log("Html is ready, starting pdf generation");
         if (PdfExporterExtensionConfiguration.getInstance().isDebug()) {
-            new HtmlLogger().log(documentData.getDocumentContent(), htmlContent, generationLog.getLog());
+            new HtmlLogger().log(documentData.getContent(), htmlContent, generationLog.getLog());
         }
         byte[] bytes = generatePdf(documentData, exportParams, metaInfoCallback, htmlContent, generationLog);
 
         if (exportParams.getInternalContent() == null) { //do not log time for internal parts processing
-            String finalMessage = "PDF document '" + documentData.getDocumentTitle() + "' has been generated within " + (System.currentTimeMillis() - startTime) + " milliseconds";
+            String finalMessage = "PDF document '" + documentData.getTitle() + "' has been generated within " + (System.currentTimeMillis() - startTime) + " milliseconds";
             logger.info(finalMessage);
             generationLog.log(finalMessage);
         }
@@ -141,10 +141,10 @@ public class PdfConverter {
 
     private @NotNull String prepareHtmlContent(@NotNull ExportParams exportParams, @Nullable ITrackerProject project, @NotNull DocumentData<? extends IUniqueObject> documentData, @Nullable ExportMetaInfoCallback metaInfoCallback) {
         String cssContent = getCssContent(documentData, exportParams);
-        String preparedDocumentContent = postProcessDocumentContent(exportParams, project, documentData.getDocumentContent());
+        String preparedDocumentContent = postProcessDocumentContent(exportParams, project, documentData.getContent());
         String headerFooterContent = getHeaderFooterContent(documentData, exportParams);
         HtmlData htmlData = new HtmlData(cssContent, preparedDocumentContent, headerFooterContent);
-        String htmlContent = composeHtml(documentData.getDocumentTitle(), htmlData, exportParams);
+        String htmlContent = composeHtml(documentData.getTitle(), htmlData, exportParams);
         if (metaInfoCallback != null) {
             metaInfoCallback.setLinkedWorkItems(WorkItemRefData.extractListFromHtml(htmlContent, exportParams.getProjectId()));
         }

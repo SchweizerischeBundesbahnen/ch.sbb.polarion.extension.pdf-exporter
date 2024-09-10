@@ -80,9 +80,9 @@ public class DocumentDataHelper {
                     .projectName(project != null ? project.getName() : "")
                     .lastRevision(richPage.getOldApi().getLastRevision())
                     .baselineName(project != null ? getRevisionBaseline(projectId, richPage.getOldApi(), exportParams.getRevision()) : "")
-                    .documentId(richPage.getOldApi().getId())
-                    .documentTitle(richPage.getOldApi().getTitle())
-                    .documentContent(documentContent)
+                    .id(richPage.getOldApi().getId())
+                    .title(richPage.getOldApi().getTitle())
+                    .content(documentContent)
                     .build();
         });
     }
@@ -112,9 +112,9 @@ public class DocumentDataHelper {
                     .projectName(project != null ? project.getName() : "")
                     .lastRevision(testRun.getOldApi().getLastRevision())
                     .baselineName(project != null ? getRevisionBaseline(projectId, testRun.getOldApi(), exportParams.getRevision()) : "")
-                    .documentId(testRun.getOldApi().getId())
-                    .documentTitle(testRun.getOldApi().getLabel())
-                    .documentContent(documentContent)
+                    .id(testRun.getOldApi().getId())
+                    .title(testRun.getOldApi().getLabel())
+                    .content(documentContent)
                     .build();
         });
     }
@@ -144,9 +144,9 @@ public class DocumentDataHelper {
                     .projectName(project != null ? project.getName() : "")
                     .lastRevision(wikiPage.getOldApi().getLastRevision())
                     .baselineName(project != null ? getRevisionBaseline(projectId, wikiPage.getOldApi(), exportParams.getRevision()) : "")
-                    .documentId(wikiPage.getOldApi().getId())
-                    .documentTitle(wikiPage.getOldApi().getTitle())
-                    .documentContent(documentContent)
+                    .id(wikiPage.getOldApi().getId())
+                    .title(wikiPage.getOldApi().getTitle())
+                    .content(documentContent)
                     .build();
         });
     }
@@ -175,9 +175,9 @@ public class DocumentDataHelper {
                     .projectName(project.getName())
                     .lastRevision(document.getOldApi().getLastRevision())
                     .baselineName(getRevisionBaseline(project.getId(), document.getOldApi(), exportParams.getRevision()))
-                    .documentId(document.getOldApi().getModuleName())
-                    .documentTitle(document.getOldApi().getTitleOrName())
-                    .documentContent(documentContent)
+                    .id(document.getOldApi().getModuleName())
+                    .title(document.getOldApi().getTitleOrName())
+                    .content(documentContent)
                     .build();
         });
     }

@@ -27,7 +27,6 @@ import ch.sbb.polarion.extension.pdf_exporter.weasyprint.base.BaseWeasyPrintTest
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.service.WeasyPrintServiceConnector;
 import com.polarion.alm.projects.IProjectService;
 import com.polarion.alm.projects.model.IProject;
-import com.polarion.alm.projects.model.IUniqueObject;
 import com.polarion.alm.tracker.ITrackerService;
 import com.polarion.alm.tracker.model.IModule;
 import com.polarion.alm.tracker.model.ITrackerProject;
@@ -75,9 +74,10 @@ class PdfConverterWeasyPrintTest extends BaseWeasyPrintTest {
 
         DocumentDataHelper documentDataHelper = mock(DocumentDataHelper.class);
         DocumentData<IModule> liveDoc1 = DocumentData.builder(DocumentType.DOCUMENT, module)
+                .id("testId")
                 .projectName("Test")
-                .documentTitle("testTitle")
-                .documentContent("<div>TEST</div>")
+                .title("testTitle")
+                .content("<div>TEST</div>")
                 .lastRevision("42")
                 .build();
         when(documentDataHelper.getLiveDocument(any(), any())).thenReturn(liveDoc1);
@@ -123,8 +123,9 @@ class PdfConverterWeasyPrintTest extends BaseWeasyPrintTest {
         params.setCoverPage("test");
         DocumentData<IModule> liveDoc2 = DocumentData.builder(DocumentType.DOCUMENT, module)
                 .projectName("Test")
-                .documentTitle("testTitle")
-                .documentContent("<div>TEST page 1</div><!--PAGE_BREAK--><!--PORTRAIT_ABOVE--><div>TEST page 2</div><!--PAGE_BREAK--><!--LANDSCAPE_ABOVE--><div>TEST page 3</div>")
+                .id("testId")
+                .title("testTitle")
+                .content("<div>TEST page 1</div><!--PAGE_BREAK--><!--PORTRAIT_ABOVE--><div>TEST page 2</div><!--PAGE_BREAK--><!--LANDSCAPE_ABOVE--><div>TEST page 3</div>")
                 .lastRevision("42")
                 .build();
         when(documentDataHelper.getLiveDocument(any(), any())).thenReturn(liveDoc2);
@@ -133,8 +134,9 @@ class PdfConverterWeasyPrintTest extends BaseWeasyPrintTest {
         //test wiki page export + {{ REVISION }} placeholder usage
         DocumentData<IWikiPage> wikiPage = DocumentData.builder(DocumentType.DOCUMENT, mock(IWikiPage.class))
                 .projectName("Test")
-                .documentTitle("wikiPage")
-                .documentContent("<div>TEST</div>")
+                .id("testId")
+                .title("wikiPage")
+                .content("<div>TEST</div>")
                 .lastRevision("42")
                 .build();
         when(documentDataHelper.getWikiDocument(any(), any())).thenReturn(wikiPage);

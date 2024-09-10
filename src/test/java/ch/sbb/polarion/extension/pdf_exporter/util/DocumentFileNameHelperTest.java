@@ -25,6 +25,8 @@ class DocumentFileNameHelperTest {
     @Test
     void evaluateVelocity() {
         DocumentData<IModule> documentData = DocumentData.builder(DocumentType.DOCUMENT, mock(IModule.class))
+                .id("Test Id")
+                .title("Test Title")
                 .projectName("Test Project")
                 .build();
         FileNameTemplateModel settingOneModel = FileNameTemplateModel.builder()
