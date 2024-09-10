@@ -2,7 +2,6 @@ package ch.sbb.polarion.extension.pdf.exporter.rest.controller;
 
 import ch.sbb.polarion.extension.pdf.exporter.model.WebhooksStatus;
 import ch.sbb.polarion.extension.pdf.exporter.properties.PdfExporterExtensionConfiguration;
-import ch.sbb.polarion.extension.pdf.exporter.rest.model.conversion.DocumentType;
 import ch.sbb.polarion.extension.pdf.exporter.rest.model.conversion.ExportParams;
 import ch.sbb.polarion.extension.pdf.exporter.service.PdfExporterPolarionService;
 import ch.sbb.polarion.extension.pdf.exporter.util.DocumentFileNameHelper;
@@ -99,6 +98,12 @@ public class UtilityResourcesInternalController {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.TEXT_PLAIN)
     @Operation(summary = "Gets a filename, prepared with velocity and placeholders",
+            requestBody = @RequestBody(description = "Export parameters similar as for generation of PDF",
+                    required = true,
+                    content = @Content(schema = @Schema(implementation = ExportParams.class),
+                            mediaType = MediaType.APPLICATION_JSON
+                    )
+            ),
             responses = {
                     @ApiResponse(responseCode = "200", description = "Successfully generated filename")
             }

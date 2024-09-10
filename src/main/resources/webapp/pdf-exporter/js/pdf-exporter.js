@@ -98,7 +98,7 @@ const PdfExporter = {
 
     loadFormData: function (params) {
         this.exportContext = new ExportContext();
-        this.exportContext.documentType = params && params.context ? params.context : "document";
+        this.exportContext.documentType = params?.context ? params.context : "document";
 
         this.actionInProgress({inProgress: true, message: "Loading form data"});
 

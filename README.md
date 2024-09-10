@@ -210,6 +210,10 @@ All good so far.
 
 ## Upgrade
 
+### Upgrade from version 6.x.x to 7.0.0
+
+In version 7.0.0 `/export-filename` REST API endpoint changed. As a result, if the endpoint has been used, it's required to adjust the calls accordingly.
+
 ### Upgrade from version 5.x.x to 6.0.0
 
 In version 6.0.0 WeasyPrint CLI support was removed. As a result, if WeasyPrint CLI has been using to generate PDFs, it's required to switch to [WeasyPrint Service](#weasyprint-configuration).

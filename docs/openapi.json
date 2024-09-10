@@ -471,7 +471,9 @@
                 "$ref": "#/components/schemas/ExportParams"
               }
             }
-          }
+          },
+          "description": "Export parameters similar as for generation of PDF",
+          "required": true
         },
         "responses": {
           "200": {
