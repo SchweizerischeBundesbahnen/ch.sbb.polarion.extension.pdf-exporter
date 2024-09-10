@@ -95,7 +95,7 @@ public class ExportParams {
     public DocumentType getDocumentType() {
         // Default to DOCUMENT
         if (documentType == null) {
-            return DocumentType.DOCUMENT;
+            return DocumentType.LIVE_DOC;
         }
         return documentType;
     }

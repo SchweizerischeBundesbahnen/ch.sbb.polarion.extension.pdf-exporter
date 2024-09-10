@@ -6,16 +6,16 @@ import io.swagger.v3.oas.annotations.media.Schema;
 @Schema(description = "Type of the document")
 public enum DocumentType {
     @Schema(description = "Live document")
-    DOCUMENT,
+    LIVE_DOC,
 
     @Schema(description = "Live report")
-    REPORT,
+    LIVE_REPORT,
 
     @Schema(description = "Test run")
-    TESTRUN,
+    TEST_RUN,
 
     @Schema(description = "Wiki page")
-    WIKI;
+    WIKI_PAGE;
 
     @SuppressWarnings("unused")
     @JsonCreator

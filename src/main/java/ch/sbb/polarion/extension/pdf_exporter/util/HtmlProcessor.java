@@ -181,11 +181,11 @@ public class HtmlProcessor {
         }
 
         html = switch (exportParams.getDocumentType()) {
-            case DOCUMENT, WIKI -> {
+            case LIVE_DOC, WIKI_PAGE -> {
                 String processingHtml = addTableOfContent(html);
                 yield addTableOfFigures(processingHtml);
             }
-            case REPORT, TESTRUN -> {
+            case LIVE_REPORT, TEST_RUN -> {
                 String processingHtml = adjustReportedBy(html);
                 processingHtml = cutExportToPdfButton(processingHtml);
                 processingHtml = adjustColumnWidthInReports(processingHtml);
@@ -197,11 +197,11 @@ public class HtmlProcessor {
         html = properTableHeads(html);
         html = cleanExtraTableContent(html);
         html = switch (exportParams.getDocumentType()) {
-            case DOCUMENT, WIKI -> {
+            case LIVE_DOC, WIKI_PAGE -> {
                 String processingHtml = new PageBreakAvoidRemover().removePageBreakAvoids(html);
                 yield new NumberedListsSanitizer().fixNumberedLists(processingHtml);
             }
-            case REPORT, TESTRUN -> html;
+            case LIVE_REPORT, TEST_RUN -> html;
         };
 
         // ----
@@ -221,8 +221,8 @@ public class HtmlProcessor {
         // ----
 
         html = switch (exportParams.getDocumentType()) {
-            case DOCUMENT, WIKI -> localizeEnums(html, exportParams);
-            case REPORT, TESTRUN -> html;
+            case LIVE_DOC, WIKI_PAGE -> localizeEnums(html, exportParams);
+            case LIVE_REPORT, TEST_RUN -> html;
         };
 
         if (exportParams.isEnableCommentsRendering()) {

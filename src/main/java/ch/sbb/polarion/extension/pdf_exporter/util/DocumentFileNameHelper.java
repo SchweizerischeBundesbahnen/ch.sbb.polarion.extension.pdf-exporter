@@ -39,10 +39,10 @@ public class DocumentFileNameHelper {
         DocumentDataHelper documentDataHelper = new DocumentDataHelper(pdfExporterPolarionService);
         final DocumentData<? extends IUniqueObject> documentData =
                 switch (exportParams.getDocumentType()) {
-                    case DOCUMENT -> documentDataHelper.getLiveDoc(project, exportParams, false);
-                    case REPORT -> documentDataHelper.getLiveReport(project, exportParams, false);
-                    case TESTRUN -> documentDataHelper.getTestRun(project, exportParams, false);
-                    case WIKI -> documentDataHelper.getWikiPage(project, exportParams, false);
+                    case LIVE_DOC -> documentDataHelper.getLiveDoc(project, exportParams, false);
+                    case LIVE_REPORT -> documentDataHelper.getLiveReport(project, exportParams, false);
+                    case TEST_RUN -> documentDataHelper.getTestRun(project, exportParams, false);
+                    case WIKI_PAGE -> documentDataHelper.getWikiPage(project, exportParams, false);
                 };
 
         FileNameTemplateModel fileNameTemplateModel = getFileNameTemplateModel(ScopeUtils.getScopeFromProject(exportParams.getProjectId()));
@@ -65,13 +65,13 @@ public class DocumentFileNameHelper {
 
     private @NotNull String getFileNameTemplate(@NotNull DocumentType documentType, @NotNull FileNameTemplateModel fileNameTemplateModel) {
         return switch (documentType) {
-            case DOCUMENT:
+            case LIVE_DOC:
                 yield fileNameTemplateModel.getDocumentNameTemplate();
-            case REPORT:
+            case LIVE_REPORT:
                 yield fileNameTemplateModel.getReportNameTemplate();
-            case TESTRUN:
+            case TEST_RUN:
                 yield fileNameTemplateModel.getTestrunNameTemplate();
-            case WIKI:
+            case WIKI_PAGE:
                 yield fileNameTemplateModel.getWikiNameTemplate();
         };
     }

@@ -45,22 +45,22 @@ public class VelocityEvaluator {
         VelocityContext velocityContext = new VelocityContextInitializer(transaction).create();
 
         switch (documentData.getDocumentType()) {
-            case DOCUMENT -> {
+            case LIVE_DOC -> {
                 if (documentData.getDocumentObject() instanceof IModule) {
                     velocityContext.put("document", documentData.getDocumentObject());
                 }
             }
-            case REPORT -> {
+            case LIVE_REPORT -> {
                 if (documentData.getDocumentObject() instanceof IRichPage) {
                     velocityContext.put("page", documentData.getDocumentObject());
                 }
             }
-            case TESTRUN -> {
+            case TEST_RUN -> {
                 if (documentData.getDocumentObject() instanceof ITestRun) {
                     velocityContext.put("testrun", documentData.getDocumentObject());
                 }
             }
-            case WIKI -> {
+            case WIKI_PAGE -> {
                 if (documentData.getDocumentObject() instanceof IWikiPage) {
                     velocityContext.put("page", documentData.getDocumentObject());
                 }

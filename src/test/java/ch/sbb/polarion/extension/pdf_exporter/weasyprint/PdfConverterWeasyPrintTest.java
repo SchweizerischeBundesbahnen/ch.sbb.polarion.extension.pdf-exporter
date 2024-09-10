@@ -73,7 +73,7 @@ class PdfConverterWeasyPrintTest extends BaseWeasyPrintTest {
                 "testFieldKey".equals(invocation.getArgument(0)) ? "testFieldValue" : null);
 
         DocumentDataHelper documentDataHelper = mock(DocumentDataHelper.class);
-        DocumentData<IModule> liveDoc1 = DocumentData.builder(DocumentType.DOCUMENT, module)
+        DocumentData<IModule> liveDoc1 = DocumentData.builder(DocumentType.LIVE_DOC, module)
                 .id("testId")
                 .projectName("Test")
                 .title("testTitle")
@@ -121,7 +121,7 @@ class PdfConverterWeasyPrintTest extends BaseWeasyPrintTest {
         compareContentUsingReferenceImages(testName + "_simple", converter.convertToPdf(params, null));
 
         params.setCoverPage("test");
-        DocumentData<IModule> liveDoc2 = DocumentData.builder(DocumentType.DOCUMENT, module)
+        DocumentData<IModule> liveDoc2 = DocumentData.builder(DocumentType.LIVE_DOC, module)
                 .projectName("Test")
                 .id("testId")
                 .title("testTitle")
@@ -132,7 +132,7 @@ class PdfConverterWeasyPrintTest extends BaseWeasyPrintTest {
         compareContentUsingReferenceImages(testName + "_complex_with_title", converter.convertToPdf(params, null));
 
         //test wiki page export + {{ REVISION }} placeholder usage
-        DocumentData<IWikiPage> wikiPage = DocumentData.builder(DocumentType.DOCUMENT, mock(IWikiPage.class))
+        DocumentData<IWikiPage> wikiPage = DocumentData.builder(DocumentType.LIVE_DOC, mock(IWikiPage.class))
                 .projectName("Test")
                 .id("testId")
                 .title("wikiPage")
@@ -142,7 +142,7 @@ class PdfConverterWeasyPrintTest extends BaseWeasyPrintTest {
         when(documentDataHelper.getWikiPage(any(), any())).thenReturn(wikiPage);
         when(headerFooterSettings.load(any(), any())).thenReturn(new HeaderFooterModel("HL", "HC  {{ REVISION }}", "HR", "FL", "FC", "FR {{ PAGE_NUMBER }}"));
         params.setCoverPage(null);
-        params.setDocumentType(DocumentType.WIKI);
+        params.setDocumentType(DocumentType.WIKI_PAGE);
         params.setLocationPath("wikiFolder/wikiPage");
         compareContentUsingReferenceImages(testName + "_wiki", converter.convertToPdf(params, null));
     }

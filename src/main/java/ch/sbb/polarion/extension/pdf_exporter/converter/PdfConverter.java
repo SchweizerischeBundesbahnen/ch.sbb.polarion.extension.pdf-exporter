@@ -132,10 +132,10 @@ public class PdfConverter {
 
     private @NotNull DocumentData<? extends IUniqueObject> getDocumentData(@NotNull ExportParams exportParams, @Nullable ITrackerProject project) {
         return switch (exportParams.getDocumentType()) {
-            case DOCUMENT -> documentDataHelper.getLiveDoc(Objects.requireNonNull(project), exportParams);
-            case REPORT -> documentDataHelper.getLiveReport(project, exportParams);
-            case TESTRUN -> documentDataHelper.getTestRun(project, exportParams);
-            case WIKI -> documentDataHelper.getWikiPage(project, exportParams);
+            case LIVE_DOC -> documentDataHelper.getLiveDoc(Objects.requireNonNull(project), exportParams);
+            case LIVE_REPORT -> documentDataHelper.getLiveReport(project, exportParams);
+            case TEST_RUN -> documentDataHelper.getTestRun(project, exportParams);
+            case WIKI_PAGE -> documentDataHelper.getWikiPage(project, exportParams);
         };
     }
 
@@ -283,7 +283,7 @@ public class PdfConverter {
         String content = placeholderProcessor.replacePlaceholders(documentData, exportParams, css);
         String processed = velocityEvaluator.evaluateVelocityExpressions(documentData, content);
 
-        String cssContent = (exportParams.getDocumentType() != DocumentType.DOCUMENT) ? appendWikiCss(processed) : processed;
+        String cssContent = (exportParams.getDocumentType() != DocumentType.LIVE_DOC) ? appendWikiCss(processed) : processed;
         return htmlProcessor.replaceImagesAsBase64Encoded(cssContent);
     }
 

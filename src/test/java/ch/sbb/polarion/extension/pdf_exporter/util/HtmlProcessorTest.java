@@ -631,7 +631,7 @@ class HtmlProcessorTest {
     private ExportParams getExportParams() {
         return ExportParams.builder()
                 .projectId("test_project")
-                .documentType(DocumentType.DOCUMENT)
+                .documentType(DocumentType.LIVE_DOC)
                 .language(Language.DE.name())
                 .build();
     }

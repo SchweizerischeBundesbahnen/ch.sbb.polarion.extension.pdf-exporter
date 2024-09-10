@@ -110,7 +110,7 @@ class CoverPageProcessorTest {
 
     private DocumentData<IModule> prepareMocks(CoverPageModel coverPageModel, ExportParams exportParams) {
         when(coverPageSettings.load("testProjectId", SettingId.fromName("test cover page"))).thenReturn(coverPageModel);
-        DocumentData<IModule> documentData = DocumentData.builder(DocumentType.DOCUMENT, mock(IModule.class))
+        DocumentData<IModule> documentData = DocumentData.builder(DocumentType.LIVE_DOC, mock(IModule.class))
                 .id("test id")
                 .title("test document")
                 .build();

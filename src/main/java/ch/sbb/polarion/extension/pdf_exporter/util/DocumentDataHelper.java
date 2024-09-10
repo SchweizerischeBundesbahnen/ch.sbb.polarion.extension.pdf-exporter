@@ -76,7 +76,7 @@ public class DocumentDataHelper {
                 documentContent = richPageRenderer.render(null);
             }
 
-            return DocumentData.builder(DocumentType.REPORT, richPage.getOldApi())
+            return DocumentData.builder(DocumentType.LIVE_REPORT, richPage.getOldApi())
                     .projectName(project != null ? project.getName() : "")
                     .lastRevision(richPage.getOldApi().getLastRevision())
                     .baselineName(project != null ? getRevisionBaseline(projectId, richPage.getOldApi(), exportParams.getRevision()) : "")
@@ -112,7 +112,7 @@ public class DocumentDataHelper {
                 documentContent = richPageRenderer.render(null);
             }
 
-            return DocumentData.builder(DocumentType.TESTRUN, testRun.getOldApi())
+            return DocumentData.builder(DocumentType.TEST_RUN, testRun.getOldApi())
                     .projectName(project != null ? project.getName() : "")
                     .lastRevision(testRun.getOldApi().getLastRevision())
                     .baselineName(project != null ? getRevisionBaseline(projectId, testRun.getOldApi(), exportParams.getRevision()) : "")
@@ -144,7 +144,7 @@ public class DocumentDataHelper {
                 documentContent = new WikiRenderer().render(projectId, exportParams.getLocationPath(), exportParams.getRevision());
             }
 
-            return DocumentData.builder(DocumentType.WIKI, wikiPage.getOldApi())
+            return DocumentData.builder(DocumentType.WIKI_PAGE, wikiPage.getOldApi())
                     .projectName(project != null ? project.getName() : "")
                     .lastRevision(wikiPage.getOldApi().getLastRevision())
                     .baselineName(project != null ? getRevisionBaseline(projectId, wikiPage.getOldApi(), exportParams.getRevision()) : "")
@@ -175,7 +175,7 @@ public class DocumentDataHelper {
                 documentContent = getLiveDocContent(exportParams, proxyDocument, (InternalReadOnlyTransaction) transaction);
             }
 
-            return DocumentData.builder(DocumentType.DOCUMENT, document.getOldApi())
+            return DocumentData.builder(DocumentType.LIVE_DOC, document.getOldApi())
                     .projectName(project.getName())
                     .lastRevision(document.getOldApi().getLastRevision())
                     .baselineName(getRevisionBaseline(project.getId(), document.getOldApi(), exportParams.getRevision()))

@@ -328,7 +328,7 @@ public class PdfExporterFormExtension implements IFormExtension {
                 .projectId(module.getProject().getId())
                 .locationPath(module.getModuleLocation().getLocationPath())
                 .revision(module.getRevision())
-                .documentType(DocumentType.DOCUMENT)
+                .documentType(DocumentType.LIVE_DOC)
                 .build();
 
         return documentFileNameHelper.getDocumentFileName(exportParams);

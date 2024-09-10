@@ -66,10 +66,10 @@ class ConverterInternalControllerTest {
     public static Stream<Arguments> getWrongConverterExportParams() {
         return Stream.of(
                 Arguments.of(null, "Missing export parameters"),
-                Arguments.of(ExportParams.builder().documentType(DocumentType.DOCUMENT).locationPath("test").build(), "projectId"),
-                Arguments.of(ExportParams.builder().documentType(DocumentType.DOCUMENT).projectId("test").build(), "locationPath"),
-                Arguments.of(ExportParams.builder().documentType(DocumentType.REPORT).build(), "locationPath"),
-                Arguments.of(ExportParams.builder().documentType(DocumentType.WIKI).build(), "locationPath")
+                Arguments.of(ExportParams.builder().documentType(DocumentType.LIVE_DOC).locationPath("test").build(), "projectId"),
+                Arguments.of(ExportParams.builder().documentType(DocumentType.LIVE_DOC).projectId("test").build(), "locationPath"),
+                Arguments.of(ExportParams.builder().documentType(DocumentType.LIVE_REPORT).build(), "locationPath"),
+                Arguments.of(ExportParams.builder().documentType(DocumentType.WIKI_PAGE).build(), "locationPath")
         );
     }
 
