@@ -1,8 +1,8 @@
 package ch.sbb.polarion.extension.pdf_exporter.util.html;
 
+import ch.sbb.polarion.extension.generic.regex.RegexMatcher;
 import ch.sbb.polarion.extension.pdf_exporter.properties.PdfExporterExtensionConfiguration;
 import ch.sbb.polarion.extension.pdf_exporter.util.FileResourceProvider;
-import ch.sbb.polarion.extension.generic.regex.RegexMatcher;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
