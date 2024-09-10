@@ -1,8 +1,9 @@
+<%@ page import="ch.sbb.polarion.extension.pdf_exporter.properties.PdfExporterExtensionConfiguration" %>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 
 <%! String bundleTimestamp = ch.sbb.polarion.extension.generic.util.VersionUtils.getVersion().getBundleBuildTimestampDigitsOnly(); %>
-<%! Boolean webhooksEnabled = ch.sbb.polarion.extension.pdf.exporter.properties.PdfExporterExtensionConfiguration.getInstance().getWebhooksEnabled(); %>
+<%! Boolean webhooksEnabled = PdfExporterExtensionConfiguration.getInstance().getWebhooksEnabled(); %>
 
 <head>
     <title>PDF Exporter: Style Packages</title>

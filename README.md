@@ -154,8 +154,8 @@ ch.sbb.polarion.extension.pdf-exporter.debug=true
 If HTML logging is switched on, then in standard polarion log file there will be following lines:
 
 ```text
-2023-09-20 08:42:13,911 [ForkJoinPool.commonPool-worker-2] INFO  ch.sbb.polarion.extension.pdf.exporter.util.HtmlLogger - Original HTML fragment provided by Polarion was stored in file /tmp/pdf-exporter10000032892830031969/original-4734772539141140796.html
-2023-09-20 08:42:13,914 [ForkJoinPool.commonPool-worker-2] INFO  ch.sbb.polarion.extension.pdf.exporter.util.HtmlLogger - Final HTML page obtained as a result of PDF exporter processing was stored in file /tmp/pdf-exporter10000032892830031969/processed-5773281490308773124.html
+2023-09-20 08:42:13,911 [ForkJoinPool.commonPool-worker-2] INFO  util.ch.sbb.polarion.extension.pdf_exporter.util.HtmlLogger - Original HTML fragment provided by Polarion was stored in file /tmp/pdf-exporter10000032892830031969/original-4734772539141140796.html
+2023-09-20 08:42:13,914 [ForkJoinPool.commonPool-worker-2] INFO  util.ch.sbb.polarion.extension.pdf_exporter.util.HtmlLogger - Final HTML page obtained as a result of PDF exporter processing was stored in file /tmp/pdf-exporter10000032892830031969/processed-5773281490308773124.html
 ```
 
 Here you can find out in which files HTML was stored.
