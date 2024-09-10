@@ -2,7 +2,7 @@ package ch.sbb.polarion.extension.pdf.exporter.rest.controller;
 
 import ch.sbb.polarion.extension.pdf.exporter.model.WebhooksStatus;
 import ch.sbb.polarion.extension.pdf.exporter.properties.PdfExporterExtensionConfiguration;
-import ch.sbb.polarion.extension.pdf.exporter.rest.model.conversion.DocumentType;
+import ch.sbb.polarion.extension.pdf.exporter.rest.model.conversion.ExportParams;
 import ch.sbb.polarion.extension.pdf.exporter.service.PdfExporterPolarionService;
 import ch.sbb.polarion.extension.pdf.exporter.util.DocumentFileNameHelper;
 import ch.sbb.polarion.extension.pdf.exporter.util.EnumValuesProvider;
@@ -15,11 +15,13 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
+import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
@@ -91,17 +93,23 @@ public class UtilityResourcesInternalController {
         return pdfExporterPolarionService.getProject(projectId).getName();
     }
 
-    @GET
+    @POST
     @Path("/export-filename")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.TEXT_PLAIN)
     @Operation(summary = "Gets a filename, prepared with velocity and placeholders",
+            requestBody = @RequestBody(description = "Export parameters similar as for generation of PDF",
+                    required = true,
+                    content = @Content(schema = @Schema(implementation = ExportParams.class),
+                            mediaType = MediaType.APPLICATION_JSON
+                    )
+            ),
             responses = {
                     @ApiResponse(responseCode = "200", description = "Successfully generated filename")
             }
     )
-    public String getFileName(@QueryParam("locationPath") String locationPath, @QueryParam("revision") String revision, @QueryParam("documentType") DocumentType documentType, @QueryParam("scope") String scope) {
-        return new DocumentFileNameHelper(pdfExporterPolarionService).getDocumentFileName(locationPath, revision, documentType, scope);
+    public String getFileName(ExportParams exportParams) {
+        return new DocumentFileNameHelper(pdfExporterPolarionService).getDocumentFileName(exportParams);
     }
 
     @GET

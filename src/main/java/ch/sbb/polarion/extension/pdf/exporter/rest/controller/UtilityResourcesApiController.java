@@ -4,6 +4,7 @@ import ch.sbb.polarion.extension.generic.rest.filter.Secured;
 import ch.sbb.polarion.extension.generic.service.PolarionService;
 import ch.sbb.polarion.extension.pdf.exporter.model.WebhooksStatus;
 import ch.sbb.polarion.extension.pdf.exporter.rest.model.conversion.DocumentType;
+import ch.sbb.polarion.extension.pdf.exporter.rest.model.conversion.ExportParams;
 
 import javax.ws.rs.Path;
 import java.util.List;
@@ -30,8 +31,8 @@ public class UtilityResourcesApiController extends UtilityResourcesInternalContr
     }
 
     @Override
-    public String getFileName(String locationPath, String revision, DocumentType documentType, String scope) {
-        return polarionService.callPrivileged(() -> super.getFileName(locationPath, revision, documentType, scope));
+    public String getFileName(ExportParams exportParams) {
+        return polarionService.callPrivileged(() -> super.getFileName(exportParams));
     }
 
     @Override

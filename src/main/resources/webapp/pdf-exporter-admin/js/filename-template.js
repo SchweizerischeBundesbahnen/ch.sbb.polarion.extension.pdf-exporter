@@ -16,7 +16,8 @@ function saveSettings() {
         contentType: 'application/json',
         body: JSON.stringify({
             'documentNameTemplate': SbbCommon.getValueById('document-name-template'),
-            'reportNameTemplate': SbbCommon.getValueById('report-name-template')
+            'reportNameTemplate': SbbCommon.getValueById('report-name-template'),
+            'testrunNameTemplate': SbbCommon.getValueById('testrun-name-template')
         }),
         onOk: () => {
             SbbCommon.showSaveSuccessAlert();
@@ -49,6 +50,7 @@ function setSettings(content) {
     const settings = JSON.parse(content);
     SbbCommon.setValueById('document-name-template', settings.documentNameTemplate);
     SbbCommon.setValueById('report-name-template', settings.reportNameTemplate);
+    SbbCommon.setValueById('testrun-name-template', settings.testrunNameTemplate);
 
     if (settings.bundleTimestamp !== SbbCommon.getValueById('bundle-timestamp')) {
         SbbCommon.setNewerVersionNotificationVisible(true);

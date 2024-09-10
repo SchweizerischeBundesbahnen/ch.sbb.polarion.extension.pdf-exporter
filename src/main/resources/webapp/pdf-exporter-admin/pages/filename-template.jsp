@@ -46,8 +46,8 @@
             display: unset;
         }
 
-        .w-48 {
-            width: 48%;
+        .w-32 {
+            width: 32%;
         }
     </style>
 </head>
@@ -58,14 +58,19 @@
     <jsp:include page='/common/jsp/notifications.jsp' />
 
     <div class="input-container">
-        <div class="input-block left w-48">
+        <div class="input-block left w-32">
             <div class="label-block"><span>Document filename template:</span></div>
             <code-input class="html-input" id="document-name-template" lang="velocity" placeholder=""></code-input>
         </div>
 
-        <div class="input-block right w-48">
+        <div class="input-block w-32">
             <div class="label-block"><span>Report filename template:</span></div>
             <code-input class="html-input" id="report-name-template" lang="velocity" placeholder=""></code-input>
+        </div>
+
+        <div class="input-block right w-32">
+            <div class="label-block"><span>Test run filename template:</span></div>
+            <code-input class="html-input" id="testrun-name-template" lang="velocity" placeholder=""></code-input>
         </div>
     </div>
 

@@ -10,6 +10,8 @@ import com.polarion.alm.shared.api.model.document.Document;
 import com.polarion.alm.shared.api.model.document.DocumentReference;
 import com.polarion.alm.shared.api.model.rp.RichPage;
 import com.polarion.alm.shared.api.model.rp.RichPageReference;
+import com.polarion.alm.shared.api.model.tr.TestRun;
+import com.polarion.alm.shared.api.model.tr.TestRunReference;
 import com.polarion.alm.shared.api.model.wiki.WikiPage;
 import com.polarion.alm.shared.api.model.wiki.WikiPageReference;
 import com.polarion.alm.shared.api.transaction.TransactionalExecutor;
@@ -23,6 +25,7 @@ import com.polarion.alm.shared.rpe.RpeRenderer;
 import com.polarion.alm.tracker.model.IBaseline;
 import com.polarion.alm.tracker.model.IModule;
 import com.polarion.alm.tracker.model.IRichPage;
+import com.polarion.alm.tracker.model.ITestRun;
 import com.polarion.alm.tracker.model.ITrackerProject;
 import com.polarion.alm.tracker.model.IWikiPage;
 import com.polarion.alm.tracker.model.ipi.IInternalBaselinesManager;
@@ -41,6 +44,7 @@ import java.util.Map;
 public class LiveDocHelper {
     private static final String DOC_REVISION_CUSTOM_FIELD = "docRevision";
     private static final String URL_QUERY_PARAM_LANGUAGE = "language";
+    private static final String URL_QUERY_PARAM_ID = "id";
 
     private final PdfExporterPolarionService pdfExporterPolarionService;
 
@@ -82,6 +86,40 @@ public class LiveDocHelper {
                     .build();
         });
     }
+
+    public DocumentData getTestRun(@Nullable ITrackerProject project, @NotNull ExportParams exportParams) {
+        return getTestRun(project, exportParams, true);
+    }
+
+    public DocumentData getTestRun(@Nullable ITrackerProject project, @NotNull ExportParams exportParams, boolean withContent) {
+        return TransactionalExecutor.executeSafelyInReadOnlyTransaction(transaction -> {
+            String projectId = project != null ? project.getId() : "";
+            TestRunReference testRunReference = TestRunReference.fromPath(createPath(projectId, exportParams.getUrlQueryParameters().get(URL_QUERY_PARAM_ID)));
+            if (exportParams.getRevision() != null) {
+                testRunReference = testRunReference.getWithRevision(exportParams.getRevision());
+            }
+
+            TestRun testRun = testRunReference.getOriginal(transaction);
+
+            String documentContent = null;
+            if (withContent) {
+                String html = RpeModelAspect.getPageHtml(testRun);
+                RpeRenderer richPageRenderer = new RpeRenderer((InternalReadOnlyTransaction) transaction, html, RichTextRenderTarget.PDF_EXPORT, testRunReference, testRunReference.scope(), new StrictMapImpl<>());
+                documentContent = richPageRenderer.render(null);
+            }
+
+            return DocumentData.builder()
+                    .projectName(project != null ? project.getName() : "")
+                    .lastRevision(testRun.getOldApi().getLastRevision())
+                    .baselineName(project != null ? getRevisionBaseline(projectId, testRun.getOldApi(), exportParams.getRevision()) : "")
+                    .testRun(testRun.getOldApi())
+                    .documentId(testRun.getOldApi().getId())
+                    .documentTitle(testRun.getOldApi().getLabel())
+                    .documentContent(documentContent)
+                    .build();
+        });
+    }
+
 
     public DocumentData getWikiDocument(@Nullable ITrackerProject project, @NotNull ExportParams exportParams) {
         return getWikiDocument(project, exportParams, true);
@@ -227,6 +265,7 @@ public class LiveDocHelper {
         private IModule document;
         private IWikiPage wikiPage;
         private IRichPage richPage;
+        private ITestRun testRun;
         private String lastRevision;
         private String baselineName;
         private String documentId;

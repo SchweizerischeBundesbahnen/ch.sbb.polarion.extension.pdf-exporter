@@ -17,7 +17,7 @@ public class ExportToPdfButtonRenderer extends AbstractWidgetRenderer {
         OpenInTableButtonWidgetRenderer button = new OpenInTableButtonWidgetRenderer("Export to PDF", null, null) {
             @Override
             protected void configureLinkAttributes(@NotNull HtmlTagBuilder a) {
-                a.attributes().onClick(builder.target().escapeForAttribute("PdfExporter.openPopup({context: 'report'})"));
+                a.attributes().onClick(builder.target().escapeForAttribute("PdfExporter.openPopup({ context: (new ExportContext().path === 'testrun' ? 'testrun' : 'report') })"));
             }
         };
         button.render(this.context, builder);
