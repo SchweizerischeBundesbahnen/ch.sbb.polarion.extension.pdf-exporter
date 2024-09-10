@@ -110,9 +110,7 @@ class CoverPageProcessorTest {
 
     private DocumentData<IModule> prepareMocks(CoverPageModel coverPageModel, ExportParams exportParams) {
         when(coverPageSettings.load("testProjectId", SettingId.fromName("test cover page"))).thenReturn(coverPageModel);
-        DocumentData<IModule> documentData = DocumentData.<IModule>builder()
-                .documentType(DocumentType.DOCUMENT)
-                .documentObject(mock(IModule.class))
+        DocumentData<IModule> documentData = DocumentData.builder(DocumentType.DOCUMENT, mock(IModule.class))
                 .documentTitle("test document")
                 .build();
         when(placeholderProcessor.replacePlaceholders(documentData, exportParams, "test template html")).thenReturn("replaced template html");

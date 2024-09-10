@@ -74,10 +74,8 @@ class PdfConverterWeasyPrintTest extends BaseWeasyPrintTest {
                 "testFieldKey".equals(invocation.getArgument(0)) ? "testFieldValue" : null);
 
         DocumentDataHelper documentDataHelper = mock(DocumentDataHelper.class);
-        DocumentData<IModule> liveDoc1 = DocumentData.<IModule>builder()
+        DocumentData<IModule> liveDoc1 = DocumentData.builder(DocumentType.DOCUMENT, module)
                 .projectName("Test")
-                .documentType(DocumentType.DOCUMENT)
-                .documentObject(module)
                 .documentTitle("testTitle")
                 .documentContent("<div>TEST</div>")
                 .lastRevision("42")
@@ -123,10 +121,8 @@ class PdfConverterWeasyPrintTest extends BaseWeasyPrintTest {
         compareContentUsingReferenceImages(testName + "_simple", converter.convertToPdf(params, null));
 
         params.setCoverPage("test");
-        DocumentData<IModule> liveDoc2 = DocumentData.<IModule>builder()
+        DocumentData<IModule> liveDoc2 = DocumentData.builder(DocumentType.DOCUMENT, module)
                 .projectName("Test")
-                .documentType(DocumentType.DOCUMENT)
-                .documentObject(module)
                 .documentTitle("testTitle")
                 .documentContent("<div>TEST page 1</div><!--PAGE_BREAK--><!--PORTRAIT_ABOVE--><div>TEST page 2</div><!--PAGE_BREAK--><!--LANDSCAPE_ABOVE--><div>TEST page 3</div>")
                 .lastRevision("42")
@@ -135,10 +131,8 @@ class PdfConverterWeasyPrintTest extends BaseWeasyPrintTest {
         compareContentUsingReferenceImages(testName + "_complex_with_title", converter.convertToPdf(params, null));
 
         //test wiki page export + {{ REVISION }} placeholder usage
-        DocumentData<IWikiPage> wikiPage = DocumentData.<IWikiPage>builder()
+        DocumentData<IWikiPage> wikiPage = DocumentData.builder(DocumentType.DOCUMENT, mock(IWikiPage.class))
                 .projectName("Test")
-                .documentType(DocumentType.WIKI)
-                .documentObject(mock(IWikiPage.class))
                 .documentTitle("wikiPage")
                 .documentContent("<div>TEST</div>")
                 .lastRevision("42")

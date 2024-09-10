@@ -7,10 +7,10 @@ import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-@Builder
+@Builder(builderMethodName = "create")
 @Getter
 public class DocumentData<T extends IUniqueObject> {
-    private final @Nullable String projectName;
+    private @Nullable String projectName;
     private final @NotNull DocumentType documentType;
     private final @NotNull T documentObject;
     private String lastRevision;
@@ -18,4 +18,13 @@ public class DocumentData<T extends IUniqueObject> {
     private String documentId;
     private String documentTitle;
     private String documentContent;
+
+    public static <T extends IUniqueObject> DocumentDataBuilder<T> builder(@NotNull DocumentType documentType, @NotNull T documentObject) {
+        return DocumentData.<T>create()
+                .documentType(documentType)
+                .documentObject(documentObject);
+    }
+
+    // making javadoc maven plugin happy
+    public static class DocumentDataBuilder<T extends IUniqueObject> {}
 }

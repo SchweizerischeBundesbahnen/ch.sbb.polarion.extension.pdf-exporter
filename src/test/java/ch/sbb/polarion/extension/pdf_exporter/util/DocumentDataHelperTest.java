@@ -28,10 +28,8 @@ class DocumentDataHelperTest {
     @MethodSource("getDocumentStatusParameters")
     void shouldGetDocumentStatus(String revision, String customFieldRevision, String lastRevision, String expectedStatus) {
         IModule module = mock(IModule.class);
-        DocumentData<IModule> documentData = DocumentData.<IModule>builder()
+        DocumentData<IModule> documentData = DocumentData.<IModule>builder(DocumentType.DOCUMENT, module)
                 .lastRevision(lastRevision)
-                .documentType(DocumentType.DOCUMENT)
-                .documentObject(module)
                 .build();
         when(module.getCustomField("docRevision")).thenReturn(customFieldRevision);
 

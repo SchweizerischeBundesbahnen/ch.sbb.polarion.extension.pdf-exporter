@@ -76,12 +76,10 @@ public class DocumentDataHelper {
                 documentContent = richPageRenderer.render(null);
             }
 
-            return DocumentData.<IRichPage>builder()
+            return DocumentData.builder(DocumentType.REPORT, richPage.getOldApi())
                     .projectName(project != null ? project.getName() : "")
                     .lastRevision(richPage.getOldApi().getLastRevision())
                     .baselineName(project != null ? getRevisionBaseline(projectId, richPage.getOldApi(), exportParams.getRevision()) : "")
-                    .documentType(DocumentType.REPORT)
-                    .documentObject(richPage.getOldApi())
                     .documentId(richPage.getOldApi().getId())
                     .documentTitle(richPage.getOldApi().getTitle())
                     .documentContent(documentContent)
@@ -110,12 +108,10 @@ public class DocumentDataHelper {
                 documentContent = richPageRenderer.render(null);
             }
 
-            return DocumentData.<ITestRun>builder()
+            return DocumentData.builder(DocumentType.TESTRUN, testRun.getOldApi())
                     .projectName(project != null ? project.getName() : "")
                     .lastRevision(testRun.getOldApi().getLastRevision())
                     .baselineName(project != null ? getRevisionBaseline(projectId, testRun.getOldApi(), exportParams.getRevision()) : "")
-                    .documentType(DocumentType.TESTRUN)
-                    .documentObject(testRun.getOldApi())
                     .documentId(testRun.getOldApi().getId())
                     .documentTitle(testRun.getOldApi().getLabel())
                     .documentContent(documentContent)
@@ -144,12 +140,10 @@ public class DocumentDataHelper {
                 documentContent = new WikiRenderer().render(projectId, exportParams.getLocationPath(), exportParams.getRevision());
             }
 
-            return DocumentData.<IWikiPage>builder()
+            return DocumentData.builder(DocumentType.WIKI, wikiPage.getOldApi())
                     .projectName(project != null ? project.getName() : "")
                     .lastRevision(wikiPage.getOldApi().getLastRevision())
                     .baselineName(project != null ? getRevisionBaseline(projectId, wikiPage.getOldApi(), exportParams.getRevision()) : "")
-                    .documentType(DocumentType.WIKI)
-                    .documentObject(wikiPage.getOldApi())
                     .documentId(wikiPage.getOldApi().getId())
                     .documentTitle(wikiPage.getOldApi().getTitle())
                     .documentContent(documentContent)
@@ -177,12 +171,10 @@ public class DocumentDataHelper {
                 documentContent = getLiveDocContent(exportParams, proxyDocument, (InternalReadOnlyTransaction) transaction);
             }
 
-            return DocumentData.<IModule>builder()
+            return DocumentData.builder(DocumentType.DOCUMENT, document.getOldApi())
                     .projectName(project.getName())
                     .lastRevision(document.getOldApi().getLastRevision())
                     .baselineName(getRevisionBaseline(project.getId(), document.getOldApi(), exportParams.getRevision()))
-                    .documentType(DocumentType.DOCUMENT)
-                    .documentObject(document.getOldApi())
                     .documentId(document.getOldApi().getModuleName())
                     .documentTitle(document.getOldApi().getTitleOrName())
                     .documentContent(documentContent)
