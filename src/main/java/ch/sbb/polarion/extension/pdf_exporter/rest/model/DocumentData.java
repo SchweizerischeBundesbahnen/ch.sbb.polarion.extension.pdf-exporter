@@ -28,5 +28,6 @@ public class DocumentData<T extends IUniqueObject> {
     }
 
     // making javadoc maven plugin happy
+    @SuppressWarnings("unused")
     public static class DocumentDataBuilder<T extends IUniqueObject> {}
 }
