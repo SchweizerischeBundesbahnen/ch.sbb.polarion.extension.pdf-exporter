@@ -4,7 +4,7 @@ import ch.sbb.polarion.extension.generic.settings.SettingId;
 import ch.sbb.polarion.extension.pdf.exporter.rest.model.conversion.ExportParams;
 import ch.sbb.polarion.extension.pdf.exporter.rest.model.settings.coverpage.CoverPageModel;
 import ch.sbb.polarion.extension.pdf.exporter.settings.CoverPageSettings;
-import ch.sbb.polarion.extension.pdf.exporter.util.LiveDocHelper;
+import ch.sbb.polarion.extension.pdf.exporter.util.DocumentData;
 import ch.sbb.polarion.extension.pdf.exporter.util.MediaUtils;
 import ch.sbb.polarion.extension.pdf.exporter.util.PdfGenerationLog;
 import ch.sbb.polarion.extension.pdf.exporter.util.PdfTemplateProcessor;
@@ -46,7 +46,7 @@ public class CoverPageProcessor {
     }
 
     @SneakyThrows
-    public byte[] generatePdfWithTitle(LiveDocHelper.DocumentData documentData, ExportParams exportParams,
+    public byte[] generatePdfWithTitle(DocumentData documentData, ExportParams exportParams,
                                        String contentHtml, PdfGenerationLog generationLog) {
         String titleHtml = composeTitleHtml(documentData, exportParams);
         generationLog.log("Starting concurrent generation for cover page and content");
@@ -62,7 +62,7 @@ public class CoverPageProcessor {
     }
 
     @VisibleForTesting
-    String composeTitleHtml(LiveDocHelper.DocumentData documentData, ExportParams exportParams) {
+    String composeTitleHtml(DocumentData documentData, ExportParams exportParams) {
         CoverPageModel settings = coverPageSettings.load(exportParams.getProjectId(), SettingId.fromName(exportParams.getCoverPage()));
         String templateHtml = settings.getTemplateHtml();
         String content = placeholderProcessor.replacePlaceholders(documentData, exportParams, templateHtml);

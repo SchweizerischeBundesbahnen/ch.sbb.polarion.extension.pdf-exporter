@@ -41,14 +41,14 @@ import org.jetbrains.annotations.VisibleForTesting;
 import java.util.Map;
 
 @SuppressWarnings("java:S1200")
-public class LiveDocHelper {
+public class DocumentDataHelper {
     private static final String DOC_REVISION_CUSTOM_FIELD = "docRevision";
     private static final String URL_QUERY_PARAM_LANGUAGE = "language";
     private static final String URL_QUERY_PARAM_ID = "id";
 
     private final PdfExporterPolarionService pdfExporterPolarionService;
 
-    public LiveDocHelper(PdfExporterPolarionService pdfExporterPolarionService) {
+    public DocumentDataHelper(PdfExporterPolarionService pdfExporterPolarionService) {
         this.pdfExporterPolarionService = pdfExporterPolarionService;
     }
 
@@ -198,11 +198,11 @@ public class LiveDocHelper {
     }
 
     public String getDocumentStatus(String revision, @NotNull DocumentData documentData) {
-        String documentStatus = documentData.lastRevision;
+        String documentStatus = documentData.getLastRevision();
         if (revision != null) {
             documentStatus = revision;
-        } else if (documentData.document != null) { //document is null for wiki pages
-            Object docRevision = documentData.document.getCustomField(DOC_REVISION_CUSTOM_FIELD);
+        } else if (documentData.getDocument() != null) { //document is null for wiki pages
+            Object docRevision = documentData.getDocument().getCustomField(DOC_REVISION_CUSTOM_FIELD);
             if (docRevision != null) {
                 documentStatus = docRevision.toString();
             }
@@ -256,20 +256,5 @@ public class LiveDocHelper {
         }
 
         return baselineNameBuilder.toString();
-    }
-
-    @Builder
-    @Getter
-    public static class DocumentData {
-        private String projectName;
-        private IModule document;
-        private IWikiPage wikiPage;
-        private IRichPage richPage;
-        private ITestRun testRun;
-        private String lastRevision;
-        private String baselineName;
-        private String documentId;
-        private String documentTitle;
-        private String documentContent;
     }
 }

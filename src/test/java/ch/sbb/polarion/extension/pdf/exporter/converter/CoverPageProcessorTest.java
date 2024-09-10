@@ -4,7 +4,7 @@ import ch.sbb.polarion.extension.generic.settings.SettingId;
 import ch.sbb.polarion.extension.pdf.exporter.rest.model.conversion.ExportParams;
 import ch.sbb.polarion.extension.pdf.exporter.rest.model.settings.coverpage.CoverPageModel;
 import ch.sbb.polarion.extension.pdf.exporter.settings.CoverPageSettings;
-import ch.sbb.polarion.extension.pdf.exporter.util.LiveDocHelper;
+import ch.sbb.polarion.extension.pdf.exporter.util.DocumentData;
 import ch.sbb.polarion.extension.pdf.exporter.util.PdfGenerationLog;
 import ch.sbb.polarion.extension.pdf.exporter.util.PdfTemplateProcessor;
 import ch.sbb.polarion.extension.pdf.exporter.util.placeholder.PlaceholderProcessor;
@@ -57,7 +57,7 @@ class CoverPageProcessorTest {
                 .templateHtml("test template html")
                 .templateCss("test template css")
                 .build();
-        LiveDocHelper.DocumentData documentData = prepareMocks(coverPageModel, exportParams);
+        DocumentData documentData = prepareMocks(coverPageModel, exportParams);
         when(weasyPrintServiceConnector.convertToPdf("result title html", new WeasyPrintOptions())).thenReturn(createEmptyPdf(2));
         when(weasyPrintServiceConnector.convertToPdf("test content", new WeasyPrintOptions())).thenReturn(createEmptyPdf(3));
 
@@ -96,7 +96,7 @@ class CoverPageProcessorTest {
                 .templateHtml("test template html")
                 .templateCss("test template css")
                 .build();
-        LiveDocHelper.DocumentData documentData = prepareMocks(coverPageModel, exportParams);
+        DocumentData documentData = prepareMocks(coverPageModel, exportParams);
 
         // Act
         String result = coverPageProcessor.composeTitleHtml(documentData, exportParams);
@@ -105,9 +105,9 @@ class CoverPageProcessorTest {
         assertThat(result).isEqualTo("result title html");
     }
 
-    private LiveDocHelper.DocumentData prepareMocks(CoverPageModel coverPageModel, ExportParams exportParams) {
+    private DocumentData prepareMocks(CoverPageModel coverPageModel, ExportParams exportParams) {
         when(coverPageSettings.load("testProjectId", SettingId.fromName("test cover page"))).thenReturn(coverPageModel);
-        LiveDocHelper.DocumentData documentData = LiveDocHelper.DocumentData.builder().documentTitle("test document").build();
+        DocumentData documentData = DocumentData.builder().documentTitle("test document").build();
         when(placeholderProcessor.replacePlaceholders(documentData, exportParams, "test template html")).thenReturn("replaced template html");
         when(velocityEvaluator.evaluateVelocityExpressions(eq(documentData), anyString())).thenAnswer(a -> a.getArguments()[1]);
         when(coverPageSettings.processImagePlaceholders("test template css")).thenCallRealMethod();

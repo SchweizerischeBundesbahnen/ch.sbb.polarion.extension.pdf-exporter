@@ -3,7 +3,8 @@ package ch.sbb.polarion.extension.pdf.exporter.util.placeholder;
 import ch.sbb.polarion.extension.pdf.exporter.rest.model.conversion.ExportParams;
 import ch.sbb.polarion.extension.pdf.exporter.rest.model.settings.headerfooter.Placeholder;
 import ch.sbb.polarion.extension.pdf.exporter.service.PdfExporterPolarionService;
-import ch.sbb.polarion.extension.pdf.exporter.util.LiveDocHelper;
+import ch.sbb.polarion.extension.pdf.exporter.util.DocumentData;
+import ch.sbb.polarion.extension.pdf.exporter.util.DocumentDataHelper;
 import ch.sbb.polarion.extension.generic.regex.RegexMatcher;
 import org.jetbrains.annotations.NotNull;
 
@@ -16,30 +17,30 @@ import java.util.TreeSet;
 public class PlaceholderProcessor {
 
     private final PdfExporterPolarionService pdfExporterPolarionService;
-    private final LiveDocHelper liveDocHelper;
+    private final DocumentDataHelper documentDataHelper;
 
     public PlaceholderProcessor() {
         this.pdfExporterPolarionService = new PdfExporterPolarionService();
-        this.liveDocHelper = new LiveDocHelper(pdfExporterPolarionService);
+        this.documentDataHelper = new DocumentDataHelper(pdfExporterPolarionService);
     }
 
-    public PlaceholderProcessor(PdfExporterPolarionService pdfExporterPolarionService, LiveDocHelper liveDocHelper) {
+    public PlaceholderProcessor(PdfExporterPolarionService pdfExporterPolarionService, DocumentDataHelper documentDataHelper) {
         this.pdfExporterPolarionService = pdfExporterPolarionService;
-        this.liveDocHelper = liveDocHelper;
+        this.documentDataHelper = documentDataHelper;
     }
 
-    public String replacePlaceholders(LiveDocHelper.DocumentData documentData, ExportParams exportParams, String template) {
+    public String replacePlaceholders(DocumentData documentData, ExportParams exportParams, String template) {
         PlaceholderValues placeholderValues = getPlaceholderValues(documentData, exportParams, template);
         return processPlaceholders(template, placeholderValues);
     }
 
-    public List<String> replacePlaceholders(LiveDocHelper.DocumentData documentData, ExportParams exportParams, List<String> templates) {
+    public List<String> replacePlaceholders(DocumentData documentData, ExportParams exportParams, List<String> templates) {
         PlaceholderValues placeholderValues = getPlaceholderValues(documentData, exportParams, templates);
 
         return processPlaceholders(templates, placeholderValues);
     }
 
-    public PlaceholderValues getPlaceholderValues(LiveDocHelper.DocumentData documentData, ExportParams exportParams, List<String> templates) {
+    public PlaceholderValues getPlaceholderValues(DocumentData documentData, ExportParams exportParams, List<String> templates) {
         String revision = exportParams.getRevision() != null ? exportParams.getRevision() : documentData.getLastRevision();
         String baseLineName = documentData.getBaselineName();
 
@@ -52,7 +53,7 @@ public class PlaceholderProcessor {
                 .baseLineName(baseLineName)
                 .documentId(documentData.getDocumentId())
                 .documentTitle(documentData.getDocumentTitle())
-                .documentRevision(liveDocHelper.getDocumentStatus(exportParams.getRevision(), documentData))
+                .documentRevision(documentDataHelper.getDocumentStatus(exportParams.getRevision(), documentData))
                 .build();
         if (documentData.getDocument() != null) {
             placeholderValues.addCustomVariables(documentData.getDocument(), extractCustomPlaceholders(templates));
@@ -60,7 +61,7 @@ public class PlaceholderProcessor {
         return placeholderValues;
     }
 
-    public PlaceholderValues getPlaceholderValues(LiveDocHelper.DocumentData documentData, ExportParams exportParams, String template) {
+    public PlaceholderValues getPlaceholderValues(DocumentData documentData, ExportParams exportParams, String template) {
         return getPlaceholderValues(documentData, exportParams, List.of(template));
     }
 

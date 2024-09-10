@@ -21,7 +21,7 @@ class DocumentFileNameHelperTest {
 
     @Test
     void evaluateVelocity() {
-        LiveDocHelper.DocumentData documentData = LiveDocHelper.DocumentData.builder()
+        DocumentData documentData = DocumentData.builder()
                 .projectName("Test Project")
                 .build();
         FileNameTemplateModel settingOneModel = FileNameTemplateModel.builder()

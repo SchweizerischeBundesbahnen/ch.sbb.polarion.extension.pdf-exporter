@@ -14,25 +14,25 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-class LiveDocHelperTest {
-    private LiveDocHelper liveDocHelper;
+class DocumentDataHelperTest {
+    private DocumentDataHelper documentDataHelper;
 
     @BeforeEach
     public void setup() {
-        liveDocHelper = new LiveDocHelper(null);
+        documentDataHelper = new DocumentDataHelper(null);
     }
 
     @ParameterizedTest
     @MethodSource("getDocumentStatusParameters")
     void shouldGetDocumentStatus(String revision, String customFieldRevision, String lastRevision, String expectedStatus) {
         IModule module = mock(IModule.class);
-        LiveDocHelper.DocumentData documentData = LiveDocHelper.DocumentData.builder()
+        DocumentData documentData = DocumentData.builder()
                 .lastRevision(lastRevision)
                 .document(module)
                 .build();
         when(module.getCustomField("docRevision")).thenReturn(customFieldRevision);
 
-        String documentStatus = liveDocHelper.getDocumentStatus(revision, documentData);
+        String documentStatus = documentDataHelper.getDocumentStatus(revision, documentData);
         assertThat(documentStatus).isEqualTo(expectedStatus);
     }
 
@@ -47,14 +47,14 @@ class LiveDocHelperTest {
     @ParameterizedTest
     @MethodSource("getDocumentLocationParameters")
     void shouldGetDocumentLocation(String location, String revision) {
-        ILocation documentLocation = liveDocHelper.getDocumentLocation(location, revision);
+        ILocation documentLocation = documentDataHelper.getDocumentLocation(location, revision);
         assertThat(documentLocation.getLocationPath()).isEqualTo(location);
         assertThat(documentLocation.getRevision()).isEqualTo(revision);
     }
 
     @Test
     void shouldCreatePath() {
-        assertThat(liveDocHelper.createPath("testProjectId", "testLocationPath")).isEqualTo("testProjectId/testLocationPath");
+        assertThat(documentDataHelper.createPath("testProjectId", "testLocationPath")).isEqualTo("testProjectId/testLocationPath");
     }
 
     private static Stream<Arguments> getDocumentLocationParameters() {

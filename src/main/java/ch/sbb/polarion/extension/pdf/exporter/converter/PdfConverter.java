@@ -17,10 +17,11 @@ import ch.sbb.polarion.extension.pdf.exporter.settings.CssSettings;
 import ch.sbb.polarion.extension.pdf.exporter.settings.HeaderFooterSettings;
 import ch.sbb.polarion.extension.pdf.exporter.settings.LocalizationSettings;
 import ch.sbb.polarion.extension.pdf.exporter.settings.WebhooksSettings;
+import ch.sbb.polarion.extension.pdf.exporter.util.DocumentData;
 import ch.sbb.polarion.extension.pdf.exporter.util.EnumValuesProvider;
 import ch.sbb.polarion.extension.pdf.exporter.util.HtmlLogger;
 import ch.sbb.polarion.extension.pdf.exporter.util.HtmlProcessor;
-import ch.sbb.polarion.extension.pdf.exporter.util.LiveDocHelper;
+import ch.sbb.polarion.extension.pdf.exporter.util.DocumentDataHelper;
 import ch.sbb.polarion.extension.pdf.exporter.util.PdfExporterFileResourceProvider;
 import ch.sbb.polarion.extension.pdf.exporter.util.PdfExporterListStyleProvider;
 import ch.sbb.polarion.extension.pdf.exporter.util.PdfGenerationLog;
@@ -68,7 +69,7 @@ public class PdfConverter {
     private final HeaderFooterSettings headerFooterSettings;
     private final CssSettings cssSettings;
 
-    private final LiveDocHelper liveDocHelper;
+    private final DocumentDataHelper documentDataHelper;
     private final PlaceholderProcessor placeholderProcessor;
     private final VelocityEvaluator velocityEvaluator;
     private final CoverPageProcessor coverPageProcessor;
@@ -80,7 +81,7 @@ public class PdfConverter {
         pdfExporterPolarionService = new PdfExporterPolarionService();
         headerFooterSettings = new HeaderFooterSettings();
         cssSettings = new CssSettings();
-        liveDocHelper = new LiveDocHelper(pdfExporterPolarionService);
+        documentDataHelper = new DocumentDataHelper(pdfExporterPolarionService);
         placeholderProcessor = new PlaceholderProcessor();
         velocityEvaluator = new VelocityEvaluator();
         coverPageProcessor = new CoverPageProcessor();
@@ -97,7 +98,7 @@ public class PdfConverter {
         generationLog.log("Starting html generation");
 
         @Nullable ITrackerProject project = getTrackerProject(exportParams);
-        @NotNull final LiveDocHelper.DocumentData documentData = getDocumentData(exportParams, project);
+        @NotNull final DocumentData documentData = getDocumentData(exportParams, project);
         @NotNull String htmlContent = prepareHtmlContent(exportParams, project, documentData, metaInfoCallback);
 
         generationLog.log("Html is ready, starting pdf generation");
@@ -116,7 +117,7 @@ public class PdfConverter {
 
     public @NotNull String prepareHtmlContent(@NotNull ExportParams exportParams, @Nullable ExportMetaInfoCallback metaInfoCallback) {
         @Nullable ITrackerProject project = getTrackerProject(exportParams);
-        @NotNull final LiveDocHelper.DocumentData documentData = getDocumentData(exportParams, project);
+        @NotNull final DocumentData documentData = getDocumentData(exportParams, project);
         return prepareHtmlContent(exportParams, project, documentData, metaInfoCallback);
     }
 
@@ -128,16 +129,16 @@ public class PdfConverter {
         return project;
     }
 
-    private @NotNull LiveDocHelper.DocumentData getDocumentData(@NotNull ExportParams exportParams, @Nullable ITrackerProject project) {
+    private @NotNull DocumentData getDocumentData(@NotNull ExportParams exportParams, @Nullable ITrackerProject project) {
         return switch (exportParams.getDocumentType()) {
-            case DOCUMENT -> liveDocHelper.getLiveDocument(Objects.requireNonNull(project), exportParams);
-            case REPORT -> liveDocHelper.getLiveReport(project, exportParams);
-            case TESTRUN -> liveDocHelper.getTestRun(project, exportParams);
-            case WIKI -> liveDocHelper.getWikiDocument(project, exportParams);
+            case DOCUMENT -> documentDataHelper.getLiveDocument(Objects.requireNonNull(project), exportParams);
+            case REPORT -> documentDataHelper.getLiveReport(project, exportParams);
+            case TESTRUN -> documentDataHelper.getTestRun(project, exportParams);
+            case WIKI -> documentDataHelper.getWikiDocument(project, exportParams);
         };
     }
 
-    private @NotNull String prepareHtmlContent(@NotNull ExportParams exportParams, @Nullable ITrackerProject project, @NotNull LiveDocHelper.DocumentData documentData, @Nullable ExportMetaInfoCallback metaInfoCallback) {
+    private @NotNull String prepareHtmlContent(@NotNull ExportParams exportParams, @Nullable ITrackerProject project, @NotNull DocumentData documentData, @Nullable ExportMetaInfoCallback metaInfoCallback) {
         String cssContent = getCssContent(documentData, exportParams);
         String preparedDocumentContent = postProcessDocumentContent(exportParams, project, documentData.getDocumentContent());
         String headerFooterContent = getHeaderFooterContent(documentData, exportParams);
@@ -229,7 +230,7 @@ public class PdfConverter {
 
     @VisibleForTesting
     byte[] generatePdf(
-            LiveDocHelper.DocumentData documentData,
+            DocumentData documentData,
             ExportParams exportParams,
             ExportMetaInfoCallback metaInfoCallback,
             String htmlPage,
@@ -265,7 +266,7 @@ public class PdfConverter {
     @NotNull
     @VisibleForTesting
     String getCssContent(
-            @NotNull LiveDocHelper.DocumentData documentData,
+            @NotNull DocumentData documentData,
             @NotNull ExportParams exportParams) {
         String cssSettingsName = exportParams.getCss() != null ? exportParams.getCss() : NamedSettings.DEFAULT_NAME;
         String pdfStyles = cssSettings.load(exportParams.getProjectId(), SettingId.fromName(cssSettingsName)).getCss();
@@ -287,7 +288,7 @@ public class PdfConverter {
 
     @VisibleForTesting
     String getHeaderFooterContent(
-            @NotNull LiveDocHelper.DocumentData documentData,
+            @NotNull DocumentData documentData,
             @NotNull ExportParams exportParams) {
         String headerFooterSettingsName = exportParams.getHeaderFooter() != null ? exportParams.getHeaderFooter() : NamedSettings.DEFAULT_NAME;
         HeaderFooterModel headerFooter = headerFooterSettings.load(exportParams.getProjectId(), SettingId.fromName(headerFooterSettingsName));
