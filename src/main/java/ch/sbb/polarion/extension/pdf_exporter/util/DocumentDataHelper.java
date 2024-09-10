@@ -81,7 +81,7 @@ public class DocumentDataHelper {
                     .lastRevision(richPage.getOldApi().getLastRevision())
                     .baselineName(project != null ? getRevisionBaseline(projectId, richPage.getOldApi(), exportParams.getRevision()) : "")
                     .id(richPage.getOldApi().getId())
-                    .title(richPage.getOldApi().getTitle())
+                    .title(richPage.getOldApi().getTitleOrName())
                     .content(documentContent)
                     .build();
         });
@@ -94,7 +94,11 @@ public class DocumentDataHelper {
     public DocumentData<ITestRun> getTestRun(@Nullable ITrackerProject project, @NotNull ExportParams exportParams, boolean withContent) {
         return TransactionalExecutor.executeSafelyInReadOnlyTransaction(transaction -> {
             String projectId = project != null ? project.getId() : "";
-            TestRunReference testRunReference = TestRunReference.fromPath(createPath(projectId, exportParams.getUrlQueryParameters().get(URL_QUERY_PARAM_ID)));
+            Map<String, String> urlQueryParameters = exportParams.getUrlQueryParameters();
+            if (urlQueryParameters == null || !urlQueryParameters.containsKey(URL_QUERY_PARAM_ID)) {
+                throw new IllegalArgumentException("TestRun id is required for export");
+            }
+            TestRunReference testRunReference = TestRunReference.fromPath(createPath(projectId, urlQueryParameters.get(URL_QUERY_PARAM_ID)));
             if (exportParams.getRevision() != null) {
                 testRunReference = testRunReference.getWithRevision(exportParams.getRevision());
             }
