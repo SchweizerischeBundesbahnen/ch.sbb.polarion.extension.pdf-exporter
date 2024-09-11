@@ -1,5 +1,7 @@
 package ch.sbb.polarion.extension.pdf_exporter.util;
 
+import ch.sbb.polarion.extension.generic.regex.IRegexEngine;
+import ch.sbb.polarion.extension.generic.regex.RegexMatcher;
 import ch.sbb.polarion.extension.generic.settings.NamedSettings;
 import ch.sbb.polarion.extension.generic.settings.SettingId;
 import ch.sbb.polarion.extension.generic.util.HtmlUtils;
@@ -10,8 +12,6 @@ import ch.sbb.polarion.extension.pdf_exporter.service.PdfExporterPolarionService
 import ch.sbb.polarion.extension.pdf_exporter.settings.LocalizationSettings;
 import ch.sbb.polarion.extension.pdf_exporter.util.exporter.CustomPageBreakPart;
 import ch.sbb.polarion.extension.pdf_exporter.util.html.HtmlLinksHelper;
-import ch.sbb.polarion.extension.generic.regex.IRegexEngine;
-import ch.sbb.polarion.extension.generic.regex.RegexMatcher;
 import com.polarion.alm.shared.util.StringUtils;
 import com.polarion.core.util.xml.CSSStyle;
 import lombok.SneakyThrows;
@@ -181,11 +181,11 @@ public class HtmlProcessor {
         }
 
         html = switch (exportParams.getDocumentType()) {
-            case DOCUMENT, WIKI -> {
+            case LIVE_DOC, WIKI_PAGE -> {
                 String processingHtml = addTableOfContent(html);
                 yield addTableOfFigures(processingHtml);
             }
-            case REPORT, TESTRUN -> {
+            case LIVE_REPORT, TEST_RUN -> {
                 String processingHtml = adjustReportedBy(html);
                 processingHtml = cutExportToPdfButton(processingHtml);
                 processingHtml = adjustColumnWidthInReports(processingHtml);
@@ -197,11 +197,11 @@ public class HtmlProcessor {
         html = properTableHeads(html);
         html = cleanExtraTableContent(html);
         html = switch (exportParams.getDocumentType()) {
-            case DOCUMENT, WIKI -> {
+            case LIVE_DOC, WIKI_PAGE -> {
                 String processingHtml = new PageBreakAvoidRemover().removePageBreakAvoids(html);
                 yield new NumberedListsSanitizer().fixNumberedLists(processingHtml);
             }
-            case REPORT, TESTRUN -> html;
+            case LIVE_REPORT, TEST_RUN -> html;
         };
 
         // ----
@@ -221,8 +221,8 @@ public class HtmlProcessor {
         // ----
 
         html = switch (exportParams.getDocumentType()) {
-            case DOCUMENT, WIKI -> localizeEnums(html, exportParams);
-            case REPORT, TESTRUN -> html;
+            case LIVE_DOC, WIKI_PAGE -> localizeEnums(html, exportParams);
+            case LIVE_REPORT, TEST_RUN -> html;
         };
 
         if (exportParams.isEnableCommentsRendering()) {

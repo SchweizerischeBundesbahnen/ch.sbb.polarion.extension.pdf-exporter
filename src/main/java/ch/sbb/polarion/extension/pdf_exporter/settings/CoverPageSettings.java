@@ -1,5 +1,6 @@
 package ch.sbb.polarion.extension.pdf_exporter.settings;
 
+import ch.sbb.polarion.extension.generic.regex.RegexMatcher;
 import ch.sbb.polarion.extension.generic.settings.GenericNamedSettings;
 import ch.sbb.polarion.extension.generic.settings.SettingName;
 import ch.sbb.polarion.extension.generic.settings.SettingsService;
@@ -7,7 +8,6 @@ import ch.sbb.polarion.extension.generic.util.ScopeUtils;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.coverpage.CoverPageModel;
 import ch.sbb.polarion.extension.pdf_exporter.service.PdfExporterPolarionService;
 import ch.sbb.polarion.extension.pdf_exporter.util.MediaUtils;
-import ch.sbb.polarion.extension.generic.regex.RegexMatcher;
 import com.polarion.core.util.logging.Logger;
 import com.polarion.platform.service.repository.IRepositoryReadOnlyConnection;
 import com.polarion.subterra.base.location.ILocation;

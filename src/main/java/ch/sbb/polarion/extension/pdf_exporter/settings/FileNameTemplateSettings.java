@@ -7,10 +7,10 @@ import org.jetbrains.annotations.NotNull;
 
 public class FileNameTemplateSettings extends GenericNamedSettings<FileNameTemplateModel> {
     public static final String FEATURE_NAME = "filename-template";
-    public static final String DEFAULT_DOCUMENT_NAME_TEMPLATE = "$projectName $document.moduleNameWithSpace.replace(\" / \", \" \")";
-    public static final String DEFAULT_REPORT_NAME_TEMPLATE = "$projectName $page.pageNameWithSpace.replace(\" / \", \" \") $page.lastRevision";
-    public static final String DEFAULT_TESTRUN_NAME_TEMPLATE = "$projectName $testrun.label";
-    public static final String DEFAULT_WIKI_NAME_TEMPLATE = "$projectName $page.pageNameWithSpace.replace(\" / \", \" \") $page.lastRevision";
+    public static final String DEFAULT_LIVE_DOC_NAME_TEMPLATE = "$projectName $document.moduleNameWithSpace.replace(\" / \", \" \")";
+    public static final String DEFAULT_LIVE_REPORT_NAME_TEMPLATE = "$projectName $page.pageNameWithSpace.replace(\" / \", \" \") $page.revision";
+    public static final String DEFAULT_TEST_RUN_NAME_TEMPLATE = "$projectName $testrun.label";
+    public static final String DEFAULT_WIKI_PAGE_NAME_TEMPLATE = "$projectName $page.pageNameWithSpace.replace(\" / \", \" \") $page.revision";
 
     public FileNameTemplateSettings() {
         super(FEATURE_NAME);
@@ -23,10 +23,10 @@ public class FileNameTemplateSettings extends GenericNamedSettings<FileNameTempl
     @Override
     public @NotNull FileNameTemplateModel defaultValues() {
         return FileNameTemplateModel.builder()
-                .documentNameTemplate(DEFAULT_DOCUMENT_NAME_TEMPLATE)
-                .reportNameTemplate(DEFAULT_REPORT_NAME_TEMPLATE)
-                .testrunNameTemplate(DEFAULT_TESTRUN_NAME_TEMPLATE)
-                .wikiNameTemplate(DEFAULT_WIKI_NAME_TEMPLATE)
+                .documentNameTemplate(DEFAULT_LIVE_DOC_NAME_TEMPLATE)
+                .reportNameTemplate(DEFAULT_LIVE_REPORT_NAME_TEMPLATE)
+                .testRunNameTemplate(DEFAULT_TEST_RUN_NAME_TEMPLATE)
+                .wikiNameTemplate(DEFAULT_WIKI_PAGE_NAME_TEMPLATE)
                 .build();
     }
 }

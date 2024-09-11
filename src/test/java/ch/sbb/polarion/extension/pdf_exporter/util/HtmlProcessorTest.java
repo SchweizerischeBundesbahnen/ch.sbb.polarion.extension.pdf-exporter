@@ -518,7 +518,7 @@ class HtmlProcessorTest {
     void cutExportToPdfButtonTest() {
         String initialHtml = """
                     <p id="polarion_client33">
-                      <span class="polarion-rp-inline-widget" data-widget="ch.sbb.polarion.extension.pdf_exporter.widgets.exportToPdfButton" id="polarion_client33_iw_1">
+                      <span class="polarion-rp-inline-widget" data-widget="ch.sbb.polarion.extension.pdf.exporter.widgets.exportToPdfButton" id="polarion_client33_iw_1">
                         <span id="polarion-rp-widget-content">
                           <span class="polarion-TestsExecutionButton-link">
                             <a onclick="PdfExporter.openPopup({context: &#39;report&#39;})">
@@ -545,7 +545,7 @@ class HtmlProcessorTest {
 
         String expectedHtml = """
                     <p id="polarion_client33">
-                      <span class="polarion-rp-inline-widget" data-widget="ch.sbb.polarion.extension.pdf_exporter.widgets.exportToPdfButton" id="polarion_client33_iw_1">
+                      <span class="polarion-rp-inline-widget" data-widget="ch.sbb.polarion.extension.pdf.exporter.widgets.exportToPdfButton" id="polarion_client33_iw_1">
                         <span id="polarion-rp-widget-content">
                           <span class="polarion-TestsExecutionButton-link">
                             <a onclick="PdfExporter.openPopup({context: &#39;report&#39;})">
@@ -631,7 +631,7 @@ class HtmlProcessorTest {
     private ExportParams getExportParams() {
         return ExportParams.builder()
                 .projectId("test_project")
-                .documentType(DocumentType.DOCUMENT)
+                .documentType(DocumentType.LIVE_DOC)
                 .language(Language.DE.name())
                 .build();
     }

@@ -213,6 +213,9 @@ All good so far.
 ### Upgrade from version 6.x.x to 7.0.0
 
 In version 7.0.0 `/export-filename` REST API endpoint changed. As a result, if the endpoint has been used, it's required to adjust the calls accordingly.
+`DocumentType` enum in `ExportParams` has been changed. As a result, if enum values have been used, it's required to adjust the calls accordingly.
+Main package has been renamed from `ch.sbb.polarion.extension.pdf.exporter` to `ch.sbb.polarion.extension.pdf_exporter`. As a result, if the extension has been used in another OSGi bundles, it's required to adjust the package imports accordingly.
+
 
 ### Upgrade from version 5.x.x to 6.0.0
 

@@ -1,8 +1,10 @@
 package ch.sbb.polarion.extension.pdf_exporter.util;
 
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.DocumentData;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.DocumentType;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.filename.FileNameTemplateModel;
 import ch.sbb.polarion.extension.pdf_exporter.util.velocity.VelocityEvaluator;
+import com.polarion.alm.tracker.model.IModule;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -22,7 +24,9 @@ class DocumentFileNameHelperTest {
 
     @Test
     void evaluateVelocity() {
-        DocumentData documentData = DocumentData.builder()
+        DocumentData<IModule> documentData = DocumentData.builder(DocumentType.LIVE_DOC, mock(IModule.class))
+                .id("Test Id")
+                .title("Test Title")
                 .projectName("Test Project")
                 .build();
         FileNameTemplateModel settingOneModel = FileNameTemplateModel.builder()

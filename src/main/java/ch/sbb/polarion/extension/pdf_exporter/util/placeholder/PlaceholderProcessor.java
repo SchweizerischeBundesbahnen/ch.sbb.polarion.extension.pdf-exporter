@@ -1,11 +1,13 @@
 package ch.sbb.polarion.extension.pdf_exporter.util.placeholder;
 
+import ch.sbb.polarion.extension.generic.regex.RegexMatcher;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.DocumentData;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.headerfooter.Placeholder;
 import ch.sbb.polarion.extension.pdf_exporter.service.PdfExporterPolarionService;
-import ch.sbb.polarion.extension.pdf_exporter.rest.model.DocumentData;
 import ch.sbb.polarion.extension.pdf_exporter.util.DocumentDataHelper;
-import ch.sbb.polarion.extension.generic.regex.RegexMatcher;
+import com.polarion.alm.projects.model.IUniqueObject;
+import com.polarion.alm.tracker.model.IModule;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.HashSet;
@@ -29,18 +31,18 @@ public class PlaceholderProcessor {
         this.documentDataHelper = documentDataHelper;
     }
 
-    public String replacePlaceholders(DocumentData documentData, ExportParams exportParams, String template) {
+    public String replacePlaceholders(DocumentData<? extends IUniqueObject> documentData, ExportParams exportParams, String template) {
         PlaceholderValues placeholderValues = getPlaceholderValues(documentData, exportParams, template);
         return processPlaceholders(template, placeholderValues);
     }
 
-    public List<String> replacePlaceholders(DocumentData documentData, ExportParams exportParams, List<String> templates) {
+    public List<String> replacePlaceholders(DocumentData<? extends IUniqueObject> documentData, ExportParams exportParams, List<String> templates) {
         PlaceholderValues placeholderValues = getPlaceholderValues(documentData, exportParams, templates);
 
         return processPlaceholders(templates, placeholderValues);
     }
 
-    public PlaceholderValues getPlaceholderValues(DocumentData documentData, ExportParams exportParams, List<String> templates) {
+    public PlaceholderValues getPlaceholderValues(DocumentData<? extends IUniqueObject> documentData, ExportParams exportParams, List<String> templates) {
         String revision = exportParams.getRevision() != null ? exportParams.getRevision() : documentData.getLastRevision();
         String baseLineName = documentData.getBaselineName();
 
@@ -51,17 +53,17 @@ public class PlaceholderProcessor {
                 .revision(revision)
                 .revisionAndBaseLineName(baseLineName != null ? (revision + " " + baseLineName) : revision)
                 .baseLineName(baseLineName)
-                .documentId(documentData.getDocumentId())
-                .documentTitle(documentData.getDocumentTitle())
+                .documentId(documentData.getId())
+                .documentTitle(documentData.getTitle())
                 .documentRevision(documentDataHelper.getDocumentStatus(exportParams.getRevision(), documentData))
                 .build();
-        if (documentData.getDocument() != null) {
-            placeholderValues.addCustomVariables(documentData.getDocument(), extractCustomPlaceholders(templates));
+        if (documentData.getDocumentObject() instanceof IModule module) {
+            placeholderValues.addCustomVariables(module, extractCustomPlaceholders(templates));
         }
         return placeholderValues;
     }
 
-    public PlaceholderValues getPlaceholderValues(DocumentData documentData, ExportParams exportParams, String template) {
+    public PlaceholderValues getPlaceholderValues(DocumentData<? extends IUniqueObject> documentData, ExportParams exportParams, String template) {
         return getPlaceholderValues(documentData, exportParams, List.of(template));
     }
 

@@ -1,7 +1,7 @@
 package ch.sbb.polarion.extension.pdf_exporter.util;
 
-import ch.sbb.polarion.extension.pdf_exporter.model.LiveDocComment;
 import ch.sbb.polarion.extension.generic.regex.RegexMatcher;
+import ch.sbb.polarion.extension.pdf_exporter.model.LiveDocComment;
 import com.polarion.alm.server.api.model.document.ProxyDocument;
 import com.polarion.alm.shared.api.model.comment.CommentBase;
 import com.polarion.alm.shared.api.model.comment.CommentBaseFields;

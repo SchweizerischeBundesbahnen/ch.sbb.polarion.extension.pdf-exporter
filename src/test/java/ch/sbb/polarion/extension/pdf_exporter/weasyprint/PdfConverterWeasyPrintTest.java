@@ -30,6 +30,7 @@ import com.polarion.alm.projects.model.IProject;
 import com.polarion.alm.tracker.ITrackerService;
 import com.polarion.alm.tracker.model.IModule;
 import com.polarion.alm.tracker.model.ITrackerProject;
+import com.polarion.alm.tracker.model.IWikiPage;
 import com.polarion.platform.IPlatformService;
 import com.polarion.platform.security.ISecurityService;
 import com.polarion.platform.service.repository.IRepositoryService;
@@ -72,8 +73,14 @@ class PdfConverterWeasyPrintTest extends BaseWeasyPrintTest {
                 "testFieldKey".equals(invocation.getArgument(0)) ? "testFieldValue" : null);
 
         DocumentDataHelper documentDataHelper = mock(DocumentDataHelper.class);
-        when(documentDataHelper.getLiveDocument(any(), any())).thenReturn(
-                DocumentData.builder().projectName("Test").document(module).documentTitle("testTitle").documentContent("<div>TEST</div>").lastRevision("42").build());
+        DocumentData<IModule> liveDoc1 = DocumentData.builder(DocumentType.LIVE_DOC, module)
+                .id("testId")
+                .projectName("Test")
+                .title("testTitle")
+                .content("<div>TEST</div>")
+                .lastRevision("42")
+                .build();
+        when(documentDataHelper.getLiveDoc(any(), any())).thenReturn(liveDoc1);
 
         LocalizationSettings localizationSettings = mock(LocalizationSettings.class);
         when(localizationSettings.load(any(), any())).thenReturn(new LocalizationModel(null, null, null));
@@ -114,22 +121,28 @@ class PdfConverterWeasyPrintTest extends BaseWeasyPrintTest {
         compareContentUsingReferenceImages(testName + "_simple", converter.convertToPdf(params, null));
 
         params.setCoverPage("test");
-        when(documentDataHelper.getLiveDocument(any(), any())).thenReturn(
-                DocumentData.builder()
-                        .projectName("Test")
-                        .document(module)
-                        .documentTitle("testTitle")
-                        .documentContent("<div>TEST page 1</div><!--PAGE_BREAK--><!--PORTRAIT_ABOVE--><div>TEST page 2</div><!--PAGE_BREAK--><!--LANDSCAPE_ABOVE--><div>TEST page 3</div>")
-                        .lastRevision("42")
-                        .build());
+        DocumentData<IModule> liveDoc2 = DocumentData.builder(DocumentType.LIVE_DOC, module)
+                .projectName("Test")
+                .id("testId")
+                .title("testTitle")
+                .content("<div>TEST page 1</div><!--PAGE_BREAK--><!--PORTRAIT_ABOVE--><div>TEST page 2</div><!--PAGE_BREAK--><!--LANDSCAPE_ABOVE--><div>TEST page 3</div>")
+                .lastRevision("42")
+                .build();
+        when(documentDataHelper.getLiveDoc(any(), any())).thenReturn(liveDoc2);
         compareContentUsingReferenceImages(testName + "_complex_with_title", converter.convertToPdf(params, null));
 
         //test wiki page export + {{ REVISION }} placeholder usage
-        when(documentDataHelper.getWikiDocument(any(), any())).thenReturn(
-                DocumentData.builder().projectName("Test").documentTitle("wikiPage").documentContent("<div>TEST</div>").lastRevision("42").build());
+        DocumentData<IWikiPage> wikiPage = DocumentData.builder(DocumentType.LIVE_DOC, mock(IWikiPage.class))
+                .projectName("Test")
+                .id("testId")
+                .title("wikiPage")
+                .content("<div>TEST</div>")
+                .lastRevision("42")
+                .build();
+        when(documentDataHelper.getWikiPage(any(), any())).thenReturn(wikiPage);
         when(headerFooterSettings.load(any(), any())).thenReturn(new HeaderFooterModel("HL", "HC  {{ REVISION }}", "HR", "FL", "FC", "FR {{ PAGE_NUMBER }}"));
         params.setCoverPage(null);
-        params.setDocumentType(DocumentType.WIKI);
+        params.setDocumentType(DocumentType.WIKI_PAGE);
         params.setLocationPath("wikiFolder/wikiPage");
         compareContentUsingReferenceImages(testName + "_wiki", converter.convertToPdf(params, null));
     }

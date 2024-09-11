@@ -2,9 +2,14 @@ package ch.sbb.polarion.extension.pdf_exporter.util.velocity;
 
 import ch.sbb.polarion.extension.generic.util.ObjectUtils;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.DocumentData;
+import com.polarion.alm.projects.model.IUniqueObject;
 import com.polarion.alm.shared.api.transaction.ReadOnlyTransaction;
 import com.polarion.alm.shared.api.transaction.TransactionalExecutor;
 import com.polarion.alm.shared.util.VelocityContextInitializer;
+import com.polarion.alm.tracker.model.IModule;
+import com.polarion.alm.tracker.model.IRichPage;
+import com.polarion.alm.tracker.model.ITestRun;
+import com.polarion.alm.tracker.model.IWikiPage;
 import com.polarion.alm.ui.server.VelocityFactory;
 import com.polarion.core.util.logging.Logger;
 import org.apache.velocity.VelocityContext;
@@ -20,7 +25,7 @@ public class VelocityEvaluator {
 
     private static final Logger log = Logger.getLogger(VelocityEvaluator.class);
 
-    public @NotNull String evaluateVelocityExpressions(@NotNull DocumentData documentData, @NotNull String template) {
+    public @NotNull String evaluateVelocityExpressions(@NotNull DocumentData<? extends IUniqueObject> documentData, @NotNull String template) {
         return ObjectUtils.requireNotNull(TransactionalExecutor.executeSafelyInReadOnlyTransaction(transaction -> {
             VelocityContext velocityContext = createVelocityContext(transaction, documentData);
             StringWriter writer = new StringWriter();
@@ -36,21 +41,35 @@ public class VelocityEvaluator {
         }));
     }
 
-    private @NotNull VelocityContext createVelocityContext(@NotNull ReadOnlyTransaction transaction, @NotNull DocumentData documentData) {
+    private @NotNull VelocityContext createVelocityContext(@NotNull ReadOnlyTransaction transaction, @NotNull DocumentData<? extends IUniqueObject> documentData) {
         VelocityContext velocityContext = new VelocityContextInitializer(transaction).create();
-        if (documentData.getDocument() != null) {
-            velocityContext.put("document", documentData.getDocument());
+
+        switch (documentData.getDocumentType()) {
+            case LIVE_DOC -> {
+                if (documentData.getDocumentObject() instanceof IModule) {
+                    velocityContext.put("document", documentData.getDocumentObject());
+                }
+            }
+            case LIVE_REPORT -> {
+                if (documentData.getDocumentObject() instanceof IRichPage) {
+                    velocityContext.put("page", documentData.getDocumentObject());
+                }
+            }
+            case TEST_RUN -> {
+                if (documentData.getDocumentObject() instanceof ITestRun) {
+                    velocityContext.put("testrun", documentData.getDocumentObject());
+                }
+            }
+            case WIKI_PAGE -> {
+                if (documentData.getDocumentObject() instanceof IWikiPage) {
+                    velocityContext.put("page", documentData.getDocumentObject());
+                }
+            }
+            default -> throw new IllegalArgumentException("Unknown document type");
         }
-        if (documentData.getRichPage() != null) {
-            velocityContext.put("page", documentData.getRichPage());
-        }
-        if (documentData.getTestRun() != null) {
-            velocityContext.put("testrun", documentData.getTestRun());
-        }
-        if (documentData.getWikiPage() != null) {
-            velocityContext.put("page", documentData.getWikiPage());
-        }
+
         velocityContext.put("projectName", documentData.getProjectName());
+
         return velocityContext;
     }
 }

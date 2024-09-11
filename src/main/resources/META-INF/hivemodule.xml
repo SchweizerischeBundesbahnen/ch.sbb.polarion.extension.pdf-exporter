@@ -66,6 +66,6 @@
                   repositoryScope="true"/>
     </contribution>
     <contribution configuration-id="com.polarion.alm.richpages.widgets">
-        <widget id="ch.sbb.polarion.extension.pdf_exporter.widgets.exportToPdfButton" instance="instance:ch.sbb.polarion.extension.pdf_exporter.widgets.ExportToPdfButton" />
+        <widget id="ch.sbb.polarion.extension.pdf.exporter.widgets.exportToPdfButton" instance="instance:ch.sbb.polarion.extension.pdf_exporter.widgets.ExportToPdfButton" />
     </contribution>
 </module>

@@ -316,7 +316,7 @@ public class ConverterInternalController {
     )
     @SuppressWarnings("java:S1166")
     public NestedListsCheck checkNestedLists(ExportParams exportParams) {
-        boolean containsNestedLists = documentDataHelper.documentContainsNestedNumberedLists(exportParams);
+        boolean containsNestedLists = documentDataHelper.hasLiveDocNestedNumberedLists(exportParams);
         return NestedListsCheck.builder().containsNestedLists(containsNestedLists).build();
     }
 
@@ -324,7 +324,7 @@ public class ConverterInternalController {
         if (exportParams == null) {
             throw new BadRequestException("Missing export parameters");
         }
-        if (exportParams.getDocumentType() == DocumentType.DOCUMENT && exportParams.getProjectId() == null) {
+        if (exportParams.getDocumentType() == DocumentType.LIVE_DOC && exportParams.getProjectId() == null) {
             throw new BadRequestException("Parameter 'projectId' should be provided");
         }
         if (exportParams.getLocationPath() == null) {

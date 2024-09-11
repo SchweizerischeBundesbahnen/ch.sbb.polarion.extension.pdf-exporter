@@ -18,6 +18,7 @@ import com.polarion.platform.persistence.model.IPObjectList;
 import com.polarion.platform.security.ISecurityService;
 import com.polarion.platform.service.repository.IRepositoryService;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
 
@@ -32,7 +33,7 @@ public class PdfExporterPolarionService extends PolarionService {
         super(trackerService, projectService, securityService, platformService, repositoryService);
     }
 
-    public ITrackerProject getProjectFromScope(String scope) {
+    public @Nullable ITrackerProject getProjectFromScope(@Nullable String scope) {
         ITrackerProject project = null;
 
         if (!StringUtils.isEmpty(scope)) {
@@ -46,14 +47,14 @@ public class PdfExporterPolarionService extends PolarionService {
         return project;
     }
 
-    public Collection<SettingName> getSuitableStylePackages(@NotNull String projectId, @NotNull String spaceId, @NotNull String documentName) {
+    public Collection<SettingName> getSuitableStylePackages(@Nullable String projectId, @NotNull String spaceId, @NotNull String documentName) {
         StylePackageSettings stylePackageSettings = (StylePackageSettings) NamedSettingsRegistry.INSTANCE.getByFeatureName(StylePackageSettings.FEATURE_NAME);
         Collection<SettingName> stylePackageNames = stylePackageSettings.readNames(ScopeUtils.getScopeFromProject(projectId));
         return stylePackageNames.stream().filter(stylePackageName -> isStylePackageSuitable(projectId, spaceId, documentName, stylePackageSettings, stylePackageName)).toList();
     }
 
     @SuppressWarnings("unchecked")
-    private boolean isStylePackageSuitable(@NotNull String projectId, @NotNull String spaceId, @NotNull String documentName,
+    private boolean isStylePackageSuitable(@Nullable String projectId, @NotNull String spaceId, @NotNull String documentName,
                                            @NotNull StylePackageSettings stylePackageSettings, @NotNull SettingName stylePackageName) {
         StylePackageModel model = stylePackageSettings.read(ScopeUtils.getScopeFromProject(projectId), SettingId.fromName(stylePackageName.getName()), null);
 
@@ -71,8 +72,12 @@ public class PdfExporterPolarionService extends PolarionService {
         }
     }
 
-    private boolean sameDocument(@NotNull String projectId, @NotNull String spaceId, @NotNull String documentName, @NotNull IModule document) {
-        return projectId.equals(document.getProjectId()) && String.format("%s/%s", spaceId, documentName).equals(document.getModuleLocation().getLocationPath());
+    private boolean sameDocument(@Nullable String projectId, @NotNull String spaceId, @NotNull String documentName, @NotNull IModule document) {
+        if (projectId == null) {
+            return document.getProjectId() == null && String.format("%s/%s", spaceId, documentName).equals(document.getModuleLocation().getLocationPath());
+        } else {
+            return projectId.equals(document.getProjectId()) && String.format("%s/%s", spaceId, documentName).equals(document.getModuleLocation().getLocationPath());
+        }
     }
 
 }

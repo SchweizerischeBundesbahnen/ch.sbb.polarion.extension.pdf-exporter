@@ -1,23 +1,33 @@
 package ch.sbb.polarion.extension.pdf_exporter.rest.model;
 
-import com.polarion.alm.tracker.model.IModule;
-import com.polarion.alm.tracker.model.IRichPage;
-import com.polarion.alm.tracker.model.ITestRun;
-import com.polarion.alm.tracker.model.IWikiPage;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.DocumentType;
+import com.polarion.alm.projects.model.IUniqueObject;
 import lombok.Builder;
 import lombok.Getter;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
-@Builder
+@Builder(builderMethodName = "create")
 @Getter
-public class DocumentData {
-    private String projectName;
-    private IModule document;
-    private IWikiPage wikiPage;
-    private IRichPage richPage;
-    private ITestRun testRun;
-    private String lastRevision;
-    private String baselineName;
-    private String documentId;
-    private String documentTitle;
-    private String documentContent;
+public class DocumentData<T extends IUniqueObject> {
+    private final @NotNull DocumentType documentType;
+    private final @NotNull T documentObject;
+
+    private @NotNull String id;
+    private @NotNull String title;
+    private @Nullable String content;
+
+    private @Nullable String projectName;
+    private @Nullable String lastRevision;
+    private @Nullable String baselineName;
+
+    public static <T extends IUniqueObject> DocumentDataBuilder<T> builder(@NotNull DocumentType documentType, @NotNull T documentObject) {
+        return DocumentData.<T>create()
+                .documentType(documentType)
+                .documentObject(documentObject);
+    }
+
+    // making javadoc maven plugin happy
+    @SuppressWarnings("unused")
+    public static class DocumentDataBuilder<T extends IUniqueObject> {}
 }

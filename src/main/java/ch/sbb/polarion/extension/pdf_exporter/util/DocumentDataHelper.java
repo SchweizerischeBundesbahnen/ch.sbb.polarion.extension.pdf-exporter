@@ -1,11 +1,13 @@
 package ch.sbb.polarion.extension.pdf_exporter.util;
 
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.DocumentData;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.DocumentType;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
 import ch.sbb.polarion.extension.pdf_exporter.service.PdfExporterPolarionService;
 import ch.sbb.polarion.extension.pdf_exporter.util.exporter.ModifiedDocumentRenderer;
 import ch.sbb.polarion.extension.pdf_exporter.util.exporter.WikiRenderer;
 import com.polarion.alm.projects.model.IProject;
+import com.polarion.alm.projects.model.IUniqueObject;
 import com.polarion.alm.server.api.model.document.ProxyDocument;
 import com.polarion.alm.shared.api.model.document.Document;
 import com.polarion.alm.shared.api.model.document.DocumentReference;
@@ -24,7 +26,11 @@ import com.polarion.alm.shared.dle.document.DocumentRendererParameters;
 import com.polarion.alm.shared.rpe.RpeModelAspect;
 import com.polarion.alm.shared.rpe.RpeRenderer;
 import com.polarion.alm.tracker.model.IBaseline;
+import com.polarion.alm.tracker.model.IModule;
+import com.polarion.alm.tracker.model.IRichPage;
+import com.polarion.alm.tracker.model.ITestRun;
 import com.polarion.alm.tracker.model.ITrackerProject;
+import com.polarion.alm.tracker.model.IWikiPage;
 import com.polarion.alm.tracker.model.ipi.IInternalBaselinesManager;
 import com.polarion.platform.persistence.model.IPObject;
 import com.polarion.subterra.base.location.ILocation;
@@ -47,11 +53,11 @@ public class DocumentDataHelper {
         this.pdfExporterPolarionService = pdfExporterPolarionService;
     }
 
-    public DocumentData getLiveReport(@Nullable ITrackerProject project, @NotNull ExportParams exportParams) {
+    public DocumentData<IRichPage> getLiveReport(@Nullable ITrackerProject project, @NotNull ExportParams exportParams) {
         return getLiveReport(project, exportParams, true);
     }
 
-    public DocumentData getLiveReport(@Nullable ITrackerProject project, @NotNull ExportParams exportParams, boolean withContent) {
+    public DocumentData<IRichPage> getLiveReport(@Nullable ITrackerProject project, @NotNull ExportParams exportParams, boolean withContent) {
         return TransactionalExecutor.executeSafelyInReadOnlyTransaction(transaction -> {
             String projectId = project != null ? project.getId() : "";
             RichPageReference richPageReference = RichPageReference.fromPath(createPath(projectId, exportParams.getLocationPath()));
@@ -70,26 +76,29 @@ public class DocumentDataHelper {
                 documentContent = richPageRenderer.render(null);
             }
 
-            return DocumentData.builder()
+            return DocumentData.builder(DocumentType.LIVE_REPORT, richPage.getOldApi())
                     .projectName(project != null ? project.getName() : "")
                     .lastRevision(richPage.getOldApi().getLastRevision())
                     .baselineName(project != null ? getRevisionBaseline(projectId, richPage.getOldApi(), exportParams.getRevision()) : "")
-                    .richPage(richPage.getOldApi())
-                    .documentId(richPage.getOldApi().getId())
-                    .documentTitle(richPage.getOldApi().getTitle())
-                    .documentContent(documentContent)
+                    .id(richPage.getOldApi().getId())
+                    .title(richPage.getOldApi().getTitleOrName())
+                    .content(documentContent)
                     .build();
         });
     }
 
-    public DocumentData getTestRun(@Nullable ITrackerProject project, @NotNull ExportParams exportParams) {
+    public DocumentData<ITestRun> getTestRun(@NotNull ITrackerProject project, @NotNull ExportParams exportParams) {
         return getTestRun(project, exportParams, true);
     }
 
-    public DocumentData getTestRun(@Nullable ITrackerProject project, @NotNull ExportParams exportParams, boolean withContent) {
+    public DocumentData<ITestRun> getTestRun(@NotNull ITrackerProject project, @NotNull ExportParams exportParams, boolean withContent) {
         return TransactionalExecutor.executeSafelyInReadOnlyTransaction(transaction -> {
-            String projectId = project != null ? project.getId() : "";
-            TestRunReference testRunReference = TestRunReference.fromPath(createPath(projectId, exportParams.getUrlQueryParameters().get(URL_QUERY_PARAM_ID)));
+            String projectId = project.getId();
+            Map<String, String> urlQueryParameters = exportParams.getUrlQueryParameters();
+            if (urlQueryParameters == null || !urlQueryParameters.containsKey(URL_QUERY_PARAM_ID)) {
+                throw new IllegalArgumentException("TestRun id is required for export");
+            }
+            TestRunReference testRunReference = TestRunReference.fromPath(createPath(projectId, urlQueryParameters.get(URL_QUERY_PARAM_ID)));
             if (exportParams.getRevision() != null) {
                 testRunReference = testRunReference.getWithRevision(exportParams.getRevision());
             }
@@ -103,24 +112,23 @@ public class DocumentDataHelper {
                 documentContent = richPageRenderer.render(null);
             }
 
-            return DocumentData.builder()
+            return DocumentData.builder(DocumentType.TEST_RUN, testRun.getOldApi())
                     .projectName(project != null ? project.getName() : "")
                     .lastRevision(testRun.getOldApi().getLastRevision())
                     .baselineName(project != null ? getRevisionBaseline(projectId, testRun.getOldApi(), exportParams.getRevision()) : "")
-                    .testRun(testRun.getOldApi())
-                    .documentId(testRun.getOldApi().getId())
-                    .documentTitle(testRun.getOldApi().getLabel())
-                    .documentContent(documentContent)
+                    .id(testRun.getOldApi().getId())
+                    .title(testRun.getOldApi().getLabel())
+                    .content(documentContent)
                     .build();
         });
     }
 
 
-    public DocumentData getWikiDocument(@Nullable ITrackerProject project, @NotNull ExportParams exportParams) {
-        return getWikiDocument(project, exportParams, true);
+    public DocumentData<IWikiPage> getWikiPage(@Nullable ITrackerProject project, @NotNull ExportParams exportParams) {
+        return getWikiPage(project, exportParams, true);
     }
 
-    public DocumentData getWikiDocument(@Nullable ITrackerProject project, @NotNull ExportParams exportParams, boolean withContent) {
+    public DocumentData<IWikiPage> getWikiPage(@Nullable ITrackerProject project, @NotNull ExportParams exportParams, boolean withContent) {
         return TransactionalExecutor.executeSafelyInReadOnlyTransaction(transaction -> {
 
             String projectId = project != null ? project.getId() : "";
@@ -136,23 +144,22 @@ public class DocumentDataHelper {
                 documentContent = new WikiRenderer().render(projectId, exportParams.getLocationPath(), exportParams.getRevision());
             }
 
-            return DocumentData.builder()
+            return DocumentData.builder(DocumentType.WIKI_PAGE, wikiPage.getOldApi())
                     .projectName(project != null ? project.getName() : "")
                     .lastRevision(wikiPage.getOldApi().getLastRevision())
                     .baselineName(project != null ? getRevisionBaseline(projectId, wikiPage.getOldApi(), exportParams.getRevision()) : "")
-                    .wikiPage(wikiPage.getOldApi())
-                    .documentId(wikiPage.getOldApi().getId())
-                    .documentTitle(wikiPage.getOldApi().getTitle())
-                    .documentContent(documentContent)
+                    .id(wikiPage.getOldApi().getId())
+                    .title(wikiPage.getOldApi().getTitleOrName())
+                    .content(documentContent)
                     .build();
         });
     }
 
-    public DocumentData getLiveDocument(@NotNull ITrackerProject project, @NotNull ExportParams exportParams) {
-        return getLiveDocument(project, exportParams, true);
+    public DocumentData<IModule> getLiveDoc(@NotNull ITrackerProject project, @NotNull ExportParams exportParams) {
+        return getLiveDoc(project, exportParams, true);
     }
 
-    public DocumentData getLiveDocument(@NotNull ITrackerProject project, @NotNull ExportParams exportParams, boolean withContent) {
+    public DocumentData<IModule> getLiveDoc(@NotNull ITrackerProject project, @NotNull ExportParams exportParams, boolean withContent) {
         return TransactionalExecutor.executeSafelyInReadOnlyTransaction(transaction -> {
 
             DocumentReference documentReference = DocumentReference.fromPath(createPath(project.getId(), exportParams.getLocationPath()));
@@ -165,22 +172,21 @@ public class DocumentDataHelper {
             String documentContent = null;
             if (withContent) {
                 ProxyDocument proxyDocument = new ProxyDocument(document.getOldApi(), (InternalReadOnlyTransaction) transaction);
-                documentContent = getDocumentContent(exportParams, proxyDocument, (InternalReadOnlyTransaction) transaction);
+                documentContent = getLiveDocContent(exportParams, proxyDocument, (InternalReadOnlyTransaction) transaction);
             }
 
-            return DocumentData.builder()
+            return DocumentData.builder(DocumentType.LIVE_DOC, document.getOldApi())
                     .projectName(project.getName())
                     .lastRevision(document.getOldApi().getLastRevision())
                     .baselineName(getRevisionBaseline(project.getId(), document.getOldApi(), exportParams.getRevision()))
-                    .document(document.getOldApi())
-                    .documentId(document.getOldApi().getModuleName())
-                    .documentTitle(document.getOldApi().getTitleOrName())
-                    .documentContent(documentContent)
+                    .id(document.getOldApi().getModuleName())
+                    .title(document.getOldApi().getTitleOrName())
+                    .content(documentContent)
                     .build();
         });
     }
 
-    public String getDocumentContent(@NotNull ExportParams exportParams, @NotNull ProxyDocument document, @NotNull InternalReadOnlyTransaction transaction) {
+    public String getLiveDocContent(@NotNull ExportParams exportParams, @NotNull ProxyDocument document, @NotNull InternalReadOnlyTransaction transaction) {
         String internalContent = exportParams.getInternalContent() != null ? exportParams.getInternalContent() : document.getHomePageContentHtml();
         if (internalContent != null && exportParams.isEnableCommentsRendering()) {
             // Add inline comments into document content
@@ -192,12 +198,12 @@ public class DocumentDataHelper {
         return documentRenderer.render(internalContent != null ? internalContent : "");
     }
 
-    public String getDocumentStatus(String revision, @NotNull DocumentData documentData) {
+    public String getDocumentStatus(String revision, @NotNull DocumentData<? extends IUniqueObject> documentData) {
         String documentStatus = documentData.getLastRevision();
         if (revision != null) {
             documentStatus = revision;
-        } else if (documentData.getDocument() != null) { //document is null for wiki pages
-            Object docRevision = documentData.getDocument().getCustomField(DOC_REVISION_CUSTOM_FIELD);
+        } else if (documentData.getDocumentObject() instanceof IModule module) {
+            Object docRevision = module.getCustomField(DOC_REVISION_CUSTOM_FIELD);
             if (docRevision != null) {
                 documentStatus = docRevision.toString();
             }
@@ -205,7 +211,7 @@ public class DocumentDataHelper {
         return documentStatus;
     }
 
-    public boolean documentContainsNestedNumberedLists(ExportParams exportParams) {
+    public boolean hasLiveDocNestedNumberedLists(@NotNull ExportParams exportParams) {
         return Boolean.TRUE.equals(TransactionalExecutor.executeSafelyInReadOnlyTransaction(transaction -> {
             IProject project = pdfExporterPolarionService.getProject(exportParams.getProjectId());
             ILocation location = getDocumentLocation(exportParams.getLocationPath(), exportParams.getRevision());
@@ -220,9 +226,8 @@ public class DocumentDataHelper {
         }));
     }
 
-    public ILocation getDocumentLocation(String locationPath, String revision) {
-        return revision == null ? Location.getLocation(locationPath)
-                : Location.getLocationWithRevision(locationPath, revision);
+    public ILocation getDocumentLocation(String locationPath, @Nullable String revision) {
+        return revision == null ? Location.getLocation(locationPath) : Location.getLocationWithRevision(locationPath, revision);
     }
 
     @VisibleForTesting

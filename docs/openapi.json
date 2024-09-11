@@ -1366,12 +1366,12 @@
           "documentType": {
             "description": "Type of the document",
             "enum": [
-              "DOCUMENT",
-              "REPORT",
-              "TESTRUN",
-              "WIKI"
+              "LIVE_DOC",
+              "LIVE_REPORT",
+              "TEST_RUN",
+              "WIKI_PAGE"
             ],
-            "example": "DOCUMENT",
+            "example": "LIVE_DOC",
             "type": "string"
           },
           "enableCommentsRendering": {

@@ -1,10 +1,10 @@
 package ch.sbb.polarion.extension.pdf_exporter.converter;
 
 import ch.sbb.polarion.extension.generic.settings.SettingId;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.DocumentData;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.coverpage.CoverPageModel;
 import ch.sbb.polarion.extension.pdf_exporter.settings.CoverPageSettings;
-import ch.sbb.polarion.extension.pdf_exporter.rest.model.DocumentData;
 import ch.sbb.polarion.extension.pdf_exporter.util.MediaUtils;
 import ch.sbb.polarion.extension.pdf_exporter.util.PdfGenerationLog;
 import ch.sbb.polarion.extension.pdf_exporter.util.PdfTemplateProcessor;
@@ -12,6 +12,7 @@ import ch.sbb.polarion.extension.pdf_exporter.util.placeholder.PlaceholderProces
 import ch.sbb.polarion.extension.pdf_exporter.util.velocity.VelocityEvaluator;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.WeasyPrintOptions;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.service.WeasyPrintServiceConnector;
+import com.polarion.alm.projects.model.IUniqueObject;
 import lombok.SneakyThrows;
 import org.jetbrains.annotations.VisibleForTesting;
 
@@ -46,7 +47,7 @@ public class CoverPageProcessor {
     }
 
     @SneakyThrows
-    public byte[] generatePdfWithTitle(DocumentData documentData, ExportParams exportParams,
+    public byte[] generatePdfWithTitle(DocumentData<? extends IUniqueObject> documentData, ExportParams exportParams,
                                        String contentHtml, PdfGenerationLog generationLog) {
         String titleHtml = composeTitleHtml(documentData, exportParams);
         generationLog.log("Starting concurrent generation for cover page and content");
@@ -62,12 +63,12 @@ public class CoverPageProcessor {
     }
 
     @VisibleForTesting
-    String composeTitleHtml(DocumentData documentData, ExportParams exportParams) {
+    String composeTitleHtml(DocumentData<? extends IUniqueObject> documentData, ExportParams exportParams) {
         CoverPageModel settings = coverPageSettings.load(exportParams.getProjectId(), SettingId.fromName(exportParams.getCoverPage()));
         String templateHtml = settings.getTemplateHtml();
         String content = placeholderProcessor.replacePlaceholders(documentData, exportParams, templateHtml);
         String evaluatedContent = velocityEvaluator.evaluateVelocityExpressions(documentData, content);
-        return pdfTemplateProcessor.processUsing(exportParams, documentData.getDocumentTitle(), coverPageSettings.processImagePlaceholders(settings.getTemplateCss()), evaluatedContent);
+        return pdfTemplateProcessor.processUsing(exportParams, documentData.getTitle(), coverPageSettings.processImagePlaceholders(settings.getTemplateCss()), evaluatedContent);
     }
 
 }

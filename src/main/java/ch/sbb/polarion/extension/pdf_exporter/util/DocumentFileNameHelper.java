@@ -12,9 +12,12 @@ import ch.sbb.polarion.extension.pdf_exporter.service.PdfExporterPolarionService
 import ch.sbb.polarion.extension.pdf_exporter.settings.FileNameTemplateSettings;
 import ch.sbb.polarion.extension.pdf_exporter.util.placeholder.PlaceholderProcessor;
 import ch.sbb.polarion.extension.pdf_exporter.util.velocity.VelocityEvaluator;
+import com.polarion.alm.projects.model.IUniqueObject;
 import com.polarion.alm.tracker.model.ITrackerProject;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.VisibleForTesting;
+
+import java.util.EnumSet;
 
 
 public class DocumentFileNameHelper {
@@ -33,15 +36,20 @@ public class DocumentFileNameHelper {
     }
 
     public String getDocumentFileName(@NotNull ExportParams exportParams) {
-        ITrackerProject project = pdfExporterPolarionService.getTrackerProject(exportParams.getProjectId());
+        ITrackerProject project = null;
+        if (exportParams.getProjectId() != null) {
+            project = pdfExporterPolarionService.getTrackerProject(exportParams.getProjectId());
+        } else if (EnumSet.of(DocumentType.LIVE_DOC, DocumentType.TEST_RUN).contains(exportParams.getDocumentType())) {
+            throw new IllegalArgumentException("Project ID must be provided for LiveDoc or TestRun export");
+        }
 
         DocumentDataHelper documentDataHelper = new DocumentDataHelper(pdfExporterPolarionService);
-        final DocumentData documentData =
+        final DocumentData<? extends IUniqueObject> documentData =
                 switch (exportParams.getDocumentType()) {
-                    case DOCUMENT -> documentDataHelper.getLiveDocument(project, exportParams, false);
-                    case REPORT -> documentDataHelper.getLiveReport(project, exportParams, false);
-                    case TESTRUN -> documentDataHelper.getTestRun(project, exportParams, false);
-                    case WIKI -> documentDataHelper.getWikiDocument(project, exportParams, false);
+                    case LIVE_DOC -> documentDataHelper.getLiveDoc(project, exportParams, false);
+                    case LIVE_REPORT -> documentDataHelper.getLiveReport(project, exportParams, false);
+                    case TEST_RUN -> documentDataHelper.getTestRun(project, exportParams, false);
+                    case WIKI_PAGE -> documentDataHelper.getWikiPage(project, exportParams, false);
                 };
 
         FileNameTemplateModel fileNameTemplateModel = getFileNameTemplateModel(ScopeUtils.getScopeFromProject(exportParams.getProjectId()));
@@ -52,7 +60,7 @@ public class DocumentFileNameHelper {
     }
 
     @VisibleForTesting
-    String evaluateVelocity(DocumentData documentData, String fileNameTemplate) {
+    String evaluateVelocity(DocumentData<? extends IUniqueObject> documentData, String fileNameTemplate) {
         String evaluatedName = velocityEvaluator.evaluateVelocityExpressions(documentData, fileNameTemplate);
         return String.format("%s.pdf", evaluatedName);
     }
@@ -64,13 +72,13 @@ public class DocumentFileNameHelper {
 
     private @NotNull String getFileNameTemplate(@NotNull DocumentType documentType, @NotNull FileNameTemplateModel fileNameTemplateModel) {
         return switch (documentType) {
-            case DOCUMENT:
+            case LIVE_DOC:
                 yield fileNameTemplateModel.getDocumentNameTemplate();
-            case REPORT:
+            case LIVE_REPORT:
                 yield fileNameTemplateModel.getReportNameTemplate();
-            case TESTRUN:
-                yield fileNameTemplateModel.getTestrunNameTemplate();
-            case WIKI:
+            case TEST_RUN:
+                yield fileNameTemplateModel.getTestRunNameTemplate();
+            case WIKI_PAGE:
                 yield fileNameTemplateModel.getWikiNameTemplate();
         };
     }

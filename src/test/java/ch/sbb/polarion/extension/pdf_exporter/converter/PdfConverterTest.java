@@ -73,18 +73,19 @@ class PdfConverterTest {
         // Arrange
         ExportParams exportParams = ExportParams.builder()
                 .projectId("test project")
-                .documentType(DocumentType.DOCUMENT)
+                .documentType(DocumentType.LIVE_DOC)
                 .build();
         ITrackerProject project = mock(ITrackerProject.class);
         lenient().when(pdfExporterPolarionService.getTrackerProject("test project")).thenReturn(project);
         PdfConverter pdfConverter = new PdfConverter(pdfExporterPolarionService, headerFooterSettings, cssSettings, documentDataHelper, placeholderProcessor, velocityEvaluator, coverPageProcessor, weasyPrintServiceConnector, htmlProcessor, pdfTemplateProcessor);
         CssModel cssModel = CssModel.builder().css("test css").build();
         when(cssSettings.load("test project", SettingId.fromName("Default"))).thenReturn(cssModel);
-        DocumentData documentData = DocumentData.builder()
-                .documentTitle("testDocument")
-                .documentContent("test document content")
+        DocumentData<IModule> documentData = DocumentData.builder(DocumentType.LIVE_DOC, module)
+                .id("testDocumentId")
+                .title("testDocument")
+                .content("test document content")
                 .build();
-        when(documentDataHelper.getLiveDocument(project, exportParams)).thenReturn(documentData);
+        when(documentDataHelper.getLiveDoc(project, exportParams)).thenReturn(documentData);
         when(headerFooterSettings.load("test project", SettingId.fromName("Default"))).thenReturn(HeaderFooterModel.builder().build());
         when(placeholderProcessor.replacePlaceholders(documentData, exportParams, "test css")).thenReturn("css content");
         when(placeholderProcessor.replacePlaceholders(eq(documentData), eq(exportParams), anyList())).thenReturn(List.of("hl", "hc", "hr", "fl", "fc", "fr"));
@@ -103,11 +104,11 @@ class PdfConverterTest {
 
     @Test
     void shouldGetAndReplaceCss() {
-        DocumentData documentData = DocumentData.builder()
+        DocumentData<IModule> documentData = DocumentData.builder(DocumentType.LIVE_DOC, module)
+                .id("testDocumentId")
                 .projectName("testProjectName")
                 .lastRevision("testLastRevision")
-                .documentTitle("testDocumentTitle")
-                .document(module)
+                .title("testDocumentTitle")
                 .build();
 
         ExportParams exportParams = ExportParams.builder()
@@ -139,7 +140,9 @@ class PdfConverterTest {
     @SuppressWarnings("unchecked")
     void shouldGetAndProcessHeaderFooterContent(String settingName, String settingArgument) {
         // Arrange
-        DocumentData documentData = DocumentData.builder()
+        DocumentData<IModule> documentData = DocumentData.builder(DocumentType.LIVE_DOC, module)
+                .id("testDocumentId")
+                .title("testDocumentTitle")
                 .build();
         ExportParams exportParams = ExportParams.builder()
                 .headerFooter(settingName)
@@ -251,7 +254,9 @@ class PdfConverterTest {
     @MethodSource("paramsForGeneratePdf")
     void shouldGeneratePdf(String internalContent, String coverPage, ExportMetaInfoCallback metaInfoCallback, boolean useCoverPageProcessor) {
         // Arrange
-        DocumentData documentData = DocumentData.builder()
+        DocumentData<IModule> documentData = DocumentData.builder(DocumentType.LIVE_DOC, module)
+                .id("testDocumentId")
+                .title("testDocumentTitle")
                 .build();
         ExportParams exportParams = ExportParams.builder()
                 .internalContent(internalContent)

@@ -22,28 +22,65 @@ const POPUP_HTML = `
 `;
 
 function ExportContext() {
-    const locationHash = decodeURI(
-        window.location.hash.includes("?")
-            ? window.location.hash.substring(2, window.location.hash.indexOf("?"))
-            : window.location.hash.substring(2)
-    );
-    const locationParts = /(project\/[^/]+\/)(testrun|.*wiki\/(.*))/.exec(locationHash);
-    if (locationParts) {
-        this.scope = locationParts[1]
+    const locationHash = getLocationHash();
+    this.scope = getScope(locationHash);
+    this.path = getPath(locationHash, this.scope);
 
-        if (locationParts[2] === "testrun" || locationParts[2].includes("/")) {
-            this.path = locationParts[2];
+    const searchParams = getSearchParams();
+    this.revision = searchParams.revision;
+    this.urlQueryParameters = searchParams.urlQueryParameters;
+
+    function getLocationHash() {
+        return decodeURI(
+            window.location.hash.includes("?")
+                ? window.location.hash.substring(2, window.location.hash.indexOf("?"))
+                : window.location.hash.substring(2)
+        );
+    }
+
+    function getScope(locationHash) {
+        const projectPattern = /project\/([^/]+)\//;
+        const projectMatch = projectPattern.exec(locationHash);
+        return projectMatch ? `project/${projectMatch[1]}/` : "";
+    }
+
+    function getPath(locationHash, scope) {
+        if (scope) {
+            const pathPattern = /project\/[^/]+\/(wiki\/([^?#]+)|testrun)/;
+            const pathMatch = pathPattern.exec(locationHash);
+            return pathMatch ? addDefaultSpaceIfRequired(pathMatch[2] || "testrun") : "";
         } else {
-            //in this case path contains only document name
-            this.path = "_default/" + locationParts[2];
+            const globalPathPattern = /wiki\/([^/?#]+)/;
+            const pathMatch = globalPathPattern.exec(locationHash);
+            return pathMatch ? addDefaultSpaceIfRequired(pathMatch[1]) : "";
         }
     }
 
-    if (window.location.hash.includes("?")) {
-        const searchParams = decodeURI(window.location.hash.substring(window.location.hash.indexOf("?")));
-        const urlSearchParams = new URLSearchParams(searchParams);
-        this.revision = urlSearchParams.get("revision");
-        this.urlQueryParameters = Object.fromEntries([...urlSearchParams]);
+    function addDefaultSpaceIfRequired(extractedPath) {
+        if (!extractedPath) {
+            return "";
+        }
+        // if contains a '/' or is exactly 'testrun', return it as it is
+        if (extractedPath.includes("/") || extractedPath === "testrun") {
+            return extractedPath;
+        }
+        // otherwise, prepend '_default/' to the path
+        return `_default/${extractedPath}`;
+    }
+
+    function getSearchParams() {
+        let result = {
+            revision: null,
+            urlQueryParameters: null
+        };
+
+        if (window.location.hash.includes("?")) {
+            const searchParams = decodeURI(window.location.hash.substring(window.location.hash.indexOf("?")));
+            const urlSearchParams = new URLSearchParams(searchParams);
+            result.revision = urlSearchParams.get("revision");
+            result.urlQueryParameters = Object.fromEntries([...urlSearchParams]);
+        }
+        return result;
     }
 }
 
@@ -90,7 +127,7 @@ const PdfExporter = {
     openPopup: function (params) {
         this.hideAlerts();
         this.loadFormData(params);
-        const reportContext = this.exportContext.documentType === "report";
+        const reportContext = this.exportContext.documentType === "live_report";
         document.querySelectorAll(".modal__container.pdf-exporter .property-wrapper.only-live-doc")
             .forEach(propertyBlock => propertyBlock.style.display = (reportContext ? "none" : "flex"));
         MicroModal.show('pdf-export-modal-popup');
@@ -98,7 +135,7 @@ const PdfExporter = {
 
     loadFormData: function (params) {
         this.exportContext = new ExportContext();
-        this.exportContext.documentType = params?.context ? params.context : "document";
+        this.exportContext.documentType = params?.context ? params.context : "live_doc";
 
         this.actionInProgress({inProgress: true, message: "Loading form data"});
 
@@ -134,9 +171,13 @@ const PdfExporter = {
             this.loadFileName(this.exportContext),
             this.adjustWebhooksVisibility()
         ]).then(() => {
+            let url = `/polarion/pdf-exporter/rest/internal/settings/style-package/suitable-names`
+                + `?spaceId=${this.exportContext.getSpaceId()}&documentName=${this.exportContext.getDocumentName()}`;
+            if (this.exportContext.getProjectId()) {
+                url += `&projectId=${this.exportContext.getProjectId()}`
+            }
             return this.loadSettingNames({
-                customUrl: `/polarion/pdf-exporter/rest/internal/settings/style-package/suitable-names?projectId=${this.exportContext.getProjectId()}`
-                    + `&spaceId=${this.exportContext.getSpaceId()}&documentName=${this.exportContext.getDocumentName()}`,
+                customUrl: url,
                 selectElement: document.getElementById("popup-style-package-select")
             }).then(() => {
                 const stylePackageSelect = document.getElementById("popup-style-package-select");
@@ -182,7 +223,7 @@ const PdfExporter = {
     },
 
     loadLinkRoles: function (exportContext) {
-        if (exportContext.documentType === "report") {
+        if (exportContext.documentType === "live_report") {
             return Promise.resolve(); // Skip loading link roles for report
         }
 
@@ -206,7 +247,7 @@ const PdfExporter = {
     },
 
     loadProjectName: function (exportContext) {
-        if (exportContext.documentType === "report" && !exportContext.getProjectId()) {
+        if (exportContext.documentType === "live_report" && !exportContext.getProjectId()) {
             return Promise.resolve();
         }
 
@@ -224,9 +265,6 @@ const PdfExporter = {
 
     loadFileName: function (exportContext) {
         let url = `/polarion/pdf-exporter/rest/internal/export-filename`
-        if (exportContext.revision) {
-            url += `&revision=${exportContext.revision}`;
-        }
         const requestBody = JSON.stringify({
             projectId: this.exportContext.getProjectId(),
             locationPath: this.exportContext.path,
@@ -262,7 +300,7 @@ const PdfExporter = {
     },
 
     loadDocumentLanguage: function (exportContext) {
-        if (exportContext.documentType === "report" || exportContext.documentType === "testrun") {
+        if (exportContext.documentType === "live_report" || exportContext.documentType === "test_run") {
             return Promise.resolve(); // Skip loading language for report
         }
 
@@ -462,7 +500,7 @@ const PdfExporter = {
 
         this.actionInProgress({inProgress: true, message: "Generating PDF"})
 
-        if (this.exportContext.documentType !== "report" && this.exportContext.documentType !== "testrun") {
+        if (this.exportContext.documentType !== "live_report" && this.exportContext.documentType !== "test_run") {
             this.checkNestedListsAsync(requestBody);
         }
 
@@ -536,7 +574,7 @@ const PdfExporter = {
     },
 
     buildRequestJson: function (selectedChapters, numberedListStyles, selectedRoles) {
-        const report = this.exportContext.documentType === "report";
+        const live_report = this.exportContext.documentType === "live_report";
         return JSON.stringify({
             projectId: this.exportContext.getProjectId(),
             locationPath: this.exportContext.path,
@@ -550,17 +588,17 @@ const PdfExporter = {
             headersColor: document.getElementById("popup-headers-color").value,
             paperSize: document.getElementById("popup-paper-size-selector").value,
             orientation: document.getElementById("popup-orientation-selector").value,
-            fitToPage: !report && document.getElementById('popup-fit-to-page').checked,
+            fitToPage: !live_report && document.getElementById('popup-fit-to-page').checked,
             enableCommentsRendering: document.getElementById('popup-enable-comments-rendering').checked,
             watermark: document.getElementById("popup-watermark").checked,
-            markReferencedWorkitems: !report && document.getElementById("popup-mark-referenced-workitems").checked,
-            cutEmptyChapters: !report && document.getElementById("popup-cut-empty-chapters").checked,
-            cutEmptyWIAttributes: !report && document.getElementById('popup-cut-empty-wi-attributes').checked,
+            markReferencedWorkitems: !live_report && document.getElementById("popup-mark-referenced-workitems").checked,
+            cutEmptyChapters: !live_report && document.getElementById("popup-cut-empty-chapters").checked,
+            cutEmptyWIAttributes: !live_report && document.getElementById('popup-cut-empty-wi-attributes').checked,
             cutLocalUrls: document.getElementById("popup-cut-urls").checked,
             followHTMLPresentationalHints: document.getElementById("popup-presentational-hints").checked,
             numberedListStyles: numberedListStyles,
             chapters: selectedChapters,
-            language: !report && document.getElementById('popup-localization').checked ? document.getElementById("popup-language").value : null,
+            language: !live_report && document.getElementById('popup-localization').checked ? document.getElementById("popup-language").value : null,
             linkedWorkitemRoles: selectedRoles,
             urlQueryParameters: this.exportContext.urlQueryParameters,
         });
