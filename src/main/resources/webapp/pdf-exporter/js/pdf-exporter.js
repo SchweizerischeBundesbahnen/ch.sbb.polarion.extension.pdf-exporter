@@ -28,14 +28,16 @@ function ExportContext() {
             : window.location.hash.substring(2)
     );
 
-    // check for a "/project/<project name>/" match
-    const projectMatch = locationHash.match(/project\/([^\/]+)\//);
+    // check for a "project/<project name>/" match
+    const projectPattern = /\/project\/([^/]+)\//;
+    const projectMatch = projectPattern.exec(locationHash);
     if (projectMatch) {
         // project scope
         this.scope = `project/${projectMatch[1]}/`;
 
         // extract the path (either "wiki/..." or "testrun")
-        const pathMatch = locationHash.match(/project\/[^\/]+\/(wiki\/([^?#]+)|testrun)/);
+        const pathPattern = /\/project\/[^/]+\/(wiki\/([^?#]+)|testrun)/;
+        const pathMatch = pathPattern.exec(locationHash);
         if (pathMatch) {
             const extractedPath = pathMatch[2] || "testrun";
             if (extractedPath.includes("/") || extractedPath === "testrun") {
@@ -49,7 +51,8 @@ function ExportContext() {
         // global scope
         this.scope = "";
 
-        const pathMatch = locationHash.match(/wiki\/([^\/?#]+)/);
+        const globalPathPattern = /\/wiki\/([^/?#]+)/;
+        const pathMatch = globalPathPattern.exec(locationHash);
         if (pathMatch) {
             const extractedPath = pathMatch[1];
             if (extractedPath.includes("/")) {
