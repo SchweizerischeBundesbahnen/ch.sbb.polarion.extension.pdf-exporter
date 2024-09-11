@@ -36,10 +36,12 @@ public class DocumentFileNameHelper {
     }
 
     public String getDocumentFileName(@NotNull ExportParams exportParams) {
-        if (exportParams.getProjectId() == null && EnumSet.of(DocumentType.LIVE_DOC, DocumentType.TEST_RUN).contains(exportParams.getDocumentType())) {
-            throw new IllegalArgumentException("Project ID must be provided for LiveDoc export");
+        ITrackerProject project = null;
+        if (exportParams.getProjectId() != null) {
+            project = pdfExporterPolarionService.getTrackerProject(exportParams.getProjectId());
+        } else if (EnumSet.of(DocumentType.LIVE_DOC, DocumentType.TEST_RUN).contains(exportParams.getDocumentType())) {
+            throw new IllegalArgumentException("Project ID must be provided for LiveDoc or TestRun export");
         }
-        ITrackerProject project = pdfExporterPolarionService.getTrackerProject(exportParams.getProjectId());
 
         DocumentDataHelper documentDataHelper = new DocumentDataHelper(pdfExporterPolarionService);
         final DocumentData<? extends IUniqueObject> documentData =
