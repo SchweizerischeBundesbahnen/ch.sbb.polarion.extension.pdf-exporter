@@ -27,15 +27,37 @@ function ExportContext() {
             ? window.location.hash.substring(2, window.location.hash.indexOf("?"))
             : window.location.hash.substring(2)
     );
-    const locationParts = /(project\/[^/]+\/)(testrun|.*wiki\/(.*))/.exec(locationHash);
-    if (locationParts) {
-        this.scope = locationParts[1]
 
-        if (locationParts[2] === "testrun" || locationParts[2].includes("/")) {
-            this.path = locationParts[2];
-        } else {
-            //in this case path contains only document name
-            this.path = "_default/" + locationParts[2];
+    // check for a "/project/<project name>/" match
+    const projectMatch = locationHash.match(/project\/([^\/]+)\//);
+    if (projectMatch) {
+        // project scope
+        this.scope = `project/${projectMatch[1]}/`;
+
+        // extract the path (either "wiki/..." or "testrun")
+        const pathMatch = locationHash.match(/project\/[^\/]+\/(wiki\/([^?#]+)|testrun)/);
+        if (pathMatch) {
+            const extractedPath = pathMatch[2] || "testrun";
+            if (extractedPath.includes("/") || extractedPath === "testrun") {
+                this.path = extractedPath;
+            } else {
+                // prepend "_default/" for paths if no space found
+                this.path = `_default/${extractedPath}`;
+            }
+        }
+    } else {
+        // global scope
+        this.scope = "";
+
+        const pathMatch = locationHash.match(/wiki\/([^\/?#]+)/);
+        if (pathMatch) {
+            const extractedPath = pathMatch[1];
+            if (extractedPath.includes("/")) {
+                this.path = extractedPath;
+            } else {
+                // prepend "_default/" for paths if no space found
+                this.path = `_default/${extractedPath}`;
+            }
         }
     }
 
