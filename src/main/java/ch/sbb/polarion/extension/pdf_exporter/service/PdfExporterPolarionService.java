@@ -18,6 +18,7 @@ import com.polarion.platform.persistence.model.IPObjectList;
 import com.polarion.platform.security.ISecurityService;
 import com.polarion.platform.service.repository.IRepositoryService;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
 
@@ -32,7 +33,7 @@ public class PdfExporterPolarionService extends PolarionService {
         super(trackerService, projectService, securityService, platformService, repositoryService);
     }
 
-    public ITrackerProject getProjectFromScope(String scope) {
+    public @Nullable ITrackerProject getProjectFromScope(@Nullable String scope) {
         ITrackerProject project = null;
 
         if (!StringUtils.isEmpty(scope)) {

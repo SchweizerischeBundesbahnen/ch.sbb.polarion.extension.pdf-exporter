@@ -17,6 +17,8 @@ import com.polarion.alm.tracker.model.ITrackerProject;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.VisibleForTesting;
 
+import java.util.EnumSet;
+
 
 public class DocumentFileNameHelper {
     private final PdfExporterPolarionService pdfExporterPolarionService;
@@ -34,6 +36,9 @@ public class DocumentFileNameHelper {
     }
 
     public String getDocumentFileName(@NotNull ExportParams exportParams) {
+        if (exportParams.getProjectId() == null && EnumSet.of(DocumentType.LIVE_DOC, DocumentType.TEST_RUN).contains(exportParams.getDocumentType())) {
+            throw new IllegalArgumentException("Project ID must be provided for LiveDoc export");
+        }
         ITrackerProject project = pdfExporterPolarionService.getTrackerProject(exportParams.getProjectId());
 
         DocumentDataHelper documentDataHelper = new DocumentDataHelper(pdfExporterPolarionService);

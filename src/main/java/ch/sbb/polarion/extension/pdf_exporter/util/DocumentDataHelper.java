@@ -87,13 +87,13 @@ public class DocumentDataHelper {
         });
     }
 
-    public DocumentData<ITestRun> getTestRun(@Nullable ITrackerProject project, @NotNull ExportParams exportParams) {
+    public DocumentData<ITestRun> getTestRun(@NotNull ITrackerProject project, @NotNull ExportParams exportParams) {
         return getTestRun(project, exportParams, true);
     }
 
-    public DocumentData<ITestRun> getTestRun(@Nullable ITrackerProject project, @NotNull ExportParams exportParams, boolean withContent) {
+    public DocumentData<ITestRun> getTestRun(@NotNull ITrackerProject project, @NotNull ExportParams exportParams, boolean withContent) {
         return TransactionalExecutor.executeSafelyInReadOnlyTransaction(transaction -> {
-            String projectId = project != null ? project.getId() : "";
+            String projectId = project.getId();
             Map<String, String> urlQueryParameters = exportParams.getUrlQueryParameters();
             if (urlQueryParameters == null || !urlQueryParameters.containsKey(URL_QUERY_PARAM_ID)) {
                 throw new IllegalArgumentException("TestRun id is required for export");
