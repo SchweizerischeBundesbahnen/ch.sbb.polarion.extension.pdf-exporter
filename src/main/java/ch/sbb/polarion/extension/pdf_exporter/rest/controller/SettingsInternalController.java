@@ -149,8 +149,8 @@ public class SettingsInternalController {
             }
     )
     public Collection<SettingName> getSuitableStylePackageNames(@QueryParam("projectId") String projectId, @QueryParam("spaceId") String spaceId, @QueryParam("documentName") String documentName) {
-        if (projectId == null || spaceId == null || documentName == null) {
-            throw new BadRequestException("Parameters 'projectId', 'spaceId', 'documentName' are required'");
+        if (spaceId == null || documentName == null) {
+            throw new BadRequestException("Parameters 'spaceId' and 'documentName' are required'");
         }
         return pdfExporterPolarionService.getSuitableStylePackages(projectId, spaceId, documentName);
     }

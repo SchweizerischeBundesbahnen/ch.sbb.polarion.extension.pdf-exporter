@@ -171,9 +171,13 @@ const PdfExporter = {
             this.loadFileName(this.exportContext),
             this.adjustWebhooksVisibility()
         ]).then(() => {
+            let url = `/polarion/pdf-exporter/rest/internal/settings/style-package/suitable-names`
+                + `?spaceId=${this.exportContext.getSpaceId()}&documentName=${this.exportContext.getDocumentName()}`;
+            if (this.exportContext.getProjectId()) {
+                url += `&projectId=${this.exportContext.getProjectId()}`
+            }
             return this.loadSettingNames({
-                customUrl: `/polarion/pdf-exporter/rest/internal/settings/style-package/suitable-names?projectId=${this.exportContext.getProjectId()}`
-                    + `&spaceId=${this.exportContext.getSpaceId()}&documentName=${this.exportContext.getDocumentName()}`,
+                customUrl: url,
                 selectElement: document.getElementById("popup-style-package-select")
             }).then(() => {
                 const stylePackageSelect = document.getElementById("popup-style-package-select");
