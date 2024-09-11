@@ -261,9 +261,6 @@ const PdfExporter = {
 
     loadFileName: function (exportContext) {
         let url = `/polarion/pdf-exporter/rest/internal/export-filename`
-        if (exportContext.revision) {
-            url += `&revision=${exportContext.revision}`;
-        }
         const requestBody = JSON.stringify({
             projectId: this.exportContext.getProjectId(),
             locationPath: this.exportContext.path,

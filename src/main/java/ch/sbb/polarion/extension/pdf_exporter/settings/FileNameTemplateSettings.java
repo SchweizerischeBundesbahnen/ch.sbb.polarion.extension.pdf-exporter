@@ -8,9 +8,9 @@ import org.jetbrains.annotations.NotNull;
 public class FileNameTemplateSettings extends GenericNamedSettings<FileNameTemplateModel> {
     public static final String FEATURE_NAME = "filename-template";
     public static final String DEFAULT_LIVE_DOC_NAME_TEMPLATE = "$projectName $document.moduleNameWithSpace.replace(\" / \", \" \")";
-    public static final String DEFAULT_LIVE_REPORT_NAME_TEMPLATE = "$projectName $page.pageNameWithSpace.replace(\" / \", \" \") $page.lastRevision";
+    public static final String DEFAULT_LIVE_REPORT_NAME_TEMPLATE = "$projectName $page.pageNameWithSpace.replace(\" / \", \" \") $page.revision";
     public static final String DEFAULT_TEST_RUN_NAME_TEMPLATE = "$projectName $testrun.label";
-    public static final String DEFAULT_WIKI_PAGE_NAME_TEMPLATE = "$projectName $page.pageNameWithSpace.replace(\" / \", \" \") $page.lastRevision";
+    public static final String DEFAULT_WIKI_PAGE_NAME_TEMPLATE = "$projectName $page.pageNameWithSpace.replace(\" / \", \" \") $page.revision";
 
     public FileNameTemplateSettings() {
         super(FEATURE_NAME);
