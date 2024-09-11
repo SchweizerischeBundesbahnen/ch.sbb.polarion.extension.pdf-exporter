@@ -22,53 +22,65 @@ const POPUP_HTML = `
 `;
 
 function ExportContext() {
-    const locationHash = decodeURI(
-        window.location.hash.includes("?")
-            ? window.location.hash.substring(2, window.location.hash.indexOf("?"))
-            : window.location.hash.substring(2)
-    );
+    const locationHash = getLocationHash();
+    this.scope = getScope(locationHash);
+    this.path = getPath(locationHash, this.scope);
 
-    // check for a "project/<project name>/" match
-    const projectPattern = /\/project\/([^/]+)\//;
-    const projectMatch = projectPattern.exec(locationHash);
-    if (projectMatch) {
-        // project scope
-        this.scope = `project/${projectMatch[1]}/`;
+    const searchParams = getSearchParams();
+    this.revision = searchParams.revision;
+    this.urlQueryParameters = searchParams.urlQueryParameters;
 
-        // extract the path (either "wiki/..." or "testrun")
-        const pathPattern = /\/project\/[^/]+\/(wiki\/([^?#]+)|testrun)/;
-        const pathMatch = pathPattern.exec(locationHash);
-        if (pathMatch) {
-            const extractedPath = pathMatch[2] || "testrun";
-            if (extractedPath.includes("/") || extractedPath === "testrun") {
-                this.path = extractedPath;
-            } else {
-                // prepend "_default/" for paths if no space found
-                this.path = `_default/${extractedPath}`;
-            }
-        }
-    } else {
-        // global scope
-        this.scope = "";
+    function getLocationHash() {
+        return decodeURI(
+            window.location.hash.includes("?")
+                ? window.location.hash.substring(2, window.location.hash.indexOf("?"))
+                : window.location.hash.substring(2)
+        );
+    }
 
-        const globalPathPattern = /\/wiki\/([^/?#]+)/;
-        const pathMatch = globalPathPattern.exec(locationHash);
-        if (pathMatch) {
-            const extractedPath = pathMatch[1];
-            if (extractedPath.includes("/")) {
-                this.path = extractedPath;
-            } else {
-                // prepend "_default/" for paths if no space found
-                this.path = `_default/${extractedPath}`;
-            }
+    function getScope(locationHash) {
+        const projectPattern = /project\/([^/]+)\//;
+        const projectMatch = projectPattern.exec(locationHash);
+        return projectMatch ? `project/${projectMatch[1]}/` : "";
+    }
+
+    function getPath(locationHash, scope) {
+        if (scope) {
+            const pathPattern = /project\/[^/]+\/(wiki\/([^?#]+)|testrun)/;
+            const pathMatch = pathPattern.exec(locationHash);
+            return pathMatch ? addDefaultSpaceIfRequired(pathMatch[2] || "testrun") : "";
+        } else {
+            const globalPathPattern = /wiki\/([^/?#]+)/;
+            const pathMatch = globalPathPattern.exec(locationHash);
+            return pathMatch ? addDefaultSpaceIfRequired(pathMatch[1]) : "";
         }
     }
 
-    if (window.location.hash.includes("?")) {
-        const searchParams = decodeURI(window.location.hash.substring(window.location.hash.indexOf("?")));
-        const urlSearchParams = new URLSearchParams(searchParams);
-        this.revision = urlSearchParams.get("revision");
-        this.urlQueryParameters = Object.fromEntries([...urlSearchParams]);
+    function addDefaultSpaceIfRequired(extractedPath) {
+        if (!extractedPath) {
+            return "";
+        }
+        // if contains a '/' or is exactly 'testrun', return it as it is
+        if (extractedPath.includes("/") || extractedPath === "testrun") {
+            return extractedPath;
+        }
+        // otherwise, prepend '_default/' to the path
+        return `_default/${extractedPath}`;
+    }
+
+    function getSearchParams() {
+        let result = {
+            revision: null,
+            urlQueryParameters: null
+        };
+
+        if (window.location.hash.includes("?")) {
+            const searchParams = decodeURI(window.location.hash.substring(window.location.hash.indexOf("?")));
+            const urlSearchParams = new URLSearchParams(searchParams);
+            result.revision = urlSearchParams.get("revision");
+            result.urlQueryParameters = Object.fromEntries([...urlSearchParams]);
+        }
+        return result;
     }
 }
 
