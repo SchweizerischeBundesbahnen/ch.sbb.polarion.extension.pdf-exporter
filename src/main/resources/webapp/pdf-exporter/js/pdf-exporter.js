@@ -127,7 +127,7 @@ const PdfExporter = {
     openPopup: function (params) {
         this.hideAlerts();
         this.loadFormData(params);
-        const reportContext = this.exportContext.documentType === "live_report";
+        const reportContext = this.exportContext.documentType === ExportParams.DocumentType.LIVE_REPORT;
         document.querySelectorAll(".modal__container.pdf-exporter .property-wrapper.only-live-doc")
             .forEach(propertyBlock => propertyBlock.style.display = (reportContext ? "none" : "flex"));
         MicroModal.show('pdf-export-modal-popup');
@@ -135,7 +135,7 @@ const PdfExporter = {
 
     loadFormData: function (params) {
         this.exportContext = new ExportContext();
-        this.exportContext.documentType = params?.context ? params.context : "live_doc";
+        this.exportContext.documentType = params?.context ? params.context : ExportParams.DocumentType.LIVE_DOC;
 
         this.actionInProgress({inProgress: true, message: "Loading form data"});
 
@@ -223,7 +223,7 @@ const PdfExporter = {
     },
 
     loadLinkRoles: function (exportContext) {
-        if (exportContext.documentType === "live_report") {
+        if (exportContext.documentType === ExportParams.DocumentType.LIVE_REPORT) {
             return Promise.resolve(); // Skip loading link roles for report
         }
 
@@ -247,7 +247,7 @@ const PdfExporter = {
     },
 
     loadProjectName: function (exportContext) {
-        if (exportContext.documentType === "live_report" && !exportContext.getProjectId()) {
+        if (exportContext.documentType === ExportParams.DocumentType.LIVE_REPORT && !exportContext.getProjectId()) {
             return Promise.resolve();
         }
 
@@ -300,7 +300,7 @@ const PdfExporter = {
     },
 
     loadDocumentLanguage: function (exportContext) {
-        if (exportContext.documentType === "live_report" || exportContext.documentType === "test_run") {
+        if (exportContext.documentType === ExportParams.DocumentType.LIVE_REPORT || exportContext.documentType === ExportParams.DocumentType.TEST_RUN) {
             return Promise.resolve(); // Skip loading language for report
         }
 
@@ -360,8 +360,8 @@ const PdfExporter = {
         ExportCommon.visibleIf("popup-webhooks-selector", !!stylePackage.webhooks)
 
         ExportCommon.setValue("popup-headers-color", stylePackage.headersColor);
-        ExportCommon.setValue("popup-paper-size-selector", stylePackage.paperSize || 'A4');
-        ExportCommon.setValue("popup-orientation-selector", stylePackage.orientation || 'PORTRAIT');
+        ExportCommon.setValue("popup-paper-size-selector", stylePackage.paperSize || ExportParams.PaperSize.A4);
+        ExportCommon.setValue("popup-orientation-selector", stylePackage.orientation || ExportParams.Orientation.PORTRAIT);
         ExportCommon.setCheckbox("popup-fit-to-page", stylePackage.fitToPage);
         ExportCommon.setCheckbox("popup-enable-comments-rendering", stylePackage.renderComments);
         ExportCommon.setCheckbox("popup-watermark", stylePackage.watermark);
@@ -500,7 +500,7 @@ const PdfExporter = {
 
         this.actionInProgress({inProgress: true, message: "Generating PDF"})
 
-        if (this.exportContext.documentType !== "live_report" && this.exportContext.documentType !== "test_run") {
+        if (this.exportContext.documentType !== ExportParams.DocumentType.LIVE_REPORT && this.exportContext.documentType !== ExportParams.DocumentType.TEST_RUN) {
             this.checkNestedListsAsync(requestBody);
         }
 
@@ -574,34 +574,34 @@ const PdfExporter = {
     },
 
     buildRequestJson: function (selectedChapters, numberedListStyles, selectedRoles) {
-        const live_report = this.exportContext.documentType === "live_report";
-        return JSON.stringify({
-            projectId: this.exportContext.getProjectId(),
-            locationPath: this.exportContext.path,
-            revision: this.exportContext.revision,
-            documentType: this.exportContext.documentType,
-            coverPage: document.getElementById("popup-cover-page-checkbox").checked ? document.getElementById("popup-cover-page-selector").value : null,
-            css: document.getElementById("popup-css-selector").value,
-            headerFooter: document.getElementById("popup-header-footer-selector").value,
-            localization: document.getElementById("popup-localization-selector").value,
-            webhooks: document.getElementById("popup-webhooks-checkbox").checked ? document.getElementById("popup-webhooks-selector").value : null,
-            headersColor: document.getElementById("popup-headers-color").value,
-            paperSize: document.getElementById("popup-paper-size-selector").value,
-            orientation: document.getElementById("popup-orientation-selector").value,
-            fitToPage: !live_report && document.getElementById('popup-fit-to-page').checked,
-            enableCommentsRendering: document.getElementById('popup-enable-comments-rendering').checked,
-            watermark: document.getElementById("popup-watermark").checked,
-            markReferencedWorkitems: !live_report && document.getElementById("popup-mark-referenced-workitems").checked,
-            cutEmptyChapters: !live_report && document.getElementById("popup-cut-empty-chapters").checked,
-            cutEmptyWIAttributes: !live_report && document.getElementById('popup-cut-empty-wi-attributes').checked,
-            cutLocalUrls: document.getElementById("popup-cut-urls").checked,
-            followHTMLPresentationalHints: document.getElementById("popup-presentational-hints").checked,
-            numberedListStyles: numberedListStyles,
-            chapters: selectedChapters,
-            language: !live_report && document.getElementById('popup-localization').checked ? document.getElementById("popup-language").value : null,
-            linkedWorkitemRoles: selectedRoles,
-            urlQueryParameters: this.exportContext.urlQueryParameters,
-        });
+        const live_report = this.exportContext.documentType === ExportParams.DocumentType.LIVE_REPORT;
+        return new ExportParams.Builder(this.exportContext.documentType)
+            .setProjectId(this.exportContext.getProjectId())
+            .setLocationPath(this.exportContext.path)
+            .setRevision(this.exportContext.revision)
+            .setCoverPage(document.getElementById("popup-cover-page-checkbox").checked ? document.getElementById("popup-cover-page-selector").value : null)
+            .setCss(document.getElementById("popup-css-selector").value)
+            .setHeaderFooter(document.getElementById("popup-header-footer-selector").value)
+            .setLocalization(document.getElementById("popup-localization-selector").value)
+            .setWebhooks(document.getElementById("popup-webhooks-checkbox").checked ? document.getElementById("popup-webhooks-selector").value : null)
+            .setHeadersColor(document.getElementById("popup-headers-color").value)
+            .setPaperSize(document.getElementById("popup-paper-size-selector").value)
+            .setOrientation(document.getElementById("popup-orientation-selector").value)
+            .setFitToPage(!live_report && document.getElementById('popup-fit-to-page').checked)
+            .setEnableCommentsRendering(!live_report && document.getElementById('popup-enable-comments-rendering').checked)
+            .setWatermark(document.getElementById("popup-watermark").checked)
+            .setMarkReferencedWorkitems(!live_report && document.getElementById("popup-mark-referenced-workitems").checked)
+            .setCutEmptyChapters(!live_report && document.getElementById("popup-cut-empty-chapters").checked)
+            .setCutEmptyWIAttributes(!live_report && document.getElementById('popup-cut-empty-wi-attributes').checked)
+            .setCutLocalUrls(document.getElementById("popup-cut-urls").checked)
+            .setFollowHTMLPresentationalHints(document.getElementById("popup-presentational-hints").checked)
+            .setNumberedListStyles(numberedListStyles)
+            .setChapters(selectedChapters)
+            .setLanguage(!live_report && document.getElementById('popup-localization').checked ? document.getElementById("popup-language").value : null)
+            .setLinkedWorkitemRoles(selectedRoles)
+            .setUrlQueryParameters(this.exportContext.urlQueryParameters)
+            .build()
+            .toJSON();
     },
 
     getSelectedChapters: function () {
