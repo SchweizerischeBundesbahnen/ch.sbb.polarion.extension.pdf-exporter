@@ -131,6 +131,25 @@ class PdfConverterWeasyPrintTest extends BaseWeasyPrintTest {
         when(documentDataHelper.getLiveDoc(any(), any())).thenReturn(liveDoc2);
         compareContentUsingReferenceImages(testName + "_complex_with_title", converter.convertToPdf(params, null));
 
+        params.setCoverPage(null);
+        DocumentData<IModule> liveDoc3 = DocumentData.builder(DocumentType.LIVE_DOC, module)
+                .projectName("Test")
+                .id("testId")
+                .title("specialSymbolsTitle")
+                .content(readHtmlResource("specialSymbols"))
+                .build();
+        when(documentDataHelper.getLiveDoc(any(), any())).thenReturn(liveDoc3);
+        compareContentUsingReferenceImages(testName + "_special_symbols", converter.convertToPdf(params, null));
+
+        DocumentData<IModule> liveDoc4 = DocumentData.builder(DocumentType.LIVE_DOC, module)
+                .projectName("Test")
+                .id("testId")
+                .title("svgImageTitle")
+                .content(readHtmlResource("svgImage"))
+                .build();
+        when(documentDataHelper.getLiveDoc(any(), any())).thenReturn(liveDoc4);
+        compareContentUsingReferenceImages(testName + "_svg_image", converter.convertToPdf(params, null));
+
         //test wiki page export + {{ REVISION }} placeholder usage
         DocumentData<IWikiPage> wikiPage = DocumentData.builder(DocumentType.LIVE_DOC, mock(IWikiPage.class))
                 .projectName("Test")
@@ -141,7 +160,6 @@ class PdfConverterWeasyPrintTest extends BaseWeasyPrintTest {
                 .build();
         when(documentDataHelper.getWikiPage(any(), any())).thenReturn(wikiPage);
         when(headerFooterSettings.load(any(), any())).thenReturn(new HeaderFooterModel("HL", "HC  {{ REVISION }}", "HR", "FL", "FC", "FR {{ PAGE_NUMBER }}"));
-        params.setCoverPage(null);
         params.setDocumentType(DocumentType.WIKI_PAGE);
         params.setLocationPath("wikiFolder/wikiPage");
         compareContentUsingReferenceImages(testName + "_wiki", converter.convertToPdf(params, null));
@@ -149,7 +167,8 @@ class PdfConverterWeasyPrintTest extends BaseWeasyPrintTest {
 
     @SneakyThrows
     private void compareContentUsingReferenceImages(String testName, byte[] pdf) {
-        //NOTE: if something will be changed in the future and images stop being equal then just copy&replace reference resource images
+        writeReportPdf(testName, "generated", pdf);
+        //NOTE: if something changes in the future and the images are no longer identical, simply copy&replace the reference resource images
         //with the new ones from the reports folder after test execution
         List<BufferedImage> resultImages = getAllPagesAsImagesAndLogAsReports(testName, pdf);
         for (int i = 0; i < resultImages.size(); i++) {
