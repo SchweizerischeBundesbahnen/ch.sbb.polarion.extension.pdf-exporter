@@ -50,4 +50,30 @@ class ExternalCssInternalizerTest {
         assertThat(result.get()).isEqualTo("""
                 <style data-precedence="test-data-precedence">test-stylesheet</style>""");
     }
+
+    @Test
+    void shouldConvertStylesheetLinkAndProcessRelativeLinks() {
+        when(fileResourceProvider.getResourceAsBytes("/some/location/file.css")).thenReturn("""
+                @font-face {
+                  src: url('../fonts/some-font.woff');
+                }
+                @font-face {
+                  src: url('relative2/some-font2.woff');
+                }
+                @font-face {
+                  src: url('/non-relative/fonts/some-font3.woff');
+                }
+                """.getBytes());
+        Optional<String> result = cssLinkInliner.inline(Map.of(
+                "rel", "stylesheet",
+                "href", "/some/location/file.css",
+                "data-precedence", "test-data-precedence"));
+
+        assertThat(result).isNotEmpty();
+        assertThat(result.get()).contains(
+                "src: url(/some/location/../fonts/some-font.woff)",
+                "src: url(/some/location/relative2/some-font2.woff)",
+                "src: url('/non-relative/fonts/some-font3.woff')"
+        );
+    }
 }

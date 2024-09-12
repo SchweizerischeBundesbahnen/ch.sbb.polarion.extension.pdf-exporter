@@ -31,7 +31,7 @@ public class HtmlLinksHelper {
         RegexMatcher.get(ATTRIBUTE_REGEX).useJavaUtil().processEntry(linkTag, regexEngine -> {
             String attributeName = regexEngine.group(1);
             String attributeValue = regexEngine.group(3);
-            attributes.put(attributeName, attributeValue);
+            attributes.put(attributeName.toLowerCase(), attributeValue);
         });
 
         return attributes;
