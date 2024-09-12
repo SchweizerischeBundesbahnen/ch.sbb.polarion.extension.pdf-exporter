@@ -56,14 +56,14 @@ class HtmlLinksHelperTest {
     void shouldParseAttributesAndReplaceLinkTags() {
         when(linkInternalizer1.inline(anyMap())).thenReturn(Optional.of("<style>replacement</style>"));
         String resultHtml = htmlLinksHelper.internalizeLinks("""
-                <html lang='en'><head><link attr1="value1" attr2="value2">some content</head>""");
+                <html lang='en'><head><link attr1="value1" ATTR2="value2">some content</head>""");
 
         assertThat(resultHtml).isEqualTo("""
                 <html lang='en'><head><style>replacement</style>some content</head>""");
         @SuppressWarnings("unchecked")
         ArgumentCaptor<Map<String, String>> captor = ArgumentCaptor.forClass(Map.class);
         verify(linkInternalizer1).inline(captor.capture());
-        assertThat(captor.getValue()).containsExactly(Map.entry("attr1", "value1"), Map.entry("attr2", "value2"));
+        assertThat(captor.getValue()).containsExactly(Map.entry("attr1", "value1"), Map.entry("attr2", "value2")); // also it must lowercase attributes
     }
 
     @Test
