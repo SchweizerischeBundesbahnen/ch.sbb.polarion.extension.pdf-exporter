@@ -115,11 +115,6 @@ class ExportParams {
                 return this;
             }
 
-            setDocumentType(documentType) {
-                this.documentType = documentType;
-                return this;
-            }
-
             setCoverPage(coverPage) {
                 this.coverPage = coverPage;
                 return this;
@@ -222,11 +217,6 @@ class ExportParams {
 
             setUrlQueryParameters(urlQueryParameters) {
                 this.urlQueryParameters = urlQueryParameters;
-                return this;
-            }
-
-            setInternalContent(internalContent) {
-                this.internalContent = internalContent;
                 return this;
             }
 
