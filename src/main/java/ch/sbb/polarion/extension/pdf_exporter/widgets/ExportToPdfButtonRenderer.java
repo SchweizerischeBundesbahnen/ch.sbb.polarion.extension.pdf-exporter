@@ -18,7 +18,7 @@ public class ExportToPdfButtonRenderer extends AbstractWidgetRenderer {
             @Override
             protected void configureLinkAttributes(@NotNull HtmlTagBuilder a) {
                 //language=JS
-                String onClickAction = "PdfExporter.openPopup({ context: (new ExportContext().path === 'testrun' ? ExportParams.DocumentType.TEST_RUN : ExportParams.DocumentType.LIVE_REPORT) })";
+                String onClickAction = "PdfExporter.openPopup({ exportContext: new ExportContext(ExportParams.DocumentType.LIVE_REPORT) });";
                 a.attributes().onClick(builder.target().escapeForAttribute(onClickAction));
             }
         };

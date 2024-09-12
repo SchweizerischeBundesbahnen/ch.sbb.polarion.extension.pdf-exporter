@@ -1,11 +1,13 @@
-class ExportContext {
+import ExportParams from "./ExportParams.js";
+
+export default class ExportContext {
     projectId = undefined;
     locationPath = undefined;
     revision = undefined;
     documentType = undefined;
     urlQueryParameters = undefined;
 
-    constructor(polarionLocationHash = window.location.hash, documentType) {
+    constructor(documentType = ExportParams.DocumentType.LIVE_DOC, polarionLocationHash = window.location.hash) {
         this.documentType = documentType;
 
         const urlPathAndSearchParams = getPathAndQueryParams(polarionLocationHash);
@@ -16,12 +18,14 @@ class ExportContext {
         this.projectId = getProjectId(scope);
         this.locationPath = getPath(normalizedPolarionLocationHash, scope);
 
+        if (this.locationPath === "testrun") {
+            this.documentType = ExportParams.DocumentType.TEST_RUN;
+        }
+
         this.urlQueryParameters = getQueryParams(searchParameters);
         this.revision = this.urlQueryParameters?.revision;
 
-        // if (!this.documentType) {
-        //     this.documentType = ExportParams.DocumentType.LIVE_DOC;
-        // }
+        console.log(this);
 
         function getPathAndQueryParams(polarionLocationHash) {
             const result = {
@@ -87,6 +91,30 @@ class ExportContext {
 
     }
 
+    getProjectId() {
+        return this.projectId;
+    }
+
+    getLocationPath() {
+        return this.locationPath;
+    }
+
+    getRevision() {
+        return this.revision;
+    }
+
+    getDocumentType() {
+        return this.documentType;
+    }
+
+    getUrlQueryParameters() {
+        return this.urlQueryParameters;
+    }
+
+    getScope() {
+        return this.projectId ? `project/${this.projectId}/` : "";
+    }
+
     getSpaceId() {
         const pathParts = this.locationPath.split("/");
         return pathParts && pathParts.length > 0 && pathParts[0];
@@ -96,13 +124,18 @@ class ExportContext {
         const pathParts = this.locationPath.split("/");
         return pathParts && pathParts.length > 1 && pathParts[1];
     }
+
+    toExportParams() {
+        return new ExportParams.Builder(this.documentType)
+            .setProjectId(this.projectId)
+            .setLocationPath(this.locationPath)
+            .setRevision(this.revision)
+            .setUrlQueryParameters(this.urlQueryParameters)
+            .build();
+    }
 }
 
-// const exportContext = new ExportContext(polarionLocationHash = "#/project/elibrary/wiki/Reports/LiveReport%20with%20params?stringParameter=asd&workItemType=changerequest&yesnoParameter=yes");
-// const exportContext = new ExportContext(polarionLocationHash = "#/project/elibrary/wiki/Reports/LiveReport%20with%20params?stringParameter=asd&workItemType=changerequest&yesnoParameter=yes&revision=1234");
-const exportContext = new ExportContext(polarionLocationHash = "#/project/elibrary/wiki/Reports/LiveReport%20with%20params?revision=1234");
-// const exportContext = new ExportContext(polarionLocationHash = "#/project/elibrary/wiki/Reports/LiveReport%20with%20params");
-
-console.log(exportContext);
-console.log(exportContext.getSpaceId());
-console.log(exportContext.getDocumentName());
+// expose ExportContext to the global scope
+if (typeof window !== 'undefined') {
+    window.ExportContext = ExportContext;
+}

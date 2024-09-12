@@ -1,4 +1,4 @@
-class ExportParams {
+export default class ExportParams {
     static DocumentType = {
         LIVE_DOC: 'LIVE_DOC',
         LIVE_REPORT: 'LIVE_REPORT',
@@ -227,12 +227,7 @@ class ExportParams {
     }
 }
 
-const exportParams = new ExportParams.Builder(ExportParams.DocumentType.LIVE_DOC)
-    .setProjectId('elibrary')
-    .setLocationPath('Specification/Product Specification')
-    .setRevision('1234')
-    .setOrientation(ExportParams.Orientation.LANDSCAPE)
-    .setPaperSize(ExportParams.PaperSize.A4)
-    .build();
-
-console.log(exportParams.toJSON());
+// expose ExportParams to the global scope
+if (typeof window !== 'undefined') {
+    window.ExportParams = ExportParams;
+}
