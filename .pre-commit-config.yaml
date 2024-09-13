@@ -18,6 +18,7 @@ repos:
       - id: mixed-line-ending
       - id: pretty-format-json
         args: [--autofix, --no-ensure-ascii, '--top-keys=openapi,info,servers,paths,components']
+        files: docs/openapi.json
   - repo: https://github.com/zricethezav/gitleaks
     rev: v8.18.4
     hooks:
