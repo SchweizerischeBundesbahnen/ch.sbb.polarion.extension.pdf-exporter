@@ -60,7 +60,7 @@ export default class ExportContext {
 
         function getPath(locationHash, scope) {
             if (scope) {
-                const pathPattern = /project\/[^\/]+\/(wiki\/([^?#]+)|testruns|testrun)/;
+                const pathPattern = /project\/[^/]+\/(wiki\/([^?#]+)|testruns|testrun)/;
                 const pathMatch = pathPattern.exec(locationHash);
                 const extractedPath = pathMatch ? (pathMatch[2] || pathMatch[1]) : undefined;
                 return pathMatch ? addDefaultSpaceIfRequired(extractedPath) : undefined;
