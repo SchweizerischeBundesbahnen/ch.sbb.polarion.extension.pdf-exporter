@@ -47,7 +47,6 @@
         <pdfbox.version>3.0.3</pdfbox.version>
         <okapi.xliff.version>1.46.0</okapi.xliff.version>
         <byte-buddy.version>1.15.1</byte-buddy.version>
-        <re2j.version>1.7</re2j.version>
 
         <slf4j.version>1.7.36</slf4j.version>
         <testcontainers.version>1.20.1</testcontainers.version>
@@ -65,6 +64,10 @@
         <!--suppress UnresolvedMavenProperty -->
         <markdown2html-maven-plugin.failOnError>${env.MARKDOWN2HTML_MAVEN_PLUGIN_FAIL_ON_ERROR}</markdown2html-maven-plugin.failOnError>
         <swagger-maven-plugin.version>2.2.22</swagger-maven-plugin.version>
+
+        <frontend-maven-plugin.version>1.15.0</frontend-maven-plugin.version>
+        <frontend-maven-plugin.nodeVersion>v20.17.0</frontend-maven-plugin.nodeVersion>
+        <frontend-maven-plugin.npmVersion>10.8.3</frontend-maven-plugin.npmVersion>
     </properties>
 
     <dependencies>
@@ -198,6 +201,46 @@
                         <package>ch.sbb.polarion.extension.pdf_exporter.rest.model</package>
                     </resourcePackages>
                 </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>com.github.eirslett</groupId>
+                <artifactId>frontend-maven-plugin</artifactId>
+                <version>${frontend-maven-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>install-node-and-npm</id>
+                        <goals>
+                            <goal>install-node-and-npm</goal>
+                        </goals>
+                        <configuration>
+                            <nodeVersion>${frontend-maven-plugin.nodeVersion}</nodeVersion>
+                            <npmVersion>${frontend-maven-plugin.npmVersion}</npmVersion>
+                        </configuration>
+                    </execution>
+
+                    <!-- Install JavaScript dependencies using npm -->
+                    <execution>
+                        <id>npm-install</id>
+                        <goals>
+                            <goal>npm</goal>
+                        </goals>
+                        <configuration>
+                            <arguments>install</arguments>
+                        </configuration>
+                    </execution>
+
+                    <!-- Run JavaScript tests -->
+                    <execution>
+                        <id>npm-test</id>
+                        <goals>
+                            <goal>npm</goal>
+                        </goals>
+                        <configuration>
+                            <arguments>run test</arguments>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

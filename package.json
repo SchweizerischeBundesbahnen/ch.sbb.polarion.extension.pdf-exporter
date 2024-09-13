@@ -1,0 +1,15 @@
+{
+  "dependencies": {
+    "micromodal": "^0.4.10"
+  },
+  "devDependencies": {
+    "chai": "^4.3.4",
+    "mocha": "10.1.0"
+  },
+  "name": "maven-js-project",
+  "scripts": {
+    "test": "mocha src/test/js/**/*.js"
+  },
+  "type": "module",
+  "version": "1.0.0"
+}

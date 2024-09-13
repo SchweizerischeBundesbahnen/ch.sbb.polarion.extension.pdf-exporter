@@ -36,3 +36,7 @@ dependency-reduced-pom.xml
 
 src/main/resources/webapp/*-admin/html/about.html
 README.html
+
+node/
+node_modules/
+package-lock.json

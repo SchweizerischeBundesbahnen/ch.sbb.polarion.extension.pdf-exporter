@@ -1,6 +1,5 @@
 const ExportPdf = {
     stylePackageChanged: function () {
-        console.log("stylePackageChanged");
         const selectedStylePackage = document.getElementById("style-package-select").value;
         const scope = document.querySelector("input[name='scope']").value;
         if (selectedStylePackage && scope) {
@@ -125,32 +124,33 @@ const ExportPdf = {
 
     buildRequestJson: function (projectId, locationPath, selectedChapters, numberedListStyles, selectedRoles) {
         const urlSearchParams = new URL(window.location.href.replace('#', '/')).searchParams;
-        return JSON.stringify({
-            projectId: projectId,
-            locationPath: locationPath,
-            revision: urlSearchParams.get('revision'),
-            coverPage: document.getElementById("cover-page-checkbox").checked ? document.getElementById("cover-page-selector").value : null,
-            css: document.getElementById("css-selector").value,
-            headerFooter: document.getElementById("header-footer-selector").value,
-            localization: document.getElementById("localization-selector").value,
-            webhooks: document.getElementById("webhooks-checkbox").checked ? document.getElementById("webhooks-selector").value : null,
-            headersColor: document.getElementById("headers-color").value,
-            paperSize: document.getElementById("paper-size-selector").value,
-            orientation: document.getElementById("orientation-selector").value,
-            fitToPage: document.getElementById('fit-to-page').checked,
-            enableCommentsRendering: document.getElementById('enable-comments-rendering').checked,
-            watermark: document.getElementById("watermark").checked,
-            markReferencedWorkitems: document.getElementById("mark-referenced-workitems").checked,
-            cutEmptyChapters: document.getElementById("cut-empty-chapters").checked,
-            cutEmptyWIAttributes: document.getElementById('cut-empty-wi-attributes').checked,
-            cutLocalUrls: document.getElementById("cut-urls").checked,
-            followHTMLPresentationalHints: document.getElementById("presentational-hints").checked,
-            numberedListStyles: numberedListStyles,
-            chapters: selectedChapters,
-            language: document.getElementById('localization').checked ? document.getElementById("language").value : null,
-            linkedWorkitemRoles: selectedRoles,
-            urlQueryParameters: Object.fromEntries([...urlSearchParams]),
-        });
+        return new ExportParams.Builder(ExportParams.DocumentType.LIVE_DOC)
+            .setProjectId(projectId)
+            .setLocationPath(locationPath)
+            .setRevision(urlSearchParams.get('revision'))
+            .setCoverPage(document.getElementById("cover-page-checkbox").checked ? document.getElementById("cover-page-selector").value : null)
+            .setCss(document.getElementById("css-selector").value)
+            .setHeaderFooter(document.getElementById("header-footer-selector").value)
+            .setLocalization(document.getElementById("localization-selector").value)
+            .setWebhooks(document.getElementById("webhooks-checkbox").checked ? document.getElementById("webhooks-selector").value : null)
+            .setHeadersColor(document.getElementById("headers-color").value)
+            .setPaperSize(document.getElementById("paper-size-selector").value)
+            .setOrientation(document.getElementById("orientation-selector").value)
+            .setFitToPage(document.getElementById('fit-to-page').checked)
+            .setEnableCommentsRendering(document.getElementById('enable-comments-rendering').checked)
+            .setWatermark(document.getElementById("watermark").checked)
+            .setMarkReferencedWorkitems(document.getElementById("mark-referenced-workitems").checked)
+            .setCutEmptyChapters(document.getElementById("cut-empty-chapters").checked)
+            .setCutEmptyWIAttributes(document.getElementById('cut-empty-wi-attributes').checked)
+            .setCutLocalUrls(document.getElementById("cut-urls").checked)
+            .setFollowHTMLPresentationalHints(document.getElementById("presentational-hints").checked)
+            .setNumberedListStyles(numberedListStyles)
+            .setChapters(selectedChapters)
+            .setLanguage(document.getElementById('localization').checked ? document.getElementById("language").value : null)
+            .setLinkedWorkitemRoles(selectedRoles)
+            .setUrlQueryParameters(Object.fromEntries([...urlSearchParams]))
+            .build()
+            .toJSON();
     },
 
     getSelectedChapters: function () {
