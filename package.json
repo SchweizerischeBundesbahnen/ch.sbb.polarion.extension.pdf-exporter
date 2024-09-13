@@ -1,15 +1,12 @@
 {
-  "dependencies": {
-    "micromodal": "^0.4.10"
-  },
-  "devDependencies": {
-    "chai": "5.1.1",
-    "mocha": "10.7.3"
-  },
   "name": "maven-js-project",
   "scripts": {
     "test": "mocha src/test/js/**/*.js"
   },
   "type": "module",
-  "version": "1.0.0"
+  "version": "1.0.0",
+  "devDependencies": {
+    "chai": "5.1.1",
+    "mocha": "10.7.3"
+  }
 }
