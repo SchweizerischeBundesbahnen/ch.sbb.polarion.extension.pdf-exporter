@@ -27,7 +27,10 @@ export default class ExportContext {
         this.urlQueryParameters = getQueryParams(searchParameters);
         this.revision = this.urlQueryParameters?.revision;
 
-        console.log(this);
+        // print the context to console only in browser
+        if (typeof window !== 'undefined') {
+            console.log(this);
+        }
 
         function getPathAndQueryParams(polarionLocationHash) {
             const result = {

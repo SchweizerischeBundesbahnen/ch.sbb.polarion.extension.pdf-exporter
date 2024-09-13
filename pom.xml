@@ -68,6 +68,9 @@
         <frontend-maven-plugin.version>1.15.0</frontend-maven-plugin.version>
         <frontend-maven-plugin.nodeVersion>v20.17.0</frontend-maven-plugin.nodeVersion>
         <frontend-maven-plugin.npmVersion>10.8.3</frontend-maven-plugin.npmVersion>
+
+        <!--suppress UnresolvedMavenProperty -->
+        <skipJavaScriptTests>${skipTests}</skipJavaScriptTests>
     </properties>
 
     <dependencies>
@@ -216,7 +219,9 @@
                         <configuration>
                             <nodeVersion>${frontend-maven-plugin.nodeVersion}</nodeVersion>
                             <npmVersion>${frontend-maven-plugin.npmVersion}</npmVersion>
+                            <skip>${skipJavaScriptTests}</skip>
                         </configuration>
+                        <phase>test</phase>
                     </execution>
 
                     <!-- Install JavaScript dependencies using npm -->
@@ -227,7 +232,9 @@
                         </goals>
                         <configuration>
                             <arguments>install</arguments>
+                            <skip>${skipJavaScriptTests}</skip>
                         </configuration>
+                        <phase>test</phase>
                     </execution>
 
                     <!-- Run JavaScript tests -->
@@ -238,7 +245,9 @@
                         </goals>
                         <configuration>
                             <arguments>run test</arguments>
+                            <skip>${skipJavaScriptTests}</skip>
                         </configuration>
+                        <phase>test</phase>
                     </execution>
                 </executions>
             </plugin>
