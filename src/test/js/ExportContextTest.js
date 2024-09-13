@@ -79,12 +79,12 @@ describe('ExportContext Class', function () {
 
         expect(exportContext.documentType).to.equal(ExportParams.DocumentType.TEST_RUN);
         expect(exportContext.projectId).to.equal('elibrary');
-        expect(exportContext.locationPath).to.equal('testrun');
+        expect(exportContext.locationPath).to.be.undefined;
         expect(exportContext.revision).to.be.undefined;
         expect(exportContext.urlQueryParameters).to.deep.equal({ id: 'elibrary_20231026-163136654' });
 
-        expect(exportContext.getSpaceId()).to.equal('testrun');
-        expect(exportContext.getDocumentName()).to.be.false; // No document name for testrun
+        expect(exportContext.getSpaceId()).to.be.undefined;
+        expect(exportContext.getDocumentName()).to.be.undefined;
     });
 
     it('URL: #/project/elibrary/wiki/Reports/LiveReport%20with%20params?stringParameter=asd&workItemType=changerequest&yesnoParameter=yes', function () {
@@ -104,4 +104,19 @@ describe('ExportContext Class', function () {
         expect(exportContext.getSpaceId()).to.equal('Reports');
         expect(exportContext.getDocumentName()).to.equal('LiveReport with params');
     });
+
+    it('URL: #/project/elibrary/testruns', function () {
+        const locationHash = "#/project/elibrary/testruns";
+        const exportContext = new ExportContext(ExportParams.DocumentType.LIVE_REPORT, locationHash);
+
+        expect(exportContext.documentType).to.equal(ExportParams.DocumentType.TEST_RUN);
+        expect(exportContext.projectId).to.equal('elibrary');
+        expect(exportContext.locationPath).to.be.undefined;
+        expect(exportContext.revision).to.be.undefined;
+        expect(exportContext.urlQueryParameters).to.be.undefined;
+
+        expect(exportContext.getSpaceId()).to.be.undefined;
+        expect(exportContext.getDocumentName()).to.be.undefined;
+    });
+
 });

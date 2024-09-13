@@ -43,17 +43,17 @@ const PdfExporter = {
     },
 
     openPopup: function (params) {
+        this.exportContext = params?.exportContext ? params.exportContext : new ExportContext();
+
         this.hideAlerts();
-        this.loadFormData(params);
+        this.loadFormData();
         const reportContext = this.exportContext.getDocumentType() === ExportParams.DocumentType.LIVE_REPORT || this.exportContext.getDocumentType() === ExportParams.DocumentType.TEST_RUN;
         document.querySelectorAll(".modal__container.pdf-exporter .property-wrapper.only-live-doc")
             .forEach(propertyBlock => propertyBlock.style.display = (reportContext ? "none" : "flex"));
         MicroModal.show('pdf-export-modal-popup');
     },
 
-    loadFormData: function (params) {
-        this.exportContext = params?.exportContext ? params.exportContext : new ExportContext();
-
+    loadFormData: function () {
         this.actionInProgress({inProgress: true, message: "Loading form data"});
 
         Promise.all([

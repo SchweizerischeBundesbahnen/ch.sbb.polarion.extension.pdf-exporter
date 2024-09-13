@@ -18,8 +18,10 @@ export default class ExportContext {
         this.projectId = getProjectId(scope);
         this.locationPath = getPath(normalizedPolarionLocationHash, scope);
 
-        if (this.locationPath === "testrun") {
+        // if "testrun" or "testruns" is present return undefined
+        if (this.locationPath?.startsWith("testrun")) {
             this.documentType = ExportParams.DocumentType.TEST_RUN;
+            this.locationPath = undefined;
         }
 
         this.urlQueryParameters = getQueryParams(searchParameters);
@@ -58,13 +60,14 @@ export default class ExportContext {
 
         function getPath(locationHash, scope) {
             if (scope) {
-                const pathPattern = /project\/[^/]+\/(wiki\/([^?#]+)|testrun)/;
+                const pathPattern = /project\/[^\/]+\/(wiki\/([^?#]+)|testruns|testrun)/;
                 const pathMatch = pathPattern.exec(locationHash);
-                return pathMatch ? addDefaultSpaceIfRequired(pathMatch[2] || "testrun") : "";
+                const extractedPath = pathMatch ? (pathMatch[2] || pathMatch[1]) : undefined;
+                return pathMatch ? addDefaultSpaceIfRequired(extractedPath) : undefined;
             } else {
                 const globalPathPattern = /wiki\/([^/?#]+)/;
                 const pathMatch = globalPathPattern.exec(locationHash);
-                return pathMatch ? addDefaultSpaceIfRequired(pathMatch[1]) : "";
+                return pathMatch ? addDefaultSpaceIfRequired(pathMatch[1]) : undefined;
             }
         }
 
@@ -72,13 +75,17 @@ export default class ExportContext {
             if (!extractedPath) {
                 return "";
             }
-            // if contains a '/' or is exactly 'testrun', return it as it is
-            if (extractedPath.includes("/") || extractedPath === "testrun") {
+            // if "testrun" or "testruns" is present return undefined
+            if (extractedPath.startsWith("testrun")) {
+                return extractedPath;
+            }
+            // if contains a '/' return it as it is
+            if (extractedPath.includes("/")) {
                 return extractedPath;
             }
             // otherwise, prepend '_default/' to the path
             return `_default/${extractedPath}`;
-        }
+        };
 
         function getQueryParams(searchParams) {
             if (!searchParameters) {
@@ -116,13 +123,21 @@ export default class ExportContext {
     }
 
     getSpaceId() {
-        const pathParts = this.locationPath.split("/");
-        return pathParts && pathParts.length > 0 && pathParts[0];
+        if (this.locationPath?.includes("/")) {
+            const pathParts = this.locationPath.split("/");
+            return pathParts && pathParts.length > 0 && pathParts[0];
+        } else {
+            return undefined;
+        }
     }
 
     getDocumentName() {
-        const pathParts = this.locationPath.split("/");
-        return pathParts && pathParts.length > 1 && pathParts[1];
+        if (this.locationPath?.includes("/")) {
+            const pathParts = this.locationPath.split("/");
+            return pathParts && pathParts.length > 1 && pathParts[1];
+        } else {
+            return undefined;
+        }
     }
 
     toExportParams() {

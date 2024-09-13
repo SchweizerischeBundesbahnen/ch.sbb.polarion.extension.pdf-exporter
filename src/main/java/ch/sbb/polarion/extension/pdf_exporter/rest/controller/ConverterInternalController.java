@@ -327,7 +327,7 @@ public class ConverterInternalController {
         if (exportParams.getDocumentType() == DocumentType.LIVE_DOC && exportParams.getProjectId() == null) {
             throw new BadRequestException("Parameter 'projectId' should be provided");
         }
-        if (exportParams.getLocationPath() == null) {
+        if (exportParams.getLocationPath() == null && exportParams.getDocumentType() != DocumentType.TEST_RUN) {
             throw new BadRequestException("Parameter 'locationPath' should be provided");
         }
     }
