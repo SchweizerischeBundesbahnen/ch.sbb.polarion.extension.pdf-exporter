@@ -28,7 +28,7 @@ export default class ExportContext {
         this.revision = this.urlQueryParameters?.revision;
 
         // print the context to console only in browser
-        if (typeof window !== 'undefined') {
+        if (isWindowDefined()) {
             console.log(this);
         }
 
@@ -37,6 +37,12 @@ export default class ExportContext {
                 path: undefined,
                 searchParameters: undefined
             };
+
+            if (isWindowDefined() && polarionLocationHash.endsWith("/testruns")) {
+                // TestRun opened from the list doesn't have proper URL, so we attempt to fetch it from the specific tag
+                // WARNING: the way we get this URL isn't convenient and may stop working in the future, but it seems the only way to do it atm
+                polarionLocationHash = window.document.querySelector('.polarion-TestRunLabelWidget-container a').getAttribute('href');
+            }
 
             if (polarionLocationHash.includes("?")) {
                 const pathAndQueryParams = decodeURI(polarionLocationHash.substring(2));
@@ -154,6 +160,10 @@ export default class ExportContext {
 }
 
 // expose ExportContext to the global scope
-if (typeof window !== 'undefined') {
+if (isWindowDefined()) {
     window.ExportContext = ExportContext;
+}
+
+function isWindowDefined() {
+    return typeof window !== 'undefined';
 }
