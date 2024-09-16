@@ -991,7 +991,7 @@ public class HtmlProcessor {
                 continue;
             }
             byte[] imgBytes = fileResourceProvider.getResourceAsBytes(url.replace("%5F", "_")); // Replace encoded underscore symbol in 'src' attribute of images
-            if (imgBytes != null) { // Don't make any manipulations if image wasn't resolved
+            if (imgBytes != null && imgBytes.length != 0) { // Don't make any manipulations if image wasn't resolved
                 try (InputStream is = new BufferedInputStream(new ByteArrayInputStream(imgBytes))) {
                     String mimeType = URLConnection.guessContentTypeFromStream(is);
 
