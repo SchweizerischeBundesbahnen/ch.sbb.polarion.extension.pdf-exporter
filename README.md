@@ -216,6 +216,15 @@ In version 7.0.0 `/export-filename` REST API endpoint changed. As a result, if t
 `DocumentType` enum in `ExportParams` has been changed. As a result, if enum values have been used, it's required to adjust the calls accordingly.
 Main package has been renamed from `ch.sbb.polarion.extension.pdf.exporter` to `ch.sbb.polarion.extension.pdf_exporter`. As a result, if the extension has been used in another OSGi bundles, it's required to adjust the package imports accordingly.
 
+There was also added a CSS fragment for better display of Test Run pages in PDF, please add this fragment to your CSS definitions if they differ from default one, or update your CSS definitions via UI clicking button "Default" and later saving it. Here is this fragment:
+```css
+#polarion-rp-widget-content > .polarion-TestRunOverviewWidget-table > tbody > tr > td:first-child {
+   width: 46% !important;
+}
+.polarion-TestRunOverviewWidget-buttonName {
+   padding-top: 20px;
+}
+```
 
 ### Upgrade from version 5.x.x to 6.0.0
 
