@@ -966,6 +966,9 @@ table.polarion-rp-column-layout td {
 #polarion-rp-parameters, #polarion-rp-page-script {
     display: none;
 }
+#polarion-rp-widget-content > .polarion-TestRunOverviewWidget-table > tbody > tr > td:first-child {
+    width: 46% !important;
+}
 .polarion-TestRunOverviewWidget-buttonName {
     padding-top: 20px;
 }
