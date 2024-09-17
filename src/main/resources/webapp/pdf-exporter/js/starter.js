@@ -73,6 +73,7 @@ const PdfExporterStarter = {
             const documentFrame = top.document.querySelector('div.polarion-content-container div.polarion-Container div.polarion-dle-Container>div.polarion-dle-Wrapper>div.polarion-dle-RpcPanel>div.polarion-dle-MainDockPanel div.polarion-dle-SplitPanel:last-child .polarion-dle-RichTextArea');
             const toolbarContainer = document.createElement('div');
             toolbarContainer.classList.add("dleToolBarContainer");
+            toolbarContainer.style.marginRight = "14px";
             toolbarContainer.innerHTML = TOOLBAR_HTML.replaceAll("{TIMESTAMP_PARAM}", this.timestampParam);
             documentFrame.parentNode.parentNode.prepend(toolbarContainer);
         }
