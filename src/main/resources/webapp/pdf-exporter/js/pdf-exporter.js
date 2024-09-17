@@ -163,7 +163,7 @@ const PdfExporter = {
     },
 
     loadFileName: function (exportContext) {
-        const requestBody = this.exportContext.toExportParams().toJSON();
+        const requestBody = exportContext.toExportParams().toJSON();
 
         return new Promise((resolve, reject) => {
             this.callAsync({
