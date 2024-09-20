@@ -43,7 +43,7 @@ class HtmlToPdfConverterTest {
 
         when(pdfTemplateProcessor.buildBaseUrlHeader()).thenReturn("<base href='http://test' />");
         when(pdfTemplateProcessor.buildSizeCss(Orientation.PORTRAIT, PaperSize.A4)).thenReturn("@page {size: test;}");
-        when(htmlProcessor.replaceImagesAsBase64Encoded(anyString())).thenAnswer(invocation ->
+        when(htmlProcessor.replaceResourcesAsBase64Encoded(anyString())).thenAnswer(invocation ->
                 invocation.getArgument(0));
         when(htmlProcessor.internalizeLinks(anyString())).thenAnswer(a -> a.getArgument(0));
         String resultHtml = htmlToPdfConverter.preprocessHtml(html, Orientation.PORTRAIT, PaperSize.A4);
@@ -55,7 +55,7 @@ class HtmlToPdfConverterTest {
                     </body>
                 </html>""");
 
-        verify(htmlProcessor).replaceImagesAsBase64Encoded(resultHtml);
+        verify(htmlProcessor).replaceResourcesAsBase64Encoded(resultHtml);
     }
 
     @Test
@@ -73,7 +73,7 @@ class HtmlToPdfConverterTest {
 
         when(pdfTemplateProcessor.buildBaseUrlHeader()).thenReturn("<base href='http://test' />");
         when(pdfTemplateProcessor.buildSizeCss(Orientation.LANDSCAPE, PaperSize.A3)).thenReturn(" @page {size: test;}");
-        when(htmlProcessor.replaceImagesAsBase64Encoded(anyString())).thenAnswer(invocation ->
+        when(htmlProcessor.replaceResourcesAsBase64Encoded(anyString())).thenAnswer(invocation ->
                 invocation.getArgument(0));
         when(htmlProcessor.internalizeLinks(anyString())).thenAnswer(a -> a.getArgument(0));
         String resultHtml = htmlToPdfConverter.preprocessHtml(html, Orientation.LANDSCAPE, PaperSize.A3);
@@ -89,7 +89,7 @@ class HtmlToPdfConverterTest {
                     </body>
                 </html>""");
 
-        verify(htmlProcessor).replaceImagesAsBase64Encoded(resultHtml);
+        verify(htmlProcessor).replaceResourcesAsBase64Encoded(resultHtml);
     }
 
     @Test
@@ -106,7 +106,7 @@ class HtmlToPdfConverterTest {
 
         when(pdfTemplateProcessor.buildBaseUrlHeader()).thenReturn("<base href='http://test' />");
         when(pdfTemplateProcessor.buildSizeCss(Orientation.LANDSCAPE, PaperSize.A3)).thenReturn(" @page {size: test;}");
-        when(htmlProcessor.replaceImagesAsBase64Encoded(anyString())).thenAnswer(invocation ->
+        when(htmlProcessor.replaceResourcesAsBase64Encoded(anyString())).thenAnswer(invocation ->
                 invocation.getArgument(0));
         when(htmlProcessor.internalizeLinks(anyString())).thenAnswer(a -> a.getArgument(0));
         String resultHtml = htmlToPdfConverter.preprocessHtml(html, Orientation.LANDSCAPE, PaperSize.A3);
@@ -121,7 +121,7 @@ class HtmlToPdfConverterTest {
                     </body>
                 </html>""");
 
-        verify(htmlProcessor).replaceImagesAsBase64Encoded(resultHtml);
+        verify(htmlProcessor).replaceResourcesAsBase64Encoded(resultHtml);
     }
 
     @Test
@@ -142,7 +142,7 @@ class HtmlToPdfConverterTest {
 
         when(pdfTemplateProcessor.buildBaseUrlHeader()).thenReturn("<base href='http://test' />");
         when(pdfTemplateProcessor.buildSizeCss(Orientation.PORTRAIT, PaperSize.A4)).thenReturn("@page {size: test;}");
-        when(htmlProcessor.replaceImagesAsBase64Encoded(anyString())).thenAnswer(invocation ->
+        when(htmlProcessor.replaceResourcesAsBase64Encoded(anyString())).thenAnswer(invocation ->
                 invocation.getArgument(0));
         when(htmlProcessor.internalizeLinks(anyString())).thenAnswer(a -> a.getArgument(0));
         String resultHtml = htmlToPdfConverter.preprocessHtml(html, Orientation.PORTRAIT, PaperSize.A4);
@@ -152,7 +152,7 @@ class HtmlToPdfConverterTest {
                     <body/>
                 </html>""");
 
-        verify(htmlProcessor).replaceImagesAsBase64Encoded(resultHtml);
+        verify(htmlProcessor).replaceResourcesAsBase64Encoded(resultHtml);
     }
 
 
@@ -163,7 +163,7 @@ class HtmlToPdfConverterTest {
 
         when(pdfTemplateProcessor.buildBaseUrlHeader()).thenReturn("<base href='http://test' />");
         when(pdfTemplateProcessor.buildSizeCss(Orientation.LANDSCAPE, PaperSize.A3)).thenReturn("@page {size: test;}");
-        when(htmlProcessor.replaceImagesAsBase64Encoded(anyString())).thenAnswer(invocation ->
+        when(htmlProcessor.replaceResourcesAsBase64Encoded(anyString())).thenAnswer(invocation ->
                 invocation.getArgument(0));
         when(htmlProcessor.internalizeLinks(anyString())).thenAnswer(a -> a.getArgument(0));
         when(weasyPrintServiceConnector.convertToPdf(resultHtml, new WeasyPrintOptions(true))).thenReturn("test content".getBytes());

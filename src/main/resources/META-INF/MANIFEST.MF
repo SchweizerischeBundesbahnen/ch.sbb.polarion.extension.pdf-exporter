@@ -12,7 +12,8 @@ Require-Bundle: com.polarion.portal.tomcat,
  slf4j.api,
  org.springframework.spring-core,
  org.springframework.spring-web,
- com.polarion.alm.wiki
+ com.polarion.alm.wiki,
+ org.apache.tika.patched
 Guice-Modules: ch.sbb.polarion.extension.pdf_exporter.PdfExporterModule
 Export-Package: ch.sbb.polarion.extension.pdf_exporter,
  ch.sbb.polarion.extension.pdf_exporter.converter,

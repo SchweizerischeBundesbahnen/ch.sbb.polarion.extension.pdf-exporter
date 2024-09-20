@@ -55,6 +55,7 @@
         <exec-maven-plugin.version>3.3.0</exec-maven-plugin.version>
         <weasyprint.version>62.3</weasyprint.version>
         <awaitility.version>4.2.2</awaitility.version>
+        <tika.version>1.28.5</tika.version>
 
         <maven-jar-plugin.Extension-Context>pdf-exporter</maven-jar-plugin.Extension-Context>
         <maven-jar-plugin.Automatic-Module-Name>ch.sbb.polarion.extension.pdf_exporter</maven-jar-plugin.Automatic-Module-Name>
@@ -91,6 +92,13 @@
             <groupId>com.polarion.alm.wiki</groupId>
             <artifactId>sidecar</artifactId>
             <version>${polarion.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.tika</groupId>
+            <artifactId>tika-core</artifactId>
+            <version>${tika.version}</version>
             <scope>provided</scope>
         </dependency>
 

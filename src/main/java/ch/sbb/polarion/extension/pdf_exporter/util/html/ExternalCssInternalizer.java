@@ -2,14 +2,15 @@ package ch.sbb.polarion.extension.pdf_exporter.util.html;
 
 import ch.sbb.polarion.extension.generic.regex.RegexMatcher;
 import ch.sbb.polarion.extension.pdf_exporter.util.FileResourceProvider;
+import ch.sbb.polarion.extension.pdf_exporter.util.MediaUtils;
 import com.polarion.core.util.StringUtils;
 
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 public class ExternalCssInternalizer implements LinkInternalizer {
 
-    private static final String URL_REGEX = "url\\(\\s*([\"'])?(?<url>.*?)\\1?\\s*\\)";
     private static final String DATA_PRECEDENCE = "data-precedence";
     private static final String HREF = "href";
     private final FileResourceProvider fileResourceProvider;
@@ -37,6 +38,7 @@ public class ExternalCssInternalizer implements LinkInternalizer {
 
         String cssContent = new String(fileResourceProvider.getResourceAsBytes(url));
         cssContent = processRelativeUrls(url, cssContent);
+        cssContent = MediaUtils.inlineBase64Resources(cssContent, fileResourceProvider);
         inlinedContent.append(cssContent);
         inlinedContent.append("</style>");
 
@@ -49,9 +51,9 @@ public class ExternalCssInternalizer implements LinkInternalizer {
             return cssContent;
         }
         String resourcePath = resourceUrl.substring(0, lastSlashPosition + 1);
-        return RegexMatcher.get(URL_REGEX).useJavaUtil().replace(cssContent, engine -> {
+        return RegexMatcher.get(MediaUtils.URL_REGEX).useJavaUtil().replace(cssContent, engine -> {
             String url = engine.group("url");
-            return url.startsWith("/") || url.toLowerCase().startsWith("http:") || url.toLowerCase().startsWith("https:") ? null :
+            return Stream.of("/", "http:", "https:", MediaUtils.DATA_URL_PREFIX).anyMatch(url::startsWith) ? null :
                     "url(%s%s)".formatted(resourcePath, url);
         });
     }

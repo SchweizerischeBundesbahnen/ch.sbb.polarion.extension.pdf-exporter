@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN">
+	<Appenders>
+		<!-- Console Appender -->
+		<Console name="Console" target="SYSTEM_OUT">
+			<PatternLayout pattern="%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"/>
+		</Console>
+
+		<!-- InMemoryAppender -->
+		<InMemoryAppender name="InMemoryAppender"/>
+
+	</Appenders>
+
+	<Loggers>
+		<Root level="DEBUG">
+			<AppenderRef ref="Console"/>
+			<AppenderRef ref="InMemoryAppender"/>
+		</Root>
+
+		<Logger name="com.example.MyClass" level="DEBUG" additivity="false">
+			<AppenderRef ref="Console"/>
+			<AppenderRef ref="InMemoryAppender"/>
+		</Logger>
+	</Loggers>
+</Configuration>

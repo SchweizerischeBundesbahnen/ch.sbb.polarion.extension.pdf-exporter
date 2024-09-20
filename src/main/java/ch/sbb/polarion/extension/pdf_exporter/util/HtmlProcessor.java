@@ -19,13 +19,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
 
-import java.io.BufferedInputStream;
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
-import java.net.URLConnection;
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
-import java.util.Base64;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
@@ -192,8 +186,8 @@ public class HtmlProcessor {
                 yield removeFloatLeftFromReports(processingHtml);
             }
         };
-        html = replaceImagesAsBase64Encoded(html);
-        html = removeSvgUnsupportedFeatureHint(html); //note that there is one more replacement attempt before replacing images with base64 representation
+        html = replaceResourcesAsBase64Encoded(html);
+        html = MediaUtils.removeSvgUnsupportedFeatureHint(html); //note that there is one more replacement attempt before replacing images with base64 representation
         html = properTableHeads(html);
         html = cleanExtraTableContent(html);
         html = switch (exportParams.getDocumentType()) {
@@ -980,56 +974,12 @@ public class HtmlProcessor {
 
     @SneakyThrows
     @SuppressWarnings({"java:S5852", "java:S5857"}) //need by design
-    public String replaceImagesAsBase64Encoded(String html) {
-        StringBuilder result = new StringBuilder();
-
-        //Retrieves data of 'src' attribute from 'img' tags
-        IRegexEngine imageRegexEngine = RegexMatcher.get("<img[^<>]*src=(\"|')(?<url>[^(\"|')]*)(\"|')").createEngine(html);
-        while (imageRegexEngine.find()) {
-            String url = imageRegexEngine.group("url");
-            if (url.startsWith("data:")) {
-                continue;
-            }
-            byte[] imgBytes = fileResourceProvider.getResourceAsBytes(url.replace("%5F", "_")); // Replace encoded underscore symbol in 'src' attribute of images
-            if (imgBytes != null && imgBytes.length != 0) { // Don't make any manipulations if image wasn't resolved
-                try (InputStream is = new BufferedInputStream(new ByteArrayInputStream(imgBytes))) {
-                    String mimeType = URLConnection.guessContentTypeFromStream(is);
-
-                    // looks like sometimes mime type for svg isn't recognized
-                    if (url.contains(".svg") && (mimeType == null || mimeType.equals(MIME_TYPE_SVG))) {
-                        imgBytes = processPossibleSvgImage(imgBytes);
-                    }
-
-                    String encodedImage = String.format("data:%s;base64, %s", mimeType, Base64.getEncoder().encodeToString(imgBytes));
-
-                    imageRegexEngine.appendReplacement(result, imageRegexEngine.group().replace(url, encodedImage));
-                }
-            }
-        }
-        imageRegexEngine.appendTail(result);
-
-        return result.toString();
+    public String replaceResourcesAsBase64Encoded(String html) {
+        return MediaUtils.inlineBase64Resources(html, fileResourceProvider);
     }
 
     public String internalizeLinks(String html) {
         return httpLinksHelper.internalizeLinks(html);
-    }
-
-    @VisibleForTesting
-    @SuppressWarnings("squid:S1166") // no need to log or rethrow exception by design
-    public byte[] processPossibleSvgImage(byte[] possibleSvgImageBytes) {
-        try {
-            String svgContent = new String(possibleSvgImageBytes, StandardCharsets.UTF_8);
-            return removeSvgUnsupportedFeatureHint(svgContent).getBytes(StandardCharsets.UTF_8);
-        } catch (Exception e) {
-            // not a valid string, just nvm
-        }
-        return possibleSvgImageBytes;
-    }
-
-    @VisibleForTesting
-    public String removeSvgUnsupportedFeatureHint(String html) {
-        return html.replaceAll("(?s)<switch>[^<]*?<g requiredFeatures=\"[^\"]+?\"/>.*?</switch>", "");
     }
 
     private boolean hasCustomPageBreaks(String html) {

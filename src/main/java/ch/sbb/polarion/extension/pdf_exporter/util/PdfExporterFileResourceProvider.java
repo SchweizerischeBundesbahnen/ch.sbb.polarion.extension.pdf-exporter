@@ -6,9 +6,19 @@ import com.polarion.alm.tracker.internal.url.PolarionUrlResolver;
 import com.polarion.core.util.StreamUtils;
 import com.polarion.core.util.logging.Logger;
 import com.polarion.platform.internal.ExecutionThreadMonitor;
+import lombok.SneakyThrows;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.VisibleForTesting;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.Base64;
+import java.util.List;
+
+import static ch.sbb.polarion.extension.pdf_exporter.util.exporter.Constants.MIME_TYPE_SVG;
 
 /**
  * Initial code taken from {@link com.polarion.alm.tracker.web.internal.server.CustomFileResourceProvider}
@@ -16,9 +26,37 @@ import java.io.InputStream;
 public class PdfExporterFileResourceProvider implements FileResourceProvider {
 
     private static final Logger logger = Logger.getLogger(PdfExporterFileResourceProvider.class);
-    private static final IUrlResolver[] resolvers = {PolarionUrlResolver.getInstance(), new CustomImageUrlResolver()};
 
-    public byte[] getResourceAsBytes(String resource) {
+    private final List<IUrlResolver> resolvers;
+
+    public PdfExporterFileResourceProvider() {
+        this.resolvers = Arrays.asList(PolarionUrlResolver.getInstance(), new CustomImageUrlResolver());
+    }
+
+    @VisibleForTesting
+    public PdfExporterFileResourceProvider(List<IUrlResolver> resolvers) {
+        this.resolvers = resolvers;
+    }
+
+    @SneakyThrows
+    @Override
+    @Nullable
+    public String getResourceAsBase64String(@NotNull String resource) {
+        if (MediaUtils.isDataUrl(resource)) { // do nothing if it's already has 'data' url
+            return resource;
+        }
+        byte[] resourceBytes = getResourceAsBytes(resource);
+        if (resourceBytes != null && resourceBytes.length != 0) { // Don't make any manipulations if resource wasn't resolved
+            String mimeType = MediaUtils.guessMimeType(resource, resourceBytes);
+            if (MIME_TYPE_SVG.equals(mimeType)) {
+                resourceBytes = processPossibleSvgImage(resourceBytes);
+            }
+            return String.format("data:%s;base64,%s", mimeType, Base64.getEncoder().encodeToString(resourceBytes));
+        }
+        return null;
+    }
+
+    public byte[] getResourceAsBytes(@NotNull String resource) {
         // Non-default icons are getting via project and thus requires open transaction
         return TransactionalExecutor.executeSafelyInReadOnlyTransaction(transaction -> {
             try {
@@ -45,6 +83,18 @@ public class PdfExporterFileResourceProvider implements FileResourceProvider {
             }
         }
         return new byte[0];
+    }
+
+    @VisibleForTesting
+    @SuppressWarnings("squid:S1166") // no need to log or rethrow exception by design
+    public byte[] processPossibleSvgImage(byte[] possibleSvgImageBytes) {
+        try {
+            String svgContent = new String(possibleSvgImageBytes, StandardCharsets.UTF_8);
+            return MediaUtils.removeSvgUnsupportedFeatureHint(svgContent).getBytes(StandardCharsets.UTF_8);
+        } catch (Exception e) {
+            // not a valid string, just nvm
+        }
+        return possibleSvgImageBytes;
     }
 }
 
