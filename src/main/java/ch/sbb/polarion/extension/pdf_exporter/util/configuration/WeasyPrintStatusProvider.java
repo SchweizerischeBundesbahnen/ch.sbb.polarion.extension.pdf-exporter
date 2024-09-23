@@ -13,19 +13,24 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
+import java.util.Map;
 
 @Discoverable
 public class WeasyPrintStatusProvider extends ConfigurationStatusProvider {
 
-    public static final List<String> WEASY_PRINT = List.of("WeasyPrint Python", "WeasyPrint", "WeasyPrint Service");
-
-    private static @NotNull ConfigurationStatus createWeasyPrintStatus(@NotNull String name, @Nullable String description) {
-        if (description == null) {
-            return new ConfigurationStatus(name, Status.WARNING, "Unknown");
-        } else {
-            return new ConfigurationStatus(name, Status.OK, description);
-        }
+    private enum WeasyPrintServiceInfo {
+        VERSION,
+        PYTHON,
+        WEASYPRINT,
+        CHROMIUM
     }
+
+    private static final Map<WeasyPrintServiceInfo, String> WEASY_PRINT_SERVICE_INFO = Map.of(
+            WeasyPrintServiceInfo.VERSION, "WeasyPrint Service",
+            WeasyPrintServiceInfo.PYTHON, "WeasyPrint Service: Python",
+            WeasyPrintServiceInfo.WEASYPRINT, "WeasyPrint Service: WeasyPrint",
+            WeasyPrintServiceInfo.CHROMIUM, "WeasyPrint Service: Chromium"
+    );
 
     @Override
     public @NotNull List<ConfigurationStatus> getStatuses(@NotNull Context context) {
@@ -37,12 +42,21 @@ public class WeasyPrintStatusProvider extends ConfigurationStatusProvider {
             htmlToPdfConverter.convert("<html><body>test html</body></html>", Orientation.PORTRAIT, PaperSize.A4);
 
             return List.of(
-                    createWeasyPrintStatus(WEASY_PRINT.get(0), weasyPrintInfo.getPython()),
-                    createWeasyPrintStatus(WEASY_PRINT.get(1), weasyPrintInfo.getWeasyprint()),
-                    createWeasyPrintStatus(WEASY_PRINT.get(2), weasyPrintInfo.getWeasyprintService())
+                    createWeasyPrintStatus(WEASY_PRINT_SERVICE_INFO.get(WeasyPrintServiceInfo.VERSION), weasyPrintInfo.getWeasyprintService() + " (" + weasyPrintInfo.getTimestamp() + ")"),
+                    createWeasyPrintStatus(WEASY_PRINT_SERVICE_INFO.get(WeasyPrintServiceInfo.PYTHON), weasyPrintInfo.getPython()),
+                    createWeasyPrintStatus(WEASY_PRINT_SERVICE_INFO.get(WeasyPrintServiceInfo.WEASYPRINT), weasyPrintInfo.getWeasyprint()),
+                    createWeasyPrintStatus(WEASY_PRINT_SERVICE_INFO.get(WeasyPrintServiceInfo.CHROMIUM), weasyPrintInfo.getChromium())
             );
         } catch (Exception e) {
-            return List.of(new ConfigurationStatus(WEASY_PRINT.get(1), Status.ERROR, e.getMessage()));
+            return List.of(new ConfigurationStatus(WEASY_PRINT_SERVICE_INFO.get(WeasyPrintServiceInfo.VERSION), Status.ERROR, e.getMessage()));
+        }
+    }
+
+    private static @NotNull ConfigurationStatus createWeasyPrintStatus(@NotNull String name, @Nullable String description) {
+        if (description == null || description.isBlank()) {
+            return new ConfigurationStatus(name, Status.WARNING, "Unknown");
+        } else {
+            return new ConfigurationStatus(name, Status.OK, description);
         }
     }
 }
