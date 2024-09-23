@@ -27,7 +27,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -37,7 +36,7 @@ import static org.mockito.Mockito.*;
 class HtmlProcessorTest {
 
     @Mock
-    private FileResourceProvider fileResourceProvider;
+    private PdfExporterFileResourceProvider fileResourceProvider;
     @Mock
     private LocalizationSettings localizationSettings;
     @Mock
@@ -257,7 +256,7 @@ class HtmlProcessorTest {
     @SneakyThrows
     void nothingToReplaceTest() {
         String html = "<div></div>";
-        String result = processor.replaceImagesAsBase64Encoded(html);
+        String result = processor.replaceResourcesAsBase64Encoded(html);
         assertEquals("<div></div>", result);
     }
 
@@ -265,30 +264,9 @@ class HtmlProcessorTest {
     @SneakyThrows
     void replaceImagesAsBase64EncodedTest() {
         String html = "<div><img id=\"image\" src=\"http://localhost/some-path/img.png\"/></div>";
-        byte[] imgBytes;
-        try (InputStream is = this.getClass().getResourceAsStream("/test_img.png")) {
-            imgBytes = is != null ? is.readAllBytes() : new byte[0];
-        }
-        when(fileResourceProvider.getResourceAsBytes(any())).thenReturn(imgBytes);
-        String result = processor.replaceImagesAsBase64Encoded(html);
-        assertEquals("<div><img id=\"image\" src=\"data:image/png;base64, " + Base64.getEncoder().encodeToString(imgBytes) + "\"/></div>", result);
-    }
-
-    @Test
-    @SneakyThrows
-    void replaceImagesUrlUnderscoreReplacementTest() {
-        // feed the url with the encoded underscore in the src attribute
-        String html = "<div><img id=\"image\" src=\"http://localhost/some-path/img%5Fname.png\"/></div>";
-        byte[] imgBytes;
-        try (InputStream is = this.getClass().getResourceAsStream("/test_img.png")) {
-            imgBytes = is != null ? is.readAllBytes() : new byte[0];
-        }
-        // return proper data only for URL containing decoded underscore symbol
-        lenient().doReturn(imgBytes).when(fileResourceProvider).getResourceAsBytes(eq("http://localhost/some-path/img_name.png"));
-        // return empty content for non-escaped URL
-        lenient().doReturn(new byte[0]).when(fileResourceProvider).getResourceAsBytes("http://localhost/some-path/img%5Fname.png");
-        String result = processor.replaceImagesAsBase64Encoded(html);
-        assertEquals("<div><img id=\"image\" src=\"data:image/png;base64, " + Base64.getEncoder().encodeToString(imgBytes) + "\"/></div>", result);
+        when(fileResourceProvider.getResourceAsBase64String(any())).thenReturn("base64Data");
+        String result = processor.replaceResourcesAsBase64Encoded(html);
+        assertEquals("<div><img id=\"image\" src=\"base64Data\"/></div>", result);
     }
 
     @Test
@@ -297,49 +275,17 @@ class HtmlProcessorTest {
         String html = "<div><img id=\"image1\" src=\"http://localhost/some-path/img1.svg\"/> <img id='image2' src='http://localhost/some-path/img2.svg'/> <img id='image1' src='http://localhost/some-path/img1.svg'/></div>";
         byte[] imgBytes;
         try (InputStream is = new ByteArrayInputStream("<svg><switch><g requiredFeatures=\"http://www.w3.org/TR/SVG11/feature#Extensibility\"/></switch></svg>".getBytes(StandardCharsets.UTF_8))) {
-            imgBytes = is != null ? is.readAllBytes() : new byte[0];
+            imgBytes = is.readAllBytes();
         }
         when(fileResourceProvider.getResourceAsBytes(any())).thenReturn(imgBytes);
-        String result = processor.replaceImagesAsBase64Encoded(html);
-        String expected = "<div><img id=\"image1\" src=\"data:null;base64, " + Base64.getEncoder().encodeToString("<svg></svg>".getBytes(StandardCharsets.UTF_8)) + "\"/> " +
-                "<img id='image2' src='data:null;base64, " + Base64.getEncoder().encodeToString("<svg></svg>".getBytes(StandardCharsets.UTF_8)) + "'/> " +
-                "<img id='image1' src='data:null;base64, " + Base64.getEncoder().encodeToString("<svg></svg>".getBytes(StandardCharsets.UTF_8)) + "'/></div>";
+        when(fileResourceProvider.getResourceAsBase64String(any())).thenCallRealMethod();
+        when(fileResourceProvider.processPossibleSvgImage(any())).thenCallRealMethod();
+        String result = processor.replaceResourcesAsBase64Encoded(html);
+        String expected = "<div><img id=\"image1\" src=\"data:image/svg+xml;base64," + Base64.getEncoder().encodeToString("<svg></svg>".getBytes(StandardCharsets.UTF_8)) + "\"/> " +
+                "<img id='image2' src='data:image/svg+xml;base64," + Base64.getEncoder().encodeToString("<svg></svg>".getBytes(StandardCharsets.UTF_8)) + "'/> " +
+                "<img id='image1' src='data:image/svg+xml;base64," + Base64.getEncoder().encodeToString("<svg></svg>".getBytes(StandardCharsets.UTF_8)) + "'/></div>";
         assertEquals(expected, result);
     }
-
-    @Test
-    void processPossibleSvgImageTest() {
-        byte[] basicString = "basic".getBytes(StandardCharsets.UTF_8);
-        assertArrayEquals(basicString, processor.processPossibleSvgImage(basicString));
-    }
-
-    @Test
-    void removeSvgUnsupportedFeatureHintTest() {
-        // svg sample from polarion diagram v23.10
-        assertEquals("<svg></svg>", processor.removeSvgUnsupportedFeatureHint("<svg><switch>" +
-                "<g requiredFeatures=\"http://www.w3.org/TR/SVG11/feature#Extensibility\"/>" +
-                "<a transform=\"translate(0,-5)\" xlink:href=\"https://www.diagrams.net/doc/faq/svg-export-text-problems\" target=\"_blank\">" +
-                "<text text-anchor=\"middle\" font-size=\"10px\" x=\"50%\" y=\"100%\">Text is not SVG - cannot display</text>" +
-                "<title>https://www.diagrams.net/doc/faq/svg-export-text-problems</title></a></switch>" +
-                "</svg>"));
-
-        // alternative hint from https://github.com/jgraph/drawio/issues/774 (also here is extra space before g)
-        assertEquals("<svg></svg>", processor.removeSvgUnsupportedFeatureHint("<svg><switch> " +
-                "<g requiredFeatures=\"http://www.w3.org/TR/SVG11/feature#Extensibility\"/>" +
-                "<a transform=\"translate(0,-5)\" xlink:href=\"https://desk.draw.io/support/solutions/articles/16000042487\" target=\"_blank\">" +
-                "<text text-anchor=\"middle\" font-size=\"10px\" x=\"50%\" y=\"100%\">Viewer does not support full SVG 1.1</text>" +
-                "</a></switch>" +
-                "</svg>"));
-
-        // potential issue with another feature, main idea here is to cut down all requiredFeatures checks no matter which feature it is
-        assertEquals("<svg></svg>", processor.removeSvgUnsupportedFeatureHint("<svg><switch>" +
-                "<g requiredFeatures=\"http://www.w3.org/TR/SVG11/feature#Gradient\"/>" +
-                "<a transform=\"translate(0,-5)\" xlink:href=\"https://some.url\" target=\"_blank\">" +
-                "<text text-anchor=\"middle\" font-size=\"10px\" x=\"50%\" y=\"100%\">Some warning</text>" +
-                "</a></switch>" +
-                "</svg>"));
-    }
-
     @Test
     @SneakyThrows
     void processHtmlForPDFTestCutEmptyWorkItemAttributesDisabled() {

@@ -295,7 +295,7 @@ const ExportPdf = {
                 for (const page of result.invalidPages) {
                     let img = document.createElement("img");
                     img.className = 'validate-result-img';
-                    img.src = 'data:image/png;base64, ' + page.content;
+                    img.src = 'data:image/png;base64,' + page.content;
                     img.onclick = function () {
                         this.classList.toggle("img-zoomed");
                     };

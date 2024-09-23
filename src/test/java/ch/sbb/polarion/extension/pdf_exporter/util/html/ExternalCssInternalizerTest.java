@@ -58,7 +58,13 @@ class ExternalCssInternalizerTest {
                   src: url('../fonts/some-font.woff');
                 }
                 @font-face {
-                  src: url('relative2/some-font2.woff');
+                  src: url('relative/quotes/some-font2.woff');
+                }
+                @font-face {
+                  src: url("relative/double/quotes/some-font3.woff");
+                }
+                @font-face {
+                  src: url(relative/no/quotes/some-font4.woff);
                 }
                 @font-face {
                   src: url('/non-relative/fonts/some-font3.woff');
@@ -72,7 +78,9 @@ class ExternalCssInternalizerTest {
         assertThat(result).isNotEmpty();
         assertThat(result.get()).contains(
                 "src: url(/some/location/../fonts/some-font.woff)",
-                "src: url(/some/location/relative2/some-font2.woff)",
+                "src: url(/some/location/relative/quotes/some-font2.woff)",
+                "src: url(/some/location/relative/double/quotes/some-font3.woff)",
+                "src: url(/some/location/relative/no/quotes/some-font4.woff)",
                 "src: url('/non-relative/fonts/some-font3.woff')"
         );
     }

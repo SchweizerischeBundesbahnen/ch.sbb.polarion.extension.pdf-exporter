@@ -93,7 +93,7 @@ class PdfConverterTest {
         when(pdfTemplateProcessor.processUsing(eq(exportParams), eq("testDocument"), eq("css content"), anyString())).thenReturn("test html content");
         when(weasyPrintServiceConnector.convertToPdf("test html content", new WeasyPrintOptions())).thenReturn("test document content".getBytes());
         when(htmlProcessor.internalizeLinks(anyString())).thenAnswer(a -> a.getArgument(0));
-        when(htmlProcessor.replaceImagesAsBase64Encoded(anyString())).thenAnswer(a -> a.getArgument(0));
+        when(htmlProcessor.replaceResourcesAsBase64Encoded(anyString())).thenAnswer(a -> a.getArgument(0));
 
         // Act
         byte[] result = pdfConverter.convertToPdf(exportParams, null);
@@ -128,7 +128,7 @@ class PdfConverterTest {
         when(pdfExporterPolarionService.getPolarionProductName()).thenReturn("testProductName");
         when(pdfExporterPolarionService.getPolarionVersion()).thenReturn("testVersion");
         lenient().when(module.getCustomField("customField")).thenReturn("customValue");
-        when(htmlProcessor.replaceImagesAsBase64Encoded(anyString())).thenAnswer(a -> a.getArgument(0));
+        when(htmlProcessor.replaceResourcesAsBase64Encoded(anyString())).thenAnswer(a -> a.getArgument(0));
 
         String cssContent = pdfConverter.getCssContent(documentData, exportParams);
 
@@ -167,7 +167,7 @@ class PdfConverterTest {
                 "-xfooter-right-"));
 
         when(velocityEvaluator.evaluateVelocityExpressions(eq(documentData), anyString())).thenAnswer(a -> a.getArguments()[1]);
-        when(htmlProcessor.replaceImagesAsBase64Encoded(anyString())).thenAnswer(a -> a.getArgument(0));
+        when(htmlProcessor.replaceResourcesAsBase64Encoded(anyString())).thenAnswer(a -> a.getArgument(0));
 
         // Act
         PdfConverter pdfConverter = new PdfConverter(null, headerFooterSettings, null, null, placeholderProcessor, velocityEvaluator, null, null, htmlProcessor, null);
