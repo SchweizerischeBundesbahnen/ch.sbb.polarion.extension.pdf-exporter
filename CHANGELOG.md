@@ -1,5 +1,12 @@
 # Changelog
 
+## [7.0.1](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v7.0.0...v7.0.1) (2024-09-20)
+
+
+### Bug Fixes
+
+* trim export file name ([#213](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/213)) ([930bb97](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/930bb976485d87369290b9313ca8ba6e57088d50))
+
 ## [7.0.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v6.2.1...v7.0.0) (2024-09-17)
 
 

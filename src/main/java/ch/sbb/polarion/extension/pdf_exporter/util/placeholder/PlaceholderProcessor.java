@@ -31,18 +31,18 @@ public class PlaceholderProcessor {
         this.documentDataHelper = documentDataHelper;
     }
 
-    public String replacePlaceholders(DocumentData<? extends IUniqueObject> documentData, ExportParams exportParams, String template) {
+    public @NotNull String replacePlaceholders(@NotNull DocumentData<? extends IUniqueObject> documentData, @NotNull ExportParams exportParams, @NotNull String template) {
         PlaceholderValues placeholderValues = getPlaceholderValues(documentData, exportParams, template);
         return processPlaceholders(template, placeholderValues);
     }
 
-    public List<String> replacePlaceholders(DocumentData<? extends IUniqueObject> documentData, ExportParams exportParams, List<String> templates) {
+    public @NotNull List<String> replacePlaceholders(@NotNull DocumentData<? extends IUniqueObject> documentData, @NotNull ExportParams exportParams, @NotNull List<String> templates) {
         PlaceholderValues placeholderValues = getPlaceholderValues(documentData, exportParams, templates);
 
         return processPlaceholders(templates, placeholderValues);
     }
 
-    public PlaceholderValues getPlaceholderValues(DocumentData<? extends IUniqueObject> documentData, ExportParams exportParams, List<String> templates) {
+    public @NotNull PlaceholderValues getPlaceholderValues(@NotNull DocumentData<? extends IUniqueObject> documentData, @NotNull ExportParams exportParams, @NotNull List<String> templates) {
         String revision = exportParams.getRevision() != null ? exportParams.getRevision() : documentData.getLastRevision();
         String baseLineName = documentData.getBaselineName();
 
@@ -63,17 +63,17 @@ public class PlaceholderProcessor {
         return placeholderValues;
     }
 
-    public PlaceholderValues getPlaceholderValues(DocumentData<? extends IUniqueObject> documentData, ExportParams exportParams, String template) {
+    public @NotNull PlaceholderValues getPlaceholderValues(@NotNull DocumentData<? extends IUniqueObject> documentData, @NotNull ExportParams exportParams, @NotNull String template) {
         return getPlaceholderValues(documentData, exportParams, List.of(template));
     }
 
-    public Set<String> extractCustomPlaceholders(List<String> contents) {
+    public @NotNull Set<String> extractCustomPlaceholders(@NotNull List<String> contents) {
         Set<String> allPlaceholders = new TreeSet<>();
         contents.forEach(section -> allPlaceholders.addAll(extractCustomPlaceholders(section)));
         return allPlaceholders;
     }
 
-    public Set<String> extractCustomPlaceholders(String section) {
+    public @NotNull Set<String> extractCustomPlaceholders(@NotNull String section) {
         Set<String> placeholders = new HashSet<>();
         RegexMatcher.get("\\{\\{\\s*(?<placeholder>\\w+)\\s*\\}\\}").processEntry(section, regexEngine -> {
             String placeholder = regexEngine.group("placeholder");
@@ -90,7 +90,7 @@ public class PlaceholderProcessor {
                 .toList();
     }
 
-    public String processPlaceholders(@NotNull String template, @NotNull PlaceholderValues placeholderValues) {
+    public @NotNull String processPlaceholders(@NotNull String template, @NotNull PlaceholderValues placeholderValues) {
         Map<String, String> variables = placeholderValues.getAllVariables();
 
         String processedText = template;
