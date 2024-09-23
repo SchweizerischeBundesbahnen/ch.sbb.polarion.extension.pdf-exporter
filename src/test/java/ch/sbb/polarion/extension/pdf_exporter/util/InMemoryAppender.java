@@ -16,7 +16,7 @@ import java.util.List;
 
 /**
  * Allows to check which data was logged by the Polarion logger.
- * WARNING: in order to be properly registered this appender must be configured in the log4j2.xml in the classpath
+ * WARNING: in order to be properly registered this appender must be configured in the log4j2.xml on the classpath
  */
 @SuppressWarnings("unused")
 @Plugin(name = "InMemoryAppender", category = Core.CATEGORY_NAME, elementType = Appender.ELEMENT_TYPE, printObject = true)

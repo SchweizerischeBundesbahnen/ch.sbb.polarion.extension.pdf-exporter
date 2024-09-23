@@ -16,10 +16,5 @@
 			<AppenderRef ref="Console"/>
 			<AppenderRef ref="InMemoryAppender"/>
 		</Root>
-
-		<Logger name="com.example.MyClass" level="DEBUG" additivity="false">
-			<AppenderRef ref="Console"/>
-			<AppenderRef ref="InMemoryAppender"/>
-		</Logger>
 	</Loggers>
 </Configuration>
