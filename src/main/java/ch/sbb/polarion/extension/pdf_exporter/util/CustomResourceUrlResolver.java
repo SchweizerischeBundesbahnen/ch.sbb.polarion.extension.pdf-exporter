@@ -15,7 +15,10 @@ import static java.net.HttpURLConnection.*;
 /**
  * Custom version of {@link com.polarion.alm.tracker.internal.url.GenericUrlResolver} with the redirect support.
  */
-public class CustomImageUrlResolver implements IUrlResolver {
+public class CustomResourceUrlResolver implements IUrlResolver {
+
+    private static final int CONNECTION_TIMEOUT_MS = 3_000;
+    private static final int READ_TIMEOUT_MS = 3_000;
 
     public boolean canResolve(@NotNull String url) {
         return url.startsWith("http://") || url.startsWith("https://");
@@ -35,6 +38,8 @@ public class CustomImageUrlResolver implements IUrlResolver {
     @VisibleForTesting
     public InputStream resolveImpl(@NotNull URL url) {
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+        connection.setConnectTimeout(CONNECTION_TIMEOUT_MS);
+        connection.setReadTimeout(READ_TIMEOUT_MS);
         connection.connect();
         int responseCode = connection.getResponseCode();
         if (responseCode == HTTP_OK) {

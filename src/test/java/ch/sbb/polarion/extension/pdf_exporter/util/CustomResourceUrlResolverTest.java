@@ -14,12 +14,12 @@ import static org.mockito.Mockito.*;
 import static org.mockito.Mockito.times;
 
 @ExtendWith(MockitoExtension.class)
-class CustomImageUrlResolverTest {
+class CustomResourceUrlResolverTest {
 
     @Test
     @SneakyThrows
     void replaceImagesUrlUnderscoreAndSpaceReplacementTest() {
-        CustomImageUrlResolver resolver = mock(CustomImageUrlResolver.class);
+        CustomResourceUrlResolver resolver = mock(CustomResourceUrlResolver.class);
         InputStream is = mock(InputStream.class);
         when(resolver.resolve(any())).thenCallRealMethod();
         when(resolver.resolveImpl(any())).thenReturn(is);

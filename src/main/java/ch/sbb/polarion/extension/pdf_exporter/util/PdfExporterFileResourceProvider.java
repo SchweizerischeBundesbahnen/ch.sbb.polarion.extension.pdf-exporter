@@ -1,7 +1,10 @@
 package ch.sbb.polarion.extension.pdf_exporter.util;
 
 import com.polarion.alm.shared.api.transaction.TransactionalExecutor;
+import com.polarion.alm.tracker.internal.url.GenericUrlResolver;
+import com.polarion.alm.tracker.internal.url.IAttachmentUrlResolver;
 import com.polarion.alm.tracker.internal.url.IUrlResolver;
+import com.polarion.alm.tracker.internal.url.ParentUrlResolver;
 import com.polarion.alm.tracker.internal.url.PolarionUrlResolver;
 import com.polarion.core.util.StreamUtils;
 import com.polarion.core.util.logging.Logger;
@@ -13,6 +16,7 @@ import org.jetbrains.annotations.VisibleForTesting;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Base64;
@@ -30,7 +34,7 @@ public class PdfExporterFileResourceProvider implements FileResourceProvider {
     private final List<IUrlResolver> resolvers;
 
     public PdfExporterFileResourceProvider() {
-        this.resolvers = Arrays.asList(PolarionUrlResolver.getInstance(), new CustomImageUrlResolver());
+        this.resolvers = Arrays.asList(removeGenericUrlResolver(PolarionUrlResolver.getInstance()), new CustomResourceUrlResolver());
     }
 
     @VisibleForTesting
@@ -95,6 +99,19 @@ public class PdfExporterFileResourceProvider implements FileResourceProvider {
             // not a valid string, just nvm
         }
         return possibleSvgImageBytes;
+    }
+
+    /**
+     * Remove GenericUrlResolver because it has no explicit timeouts declared
+     */
+    @SneakyThrows
+    private IUrlResolver removeGenericUrlResolver(IAttachmentUrlResolver urlResolver) {
+        if (urlResolver instanceof ParentUrlResolver parentUrlResolver) {
+            Field childResolversField = ParentUrlResolver.class.getDeclaredField("childResolvers");
+            childResolversField.setAccessible(true);
+            ((List<?>) childResolversField.get(parentUrlResolver)).removeIf(resolver -> resolver instanceof GenericUrlResolver);
+        }
+        return urlResolver;
     }
 }
 
