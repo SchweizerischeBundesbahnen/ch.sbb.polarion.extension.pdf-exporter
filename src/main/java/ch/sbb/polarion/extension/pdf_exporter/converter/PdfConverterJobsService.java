@@ -2,6 +2,8 @@ package ch.sbb.polarion.extension.pdf_exporter.converter;
 
 import ch.sbb.polarion.extension.generic.rest.filter.LogoutFilter;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
+import ch.sbb.polarion.extension.pdf_exporter.service.PdfExporterPolarionService;
+import ch.sbb.polarion.extension.pdf_exporter.util.DocumentFileNameHelper;
 import com.polarion.core.util.logging.Logger;
 import com.polarion.platform.security.ISecurityService;
 import lombok.Builder;
@@ -33,7 +35,6 @@ public class PdfConverterJobsService {
     private static final Map<String, String> failedJobsReasons = new ConcurrentHashMap<>();
 
     private final PdfConverter pdfConverter;
-
     private final ISecurityService securityService;
 
     public PdfConverterJobsService(PdfConverter pdfConverter, ISecurityService securityService) {
@@ -72,7 +73,10 @@ public class PdfConverterJobsService {
                     asyncConversionJob.completeExceptionally(e);
                     return null;
                 });
-        JobDetails jobDetails = JobDetails.builder().future(asyncConversionJob).startingTime(Instant.now()).build();
+        JobDetails jobDetails = JobDetails.builder()
+                .future(asyncConversionJob)
+                .exportParams(exportParams)
+                .startingTime(Instant.now()).build();
         jobs.put(jobId, jobDetails);
         return jobId;
     }
@@ -112,6 +116,14 @@ public class PdfConverterJobsService {
         }
     }
 
+    public ExportParams getJobParams(String jobId) {
+        JobDetails jobDetails = jobs.get(jobId);
+        if (jobDetails == null) {
+            throw new NoSuchElementException("Converter Job is unknown: " + jobId);
+        }
+        return jobDetails.exportParams;
+    }
+
     public Map<String, JobState> getAllJobsStates() {
         return jobs.keySet().stream()
                 .collect(Collectors.toMap(Function.identity(), this::getJobState));
@@ -141,6 +153,7 @@ public class PdfConverterJobsService {
     @Builder
     public record JobDetails(
             CompletableFuture<byte[]> future,
+            ExportParams exportParams,
             Instant startingTime) {
     }
 

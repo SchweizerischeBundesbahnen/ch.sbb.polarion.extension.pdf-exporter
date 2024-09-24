@@ -56,12 +56,24 @@ const ExportCommon = {
                     console.log('Async PDF conversion: still in progress, retrying...');
                     this.pullAndGetResultPdf(url, successCallback, errorCallback);
                 } else if (request.status === 200) {
-                    successCallback(request.response);
+                    const contentDisposition = request.getResponseHeader("Content-Disposition") || "";
+                    const fileName = contentDisposition.includes("filename=") ? contentDisposition.split("filename=")[1] : null;
+                    successCallback(request.response, fileName);
                 }
             },
             onError: (status, errorMessage, request) => {
                 errorCallback(request.response);
             }
         });
+    },
+
+    buildMicromodal: function(id, content) {
+        const popup = document.createElement('div');
+        popup.classList.add("modal");
+        popup.classList.add("micromodal-slide");
+        popup.id = id;
+        popup.setAttribute("aria-hidden", "true");
+        popup.innerHTML = content;
+        return popup;
     },
 }

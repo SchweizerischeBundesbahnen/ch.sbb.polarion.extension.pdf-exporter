@@ -1,9 +1,10 @@
 const SELECTED_STYLE_PACKAGE_COOKIE = 'selected-style-package';
 const MAX_PAGE_PREVIEWS = 4;
 
+const POPUP_ID = "pdf-export-modal-popup";
 const POPUP_HTML = `
     <div class="modal__overlay" tabindex="-1" data-micromodal-close>
-        <div class="modal__container pdf-exporter" role="dialog" aria-modal="true" aria-labelledby="pdf-export-modal-popup-title">
+        <div  id="pdf-export-popup" class="modal__container pdf-exporter" role="dialog" aria-modal="true" aria-labelledby="pdf-export-modal-popup-title">
             <header class="modal__header">
                 <h2 class="modal__title" id="pdf-export-modal-popup-title" style="display: flex; justify-content: space-between; width: 100%">
                     <span>Export to PDF</span>
@@ -21,24 +22,19 @@ const POPUP_HTML = `
     </div>
 `;
 
+
 const PdfExporter = {
     exportContext: null,
     documentLanguage: null,
 
     init: function () {
-        const popup = document.createElement('div');
-        popup.classList.add("modal");
-        popup.classList.add("micromodal-slide");
-        popup.id = "pdf-export-modal-popup";
-        popup.setAttribute("aria-hidden", "true");
-        popup.innerHTML = POPUP_HTML;
-        document.body.appendChild(popup);
+        document.body.appendChild(ExportCommon.buildMicromodal(POPUP_ID, POPUP_HTML));
 
         fetch('/polarion/pdf-exporter/html/popupForm.html')
             .then(response => response.text())
             .then(content => {
-                document.querySelector(".modal__container.pdf-exporter .modal__content").innerHTML = content;
-                document.querySelector(".modal__container.pdf-exporter .modal__footer .action-button").style.display = "inline-block";
+                document.querySelector("#pdf-export-popup .modal__content").innerHTML = content;
+                document.querySelector("#pdf-export-popup .modal__footer .action-button").style.display = "inline-block";
             });
     },
 
@@ -47,10 +43,21 @@ const PdfExporter = {
 
         this.hideAlerts();
         this.loadFormData();
-        const reportContext = this.exportContext.getDocumentType() === ExportParams.DocumentType.LIVE_REPORT || this.exportContext.getDocumentType() === ExportParams.DocumentType.TEST_RUN;
+        const documentContext = this.exportContext.getDocumentType() === ExportParams.DocumentType.LIVE_DOC;
         document.querySelectorAll(".modal__container.pdf-exporter .property-wrapper.only-live-doc")
-            .forEach(propertyBlock => propertyBlock.style.display = (reportContext ? "none" : "flex"));
-        MicroModal.show('pdf-export-modal-popup');
+            .forEach(propertyBlock => propertyBlock.style.display = (documentContext ? "flex" : "none"));
+        const mixedContext = this.exportContext.getDocumentType() === ExportParams.DocumentType.MIXED;
+        document.querySelectorAll(".modal__container.pdf-exporter .property-wrapper.not-mixed")
+            .forEach(propertyBlock => propertyBlock.style.display = (mixedContext ? "none" : "flex"));
+        MicroModal.show(POPUP_ID);
+    },
+
+    openPopupForBulkExport: function () {
+        PdfExporter.openPopup({ exportContext: new ExportContext(ExportParams.DocumentType.MIXED) });
+    },
+
+    closePopup: function () {
+        MicroModal.close(POPUP_ID);
     },
 
     loadFormData: function () {
@@ -82,31 +89,12 @@ const PdfExporter = {
                 scope: this.exportContext.getScope(),
                 selectElement: document.getElementById("popup-webhooks-selector")
             }),
+            this.adjustWebhooksVisibility(),
             this.loadLinkRoles(this.exportContext),
             this.loadDocumentLanguage(this.exportContext),
             this.loadFileName(this.exportContext),
-            this.adjustWebhooksVisibility()
         ]).then(() => {
-            let url = `/polarion/pdf-exporter/rest/internal/settings/style-package/suitable-names`
-                + `?spaceId=${this.exportContext.getSpaceId()}&documentName=${this.exportContext.getDocumentName()}`;
-            if (this.exportContext.getProjectId()) {
-                url += `&projectId=${this.exportContext.getProjectId()}`
-            }
-            return this.loadSettingNames({
-                customUrl: url,
-                selectElement: document.getElementById("popup-style-package-select")
-            }).then(() => {
-                const stylePackageSelect = document.getElementById("popup-style-package-select");
-                const valueToPreselect = SbbCommon.getCookie(SELECTED_STYLE_PACKAGE_COOKIE);
-                if (valueToPreselect && this.containsOption(stylePackageSelect, valueToPreselect)) {
-                    stylePackageSelect.value = valueToPreselect;
-                } else if (stylePackageSelect.options.length > 1) {
-                    stylePackageSelect.value = stylePackageSelect.options[1].value;
-                }
-
-                this.onStylePackageChanged();
-                this.actionInProgress({inProgress: false});
-            });
+            return this.loadStylePackages(this.exportContext);
         }).catch((error) => {
             this.showNotification({alertType: "error", message: "Error occurred loading form data" + (error.response.message ? ": " + error.response.message : "")});
             this.actionInProgress({inProgress: false});
@@ -139,8 +127,10 @@ const PdfExporter = {
     },
 
     loadLinkRoles: function (exportContext) {
-        if (exportContext.getDocumentType() === ExportParams.DocumentType.LIVE_REPORT || exportContext.getDocumentType() === ExportParams.DocumentType.TEST_RUN) {
-            return Promise.resolve(); // Skip loading link roles for report
+        if (exportContext.getDocumentType() === ExportParams.DocumentType.LIVE_REPORT
+            || exportContext.getDocumentType() === ExportParams.DocumentType.TEST_RUN
+            || exportContext.getDocumentType() === ExportParams.DocumentType.MIXED) {
+            return Promise.resolve(); // Skip loading link roles for reports, test runs and bulk export
         }
 
         return new Promise((resolve, reject) => {
@@ -163,6 +153,10 @@ const PdfExporter = {
     },
 
     loadFileName: function (exportContext) {
+        if (exportContext.getDocumentType() === ExportParams.DocumentType.MIXED) {
+            return Promise.resolve(); // Skip loading file name for bulk export
+        }
+
         const requestBody = exportContext.toExportParams().toJSON();
 
         return new Promise((resolve, reject) => {
@@ -192,8 +186,10 @@ const PdfExporter = {
     },
 
     loadDocumentLanguage: function (exportContext) {
-        if (exportContext.documentType === ExportParams.DocumentType.LIVE_REPORT || exportContext.documentType === ExportParams.DocumentType.TEST_RUN) {
-            return Promise.resolve(); // Skip loading language for report
+        if (exportContext.documentType === ExportParams.DocumentType.LIVE_REPORT
+            || exportContext.documentType === ExportParams.DocumentType.TEST_RUN
+            || exportContext.getDocumentType() === ExportParams.DocumentType.MIXED) {
+            return Promise.resolve(); // Skip loading language for reports, test runs and bulk export
         }
 
         let url = `/polarion/pdf-exporter/rest/internal/document-language?projectId=${exportContext.getProjectId()}&spaceId=${exportContext.getSpaceId()}&documentName=${exportContext.getDocumentName()}`;
@@ -208,6 +204,35 @@ const PdfExporter = {
                 PdfExporter.documentLanguage = responseText;
                 resolve();
             }).catch((error) => reject(error));
+        });
+    },
+
+    loadStylePackages: function (exportContext) {
+        let stylePackagesUrl;
+        if (exportContext.getDocumentType() === ExportParams.DocumentType.MIXED) {
+            stylePackagesUrl = `/polarion/pdf-exporter/rest/internal/settings/style-package/names?scope=${exportContext.getScope()}`;
+        } else {
+            stylePackagesUrl = `/polarion/pdf-exporter/rest/internal/settings/style-package/suitable-names`
+                + `?spaceId=${exportContext.getSpaceId()}&documentName=${exportContext.getDocumentName()}`;
+            if (exportContext.getProjectId()) {
+                stylePackagesUrl += `&projectId=${exportContext.getProjectId()}`
+            }
+        }
+
+        return this.loadSettingNames({
+            customUrl: stylePackagesUrl,
+            selectElement: document.getElementById("popup-style-package-select")
+        }).then(() => {
+            const stylePackageSelect = document.getElementById("popup-style-package-select");
+            const valueToPreselect = SbbCommon.getCookie(SELECTED_STYLE_PACKAGE_COOKIE);
+            if (valueToPreselect && this.containsOption(stylePackageSelect, valueToPreselect)) {
+                stylePackageSelect.value = valueToPreselect;
+            } else if (stylePackageSelect.options.length > 1) {
+                stylePackageSelect.value = stylePackageSelect.options[1].value;
+            }
+
+            this.onStylePackageChanged();
+            this.actionInProgress({inProgress: false});
         });
     },
 
@@ -295,17 +320,17 @@ const PdfExporter = {
                 });
             }
         }
-        ExportCommon.displayIf("popup-roles-selector", stylePackage.linkedWorkitemRoles, "inline-block");
+        ExportCommon.displayIf("popup-roles-selector", this.exportContext.getDocumentType() !== ExportParams.DocumentType.MIXED && stylePackage.linkedWorkitemRoles, "inline-block");
 
         ExportCommon.displayIf("popup-style-package-content", stylePackage.exposeSettings);
-        ExportCommon.displayIf("popup-page-width-validation", stylePackage.exposePageWidthValidation);
+        ExportCommon.displayIf("popup-page-width-validation", this.exportContext.getDocumentType() !== ExportParams.DocumentType.MIXED && stylePackage.exposePageWidthValidation);
     },
 
     validatePdf: function () {
         this.hideAlerts();
 
-        const requestBody = this.prepareRequestBody();
-        if (requestBody === undefined) {
+        const exportParams = this.getExportParams();
+        if (exportParams === undefined) {
             return;
         }
         this.actionInProgress({inProgress: true, message: "Performing PDF validation"})
@@ -313,7 +338,7 @@ const PdfExporter = {
         this.callAsync({
             method: "POST",
             url: "/polarion/pdf-exporter/rest/internal/validate?max-results=5",
-            body: requestBody,
+            body: exportParams.toJSON(),
             responseType: "json"
         }).then(({response}) => {
             this.actionInProgress({inProgress: false});
@@ -377,8 +402,14 @@ const PdfExporter = {
     exportToPdf: function () {
         this.hideAlerts();
 
-        const requestBody = this.prepareRequestBody();
-        if (requestBody === undefined) {
+        const exportParams = this.getExportParams();
+        if (exportParams === undefined) {
+            return;
+        }
+
+        if (this.exportContext.getDocumentType() === ExportParams.DocumentType.MIXED) {
+            this.closePopup();
+            BulkPdfExporter.openPopup(exportParams);
             return;
         }
 
@@ -392,12 +423,13 @@ const PdfExporter = {
 
         this.actionInProgress({inProgress: true, message: "Generating PDF"})
 
+        const requestBody = exportParams.toJSON();
         if (this.exportContext.getDocumentType() !== ExportParams.DocumentType.LIVE_REPORT && this.exportContext.getDocumentType() !== ExportParams.DocumentType.TEST_RUN) {
             this.checkNestedListsAsync(requestBody);
         }
 
-        ExportCommon.asyncConvertPdf(requestBody, successResponse => {
-            const objectURL = (window.URL ? window.URL : window.webkitURL).createObjectURL(successResponse);
+        ExportCommon.asyncConvertPdf(requestBody, responseBody => {
+            const objectURL = (window.URL ? window.URL : window.webkitURL).createObjectURL(responseBody);
             const anchorElement = document.createElement("a");
             anchorElement.href = objectURL;
             anchorElement.download = filename;
@@ -433,7 +465,7 @@ const PdfExporter = {
         })
     },
 
-    prepareRequestBody: function () {
+    getExportParams: function () {
         let selectedChapters = null;
         if (document.getElementById("popup-specific-chapters").checked) {
             selectedChapters = this.getSelectedChapters();
@@ -462,11 +494,11 @@ const PdfExporter = {
             selectedRoles.push(...selectedOptions.map(opt => opt.value));
         }
 
-        return this.buildRequestJson(selectedChapters, numberedListStyles, selectedRoles);
+        return this.buildExportParams(selectedChapters, numberedListStyles, selectedRoles);
     },
 
-    buildRequestJson: function (selectedChapters, numberedListStyles, selectedRoles) {
-        const live_report = this.exportContext.getDocumentType() === ExportParams.DocumentType.LIVE_REPORT;
+    buildExportParams: function (selectedChapters, numberedListStyles, selectedRoles) {
+        const live_doc = this.exportContext.getDocumentType() === ExportParams.DocumentType.LIVE_DOC;
         return new ExportParams.Builder(this.exportContext.getDocumentType())
             .setProjectId(this.exportContext.getProjectId())
             .setLocationPath(this.exportContext.getLocationPath())
@@ -479,21 +511,20 @@ const PdfExporter = {
             .setHeadersColor(document.getElementById("popup-headers-color").value)
             .setPaperSize(document.getElementById("popup-paper-size-selector").value)
             .setOrientation(document.getElementById("popup-orientation-selector").value)
-            .setFitToPage(!live_report && document.getElementById('popup-fit-to-page').checked)
-            .setEnableCommentsRendering(!live_report && document.getElementById('popup-enable-comments-rendering').checked)
+            .setFitToPage(live_doc && document.getElementById('popup-fit-to-page').checked)
+            .setEnableCommentsRendering(live_doc && document.getElementById('popup-enable-comments-rendering').checked)
             .setWatermark(document.getElementById("popup-watermark").checked)
-            .setMarkReferencedWorkitems(!live_report && document.getElementById("popup-mark-referenced-workitems").checked)
-            .setCutEmptyChapters(!live_report && document.getElementById("popup-cut-empty-chapters").checked)
-            .setCutEmptyWIAttributes(!live_report && document.getElementById('popup-cut-empty-wi-attributes').checked)
+            .setMarkReferencedWorkitems(live_doc && document.getElementById("popup-mark-referenced-workitems").checked)
+            .setCutEmptyChapters(live_doc && document.getElementById("popup-cut-empty-chapters").checked)
+            .setCutEmptyWIAttributes(live_doc && document.getElementById('popup-cut-empty-wi-attributes').checked)
             .setCutLocalUrls(document.getElementById("popup-cut-urls").checked)
             .setFollowHTMLPresentationalHints(document.getElementById("popup-presentational-hints").checked)
             .setNumberedListStyles(numberedListStyles)
             .setChapters(selectedChapters)
-            .setLanguage(!live_report && document.getElementById('popup-localization').checked ? document.getElementById("popup-language").value : null)
+            .setLanguage(live_doc && document.getElementById('popup-localization').checked ? document.getElementById("popup-language").value : null)
             .setLinkedWorkitemRoles(selectedRoles)
             .setUrlQueryParameters(this.exportContext.getUrlQueryParameters())
-            .build()
-            .toJSON();
+            .build();
     },
 
     getSelectedChapters: function () {

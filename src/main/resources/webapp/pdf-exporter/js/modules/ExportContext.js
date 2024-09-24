@@ -16,12 +16,15 @@ export default class ExportContext {
 
         const scope = getScope(normalizedPolarionLocationHash);
         this.projectId = getProjectId(scope);
-        this.locationPath = getPath(normalizedPolarionLocationHash, scope);
 
-        // if "testrun" or "testruns" is present return undefined
-        if (this.locationPath?.startsWith("testrun")) {
-            this.documentType = ExportParams.DocumentType.TEST_RUN;
-            this.locationPath = undefined;
+        if (this.documentType !== ExportParams.DocumentType.MIXED) {
+            this.locationPath = getPath(normalizedPolarionLocationHash, scope);
+
+            // if "testrun" or "testruns" is present return undefined
+            if (this.locationPath?.startsWith("testrun")) {
+                this.documentType = ExportParams.DocumentType.TEST_RUN;
+                this.locationPath = undefined;
+            }
         }
 
         this.urlQueryParameters = getQueryParams(searchParameters);

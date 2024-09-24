@@ -15,6 +15,7 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.jobs.ConverterJobDetail
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.jobs.ConverterJobStatus;
 import ch.sbb.polarion.extension.pdf_exporter.service.PdfExporterPolarionService;
 import ch.sbb.polarion.extension.pdf_exporter.util.DocumentDataHelper;
+import ch.sbb.polarion.extension.pdf_exporter.util.DocumentFileNameHelper;
 import ch.sbb.polarion.extension.pdf_exporter.util.PdfValidationService;
 import com.polarion.platform.core.PlatformContext;
 import com.polarion.platform.security.ISecurityService;
@@ -113,8 +114,9 @@ public class ConverterInternalController {
             })
     public Response convertToPdf(ExportParams exportParams) {
         validateExportParameters(exportParams);
+        String fileName = new DocumentFileNameHelper(pdfExporterPolarionService).getDocumentFileName(exportParams);
         byte[] pdfBytes = pdfConverter.convertToPdf(exportParams, null);
-        return Response.ok(pdfBytes).header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=document.pdf").build();
+        return Response.ok(pdfBytes).header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + fileName).build();
     }
 
     @POST
@@ -229,7 +231,8 @@ public class ConverterInternalController {
         if (pdfContent.isEmpty()) {
             return Response.status(HttpStatus.NO_CONTENT.value()).build();
         }
-        return Response.ok(pdfContent.get()).header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=document.pdf").build();
+        ExportParams exportParams = pdfConverterJobService.getJobParams(jobId);
+        return Response.ok(pdfContent.get()).header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + exportParams.getFileName() + "\"").build();
     }
 
     @GET

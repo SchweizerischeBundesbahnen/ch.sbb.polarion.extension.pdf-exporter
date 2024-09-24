@@ -97,6 +97,8 @@
     margin: 0;
     padding: 16px;
     color: black;
+    max-height: 80vh;
+    overflow: auto;
 }
 
 .form-wrapper {
@@ -184,6 +186,45 @@
     display: flex;
     justify-content: center;
     flex-wrap: wrap;
+}
+
+.modal__container.pdf-exporter .export-item {
+    padding: 5px;
+    border-bottom: 1px solid #aaa;
+}
+
+.modal__container.pdf-exporter .export-item .title .name {
+    font-weight: bold;
+}
+
+.modal__container.pdf-exporter .export-item .icon {
+    padding-right: 10px;
+    font-size: 18px;
+    vertical-align: middle;
+}
+
+.modal__container.pdf-exporter .export-item .icon img {
+    width: 16px;
+}
+
+.modal__container.pdf-exporter .export-item.paused {
+    color: #888;
+}
+
+.modal__container.pdf-exporter .export-item.paused .icon i.fa:before {
+    content: "\f017"; /* Clock icon from FontAwesome */
+}
+
+.modal__container.pdf-exporter .export-item.finished .icon {
+    color: green;
+}
+
+.modal__container.pdf-exporter .export-item.finished .icon i.fa:before {
+    content: "\f00c"; /* Check/Ticker icon from FontAwesome */
+}
+
+.modal__container.pdf-exporter .export-item:not(.in-progress) .icon img {
+    display: none;
 }
 
 .property-wrapper {
@@ -369,4 +410,57 @@
 
 .hidden {
     display: none;
+}
+
+#polarion-PdfExporter-BulkExportWidget .header {
+    margin-left: 30px;
+}
+
+#polarion-PdfExporter-BulkExportWidget .header p {
+    color: grey;
+}
+
+#polarion-PdfExporter-BulkExportWidget .polarion-TestsExecutionButton-link {
+    display: block;
+}
+
+#polarion-PdfExporter-BulkExportWidget .polarion-TestsExecutionButton-buttons {
+    display: inline-block;
+}
+
+#polarion-PdfExporter-BulkExportWidget .polarion-TestsExecutionButton-buttons-content {
+    min-width: auto;
+}
+
+#polarion-PdfExporter-BulkExportWidget .polarion-TestsExecutionButton-buttons-content-labelCell {
+    padding: 10px;
+}
+
+#polarion-PdfExporter-BulkExportWidget .polarion-TestsExecutionButton-labelTextNew {
+    font-size: 20px;
+}
+
+#polarion-PdfExporter-BulkExportWidget .export-items {
+    display: flex;
+}
+
+#polarion-PdfExporter-BulkExportWidget .export-items .column {
+    padding-left: 30px;
+    min-width: 240px;
+    max-width: 460px;
+}
+
+#polarion-PdfExporter-BulkExportWidget .export-items .column .column-content {
+    height: 60vh;
+    overflow: auto;
+    border-right: 1px solid #ccc;
+    padding-right: 20px;
+}
+
+#polarion-PdfExporter-BulkExportWidget .export-items .column .no-data {
+    font-style: italic;
+}
+
+#polarion-PdfExporter-BulkExportWidget .polarion-TestsExecutionButton-buttons-defaultCursor .polarion-TestsExecutionButton-labelTextNew {
+    color: gray;
 }
