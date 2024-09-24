@@ -1,5 +1,14 @@
 # Changelog
 
+## [7.1.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v7.0.1...v7.1.0) (2024-09-24)
+
+
+### Features
+
+* display weasyprint server build timestamp and chromium version in extension info table ([#219](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/219)) ([fe7c7ea](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/fe7c7ea41735f32ae9c08cbc028e08388e517034)), closes [#218](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/218)
+* unused configuration property removal ([#221](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/221)) ([d7508fa](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/d7508fa131ba9c513280f354f81a9894a609e853))
+* urls in css now replaced by the base64 content ([#215](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/215)) ([8bc75d6](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/8bc75d6133c483b3d7288edb77d13fb7c44c0124))
+
 ## [7.0.1](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v7.0.0...v7.0.1) (2024-09-20)
 
 
