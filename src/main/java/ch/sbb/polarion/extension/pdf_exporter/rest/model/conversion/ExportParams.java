@@ -5,6 +5,8 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 import java.util.Map;
@@ -14,16 +16,16 @@ import java.util.Map;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ExportParams {
-    @Schema(name = "Project ID", example = "elibrary", description = "The unique identifier for the project")
-    private String projectId;
+    @Schema(description = "The unique identifier for the project", example = "elibrary")
+    private @Nullable String projectId;
 
-    @Schema(name = "Location path", required = true, description = "Document path for export")
-    private String locationPath;
+    @Schema(description = "Document path for export", example = "Specification/Product Specification")
+    private @Nullable String locationPath;
 
-    @Schema(description = "The specific revision of the document to export")
-    private String revision;
+    @Schema(description = "The specific revision of the document")
+    private @Nullable String revision;
 
-    @Schema(description = "The type of document to export", example = "LIVE_DOC")
+    @Schema(description = "The type of document", example = "LIVE_DOC")
     private DocumentType documentType;
 
     @Schema(description = "Cover page settings name")
@@ -32,7 +34,7 @@ public class ExportParams {
     @Schema(description = "CSS settings name")
     private String css;
 
-    @Schema(description = "Header Footer settings name")
+    @Schema(description = "Header/Footer settings name")
     private String headerFooter;
 
     @Schema(description = "Localization settings name")
@@ -44,7 +46,7 @@ public class ExportParams {
     @Schema(description = "Color to be used for headers in the document. By default dark blue color (Polarion's default)")
     private String headersColor;
 
-    @Schema(description = "The orientation of the exported document", defaultValue = "PORTRAIT")
+    @Schema(description = "The page orientation of the exported document", defaultValue = "PORTRAIT")
     private Orientation orientation = Orientation.PORTRAIT;
 
     @Schema(description = "The paper size of the exported document", defaultValue = "A4")
@@ -92,10 +94,9 @@ public class ExportParams {
     @Schema(description = "Internal content")
     private String internalContent;
 
-    public DocumentType getDocumentType() {
-        // Default to DOCUMENT
+    public @NotNull DocumentType getDocumentType() {
         if (documentType == null) {
-            return DocumentType.LIVE_DOC;
+            documentType = DocumentType.LIVE_DOC;
         }
         return documentType;
     }
