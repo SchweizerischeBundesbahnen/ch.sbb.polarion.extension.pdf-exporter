@@ -1,5 +1,13 @@
 # Changelog
 
+## [7.1.1](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v7.1.0...v7.1.1) (2024-09-24)
+
+
+### Bug Fixes
+
+* Fix loading JS module ([#225](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/225)) ([c09cac1](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/c09cac1f9cd09148b937e46180930213d8ab8a70)), closes [#222](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/222)
+* fix renamed properties in schema ([#224](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/224)) ([e4ef40d](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/e4ef40defba8414ed33b58ffac0caeb37195e9bd)), closes [#222](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/222)
+
 ## [7.1.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v7.0.1...v7.1.0) (2024-09-24)
 
 
