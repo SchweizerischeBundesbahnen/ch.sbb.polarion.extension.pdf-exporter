@@ -1,6 +1,7 @@
 package ch.sbb.polarion.extension.pdf_exporter.util;
 
 import com.polarion.alm.tracker.internal.url.IUrlResolver;
+import com.polarion.core.util.StringUtils;
 import com.polarion.core.util.logging.Logger;
 import lombok.SneakyThrows;
 import org.jetbrains.annotations.NotNull;
@@ -9,6 +10,7 @@ import org.jetbrains.annotations.VisibleForTesting;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.stream.Stream;
 
 import static java.net.HttpURLConnection.*;
 
@@ -21,12 +23,12 @@ public class CustomResourceUrlResolver implements IUrlResolver {
     private static final int READ_TIMEOUT_MS = 3_000;
 
     public boolean canResolve(@NotNull String url) {
-        return url.startsWith("http://") || url.startsWith("https://");
+        return Stream.of("/", "http:", "https:").anyMatch(url::startsWith);
     }
 
     public InputStream resolve(@NotNull String urlStr) {
         try {
-            URL url = new URL(normalizeUrl(urlStr));
+            URL url = new URL(normalizeUrl(ensureAbsoluteUrl(urlStr)));
             return resolveImpl(url);
         } catch (Exception e) {
             Logger.getLogger(this).warn("Failed to load resource: " + urlStr, e);
@@ -51,6 +53,15 @@ public class CustomResourceUrlResolver implements IUrlResolver {
             }
         }
         return null;
+    }
+
+    private String ensureAbsoluteUrl(String url) {
+        return url.startsWith("/") ? getBaseUrl() + url : url;
+    }
+
+    private String getBaseUrl() {
+        String baseUrl = System.getProperty("base.url").trim();
+        return StringUtils.removeSuffix(baseUrl, "/");
     }
 
     private String normalizeUrl(String urlStr) {

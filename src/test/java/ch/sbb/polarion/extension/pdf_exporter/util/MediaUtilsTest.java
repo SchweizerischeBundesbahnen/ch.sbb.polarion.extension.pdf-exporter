@@ -76,7 +76,7 @@ class MediaUtilsTest {
         assertNull(MediaUtils.guessMimeType("unknownExtensionNonsenseContent.unk", Bytes.toArray(List.of(0, 0, 0, 0, 0))));
 
         assertTrue(InMemoryAppender.anyMessageContains("Cannot get mime type for the resource: unknownExtensionEmptyContent.unk"));
-        assertTrue(InMemoryAppender.anyMessageContains("Cannot get mime type for the resource: unknownExtensionEmptyContent.unk"));
+        assertTrue(InMemoryAppender.anyMessageContains("Cannot get mime type for the resource: unknownExtensionNonsenseContent.unk"));
     }
 
 }
