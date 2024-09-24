@@ -1325,15 +1325,6 @@
       },
       "ExportParams": {
         "properties": {
-          "Location path": {
-            "description": "Document path for export",
-            "type": "string"
-          },
-          "Project ID": {
-            "description": "The unique identifier for the project",
-            "example": "elibrary",
-            "type": "string"
-          },
           "chapters": {
             "description": "Specific higher level chapters",
             "items": {
@@ -1390,7 +1381,7 @@
             "type": "boolean"
           },
           "headerFooter": {
-            "description": "Header Footer settings name",
+            "description": "Header/Footer settings name",
             "type": "string"
           },
           "headersColor": {
@@ -1420,6 +1411,11 @@
           },
           "localization": {
             "description": "Localization settings name",
+            "type": "string"
+          },
+          "locationPath": {
+            "description": "Document path for export",
+            "example": "Specification/Product Specification",
             "type": "string"
           },
           "markReferencedWorkitems": {
@@ -1456,8 +1452,13 @@
             ],
             "type": "string"
           },
+          "projectId": {
+            "description": "The unique identifier for the project",
+            "example": "elibrary",
+            "type": "string"
+          },
           "revision": {
-            "description": "The specific revision of the document to export",
+            "description": "The specific revision of the document",
             "type": "string"
           },
           "urlQueryParameters": {
@@ -1478,7 +1479,7 @@
           }
         },
         "required": [
-          "Location path"
+          "documentType"
         ],
         "type": "object"
       },
