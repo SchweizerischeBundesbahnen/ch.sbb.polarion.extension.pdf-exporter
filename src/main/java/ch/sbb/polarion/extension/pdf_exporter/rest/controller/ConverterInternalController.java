@@ -22,6 +22,7 @@ import com.polarion.platform.security.ISecurityService;
 import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.headers.Header;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
@@ -54,6 +55,8 @@ import java.util.stream.Collectors;
 @Tag(name = "PDF Processing")
 @SuppressWarnings("java:S1200")
 public class ConverterInternalController {
+
+    private static final String EXPORT_FILENAME_HEADER = "Export-Filename";
 
     private final PdfExporterPolarionService pdfExporterPolarionService;
     private final PdfConverter pdfConverter;
@@ -109,14 +112,21 @@ public class ConverterInternalController {
             responses = {
                     @ApiResponse(responseCode = "200",
                             description = "Content of PDF document as a byte array",
-                            content = {@Content(mediaType = "application/pdf")}
+                            content = {@Content(mediaType = "application/pdf")},
+                            headers = {
+                                    @Header(name = HttpHeaders.CONTENT_DISPOSITION, description = "To inform a browser that the response is a downloadable attachment"),
+                                    @Header(name = EXPORT_FILENAME_HEADER, description = "File name for converted PDF document")
+                            }
                     )
             })
     public Response convertToPdf(ExportParams exportParams) {
         validateExportParameters(exportParams);
         String fileName = new DocumentFileNameHelper(pdfExporterPolarionService).getDocumentFileName(exportParams);
         byte[] pdfBytes = pdfConverter.convertToPdf(exportParams, null);
-        return Response.ok(pdfBytes).header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + fileName).build();
+        return Response.ok(pdfBytes)
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
+                .header(EXPORT_FILENAME_HEADER, fileName)
+                .build();
     }
 
     @POST
@@ -214,7 +224,11 @@ public class ConverterInternalController {
             responses = {
                     @ApiResponse(responseCode = "200",
                             description = "Conversion job result is ready",
-                            content = {@Content(mediaType = "application/pdf")}
+                            content = {@Content(mediaType = "application/pdf")},
+                            headers = {
+                                @Header(name = HttpHeaders.CONTENT_DISPOSITION, description = "To inform a browser that the response is a downloadable attachment"),
+                                @Header(name = EXPORT_FILENAME_HEADER, description = "File name for converted PDF document")
+                            }
                     ),
                     @ApiResponse(responseCode = "204",
                             description = "Conversion job is still in progress"
@@ -232,7 +246,9 @@ public class ConverterInternalController {
             return Response.status(HttpStatus.NO_CONTENT.value()).build();
         }
         ExportParams exportParams = pdfConverterJobService.getJobParams(jobId);
-        return Response.ok(pdfContent.get()).header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + exportParams.getFileName() + "\"").build();
+        return Response.ok(pdfContent.get())
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + exportParams.getFileName() + "\"")
+                .header(EXPORT_FILENAME_HEADER, exportParams.getFileName()).build();
     }
 
     @GET
