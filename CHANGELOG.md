@@ -1,5 +1,13 @@
 # Changelog
 
+## [7.1.2](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v7.1.1...v7.1.2) (2024-09-25)
+
+
+### Bug Fixes
+
+* **deps:** update dependency net.bytebuddy:byte-buddy to v1.15.2 ([fcbaaac](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/fcbaaac9006d3a90f8f9f6a12a15c8b22fde1308))
+* do not remove GenericUrlResolver from PolarionUrlResolver singleton ([#229](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/229)) ([a409e33](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/a409e33b1a1309f6c1805faefa4c7ebec1553426)), closes [#228](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/228)
+
 ## [7.1.1](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v7.1.0...v7.1.1) (2024-09-24)
 
 
