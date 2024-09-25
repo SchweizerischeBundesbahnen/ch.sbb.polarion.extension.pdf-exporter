@@ -34,7 +34,7 @@ public class PdfExporterFileResourceProvider implements FileResourceProvider {
     private final List<IUrlResolver> resolvers;
 
     public PdfExporterFileResourceProvider() {
-        this.resolvers = Arrays.asList(removeGenericUrlResolver(PolarionUrlResolver.getInstance()), new CustomResourceUrlResolver());
+        this.resolvers = Arrays.asList(getPolarionUrlResolverWithoutGenericUrlChildResolver(), new CustomResourceUrlResolver());
     }
 
     @VisibleForTesting
@@ -105,13 +105,21 @@ public class PdfExporterFileResourceProvider implements FileResourceProvider {
      * Remove GenericUrlResolver because it has no explicit timeouts declared
      */
     @SneakyThrows
-    private IUrlResolver removeGenericUrlResolver(IAttachmentUrlResolver urlResolver) {
-        if (urlResolver instanceof ParentUrlResolver parentUrlResolver) {
+    private IAttachmentUrlResolver getPolarionUrlResolverWithoutGenericUrlChildResolver() {
+        IAttachmentUrlResolver attachmentUrlResolver = PolarionUrlResolver.getInstance();
+
+        if (attachmentUrlResolver instanceof ParentUrlResolver parentUrlResolver) {
             Field childResolversField = ParentUrlResolver.class.getDeclaredField("childResolvers");
             childResolversField.setAccessible(true);
-            ((List<?>) childResolversField.get(parentUrlResolver)).removeIf(resolver -> resolver instanceof GenericUrlResolver);
+
+            @SuppressWarnings("unchecked")
+            List<IUrlResolver> childResolvers = ((List<IUrlResolver>) childResolversField.get(parentUrlResolver)).stream()
+                    .filter(resolver -> !(resolver instanceof GenericUrlResolver))
+                    .toList();
+
+            return new ParentUrlResolver(childResolvers);
         }
-        return urlResolver;
+
+        return attachmentUrlResolver;
     }
 }
-

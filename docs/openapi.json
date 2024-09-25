@@ -1478,9 +1478,6 @@
             "type": "string"
           }
         },
-        "required": [
-          "documentType"
-        ],
         "type": "object"
       },
       "FormDataBodyPart": {
