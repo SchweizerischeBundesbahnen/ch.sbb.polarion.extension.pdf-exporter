@@ -113,11 +113,11 @@ public class PdfExporterFileResourceProvider implements FileResourceProvider {
             childResolversField.setAccessible(true);
 
             @SuppressWarnings("unchecked")
-            List<IUrlResolver> resolvers = ((List<IUrlResolver>) childResolversField.get(parentUrlResolver)).stream()
+            List<IUrlResolver> childResolvers = ((List<IUrlResolver>) childResolversField.get(parentUrlResolver)).stream()
                     .filter(resolver -> !(resolver instanceof GenericUrlResolver))
                     .toList();
 
-            return new ParentUrlResolver(resolvers);
+            return new ParentUrlResolver(childResolvers);
         }
 
         return attachmentUrlResolver;
