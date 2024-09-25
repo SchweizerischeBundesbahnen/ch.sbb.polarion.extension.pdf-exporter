@@ -1,5 +1,61 @@
 # Changelog
 
+## [7.1.1](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v7.1.0...v7.1.1) (2024-09-24)
+
+
+### Bug Fixes
+
+* Fix loading JS module ([#225](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/225)) ([c09cac1](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/c09cac1f9cd09148b937e46180930213d8ab8a70)), closes [#222](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/222)
+* fix renamed properties in schema ([#224](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/224)) ([e4ef40d](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/e4ef40defba8414ed33b58ffac0caeb37195e9bd)), closes [#222](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/222)
+
+## [7.1.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v7.0.1...v7.1.0) (2024-09-24)
+
+
+### Features
+
+* display weasyprint server build timestamp and chromium version in extension info table ([#219](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/219)) ([fe7c7ea](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/fe7c7ea41735f32ae9c08cbc028e08388e517034)), closes [#218](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/218)
+* unused configuration property removal ([#221](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/221)) ([d7508fa](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/d7508fa131ba9c513280f354f81a9894a609e853))
+* urls in css now replaced by the base64 content ([#215](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/215)) ([8bc75d6](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/8bc75d6133c483b3d7288edb77d13fb7c44c0124))
+
+## [7.0.1](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v7.0.0...v7.0.1) (2024-09-20)
+
+
+### Bug Fixes
+
+* trim export file name ([#213](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/213)) ([930bb97](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/930bb976485d87369290b9313ca8ba6e57088d50))
+
+## [7.0.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v6.2.1...v7.0.0) (2024-09-17)
+
+
+### ⚠ BREAKING CHANGES
+
+* refactoring ([#200](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/200))
+* refactoring ([#199](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/199))
+* add support of test runs ([#196](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/196))
+
+### Features
+
+* add support of test runs ([#196](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/196)) ([b92cdae](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/b92cdae91108c138742a33b9f2ff8f2d54c49167)), closes [#192](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/192)
+* javascript refactoring with ability to run JS tests in build process ([#203](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/203)) ([a84ec78](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/a84ec78cd778add63d2a9ab58a40c17072b78a60))
+
+
+### Bug Fixes
+
+* export of TestRun not working from "list view" ([#208](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/208)) ([fea02d6](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/fea02d6c1f1adf0c45a8ea71bc83f56e5cceac72))
+* fix CSS for testruns ([#207](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/207)) ([724aa1a](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/724aa1a441ba915120a0076320f7f8ef02937ee6)), closes [#192](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/192)
+* Fix css for testruns ([#210](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/210)) ([fada1ad](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/fada1ad815bdd909cfb8c43f0fd95fb87e456679)), closes [#192](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/192)
+* Fix style of button in toolbar ([#211](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/211)) ([38e17ef](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/38e17efaecc120e4f57293d3faf4e927f5319b22))
+* internalized relative links fix ([#202](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/202)) ([3b36210](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/3b3621030e345ce557e3a77d61afa3e9d4a5c5ec))
+* JavaScript refactoring and fixes for test runs support ([#204](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/204)) ([cc5b954](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/cc5b9541c2bba83199d27046ff47bc47f8ed2606))
+* package-lock.json under VCS, JSON sorter only for OpenAPI Spec ([#206](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/206)) ([d84e1b2](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/d84e1b22ffb11696b17469678a30d2d079f3d1fd))
+* skipping JavaScript tests if -DskipTests is used ([#205](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/205)) ([357a872](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/357a87253e413e62b66f38afdaee807512a8d519))
+
+
+### Miscellaneous Chores
+
+* refactoring ([#199](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/199)) ([101af70](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/101af709292fd4c797dc9a7f15f17b7e2548586d))
+* refactoring ([#200](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/200)) ([ec21fcd](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/ec21fcd8207bdc8af2c918b413da4ced272d1a70))
+
 ## [6.2.1](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v6.2.0...v6.2.1) (2024-09-10)
 
 

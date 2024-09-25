@@ -369,7 +369,7 @@ const PdfExporter = {
             const page = result.invalidPages[i];
             const img = document.createElement("img");
             img.className = 'popup-validate-result-img';
-            img.src = 'data:image/png;base64, ' + page.content;
+            img.src = 'data:image/png;base64,' + page.content;
             img.onclick = function () {
                 this.classList.toggle("popup-img-zoomed");
             };

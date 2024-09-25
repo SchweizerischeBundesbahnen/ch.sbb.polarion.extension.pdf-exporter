@@ -18,6 +18,6 @@ public class DleToolbarStatusProvider extends ConfigurationStatusProvider {
         ILocation location = ScopeUtils.getDefaultLocation().append(".polarion/context.properties");
         String content = new SettingsService().read(location, null);
 
-        return getConfigurationStatus(DLE_TOOLBAR, content, "scriptInjection.dleEditorHead=<script src=\"/polarion/pdf-exporter/js/starter.js\"></script>.*<script>PdfExporterStarter.injectToolbar();</script>");
+        return getConfigurationStatus(DLE_TOOLBAR, content, "scriptInjection.dleEditorHead=<script src=\"/polarion/pdf-exporter/js/starter.js\"></script>.*<script>PdfExporterStarter.injectToolbar(.*);</script>");
     }
 }

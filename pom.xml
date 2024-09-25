@@ -9,7 +9,7 @@
     </parent>
 
     <artifactId>ch.sbb.polarion.extension.pdf-exporter</artifactId>
-    <version>6.2.2-SNAPSHOT</version>
+    <version>7.1.2-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>Polarion ALM extension to convert Documents to PDF files</name>
@@ -55,6 +55,7 @@
         <exec-maven-plugin.version>3.3.0</exec-maven-plugin.version>
         <weasyprint.version>62.3</weasyprint.version>
         <awaitility.version>4.2.2</awaitility.version>
+        <tika.version>1.28.5</tika.version>
 
         <maven-jar-plugin.Extension-Context>pdf-exporter</maven-jar-plugin.Extension-Context>
         <maven-jar-plugin.Automatic-Module-Name>ch.sbb.polarion.extension.pdf_exporter</maven-jar-plugin.Automatic-Module-Name>
@@ -65,7 +66,7 @@
         <markdown2html-maven-plugin.failOnError>${env.MARKDOWN2HTML_MAVEN_PLUGIN_FAIL_ON_ERROR}</markdown2html-maven-plugin.failOnError>
         <swagger-maven-plugin.version>2.2.22</swagger-maven-plugin.version>
 
-        <frontend-maven-plugin.version>1.15.0</frontend-maven-plugin.version>
+        <frontend-maven-plugin.version>1.15.1</frontend-maven-plugin.version>
         <frontend-maven-plugin.nodeVersion>v20.17.0</frontend-maven-plugin.nodeVersion>
         <frontend-maven-plugin.npmVersion>10.8.3</frontend-maven-plugin.npmVersion>
 
@@ -91,6 +92,13 @@
             <groupId>com.polarion.alm.wiki</groupId>
             <artifactId>sidecar</artifactId>
             <version>${polarion.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.tika</groupId>
+            <artifactId>tika-core</artifactId>
+            <version>${tika.version}</version>
             <scope>provided</scope>
         </dependency>
 

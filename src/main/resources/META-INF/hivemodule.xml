@@ -1,72 +1,93 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <module id="ch.sbb.polarion.extension.pdf_exporter" version="1.0.0">
+
     <contribution configuration-id="com.polarion.xray.webui.administrationPageExtenders">
-        <extender name="About"
+        <extender id="about"
+                  name="About"
+                  parentNodeId="pdf-export"
                   parentNodeName="PDF Export"
-                  parentNodeIconUrl="/polarion/icons/default/topicIcons/documentsAndWiki.svg"
-                  iconUrl="/polarion/icons/default/topicIconsSmall/documentsAndWiki.svg"
+                  parentNodeIconUrl="/polarion/pdf-exporter-admin/ui/images/menu/30x30/_parent.svg"
+                  iconUrl="/polarion/pdf-exporter-admin/ui/images/menu/16x16/about.svg"
                   pageUrl="/polarion/pdf-exporter-admin/pages/about.jsp?scope=$scope$"
                   projectScope="true"
+                  projectGroupScope="false"
                   repositoryScope="true"/>
-        <extender name="REST API"
-                  parentNodeName="PDF Export"
-                  parentNodeIconUrl="/polarion/icons/default/topicIcons/documentsAndWiki.svg"
-                  iconUrl="/polarion/icons/default/topicIconsSmall/documentsAndWiki.svg"
+
+        <extender id="rest-api"
+                  name="REST API"
+                  parentNodeId="pdf-export"
+                  iconUrl="/polarion/pdf-exporter-admin/ui/images/menu/16x16/rest_api.svg"
                   pageUrl="/polarion/pdf-exporter/rest/swagger"
                   projectScope="true"
+                  projectGroupScope="false"
                   repositoryScope="true"/>
-        <extender name="Style Package"
-                  parentNodeName="PDF Export"
-                  parentNodeIconUrl="/polarion/icons/default/topicIcons/documentsAndWiki.svg"
-                  iconUrl="/polarion/icons/default/topicIconsSmall/documentsAndWiki.svg"
+
+        <extender id="style-package"
+                  name="Style Package"
+                  parentNodeId="pdf-export"
+                  iconUrl="/polarion/pdf-exporter-admin/ui/images/menu/16x16/style_package.svg"
                   pageUrl="/polarion/pdf-exporter-admin/pages/style-packages.jsp?scope=$scope$"
                   projectScope="true"
+                  projectGroupScope="false"
                   repositoryScope="true"/>
-        <extender name="Cover Page"
-                  parentNodeName="PDF Export"
-                  parentNodeIconUrl="/polarion/icons/default/topicIcons/documentsAndWiki.svg"
-                  iconUrl="/polarion/icons/default/topicIconsSmall/documentsAndWiki.svg"
+
+        <extender id="cover-page"
+                  name="Cover Page"
+                  parentNodeId="pdf-export"
+                  iconUrl="/polarion/pdf-exporter-admin/ui/images/menu/16x16/cover_page.svg"
                   pageUrl="/polarion/pdf-exporter-admin/pages/cover-page.jsp?scope=$scope$"
                   projectScope="true"
+                  projectGroupScope="false"
                   repositoryScope="true"/>
-        <extender name="Header and Footer"
-                  parentNodeName="PDF Export"
-                  parentNodeIconUrl="/polarion/icons/default/topicIcons/documentsAndWiki.svg"
-                  iconUrl="/polarion/icons/default/topicIconsSmall/documentsAndWiki.svg"
+
+        <extender id="header-footer"
+                  name="Header/Footer"
+                  parentNodeId="pdf-export"
+                  iconUrl="/polarion/pdf-exporter-admin/ui/images/menu/16x16/header_footer.svg"
                   pageUrl="/polarion/pdf-exporter-admin/pages/header-footer.jsp?scope=$scope$"
                   projectScope="true"
+                  projectGroupScope="false"
                   repositoryScope="true"/>
-        <extender name="Localization"
-                  parentNodeName="PDF Export"
-                  parentNodeIconUrl="/polarion/icons/default/topicIcons/documentsAndWiki.svg"
-                  iconUrl="/polarion/icons/default/topicIconsSmall/documentsAndWiki.svg"
+
+        <extender id="localization"
+                  name="Localization"
+                  parentNodeId="pdf-export"
+                  iconUrl="/polarion/pdf-exporter-admin/ui/images/menu/16x16/localization.svg"
                   pageUrl="/polarion/pdf-exporter-admin/pages/localization.jsp?scope=$scope$"
                   projectScope="true"
+                  projectGroupScope="false"
                   repositoryScope="true"/>
-        <extender name="Stylesheets (CSS)"
-                  parentNodeName="PDF Export"
-                  parentNodeIconUrl="/polarion/icons/default/topicIcons/documentsAndWiki.svg"
-                  iconUrl="/polarion/icons/default/topicIconsSmall/documentsAndWiki.svg"
+
+        <extender id="css"
+                  name="CSS"
+                  parentNodeId="pdf-export"
+                  iconUrl="/polarion/pdf-exporter-admin/ui/images/menu/16x16/css.svg"
                   pageUrl="/polarion/pdf-exporter-admin/pages/css.jsp?scope=$scope$"
                   projectScope="true"
+                  projectGroupScope="false"
                   repositoryScope="true"/>
-        <extender name="Webhooks"
-                  parentNodeName="PDF Export"
-                  parentNodeIconUrl="/polarion/icons/default/topicIcons/documentsAndWiki.svg"
-                  iconUrl="/polarion/icons/default/topicIconsSmall/documentsAndWiki.svg"
+
+        <extender id="webhooks"
+                  name="Webhooks"
+                  parentNodeId="pdf-export"
+                  iconUrl="/polarion/pdf-exporter-admin/ui/images/menu/16x16/webhooks.svg"
                   pageUrl="/polarion/pdf-exporter-admin/pages/webhooks.jsp?scope=$scope$"
                   projectScope="true"
+                  projectGroupScope="false"
                   repositoryScope="true"/>
-        <extender name="Filename template"
-                  parentNodeName="PDF Export"
-                  parentNodeIconUrl="/polarion/icons/default/topicIcons/documentsAndWiki.svg"
-                  iconUrl="/polarion/icons/default/topicIconsSmall/documentsAndWiki.svg"
+
+        <extender id="filename"
+                  name="Filename"
+                  parentNodeId="pdf-export"
+                  iconUrl="/polarion/pdf-exporter-admin/ui/images/menu/16x16/filename.svg"
                   pageUrl="/polarion/pdf-exporter-admin/pages/filename-template.jsp?scope=$scope$"
                   projectScope="true"
+                  projectGroupScope="false"
                   repositoryScope="true"/>
     </contribution>
+
     <contribution configuration-id="com.polarion.alm.richpages.widgets">
-        <widget id="ch.sbb.polarion.extension.pdf.exporter.widgets.exportToPdfButton" instance="instance:ch.sbb.polarion.extension.pdf_exporter.widgets.ExportToPdfButton" />
+        <widget id="ch.sbb.polarion.extension.pdf.exporter.widgets.exportToPdfButton" instance="instance:ch.sbb.polarion.extension.pdf_exporter.widgets.ExportToPdfButton"/>
     </contribution>
     <contribution configuration-id="com.polarion.alm.richpages.widgets">
         <widget id="ch.sbb.polarion.extension.pdf.exporter.widgets.bulkPdfExportPane" instance="instance:ch.sbb.polarion.extension.pdf_exporter.widgets.BulkPdfExportWidget" />

@@ -1,7 +1,6 @@
 package ch.sbb.polarion.extension.pdf_exporter.util.html;
 
 import ch.sbb.polarion.extension.generic.regex.RegexMatcher;
-import ch.sbb.polarion.extension.pdf_exporter.properties.PdfExporterExtensionConfiguration;
 import ch.sbb.polarion.extension.pdf_exporter.util.FileResourceProvider;
 
 import java.util.LinkedHashMap;
@@ -38,11 +37,6 @@ public class HtmlLinksHelper {
     }
 
     public String internalizeLinks(String htmlContent) {
-        boolean linksInternalizationEnabled = PdfExporterExtensionConfiguration.getInstance().getInternalizeExternalCss();
-        if (!linksInternalizationEnabled) {
-            return htmlContent;
-        }
-
         return RegexMatcher.get(LINK_REGEX, RegexMatcher.CASE_INSENSITIVE).replace(htmlContent, regexEngine -> {
             String linkTag = regexEngine.group(0);
             Map<String, String> attributesMap = parseLinkTagAttributes(linkTag);

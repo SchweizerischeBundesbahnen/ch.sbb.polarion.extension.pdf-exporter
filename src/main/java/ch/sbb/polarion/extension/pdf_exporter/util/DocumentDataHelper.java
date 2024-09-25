@@ -59,8 +59,14 @@ public class DocumentDataHelper {
 
     public DocumentData<IRichPage> getLiveReport(@Nullable ITrackerProject project, @NotNull ExportParams exportParams, boolean withContent) {
         return TransactionalExecutor.executeSafelyInReadOnlyTransaction(transaction -> {
+
             String projectId = project != null ? project.getId() : "";
-            RichPageReference richPageReference = RichPageReference.fromPath(createPath(projectId, exportParams.getLocationPath()));
+            String locationPath = exportParams.getLocationPath();
+            if (locationPath == null) {
+                throw new IllegalArgumentException("Location path is required for export");
+            }
+
+            RichPageReference richPageReference = RichPageReference.fromPath(createPath(projectId, locationPath));
             if (exportParams.getRevision() != null) {
                 richPageReference = richPageReference.getWithRevision(exportParams.getRevision());
             }
@@ -93,11 +99,13 @@ public class DocumentDataHelper {
 
     public DocumentData<ITestRun> getTestRun(@NotNull ITrackerProject project, @NotNull ExportParams exportParams, boolean withContent) {
         return TransactionalExecutor.executeSafelyInReadOnlyTransaction(transaction -> {
+
             String projectId = project.getId();
             Map<String, String> urlQueryParameters = exportParams.getUrlQueryParameters();
             if (urlQueryParameters == null || !urlQueryParameters.containsKey(URL_QUERY_PARAM_ID)) {
                 throw new IllegalArgumentException("TestRun id is required for export");
             }
+
             TestRunReference testRunReference = TestRunReference.fromPath(createPath(projectId, urlQueryParameters.get(URL_QUERY_PARAM_ID)));
             if (exportParams.getRevision() != null) {
                 testRunReference = testRunReference.getWithRevision(exportParams.getRevision());
@@ -113,9 +121,9 @@ public class DocumentDataHelper {
             }
 
             return DocumentData.builder(DocumentType.TEST_RUN, testRun.getOldApi())
-                    .projectName(project != null ? project.getName() : "")
+                    .projectName(project.getName())
                     .lastRevision(testRun.getOldApi().getLastRevision())
-                    .baselineName(project != null ? getRevisionBaseline(projectId, testRun.getOldApi(), exportParams.getRevision()) : "")
+                    .baselineName(getRevisionBaseline(projectId, testRun.getOldApi(), exportParams.getRevision()))
                     .id(testRun.getOldApi().getId())
                     .title(testRun.getOldApi().getLabel())
                     .content(documentContent)
@@ -132,6 +140,11 @@ public class DocumentDataHelper {
         return TransactionalExecutor.executeSafelyInReadOnlyTransaction(transaction -> {
 
             String projectId = project != null ? project.getId() : "";
+            String locationPath = exportParams.getLocationPath();
+            if (locationPath == null) {
+                throw new IllegalArgumentException("Location path is required for export");
+            }
+
             WikiPageReference wikiPageReference = WikiPageReference.fromPath(createPath(projectId, exportParams.getLocationPath()));
             if (exportParams.getRevision() != null) {
                 wikiPageReference = wikiPageReference.getWithRevision(exportParams.getRevision());
@@ -161,6 +174,11 @@ public class DocumentDataHelper {
 
     public DocumentData<IModule> getLiveDoc(@NotNull ITrackerProject project, @NotNull ExportParams exportParams, boolean withContent) {
         return TransactionalExecutor.executeSafelyInReadOnlyTransaction(transaction -> {
+
+            String locationPath = exportParams.getLocationPath();
+            if (locationPath == null) {
+                throw new IllegalArgumentException("Location path is required for export");
+            }
 
             DocumentReference documentReference = DocumentReference.fromPath(createPath(project.getId(), exportParams.getLocationPath()));
             if (exportParams.getRevision() != null) {

@@ -74,7 +74,7 @@ public class HtmlToPdfConverter {
         } else {
             html = replaceTagContent(origHtml, "head", head);
         }
-        html = htmlProcessor.replaceImagesAsBase64Encoded(html);
+        html = htmlProcessor.replaceResourcesAsBase64Encoded(html);
         html = htmlProcessor.internalizeLinks(html);
 
         return html;

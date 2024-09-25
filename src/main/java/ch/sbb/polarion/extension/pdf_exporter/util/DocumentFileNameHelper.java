@@ -53,20 +53,20 @@ public class DocumentFileNameHelper {
                 };
 
         FileNameTemplateModel fileNameTemplateModel = getFileNameTemplateModel(ScopeUtils.getScopeFromProject(exportParams.getProjectId()));
-        String fileNameTemplate = getFileNameTemplate(exportParams.getDocumentType(), fileNameTemplateModel);
+        @NotNull String fileNameTemplate = getFileNameTemplate(exportParams.getDocumentType(), fileNameTemplateModel);
         fileNameTemplate = new PlaceholderProcessor().replacePlaceholders(documentData, exportParams, fileNameTemplate);
         String evaluatedFileName = evaluateVelocity(documentData, fileNameTemplate);
-        return replaceIllegalFileNameSymbols(evaluatedFileName);
+        return replaceIllegalFileNameSymbols(evaluatedFileName).trim();
     }
 
     @VisibleForTesting
-    String evaluateVelocity(DocumentData<? extends IUniqueObject> documentData, String fileNameTemplate) {
+    @NotNull String evaluateVelocity(@NotNull DocumentData<? extends IUniqueObject> documentData, @NotNull String fileNameTemplate) {
         String evaluatedName = velocityEvaluator.evaluateVelocityExpressions(documentData, fileNameTemplate);
         return String.format("%s.pdf", evaluatedName);
     }
 
     @VisibleForTesting
-    String replaceIllegalFileNameSymbols(String fileName) {
+    @NotNull String replaceIllegalFileNameSymbols(@NotNull String fileName) {
         return fileName.replaceAll("[\\\\/:*?\"<>|]", "_");
     }
 

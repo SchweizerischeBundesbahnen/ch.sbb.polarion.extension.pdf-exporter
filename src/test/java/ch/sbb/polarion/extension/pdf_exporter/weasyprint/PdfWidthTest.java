@@ -2,6 +2,7 @@ package ch.sbb.polarion.extension.pdf_exporter.weasyprint;
 
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.Orientation;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PaperSize;
+import ch.sbb.polarion.extension.pdf_exporter.util.FileResourceProvider;
 import ch.sbb.polarion.extension.pdf_exporter.util.HtmlProcessor;
 import ch.sbb.polarion.extension.pdf_exporter.util.MediaUtils;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.base.BaseWeasyPrintTest;
@@ -18,11 +19,12 @@ import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.mock;
 
 public class PdfWidthTest extends BaseWeasyPrintTest {
 
     public static final String FIXED_POSTFIX = "Fixed";
-    private static final HtmlProcessor htmlProcessor = new HtmlProcessor(null, null, null, null);
+    private static final HtmlProcessor htmlProcessor = new HtmlProcessor(mock(FileResourceProvider.class), null, null, null);
 
     private static Stream<Arguments> testWidthViolationParams() {
         return Stream.of(

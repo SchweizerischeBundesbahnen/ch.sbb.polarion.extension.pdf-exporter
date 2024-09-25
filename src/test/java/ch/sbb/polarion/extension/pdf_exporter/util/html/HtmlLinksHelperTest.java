@@ -34,7 +34,6 @@ class HtmlLinksHelperTest {
     void setup() {
         extensionConfigurationMockedStatic = mockStatic(PdfExporterExtensionConfiguration.class);
         extensionConfigurationMockedStatic.when(PdfExporterExtensionConfiguration::getInstance).thenReturn(pdfExporterExtensionConfiguration);
-        when(pdfExporterExtensionConfiguration.getInternalizeExternalCss()).thenReturn(true);
         htmlLinksHelper = new HtmlLinksHelper(Set.of(linkInternalizer1, linkInternalizer2));
     }
 
@@ -64,15 +63,5 @@ class HtmlLinksHelperTest {
         ArgumentCaptor<Map<String, String>> captor = ArgumentCaptor.forClass(Map.class);
         verify(linkInternalizer1).inline(captor.capture());
         assertThat(captor.getValue()).containsExactly(Map.entry("attr1", "value1"), Map.entry("attr2", "value2")); // also it must lowercase attributes
-    }
-
-    @Test
-    void shouldReturnUnchangedHtmlWhenPropertyNotSet() {
-        when(pdfExporterExtensionConfiguration.getInternalizeExternalCss()).thenReturn(false);
-        String resultHtml = htmlLinksHelper.internalizeLinks("""
-                    <html lang='en'><head><link attr1="value1" attr2="value2">some content</head>""");
-        assertThat(resultHtml).isEqualTo("""
-                <html lang='en'><head><link attr1="value1" attr2="value2">some content</head>""");
-        verify(linkInternalizer1, times(0)).inline(anyMap());
     }
 }
