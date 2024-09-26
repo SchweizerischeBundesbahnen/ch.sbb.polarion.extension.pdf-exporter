@@ -56,9 +56,7 @@ const ExportCommon = {
                     console.log('Async PDF conversion: still in progress, retrying...');
                     this.pullAndGetResultPdf(url, successCallback, errorCallback);
                 } else if (request.status === 200) {
-                    const contentDisposition = request.getResponseHeader("Content-Disposition") || "";
-                    const fileName = contentDisposition.includes("filename=") ? contentDisposition.split("filename=")[1] : null;
-                    successCallback(request.response, fileName);
+                    successCallback(request.response, request.getResponseHeader("Export-Filename"));
                 }
             },
             onError: (status, errorMessage, request) => {

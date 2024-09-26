@@ -11,6 +11,7 @@ const BULK_POPUP_HTML = `
 
             </main>
             <footer class="modal__footer">
+                <span class="result"></span>
                 <button class="polarion-JSWizardButton-Primary action-button" onclick="BulkPdfExporter.stopBulkExport();">Stop</button>
                 <button class="polarion-JSWizardButton" data-micromodal-close aria-label="Close this dialog window" style="display: none">Close</button>
             </footer>
@@ -19,12 +20,14 @@ const BULK_POPUP_HTML = `
 `;
 const BULK_EXPORT_WIDGET_ID = "polarion-PdfExporter-BulkExportWidget";
 const DISABLED_BUTTON_CLASS= "polarion-TestsExecutionButton-buttons-defaultCursor";
-const IN_PROGRESS = "IN_PROGRESS";
-const INTERRUPTED = "INTERRUPTED";
-const FINISHED = "FINISHED";
+const BULK_EXPORT_IN_PROGRESS = "IN_PROGRESS";
+const BULK_EXPORT_INTERRUPTED = "INTERRUPTED";
+const BULK_EXPORT_FINISHED = "FINISHED";
 
 const BulkPdfExporter = {
     exportParams: null,
+    state: null,
+    errors: false,
 
     init: function () {
         document.body.appendChild(ExportCommon.buildMicromodal(BULK_POPUP_ID, BULK_POPUP_HTML));
@@ -32,7 +35,7 @@ const BulkPdfExporter = {
 
     openPopup: function (exportParams) {
         this.exportParams = exportParams;
-        this.updateState(IN_PROGRESS);
+        this.updateState(BULK_EXPORT_IN_PROGRESS);
         this.renderBulkExportItems();
         MicroModal.show(BULK_POPUP_ID);
         this.startNextItemExport();
@@ -112,16 +115,37 @@ const BulkPdfExporter = {
     },
 
     stopBulkExport: function () {
-        this.updateState(INTERRUPTED);
+        this.updateState(BULK_EXPORT_INTERRUPTED);
     },
 
     updateState: function (state) {
-        if (state === IN_PROGRESS) {
-            document.querySelector("#bulk-pdf-export-popup .polarion-JSWizardButton-Primary").style.display = "block";
-            document.querySelector("#bulk-pdf-export-popup .polarion-JSWizardButton").style.display = "none";
+        this.state = state;
+
+        const popup = document.getElementById("bulk-pdf-export-popup");
+        const resultSpan = popup.querySelector(".modal__footer .result");
+        if (this.state === BULK_EXPORT_IN_PROGRESS) {
+            popup.querySelector(".polarion-JSWizardButton-Primary").style.display = "block";
+            popup.querySelector(".polarion-JSWizardButton").style.display = "none";
+            resultSpan.className = "result";
+            resultSpan.innerText = "";
         } else {
-            document.querySelector("#bulk-pdf-export-popup .polarion-JSWizardButton-Primary").style.display = "none";
-            document.querySelector("#bulk-pdf-export-popup .polarion-JSWizardButton").style.display = "block";
+            popup.querySelector(".polarion-JSWizardButton-Primary").style.display = "none";
+            popup.querySelector(".polarion-JSWizardButton").style.display = "block";
+            if (this.state === BULK_EXPORT_INTERRUPTED) {
+                document.querySelectorAll("#bulk-pdf-export-popup .export-item.paused").forEach(item => {
+                    item.classList.remove("paused");
+                    item.classList.add("interrupted");
+                });
+
+                resultSpan.classList.add("interrupted");
+                resultSpan.innerText = "Export interrupted by user";
+            } else if (this.state === BULK_EXPORT_FINISHED) {
+                resultSpan.classList.add("finished");
+                if (this.errors) {
+                    resultSpan.classList.add("with-errors");
+                }
+                resultSpan.innerText = this.errors ? "Export finished with errors" : "Export successfully finished";
+            }
         }
     },
 
@@ -132,33 +156,46 @@ const BulkPdfExporter = {
             nextItem.classList.remove("paused");
             nextItem.classList.add("in-progress");
 
-            this.exportParams["documentType"] = this.getDocumentType(nextItem.dataset["type"]);
-            this.exportParams["locationPath"] = `${nextItem.dataset["space"]}/${nextItem.dataset["id"]}`;
+            const documentType = this.getDocumentType(nextItem.dataset["type"]);
+            this.exportParams["documentType"] = documentType;
+            if (documentType === ExportParams.DocumentType.TEST_RUN) {
+                this.exportParams["urlQueryParameters"] = { id: nextItem.dataset["id"] };
+            } else {
+                this.exportParams["locationPath"] = `${nextItem.dataset["space"]}/${nextItem.dataset["id"]}`;
+            }
 
             ExportCommon.asyncConvertPdf(this.exportParams.toJSON(), (responseBody, fileName) => {
-                console.log(fileName);
                 nextItem.classList.remove("in-progress");
                 nextItem.classList.add("finished");
 
                 const objectURL = (window.URL ? window.URL : window.webkitURL).createObjectURL(responseBody);
                 const anchorElement = document.createElement("a");
                 anchorElement.href = objectURL;
-                anchorElement.download = fileName || `${nextItem.dataset["space"]}_${nextItem.dataset["id"]}.pdf`; // Fallback if file name wasn't received in response
+                anchorElement.download = fileName || `${nextItem.dataset["space"] ? nextItem.dataset["space"] + "_" : ""}${nextItem.dataset["id"]}.pdf`; // Fallback if file name wasn't received in response
                 anchorElement.target = "_blank";
                 anchorElement.click();
                 anchorElement.remove();
                 setTimeout(() => URL.revokeObjectURL(objectURL), 100);
                 this.startNextItemExport();
-                // this.showNotification({alertType: "success", message: "PDF was successfully generated"});
             }, errorResponse => {
-                // errorResponse.text().then(errorJson => {
-                //     const error = errorJson && JSON.parse(errorJson);
-                //     const errorMessage = error && (error.message ? error.message : error.errorMessage);
-                //     this.showNotification({alertType: "error", message: "Error occurred during PDF generation" + (errorMessage ? ": " + errorMessage : "")});
-                // });
+                this.errors = true;
+                nextItem.classList.remove("in-progress");
+                nextItem.classList.add("error");
+
+                errorResponse.text().then(errorJson => {
+                    const error = errorJson && JSON.parse(errorJson);
+                    const errorMessage = error && (error.message ? error.message : error.errorMessage);
+                    const errorDiv = document.createElement("div");
+                    errorDiv.className = "error-message";
+                    errorDiv.innerText = errorMessage;
+                    nextItem.appendChild(errorDiv);
+                });
+                this.startNextItemExport();
             });
         } else {
-            this.updateState(FINISHED);
+            if (this.state !== BULK_EXPORT_INTERRUPTED) {
+                this.updateState(BULK_EXPORT_FINISHED);
+            }
         }
     },
 

@@ -17,6 +17,7 @@ import ch.sbb.polarion.extension.pdf_exporter.service.PdfExporterPolarionService
 import ch.sbb.polarion.extension.pdf_exporter.util.DocumentDataHelper;
 import ch.sbb.polarion.extension.pdf_exporter.util.DocumentFileNameHelper;
 import ch.sbb.polarion.extension.pdf_exporter.util.PdfValidationService;
+import com.polarion.core.util.StringUtils;
 import com.polarion.platform.core.PlatformContext;
 import com.polarion.platform.security.ISecurityService;
 import io.swagger.v3.oas.annotations.Hidden;
@@ -28,6 +29,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
 import org.springframework.http.HttpStatus;
 
@@ -121,7 +123,7 @@ public class ConverterInternalController {
             })
     public Response convertToPdf(ExportParams exportParams) {
         validateExportParameters(exportParams);
-        String fileName = new DocumentFileNameHelper(pdfExporterPolarionService).getDocumentFileName(exportParams);
+        String fileName = getFileName(exportParams);
         byte[] pdfBytes = pdfConverter.convertToPdf(exportParams, null);
         return Response.ok(pdfBytes)
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
@@ -246,9 +248,11 @@ public class ConverterInternalController {
             return Response.status(HttpStatus.NO_CONTENT.value()).build();
         }
         ExportParams exportParams = pdfConverterJobService.getJobParams(jobId);
+        String fileName = getFileName(exportParams);
         return Response.ok(pdfContent.get())
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + exportParams.getFileName() + "\"")
-                .header(EXPORT_FILENAME_HEADER, exportParams.getFileName()).build();
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
+                .header(EXPORT_FILENAME_HEADER, fileName)
+                .build();
     }
 
     @GET
@@ -280,7 +284,11 @@ public class ConverterInternalController {
             responses = {
                     @ApiResponse(responseCode = "200",
                             description = "Content of PDF document as a byte array",
-                            content = {@Content(mediaType = "application/pdf")}
+                            content = {@Content(mediaType = "application/pdf")},
+                            headers = {
+                                    @Header(name = HttpHeaders.CONTENT_DISPOSITION, description = "To inform a browser that the response is a downloadable attachment"),
+                                    @Header(name = EXPORT_FILENAME_HEADER, description = "File name for converted PDF document")
+                            }
                     )
             })
     public Response convertHtmlToPdf(
@@ -289,8 +297,11 @@ public class ConverterInternalController {
             @Parameter(description = "default value: A4") @QueryParam("paperSize") PaperSize paperSize,
             @Parameter(description = "default value: document.pdf") @QueryParam("fileName") String fileName) {
         byte[] pdfBytes = htmlToPdfConverter.convert(html, orientation, paperSize);
-        String dispositionFileName = (fileName != null) ? fileName : "document.pdf";
-        return Response.ok(pdfBytes).header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + dispositionFileName).build();
+        String headerFileName = (fileName != null) ? fileName : "document.pdf";
+        return Response.ok(pdfBytes)
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + headerFileName)
+                .header(EXPORT_FILENAME_HEADER, headerFileName)
+                .build();
     }
 
     @POST
@@ -348,6 +359,16 @@ public class ConverterInternalController {
         }
         if (exportParams.getLocationPath() == null && exportParams.getDocumentType() != DocumentType.TEST_RUN) {
             throw new BadRequestException("Parameter 'locationPath' should be provided");
+        }
+    }
+
+    private String getFileName(@Nullable ExportParams exportParams) {
+        if (exportParams != null) {
+            return StringUtils.isEmpty(exportParams.getFileName())
+                ? new DocumentFileNameHelper(pdfExporterPolarionService).getDocumentFileName(exportParams)
+                : exportParams.getFileName();
+        } else {
+            return "document.pdf";
         }
     }
 

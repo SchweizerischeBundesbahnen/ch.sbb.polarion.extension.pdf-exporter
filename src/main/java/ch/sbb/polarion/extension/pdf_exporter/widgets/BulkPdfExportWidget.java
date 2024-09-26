@@ -3,10 +3,10 @@ package ch.sbb.polarion.extension.pdf_exporter.widgets;
 import com.polarion.alm.shared.api.SharedContext;
 import com.polarion.alm.shared.api.model.rp.parameter.ParameterFactory;
 import com.polarion.alm.shared.api.model.rp.parameter.RichPageParameter;
-import com.polarion.alm.shared.api.model.rp.parameter.impl.ParameterFactoryImpl;
 import com.polarion.alm.shared.api.model.rp.widget.RichPageWidget;
 import com.polarion.alm.shared.api.model.rp.widget.RichPageWidgetContext;
 import com.polarion.alm.shared.api.model.rp.widget.RichPageWidgetRenderingContext;
+import com.polarion.alm.shared.api.utils.collections.ImmutableStrictList;
 import com.polarion.alm.shared.api.utils.collections.ReadOnlyStrictMap;
 import com.polarion.alm.shared.api.utils.collections.StrictMap;
 import com.polarion.alm.shared.api.utils.collections.StrictMapImpl;
@@ -21,7 +21,12 @@ public class BulkPdfExportWidget extends RichPageWidget {
     @NotNull
     @Override
     public String getIcon(@NotNull RichPageWidgetContext widgetContext) {
-        return "/polarion/ria/images/widgets/table.png";
+        return "/polarion/pdf-exporter-admin/ui/images/app-icon.svg";
+    }
+
+    @NotNull
+    public Iterable<String> getTags(@NotNull SharedContext context) {
+        return new ImmutableStrictList<>(Constants.PDF_EXPORT_TAG);
     }
 
     @NotNull

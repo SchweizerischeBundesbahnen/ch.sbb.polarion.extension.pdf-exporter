@@ -402,7 +402,15 @@ const PdfExporter = {
     exportToPdf: function () {
         this.hideAlerts();
 
-        const exportParams = this.getExportParams();
+        let fileName = document.getElementById("popup-filename").value;
+        if (!fileName) {
+            fileName = document.getElementById("popup-filename").dataset.default;
+        }
+        if (fileName && !fileName.endsWith(".pdf")) {
+            fileName += ".pdf";
+        }
+
+        const exportParams = this.getExportParams(fileName);
         if (exportParams === undefined) {
             return;
         }
@@ -411,14 +419,6 @@ const PdfExporter = {
             this.closePopup();
             BulkPdfExporter.openPopup(exportParams);
             return;
-        }
-
-        let filename = document.getElementById("popup-filename").value;
-        if (!filename) {
-            filename = document.getElementById("popup-filename").dataset.default;
-        }
-        if (!filename.endsWith(".pdf")) {
-            filename += ".pdf";
         }
 
         this.actionInProgress({inProgress: true, message: "Generating PDF"})
@@ -432,7 +432,7 @@ const PdfExporter = {
             const objectURL = (window.URL ? window.URL : window.webkitURL).createObjectURL(responseBody);
             const anchorElement = document.createElement("a");
             anchorElement.href = objectURL;
-            anchorElement.download = filename;
+            anchorElement.download = fileName;
             anchorElement.target = "_blank";
             anchorElement.click();
             anchorElement.remove();
@@ -465,7 +465,7 @@ const PdfExporter = {
         })
     },
 
-    getExportParams: function () {
+    getExportParams: function (fileName) {
         let selectedChapters = null;
         if (document.getElementById("popup-specific-chapters").checked) {
             selectedChapters = this.getSelectedChapters();
@@ -494,10 +494,10 @@ const PdfExporter = {
             selectedRoles.push(...selectedOptions.map(opt => opt.value));
         }
 
-        return this.buildExportParams(selectedChapters, numberedListStyles, selectedRoles);
+        return this.buildExportParams(selectedChapters, numberedListStyles, selectedRoles, fileName);
     },
 
-    buildExportParams: function (selectedChapters, numberedListStyles, selectedRoles) {
+    buildExportParams: function (selectedChapters, numberedListStyles, selectedRoles, fileName) {
         const live_doc = this.exportContext.getDocumentType() === ExportParams.DocumentType.LIVE_DOC;
         return new ExportParams.Builder(this.exportContext.getDocumentType())
             .setProjectId(this.exportContext.getProjectId())
@@ -523,6 +523,7 @@ const PdfExporter = {
             .setChapters(selectedChapters)
             .setLanguage(live_doc && document.getElementById('popup-localization').checked ? document.getElementById("popup-language").value : null)
             .setLinkedWorkitemRoles(selectedRoles)
+            .setFileName(fileName)
             .setUrlQueryParameters(this.exportContext.getUrlQueryParameters())
             .build();
     },

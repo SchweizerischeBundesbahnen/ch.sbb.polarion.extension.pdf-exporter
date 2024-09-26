@@ -172,6 +172,10 @@
     border-color: #527889;
 }
 
+.modal__container.pdf-exporter .modal__footer {
+    margin-left: 20px;
+}
+
 .modal__container.pdf-exporter .flex-container {
     display: flex;
     column-gap: 20px;
@@ -204,7 +208,7 @@
 }
 
 .modal__container.pdf-exporter .export-item .icon img {
-    width: 16px;
+    width: 18px;
 }
 
 .modal__container.pdf-exporter .export-item.paused {
@@ -223,8 +227,39 @@
     content: "\f00c"; /* Check/Ticker icon from FontAwesome */
 }
 
+.modal__container.pdf-exporter .export-item.interrupted .icon, .modal__container.pdf-exporter .export-item.error .icon {
+    color: red;
+}
+
+.modal__container.pdf-exporter .export-item.error .icon i.fa:before {
+    content: "\f06a"; /* Check/Ticker icon from FontAwesome */
+}
+
+.modal__container.pdf-exporter .export-item.interrupted .icon i.fa:before {
+    content: "\f05e"; /* Check/Ticker icon from FontAwesome */
+}
+
 .modal__container.pdf-exporter .export-item:not(.in-progress) .icon img {
     display: none;
+}
+
+.modal__container.pdf-exporter .export-item .error-message {
+    color: rgba(255, 0, 0, 0.7);
+    font-size: 10px;
+    font-family: monospace;
+    margin-left: 26px;
+}
+
+.modal__container.pdf-exporter .modal__footer .result {
+    flex-grow: 5;
+}
+
+.modal__container.pdf-exporter .modal__footer .result.finished {
+    color: green;
+}
+
+.modal__container.pdf-exporter .modal__footer .result.interrupted, .modal__container.pdf-exporter .modal__footer .result.finished.with-errors {
+    color: red;
 }
 
 .property-wrapper {
