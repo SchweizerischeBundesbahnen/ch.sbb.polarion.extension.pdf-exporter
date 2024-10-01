@@ -52,8 +52,13 @@ const PdfExporter = {
         MicroModal.show(POPUP_ID);
     },
 
-    openPopupForBulkExport: function () {
-        PdfExporter.openPopup({ exportContext: new ExportContext(ExportParams.DocumentType.MIXED) });
+    openPopupForBulkExport: function (bulkExportWidget) {
+        PdfExporter.openPopup({ exportContext: new ExportContext(
+            {
+                documentType: ExportParams.DocumentType.MIXED,
+                bulkExportWidget: bulkExportWidget
+            })
+        });
     },
 
     closePopup: function () {
@@ -415,9 +420,9 @@ const PdfExporter = {
             return;
         }
 
-        if (this.exportContext.getDocumentType() === ExportParams.DocumentType.MIXED) {
+        if (this.exportContext.getBulkExportWidget() && this.exportContext.getDocumentType() === ExportParams.DocumentType.MIXED) {
             this.closePopup();
-            BulkPdfExporter.openPopup(exportParams);
+            BulkPdfExporter.openPopup(this.exportContext.getBulkExportWidget(), exportParams);
             return;
         }
 

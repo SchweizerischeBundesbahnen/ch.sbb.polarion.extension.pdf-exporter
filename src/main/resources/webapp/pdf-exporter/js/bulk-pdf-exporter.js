@@ -18,7 +18,6 @@ const BULK_POPUP_HTML = `
         </div>
     </div>
 `;
-const BULK_EXPORT_WIDGET_ID = "polarion-PdfExporter-BulkExportWidget";
 const DISABLED_BUTTON_CLASS= "polarion-TestsExecutionButton-buttons-defaultCursor";
 const BULK_EXPORT_IN_PROGRESS = "IN_PROGRESS";
 const BULK_EXPORT_INTERRUPTED = "INTERRUPTED";
@@ -33,16 +32,15 @@ const BulkPdfExporter = {
         document.body.appendChild(ExportCommon.buildMicromodal(BULK_POPUP_ID, BULK_POPUP_HTML));
     },
 
-    openPopup: function (exportParams) {
+    openPopup: function (bulkExportWidget, exportParams) {
         this.exportParams = exportParams;
         this.updateState(BULK_EXPORT_IN_PROGRESS);
-        this.renderBulkExportItems();
+        this.renderBulkExportItems(bulkExportWidget);
         MicroModal.show(BULK_POPUP_ID);
         this.startNextItemExport();
     },
 
-    renderBulkExportItems: function() {
-        const bulkExportWidget = document.getElementById(BULK_EXPORT_WIDGET_ID);
+    renderBulkExportItems: function(bulkExportWidget) {
         if (bulkExportWidget) {
             const modalContent = document.querySelector("#bulk-pdf-export-popup .modal__content");
             modalContent.innerHTML = "";
@@ -100,13 +98,13 @@ const BulkPdfExporter = {
         }
     },
 
-    updateBulkExportButton: function () {
-        const bulkExportWidget = document.getElementById(BULK_EXPORT_WIDGET_ID);
+    updateBulkExportButton: function (clickedElement) {
+        const bulkExportWidget = clickedElement && clickedElement.closest("div.polarion-PdfExporter-BulkExportWidget");
         const button = bulkExportWidget && bulkExportWidget.querySelector(".polarion-TestsExecutionButton-buttons");
         if (button) {
             if (bulkExportWidget.querySelectorAll('input[type="checkbox"]:checked').length > 0) {
                 button.classList.remove(DISABLED_BUTTON_CLASS);
-                button.addEventListener("click", PdfExporter.openPopupForBulkExport);
+                button.addEventListener("click", () => PdfExporter.openPopupForBulkExport(bulkExportWidget));
             } else {
                 button.classList.add(DISABLED_BUTTON_CLASS);
                 button.removeEventListener("click", PdfExporter.openPopupForBulkExport);

@@ -6,8 +6,9 @@ export default class ExportContext {
     revision = undefined;
     documentType = undefined;
     urlQueryParameters = undefined;
+    bulkExportWidget = undefined;
 
-    constructor(documentType = ExportParams.DocumentType.LIVE_DOC, polarionLocationHash = window.location.hash) {
+    constructor({documentType = ExportParams.DocumentType.LIVE_DOC, polarionLocationHash = window.location.hash, bulkExportWidget}) {
         this.documentType = documentType;
 
         const urlPathAndSearchParams = getPathAndQueryParams(polarionLocationHash);
@@ -29,6 +30,8 @@ export default class ExportContext {
 
         this.urlQueryParameters = getQueryParams(searchParameters);
         this.revision = this.urlQueryParameters?.revision;
+
+        this.bulkExportWidget = bulkExportWidget;
 
         // print the context to console only in browser
         if (isWindowDefined()) {
@@ -128,6 +131,10 @@ export default class ExportContext {
 
     getUrlQueryParameters() {
         return this.urlQueryParameters;
+    }
+
+    getBulkExportWidget() {
+        return this.bulkExportWidget;
     }
 
     getScope() {

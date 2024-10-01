@@ -37,7 +37,7 @@ public class BulkPdfExportWidgetRenderer extends AbstractWidgetRenderer {
     @Override
     protected void render(@NotNull HtmlFragmentBuilder builder) {
         HtmlTagBuilder wrap = builder.tag().div();
-        wrap.attributes().id("polarion-PdfExporter-BulkExportWidget");
+        wrap.attributes().className("polarion-PdfExporter-BulkExportWidget");
 
         HtmlTagBuilder header = wrap.append().tag().div();
         header.attributes().className("header");
@@ -53,7 +53,7 @@ public class BulkPdfExportWidgetRenderer extends AbstractWidgetRenderer {
         if (includeDocuments) {
             final HtmlTagBuilder columnContent = renderColumn(exportItems, "Documents:");
             //language=JS
-            columnContent.attributes().onClick("BulkPdfExporter.updateBulkExportButton();");
+            columnContent.attributes().onClick("BulkPdfExporter.updateBulkExportButton(this);");
             IPObjectList<IModule> documents = polarionService.getDocuments(projectId);
             if (documents.isEmpty()) {
                 renderNoData(columnContent, "No documents found");
@@ -65,7 +65,7 @@ public class BulkPdfExportWidgetRenderer extends AbstractWidgetRenderer {
         if (includeReports) {
             final HtmlTagBuilder columnContent = renderColumn(exportItems, "Reports:");
             //language=JS
-            columnContent.attributes().onClick("BulkPdfExporter.updateBulkExportButton();");
+            columnContent.attributes().onClick("BulkPdfExporter.updateBulkExportButton(this);");
             IPObjectList<IRichPage> reports = polarionService.getReports(projectId);
             if (reports.isEmpty()) {
                 renderNoData(columnContent, "No reports found");
@@ -77,7 +77,7 @@ public class BulkPdfExportWidgetRenderer extends AbstractWidgetRenderer {
         if (includeTestRuns) {
             final HtmlTagBuilder columnContent = renderColumn(exportItems, "Test Runs:");
             //language=JS
-            columnContent.attributes().onClick("BulkPdfExporter.updateBulkExportButton();");
+            columnContent.attributes().onClick("BulkPdfExporter.updateBulkExportButton(this);");
             IPObjectList<ITestRun> testRuns = polarionService.getTestRuns(projectId);
             if (testRuns.isEmpty()) {
                 renderNoData(columnContent, "No test runs found");

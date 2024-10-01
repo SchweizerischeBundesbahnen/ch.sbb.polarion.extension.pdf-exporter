@@ -90,6 +90,10 @@
         <widget id="ch.sbb.polarion.extension.pdf.exporter.widgets.exportToPdfButton" instance="instance:ch.sbb.polarion.extension.pdf_exporter.widgets.ExportToPdfButton"/>
     </contribution>
     <contribution configuration-id="com.polarion.alm.richpages.widgets">
-        <widget id="ch.sbb.polarion.extension.pdf.exporter.widgets.bulkPdfExportPane" instance="instance:ch.sbb.polarion.extension.pdf_exporter.widgets.BulkPdfExportWidget" />
+        <widget id="ch.sbb.polarion.extension.pdf.exporter.widgets.bulkPdfExportWidget" instance="instance:ch.sbb.polarion.extension.pdf_exporter.widgets.BulkPdfExportWidget" />
     </contribution>
+    <contribution configuration-id="com.polarion.alm.richpages.widgets">
+        <widget id="ch.sbb.polarion.extension.pdf.exporter.widgets.bulkPdfExportTable" instance="instance:ch.sbb.polarion.extension.pdf_exporter.widgets.BulkPdfExportTable" />
+    </contribution>
+
 </module>
