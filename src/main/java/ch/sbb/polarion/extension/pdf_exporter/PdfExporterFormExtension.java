@@ -112,12 +112,8 @@ public class PdfExporterFormExtension implements IFormExtension {
 
     private SettingName getStylePackageNameToSelect(Collection<SettingName> stylePackageNames) {
         return stylePackageNames.stream()
-                .filter(stylePackageName -> !NamedSettings.DEFAULT_NAME.equals(stylePackageName.getName()))
                 .findFirst()
-                .orElse(stylePackageNames.stream()
-                        .findFirst()
-                        .orElse(null)
-                );
+                .orElse(null);
     }
 
     private StylePackageModel getSelectedStylePackage(SettingName defaultStylePackageName, String scope) {

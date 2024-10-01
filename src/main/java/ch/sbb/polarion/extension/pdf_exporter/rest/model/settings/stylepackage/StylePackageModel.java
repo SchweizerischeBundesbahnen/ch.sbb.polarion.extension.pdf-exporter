@@ -1,5 +1,6 @@
 package ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.stylepackage;
 
+import ch.sbb.polarion.extension.generic.settings.NamedSettings;
 import ch.sbb.polarion.extension.generic.settings.SettingsModel;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;
@@ -10,6 +11,7 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 
 import java.util.List;
+import java.util.Optional;
 
 @Data
 @Builder
@@ -19,7 +21,12 @@ import java.util.List;
 @EqualsAndHashCode(callSuper = false)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class StylePackageModel extends SettingsModel {
+
+    public static final Float DEFAULT_WEIGHT = 50f;
+    public static final Float DEFAULT_INITIAL_WEIGHT = 0f; // used to initialize the 'Default' settings in the default/repository scope
+
     private static final String MATCHING_QUERY_ENTRY_NAME = "MATCHING QUERY";
+    private static final String WEIGHT_ENTRY_NAME = "WEIGHT";
     private static final String EXPOSE_SETTINGS_ENTRY_NAME = "EXPOSE SETTINGS";
     private static final String COVER_PAGE_ENTRY_NAME = "COVER PAGE";
     private static final String HEADER_FOOTER_ENTRY_NAME = "HEADER FOOTER";
@@ -44,6 +51,7 @@ public class StylePackageModel extends SettingsModel {
     private static final String EXPOSE_PAGE_WIDTH_VALIDATION_ENTRY_NAME = "EXPOSE PAGE WIDTH VALIDATION";
 
     private String matchingQuery;
+    private Float weight;
     private boolean exposeSettings;
     private String coverPage;
     private String headerFooter;
@@ -70,6 +78,7 @@ public class StylePackageModel extends SettingsModel {
     @Override
     protected String serializeModelData() {
         return serializeEntry(MATCHING_QUERY_ENTRY_NAME, matchingQuery) +
+                serializeEntry(WEIGHT_ENTRY_NAME, weight) +
                 serializeEntry(EXPOSE_SETTINGS_ENTRY_NAME, exposeSettings) +
                 serializeEntry(COVER_PAGE_ENTRY_NAME, coverPage) +
                 serializeEntry(HEADER_FOOTER_ENTRY_NAME, headerFooter) +
@@ -97,6 +106,8 @@ public class StylePackageModel extends SettingsModel {
     @Override
     protected void deserializeModelData(String serializedString) {
         matchingQuery = deserializeEntry(MATCHING_QUERY_ENTRY_NAME, serializedString);
+        weight = Optional.ofNullable(deserializeEntry(WEIGHT_ENTRY_NAME, serializedString)).map(Float::parseFloat)
+                .orElse(NamedSettings.DEFAULT_NAME.equals(name) ? DEFAULT_INITIAL_WEIGHT : DEFAULT_WEIGHT);
         exposeSettings = Boolean.parseBoolean(deserializeEntry(EXPOSE_SETTINGS_ENTRY_NAME, serializedString));
         coverPage = deserializeEntry(COVER_PAGE_ENTRY_NAME, serializedString);
         headerFooter = deserializeEntry(HEADER_FOOTER_ENTRY_NAME, serializedString);

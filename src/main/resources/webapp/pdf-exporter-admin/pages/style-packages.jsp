@@ -52,6 +52,24 @@
         .checkbox.input-group label {
             width: auto;
         }
+        .flex-centered {
+            display: flex;
+            align-items: center;
+        }
+        .flex-centered label {
+            width: auto;
+            margin-right: 4px;
+        }
+        .flex-grow {
+            flex-grow: 1;
+        }
+        .more-info {
+            background: url(/polarion/ria/images/msginfo.png) no-repeat;
+            display: inline-block;
+            width: 17px;
+            height: 17px;
+            cursor: pointer;
+        }
     </style>
 </head>
 
@@ -72,12 +90,23 @@
         </div>
 
         <div class="flex-container" id="matching-query-container" style="border-top: 1px solid #ccc; margin-top: 20px; padding-top: 15px;">
-            <p>Here you can specify a query to select documents to which this style package will be relevant. For documents not matching this query the style package won't be visible.
-                If you want to make this style package be available to all documents, just leave this field empty.</p>
-            <div class='input-group'>
-                <label for='matching-query'>Matching query:</label>
-                <input id='matching-query' style="width: 725px;"/>
+
+            <div class="flex-column">
+                <div class='input-group flex-centered'>
+                    <label for='style-package-weight'>Weight:</label>
+                    <div class='more-info' title="The field below contains a float number from 0.0 to 100, which will determine the position of current style package in the resulting style packages list. The higher the number, the higher its position will be. Use 'Preview resulting list' to check the current item's position in the final list."></div>
+                    <input id="style-package-weight" style="margin-left: 59px" type="number" min="1" max="100" step="0.1" onblur="adjustWeight(this)">
+                </div>
             </div>
+
+            <div class="flex-grow">
+                <div class='input-group flex-centered'>
+                    <label for='matching-query'>Matching query:</label>
+                    <div class='more-info' title="Here you can specify a query to select documents to which this style package will be relevant. For documents not matching this query the style package won't be visible. If you want to make this style package be available to all documents, just leave this field empty."></div>
+                    <input id='matching-query' class="flex-grow" style="margin-left: 8px;"/>
+                </div>
+            </div>
+
         </div>
 
         <div class="flex-container" style="border-top: 1px solid #ccc; margin-top: 20px; padding-top: 15px;">

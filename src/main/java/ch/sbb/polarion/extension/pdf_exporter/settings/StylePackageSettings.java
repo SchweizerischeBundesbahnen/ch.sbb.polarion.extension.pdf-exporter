@@ -6,6 +6,7 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.Orientation;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PaperSize;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.stylepackage.StylePackageModel;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.VisibleForTesting;
 
 public class StylePackageSettings extends GenericNamedSettings<StylePackageModel> {
     public static final String FEATURE_NAME = "style-package";
@@ -17,6 +18,11 @@ public class StylePackageSettings extends GenericNamedSettings<StylePackageModel
 
     public StylePackageSettings(SettingsService settingsService) {
         super(FEATURE_NAME, settingsService);
+    }
+
+    @Override
+    public void beforeSave(@NotNull StylePackageModel what) {
+        adjustAndValidateWeight(what);
     }
 
     @Override
@@ -34,7 +40,18 @@ public class StylePackageSettings extends GenericNamedSettings<StylePackageModel
                 .renderComments(true)
                 .cutEmptyWorkitemAttributes(true)
                 .followHTMLPresentationalHints(true)
+                .weight(StylePackageModel.DEFAULT_WEIGHT)
                 .build();
+    }
+
+    @VisibleForTesting
+    void adjustAndValidateWeight(StylePackageModel model) {
+        Float weight = model.getWeight();
+        if (weight == null) {
+            model.setWeight(DEFAULT_NAME.equals(model.getName()) ? StylePackageModel.DEFAULT_INITIAL_WEIGHT : StylePackageModel.DEFAULT_WEIGHT);
+        } else if (weight < 0 || weight > 100 || Math.abs(weight * 10 - Math.floor(weight * 10)) > 0) {
+            throw new IllegalArgumentException("Weight must be between 0 and 100 and have only one digit after the decimal point");
+        }
     }
 
 }
