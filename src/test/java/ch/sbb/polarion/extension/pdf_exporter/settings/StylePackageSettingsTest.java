@@ -152,4 +152,60 @@ class StylePackageSettingsTest {
             assertEquals("setting_two", loadedTwoModel.getBundleTimestamp());
         }
     }
+
+    @Test
+    void testValidateWeight() {
+        try (MockedStatic<ScopeUtils> mockScopeUtils = mockStatic(ScopeUtils.class)) {
+            SettingsService mockedSettingsService = mock(SettingsService.class);
+            mockScopeUtils.when(() -> ScopeUtils.getFileContent(any())).thenCallRealMethod();
+
+            StylePackageSettings stylePackageSettings = new StylePackageSettings(mockedSettingsService);
+            StylePackageModel model = new StylePackageModel();
+
+            model.setWeight(null);
+            stylePackageSettings.adjustAndValidateWeight(model);
+            assertEquals(StylePackageModel.DEFAULT_WEIGHT, model.getWeight());
+
+            model.setWeight(0.0f);
+            stylePackageSettings.adjustAndValidateWeight(model);
+            assertEquals(0.0f, model.getWeight());
+
+            model.setWeight(0.1f);
+            stylePackageSettings.adjustAndValidateWeight(model);
+            assertEquals(0.1f, model.getWeight());
+
+            model.setWeight(0.10f);
+            stylePackageSettings.adjustAndValidateWeight(model);
+            assertEquals(0.1f, model.getWeight());
+
+            model.setWeight(100.000f);
+            stylePackageSettings.adjustAndValidateWeight(model);
+            assertEquals(100f, model.getWeight());
+
+            model.setWeight(-5.0f);
+            IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+                stylePackageSettings.adjustAndValidateWeight(model);
+            });
+            assertEquals("Weight must be between 0 and 100 and have only one digit after the decimal point", exception.getMessage());
+
+            model.setWeight(101.0f);
+            exception = assertThrows(IllegalArgumentException.class, () -> {
+                stylePackageSettings.adjustAndValidateWeight(model);
+            });
+            assertEquals("Weight must be between 0 and 100 and have only one digit after the decimal point", exception.getMessage());
+
+            model.setWeight(50.11f);
+            exception = assertThrows(IllegalArgumentException.class, () -> {
+                stylePackageSettings.adjustAndValidateWeight(model);
+            });
+            assertEquals("Weight must be between 0 and 100 and have only one digit after the decimal point", exception.getMessage());
+
+            model.setWeight(20.000001f);
+            exception = assertThrows(IllegalArgumentException.class, () -> {
+                stylePackageSettings.adjustAndValidateWeight(model);
+            });
+            assertEquals("Weight must be between 0 and 100 and have only one digit after the decimal point", exception.getMessage());
+        }
+    }
+
 }

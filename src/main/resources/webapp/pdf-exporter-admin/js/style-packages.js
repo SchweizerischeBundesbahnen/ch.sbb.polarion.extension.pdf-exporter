@@ -7,7 +7,8 @@ SbbCommon.init({
 });
 Configurations.init({
     label: 'style package',
-    setConfigurationContentCallback: setStylePackage
+    setConfigurationContentCallback: setStylePackage,
+    newConfigurationCallback: newConfigurationCreated
 });
 
 const ChildConfigurations = {
@@ -159,6 +160,7 @@ function saveStylePackage() {
         contentType: 'application/json',
         body: JSON.stringify({
             'matchingQuery': SbbCommon.getValueById('matching-query'),
+            'weight': SbbCommon.getValueById('style-package-weight'),
             'exposeSettings': SbbCommon.getCheckboxValueById('exposeSettings'),
             'coverPage': SbbCommon.getCheckboxValueById('cover-page-checkbox') ? ChildConfigurations.coverPageSelect.getSelectedValue() : null,
             'css': ChildConfigurations.cssSelect.getSelectedValue(),
@@ -213,6 +215,7 @@ function setStylePackage(content) {
     const stylePackage = JSON.parse(content);
 
     SbbCommon.setValueById('matching-query', stylePackage.matchingQuery || "");
+    SbbCommon.setValueById('style-package-weight', stylePackage.weight);
     document.getElementById('matching-query-container').style.display = DEFAULT_SETTING_NAME === Configurations.getSelectedConfiguration() ? "none" : "flex";
 
     SbbCommon.setCheckboxValueById('exposeSettings', stylePackage.exposeSettings);
@@ -262,6 +265,33 @@ function setStylePackage(content) {
     if (stylePackage.bundleTimestamp !== SbbCommon.getValueById('bundle-timestamp')) {
         SbbCommon.setNewerVersionNotificationVisible(true);
     }
+}
+
+function newConfigurationCreated() {
+    SbbCommon.setValueById('style-package-weight', 50);
+}
+
+function adjustWeight(input) {
+    let value = parseFloat(input.value); // Get the current value and convert to float
+
+    // 1. If the number > 100, set the value to 100
+    if (value > 100) {
+        value = 100;
+    }
+
+    // 2. If the decimal part contains more than 1 cipher, round to 1 decimal
+    if (value % 1 !== 0) { // Check if there's a decimal part
+        value = parseFloat(value.toFixed(1)); // Round to 1 decimal place
+    }
+
+    // 3. If the number doesn't fit the pattern NNN.N, set the value to 50
+    const regex = /^\d{1,3}(\.\d)?$/;
+    if (!regex.test(value)) {
+        value = 50;
+    }
+
+    // Set the modified value back to the input field
+    input.value = value;
 }
 
 PaperSizes.init();
