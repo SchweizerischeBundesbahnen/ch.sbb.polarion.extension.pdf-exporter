@@ -1,89 +1,98 @@
 package ch.sbb.polarion.extension.pdf_exporter.widgets;
 
-import ch.sbb.polarion.extension.pdf_exporter.service.PdfExporterPolarionService;
 import com.polarion.alm.server.api.model.rp.widget.AbstractWidgetRenderer;
-import com.polarion.alm.shared.api.model.rp.parameter.BooleanParameter;
+import com.polarion.alm.server.api.model.rp.widget.BottomQueryLinksBuilder;
+import com.polarion.alm.shared.api.model.ModelObject;
+import com.polarion.alm.shared.api.model.rp.parameter.CompositeParameter;
+import com.polarion.alm.shared.api.model.rp.parameter.DataSet;
+import com.polarion.alm.shared.api.model.rp.parameter.DataSetParameter;
+import com.polarion.alm.shared.api.model.rp.parameter.Field;
+import com.polarion.alm.shared.api.model.rp.parameter.FieldsParameter;
+import com.polarion.alm.shared.api.model.rp.parameter.IntegerParameter;
+import com.polarion.alm.shared.api.model.rp.parameter.SortingParameter;
 import com.polarion.alm.shared.api.model.rp.widget.RichPageWidgetCommonContext;
+import com.polarion.alm.shared.api.utils.collections.IterableWithSize;
+import com.polarion.alm.shared.api.utils.html.HtmlContentBuilder;
 import com.polarion.alm.shared.api.utils.html.HtmlFragmentBuilder;
 import com.polarion.alm.shared.api.utils.html.HtmlTagBuilder;
 import com.polarion.alm.tracker.model.IModule;
 import com.polarion.alm.tracker.model.IRichPage;
-import com.polarion.alm.tracker.model.ITestRun;
 import com.polarion.alm.ui.shared.LinearGradientColor;
-import com.polarion.core.util.StringUtils;
-import com.polarion.platform.persistence.model.IPObjectList;
 import org.jetbrains.annotations.NotNull;
 
-import static ch.sbb.polarion.extension.pdf_exporter.widgets.BulkPdfExportWidget.*;
+import java.util.Iterator;
 
 public class BulkPdfExportWidgetRenderer extends AbstractWidgetRenderer {
-    private PdfExporterPolarionService polarionService = new PdfExporterPolarionService();
-
-    private final String projectId;
-    private final boolean includeDocuments;
-    private final boolean includeReports;
-    private final boolean includeTestRuns;
+    @NotNull
+    private final DataSet dataSet;
+    @NotNull
+    private final IterableWithSize<ModelObject> items;
+    private final int topItems;
+    @NotNull
+    private final IterableWithSize<Field> columns;
+    private final String dataType;
 
     public BulkPdfExportWidgetRenderer(@NotNull RichPageWidgetCommonContext context) {
         super(context);
+        DataSetParameter dataSetParameter = context.parameter("dataSet");
+        FieldsParameter columnsParameter = dataSetParameter.get("columns");
+        SortingParameter sortByParameter = dataSetParameter.get("sortBy");
+        String sort = sortByParameter.asLuceneSortString();
+        this.dataSet = dataSetParameter.getFor().sort(sort).revision(null);
+        this.items = this.dataSet.items();
+        if (!items.isEmpty()) {
+            switch (items.iterator().next().getOldApi().getPrototype().getName()) {
+                case "Module": dataType = "Documents"; break;
+                case "RichPage": dataType = "Pages"; break;
+                case "TestRun": dataType = "Test Runs"; break;
+                default: dataType = "Unknown"; break;
+            }
+        } else {
+            dataType = "Unknown";
+        }
+        this.columns = columnsParameter.fields();
 
-        projectId = context.getDisplayedScope().projectId();
+        CompositeParameter advanced = context.parameter("advanced");
+        IntegerParameter top = advanced.get("top");
+        Integer topValue = top.value();
+        if (topValue != null) {
+            this.topItems = topValue == 0 ? Integer.MAX_VALUE : topValue;
+        } else {
+            this.topItems = 50;
+        }
 
-        includeDocuments = ((BooleanParameter) context.parameter(INCLUDE_DOCUMENTS)).value();
-        includeReports = ((BooleanParameter) context.parameter(INCLUDE_REPORTS)).value();
-        includeTestRuns = ((BooleanParameter) context.parameter(INCLUDE_TEST_RUNS)).value();
     }
 
-    @Override
     protected void render(@NotNull HtmlFragmentBuilder builder) {
-        HtmlTagBuilder wrap = builder.tag().div();
-        wrap.attributes().className("polarion-PdfExporter-BulkExportWidget");
+        if (this.topItems < 0) {
+            builder.html(this.context.renderWarning(this.localization.getString("richpages.widget.table.invalidTopValue")));
+        } else {
+            HtmlTagBuilder wrap = builder.tag().div();
+            wrap.attributes().className("polarion-PdfExporter-BulkExportWidget");
 
-        HtmlTagBuilder header = wrap.append().tag().div();
-        header.attributes().className("header");
+            HtmlTagBuilder header = wrap.append().tag().div();
+            header.attributes().className("header");
 
-        renderExportButton(header);
+            HtmlTagBuilder title = header.append().tag().h3();
+            title.append().text(dataType);
 
-        HtmlTagBuilder description = header.append().tag().div();
-        description.append().tag().p().append().text("Please select items below which you want to export and click button above");
+            renderExportButton(header);
 
-        HtmlTagBuilder exportItems = wrap.append().tag().div();
-        exportItems.attributes().className("export-items");
+            HtmlTagBuilder description = header.append().tag().div();
+            description.append().tag().p().append().text(String.format("Please select %s below which you want to export and click button above", dataType));
 
-        if (includeDocuments) {
-            final HtmlTagBuilder columnContent = renderColumn(exportItems, "Documents:");
+            HtmlTagBuilder exportItems = wrap.append().tag().div();
+            exportItems.attributes().className("export-items");
+
+            HtmlTagBuilder mainTable = exportItems.append().tag().table();
+
+            mainTable.attributes().className("polarion-rpw-table-main");
             //language=JS
-            columnContent.attributes().onClick("BulkPdfExporter.updateBulkExportButton(this);");
-            IPObjectList<IModule> documents = polarionService.getDocuments(projectId);
-            if (documents.isEmpty()) {
-                renderNoData(columnContent, "No documents found");
-            } else {
-                documents.forEach(document -> renderExportItem(columnContent, new ExportItem(document)));
-            }
-        }
+            mainTable.attributes().onClick("BulkPdfExporter.updateBulkExportButton(this);");
 
-        if (includeReports) {
-            final HtmlTagBuilder columnContent = renderColumn(exportItems, "Reports:");
-            //language=JS
-            columnContent.attributes().onClick("BulkPdfExporter.updateBulkExportButton(this);");
-            IPObjectList<IRichPage> reports = polarionService.getReports(projectId);
-            if (reports.isEmpty()) {
-                renderNoData(columnContent, "No reports found");
-            } else {
-                reports.forEach(report -> renderExportItem(columnContent, new ExportItem(report)));
-            }
-        }
-
-        if (includeTestRuns) {
-            final HtmlTagBuilder columnContent = renderColumn(exportItems, "Test Runs:");
-            //language=JS
-            columnContent.attributes().onClick("BulkPdfExporter.updateBulkExportButton(this);");
-            IPObjectList<ITestRun> testRuns = polarionService.getTestRuns(projectId);
-            if (testRuns.isEmpty()) {
-                renderNoData(columnContent, "No test runs found");
-            } else {
-                testRuns.forEach(testRun -> renderExportItem(columnContent, new ExportItem(testRun)));
-            }
+            HtmlContentBuilder contentBuilder = mainTable.append();
+            this.renderContentTable(contentBuilder.tag().tr().append().tag().td().append());
+            this.renderFooter(contentBuilder.tag().tr().append().tag().td());
         }
     }
 
@@ -107,60 +116,91 @@ public class BulkPdfExportWidgetRenderer extends AbstractWidgetRenderer {
         label.append().text("Export to PDF");
     }
 
-    private @NotNull HtmlTagBuilder renderColumn(@NotNull HtmlTagBuilder wrap, @NotNull String title) {
-        HtmlTagBuilder column = wrap.append().tag().div();
-        column.attributes().className("column");
-        HtmlTagBuilder header = column.append().tag().h3();
-        header.append().text(title);
-        HtmlTagBuilder columnContent = column.append().tag().div();
-        columnContent.attributes().className("column-content");
-        return columnContent;
+    private void renderContentTable(@NotNull HtmlContentBuilder builder) {
+        HtmlTagBuilder table = builder.tag().table();
+        table.attributes().className("polarion-rpw-table-content");
+        this.renderContentRows(table.append());
     }
 
-    private void renderNoData(@NotNull HtmlTagBuilder columnContent, @NotNull String noDataLabel) {
-        HtmlTagBuilder noData = columnContent.append().tag().div();
-        noData.attributes().className("no-data");
-        noData.append().text(noDataLabel);
-    }
+    private void renderContentRows(@NotNull HtmlContentBuilder builder) {
+        this.renderHeaderRow(builder);
+        int count = 0;
 
-    private void renderExportItem(@NotNull HtmlTagBuilder columnContent, @NotNull ExportItem exportItem) {
-        HtmlTagBuilder itemDiv = columnContent.append().tag().div();
-        HtmlTagBuilder label = itemDiv.append().tag().byName("label");
-        HtmlTagBuilder checkbox = label.append().tag().byName("input");
-        checkbox.attributes()
-                .byName("type", "checkbox")
-                .className("export-item")
-                .byName("data-type", exportItem.type)
-                .byName("data-space", exportItem.space)
-                .byName("data-id", exportItem.id);
-        label.append().text(exportItem.title);
-    }
+        for (Iterator<ModelObject> iterator = this.items.iterator(); iterator.hasNext(); ++count) {
+            if (count >= this.topItems) {
+                break;
+            }
 
-    private static class ExportItem {
-        private final String space;
-        private final String id;
-        private final String title;
-        private final String type;
-
-        ExportItem(IModule document) {
-            space = document.getModuleFolder();
-            id = document.getId();
-            title = document.getModuleNameWithSpace();
-            type = document.getPrototype().getName();
+            HtmlTagBuilder tr = builder.tag().tr();
+            tr.attributes().className("polarion-rpw-table-content-row");
+            this.renderItem(tr.append(), iterator.next());
         }
 
-        ExportItem(IRichPage report) {
-            space = report.getSpaceId();
-            id = report.getId();
-            title = report.getPageNameWithSpace();
-            type = report.getPrototype().getName();
-        }
+    }
 
-        ExportItem(ITestRun testRun) {
-            space = null;
-            id = testRun.getId();
-            title = testRun.getId() + (!StringUtils.isEmpty(testRun.getTitle()) ? " / " + testRun.getTitle() : "");
-            type = testRun.getPrototype().getName();
+    private void renderItem(@NotNull HtmlContentBuilder builder, @NotNull ModelObject item) {
+        if (item.isUnresolvable()) {
+            this.renderNotReadableRow(builder, this.localization.getString("richpages.widget.table.unresolvableItem", item.getReferenceToCurrent().toPath()));
+        } else if (!item.can().read()) {
+            this.renderNotReadableRow(builder, this.localization.getString("security.cannotread"));
+        } else {
+            HtmlTagBuilder td = builder.tag().td();
+            HtmlTagBuilder checkbox = td.append().tag().byName("input");
+            checkbox.attributes()
+                    .byName("type", "checkbox")
+                    .byName("data-type", item.getOldApi().getPrototype().getName())
+                    .byName("data-space", getSpace(item))
+                    .byName("data-id", getValue(item, "id"))
+                    .className("export-item");
+
+            for (Field column : this.columns) {
+                td = builder.tag().td();
+                column.render(item.fields()).withLinks(true).htmlTo(td.append());
+            }
         }
     }
+
+    private String getSpace(@NotNull ModelObject item) {
+        String spaceFieldId = null;
+        if (item.getOldApi() instanceof IModule) {
+            spaceFieldId = "moduleFolder";
+        } else if (item.getOldApi() instanceof IRichPage) {
+            spaceFieldId = "spaceId";
+        }
+        if (spaceFieldId != null) {
+            return getValue(item, spaceFieldId);
+        } else {
+            return "";
+        }
+    }
+
+    private String getValue(@NotNull ModelObject item, @NotNull String fieldName) {
+        Object fieldValue = item.getOldApi().getValue(fieldName);
+        return fieldValue == null ? "" : fieldValue.toString();
+    }
+
+    private void renderNotReadableRow(@NotNull HtmlContentBuilder builder, @NotNull String message) {
+        HtmlTagBuilder td = builder.tag().td();
+        td.attributes().colspan("" + (this.columns.size() + 1)).className("polarion-rpw-table-not-readable-cell");
+        td.append().text(message);
+    }
+
+    private void renderHeaderRow(@NotNull HtmlContentBuilder builder) {
+        HtmlTagBuilder row = builder.tag().tr();
+        row.attributes().className("polarion-rpw-table-header-row");
+        HtmlTagBuilder th = row.append().tag().th();
+        HtmlTagBuilder checkbox = th.append().tag().byName("input");
+        checkbox.attributes().byName("type", "checkbox").className("export-all");
+        //language=JS
+        checkbox.attributes().onClick("BulkPdfExporter.selectAllItems(this);");
+
+        for (Field column : this.columns) {
+            row.append().tag().th().append().text(column.label());
+        }
+    }
+
+    private void renderFooter(@NotNull HtmlTagBuilder tagBuilder) {
+        (new BottomQueryLinksBuilder(this.context, this.dataSet, this.topItems)).render(tagBuilder);
+    }
+
 }

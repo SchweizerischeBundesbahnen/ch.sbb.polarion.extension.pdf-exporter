@@ -451,6 +451,10 @@
     margin-bottom: 30px;
 }
 
+.polarion-PdfExporter-BulkExportWidget .header h3 {
+    margin: 0 0 20px;
+}
+
 .polarion-PdfExporter-BulkExportWidget .header p {
     color: grey;
 }
@@ -477,30 +481,7 @@
 
 .polarion-PdfExporter-BulkExportWidget .export-items {
     display: flex;
-}
-
-.polarion-PdfExporter-BulkExportWidget .table.export-items {
     margin-top: 30px;
-}
-
-.polarion-PdfExporter-BulkExportWidget .export-items .column {
-    min-width: 240px;
-    max-width: 460px;
-}
-
-.polarion-PdfExporter-BulkExportWidget .export-items .column:not(:first-child) {
-    padding-left: 30px;
-}
-
-.polarion-PdfExporter-BulkExportWidget .export-items .column .column-content {
-    height: 60vh;
-    overflow: auto;
-    border-right: 1px solid #ccc;
-    padding-right: 20px;
-}
-
-.polarion-PdfExporter-BulkExportWidget .export-items .column .no-data {
-    font-style: italic;
 }
 
 .polarion-PdfExporter-BulkExportWidget .polarion-TestsExecutionButton-buttons-defaultCursor .polarion-TestsExecutionButton-labelTextNew {

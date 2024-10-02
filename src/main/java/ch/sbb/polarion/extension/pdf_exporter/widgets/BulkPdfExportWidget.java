@@ -1,22 +1,26 @@
 package ch.sbb.polarion.extension.pdf_exporter.widgets;
 
+import com.polarion.alm.server.api.model.rp.widget.TableWidget;
 import com.polarion.alm.shared.api.SharedContext;
+import com.polarion.alm.shared.api.model.PrototypeEnum;
+import com.polarion.alm.shared.api.model.rp.parameter.CompositeParameter;
+import com.polarion.alm.shared.api.model.rp.parameter.DataSetParameter;
+import com.polarion.alm.shared.api.model.rp.parameter.FieldsParameter;
+import com.polarion.alm.shared.api.model.rp.parameter.IntegerParameter;
 import com.polarion.alm.shared.api.model.rp.parameter.ParameterFactory;
 import com.polarion.alm.shared.api.model.rp.parameter.RichPageParameter;
-import com.polarion.alm.shared.api.model.rp.widget.RichPageWidget;
+import com.polarion.alm.shared.api.model.rp.parameter.SortingParameter;
 import com.polarion.alm.shared.api.model.rp.widget.RichPageWidgetContext;
 import com.polarion.alm.shared.api.model.rp.widget.RichPageWidgetRenderingContext;
+import com.polarion.alm.shared.api.utils.SharedLocalization;
 import com.polarion.alm.shared.api.utils.collections.ImmutableStrictList;
 import com.polarion.alm.shared.api.utils.collections.ReadOnlyStrictMap;
 import com.polarion.alm.shared.api.utils.collections.StrictMap;
 import com.polarion.alm.shared.api.utils.collections.StrictMapImpl;
+import com.polarion.reina.web.js.widgets.WidgetUtil;
 import org.jetbrains.annotations.NotNull;
 
-public class BulkPdfExportWidget extends RichPageWidget {
-
-    public static final String INCLUDE_DOCUMENTS = "includeDocuments";
-    public static final String INCLUDE_REPORTS = "includeReports";
-    public static final String INCLUDE_TEST_RUNS = "includeTestRuns";
+public class BulkPdfExportWidget extends TableWidget {
 
     @NotNull
     @Override
@@ -44,11 +48,29 @@ public class BulkPdfExportWidget extends RichPageWidget {
     @NotNull
     @Override
     public ReadOnlyStrictMap<String, RichPageParameter> getParametersDefinition(@NotNull ParameterFactory parameterFactory) {
-        StrictMap<String, RichPageParameter> parameters = new StrictMapImpl<>();
-        parameters.put(INCLUDE_DOCUMENTS, parameterFactory.bool("Include Live Documents").value(true).build());
-        parameters.put(INCLUDE_REPORTS, parameterFactory.bool("Include Live Reports").value(true).build());
-        parameters.put(INCLUDE_TEST_RUNS, parameterFactory.bool("Include Test Runs").value(true).build());
+        StrictMap<String, RichPageParameter> parameters = new StrictMapImpl();
+        SharedLocalization localization = parameterFactory.context().localization();
+        FieldsParameter columns = parameterFactory.fields(localization.getString("richpages.widget.table.columns")).build();
+        SortingParameter sortBy = parameterFactory.sorting(localization.getString("richpages.widget.table.sortBy")).build();
+        DataSetParameter dataSet = parameterFactory.dataSet(localization.getString("richpages.widget.table.dataSet"))
+                .allowedPrototypes(PrototypeEnum.Document, PrototypeEnum.TestRun, PrototypeEnum.RichPage)
+                .add("columns", columns)
+                .add("sortBy", sortBy)
+                .dependencySource(true)
+                .build();
+        parameters.put("dataSet", dataSet);
+        parameters.put("propertiesSidebarFields", this.createSidebarFieldsParameter(parameterFactory));
+        IntegerParameter top = parameterFactory.integer(localization.getString("richpages.widget.table.top")).value(50).build();
+        CompositeParameter advanced = parameterFactory.composite(localization.getString("richpages.widget.advanced")).collapsedByDefault(true).add("top", top).build();
+        parameters.put("advanced", advanced);
         return parameters;
+    }
+
+    @NotNull
+    private FieldsParameter createSidebarFieldsParameter(@NotNull ParameterFactory factory) {
+        FieldsParameter parameter = factory.fields(factory.context().localization().getString("richpages.widget.table.parameters.propertiesSidebarFields")).disallowedFields(WidgetUtil.getExcludedPropertiesSidebarFields()).dependencyTarget(true).build();
+        parameter.defaultFields().set(WidgetUtil.getDefaultWidgetPropertiesSidebarFields());
+        return parameter;
     }
 
     @NotNull

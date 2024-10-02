@@ -26,6 +26,7 @@ const BULK_EXPORT_FINISHED = "FINISHED";
 const BulkPdfExporter = {
     exportParams: null,
     state: null,
+    registeredButtonClickListener: null,
     errors: false,
 
     init: function () {
@@ -44,7 +45,7 @@ const BulkPdfExporter = {
         if (bulkExportWidget) {
             const modalContent = document.querySelector("#bulk-pdf-export-popup .modal__content");
             modalContent.innerHTML = "";
-            bulkExportWidget.querySelectorAll('input[type="checkbox"]:checked').forEach((selectedCheckbox) => {
+            bulkExportWidget.querySelectorAll('input[type="checkbox"]:not(.export-all):checked').forEach((selectedCheckbox) => {
                 const div = document.createElement("div");
                 div.className = "export-item paused";
                 div.dataset["type"] = selectedCheckbox.dataset["type"];
@@ -102,13 +103,31 @@ const BulkPdfExporter = {
         const bulkExportWidget = clickedElement && clickedElement.closest("div.polarion-PdfExporter-BulkExportWidget");
         const button = bulkExportWidget && bulkExportWidget.querySelector(".polarion-TestsExecutionButton-buttons");
         if (button) {
-            if (bulkExportWidget.querySelectorAll('input[type="checkbox"]:checked').length > 0) {
+            if (button.classList.contains(DISABLED_BUTTON_CLASS) && bulkExportWidget.querySelectorAll('input[type="checkbox"]:checked').length > 0) {
                 button.classList.remove(DISABLED_BUTTON_CLASS);
-                button.addEventListener("click", () => PdfExporter.openPopupForBulkExport(bulkExportWidget));
-            } else {
-                button.classList.add(DISABLED_BUTTON_CLASS);
-                button.removeEventListener("click", PdfExporter.openPopupForBulkExport);
+                // We need to remember click listener to remove it from button later
+                this.registeredButtonClickListener = () => PdfExporter.openPopupForBulkExport(bulkExportWidget);
+                button.addEventListener("click", this.registeredButtonClickListener);
             }
+            if (!button.classList.contains(DISABLED_BUTTON_CLASS) && bulkExportWidget.querySelectorAll('input[type="checkbox"]:checked').length === 0) {
+                button.classList.add(DISABLED_BUTTON_CLASS);
+                button.removeEventListener("click", this.registeredButtonClickListener);
+            }
+            if (bulkExportWidget.querySelectorAll('input[type="checkbox"]:not(.export-all):not(:checked)').length > 0) {
+                const exportAllCheckbox = bulkExportWidget.querySelector('input[type="checkbox"].export-all');
+                if (exportAllCheckbox) {
+                    exportAllCheckbox.checked = false;
+                };
+            }
+        }
+    },
+
+    selectAllItems: function (clickedElement) {
+        const bulkExportWidget = clickedElement && clickedElement.closest("div.polarion-PdfExporter-BulkExportWidget");
+        if (bulkExportWidget) {
+            bulkExportWidget.querySelectorAll('input[type="checkbox"]:not(.export-all)').forEach(checkbox => {
+                checkbox.checked = clickedElement.checked;
+            });
         }
     },
 
