@@ -1,5 +1,19 @@
 # Changelog
 
+## [7.2.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v7.1.2...v7.2.0) (2024-10-02)
+
+
+### Features
+
+* style packages weights ([#234](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/234)) ([0cc515b](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/0cc515b5345bb37ed570c9b64d5271b001f7c4ef))
+
+
+### Bug Fixes
+
+* **deps:** update dependency ch.sbb.polarion.extensions:ch.sbb.polarion.extension.generic to v7.2.0 ([07674e1](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/07674e1d30772d607ff7fe3a7d1feab09a16353e))
+* **deps:** update dependency net.bytebuddy:byte-buddy to v1.15.3 ([c10e378](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/c10e37885c04a209e48f5da68c52d6277e8df1c7))
+* set configuration properties prefix ([#236](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/236)) ([b037f03](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/b037f0312a3aad584254d9b2c1f2f3f736d7da0d)), closes [#235](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/235)
+
 ## [7.1.2](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v7.1.1...v7.1.2) (2024-09-25)
 
 
