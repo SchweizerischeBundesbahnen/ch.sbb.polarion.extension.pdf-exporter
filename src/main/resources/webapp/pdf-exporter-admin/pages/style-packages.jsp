@@ -89,7 +89,7 @@
             There was an error loading link role names.
         </div>
 
-        <div class="flex-container" id="matching-query-container" style="border-top: 1px solid #ccc; margin-top: 20px; padding-top: 15px;">
+        <div class="flex-container" style="border-top: 1px solid #ccc; margin-top: 20px; padding-top: 15px;">
 
             <div class="flex-column">
                 <div class='input-group flex-centered'>
@@ -99,7 +99,7 @@
                 </div>
             </div>
 
-            <div class="flex-grow">
+            <div class="flex-grow" id="matching-query-container">
                 <div class='input-group flex-centered'>
                     <label for='matching-query'>Matching query:</label>
                     <div class='more-info' title="Here you can specify a query to select documents to which this style package will be relevant. For documents not matching this query the style package won't be visible. If you want to make this style package be available to all documents, just leave this field empty."></div>
