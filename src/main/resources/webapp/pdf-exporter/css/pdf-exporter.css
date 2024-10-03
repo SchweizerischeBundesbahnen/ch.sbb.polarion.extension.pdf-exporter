@@ -84,8 +84,7 @@
 
 .modal__container.pdf-exporter .modal__footer {
     justify-content: end;
-    margin-bottom: 14px;
-    margin-right: 6px;
+    margin: 10px 6px 14px 20px;
 }
 
 .modal__container.pdf-exporter .modal__title {
@@ -172,10 +171,6 @@
     border-color: #527889;
 }
 
-.modal__container.pdf-exporter .modal__footer {
-    margin-left: 20px;
-}
-
 .modal__container.pdf-exporter .flex-container {
     display: flex;
     column-gap: 20px;
@@ -251,7 +246,7 @@
 }
 
 .modal__container.pdf-exporter .modal__footer .result {
-    flex-grow: 5;
+    flex-grow: 1;
 }
 
 .modal__container.pdf-exporter .modal__footer .result.finished {
@@ -486,4 +481,62 @@
 
 .polarion-PdfExporter-BulkExportWidget .polarion-TestsExecutionButton-buttons-defaultCursor .polarion-TestsExecutionButton-labelTextNew {
     color: gray;
+}
+
+.progress-bar {
+    height: 24px;
+    flex-grow: 1;
+    background: #eeeeee;
+    border-radius: 4px;
+    margin-right: 20px;
+}
+
+.progress-bar > span {
+    display: block;
+    position: relative;
+    height: 100%;
+    padding: 0 10px;
+    border-radius: 4px;
+    background-color: #0d6efd;
+    overflow: hidden;
+    line-height: 1.6em;
+    text-align: center;
+    color: white;
+}
+
+.progress-bar > span:after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    background-image: linear-gradient(
+            -45deg,
+            rgba(255, 255, 255, 0.2) 25%,
+            transparent 25%,
+            transparent 50%,
+            rgba(255, 255, 255, 0.2) 50%,
+            rgba(255, 255, 255, 0.2) 75%,
+            transparent 75%,
+            transparent
+    );
+    z-index: 1;
+    background-size: 50px 50px;
+    animation: move 2s linear infinite;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.animate > span:after {
+    display: none;
+}
+
+@keyframes move {
+    0% {
+        background-position: 0 0;
+    }
+    100% {
+        background-position: 50px 50px;
+    }
 }

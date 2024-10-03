@@ -28,7 +28,13 @@ const PdfExporter = {
     documentLanguage: null,
 
     init: function () {
-        document.body.appendChild(ExportCommon.buildMicromodal(POPUP_ID, POPUP_HTML));
+        const popup = document.createElement('div');
+        popup.classList.add("modal");
+        popup.classList.add("micromodal-slide");
+        popup.id = POPUP_ID;
+        popup.setAttribute("aria-hidden", "true");
+        popup.innerHTML = POPUP_HTML;
+        document.body.appendChild(popup);
 
         fetch('/polarion/pdf-exporter/html/popupForm.html')
             .then(response => response.text())

@@ -65,13 +65,4 @@ const ExportCommon = {
         });
     },
 
-    buildMicromodal: function(id, content) {
-        const popup = document.createElement('div');
-        popup.classList.add("modal");
-        popup.classList.add("micromodal-slide");
-        popup.id = id;
-        popup.setAttribute("aria-hidden", "true");
-        popup.innerHTML = content;
-        return popup;
-    },
 }

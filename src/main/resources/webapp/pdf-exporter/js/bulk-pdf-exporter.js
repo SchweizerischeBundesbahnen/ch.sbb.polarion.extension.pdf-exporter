@@ -11,7 +11,10 @@ const BULK_POPUP_HTML = `
 
             </main>
             <footer class="modal__footer">
-                <span class="result"></span>
+                <div class="progress-bar" style="display: none">
+                    <span></span>
+                </div>
+                <span class="result" style="display: none"></span>
                 <button class="polarion-JSWizardButton-Primary action-button" onclick="BulkPdfExporter.stopBulkExport();">Stop</button>
                 <button class="polarion-JSWizardButton" data-micromodal-close aria-label="Close this dialog window" style="display: none">Close</button>
             </footer>
@@ -25,16 +28,26 @@ const BULK_EXPORT_FINISHED = "FINISHED";
 
 const BulkPdfExporter = {
     exportParams: null,
+    itemsCount: 0,
+    finishedCount: 0,
     state: null,
     registeredButtonClickListener: null,
     errors: false,
 
     init: function () {
-        document.body.appendChild(ExportCommon.buildMicromodal(BULK_POPUP_ID, BULK_POPUP_HTML));
+        const popup = document.createElement('div');
+        popup.classList.add("modal");
+        popup.classList.add("micromodal-slide");
+        popup.id = BULK_POPUP_ID;
+        popup.setAttribute("aria-hidden", "true");
+        popup.innerHTML = BULK_POPUP_HTML;
+        document.body.appendChild(popup);
     },
 
     openPopup: function (bulkExportWidget, exportParams) {
         this.exportParams = exportParams;
+        this.itemsCount = 0;
+        this.finishedCount = 0;
         this.updateState(BULK_EXPORT_IN_PROGRESS);
         this.renderBulkExportItems(bulkExportWidget);
         MicroModal.show(BULK_POPUP_ID);
@@ -46,6 +59,8 @@ const BulkPdfExporter = {
             const modalContent = document.querySelector("#bulk-pdf-export-popup .modal__content");
             modalContent.innerHTML = "";
             bulkExportWidget.querySelectorAll('input[type="checkbox"]:not(.export-all):checked').forEach((selectedCheckbox) => {
+                BulkPdfExporter.itemsCount += 1;
+
                 const div = document.createElement("div");
                 div.className = "export-item paused";
                 div.dataset["type"] = selectedCheckbox.dataset["type"];
@@ -79,6 +94,7 @@ const BulkPdfExporter = {
 
                 modalContent.appendChild(div);
             });
+            this.updateState(BULK_EXPORT_IN_PROGRESS);
         }
     },
 
@@ -117,7 +133,7 @@ const BulkPdfExporter = {
                 const exportAllCheckbox = bulkExportWidget.querySelector('input[type="checkbox"].export-all');
                 if (exportAllCheckbox) {
                     exportAllCheckbox.checked = false;
-                };
+                }
             }
         }
     },
@@ -140,14 +156,25 @@ const BulkPdfExporter = {
 
         const popup = document.getElementById("bulk-pdf-export-popup");
         const resultSpan = popup.querySelector(".modal__footer .result");
+        const progressBar = popup.querySelector(".modal__footer .progress-bar");
         if (this.state === BULK_EXPORT_IN_PROGRESS) {
             popup.querySelector(".polarion-JSWizardButton-Primary").style.display = "block";
             popup.querySelector(".polarion-JSWizardButton").style.display = "none";
-            resultSpan.className = "result";
-            resultSpan.innerText = "";
+            resultSpan.style.display = "none";
+            progressBar.style.display = this.itemsCount > 1 ? "block" : "none";
+            const progressBarSpan = progressBar.querySelector("span");
+            const progress = Math.round(BulkPdfExporter.finishedCount / BulkPdfExporter.itemsCount * 100);
+            if (progress > 25) {
+                progressBarSpan.innerText = `${this.finishedCount} out of ${this.itemsCount} finished`;
+            } else {
+                progressBarSpan.innerText = "";
+            }
+            progressBarSpan.style.width = progress + "%";
         } else {
             popup.querySelector(".polarion-JSWizardButton-Primary").style.display = "none";
             popup.querySelector(".polarion-JSWizardButton").style.display = "block";
+            progressBar.style.display = "none";
+            resultSpan.style.display = "block";
             if (this.state === BULK_EXPORT_INTERRUPTED) {
                 document.querySelectorAll("#bulk-pdf-export-popup .export-item.paused").forEach(item => {
                     item.classList.remove("paused");
@@ -184,6 +211,9 @@ const BulkPdfExporter = {
             ExportCommon.asyncConvertPdf(this.exportParams.toJSON(), (responseBody, fileName) => {
                 nextItem.classList.remove("in-progress");
                 nextItem.classList.add("finished");
+
+                BulkPdfExporter.finishedCount += 1;
+                BulkPdfExporter.updateState(BULK_EXPORT_IN_PROGRESS);
 
                 const objectURL = (window.URL ? window.URL : window.webkitURL).createObjectURL(responseBody);
                 const anchorElement = document.createElement("a");
