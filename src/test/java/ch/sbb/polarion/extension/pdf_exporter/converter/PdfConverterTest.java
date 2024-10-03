@@ -2,6 +2,7 @@ package ch.sbb.polarion.extension.pdf_exporter.converter;
 
 import ch.sbb.polarion.extension.generic.settings.SettingId;
 import ch.sbb.polarion.extension.pdf_exporter.TestStringUtils;
+import ch.sbb.polarion.extension.pdf_exporter.properties.PdfExporterExtensionConfiguration;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.ExportMetaInfoCallback;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.DocumentType;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
@@ -27,13 +28,17 @@ import com.polarion.alm.tracker.model.ITrackerProject;
 import com.polarion.alm.tracker.model.ITypeOpt;
 import com.polarion.platform.persistence.IEnumeration;
 import com.polarion.platform.persistence.spi.EnumOption;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.Answers;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
@@ -67,6 +72,20 @@ class PdfConverterTest {
     private HtmlProcessor htmlProcessor;
     @Mock
     private PdfTemplateProcessor pdfTemplateProcessor;
+
+    @Mock(answer = Answers.RETURNS_DEEP_STUBS)
+    MockedStatic<PdfExporterExtensionConfiguration> pdfExporterExtensionConfigurationMockedStatic;
+
+    @BeforeEach
+    void setUp() {
+        PdfExporterExtensionConfiguration pdfExporterExtensionConfiguration = mock(PdfExporterExtensionConfiguration.class);
+        pdfExporterExtensionConfigurationMockedStatic.when(PdfExporterExtensionConfiguration::getInstance).thenReturn(pdfExporterExtensionConfiguration);
+    }
+
+    @AfterEach
+    void tearDown() {
+        pdfExporterExtensionConfigurationMockedStatic.close();
+    }
 
     @Test
     void shouldConvertToPdfInSimplestWorkflow() {

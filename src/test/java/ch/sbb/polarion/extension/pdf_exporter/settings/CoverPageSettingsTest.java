@@ -1,9 +1,11 @@
 package ch.sbb.polarion.extension.pdf_exporter.settings;
 
 import ch.sbb.polarion.extension.generic.exception.ObjectNotFoundException;
+import ch.sbb.polarion.extension.generic.rest.model.Context;
 import ch.sbb.polarion.extension.generic.settings.GenericNamedSettings;
 import ch.sbb.polarion.extension.generic.settings.SettingId;
 import ch.sbb.polarion.extension.generic.settings.SettingsService;
+import ch.sbb.polarion.extension.generic.util.ContextUtils;
 import ch.sbb.polarion.extension.generic.util.ScopeUtils;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.coverpage.CoverPageModel;
 import ch.sbb.polarion.extension.pdf_exporter.service.PdfExporterPolarionService;
@@ -14,8 +16,11 @@ import com.polarion.platform.service.repository.IRepositoryReadOnlyConnection;
 import com.polarion.platform.service.repository.IRepositoryService;
 import com.polarion.subterra.base.location.ILocation;
 import com.polarion.subterra.base.location.Location;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Answers;
 import org.mockito.Mock;
 import org.mockito.MockedConstruction;
 import org.mockito.MockedStatic;
@@ -45,6 +50,20 @@ import static org.mockito.Mockito.when;
 class CoverPageSettingsTest {
     @Mock
     PdfExporterPolarionService mockedPdfExporterPolarionService;
+
+    @Mock(answer = Answers.RETURNS_DEEP_STUBS)
+    MockedStatic<ContextUtils> contextUtilsMockedStatic;
+
+    @BeforeEach
+    void setUp() {
+        Context context = new Context("pdf-exporter");
+        contextUtilsMockedStatic.when(ContextUtils::getContext).thenReturn(context);
+    }
+
+    @AfterEach
+    void tearDown() {
+        contextUtilsMockedStatic.close();
+    }
 
     @Test
     void testDefaultCss() {

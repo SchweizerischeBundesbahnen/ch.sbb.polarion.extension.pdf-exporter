@@ -1,14 +1,20 @@
 package ch.sbb.polarion.extension.pdf_exporter.settings;
 
 import ch.sbb.polarion.extension.generic.exception.ObjectNotFoundException;
+import ch.sbb.polarion.extension.generic.rest.model.Context;
 import ch.sbb.polarion.extension.generic.settings.GenericNamedSettings;
 import ch.sbb.polarion.extension.generic.settings.SettingId;
 import ch.sbb.polarion.extension.generic.settings.SettingsService;
+import ch.sbb.polarion.extension.generic.util.ContextUtils;
 import ch.sbb.polarion.extension.generic.util.ScopeUtils;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.filename.FileNameTemplateModel;
 import com.polarion.subterra.base.location.ILocation;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Answers;
+import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -22,6 +28,21 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class FileNameTemplateSettingsTest {
+
+    @Mock(answer = Answers.RETURNS_DEEP_STUBS)
+    MockedStatic<ContextUtils> contextUtilsMockedStatic;
+
+    @BeforeEach
+    void setUp() {
+        Context context = new Context("pdf-exporter");
+        contextUtilsMockedStatic.when(ContextUtils::getContext).thenReturn(context);
+    }
+
+    @AfterEach
+    void tearDown() {
+        contextUtilsMockedStatic.close();
+    }
+
     @Test
     void testSettingDoesNotExist() {
         try (MockedStatic<ScopeUtils> mockScopeUtils = mockStatic(ScopeUtils.class)) {
