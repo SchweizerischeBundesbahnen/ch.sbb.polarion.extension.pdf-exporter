@@ -116,8 +116,8 @@ const BulkPdfExporter = {
     },
 
     updateBulkExportButton: function (clickedElement) {
-        const bulkExportWidget = clickedElement && clickedElement.closest("div.polarion-PdfExporter-BulkExportWidget");
-        const button = bulkExportWidget && bulkExportWidget.querySelector(".polarion-TestsExecutionButton-buttons");
+        const bulkExportWidget = clickedElement?.closest("div.polarion-PdfExporter-BulkExportWidget");
+        const button = bulkExportWidget?.querySelector(".polarion-TestsExecutionButton-buttons");
         if (button) {
             if (button.classList.contains(DISABLED_BUTTON_CLASS) && bulkExportWidget.querySelectorAll('input[type="checkbox"]:checked').length > 0) {
                 button.classList.remove(DISABLED_BUTTON_CLASS);
@@ -139,7 +139,7 @@ const BulkPdfExporter = {
     },
 
     selectAllItems: function (clickedElement) {
-        const bulkExportWidget = clickedElement && clickedElement.closest("div.polarion-PdfExporter-BulkExportWidget");
+        const bulkExportWidget = clickedElement?.closest("div.polarion-PdfExporter-BulkExportWidget");
         if (bulkExportWidget) {
             bulkExportWidget.querySelectorAll('input[type="checkbox"]:not(.export-all)').forEach(checkbox => {
                 checkbox.checked = clickedElement.checked;
@@ -161,15 +161,7 @@ const BulkPdfExporter = {
             popup.querySelector(".polarion-JSWizardButton-Primary").style.display = "block";
             popup.querySelector(".polarion-JSWizardButton").style.display = "none";
             resultSpan.style.display = "none";
-            progressBar.style.display = this.itemsCount > 1 ? "block" : "none";
-            const progressBarSpan = progressBar.querySelector("span");
-            const progress = Math.round(BulkPdfExporter.finishedCount / BulkPdfExporter.itemsCount * 100);
-            if (progress > 25) {
-                progressBarSpan.innerText = `${this.finishedCount} out of ${this.itemsCount} finished`;
-            } else {
-                progressBarSpan.innerText = "";
-            }
-            progressBarSpan.style.width = progress + "%";
+            this.updateProgress(progressBar);
         } else {
             popup.querySelector(".polarion-JSWizardButton-Primary").style.display = "none";
             popup.querySelector(".polarion-JSWizardButton").style.display = "block";
@@ -191,6 +183,18 @@ const BulkPdfExporter = {
                 resultSpan.innerText = this.errors ? "Export finished with errors" : "Export successfully finished";
             }
         }
+    },
+
+    updateProgress: function (progressBar) {
+        progressBar.style.display = this.itemsCount > 1 ? "block" : "none";
+        const progressBarSpan = progressBar.querySelector("span");
+        const progress = Math.round(BulkPdfExporter.finishedCount / BulkPdfExporter.itemsCount * 100);
+        if (progress > 25) {
+            progressBarSpan.innerText = `${this.finishedCount} out of ${this.itemsCount} finished`;
+        } else {
+            progressBarSpan.innerText = "";
+        }
+        progressBarSpan.style.width = progress + "%";
     },
 
     startNextItemExport: function () {
@@ -239,10 +243,8 @@ const BulkPdfExporter = {
                 });
                 this.startNextItemExport();
             });
-        } else {
-            if (this.state !== BULK_EXPORT_INTERRUPTED) {
-                this.updateState(BULK_EXPORT_FINISHED);
-            }
+        } else if (this.state !== BULK_EXPORT_INTERRUPTED) {
+            this.updateState(BULK_EXPORT_FINISHED);
         }
     },
 
