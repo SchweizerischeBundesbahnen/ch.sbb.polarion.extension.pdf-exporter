@@ -10,10 +10,7 @@ import ch.sbb.polarion.extension.pdf_exporter.settings.StylePackageSettings;
 import com.polarion.alm.projects.IProjectService;
 import com.polarion.alm.tracker.ITrackerService;
 import com.polarion.alm.tracker.model.IModule;
-import com.polarion.alm.tracker.model.IRichPage;
-import com.polarion.alm.tracker.model.ITestRun;
 import com.polarion.alm.tracker.model.ITrackerProject;
-import com.polarion.alm.tracker.workreport.IReport;
 import com.polarion.core.util.StringUtils;
 import com.polarion.platform.IPlatformService;
 import com.polarion.platform.persistence.IDataService;
@@ -82,38 +79,4 @@ public class PdfExporterPolarionService extends PolarionService {
             return projectId.equals(document.getProjectId()) && String.format("%s/%s", spaceId, documentName).equals(document.getModuleLocation().getLocationPath());
         }
     }
-
-    @NotNull
-    @SuppressWarnings("unchecked")
-    public IPObjectList<IModule> getDocuments(@Nullable String projectId) {
-        IDataService dataService = getTrackerService().getDataService();
-        if (projectId != null) {
-            return dataService.searchInstances(dataService.getPrototype("Module"), String.format("project.id:%s", projectId), "title");
-        } else {
-            return dataService.searchInstances(dataService.getPrototype("Module"), "NOT HAS_VALUE:project.id", "title");
-        }
-    }
-
-    @NotNull
-    @SuppressWarnings("unchecked")
-    public IPObjectList<IRichPage> getReports(@Nullable String projectId) {
-        IDataService dataService = getTrackerService().getDataService();
-        if (projectId != null) {
-            return dataService.searchInstances(dataService.getPrototype("RichPage"), String.format("project.id:%s", projectId), "title");
-        } else {
-            return dataService.searchInstances(dataService.getPrototype("RichPage"), "NOT HAS_VALUE:project.id", "title");
-        }
-    }
-
-    @NotNull
-    @SuppressWarnings("unchecked")
-    public IPObjectList<ITestRun> getTestRuns(@Nullable String projectId) {
-        IDataService dataService = getTrackerService().getDataService();
-        if (projectId != null) {
-            return dataService.searchInstances(dataService.getPrototype("TestRun"), String.format("project.id:%s", projectId), "title");
-        } else {
-            return dataService.searchInstances(dataService.getPrototype("TestRun"), "NOT HAS_VALUE:project.id", "title");
-        }
-    }
-
 }
