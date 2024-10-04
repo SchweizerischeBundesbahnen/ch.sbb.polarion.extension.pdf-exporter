@@ -48,6 +48,7 @@ const BulkPdfExporter = {
         this.exportParams = exportParams;
         this.itemsCount = 0;
         this.finishedCount = 0;
+        this.errors = false;
         this.updateState(BULK_EXPORT_IN_PROGRESS);
         this.renderBulkExportItems(bulkExportWidget);
         MicroModal.show(BULK_POPUP_ID);
@@ -179,6 +180,8 @@ const BulkPdfExporter = {
                 resultSpan.classList.add("finished");
                 if (this.errors) {
                     resultSpan.classList.add("with-errors");
+                } else {
+                    resultSpan.classList.remove("with-errors");
                 }
                 resultSpan.innerText = this.errors ? "Export finished with errors" : "Export successfully finished";
             }
