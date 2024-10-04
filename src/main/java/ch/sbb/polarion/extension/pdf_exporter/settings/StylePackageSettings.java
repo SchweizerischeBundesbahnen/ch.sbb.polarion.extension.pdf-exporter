@@ -56,7 +56,8 @@ public class StylePackageSettings extends GenericNamedSettings<StylePackageModel
         }
     }
 
-    private void validateMatchingQuery(StylePackageModel model) {
+    @VisibleForTesting
+    void validateMatchingQuery(StylePackageModel model) {
         if (DEFAULT_NAME.equals(model.getName()) && !StringUtils.isEmpty(model.getMatchingQuery())) {
             throw new IllegalArgumentException("Matching query cannot be specified for a default style package");
         }
