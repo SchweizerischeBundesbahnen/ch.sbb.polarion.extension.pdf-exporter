@@ -39,13 +39,13 @@ public abstract class BaseWeasyPrintTest {
     public MockedStatic<PdfExporterExtensionConfiguration> pdfExporterExtensionConfigurationMockedStatic;
 
     @BeforeEach
-    public void setUp() {
+    protected void setUp() {
         PdfExporterExtensionConfiguration pdfExporterExtensionConfiguration = mock(PdfExporterExtensionConfiguration.class);
         pdfExporterExtensionConfigurationMockedStatic.when(PdfExporterExtensionConfiguration::getInstance).thenReturn(pdfExporterExtensionConfiguration);
     }
 
     @AfterEach
-    public void tearDown() {
+    protected void tearDown() {
         pdfExporterExtensionConfigurationMockedStatic.close();
     }
 
