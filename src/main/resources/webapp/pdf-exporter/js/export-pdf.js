@@ -91,7 +91,7 @@ const ExportPdf = {
         document.getElementById(elementId).className = className;
     },
 
-    prepareRequest: function (projectId, locationPath) {
+    prepareRequest: function (projectId, locationPath, fileName) {
         let selectedChapters = null;
         if (document.getElementById("specific-chapters").checked) {
             selectedChapters = this.getSelectedChapters();
@@ -119,10 +119,10 @@ const ExportPdf = {
             selectedRoles.push(...selectedOptions.map(opt => opt.value));
         }
 
-        return this.buildRequestJson(projectId, locationPath, selectedChapters, numberedListStyles, selectedRoles);
+        return this.buildRequestJson(projectId, locationPath, selectedChapters, numberedListStyles, selectedRoles, fileName);
     },
 
-    buildRequestJson: function (projectId, locationPath, selectedChapters, numberedListStyles, selectedRoles) {
+    buildRequestJson: function (projectId, locationPath, selectedChapters, numberedListStyles, selectedRoles, fileName) {
         const urlSearchParams = new URL(window.location.href.replace('#', '/')).searchParams;
         return new ExportParams.Builder(ExportParams.DocumentType.LIVE_DOC)
             .setProjectId(projectId)
@@ -148,6 +148,7 @@ const ExportPdf = {
             .setChapters(selectedChapters)
             .setLanguage(document.getElementById('localization').checked ? document.getElementById("language").value : null)
             .setLinkedWorkitemRoles(selectedRoles)
+            .setFileName(fileName)
             .setUrlQueryParameters(Object.fromEntries([...urlSearchParams]))
             .build()
             .toJSON();
@@ -185,17 +186,17 @@ const ExportPdf = {
         $("#export-error").empty();
         $("#export-warning").empty();
 
-        let request = this.prepareRequest(projectId, locationPath);
-        if (request === undefined) {
-            return;
+        let fileName = document.getElementById("filename").value;
+        if (!fileName) {
+            fileName = document.getElementById("filename").dataset.default;
+        }
+        if (fileName && !fileName.endsWith(".pdf")) {
+            fileName += ".pdf";
         }
 
-        let filename = document.getElementById("filename").value;
-        if (!filename) {
-            filename = document.getElementById("filename").dataset.default;
-        }
-        if (!filename.endsWith(".pdf")) {
-            filename += ".pdf";
+        let request = this.prepareRequest(projectId, locationPath, fileName);
+        if (request === undefined) {
+            return;
         }
 
         this.actionInProgress(true);
@@ -222,7 +223,7 @@ const ExportPdf = {
             const objectURL = (window.URL ? window.URL : window.webkitURL).createObjectURL(successResponse);
             const anchorElement = document.createElement("a");
             anchorElement.href = objectURL;
-            anchorElement.download = filename;
+            anchorElement.download = fileName;
             anchorElement.target = "_blank";
             anchorElement.click();
             anchorElement.remove();

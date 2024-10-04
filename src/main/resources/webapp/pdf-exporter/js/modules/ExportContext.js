@@ -6,8 +6,9 @@ export default class ExportContext {
     revision = undefined;
     documentType = undefined;
     urlQueryParameters = undefined;
+    bulkExportWidget = undefined;
 
-    constructor(documentType = ExportParams.DocumentType.LIVE_DOC, polarionLocationHash = window.location.hash) {
+    constructor({documentType = ExportParams.DocumentType.LIVE_DOC, polarionLocationHash = window.location.hash, bulkExportWidget}) {
         this.documentType = documentType;
 
         const urlPathAndSearchParams = getPathAndQueryParams(polarionLocationHash);
@@ -16,16 +17,21 @@ export default class ExportContext {
 
         const scope = getScope(normalizedPolarionLocationHash);
         this.projectId = getProjectId(scope);
-        this.locationPath = getPath(normalizedPolarionLocationHash, scope);
 
-        // if "testrun" or "testruns" is present return undefined
-        if (this.locationPath?.startsWith("testrun")) {
-            this.documentType = ExportParams.DocumentType.TEST_RUN;
-            this.locationPath = undefined;
+        if (this.documentType !== ExportParams.DocumentType.MIXED) {
+            this.locationPath = getPath(normalizedPolarionLocationHash, scope);
+
+            // if "testrun" or "testruns" is present return undefined
+            if (this.locationPath?.startsWith("testrun")) {
+                this.documentType = ExportParams.DocumentType.TEST_RUN;
+                this.locationPath = undefined;
+            }
         }
 
         this.urlQueryParameters = getQueryParams(searchParameters);
         this.revision = this.urlQueryParameters?.revision;
+
+        this.bulkExportWidget = bulkExportWidget;
 
         // print the context to console only in browser
         if (isWindowDefined()) {
@@ -125,6 +131,10 @@ export default class ExportContext {
 
     getUrlQueryParameters() {
         return this.urlQueryParameters;
+    }
+
+    getBulkExportWidget() {
+        return this.bulkExportWidget;
     }
 
     getScope() {

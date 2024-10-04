@@ -88,6 +88,9 @@ public class ExportParams {
     @Schema(description = "Specific Workitem roles", example = "[\"has parent\", \"depends on\"]")
     private List<String> linkedWorkitemRoles;
 
+    @Schema(description = "Target file name of exported document")
+    private String fileName;
+
     @Schema(description = "Map of attributes extracted from the URL")
     private Map<String, String> urlQueryParameters;
 
