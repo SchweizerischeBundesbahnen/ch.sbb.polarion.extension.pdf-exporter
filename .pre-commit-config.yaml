@@ -20,7 +20,7 @@ repos:
         args: [--autofix, --no-ensure-ascii, '--top-keys=openapi,info,servers,paths,components']
         files: docs/openapi.json
   - repo: https://github.com/zricethezav/gitleaks
-    rev: v8.19.2
+    rev: v8.20.0
     hooks:
       - id: gitleaks
   - repo: https://github.com/grigoriev/pre-commit-check-git-user
@@ -29,6 +29,6 @@ repos:
       - id: check-git-config-user-email
         args: [--templates, ^\S+\.\S+@sbb\.ch$]
   - repo: https://github.com/commitizen-tools/commitizen
-    rev: v3.29.0
+    rev: v3.29.1
     hooks:
       - id: commitizen

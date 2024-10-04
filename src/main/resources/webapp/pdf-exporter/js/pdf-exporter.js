@@ -238,8 +238,6 @@ const PdfExporter = {
             const valueToPreselect = SbbCommon.getCookie(SELECTED_STYLE_PACKAGE_COOKIE);
             if (valueToPreselect && this.containsOption(stylePackageSelect, valueToPreselect)) {
                 stylePackageSelect.value = valueToPreselect;
-            } else if (stylePackageSelect.options.length > 1) {
-                stylePackageSelect.value = stylePackageSelect.options[1].value;
             }
 
             this.onStylePackageChanged();
