@@ -210,7 +210,17 @@
             "content": {
               "application/pdf": {}
             },
-            "description": "Content of PDF document as a byte array"
+            "description": "Content of PDF document as a byte array",
+            "headers": {
+              "Content-Disposition": {
+                "description": "To inform a browser that the response is a downloadable attachment",
+                "style": "simple"
+              },
+              "Export-Filename": {
+                "description": "File name for converted PDF document",
+                "style": "simple"
+              }
+            }
           }
         },
         "summary": "Returns requested Polarion's document converted to PDF",
@@ -281,7 +291,17 @@
             "content": {
               "application/pdf": {}
             },
-            "description": "Content of PDF document as a byte array"
+            "description": "Content of PDF document as a byte array",
+            "headers": {
+              "Content-Disposition": {
+                "description": "To inform a browser that the response is a downloadable attachment",
+                "style": "simple"
+              },
+              "Export-Filename": {
+                "description": "File name for converted PDF document",
+                "style": "simple"
+              }
+            }
           }
         },
         "summary": "Converts input HTML to PDF",
@@ -399,7 +419,17 @@
             "content": {
               "application/pdf": {}
             },
-            "description": "Conversion job result is ready"
+            "description": "Conversion job result is ready",
+            "headers": {
+              "Content-Disposition": {
+                "description": "To inform a browser that the response is a downloadable attachment",
+                "style": "simple"
+              },
+              "Export-Filename": {
+                "description": "File name for converted PDF document",
+                "style": "simple"
+              }
+            }
           },
           "204": {
             "description": "Conversion job is still in progress"
@@ -1369,6 +1399,10 @@
             "default": true,
             "description": "Comments should be rendered in the exported document",
             "type": "boolean"
+          },
+          "fileName": {
+            "description": "Target file name of exported document",
+            "type": "string"
           },
           "fitToPage": {
             "default": true,

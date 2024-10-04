@@ -33,13 +33,18 @@ const PdfExporterStarter = {
         this.injectStyles("pdf-exporter-styles", `/polarion/pdf-exporter/css/pdf-exporter.css${this.timestampParam}`);
         this.injectStyles("pdf-micromodal-styles", `/polarion/pdf-exporter/css/micromodal.css${this.timestampParam}`);
 
-        this.injectScript("ExportParams-script", `/polarion/pdf-exporter/js/modules/ExportParams.js${this.timestampParam}`, "module");
-        this.injectScript("ExportContext-script", `/polarion/pdf-exporter/js/modules/ExportContext.js${this.timestampParam}`, "module");
-
-        this.injectScript("common-script", `/polarion/pdf-exporter/ui/generic/js/common.js${this.timestampParam}`);
-        this.injectScript("pdf-micromodal-script", `/polarion/pdf-exporter/js/micromodal.min.js${this.timestampParam}`);
-        this.injectScript("export-common-script", `/polarion/pdf-exporter/js/export-common.js${this.timestampParam}`);
-        this.injectScript("pdf-exporter-script", `/polarion/pdf-exporter/js/pdf-exporter.js${this.timestampParam}`);
+        this.injectScript("ExportParams-script", `/polarion/pdf-exporter/js/modules/ExportParams.js${this.timestampParam}`, "module")
+            .then(() => {
+                Promise.all([
+                    this.injectScript("ExportContext-script", `/polarion/pdf-exporter/js/modules/ExportContext.js${this.timestampParam}`, "module"),
+                    this.injectScript("common-script", `/polarion/pdf-exporter/ui/generic/js/common.js${this.timestampParam}`),
+                    this.injectScript("pdf-micromodal-script", `/polarion/pdf-exporter/js/micromodal.min.js${this.timestampParam}`),
+                    this.injectScript("export-common-script", `/polarion/pdf-exporter/js/export-common.js${this.timestampParam}`)
+                ]).then(() => {
+                    this.injectScript("pdf-exporter-script", `/polarion/pdf-exporter/js/pdf-exporter.js${this.timestampParam}`);
+                    this.injectScript("bulk-pdf-exporter-script", `/polarion/pdf-exporter/js/bulk-pdf-exporter.js${this.timestampParam}`);
+                });
+        });
     },
 
     injectStyles: function (id, stylesPath) {
@@ -54,13 +59,16 @@ const PdfExporterStarter = {
     },
 
     injectScript: function (id, componentScriptPath, type = "text/javascript") {
-        if (!top.document.getElementById(id)) {
-            const scriptElement = document.createElement("script");
-            scriptElement.id = id;
-            scriptElement.setAttribute("src", componentScriptPath);
-            scriptElement.setAttribute("type", type);
-            top.document.head.appendChild(scriptElement);
-        }
+        return new Promise((resolve) => {
+            if (!top.document.getElementById(id)) {
+                const scriptElement = document.createElement("script");
+                scriptElement.id = id;
+                scriptElement.setAttribute("src", componentScriptPath);
+                scriptElement.setAttribute("type", type);
+                top.document.head.appendChild(scriptElement);
+            }
+            resolve();
+        });
     },
 
     injectToolbar: function (params) {

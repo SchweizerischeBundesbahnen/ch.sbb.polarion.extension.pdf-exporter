@@ -84,8 +84,7 @@
 
 .modal__container.pdf-exporter .modal__footer {
     justify-content: end;
-    margin-bottom: 14px;
-    margin-right: 6px;
+    margin: 10px 6px 14px 20px;
 }
 
 .modal__container.pdf-exporter .modal__title {
@@ -97,6 +96,8 @@
     margin: 0;
     padding: 16px;
     color: black;
+    max-height: 80vh;
+    overflow: auto;
 }
 
 .form-wrapper {
@@ -184,6 +185,76 @@
     display: flex;
     justify-content: center;
     flex-wrap: wrap;
+}
+
+.modal__container.pdf-exporter .export-item {
+    padding: 5px;
+    border-bottom: 1px solid #aaa;
+}
+
+.modal__container.pdf-exporter .export-item .title .name {
+    font-weight: bold;
+}
+
+.modal__container.pdf-exporter .export-item .icon {
+    padding-right: 10px;
+    font-size: 18px;
+    vertical-align: middle;
+}
+
+.modal__container.pdf-exporter .export-item .icon img {
+    width: 18px;
+}
+
+.modal__container.pdf-exporter .export-item.paused {
+    color: #888;
+}
+
+.modal__container.pdf-exporter .export-item.paused .icon i.fa:before {
+    content: "\f017"; /* Clock icon from FontAwesome */
+}
+
+.modal__container.pdf-exporter .export-item.finished .icon {
+    color: green;
+}
+
+.modal__container.pdf-exporter .export-item.finished .icon i.fa:before {
+    content: "\f00c"; /* Check/Ticker icon from FontAwesome */
+}
+
+.modal__container.pdf-exporter .export-item.interrupted .icon, .modal__container.pdf-exporter .export-item.error .icon {
+    color: red;
+}
+
+.modal__container.pdf-exporter .export-item.error .icon i.fa:before {
+    content: "\f06a"; /* Check/Ticker icon from FontAwesome */
+}
+
+.modal__container.pdf-exporter .export-item.interrupted .icon i.fa:before {
+    content: "\f05e"; /* Check/Ticker icon from FontAwesome */
+}
+
+.modal__container.pdf-exporter .export-item:not(.in-progress) .icon img {
+    display: none;
+}
+
+.modal__container.pdf-exporter .export-item .error-message {
+    color: rgba(255, 0, 0, 0.7);
+    font-size: 10px;
+    font-family: monospace;
+    margin-left: 26px;
+}
+
+.modal__container.pdf-exporter .modal__footer .result {
+    flex-grow: 1;
+}
+
+.modal__container.pdf-exporter .modal__footer .result.finished {
+    color: green;
+}
+
+.modal__container.pdf-exporter .modal__footer .result.interrupted, .modal__container.pdf-exporter .modal__footer .result.finished.with-errors {
+    color: red;
 }
 
 .property-wrapper {
@@ -369,4 +440,103 @@
 
 .hidden {
     display: none;
+}
+
+.polarion-PdfExporter-BulkExportWidget {
+    margin-bottom: 30px;
+}
+
+.polarion-PdfExporter-BulkExportWidget .header h3 {
+    margin: 0 0 20px;
+}
+
+.polarion-PdfExporter-BulkExportWidget .header p {
+    color: grey;
+}
+
+.polarion-PdfExporter-BulkExportWidget .polarion-TestsExecutionButton-link {
+    display: block;
+}
+
+.polarion-PdfExporter-BulkExportWidget .polarion-TestsExecutionButton-buttons {
+    display: inline-block;
+}
+
+.polarion-PdfExporter-BulkExportWidget .polarion-TestsExecutionButton-buttons-content {
+    min-width: auto;
+}
+
+.polarion-PdfExporter-BulkExportWidget .polarion-TestsExecutionButton-buttons-content-labelCell {
+    padding: 10px;
+}
+
+.polarion-PdfExporter-BulkExportWidget .polarion-TestsExecutionButton-labelTextNew {
+    font-size: 20px;
+}
+
+.polarion-PdfExporter-BulkExportWidget .export-items {
+    display: flex;
+    margin-top: 30px;
+}
+
+.polarion-PdfExporter-BulkExportWidget .polarion-TestsExecutionButton-buttons-defaultCursor .polarion-TestsExecutionButton-labelTextNew {
+    color: gray;
+}
+
+.progress-bar {
+    height: 24px;
+    flex-grow: 1;
+    background: #eeeeee;
+    border-radius: 4px;
+    margin-right: 20px;
+}
+
+.progress-bar > span {
+    display: block;
+    position: relative;
+    height: 100%;
+    padding: 0 10px;
+    border-radius: 4px;
+    background-color: #0d6efd;
+    overflow: hidden;
+    line-height: 1.6em;
+    text-align: center;
+    color: white;
+}
+
+.progress-bar > span:after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    background-image: linear-gradient(
+            -45deg,
+            rgba(255, 255, 255, 0.2) 25%,
+            transparent 25%,
+            transparent 50%,
+            rgba(255, 255, 255, 0.2) 50%,
+            rgba(255, 255, 255, 0.2) 75%,
+            transparent 75%,
+            transparent
+    );
+    z-index: 1;
+    background-size: 50px 50px;
+    animation: move 2s linear infinite;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.animate > span:after {
+    display: none;
+}
+
+@keyframes move {
+    0% {
+        background-position: 0 0;
+    }
+    100% {
+        background-position: 50px 50px;
+    }
 }

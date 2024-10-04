@@ -21,13 +21,9 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import static java.util.Comparator.comparing;
 
 public class PdfExporterPolarionService extends PolarionService {
 
@@ -89,5 +85,4 @@ public class PdfExporterPolarionService extends PolarionService {
             return projectId.equals(document.getProjectId()) && String.format("%s/%s", spaceId, documentName).equals(document.getModuleLocation().getLocationPath());
         }
     }
-
 }
