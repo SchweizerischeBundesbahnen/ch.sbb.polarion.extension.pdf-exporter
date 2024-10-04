@@ -34,14 +34,10 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.contains;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
-import static org.mockito.Mockito.when;
 
-@ExtendWith(MockitoExtension.class)
+@ExtendWith({MockitoExtension.class, PdfExporterContextExtension.class})
 class CoverPageSettingsTest {
     @Mock
     PdfExporterPolarionService mockedPdfExporterPolarionService;
@@ -167,12 +163,12 @@ class CoverPageSettingsTest {
     @Test
     void testPredefinedTemplates() {
         try (MockedConstruction<ZipInputStream> mockZipInputStream = Mockito.mockConstruction(ZipInputStream.class,
-                     (mock, context) -> when(mock.getNextEntry()).thenReturn(
-                             new ZipEntry("default/cover-page/test_1/template.html"),
-                             new ZipEntry("default/cover-page/test_2/template.html"),
-                             new ZipEntry("default/cover-page/test_3/template.html"),
-                             null
-                     )
+                (mock, context) -> when(mock.getNextEntry()).thenReturn(
+                        new ZipEntry("default/cover-page/test_1/template.html"),
+                        new ZipEntry("default/cover-page/test_2/template.html"),
+                        new ZipEntry("default/cover-page/test_3/template.html"),
+                        null
+                )
         )) {
             try (MockedStatic<ScopeUtils> mockScopeUtils = mockStatic(ScopeUtils.class)) {
                 SettingsService mockedSettingsService = mock(SettingsService.class);

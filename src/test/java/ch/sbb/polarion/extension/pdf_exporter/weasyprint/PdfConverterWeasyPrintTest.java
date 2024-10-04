@@ -2,6 +2,7 @@ package ch.sbb.polarion.extension.pdf_exporter.weasyprint;
 
 import ch.sbb.polarion.extension.pdf_exporter.converter.CoverPageProcessor;
 import ch.sbb.polarion.extension.pdf_exporter.converter.PdfConverter;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.DocumentData;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.DocumentType;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.Orientation;
@@ -15,10 +16,9 @@ import ch.sbb.polarion.extension.pdf_exporter.settings.CoverPageSettings;
 import ch.sbb.polarion.extension.pdf_exporter.settings.CssSettings;
 import ch.sbb.polarion.extension.pdf_exporter.settings.HeaderFooterSettings;
 import ch.sbb.polarion.extension.pdf_exporter.settings.LocalizationSettings;
-import ch.sbb.polarion.extension.pdf_exporter.rest.model.DocumentData;
+import ch.sbb.polarion.extension.pdf_exporter.util.DocumentDataHelper;
 import ch.sbb.polarion.extension.pdf_exporter.util.FileResourceProvider;
 import ch.sbb.polarion.extension.pdf_exporter.util.HtmlProcessor;
-import ch.sbb.polarion.extension.pdf_exporter.util.DocumentDataHelper;
 import ch.sbb.polarion.extension.pdf_exporter.util.MediaUtils;
 import ch.sbb.polarion.extension.pdf_exporter.util.PdfTemplateProcessor;
 import ch.sbb.polarion.extension.pdf_exporter.util.html.HtmlLinksHelper;
@@ -36,32 +36,74 @@ import com.polarion.platform.IPlatformService;
 import com.polarion.platform.security.ISecurityService;
 import com.polarion.platform.service.repository.IRepositoryService;
 import lombok.SneakyThrows;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.stubbing.Answer;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class PdfConverterWeasyPrintTest extends BaseWeasyPrintTest {
 
-    @Test
-    @SneakyThrows
-    void testConverter() {
+    @SuppressWarnings("rawtypes")
+    private MockedStatic<CompletableFuture> completableFutureMockedStatic;
 
-        String testName = getCurrentMethodName();
+    private HeaderFooterSettings headerFooterSettings;
+    private DocumentDataHelper documentDataHelper;
+    private PdfConverter converter;
+    private IModule module;
+
+    @BeforeEach
+    @Override
+    protected void setUp() {
+        super.setUp();
+
+        prepareTestMocks();
+
+        // we need to change behavior for CompletableFuture.supplyAsync() from async to sync
+        // because we have static mocks which can not be shared between threads
+        completableFutureMockedStatic = mockStatic(CompletableFuture.class, invocation -> {
+            if (invocation.getMethod().getName().equals("supplyAsync")) {
+                Supplier<?> supplier = invocation.getArgument(0);
+                return CompletableFuture.completedFuture(supplier.get());
+            }
+            return invocation.callRealMethod();
+        });
+    }
+
+    @AfterEach
+    @Override
+    protected void tearDown() {
+        super.tearDown();
+
+        completableFutureMockedStatic.close();
+    }
+
+    @SneakyThrows
+    void prepareTestMocks() {
 
         ITrackerService trackerService = mock(ITrackerService.class);
         IProjectService projectService = mock(IProjectService.class);
-        PdfExporterPolarionService pdfExporterPolarionService = new PdfExporterPolarionService(trackerService, projectService,
-                mock(ISecurityService.class), mock(IPlatformService.class), mock(IRepositoryService.class));
+        PdfExporterPolarionService pdfExporterPolarionService = new PdfExporterPolarionService(
+                trackerService,
+                projectService,
+                mock(ISecurityService.class),
+                mock(IPlatformService.class),
+                mock(IRepositoryService.class)
+        );
 
         IProject project = mock(IProject.class);
         when(projectService.getProject(anyString())).thenReturn(project);
@@ -69,24 +111,16 @@ class PdfConverterWeasyPrintTest extends BaseWeasyPrintTest {
         when(trackerService.getTrackerProject(any(IProject.class))).thenReturn(trackerProject);
         lenient().when(trackerProject.isUnresolvable()).thenReturn(false);
 
-        IModule module = mock(IModule.class);
-        when(module.getCustomField(anyString())).thenAnswer((Answer<String>) invocation ->
+        module = mock(IModule.class);
+        lenient().when(module.getCustomField(anyString())).thenAnswer((Answer<String>) invocation ->
                 "testFieldKey".equals(invocation.getArgument(0)) ? "testFieldValue" : null);
 
-        DocumentDataHelper documentDataHelper = mock(DocumentDataHelper.class);
-        DocumentData<IModule> liveDoc1 = DocumentData.builder(DocumentType.LIVE_DOC, module)
-                .id("testId")
-                .projectName("Test")
-                .title("testTitle")
-                .content("<div>TEST</div>")
-                .lastRevision("42")
-                .build();
-        when(documentDataHelper.getLiveDoc(any(), any())).thenReturn(liveDoc1);
+        documentDataHelper = mock(DocumentDataHelper.class);
 
         LocalizationSettings localizationSettings = mock(LocalizationSettings.class);
         when(localizationSettings.load(any(), any())).thenReturn(new LocalizationModel(null, null, null));
 
-        HeaderFooterSettings headerFooterSettings = mock(HeaderFooterSettings.class);
+        headerFooterSettings = mock(HeaderFooterSettings.class);
         //here we will test "testFieldKey" custom field & special "PAGE_NUMBER" placeholder substitution in the header
         when(headerFooterSettings.load(any(), any())).thenReturn(new HeaderFooterModel("HL", "HC  {{ testFieldKey }}", "HR", "FL", "FC", "FR {{ PAGE_NUMBER }}"));
 
@@ -107,23 +141,67 @@ class PdfConverterWeasyPrintTest extends BaseWeasyPrintTest {
 
         CoverPageSettings coverPageSettings = mock(CoverPageSettings.class);
         //check "testFieldKey" custom field substitution in the title + use basic css here, otherwise fonts may differ on different OS
-        when(coverPageSettings.load(any(), any())).thenReturn(new CoverPageModel("<dev>TITLE {{ testFieldKey }}</div>", basicCss));
-        when(coverPageSettings.processImagePlaceholders(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        lenient().when(coverPageSettings.load(any(), any())).thenReturn(new CoverPageModel("<dev>TITLE {{ testFieldKey }}</div>", basicCss));
+        lenient().when(coverPageSettings.processImagePlaceholders(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
-        CoverPageProcessor coverPageProcessor = new CoverPageProcessor(placeholderProcessor, velocityEvaluator, weasyPrintServiceConnector, coverPageSettings, new PdfTemplateProcessor());
+        CoverPageProcessor coverPageProcessor = new CoverPageProcessor(
+                placeholderProcessor,
+                velocityEvaluator,
+                weasyPrintServiceConnector,
+                coverPageSettings,
+                new PdfTemplateProcessor()
+        );
 
         HtmlLinksHelper htmlLinksHelper = mock(HtmlLinksHelper.class);
         when(htmlLinksHelper.internalizeLinks(anyString())).thenAnswer(invocation -> invocation.getArgument(0));
 
         FileResourceProvider fileResourceProvider = mock(FileResourceProvider.class);
 
-        ExportParams params = ExportParams.builder().projectId("test").locationPath("testLocation").orientation(Orientation.PORTRAIT).paperSize(PaperSize.A4).build();
-        PdfConverter converter = new PdfConverter(pdfExporterPolarionService, headerFooterSettings, cssSettings, documentDataHelper, placeholderProcessor, velocityEvaluator,
-                coverPageProcessor, weasyPrintServiceConnector, new HtmlProcessor(fileResourceProvider, localizationSettings, htmlLinksHelper, pdfExporterPolarionService), new PdfTemplateProcessor());
+        converter = new PdfConverter(
+                pdfExporterPolarionService,
+                headerFooterSettings,
+                cssSettings,
+                documentDataHelper,
+                placeholderProcessor,
+                velocityEvaluator,
+                coverPageProcessor,
+                weasyPrintServiceConnector,
+                new HtmlProcessor(fileResourceProvider, localizationSettings, htmlLinksHelper, pdfExporterPolarionService),
+                new PdfTemplateProcessor()
+        );
+    }
 
-        compareContentUsingReferenceImages(testName + "_simple", converter.convertToPdf(params, null));
+    @Test
+    void testConverterSimple() {
+        ExportParams params = ExportParams.builder()
+                .projectId("test")
+                .locationPath("testLocation")
+                .orientation(Orientation.PORTRAIT)
+                .paperSize(PaperSize.A4)
+                .build();
 
-        params.setCoverPage("test");
+        DocumentData<IModule> liveDoc1 = DocumentData.builder(DocumentType.LIVE_DOC, module)
+                .id("testId")
+                .projectName("Test")
+                .title("testTitle")
+                .content("<div>TEST</div>")
+                .lastRevision("42")
+                .build();
+        when(documentDataHelper.getLiveDoc(any(), any())).thenReturn(liveDoc1);
+
+        compareContentUsingReferenceImages(getCurrentMethodName(), converter.convertToPdf(params, null));
+    }
+
+    @Test
+    void testConverterComplexWithTitle() {
+        ExportParams params = ExportParams.builder()
+                .projectId("test")
+                .locationPath("testLocation")
+                .orientation(Orientation.PORTRAIT)
+                .paperSize(PaperSize.A4)
+                .coverPage("test")
+                .build();
+
         DocumentData<IModule> liveDoc2 = DocumentData.builder(DocumentType.LIVE_DOC, module)
                 .projectName("Test")
                 .id("testId")
@@ -132,9 +210,19 @@ class PdfConverterWeasyPrintTest extends BaseWeasyPrintTest {
                 .lastRevision("42")
                 .build();
         when(documentDataHelper.getLiveDoc(any(), any())).thenReturn(liveDoc2);
-        compareContentUsingReferenceImages(testName + "_complex_with_title", converter.convertToPdf(params, null));
 
-        params.setCoverPage(null);
+        compareContentUsingReferenceImages(getCurrentMethodName(), converter.convertToPdf(params, null));
+    }
+
+    @Test
+    void testConverterSpecialSymbols() {
+        ExportParams params = ExportParams.builder()
+                .projectId("test")
+                .locationPath("testLocation")
+                .orientation(Orientation.PORTRAIT)
+                .paperSize(PaperSize.A4)
+                .build();
+
         DocumentData<IModule> liveDoc3 = DocumentData.builder(DocumentType.LIVE_DOC, module)
                 .projectName("Test")
                 .id("testId")
@@ -142,7 +230,18 @@ class PdfConverterWeasyPrintTest extends BaseWeasyPrintTest {
                 .content(readHtmlResource("specialSymbols"))
                 .build();
         when(documentDataHelper.getLiveDoc(any(), any())).thenReturn(liveDoc3);
-        compareContentUsingReferenceImages(testName + "_special_symbols", converter.convertToPdf(params, null));
+
+        compareContentUsingReferenceImages(getCurrentMethodName(), converter.convertToPdf(params, null));
+    }
+
+    @Test
+    void testConverterSvgImage() {
+        ExportParams params = ExportParams.builder()
+                .projectId("test")
+                .locationPath("testLocation")
+                .orientation(Orientation.PORTRAIT)
+                .paperSize(PaperSize.A4)
+                .build();
 
         DocumentData<IModule> liveDoc4 = DocumentData.builder(DocumentType.LIVE_DOC, module)
                 .projectName("Test")
@@ -151,7 +250,18 @@ class PdfConverterWeasyPrintTest extends BaseWeasyPrintTest {
                 .content(readHtmlResource("svgImage"))
                 .build();
         when(documentDataHelper.getLiveDoc(any(), any())).thenReturn(liveDoc4);
-        compareContentUsingReferenceImages(testName + "_svg_image", converter.convertToPdf(params, null));
+
+        compareContentUsingReferenceImages(getCurrentMethodName(), converter.convertToPdf(params, null));
+    }
+
+    @Test
+    void testConverterWiki() {
+        ExportParams params = ExportParams.builder()
+                .projectId("test")
+                .locationPath("testLocation")
+                .orientation(Orientation.PORTRAIT)
+                .paperSize(PaperSize.A4)
+                .build();
 
         //test wiki page export + {{ REVISION }} placeholder usage
         DocumentData<IWikiPage> wikiPage = DocumentData.builder(DocumentType.LIVE_DOC, mock(IWikiPage.class))
@@ -165,7 +275,8 @@ class PdfConverterWeasyPrintTest extends BaseWeasyPrintTest {
         when(headerFooterSettings.load(any(), any())).thenReturn(new HeaderFooterModel("HL", "HC  {{ REVISION }}", "HR", "FL", "FC", "FR {{ PAGE_NUMBER }}"));
         params.setDocumentType(DocumentType.WIKI_PAGE);
         params.setLocationPath("wikiFolder/wikiPage");
-        compareContentUsingReferenceImages(testName + "_wiki", converter.convertToPdf(params, null));
+
+        compareContentUsingReferenceImages(getCurrentMethodName(), converter.convertToPdf(params, null));
     }
 
     @SneakyThrows

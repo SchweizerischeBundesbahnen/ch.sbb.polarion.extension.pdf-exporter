@@ -20,8 +20,9 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.contains;
 import static org.mockito.Mockito.*;
 
-@ExtendWith(MockitoExtension.class)
+@ExtendWith({MockitoExtension.class, PdfExporterContextExtension.class})
 class FileNameTemplateSettingsTest {
+
     @Test
     void testSettingDoesNotExist() {
         try (MockedStatic<ScopeUtils> mockScopeUtils = mockStatic(ScopeUtils.class)) {

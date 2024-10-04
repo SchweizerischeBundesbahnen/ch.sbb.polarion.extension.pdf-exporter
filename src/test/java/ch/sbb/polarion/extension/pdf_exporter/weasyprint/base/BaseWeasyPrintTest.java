@@ -1,5 +1,6 @@
 package ch.sbb.polarion.extension.pdf_exporter.weasyprint.base;
 
+import ch.sbb.polarion.extension.pdf_exporter.properties.PdfExporterExtensionConfiguration;
 import ch.sbb.polarion.extension.pdf_exporter.util.MediaUtils;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.WeasyPrintOptions;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.service.WeasyPrintServiceConnector;
@@ -8,6 +9,13 @@ import lombok.SneakyThrows;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.jetbrains.annotations.NotNull;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Answers;
+import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
@@ -21,9 +29,25 @@ import java.util.Base64;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
 
+@ExtendWith(MockitoExtension.class)
 @SkipTestWhenParamNotSet
 public abstract class BaseWeasyPrintTest {
+
+    @Mock(answer = Answers.RETURNS_DEEP_STUBS)
+    protected MockedStatic<PdfExporterExtensionConfiguration> pdfExporterExtensionConfigurationMockedStatic;
+
+    @BeforeEach
+    protected void setUp() {
+        PdfExporterExtensionConfiguration pdfExporterExtensionConfiguration = mock(PdfExporterExtensionConfiguration.class);
+        pdfExporterExtensionConfigurationMockedStatic.when(PdfExporterExtensionConfiguration::getInstance).thenReturn(pdfExporterExtensionConfiguration);
+    }
+
+    @AfterEach
+    protected void tearDown() {
+        pdfExporterExtensionConfigurationMockedStatic.close();
+    }
 
     public static final String DOCKER_IMAGE_NAME = "ghcr.io/schweizerischebundesbahnen/weasyprint-service:latest";
 

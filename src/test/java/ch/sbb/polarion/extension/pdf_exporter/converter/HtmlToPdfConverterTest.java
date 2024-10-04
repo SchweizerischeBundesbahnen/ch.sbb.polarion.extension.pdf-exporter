@@ -1,22 +1,26 @@
 package ch.sbb.polarion.extension.pdf_exporter.converter;
 
+import ch.sbb.polarion.extension.pdf_exporter.properties.PdfExporterExtensionConfiguration;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.Orientation;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PaperSize;
 import ch.sbb.polarion.extension.pdf_exporter.util.HtmlProcessor;
 import ch.sbb.polarion.extension.pdf_exporter.util.PdfTemplateProcessor;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.WeasyPrintOptions;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.service.WeasyPrintServiceConnector;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Answers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class HtmlToPdfConverterTest {
@@ -31,6 +35,20 @@ class HtmlToPdfConverterTest {
 
     @InjectMocks
     private HtmlToPdfConverter htmlToPdfConverter;
+
+    @Mock(answer = Answers.RETURNS_DEEP_STUBS)
+    MockedStatic<PdfExporterExtensionConfiguration> pdfExporterExtensionConfigurationMockedStatic;
+
+    @BeforeEach
+    void setUp() {
+        PdfExporterExtensionConfiguration pdfExporterExtensionConfiguration = mock(PdfExporterExtensionConfiguration.class);
+        pdfExporterExtensionConfigurationMockedStatic.when(PdfExporterExtensionConfiguration::getInstance).thenReturn(pdfExporterExtensionConfiguration);
+    }
+
+    @AfterEach
+    void tearDown() {
+        pdfExporterExtensionConfigurationMockedStatic.close();
+    }
 
     @Test
     void shouldInjectHeadAndStyle() {
