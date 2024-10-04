@@ -67,10 +67,7 @@ class PdfConverterWeasyPrintTest extends BaseWeasyPrintTest {
     private IModule module;
 
     @BeforeEach
-    @Override
     protected void setUp() {
-        super.setUp();
-
         prepareTestMocks();
 
         // we need to change behavior for CompletableFuture.supplyAsync() from async to sync
@@ -85,10 +82,7 @@ class PdfConverterWeasyPrintTest extends BaseWeasyPrintTest {
     }
 
     @AfterEach
-    @Override
     protected void tearDown() {
-        super.tearDown();
-
         completableFutureMockedStatic.close();
     }
 
