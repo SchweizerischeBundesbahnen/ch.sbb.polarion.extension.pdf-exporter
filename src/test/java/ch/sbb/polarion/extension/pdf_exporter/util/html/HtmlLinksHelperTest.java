@@ -1,7 +1,6 @@
 package ch.sbb.polarion.extension.pdf_exporter.util.html;
 
 import ch.sbb.polarion.extension.pdf_exporter.configuration.PdfExporterExtensionConfigurationExtension;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -29,10 +28,6 @@ class HtmlLinksHelperTest {
     @BeforeEach
     void setup() {
         htmlLinksHelper = new HtmlLinksHelper(Set.of(linkInternalizer1, linkInternalizer2));
-    }
-
-    @AfterEach
-    void shutdown() {
     }
 
     @Test
