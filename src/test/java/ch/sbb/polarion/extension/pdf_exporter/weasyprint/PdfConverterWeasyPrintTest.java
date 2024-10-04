@@ -83,8 +83,8 @@ class PdfConverterWeasyPrintTest extends BaseWeasyPrintTest {
 
         IConfiguration configuration = mock(IConfiguration.class);
         IClusterConfiguration clusterConfiguration = mock(IClusterConfiguration.class);
-        when(clusterConfiguration.nodeHostname()).thenReturn("localhost");
-        when(configuration.cluster()).thenReturn(clusterConfiguration);
+        lenient().when(clusterConfiguration.nodeHostname()).thenReturn("localhost");
+        lenient().when(configuration.cluster()).thenReturn(clusterConfiguration);
         configurationMockedStatic.when(Configuration::getInstance).thenReturn(configuration);
 
         // we need to change behavior for CompletableFuture.supplyAsync() from async to sync
