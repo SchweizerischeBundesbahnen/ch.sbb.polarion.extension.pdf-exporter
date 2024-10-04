@@ -32,6 +32,9 @@ import com.polarion.alm.tracker.ITrackerService;
 import com.polarion.alm.tracker.model.IModule;
 import com.polarion.alm.tracker.model.ITrackerProject;
 import com.polarion.alm.tracker.model.IWikiPage;
+import com.polarion.core.config.Configuration;
+import com.polarion.core.config.IClusterConfiguration;
+import com.polarion.core.config.IConfiguration;
 import com.polarion.platform.IPlatformService;
 import com.polarion.platform.security.ISecurityService;
 import com.polarion.platform.service.repository.IRepositoryService;
@@ -40,6 +43,9 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Answers;
+import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.stubbing.Answer;
 
@@ -55,6 +61,9 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class PdfConverterWeasyPrintTest extends BaseWeasyPrintTest {
 
+    @Mock(answer = Answers.RETURNS_DEEP_STUBS)
+    public MockedStatic<Configuration> configurationMockedStatic;
+
     private HeaderFooterSettings headerFooterSettings;
     private DocumentDataHelper documentDataHelper;
     private PdfConverter converter;
@@ -66,12 +75,20 @@ class PdfConverterWeasyPrintTest extends BaseWeasyPrintTest {
         super.setUp();
 
         prepareTestMocks();
+
+        IConfiguration configuration = mock(IConfiguration.class);
+        IClusterConfiguration clusterConfiguration = mock(IClusterConfiguration.class);
+        when(clusterConfiguration.nodeHostname()).thenReturn("localhost");
+        when(configuration.cluster()).thenReturn(clusterConfiguration);
+        configurationMockedStatic.when(Configuration::getInstance).thenReturn(configuration);
     }
 
     @AfterEach
     @Override
     protected void tearDown() {
         super.tearDown();
+
+        configurationMockedStatic.close();
     }
 
     @SneakyThrows
