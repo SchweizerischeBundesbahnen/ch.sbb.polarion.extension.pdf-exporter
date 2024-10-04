@@ -4,6 +4,7 @@ export default class ExportParams {
         LIVE_REPORT: 'LIVE_REPORT',
         TEST_RUN: 'TEST_RUN',
         WIKI_PAGE: 'WIKI_PAGE',
+        MIXED: 'MIXED',
     };
 
     static Orientation = {
@@ -49,6 +50,7 @@ export default class ExportParams {
         this.chapters = builder.chapters;
         this.language = builder.language;
         this.linkedWorkitemRoles = builder.linkedWorkitemRoles;
+        this.fileName = builder.fileName;
         this.urlQueryParameters = builder.urlQueryParameters;
         this.internalContent = builder.internalContent;
     }
@@ -96,6 +98,7 @@ export default class ExportParams {
                 this.chapters = undefined;
                 this.language = undefined;
                 this.linkedWorkitemRoles = undefined;
+                this.fileName = undefined;
                 this.urlQueryParameters = undefined;
                 this.internalContent = undefined;
             }
@@ -212,6 +215,11 @@ export default class ExportParams {
 
             setLinkedWorkitemRoles(linkedWorkitemRoles) {
                 this.linkedWorkitemRoles = linkedWorkitemRoles;
+                return this;
+            }
+
+            setFileName(fileName) {
+                this.fileName = fileName;
                 return this;
             }
 
