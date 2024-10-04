@@ -36,7 +36,7 @@ import static org.mockito.Mockito.mock;
 public abstract class BaseWeasyPrintTest {
 
     @Mock(answer = Answers.RETURNS_DEEP_STUBS)
-    public MockedStatic<PdfExporterExtensionConfiguration> pdfExporterExtensionConfigurationMockedStatic;
+    protected MockedStatic<PdfExporterExtensionConfiguration> pdfExporterExtensionConfigurationMockedStatic;
 
     @BeforeEach
     protected void setUp() {

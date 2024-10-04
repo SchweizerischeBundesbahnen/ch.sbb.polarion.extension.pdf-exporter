@@ -52,6 +52,8 @@ import org.mockito.stubbing.Answer;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -62,7 +64,10 @@ import static org.mockito.Mockito.*;
 class PdfConverterWeasyPrintTest extends BaseWeasyPrintTest {
 
     @Mock(answer = Answers.RETURNS_DEEP_STUBS)
-    public MockedStatic<Configuration> configurationMockedStatic;
+    private MockedStatic<Configuration> configurationMockedStatic;
+
+    @SuppressWarnings("rawtypes")
+    private MockedStatic<CompletableFuture> completableFutureMockedStatic;
 
     private HeaderFooterSettings headerFooterSettings;
     private DocumentDataHelper documentDataHelper;
@@ -81,6 +86,16 @@ class PdfConverterWeasyPrintTest extends BaseWeasyPrintTest {
         when(clusterConfiguration.nodeHostname()).thenReturn("localhost");
         when(configuration.cluster()).thenReturn(clusterConfiguration);
         configurationMockedStatic.when(Configuration::getInstance).thenReturn(configuration);
+
+        // we need to change behavior for CompletableFuture.supplyAsync() from async to sync
+        // because we have static mocks which can not be shared between threads
+        completableFutureMockedStatic = mockStatic(CompletableFuture.class, invocation -> {
+            if (invocation.getMethod().getName().equals("supplyAsync")) {
+                Supplier<?> supplier = invocation.getArgument(0);
+                return CompletableFuture.completedFuture(supplier.get());
+            }
+            return invocation.callRealMethod();
+        });
     }
 
     @AfterEach
@@ -89,6 +104,7 @@ class PdfConverterWeasyPrintTest extends BaseWeasyPrintTest {
         super.tearDown();
 
         configurationMockedStatic.close();
+        completableFutureMockedStatic.close();
     }
 
     @SneakyThrows
