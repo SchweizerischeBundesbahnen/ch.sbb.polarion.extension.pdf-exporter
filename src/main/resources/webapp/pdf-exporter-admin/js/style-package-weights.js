@@ -167,7 +167,7 @@ const StylePackageWeights = {
             newValue = parseFloat((prevItemValue + (nextItemValue - prevItemValue) / 2).toFixed(1));
         }
 
-        items[newPosition].querySelector(this.STYLE_INPUT).value = newValue > 100 ? 100 : (newValue < 0 ? 0 : newValue);
+        items[newPosition].querySelector(this.STYLE_INPUT).value = Math.max(0, Math.min(100, newValue));
     },
 
     getPositionByName: function (name, dynamicItems) {
