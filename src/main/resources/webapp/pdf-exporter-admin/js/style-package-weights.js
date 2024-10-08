@@ -157,7 +157,7 @@ const StylePackageWeights = {
         }
         // We have to sort list again even if its position hasn't changed.
         // For example:
-        // 1. We have sequence like
+        // 1. We have sequence like "ccc 45, aaa 42, bbb 42, ddd 42"
         // 2. Manually change ccc value to 42
         // 3. Its position initially wasn't changed, but according to our rules when multiple items
         //    have the same weight they must be sorted alphabetically
