@@ -1,5 +1,7 @@
 package ch.sbb.polarion.extension.pdf_exporter.settings;
 
+import ch.sbb.polarion.extension.generic.context.CurrentContextConfig;
+import ch.sbb.polarion.extension.generic.context.CurrentContextExtension;
 import ch.sbb.polarion.extension.generic.exception.ObjectNotFoundException;
 import ch.sbb.polarion.extension.generic.settings.SettingId;
 import ch.sbb.polarion.extension.generic.settings.SettingsService;
@@ -17,7 +19,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
-@ExtendWith({MockitoExtension.class, PdfExporterContextExtension.class})
+@ExtendWith({MockitoExtension.class, CurrentContextExtension.class})
+@CurrentContextConfig("pdf-exporter")
 class HeaderFooterSettingsTest {
 
     @Test
