@@ -18,10 +18,7 @@ const StylePackageWeights = {
             filter: '.static,.weight-input',
             preventOnFilter: false,
             onEnd: (evt) => {
-                if (evt.newDraggableIndex !== evt.oldDraggableIndex) {
-                    this.updateWeightForNewPosition(evt.newDraggableIndex);
-                    this.sortList();
-                }
+                this.afterPositionChange(evt.oldDraggableIndex, evt.newDraggableIndex);
             }
         });
     },
@@ -68,10 +65,10 @@ const StylePackageWeights = {
     },
 
     setData: function (jsonString) {
-        const data = JSON.parse(jsonString);
+        this.data = JSON.parse(jsonString);
         const weightStyleName = this.STYLE_INPUT.replace('.', '');
         this.sortableList.innerHTML = '';
-        data.forEach((item) => {
+        this.data.forEach((item) => {
             const li = document.createElement("li");
             li.classList.add(this.STYLE_ITEM.replace('.', ''));
             const globalScopedItem = item.scope === "" && SbbCommon.scope !== "";
@@ -125,6 +122,7 @@ const StylePackageWeights = {
 
     moveItem: function (fromPosition, toPosition) {
         if (fromPosition === toPosition) {
+            this.afterPositionChange(fromPosition, toPosition);
             return;
         }
         const items = Array.from(this.sortableList.children);
@@ -148,23 +146,44 @@ const StylePackageWeights = {
             self.sortableList.insertBefore(fromItem, fromPosition < toPosition ? toItem.nextSibling : toItem);
 
             fromItem.removeEventListener('transitionend', handleTransitionEnd);
+
+            self.afterPositionChange(fromPosition, toPosition);
         });
+    },
+
+    afterPositionChange: function (fromPosition, toPosition) {
+        if (fromPosition !== toPosition) {
+            this.updateWeightForNewPosition(toPosition);
+        }
+        // We have to sort list again even if its position hasn't changed.
+        // For example:
+        // 1. We have sequence like
+        // 2. Manually change ccc value to 42
+        // 3. Its position initially wasn't changed, but according to our rules when multiple items
+        //    have the same weight they must be sorted alphabetically
+        // 4. Sort the resulting list to get proper result: "aaa 42, bbb 42, ccc 42, ddd 42"
+        this.sortList();
     },
 
     updateWeightForNewPosition: function (newPosition) {
         const items = this.sortableList.querySelectorAll(this.STYLE_ITEM);
+        const changedItemName = items[newPosition].querySelector(this.STYLE_INPUT).id.replace(this.ID_PREFIX, '');
+
+        // we are going to try to keep initial weight
+        const initialWeight = this.data.find(i => i.name === changedItemName).weight;
 
         let newValue;
         if (newPosition === 0) {
             const nextItemValue = parseFloat(items[newPosition + 1].querySelector(this.STYLE_INPUT).value);
-            newValue = nextItemValue + 1;
+            newValue = initialWeight > nextItemValue ? initialWeight : nextItemValue + 1;
         } else if (newPosition === items.length - 1) {
             const prevItemValue = parseFloat(items[items.length - 2].querySelector(this.STYLE_INPUT).value);
-            newValue = prevItemValue - 1;
+            newValue = initialWeight < prevItemValue ? initialWeight : prevItemValue - 1;
         } else {
             const prevItemValue = parseFloat(items[newPosition - 1].querySelector(this.STYLE_INPUT).value);
             const nextItemValue = parseFloat(items[newPosition + 1].querySelector(this.STYLE_INPUT).value);
-            newValue = parseFloat((prevItemValue + (nextItemValue - prevItemValue) / 2).toFixed(1));
+            newValue = initialWeight > nextItemValue && initialWeight < prevItemValue ? initialWeight :
+                parseFloat((prevItemValue + (nextItemValue - prevItemValue) / 2).toFixed(1));
         }
 
         items[newPosition].querySelector(this.STYLE_INPUT).value = Math.max(0, Math.min(100, newValue));
