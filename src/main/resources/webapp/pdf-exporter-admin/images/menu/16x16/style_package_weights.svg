@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="white">
+    <rect width="16" height="16" fill="none"/>
+    <!-- List lines that take all vertical space -->
+    <rect x="3" y="2" width="8" height="1"/>
+    <rect x="3" y="7" width="8" height="1"/>
+    <rect x="3" y="12" width="8" height="1"/>
+    <!-- Larger and more prominent up arrow -->
+    <path d="M11 5 L15 5 L13 2 Z" fill="white"/>
+</svg>

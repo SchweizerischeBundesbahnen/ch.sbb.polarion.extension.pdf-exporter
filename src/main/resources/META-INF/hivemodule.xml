@@ -31,6 +31,15 @@
                   projectGroupScope="false"
                   repositoryScope="true"/>
 
+        <extender id="style-package-weights"
+                  name="Style Package Weights"
+                  parentNodeId="pdf-export"
+                  iconUrl="/polarion/pdf-exporter-admin/ui/images/menu/16x16/style_package_weights.svg"
+                  pageUrl="/polarion/pdf-exporter-admin/pages/style-package-weights.jsp?scope=$scope$"
+                  projectScope="true"
+                  projectGroupScope="false"
+                  repositoryScope="true"/>
+
         <extender id="cover-page"
                   name="Cover Page"
                   parentNodeId="pdf-export"

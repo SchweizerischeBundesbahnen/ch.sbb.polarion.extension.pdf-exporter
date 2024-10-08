@@ -857,6 +857,68 @@
         ]
       }
     },
+    "/api/settings/style-package/weights": {
+      "get": {
+        "operationId": "getStylePackageWeights",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "scope",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved the list of style package names with the weight information"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "Get full list of available style packages for the specific scope with the weight information",
+        "tags": [
+          "Settings"
+        ]
+      },
+      "post": {
+        "operationId": "updateStylePackageWeights",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "items": {
+                  "$ref": "#/components/schemas/StylePackageWeightInfo"
+                },
+                "type": "array"
+              }
+            }
+          },
+          "description": "Style packages list with the weight information",
+          "required": true
+        },
+        "responses": {
+          "default": {
+            "content": {
+              "*/*": {}
+            },
+            "description": "default response"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "Update weight information for the provided style packages",
+        "tags": [
+          "Settings"
+        ]
+      }
+    },
     "/api/settings/{feature}/default-content": {
       "get": {
         "operationId": "getDefaultValues_1",
@@ -1777,6 +1839,24 @@
           "bundleTimestamp": {
             "description": "The bundle timestamp of the setting",
             "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "StylePackageWeightInfo": {
+        "properties": {
+          "name": {
+            "description": "The name of the setting",
+            "type": "string"
+          },
+          "scope": {
+            "description": "The scope of the setting",
+            "type": "string"
+          },
+          "weight": {
+            "description": "The weight of the setting",
+            "format": "float",
+            "type": "number"
           }
         },
         "type": "object"

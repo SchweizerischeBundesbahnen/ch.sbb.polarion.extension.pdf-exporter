@@ -4,12 +4,17 @@ import ch.sbb.polarion.extension.generic.settings.SettingId;
 import ch.sbb.polarion.extension.generic.settings.SettingName;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.coverpage.CoverPageModel;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.localization.LocalizationModel;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.stylepackage.StylePackageWeightInfo;
 import ch.sbb.polarion.extension.pdf_exporter.service.PdfExporterPolarionService;
 import ch.sbb.polarion.extension.pdf_exporter.settings.CoverPageSettings;
 import ch.sbb.polarion.extension.pdf_exporter.settings.LocalizationSettings;
 import ch.sbb.polarion.extension.pdf_exporter.util.LocalizationHelper;
 import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -33,6 +38,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -153,6 +159,35 @@ public class SettingsInternalController {
             throw new BadRequestException("Parameters 'spaceId' and 'documentName' are required'");
         }
         return pdfExporterPolarionService.getSuitableStylePackages(projectId, spaceId, documentName);
+    }
+
+    @GET
+    @Path("/settings/style-package/weights")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Tag(name = "Settings")
+    @Operation(summary = "Get full list of available style packages for the specific scope with the weight information",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Successfully retrieved the list of style package names with the weight information")
+            }
+    )
+    public Collection<StylePackageWeightInfo> getStylePackageWeights(@QueryParam("scope") String scope) {
+        return pdfExporterPolarionService.getStylePackagesWeights(scope);
+    }
+
+    @POST
+    @Path("/settings/style-package/weights")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Tag(name = "Settings")
+    @Operation(summary = "Update weight information for the provided style packages",
+            requestBody = @RequestBody(description = "Style packages list with the weight information",
+                    required = true,
+                    content = @Content(array = @ArraySchema(schema = @Schema(implementation = StylePackageWeightInfo.class)),
+                            mediaType = MediaType.APPLICATION_JSON
+                    )
+            )
+    )
+    public void updateStylePackageWeights(List<StylePackageWeightInfo> stylePackageWeights) {
+        pdfExporterPolarionService.updateStylePackagesWeights(stylePackageWeights);
     }
 
 }

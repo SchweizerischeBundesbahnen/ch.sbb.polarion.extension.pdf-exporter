@@ -94,8 +94,8 @@
             <div class="flex-column">
                 <div class='input-group flex-centered'>
                     <label for='style-package-weight'>Weight:</label>
-                    <div class='more-info' title="The field below contains a float number from 0.0 to 100, which will determine the position of current style package in the resulting style packages list. The higher the number, the higher its position will be. Use 'Preview resulting list' to check the current item's position in the final list."></div>
-                    <input id="style-package-weight" style="margin-left: 59px" type="number" min="1" max="100" step="0.1" onblur="adjustWeight(this)">
+                    <div class='more-info' title="The field below contains a float number from 0.0 to 100, which will determine the position of current style package in the resulting style packages list. The higher the number, the higher its position will be."></div>
+                    <input id="style-package-weight" style="margin-left: 59px" type="number" min="1" max="100" step="0.1" onblur="StylePackageUtils.adjustWeight(this)">
                 </div>
             </div>
 
@@ -293,5 +293,6 @@
 <script type="text/javascript" src="../ui/generic/js/custom-select.js?bundle=<%= bundleTimestamp %>"></script>
 <script type="text/javascript" src="../ui/generic/js/configurations.js?bundle=<%= bundleTimestamp %>"></script>
 <script type="text/javascript" src="../js/style-packages.js?bundle=<%= bundleTimestamp %>"></script>
+<script type="text/javascript" src="../js/style-package-utils.js?bundle=<%= bundleTimestamp %>"></script>
 </body>
 </html>
