@@ -1,5 +1,7 @@
 package ch.sbb.polarion.extension.pdf_exporter.settings;
 
+import ch.sbb.polarion.extension.generic.context.CurrentContextConfig;
+import ch.sbb.polarion.extension.generic.context.CurrentContextExtension;
 import ch.sbb.polarion.extension.generic.settings.NamedSettings;
 import ch.sbb.polarion.extension.generic.settings.SettingId;
 import ch.sbb.polarion.extension.generic.settings.SettingsService;
@@ -15,7 +17,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-@ExtendWith({MockitoExtension.class, PdfExporterContextExtension.class})
+@ExtendWith({MockitoExtension.class, CurrentContextExtension.class})
+@CurrentContextConfig("pdf-exporter")
 class LocalizationSettingsTest {
 
     @Test

@@ -1,5 +1,7 @@
 package ch.sbb.polarion.extension.pdf_exporter.settings;
 
+import ch.sbb.polarion.extension.generic.context.CurrentContextConfig;
+import ch.sbb.polarion.extension.generic.context.CurrentContextExtension;
 import ch.sbb.polarion.extension.generic.exception.ObjectNotFoundException;
 import ch.sbb.polarion.extension.generic.settings.GenericNamedSettings;
 import ch.sbb.polarion.extension.generic.settings.SettingId;
@@ -20,7 +22,8 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.contains;
 import static org.mockito.Mockito.*;
 
-@ExtendWith({MockitoExtension.class, PdfExporterContextExtension.class})
+@ExtendWith({MockitoExtension.class, CurrentContextExtension.class})
+@CurrentContextConfig("pdf-exporter")
 class FileNameTemplateSettingsTest {
 
     @Test
