@@ -94,7 +94,7 @@
             <div class="flex-column">
                 <div class='input-group flex-centered'>
                     <label for='style-package-weight'>Weight:</label>
-                    <div class='more-info' title="The field below contains a float number from 0.0 to 100, which will determine the position of current style package in the resulting style packages list. The higher the number, the higher its position will be."></div>
+                    <div class='more-info' title="A float number from 0.0 to 100, which will determine the position of current style package in the resulting style packages list. The higher the number, the higher its position will be."></div>
                     <input id="style-package-weight" style="margin-left: 59px" type="number" min="1" max="100" step="0.1" onblur="StylePackageUtils.adjustWeight(this)">
                 </div>
             </div>
@@ -102,7 +102,7 @@
             <div class="flex-grow" id="matching-query-container">
                 <div class='input-group flex-centered'>
                     <label for='matching-query'>Matching query:</label>
-                    <div class='more-info' title="Here you can specify a query to select documents to which this style package will be relevant. For documents not matching this query the style package won't be visible. If you want to make this style package be available to all documents, just leave this field empty."></div>
+                    <div class='more-info' title="A query to select documents to which this style package will be relevant. For documents not matching this query the style package won't be visible. If you want to make this style package be available to all documents, just leave this field empty."></div>
                     <input id='matching-query' class="flex-grow" style="margin-left: 8px;"/>
                 </div>
             </div>
