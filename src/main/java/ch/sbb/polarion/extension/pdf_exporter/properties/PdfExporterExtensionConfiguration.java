@@ -15,6 +15,7 @@ public class PdfExporterExtensionConfiguration extends ExtensionConfiguration {
     public static final String WEASYPRINT_SERVICE = "weasyprint.service";
     public static final String WEASYPRINT_SERVICE_DEFAULT = "http://localhost:9080";
     public static final String WEASYPRINT_PDF_VARIANT = "weasyprint.pdf.variant";
+    public static final String WEASYPRINT_PDF_VARIANT_DEFAULT = "pdf/a-2b";
     public static final String WEBHOOKS_ENABLED = "webhooks.enabled";
 
     public String getWeasyprintService() {
@@ -22,7 +23,7 @@ public class PdfExporterExtensionConfiguration extends ExtensionConfiguration {
     }
 
     public String getWeasyprintPdfVariant() {
-        return SystemValueReader.getInstance().readString(getPropertyPrefix() + WEASYPRINT_PDF_VARIANT, null);
+        return SystemValueReader.getInstance().readString(getPropertyPrefix() + WEASYPRINT_PDF_VARIANT, WEASYPRINT_PDF_VARIANT_DEFAULT);
     }
 
     @NotNull
