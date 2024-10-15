@@ -91,7 +91,7 @@
     <jsp:param name="defaultFunction" value="revertToDefault()"/>
 </jsp:include>
 
-<div class="standard-admin-page" id="templates-pane" style="display: none">
+<div class="standard-admin-page hide-on-edit-configuration" id="templates-pane" style="display: none">
     <h2 class="align-left">Predefined Templates</h2>
     <div>
         <p>In addition to a default template, there are more predefined ones which you can persist. Please select one from the dropdown below and click 'Persist' button.</p>
