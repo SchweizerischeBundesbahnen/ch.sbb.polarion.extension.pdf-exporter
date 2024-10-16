@@ -21,7 +21,9 @@ ch.sbb.polarion.extension.pdf-exporter.weasyprint.service=http://localhost:9080
 
 ## Restart Polarion
 
-Restart Polarion.
+Stop Polarion.  
+Delete the `<polarion_home>/data/workspace/.config` folder.  
+Start Polarion.
 
 ## Configure PDF Exporter for Live Reports
 
@@ -36,9 +38,10 @@ scriptInjection.mainHead=<script src="/polarion/pdf-exporter/js/starter.js"></sc
 On admin pane of appropriate project select menu "Documents & Pages ➙ Document Properties Sidebar", insert following new line inside `sections`-element and save your changes:
 
 ```xml
-…
-<extension id="pdf-exporter" label="PDF Exporter" />
-…
+<sections>
+  …
+  <extension id="pdf-exporter" label="PDF Exporter" />
+</sections>
 ```
 
 ## Ready to go
