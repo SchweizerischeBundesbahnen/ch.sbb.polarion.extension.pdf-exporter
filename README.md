@@ -220,9 +220,13 @@ There was also added a CSS fragment for better display of Test Run pages in PDF,
 }
 ```
 
+In version 7.1.0 the property`ch.sbb.polarion.extension.pdf-exporter.internalizeExternalCss` has been removed. `polarion.properties` should be updated accordingly.
+
+
 ### Upgrade from version 5.x.x to 6.0.0
 
 In version 6.0.0 WeasyPrint CLI support was removed. As a result, if WeasyPrint CLI has been using to generate PDFs, it's required to switch to [WeasyPrint Service](#weasyprint-configuration).
+The configuration properties `ch.sbb.polarion.extension.pdf-exporter.weasyprint.connector` and `ch.sbb.polarion.extension.pdf-exporter.weasyprint.executable` have been removed due to the removal of WeasyPrint CLI support. `polarion.properties` should be updated accordingly.
 
 ### Upgrade from version 4.x.x to 5.0.0
 In version 5.0.0 not only label of configuration parameter "Fit images and tables to page width" was modified to be "Fit images and tables to page",
