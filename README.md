@@ -207,7 +207,9 @@ All good so far.
 ### Upgrade from version 6.x.x to 7.0.0
 
 In version 7.0.0 `/export-filename` REST API endpoint changed. As a result, if the endpoint has been used, it's required to adjust the calls accordingly.
+
 `DocumentType` enum in `ExportParams` has been changed. As a result, if enum values have been used, it's required to adjust the calls accordingly.
+
 Main package has been renamed from `ch.sbb.polarion.extension.pdf.exporter` to `ch.sbb.polarion.extension.pdf_exporter`. As a result, if the extension has been used in another OSGi bundles, it's required to adjust the package imports accordingly.
 
 There was also added a CSS fragment for better display of Test Run pages in PDF, please add this fragment to your CSS definitions if they differ from default one, or update your CSS definitions via UI clicking button "Default" and later saving it. Here is this fragment:
@@ -220,9 +222,14 @@ There was also added a CSS fragment for better display of Test Run pages in PDF,
 }
 ```
 
+In version 7.1.0 the property `ch.sbb.polarion.extension.pdf-exporter.internalizeExternalCss` has been removed. `polarion.properties` should be updated accordingly.
+
+
 ### Upgrade from version 5.x.x to 6.0.0
 
 In version 6.0.0 WeasyPrint CLI support was removed. As a result, if WeasyPrint CLI has been using to generate PDFs, it's required to switch to [WeasyPrint Service](#weasyprint-configuration).
+
+The configuration properties `ch.sbb.polarion.extension.pdf-exporter.weasyprint.connector` and `ch.sbb.polarion.extension.pdf-exporter.weasyprint.executable` have been removed due to the removal of WeasyPrint CLI support. `polarion.properties` should be updated accordingly.
 
 ### Upgrade from version 4.x.x to 5.0.0
 In version 5.0.0 not only label of configuration parameter "Fit images and tables to page width" was modified to be "Fit images and tables to page",
