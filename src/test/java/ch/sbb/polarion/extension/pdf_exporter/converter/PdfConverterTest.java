@@ -2,6 +2,8 @@ package ch.sbb.polarion.extension.pdf_exporter.converter;
 
 import ch.sbb.polarion.extension.generic.settings.SettingId;
 import ch.sbb.polarion.extension.pdf_exporter.TestStringUtils;
+import ch.sbb.polarion.extension.pdf_exporter.configuration.PdfExporterExtensionConfigurationExtension;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.DocumentData;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.ExportMetaInfoCallback;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.DocumentType;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
@@ -10,9 +12,8 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.headerfooter.H
 import ch.sbb.polarion.extension.pdf_exporter.service.PdfExporterPolarionService;
 import ch.sbb.polarion.extension.pdf_exporter.settings.CssSettings;
 import ch.sbb.polarion.extension.pdf_exporter.settings.HeaderFooterSettings;
-import ch.sbb.polarion.extension.pdf_exporter.rest.model.DocumentData;
-import ch.sbb.polarion.extension.pdf_exporter.util.HtmlProcessor;
 import ch.sbb.polarion.extension.pdf_exporter.util.DocumentDataHelper;
+import ch.sbb.polarion.extension.pdf_exporter.util.HtmlProcessor;
 import ch.sbb.polarion.extension.pdf_exporter.util.PdfGenerationLog;
 import ch.sbb.polarion.extension.pdf_exporter.util.PdfTemplateProcessor;
 import ch.sbb.polarion.extension.pdf_exporter.util.placeholder.PlaceholderProcessor;
@@ -43,7 +44,7 @@ import java.util.stream.Stream;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
-@ExtendWith(MockitoExtension.class)
+@ExtendWith({MockitoExtension.class, PdfExporterExtensionConfigurationExtension.class})
 class PdfConverterTest {
     @Mock
     private PdfExporterPolarionService pdfExporterPolarionService;

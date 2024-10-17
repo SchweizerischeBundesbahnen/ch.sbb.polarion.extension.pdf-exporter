@@ -6,6 +6,7 @@ import ch.sbb.polarion.extension.generic.settings.SettingId;
 import ch.sbb.polarion.extension.generic.settings.SettingName;
 import ch.sbb.polarion.extension.generic.util.ScopeUtils;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.stylepackage.StylePackageModel;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.stylepackage.StylePackageWeightInfo;
 import ch.sbb.polarion.extension.pdf_exporter.settings.StylePackageSettings;
 import com.polarion.alm.projects.IProjectService;
 import com.polarion.alm.tracker.ITrackerService;
@@ -20,14 +21,12 @@ import com.polarion.platform.service.repository.IRepositoryService;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import static java.util.Comparator.comparing;
+import java.util.Objects;
 
 public class PdfExporterPolarionService extends PolarionService {
 
@@ -54,13 +53,41 @@ public class PdfExporterPolarionService extends PolarionService {
         return project;
     }
 
+    public Collection<StylePackageWeightInfo> getStylePackagesWeights(@Nullable String scope) {
+        StylePackageSettings stylePackageSettings = (StylePackageSettings) NamedSettingsRegistry.INSTANCE.getByFeatureName(StylePackageSettings.FEATURE_NAME);
+        Collection<SettingName> stylePackageNames = stylePackageSettings.readNames(scope == null ? "" : scope);
+        Collection<StylePackageWeightInfo> stylePackageWeightInfos = new ArrayList<>();
+        for (SettingName settingName : stylePackageNames) {
+            stylePackageWeightInfos.add(StylePackageWeightInfo.builder()
+                    .name(settingName.getName())
+                    .scope(settingName.getScope())
+                    .weight(stylePackageSettings.read(settingName.getScope(), SettingId.fromName(settingName.getName()), null).getWeight())
+                    .build());
+        }
+        return stylePackageWeightInfos;
+    }
+
+    public void updateStylePackagesWeights(@NotNull List<StylePackageWeightInfo> weightInfos) {
+        StylePackageSettings stylePackageSettings = (StylePackageSettings) NamedSettingsRegistry.INSTANCE.getByFeatureName(StylePackageSettings.FEATURE_NAME);
+        for (StylePackageWeightInfo weightInfo : weightInfos) {
+            StylePackageModel model = stylePackageSettings.read(weightInfo.getScope(), SettingId.fromName(weightInfo.getName()), null);
+            if (!Objects.equals(model.getWeight(), weightInfo.getWeight())) { // skip unnecessary updates
+                model.setWeight(weightInfo.getWeight());
+                stylePackageSettings.save(weightInfo.getScope(), SettingId.fromName(weightInfo.getName()), model);
+            }
+        }
+    }
+
     public Collection<SettingName> getSuitableStylePackages(@Nullable String projectId, @NotNull String spaceId, @NotNull String documentName) {
         StylePackageSettings stylePackageSettings = (StylePackageSettings) NamedSettingsRegistry.INSTANCE.getByFeatureName(StylePackageSettings.FEATURE_NAME);
         Collection<SettingName> stylePackageNames = stylePackageSettings.readNames(ScopeUtils.getScopeFromProject(projectId));
         List<SettingName> names = stylePackageNames.stream().filter(stylePackageName -> isStylePackageSuitable(projectId, spaceId, documentName, stylePackageSettings, stylePackageName)).toList();
         Map<SettingName, Float> weightsMap = new HashMap<>();
         names.forEach(name -> weightsMap.put(name, stylePackageSettings.read(name.getScope(), SettingId.fromName(name.getName()), null).getWeight()));
-        return names.stream().sorted((o1, o2) -> weightsMap.get(o2).compareTo(weightsMap.get(o1))).toList();
+        return names.stream().sorted((o1, o2) -> {
+            int compareResult = weightsMap.get(o2).compareTo(weightsMap.get(o1));
+            return compareResult == 0 ? o1.getName().compareToIgnoreCase(o2.getName()) : compareResult;
+        }).toList();
     }
 
     @SuppressWarnings("unchecked")
@@ -89,5 +116,4 @@ public class PdfExporterPolarionService extends PolarionService {
             return projectId.equals(document.getProjectId()) && String.format("%s/%s", spaceId, documentName).equals(document.getModuleLocation().getLocationPath());
         }
     }
-
 }

@@ -1,5 +1,7 @@
 package ch.sbb.polarion.extension.pdf_exporter.settings;
 
+import ch.sbb.polarion.extension.generic.context.CurrentContextConfig;
+import ch.sbb.polarion.extension.generic.context.CurrentContextExtension;
 import ch.sbb.polarion.extension.generic.exception.ObjectNotFoundException;
 import ch.sbb.polarion.extension.generic.settings.GenericNamedSettings;
 import ch.sbb.polarion.extension.generic.settings.SettingId;
@@ -16,13 +18,15 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static ch.sbb.polarion.extension.generic.settings.NamedSettings.DEFAULT_NAME;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
-@ExtendWith(MockitoExtension.class)
+@ExtendWith({MockitoExtension.class, CurrentContextExtension.class})
+@CurrentContextConfig("pdf-exporter")
 class StylePackageSettingsTest {
+
     @Test
     void testSettingDoesNotExist() {
         try (MockedStatic<ScopeUtils> mockScopeUtils = mockStatic(ScopeUtils.class)) {
@@ -205,6 +209,24 @@ class StylePackageSettingsTest {
                 stylePackageSettings.adjustAndValidateWeight(model);
             });
             assertEquals("Weight must be between 0 and 100 and have only one digit after the decimal point", exception.getMessage());
+        }
+    }
+
+    @Test
+    void testValidateMatchingQuery() {
+        try (MockedStatic<ScopeUtils> mockScopeUtils = mockStatic(ScopeUtils.class)) {
+            SettingsService mockedSettingsService = mock(SettingsService.class);
+            mockScopeUtils.when(() -> ScopeUtils.getFileContent(any())).thenCallRealMethod();
+
+            StylePackageSettings stylePackageSettings = new StylePackageSettings(mockedSettingsService);
+            StylePackageModel model = new StylePackageModel();
+
+            model.setMatchingQuery("query");
+            assertDoesNotThrow(() -> stylePackageSettings.validateMatchingQuery(model));
+
+            model.setName(DEFAULT_NAME);
+            IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> stylePackageSettings.validateMatchingQuery(model));
+            assertEquals("Matching query cannot be specified for a default style package", exception.getMessage());
         }
     }
 

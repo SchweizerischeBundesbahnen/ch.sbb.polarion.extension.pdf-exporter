@@ -5,7 +5,7 @@
     <parent>
         <groupId>ch.sbb.polarion.extensions</groupId>
         <artifactId>ch.sbb.polarion.extension.generic</artifactId>
-        <version>7.2.0</version>
+        <version>7.4.1</version>
     </parent>
 
     <artifactId>ch.sbb.polarion.extension.pdf-exporter</artifactId>
@@ -45,8 +45,8 @@
 
     <properties>
         <pdfbox.version>3.0.3</pdfbox.version>
-        <okapi.xliff.version>1.46.0</okapi.xliff.version>
-        <byte-buddy.version>1.15.3</byte-buddy.version>
+        <okapi.xliff.version>1.47.0</okapi.xliff.version>
+        <byte-buddy.version>1.15.4</byte-buddy.version>
 
         <slf4j.version>1.7.36</slf4j.version>
         <testcontainers.version>1.20.2</testcontainers.version>
@@ -155,6 +155,13 @@
             <groupId>org.awaitility</groupId>
             <artifactId>awaitility</artifactId>
             <version>${awaitility.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>ch.sbb.polarion.extensions</groupId>
+            <artifactId>ch.sbb.polarion.extension.generic.app</artifactId>
+            <version>${project.parent.version}</version>
+            <type>test-jar</type>
             <scope>test</scope>
         </dependency>
     </dependencies>

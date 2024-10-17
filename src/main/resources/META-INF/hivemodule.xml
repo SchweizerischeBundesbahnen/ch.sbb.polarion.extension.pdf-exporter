@@ -31,6 +31,15 @@
                   projectGroupScope="false"
                   repositoryScope="true"/>
 
+        <extender id="style-package-weights"
+                  name="Style Package Weights"
+                  parentNodeId="pdf-export"
+                  iconUrl="/polarion/pdf-exporter-admin/ui/images/menu/16x16/style_package_weights.svg"
+                  pageUrl="/polarion/pdf-exporter-admin/pages/style-package-weights.jsp?scope=$scope$"
+                  projectScope="true"
+                  projectGroupScope="false"
+                  repositoryScope="true"/>
+
         <extender id="cover-page"
                   name="Cover Page"
                   parentNodeId="pdf-export"
@@ -89,4 +98,8 @@
     <contribution configuration-id="com.polarion.alm.richpages.widgets">
         <widget id="ch.sbb.polarion.extension.pdf.exporter.widgets.exportToPdfButton" instance="instance:ch.sbb.polarion.extension.pdf_exporter.widgets.ExportToPdfButton"/>
     </contribution>
+    <contribution configuration-id="com.polarion.alm.richpages.widgets">
+        <widget id="ch.sbb.polarion.extension.pdf.exporter.widgets.bulkPdfExportWidget" instance="instance:ch.sbb.polarion.extension.pdf_exporter.widgets.BulkPdfExportWidget" />
+    </contribution>
+
 </module>

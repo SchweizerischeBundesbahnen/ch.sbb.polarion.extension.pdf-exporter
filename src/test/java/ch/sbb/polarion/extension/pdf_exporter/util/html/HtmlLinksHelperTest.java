@@ -1,13 +1,11 @@
 package ch.sbb.polarion.extension.pdf_exporter.util.html;
 
-import ch.sbb.polarion.extension.pdf_exporter.properties.PdfExporterExtensionConfiguration;
-import org.junit.jupiter.api.AfterEach;
+import ch.sbb.polarion.extension.pdf_exporter.configuration.PdfExporterExtensionConfigurationExtension;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
-import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Map;
@@ -18,28 +16,18 @@ import java.util.stream.Stream;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
-@ExtendWith(MockitoExtension.class)
+@ExtendWith({MockitoExtension.class, PdfExporterExtensionConfigurationExtension.class})
 class HtmlLinksHelperTest {
     @Mock
     private LinkInternalizer linkInternalizer1;
     @Mock
     private LinkInternalizer linkInternalizer2;
 
-    @Mock
-    private PdfExporterExtensionConfiguration pdfExporterExtensionConfiguration;
     private HtmlLinksHelper htmlLinksHelper;
-    private MockedStatic<PdfExporterExtensionConfiguration> extensionConfigurationMockedStatic;
 
     @BeforeEach
     void setup() {
-        extensionConfigurationMockedStatic = mockStatic(PdfExporterExtensionConfiguration.class);
-        extensionConfigurationMockedStatic.when(PdfExporterExtensionConfiguration::getInstance).thenReturn(pdfExporterExtensionConfiguration);
         htmlLinksHelper = new HtmlLinksHelper(Set.of(linkInternalizer1, linkInternalizer2));
-    }
-
-    @AfterEach
-    void shutdown() {
-        extensionConfigurationMockedStatic.close();
     }
 
     @Test
@@ -47,8 +35,7 @@ class HtmlLinksHelperTest {
         htmlLinksHelper.internalizeLinks("""
                 <html lang='en'><head><link>some content<link></head>""");
 
-        Stream.of(linkInternalizer1, linkInternalizer2)
-                        .forEach(inliner -> verify(inliner, times(2)).inline(Map.of()));
+        Stream.of(linkInternalizer1, linkInternalizer2).forEach(inliner -> verify(inliner, times(2)).inline(Map.of()));
     }
 
     @Test

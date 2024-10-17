@@ -1,5 +1,6 @@
 package ch.sbb.polarion.extension.pdf_exporter.weasyprint.base;
 
+import ch.sbb.polarion.extension.pdf_exporter.configuration.PdfExporterExtensionConfigurationExtension;
 import ch.sbb.polarion.extension.pdf_exporter.util.MediaUtils;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.WeasyPrintOptions;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.service.WeasyPrintServiceConnector;
@@ -8,6 +9,8 @@ import lombok.SneakyThrows;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.jetbrains.annotations.NotNull;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
@@ -22,6 +25,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@ExtendWith({MockitoExtension.class, PdfExporterExtensionConfigurationExtension.class})
 @SkipTestWhenParamNotSet
 public abstract class BaseWeasyPrintTest {
 

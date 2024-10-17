@@ -5,6 +5,7 @@ import ch.sbb.polarion.extension.generic.settings.SettingsService;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.Orientation;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PaperSize;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.stylepackage.StylePackageModel;
+import com.polarion.core.util.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.VisibleForTesting;
 
@@ -23,6 +24,7 @@ public class StylePackageSettings extends GenericNamedSettings<StylePackageModel
     @Override
     public void beforeSave(@NotNull StylePackageModel what) {
         adjustAndValidateWeight(what);
+        validateMatchingQuery(what);
     }
 
     @Override
@@ -54,4 +56,10 @@ public class StylePackageSettings extends GenericNamedSettings<StylePackageModel
         }
     }
 
+    @VisibleForTesting
+    void validateMatchingQuery(StylePackageModel model) {
+        if (DEFAULT_NAME.equals(model.getName()) && !StringUtils.isEmpty(model.getMatchingQuery())) {
+            throw new IllegalArgumentException("Matching query cannot be specified for a default style package");
+        }
+    }
 }

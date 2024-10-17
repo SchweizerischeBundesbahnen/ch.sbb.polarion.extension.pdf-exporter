@@ -5,7 +5,7 @@ import ExportParams from "../../main/resources/webapp/pdf-exporter/js/modules/Ex
 describe('ExportContext Class', function () {
     it('URL: #/project/elibrary/wiki/BigDoc', function () {
         const locationHash = "#/project/elibrary/wiki/BigDoc";
-        const exportContext = new ExportContext(ExportParams.DocumentType.LIVE_DOC, locationHash);
+        const exportContext = new ExportContext({documentType: ExportParams.DocumentType.LIVE_DOC, polarionLocationHash: locationHash});
 
         expect(exportContext.documentType).to.equal(ExportParams.DocumentType.LIVE_DOC);
         expect(exportContext.projectId).to.equal('elibrary');
@@ -19,7 +19,7 @@ describe('ExportContext Class', function () {
 
     it('URL: #/project/elibrary/wiki/Specification/Administration%20Specification', function () {
         const locationHash = "#/project/elibrary/wiki/Specification/Administration%20Specification";
-        const exportContext = new ExportContext(ExportParams.DocumentType.LIVE_DOC, locationHash);
+        const exportContext = new ExportContext({documentType: ExportParams.DocumentType.LIVE_DOC, polarionLocationHash: locationHash});
 
         expect(exportContext.documentType).to.equal(ExportParams.DocumentType.LIVE_DOC);
         expect(exportContext.projectId).to.equal('elibrary');
@@ -33,7 +33,7 @@ describe('ExportContext Class', function () {
 
     it('URL: #/project/mega_project/wiki/Specs/test', function () {
         const locationHash = "#/project/mega_project/wiki/Specs/test";
-        const exportContext = new ExportContext(ExportParams.DocumentType.LIVE_DOC, locationHash);
+        const exportContext = new ExportContext({documentType: ExportParams.DocumentType.LIVE_DOC, polarionLocationHash: locationHash});
 
         expect(exportContext.documentType).to.equal(ExportParams.DocumentType.LIVE_DOC);
         expect(exportContext.projectId).to.equal('mega_project');
@@ -47,7 +47,7 @@ describe('ExportContext Class', function () {
 
     it('URL: #/wiki/classic%20wiki%20page', function () {
         const locationHash = "#/wiki/classic%20wiki%20page";
-        const exportContext = new ExportContext(ExportParams.DocumentType.LIVE_DOC, locationHash);
+        const exportContext = new ExportContext({documentType: ExportParams.DocumentType.LIVE_DOC, polarionLocationHash: locationHash});
 
         expect(exportContext.documentType).to.equal(ExportParams.DocumentType.LIVE_DOC);
         expect(exportContext.projectId).to.be.null;
@@ -61,7 +61,7 @@ describe('ExportContext Class', function () {
 
     it('URL: #/wiki/TestLiveReport', function () {
         const locationHash = "#/wiki/TestLiveReport";
-        const exportContext = new ExportContext(ExportParams.DocumentType.LIVE_REPORT, locationHash);
+        const exportContext = new ExportContext({documentType: ExportParams.DocumentType.LIVE_REPORT, polarionLocationHash: locationHash});
 
         expect(exportContext.documentType).to.equal(ExportParams.DocumentType.LIVE_REPORT);
         expect(exportContext.projectId).to.be.null;
@@ -75,7 +75,7 @@ describe('ExportContext Class', function () {
 
     it('URL: #/project/elibrary/testrun?id=elibrary_20231026-163136654', function () {
         const locationHash = "#/project/elibrary/testrun?id=elibrary_20231026-163136654";
-        const exportContext = new ExportContext(ExportParams.DocumentType.LIVE_REPORT, locationHash);
+        const exportContext = new ExportContext({documentType: ExportParams.DocumentType.LIVE_REPORT, polarionLocationHash: locationHash});
 
         expect(exportContext.documentType).to.equal(ExportParams.DocumentType.TEST_RUN);
         expect(exportContext.projectId).to.equal('elibrary');
@@ -89,7 +89,7 @@ describe('ExportContext Class', function () {
 
     it('URL: #/project/elibrary/wiki/Reports/LiveReport%20with%20params?stringParameter=asd&workItemType=changerequest&yesnoParameter=yes', function () {
         const locationHash = "#/project/elibrary/wiki/Reports/LiveReport%20with%20params?stringParameter=asd&workItemType=changerequest&yesnoParameter=yes";
-        const exportContext = new ExportContext(ExportParams.DocumentType.LIVE_DOC, locationHash);
+        const exportContext = new ExportContext({documentType: ExportParams.DocumentType.LIVE_DOC, polarionLocationHash: locationHash});
 
         expect(exportContext.documentType).to.equal(ExportParams.DocumentType.LIVE_DOC);
         expect(exportContext.projectId).to.equal('elibrary');
@@ -107,7 +107,7 @@ describe('ExportContext Class', function () {
 
     it('URL: #/project/elibrary/testruns', function () {
         const locationHash = "#/project/elibrary/testruns";
-        const exportContext = new ExportContext(ExportParams.DocumentType.LIVE_REPORT, locationHash);
+        const exportContext = new ExportContext({documentType: ExportParams.DocumentType.LIVE_REPORT, polarionLocationHash: locationHash});
 
         expect(exportContext.documentType).to.equal(ExportParams.DocumentType.TEST_RUN);
         expect(exportContext.projectId).to.equal('elibrary');

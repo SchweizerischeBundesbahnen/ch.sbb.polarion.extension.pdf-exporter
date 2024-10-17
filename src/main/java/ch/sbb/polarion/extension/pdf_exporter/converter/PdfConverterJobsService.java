@@ -31,9 +31,9 @@ public class PdfConverterJobsService {
     // Static maps are necessary for per-request scoped InternalController and ApiController. In case of singletons static can be removed
     private static final Map<String, JobDetails> jobs = new ConcurrentHashMap<>();
     private static final Map<String, String> failedJobsReasons = new ConcurrentHashMap<>();
+    private static final String UNKNOWN_JOB_MESSAGE = "Converter Job is unknown: %s";
 
     private final PdfConverter pdfConverter;
-
     private final ISecurityService securityService;
 
     public PdfConverterJobsService(PdfConverter pdfConverter, ISecurityService securityService) {
@@ -72,7 +72,10 @@ public class PdfConverterJobsService {
                     asyncConversionJob.completeExceptionally(e);
                     return null;
                 });
-        JobDetails jobDetails = JobDetails.builder().future(asyncConversionJob).startingTime(Instant.now()).build();
+        JobDetails jobDetails = JobDetails.builder()
+                .future(asyncConversionJob)
+                .exportParams(exportParams)
+                .startingTime(Instant.now()).build();
         jobs.put(jobId, jobDetails);
         return jobId;
     }
@@ -80,7 +83,7 @@ public class PdfConverterJobsService {
     public JobState getJobState(String jobId) {
         JobDetails jobDetails = jobs.get(jobId);
         if (jobDetails == null) {
-            throw new NoSuchElementException("Converter Job is unknown: " + jobId);
+            throw new NoSuchElementException(String.format(UNKNOWN_JOB_MESSAGE, jobId));
         }
         CompletableFuture<byte[]> future = jobDetails.future();
         return JobState.builder()
@@ -93,7 +96,7 @@ public class PdfConverterJobsService {
     public Optional<byte[]> getJobResult(String jobId) {
         JobDetails jobDetails = jobs.get(jobId);
         if (jobDetails == null) {
-            throw new NoSuchElementException("Converter Job is unknown: " + jobId);
+            throw new NoSuchElementException(String.format(UNKNOWN_JOB_MESSAGE, jobId));
         }
         CompletableFuture<byte[]> future = jobDetails.future();
         if (!future.isDone()) {
@@ -110,6 +113,14 @@ public class PdfConverterJobsService {
         } catch (Exception e) {
             throw new IllegalStateException("Cannot extract result for job " + jobId + " :" + e.getMessage(), e);
         }
+    }
+
+    public ExportParams getJobParams(String jobId) {
+        JobDetails jobDetails = jobs.get(jobId);
+        if (jobDetails == null) {
+            throw new NoSuchElementException(String.format(UNKNOWN_JOB_MESSAGE, jobId));
+        }
+        return jobDetails.exportParams;
     }
 
     public Map<String, JobState> getAllJobsStates() {
@@ -141,6 +152,7 @@ public class PdfConverterJobsService {
     @Builder
     public record JobDetails(
             CompletableFuture<byte[]> future,
+            ExportParams exportParams,
             Instant startingTime) {
     }
 

@@ -1,5 +1,6 @@
 package ch.sbb.polarion.extension.pdf_exporter.converter;
 
+import ch.sbb.polarion.extension.pdf_exporter.configuration.PdfExporterExtensionConfigurationExtension;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.Orientation;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PaperSize;
 import ch.sbb.polarion.extension.pdf_exporter.util.HtmlProcessor;
@@ -18,7 +19,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@ExtendWith(MockitoExtension.class)
+@ExtendWith({MockitoExtension.class, PdfExporterExtensionConfigurationExtension.class})
 class HtmlToPdfConverterTest {
     @Mock
     private PdfTemplateProcessor pdfTemplateProcessor;

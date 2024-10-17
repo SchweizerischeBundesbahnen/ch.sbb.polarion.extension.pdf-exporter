@@ -7,7 +7,7 @@ repos:
       - id: yamlfix
         args: [-c, .yamlfix.toml]
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.6.0
+    rev: v5.0.0
     hooks:
       - id: check-merge-conflict
       - id: trailing-whitespace
@@ -20,7 +20,7 @@ repos:
         args: [--autofix, --no-ensure-ascii, '--top-keys=openapi,info,servers,paths,components']
         files: docs/openapi.json
   - repo: https://github.com/zricethezav/gitleaks
-    rev: v8.19.3
+    rev: v8.21.0
     hooks:
       - id: gitleaks
   - repo: https://github.com/grigoriev/pre-commit-check-git-user
