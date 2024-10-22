@@ -9,7 +9,7 @@ import java.io.InputStream;
 import java.util.Properties;
 
 @UtilityClass
-public class VersionsUtils {
+public class VersionUtils {
 
     public static @Nullable String getLatestCompatibleVersionWeasyPrintService() {
         try (InputStream input = WeasyPrintStatusProvider.class.getClassLoader().getResourceAsStream("versions.properties")) {
