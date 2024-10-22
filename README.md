@@ -96,11 +96,7 @@ First of all you need to inject appropriate JavaScript code into Polarion:
 5. Save changes by clicking 💾 Save
 
 Then open a project, its Live Report you wish to export, and click "Expand Tools" on top of the page.
-As a result report's toolbar will appear. Click "Edit" button in a toolbar, as a result the report will be switched into an edit mode. Add an empty region on top
-of the report, place cursor there, choose "Generic" tag on "Widgets" sidebar on right hand side of the page, find "Export to PDF Button" widget there and click it
-to add to the report. Then save a report clicking 💾 in a toolbar and then return to a view mode clicking "Back" button. When you click "Export to PDF" button just added
-to the report, PDF Exporter view will be opened in a popup and you will be able to proceed with exporting the report to PDF. Be aware that in report's context limited
-set of properties are available for configuration in PDF popup, the rest of them are relevant only in Live Document context.
+As a result report's toolbar will appear. Click "Edit" button in a toolbar, as a result the report will be switched into an edit mode. Add an empty region on top of the report, place cursor there, choose "Generic" tag on "Widgets" sidebar on right hand side of the page, find "Export to PDF Button" widget there and click it to add to the report. Then save a report clicking 💾 in a toolbar and then return to a view mode clicking "Back" button. When you click "Export to PDF" button just added to the report, PDF Exporter view will be opened in a popup and you will be able to proceed with exporting the report to PDF. Be aware that in report's context limited set of properties are available for configuration in PDF popup, the rest of them are relevant only in Live Document context.
 
 ### Configuring logs
 
@@ -160,13 +156,28 @@ If HTML logging is switched on, then in standard polarion log file there will be
 
 Here you can find out in which files HTML was stored.
 
-### Enabling internalization of CSS links
+### PDF Variants configuration
 
-The converting HTML can contain some external CSS links referencing Polarion Server, like:
+This configuration property allows selecting a PDF variant to be used for PDF generation. The following variants are supported:
 
-```html
-<link rel="stylesheet" href="/polarion/diff-tool-app/ui/app/_next/static/css/3c374f9daffd361a.css" data-precedence="next">
+| Variant      | Description                                                      |
+|--------------|------------------------------------------------------------------|
+| **pdf/a-1b** | Basic visual preservation (older PDF standard)                   |
+| **pdf/a-2b** | Basic visual preservation with modern features like transparency |
+| **pdf/a-3b** | Visual preservation with file attachments                        |
+| **pdf/a-4b** | Visual preservation using PDF 2.0 standard                       |
+| **pdf/a-2u** | Visual preservation + searchable text (Unicode)                  |
+| **pdf/a-3u** | Visual preservation + searchable text with file attachments      |
+| **pdf/a-4u** | Searchable text + PDF 2.0 features                               |
+| **pdf/ua-1** | Accessible PDF for assistive technologies                        |
+
+To configure the PDF variant, adjust the following property in the `polarion.properties` file:
+
+```properties
+ch.sbb.polarion.extension.pdf-exporter.weasyprint.pdf.variant=pdf/a-2b
 ```
+
+The default value is `pdf/a-2b`.
 
 ## Extension configuration
 
