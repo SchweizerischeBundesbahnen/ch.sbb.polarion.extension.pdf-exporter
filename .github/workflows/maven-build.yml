@@ -19,7 +19,7 @@ jobs:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
       MARKDOWN2HTML_MAVEN_PLUGIN_FAIL_ON_ERROR: true
     steps:
-      - name: 📄 Checkout
+      - name: 📄 Checkout the repository
         uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871  # v4
         with:
           fetch-depth: 0
@@ -29,13 +29,13 @@ jobs:
           distribution: adopt
           java-version: 17
           gpg-private-key: ${{ secrets.COM_SONATYPE_CENTRAL_POLARION_OPENSOURCE_GPG_PRIVATE_KEY }}
-      - name: 📝 Store project version
+      - name: 📝 Get the project version
         id: project_version
         run: echo "project_version=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)" >> $GITHUB_OUTPUT
       - name: 📝 Store cache key
         id: cache_key
         run: echo "cache_key=${{ runner.os }}-mvn-${{ hashFiles('**/pom.xml') }}-${{ github.sha }}" >> $GITHUB_OUTPUT
-      - name: 💾 Prepare Cache
+      - name: 💾 Prepare cache using cache key
         id: prepare-cache
         uses: actions/cache@3624ceb22c1c5a301c8db4169662070a689d9ea8  # v4
         with:
@@ -43,7 +43,7 @@ jobs:
             /home/runner/.m2
             /home/runner/work
           key: ${{ steps.cache_key.outputs.cache_key }}
-      - name: 🔘 Generate settings.xml
+      - name: 🔘 Generate settings.xml for Maven
         uses: whelk-io/maven-settings-xml-action@9dc09b23833fa9aa7f27b63db287951856f3433d  # v22
         with:
           repositories: >
@@ -121,7 +121,7 @@ jobs:
           distribution: adopt
           java-version: 17
           gpg-private-key: ${{ secrets.COM_SONATYPE_CENTRAL_POLARION_OPENSOURCE_GPG_PRIVATE_KEY }}
-      - name: 💾 Restore Cache
+      - name: 💾 Restore cache using cache key
         id: restore-cache
         uses: actions/cache@3624ceb22c1c5a301c8db4169662070a689d9ea8  # v4
         with:
@@ -129,7 +129,7 @@ jobs:
             /home/runner/.m2
             /home/runner/work
           key: ${{ needs.build.outputs.cache_key }}
-      - name: 📦 Publish to Maven Central
+      - name: 📦 Deploy artifacts to Maven Central
         run: mvn --batch-mode deploy -P gpg-sign -P nexus-staging
 
   # Deploy release to GitHub Packages
@@ -150,7 +150,7 @@ jobs:
         with:
           distribution: adopt
           java-version: 17
-      - name: 💾 Restore Cache
+      - name: 💾 Restore cache using cache key
         id: restore-cache
         uses: actions/cache@3624ceb22c1c5a301c8db4169662070a689d9ea8  # v4
         with:
@@ -158,8 +158,8 @@ jobs:
             /home/runner/.m2
             /home/runner/work
           key: ${{ needs.build.outputs.cache_key }}
-      - name: 📦 Publish to GitHub Packages
+      - name: 📦 Deploy artifacts to GitHub Packages
         run: mvn --batch-mode -Dmaven.javadoc.skip=true -Dmaven.source.skip=true deploy -P deploy-github-packages
-      - name: 📦 Upload assets
+      - name: 📦 Upload assets to GitHub Release
         run: |-
           gh release upload v${{ needs.build.outputs.project_version }} target/*-${{ needs.build.outputs.project_version }}.jar

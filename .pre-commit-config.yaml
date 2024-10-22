@@ -18,9 +18,22 @@ repos:
       - id: check-yaml
       - id: no-commit-to-branch
       - id: mixed-line-ending
+      - id: end-of-file-fixer
       - id: pretty-format-json
         args: [--autofix, --no-ensure-ascii, '--top-keys=openapi,info,servers,paths,components']
         files: docs/openapi.json
+  - repo: local
+    hooks:
+      - id: sensitive-data-leak-urls
+        name: Sensitive data leak - URLs
+        entry: (?<!polarion-opensource@)(?<!www\.)sbb\.ch
+        language: pygrep
+        types: [text]
+      - id: sensitive-data-leak-ue-numbers
+        name: Sensitive data leak - UE numbers
+        entry: \b([uUeE]{1,2})\d{5,6}\b
+        language: pygrep
+        types: [text]
   - repo: https://github.com/zricethezav/gitleaks
     rev: v8.21.1
     hooks:

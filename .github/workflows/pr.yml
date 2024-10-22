@@ -17,7 +17,8 @@ jobs:
           fetch-depth: 0
       - uses: actions/setup-python@f677139bbe7f9c59b41e40162b753c062f5d49a3  # v5
         with:
-          cache: pip  # caching pip dependencies
+          python-version: 3.x
+          cache: pip
       - run: pip install commitizen
       - name: Check commit messages
         run: cz check --rev-range origin/${GITHUB_BASE_REF}..
