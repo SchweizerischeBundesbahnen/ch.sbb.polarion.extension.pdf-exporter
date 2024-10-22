@@ -59,7 +59,7 @@ public class BulkPdfExportWidget extends TableWidget {
                 .dependencySource(true)
                 .build();
         parameters.put("dataSet", dataSet);
-        parameters.put("propertiesSidebarFields", this.createSidebarFieldsParameter(parameterFactory));
+        parameters.put("propertiesSidebarFields", this.constructSidebarFieldsParameter(parameterFactory));
         IntegerParameter top = parameterFactory.integer(localization.getString("richpages.widget.table.top")).value(50).build();
         CompositeParameter advanced = parameterFactory.composite(localization.getString("richpages.widget.advanced")).collapsedByDefault(true).add("top", top).build();
         parameters.put("advanced", advanced);
@@ -67,7 +67,7 @@ public class BulkPdfExportWidget extends TableWidget {
     }
 
     @NotNull
-    private FieldsParameter createSidebarFieldsParameter(@NotNull ParameterFactory factory) {
+    private FieldsParameter constructSidebarFieldsParameter(@NotNull ParameterFactory factory) {
         FieldsParameter parameter = factory.fields(factory.context().localization().getString("richpages.widget.table.parameters.propertiesSidebarFields")).disallowedFields(WidgetUtil.getExcludedPropertiesSidebarFields()).dependencyTarget(true).build();
         parameter.defaultFields().set(WidgetUtil.getDefaultWidgetPropertiesSidebarFields());
         return parameter;
