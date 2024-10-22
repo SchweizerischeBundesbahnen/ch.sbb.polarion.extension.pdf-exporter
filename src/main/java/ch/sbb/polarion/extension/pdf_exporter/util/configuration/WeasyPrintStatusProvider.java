@@ -4,22 +4,27 @@ import ch.sbb.polarion.extension.generic.configuration.ConfigurationStatus;
 import ch.sbb.polarion.extension.generic.configuration.ConfigurationStatusProvider;
 import ch.sbb.polarion.extension.generic.configuration.Status;
 import ch.sbb.polarion.extension.generic.util.Discoverable;
-import ch.sbb.polarion.extension.pdf_exporter.converter.HtmlToPdfConverter;
-import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.Orientation;
-import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PaperSize;
+import ch.sbb.polarion.extension.pdf_exporter.util.VersionsUtils;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.service.WeasyPrintServiceConnector;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.service.model.WeasyPrintInfo;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 
 @Discoverable
 public class WeasyPrintStatusProvider extends ConfigurationStatusProvider {
+
+    private final WeasyPrintServiceConnector weasyPrintServiceConnector;
+
+    public WeasyPrintStatusProvider() {
+        this.weasyPrintServiceConnector = new WeasyPrintServiceConnector();
+    }
+
+    public WeasyPrintStatusProvider(WeasyPrintServiceConnector weasyPrintServiceConnector) {
+        this.weasyPrintServiceConnector = weasyPrintServiceConnector;
+    }
 
     private enum WeasyPrintServiceInfo {
         VERSION,
@@ -38,14 +43,9 @@ public class WeasyPrintStatusProvider extends ConfigurationStatusProvider {
     @Override
     public @NotNull List<ConfigurationStatus> getStatuses(@NotNull Context context) {
         try {
-            HtmlToPdfConverter htmlToPdfConverter = new HtmlToPdfConverter();
-            WeasyPrintServiceConnector weasyPrintServiceConnector = new WeasyPrintServiceConnector();
-
             WeasyPrintInfo weasyPrintInfo = weasyPrintServiceConnector.getWeasyPrintInfo();
-            htmlToPdfConverter.convert("<html><body>test html</body></html>", Orientation.PORTRAIT, PaperSize.A4);
-
             return List.of(
-                    createWeasyPrintStatus(WEASY_PRINT_SERVICE_INFO.get(WeasyPrintServiceInfo.VERSION), weasyPrintInfo.getWeasyprintService(), weasyPrintInfo.getTimestamp(), getLatestCompatibleVersionWeasyPrintService()),
+                    createWeasyPrintStatus(WEASY_PRINT_SERVICE_INFO.get(WeasyPrintServiceInfo.VERSION), weasyPrintInfo.getWeasyprintService(), weasyPrintInfo.getTimestamp(), VersionsUtils.getLatestCompatibleVersionWeasyPrintService()),
                     createWeasyPrintStatus(WEASY_PRINT_SERVICE_INFO.get(WeasyPrintServiceInfo.PYTHON), weasyPrintInfo.getPython()),
                     createWeasyPrintStatus(WEASY_PRINT_SERVICE_INFO.get(WeasyPrintServiceInfo.WEASYPRINT), weasyPrintInfo.getWeasyprint()),
                     createWeasyPrintStatus(WEASY_PRINT_SERVICE_INFO.get(WeasyPrintServiceInfo.CHROMIUM), weasyPrintInfo.getChromium())
@@ -83,20 +83,6 @@ public class WeasyPrintStatusProvider extends ConfigurationStatusProvider {
             message.append(": <span style='color: red;'>upgrade to</span> <a href='https://github.com/SchweizerischeBundesbahnen/weasyprint-service/releases/tag/v").append(latestCompatibleVersion).append("' target='_blank'>").append(latestCompatibleVersion).append("</a>");
         }
         return message.toString();
-    }
-
-    static @Nullable String getLatestCompatibleVersionWeasyPrintService() {
-        try (InputStream input = WeasyPrintStatusProvider.class.getClassLoader().getResourceAsStream("versions.properties")) {
-            if (input == null) {
-                return null;
-            }
-
-            Properties properties = new Properties();
-            properties.load(input);
-            return properties.getProperty("weasyprint-service.version");
-        } catch (IOException e) {
-            return null;
-        }
     }
 
 }
