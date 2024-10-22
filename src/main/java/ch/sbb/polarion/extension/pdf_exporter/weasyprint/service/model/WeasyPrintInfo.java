@@ -1,10 +1,14 @@
 package ch.sbb.polarion.extension.pdf_exporter.weasyprint.service.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.jetbrains.annotations.Nullable;
 
+@NoArgsConstructor
+@AllArgsConstructor
 @Data
 @Builder
 @JsonIgnoreProperties(ignoreUnknown = true)
