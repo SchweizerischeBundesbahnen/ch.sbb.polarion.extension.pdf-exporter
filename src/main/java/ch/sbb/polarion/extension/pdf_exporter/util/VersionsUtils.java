@@ -1,12 +1,14 @@
 package ch.sbb.polarion.extension.pdf_exporter.util;
 
 import ch.sbb.polarion.extension.pdf_exporter.util.configuration.WeasyPrintStatusProvider;
+import lombok.experimental.UtilityClass;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
 
+@UtilityClass
 public class VersionsUtils {
 
     public static @Nullable String getLatestCompatibleVersionWeasyPrintService() {
