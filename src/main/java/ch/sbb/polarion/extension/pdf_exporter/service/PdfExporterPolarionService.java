@@ -42,7 +42,7 @@ public class PdfExporterPolarionService extends PolarionService {
     public @Nullable ITrackerProject getProjectFromScope(@Nullable String scope) {
         ITrackerProject project = null;
 
-        if (!StringUtils.isEmpty(scope)) {
+        if (scope != null && !scope.isEmpty()) {
             String projectId = ScopeUtils.getProjectFromScope(scope);
             if (projectId == null) {
                 throw new IllegalArgumentException(String.format("Wrong scope format: %s. Should be of form 'project/{projectId}/'", scope));
