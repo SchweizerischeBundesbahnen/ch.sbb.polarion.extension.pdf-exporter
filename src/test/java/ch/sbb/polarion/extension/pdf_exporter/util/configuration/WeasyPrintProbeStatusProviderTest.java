@@ -17,7 +17,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 @ExtendWith({MockitoExtension.class})
-class WeasyPrintTestConversionStatusProviderTest {
+class WeasyPrintProbeStatusProviderTest {
 
     @Test
     void testHappyPath() {
@@ -27,7 +27,7 @@ class WeasyPrintTestConversionStatusProviderTest {
 
         ConfigurationStatus status = weasyPrintProbeStatusProvider.getStatus(ConfigurationStatusProvider.Context.builder().build());
 
-        assertEquals(new ConfigurationStatus("WeasyPrint Service: Test conversion", Status.OK), status);
+        assertEquals(new ConfigurationStatus("WeasyPrint Service: WeasyPrint probe", Status.OK), status);
     }
 
     @Test
@@ -38,6 +38,6 @@ class WeasyPrintTestConversionStatusProviderTest {
 
         ConfigurationStatus status = weasyPrintProbeStatusProvider.getStatus(ConfigurationStatusProvider.Context.builder().build());
 
-        assertEquals(new ConfigurationStatus("WeasyPrint Service: Test conversion", Status.ERROR, "java.net.ConnectException: Connection refused"), status);
+        assertEquals(new ConfigurationStatus("WeasyPrint Service: WeasyPrint probe", Status.ERROR, "java.net.ConnectException: Connection refused"), status);
     }
 }
