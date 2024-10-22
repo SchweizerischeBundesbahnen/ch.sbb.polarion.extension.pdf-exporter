@@ -23,9 +23,9 @@ class WeasyPrintTestConversionStatusProviderTest {
     void testHappyPath() {
         HtmlToPdfConverter htmlToPdfConverter = mock(HtmlToPdfConverter.class);
         when(htmlToPdfConverter.convert("<html><body>test html</body></html>", Orientation.PORTRAIT, PaperSize.A4)).thenReturn(new byte[0]);
-        WeasyPrintTestConversionStatusProvider weasyPrintTestConversionStatusProvider = new WeasyPrintTestConversionStatusProvider(htmlToPdfConverter);
+        WeasyPrintProbeStatusProvider weasyPrintProbeStatusProvider = new WeasyPrintProbeStatusProvider(htmlToPdfConverter);
 
-        ConfigurationStatus status = weasyPrintTestConversionStatusProvider.getStatus(ConfigurationStatusProvider.Context.builder().build());
+        ConfigurationStatus status = weasyPrintProbeStatusProvider.getStatus(ConfigurationStatusProvider.Context.builder().build());
 
         assertEquals(new ConfigurationStatus("WeasyPrint Service: Test conversion", Status.OK), status);
     }
@@ -34,9 +34,9 @@ class WeasyPrintTestConversionStatusProviderTest {
     void testConnectionRefused() {
         HtmlToPdfConverter htmlToPdfConverter = mock(HtmlToPdfConverter.class);
         when(htmlToPdfConverter.convert("<html><body>test html</body></html>", Orientation.PORTRAIT, PaperSize.A4)).thenThrow(new ProcessingException("java.net.ConnectException: Connection refused"));
-        WeasyPrintTestConversionStatusProvider weasyPrintTestConversionStatusProvider = new WeasyPrintTestConversionStatusProvider(htmlToPdfConverter);
+        WeasyPrintProbeStatusProvider weasyPrintProbeStatusProvider = new WeasyPrintProbeStatusProvider(htmlToPdfConverter);
 
-        ConfigurationStatus status = weasyPrintTestConversionStatusProvider.getStatus(ConfigurationStatusProvider.Context.builder().build());
+        ConfigurationStatus status = weasyPrintProbeStatusProvider.getStatus(ConfigurationStatusProvider.Context.builder().build());
 
         assertEquals(new ConfigurationStatus("WeasyPrint Service: Test conversion", Status.ERROR, "java.net.ConnectException: Connection refused"), status);
     }

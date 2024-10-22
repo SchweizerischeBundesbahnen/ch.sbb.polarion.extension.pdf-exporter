@@ -10,17 +10,17 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PaperSize;
 import org.jetbrains.annotations.NotNull;
 
 @Discoverable
-public class WeasyPrintTestConversionStatusProvider extends ConfigurationStatusProvider {
+public class WeasyPrintProbeStatusProvider extends ConfigurationStatusProvider {
 
-    private static final String WEASY_PRINT_SERVICE_TEST_CONVERSION = "WeasyPrint Service: Test conversion";
+    private static final String WEASY_PRINT_SERVICE_TEST_CONVERSION = "WeasyPrint Service: WeasyPrint probe";
 
     private final HtmlToPdfConverter htmlToPdfConverter;
 
-    public WeasyPrintTestConversionStatusProvider() {
+    public WeasyPrintProbeStatusProvider() {
         this.htmlToPdfConverter = new HtmlToPdfConverter();
     }
 
-    public WeasyPrintTestConversionStatusProvider(HtmlToPdfConverter htmlToPdfConverter) {
+    public WeasyPrintProbeStatusProvider(HtmlToPdfConverter htmlToPdfConverter) {
         this.htmlToPdfConverter = htmlToPdfConverter;
     }
 
