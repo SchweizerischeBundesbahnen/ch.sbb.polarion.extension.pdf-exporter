@@ -65,22 +65,22 @@ public class WeasyPrintStatusProvider extends ConfigurationStatusProvider {
 
     private static @NotNull ConfigurationStatus createWeasyPrintStatus(@NotNull String name, @Nullable String version, @Nullable String timestamp, @Nullable String latestCompatibleVersion) {
         if (version == null || version.isBlank()) {
-            return new ConfigurationStatus(name, Status.ERROR, createUpgradeWeasyPrintMessage("Unknown", timestamp, latestCompatibleVersion));
+            return new ConfigurationStatus(name, Status.ERROR, createUseLatestCompatibleWeasyPrintMessage("Unknown", timestamp, latestCompatibleVersion));
         } else if (!version.equals(latestCompatibleVersion)) {
-            return new ConfigurationStatus(name, Status.WARNING, createUpgradeWeasyPrintMessage(version, timestamp, latestCompatibleVersion));
+            return new ConfigurationStatus(name, Status.WARNING, createUseLatestCompatibleWeasyPrintMessage(version, timestamp, latestCompatibleVersion));
         } else {
             return new ConfigurationStatus(name, Status.OK, version);
         }
     }
 
-    private static @NotNull String createUpgradeWeasyPrintMessage(@NotNull String version, @Nullable String timestamp, @Nullable String latestCompatibleVersion) {
+    private static @NotNull String createUseLatestCompatibleWeasyPrintMessage(@NotNull String version, @Nullable String timestamp, @Nullable String latestCompatibleVersion) {
         StringBuilder message = new StringBuilder();
         message.append(version);
         if (timestamp != null && !timestamp.isBlank()) {
             message.append(" (").append(timestamp).append(")");
         }
         if (latestCompatibleVersion != null && !latestCompatibleVersion.isBlank()) {
-            message.append(": <span style='color: red;'>upgrade to</span> <a href='https://github.com/SchweizerischeBundesbahnen/weasyprint-service/releases/tag/v").append(latestCompatibleVersion).append("' target='_blank'>").append(latestCompatibleVersion).append("</a>");
+            message.append(": <span style='color: red;'>use latest compatible</span> <a href='https://github.com/SchweizerischeBundesbahnen/weasyprint-service/releases/tag/v").append(latestCompatibleVersion).append("' target='_blank'>").append(latestCompatibleVersion).append("</a>");
         }
         return message.toString();
     }
