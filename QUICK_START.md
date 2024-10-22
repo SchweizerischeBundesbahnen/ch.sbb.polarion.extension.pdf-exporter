@@ -21,8 +21,8 @@ ch.sbb.polarion.extension.pdf-exporter.weasyprint.service=http://localhost:9080
 
 ## Restart Polarion
 
-Stop Polarion.  
-Delete the `<polarion_home>/data/workspace/.config` folder.  
+Stop Polarion.
+Delete the `<polarion_home>/data/workspace/.config` folder.
 Start Polarion.
 
 ## Configure PDF Exporter for Live Reports
