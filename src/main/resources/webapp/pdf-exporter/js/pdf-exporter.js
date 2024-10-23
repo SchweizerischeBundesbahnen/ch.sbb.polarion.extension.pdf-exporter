@@ -45,7 +45,7 @@ const PdfExporter = {
     },
 
     openPopup: function (params) {
-        this.exportContext = params?.exportContext ? params.exportContext : new ExportContext();
+        this.exportContext = params?.exportContext ? params.exportContext : new ExportContext({});
 
         this.hideAlerts();
         this.loadFormData();
@@ -606,8 +606,12 @@ const PdfExporter = {
         document.querySelectorAll(".modal__container.pdf-exporter input.error").forEach(input => {
             input.classList.remove("error");
         });
-        document.getElementById('page-previews').innerHTML = "";
-        document.getElementById("suspicious-wi").innerHTML = "";
+        if (document.getElementById('page-previews')) {
+            document.getElementById('page-previews').innerHTML = "";
+        }
+        if (document.getElementById("suspicious-wi")) {
+            document.getElementById("suspicious-wi").innerHTML = "";
+        }
     },
 
     callAsync: function ({method, url, contentType, responseType, body}) {
