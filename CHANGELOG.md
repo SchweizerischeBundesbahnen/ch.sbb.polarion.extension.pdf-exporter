@@ -1,5 +1,12 @@
 # Changelog
 
+## [7.3.1](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v7.3.0...v7.3.1) (2024-10-23)
+
+
+### Bug Fixes
+
+* Fix JS - null pointer errors and absent parameter with later decomposing ([#273](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/273)) ([61a1d3e](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/61a1d3e0cc5f74703bdcb906f46441e557d224a6)), closes [#271](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/271)
+
 ## [7.3.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v7.2.0...v7.3.0) (2024-10-22)
 
 
