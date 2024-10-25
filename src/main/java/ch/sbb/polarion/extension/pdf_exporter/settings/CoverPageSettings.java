@@ -11,7 +11,6 @@ import ch.sbb.polarion.extension.pdf_exporter.util.MediaUtils;
 import com.polarion.core.util.logging.Logger;
 import com.polarion.platform.service.repository.IRepositoryReadOnlyConnection;
 import com.polarion.subterra.base.location.ILocation;
-import com.polarion.subterra.base.location.Location;
 import org.jetbrains.annotations.NotNull;
 
 import javax.ws.rs.InternalServerErrorException;
@@ -24,6 +23,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
@@ -151,15 +151,14 @@ public class CoverPageSettings extends GenericNamedSettings<CoverPageModel> {
         }
     }
 
-    @SuppressWarnings("unchecked")
     public void deleteCoverPageImages(String coverPageName, String scope) {
         String uuid = getIdByName(scope, true, coverPageName);
         ILocation coverPageFolderLocation = ScopeUtils.getContextLocation(scope).append(getSettingsFolder());
         final IRepositoryReadOnlyConnection readOnlyConnection = pdfExporterPolarionService.getReadOnlyConnection(coverPageFolderLocation);
-        List<Location> subLocations = readOnlyConnection.getSubLocations(coverPageFolderLocation, false);
+        List<ILocation> subLocations = readOnlyConnection.getSubLocations(coverPageFolderLocation, false);
         subLocations.forEach(location -> {
             String locationFileName = location.getLastComponent();
-            if (locationFileName.startsWith(uuid) && imageExtensions.contains(locationFileName.substring(locationFileName.lastIndexOf(".")))) {
+            if (locationFileName.startsWith(Objects.requireNonNull(uuid)) && imageExtensions.contains(locationFileName.substring(locationFileName.lastIndexOf(".")))) {
                 getSettingsService().delete(location);
             }
         });
