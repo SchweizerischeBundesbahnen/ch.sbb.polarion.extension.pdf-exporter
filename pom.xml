@@ -84,9 +84,11 @@
             </properties>
         </profile>
 
-        <!-- deprecated profile: polarion2404 -->
         <profile>
             <id>polarion2404</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
             <properties>
                 <velocity-engine-core.artifactId>velocity-engine-core-2.3</velocity-engine-core.artifactId>
             </properties>
