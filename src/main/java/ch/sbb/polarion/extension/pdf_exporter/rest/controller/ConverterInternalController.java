@@ -116,8 +116,14 @@ public class ConverterInternalController {
                             description = "Content of PDF document as a byte array",
                             content = {@Content(mediaType = "application/pdf")},
                             headers = {
-                                    @Header(name = HttpHeaders.CONTENT_DISPOSITION, description = "To inform a browser that the response is a downloadable attachment"),
-                                    @Header(name = EXPORT_FILENAME_HEADER, description = "File name for converted PDF document")
+                                    @Header(name = HttpHeaders.CONTENT_DISPOSITION,
+                                            description = "To inform a browser that the response is a downloadable attachment",
+                                            schema = @Schema(implementation = String.class)
+                                    ),
+                                    @Header(name = EXPORT_FILENAME_HEADER,
+                                            description = "File name for converted PDF document",
+                                            schema = @Schema(implementation = String.class)
+                                    )
                             }
                     )
             })
@@ -228,8 +234,14 @@ public class ConverterInternalController {
                             description = "Conversion job result is ready",
                             content = {@Content(mediaType = "application/pdf")},
                             headers = {
-                                @Header(name = HttpHeaders.CONTENT_DISPOSITION, description = "To inform a browser that the response is a downloadable attachment"),
-                                @Header(name = EXPORT_FILENAME_HEADER, description = "File name for converted PDF document")
+                                    @Header(name = HttpHeaders.CONTENT_DISPOSITION,
+                                            description = "To inform a browser that the response is a downloadable attachment",
+                                            schema = @Schema(implementation = String.class)
+                                    ),
+                                    @Header(name = EXPORT_FILENAME_HEADER,
+                                            description = "File name for converted PDF document",
+                                            schema = @Schema(implementation = String.class)
+                                    )
                             }
                     ),
                     @ApiResponse(responseCode = "204",
@@ -286,8 +298,14 @@ public class ConverterInternalController {
                             description = "Content of PDF document as a byte array",
                             content = {@Content(mediaType = "application/pdf")},
                             headers = {
-                                    @Header(name = HttpHeaders.CONTENT_DISPOSITION, description = "To inform a browser that the response is a downloadable attachment"),
-                                    @Header(name = EXPORT_FILENAME_HEADER, description = "File name for converted PDF document")
+                                    @Header(name = HttpHeaders.CONTENT_DISPOSITION,
+                                            description = "To inform a browser that the response is a downloadable attachment",
+                                            schema = @Schema(implementation = String.class)
+                                    ),
+                                    @Header(name = EXPORT_FILENAME_HEADER,
+                                            description = "File name for converted PDF document",
+                                            schema = @Schema(implementation = String.class)
+                                    )
                             }
                     )
             })
