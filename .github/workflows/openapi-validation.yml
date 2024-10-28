@@ -1,0 +1,16 @@
+---
+name: openapi-validate
+on: [push]
+jobs:
+  check-openapi-definition:
+    runs-on: ubuntu-latest
+    name: Swagger Editor Validator Remote
+    steps:
+      - name: 📄 Checkout the repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        with:
+          fetch-depth: 0
+      - name: 🧪 Validate OpenAPI definition
+        uses: char0n/swagger-editor-validate@fe35d650e9fc674505607519d0d12ab4de5d415d # v1
+        with:
+          definition-file: docs/openapi.json
