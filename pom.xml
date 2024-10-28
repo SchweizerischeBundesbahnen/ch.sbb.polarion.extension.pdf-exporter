@@ -75,6 +75,54 @@
         <skipJavaScriptTests>${skipTests}</skipJavaScriptTests>
     </properties>
 
+    <profiles>
+        <!-- deprecated profile: polarion2310 -->
+        <profile>
+            <id>polarion2310</id>
+            <properties>
+                <velocity-engine-core.artifactId>velocity-engine-core-2.3</velocity-engine-core.artifactId>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>polarion2404</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <properties>
+                <velocity-engine-core.artifactId>velocity-engine-core-2.3</velocity-engine-core.artifactId>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>polarion2410</id>
+            <properties>
+                <velocity-engine-core.artifactId>org.apache.velocity.engine-core_2.3.0</velocity-engine-core.artifactId>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>tests-with-weasyprint-docker</id>
+
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <version>${maven-surefire-plugin.version}</version>
+                        <configuration>
+                            <!-- hide unwanted exceptions logging -->
+                            <redirectTestOutputToFile>true</redirectTestOutputToFile>
+                            <systemPropertyVariables>
+                                <wpExporterImpl>docker</wpExporterImpl>
+                            </systemPropertyVariables>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+
     <dependencies>
         <dependency>
             <groupId>ch.sbb.polarion.extensions</groupId>
@@ -84,7 +132,7 @@
 
         <dependency>
             <groupId>com.polarion.thirdparty</groupId>
-            <artifactId>velocity-engine-core-2.3</artifactId>
+            <artifactId>${velocity-engine-core.artifactId}</artifactId>
             <version>${polarion.version}</version>
             <scope>provided</scope>
         </dependency>
@@ -270,26 +318,4 @@
         </plugins>
     </build>
 
-    <profiles>
-        <profile>
-            <id>tests-with-weasyprint-docker</id>
-
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-surefire-plugin</artifactId>
-                        <version>${maven-surefire-plugin.version}</version>
-                        <configuration>
-                            <!-- hide unwanted exceptions logging -->
-                            <redirectTestOutputToFile>true</redirectTestOutputToFile>
-                            <systemPropertyVariables>
-                                <wpExporterImpl>docker</wpExporterImpl>
-                            </systemPropertyVariables>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-    </profiles>
 </project>
