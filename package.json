@@ -7,6 +7,6 @@
   "version": "1.0.0",
   "devDependencies": {
     "chai": "5.1.2",
-    "mocha": "10.7.3"
+    "mocha": "10.8.1"
   }
 }
