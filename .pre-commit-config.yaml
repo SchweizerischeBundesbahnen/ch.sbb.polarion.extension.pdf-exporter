@@ -44,6 +44,6 @@ repos:
       - id: check-git-config-user-email
         args: [--templates, ^\S+\.\S+@sbb\.ch$]
   - repo: https://github.com/commitizen-tools/commitizen
-    rev: v3.30.1
+    rev: v3.31.0
     hooks:
       - id: commitizen
