@@ -4,6 +4,7 @@ export default class ExportParams {
         LIVE_REPORT: 'LIVE_REPORT',
         TEST_RUN: 'TEST_RUN',
         WIKI_PAGE: 'WIKI_PAGE',
+        BASELINE_COLLECTION: 'BASELINE_COLLECTION',
         MIXED: 'MIXED',
     };
 
@@ -53,6 +54,7 @@ export default class ExportParams {
         this.fileName = builder.fileName;
         this.urlQueryParameters = builder.urlQueryParameters;
         this.internalContent = builder.internalContent;
+        this.collectionId = builder.collectionId;
     }
 
     toJSON() {
@@ -101,6 +103,7 @@ export default class ExportParams {
                 this.fileName = undefined;
                 this.urlQueryParameters = undefined;
                 this.internalContent = undefined;
+                this.collectionId = undefined;
             }
 
             setProjectId(projectId) {
@@ -225,6 +228,11 @@ export default class ExportParams {
 
             setUrlQueryParameters(urlQueryParameters) {
                 this.urlQueryParameters = urlQueryParameters;
+                return this;
+            }
+
+            setCollectionId(collectionId) {
+                this.collectionId = collectionId;
                 return this;
             }
 

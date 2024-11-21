@@ -50,6 +50,7 @@ public class DocumentFileNameHelper {
                     case LIVE_REPORT -> documentDataHelper.getLiveReport(project, exportParams, false);
                     case TEST_RUN -> documentDataHelper.getTestRun(project, exportParams, false);
                     case WIKI_PAGE -> documentDataHelper.getWikiPage(project, exportParams, false);
+                    case BASELINE_COLLECTION -> documentDataHelper.getBaselineCollection(project, exportParams);
                 };
 
         FileNameTemplateModel fileNameTemplateModel = getFileNameTemplateModel(ScopeUtils.getScopeFromProject(exportParams.getProjectId()));
@@ -80,6 +81,8 @@ public class DocumentFileNameHelper {
                 yield fileNameTemplateModel.getTestRunNameTemplate();
             case WIKI_PAGE:
                 yield fileNameTemplateModel.getWikiNameTemplate();
+            case BASELINE_COLLECTION:
+                yield "Test";
         };
     }
 

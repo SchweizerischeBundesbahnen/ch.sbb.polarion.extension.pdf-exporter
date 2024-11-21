@@ -1282,6 +1282,10 @@
               "description" : "Specific higher level chapters"
             }
           },
+          "collectionId" : {
+            "type" : "string",
+            "description" : "The unique identifier for the collection"
+          },
           "coverPage" : {
             "type" : "string",
             "description" : "Cover page settings name"
@@ -1306,7 +1310,7 @@
           "documentType" : {
             "type" : "string",
             "description" : "Type of the document",
-            "enum" : [ "LIVE_DOC", "LIVE_REPORT", "TEST_RUN", "WIKI_PAGE" ],
+            "enum" : [ "LIVE_DOC", "LIVE_REPORT", "TEST_RUN", "WIKI_PAGE", "BASELINE_COLLECTION" ],
             "example" : "LIVE_DOC"
           },
           "enableCommentsRendering" : {

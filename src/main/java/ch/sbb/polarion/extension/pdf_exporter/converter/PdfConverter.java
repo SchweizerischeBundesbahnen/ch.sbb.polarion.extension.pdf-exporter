@@ -136,6 +136,7 @@ public class PdfConverter {
             case LIVE_REPORT -> documentDataHelper.getLiveReport(project, exportParams);
             case TEST_RUN -> documentDataHelper.getTestRun(Objects.requireNonNull(project), exportParams);
             case WIKI_PAGE -> documentDataHelper.getWikiPage(project, exportParams);
+            case BASELINE_COLLECTION -> documentDataHelper.getBaselineCollection(Objects.requireNonNull(project), exportParams);
         };
     }
 

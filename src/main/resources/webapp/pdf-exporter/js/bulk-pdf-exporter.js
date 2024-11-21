@@ -104,6 +104,7 @@ const BulkPdfExporter = {
             case "Module": return "Document: ";
             case "RichPage": return "Report: ";
             case "TestRun": return "Test Run: ";
+            case "BaselineCollection": return "Collection: ";
             default: return "";
         }
     },
@@ -211,6 +212,8 @@ const BulkPdfExporter = {
             this.exportParams["documentType"] = documentType;
             if (documentType === ExportParams.DocumentType.TEST_RUN) {
                 this.exportParams["urlQueryParameters"] = { id: nextItem.dataset["id"] };
+            } else if (documentType === ExportParams.DocumentType.BASELINE_COLLECTION) {
+                this.exportParams["collectionId"] = { id: nextItem.dataset["id"] };
             } else {
                 this.exportParams["locationPath"] = `${nextItem.dataset["space"]}/${nextItem.dataset["id"]}`;
             }
@@ -256,6 +259,7 @@ const BulkPdfExporter = {
             case "Module": return ExportParams.DocumentType.LIVE_DOC;
             case "RichPage": return ExportParams.DocumentType.LIVE_REPORT;
             case "TestRun": return ExportParams.DocumentType.TEST_RUN;
+            case "BaselineCollection": return ExportParams.DocumentType.BASELINE_COLLECTION;
             default: return "";
         }
     }

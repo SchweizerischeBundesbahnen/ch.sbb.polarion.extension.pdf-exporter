@@ -45,6 +45,7 @@ public class BulkPdfExportWidgetRenderer extends AbstractWidgetRenderer {
                 case "Module": dataType = "Documents"; break;
                 case "RichPage": dataType = "Pages"; break;
                 case "TestRun": dataType = "Test Runs"; break;
+                case "BaselineCollection": dataType = "Collections"; break;
                 default: dataType = "Unknown"; break;
             }
         } else {
