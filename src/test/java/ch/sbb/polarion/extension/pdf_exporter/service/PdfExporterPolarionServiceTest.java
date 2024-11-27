@@ -8,6 +8,7 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.stylepackage.S
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.stylepackage.StylePackageWeightInfo;
 import ch.sbb.polarion.extension.pdf_exporter.settings.StylePackageSettings;
 import com.polarion.alm.projects.IProjectService;
+import com.polarion.alm.tracker.ITestManagementService;
 import com.polarion.alm.tracker.ITrackerService;
 import com.polarion.alm.tracker.model.ITrackerProject;
 import com.polarion.platform.IPlatformService;
@@ -28,8 +29,14 @@ class PdfExporterPolarionServiceTest {
 
     private final ITrackerService trackerService = mock(ITrackerService.class);
     private StylePackageSettings stylePackageSettings;
-    private final PdfExporterPolarionService service = new PdfExporterPolarionService(trackerService, mock(IProjectService.class),
-            mock(ISecurityService.class), mock(IPlatformService.class), mock(IRepositoryService.class));
+    private final PdfExporterPolarionService service = new PdfExporterPolarionService(
+            trackerService,
+            mock(IProjectService.class),
+            mock(ISecurityService.class),
+            mock(IPlatformService.class),
+            mock(IRepositoryService.class),
+            mock(ITestManagementService.class)
+    );
 
     @BeforeEach
     void setUp() {

@@ -203,38 +203,33 @@ const BulkPdfExporter = {
     startNextItemExport: function () {
         const pausedItems = document.querySelectorAll("#bulk-pdf-export-popup .export-item.paused");
         if (this.exportParams && pausedItems && pausedItems.length > 0) {
-            const nextItem = pausedItems[0];
-            nextItem.classList.remove("paused");
-            nextItem.classList.add("in-progress");
+            const currentItem = pausedItems[0];
+            currentItem.classList.remove("paused");
+            currentItem.classList.add("in-progress");
 
-            const documentType = this.getDocumentType(nextItem.dataset["type"]);
+            const documentType = this.getDocumentType(currentItem.dataset["type"]);
             this.exportParams["documentType"] = documentType;
+            const documentId = currentItem.dataset["id"];
             if (documentType === ExportParams.DocumentType.TEST_RUN) {
-                this.exportParams["urlQueryParameters"] = { id: nextItem.dataset["id"] };
+                this.exportParams["urlQueryParameters"] = { id: documentId };
+                this.downloadTestRunAttachments(this.exportParams.projectId, documentId, this.exportParams.revision, this.exportParams.attachmentsFilter);
             } else {
-                this.exportParams["locationPath"] = `${nextItem.dataset["space"]}/${nextItem.dataset["id"]}`;
+                this.exportParams["locationPath"] = `${currentItem.dataset["space"]}/${documentId}`;
             }
 
             ExportCommon.asyncConvertPdf(this.exportParams.toJSON(), (responseBody, fileName) => {
-                nextItem.classList.remove("in-progress");
-                nextItem.classList.add("finished");
+                currentItem.classList.remove("in-progress");
+                currentItem.classList.add("finished");
 
                 BulkPdfExporter.finishedCount += 1;
                 BulkPdfExporter.updateState(BULK_EXPORT_IN_PROGRESS);
-
-                const objectURL = (window.URL ? window.URL : window.webkitURL).createObjectURL(responseBody);
-                const anchorElement = document.createElement("a");
-                anchorElement.href = objectURL;
-                anchorElement.download = fileName || `${nextItem.dataset["space"] ? nextItem.dataset["space"] + "_" : ""}${nextItem.dataset["id"]}.pdf`; // Fallback if file name wasn't received in response
-                anchorElement.target = "_blank";
-                anchorElement.click();
-                anchorElement.remove();
-                setTimeout(() => URL.revokeObjectURL(objectURL), 100);
+                const downloadFileName = fileName || `${currentItem.dataset["space"] ? currentItem.dataset["space"] + "_" : ""}${documentId}.pdf`; // Fallback if file name wasn't received in response
+                this.downloadBlob(responseBody, downloadFileName);
                 this.startNextItemExport();
             }, errorResponse => {
                 this.errors = true;
-                nextItem.classList.remove("in-progress");
-                nextItem.classList.add("error");
+                currentItem.classList.remove("in-progress");
+                currentItem.classList.add("error");
 
                 errorResponse.text().then(errorJson => {
                     const error = errorJson && JSON.parse(errorJson);
@@ -242,7 +237,7 @@ const BulkPdfExporter = {
                     const errorDiv = document.createElement("div");
                     errorDiv.className = "error-message";
                     errorDiv.innerText = errorMessage;
-                    nextItem.appendChild(errorDiv);
+                    currentItem.appendChild(errorDiv);
                 });
                 this.startNextItemExport();
             });
@@ -258,6 +253,54 @@ const BulkPdfExporter = {
             case "TestRun": return ExportParams.DocumentType.TEST_RUN;
             default: return "";
         }
+    },
+
+    downloadTestRunAttachments: function (projectId, testRunId, revision = null, filter = null) {
+        let url = `/polarion/pdf-exporter/rest/internal/projects/${projectId}/testruns/${testRunId}/attachments?`;
+        if (revision) url += `&revision=${revision}`;
+        if (filter) url += `&filter=${filter}`;
+
+        SbbCommon.callAsync({
+            method: "GET",
+            url: url,
+            responseType: "json",
+            onOk: (responseText, request) => {
+                for (const attachment of request.response) {
+                    this.downloadAttachmentContent(projectId, testRunId, attachment.id, revision);
+                }
+            },
+            onError: (status, errorMessage, request) => {
+                console.error('Error fetching attachments:', request.response);
+            }
+        });
+    },
+
+    downloadAttachmentContent: function (projectId, testRunId, attachmentId, revision = null) {
+        let url = `/polarion/pdf-exporter/rest/internal/projects/${projectId}/testruns/${testRunId}/attachments/${attachmentId}/content?`;
+        if (revision) url += `&revision=${revision}`;
+
+        SbbCommon.callAsync({
+            method: "GET",
+            url: url,
+            responseType: "blob",
+            onOk: (responseText, request) => {
+                this.downloadBlob(request.response, request.getResponseHeader("Filename"));
+            },
+            onError: (status, errorMessage, request) => {
+                console.error(`Error downloading attachment ${attachmentId}:`, request.response);
+            }
+        });
+    },
+
+    downloadBlob: function(blob, fileName) {
+        const objectURL = (window.URL ? window.URL : window.webkitURL).createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = objectURL;
+        link.download = fileName
+        link.target = "_blank";
+        link.click();
+        link.remove();
+        setTimeout(() => URL.revokeObjectURL(objectURL), 100);
     }
 }
 

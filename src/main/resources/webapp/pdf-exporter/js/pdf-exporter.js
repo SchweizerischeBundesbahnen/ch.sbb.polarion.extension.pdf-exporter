@@ -333,6 +333,10 @@ const PdfExporter = {
 
         ExportCommon.displayIf("popup-style-package-content", stylePackage.exposeSettings);
         ExportCommon.displayIf("popup-page-width-validation", this.exportContext.getDocumentType() !== ExportParams.DocumentType.MIXED && stylePackage.exposePageWidthValidation);
+
+        ExportCommon.setCheckbox("popup-download-attachments", stylePackage.attachmentsFilter);
+        ExportCommon.setValue("popup-attachments-filter", stylePackage.attachmentsFilter || "");
+        ExportCommon.visibleIf("popup-attachments-filter", stylePackage.attachmentsFilter);
     },
 
     validatePdf: function () {
@@ -503,11 +507,18 @@ const PdfExporter = {
             selectedRoles.push(...selectedOptions.map(opt => opt.value));
         }
 
-        return this.buildExportParams(selectedChapters, numberedListStyles, selectedRoles, fileName);
+        let attachmentsFilter = null;
+        if (document.getElementById("popup-download-attachments").checked) {
+            attachmentsFilter = document.getElementById("popup-attachments-filter").value;
+        }
+
+        return this.buildExportParams(selectedChapters, numberedListStyles, selectedRoles, fileName, attachmentsFilter);
     },
 
-    buildExportParams: function (selectedChapters, numberedListStyles, selectedRoles, fileName) {
+    buildExportParams: function (selectedChapters, numberedListStyles, selectedRoles, fileName, attachmentsFilter) {
         const live_doc = this.exportContext.getDocumentType() === ExportParams.DocumentType.LIVE_DOC;
+        const test_run = this.exportContext.getDocumentType() === ExportParams.DocumentType.TEST_RUN;
+        const mixed = this.exportContext.getDocumentType() === ExportParams.DocumentType.MIXED;
         return new ExportParams.Builder(this.exportContext.getDocumentType())
             .setProjectId(this.exportContext.getProjectId())
             .setLocationPath(this.exportContext.getLocationPath())
@@ -534,6 +545,7 @@ const PdfExporter = {
             .setLinkedWorkitemRoles(selectedRoles)
             .setFileName(fileName)
             .setUrlQueryParameters(this.exportContext.getUrlQueryParameters())
+            .setAttachmentsFilter((test_run || mixed) && attachmentsFilter ? attachmentsFilter : null)
             .build();
     },
 

@@ -28,6 +28,7 @@ import ch.sbb.polarion.extension.pdf_exporter.weasyprint.base.BaseWeasyPrintTest
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.service.WeasyPrintServiceConnector;
 import com.polarion.alm.projects.IProjectService;
 import com.polarion.alm.projects.model.IProject;
+import com.polarion.alm.tracker.ITestManagementService;
 import com.polarion.alm.tracker.ITrackerService;
 import com.polarion.alm.tracker.model.IModule;
 import com.polarion.alm.tracker.model.ITrackerProject;
@@ -96,7 +97,8 @@ class PdfConverterWeasyPrintTest extends BaseWeasyPrintTest {
                 projectService,
                 mock(ISecurityService.class),
                 mock(IPlatformService.class),
-                mock(IRepositoryService.class)
+                mock(IRepositoryService.class),
+                mock(ITestManagementService.class)
         );
 
         IProject project = mock(IProject.class);

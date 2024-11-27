@@ -1,6 +1,13 @@
 package ch.sbb.polarion.extension.pdf_exporter.util.placeholder;
 
+import ch.sbb.polarion.extension.pdf_exporter.service.PdfExporterPolarionService;
+import com.polarion.alm.projects.IProjectService;
+import com.polarion.alm.tracker.ITestManagementService;
+import com.polarion.alm.tracker.ITrackerService;
+import com.polarion.platform.IPlatformService;
 import com.polarion.platform.core.PlatformContext;
+import com.polarion.platform.security.ISecurityService;
+import com.polarion.platform.service.repository.IRepositoryService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -17,6 +24,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
 
 @ExtendWith(MockitoExtension.class)
 class PlaceholderProcessorTest {
@@ -41,7 +49,16 @@ class PlaceholderProcessorTest {
                 .sbbCustomRevision("testCustomRevision")
                 .projectName("testProjectName")
                 .build();
-        placeholderProcessor = new PlaceholderProcessor();
+
+        PdfExporterPolarionService pdfExporterPolarionService = new PdfExporterPolarionService(
+                mock(ITrackerService.class),
+                mock(IProjectService.class),
+                mock(ISecurityService.class),
+                mock(IPlatformService.class),
+                mock(IRepositoryService.class),
+                mock(ITestManagementService.class)
+        );
+        placeholderProcessor = new PlaceholderProcessor(pdfExporterPolarionService);
     }
 
     @Test

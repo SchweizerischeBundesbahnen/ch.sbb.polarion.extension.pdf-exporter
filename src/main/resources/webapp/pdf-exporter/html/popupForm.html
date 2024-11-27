@@ -142,6 +142,13 @@
                         Mark referenced Workitems
                     </label>
                 </div>
+                <div class='property-wrapper'>
+                    <label for='popup-download-attachments'>
+                        <input id='popup-download-attachments' onchange='document.getElementById("popup-attachments-filter").style.visibility = this.checked ? "visible" : "hidden"' type='checkbox'/>
+                        Download attachments
+                    </label>
+                    <input id='popup-attachments-filter' placeholder='*.*' style='width: 101px' type='text'/>
+                </div>
             </div>
         </div>
 
