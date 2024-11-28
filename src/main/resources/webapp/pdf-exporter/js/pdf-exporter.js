@@ -508,6 +508,7 @@ const PdfExporter = {
 
     buildExportParams: function (selectedChapters, numberedListStyles, selectedRoles, fileName) {
         const live_doc = this.exportContext.getDocumentType() === ExportParams.DocumentType.LIVE_DOC;
+        const test_run = this.exportContext.getDocumentType() === ExportParams.DocumentType.TEST_RUN;
         return new ExportParams.Builder(this.exportContext.getDocumentType())
             .setProjectId(this.exportContext.getProjectId())
             .setLocationPath(this.exportContext.getLocationPath())
@@ -520,7 +521,7 @@ const PdfExporter = {
             .setHeadersColor(document.getElementById("popup-headers-color").value)
             .setPaperSize(document.getElementById("popup-paper-size-selector").value)
             .setOrientation(document.getElementById("popup-orientation-selector").value)
-            .setFitToPage(live_doc && document.getElementById('popup-fit-to-page').checked)
+            .setFitToPage((live_doc || test_run) && document.getElementById('popup-fit-to-page').checked)
             .setEnableCommentsRendering(live_doc && document.getElementById('popup-enable-comments-rendering').checked)
             .setWatermark(document.getElementById("popup-watermark").checked)
             .setMarkReferencedWorkitems(live_doc && document.getElementById("popup-mark-referenced-workitems").checked)
