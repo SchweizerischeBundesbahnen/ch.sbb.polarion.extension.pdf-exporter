@@ -556,7 +556,7 @@ public class HtmlProcessor {
             // This regexp searches for <td> or <th> elements of regular tables which width in styles specified in pixels ("px").
             // <td> or <th> element till "width:" in styles matched into first unnamed group and width value - into second unnamed group.
             // Then we replace matched content by first group content plus "auto" instead of value in pixels.
-            html = RegexMatcher.get("(<t[dh].+?width:.*?)(\\d+px)")
+            html = RegexMatcher.get("(<t[dh][^>]+?width:.*?)(\\d+px)")
                     .replace(html, regexEngine -> regexEngine.group(1) + "auto");
         }
 
