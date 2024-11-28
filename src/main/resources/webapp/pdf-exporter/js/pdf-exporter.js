@@ -59,8 +59,10 @@ const PdfExporter = {
                     .forEach(propertyBlock => propertyBlock.style.display = "flex");
                 break;
             case ExportParams.DocumentType.MIXED:
-                document.querySelectorAll(".modal__container.pdf-exporter .property-wrapper.not-mixed")
+                document.querySelectorAll(".modal__container.pdf-exporter .property-wrapper.not-visible-for-mixed")
                     .forEach(propertyBlock => propertyBlock.style.display = "none");
+                document.querySelectorAll(".modal__container.pdf-exporter .property-wrapper.visible-for-mixed")
+                    .forEach(propertyBlock => propertyBlock.style.display = "flex");
                 break;
         }
         MicroModal.show(POPUP_ID);
@@ -442,6 +444,11 @@ const PdfExporter = {
             return;
         }
 
+        if (this.exportContext.getDocumentType() === ExportParams.DocumentType.TEST_RUN) {
+            const testRunId = new URLSearchParams(this.exportContext.getUrlQueryParameters()).get("id")
+            ExportCommon.downloadTestRunAttachments(exportParams.projectId, testRunId, exportParams.revision, exportParams.attachmentsFilter);
+        }
+
         this.actionInProgress({inProgress: true, message: "Generating PDF"})
 
         const requestBody = exportParams.toJSON();
@@ -450,14 +457,7 @@ const PdfExporter = {
         }
 
         ExportCommon.asyncConvertPdf(requestBody, responseBody => {
-            const objectURL = (window.URL ? window.URL : window.webkitURL).createObjectURL(responseBody);
-            const anchorElement = document.createElement("a");
-            anchorElement.href = objectURL;
-            anchorElement.download = fileName;
-            anchorElement.target = "_blank";
-            anchorElement.click();
-            anchorElement.remove();
-            setTimeout(() => URL.revokeObjectURL(objectURL), 100);
+            ExportCommon.downloadBlob(responseBody, fileName);
 
             this.showNotification({alertType: "success", message: "PDF was successfully generated"});
             this.actionInProgress({inProgress: false});

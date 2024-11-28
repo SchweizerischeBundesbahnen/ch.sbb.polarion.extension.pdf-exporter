@@ -142,7 +142,7 @@
                         Mark referenced Workitems
                     </label>
                 </div>
-                <div class='property-wrapper'>
+                <div class='property-wrapper hidden visible-for-test-run visible-for-mixed'>
                     <label for='popup-download-attachments'>
                         <input id='popup-download-attachments' onchange='document.getElementById("popup-attachments-filter").style.visibility = this.checked ? "visible" : "hidden"' type='checkbox'/>
                         Download attachments
@@ -192,7 +192,7 @@
         </div>
     </div>
 
-    <div class='property-wrapper not-mixed'>
+    <div class='property-wrapper not-visible-for-mixed'>
         <label for='popup-filename'>File name:</label>
         <input id='popup-filename' type='text' style="width: 594px" />
     </div>

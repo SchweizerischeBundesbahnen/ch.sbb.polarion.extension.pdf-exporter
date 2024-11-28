@@ -12,6 +12,8 @@ class WildcardUtilsTest {
 
     static Stream<Arguments> provideToRegexArguments() {
         return Stream.of(
+                Arguments.of(null, ".*"),
+                Arguments.of("", ".*"),
                 Arguments.of("*.txt", "^.*\\.txt$"),
                 Arguments.of("file?.doc", "^file.\\.doc$"),
                 Arguments.of("doc*", "^doc.*$"),
@@ -29,6 +31,8 @@ class WildcardUtilsTest {
 
     static Stream<Arguments> provideMatchesArguments() {
         return Stream.of(
+                Arguments.of(null, "*.txt", false),
+                Arguments.of("", "*.txt", false),
                 Arguments.of("file.txt", "*.txt", true),
                 Arguments.of("file.doc", "*.txt", false),
                 Arguments.of("doc1.doc", "doc?.doc", true),
