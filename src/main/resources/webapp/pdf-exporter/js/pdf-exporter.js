@@ -49,12 +49,20 @@ const PdfExporter = {
 
         this.hideAlerts();
         this.loadFormData();
-        const documentContext = this.exportContext.getDocumentType() === ExportParams.DocumentType.LIVE_DOC;
-        document.querySelectorAll(".modal__container.pdf-exporter .property-wrapper.only-live-doc")
-            .forEach(propertyBlock => propertyBlock.style.display = (documentContext ? "flex" : "none"));
-        const mixedContext = this.exportContext.getDocumentType() === ExportParams.DocumentType.MIXED;
-        document.querySelectorAll(".modal__container.pdf-exporter .property-wrapper.not-mixed")
-            .forEach(propertyBlock => propertyBlock.style.display = (mixedContext ? "none" : "flex"));
+        switch (this.exportContext.getDocumentType()) {
+            case ExportParams.DocumentType.LIVE_DOC:
+                document.querySelectorAll(".modal__container.pdf-exporter .property-wrapper.visible-for-live-doc")
+                    .forEach(propertyBlock => propertyBlock.style.display = "flex");
+                break;
+            case ExportParams.DocumentType.TEST_RUN:
+                document.querySelectorAll(".modal__container.pdf-exporter .property-wrapper.visible-for-test-run")
+                    .forEach(propertyBlock => propertyBlock.style.display = "flex");
+                break;
+            case ExportParams.DocumentType.MIXED:
+                document.querySelectorAll(".modal__container.pdf-exporter .property-wrapper.not-mixed")
+                    .forEach(propertyBlock => propertyBlock.style.display = "none");
+                break;
+        }
         MicroModal.show(POPUP_ID);
     },
 
@@ -531,7 +539,7 @@ const PdfExporter = {
             .setHeadersColor(document.getElementById("popup-headers-color").value)
             .setPaperSize(document.getElementById("popup-paper-size-selector").value)
             .setOrientation(document.getElementById("popup-orientation-selector").value)
-            .setFitToPage(live_doc && document.getElementById('popup-fit-to-page').checked)
+            .setFitToPage((live_doc || test_run) && document.getElementById('popup-fit-to-page').checked)
             .setEnableCommentsRendering(live_doc && document.getElementById('popup-enable-comments-rendering').checked)
             .setWatermark(document.getElementById("popup-watermark").checked)
             .setMarkReferencedWorkitems(live_doc && document.getElementById("popup-mark-referenced-workitems").checked)
