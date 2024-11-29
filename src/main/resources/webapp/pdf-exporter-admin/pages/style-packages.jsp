@@ -263,6 +263,13 @@
                     </label>
                     <div id="roles-select" style="display: none; margin-left: 10px; width: 152px"></div>
                 </div>
+                <div class='checkbox input-group'>
+                    <label for='download-attachments' style="margin-top: 5px">
+                        <input id='download-attachments' onchange='document.getElementById("attachments-filter").style.visibility = this.checked ? "visible" : "hidden"' type='checkbox'/>
+                        Download attachments
+                    </label>
+                    <input id='attachments-filter' placeholder='*.*' type='text' style="visibility: hidden; margin-left: 10px; width: 117px"/>
+                </div>
             </div>
         </div>
 

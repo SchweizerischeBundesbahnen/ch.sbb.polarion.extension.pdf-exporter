@@ -59,8 +59,10 @@ const PdfExporter = {
                     .forEach(propertyBlock => propertyBlock.style.display = "flex");
                 break;
             case ExportParams.DocumentType.MIXED:
-                document.querySelectorAll(".modal__container.pdf-exporter .property-wrapper.not-mixed")
+                document.querySelectorAll(".modal__container.pdf-exporter .property-wrapper.not-visible-for-mixed")
                     .forEach(propertyBlock => propertyBlock.style.display = "none");
+                document.querySelectorAll(".modal__container.pdf-exporter .property-wrapper.visible-for-mixed")
+                    .forEach(propertyBlock => propertyBlock.style.display = "flex");
                 break;
         }
         MicroModal.show(POPUP_ID);
@@ -341,6 +343,10 @@ const PdfExporter = {
 
         ExportCommon.displayIf("popup-style-package-content", stylePackage.exposeSettings);
         ExportCommon.displayIf("popup-page-width-validation", this.exportContext.getDocumentType() !== ExportParams.DocumentType.MIXED && stylePackage.exposePageWidthValidation);
+
+        ExportCommon.setCheckbox("popup-download-attachments", stylePackage.attachmentsFilter);
+        ExportCommon.setValue("popup-attachments-filter", stylePackage.attachmentsFilter || "");
+        ExportCommon.visibleIf("popup-attachments-filter", stylePackage.attachmentsFilter);
     },
 
     validatePdf: function () {
@@ -438,6 +444,11 @@ const PdfExporter = {
             return;
         }
 
+        if (this.exportContext.getDocumentType() === ExportParams.DocumentType.TEST_RUN) {
+            const testRunId = new URLSearchParams(this.exportContext.getUrlQueryParameters()).get("id")
+            ExportCommon.downloadTestRunAttachments(exportParams.projectId, testRunId, exportParams.revision, exportParams.attachmentsFilter);
+        }
+
         this.actionInProgress({inProgress: true, message: "Generating PDF"})
 
         const requestBody = exportParams.toJSON();
@@ -446,14 +457,7 @@ const PdfExporter = {
         }
 
         ExportCommon.asyncConvertPdf(requestBody, responseBody => {
-            const objectURL = (window.URL ? window.URL : window.webkitURL).createObjectURL(responseBody);
-            const anchorElement = document.createElement("a");
-            anchorElement.href = objectURL;
-            anchorElement.download = fileName;
-            anchorElement.target = "_blank";
-            anchorElement.click();
-            anchorElement.remove();
-            setTimeout(() => URL.revokeObjectURL(objectURL), 100);
+            ExportCommon.downloadBlob(responseBody, fileName);
 
             this.showNotification({alertType: "success", message: "PDF was successfully generated"});
             this.actionInProgress({inProgress: false});
@@ -511,12 +515,18 @@ const PdfExporter = {
             selectedRoles.push(...selectedOptions.map(opt => opt.value));
         }
 
-        return this.buildExportParams(selectedChapters, numberedListStyles, selectedRoles, fileName);
+        let attachmentsFilter = null;
+        if (document.getElementById("popup-download-attachments").checked) {
+            attachmentsFilter = document.getElementById("popup-attachments-filter").value;
+        }
+
+        return this.buildExportParams(selectedChapters, numberedListStyles, selectedRoles, fileName, attachmentsFilter);
     },
 
-    buildExportParams: function (selectedChapters, numberedListStyles, selectedRoles, fileName) {
+    buildExportParams: function (selectedChapters, numberedListStyles, selectedRoles, fileName, attachmentsFilter) {
         const live_doc = this.exportContext.getDocumentType() === ExportParams.DocumentType.LIVE_DOC;
         const test_run = this.exportContext.getDocumentType() === ExportParams.DocumentType.TEST_RUN;
+        const mixed = this.exportContext.getDocumentType() === ExportParams.DocumentType.MIXED;
         return new ExportParams.Builder(this.exportContext.getDocumentType())
             .setProjectId(this.exportContext.getProjectId())
             .setLocationPath(this.exportContext.getLocationPath())
@@ -543,6 +553,7 @@ const PdfExporter = {
             .setLinkedWorkitemRoles(selectedRoles)
             .setFileName(fileName)
             .setUrlQueryParameters(this.exportContext.getUrlQueryParameters())
+            .setAttachmentsFilter((test_run || mixed) && attachmentsFilter ? attachmentsFilter : null)
             .build();
     },
 

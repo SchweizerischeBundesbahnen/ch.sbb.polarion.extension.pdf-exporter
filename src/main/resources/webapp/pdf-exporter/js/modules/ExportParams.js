@@ -52,6 +52,7 @@ export default class ExportParams {
         this.linkedWorkitemRoles = builder.linkedWorkitemRoles;
         this.fileName = builder.fileName;
         this.urlQueryParameters = builder.urlQueryParameters;
+        this.attachmentsFilter = builder.attachmentsFilter;
         this.internalContent = builder.internalContent;
     }
 
@@ -100,6 +101,7 @@ export default class ExportParams {
                 this.linkedWorkitemRoles = undefined;
                 this.fileName = undefined;
                 this.urlQueryParameters = undefined;
+                this.attachmentsFilter = undefined;
                 this.internalContent = undefined;
             }
 
@@ -225,6 +227,11 @@ export default class ExportParams {
 
             setUrlQueryParameters(urlQueryParameters) {
                 this.urlQueryParameters = urlQueryParameters;
+                return this;
+            }
+
+            setAttachmentsFilter(attachmentsFilter) {
+                this.attachmentsFilter = attachmentsFilter;
                 return this;
             }
 

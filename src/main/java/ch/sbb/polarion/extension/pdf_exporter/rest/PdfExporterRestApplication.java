@@ -7,6 +7,8 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.controller.ConverterApiContro
 import ch.sbb.polarion.extension.pdf_exporter.rest.controller.ConverterInternalController;
 import ch.sbb.polarion.extension.pdf_exporter.rest.controller.SettingsApiController;
 import ch.sbb.polarion.extension.pdf_exporter.rest.controller.SettingsInternalController;
+import ch.sbb.polarion.extension.pdf_exporter.rest.controller.TestRunAttachmentsApiController;
+import ch.sbb.polarion.extension.pdf_exporter.rest.controller.TestRunAttachmentsInternalController;
 import ch.sbb.polarion.extension.pdf_exporter.rest.controller.UtilityResourcesApiController;
 import ch.sbb.polarion.extension.pdf_exporter.rest.controller.UtilityResourcesInternalController;
 import ch.sbb.polarion.extension.pdf_exporter.rest.exception.NoSuchElementExceptionMapper;
@@ -64,6 +66,8 @@ public class PdfExporterRestApplication extends GenericRestApplication {
                 new ConverterInternalController(),
                 new SettingsApiController(),
                 new SettingsInternalController(),
+                new TestRunAttachmentsApiController(),
+                new TestRunAttachmentsInternalController(),
                 new UtilityResourcesApiController(),
                 new UtilityResourcesInternalController()
         );
