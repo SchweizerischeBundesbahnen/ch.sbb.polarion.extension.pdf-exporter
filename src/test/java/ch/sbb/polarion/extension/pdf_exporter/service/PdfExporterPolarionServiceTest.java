@@ -3,13 +3,18 @@ package ch.sbb.polarion.extension.pdf_exporter.service;
 import ch.sbb.polarion.extension.generic.settings.NamedSettingsRegistry;
 import ch.sbb.polarion.extension.generic.settings.SettingId;
 import ch.sbb.polarion.extension.generic.settings.SettingName;
+import ch.sbb.polarion.extension.generic.util.PObjectListStub;
 import ch.sbb.polarion.extension.generic.util.ScopeUtils;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.attachments.TestRunAttachment;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.stylepackage.StylePackageModel;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.stylepackage.StylePackageWeightInfo;
 import ch.sbb.polarion.extension.pdf_exporter.settings.StylePackageSettings;
 import com.polarion.alm.projects.IProjectService;
 import com.polarion.alm.tracker.ITestManagementService;
 import com.polarion.alm.tracker.ITrackerService;
+import com.polarion.alm.tracker.model.IAttachment;
+import com.polarion.alm.tracker.model.ITestRun;
+import com.polarion.alm.tracker.model.ITestRunAttachment;
 import com.polarion.alm.tracker.model.ITrackerProject;
 import com.polarion.platform.IPlatformService;
 import com.polarion.platform.security.ISecurityService;
@@ -23,11 +28,13 @@ import java.util.Collection;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
 class PdfExporterPolarionServiceTest {
 
     private final ITrackerService trackerService = mock(ITrackerService.class);
+    private final ITestManagementService testManagementService = mock(ITestManagementService.class);
     private StylePackageSettings stylePackageSettings;
     private final PdfExporterPolarionService service = new PdfExporterPolarionService(
             trackerService,
@@ -35,7 +42,7 @@ class PdfExporterPolarionServiceTest {
             mock(ISecurityService.class),
             mock(IPlatformService.class),
             mock(IRepositoryService.class),
-            mock(ITestManagementService.class)
+            testManagementService
     );
 
     @BeforeEach
@@ -152,5 +159,73 @@ class PdfExporterPolarionServiceTest {
         assertNotNull(result);
         assertEquals(5, result.size());
         assertEquals(List.of("name2", "name3", "name4", "name5", "name1"), result.stream().map(SettingName::getName).toList());
+    }
+
+    @Test
+    void testGetTestRun() {
+        when(testManagementService.getTestRun("testProjectId", "testTestRunId", null)).thenReturn(mock(ITestRun.class));
+        when(testManagementService.getTestRun("testProjectId", "testTestRunId", "1234")).thenReturn(mock(ITestRun.class));
+
+        ITestRun testRun = service.getTestRun("testProjectId", "testTestRunId", null);
+        assertNotNull(testRun);
+        ITestRun testRunWithRevision = service.getTestRun("testProjectId", "testTestRunId", "1234");
+        assertNotNull(testRunWithRevision);
+
+        ITestRun nonExistingTestRun = mock(ITestRun.class);
+        when(nonExistingTestRun.isUnresolvable()).thenReturn(true);
+        when(testManagementService.getTestRun("testProjectId", "nonExistingTestRun", null)).thenReturn(nonExistingTestRun);
+        assertThrows(IllegalArgumentException.class, () -> service.getTestRun("testProjectId", "nonExistingTestRun", null));
+    }
+
+    @Test
+    void testGetTestRunAttachments() {
+        PObjectListStub<ITestRunAttachment> attachments = new PObjectListStub<>();
+        ITestRunAttachment testRunAttachment1 = mock(ITestRunAttachment.class);
+        when(testRunAttachment1.getFileName()).thenReturn("test1.pdf");
+        attachments.add(testRunAttachment1);
+        ITestRunAttachment testRunAttachment2 = mock(ITestRunAttachment.class);
+        when(testRunAttachment2.getFileName()).thenReturn("test2.txt");
+        attachments.add(testRunAttachment2);
+
+        ITestRun testRun = mock(ITestRun.class);
+        when(testRun.isUnresolvable()).thenReturn(false);
+        when(testRun.getAttachments()).thenReturn(attachments);
+        when(testManagementService.getTestRun("testProjectId", "testTestRunId", null)).thenReturn(testRun);
+
+        List<TestRunAttachment> testRunAttachments = service.getTestRunAttachments("testProjectId", "testTestRunId", null, null);
+        assertNotNull(testRunAttachments);
+        assertEquals(2, testRunAttachments.size());
+
+        List<TestRunAttachment> testRunAttachmentsFilteredPdf = service.getTestRunAttachments("testProjectId", "testTestRunId", null, "*.pdf");
+        assertNotNull(testRunAttachmentsFilteredPdf);
+        assertEquals(1, testRunAttachmentsFilteredPdf.size());
+
+        List<TestRunAttachment> testRunAttachmentsFilteredTxt = service.getTestRunAttachments("testProjectId", "testTestRunId", null, "*.pdf");
+        assertNotNull(testRunAttachmentsFilteredTxt);
+        assertEquals(1, testRunAttachmentsFilteredTxt.size());
+
+        List<TestRunAttachment> testRunAttachmentsFilteredAll = service.getTestRunAttachments("testProjectId", "testTestRunId", null, "*.*");
+        assertNotNull(testRunAttachmentsFilteredAll);
+        assertEquals(2, testRunAttachmentsFilteredAll.size());
+
+        List<TestRunAttachment> testRunAttachmentsFilteredNone = service.getTestRunAttachments("testProjectId", "testTestRunId", null, "*.png");
+        assertNotNull(testRunAttachmentsFilteredNone);
+        assertEquals(0, testRunAttachmentsFilteredNone.size());
+    }
+
+    @Test
+    void testGetTestRunAttachment() {
+        ITestRun testRun = mock(ITestRun.class);
+        when(testRun.isUnresolvable()).thenReturn(false);
+        when(testRun.getAttachment("testAttachmentId")).thenReturn(mock(ITestRunAttachment.class));
+        when(testManagementService.getTestRun("testProjectId", "testTestRunId", null)).thenReturn(testRun);
+        when(testManagementService.getTestRun("testProjectId", "testTestRunId", "1234")).thenReturn(testRun);
+
+        ITestRunAttachment testRunAttachment = service.getTestRunAttachment("testProjectId", "testTestRunId", "testAttachmentId", null);
+        assertNotNull(testRunAttachment);
+        ITestRunAttachment testRunAttachmentWithRevision = service.getTestRunAttachment("testProjectId", "testTestRunId", "testAttachmentId", "1234");
+        assertNotNull(testRunAttachmentWithRevision);
+
+        assertThrows(IllegalArgumentException.class, () -> service.getTestRunAttachment("testProjectId", "testTestRunId", "nonExistingAttachmentId", null));
     }
 }
