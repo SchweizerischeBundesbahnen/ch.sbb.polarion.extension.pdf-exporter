@@ -220,14 +220,8 @@ const ExportPdf = {
 
         ExportCommon.asyncConvertPdf(request, successResponse => {
             this.actionInProgress(false);
-            const objectURL = (window.URL ? window.URL : window.webkitURL).createObjectURL(successResponse);
-            const anchorElement = document.createElement("a");
-            anchorElement.href = objectURL;
-            anchorElement.download = fileName;
-            anchorElement.target = "_blank";
-            anchorElement.click();
-            anchorElement.remove();
-            setTimeout(() => URL.revokeObjectURL(objectURL), 100);
+
+            ExportCommon.downloadBlob(successResponse, fileName);
         }, errorResponse => {
             this.actionInProgress(false);
             errorResponse.text().then(errorJson => {

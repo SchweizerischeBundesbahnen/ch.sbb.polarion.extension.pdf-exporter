@@ -26,6 +26,11 @@ public class PlaceholderProcessor {
         this.documentDataHelper = new DocumentDataHelper(pdfExporterPolarionService);
     }
 
+    public PlaceholderProcessor(PdfExporterPolarionService pdfExporterPolarionService) {
+        this.pdfExporterPolarionService = pdfExporterPolarionService;
+        this.documentDataHelper = new DocumentDataHelper(pdfExporterPolarionService);
+    }
+
     public PlaceholderProcessor(PdfExporterPolarionService pdfExporterPolarionService, DocumentDataHelper documentDataHelper) {
         this.pdfExporterPolarionService = pdfExporterPolarionService;
         this.documentDataHelper = documentDataHelper;

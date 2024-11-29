@@ -183,6 +183,7 @@ function saveStylePackage() {
             'language': SbbCommon.getCheckboxValueById('localization') ? Languages.languageSelect.getSelectedValue() : null,
             'linkedWorkitemRoles': SbbCommon.getCheckboxValueById('selected-roles') ? LinkRoles.rolesSelect.getSelectedValue() : null,
             'exposePageWidthValidation': SbbCommon.getCheckboxValueById('expose-page-width-validation'),
+            'attachmentsFilter': SbbCommon.getCheckboxValueById('download-attachments') ? SbbCommon.getValueById('attachments-filter') : null,
         }),
         onOk: () => {
             SbbCommon.showSaveSuccessAlert();
@@ -257,8 +258,11 @@ function setStylePackage(content) {
 
     SbbCommon.setCheckboxValueById('selected-roles', !!stylePackage.linkedWorkitemRoles);
     document.getElementById('selected-roles').dispatchEvent(new Event('change'));
-
     LinkRoles.rolesSelect.selectMultipleValues(stylePackage.linkedWorkitemRoles);
+
+    SbbCommon.setCheckboxValueById('download-attachments', !!stylePackage.attachmentsFilter);
+    document.getElementById('download-attachments').dispatchEvent(new Event('change'));
+    SbbCommon.setValueById('attachments-filter', stylePackage.attachmentsFilter || "");
 
     SbbCommon.setCheckboxValueById('expose-page-width-validation', stylePackage.exposePageWidthValidation);
 
@@ -280,4 +284,3 @@ Promise.all([
 ]).then(() => {
     Configurations.loadConfigurationNames();
 });
-

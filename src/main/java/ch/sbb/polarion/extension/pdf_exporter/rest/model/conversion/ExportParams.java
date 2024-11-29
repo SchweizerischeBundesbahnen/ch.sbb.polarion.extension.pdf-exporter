@@ -94,6 +94,9 @@ public class ExportParams {
     @Schema(description = "Map of attributes extracted from the URL")
     private Map<String, String> urlQueryParameters;
 
+    @Schema(description = "Filter for attachments to be downloaded, example: '*.pdf'")
+    private String attachmentsFilter;
+
     @Schema(description = "Internal content")
     private String internalContent;
 
