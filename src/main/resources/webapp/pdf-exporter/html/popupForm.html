@@ -92,7 +92,7 @@
 
         <div class="flex-container">
             <div class="flex-column">
-                <div class='property-wrapper hidden visible-for-live-doc visible-for-test-run'>
+                <div class='property-wrapper hidden visible-for-LIVE_DOC visible-for-TEST_RUN'>
                     <label for='popup-fit-to-page'>
                         <input id='popup-fit-to-page' type='checkbox'/>
                         Fit images and tables to page
@@ -104,7 +104,7 @@
                         Follow HTML presentational hints
                     </label>
                 </div>
-                <div class='property-wrapper hidden visible-for-live-doc'>
+                <div class='property-wrapper hidden visible-for-LIVE_DOC'>
                     <label for='popup-enable-comments-rendering'>
                         <input id='popup-enable-comments-rendering' type='checkbox'/>
                         Comments rendering
@@ -118,13 +118,13 @@
                 </div>
             </div>
             <div class="flex-column">
-                <div class='property-wrapper hidden visible-for-live-doc'>
+                <div class='property-wrapper hidden visible-for-LIVE_DOC'>
                     <label for='popup-cut-empty-chapters'>
                         <input id='popup-cut-empty-chapters' type='checkbox'/>
                         Cut empty chapters (any level)
                     </label>
                 </div>
-                <div class='property-wrapper hidden visible-for-live-doc'>
+                <div class='property-wrapper hidden visible-for-LIVE_DOC'>
                     <label for='popup-cut-empty-wi-attributes'>
                         <input id='popup-cut-empty-wi-attributes' type='checkbox'/>
                         Cut empty Workitem attributes
@@ -136,13 +136,13 @@
                         Cut local Polarion URLs
                     </label>
                 </div>
-                <div class='property-wrapper hidden visible-for-live-doc'>
+                <div class='property-wrapper hidden visible-for-LIVE_DOC'>
                     <label for='popup-mark-referenced-workitems'>
                         <input id='popup-mark-referenced-workitems' type='checkbox'/>
                         Mark referenced Workitems
                     </label>
                 </div>
-                <div class='property-wrapper hidden visible-for-test-run visible-for-mixed'>
+                <div class='property-wrapper hidden visible-for-TEST_RUN'>
                     <label for='popup-download-attachments'>
                         <input id='popup-download-attachments' onchange='document.getElementById("popup-attachments-filter").style.visibility = this.checked ? "visible" : "hidden"' type='checkbox'/>
                         Download attachments
@@ -154,14 +154,14 @@
 
         <div class="flex-container">
             <div class="flex-column">
-                <div class='property-wrapper hidden visible-for-live-doc'>
+                <div class='property-wrapper hidden visible-for-LIVE_DOC'>
                     <label for='popup-custom-list-styles'>
                         <input id='popup-custom-list-styles' onchange='document.getElementById("popup-numbered-list-styles").style.visibility = this.checked ? "visible" : "hidden"' type='checkbox'/>
                         Custom styles of numbered lists
                     </label>
                     <input id='popup-numbered-list-styles' placeholder='eg. 1ai' style='width: 84px' type='text'/>
                 </div>
-                <div class='property-wrapper hidden visible-for-live-doc'>
+                <div class='property-wrapper hidden visible-for-LIVE_DOC'>
                     <label for='popup-specific-chapters'>
                         <input id='popup-specific-chapters' onchange='document.getElementById("popup-chapters").style.visibility = this.checked ? "visible" : "hidden"' type='checkbox'/>
                         Specific higher level chapters
@@ -170,7 +170,7 @@
                 </div>
             </div>
             <div class="flex-column">
-                <div class='property-wrapper hidden visible-for-live-doc'>
+                <div class='property-wrapper hidden visible-for-LIVE_DOC'>
                     <label for='popup-localization'>
                         <input id='popup-localization' onchange='document.getElementById("popup-language").style.visibility = this.checked ? "visible" : "hidden"' type='checkbox'/>
                         Localize enums
@@ -181,7 +181,7 @@
                         <option value='it'>Italiano</option>
                     </select>
                 </div>
-                <div class='property-wrapper hidden visible-for-live-doc'>
+                <div class='property-wrapper hidden visible-for-LIVE_DOC'>
                     <label for='popup-selected-roles' style="align-self: flex-start;">
                         <input id='popup-selected-roles' onchange='document.getElementById("popup-roles-selector").style.display = this.checked ? "inline-block" : "none"' type='checkbox'/>
                         Specific Workitem roles
@@ -192,7 +192,7 @@
         </div>
     </div>
 
-    <div class='property-wrapper not-visible-for-mixed'>
+    <div class='property-wrapper not-visible-for-BULK'>
         <label for='popup-filename'>File name:</label>
         <input id='popup-filename' type='text' style="width: 594px" />
     </div>

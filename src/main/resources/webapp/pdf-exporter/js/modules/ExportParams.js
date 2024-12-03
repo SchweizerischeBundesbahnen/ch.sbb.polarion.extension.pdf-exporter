@@ -4,7 +4,6 @@ export default class ExportParams {
         LIVE_REPORT: 'LIVE_REPORT',
         TEST_RUN: 'TEST_RUN',
         WIKI_PAGE: 'WIKI_PAGE',
-        MIXED: 'MIXED',
     };
 
     static Orientation = {
@@ -24,6 +23,11 @@ export default class ExportParams {
         LEGAL: 'LEGAL',
         LEDGER: 'LEDGER',
     };
+
+    static ExportType = {
+        SINGLE: 'SINGLE',
+        BULK: 'BULK',
+    }
 
     constructor(builder) {
         this.projectId = builder.projectId;
