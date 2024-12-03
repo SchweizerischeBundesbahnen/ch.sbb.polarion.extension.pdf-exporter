@@ -33,11 +33,13 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 public class PdfExporterPolarionService extends PolarionService {
 
@@ -173,15 +175,18 @@ public class PdfExporterPolarionService extends PolarionService {
 
     public @NotNull List<CollectionItem> getCollectionItems(@NotNull String projectId, @NotNull String collectionId, @NotNull ReadOnlyTransaction transaction) {
         List<CollectionItem> collectionItemList = new ArrayList<>();
-            IBaselineCollection collection = new BaselineCollectionReference(projectId, collectionId).get(transaction).getOldApi();
-            collection.getElements()
-                    .stream()
-                    .map(IBaselineCollectionElement::getObjectWithRevision)
-                    .filter(IModule.class::isInstance)
-                    .map(IModule.class::cast)
-                    .forEach(module -> {
-                        collectionItemList.add(new CollectionItem(module.getModuleNameWithSpace().replaceFirst("\\s*/\\s*", "/"), module.getLastRevision()));
-                    });
+        IBaselineCollection collection = new BaselineCollectionReference(projectId, collectionId).get(transaction).getOldApi();
+        collection.getElements()
+                .stream()
+                .map(IBaselineCollectionElement::getObjectWithRevision)
+                .filter(IModule.class::isInstance)
+                .map(IModule.class::cast)
+                .forEach(module -> {
+                    String moduleNameWithSpace = Arrays.stream(module.getModuleNameWithSpace().split("/"))
+                            .map(String::trim)
+                            .collect(Collectors.joining("/"));
+                    collectionItemList.add(new CollectionItem(moduleNameWithSpace, module.getLastRevision()));
+                });
         return collectionItemList;
     }
 }

@@ -249,10 +249,10 @@ class PdfExporterPolarionServiceTest {
         IModule mockModule1 = mock(IModule.class);
         IModule mockModule2 = mock(IModule.class);
 
-        when(mockModule1.getModuleNameWithSpace()).thenReturn("space1/Module1");
+        when(mockModule1.getModuleNameWithSpace()).thenReturn("space1 / Module1 test");
         when(mockModule1.getLastRevision()).thenReturn("1");
 
-        when(mockModule2.getModuleNameWithSpace()).thenReturn("space2/Module2");
+        when(mockModule2.getModuleNameWithSpace()).thenReturn("space2 / Module2 test");
         when(mockModule2.getLastRevision()).thenReturn("2");
 
         IBaselineCollectionElement mockElement1 = mock(IBaselineCollectionElement.class);
@@ -273,10 +273,10 @@ class PdfExporterPolarionServiceTest {
 
             assertNotNull(result);
             assertEquals(2, result.size());
-            assertEquals("space1/Module1", result.get(0).getModuleNameWithSpace());
+            assertEquals("space1/Module1 test", result.get(0).getModuleNameWithSpace());
             assertEquals("1", result.get(0).getRevision());
 
-            assertEquals("space2/Module2", result.get(1).getModuleNameWithSpace());
+            assertEquals("space2/Module2 test", result.get(1).getModuleNameWithSpace());
             assertEquals("2", result.get(1).getRevision());
         }
     }
