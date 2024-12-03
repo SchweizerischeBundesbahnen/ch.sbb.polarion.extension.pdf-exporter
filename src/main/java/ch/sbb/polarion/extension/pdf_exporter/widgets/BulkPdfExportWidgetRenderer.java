@@ -22,6 +22,7 @@ import com.polarion.alm.tracker.model.IModule;
 import com.polarion.alm.tracker.model.IRichPage;
 import com.polarion.alm.ui.shared.LinearGradientColor;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.VisibleForTesting;
 
 import java.util.Iterator;
 import java.util.List;
@@ -29,12 +30,14 @@ import java.util.stream.Collectors;
 
 public class BulkPdfExportWidgetRenderer extends AbstractWidgetRenderer {
     @NotNull
-    private final DataSet dataSet;
+    final DataSet dataSet;
     @NotNull
     private final IterableWithSize<ModelObject> items;
-    private final int topItems;
+    @VisibleForTesting
+    final int topItems;
     @NotNull
-    private final IterableWithSize<Field> columns;
+    @VisibleForTesting
+    final IterableWithSize<Field> columns;
     private final @NotNull PrototypeEnum itemsPrototype;
 
     public BulkPdfExportWidgetRenderer(@NotNull RichPageWidgetCommonContext context) {
@@ -46,7 +49,7 @@ public class BulkPdfExportWidgetRenderer extends AbstractWidgetRenderer {
             List<Field> fields = columnsParameter.fields().toArrayList();
             if (fields.stream().noneMatch(field -> "elements".equals(field.id()))) {
                 fields.add(new FieldImpl("elements"));
-                columnsParameter.set().fields(fields.stream().map(Field::id).collect(Collectors.toList()));
+                columnsParameter.set().fields(fields.stream().map(Field::id).toList());
             }
         }
 
@@ -65,7 +68,6 @@ public class BulkPdfExportWidgetRenderer extends AbstractWidgetRenderer {
         } else {
             this.topItems = 50;
         }
-
     }
 
     public @NotNull DocumentType getItemsType(@NotNull PrototypeEnum prototype) {
