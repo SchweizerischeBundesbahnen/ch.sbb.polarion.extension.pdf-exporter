@@ -5,11 +5,13 @@ export default class ExportContext {
     locationPath = undefined;
     revision = undefined;
     documentType = undefined;
+    exportType = undefined;
     urlQueryParameters = undefined;
     bulkExportWidget = undefined;
 
-    constructor({documentType = ExportParams.DocumentType.LIVE_DOC, polarionLocationHash = window.location.hash, bulkExportWidget}) {
+    constructor({documentType = ExportParams.DocumentType.LIVE_DOC, exportType = ExportParams.ExportType.SINGLE, polarionLocationHash = window.location.hash, bulkExportWidget}) {
         this.documentType = documentType;
+        this.exportType = exportType;
 
         const urlPathAndSearchParams = getPathAndQueryParams(polarionLocationHash);
         const normalizedPolarionLocationHash = urlPathAndSearchParams.path;
@@ -18,7 +20,7 @@ export default class ExportContext {
         const scope = getScope(normalizedPolarionLocationHash);
         this.projectId = getProjectId(scope);
 
-        if (this.documentType !== ExportParams.DocumentType.MIXED) {
+        if (this.exportType !== ExportParams.ExportType.BULK) {
             this.locationPath = getPath(normalizedPolarionLocationHash, scope);
 
             // if "testrun" or "testruns" is present return undefined
@@ -127,6 +129,10 @@ export default class ExportContext {
 
     getDocumentType() {
         return this.documentType;
+    }
+
+    getExportType() {
+        return this.exportType;
     }
 
     getUrlQueryParameters() {

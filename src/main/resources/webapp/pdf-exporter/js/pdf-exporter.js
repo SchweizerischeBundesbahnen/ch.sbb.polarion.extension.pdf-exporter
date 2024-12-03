@@ -49,29 +49,48 @@ const PdfExporter = {
 
         this.hideAlerts();
         this.loadFormData();
-        switch (this.exportContext.getDocumentType()) {
-            case ExportParams.DocumentType.LIVE_DOC:
-                document.querySelectorAll(".modal__container.pdf-exporter .property-wrapper.visible-for-live-doc")
-                    .forEach(propertyBlock => propertyBlock.style.display = "flex");
-                break;
-            case ExportParams.DocumentType.TEST_RUN:
-                document.querySelectorAll(".modal__container.pdf-exporter .property-wrapper.visible-for-test-run")
-                    .forEach(propertyBlock => propertyBlock.style.display = "flex");
-                break;
-            case ExportParams.DocumentType.MIXED:
-                document.querySelectorAll(".modal__container.pdf-exporter .property-wrapper.not-visible-for-mixed")
-                    .forEach(propertyBlock => propertyBlock.style.display = "none");
-                document.querySelectorAll(".modal__container.pdf-exporter .property-wrapper.visible-for-mixed")
-                    .forEach(propertyBlock => propertyBlock.style.display = "flex");
-                break;
+
+        const Action = {
+            SHOW: "flex",
+            HIDE: "none",
+            getOpposite(value) {
+                return value === this.HIDE ? this.SHOW : this.HIDE;
+            }
         }
+        function toggleAllOptionalPropertyBlocks(action) {
+            const types = [
+                ExportParams.DocumentType.LIVE_DOC,
+                ExportParams.DocumentType.LIVE_REPORT,
+                ExportParams.DocumentType.TEST_RUN,
+                ExportParams.DocumentType.WIKI_PAGE,
+                ExportParams.ExportType.SINGLE,
+                ExportParams.ExportType.BULK,
+            ];
+            types.forEach(documentType => {
+                toggleOptionalPropertyBlocks(documentType, action);
+            });
+        }
+        function toggleOptionalPropertyBlocks(documentType, action) {
+            document.querySelectorAll(`.modal__container.pdf-exporter .property-wrapper.visible-for-${documentType}`)
+                .forEach(propertyBlock => propertyBlock.style.display = action);
+            document.querySelectorAll(`.modal__container.pdf-exporter .property-wrapper.not-visible-for-${documentType}`)
+                .forEach(propertyBlock => propertyBlock.style.display = Action.getOpposite(action));
+        }
+
+        toggleAllOptionalPropertyBlocks(Action.HIDE);
+        toggleOptionalPropertyBlocks(this.exportContext.getDocumentType(), Action.SHOW);
+        toggleOptionalPropertyBlocks(this.exportContext.getExportType(), Action.SHOW);
+
         MicroModal.show(POPUP_ID);
     },
 
     openPopupForBulkExport: function (bulkExportWidget) {
+        const documentType = bulkExportWidget?.querySelector(".polarion-PdfExporter-BulkExportWidget .header")?.getAttribute("document-type");
+
         PdfExporter.openPopup({ exportContext: new ExportContext(
             {
-                documentType: ExportParams.DocumentType.MIXED,
+                documentType: documentType,
+                exportType: ExportParams.ExportType.BULK,
                 bulkExportWidget: bulkExportWidget
             })
         });
@@ -150,7 +169,7 @@ const PdfExporter = {
     loadLinkRoles: function (exportContext) {
         if (exportContext.getDocumentType() === ExportParams.DocumentType.LIVE_REPORT
             || exportContext.getDocumentType() === ExportParams.DocumentType.TEST_RUN
-            || exportContext.getDocumentType() === ExportParams.DocumentType.MIXED) {
+            || exportContext.getExportType() === ExportParams.ExportType.BULK) {
             return Promise.resolve(); // Skip loading link roles for reports, test runs and bulk export
         }
 
@@ -174,7 +193,7 @@ const PdfExporter = {
     },
 
     loadFileName: function (exportContext) {
-        if (exportContext.getDocumentType() === ExportParams.DocumentType.MIXED) {
+        if (exportContext.getExportType() === ExportParams.ExportType.BULK) {
             return Promise.resolve(); // Skip loading file name for bulk export
         }
 
@@ -209,7 +228,7 @@ const PdfExporter = {
     loadDocumentLanguage: function (exportContext) {
         if (exportContext.documentType === ExportParams.DocumentType.LIVE_REPORT
             || exportContext.documentType === ExportParams.DocumentType.TEST_RUN
-            || exportContext.getDocumentType() === ExportParams.DocumentType.MIXED) {
+            || exportContext.getExportType() === ExportParams.ExportType.BULK) {
             return Promise.resolve(); // Skip loading language for reports, test runs and bulk export
         }
 
@@ -230,7 +249,7 @@ const PdfExporter = {
 
     loadStylePackages: function (exportContext) {
         let stylePackagesUrl;
-        if (exportContext.getDocumentType() === ExportParams.DocumentType.MIXED) {
+        if (exportContext.getExportType() === ExportParams.ExportType.BULK) {
             stylePackagesUrl = `/polarion/pdf-exporter/rest/internal/settings/style-package/names?scope=${exportContext.getScope()}`;
         } else {
             stylePackagesUrl = `/polarion/pdf-exporter/rest/internal/settings/style-package/suitable-names`
@@ -339,10 +358,10 @@ const PdfExporter = {
                 });
             }
         }
-        ExportCommon.displayIf("popup-roles-selector", this.exportContext.getDocumentType() !== ExportParams.DocumentType.MIXED && stylePackage.linkedWorkitemRoles, "inline-block");
+        ExportCommon.displayIf("popup-roles-selector", this.exportContext.getExportType() !== ExportParams.ExportType.BULK && stylePackage.linkedWorkitemRoles, "inline-block");
 
         ExportCommon.displayIf("popup-style-package-content", stylePackage.exposeSettings);
-        ExportCommon.displayIf("popup-page-width-validation", this.exportContext.getDocumentType() !== ExportParams.DocumentType.MIXED && stylePackage.exposePageWidthValidation);
+        ExportCommon.displayIf("popup-page-width-validation", this.exportContext.getExportType() !== ExportParams.ExportType.BULK && stylePackage.exposePageWidthValidation);
 
         ExportCommon.setCheckbox("popup-download-attachments", stylePackage.attachmentsFilter);
         ExportCommon.setValue("popup-attachments-filter", stylePackage.attachmentsFilter || "");
@@ -438,7 +457,7 @@ const PdfExporter = {
             return;
         }
 
-        if (this.exportContext.getBulkExportWidget() && this.exportContext.getDocumentType() === ExportParams.DocumentType.MIXED) {
+        if (this.exportContext.getBulkExportWidget() && this.exportContext.getExportType() === ExportParams.ExportType.BULK) {
             this.closePopup();
             BulkPdfExporter.openPopup(this.exportContext.getBulkExportWidget(), exportParams);
             return;
@@ -526,7 +545,6 @@ const PdfExporter = {
     buildExportParams: function (selectedChapters, numberedListStyles, selectedRoles, fileName, attachmentsFilter) {
         const live_doc = this.exportContext.getDocumentType() === ExportParams.DocumentType.LIVE_DOC;
         const test_run = this.exportContext.getDocumentType() === ExportParams.DocumentType.TEST_RUN;
-        const mixed = this.exportContext.getDocumentType() === ExportParams.DocumentType.MIXED;
         return new ExportParams.Builder(this.exportContext.getDocumentType())
             .setProjectId(this.exportContext.getProjectId())
             .setLocationPath(this.exportContext.getLocationPath())
@@ -553,7 +571,7 @@ const PdfExporter = {
             .setLinkedWorkitemRoles(selectedRoles)
             .setFileName(fileName)
             .setUrlQueryParameters(this.exportContext.getUrlQueryParameters())
-            .setAttachmentsFilter((test_run || mixed) && attachmentsFilter ? attachmentsFilter : null)
+            .setAttachmentsFilter(test_run && attachmentsFilter ? attachmentsFilter : null)
             .build();
     },
 
