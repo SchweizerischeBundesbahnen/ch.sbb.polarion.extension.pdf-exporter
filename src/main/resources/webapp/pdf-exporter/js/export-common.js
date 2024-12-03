@@ -113,54 +113,6 @@ const ExportCommon = {
         setTimeout(() => URL.revokeObjectURL(objectURL), 100);
     },
 
-    downloadTestRunAttachments: function (projectId, testRunId, revision = null, filter = null) {
-        let url = `/polarion/pdf-exporter/rest/internal/projects/${projectId}/testruns/${testRunId}/attachments?`;
-        if (revision) url += `&revision=${revision}`;
-        if (filter) url += `&filter=${filter}`;
-
-        SbbCommon.callAsync({
-            method: "GET",
-            url: url,
-            responseType: "json",
-            onOk: (responseText, request) => {
-                for (const attachment of request.response) {
-                    this.downloadAttachmentContent(projectId, testRunId, attachment.id, revision);
-                }
-            },
-            onError: (status, errorMessage, request) => {
-                console.error('Error fetching attachments:', request.response);
-            }
-        });
-    },
-
-    downloadAttachmentContent: function (projectId, testRunId, attachmentId, revision = null) {
-        let url = `/polarion/pdf-exporter/rest/internal/projects/${projectId}/testruns/${testRunId}/attachments/${attachmentId}/content?`;
-        if (revision) url += `&revision=${revision}`;
-
-        SbbCommon.callAsync({
-            method: "GET",
-            url: url,
-            responseType: "blob",
-            onOk: (responseText, request) => {
-                this.downloadBlob(request.response, request.getResponseHeader("Filename"));
-            },
-            onError: (status, errorMessage, request) => {
-                console.error(`Error downloading attachment ${attachmentId}:`, request.response);
-            }
-        });
-    },
-
-    downloadBlob: function(blob, fileName) {
-        const objectURL = (window.URL ? window.URL : window.webkitURL).createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = objectURL;
-        link.download = fileName
-        link.target = "_blank";
-        link.click();
-        link.remove();
-        setTimeout(() => URL.revokeObjectURL(objectURL), 100);
-    },
-
     downloadCollectionItems: function (exportParams, collectionId, onComplete, onError) {
         let url = `/polarion/pdf-exporter/rest/internal/projects/${exportParams.projectId}/collections/${collectionId}`;
         SbbCommon.callAsync({
