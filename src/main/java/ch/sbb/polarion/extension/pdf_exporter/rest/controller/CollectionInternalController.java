@@ -3,6 +3,7 @@ package ch.sbb.polarion.extension.pdf_exporter.rest.controller;
 
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.collections.CollectionItem;
 import ch.sbb.polarion.extension.pdf_exporter.service.PdfExporterPolarionService;
+import com.polarion.alm.shared.api.transaction.TransactionalExecutor;
 import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -41,6 +42,6 @@ public class CollectionInternalController {
     )
     public List<CollectionItem> getCollectionItems(@Parameter(description = "Project ID", required = true) @PathParam("projectId") String projectId,
                                                    @Parameter(description = "Collection ID", required = true) @PathParam("collectionId") String collectionId) {
-        return pdfExporterPolarionService.getCollectionItems(projectId, collectionId);
+        return TransactionalExecutor.executeSafelyInReadOnlyTransaction(transaction -> pdfExporterPolarionService.getCollectionItems(projectId, collectionId, transaction));
     }
 }

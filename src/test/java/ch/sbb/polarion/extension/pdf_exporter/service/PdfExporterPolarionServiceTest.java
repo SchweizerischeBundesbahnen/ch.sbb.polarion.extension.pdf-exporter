@@ -6,21 +6,30 @@ import ch.sbb.polarion.extension.generic.settings.SettingName;
 import ch.sbb.polarion.extension.generic.util.PObjectListStub;
 import ch.sbb.polarion.extension.generic.util.ScopeUtils;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.attachments.TestRunAttachment;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.collections.CollectionItem;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.stylepackage.StylePackageModel;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.stylepackage.StylePackageWeightInfo;
 import ch.sbb.polarion.extension.pdf_exporter.settings.StylePackageSettings;
 import com.polarion.alm.projects.IProjectService;
+import com.polarion.alm.shared.api.model.baselinecollection.BaselineCollection;
+import com.polarion.alm.shared.api.model.baselinecollection.BaselineCollectionReference;
+import com.polarion.alm.shared.api.transaction.ReadOnlyTransaction;
 import com.polarion.alm.tracker.ITestManagementService;
 import com.polarion.alm.tracker.ITrackerService;
+import com.polarion.alm.tracker.model.IModule;
 import com.polarion.alm.tracker.model.ITestRun;
 import com.polarion.alm.tracker.model.ITestRunAttachment;
 import com.polarion.alm.tracker.model.ITrackerProject;
+import com.polarion.alm.tracker.model.baselinecollection.IBaselineCollection;
+import com.polarion.alm.tracker.model.baselinecollection.IBaselineCollectionElement;
 import com.polarion.platform.IPlatformService;
 import com.polarion.platform.security.ISecurityService;
 import com.polarion.platform.service.repository.IRepositoryService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.MockedConstruction;
 import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -225,5 +234,50 @@ class PdfExporterPolarionServiceTest {
         assertNotNull(testRunAttachmentWithRevision);
 
         assertThrows(IllegalArgumentException.class, () -> service.getTestRunAttachment("testProjectId", "testTestRunId", "nonExistingAttachmentId", null));
+    }
+
+    @Test
+    void testGetCollectionItems() {
+        // Mock dependencies
+        String projectId = "testProjectId";
+        String collectionId = "testCollectionId";
+
+        IBaselineCollection mockCollection = mock(IBaselineCollection.class);
+        BaselineCollectionReference mockReference = mock(BaselineCollectionReference.class);
+
+        // Mock collection elements
+        IModule mockModule1 = mock(IModule.class);
+        IModule mockModule2 = mock(IModule.class);
+
+        when(mockModule1.getModuleNameWithSpace()).thenReturn("space1/Module1");
+        when(mockModule1.getLastRevision()).thenReturn("1");
+
+        when(mockModule2.getModuleNameWithSpace()).thenReturn("space2/Module2");
+        when(mockModule2.getLastRevision()).thenReturn("2");
+
+        IBaselineCollectionElement mockElement1 = mock(IBaselineCollectionElement.class);
+        IBaselineCollectionElement mockElement2 = mock(IBaselineCollectionElement.class);
+
+        when(mockElement1.getObjectWithRevision()).thenReturn(mockModule1);
+        when(mockElement2.getObjectWithRevision()).thenReturn(mockModule2);
+
+        BaselineCollection baselineCollection = mock(BaselineCollection.class);
+        when(mockCollection.getElements()).thenReturn(List.of(mockElement1, mockElement2));
+        when(mockReference.get(Mockito.any())).thenReturn(baselineCollection);
+        when(baselineCollection.getOldApi()).thenReturn(mockCollection);
+
+        try (MockedConstruction<BaselineCollectionReference> mockedStaticReference = mockConstruction(BaselineCollectionReference.class, (mock, context) -> {
+            when(mock.get(Mockito.any())).thenReturn(baselineCollection);
+        })) {
+            List<CollectionItem> result = service.getCollectionItems(projectId, collectionId, mock(ReadOnlyTransaction.class));
+
+            assertNotNull(result);
+            assertEquals(2, result.size());
+            assertEquals("space1/Module1", result.get(0).getModuleNameWithSpace());
+            assertEquals("1", result.get(0).getRevision());
+
+            assertEquals("space2/Module2", result.get(1).getModuleNameWithSpace());
+            assertEquals("2", result.get(1).getRevision());
+        }
     }
 }

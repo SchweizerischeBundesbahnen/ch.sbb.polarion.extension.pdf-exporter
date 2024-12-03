@@ -13,7 +13,7 @@ import ch.sbb.polarion.extension.pdf_exporter.settings.StylePackageSettings;
 import ch.sbb.polarion.extension.pdf_exporter.util.WildcardUtils;
 import com.polarion.alm.projects.IProjectService;
 import com.polarion.alm.shared.api.model.baselinecollection.BaselineCollectionReference;
-import com.polarion.alm.shared.api.transaction.TransactionalExecutor;
+import com.polarion.alm.shared.api.transaction.ReadOnlyTransaction;
 import com.polarion.alm.tracker.ITestManagementService;
 import com.polarion.alm.tracker.ITrackerService;
 import com.polarion.alm.tracker.model.IModule;
@@ -171,11 +171,9 @@ public class PdfExporterPolarionService extends PolarionService {
         return testRunAttachment;
     }
 
-    public @NotNull List<CollectionItem> getCollectionItems(@NotNull String projectId, @NotNull String collectionId) {
+    public @NotNull List<CollectionItem> getCollectionItems(@NotNull String projectId, @NotNull String collectionId, @NotNull ReadOnlyTransaction transaction) {
         List<CollectionItem> collectionItemList = new ArrayList<>();
-        TransactionalExecutor.executeSafelyInReadOnlyTransaction(transaction -> {
             IBaselineCollection collection = new BaselineCollectionReference(projectId, collectionId).get(transaction).getOldApi();
-
             collection.getElements()
                     .stream()
                     .map(IBaselineCollectionElement::getObjectWithRevision)
@@ -184,9 +182,6 @@ public class PdfExporterPolarionService extends PolarionService {
                     .forEach(module -> {
                         collectionItemList.add(new CollectionItem(module.getModuleNameWithSpace().replaceFirst("\\s*/\\s*", "/"), module.getLastRevision()));
                     });
-
-            return null;
-        });
         return collectionItemList;
     }
 }
