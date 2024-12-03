@@ -56,21 +56,21 @@ public class BulkPdfExportWidgetRenderer extends AbstractWidgetRenderer {
 
     }
 
-    private @NotNull DocumentType getItemsType(@NotNull PrototypeEnum prototype) {
+    public @NotNull DocumentType getItemsType(@NotNull PrototypeEnum prototype) {
         return switch (prototype) {
             case Document -> DocumentType.LIVE_DOC;
             case RichPage -> DocumentType.LIVE_REPORT;
             case TestRun -> DocumentType.TEST_RUN;
-            default -> throw new IllegalStateException("Unexpected value: " + prototype);
+            default -> throw new IllegalArgumentException("Unexpected value: " + prototype);
         };
     }
 
-    private @NotNull String getWidgetItemsType(@NotNull PrototypeEnum prototype) {
+    public @NotNull String getWidgetItemsType(@NotNull PrototypeEnum prototype) {
         return switch (prototype) {
             case Document -> "Documents";
             case RichPage -> "Pages";
             case TestRun -> "Test Runs";
-            default -> throw new IllegalStateException("Unexpected value: " + prototype);
+            default -> throw new IllegalArgumentException("Unexpected value: " + prototype);
         };
     }
 
