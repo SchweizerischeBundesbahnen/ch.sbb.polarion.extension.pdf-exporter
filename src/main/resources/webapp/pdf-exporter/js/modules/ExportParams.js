@@ -55,7 +55,6 @@ export default class ExportParams {
         this.urlQueryParameters = builder.urlQueryParameters;
         this.attachmentsFilter = builder.attachmentsFilter;
         this.internalContent = builder.internalContent;
-        this.collectionId = builder.collectionId;
     }
 
     toJSON() {
@@ -105,7 +104,6 @@ export default class ExportParams {
                 this.urlQueryParameters = undefined;
                 this.attachmentsFilter = undefined;
                 this.internalContent = undefined;
-                this.collectionId = undefined;
             }
 
             setProjectId(projectId) {
@@ -235,11 +233,6 @@ export default class ExportParams {
 
             setAttachmentsFilter(attachmentsFilter) {
                 this.attachmentsFilter = attachmentsFilter;
-                return this;
-            }
-
-            setCollectionId(collectionId) {
-                this.collectionId = collectionId;
                 return this;
             }
 

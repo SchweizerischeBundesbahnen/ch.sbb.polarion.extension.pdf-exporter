@@ -3,6 +3,7 @@ package ch.sbb.polarion.extension.pdf_exporter.widgets;
 import com.polarion.alm.server.api.model.rp.widget.AbstractWidgetRenderer;
 import com.polarion.alm.server.api.model.rp.widget.BottomQueryLinksBuilder;
 import com.polarion.alm.shared.api.model.ModelObject;
+import com.polarion.alm.shared.api.model.PrototypeEnum;
 import com.polarion.alm.shared.api.model.rp.parameter.CompositeParameter;
 import com.polarion.alm.shared.api.model.rp.parameter.DataSet;
 import com.polarion.alm.shared.api.model.rp.parameter.DataSetParameter;
@@ -10,6 +11,7 @@ import com.polarion.alm.shared.api.model.rp.parameter.Field;
 import com.polarion.alm.shared.api.model.rp.parameter.FieldsParameter;
 import com.polarion.alm.shared.api.model.rp.parameter.IntegerParameter;
 import com.polarion.alm.shared.api.model.rp.parameter.SortingParameter;
+import com.polarion.alm.shared.api.model.rp.parameter.impl.dataset.FieldImpl;
 import com.polarion.alm.shared.api.model.rp.widget.RichPageWidgetCommonContext;
 import com.polarion.alm.shared.api.utils.collections.IterableWithSize;
 import com.polarion.alm.shared.api.utils.html.HtmlContentBuilder;
@@ -20,7 +22,12 @@ import com.polarion.alm.tracker.model.IRichPage;
 import com.polarion.alm.ui.shared.LinearGradientColor;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import static com.polarion.alm.shared.api.model.baselinecollection.BaselineCollectionFieldsEnum.elements;
 
 public class BulkPdfExportWidgetRenderer extends AbstractWidgetRenderer {
     @NotNull
@@ -36,16 +43,35 @@ public class BulkPdfExportWidgetRenderer extends AbstractWidgetRenderer {
         super(context);
         DataSetParameter dataSetParameter = context.parameter("dataSet");
         FieldsParameter columnsParameter = dataSetParameter.get("columns");
+
+        if (PrototypeEnum.BaselineCollection.equals(dataSetParameter.prototype())) {
+            List<Field> fields = columnsParameter.fields().toArrayList();
+            if (fields.stream().noneMatch(field -> "elements".equals(field.id()))) {
+                fields.add(new FieldImpl("elements"));
+                columnsParameter.set().fields(fields.stream().map(Field::id).collect(Collectors.toList()));
+            }
+        }
+
         SortingParameter sortByParameter = dataSetParameter.get("sortBy");
         String sort = sortByParameter.asLuceneSortString();
         this.dataSet = dataSetParameter.getFor().sort(sort).revision(null);
         this.items = this.dataSet.items();
         switch (dataSetParameter.prototype()) {
-            case Document: dataType = "Documents"; break;
-            case RichPage: dataType = "Pages"; break;
-            case TestRun: dataType = "Test Runs"; break;
-            case "BaselineCollection": dataType = "Collections"; break;
-            default: dataType = "Unknown"; break;
+            case Document:
+                dataType = "Documents";
+                break;
+            case RichPage:
+                dataType = "Pages";
+                break;
+            case TestRun:
+                dataType = "Test Runs";
+                break;
+            case BaselineCollection:
+                dataType = "Collections";
+                break;
+            default:
+                dataType = "Unknown";
+                break;
         }
         this.columns = columnsParameter.fields();
 
@@ -148,6 +174,7 @@ public class BulkPdfExportWidgetRenderer extends AbstractWidgetRenderer {
                     .byName("data-type", item.getOldApi().getPrototype().getName())
                     .byName("data-space", getSpace(item))
                     .byName("data-id", getValue(item, "id"))
+                    .byName("data-name", getValue(item, "name"))
                     .className("export-item");
 
             for (Field column : this.columns) {

@@ -113,4 +113,57 @@ const ExportCommon = {
         setTimeout(() => URL.revokeObjectURL(objectURL), 100);
     },
 
+    downloadCollectionItems: function (exportParams, collectionId, onComplete, onError) {
+        let url = `/polarion/pdf-exporter/rest/internal/projects/${exportParams.projectId}/collections/${collectionId}`;
+        SbbCommon.callAsync({
+            method: "GET",
+            url: url,
+            responseType: "json",
+            onOk: (responseText, request) => {
+                const collectionItems = request.response;
+
+                if (!collectionItems || collectionItems.length === 0) {
+                    console.warn("No items found in the collection.");
+                    onComplete && onComplete();
+                    return;
+                }
+
+                let completedCount = 0;
+                let hasErrors = false;
+
+                const handleItem = (item) => {
+                    exportParams["locationPath"] = item.moduleNameWithSpace;
+                    exportParams["revision"] = item.revision;
+                    exportParams["documentType"] = ExportParams.DocumentType.LIVE_DOC;
+
+                    this.asyncConvertPdf(
+                        exportParams.toJSON(),
+                        (responseBody, fileName) => {
+                            const downloadFileName = fileName || "downloaded_document.pdf";
+                            this.downloadBlob(responseBody, downloadFileName);
+
+                            completedCount++;
+                            if (completedCount === collectionItems.length && !hasErrors) {
+                                onComplete && onComplete();
+                            }
+                        },
+                        (errorResponse) => {
+                            console.error("Error converting item:", errorResponse);
+                            hasErrors = true;
+                            completedCount++;
+                            if (completedCount === collectionItems.length) {
+                                onError && onError(errorResponse);
+                            }
+                        }
+                    );
+                };
+
+                collectionItems.forEach(handleItem);
+            },
+            onError: (status, errorMessage, request) => {
+                console.error("Error loading collection items:", request.response);
+                onError && onError(errorMessage);
+            }
+        });
+    },
 }

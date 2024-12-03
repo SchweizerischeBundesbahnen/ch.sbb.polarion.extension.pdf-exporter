@@ -100,9 +100,6 @@ public class ExportParams {
     @Schema(description = "Internal content")
     private String internalContent;
 
-    @Schema(description = "The unique identifier for the collection")
-    private String collectionId;
-
     public @NotNull DocumentType getDocumentType() {
         if (documentType == null) {
             documentType = DocumentType.LIVE_DOC;

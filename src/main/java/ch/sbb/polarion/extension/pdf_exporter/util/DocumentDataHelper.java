@@ -135,29 +135,6 @@ public class DocumentDataHelper {
         });
     }
 
-    public DocumentData<IBaselineCollection> getBaselineCollection(@NotNull ITrackerProject project, @NotNull ExportParams exportParams) {
-        return TransactionalExecutor.executeSafelyInReadOnlyTransaction(transaction -> {
-
-            String projectId = project.getId();
-            String collectionId = exportParams.getCollectionId();
-            if (projectId == null || collectionId == null) {
-                throw new IllegalArgumentException("Project id and collection id are required for export");
-            }
-
-            IBaselineCollection collection = new BaselineCollectionReference(projectId, collectionId).get(transaction).getOldApi();
-
-            return DocumentData.builder(DocumentType.BASELINE_COLLECTION, collection)
-                    .projectName(project.getName())
-                    .lastRevision(collection.getLastRevision())
-                    .baselineName(getRevisionBaseline(projectId, collection, exportParams.getRevision()))
-                    .id(collectionId)
-                    .title(collection.getName())
-                    .content(null)
-                    .build();
-        });
-    }
-
-
     public DocumentData<IWikiPage> getWikiPage(@Nullable ITrackerProject project, @NotNull ExportParams exportParams) {
         return getWikiPage(project, exportParams, true);
     }

@@ -3,6 +3,8 @@ package ch.sbb.polarion.extension.pdf_exporter.rest;
 import ch.sbb.polarion.extension.generic.rest.GenericRestApplication;
 import ch.sbb.polarion.extension.generic.settings.NamedSettingsRegistry;
 import ch.sbb.polarion.extension.pdf_exporter.converter.PdfConverterJobsCleaner;
+import ch.sbb.polarion.extension.pdf_exporter.rest.controller.CollectionApiController;
+import ch.sbb.polarion.extension.pdf_exporter.rest.controller.CollectionInternalController;
 import ch.sbb.polarion.extension.pdf_exporter.rest.controller.ConverterApiController;
 import ch.sbb.polarion.extension.pdf_exporter.rest.controller.ConverterInternalController;
 import ch.sbb.polarion.extension.pdf_exporter.rest.controller.SettingsApiController;
@@ -68,6 +70,8 @@ public class PdfExporterRestApplication extends GenericRestApplication {
                 new SettingsInternalController(),
                 new TestRunAttachmentsApiController(),
                 new TestRunAttachmentsInternalController(),
+                new CollectionApiController(),
+                new CollectionInternalController(),
                 new UtilityResourcesApiController(),
                 new UtilityResourcesInternalController()
         );

@@ -15,10 +15,7 @@ public enum DocumentType {
     TEST_RUN,
 
     @Schema(description = "Wiki page")
-    WIKI_PAGE,
-
-    @Schema(description = "Collection")
-    BASELINE_COLLECTION;
+    WIKI_PAGE;
 
     @SuppressWarnings("unused")
     @JsonCreator

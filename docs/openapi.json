@@ -597,6 +597,47 @@
         ]
       }
     },
+    "/api/projects/{projectId}/collections/{collectionId}": {
+      "get": {
+        "operationId": "getCollectionItems",
+        "parameters": [
+          {
+            "description": "Project ID",
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Collection ID",
+            "in": "path",
+            "name": "collectionId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CollectionItem"
+                }
+              }
+            },
+            "description": "List of collection item"
+          }
+        },
+        "summary": "Get items from collection",
+        "tags": [
+          "Collections"
+        ]
+      }
+    },
     "/api/projects/{projectId}/name": {
       "get": {
         "operationId": "getProjectName",
@@ -1504,6 +1545,20 @@
         },
         "type": "object"
       },
+      "CollectionItem": {
+        "description": "Details about the collection item",
+        "properties": {
+          "moduleNameWithSpace": {
+            "description": "The name of the module with spaces",
+            "type": "string"
+          },
+          "revision": {
+            "description": "The revision of the module",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "ConfigurationStatus": {
         "properties": {
           "details": {
@@ -1616,13 +1671,6 @@
             },
             "type": "array"
           },
-          "collectionId" : {
-            "type" : "string",
-            "description" : "The unique identifier for the collection"
-          },
-          "coverPage" : {
-            "type" : "string",
-            "description" : "Cover page settings name"
           "coverPage": {
             "description": "Cover page settings name",
             "type": "string"
@@ -1644,11 +1692,6 @@
             "description": "Local Polarion URLs should be removed from the document",
             "type": "boolean"
           },
-          "documentType" : {
-            "type" : "string",
-            "description" : "Type of the document",
-            "enum" : [ "LIVE_DOC", "LIVE_REPORT", "TEST_RUN", "WIKI_PAGE", "BASELINE_COLLECTION" ],
-            "example" : "LIVE_DOC"
           "documentType": {
             "description": "Type of the document",
             "enum": [

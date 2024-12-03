@@ -185,7 +185,6 @@ public class HtmlProcessor {
                 processingHtml = adjustColumnWidthInReports(processingHtml);
                 yield removeFloatLeftFromReports(processingHtml);
             }
-            case BASELINE_COLLECTION -> null;
         };
         html = replaceResourcesAsBase64Encoded(html);
         html = MediaUtils.removeSvgUnsupportedFeatureHint(html); //note that there is one more replacement attempt before replacing images with base64 representation
@@ -197,7 +196,6 @@ public class HtmlProcessor {
                 yield new NumberedListsSanitizer().fixNumberedLists(processingHtml);
             }
             case LIVE_REPORT, TEST_RUN -> html;
-            case BASELINE_COLLECTION -> null;
         };
 
         // ----
@@ -219,7 +217,6 @@ public class HtmlProcessor {
         html = switch (exportParams.getDocumentType()) {
             case LIVE_DOC, WIKI_PAGE -> localizeEnums(html, exportParams);
             case LIVE_REPORT, TEST_RUN -> html;
-            case BASELINE_COLLECTION -> null;
         };
 
         if (exportParams.isEnableCommentsRendering()) {
