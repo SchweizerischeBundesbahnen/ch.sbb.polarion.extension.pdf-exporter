@@ -1,8 +1,10 @@
 package ch.sbb.polarion.extension.pdf_exporter.widgets;
 
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.DocumentType;
 import com.polarion.alm.server.api.model.rp.widget.AbstractWidgetRenderer;
 import com.polarion.alm.server.api.model.rp.widget.BottomQueryLinksBuilder;
 import com.polarion.alm.shared.api.model.ModelObject;
+import com.polarion.alm.shared.api.model.PrototypeEnum;
 import com.polarion.alm.shared.api.model.rp.parameter.CompositeParameter;
 import com.polarion.alm.shared.api.model.rp.parameter.DataSet;
 import com.polarion.alm.shared.api.model.rp.parameter.DataSetParameter;
@@ -30,7 +32,7 @@ public class BulkPdfExportWidgetRenderer extends AbstractWidgetRenderer {
     private final int topItems;
     @NotNull
     private final IterableWithSize<Field> columns;
-    private final String dataType;
+    private final @NotNull PrototypeEnum itemsPrototype;
 
     public BulkPdfExportWidgetRenderer(@NotNull RichPageWidgetCommonContext context) {
         super(context);
@@ -40,12 +42,7 @@ public class BulkPdfExportWidgetRenderer extends AbstractWidgetRenderer {
         String sort = sortByParameter.asLuceneSortString();
         this.dataSet = dataSetParameter.getFor().sort(sort).revision(null);
         this.items = this.dataSet.items();
-        switch (dataSetParameter.prototype()) {
-            case Document: dataType = "Documents"; break;
-            case RichPage: dataType = "Pages"; break;
-            case TestRun: dataType = "Test Runs"; break;
-            default: dataType = "Unknown"; break;
-        }
+        itemsPrototype = dataSetParameter.prototype();
         this.columns = columnsParameter.fields();
 
         CompositeParameter advanced = context.parameter("advanced");
@@ -59,6 +56,24 @@ public class BulkPdfExportWidgetRenderer extends AbstractWidgetRenderer {
 
     }
 
+    private @NotNull DocumentType getItemsType(@NotNull PrototypeEnum prototype) {
+        return switch (prototype) {
+            case Document -> DocumentType.LIVE_DOC;
+            case RichPage -> DocumentType.LIVE_REPORT;
+            case TestRun -> DocumentType.TEST_RUN;
+            default -> throw new IllegalStateException("Unexpected value: " + prototype);
+        };
+    }
+
+    private @NotNull String getWidgetItemsType(@NotNull PrototypeEnum prototype) {
+        return switch (prototype) {
+            case Document -> "Documents";
+            case RichPage -> "Pages";
+            case TestRun -> "Test Runs";
+            default -> throw new IllegalStateException("Unexpected value: " + prototype);
+        };
+    }
+
     protected void render(@NotNull HtmlFragmentBuilder builder) {
         if (this.topItems < 0) {
             builder.html(this.context.renderWarning(this.localization.getString("richpages.widget.table.invalidTopValue")));
@@ -68,14 +83,15 @@ public class BulkPdfExportWidgetRenderer extends AbstractWidgetRenderer {
 
             HtmlTagBuilder header = wrap.append().tag().div();
             header.attributes().className("header");
+            header.attributes().byName("document-type", getItemsType(itemsPrototype).name());
 
             HtmlTagBuilder title = header.append().tag().h3();
-            title.append().text(dataType);
+            title.append().text(getWidgetItemsType(itemsPrototype));
 
             renderExportButton(header);
 
             HtmlTagBuilder description = header.append().tag().div();
-            description.append().tag().p().append().text(String.format("Please select %s below which you want to export and click button above", dataType));
+            description.append().tag().p().append().text(String.format("Please select %s below which you want to export and click button above", getWidgetItemsType(itemsPrototype)));
 
             HtmlTagBuilder exportItems = wrap.append().tag().div();
             exportItems.attributes().className("export-items");
