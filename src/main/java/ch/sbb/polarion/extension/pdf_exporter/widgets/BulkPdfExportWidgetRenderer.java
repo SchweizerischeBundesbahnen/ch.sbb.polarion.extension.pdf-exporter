@@ -57,21 +57,11 @@ public class BulkPdfExportWidgetRenderer extends AbstractWidgetRenderer {
         this.dataSet = dataSetParameter.getFor().sort(sort).revision(null);
         this.items = this.dataSet.items();
         switch (dataSetParameter.prototype()) {
-            case Document:
-                dataType = "Documents";
-                break;
-            case RichPage:
-                dataType = "Pages";
-                break;
-            case TestRun:
-                dataType = "Test Runs";
-                break;
-            case BaselineCollection:
-                dataType = "Collections";
-                break;
-            default:
-                dataType = "Unknown";
-                break;
+            case Document: dataType = "Documents"; break;
+            case RichPage: dataType = "Pages"; break;
+            case TestRun: dataType = "Test Runs"; break;
+            case BaselineCollection: dataType = "Collections"; break;
+            default: dataType = "Unknown"; break;
         }
         this.columns = columnsParameter.fields();
 
