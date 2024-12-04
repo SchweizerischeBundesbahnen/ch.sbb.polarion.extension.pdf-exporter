@@ -170,6 +170,10 @@ public class BulkPdfExportWidgetRenderer extends AbstractWidgetRenderer {
                     .byName("data-id", getValue(item, "id"))
                     .className("export-item");
 
+            if (PrototypeEnum.BaselineCollection.name().equals(item.getOldApi().getPrototype().getName())) {
+                checkbox.attributes().byName("data-name", getValue(item, "name"));
+            }
+
             for (Field column : this.columns) {
                 td = builder.tag().td();
                 column.render(item.fields()).withLinks(true).htmlTo(td.append());
