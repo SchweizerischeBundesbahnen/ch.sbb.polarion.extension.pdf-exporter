@@ -50,7 +50,7 @@ public class DocumentFileNameHelper {
                     case LIVE_REPORT -> documentDataHelper.getLiveReport(project, exportParams, false);
                     case TEST_RUN -> documentDataHelper.getTestRun(project, exportParams, false);
                     case WIKI_PAGE -> documentDataHelper.getWikiPage(project, exportParams, false);
-                    default -> throw new IllegalArgumentException("Unknown document type: " + exportParams.getDocumentType());
+                    case BASELINE_COLLECTION -> throw new IllegalArgumentException("Unsupported document type: %s".formatted(exportParams.getDocumentType()));
                 };
 
         FileNameTemplateModel fileNameTemplateModel = getFileNameTemplateModel(ScopeUtils.getScopeFromProject(exportParams.getProjectId()));

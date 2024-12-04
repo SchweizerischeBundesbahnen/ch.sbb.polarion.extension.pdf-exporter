@@ -172,24 +172,28 @@ public class PdfExporterPolarionService extends PolarionService {
     }
 
     public @NotNull List<DocumentCollectionEntry> getDocumentsFromCollection(@NotNull String projectId, @NotNull String collectionId, @NotNull ReadOnlyTransaction transaction) {
-        List<DocumentCollectionEntry> documentCollectionEntryList = new ArrayList<>();
+        List<DocumentCollectionEntry> result = new ArrayList<>();
+
         IBaselineCollection collection = new BaselineCollectionReference(projectId, collectionId).get(transaction).getOldApi();
-        List<Object> elements = collection.getElements().stream().map(IBaselineCollectionElement::getObjectWithRevision).toList();
-        for (Object element : elements) {
-            if (element instanceof IBaselineCollection iBaselineCollection) {
-                documentCollectionEntryList.addAll(getDocumentsFromCollection(iBaselineCollection.getProjectId(), iBaselineCollection.getId(), transaction));
-            } else if (element instanceof IModule module) {
-                String[] locationParts = module.getModuleLocation().getLocationPath().split("/");
-                if (locationParts.length == 2) {
-                    documentCollectionEntryList.add(new DocumentCollectionEntry(
-                            module.getProjectId(),
-                            locationParts[0],
-                            locationParts[1],
-                            module.getRevision()
-                    ));
-                }
+
+        List<IModule> modules = collection.getElements().stream()
+                .map(IBaselineCollectionElement::getObjectWithRevision)
+                .filter(IModule.class::isInstance)
+                .map(IModule.class::cast)
+                .toList();
+
+        for (IModule module : modules) {
+            String[] locationParts = module.getModuleLocation().getLocationPath().split("/");
+            if (locationParts.length == 2) {
+                result.add(new DocumentCollectionEntry(
+                        module.getProjectId(),
+                        locationParts[0],
+                        locationParts[1],
+                        module.getRevision()
+                ));
             }
         }
-        return documentCollectionEntryList;
+
+        return result;
     }
 }

@@ -136,7 +136,7 @@ public class PdfConverter {
             case LIVE_REPORT -> documentDataHelper.getLiveReport(project, exportParams);
             case TEST_RUN -> documentDataHelper.getTestRun(Objects.requireNonNull(project), exportParams);
             case WIKI_PAGE -> documentDataHelper.getWikiPage(project, exportParams);
-            default -> throw new IllegalArgumentException("Unknown document type: " + exportParams.getDocumentType());
+            case BASELINE_COLLECTION -> throw new IllegalArgumentException("Unsupported document type: %s".formatted(exportParams.getDocumentType()));
         };
     }
 
