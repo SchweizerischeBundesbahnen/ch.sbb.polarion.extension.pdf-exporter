@@ -178,6 +178,7 @@ const BulkPdfExporter = {
                 resultSpan.classList.add("interrupted");
                 resultSpan.innerText = "Export interrupted by user";
             } else if (this.state === BULK_EXPORT_FINISHED) {
+                resultSpan.classList.remove("interrupted");
                 resultSpan.classList.add("finished");
                 if (this.errors) {
                     resultSpan.classList.add("with-errors");
@@ -219,7 +220,9 @@ const BulkPdfExporter = {
                         currentItem.classList.remove("in-progress");
                         currentItem.classList.add("finished");
                         BulkPdfExporter.finishedCount += 1;
-                        BulkPdfExporter.updateState(BULK_EXPORT_IN_PROGRESS);
+                        if (this.state !== BULK_EXPORT_INTERRUPTED) {
+                            BulkPdfExporter.updateState(BULK_EXPORT_IN_PROGRESS);
+                        }
                         this.startNextItemExport();
                     },
                     (error) => {
