@@ -74,6 +74,7 @@ public class BulkPdfExportWidgetRenderer extends AbstractWidgetRenderer {
             case Document -> DocumentType.LIVE_DOC;
             case RichPage -> DocumentType.LIVE_REPORT;
             case TestRun -> DocumentType.TEST_RUN;
+            case BaselineCollection -> DocumentType.BASELINE_COLLECTION;
             default -> throw new IllegalArgumentException("Unexpected value: " + prototype);
         };
     }
@@ -97,7 +98,7 @@ public class BulkPdfExportWidgetRenderer extends AbstractWidgetRenderer {
 
             HtmlTagBuilder header = wrap.append().tag().div();
             header.attributes().className("header");
-            header.attributes().byName("document-type", PrototypeEnum.BaselineCollection.equals(itemsPrototype) ? PrototypeEnum.BaselineCollection.name() : getItemsType(itemsPrototype).name());
+            header.attributes().byName("document-type", getItemsType(itemsPrototype).name());
 
             HtmlTagBuilder title = header.append().tag().h3();
             title.append().text(getWidgetItemsType(itemsPrototype));

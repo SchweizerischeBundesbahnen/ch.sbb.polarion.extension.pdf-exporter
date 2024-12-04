@@ -66,6 +66,7 @@ class BulkPdfExportWidgetRendererTest {
         assertEquals(DocumentType.LIVE_DOC, bulkPdfExportWidgetRenderer.getItemsType(PrototypeEnum.Document));
         assertEquals(DocumentType.LIVE_REPORT, bulkPdfExportWidgetRenderer.getItemsType(PrototypeEnum.RichPage));
         assertEquals(DocumentType.TEST_RUN, bulkPdfExportWidgetRenderer.getItemsType(PrototypeEnum.TestRun));
+        assertEquals(DocumentType.BASELINE_COLLECTION, bulkPdfExportWidgetRenderer.getItemsType(PrototypeEnum.BaselineCollection));
         assertThrows(IllegalArgumentException.class, () -> bulkPdfExportWidgetRenderer.getItemsType(PrototypeEnum.WorkItem));
     }
 

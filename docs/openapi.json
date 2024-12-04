@@ -1695,6 +1695,7 @@
           "documentType": {
             "description": "Type of the document",
             "enum": [
+              "BASELINE_COLLECTION",
               "LIVE_DOC",
               "LIVE_REPORT",
               "TEST_RUN",
