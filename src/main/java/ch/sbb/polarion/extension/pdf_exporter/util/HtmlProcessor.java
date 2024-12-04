@@ -187,7 +187,7 @@ public class HtmlProcessor {
                 processingHtml = adjustColumnWidthInReports(processingHtml);
                 yield removeFloatLeftFromReports(processingHtml);
             }
-            case BASELINE_COLLECTION -> throw new IllegalArgumentException("Unsupported document type: %s".formatted(exportParams.getDocumentType()));
+            case BASELINE_COLLECTION -> throw new IllegalArgumentException(UNSUPPORTED_DOCUMENT_TYPE.formatted(exportParams.getDocumentType()));
         };
         html = replaceResourcesAsBase64Encoded(html);
         html = MediaUtils.removeSvgUnsupportedFeatureHint(html); //note that there is one more replacement attempt before replacing images with base64 representation
@@ -199,7 +199,7 @@ public class HtmlProcessor {
                 yield new NumberedListsSanitizer().fixNumberedLists(processingHtml);
             }
             case LIVE_REPORT, TEST_RUN -> html;
-            case BASELINE_COLLECTION -> throw new IllegalArgumentException("Unsupported document type: %s".formatted(exportParams.getDocumentType()));
+            case BASELINE_COLLECTION -> throw new IllegalArgumentException(UNSUPPORTED_DOCUMENT_TYPE.formatted(exportParams.getDocumentType()));
         };
 
         // ----
