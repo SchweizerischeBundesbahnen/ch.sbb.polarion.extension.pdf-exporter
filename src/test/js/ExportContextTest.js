@@ -119,15 +119,15 @@ describe('ExportContext Class', function () {
         expect(exportContext.getDocumentName()).to.be.undefined;
     });
 
-    it('URL: #/project/elibrary/collection', function () {
-        const locationHash = "#/project/elibrary/collection";
+    it('URL: #/project/elibrary/collection?id=144', function () {
+        const locationHash = "#/project/elibrary/collection?id=144";
         const exportContext = new ExportContext({documentType: ExportParams.DocumentType.BASELINE_COLLECTION, polarionLocationHash: locationHash});
 
         expect(exportContext.documentType).to.equal(ExportParams.DocumentType.BASELINE_COLLECTION);
         expect(exportContext.projectId).to.equal('elibrary');
         expect(exportContext.locationPath).to.be.undefined;
         expect(exportContext.revision).to.be.undefined;
-        expect(exportContext.urlQueryParameters).to.be.undefined;
+        expect(exportContext.urlQueryParameters).to.deep.equal({ id: '144' });
 
         expect(exportContext.getSpaceId()).to.be.undefined;
         expect(exportContext.getDocumentName()).to.be.undefined;
