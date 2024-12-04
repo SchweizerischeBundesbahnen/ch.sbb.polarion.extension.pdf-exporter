@@ -26,7 +26,6 @@ import org.jetbrains.annotations.VisibleForTesting;
 
 import java.util.Iterator;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class BulkPdfExportWidgetRenderer extends AbstractWidgetRenderer {
     @NotNull

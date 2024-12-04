@@ -1,6 +1,5 @@
 package ch.sbb.polarion.extension.pdf_exporter.util;
 
-import ch.sbb.polarion.extension.generic.util.ObjectUtils;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.DocumentData;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.DocumentType;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
@@ -10,7 +9,6 @@ import ch.sbb.polarion.extension.pdf_exporter.util.exporter.WikiRenderer;
 import com.polarion.alm.projects.model.IProject;
 import com.polarion.alm.projects.model.IUniqueObject;
 import com.polarion.alm.server.api.model.document.ProxyDocument;
-import com.polarion.alm.shared.api.model.baselinecollection.BaselineCollectionReference;
 import com.polarion.alm.shared.api.model.document.Document;
 import com.polarion.alm.shared.api.model.document.DocumentReference;
 import com.polarion.alm.shared.api.model.rp.RichPage;
@@ -33,8 +31,6 @@ import com.polarion.alm.tracker.model.IRichPage;
 import com.polarion.alm.tracker.model.ITestRun;
 import com.polarion.alm.tracker.model.ITrackerProject;
 import com.polarion.alm.tracker.model.IWikiPage;
-import com.polarion.alm.tracker.model.baselinecollection.IBaselineCollection;
-import com.polarion.alm.tracker.model.baselinecollection.internal.BaselineCollection;
 import com.polarion.alm.tracker.model.ipi.IInternalBaselinesManager;
 import com.polarion.platform.persistence.model.IPObject;
 import com.polarion.subterra.base.location.ILocation;
