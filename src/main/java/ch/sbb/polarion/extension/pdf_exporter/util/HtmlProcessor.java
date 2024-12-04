@@ -174,6 +174,7 @@ public class HtmlProcessor {
             html = cutNotNeededChapters(html, exportParams.getChapters());
         }
 
+        final String UNKNOWN_DOCUMENT_TYPE = "Unknown document type: ";
         html = switch (exportParams.getDocumentType()) {
             case LIVE_DOC, WIKI_PAGE -> {
                 String processingHtml = addTableOfContent(html);
@@ -185,7 +186,7 @@ public class HtmlProcessor {
                 processingHtml = adjustColumnWidthInReports(processingHtml);
                 yield removeFloatLeftFromReports(processingHtml);
             }
-            default -> throw new IllegalArgumentException("Unknown document type: " + exportParams.getDocumentType());
+            default -> throw new IllegalArgumentException(UNKNOWN_DOCUMENT_TYPE + exportParams.getDocumentType());
         };
         html = replaceResourcesAsBase64Encoded(html);
         html = MediaUtils.removeSvgUnsupportedFeatureHint(html); //note that there is one more replacement attempt before replacing images with base64 representation
@@ -197,7 +198,7 @@ public class HtmlProcessor {
                 yield new NumberedListsSanitizer().fixNumberedLists(processingHtml);
             }
             case LIVE_REPORT, TEST_RUN -> html;
-            default -> throw new IllegalArgumentException("Unknown document type: " + exportParams.getDocumentType());
+            default -> throw new IllegalArgumentException(UNKNOWN_DOCUMENT_TYPE + exportParams.getDocumentType());
         };
 
         // ----
@@ -219,7 +220,7 @@ public class HtmlProcessor {
         html = switch (exportParams.getDocumentType()) {
             case LIVE_DOC, WIKI_PAGE -> localizeEnums(html, exportParams);
             case LIVE_REPORT, TEST_RUN -> html;
-            default -> throw new IllegalArgumentException("Unknown document type: " + exportParams.getDocumentType());
+            default -> throw new IllegalArgumentException(UNKNOWN_DOCUMENT_TYPE + exportParams.getDocumentType());
         };
 
         if (exportParams.isEnableCommentsRendering()) {

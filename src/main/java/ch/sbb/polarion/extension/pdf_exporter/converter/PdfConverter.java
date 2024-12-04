@@ -176,21 +176,23 @@ public class PdfConverter {
             client = ClientBuilder.newClient();
             WebTarget webTarget = client.target(webhookConfig.getUrl()).register(MultiPartFeature.class);
 
-            FormDataMultiPart multipart = new FormDataMultiPart();
-            multipart.bodyPart(new FormDataBodyPart("exportParams", new ObjectMapper().writeValueAsString(exportParams), MediaType.APPLICATION_JSON_TYPE));
-            multipart.bodyPart(new FormDataBodyPart("html", htmlContent.getBytes(StandardCharsets.UTF_8), MediaType.APPLICATION_OCTET_STREAM_TYPE));
+            try (FormDataMultiPart multipart = new FormDataMultiPart()) {
 
-            Invocation.Builder requestBuilder = webTarget.request(MediaType.TEXT_PLAIN);
+                multipart.bodyPart(new FormDataBodyPart("exportParams", new ObjectMapper().writeValueAsString(exportParams), MediaType.APPLICATION_JSON_TYPE));
+                multipart.bodyPart(new FormDataBodyPart("html", htmlContent.getBytes(StandardCharsets.UTF_8), MediaType.APPLICATION_OCTET_STREAM_TYPE));
 
-            addAuthHeader(webhookConfig, requestBuilder);
+                Invocation.Builder requestBuilder = webTarget.request(MediaType.TEXT_PLAIN);
 
-            try (Response response = requestBuilder.post(Entity.entity(multipart, multipart.getMediaType()))) {
-                if (response.getStatus() == Response.Status.OK.getStatusCode()) {
-                    try (InputStream inputStream = response.readEntity(InputStream.class)) {
-                        return new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
+                addAuthHeader(webhookConfig, requestBuilder);
+
+                try (Response response = requestBuilder.post(Entity.entity(multipart, multipart.getMediaType()))) {
+                    if (response.getStatus() == Response.Status.OK.getStatusCode()) {
+                        try (InputStream inputStream = response.readEntity(InputStream.class)) {
+                            return new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
+                        }
+                    } else {
+                        logger.error(String.format("Could not get proper response from webhook [%s]: response status %s", webhookConfig.getUrl(), response.getStatus()));
                     }
-                } else {
-                    logger.error(String.format("Could not get proper response from webhook [%s]: response status %s", webhookConfig.getUrl(), response.getStatus()));
                 }
             }
         } catch (Exception e) {
