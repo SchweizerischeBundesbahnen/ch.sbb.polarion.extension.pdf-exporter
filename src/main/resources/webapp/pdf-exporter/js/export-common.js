@@ -113,17 +113,17 @@ const ExportCommon = {
         setTimeout(() => URL.revokeObjectURL(objectURL), 100);
     },
 
-    downloadCollectionItems: function (exportParams, collectionId, onComplete, onError) {
+    convertCollectionDocuments: function (exportParams, collectionId, onComplete, onError) {
         let url = `/polarion/pdf-exporter/rest/internal/projects/${exportParams.projectId}/collections/${collectionId}/documents`;
         SbbCommon.callAsync({
             method: "GET",
             url: url,
             responseType: "json",
             onOk: (responseText, request) => {
-                const collectionItems = request.response;
+                const collectionDocuments = request.response;
 
-                if (!collectionItems || collectionItems.length === 0) {
-                    console.warn("No items found in the collection.");
+                if (!collectionDocuments || collectionDocuments.length === 0) {
+                    console.warn("No documents found in the collection.");
                     onComplete && onComplete();
                     return;
                 }
@@ -131,38 +131,38 @@ const ExportCommon = {
                 let completedCount = 0;
                 let hasErrors = false;
 
-                const handleItem = (item) => {
-                    exportParams["projectId"] = item.projectId;
-                    exportParams["locationPath"] = item.spaceId + "/" + item.documentName;
-                    exportParams["revision"] = item.revision;
+                const convertCollectionDocument = (collectionDocument) => {
+                    exportParams["projectId"] = collectionDocument.projectId;
+                    exportParams["locationPath"] = collectionDocument.spaceId + "/" + collectionDocument.documentName;
+                    exportParams["revision"] = collectionDocument.revision;
                     exportParams["documentType"] = ExportParams.DocumentType.LIVE_DOC;
 
                     this.asyncConvertPdf(
                         exportParams.toJSON(),
                         (responseBody, fileName) => {
-                            const downloadFileName = fileName || `${item.projectId}_${item.spaceId}_${item.documentName}.pdf`;
+                            const downloadFileName = fileName || `${collectionDocument.projectId}_${collectionDocument.spaceId}_${collectionDocument.documentName}.pdf`;
                             this.downloadBlob(responseBody, downloadFileName);
 
                             completedCount++;
-                            if (completedCount === collectionItems.length && !hasErrors) {
+                            if (completedCount === collectionDocuments.length && !hasErrors) {
                                 onComplete && onComplete();
                             }
                         },
                         (errorResponse) => {
-                            console.error("Error converting item:", errorResponse);
+                            console.error("Error converting collection document:", errorResponse);
                             hasErrors = true;
                             completedCount++;
-                            if (completedCount === collectionItems.length) {
+                            if (completedCount === collectionDocuments.length) {
                                 onError && onError(errorResponse);
                             }
                         }
                     );
                 };
 
-                collectionItems.forEach(handleItem);
+                collectionDocuments.forEach(convertCollectionDocument);
             },
             onError: (status, errorMessage, request) => {
-                console.error("Error loading collection items:", request.response);
+                console.error("Error loading collection documents:", request.response);
                 onError && onError(errorMessage);
             }
         });

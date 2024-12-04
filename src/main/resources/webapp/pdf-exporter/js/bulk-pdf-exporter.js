@@ -21,7 +21,7 @@ const BULK_POPUP_HTML = `
         </div>
     </div>
 `;
-const DISABLED_BUTTON_CLASS= "polarion-TestsExecutionButton-buttons-defaultCursor";
+const DISABLED_BUTTON_CLASS = "polarion-TestsExecutionButton-buttons-defaultCursor";
 const BULK_EXPORT_IN_PROGRESS = "IN_PROGRESS";
 const BULK_EXPORT_INTERRUPTED = "INTERRUPTED";
 const BULK_EXPORT_FINISHED = "FINISHED";
@@ -55,7 +55,7 @@ const BulkPdfExporter = {
         this.startNextItemExport();
     },
 
-    renderBulkExportItems: function(bulkExportWidget) {
+    renderBulkExportItems: function (bulkExportWidget) {
         if (bulkExportWidget) {
             const modalContent = document.querySelector("#bulk-pdf-export-popup .modal__content");
             modalContent.innerHTML = "";
@@ -215,7 +215,7 @@ const BulkPdfExporter = {
                 this.exportParams["urlQueryParameters"] = {id: documentId};
                 ExportCommon.downloadTestRunAttachments(this.exportParams.projectId, documentId, this.exportParams.revision, this.exportParams.attachmentsFilter);
             } else if (documentType === ExportParams.DocumentType.BASELINE_COLLECTION) {
-                ExportCommon.downloadCollectionItems(this.exportParams, documentId, () => {
+                ExportCommon.convertCollectionDocuments(this.exportParams, documentId, () => {
                         currentItem.classList.remove("in-progress");
                         currentItem.classList.add("finished");
                         BulkPdfExporter.finishedCount += 1;
