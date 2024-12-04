@@ -140,6 +140,8 @@ public class HtmlProcessor {
     private static final String MEASURE_HEIGHT = "measureHeight";
     private static final String NUMBER = "number";
 
+    private static final String UNSUPPORTED_DOCUMENT_TYPE = "Unsupported document type: %s";
+
     private final FileResourceProvider fileResourceProvider;
     private final LocalizationSettings localizationSettings;
     private final HtmlLinksHelper httpLinksHelper;
@@ -174,7 +176,6 @@ public class HtmlProcessor {
             html = cutNotNeededChapters(html, exportParams.getChapters());
         }
 
-        final String UNKNOWN_DOCUMENT_TYPE = "Unknown document type: ";
         html = switch (exportParams.getDocumentType()) {
             case LIVE_DOC, WIKI_PAGE -> {
                 String processingHtml = addTableOfContent(html);
@@ -186,7 +187,7 @@ public class HtmlProcessor {
                 processingHtml = adjustColumnWidthInReports(processingHtml);
                 yield removeFloatLeftFromReports(processingHtml);
             }
-            default -> throw new IllegalArgumentException(UNKNOWN_DOCUMENT_TYPE + exportParams.getDocumentType());
+            case BASELINE_COLLECTION -> throw new IllegalArgumentException("Unsupported document type: %s".formatted(exportParams.getDocumentType()));
         };
         html = replaceResourcesAsBase64Encoded(html);
         html = MediaUtils.removeSvgUnsupportedFeatureHint(html); //note that there is one more replacement attempt before replacing images with base64 representation
@@ -198,7 +199,7 @@ public class HtmlProcessor {
                 yield new NumberedListsSanitizer().fixNumberedLists(processingHtml);
             }
             case LIVE_REPORT, TEST_RUN -> html;
-            default -> throw new IllegalArgumentException(UNKNOWN_DOCUMENT_TYPE + exportParams.getDocumentType());
+            case BASELINE_COLLECTION -> throw new IllegalArgumentException("Unsupported document type: %s".formatted(exportParams.getDocumentType()));
         };
 
         // ----
@@ -220,7 +221,7 @@ public class HtmlProcessor {
         html = switch (exportParams.getDocumentType()) {
             case LIVE_DOC, WIKI_PAGE -> localizeEnums(html, exportParams);
             case LIVE_REPORT, TEST_RUN -> html;
-            default -> throw new IllegalArgumentException(UNKNOWN_DOCUMENT_TYPE + exportParams.getDocumentType());
+            case BASELINE_COLLECTION -> throw new IllegalArgumentException(UNSUPPORTED_DOCUMENT_TYPE.formatted(exportParams.getDocumentType()));
         };
 
         if (exportParams.isEnableCommentsRendering()) {
@@ -326,7 +327,8 @@ public class HtmlProcessor {
 
     @NotNull
     @VisibleForTesting
-    @SuppressWarnings("java:S5852") //regex checked
+    @SuppressWarnings("java:S5852")
+        //regex checked
     String cutNotNeededChapters(@NotNull String html, List<String> selectedChapters) {
         // LinkedHashMap is chosen intentionally to keep an order of insertion
         Map<String, Boolean> chaptersMapping = new LinkedHashMap<>();
@@ -463,7 +465,7 @@ public class HtmlProcessor {
                         }
                         filteredContent.append(row);
                     }
-        });
+                });
         // filteredContent - is literally content of td or span element, we need to prepend <td>/<span> with its attributes and append </td>/</span> to it
         return linkedWorkItems.substring(0, linkedWorkItems.indexOf(">") + 1)
                 + filteredContent
@@ -548,13 +550,14 @@ public class HtmlProcessor {
         // for table headers to repeat on each page.
         return RegexMatcher.get("(<tbody>[^<]*(?<header><tr>[^<]*<th[\\s|\\S]*?))(?=(<tr|</tbody))").useJavaUtil().replace(html, regexEngine -> {
             String header = regexEngine.group("header");
-            return  "<thead>" + header + "</thead><tbody>";
+            return "<thead>" + header + "</thead><tbody>";
         });
     }
 
     @NotNull
     @VisibleForTesting
-    @SuppressWarnings("java:S5852") //regex checked
+    @SuppressWarnings("java:S5852")
+        //regex checked
     String adjustCellWidth(@NotNull String html, @NotNull ExportParams exportParams) {
         if (exportParams.isFitToPage()) {
             // This regexp searches for <td> or <th> elements of regular tables which width in styles specified in pixels ("px").
@@ -735,12 +738,13 @@ public class HtmlProcessor {
 
     @NotNull
     @VisibleForTesting
-    @SuppressWarnings({"java:S5852", "java:S5869"}) //regex checked
+    @SuppressWarnings({"java:S5852", "java:S5869"})
+        //regex checked
     String cutExportToPdfButton(@NotNull String html) {
         // This regexp searches for 'Export to PDF' button enclosed into table-element with class 'polarion-TestsExecutionButton-buttons-content',
         // which in its turn enclosed into div-element with class 'polarion-TestsExecutionButton-buttons-pdf'
         return RegexMatcher.get("<div[^>]*class=\"polarion-TestsExecutionButton-buttons-pdf\">" +
-                "[\\w|\\W]*<table class=\"polarion-TestsExecutionButton-buttons-content\">[\\w|\\W]*<div[^>]*>Export to PDF</div>[\\w|\\W]*?</div>")
+                        "[\\w|\\W]*<table class=\"polarion-TestsExecutionButton-buttons-content\">[\\w|\\W]*<div[^>]*>Export to PDF</div>[\\w|\\W]*?</div>")
                 .removeAll(html);
     }
 
@@ -775,18 +779,14 @@ public class HtmlProcessor {
 
     @NotNull
     private static String liftHeadingTag(@NotNull String tag) {
-        switch (tag) {
-            case "h2":
-                return "h1";
-            case "h3":
-                return "h2";
-            case "h4":
-                return "h3";
-            case "h5":
-                return "h4";
-            default:
-                return tag.equals("h6") ? "h5" : "h6";
-        }
+        return switch (tag) {
+            case "h2" -> "h1";
+            case "h3" -> "h2";
+            case "h4" -> "h3";
+            case "h5" -> "h4";
+            case "h6" -> "h5";
+            default -> "h6";
+        };
     }
 
     @NotNull

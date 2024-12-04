@@ -238,7 +238,7 @@ class PdfExporterPolarionServiceTest {
     }
 
     @Test
-    void testGetCollectionItems() {
+    void testGetDocumentsFromCollection() {
         String projectId = "testProjectId";
         String collectionId = "testCollectionId";
 
@@ -257,8 +257,8 @@ class PdfExporterPolarionServiceTest {
         when(mockModule2.getModuleLocation()).thenReturn(mockLocation2);
         when(mockModule2.getRevision()).thenReturn("2");
 
-        when(mockLocation1.getLocationPath()).thenReturn("space1/Module1 test");
-        when(mockLocation2.getLocationPath()).thenReturn("space2/Module2 test");
+        when(mockLocation1.getLocationPath()).thenReturn("space 1/test Module1");
+        when(mockLocation2.getLocationPath()).thenReturn("_default/test Module2");
 
         IBaselineCollectionElement mockElement1 = mock(IBaselineCollectionElement.class);
         IBaselineCollectionElement mockElement2 = mock(IBaselineCollectionElement.class);
@@ -278,12 +278,12 @@ class PdfExporterPolarionServiceTest {
 
             assertNotNull(result);
             assertEquals(2, result.size());
-            assertEquals("space1", result.get(0).getSpaceId());
-            assertEquals("Module1 test", result.get(0).getDocumentName());
+            assertEquals("space 1", result.get(0).getSpaceId());
+            assertEquals("test Module1", result.get(0).getDocumentName());
             assertEquals("1", result.get(0).getRevision());
 
-            assertEquals("space2", result.get(1).getSpaceId());
-            assertEquals("Module2 test", result.get(1).getDocumentName());
+            assertEquals("_default", result.get(1).getSpaceId());
+            assertEquals("test Module2", result.get(1).getDocumentName());
             assertEquals("2", result.get(1).getRevision());
         }
     }
