@@ -120,7 +120,7 @@ public class PdfExporterPolarionService extends PolarionService {
             return true;
         } else {
             IDataService dataService = getTrackerService().getDataService();
-            IPObjectList<IModule> suitableDocuments = dataService.searchInstances(dataService.getPrototype("Module"), model.getMatchingQuery(), "name");
+            IPObjectList<IModule> suitableDocuments = dataService.searchInstances(IModule.PROTO, model.getMatchingQuery(), "name");
             for (IModule suitableDocument : suitableDocuments) {
                 if (sameDocument(projectId, spaceId, documentName, suitableDocument)) {
                     return true;
