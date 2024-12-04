@@ -72,7 +72,8 @@ public class DocumentFileNameHelper {
         return fileName.replaceAll("[\\\\/:*?\"<>|]", "_");
     }
 
-    private @NotNull String getFileNameTemplate(@NotNull DocumentType documentType, @NotNull FileNameTemplateModel fileNameTemplateModel) {
+    @VisibleForTesting
+    @NotNull String getFileNameTemplate(@NotNull DocumentType documentType, @NotNull FileNameTemplateModel fileNameTemplateModel) {
         return switch (documentType) {
             case LIVE_DOC -> fileNameTemplateModel.getDocumentNameTemplate();
             case LIVE_REPORT -> fileNameTemplateModel.getReportNameTemplate();
