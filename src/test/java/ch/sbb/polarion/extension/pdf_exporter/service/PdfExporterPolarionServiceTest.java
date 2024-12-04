@@ -6,7 +6,7 @@ import ch.sbb.polarion.extension.generic.settings.SettingName;
 import ch.sbb.polarion.extension.generic.util.PObjectListStub;
 import ch.sbb.polarion.extension.generic.util.ScopeUtils;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.attachments.TestRunAttachment;
-import ch.sbb.polarion.extension.pdf_exporter.rest.model.collections.CollectionItem;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.collections.DocumentCollectionEntry;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.stylepackage.StylePackageModel;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.stylepackage.StylePackageWeightInfo;
 import ch.sbb.polarion.extension.pdf_exporter.settings.StylePackageSettings;
@@ -25,6 +25,7 @@ import com.polarion.alm.tracker.model.baselinecollection.IBaselineCollectionElem
 import com.polarion.platform.IPlatformService;
 import com.polarion.platform.security.ISecurityService;
 import com.polarion.platform.service.repository.IRepositoryService;
+import com.polarion.subterra.base.location.ILocation;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedConstruction;
@@ -238,22 +239,26 @@ class PdfExporterPolarionServiceTest {
 
     @Test
     void testGetCollectionItems() {
-        // Mock dependencies
         String projectId = "testProjectId";
         String collectionId = "testCollectionId";
 
         IBaselineCollection mockCollection = mock(IBaselineCollection.class);
         BaselineCollectionReference mockReference = mock(BaselineCollectionReference.class);
 
-        // Mock collection elements
         IModule mockModule1 = mock(IModule.class);
         IModule mockModule2 = mock(IModule.class);
 
-        when(mockModule1.getModuleNameWithSpace()).thenReturn("space1 / Module1 test");
-        when(mockModule1.getLastRevision()).thenReturn("1");
+        ILocation mockLocation1 = mock(ILocation.class);
+        ILocation mockLocation2 = mock(ILocation.class);
 
-        when(mockModule2.getModuleNameWithSpace()).thenReturn("space2 / Module2 test");
-        when(mockModule2.getLastRevision()).thenReturn("2");
+        when(mockModule1.getModuleLocation()).thenReturn(mockLocation1);
+        when(mockModule1.getRevision()).thenReturn("1");
+
+        when(mockModule2.getModuleLocation()).thenReturn(mockLocation2);
+        when(mockModule2.getRevision()).thenReturn("2");
+
+        when(mockLocation1.getLocationPath()).thenReturn("space1/Module1 test");
+        when(mockLocation2.getLocationPath()).thenReturn("space2/Module2 test");
 
         IBaselineCollectionElement mockElement1 = mock(IBaselineCollectionElement.class);
         IBaselineCollectionElement mockElement2 = mock(IBaselineCollectionElement.class);
@@ -269,14 +274,16 @@ class PdfExporterPolarionServiceTest {
         try (MockedConstruction<BaselineCollectionReference> mockedStaticReference = mockConstruction(BaselineCollectionReference.class, (mock, context) -> {
             when(mock.get(Mockito.any())).thenReturn(baselineCollection);
         })) {
-            List<CollectionItem> result = service.getCollectionItems(projectId, collectionId, mock(ReadOnlyTransaction.class));
+            List<DocumentCollectionEntry> result = service.getDocumentsFromCollection(projectId, collectionId, mock(ReadOnlyTransaction.class));
 
             assertNotNull(result);
             assertEquals(2, result.size());
-            assertEquals("space1/Module1 test", result.get(0).getModuleNameWithSpace());
+            assertEquals("space1", result.get(0).getSpaceId());
+            assertEquals("Module1 test", result.get(0).getDocumentName());
             assertEquals("1", result.get(0).getRevision());
 
-            assertEquals("space2/Module2 test", result.get(1).getModuleNameWithSpace());
+            assertEquals("space2", result.get(1).getSpaceId());
+            assertEquals("Module2 test", result.get(1).getDocumentName());
             assertEquals("2", result.get(1).getRevision());
         }
     }

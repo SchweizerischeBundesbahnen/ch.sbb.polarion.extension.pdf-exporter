@@ -1,7 +1,7 @@
 package ch.sbb.polarion.extension.pdf_exporter.rest.controller;
 
 
-import ch.sbb.polarion.extension.pdf_exporter.rest.model.collections.CollectionItem;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.collections.DocumentCollectionEntry;
 import ch.sbb.polarion.extension.pdf_exporter.service.PdfExporterPolarionService;
 import com.polarion.alm.shared.api.transaction.TransactionalExecutor;
 import io.swagger.v3.oas.annotations.Hidden;
@@ -30,18 +30,18 @@ public class CollectionInternalController {
     }
 
     @GET
-    @Path("/projects/{projectId}/collections/{collectionId}")
+    @Path("/projects/{projectId}/collections/{collectionId}/documents")
     @Produces(MediaType.APPLICATION_JSON)
-    @Operation(summary = "Get items from collection",
+    @Operation(summary = "Get documents from collection",
             responses = {
                     @ApiResponse(responseCode = "200",
-                            description = "List of collection item",
-                            content = @Content(schema = @Schema(implementation = CollectionItem.class))
+                            description = "Successfully retrieved the list of documents in the collection",
+                            content = @Content(schema = @Schema(implementation = DocumentCollectionEntry.class))
                     )
             }
     )
-    public List<CollectionItem> getCollectionItems(@Parameter(description = "Project ID", required = true) @PathParam("projectId") String projectId,
-                                                   @Parameter(description = "Collection ID", required = true) @PathParam("collectionId") String collectionId) {
-        return TransactionalExecutor.executeSafelyInReadOnlyTransaction(transaction -> pdfExporterPolarionService.getCollectionItems(projectId, collectionId, transaction));
+    public List<DocumentCollectionEntry> getDocumentsFromCollection(@Parameter(description = "Project ID", required = true) @PathParam("projectId") String projectId,
+                                                                    @Parameter(description = "Collection ID", required = true) @PathParam("collectionId") String collectionId) {
+        return TransactionalExecutor.executeSafelyInReadOnlyTransaction(transaction -> pdfExporterPolarionService.getDocumentsFromCollection(projectId, collectionId, transaction));
     }
 }

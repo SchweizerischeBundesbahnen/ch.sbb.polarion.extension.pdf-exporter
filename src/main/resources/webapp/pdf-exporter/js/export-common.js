@@ -114,7 +114,7 @@ const ExportCommon = {
     },
 
     downloadCollectionItems: function (exportParams, collectionId, onComplete, onError) {
-        let url = `/polarion/pdf-exporter/rest/internal/projects/${exportParams.projectId}/collections/${collectionId}`;
+        let url = `/polarion/pdf-exporter/rest/internal/projects/${exportParams.projectId}/collections/${collectionId}/documents`;
         SbbCommon.callAsync({
             method: "GET",
             url: url,
@@ -132,14 +132,15 @@ const ExportCommon = {
                 let hasErrors = false;
 
                 const handleItem = (item) => {
-                    exportParams["locationPath"] = item.moduleNameWithSpace;
+                    exportParams["projectId"] = item.projectId;
+                    exportParams["locationPath"] = item.spaceId + "/" + item.documentName;
                     exportParams["revision"] = item.revision;
                     exportParams["documentType"] = ExportParams.DocumentType.LIVE_DOC;
 
                     this.asyncConvertPdf(
                         exportParams.toJSON(),
                         (responseBody, fileName) => {
-                            const downloadFileName = fileName || "downloaded_document.pdf";
+                            const downloadFileName = fileName || `${item.projectId}_${item.spaceId}_${item.documentName}.pdf`;
                             this.downloadBlob(responseBody, downloadFileName);
 
                             completedCount++;

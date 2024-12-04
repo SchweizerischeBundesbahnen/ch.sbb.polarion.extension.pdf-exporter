@@ -6,7 +6,7 @@ import ch.sbb.polarion.extension.generic.settings.SettingId;
 import ch.sbb.polarion.extension.generic.settings.SettingName;
 import ch.sbb.polarion.extension.generic.util.ScopeUtils;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.attachments.TestRunAttachment;
-import ch.sbb.polarion.extension.pdf_exporter.rest.model.collections.CollectionItem;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.collections.DocumentCollectionEntry;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.stylepackage.StylePackageModel;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.stylepackage.StylePackageWeightInfo;
 import ch.sbb.polarion.extension.pdf_exporter.settings.StylePackageSettings;
@@ -33,13 +33,11 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 public class PdfExporterPolarionService extends PolarionService {
 
@@ -173,20 +171,25 @@ public class PdfExporterPolarionService extends PolarionService {
         return testRunAttachment;
     }
 
-    public @NotNull List<CollectionItem> getCollectionItems(@NotNull String projectId, @NotNull String collectionId, @NotNull ReadOnlyTransaction transaction) {
-        List<CollectionItem> collectionItemList = new ArrayList<>();
+    public @NotNull List<DocumentCollectionEntry> getDocumentsFromCollection(@NotNull String projectId, @NotNull String collectionId, @NotNull ReadOnlyTransaction transaction) {
+        List<DocumentCollectionEntry> documentCollectionEntryList = new ArrayList<>();
         IBaselineCollection collection = new BaselineCollectionReference(projectId, collectionId).get(transaction).getOldApi();
-        collection.getElements()
-                .stream()
-                .map(IBaselineCollectionElement::getObjectWithRevision)
-                .filter(IModule.class::isInstance)
-                .map(IModule.class::cast)
-                .forEach(module -> {
-                    String moduleNameWithSpace = Arrays.stream(module.getModuleNameWithSpace().split("/"))
-                            .map(String::trim)
-                            .collect(Collectors.joining("/"));
-                    collectionItemList.add(new CollectionItem(moduleNameWithSpace, module.getLastRevision()));
-                });
-        return collectionItemList;
+        List<Object> elements = collection.getElements().stream().map(IBaselineCollectionElement::getObjectWithRevision).toList();
+        for (Object element : elements) {
+            if (element instanceof IBaselineCollection iBaselineCollection) {
+                documentCollectionEntryList.addAll(getDocumentsFromCollection(iBaselineCollection.getProjectId(), iBaselineCollection.getId(), transaction));
+            } else if (element instanceof IModule module) {
+                String[] locationParts = module.getModuleLocation().getLocationPath().split("/");
+                if (locationParts.length == 2) {
+                    documentCollectionEntryList.add(new DocumentCollectionEntry(
+                            module.getProjectId(),
+                            locationParts[0],
+                            locationParts[1],
+                            module.getRevision()
+                    ));
+                }
+            }
+        }
+        return documentCollectionEntryList;
     }
 }

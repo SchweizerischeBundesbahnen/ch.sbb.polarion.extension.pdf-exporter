@@ -597,9 +597,9 @@
         ]
       }
     },
-    "/api/projects/{projectId}/collections/{collectionId}": {
+    "/api/projects/{projectId}/collections/{collectionId}/documents": {
       "get": {
-        "operationId": "getCollectionItems",
+        "operationId": "getDocumentsFromCollection",
         "parameters": [
           {
             "description": "Project ID",
@@ -625,14 +625,14 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CollectionItem"
+                  "$ref": "#/components/schemas/DocumentCollectionEntry"
                 }
               }
             },
-            "description": "List of collection item"
+            "description": "Successfully retrieved the list of documents in the collection"
           }
         },
-        "summary": "Get items from collection",
+        "summary": "Get documents from collection",
         "tags": [
           "Collections"
         ]
@@ -1545,20 +1545,6 @@
         },
         "type": "object"
       },
-      "CollectionItem": {
-        "description": "Details about the collection item",
-        "properties": {
-          "moduleNameWithSpace": {
-            "description": "The name of the module with spaces",
-            "type": "string"
-          },
-          "revision": {
-            "description": "The revision of the module",
-            "type": "string"
-          }
-        },
-        "type": "object"
-      },
       "ConfigurationStatus": {
         "properties": {
           "details": {
@@ -1652,6 +1638,29 @@
               "CANCELLED"
             ],
             "example": "IN_PROGRESS",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "DocumentCollectionEntry": {
+        "description": "Details about document from collection",
+        "properties": {
+          "documentName": {
+            "description": "The name of the document",
+            "type": "string"
+          },
+          "projectId": {
+            "description": "The unique identifier for the project",
+            "example": "elibrary",
+            "type": "string"
+          },
+          "revision": {
+            "description": "The revision of the document",
+            "type": "string"
+          },
+          "spaceId": {
+            "description": "The unique identifier of the space within the project",
             "type": "string"
           }
         },
