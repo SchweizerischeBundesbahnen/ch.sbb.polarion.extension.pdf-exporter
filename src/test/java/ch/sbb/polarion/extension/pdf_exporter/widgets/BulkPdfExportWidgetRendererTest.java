@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -54,8 +54,8 @@ class BulkPdfExportWidgetRendererTest {
 
         // Assert
         assertNotNull(renderer);
-        assertEquals(1, renderer.columns.size());
-        assertEquals(50, renderer.topItems);
+        assertEquals(1, renderer.getColumns().size());
+        assertEquals(50, renderer.getTopItems());
     }
 
     @Test

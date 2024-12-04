@@ -20,28 +20,25 @@ import com.polarion.alm.shared.api.utils.html.HtmlTagBuilder;
 import com.polarion.alm.tracker.model.IModule;
 import com.polarion.alm.tracker.model.IRichPage;
 import com.polarion.alm.ui.shared.LinearGradientColor;
+import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.VisibleForTesting;
 
 import java.util.Iterator;
 
 public class BulkPdfExportWidgetRenderer extends AbstractWidgetRenderer {
-    @NotNull
-    final DataSet dataSet;
-    @NotNull
-    private final IterableWithSize<ModelObject> items;
-    @VisibleForTesting
-    final int topItems;
-    @NotNull
-    @VisibleForTesting
-    final IterableWithSize<Field> columns;
+    private final @NotNull DataSet dataSet;
+
+    private final @NotNull IterableWithSize<ModelObject> items;
+    @Getter
+    private final int topItems;
+    @Getter
+    private final @NotNull IterableWithSize<Field> columns;
     private final @NotNull PrototypeEnum itemsPrototype;
 
     public BulkPdfExportWidgetRenderer(@NotNull RichPageWidgetCommonContext context) {
         super(context);
         DataSetParameter dataSetParameter = context.parameter("dataSet");
         FieldsParameter columnsParameter = dataSetParameter.get("columns");
-
         SortingParameter sortByParameter = dataSetParameter.get("sortBy");
         String sort = sortByParameter.asLuceneSortString();
         this.dataSet = dataSetParameter.getFor().sort(sort).revision(null);
@@ -57,6 +54,7 @@ public class BulkPdfExportWidgetRenderer extends AbstractWidgetRenderer {
         } else {
             this.topItems = 50;
         }
+
     }
 
     public @NotNull DocumentType getItemsType(@NotNull PrototypeEnum prototype) {
