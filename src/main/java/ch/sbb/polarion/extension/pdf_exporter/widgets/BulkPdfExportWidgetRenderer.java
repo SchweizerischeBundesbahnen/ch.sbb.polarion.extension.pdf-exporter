@@ -12,7 +12,6 @@ import com.polarion.alm.shared.api.model.rp.parameter.Field;
 import com.polarion.alm.shared.api.model.rp.parameter.FieldsParameter;
 import com.polarion.alm.shared.api.model.rp.parameter.IntegerParameter;
 import com.polarion.alm.shared.api.model.rp.parameter.SortingParameter;
-import com.polarion.alm.shared.api.model.rp.parameter.impl.dataset.FieldImpl;
 import com.polarion.alm.shared.api.model.rp.widget.RichPageWidgetCommonContext;
 import com.polarion.alm.shared.api.utils.collections.IterableWithSize;
 import com.polarion.alm.shared.api.utils.html.HtmlContentBuilder;
@@ -25,7 +24,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.VisibleForTesting;
 
 import java.util.Iterator;
-import java.util.List;
 
 public class BulkPdfExportWidgetRenderer extends AbstractWidgetRenderer {
     @NotNull
@@ -43,14 +41,6 @@ public class BulkPdfExportWidgetRenderer extends AbstractWidgetRenderer {
         super(context);
         DataSetParameter dataSetParameter = context.parameter("dataSet");
         FieldsParameter columnsParameter = dataSetParameter.get("columns");
-
-        if (PrototypeEnum.BaselineCollection.equals(dataSetParameter.prototype())) {
-            List<Field> fields = columnsParameter.fields().toArrayList();
-            if (fields.stream().noneMatch(field -> "elements".equals(field.id()))) {
-                fields.add(new FieldImpl("elements"));
-                columnsParameter.set().fields(fields.stream().map(Field::id).toList());
-            }
-        }
 
         SortingParameter sortByParameter = dataSetParameter.get("sortBy");
         String sort = sortByParameter.asLuceneSortString();
@@ -178,8 +168,11 @@ public class BulkPdfExportWidgetRenderer extends AbstractWidgetRenderer {
                     .byName("data-type", item.getOldApi().getPrototype().getName())
                     .byName("data-space", getSpace(item))
                     .byName("data-id", getValue(item, "id"))
-                    .byName("data-name", getValue(item, "name"))
                     .className("export-item");
+
+            if (PrototypeEnum.BaselineCollection.equals(PrototypeEnum.valueOf(item.getOldApi().getPrototype().getName()))) {
+                checkbox.attributes().byName("data-name", getValue(item, "name"));
+            }
 
             for (Field column : this.columns) {
                 td = builder.tag().td();
