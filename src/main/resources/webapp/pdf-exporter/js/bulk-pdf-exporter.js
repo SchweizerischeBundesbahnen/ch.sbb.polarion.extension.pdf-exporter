@@ -163,6 +163,8 @@ const BulkPdfExporter = {
             popup.querySelector(".polarion-JSWizardButton-Primary").style.display = "block";
             popup.querySelector(".polarion-JSWizardButton").style.display = "none";
             resultSpan.style.display = "none";
+            resultSpan.classList.remove("interrupted");
+            resultSpan.classList.remove("finished");
             this.updateProgress(progressBar);
         } else {
             popup.querySelector(".polarion-JSWizardButton-Primary").style.display = "none";
@@ -178,7 +180,6 @@ const BulkPdfExporter = {
                 resultSpan.classList.add("interrupted");
                 resultSpan.innerText = "Export interrupted by user";
             } else if (this.state === BULK_EXPORT_FINISHED) {
-                resultSpan.classList.remove("interrupted");
                 resultSpan.classList.add("finished");
                 if (this.errors) {
                     resultSpan.classList.add("with-errors");
