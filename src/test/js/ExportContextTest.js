@@ -147,20 +147,6 @@ describe('ExportContext Class', function () {
         expect(exportContext.getDocumentName()).to.equal('live_doc');
     });
 
-    it('URL: #/project/elibrary/collection/145/wiki/live_doc', function () {
-        const locationHash = "#/project/elibrary/collection/145/wiki/live_doc";
-        const exportContext = new ExportContext({documentType: ExportParams.DocumentType.LIVE_DOC, polarionLocationHash: locationHash});
-
-        expect(exportContext.documentType).to.equal(ExportParams.DocumentType.LIVE_DOC);
-        expect(exportContext.projectId).to.equal('elibrary');
-        expect(exportContext.locationPath).to.equal('_default/live_doc');
-        expect(exportContext.revision).to.be.undefined;
-        expect(exportContext.urlQueryParameters).to.be.undefined;
-
-        expect(exportContext.getSpaceId()).to.equal('_default');
-        expect(exportContext.getDocumentName()).to.equal('live_doc');
-    });
-
     it('URL: #/project/drivepilot/collection/elibrary//144/wiki/Requirements/live%20doc', function () {
         const locationHash = "#/project/drivepilot/collection/elibrary//144/wiki/Requirements/live%20doc";
         const exportContext = new ExportContext({documentType: ExportParams.DocumentType.LIVE_DOC, polarionLocationHash: locationHash});
@@ -187,5 +173,33 @@ describe('ExportContext Class', function () {
 
         expect(exportContext.getSpaceId()).to.equal('Requirements');
         expect(exportContext.getDocumentName()).to.equal('System Requirement Specification');
+    });
+
+    it('URL: #/baseline/6749/project/elibrary/wiki/BigDoc2', function () {
+        const locationHash = "#/baseline/6749/project/elibrary/wiki/BigDoc2";
+        const exportContext = new ExportContext({documentType: ExportParams.DocumentType.LIVE_DOC, polarionLocationHash: locationHash});
+
+        expect(exportContext.documentType).to.equal(ExportParams.DocumentType.LIVE_DOC);
+        expect(exportContext.projectId).to.equal('elibrary');
+        expect(exportContext.locationPath).to.equal('_default/BigDoc2');
+        expect(exportContext.revision).to.equal('6749');
+        expect(exportContext.urlQueryParameters).to.be.undefined;
+
+        expect(exportContext.getSpaceId()).to.equal('_default');
+        expect(exportContext.getDocumentName()).to.equal('BigDoc2');
+    });
+
+    it('URL: #/baseline/6711/project/elibrary/wiki/Specification/Epic%20Statistics?parameter=value', function () {
+        const locationHash = "#/baseline/6711/project/elibrary/wiki/Specification/Epic%20Statistics?parameter=value";
+        const exportContext = new ExportContext({documentType: ExportParams.DocumentType.LIVE_REPORT, polarionLocationHash: locationHash});
+
+        expect(exportContext.documentType).to.equal(ExportParams.DocumentType.LIVE_REPORT);
+        expect(exportContext.projectId).to.equal('elibrary');
+        expect(exportContext.locationPath).to.equal('Specification/Epic Statistics');
+        expect(exportContext.revision).to.equal('6711');
+        expect(exportContext.urlQueryParameters).to.deep.equal({ parameter: 'value' });
+
+        expect(exportContext.getSpaceId()).to.equal('Specification');
+        expect(exportContext.getDocumentName()).to.equal('Epic Statistics');
     });
 });
