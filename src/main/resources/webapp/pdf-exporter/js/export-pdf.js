@@ -91,7 +91,7 @@ const ExportPdf = {
         document.getElementById(elementId).className = className;
     },
 
-    prepareRequest: function (projectId, locationPath, fileName) {
+    prepareRequest: function (projectId, locationPath, revision, fileName) {
         let selectedChapters = null;
         if (document.getElementById("specific-chapters").checked) {
             selectedChapters = this.getSelectedChapters();
@@ -119,15 +119,15 @@ const ExportPdf = {
             selectedRoles.push(...selectedOptions.map(opt => opt.value));
         }
 
-        return this.buildRequestJson(projectId, locationPath, selectedChapters, numberedListStyles, selectedRoles, fileName);
+        return this.buildRequestJson(projectId, locationPath, revision, selectedChapters, numberedListStyles, selectedRoles, fileName);
     },
 
-    buildRequestJson: function (projectId, locationPath, selectedChapters, numberedListStyles, selectedRoles, fileName) {
+    buildRequestJson: function (projectId, locationPath, revision, selectedChapters, numberedListStyles, selectedRoles, fileName) {
         const urlSearchParams = new URL(window.location.href.replace('#', '/')).searchParams;
         return new ExportParams.Builder(ExportParams.DocumentType.LIVE_DOC)
             .setProjectId(projectId)
             .setLocationPath(locationPath)
-            .setRevision(urlSearchParams.get('revision'))
+            .setRevision(revision)
             .setCoverPage(document.getElementById("cover-page-checkbox").checked ? document.getElementById("cover-page-selector").value : null)
             .setCss(document.getElementById("css-selector").value)
             .setHeaderFooter(document.getElementById("header-footer-selector").value)
@@ -181,7 +181,7 @@ const ExportPdf = {
         return undefined;
     },
 
-    loadPdf: function (projectId, locationPath) {
+    loadPdf: function (projectId, locationPath, revision) {
         //clean previous errors
         $("#export-error").empty();
         $("#export-warning").empty();
@@ -194,7 +194,7 @@ const ExportPdf = {
             fileName += ".pdf";
         }
 
-        let request = this.prepareRequest(projectId, locationPath, fileName);
+        let request = this.prepareRequest(projectId, locationPath, revision, fileName);
         if (request === undefined) {
             return;
         }
@@ -246,12 +246,12 @@ const ExportPdf = {
         }
     },
 
-    validatePdf: function (projectId, locationPath) {
+    validatePdf: function (projectId, locationPath, revision) {
         //clean previous errors
         $("#validate-error").empty();
         $("#validate-ok").empty();
 
-        let request = this.prepareRequest(projectId, locationPath);
+        let request = this.prepareRequest(projectId, locationPath, revision);
         if (request === undefined) {
             return;
         }
