@@ -378,6 +378,9 @@ public class ConverterInternalController {
         if (exportParams.getLocationPath() == null && exportParams.getDocumentType() != DocumentType.TEST_RUN) {
             throw new BadRequestException("Parameter 'locationPath' should be provided");
         }
+        if (exportParams.getDocumentType() == DocumentType.BASELINE_COLLECTION) {
+            throw new BadRequestException("Parameter 'documentType' should not be 'BASELINE_COLLECTION'");
+        }
     }
 
     private String getFileName(@Nullable ExportParams exportParams) {

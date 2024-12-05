@@ -597,6 +597,47 @@
         ]
       }
     },
+    "/api/projects/{projectId}/collections/{collectionId}/documents": {
+      "get": {
+        "operationId": "getDocumentsFromCollection",
+        "parameters": [
+          {
+            "description": "Project ID",
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Collection ID",
+            "in": "path",
+            "name": "collectionId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentCollectionEntry"
+                }
+              }
+            },
+            "description": "Successfully retrieved the list of documents in the collection"
+          }
+        },
+        "summary": "Get documents from collection",
+        "tags": [
+          "Collections"
+        ]
+      }
+    },
     "/api/projects/{projectId}/name": {
       "get": {
         "operationId": "getProjectName",
@@ -1602,6 +1643,29 @@
         },
         "type": "object"
       },
+      "DocumentCollectionEntry": {
+        "description": "Details about document from collection",
+        "properties": {
+          "documentName": {
+            "description": "The name of the document",
+            "type": "string"
+          },
+          "projectId": {
+            "description": "The unique identifier for the project",
+            "example": "elibrary",
+            "type": "string"
+          },
+          "revision": {
+            "description": "The revision of the document",
+            "type": "string"
+          },
+          "spaceId": {
+            "description": "The unique identifier of the space within the project",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "ExportParams": {
         "properties": {
           "attachmentsFilter": {
@@ -1640,6 +1704,7 @@
           "documentType": {
             "description": "Type of the document",
             "enum": [
+              "BASELINE_COLLECTION",
               "LIVE_DOC",
               "LIVE_REPORT",
               "TEST_RUN",

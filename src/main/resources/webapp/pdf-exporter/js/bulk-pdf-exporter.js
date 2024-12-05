@@ -21,7 +21,7 @@ const BULK_POPUP_HTML = `
         </div>
     </div>
 `;
-const DISABLED_BUTTON_CLASS= "polarion-TestsExecutionButton-buttons-defaultCursor";
+const DISABLED_BUTTON_CLASS = "polarion-TestsExecutionButton-buttons-defaultCursor";
 const BULK_EXPORT_IN_PROGRESS = "IN_PROGRESS";
 const BULK_EXPORT_INTERRUPTED = "INTERRUPTED";
 const BULK_EXPORT_FINISHED = "FINISHED";
@@ -55,7 +55,7 @@ const BulkPdfExporter = {
         this.startNextItemExport();
     },
 
-    renderBulkExportItems: function(bulkExportWidget) {
+    renderBulkExportItems: function (bulkExportWidget) {
         if (bulkExportWidget) {
             const modalContent = document.querySelector("#bulk-pdf-export-popup .modal__content");
             modalContent.innerHTML = "";
@@ -88,7 +88,7 @@ const BulkPdfExporter = {
 
                 const nameSpan = document.createElement("span");
                 nameSpan.className = "name";
-                nameSpan.innerText = this.getSpace(selectedCheckbox) + selectedCheckbox.dataset["id"];
+                nameSpan.innerText = this.getDocumentType(selectedCheckbox.dataset["type"]) === ExportParams.DocumentType.BASELINE_COLLECTION ? selectedCheckbox.dataset["name"] : this.getSpace(selectedCheckbox) + selectedCheckbox.dataset["id"];
                 titleSpan.appendChild(nameSpan);
 
                 div.appendChild(titleSpan);
@@ -104,6 +104,7 @@ const BulkPdfExporter = {
             case "Module": return "Document: ";
             case "RichPage": return "Report: ";
             case "TestRun": return "Test Run: ";
+            case "BaselineCollection": return "Collection: ";
             default: return "";
         }
     },
@@ -162,6 +163,8 @@ const BulkPdfExporter = {
             popup.querySelector(".polarion-JSWizardButton-Primary").style.display = "block";
             popup.querySelector(".polarion-JSWizardButton").style.display = "none";
             resultSpan.style.display = "none";
+            resultSpan.classList.remove("interrupted");
+            resultSpan.classList.remove("finished");
             this.updateProgress(progressBar);
         } else {
             popup.querySelector(".polarion-JSWizardButton-Primary").style.display = "none";
@@ -211,36 +214,62 @@ const BulkPdfExporter = {
             this.exportParams["documentType"] = documentType;
             const documentId = currentItem.dataset["id"];
             if (documentType === ExportParams.DocumentType.TEST_RUN) {
-                this.exportParams["urlQueryParameters"] = { id: documentId };
+                this.exportParams["urlQueryParameters"] = {id: documentId};
                 ExportCommon.downloadTestRunAttachments(this.exportParams.projectId, documentId, this.exportParams.revision, this.exportParams.attachmentsFilter);
+            } else if (documentType === ExportParams.DocumentType.BASELINE_COLLECTION) {
+                ExportCommon.convertCollectionDocuments(this.exportParams, documentId, () => {
+                        currentItem.classList.remove("in-progress");
+                        currentItem.classList.add("finished");
+                        BulkPdfExporter.finishedCount += 1;
+                        if (this.state !== BULK_EXPORT_INTERRUPTED) {
+                            BulkPdfExporter.updateState(BULK_EXPORT_IN_PROGRESS);
+                        }
+                        this.startNextItemExport();
+                    },
+                    (error) => {
+                        this.errors = true;
+                        currentItem.classList.remove("in-progress");
+                        currentItem.classList.add("error");
+                        error.text().then(errorJson => {
+                            const error = errorJson && JSON.parse(errorJson);
+                            const errorMessage = error && (error.message ? error.message : error.errorMessage);
+                            const errorDiv = document.createElement("div");
+                            errorDiv.className = "error-message";
+                            errorDiv.innerText = errorMessage;
+                            currentItem.appendChild(errorDiv);
+                        });
+                        this.startNextItemExport();
+                    });
             } else {
                 this.exportParams["locationPath"] = `${currentItem.dataset["space"]}/${documentId}`;
             }
 
-            ExportCommon.asyncConvertPdf(this.exportParams.toJSON(), (responseBody, fileName) => {
-                currentItem.classList.remove("in-progress");
-                currentItem.classList.add("finished");
+            if (documentType !== ExportParams.DocumentType.BASELINE_COLLECTION) {
+                ExportCommon.asyncConvertPdf(this.exportParams.toJSON(), (responseBody, fileName) => {
+                    currentItem.classList.remove("in-progress");
+                    currentItem.classList.add("finished");
 
-                BulkPdfExporter.finishedCount += 1;
-                BulkPdfExporter.updateState(BULK_EXPORT_IN_PROGRESS);
-                const downloadFileName = fileName || `${currentItem.dataset["space"] ? currentItem.dataset["space"] + "_" : ""}${documentId}.pdf`; // Fallback if file name wasn't received in response
-                ExportCommon.downloadBlob(responseBody, downloadFileName);
-                this.startNextItemExport();
-            }, errorResponse => {
-                this.errors = true;
-                currentItem.classList.remove("in-progress");
-                currentItem.classList.add("error");
+                    BulkPdfExporter.finishedCount += 1;
+                    BulkPdfExporter.updateState(BULK_EXPORT_IN_PROGRESS);
+                    const downloadFileName = fileName || `${currentItem.dataset["space"] ? currentItem.dataset["space"] + "_" : ""}${documentId}.pdf`; // Fallback if file name wasn't received in response
+                    ExportCommon.downloadBlob(responseBody, downloadFileName);
+                    this.startNextItemExport();
+                }, errorResponse => {
+                    this.errors = true;
+                    currentItem.classList.remove("in-progress");
+                    currentItem.classList.add("error");
 
-                errorResponse.text().then(errorJson => {
-                    const error = errorJson && JSON.parse(errorJson);
-                    const errorMessage = error && (error.message ? error.message : error.errorMessage);
-                    const errorDiv = document.createElement("div");
-                    errorDiv.className = "error-message";
-                    errorDiv.innerText = errorMessage;
-                    currentItem.appendChild(errorDiv);
+                    errorResponse.text().then(errorJson => {
+                        const error = errorJson && JSON.parse(errorJson);
+                        const errorMessage = error && (error.message ? error.message : error.errorMessage);
+                        const errorDiv = document.createElement("div");
+                        errorDiv.className = "error-message";
+                        errorDiv.innerText = errorMessage;
+                        currentItem.appendChild(errorDiv);
+                    });
+                    this.startNextItemExport();
                 });
-                this.startNextItemExport();
-            });
+            }
         } else if (this.state !== BULK_EXPORT_INTERRUPTED) {
             this.updateState(BULK_EXPORT_FINISHED);
         }
@@ -251,6 +280,7 @@ const BulkPdfExporter = {
             case "Module": return ExportParams.DocumentType.LIVE_DOC;
             case "RichPage": return ExportParams.DocumentType.LIVE_REPORT;
             case "TestRun": return ExportParams.DocumentType.TEST_RUN;
+            case "BaselineCollection": return ExportParams.DocumentType.BASELINE_COLLECTION;
             default: return "";
         }
     },

@@ -20,18 +20,19 @@ import com.polarion.alm.shared.api.utils.html.HtmlTagBuilder;
 import com.polarion.alm.tracker.model.IModule;
 import com.polarion.alm.tracker.model.IRichPage;
 import com.polarion.alm.ui.shared.LinearGradientColor;
+import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Iterator;
 
 public class BulkPdfExportWidgetRenderer extends AbstractWidgetRenderer {
-    @NotNull
-    private final DataSet dataSet;
-    @NotNull
-    private final IterableWithSize<ModelObject> items;
+    private final @NotNull DataSet dataSet;
+
+    private final @NotNull IterableWithSize<ModelObject> items;
+    @Getter
     private final int topItems;
-    @NotNull
-    private final IterableWithSize<Field> columns;
+    @Getter
+    private final @NotNull IterableWithSize<Field> columns;
     private final @NotNull PrototypeEnum itemsPrototype;
 
     public BulkPdfExportWidgetRenderer(@NotNull RichPageWidgetCommonContext context) {
@@ -61,6 +62,7 @@ public class BulkPdfExportWidgetRenderer extends AbstractWidgetRenderer {
             case Document -> DocumentType.LIVE_DOC;
             case RichPage -> DocumentType.LIVE_REPORT;
             case TestRun -> DocumentType.TEST_RUN;
+            case BaselineCollection -> DocumentType.BASELINE_COLLECTION;
             default -> throw new IllegalArgumentException("Unexpected value: " + prototype);
         };
     }
@@ -70,6 +72,7 @@ public class BulkPdfExportWidgetRenderer extends AbstractWidgetRenderer {
             case Document -> "Documents";
             case RichPage -> "Pages";
             case TestRun -> "Test Runs";
+            case BaselineCollection -> "Collections";
             default -> throw new IllegalArgumentException("Unexpected value: " + prototype);
         };
     }
@@ -164,6 +167,10 @@ public class BulkPdfExportWidgetRenderer extends AbstractWidgetRenderer {
                     .byName("data-space", getSpace(item))
                     .byName("data-id", getValue(item, "id"))
                     .className("export-item");
+
+            if (PrototypeEnum.BaselineCollection.name().equals(item.getOldApi().getPrototype().getName())) {
+                checkbox.attributes().byName("data-name", getValue(item, "name"));
+            }
 
             for (Field column : this.columns) {
                 td = builder.tag().td();

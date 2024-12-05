@@ -10,6 +10,7 @@ import com.polarion.alm.tracker.model.IModule;
 import com.polarion.alm.tracker.model.IRichPage;
 import com.polarion.alm.tracker.model.ITestRun;
 import com.polarion.alm.tracker.model.IWikiPage;
+import com.polarion.alm.tracker.model.baselinecollection.IBaselineCollection;
 import com.polarion.alm.ui.server.VelocityFactory;
 import com.polarion.core.util.logging.Logger;
 import org.apache.velocity.VelocityContext;
@@ -65,7 +66,11 @@ public class VelocityEvaluator {
                     velocityContext.put("page", documentData.getDocumentObject());
                 }
             }
-            default -> throw new IllegalArgumentException("Unknown document type");
+            case BASELINE_COLLECTION -> {
+                if (documentData.getDocumentObject() instanceof IBaselineCollection) {
+                    velocityContext.put("collection", documentData.getDocumentObject());
+                }
+            }
         }
 
         velocityContext.put("projectName", documentData.getProjectName());

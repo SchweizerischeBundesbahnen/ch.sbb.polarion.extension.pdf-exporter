@@ -131,7 +131,6 @@ public class DocumentDataHelper {
         });
     }
 
-
     public DocumentData<IWikiPage> getWikiPage(@Nullable ITrackerProject project, @NotNull ExportParams exportParams) {
         return getWikiPage(project, exportParams, true);
     }

@@ -4,6 +4,7 @@ export default class ExportParams {
         LIVE_REPORT: 'LIVE_REPORT',
         TEST_RUN: 'TEST_RUN',
         WIKI_PAGE: 'WIKI_PAGE',
+        BASELINE_COLLECTION: 'BASELINE_COLLECTION',
     };
 
     static Orientation = {

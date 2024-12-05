@@ -18,6 +18,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.VisibleForTesting;
 
 import java.util.EnumSet;
+import java.util.Objects;
 
 
 public class DocumentFileNameHelper {
@@ -46,10 +47,11 @@ public class DocumentFileNameHelper {
         DocumentDataHelper documentDataHelper = new DocumentDataHelper(pdfExporterPolarionService);
         final DocumentData<? extends IUniqueObject> documentData =
                 switch (exportParams.getDocumentType()) {
-                    case LIVE_DOC -> documentDataHelper.getLiveDoc(project, exportParams, false);
+                    case LIVE_DOC -> documentDataHelper.getLiveDoc(Objects.requireNonNull(project), exportParams, false);
                     case LIVE_REPORT -> documentDataHelper.getLiveReport(project, exportParams, false);
-                    case TEST_RUN -> documentDataHelper.getTestRun(project, exportParams, false);
+                    case TEST_RUN -> documentDataHelper.getTestRun(Objects.requireNonNull(project), exportParams, false);
                     case WIKI_PAGE -> documentDataHelper.getWikiPage(project, exportParams, false);
+                    case BASELINE_COLLECTION -> throw new IllegalArgumentException("Unsupported document type: %s".formatted(exportParams.getDocumentType()));
                 };
 
         FileNameTemplateModel fileNameTemplateModel = getFileNameTemplateModel(ScopeUtils.getScopeFromProject(exportParams.getProjectId()));
@@ -70,16 +72,14 @@ public class DocumentFileNameHelper {
         return fileName.replaceAll("[\\\\/:*?\"<>|]", "_");
     }
 
-    private @NotNull String getFileNameTemplate(@NotNull DocumentType documentType, @NotNull FileNameTemplateModel fileNameTemplateModel) {
+    @VisibleForTesting
+    @NotNull String getFileNameTemplate(@NotNull DocumentType documentType, @NotNull FileNameTemplateModel fileNameTemplateModel) {
         return switch (documentType) {
-            case LIVE_DOC:
-                yield fileNameTemplateModel.getDocumentNameTemplate();
-            case LIVE_REPORT:
-                yield fileNameTemplateModel.getReportNameTemplate();
-            case TEST_RUN:
-                yield fileNameTemplateModel.getTestRunNameTemplate();
-            case WIKI_PAGE:
-                yield fileNameTemplateModel.getWikiNameTemplate();
+            case LIVE_DOC -> fileNameTemplateModel.getDocumentNameTemplate();
+            case LIVE_REPORT -> fileNameTemplateModel.getReportNameTemplate();
+            case TEST_RUN -> fileNameTemplateModel.getTestRunNameTemplate();
+            case WIKI_PAGE -> fileNameTemplateModel.getWikiNameTemplate();
+            case BASELINE_COLLECTION -> throw new IllegalArgumentException("Unsupported document type: %s".formatted(documentType));
         };
     }
 

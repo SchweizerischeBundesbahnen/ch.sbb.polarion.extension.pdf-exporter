@@ -5,6 +5,9 @@ import io.swagger.v3.oas.annotations.media.Schema;
 
 @Schema(description = "Type of the document")
 public enum DocumentType {
+    @Schema(description = "Baseline collection")
+    BASELINE_COLLECTION,
+
     @Schema(description = "Live document")
     LIVE_DOC,
 

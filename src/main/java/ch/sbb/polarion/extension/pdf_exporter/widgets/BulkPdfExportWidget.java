@@ -53,7 +53,7 @@ public class BulkPdfExportWidget extends TableWidget {
         FieldsParameter columns = parameterFactory.fields(localization.getString("richpages.widget.table.columns")).build();
         SortingParameter sortBy = parameterFactory.sorting(localization.getString("richpages.widget.table.sortBy")).build();
         DataSetParameter dataSet = parameterFactory.dataSet(localization.getString("richpages.widget.table.dataSet"))
-                .allowedPrototypes(PrototypeEnum.Document, PrototypeEnum.TestRun, PrototypeEnum.RichPage)
+                .allowedPrototypes(PrototypeEnum.Document, PrototypeEnum.TestRun, PrototypeEnum.RichPage, PrototypeEnum.BaselineCollection)
                 .add("columns", columns)
                 .add("sortBy", sortBy)
                 .dependencySource(true)
