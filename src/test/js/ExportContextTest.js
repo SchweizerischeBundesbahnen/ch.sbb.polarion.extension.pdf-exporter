@@ -132,4 +132,60 @@ describe('ExportContext Class', function () {
         expect(exportContext.getSpaceId()).to.be.undefined;
         expect(exportContext.getDocumentName()).to.be.undefined;
     });
+
+    it('URL: #/project/elibrary/collection/145/wiki/live_doc', function () {
+        const locationHash = "#/project/elibrary/collection/145/wiki/live_doc";
+        const exportContext = new ExportContext({documentType: ExportParams.DocumentType.LIVE_DOC, polarionLocationHash: locationHash});
+
+        expect(exportContext.documentType).to.equal(ExportParams.DocumentType.LIVE_DOC);
+        expect(exportContext.projectId).to.equal('elibrary');
+        expect(exportContext.locationPath).to.equal('_default/live_doc');
+        expect(exportContext.revision).to.be.undefined;
+        expect(exportContext.urlQueryParameters).to.be.undefined;
+
+        expect(exportContext.getSpaceId()).to.equal('_default');
+        expect(exportContext.getDocumentName()).to.equal('live_doc');
+    });
+
+    it('URL: #/project/elibrary/collection/145/wiki/live_doc', function () {
+        const locationHash = "#/project/elibrary/collection/145/wiki/live_doc";
+        const exportContext = new ExportContext({documentType: ExportParams.DocumentType.LIVE_DOC, polarionLocationHash: locationHash});
+
+        expect(exportContext.documentType).to.equal(ExportParams.DocumentType.LIVE_DOC);
+        expect(exportContext.projectId).to.equal('elibrary');
+        expect(exportContext.locationPath).to.equal('_default/live_doc');
+        expect(exportContext.revision).to.be.undefined;
+        expect(exportContext.urlQueryParameters).to.be.undefined;
+
+        expect(exportContext.getSpaceId()).to.equal('_default');
+        expect(exportContext.getDocumentName()).to.equal('live_doc');
+    });
+
+    it('URL: #/project/drivepilot/collection/elibrary//144/wiki/Requirements/live%20doc', function () {
+        const locationHash = "#/project/drivepilot/collection/elibrary//144/wiki/Requirements/live%20doc";
+        const exportContext = new ExportContext({documentType: ExportParams.DocumentType.LIVE_DOC, polarionLocationHash: locationHash});
+
+        expect(exportContext.documentType).to.equal(ExportParams.DocumentType.LIVE_DOC);
+        expect(exportContext.projectId).to.equal('drivepilot');
+        expect(exportContext.locationPath).to.equal('Requirements/live doc');
+        expect(exportContext.revision).to.be.undefined;
+        expect(exportContext.urlQueryParameters).to.be.undefined;
+
+        expect(exportContext.getSpaceId()).to.equal('Requirements');
+        expect(exportContext.getDocumentName()).to.equal('live doc');
+    });
+
+    it('URL: #/project/drivepilot/collection/1/wiki/Requirements/System%20Requirement%20Specification?revision=112', function () {
+        const locationHash = "#/project/drivepilot/collection/1/wiki/Requirements/System%20Requirement%20Specification?revision=112";
+        const exportContext = new ExportContext({documentType: ExportParams.DocumentType.LIVE_DOC, polarionLocationHash: locationHash});
+
+        expect(exportContext.documentType).to.equal(ExportParams.DocumentType.LIVE_DOC);
+        expect(exportContext.projectId).to.equal('drivepilot');
+        expect(exportContext.locationPath).to.equal('Requirements/System Requirement Specification');
+        expect(exportContext.revision).to.equal('112');
+        expect(exportContext.urlQueryParameters).to.deep.equal({ revision: '112' });
+
+        expect(exportContext.getSpaceId()).to.equal('Requirements');
+        expect(exportContext.getDocumentName()).to.equal('System Requirement Specification');
+    });
 });
