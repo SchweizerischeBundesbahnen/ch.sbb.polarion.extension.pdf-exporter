@@ -305,7 +305,7 @@ public class PdfExporterFormExtension implements IFormExtension {
     private String adjustButtons(@NotNull String form, @NotNull IModule module, @NotNull StylePackageModel stylePackage) {
         IProject project = module.getProject();
         String moduleLocationPath = module.getModuleLocation().getLocationPath();
-        String params = fillParams(project.getId(), moduleLocationPath);
+        String params = fillParams(project.getId(), moduleLocationPath, module.getRevision());
         form = form.replace("{LOAD_PDF_PARAMS}", params);
 
         form = form.replace("{VALIDATE_PDF_PARAMS}", params);

@@ -17,6 +17,11 @@ export default class ExportContext {
         const normalizedPolarionLocationHash = urlPathAndSearchParams.path;
         const searchParameters = urlPathAndSearchParams.searchParameters;
 
+        const baseline = getBaseline(normalizedPolarionLocationHash);
+        if (baseline) {
+            this.revision = getBaselineRevision(baseline);
+        }
+
         const scope = getScope(normalizedPolarionLocationHash);
         this.projectId = getProjectId(scope);
 
@@ -31,7 +36,9 @@ export default class ExportContext {
         }
 
         this.urlQueryParameters = getQueryParams(searchParameters);
-        this.revision = this.urlQueryParameters?.revision;
+        if (!this.revision) {
+            this.revision = this.urlQueryParameters?.revision;
+        }
 
         this.bulkExportWidget = bulkExportWidget;
 
@@ -62,6 +69,17 @@ export default class ExportContext {
             }
 
             return result;
+        }
+
+        function getBaseline(locationHash) {
+            const baselinePattern = /baseline\/([^/]+)\//;
+            const baselineMatch = baselinePattern.exec(locationHash);
+            return baselineMatch ? `baseline/${baselineMatch[1]}/` : undefined;
+        }
+
+        function getBaselineRevision(baselineScope) {
+            const foundValues = /baseline\/(.*)\//.exec(baselineScope);
+            return foundValues !== null ? foundValues[1] : null;
         }
 
         function getScope(locationHash) {
