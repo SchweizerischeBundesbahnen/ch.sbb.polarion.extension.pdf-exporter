@@ -1,5 +1,12 @@
 # Changelog
 
+## [7.5.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v7.4.0...v7.5.0) (2024-12-09)
+
+
+### Features
+
+* support baseline view ([#308](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/308)) ([6c7ccf4](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/6c7ccf4efd5e6966e389c437a2fd1e1d02d6e495)), closes [#305](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/305)
+
 ## [7.4.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v7.3.1...v7.4.0) (2024-12-05)
 
 
