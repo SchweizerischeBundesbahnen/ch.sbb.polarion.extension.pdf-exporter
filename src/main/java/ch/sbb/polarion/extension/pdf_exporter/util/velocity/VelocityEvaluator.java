@@ -1,5 +1,6 @@
 package ch.sbb.polarion.extension.pdf_exporter.util.velocity;
 
+import ch.sbb.polarion.extension.generic.util.ObjectUtils;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.DocumentData;
 import com.polarion.alm.projects.model.IUniqueObject;
 import com.polarion.alm.shared.api.transaction.ReadOnlyTransaction;
@@ -20,14 +21,13 @@ import org.apache.velocity.exception.ResourceNotFoundException;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.StringWriter;
-import java.util.Objects;
 
 public class VelocityEvaluator {
 
     private static final Logger log = Logger.getLogger(VelocityEvaluator.class);
 
     public @NotNull String evaluateVelocityExpressions(@NotNull DocumentData<? extends IUniqueObject> documentData, @NotNull String template) {
-        return Objects.requireNonNull(TransactionalExecutor.executeSafelyInReadOnlyTransaction(transaction -> {
+        return ObjectUtils.requireNotNull(TransactionalExecutor.executeSafelyInReadOnlyTransaction(transaction -> {
             VelocityContext velocityContext = createVelocityContext(transaction, documentData);
             StringWriter writer = new StringWriter();
             VelocityEngine velocityEngine = new VelocityFactory().engine();

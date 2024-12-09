@@ -48,7 +48,6 @@ public class ModifiedDocumentRenderer {
         if (lazyLoadParams != null) {
             this.renderingContext.setDocumentLazyLoad(lazyLoadParams.isDocumentLazyLoad());
             this.renderingContext.setCurrentDocumentRevision(lazyLoadParams.getCurrentDocumentRevision());
-            this.renderingContext.setDocumentLazyLoadHeadOrBaseline(lazyLoadParams.isHeadOrBaseline());
         }
 
         FieldRichTextRenderer renderer = null;

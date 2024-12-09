@@ -278,8 +278,8 @@ public class PdfConverter {
         String css = pdfStyles
                 + (exportParams.getHeadersColor() != null ?
                 "      h1, h2, h3, h4, h5, h6, .content .title {" +
-                        "        color: " + exportParams.getHeadersColor() + ";" +
-                        "      }"
+                "        color: " + exportParams.getHeadersColor() + ";" +
+                "      }"
                 : "")
                 + listStyles;
 
