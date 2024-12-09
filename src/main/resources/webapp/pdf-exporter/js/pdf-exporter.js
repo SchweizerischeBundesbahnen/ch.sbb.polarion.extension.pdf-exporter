@@ -548,6 +548,7 @@ const PdfExporter = {
         return new ExportParams.Builder(this.exportContext.getDocumentType())
             .setProjectId(this.exportContext.getProjectId())
             .setLocationPath(this.exportContext.getLocationPath())
+            .setBaselineRevision(this.exportContext.getBaselineRevision())
             .setRevision(this.exportContext.getRevision())
             .setCoverPage(document.getElementById("popup-cover-page-checkbox").checked ? document.getElementById("popup-cover-page-selector").value : null)
             .setCss(document.getElementById("popup-css-selector").value)

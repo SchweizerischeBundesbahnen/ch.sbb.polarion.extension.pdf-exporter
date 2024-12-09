@@ -55,8 +55,10 @@ public class PdfExporterFormExtension implements IFormExtension {
     @Override
     @Nullable
     public String render(@NotNull IFormExtensionContext context) {
-        return TransactionalExecutor.executeSafelyInReadOnlyTransaction(
-                transaction -> renderForm(transaction.context(), context.object().getOldApi()));
+        return TransactionalExecutor.executeSafelyInReadOnlyTransaction(transaction -> {
+            String baselineRevision = transaction.context().baselineRevision();
+            return polarionService.executeInBaseline(baselineRevision, transaction, () -> renderForm(transaction.context(), context.object().getOldApi()));
+        });
     }
 
     public String renderForm(@NotNull SharedContext context, @NotNull IPObject object) {
@@ -101,7 +103,7 @@ public class PdfExporterFormExtension implements IFormExtension {
             form = adjustLocalizeEnums(form, selectedStylePackage, module.getCustomField(DOC_LANGUAGE_FIELD));
             form = adjustLinkRoles(form, EnumValuesProvider.getAllLinkRoleNames(module.getProject()), selectedStylePackage);
             form = adjustFilename(form, module);
-            form = adjustButtons(form, module, selectedStylePackage);
+            form = adjustButtons(form, module, selectedStylePackage, context.baselineRevision());
 
             builder.html(form);
         }
@@ -302,10 +304,10 @@ public class PdfExporterFormExtension implements IFormExtension {
         return form.replace("{FILENAME}", filename).replace("{DATA_FILENAME}", filename);
     }
 
-    private String adjustButtons(@NotNull String form, @NotNull IModule module, @NotNull StylePackageModel stylePackage) {
+    private String adjustButtons(@NotNull String form, @NotNull IModule module, @NotNull StylePackageModel stylePackage, @Nullable String baselineRevision) {
         IProject project = module.getProject();
         String moduleLocationPath = module.getModuleLocation().getLocationPath();
-        String params = fillParams(project.getId(), moduleLocationPath, module.getRevision());
+        String params = fillParams(project.getId(), moduleLocationPath, baselineRevision, module.getRevision());
         form = form.replace("{LOAD_PDF_PARAMS}", params);
 
         form = form.replace("{VALIDATE_PDF_PARAMS}", params);

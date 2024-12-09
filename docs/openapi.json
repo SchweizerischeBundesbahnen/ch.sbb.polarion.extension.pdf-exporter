@@ -618,6 +618,14 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "description": "The specific revision of the provided collection",
+            "in": "query",
+            "name": "revision",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -1670,6 +1678,10 @@
         "properties": {
           "attachmentsFilter": {
             "description": "Filter for attachments to be downloaded, example: '*.pdf'",
+            "type": "string"
+          },
+          "baselineRevision": {
+            "description": "The specific revision of the provided baseline",
             "type": "string"
           },
           "chapters": {

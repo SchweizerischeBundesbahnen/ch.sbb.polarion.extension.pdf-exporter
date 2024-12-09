@@ -22,6 +22,9 @@ public class ExportParams {
     @Schema(description = "Document path for export", example = "Specification/Product Specification")
     private @Nullable String locationPath;
 
+    @Schema(description = "The specific revision of the provided baseline")
+    private @Nullable String baselineRevision;
+
     @Schema(description = "The specific revision of the document")
     private @Nullable String revision;
 

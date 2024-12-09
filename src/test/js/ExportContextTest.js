@@ -10,6 +10,7 @@ describe('ExportContext Class', function () {
         expect(exportContext.documentType).to.equal(ExportParams.DocumentType.LIVE_DOC);
         expect(exportContext.projectId).to.equal('elibrary');
         expect(exportContext.locationPath).to.equal('_default/BigDoc');
+        expect(exportContext.baselineRevision).to.be.undefined;
         expect(exportContext.revision).to.be.undefined;
         expect(exportContext.urlQueryParameters).to.be.undefined;
 
@@ -24,6 +25,7 @@ describe('ExportContext Class', function () {
         expect(exportContext.documentType).to.equal(ExportParams.DocumentType.LIVE_DOC);
         expect(exportContext.projectId).to.equal('elibrary');
         expect(exportContext.locationPath).to.equal('Specification/Administration Specification');
+        expect(exportContext.baselineRevision).to.be.undefined;
         expect(exportContext.revision).to.be.undefined;
         expect(exportContext.urlQueryParameters).to.be.undefined;
 
@@ -38,6 +40,7 @@ describe('ExportContext Class', function () {
         expect(exportContext.documentType).to.equal(ExportParams.DocumentType.LIVE_DOC);
         expect(exportContext.projectId).to.equal('mega_project');
         expect(exportContext.locationPath).to.equal('Specs/test');
+        expect(exportContext.baselineRevision).to.be.undefined;
         expect(exportContext.revision).to.be.undefined;
         expect(exportContext.urlQueryParameters).to.be.undefined;
 
@@ -52,6 +55,7 @@ describe('ExportContext Class', function () {
         expect(exportContext.documentType).to.equal(ExportParams.DocumentType.LIVE_DOC);
         expect(exportContext.projectId).to.be.null;
         expect(exportContext.locationPath).to.equal('_default/classic wiki page');
+        expect(exportContext.baselineRevision).to.be.undefined;
         expect(exportContext.revision).to.be.undefined;
         expect(exportContext.urlQueryParameters).to.be.undefined;
 
@@ -66,6 +70,7 @@ describe('ExportContext Class', function () {
         expect(exportContext.documentType).to.equal(ExportParams.DocumentType.LIVE_REPORT);
         expect(exportContext.projectId).to.be.null;
         expect(exportContext.locationPath).to.equal('_default/TestLiveReport');
+        expect(exportContext.baselineRevision).to.be.undefined;
         expect(exportContext.revision).to.be.undefined;
         expect(exportContext.urlQueryParameters).to.be.undefined;
 
@@ -80,6 +85,7 @@ describe('ExportContext Class', function () {
         expect(exportContext.documentType).to.equal(ExportParams.DocumentType.TEST_RUN);
         expect(exportContext.projectId).to.equal('elibrary');
         expect(exportContext.locationPath).to.be.undefined;
+        expect(exportContext.baselineRevision).to.be.undefined;
         expect(exportContext.revision).to.be.undefined;
         expect(exportContext.urlQueryParameters).to.deep.equal({ id: 'elibrary_20231026-163136654' });
 
@@ -94,6 +100,7 @@ describe('ExportContext Class', function () {
         expect(exportContext.documentType).to.equal(ExportParams.DocumentType.LIVE_DOC);
         expect(exportContext.projectId).to.equal('elibrary');
         expect(exportContext.locationPath).to.equal('Reports/LiveReport with params');
+        expect(exportContext.baselineRevision).to.be.undefined;
         expect(exportContext.revision).to.be.undefined;
         expect(exportContext.urlQueryParameters).to.deep.equal({
             stringParameter: 'asd',
@@ -112,6 +119,7 @@ describe('ExportContext Class', function () {
         expect(exportContext.documentType).to.equal(ExportParams.DocumentType.TEST_RUN);
         expect(exportContext.projectId).to.equal('elibrary');
         expect(exportContext.locationPath).to.be.undefined;
+        expect(exportContext.baselineRevision).to.be.undefined;
         expect(exportContext.revision).to.be.undefined;
         expect(exportContext.urlQueryParameters).to.be.undefined;
 
@@ -126,6 +134,7 @@ describe('ExportContext Class', function () {
         expect(exportContext.documentType).to.equal(ExportParams.DocumentType.BASELINE_COLLECTION);
         expect(exportContext.projectId).to.equal('elibrary');
         expect(exportContext.locationPath).to.be.undefined;
+        expect(exportContext.baselineRevision).to.be.undefined;
         expect(exportContext.revision).to.be.undefined;
         expect(exportContext.urlQueryParameters).to.deep.equal({ id: '144' });
 
@@ -140,6 +149,7 @@ describe('ExportContext Class', function () {
         expect(exportContext.documentType).to.equal(ExportParams.DocumentType.LIVE_DOC);
         expect(exportContext.projectId).to.equal('elibrary');
         expect(exportContext.locationPath).to.equal('_default/live_doc');
+        expect(exportContext.baselineRevision).to.be.undefined;
         expect(exportContext.revision).to.be.undefined;
         expect(exportContext.urlQueryParameters).to.be.undefined;
 
@@ -154,6 +164,7 @@ describe('ExportContext Class', function () {
         expect(exportContext.documentType).to.equal(ExportParams.DocumentType.LIVE_DOC);
         expect(exportContext.projectId).to.equal('drivepilot');
         expect(exportContext.locationPath).to.equal('Requirements/live doc');
+        expect(exportContext.baselineRevision).to.be.undefined;
         expect(exportContext.revision).to.be.undefined;
         expect(exportContext.urlQueryParameters).to.be.undefined;
 
@@ -168,6 +179,7 @@ describe('ExportContext Class', function () {
         expect(exportContext.documentType).to.equal(ExportParams.DocumentType.LIVE_DOC);
         expect(exportContext.projectId).to.equal('drivepilot');
         expect(exportContext.locationPath).to.equal('Requirements/System Requirement Specification');
+        expect(exportContext.baselineRevision).to.be.undefined;
         expect(exportContext.revision).to.equal('112');
         expect(exportContext.urlQueryParameters).to.deep.equal({ revision: '112' });
 
@@ -182,7 +194,8 @@ describe('ExportContext Class', function () {
         expect(exportContext.documentType).to.equal(ExportParams.DocumentType.LIVE_DOC);
         expect(exportContext.projectId).to.equal('elibrary');
         expect(exportContext.locationPath).to.equal('_default/BigDoc2');
-        expect(exportContext.revision).to.equal('6749');
+        expect(exportContext.baselineRevision).to.equal('6749');
+        expect(exportContext.revision).to.be.undefined;
         expect(exportContext.urlQueryParameters).to.be.undefined;
 
         expect(exportContext.getSpaceId()).to.equal('_default');
@@ -196,7 +209,8 @@ describe('ExportContext Class', function () {
         expect(exportContext.documentType).to.equal(ExportParams.DocumentType.LIVE_REPORT);
         expect(exportContext.projectId).to.equal('elibrary');
         expect(exportContext.locationPath).to.equal('Specification/Epic Statistics');
-        expect(exportContext.revision).to.equal('6711');
+        expect(exportContext.baselineRevision).to.equal('6711');
+        expect(exportContext.revision).to.be.undefined;
         expect(exportContext.urlQueryParameters).to.deep.equal({ parameter: 'value' });
 
         expect(exportContext.getSpaceId()).to.equal('Specification');

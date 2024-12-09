@@ -40,6 +40,7 @@ import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
 
 import java.util.Map;
+import java.util.Objects;
 
 @SuppressWarnings("java:S1200")
 public class DocumentDataHelper {
@@ -58,39 +59,40 @@ public class DocumentDataHelper {
     }
 
     public DocumentData<IRichPage> getLiveReport(@Nullable ITrackerProject project, @NotNull ExportParams exportParams, boolean withContent) {
-        return TransactionalExecutor.executeSafelyInReadOnlyTransaction(transaction -> {
+        return TransactionalExecutor.executeSafelyInReadOnlyTransaction(
+                transaction -> pdfExporterPolarionService.executeInBaseline(exportParams.getBaselineRevision(), transaction, () -> {
 
-            String projectId = project != null ? project.getId() : "";
-            String locationPath = exportParams.getLocationPath();
-            if (locationPath == null) {
-                throw new IllegalArgumentException("Location path is required for export");
-            }
+                    String projectId = project != null ? project.getId() : "";
+                    String locationPath = exportParams.getLocationPath();
+                    if (locationPath == null) {
+                        throw new IllegalArgumentException("Location path is required for export");
+                    }
 
-            RichPageReference richPageReference = RichPageReference.fromPath(createPath(projectId, locationPath));
-            if (exportParams.getRevision() != null) {
-                richPageReference = richPageReference.getWithRevision(exportParams.getRevision());
-            }
+                    RichPageReference richPageReference = RichPageReference.fromPath(createPath(projectId, locationPath));
+                    if (exportParams.getRevision() != null) {
+                        richPageReference = richPageReference.getWithRevision(exportParams.getRevision());
+                    }
 
-            RichPage richPage = richPageReference.getOriginal(transaction);
+                    RichPage richPage = richPageReference.getOriginal(transaction);
 
-            String documentContent = null;
-            if (withContent) {
-                String html = RpeModelAspect.getPageHtml(richPage);
-                Map<String, String> liveReportParameters = exportParams.getUrlQueryParameters() == null ? Map.of() : exportParams.getUrlQueryParameters();
-                StrictMap<String, String> urlParameters = new StrictMapImpl<>(liveReportParameters);
-                RpeRenderer richPageRenderer = new RpeRenderer((InternalReadOnlyTransaction) transaction, html, RichTextRenderTarget.PDF_EXPORT, richPageReference, richPageReference.scope(), urlParameters);
-                documentContent = richPageRenderer.render(null);
-            }
+                    String documentContent = null;
+                    if (withContent) {
+                        String html = RpeModelAspect.getPageHtml(richPage);
+                        Map<String, String> liveReportParameters = exportParams.getUrlQueryParameters() == null ? Map.of() : exportParams.getUrlQueryParameters();
+                        StrictMap<String, String> urlParameters = new StrictMapImpl<>(liveReportParameters);
+                        RpeRenderer richPageRenderer = new RpeRenderer((InternalReadOnlyTransaction) transaction, html, RichTextRenderTarget.PDF_EXPORT, richPageReference, richPageReference.scope(), urlParameters);
+                        documentContent = richPageRenderer.render(null);
+                    }
 
-            return DocumentData.builder(DocumentType.LIVE_REPORT, richPage.getOldApi())
-                    .projectName(project != null ? project.getName() : "")
-                    .lastRevision(richPage.getOldApi().getLastRevision())
-                    .baselineName(project != null ? getRevisionBaseline(projectId, richPage.getOldApi(), exportParams.getRevision()) : "")
-                    .id(richPage.getOldApi().getId())
-                    .title(richPage.getOldApi().getTitleOrName())
-                    .content(documentContent)
-                    .build();
-        });
+                    return DocumentData.builder(DocumentType.LIVE_REPORT, richPage.getOldApi())
+                            .projectName(project != null ? project.getName() : "")
+                            .lastRevision(richPage.getOldApi().getLastRevision())
+                            .baselineName(project != null ? getRevisionBaseline(projectId, richPage.getOldApi(), exportParams.getRevision()) : "")
+                            .id(richPage.getOldApi().getId())
+                            .title(richPage.getOldApi().getTitleOrName())
+                            .content(documentContent)
+                            .build();
+                }));
     }
 
     public DocumentData<ITestRun> getTestRun(@NotNull ITrackerProject project, @NotNull ExportParams exportParams) {
@@ -98,37 +100,38 @@ public class DocumentDataHelper {
     }
 
     public DocumentData<ITestRun> getTestRun(@NotNull ITrackerProject project, @NotNull ExportParams exportParams, boolean withContent) {
-        return TransactionalExecutor.executeSafelyInReadOnlyTransaction(transaction -> {
+        return TransactionalExecutor.executeSafelyInReadOnlyTransaction(
+                transaction -> pdfExporterPolarionService.executeInBaseline(exportParams.getBaselineRevision(), transaction, () -> {
 
-            String projectId = project.getId();
-            Map<String, String> urlQueryParameters = exportParams.getUrlQueryParameters();
-            if (urlQueryParameters == null || !urlQueryParameters.containsKey(URL_QUERY_PARAM_ID)) {
-                throw new IllegalArgumentException("TestRun id is required for export");
-            }
+                    String projectId = project.getId();
+                    Map<String, String> urlQueryParameters = exportParams.getUrlQueryParameters();
+                    if (urlQueryParameters == null || !urlQueryParameters.containsKey(URL_QUERY_PARAM_ID)) {
+                        throw new IllegalArgumentException("TestRun id is required for export");
+                    }
 
-            TestRunReference testRunReference = TestRunReference.fromPath(createPath(projectId, urlQueryParameters.get(URL_QUERY_PARAM_ID)));
-            if (exportParams.getRevision() != null) {
-                testRunReference = testRunReference.getWithRevision(exportParams.getRevision());
-            }
+                    TestRunReference testRunReference = TestRunReference.fromPath(createPath(projectId, urlQueryParameters.get(URL_QUERY_PARAM_ID)));
+                    if (exportParams.getRevision() != null) {
+                        testRunReference = testRunReference.getWithRevision(exportParams.getRevision());
+                    }
 
-            TestRun testRun = testRunReference.getOriginal(transaction);
+                    TestRun testRun = testRunReference.getOriginal(transaction);
 
-            String documentContent = null;
-            if (withContent) {
-                String html = RpeModelAspect.getPageHtml(testRun);
-                RpeRenderer richPageRenderer = new RpeRenderer((InternalReadOnlyTransaction) transaction, html, RichTextRenderTarget.PDF_EXPORT, testRunReference, testRunReference.scope(), new StrictMapImpl<>());
-                documentContent = richPageRenderer.render(null);
-            }
+                    String documentContent = null;
+                    if (withContent) {
+                        String html = RpeModelAspect.getPageHtml(testRun);
+                        RpeRenderer richPageRenderer = new RpeRenderer((InternalReadOnlyTransaction) transaction, html, RichTextRenderTarget.PDF_EXPORT, testRunReference, testRunReference.scope(), new StrictMapImpl<>());
+                        documentContent = richPageRenderer.render(null);
+                    }
 
-            return DocumentData.builder(DocumentType.TEST_RUN, testRun.getOldApi())
-                    .projectName(project.getName())
-                    .lastRevision(testRun.getOldApi().getLastRevision())
-                    .baselineName(getRevisionBaseline(projectId, testRun.getOldApi(), exportParams.getRevision()))
-                    .id(testRun.getOldApi().getId())
-                    .title(testRun.getOldApi().getLabel())
-                    .content(documentContent)
-                    .build();
-        });
+                    return DocumentData.builder(DocumentType.TEST_RUN, testRun.getOldApi())
+                            .projectName(project.getName())
+                            .lastRevision(testRun.getOldApi().getLastRevision())
+                            .baselineName(getRevisionBaseline(projectId, testRun.getOldApi(), exportParams.getRevision()))
+                            .id(testRun.getOldApi().getId())
+                            .title(testRun.getOldApi().getLabel())
+                            .content(documentContent)
+                            .build();
+                }));
     }
 
     public DocumentData<IWikiPage> getWikiPage(@Nullable ITrackerProject project, @NotNull ExportParams exportParams) {
@@ -136,35 +139,36 @@ public class DocumentDataHelper {
     }
 
     public DocumentData<IWikiPage> getWikiPage(@Nullable ITrackerProject project, @NotNull ExportParams exportParams, boolean withContent) {
-        return TransactionalExecutor.executeSafelyInReadOnlyTransaction(transaction -> {
+        return TransactionalExecutor.executeSafelyInReadOnlyTransaction(
+                transaction -> pdfExporterPolarionService.executeInBaseline(exportParams.getBaselineRevision(), transaction, () -> {
 
-            String projectId = project != null ? project.getId() : "";
-            String locationPath = exportParams.getLocationPath();
-            if (locationPath == null) {
-                throw new IllegalArgumentException("Location path is required for export");
-            }
+                    String projectId = project != null ? project.getId() : "";
+                    String locationPath = exportParams.getLocationPath();
+                    if (locationPath == null) {
+                        throw new IllegalArgumentException("Location path is required for export");
+                    }
 
-            WikiPageReference wikiPageReference = WikiPageReference.fromPath(createPath(projectId, exportParams.getLocationPath()));
-            if (exportParams.getRevision() != null) {
-                wikiPageReference = wikiPageReference.getWithRevision(exportParams.getRevision());
-            }
+                    WikiPageReference wikiPageReference = WikiPageReference.fromPath(createPath(projectId, exportParams.getLocationPath()));
+                    if (exportParams.getRevision() != null) {
+                        wikiPageReference = wikiPageReference.getWithRevision(exportParams.getRevision());
+                    }
 
-            WikiPage wikiPage = wikiPageReference.getOriginal(transaction);
+                    WikiPage wikiPage = wikiPageReference.getOriginal(transaction);
 
-            String documentContent = null;
-            if (withContent) {
-                documentContent = new WikiRenderer().render(projectId, exportParams.getLocationPath(), exportParams.getRevision());
-            }
+                    String documentContent = null;
+                    if (withContent) {
+                        documentContent = new WikiRenderer().render(projectId, exportParams.getLocationPath(), exportParams.getRevision());
+                    }
 
-            return DocumentData.builder(DocumentType.WIKI_PAGE, wikiPage.getOldApi())
-                    .projectName(project != null ? project.getName() : "")
-                    .lastRevision(wikiPage.getOldApi().getLastRevision())
-                    .baselineName(project != null ? getRevisionBaseline(projectId, wikiPage.getOldApi(), exportParams.getRevision()) : "")
-                    .id(wikiPage.getOldApi().getId())
-                    .title(wikiPage.getOldApi().getTitleOrName())
-                    .content(documentContent)
-                    .build();
-        });
+                    return DocumentData.builder(DocumentType.WIKI_PAGE, wikiPage.getOldApi())
+                            .projectName(project != null ? project.getName() : "")
+                            .lastRevision(wikiPage.getOldApi().getLastRevision())
+                            .baselineName(project != null ? getRevisionBaseline(projectId, wikiPage.getOldApi(), exportParams.getRevision()) : "")
+                            .id(wikiPage.getOldApi().getId())
+                            .title(wikiPage.getOldApi().getTitleOrName())
+                            .content(documentContent)
+                            .build();
+                }));
     }
 
     public DocumentData<IModule> getLiveDoc(@NotNull ITrackerProject project, @NotNull ExportParams exportParams) {
@@ -172,35 +176,36 @@ public class DocumentDataHelper {
     }
 
     public DocumentData<IModule> getLiveDoc(@NotNull ITrackerProject project, @NotNull ExportParams exportParams, boolean withContent) {
-        return TransactionalExecutor.executeSafelyInReadOnlyTransaction(transaction -> {
+        return TransactionalExecutor.executeSafelyInReadOnlyTransaction(
+                transaction -> pdfExporterPolarionService.executeInBaseline(exportParams.getBaselineRevision(), transaction, () -> {
 
-            String locationPath = exportParams.getLocationPath();
-            if (locationPath == null) {
-                throw new IllegalArgumentException("Location path is required for export");
-            }
+                    String locationPath = exportParams.getLocationPath();
+                    if (locationPath == null) {
+                        throw new IllegalArgumentException("Location path is required for export");
+                    }
 
-            DocumentReference documentReference = DocumentReference.fromPath(createPath(project.getId(), exportParams.getLocationPath()));
-            if (exportParams.getRevision() != null) {
-                documentReference = documentReference.getWithRevision(exportParams.getRevision());
-            }
+                    DocumentReference documentReference = DocumentReference.fromPath(createPath(project.getId(), exportParams.getLocationPath()));
+                    if (exportParams.getRevision() != null) {
+                        documentReference = documentReference.getWithRevision(exportParams.getRevision());
+                    }
 
-            Document document = documentReference.getOriginal(transaction);
+                    Document document = documentReference.getOriginal(transaction);
 
-            String documentContent = null;
-            if (withContent) {
-                ProxyDocument proxyDocument = new ProxyDocument(document.getOldApi(), (InternalReadOnlyTransaction) transaction);
-                documentContent = getLiveDocContent(exportParams, proxyDocument, (InternalReadOnlyTransaction) transaction);
-            }
+                    String documentContent = null;
+                    if (withContent) {
+                        ProxyDocument proxyDocument = new ProxyDocument(document.getOldApi(), (InternalReadOnlyTransaction) transaction);
+                        documentContent = getLiveDocContent(exportParams, proxyDocument, (InternalReadOnlyTransaction) transaction);
+                    }
 
-            return DocumentData.builder(DocumentType.LIVE_DOC, document.getOldApi())
-                    .projectName(project.getName())
-                    .lastRevision(document.getOldApi().getLastRevision())
-                    .baselineName(getRevisionBaseline(project.getId(), document.getOldApi(), exportParams.getRevision()))
-                    .id(document.getOldApi().getModuleName())
-                    .title(document.getOldApi().getTitleOrName())
-                    .content(documentContent)
-                    .build();
-        });
+                    return DocumentData.builder(DocumentType.LIVE_DOC, document.getOldApi())
+                            .projectName(project.getName())
+                            .lastRevision(document.getOldApi().getLastRevision())
+                            .baselineName(getRevisionBaseline(project.getId(), document.getOldApi(), exportParams.getRevision()))
+                            .id(document.getOldApi().getModuleName())
+                            .title(document.getOldApi().getTitleOrName())
+                            .content(documentContent)
+                            .build();
+                }));
     }
 
     public String getLiveDocContent(@NotNull ExportParams exportParams, @NotNull ProxyDocument document, @NotNull InternalReadOnlyTransaction transaction) {
@@ -229,8 +234,8 @@ public class DocumentDataHelper {
     }
 
     public boolean hasLiveDocNestedNumberedLists(@NotNull ExportParams exportParams) {
-        return Boolean.TRUE.equals(TransactionalExecutor.executeSafelyInReadOnlyTransaction(transaction -> {
-            IProject project = pdfExporterPolarionService.getProject(exportParams.getProjectId());
+        return Boolean.TRUE.equals(TransactionalExecutor.executeSafelyInReadOnlyTransaction(transaction -> pdfExporterPolarionService.executeInBaseline(exportParams.getBaselineRevision(), transaction, () -> {
+            IProject project = pdfExporterPolarionService.getProject(Objects.requireNonNull(exportParams.getProjectId()));
             ILocation location = getDocumentLocation(exportParams.getLocationPath(), exportParams.getRevision());
             ProxyDocument document = new ProxyDocument(pdfExporterPolarionService.getModule(project, location), (InternalReadOnlyTransaction) transaction);
 
@@ -240,7 +245,7 @@ public class DocumentDataHelper {
             String renderedContent = documentRenderer.render(internalContent != null ? internalContent : "");
 
             return new NumberedListsSanitizer().containsNestedNumberedLists(renderedContent);
-        }));
+        })));
     }
 
     public ILocation getDocumentLocation(String locationPath, @Nullable String revision) {

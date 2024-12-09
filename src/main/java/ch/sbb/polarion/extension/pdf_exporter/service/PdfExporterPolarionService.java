@@ -5,6 +5,7 @@ import ch.sbb.polarion.extension.generic.settings.NamedSettingsRegistry;
 import ch.sbb.polarion.extension.generic.settings.SettingId;
 import ch.sbb.polarion.extension.generic.settings.SettingName;
 import ch.sbb.polarion.extension.generic.util.ScopeUtils;
+import ch.sbb.polarion.extension.pdf_exporter.exception.BaselineExecutionException;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.attachments.TestRunAttachment;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.collections.DocumentCollectionEntry;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.stylepackage.StylePackageModel;
@@ -12,6 +13,7 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.stylepackage.S
 import ch.sbb.polarion.extension.pdf_exporter.settings.StylePackageSettings;
 import ch.sbb.polarion.extension.pdf_exporter.util.WildcardUtils;
 import com.polarion.alm.projects.IProjectService;
+import com.polarion.alm.shared.api.model.baselinecollection.BaselineCollection;
 import com.polarion.alm.shared.api.model.baselinecollection.BaselineCollectionReference;
 import com.polarion.alm.shared.api.transaction.ReadOnlyTransaction;
 import com.polarion.alm.tracker.ITestManagementService;
@@ -38,6 +40,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.Callable;
 
 public class PdfExporterPolarionService extends PolarionService {
 
@@ -171,10 +174,16 @@ public class PdfExporterPolarionService extends PolarionService {
         return testRunAttachment;
     }
 
-    public @NotNull List<DocumentCollectionEntry> getDocumentsFromCollection(@NotNull String projectId, @NotNull String collectionId, @NotNull ReadOnlyTransaction transaction) {
+    public @NotNull List<DocumentCollectionEntry> getDocumentsFromCollection(@NotNull String projectId, @NotNull String collectionId, @Nullable String revision, @NotNull ReadOnlyTransaction transaction) {
         List<DocumentCollectionEntry> result = new ArrayList<>();
 
-        IBaselineCollection collection = new BaselineCollectionReference(projectId, collectionId).get(transaction).getOldApi();
+        BaselineCollectionReference baselineCollectionReference = new BaselineCollectionReference(projectId, collectionId);
+        if (revision != null) {
+            baselineCollectionReference = baselineCollectionReference.getWithRevision(revision);
+        }
+
+        BaselineCollection baselineCollection = baselineCollectionReference.get(transaction);
+        IBaselineCollection collection = baselineCollection.getOldApi();
 
         List<IModule> modules = collection.getElements().stream()
                 .map(IBaselineCollectionElement::getObjectWithRevision)
@@ -196,4 +205,21 @@ public class PdfExporterPolarionService extends PolarionService {
 
         return result;
     }
+
+    public <T> T executeInBaseline(@Nullable String baselineRevision, @NotNull ReadOnlyTransaction transaction, @NotNull Callable<T> callable) {
+        if (baselineRevision == null) {
+            return callCallable(callable);
+        } else {
+            return transaction.utils().executeInBaseline(baselineRevision, () -> callCallable(callable));
+        }
+    }
+
+    private static <T> T callCallable(@NotNull Callable<T> callable) {
+        try {
+            return callable.call();
+        } catch (Exception e) {
+            throw new BaselineExecutionException("Error during callable execution", e);
+        }
+    }
+
 }
