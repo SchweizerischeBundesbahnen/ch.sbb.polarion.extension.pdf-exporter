@@ -33,6 +33,7 @@ export default class ExportParams {
     constructor(builder) {
         this.projectId = builder.projectId;
         this.locationPath = builder.locationPath;
+        this.baselineRevision = builder.baselineRevision;
         this.revision = builder.revision;
         this.documentType = builder.documentType;
         this.coverPage = builder.coverPage;
@@ -83,6 +84,7 @@ export default class ExportParams {
                 // initialize all other values as undefined
                 this.projectId = undefined;
                 this.locationPath = undefined;
+                this.baselineRevision = undefined;
                 this.revision = undefined;
                 this.coverPage = undefined;
                 this.css = undefined;
@@ -117,6 +119,11 @@ export default class ExportParams {
 
             setLocationPath(locationPath) {
                 this.locationPath = locationPath;
+                return this;
+            }
+
+            setBaselineRevision(baselineRevision) {
+                this.baselineRevision = baselineRevision;
                 return this;
             }
 

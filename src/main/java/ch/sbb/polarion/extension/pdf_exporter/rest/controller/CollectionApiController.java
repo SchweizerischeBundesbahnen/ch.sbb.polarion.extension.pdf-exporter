@@ -13,7 +13,7 @@ public class CollectionApiController extends CollectionInternalController {
     private static final PolarionService polarionService = new PolarionService();
 
     @Override
-    public List<DocumentCollectionEntry> getDocumentsFromCollection(String projectId, String collectionId) {
-        return polarionService.callPrivileged(() -> super.getDocumentsFromCollection(projectId, collectionId));
+    public List<DocumentCollectionEntry> getDocumentsFromCollection(String projectId, String collectionId, String revision) {
+        return polarionService.callPrivileged(() -> super.getDocumentsFromCollection(projectId, collectionId, revision));
     }
 }

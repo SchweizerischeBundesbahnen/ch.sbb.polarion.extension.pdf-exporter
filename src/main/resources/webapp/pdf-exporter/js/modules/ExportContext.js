@@ -3,6 +3,7 @@ import ExportParams from "./ExportParams.js";
 export default class ExportContext {
     projectId = undefined;
     locationPath = undefined;
+    baselineRevision = undefined;
     revision = undefined;
     documentType = undefined;
     exportType = undefined;
@@ -19,7 +20,7 @@ export default class ExportContext {
 
         const baseline = getBaseline(normalizedPolarionLocationHash);
         if (baseline) {
-            this.revision = getBaselineRevision(baseline);
+            this.baselineRevision = getBaselineRevision(baseline);
         }
 
         const scope = getScope(normalizedPolarionLocationHash);
@@ -36,9 +37,7 @@ export default class ExportContext {
         }
 
         this.urlQueryParameters = getQueryParams(searchParameters);
-        if (!this.revision) {
-            this.revision = this.urlQueryParameters?.revision;
-        }
+        this.revision = this.urlQueryParameters?.revision;
 
         this.bulkExportWidget = bulkExportWidget;
 
@@ -141,6 +140,10 @@ export default class ExportContext {
         return this.locationPath;
     }
 
+    getBaselineRevision() {
+        return this.baselineRevision;
+    }
+
     getRevision() {
         return this.revision;
     }
@@ -187,6 +190,7 @@ export default class ExportContext {
         return new ExportParams.Builder(this.documentType)
             .setProjectId(this.projectId)
             .setLocationPath(this.locationPath)
+            .setBaselineRevision(this.baselineRevision)
             .setRevision(this.revision)
             .setUrlQueryParameters(this.urlQueryParameters)
             .build();

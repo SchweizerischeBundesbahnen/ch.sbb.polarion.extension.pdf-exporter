@@ -16,6 +16,7 @@ import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import java.util.List;
 
@@ -40,8 +41,11 @@ public class CollectionInternalController {
                     )
             }
     )
-    public List<DocumentCollectionEntry> getDocumentsFromCollection(@Parameter(description = "Project ID", required = true) @PathParam("projectId") String projectId,
-                                                                    @Parameter(description = "Collection ID", required = true) @PathParam("collectionId") String collectionId) {
-        return TransactionalExecutor.executeSafelyInReadOnlyTransaction(transaction -> pdfExporterPolarionService.getDocumentsFromCollection(projectId, collectionId, transaction));
+    public List<DocumentCollectionEntry> getDocumentsFromCollection(
+            @Parameter(description = "Project ID", required = true) @PathParam("projectId") String projectId,
+            @Parameter(description = "Collection ID", required = true) @PathParam("collectionId") String collectionId,
+            @Parameter(description = "The specific revision of the provided collection") @QueryParam("revision") String revision
+    ) {
+        return TransactionalExecutor.executeSafelyInReadOnlyTransaction(transaction -> pdfExporterPolarionService.getDocumentsFromCollection(projectId, collectionId, revision, transaction));
     }
 }
