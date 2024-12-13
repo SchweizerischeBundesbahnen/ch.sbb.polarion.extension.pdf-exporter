@@ -6,12 +6,21 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.DocumentData;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.id.DocumentProject;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.id.LiveDocId;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.filename.FileNameTemplateModel;
+import ch.sbb.polarion.extension.pdf_exporter.service.PdfExporterPolarionService;
 import ch.sbb.polarion.extension.pdf_exporter.util.velocity.VelocityEvaluator;
+import com.polarion.alm.shared.api.transaction.RunnableInReadOnlyTransaction;
+import com.polarion.alm.shared.api.transaction.TransactionalExecutor;
+import com.polarion.alm.shared.api.transaction.internal.InternalReadOnlyTransaction;
 import com.polarion.alm.tracker.model.IModule;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Answers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockedConstruction;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -27,11 +36,33 @@ class DocumentFileNameHelperTest {
     @InjectMocks
     DocumentFileNameHelper fileNameHelper;
 
+    @Mock(answer = Answers.RETURNS_DEEP_STUBS)
+    InternalReadOnlyTransaction internalReadOnlyTransactionMock;
+
+    MockedStatic<TransactionalExecutor> transactionalExecutorMockedStatic;
+
+    @BeforeEach
+    void setUp() {
+        transactionalExecutorMockedStatic = mockStatic(TransactionalExecutor.class);
+        transactionalExecutorMockedStatic.when(() -> TransactionalExecutor.executeSafelyInReadOnlyTransaction(any()))
+                .thenAnswer(invocation -> {
+                    RunnableInReadOnlyTransaction<?> runnable = invocation.getArgument(0);
+                    return runnable.run(internalReadOnlyTransactionMock);
+                });
+    }
+
+    @AfterEach
+    void tearDown() {
+        transactionalExecutorMockedStatic.close();
+    }
+
     @Test
     void evaluateVelocity() {
         DocumentData<IModule> documentData = DocumentData.creator(DocumentType.LIVE_DOC, mock(IModule.class))
                 .id(new LiveDocId(new DocumentProject("testProjectId", "Test Project"), "testSpaceId", "testDocumentId"))
                 .title("Test Title")
+                .lastRevision("12345")
+                .revisionPlaceholder("12345")
                 .build();
         FileNameTemplateModel settingOneModel = FileNameTemplateModel.builder()
                 .documentNameTemplate("$projectName $document.moduleFolder $document.moduleName")
@@ -64,9 +95,10 @@ class DocumentFileNameHelperTest {
                 .build();
 
         // Act & Assert
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
-                fileNameHelper.getDocumentFileName(exportParams));
-        assertEquals("Unsupported document type: BASELINE_COLLECTION", exception.getMessage());
+        try (MockedConstruction<PdfExporterPolarionService> pdfExporterPolarionServiceMockedConstruction = mockConstruction(PdfExporterPolarionService.class)) {
+            IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> fileNameHelper.getDocumentFileName(exportParams));
+            assertEquals("Unsupported document type: BASELINE_COLLECTION", exception.getMessage());
+        }
     }
 
 

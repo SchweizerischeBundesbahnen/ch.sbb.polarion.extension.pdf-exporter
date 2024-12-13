@@ -386,7 +386,7 @@ public class ConverterInternalController {
     private String getFileName(@Nullable ExportParams exportParams) {
         if (exportParams != null) {
             return StringUtils.isEmpty(exportParams.getFileName())
-                ? new DocumentFileNameHelper(pdfExporterPolarionService).getDocumentFileName(exportParams)
+                ? new DocumentFileNameHelper().getDocumentFileName(exportParams)
                 : exportParams.getFileName();
         } else {
             return "document.pdf";

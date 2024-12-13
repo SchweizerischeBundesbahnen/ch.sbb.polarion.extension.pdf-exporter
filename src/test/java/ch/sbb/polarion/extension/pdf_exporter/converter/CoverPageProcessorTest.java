@@ -115,6 +115,8 @@ class CoverPageProcessorTest {
         DocumentData<IModule> documentData = DocumentData.creator(DocumentType.LIVE_DOC, mock(IModule.class))
                 .id(new LiveDocId(new DocumentProject("testProjectId", "Test Project"), "_default", "test id"))
                 .title("test document")
+                .lastRevision("12345")
+                .revisionPlaceholder("12345")
                 .build();
         when(placeholderProcessor.replacePlaceholders(documentData, exportParams, "test template html")).thenReturn("replaced template html");
         when(velocityEvaluator.evaluateVelocityExpressions(eq(documentData), anyString())).thenAnswer(a -> a.getArguments()[1]);

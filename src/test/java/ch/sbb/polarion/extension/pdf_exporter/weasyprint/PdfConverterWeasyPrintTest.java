@@ -19,7 +19,7 @@ import ch.sbb.polarion.extension.pdf_exporter.settings.CoverPageSettings;
 import ch.sbb.polarion.extension.pdf_exporter.settings.CssSettings;
 import ch.sbb.polarion.extension.pdf_exporter.settings.HeaderFooterSettings;
 import ch.sbb.polarion.extension.pdf_exporter.settings.LocalizationSettings;
-import ch.sbb.polarion.extension.pdf_exporter.util.DocumentDataHelper;
+import ch.sbb.polarion.extension.pdf_exporter.util.DocumentDataFactory;
 import ch.sbb.polarion.extension.pdf_exporter.util.FileResourceProvider;
 import ch.sbb.polarion.extension.pdf_exporter.util.HtmlProcessor;
 import ch.sbb.polarion.extension.pdf_exporter.util.MediaUtils;
@@ -66,9 +66,10 @@ class PdfConverterWeasyPrintTest extends BaseWeasyPrintTest {
     private MockedStatic<CompletableFuture> completableFutureMockedStatic;
 
     private HeaderFooterSettings headerFooterSettings;
-    private DocumentDataHelper documentDataHelper;
     private PdfConverter converter;
     private IModule module;
+
+    private MockedStatic<DocumentDataFactory> documentDataFactoryMockedStatic;
 
     @BeforeEach
     protected void setUp() {
@@ -83,11 +84,14 @@ class PdfConverterWeasyPrintTest extends BaseWeasyPrintTest {
             }
             return invocation.callRealMethod();
         });
+
+        documentDataFactoryMockedStatic = mockStatic(DocumentDataFactory.class);
     }
 
     @AfterEach
     protected void tearDown() {
         completableFutureMockedStatic.close();
+        documentDataFactoryMockedStatic.close();
     }
 
     @SneakyThrows
@@ -114,8 +118,6 @@ class PdfConverterWeasyPrintTest extends BaseWeasyPrintTest {
         lenient().when(module.getCustomField(anyString())).thenAnswer((Answer<String>) invocation ->
                 "testFieldKey".equals(invocation.getArgument(0)) ? "testFieldValue" : null);
 
-        documentDataHelper = mock(DocumentDataHelper.class);
-
         LocalizationSettings localizationSettings = mock(LocalizationSettings.class);
         when(localizationSettings.load(any(), any())).thenReturn(new LocalizationModel(null, null, null));
 
@@ -133,7 +135,7 @@ class PdfConverterWeasyPrintTest extends BaseWeasyPrintTest {
         WeasyPrintServiceConnector weasyPrintServiceConnector = mock(WeasyPrintServiceConnector.class);
         when(weasyPrintServiceConnector.convertToPdf(anyString(), any())).thenAnswer((Answer<byte[]>) invocation -> exportToPdf(invocation.getArgument(0), invocation.getArgument(1)));
 
-        PlaceholderProcessor placeholderProcessor = new PlaceholderProcessor(pdfExporterPolarionService, documentDataHelper);
+        PlaceholderProcessor placeholderProcessor = new PlaceholderProcessor(pdfExporterPolarionService);
 
         VelocityEvaluator velocityEvaluator = mock(VelocityEvaluator.class);
         when(velocityEvaluator.evaluateVelocityExpressions(any(), anyString())).thenAnswer(a -> a.getArguments()[1]);
@@ -160,7 +162,6 @@ class PdfConverterWeasyPrintTest extends BaseWeasyPrintTest {
                 pdfExporterPolarionService,
                 headerFooterSettings,
                 cssSettings,
-                documentDataHelper,
                 placeholderProcessor,
                 velocityEvaluator,
                 coverPageProcessor,
@@ -184,8 +185,9 @@ class PdfConverterWeasyPrintTest extends BaseWeasyPrintTest {
                 .title("testTitle")
                 .content("<div>TEST</div>")
                 .lastRevision("42")
+                .revisionPlaceholder("42")
                 .build();
-        when(documentDataHelper.getLiveDoc(any(), any())).thenReturn(liveDoc1);
+        documentDataFactoryMockedStatic.when(() -> DocumentDataFactory.getDocumentData(any(), any())).thenReturn(liveDoc1);
 
         compareContentUsingReferenceImages(getCurrentMethodName(), converter.convertToPdf(params, null));
     }
@@ -205,8 +207,9 @@ class PdfConverterWeasyPrintTest extends BaseWeasyPrintTest {
                 .title("testTitle")
                 .content("<div>TEST page 1</div><!--PAGE_BREAK--><!--PORTRAIT_ABOVE--><div>TEST page 2</div><!--PAGE_BREAK--><!--LANDSCAPE_ABOVE--><div>TEST page 3</div>")
                 .lastRevision("42")
+                .revisionPlaceholder("42")
                 .build();
-        when(documentDataHelper.getLiveDoc(any(), any())).thenReturn(liveDoc2);
+        documentDataFactoryMockedStatic.when(() -> DocumentDataFactory.getDocumentData(any(), any())).thenReturn(liveDoc2);
 
         compareContentUsingReferenceImages(getCurrentMethodName(), converter.convertToPdf(params, null));
     }
@@ -223,9 +226,11 @@ class PdfConverterWeasyPrintTest extends BaseWeasyPrintTest {
         DocumentData<IModule> liveDoc3 = DocumentData.creator(DocumentType.LIVE_DOC, module)
                 .id(LiveDocId.from("testProjectId", "_default", "testDocumentId"))
                 .title("specialSymbolsTitle")
+                .lastRevision("12345")
+                .revisionPlaceholder("12345")
                 .content(readHtmlResource("specialSymbols"))
                 .build();
-        when(documentDataHelper.getLiveDoc(any(), any())).thenReturn(liveDoc3);
+        documentDataFactoryMockedStatic.when(() -> DocumentDataFactory.getDocumentData(any(), any())).thenReturn(liveDoc3);
 
         compareContentUsingReferenceImages(getCurrentMethodName(), converter.convertToPdf(params, null));
     }
@@ -242,9 +247,11 @@ class PdfConverterWeasyPrintTest extends BaseWeasyPrintTest {
         DocumentData<IModule> liveDoc4 = DocumentData.creator(DocumentType.LIVE_DOC, module)
                 .id(LiveDocId.from("testProjectId", "_default", "testDocumentId"))
                 .title("svgImageTitle")
+                .lastRevision("12345")
+                .revisionPlaceholder("12345")
                 .content(readHtmlResource("svgImage"))
                 .build();
-        when(documentDataHelper.getLiveDoc(any(), any())).thenReturn(liveDoc4);
+        documentDataFactoryMockedStatic.when(() -> DocumentDataFactory.getDocumentData(any(), any())).thenReturn(liveDoc4);
 
         compareContentUsingReferenceImages(getCurrentMethodName(), converter.convertToPdf(params, null));
     }
@@ -264,8 +271,9 @@ class PdfConverterWeasyPrintTest extends BaseWeasyPrintTest {
                 .title("wikiPage")
                 .content("<div>TEST</div>")
                 .lastRevision("42")
+                .revisionPlaceholder("42")
                 .build();
-        when(documentDataHelper.getWikiPage(any(), any())).thenReturn(wikiPage);
+        documentDataFactoryMockedStatic.when(() -> DocumentDataFactory.getDocumentData(any(), any())).thenReturn(wikiPage);
         when(headerFooterSettings.load(any(), any())).thenReturn(new HeaderFooterModel("HL", "HC  {{ REVISION }}", "HR", "FL", "FC", "FR {{ PAGE_NUMBER }}"));
         params.setDocumentType(DocumentType.WIKI_PAGE);
         params.setLocationPath("wikiFolder/wikiPage");

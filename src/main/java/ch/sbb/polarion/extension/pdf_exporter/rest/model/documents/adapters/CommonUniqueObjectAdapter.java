@@ -26,6 +26,11 @@ public abstract class CommonUniqueObjectAdapter implements IUniqueObjectAdapter 
     }
 
     @Override
+    public @NotNull String getRevisionPlaceholder() {
+        return getRevision() != null ? getRevision() : getLastRevision();
+    }
+
+    @Override
     public @NotNull String getContent(@NotNull ExportParams exportParams) {
         return Objects.requireNonNull(TransactionalExecutor.executeSafelyInReadOnlyTransaction(transaction -> getContent(exportParams, transaction)));
     }

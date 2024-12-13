@@ -69,6 +69,7 @@ public class UniqueObjectConverter {
                 .title(moduleAdapter.getTitle())
                 .revision(moduleAdapter.getRevision())
                 .lastRevision(moduleAdapter.getLastRevision())
+                .revisionPlaceholder(moduleAdapter.getRevisionPlaceholder())
                 .baseline(moduleAdapter.getDocumentBaseline(transaction))
                 .content(withContent && exportParams != null ? moduleAdapter.getContent(exportParams, transaction) : null)
                 .build());

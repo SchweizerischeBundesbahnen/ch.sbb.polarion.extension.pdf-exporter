@@ -18,7 +18,7 @@ import ch.sbb.polarion.extension.pdf_exporter.settings.CssSettings;
 import ch.sbb.polarion.extension.pdf_exporter.settings.HeaderFooterSettings;
 import ch.sbb.polarion.extension.pdf_exporter.settings.LocalizationSettings;
 import ch.sbb.polarion.extension.pdf_exporter.settings.WebhooksSettings;
-import ch.sbb.polarion.extension.pdf_exporter.util.DocumentDataHelper;
+import ch.sbb.polarion.extension.pdf_exporter.util.DocumentDataFactory;
 import ch.sbb.polarion.extension.pdf_exporter.util.EnumValuesProvider;
 import ch.sbb.polarion.extension.pdf_exporter.util.HtmlLogger;
 import ch.sbb.polarion.extension.pdf_exporter.util.HtmlProcessor;
@@ -59,7 +59,6 @@ import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 
 @AllArgsConstructor
 @SuppressWarnings("java:S1200")
@@ -70,7 +69,6 @@ public class PdfConverter {
     private final HeaderFooterSettings headerFooterSettings;
     private final CssSettings cssSettings;
 
-    private final DocumentDataHelper documentDataHelper;
     private final PlaceholderProcessor placeholderProcessor;
     private final VelocityEvaluator velocityEvaluator;
     private final CoverPageProcessor coverPageProcessor;
@@ -82,7 +80,6 @@ public class PdfConverter {
         pdfExporterPolarionService = new PdfExporterPolarionService();
         headerFooterSettings = new HeaderFooterSettings();
         cssSettings = new CssSettings();
-        documentDataHelper = new DocumentDataHelper(pdfExporterPolarionService);
         placeholderProcessor = new PlaceholderProcessor();
         velocityEvaluator = new VelocityEvaluator();
         coverPageProcessor = new CoverPageProcessor();
@@ -99,7 +96,7 @@ public class PdfConverter {
         generationLog.log("Starting html generation");
 
         @Nullable ITrackerProject project = getTrackerProject(exportParams);
-        @NotNull final DocumentData<? extends IUniqueObject> documentData = getDocumentData(exportParams, project);
+        @NotNull final DocumentData<? extends IUniqueObject> documentData = DocumentDataFactory.getDocumentData(exportParams, true);
         @NotNull String htmlContent = prepareHtmlContent(exportParams, project, documentData, metaInfoCallback);
 
         generationLog.log("Html is ready, starting pdf generation");
@@ -118,7 +115,7 @@ public class PdfConverter {
 
     public @NotNull String prepareHtmlContent(@NotNull ExportParams exportParams, @Nullable ExportMetaInfoCallback metaInfoCallback) {
         @Nullable ITrackerProject project = getTrackerProject(exportParams);
-        @NotNull final DocumentData<? extends IUniqueObject> documentData = getDocumentData(exportParams, project);
+        @NotNull final DocumentData<? extends IUniqueObject> documentData = DocumentDataFactory.getDocumentData(exportParams, true);
         return prepareHtmlContent(exportParams, project, documentData, metaInfoCallback);
     }
 
@@ -128,16 +125,6 @@ public class PdfConverter {
             project = pdfExporterPolarionService.getTrackerProject(exportParams.getProjectId());
         }
         return project;
-    }
-
-    private @NotNull DocumentData<? extends IUniqueObject> getDocumentData(@NotNull ExportParams exportParams, @Nullable ITrackerProject project) {
-        return switch (exportParams.getDocumentType()) {
-            case LIVE_DOC -> documentDataHelper.getLiveDoc(Objects.requireNonNull(project), exportParams);
-            case LIVE_REPORT -> documentDataHelper.getLiveReport(project, exportParams);
-            case TEST_RUN -> documentDataHelper.getTestRun(Objects.requireNonNull(project), exportParams);
-            case WIKI_PAGE -> documentDataHelper.getWikiPage(project, exportParams);
-            case BASELINE_COLLECTION -> throw new IllegalArgumentException("Unsupported document type: %s".formatted(exportParams.getDocumentType()));
-        };
     }
 
     private @NotNull String prepareHtmlContent(@NotNull ExportParams exportParams, @Nullable ITrackerProject project, @NotNull DocumentData<? extends IUniqueObject> documentData, @Nullable ExportMetaInfoCallback metaInfoCallback) {
@@ -278,8 +265,8 @@ public class PdfConverter {
         String css = pdfStyles
                 + (exportParams.getHeadersColor() != null ?
                 "      h1, h2, h3, h4, h5, h6, .content .title {" +
-                "        color: " + exportParams.getHeadersColor() + ";" +
-                "      }"
+                        "        color: " + exportParams.getHeadersColor() + ";" +
+                        "      }"
                 : "")
                 + listStyles;
 

@@ -8,51 +8,34 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.DocumentType
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.DocumentData;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.filename.FileNameTemplateModel;
-import ch.sbb.polarion.extension.pdf_exporter.service.PdfExporterPolarionService;
 import ch.sbb.polarion.extension.pdf_exporter.settings.FileNameTemplateSettings;
 import ch.sbb.polarion.extension.pdf_exporter.util.placeholder.PlaceholderProcessor;
 import ch.sbb.polarion.extension.pdf_exporter.util.velocity.VelocityEvaluator;
 import com.polarion.alm.projects.model.IUniqueObject;
-import com.polarion.alm.tracker.model.ITrackerProject;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.VisibleForTesting;
 
 import java.util.EnumSet;
-import java.util.Objects;
 
 
 public class DocumentFileNameHelper {
-    private final PdfExporterPolarionService pdfExporterPolarionService;
 
     private final VelocityEvaluator velocityEvaluator;
 
-    public DocumentFileNameHelper(PdfExporterPolarionService pdfExporterPolarionService) {
-        this.pdfExporterPolarionService = pdfExporterPolarionService;
+    public DocumentFileNameHelper() {
         this.velocityEvaluator = new VelocityEvaluator();
     }
 
-    public DocumentFileNameHelper(PdfExporterPolarionService pdfExporterPolarionService, VelocityEvaluator velocityEvaluator) {
-        this.pdfExporterPolarionService = pdfExporterPolarionService;
+    public DocumentFileNameHelper(VelocityEvaluator velocityEvaluator) {
         this.velocityEvaluator = velocityEvaluator;
     }
 
     public String getDocumentFileName(@NotNull ExportParams exportParams) {
-        ITrackerProject project = null;
-        if (exportParams.getProjectId() != null) {
-            project = pdfExporterPolarionService.getTrackerProject(exportParams.getProjectId());
-        } else if (EnumSet.of(DocumentType.LIVE_DOC, DocumentType.TEST_RUN).contains(exportParams.getDocumentType())) {
+        if (EnumSet.of(DocumentType.LIVE_DOC, DocumentType.TEST_RUN).contains(exportParams.getDocumentType())) {
             throw new IllegalArgumentException("Project ID must be provided for LiveDoc or TestRun export");
         }
 
-        DocumentDataHelper documentDataHelper = new DocumentDataHelper(pdfExporterPolarionService);
-        final DocumentData<? extends IUniqueObject> documentData =
-                switch (exportParams.getDocumentType()) {
-                    case LIVE_DOC -> documentDataHelper.getLiveDoc(Objects.requireNonNull(project), exportParams, false);
-                    case LIVE_REPORT -> documentDataHelper.getLiveReport(project, exportParams, false);
-                    case TEST_RUN -> documentDataHelper.getTestRun(Objects.requireNonNull(project), exportParams, false);
-                    case WIKI_PAGE -> documentDataHelper.getWikiPage(project, exportParams, false);
-                    case BASELINE_COLLECTION -> throw new IllegalArgumentException("Unsupported document type: %s".formatted(exportParams.getDocumentType()));
-                };
+        final DocumentData<? extends IUniqueObject> documentData = DocumentDataFactory.getDocumentData(exportParams, false);
 
         FileNameTemplateModel fileNameTemplateModel = getFileNameTemplateModel(ScopeUtils.getScopeFromProject(exportParams.getProjectId()));
         @NotNull String fileNameTemplate = getFileNameTemplate(exportParams.getDocumentType(), fileNameTemplateModel);

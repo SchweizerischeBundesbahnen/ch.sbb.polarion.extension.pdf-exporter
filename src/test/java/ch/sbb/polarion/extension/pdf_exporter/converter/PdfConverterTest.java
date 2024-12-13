@@ -13,7 +13,7 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.headerfooter.H
 import ch.sbb.polarion.extension.pdf_exporter.service.PdfExporterPolarionService;
 import ch.sbb.polarion.extension.pdf_exporter.settings.CssSettings;
 import ch.sbb.polarion.extension.pdf_exporter.settings.HeaderFooterSettings;
-import ch.sbb.polarion.extension.pdf_exporter.util.DocumentDataHelper;
+import ch.sbb.polarion.extension.pdf_exporter.util.DocumentDataFactory;
 import ch.sbb.polarion.extension.pdf_exporter.util.HtmlProcessor;
 import ch.sbb.polarion.extension.pdf_exporter.util.PdfGenerationLog;
 import ch.sbb.polarion.extension.pdf_exporter.util.PdfTemplateProcessor;
@@ -29,6 +29,8 @@ import com.polarion.alm.tracker.model.ITrackerProject;
 import com.polarion.alm.tracker.model.ITypeOpt;
 import com.polarion.platform.persistence.IEnumeration;
 import com.polarion.platform.persistence.spi.EnumOption;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -36,6 +38,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
@@ -51,8 +54,6 @@ class PdfConverterTest {
     private PdfExporterPolarionService pdfExporterPolarionService;
     @Mock
     private IModule module;
-    @Mock
-    private DocumentDataHelper documentDataHelper;
     @Mock
     private CssSettings cssSettings;
     @Mock
@@ -70,25 +71,41 @@ class PdfConverterTest {
     @Mock
     private PdfTemplateProcessor pdfTemplateProcessor;
 
+    private MockedStatic<DocumentDataFactory> documentDataFactoryMockedStatic;
+
+    @BeforeEach
+    void setUp() {
+        documentDataFactoryMockedStatic = mockStatic(DocumentDataFactory.class);
+    }
+
+    @AfterEach
+    void tearDown() {
+        documentDataFactoryMockedStatic.close();
+    }
+
     @Test
     void shouldConvertToPdfInSimplestWorkflow() {
         // Arrange
         ExportParams exportParams = ExportParams.builder()
-                .projectId("test project")
+                .projectId("testProjectId")
                 .documentType(DocumentType.LIVE_DOC)
                 .build();
+
         ITrackerProject project = mock(ITrackerProject.class);
-        lenient().when(pdfExporterPolarionService.getTrackerProject("test project")).thenReturn(project);
-        PdfConverter pdfConverter = new PdfConverter(pdfExporterPolarionService, headerFooterSettings, cssSettings, documentDataHelper, placeholderProcessor, velocityEvaluator, coverPageProcessor, weasyPrintServiceConnector, htmlProcessor, pdfTemplateProcessor);
+        lenient().when(pdfExporterPolarionService.getTrackerProject("testProjectId")).thenReturn(project);
+        PdfConverter pdfConverter = new PdfConverter(pdfExporterPolarionService, headerFooterSettings, cssSettings, placeholderProcessor, velocityEvaluator, coverPageProcessor, weasyPrintServiceConnector, htmlProcessor, pdfTemplateProcessor);
         CssModel cssModel = CssModel.builder().css("test css").build();
-        when(cssSettings.load("test project", SettingId.fromName("Default"))).thenReturn(cssModel);
+        when(cssSettings.load("testProjectId", SettingId.fromName("Default"))).thenReturn(cssModel);
         DocumentData<IModule> documentData = DocumentData.creator(DocumentType.LIVE_DOC, module)
                 .id(LiveDocId.from("testProjectId", "_default", "testDocumentId"))
                 .title("testDocument")
                 .content("test document content")
+                .lastRevision("12345")
+                .revisionPlaceholder("12345")
                 .build();
-        when(documentDataHelper.getLiveDoc(project, exportParams)).thenReturn(documentData);
-        when(headerFooterSettings.load("test project", SettingId.fromName("Default"))).thenReturn(HeaderFooterModel.builder().build());
+
+        documentDataFactoryMockedStatic.when(() -> DocumentDataFactory.getDocumentData(eq(exportParams), anyBoolean())).thenReturn(documentData);
+        when(headerFooterSettings.load("testProjectId", SettingId.fromName("Default"))).thenReturn(HeaderFooterModel.builder().build());
         when(placeholderProcessor.replacePlaceholders(documentData, exportParams, "test css")).thenReturn("css content");
         when(placeholderProcessor.replacePlaceholders(eq(documentData), eq(exportParams), anyList())).thenReturn(List.of("hl", "hc", "hr", "fl", "fc", "fr"));
         when(velocityEvaluator.evaluateVelocityExpressions(eq(documentData), anyString())).thenAnswer(a -> a.getArguments()[1]);
@@ -109,6 +126,7 @@ class PdfConverterTest {
         DocumentData<IModule> documentData = DocumentData.creator(DocumentType.LIVE_DOC, module)
                 .id(LiveDocId.from("testProjectId", "_default", "testDocumentId"))
                 .lastRevision("testLastRevision")
+                .revisionPlaceholder("testRevisionPlaceholder")
                 .title("testDocumentTitle")
                 .build();
 
@@ -121,11 +139,10 @@ class PdfConverterTest {
 
         CssModel cssModel = CssModel.builder().css("my test css: {{ DOCUMENT_TITLE }} {{DOCUMENT_REVISION}} {{ REVISION }} {{ PRODUCT_NAME }} {{ PRODUCT_VERSION }} {{customField}}").build();
         when(cssSettings.load("testProjectId", SettingId.fromName("testCssSetting"))).thenReturn(cssModel);
-        PlaceholderProcessor processor = new PlaceholderProcessor(pdfExporterPolarionService, documentDataHelper);
+        PlaceholderProcessor processor = new PlaceholderProcessor(pdfExporterPolarionService);
         when(velocityEvaluator.evaluateVelocityExpressions(eq(documentData), anyString())).thenAnswer(a -> a.getArguments()[1]);
-        PdfConverter pdfConverter = new PdfConverter(null, null, cssSettings, null, processor, velocityEvaluator, null, null, htmlProcessor, pdfTemplateProcessor);
+        PdfConverter pdfConverter = new PdfConverter(null, null, cssSettings, processor, velocityEvaluator, null, null, htmlProcessor, pdfTemplateProcessor);
 
-        when(documentDataHelper.getDocumentStatus("testRevision", documentData)).thenReturn("testStatus");
         when(pdfExporterPolarionService.getPolarionProductName()).thenReturn("testProductName");
         when(pdfExporterPolarionService.getPolarionVersion()).thenReturn("testVersion");
         lenient().when(module.getCustomField("customField")).thenReturn("customValue");
@@ -133,7 +150,7 @@ class PdfConverterTest {
 
         String cssContent = pdfConverter.getCssContent(documentData, exportParams);
 
-        assertThat(cssContent).startsWith("my test css: testDocumentTitle testStatus testRevision testProductName testVersion customValue");
+        assertThat(cssContent).startsWith("my test css: testDocumentTitle testRevisionPlaceholder testRevision testProductName testVersion customValue");
     }
 
     @ParameterizedTest
@@ -144,6 +161,8 @@ class PdfConverterTest {
         DocumentData<IModule> documentData = DocumentData.creator(DocumentType.LIVE_DOC, module)
                 .id(LiveDocId.from("testProjectId", "_default", "testDocumentId"))
                 .title("testDocumentTitle")
+                .lastRevision("12345")
+                .revisionPlaceholder("12345")
                 .build();
         ExportParams exportParams = ExportParams.builder()
                 .headerFooter(settingName)
@@ -171,7 +190,7 @@ class PdfConverterTest {
         when(htmlProcessor.replaceResourcesAsBase64Encoded(anyString())).thenAnswer(a -> a.getArgument(0));
 
         // Act
-        PdfConverter pdfConverter = new PdfConverter(null, headerFooterSettings, null, null, placeholderProcessor, velocityEvaluator, null, null, htmlProcessor, null);
+        PdfConverter pdfConverter = new PdfConverter(null, headerFooterSettings, null, placeholderProcessor, velocityEvaluator, null, null, htmlProcessor, null);
         String headerFooterContent = pdfConverter.getHeaderFooterContent(documentData, exportParams);
 
         // Assert
@@ -241,7 +260,7 @@ class PdfConverterTest {
         when(htmlProcessor.processHtmlForPDF(anyString(), eq(exportParams), any(List.class))).thenReturn("result string");
 
         // Act
-        PdfConverter pdfConverter = new PdfConverter(null, null, null, null, null, null, null, null, htmlProcessor, null);
+        PdfConverter pdfConverter = new PdfConverter(null, null, null, null, null, null, null, htmlProcessor, null);
         String resultContent = pdfConverter.postProcessDocumentContent(exportParams, project, "test content");
 
         // Assert
@@ -258,6 +277,8 @@ class PdfConverterTest {
         DocumentData<IModule> documentData = DocumentData.creator(DocumentType.LIVE_DOC, module)
                 .id(LiveDocId.from("testProjectId", "_default", "testDocumentId"))
                 .title("testDocumentTitle")
+                .lastRevision("12345")
+                .revisionPlaceholder("12345")
                 .build();
         ExportParams exportParams = ExportParams.builder()
                 .internalContent(internalContent)
@@ -271,7 +292,7 @@ class PdfConverterTest {
         }
 
         // Act
-        PdfConverter pdfConverter = new PdfConverter(null, null, null, null, null, null, coverPageProcessor, weasyPrintServiceConnector, null, null);
+        PdfConverter pdfConverter = new PdfConverter(null, null, null, null, null, coverPageProcessor, weasyPrintServiceConnector, null, null);
         byte[] result = pdfConverter.generatePdf(documentData, exportParams, metaInfoCallback, "test html content", pdfGenerationLog);
 
         // Assert

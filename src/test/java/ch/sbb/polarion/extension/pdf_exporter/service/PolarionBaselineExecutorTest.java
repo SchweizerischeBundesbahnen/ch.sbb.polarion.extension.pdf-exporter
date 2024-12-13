@@ -8,6 +8,8 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
+
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -44,11 +46,16 @@ class PolarionBaselineExecutorTest {
         assertEquals("valueWithoutBaseline", PolarionBaselineExecutor.executeInBaseline(null, mockReadOnlyTransaction, () -> "valueWithoutBaseline"));
 
         assertEquals("valueInBaseline", PolarionBaselineExecutor.executeInBaseline("1234", mockReadOnlyTransaction, () -> "valueInBaseline"));
-        assertThrows(BaselineExecutionException.class, () -> PolarionBaselineExecutor.executeInBaseline("5678", mockReadOnlyTransaction, this::testCallable));
+        assertThrows(BaselineExecutionException.class, () -> PolarionBaselineExecutor.executeInBaseline("5678", mockReadOnlyTransaction, this::testCallableWithException));
+        assertThrows(NullPointerException.class, () -> PolarionBaselineExecutor.executeInBaseline("5678", mockReadOnlyTransaction, this::testCallableWithRuntimeException));
     }
 
-    private String testCallable() throws Exception {
-        throw new Exception("argument");
+    private String testCallableWithException() throws IOException {
+        throw new IOException("io exception");
+    }
+
+    private String testCallableWithRuntimeException() {
+        throw new NullPointerException("null pointer exception");
     }
 
 }

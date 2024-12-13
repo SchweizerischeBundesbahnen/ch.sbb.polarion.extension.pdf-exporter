@@ -26,21 +26,22 @@ class DocumentDataHelperTest {
     }
 
     @ParameterizedTest
-    @MethodSource("getDocumentStatusParameters")
-    void shouldGetDocumentStatus(String revision, String customFieldRevision, String lastRevision, String expectedStatus) {
+    @MethodSource("getRevisionPlaceholderParameters")
+    void shouldGetRevisionPlaceholder(String revision, String customFieldRevision, String lastRevision, String expectedStatus) {
         IModule module = mock(IModule.class);
         DocumentData<IModule> documentData = DocumentData.creator(DocumentType.LIVE_DOC, module)
                 .id(LiveDocId.from("testProjectId", "_default", "testDocumentId"))
                 .title("testTitle")
                 .lastRevision(lastRevision)
+                .revisionPlaceholder(lastRevision)
                 .build();
         when(module.getCustomField("docRevision")).thenReturn(customFieldRevision);
 
-        String documentStatus = documentDataHelper.getDocumentStatus(revision, documentData);
+        String documentStatus = documentDataHelper.getCalculatedPlaceholderRevision(revision, documentData);
         assertThat(documentStatus).isEqualTo(expectedStatus);
     }
 
-    private static Stream<Arguments> getDocumentStatusParameters() {
+    private static Stream<Arguments> getRevisionPlaceholderParameters() {
         return Stream.of(
                 Arguments.of("revision", "customFieldRevision", "lastRevision", "revision"),
                 Arguments.of(null, "customFieldRevision",  "lastRevision", "customFieldRevision"),

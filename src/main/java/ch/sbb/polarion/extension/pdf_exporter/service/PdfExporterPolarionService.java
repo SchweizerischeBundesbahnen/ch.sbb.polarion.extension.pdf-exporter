@@ -5,7 +5,6 @@ import ch.sbb.polarion.extension.generic.settings.NamedSettingsRegistry;
 import ch.sbb.polarion.extension.generic.settings.SettingId;
 import ch.sbb.polarion.extension.generic.settings.SettingName;
 import ch.sbb.polarion.extension.generic.util.ScopeUtils;
-import ch.sbb.polarion.extension.pdf_exporter.exception.BaselineExecutionException;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.attachments.TestRunAttachment;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.collections.DocumentCollectionEntry;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.stylepackage.StylePackageModel;
@@ -40,7 +39,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.Callable;
 
 public class PdfExporterPolarionService extends PolarionService {
 

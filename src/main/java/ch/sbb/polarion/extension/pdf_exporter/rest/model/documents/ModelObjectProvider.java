@@ -1,8 +1,10 @@
 package ch.sbb.polarion.extension.pdf_exporter.rest.model.documents;
 
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.DocumentType;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
 import ch.sbb.polarion.extension.pdf_exporter.service.PdfExporterPolarionService;
 import com.polarion.alm.projects.model.IProject;
+import com.polarion.alm.shared.api.model.ModelObject;
 import com.polarion.alm.shared.api.model.document.Document;
 import com.polarion.alm.shared.api.model.document.DocumentReference;
 import com.polarion.alm.shared.api.model.rp.RichPage;
@@ -14,9 +16,9 @@ import com.polarion.alm.shared.api.model.wiki.WikiPageReference;
 import com.polarion.alm.shared.api.transaction.ReadOnlyTransaction;
 import com.polarion.core.util.StringUtils;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.Map;
+import java.util.Optional;
 
 import static ch.sbb.polarion.extension.pdf_exporter.util.DocumentDataHelper.URL_QUERY_PARAM_ID;
 
@@ -35,13 +37,19 @@ public class ModelObjectProvider {
         this.pdfExporterPolarionService = pdfExporterPolarionService;
     }
 
+    public ModelObject getModelObject(@NotNull DocumentType documentType, ReadOnlyTransaction transaction) {
+        return switch (exportParams.getDocumentType()) {
+            case LIVE_DOC -> getDocument(transaction);
+            case LIVE_REPORT -> getRichPage(transaction);
+            case TEST_RUN -> getTestRun(transaction);
+            case WIKI_PAGE -> getWikiPage(transaction);
+            case BASELINE_COLLECTION -> throw new IllegalArgumentException("Unsupported document type: %s".formatted(exportParams.getDocumentType()));
+        };
+    }
+
     public @NotNull RichPage getRichPage(@NotNull ReadOnlyTransaction transaction) {
-        IProject project = getProject(exportParams);
-        String projectId = project != null ? project.getId() : "";
-        String locationPath = exportParams.getLocationPath();
-        if (locationPath == null) {
-            throw new IllegalArgumentException("Location path is required for export");
-        }
+        String projectId = getProjectId().orElse("");
+        String locationPath = getLocationPath().orElseThrow(() -> new IllegalArgumentException("Location path is required for export"));
 
         RichPageReference richPageReference = RichPageReference.fromPath(createPath(projectId, locationPath));
         if (exportParams.getRevision() != null) {
@@ -52,16 +60,10 @@ public class ModelObjectProvider {
     }
 
     public @NotNull TestRun getTestRun(ReadOnlyTransaction transaction) {
-        IProject project = getProject(exportParams);
-        if (project == null) {
-            throw new IllegalArgumentException("Project id is required for export");
-        }
-        Map<String, String> urlQueryParameters = exportParams.getUrlQueryParameters();
-        if (urlQueryParameters == null || !urlQueryParameters.containsKey(URL_QUERY_PARAM_ID)) {
-            throw new IllegalArgumentException("TestRun id is required for export of test run");
-        }
+        String projectId = getProjectId().orElseThrow(() -> new IllegalArgumentException("Project id is required for export"));
+        String testRunId = getTestRunId().orElseThrow(() -> new IllegalArgumentException("Test run id is required for export"));
 
-        TestRunReference testRunReference = TestRunReference.fromPath(createPath(project.getId(), urlQueryParameters.get(URL_QUERY_PARAM_ID)));
+        TestRunReference testRunReference = TestRunReference.fromPath(createPath(projectId, testRunId));
         if (exportParams.getRevision() != null) {
             testRunReference = testRunReference.getWithRevision(exportParams.getRevision());
         }
@@ -69,16 +71,11 @@ public class ModelObjectProvider {
         return testRunReference.getOriginal(transaction);
     }
 
-
     public @NotNull WikiPage getWikiPage(@NotNull ReadOnlyTransaction transaction) {
-        IProject project = getProject(exportParams);
-        String projectId = project != null ? project.getId() : "";
-        String locationPath = exportParams.getLocationPath();
-        if (locationPath == null) {
-            throw new IllegalArgumentException("Location path is required for export");
-        }
+        String projectId = getProjectId().orElse("");
+        String locationPath = getLocationPath().orElseThrow(() -> new IllegalArgumentException("Location path is required for export"));
 
-        WikiPageReference wikiPageReference = WikiPageReference.fromPath(createPath(projectId, exportParams.getLocationPath()));
+        WikiPageReference wikiPageReference = WikiPageReference.fromPath(createPath(projectId, locationPath));
         if (exportParams.getRevision() != null) {
             wikiPageReference = wikiPageReference.getWithRevision(exportParams.getRevision());
         }
@@ -87,16 +84,10 @@ public class ModelObjectProvider {
     }
 
     public Document getDocument(ReadOnlyTransaction transaction) {
-        IProject project = getProject(exportParams);
-        if (project == null) {
-            throw new IllegalArgumentException("Project id is required for export");
-        }
-        String locationPath = exportParams.getLocationPath();
-        if (locationPath == null) {
-            throw new IllegalArgumentException("Location path is required for export");
-        }
+        String projectId = getProjectId().orElseThrow(() -> new IllegalArgumentException("Project id is required for export"));
+        String locationPath = getLocationPath().orElseThrow(() -> new IllegalArgumentException("Location path is required for export"));
 
-        DocumentReference documentReference = DocumentReference.fromPath(createPath(project.getId(), exportParams.getLocationPath()));
+        DocumentReference documentReference = DocumentReference.fromPath(createPath(projectId, locationPath));
         if (exportParams.getRevision() != null) {
             documentReference = documentReference.getWithRevision(exportParams.getRevision());
         }
@@ -105,12 +96,25 @@ public class ModelObjectProvider {
     }
 
 
-    private @Nullable IProject getProject(@NotNull ExportParams exportParams) {
+    private Optional<String> getProjectId() {
         IProject project = null;
         if (!StringUtils.isEmpty(exportParams.getProjectId())) {
             project = pdfExporterPolarionService.getProject(exportParams.getProjectId());
         }
-        return project;
+        String projectId = project != null ? project.getId() : null;
+        return Optional.ofNullable(projectId);
+    }
+
+    private Optional<String> getLocationPath() {
+        return Optional.ofNullable(exportParams.getLocationPath());
+    }
+
+    private Optional<String> getTestRunId() {
+        Map<String, String> urlQueryParameters = exportParams.getUrlQueryParameters();
+        if (urlQueryParameters == null || !urlQueryParameters.containsKey(URL_QUERY_PARAM_ID)) {
+            return Optional.empty();
+        }
+        return Optional.ofNullable(urlQueryParameters.get(URL_QUERY_PARAM_ID));
     }
 
     public static @NotNull String createPath(@NotNull String projectId, @NotNull String locationPath) {

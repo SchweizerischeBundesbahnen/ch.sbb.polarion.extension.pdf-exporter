@@ -19,21 +19,13 @@ import java.util.TreeSet;
 public class PlaceholderProcessor {
 
     private final PdfExporterPolarionService pdfExporterPolarionService;
-    private final DocumentDataHelper documentDataHelper;
 
     public PlaceholderProcessor() {
         this.pdfExporterPolarionService = new PdfExporterPolarionService();
-        this.documentDataHelper = new DocumentDataHelper(pdfExporterPolarionService);
     }
 
     public PlaceholderProcessor(PdfExporterPolarionService pdfExporterPolarionService) {
         this.pdfExporterPolarionService = pdfExporterPolarionService;
-        this.documentDataHelper = new DocumentDataHelper(pdfExporterPolarionService);
-    }
-
-    public PlaceholderProcessor(PdfExporterPolarionService pdfExporterPolarionService, DocumentDataHelper documentDataHelper) {
-        this.pdfExporterPolarionService = pdfExporterPolarionService;
-        this.documentDataHelper = documentDataHelper;
     }
 
     public @NotNull String replacePlaceholders(@NotNull DocumentData<? extends IUniqueObject> documentData, @NotNull ExportParams exportParams, @NotNull String template) {
@@ -60,11 +52,13 @@ public class PlaceholderProcessor {
                 .baseLineName(baselineName)
                 .documentId(documentData.getId().getDocumentId())
                 .documentTitle(documentData.getTitle())
-                .documentRevision(documentDataHelper.getDocumentStatus(exportParams.getRevision(), documentData))
+                .documentRevision(documentData.getRevisionPlaceholder())
                 .build();
+
         if (documentData.getDocumentObject() instanceof IModule module) {
             placeholderValues.addCustomVariables(module, extractCustomPlaceholders(templates));
         }
+
         return placeholderValues;
     }
 

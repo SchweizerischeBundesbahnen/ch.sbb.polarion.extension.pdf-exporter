@@ -321,7 +321,7 @@ public class PdfExporterFormExtension implements IFormExtension {
     }
 
     private String getFilename(@NotNull IModule module) {
-        DocumentFileNameHelper documentFileNameHelper = new DocumentFileNameHelper(new PdfExporterPolarionService());
+        DocumentFileNameHelper documentFileNameHelper = new DocumentFileNameHelper();
 
         ExportParams exportParams = ExportParams.builder()
                 .projectId(module.getProject().getId())

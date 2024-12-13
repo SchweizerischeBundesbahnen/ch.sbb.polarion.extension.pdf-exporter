@@ -2,27 +2,17 @@ package ch.sbb.polarion.extension.pdf_exporter.util;
 
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.DocumentData;
-import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.ModelObjectProvider;
-import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.UniqueObjectConverter;
 import ch.sbb.polarion.extension.pdf_exporter.service.PdfExporterPolarionService;
 import ch.sbb.polarion.extension.pdf_exporter.service.PolarionBaselineExecutor;
 import ch.sbb.polarion.extension.pdf_exporter.util.exporter.ModifiedDocumentRenderer;
 import com.polarion.alm.projects.model.IProject;
 import com.polarion.alm.projects.model.IUniqueObject;
 import com.polarion.alm.server.api.model.document.ProxyDocument;
-import com.polarion.alm.shared.api.model.document.Document;
-import com.polarion.alm.shared.api.model.rp.RichPage;
-import com.polarion.alm.shared.api.model.tr.TestRun;
-import com.polarion.alm.shared.api.model.wiki.WikiPage;
 import com.polarion.alm.shared.api.transaction.TransactionalExecutor;
 import com.polarion.alm.shared.api.transaction.internal.InternalReadOnlyTransaction;
 import com.polarion.alm.shared.api.utils.html.RichTextRenderTarget;
 import com.polarion.alm.shared.dle.document.DocumentRendererParameters;
 import com.polarion.alm.tracker.model.IModule;
-import com.polarion.alm.tracker.model.IRichPage;
-import com.polarion.alm.tracker.model.ITestRun;
-import com.polarion.alm.tracker.model.ITrackerProject;
-import com.polarion.alm.tracker.model.IWikiPage;
 import com.polarion.subterra.base.location.ILocation;
 import com.polarion.subterra.base.location.Location;
 import org.jetbrains.annotations.NotNull;
@@ -43,79 +33,7 @@ public class DocumentDataHelper {
         this.pdfExporterPolarionService = pdfExporterPolarionService;
     }
 
-    public DocumentData<IRichPage> getLiveReport(@Nullable ITrackerProject project, @NotNull ExportParams exportParams) {
-        return getLiveReport(project, exportParams, true);
-    }
-
-    public DocumentData<IRichPage> getLiveReport(@Nullable ITrackerProject project, @NotNull ExportParams exportParams, boolean withContent) {
-        return TransactionalExecutor.executeSafelyInReadOnlyTransaction(
-                transaction -> PolarionBaselineExecutor.executeInBaseline(exportParams.getBaselineRevision(), transaction, () -> {
-
-                    RichPage richPage = new ModelObjectProvider(exportParams)
-                            .getRichPage(transaction);
-
-                    return new UniqueObjectConverter(richPage)
-                            .withExportParams(exportParams)
-                            .withContent(withContent)
-                            .toDocumentData(transaction);
-                }));
-    }
-
-    public DocumentData<ITestRun> getTestRun(@NotNull ITrackerProject project, @NotNull ExportParams exportParams) {
-        return getTestRun(project, exportParams, true);
-    }
-
-    public DocumentData<ITestRun> getTestRun(@NotNull ITrackerProject project, @NotNull ExportParams exportParams, boolean withContent) {
-        return TransactionalExecutor.executeSafelyInReadOnlyTransaction(
-                transaction -> PolarionBaselineExecutor.executeInBaseline(exportParams.getBaselineRevision(), transaction, () -> {
-
-                    TestRun testRun = new ModelObjectProvider(exportParams)
-                            .getTestRun(transaction);
-
-                    return new UniqueObjectConverter(testRun)
-                            .withExportParams(exportParams)
-                            .withContent(withContent)
-                            .toDocumentData(transaction);
-                }));
-    }
-
-    public DocumentData<IWikiPage> getWikiPage(@Nullable ITrackerProject project, @NotNull ExportParams exportParams) {
-        return getWikiPage(project, exportParams, true);
-    }
-
-    public DocumentData<IWikiPage> getWikiPage(@Nullable ITrackerProject project, @NotNull ExportParams exportParams, boolean withContent) {
-        return TransactionalExecutor.executeSafelyInReadOnlyTransaction(
-                transaction -> PolarionBaselineExecutor.executeInBaseline(exportParams.getBaselineRevision(), transaction, () -> {
-
-                    WikiPage wikiPage = new ModelObjectProvider(exportParams)
-                            .getWikiPage(transaction);
-
-                    return new UniqueObjectConverter(wikiPage)
-                            .withExportParams(exportParams)
-                            .withContent(withContent)
-                            .toDocumentData(transaction);
-                }));
-    }
-
-    public DocumentData<IModule> getLiveDoc(@NotNull ITrackerProject project, @NotNull ExportParams exportParams) {
-        return getLiveDoc(project, exportParams, true);
-    }
-
-    public DocumentData<IModule> getLiveDoc(@NotNull ITrackerProject project, @NotNull ExportParams exportParams, boolean withContent) {
-        return TransactionalExecutor.executeSafelyInReadOnlyTransaction(
-                transaction -> PolarionBaselineExecutor.executeInBaseline(exportParams.getBaselineRevision(), transaction, () -> {
-
-                    Document document = new ModelObjectProvider(exportParams)
-                            .getDocument(transaction);
-
-                    return new UniqueObjectConverter(document)
-                            .withExportParams(exportParams)
-                            .withContent(withContent)
-                            .toDocumentData(transaction);
-                }));
-    }
-
-    public String getDocumentStatus(String revision, @NotNull DocumentData<? extends IUniqueObject> documentData) {
+    public static String getCalculatedPlaceholderRevision(String revision, @NotNull DocumentData<? extends IUniqueObject> documentData) {
         String documentStatus = documentData.getLastRevision();
         if (revision != null) {
             documentStatus = revision;

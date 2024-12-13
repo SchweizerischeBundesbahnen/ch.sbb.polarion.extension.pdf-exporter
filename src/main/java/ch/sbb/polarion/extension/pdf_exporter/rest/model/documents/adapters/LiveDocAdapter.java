@@ -19,6 +19,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Map;
 
+import static ch.sbb.polarion.extension.pdf_exporter.util.DocumentDataHelper.DOC_REVISION_CUSTOM_FIELD;
 import static ch.sbb.polarion.extension.pdf_exporter.util.DocumentDataHelper.URL_QUERY_PARAM_LANGUAGE;
 
 public class LiveDocAdapter extends CommonUniqueObjectAdapter {
@@ -51,6 +52,16 @@ public class LiveDocAdapter extends CommonUniqueObjectAdapter {
     @Override
     public @NotNull String getTitle() {
         return module.getTitleOrName();
+    }
+
+    @Override
+    public @NotNull String getRevisionPlaceholder() {
+        Object docRevision = module.getCustomField(DOC_REVISION_CUSTOM_FIELD);
+        if (docRevision != null) {
+            return docRevision.toString();
+        } else {
+            return super.getRevisionPlaceholder();
+        }
     }
 
     @Override

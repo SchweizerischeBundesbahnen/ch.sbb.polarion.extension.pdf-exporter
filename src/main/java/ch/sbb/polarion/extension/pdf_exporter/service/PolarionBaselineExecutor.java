@@ -20,6 +20,8 @@ public class PolarionBaselineExecutor {
     private static <T> T callCallable(@NotNull Callable<T> callable) {
         try {
             return callable.call();
+        } catch (RuntimeException e) {
+            throw e;
         } catch (Exception e) {
             throw new BaselineExecutionException("Error during callable execution", e);
         }

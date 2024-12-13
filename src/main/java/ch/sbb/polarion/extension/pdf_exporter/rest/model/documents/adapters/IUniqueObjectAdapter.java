@@ -23,6 +23,8 @@ public interface IUniqueObjectAdapter {
 
     @NotNull String getLastRevision();
 
+    @NotNull String getRevisionPlaceholder();
+
     @NotNull String getContent(@NotNull ExportParams exportParams);
 
     @NotNull String getContent(@NotNull ExportParams exportParams, @NotNull ReadOnlyTransaction transaction);
