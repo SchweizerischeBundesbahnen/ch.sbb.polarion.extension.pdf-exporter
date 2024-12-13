@@ -1,6 +1,5 @@
 package ch.sbb.polarion.extension.pdf_exporter.rest.model.documents;
 
-import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.DocumentType;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
 import ch.sbb.polarion.extension.pdf_exporter.service.PdfExporterPolarionService;
 import com.polarion.alm.projects.model.IProject;
@@ -23,6 +22,10 @@ import java.util.Optional;
 public class ModelObjectProvider {
     public static final String URL_QUERY_PARAM_ID = "id";
 
+    private static final String LOCATION_PATH_IS_REQUIRED_FOR_EXPORT = "Location path is required for export";
+    private static final String PROJECT_ID_IS_REQUIRED_FOR_EXPORT = "Project id is required for export";
+    private static final String TEST_RUN_ID_IS_REQUIRED_FOR_EXPORT = "Test run id is required for export";
+
     private final @NotNull ExportParams exportParams;
     private final @NotNull PdfExporterPolarionService pdfExporterPolarionService;
 
@@ -36,7 +39,7 @@ public class ModelObjectProvider {
         this.pdfExporterPolarionService = pdfExporterPolarionService;
     }
 
-    public ModelObject getModelObject(@NotNull DocumentType documentType, ReadOnlyTransaction transaction) {
+    public ModelObject getModelObject(ReadOnlyTransaction transaction) {
         return switch (exportParams.getDocumentType()) {
             case LIVE_DOC -> getDocument(transaction);
             case LIVE_REPORT -> getRichPage(transaction);
@@ -48,7 +51,7 @@ public class ModelObjectProvider {
 
     public @NotNull RichPage getRichPage(@NotNull ReadOnlyTransaction transaction) {
         String projectId = getProjectId().orElse("");
-        String locationPath = getLocationPath().orElseThrow(() -> new IllegalArgumentException("Location path is required for export"));
+        String locationPath = getLocationPath().orElseThrow(() -> new IllegalArgumentException(LOCATION_PATH_IS_REQUIRED_FOR_EXPORT));
 
         RichPageReference richPageReference = RichPageReference.fromPath(createPath(projectId, locationPath));
         if (exportParams.getRevision() != null) {
@@ -59,8 +62,8 @@ public class ModelObjectProvider {
     }
 
     public @NotNull TestRun getTestRun(ReadOnlyTransaction transaction) {
-        String projectId = getProjectId().orElseThrow(() -> new IllegalArgumentException("Project id is required for export"));
-        String testRunId = getTestRunId().orElseThrow(() -> new IllegalArgumentException("Test run id is required for export"));
+        String projectId = getProjectId().orElseThrow(() -> new IllegalArgumentException(PROJECT_ID_IS_REQUIRED_FOR_EXPORT));
+        String testRunId = getTestRunId().orElseThrow(() -> new IllegalArgumentException(TEST_RUN_ID_IS_REQUIRED_FOR_EXPORT));
 
         TestRunReference testRunReference = TestRunReference.fromPath(createPath(projectId, testRunId));
         if (exportParams.getRevision() != null) {
@@ -72,7 +75,7 @@ public class ModelObjectProvider {
 
     public @NotNull WikiPage getWikiPage(@NotNull ReadOnlyTransaction transaction) {
         String projectId = getProjectId().orElse("");
-        String locationPath = getLocationPath().orElseThrow(() -> new IllegalArgumentException("Location path is required for export"));
+        String locationPath = getLocationPath().orElseThrow(() -> new IllegalArgumentException(LOCATION_PATH_IS_REQUIRED_FOR_EXPORT));
 
         WikiPageReference wikiPageReference = WikiPageReference.fromPath(createPath(projectId, locationPath));
         if (exportParams.getRevision() != null) {
@@ -83,8 +86,8 @@ public class ModelObjectProvider {
     }
 
     public Document getDocument(ReadOnlyTransaction transaction) {
-        String projectId = getProjectId().orElseThrow(() -> new IllegalArgumentException("Project id is required for export"));
-        String locationPath = getLocationPath().orElseThrow(() -> new IllegalArgumentException("Location path is required for export"));
+        String projectId = getProjectId().orElseThrow(() -> new IllegalArgumentException(PROJECT_ID_IS_REQUIRED_FOR_EXPORT));
+        String locationPath = getLocationPath().orElseThrow(() -> new IllegalArgumentException(LOCATION_PATH_IS_REQUIRED_FOR_EXPORT));
 
         DocumentReference documentReference = DocumentReference.fromPath(createPath(projectId, locationPath));
         if (exportParams.getRevision() != null) {

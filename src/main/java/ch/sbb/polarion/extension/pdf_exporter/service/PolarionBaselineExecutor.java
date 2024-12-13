@@ -2,11 +2,13 @@ package ch.sbb.polarion.extension.pdf_exporter.service;
 
 import ch.sbb.polarion.extension.pdf_exporter.exception.BaselineExecutionException;
 import com.polarion.alm.shared.api.transaction.ReadOnlyTransaction;
+import lombok.experimental.UtilityClass;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.concurrent.Callable;
 
+@UtilityClass
 public class PolarionBaselineExecutor {
 
     public static <T> T executeInBaseline(@Nullable String baselineRevision, @NotNull ReadOnlyTransaction transaction, @NotNull Callable<T> callable) {
