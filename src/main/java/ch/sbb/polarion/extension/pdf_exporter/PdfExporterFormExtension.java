@@ -11,6 +11,7 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.localization.Language;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.stylepackage.StylePackageModel;
 import ch.sbb.polarion.extension.pdf_exporter.service.PdfExporterPolarionService;
+import ch.sbb.polarion.extension.pdf_exporter.service.PolarionBaselineExecutor;
 import ch.sbb.polarion.extension.pdf_exporter.settings.CoverPageSettings;
 import ch.sbb.polarion.extension.pdf_exporter.settings.CssSettings;
 import ch.sbb.polarion.extension.pdf_exporter.settings.HeaderFooterSettings;
@@ -57,7 +58,7 @@ public class PdfExporterFormExtension implements IFormExtension {
     public String render(@NotNull IFormExtensionContext context) {
         return TransactionalExecutor.executeSafelyInReadOnlyTransaction(transaction -> {
             String baselineRevision = transaction.context().baselineRevision();
-            return polarionService.executeInBaseline(baselineRevision, transaction, () -> renderForm(transaction.context(), context.object().getOldApi()));
+            return PolarionBaselineExecutor.executeInBaseline(baselineRevision, transaction, () -> renderForm(transaction.context(), context.object().getOldApi()));
         });
     }
 

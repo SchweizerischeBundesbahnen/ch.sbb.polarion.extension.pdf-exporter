@@ -206,20 +206,4 @@ public class PdfExporterPolarionService extends PolarionService {
         return result;
     }
 
-    public <T> T executeInBaseline(@Nullable String baselineRevision, @NotNull ReadOnlyTransaction transaction, @NotNull Callable<T> callable) {
-        if (baselineRevision == null) {
-            return callCallable(callable);
-        } else {
-            return transaction.utils().executeInBaseline(baselineRevision, () -> callCallable(callable));
-        }
-    }
-
-    private static <T> T callCallable(@NotNull Callable<T> callable) {
-        try {
-            return callable.call();
-        } catch (Exception e) {
-            throw new BaselineExecutionException("Error during callable execution", e);
-        }
-    }
-
 }

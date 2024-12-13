@@ -1,7 +1,8 @@
 package ch.sbb.polarion.extension.pdf_exporter.util;
 
-import ch.sbb.polarion.extension.pdf_exporter.rest.model.DocumentData;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.DocumentType;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.DocumentData;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.id.LiveDocId;
 import com.polarion.alm.tracker.model.IModule;
 import com.polarion.subterra.base.location.ILocation;
 import org.junit.jupiter.api.BeforeEach;
@@ -28,8 +29,8 @@ class DocumentDataHelperTest {
     @MethodSource("getDocumentStatusParameters")
     void shouldGetDocumentStatus(String revision, String customFieldRevision, String lastRevision, String expectedStatus) {
         IModule module = mock(IModule.class);
-        DocumentData<IModule> documentData = DocumentData.builder(DocumentType.LIVE_DOC, module)
-                .id("testId")
+        DocumentData<IModule> documentData = DocumentData.creator(DocumentType.LIVE_DOC, module)
+                .id(LiveDocId.from("testProjectId", "_default", "testDocumentId"))
                 .title("testTitle")
                 .lastRevision(lastRevision)
                 .build();

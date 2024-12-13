@@ -213,6 +213,26 @@
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
+
+        <!-- required for mocking InternalReadOnlyTransaction -->
+        <dependency>
+            <groupId>com.polarion.alm.builder</groupId>
+            <artifactId>builder</artifactId>
+            <version>${polarion.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.siemens.polarion.integration.ci</groupId>
+            <artifactId>integrationci</artifactId>
+            <version>${polarion.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.polarion.alm.oslc</groupId>
+            <artifactId>oslc</artifactId>
+            <version>${polarion.version}</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>

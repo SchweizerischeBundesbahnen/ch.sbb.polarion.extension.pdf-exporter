@@ -2,11 +2,14 @@ package ch.sbb.polarion.extension.pdf_exporter.weasyprint;
 
 import ch.sbb.polarion.extension.pdf_exporter.converter.CoverPageProcessor;
 import ch.sbb.polarion.extension.pdf_exporter.converter.PdfConverter;
-import ch.sbb.polarion.extension.pdf_exporter.rest.model.DocumentData;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.DocumentType;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.Orientation;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PaperSize;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.DocumentData;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.id.DocumentProject;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.id.LiveDocId;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.id.WikiPageId;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.coverpage.CoverPageModel;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.css.CssModel;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.headerfooter.HeaderFooterModel;
@@ -176,9 +179,8 @@ class PdfConverterWeasyPrintTest extends BaseWeasyPrintTest {
                 .paperSize(PaperSize.A4)
                 .build();
 
-        DocumentData<IModule> liveDoc1 = DocumentData.builder(DocumentType.LIVE_DOC, module)
-                .id("testId")
-                .projectName("Test")
+        DocumentData<IModule> liveDoc1 = DocumentData.creator(DocumentType.LIVE_DOC, module)
+                .id(LiveDocId.from("testProjectId", "_default", "testDocumentId"))
                 .title("testTitle")
                 .content("<div>TEST</div>")
                 .lastRevision("42")
@@ -198,9 +200,8 @@ class PdfConverterWeasyPrintTest extends BaseWeasyPrintTest {
                 .coverPage("test")
                 .build();
 
-        DocumentData<IModule> liveDoc2 = DocumentData.builder(DocumentType.LIVE_DOC, module)
-                .projectName("Test")
-                .id("testId")
+        DocumentData<IModule> liveDoc2 = DocumentData.creator(DocumentType.LIVE_DOC, module)
+                .id(LiveDocId.from("testProjectId", "_default", "testDocumentId"))
                 .title("testTitle")
                 .content("<div>TEST page 1</div><!--PAGE_BREAK--><!--PORTRAIT_ABOVE--><div>TEST page 2</div><!--PAGE_BREAK--><!--LANDSCAPE_ABOVE--><div>TEST page 3</div>")
                 .lastRevision("42")
@@ -219,9 +220,8 @@ class PdfConverterWeasyPrintTest extends BaseWeasyPrintTest {
                 .paperSize(PaperSize.A4)
                 .build();
 
-        DocumentData<IModule> liveDoc3 = DocumentData.builder(DocumentType.LIVE_DOC, module)
-                .projectName("Test")
-                .id("testId")
+        DocumentData<IModule> liveDoc3 = DocumentData.creator(DocumentType.LIVE_DOC, module)
+                .id(LiveDocId.from("testProjectId", "_default", "testDocumentId"))
                 .title("specialSymbolsTitle")
                 .content(readHtmlResource("specialSymbols"))
                 .build();
@@ -239,9 +239,8 @@ class PdfConverterWeasyPrintTest extends BaseWeasyPrintTest {
                 .paperSize(PaperSize.A4)
                 .build();
 
-        DocumentData<IModule> liveDoc4 = DocumentData.builder(DocumentType.LIVE_DOC, module)
-                .projectName("Test")
-                .id("testId")
+        DocumentData<IModule> liveDoc4 = DocumentData.creator(DocumentType.LIVE_DOC, module)
+                .id(LiveDocId.from("testProjectId", "_default", "testDocumentId"))
                 .title("svgImageTitle")
                 .content(readHtmlResource("svgImage"))
                 .build();
@@ -260,9 +259,8 @@ class PdfConverterWeasyPrintTest extends BaseWeasyPrintTest {
                 .build();
 
         //test wiki page export + {{ REVISION }} placeholder usage
-        DocumentData<IWikiPage> wikiPage = DocumentData.builder(DocumentType.LIVE_DOC, mock(IWikiPage.class))
-                .projectName("Test")
-                .id("testId")
+        DocumentData<IWikiPage> wikiPage = DocumentData.creator(DocumentType.WIKI_PAGE, mock(IWikiPage.class))
+                .id(new WikiPageId(new DocumentProject("testProjectId", "Test Project"), "wikiPageId"))
                 .title("wikiPage")
                 .content("<div>TEST</div>")
                 .lastRevision("42")

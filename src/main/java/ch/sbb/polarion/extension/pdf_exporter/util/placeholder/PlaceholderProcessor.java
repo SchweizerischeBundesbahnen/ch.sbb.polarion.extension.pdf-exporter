@@ -1,8 +1,8 @@
 package ch.sbb.polarion.extension.pdf_exporter.util.placeholder;
 
 import ch.sbb.polarion.extension.generic.regex.RegexMatcher;
-import ch.sbb.polarion.extension.pdf_exporter.rest.model.DocumentData;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.DocumentData;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.headerfooter.Placeholder;
 import ch.sbb.polarion.extension.pdf_exporter.service.PdfExporterPolarionService;
 import ch.sbb.polarion.extension.pdf_exporter.util.DocumentDataHelper;
@@ -49,16 +49,16 @@ public class PlaceholderProcessor {
 
     public @NotNull PlaceholderValues getPlaceholderValues(@NotNull DocumentData<? extends IUniqueObject> documentData, @NotNull ExportParams exportParams, @NotNull List<String> templates) {
         String revision = exportParams.getRevision() != null ? exportParams.getRevision() : documentData.getLastRevision();
-        String baseLineName = documentData.getBaselineName();
+        String baselineName = documentData.getBaseline() != null ? documentData.getBaseline().asPlaceholder() : "";
 
         PlaceholderValues placeholderValues = PlaceholderValues.builder()
                 .productName(pdfExporterPolarionService.getPolarionProductName())
                 .productVersion(pdfExporterPolarionService.getPolarionVersion())
-                .projectName(documentData.getProjectName())
+                .projectName(documentData.getId().getDocumentProject() != null ? documentData.getId().getDocumentProject().getName() : "")
                 .revision(revision)
-                .revisionAndBaseLineName(baseLineName != null ? (revision + " " + baseLineName) : revision)
-                .baseLineName(baseLineName)
-                .documentId(documentData.getId())
+                .revisionAndBaseLineName(baselineName.isEmpty() ? revision : (revision + " " + baselineName))
+                .baseLineName(baselineName)
+                .documentId(documentData.getId().getDocumentId())
                 .documentTitle(documentData.getTitle())
                 .documentRevision(documentDataHelper.getDocumentStatus(exportParams.getRevision(), documentData))
                 .build();
