@@ -26,6 +26,7 @@ import com.polarion.alm.tracker.model.IRichPage;
 import com.polarion.alm.tracker.model.ITestRun;
 import com.polarion.alm.tracker.model.ITrackerProject;
 import com.polarion.alm.tracker.model.IWikiPage;
+import com.polarion.alm.tracker.model.baselinecollection.IBaselineCollection;
 import com.polarion.alm.tracker.model.ipi.IInternalBaselinesManager;
 import com.polarion.alm.tracker.spi.model.IInternalModule;
 import org.junit.jupiter.api.AfterEach;
@@ -59,6 +60,8 @@ class DocumentDataTest {
     private IWikiPage wikiPageInDefaultRepo;
     @Mock
     private IWikiPage wikiPageInProject;
+    @Mock
+    private IBaselineCollection baselineCollection;
 
     private MockedStatic<TransactionalExecutor> transactionalExecutorMockedStatic;
 
@@ -383,4 +386,8 @@ class DocumentDataTest {
         }
     }
 
+    @Test
+    void testBaselineCollectionDocumentData() {
+        assertThrows(IllegalArgumentException.class, () -> new UniqueObjectConverter(baselineCollection));
+    }
 }
