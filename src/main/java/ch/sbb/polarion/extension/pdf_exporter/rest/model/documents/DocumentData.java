@@ -3,7 +3,6 @@ package ch.sbb.polarion.extension.pdf_exporter.rest.model.documents;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.DocumentType;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.id.DocumentId;
 import com.polarion.alm.projects.model.IUniqueObject;
-import com.polarion.alm.tracker.model.IModule;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -11,8 +10,6 @@ import lombok.Getter;
 import lombok.Setter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import static ch.sbb.polarion.extension.pdf_exporter.util.DocumentDataHelper.DOC_REVISION_CUSTOM_FIELD;
 
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Builder

@@ -4,7 +4,6 @@ import com.polarion.alm.server.api.model.rp.widget.GenericButtonWidget;
 import com.polarion.alm.shared.api.SharedContext;
 import com.polarion.alm.shared.api.model.rp.parameter.ParameterFactory;
 import com.polarion.alm.shared.api.model.rp.parameter.RichPageParameter;
-import com.polarion.alm.shared.api.model.rp.widget.RichPageWidget;
 import com.polarion.alm.shared.api.model.rp.widget.RichPageWidgetContext;
 import com.polarion.alm.shared.api.model.rp.widget.RichPageWidgetRenderingContext;
 import com.polarion.alm.shared.api.utils.collections.ImmutableStrictList;

@@ -19,10 +19,10 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Map;
 
-import static ch.sbb.polarion.extension.pdf_exporter.util.DocumentDataHelper.DOC_REVISION_CUSTOM_FIELD;
-import static ch.sbb.polarion.extension.pdf_exporter.util.DocumentDataHelper.URL_QUERY_PARAM_LANGUAGE;
-
 public class LiveDocAdapter extends CommonUniqueObjectAdapter {
+    public static final String DOC_REVISION_CUSTOM_FIELD = "docRevision";
+    public static final String URL_QUERY_PARAM_LANGUAGE = "language";
+
     private final @NotNull IModule module;
 
     public LiveDocAdapter(@NotNull IModule module) {

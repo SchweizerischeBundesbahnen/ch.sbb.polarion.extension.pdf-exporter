@@ -20,9 +20,8 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Map;
 import java.util.Optional;
 
-import static ch.sbb.polarion.extension.pdf_exporter.util.DocumentDataHelper.URL_QUERY_PARAM_ID;
-
 public class ModelObjectProvider {
+    public static final String URL_QUERY_PARAM_ID = "id";
 
     private final @NotNull ExportParams exportParams;
     private final @NotNull PdfExporterPolarionService pdfExporterPolarionService;

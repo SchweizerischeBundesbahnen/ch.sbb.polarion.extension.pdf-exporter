@@ -5,7 +5,6 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.DocumentData;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.headerfooter.Placeholder;
 import ch.sbb.polarion.extension.pdf_exporter.service.PdfExporterPolarionService;
-import ch.sbb.polarion.extension.pdf_exporter.util.DocumentDataHelper;
 import com.polarion.alm.projects.model.IUniqueObject;
 import com.polarion.alm.tracker.model.IModule;
 import org.jetbrains.annotations.NotNull;
