@@ -24,19 +24,19 @@ import java.util.Objects;
 public class UniqueObjectConverter {
 
     @Getter
-    private final @NotNull IUniqueObjectAdapter moduleAdapter;
+    private final @NotNull IUniqueObjectAdapter uniqueObjectAdapter;
     private boolean withContent;
     private @Nullable ExportParams exportParams;
 
     public UniqueObjectConverter(@NotNull IUniqueObject uniqueObject) {
         if (uniqueObject instanceof IModule module) {
-            moduleAdapter = new LiveDocAdapter(module);
+            uniqueObjectAdapter = new LiveDocAdapter(module);
         } else if (uniqueObject instanceof IRichPage richPage) {
-            moduleAdapter = new LiveReportAdapter(richPage);
+            uniqueObjectAdapter = new LiveReportAdapter(richPage);
         } else if (uniqueObject instanceof IWikiPage wikiPage) {
-            moduleAdapter = new WikiPageAdapter(wikiPage);
+            uniqueObjectAdapter = new WikiPageAdapter(wikiPage);
         } else if (uniqueObject instanceof ITestRun testRun) {
-            moduleAdapter = new TestRunAdapter(testRun);
+            uniqueObjectAdapter = new TestRunAdapter(testRun);
         } else {
             throw new IllegalArgumentException("Unsupported unique object type: " + uniqueObject.getClass());
         }
@@ -63,15 +63,15 @@ public class UniqueObjectConverter {
     public @NotNull <T extends IUniqueObject> DocumentData<T> toDocumentData(@NotNull ReadOnlyTransaction transaction) {
         String baselineRevision = getBaselineRevision();
         return PolarionBaselineExecutor.executeInBaseline(baselineRevision, transaction, () -> DocumentData.<T>builder()
-                .documentObject(moduleAdapter.getUniqueObject())
-                .id(moduleAdapter.getDocumentId())
-                .type(moduleAdapter.getDocumentType())
-                .title(moduleAdapter.getTitle())
-                .revision(moduleAdapter.getRevision())
-                .lastRevision(moduleAdapter.getLastRevision())
-                .revisionPlaceholder(moduleAdapter.getRevisionPlaceholder())
-                .baseline(moduleAdapter.getDocumentBaseline(transaction))
-                .content(withContent && exportParams != null ? moduleAdapter.getContent(exportParams, transaction) : null)
+                .documentObject(uniqueObjectAdapter.getUniqueObject())
+                .id(uniqueObjectAdapter.getDocumentId())
+                .type(uniqueObjectAdapter.getDocumentType())
+                .title(uniqueObjectAdapter.getTitle())
+                .revision(uniqueObjectAdapter.getRevision())
+                .lastRevision(uniqueObjectAdapter.getLastRevision())
+                .revisionPlaceholder(uniqueObjectAdapter.getRevisionPlaceholder())
+                .baseline(uniqueObjectAdapter.getDocumentBaseline(transaction))
+                .content(withContent && exportParams != null ? uniqueObjectAdapter.getContent(exportParams, transaction) : null)
                 .build());
     }
 

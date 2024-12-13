@@ -57,11 +57,7 @@ public class LiveDocAdapter extends CommonUniqueObjectAdapter {
     @Override
     public @NotNull String getRevisionPlaceholder() {
         Object docRevision = module.getCustomField(DOC_REVISION_CUSTOM_FIELD);
-        if (docRevision != null) {
-            return docRevision.toString();
-        } else {
-            return super.getRevisionPlaceholder();
-        }
+        return docRevision != null ? docRevision.toString() : super.getRevisionPlaceholder();
     }
 
     @Override

@@ -49,7 +49,12 @@ public class WikiPageAdapter extends CommonUniqueObjectAdapter {
 
     @Override
     public @NotNull String getContent(@NotNull ExportParams exportParams, @NotNull ReadOnlyTransaction transaction) {
-        return PolarionBaselineExecutor.executeInBaseline(exportParams.getBaselineRevision(), transaction, () -> new WikiRenderer().render(wikiPage.getProjectId(), Objects.requireNonNull(exportParams.getLocationPath()), exportParams.getRevision()));
+        return PolarionBaselineExecutor.executeInBaseline(exportParams.getBaselineRevision(), transaction, () -> {
+            @NotNull String projectId = wikiPage.getProject() != null ? wikiPage.getProject().getId() : "";
+            @NotNull String locationPath = Objects.requireNonNull(exportParams.getLocationPath());
+            @Nullable String revision = exportParams.getRevision();
+            return new WikiRenderer().render(projectId, locationPath, revision);
+        });
     }
 
 }
