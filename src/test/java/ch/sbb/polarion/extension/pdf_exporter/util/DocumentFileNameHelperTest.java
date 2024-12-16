@@ -3,24 +3,18 @@ package ch.sbb.polarion.extension.pdf_exporter.util;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.DocumentType;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.DocumentData;
+import ch.sbb.polarion.extension.pdf_exporter.test_extensions.TransactionalExecutorExtension;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.id.DocumentProject;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.id.LiveDocId;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.filename.FileNameTemplateModel;
 import ch.sbb.polarion.extension.pdf_exporter.service.PdfExporterPolarionService;
 import ch.sbb.polarion.extension.pdf_exporter.util.velocity.VelocityEvaluator;
-import com.polarion.alm.shared.api.transaction.RunnableInReadOnlyTransaction;
-import com.polarion.alm.shared.api.transaction.TransactionalExecutor;
-import com.polarion.alm.shared.api.transaction.internal.InternalReadOnlyTransaction;
 import com.polarion.alm.tracker.model.IModule;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Answers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedConstruction;
-import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -28,33 +22,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
-@ExtendWith(MockitoExtension.class)
+@ExtendWith({MockitoExtension.class, TransactionalExecutorExtension.class})
 class DocumentFileNameHelperTest {
     @Mock
     VelocityEvaluator velocityEvaluator;
 
     @InjectMocks
     DocumentFileNameHelper fileNameHelper;
-
-    @Mock(answer = Answers.RETURNS_DEEP_STUBS)
-    InternalReadOnlyTransaction internalReadOnlyTransactionMock;
-
-    MockedStatic<TransactionalExecutor> transactionalExecutorMockedStatic;
-
-    @BeforeEach
-    void setUp() {
-        transactionalExecutorMockedStatic = mockStatic(TransactionalExecutor.class);
-        transactionalExecutorMockedStatic.when(() -> TransactionalExecutor.executeSafelyInReadOnlyTransaction(any()))
-                .thenAnswer(invocation -> {
-                    RunnableInReadOnlyTransaction<?> runnable = invocation.getArgument(0);
-                    return runnable.run(internalReadOnlyTransactionMock);
-                });
-    }
-
-    @AfterEach
-    void tearDown() {
-        transactionalExecutorMockedStatic.close();
-    }
 
     @Test
     void evaluateVelocity() {

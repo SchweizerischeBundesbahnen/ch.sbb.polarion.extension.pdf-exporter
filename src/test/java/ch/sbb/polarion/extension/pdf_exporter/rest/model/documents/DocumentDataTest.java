@@ -3,6 +3,8 @@ package ch.sbb.polarion.extension.pdf_exporter.rest.model.documents;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.DocumentType;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.id.LiveDocId;
+import ch.sbb.polarion.extension.pdf_exporter.test_extensions.CustomExtensionMock;
+import ch.sbb.polarion.extension.pdf_exporter.test_extensions.TransactionalExecutorExtension;
 import ch.sbb.polarion.extension.pdf_exporter.util.exporter.ModifiedDocumentRenderer;
 import ch.sbb.polarion.extension.pdf_exporter.util.exporter.WikiRenderer;
 import com.polarion.alm.projects.model.IProject;
@@ -14,8 +16,6 @@ import com.polarion.alm.shared.api.Scope;
 import com.polarion.alm.shared.api.model.rp.RichPageReference;
 import com.polarion.alm.shared.api.model.tr.TestRunReference;
 import com.polarion.alm.shared.api.services.internal.InternalServices;
-import com.polarion.alm.shared.api.transaction.RunnableInReadOnlyTransaction;
-import com.polarion.alm.shared.api.transaction.TransactionalExecutor;
 import com.polarion.alm.shared.api.transaction.internal.InternalReadOnlyTransaction;
 import com.polarion.alm.shared.rpe.RpeModelAspect;
 import com.polarion.alm.shared.rpe.RpeRenderer;
@@ -29,7 +29,6 @@ import com.polarion.alm.tracker.model.IWikiPage;
 import com.polarion.alm.tracker.model.baselinecollection.IBaselineCollection;
 import com.polarion.alm.tracker.model.ipi.IInternalBaselinesManager;
 import com.polarion.alm.tracker.spi.model.IInternalModule;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -41,13 +40,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-@ExtendWith({MockitoExtension.class})
+@ExtendWith({MockitoExtension.class, TransactionalExecutorExtension.class})
 class DocumentDataTest {
+
+    @CustomExtensionMock
+    private InternalReadOnlyTransaction internalReadOnlyTransactionMock;
 
     @Mock
     private IInternalBaselinesManager internalBaselinesManager;
-    @Mock
-    private InternalReadOnlyTransaction internalReadOnlyTransactionMock;
     @Mock
     private IInternalModule module;
     @Mock
@@ -63,17 +63,8 @@ class DocumentDataTest {
     @Mock
     private IBaselineCollection baselineCollection;
 
-    private MockedStatic<TransactionalExecutor> transactionalExecutorMockedStatic;
-
     @BeforeEach
     void setUp() {
-        transactionalExecutorMockedStatic = mockStatic(TransactionalExecutor.class);
-        transactionalExecutorMockedStatic.when(() -> TransactionalExecutor.executeSafelyInReadOnlyTransaction(any()))
-                .thenAnswer(invocation -> {
-                    RunnableInReadOnlyTransaction<?> runnable = invocation.getArgument(0);
-                    return runnable.run(internalReadOnlyTransactionMock);
-                });
-
         InternalServices internalServicesMock = mock(InternalServices.class);
         ITrackerService trackerServiceMock = mock(ITrackerService.class);
         ITrackerProject trackerProjectMock = mock(ITrackerProject.class);
@@ -97,11 +88,6 @@ class DocumentDataTest {
         IBaseline projectBaselineName = mock(IBaseline.class);
         lenient().when(projectBaselineName.getName()).thenReturn("projectBaselineName");
         lenient().when(internalBaselinesManager.getRevisionBaseline("12345")).thenReturn(projectBaselineName);
-    }
-
-    @AfterEach
-    void tearDown() {
-        transactionalExecutorMockedStatic.close();
     }
 
     @Test

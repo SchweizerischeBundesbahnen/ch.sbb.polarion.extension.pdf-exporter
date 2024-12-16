@@ -4,6 +4,8 @@ import ch.sbb.polarion.extension.generic.exception.ObjectNotFoundException;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.DocumentType;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
 import ch.sbb.polarion.extension.pdf_exporter.service.PdfExporterPolarionService;
+import ch.sbb.polarion.extension.pdf_exporter.test_extensions.CustomExtensionMock;
+import ch.sbb.polarion.extension.pdf_exporter.test_extensions.TransactionalExecutorExtension;
 import com.polarion.alm.projects.model.IProject;
 import com.polarion.alm.shared.api.model.ModelObject;
 import com.polarion.alm.shared.api.model.document.Document;
@@ -18,19 +20,17 @@ import com.polarion.alm.shared.api.model.tr.internal.InternalTestRuns;
 import com.polarion.alm.shared.api.model.wiki.WikiPage;
 import com.polarion.alm.shared.api.model.wiki.WikiPageSelector;
 import com.polarion.alm.shared.api.model.wiki.WikiPages;
-import com.polarion.alm.shared.api.transaction.RunnableInReadOnlyTransaction;
 import com.polarion.alm.shared.api.transaction.TransactionalExecutor;
 import com.polarion.alm.shared.api.transaction.internal.InternalReadOnlyTransaction;
 import org.jetbrains.annotations.NotNull;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
-import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Map;
@@ -42,35 +42,21 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
-@ExtendWith({MockitoExtension.class})
+@ExtendWith({MockitoExtension.class, TransactionalExecutorExtension.class})
 class ModelObjectProviderTest {
 
-    @Mock
+    @CustomExtensionMock
     private InternalReadOnlyTransaction internalReadOnlyTransactionMock;
+
     @Mock
     private PdfExporterPolarionService pdfExporterPolarionService;
 
-    private MockedStatic<TransactionalExecutor> transactionalExecutorMockedStatic;
-
     @BeforeEach
     void setUp() {
-        transactionalExecutorMockedStatic = mockStatic(TransactionalExecutor.class);
-        transactionalExecutorMockedStatic.when(() -> TransactionalExecutor.executeSafelyInReadOnlyTransaction(any()))
-                .thenAnswer(invocation -> {
-                    RunnableInReadOnlyTransaction<?> runnable = invocation.getArgument(0);
-                    return runnable.run(internalReadOnlyTransactionMock);
-                });
-
         IProject projectMock = mock(IProject.class);
         lenient().when(projectMock.getId()).thenReturn("testProjectId");
         lenient().when(pdfExporterPolarionService.getProject(eq("testProjectId"))).thenReturn(projectMock);
         lenient().when(pdfExporterPolarionService.getProject(eq("nonExistingProjectId"))).thenThrow(new ObjectNotFoundException("Project not found"));
-    }
-
-
-    @AfterEach
-    void tearDown() {
-        transactionalExecutorMockedStatic.close();
     }
 
     public static Stream<Arguments> paramsForModelObjectProviderGetDocument() {
@@ -91,7 +77,7 @@ class ModelObjectProviderTest {
 
     @ParameterizedTest
     @MethodSource("paramsForModelObjectProviderGetDocument")
-    void testModelObjectProviderGetDocument(@NotNull ExportParams exportParams) {
+    void testModelObjectProviderGetDocument(@NotNull ExportParams exportParams, ExtensionContext extensionContext) {
         InternalDocuments internalDocumentsMock = mock(InternalDocuments.class);
         DocumentSelector documentSelectorMock = mock(DocumentSelector.class);
         when(documentSelectorMock.revision(any())).thenReturn(documentSelectorMock);
@@ -127,7 +113,7 @@ class ModelObjectProviderTest {
 
     @ParameterizedTest
     @MethodSource("paramsForModelObjectProviderGetRichPage")
-    void testModelObjectProviderGetRichPage(@NotNull ExportParams exportParams) {
+    void testModelObjectProviderGetRichPage(@NotNull ExportParams exportParams, ExtensionContext extensionContext) {
         InternalRichPages richPagesMock = mock(InternalRichPages.class);
         RichPageSelector richPagesSelectorMock = mock(RichPageSelector.class);
         when(richPagesSelectorMock.revision(any())).thenReturn(richPagesSelectorMock);
@@ -160,7 +146,7 @@ class ModelObjectProviderTest {
 
     @ParameterizedTest
     @MethodSource("paramsForModelObjectProviderGetTestRun")
-    void testModelObjectProviderGetTestRun(@NotNull ExportParams exportParams) {
+    void testModelObjectProviderGetTestRun(@NotNull ExportParams exportParams, ExtensionContext extensionContext) {
         InternalTestRuns testRunsMock = mock(InternalTestRuns.class);
         TestRunSelector testRunsSelectorMock = mock(TestRunSelector.class);
         when(testRunsSelectorMock.revision(any())).thenReturn(testRunsSelectorMock);
@@ -197,7 +183,7 @@ class ModelObjectProviderTest {
 
     @ParameterizedTest
     @MethodSource("paramsForModelObjectProviderGetWikiPage")
-    void testModelObjectProviderGetWikiPage(@NotNull ExportParams exportParams) {
+    void testModelObjectProviderGetWikiPage(@NotNull ExportParams exportParams, ExtensionContext extensionContext) {
         WikiPages wikiPagesMock = mock(WikiPages.class);
         WikiPageSelector wikiPagesSelectorMock = mock(WikiPageSelector.class);
         when(wikiPagesSelectorMock.revision(any())).thenReturn(wikiPagesSelectorMock);
