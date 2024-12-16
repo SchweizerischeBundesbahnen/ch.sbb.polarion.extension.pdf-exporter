@@ -1,4 +1,4 @@
-package ch.sbb.polarion.extension.pdf_exporter.test_extensions;
+package ch.sbb.polarion.extension.pdf_exporter.test_extensions.generic;
 
 import org.junit.jupiter.api.extension.ExtensionContext;
 

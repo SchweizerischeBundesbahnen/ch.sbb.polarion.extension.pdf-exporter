@@ -1,8 +1,8 @@
 package ch.sbb.polarion.extension.pdf_exporter.service;
 
 import ch.sbb.polarion.extension.pdf_exporter.exception.BaselineExecutionException;
-import ch.sbb.polarion.extension.pdf_exporter.test_extensions.CustomExtensionMock;
-import ch.sbb.polarion.extension.pdf_exporter.test_extensions.TransactionalExecutorExtension;
+import ch.sbb.polarion.extension.pdf_exporter.test_extensions.generic.CustomExtensionMock;
+import ch.sbb.polarion.extension.pdf_exporter.test_extensions.generic.TransactionalExecutorExtension;
 import com.polarion.alm.shared.api.transaction.internal.InternalReadOnlyTransaction;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -12,7 +12,7 @@ import java.io.IOException;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-@ExtendWith(TransactionalExecutorExtension.class)
+@ExtendWith({TransactionalExecutorExtension.class})
 class PolarionBaselineExecutorTest {
 
     @CustomExtensionMock
