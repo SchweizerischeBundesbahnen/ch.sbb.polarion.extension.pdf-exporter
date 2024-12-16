@@ -75,7 +75,7 @@
         <skipJavaScriptTests>${skipTests}</skipJavaScriptTests>
 
         <!-- exclude rest controllers from coverage report -->
-        <sonar.coverage.exclusions>ch/sbb/polarion/extension/pdf_export/rest/controller/**</sonar.coverage.exclusions>
+        <sonar.coverage.exclusions>**/rest/controller/**</sonar.coverage.exclusions>
     </properties>
 
     <profiles>
