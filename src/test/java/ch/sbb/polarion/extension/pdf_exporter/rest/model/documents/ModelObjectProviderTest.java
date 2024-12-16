@@ -106,38 +106,6 @@ class ModelObjectProviderTest {
         assertEquals(documentMock, modelObject);
     }
 
-    public static Stream<Arguments> paramsForModelObjectProviderGetDocumentFailed() {
-        return Stream.of(
-                Arguments.of(ExportParams.builder()
-                        .projectId("nonExistingProjectId")
-                        .locationPath("_default/testLocationPath")
-                        .documentType(DocumentType.LIVE_DOC)
-                        .build(), ObjectNotFoundException.class),
-                Arguments.of(ExportParams.builder()
-                        .projectId("testProjectId")
-                        .documentType(DocumentType.LIVE_DOC)
-                        .build(), IllegalArgumentException.class)
-//                Arguments.of(ExportParams.builder()
-//                        .projectId("testProjectId")
-//                        .locationPath("wrongLocationPath")
-//                        .documentType(DocumentType.LIVE_DOC)
-//                        .build()),
-//                Arguments.of(ExportParams.builder()
-//                        .projectId("testProjectId")
-//                        .locationPath("_default/nonExistingLocationPath")
-//                        .documentType(DocumentType.LIVE_DOC)
-//                        .build())
-        );
-
-    }
-
-    @ParameterizedTest
-    @MethodSource("paramsForModelObjectProviderGetDocumentFailed")
-    void testModelObjectProviderGetDocumentFailed(@NotNull ExportParams exportParams, @NotNull Class<? extends Exception> expectedExceptionClass) {
-        ModelObjectProvider modelObjectProvider = new ModelObjectProvider(exportParams, pdfExporterPolarionService);
-        assertThrows(expectedExceptionClass, () -> TransactionalExecutor.executeSafelyInReadOnlyTransaction(modelObjectProvider::getModelObject));
-    }
-
     public static Stream<Arguments> paramsForModelObjectProviderGetRichPage() {
         return Stream.of(
                 Arguments.of(ExportParams.builder()
@@ -174,28 +142,6 @@ class ModelObjectProviderTest {
         assertEquals(richPageMock, modelObject);
     }
 
-    public static Stream<Arguments> paramsForModelObjectProviderGetRichPageFailed() {
-        return Stream.of(
-                Arguments.of(ExportParams.builder()
-                        .projectId("nonExistingProjectId")
-                        .locationPath("_default/testLocationPath")
-                        .documentType(DocumentType.LIVE_REPORT)
-                        .build(), ObjectNotFoundException.class),
-                Arguments.of(ExportParams.builder()
-                        .projectId("testProjectId")
-                        .documentType(DocumentType.LIVE_REPORT)
-                        .build(), IllegalArgumentException.class)
-        );
-
-    }
-
-    @ParameterizedTest
-    @MethodSource("paramsForModelObjectProviderGetRichPageFailed")
-    void testModelObjectProviderGetRichPageFailed(@NotNull ExportParams exportParams, @NotNull Class<? extends Exception> expectedExceptionClass) {
-        ModelObjectProvider modelObjectProvider = new ModelObjectProvider(exportParams, pdfExporterPolarionService);
-        assertThrows(expectedExceptionClass, () -> TransactionalExecutor.executeSafelyInReadOnlyTransaction(modelObjectProvider::getModelObject));
-    }
-
     public static Stream<Arguments> paramsForModelObjectProviderGetTestRun() {
         return Stream.of(
                 Arguments.of(ExportParams.builder()
@@ -227,33 +173,6 @@ class ModelObjectProviderTest {
         ModelObject modelObject = TransactionalExecutor.executeSafelyInReadOnlyTransaction(modelObjectProvider::getModelObject);
 
         assertEquals(testRunMock, modelObject);
-    }
-
-    public static Stream<Arguments> paramsForModelObjectProviderGetTestRunFailed() {
-        return Stream.of(
-                Arguments.of(ExportParams.builder()
-                        .projectId("nonExistingProjectId")
-                        .urlQueryParameters(Map.of("id", "testRunId"))
-                        .documentType(DocumentType.TEST_RUN)
-                        .build(), ObjectNotFoundException.class),
-                Arguments.of(ExportParams.builder()
-                        .projectId("testProjectId")
-                        .documentType(DocumentType.TEST_RUN)
-                        .build(), IllegalArgumentException.class),
-                Arguments.of(ExportParams.builder()
-                        .projectId("testProjectId")
-                        .urlQueryParameters(Map.of())
-                        .documentType(DocumentType.TEST_RUN)
-                        .build(), IllegalArgumentException.class)
-        );
-
-    }
-
-    @ParameterizedTest
-    @MethodSource("paramsForModelObjectProviderGetTestRunFailed")
-    void testModelObjectProviderGetTestRunFailed(@NotNull ExportParams exportParams, @NotNull Class<? extends Exception> expectedExceptionClass) {
-        ModelObjectProvider modelObjectProvider = new ModelObjectProvider(exportParams, pdfExporterPolarionService);
-        assertThrows(expectedExceptionClass, () -> TransactionalExecutor.executeSafelyInReadOnlyTransaction(modelObjectProvider::getModelObject));
     }
 
     public static Stream<Arguments> paramsForModelObjectProviderGetWikiPage() {
@@ -293,8 +212,53 @@ class ModelObjectProviderTest {
         assertEquals(wikiPageMock, modelObject);
     }
 
-    public static Stream<Arguments> paramsForModelObjectProviderGetWikiPageFailed() {
+    public static Stream<Arguments> paramsForModelObjectProviderShouldFail() {
         return Stream.of(
+                Arguments.of(ExportParams.builder()
+                        .projectId("nonExistingProjectId")
+                        .locationPath("_default/testLocationPath")
+                        .documentType(DocumentType.LIVE_DOC)
+                        .build(), ObjectNotFoundException.class),
+                Arguments.of(ExportParams.builder()
+                        .projectId("testProjectId")
+                        .documentType(DocumentType.LIVE_DOC)
+                        .build(), IllegalArgumentException.class),
+//                Arguments.of(ExportParams.builder()
+//                        .projectId("testProjectId")
+//                        .locationPath("wrongLocationPath")
+//                        .documentType(DocumentType.LIVE_DOC)
+//                        .build(), IllegalArgumentException.class),
+//                Arguments.of(ExportParams.builder()
+//                        .projectId("testProjectId")
+//                        .locationPath("_default/nonExistingLocationPath")
+//                        .documentType(DocumentType.LIVE_DOC)
+//                        .build(), IllegalArgumentException.class),
+
+                Arguments.of(ExportParams.builder()
+                        .projectId("nonExistingProjectId")
+                        .locationPath("_default/testLocationPath")
+                        .documentType(DocumentType.LIVE_REPORT)
+                        .build(), ObjectNotFoundException.class),
+                Arguments.of(ExportParams.builder()
+                        .projectId("testProjectId")
+                        .documentType(DocumentType.LIVE_REPORT)
+                        .build(), IllegalArgumentException.class),
+
+                Arguments.of(ExportParams.builder()
+                        .projectId("nonExistingProjectId")
+                        .urlQueryParameters(Map.of("id", "testRunId"))
+                        .documentType(DocumentType.TEST_RUN)
+                        .build(), ObjectNotFoundException.class),
+                Arguments.of(ExportParams.builder()
+                        .projectId("testProjectId")
+                        .documentType(DocumentType.TEST_RUN)
+                        .build(), IllegalArgumentException.class),
+                Arguments.of(ExportParams.builder()
+                        .projectId("testProjectId")
+                        .urlQueryParameters(Map.of())
+                        .documentType(DocumentType.TEST_RUN)
+                        .build(), IllegalArgumentException.class),
+
                 Arguments.of(ExportParams.builder()
                         .projectId("nonExistingProjectId")
                         .locationPath("_default/testLocationPath")
@@ -309,8 +273,8 @@ class ModelObjectProviderTest {
     }
 
     @ParameterizedTest
-    @MethodSource("paramsForModelObjectProviderGetWikiPageFailed")
-    void testModelObjectProviderGetWikiPageFailed(@NotNull ExportParams exportParams, @NotNull Class<? extends Exception> expectedExceptionClass) {
+    @MethodSource("paramsForModelObjectProviderShouldFail")
+    void testModelObjectProviderShouldFail(@NotNull ExportParams exportParams, @NotNull Class<? extends Exception> expectedExceptionClass) {
         ModelObjectProvider modelObjectProvider = new ModelObjectProvider(exportParams, pdfExporterPolarionService);
         assertThrows(expectedExceptionClass, () -> TransactionalExecutor.executeSafelyInReadOnlyTransaction(modelObjectProvider::getModelObject));
     }
