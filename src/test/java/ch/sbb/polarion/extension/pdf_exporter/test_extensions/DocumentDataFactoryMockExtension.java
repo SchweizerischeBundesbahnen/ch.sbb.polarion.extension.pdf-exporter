@@ -1,4 +1,4 @@
-package ch.sbb.polarion.extension.pdf_exporter.test_extensions.generic;
+package ch.sbb.polarion.extension.pdf_exporter.test_extensions;
 
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.DocumentData;
@@ -10,7 +10,6 @@ import org.mockito.MockedStatic;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 import static org.mockito.Mockito.*;
 

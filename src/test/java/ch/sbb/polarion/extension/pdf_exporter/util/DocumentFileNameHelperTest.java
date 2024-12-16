@@ -9,7 +9,7 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.id.DocumentPr
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.id.LiveDocId;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.filename.FileNameTemplateModel;
 import ch.sbb.polarion.extension.pdf_exporter.settings.FileNameTemplateSettings;
-import ch.sbb.polarion.extension.pdf_exporter.test_extensions.generic.DocumentDataFactoryMockExtension;
+import ch.sbb.polarion.extension.pdf_exporter.test_extensions.DocumentDataFactoryMockExtension;
 import ch.sbb.polarion.extension.pdf_exporter.test_extensions.generic.PlatformContextMockExtension;
 import ch.sbb.polarion.extension.pdf_exporter.test_extensions.generic.TransactionalExecutorExtension;
 import ch.sbb.polarion.extension.pdf_exporter.util.velocity.VelocityEvaluator;

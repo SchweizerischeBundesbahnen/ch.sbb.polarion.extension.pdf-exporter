@@ -6,6 +6,7 @@ import com.polarion.alm.tracker.ITrackerService;
 import com.polarion.platform.IPlatformService;
 import com.polarion.platform.core.IPlatform;
 import com.polarion.platform.core.PlatformContext;
+import com.polarion.platform.persistence.IDataService;
 import com.polarion.platform.security.ILoginPolicy;
 import com.polarion.platform.security.ISecurityService;
 import com.polarion.platform.service.repository.IRepositoryService;
@@ -28,6 +29,7 @@ public class PlatformContextMockExtension implements BeforeEachCallback, AfterEa
     private ISecurityService securityService;
     private IPlatformService platformService;
     private IRepositoryService repositoryService;
+    private IDataService dataService;
     private ILoginPolicy loginPolicy;
     private ITestManagementService testManagementService;
 
@@ -40,6 +42,7 @@ public class PlatformContextMockExtension implements BeforeEachCallback, AfterEa
         securityService = mock(ISecurityService.class);
         platformService = mock(IPlatformService.class);
         repositoryService = mock(IRepositoryService.class);
+        dataService = mock(IDataService.class);
         loginPolicy = mock(ILoginPolicy.class);
         testManagementService = mock(ITestManagementService.class);
 
@@ -48,6 +51,7 @@ public class PlatformContextMockExtension implements BeforeEachCallback, AfterEa
         lenient().when(platformMock.lookupService(ISecurityService.class)).thenReturn(securityService);
         lenient().when(platformMock.lookupService(IPlatformService.class)).thenReturn(platformService);
         lenient().when(platformMock.lookupService(IRepositoryService.class)).thenReturn(repositoryService);
+        lenient().when(platformMock.lookupService(IDataService.class)).thenReturn(dataService);
         lenient().when(platformMock.lookupService(ILoginPolicy.class)).thenReturn(loginPolicy);
 
         platformContextMockedStatic = mockStatic(PlatformContext.class);
@@ -58,6 +62,7 @@ public class PlatformContextMockExtension implements BeforeEachCallback, AfterEa
         CustomExtensionMockInjector.inject(context, securityService);
         CustomExtensionMockInjector.inject(context, platformService);
         CustomExtensionMockInjector.inject(context, repositoryService);
+        CustomExtensionMockInjector.inject(context, dataService);
         CustomExtensionMockInjector.inject(context, loginPolicy);
 
         testManagementServiceAccessorMockedConstruction = mockConstruction(TestManagementServiceAccessor.class, (testManagementServiceAccessor, mockedContructionContext) -> {
