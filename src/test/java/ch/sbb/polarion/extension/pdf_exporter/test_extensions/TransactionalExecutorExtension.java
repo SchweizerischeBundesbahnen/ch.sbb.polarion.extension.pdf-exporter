@@ -31,11 +31,11 @@ public class TransactionalExecutorExtension implements BeforeEachCallback, After
         });
 
         InternalPolarionUtils internalPolarionUtils = mock(InternalPolarionUtils.class);
-        when(internalPolarionUtils.executeInBaseline(any(), any())).thenAnswer(invocation -> {
+        lenient().when(internalPolarionUtils.executeInBaseline(any(), any())).thenAnswer(invocation -> {
             RunnableWithResult<?> runnableWithResult = invocation.getArgument(1);
             return runnableWithResult.run();
         });
-        when(internalReadOnlyTransactionMock.utils()).thenReturn(internalPolarionUtils);
+        lenient().when(internalReadOnlyTransactionMock.utils()).thenReturn(internalPolarionUtils);
 
         CustomExtensionMockInjector.inject(context, internalPolarionUtils);
         CustomExtensionMockInjector.inject(context, internalReadOnlyTransactionMock);
