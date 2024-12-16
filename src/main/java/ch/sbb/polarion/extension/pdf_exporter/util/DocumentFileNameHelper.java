@@ -31,7 +31,7 @@ public class DocumentFileNameHelper {
     }
 
     public String getDocumentFileName(@NotNull ExportParams exportParams) {
-        if (EnumSet.of(DocumentType.LIVE_DOC, DocumentType.TEST_RUN).contains(exportParams.getDocumentType())) {
+        if (exportParams.getProjectId() == null && EnumSet.of(DocumentType.LIVE_DOC, DocumentType.TEST_RUN).contains(exportParams.getDocumentType())) {
             throw new IllegalArgumentException("Project ID must be provided for LiveDoc or TestRun export");
         }
 
