@@ -49,7 +49,7 @@ public abstract class CommonUniqueObjectAdapter implements IUniqueObjectAdapter 
         IBaseline projectBaseline = baselinesManager.getRevisionBaseline(revision);
         IBaseline moduleBaseline = baselinesManager.getRevisionBaseline(getUniqueObject(), revision);
 
-        return new DocumentBaseline(projectBaseline, moduleBaseline);
+        return DocumentBaseline.from(projectBaseline, moduleBaseline);
     }
 
 }

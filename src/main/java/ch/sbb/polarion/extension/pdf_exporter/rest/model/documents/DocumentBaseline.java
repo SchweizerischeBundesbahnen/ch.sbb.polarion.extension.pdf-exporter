@@ -2,6 +2,7 @@ package ch.sbb.polarion.extension.pdf_exporter.rest.model.documents;
 
 import com.polarion.alm.tracker.model.IBaseline;
 import lombok.Data;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -17,11 +18,6 @@ public class DocumentBaseline {
         this.documentBaselineName = documentBaselineName;
     }
 
-    public DocumentBaseline(@Nullable IBaseline projectBaseline, @Nullable IBaseline moduleBaseline) {
-        this.projectBaselineName = projectBaseline != null ? projectBaseline.getName() : null;
-        this.documentBaselineName = moduleBaseline != null ? moduleBaseline.getName() : null;
-    }
-
     public String asPlaceholder() {
         List<String> names = new ArrayList<>();
 
@@ -35,4 +31,11 @@ public class DocumentBaseline {
 
         return String.join(" | ", names);
     }
+
+    public static @NotNull DocumentBaseline from(@Nullable IBaseline projectBaseline, @Nullable IBaseline moduleBaseline) {
+        String projectBaselineName = projectBaseline != null ? projectBaseline.getName() : null;
+        String documentBaselineName = moduleBaseline != null ? moduleBaseline.getName() : null;
+        return new DocumentBaseline(projectBaselineName, documentBaselineName);
+    }
+
 }
