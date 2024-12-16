@@ -48,7 +48,7 @@ class DocumentDataFactoryTest {
     void setUp() {
         IProject projectMock = mock(IProject.class);
         when(projectMock.getId()).thenReturn("testProjectId");
-        when(pdfExporterPolarionServiceMock.getProject(eq("testProjectId"))).thenReturn(projectMock);
+        when(pdfExporterPolarionServiceMock.getProject("testProjectId")).thenReturn(projectMock);
 
         InternalDocuments internalDocumentsMock = mock(InternalDocuments.class);
         DocumentSelector documentSelectorMock = mock(DocumentSelector.class);
@@ -72,7 +72,7 @@ class DocumentDataFactoryTest {
 
         IInternalBaselinesManager internalBaselinesManager = mock(IInternalBaselinesManager.class);
         when(projectMock.getBaselinesManager()).thenReturn(internalBaselinesManager);
-        when(internalBaselinesManager.getRevisionBaseline(eq("12345"))).thenReturn(null);
+        when(internalBaselinesManager.getRevisionBaseline("12345")).thenReturn(null);
 
         InternalServices internalServicesMock = mock(InternalServices.class);
         ITrackerService trackerService = mock(ITrackerService.class);
@@ -83,7 +83,7 @@ class DocumentDataFactoryTest {
         Document documentMock = mock(Document.class);
         when(documentMock.getOldApi()).thenReturn(moduleMock);
 
-        when(projectServiceMock.getProject(eq("testProjectId"))).thenReturn(projectMock);
+        when(projectServiceMock.getProject("testProjectId")).thenReturn(projectMock);
 
         ExportParams exportParamsMock = ExportParams.builder()
                 .projectId("testProjectId")

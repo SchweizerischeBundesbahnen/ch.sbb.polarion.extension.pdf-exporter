@@ -16,7 +16,7 @@ import static org.mockito.Mockito.*;
 public class DocumentDataFactoryMockExtension implements BeforeEachCallback, AfterEachCallback {
 
     private MockedStatic<DocumentDataFactory> documentDataFactoryMockedStatic;
-    private final static Map<ExportParams, DocumentData<?>> documentDataMocks = new HashMap<>();
+    private static final Map<ExportParams, DocumentData<?>> documentDataMocks = new HashMap<>();
 
     @Override
     public void beforeEach(ExtensionContext context) throws Exception {

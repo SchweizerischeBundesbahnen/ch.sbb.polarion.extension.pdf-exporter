@@ -61,7 +61,7 @@ class DocumentFileNameHelperTest {
         when(velocityEvaluator.evaluateVelocityExpressions(eq(documentData), anyString())).thenAnswer(a -> a.getArguments()[1]);
 
         String result = fileNameHelper.evaluateVelocity(documentData, settingOneModel.getDocumentNameTemplate());
-        assertThat(result).contains("pdf");
+        assertThat(result).endsWith(".pdf");
     }
 
     @Test
@@ -98,13 +98,13 @@ class DocumentFileNameHelperTest {
                 .locationPath("testSpaceId/testDocumentId")
                 .documentType(DocumentType.LIVE_DOC)
                 .build();
-        DocumentData<IModule> documentDataMock = DocumentData.creator(DocumentType.LIVE_DOC, mock(IModule.class))
+        DocumentData<IModule> documentData = DocumentData.creator(DocumentType.LIVE_DOC, mock(IModule.class))
                 .id(new LiveDocId(new DocumentProject("testProjectId", "Test Project"), "testSpaceId", "testDocumentId"))
                 .title("Test Title")
                 .lastRevision("12345")
                 .revisionPlaceholder("12345")
                 .build();
-        documentDataFactoryMockExtension.register(exportParams, documentDataMock);
+        documentDataFactoryMockExtension.register(exportParams, documentData);
 
         FileNameTemplateSettings fileNameTemplateSettings = new FileNameTemplateSettings();
         FileNameTemplateSettings fileNameTemplateSettingsSpy = spy(fileNameTemplateSettings);
@@ -112,8 +112,11 @@ class DocumentFileNameHelperTest {
 
         NamedSettingsRegistry.INSTANCE.register(List.of(fileNameTemplateSettingsSpy));
 
+        when(velocityEvaluator.evaluateVelocityExpressions(eq(documentData), anyString())).thenAnswer(a -> a.getArguments()[1]);
+
         // Act & Assert
-        fileNameHelper.getDocumentFileName(exportParams);
+        String documentFileName = fileNameHelper.getDocumentFileName(exportParams);
+        assertThat(documentFileName).endsWith(".pdf");
     }
 
 
