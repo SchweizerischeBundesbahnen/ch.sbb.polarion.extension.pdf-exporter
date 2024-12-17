@@ -16,7 +16,7 @@ import java.util.Objects;
 @UtilityClass
 public class DocumentDataFactory {
 
-    public static @NotNull <T extends IUniqueObject> DocumentData<T> getDocumentData(@NotNull ExportParams exportParams, boolean withContent) {
+    public @NotNull <T extends IUniqueObject> DocumentData<T> getDocumentData(@NotNull ExportParams exportParams, boolean withContent) {
         return Objects.requireNonNull(TransactionalExecutor.executeSafelyInReadOnlyTransaction(
                 transaction -> PolarionBaselineExecutor.executeInBaseline(exportParams.getBaselineRevision(), transaction, () -> {
 

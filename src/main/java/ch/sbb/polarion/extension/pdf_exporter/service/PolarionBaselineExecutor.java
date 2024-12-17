@@ -11,7 +11,7 @@ import java.util.concurrent.Callable;
 @UtilityClass
 public class PolarionBaselineExecutor {
 
-    public static <T> T executeInBaseline(@Nullable String baselineRevision, @NotNull ReadOnlyTransaction transaction, @NotNull Callable<T> callable) {
+    public <T> T executeInBaseline(@Nullable String baselineRevision, @NotNull ReadOnlyTransaction transaction, @NotNull Callable<T> callable) {
         if (baselineRevision == null) {
             return callCallable(callable);
         } else {
@@ -19,7 +19,7 @@ public class PolarionBaselineExecutor {
         }
     }
 
-    private static <T> T callCallable(@NotNull Callable<T> callable) {
+    private <T> T callCallable(@NotNull Callable<T> callable) {
         try {
             return callable.call();
         } catch (RuntimeException e) {
