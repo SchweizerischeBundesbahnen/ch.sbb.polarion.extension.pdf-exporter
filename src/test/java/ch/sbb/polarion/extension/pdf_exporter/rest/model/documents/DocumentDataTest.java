@@ -206,9 +206,9 @@ class DocumentDataTest {
         assertEquals("rich page title", documentData.getTitle());
         assertNull(documentData.getContent());
         assertNotNull(documentData.getBaseline());
-        assertEquals("pb. projectBaselineName | db. documentBaselineName", documentData.getBaseline().asPlaceholder());
+        assertEquals("", documentData.getBaseline().asPlaceholder());
         assertNotNull(uniqueObjectConverter.getUniqueObjectAdapter().getDocumentBaseline());
-        assertEquals("pb. projectBaselineName | db. documentBaselineName", uniqueObjectConverter.getUniqueObjectAdapter().getDocumentBaseline().asPlaceholder());
+        assertEquals("", uniqueObjectConverter.getUniqueObjectAdapter().getDocumentBaseline().asPlaceholder());
         assertNull(documentData.getRevision());
         assertEquals("12345", documentData.getLastRevision());
         assertNull(documentData.getContent());
@@ -348,9 +348,9 @@ class DocumentDataTest {
         assertEquals("wiki page title", documentData.getTitle());
         assertNull(documentData.getContent());
         assertNotNull(documentData.getBaseline());
-        assertEquals("pb. projectBaselineName | db. documentBaselineName", documentData.getBaseline().asPlaceholder());
+        assertEquals("", documentData.getBaseline().asPlaceholder());
         assertNotNull(uniqueObjectConverter.getUniqueObjectAdapter().getDocumentBaseline());
-        assertEquals("pb. projectBaselineName | db. documentBaselineName", uniqueObjectConverter.getUniqueObjectAdapter().getDocumentBaseline().asPlaceholder());
+        assertEquals("", uniqueObjectConverter.getUniqueObjectAdapter().getDocumentBaseline().asPlaceholder());
         assertNull(documentData.getRevision());
         assertEquals("12345", documentData.getLastRevision());
         assertNull(documentData.getContent());
