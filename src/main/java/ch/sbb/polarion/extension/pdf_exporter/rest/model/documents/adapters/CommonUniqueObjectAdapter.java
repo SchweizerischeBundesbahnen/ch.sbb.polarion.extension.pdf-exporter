@@ -2,6 +2,7 @@ package ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.adapters;
 
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.DocumentBaseline;
+import com.polarion.alm.projects.model.IProject;
 import com.polarion.alm.shared.api.transaction.ReadOnlyTransaction;
 import com.polarion.alm.shared.api.transaction.TransactionalExecutor;
 import com.polarion.alm.shared.api.transaction.internal.InternalReadOnlyTransaction;
@@ -42,14 +43,19 @@ public abstract class CommonUniqueObjectAdapter implements IUniqueObjectAdapter 
 
     @Override
     public @NotNull DocumentBaseline getDocumentBaseline(@NotNull ReadOnlyTransaction transaction) {
-        String revision = getRevision() != null ? getRevision() : getLastRevision();
+        IProject project = getUniqueObject().getProject();
+        if (project != null) {
+            String revision = getRevision() != null ? getRevision() : getLastRevision();
 
-        ITrackerService trackerService = ((InternalReadOnlyTransaction) transaction).services().trackerService();
-        IInternalBaselinesManager baselinesManager = (IInternalBaselinesManager) trackerService.getTrackerProject(getUniqueObject().getProject()).getBaselinesManager();
-        IBaseline projectBaseline = baselinesManager.getRevisionBaseline(revision);
-        IBaseline moduleBaseline = baselinesManager.getRevisionBaseline(getUniqueObject(), revision);
+            ITrackerService trackerService = ((InternalReadOnlyTransaction) transaction).services().trackerService();
+            IInternalBaselinesManager baselinesManager = (IInternalBaselinesManager) trackerService.getTrackerProject(project).getBaselinesManager();
+            IBaseline projectBaseline = baselinesManager.getRevisionBaseline(revision);
+            IBaseline moduleBaseline = baselinesManager.getRevisionBaseline(getUniqueObject(), revision);
 
-        return DocumentBaseline.from(projectBaseline, moduleBaseline);
+            return DocumentBaseline.from(projectBaseline, moduleBaseline);
+        } else {
+            return DocumentBaseline.empty();
+        }
     }
 
 }

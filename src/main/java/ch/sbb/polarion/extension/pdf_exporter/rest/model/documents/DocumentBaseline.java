@@ -38,4 +38,8 @@ public class DocumentBaseline {
         return new DocumentBaseline(projectBaselineName, documentBaselineName);
     }
 
+    public static @NotNull DocumentBaseline empty() {
+        return new DocumentBaseline(null, null);
+    }
+
 }
