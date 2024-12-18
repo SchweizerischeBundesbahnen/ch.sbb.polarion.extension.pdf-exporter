@@ -245,14 +245,14 @@ const BulkPdfExporter = {
             }
 
             if (documentType !== ExportParams.DocumentType.BASELINE_COLLECTION) {
-                ExportCommon.asyncConvertPdf(this.exportParams.toJSON(), (responseBody, fileName) => {
+                ExportCommon.asyncConvertPdf(this.exportParams.toJSON(), (result, fileName) => {
                     currentItem.classList.remove("in-progress");
                     currentItem.classList.add("finished");
 
                     BulkPdfExporter.finishedCount += 1;
                     BulkPdfExporter.updateState(BULK_EXPORT_IN_PROGRESS);
                     const downloadFileName = fileName || `${currentItem.dataset["space"] ? currentItem.dataset["space"] + "_" : ""}${documentId}.pdf`; // Fallback if file name wasn't received in response
-                    ExportCommon.downloadBlob(responseBody, downloadFileName);
+                    ExportCommon.downloadBlob(result.response, downloadFileName);
                     this.startNextItemExport();
                 }, errorResponse => {
                     this.errors = true;

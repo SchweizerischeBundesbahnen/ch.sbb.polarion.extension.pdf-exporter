@@ -1,5 +1,6 @@
 package ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -8,8 +9,10 @@ import lombok.NoArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Data
 @Builder
@@ -102,6 +105,21 @@ public class ExportParams {
 
     @Schema(description = "Internal content")
     private String internalContent;
+
+    @JsonIgnore
+    private List<String> unavailableWorkItemAttachments = new ArrayList<>();
+
+    @JsonIgnore
+    public int getUnavailableWorkItemAttachmentsCount() {
+        return unavailableWorkItemAttachments.size();
+    }
+
+    @JsonIgnore
+    public List<String> getWorkItemsIdContainUnavailableAttachments() {
+        return unavailableWorkItemAttachments.stream()
+                .distinct()
+                .collect(Collectors.toList());
+    }
 
     public @NotNull DocumentType getDocumentType() {
         if (documentType == null) {

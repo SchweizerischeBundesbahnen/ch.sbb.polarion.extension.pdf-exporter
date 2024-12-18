@@ -12,7 +12,7 @@ import java.util.Base64;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -33,9 +33,9 @@ class PdfExporterFileResourceProviderTest {
             imgBytes = is != null ? is.readAllBytes() : new byte[0];
         }
         PdfExporterFileResourceProvider provider = mock(PdfExporterFileResourceProvider.class);
-        when(provider.getResourceAsBytes("http://localhost/some-path/img.png")).thenReturn(imgBytes);
-        when(provider.getResourceAsBase64String(any())).thenCallRealMethod();
-        String result = provider.getResourceAsBase64String("http://localhost/some-path/img.png");
+        when(provider.getResourceAsBytes("http://localhost/some-path/img.png", null)).thenReturn(imgBytes);
+        when(provider.getResourceAsBase64String(any(), eq(null))).thenCallRealMethod();
+        String result = provider.getResourceAsBase64String("http://localhost/some-path/img.png", null);
         assertEquals("data:image/png;base64," + Base64.getEncoder().encodeToString(imgBytes), result);
     }
 

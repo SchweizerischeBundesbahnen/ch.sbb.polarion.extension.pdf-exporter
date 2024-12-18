@@ -219,10 +219,13 @@ const ExportPdf = {
             }
         });
 
-        ExportCommon.asyncConvertPdf(request, successResponse => {
+        ExportCommon.asyncConvertPdf(request, result => {
+            if (result.warning) {
+                $("#export-warning").append(result.warning);
+            }
             this.actionInProgress(false);
 
-            ExportCommon.downloadBlob(successResponse, fileName);
+            ExportCommon.downloadBlob(result.response, fileName);
         }, errorResponse => {
             this.actionInProgress(false);
             errorResponse.text().then(errorJson => {
