@@ -91,7 +91,7 @@ public class PdfExporterFileResourceProvider implements FileResourceProvider {
                     byte[] result = StreamUtils.suckStreamThenClose(stream);
                     if (result.length > 0) {
                         if (WorkItemAttachmentUrlResolver.isWorkItemAttachmentUrl(resource) && isMediaTypeMismatch(resource, result)) {
-                            unavailableWorkItemAttachments.add(readAttachmentInfo(resource));
+                            unavailableWorkItemAttachments.add(getWorkItemIdFromAttachmentUrl(resource));
                             return getDefaultContent(resource);
                         }
                         return result;
@@ -102,50 +102,50 @@ public class PdfExporterFileResourceProvider implements FileResourceProvider {
         return new byte[0];
     }
 
-    private boolean isMediaTypeMismatch(String resource, byte[] content) {
+    @VisibleForTesting
+    boolean isMediaTypeMismatch(String resource, byte[] content) {
         String detectedMimeType = MediaUtils.getMimeTypeUsingTikaByContent(resource, content);
         String expectedMimeType = MediaUtils.getMimeTypeUsingTikaByResourceName(resource, null);
         return expectedMimeType != null && !expectedMimeType.equals(detectedMimeType);
     }
 
-    private byte[] getDefaultContent(String resource) throws IOException {
-        String sadBearPath;
+    @VisibleForTesting
+    byte[] getDefaultContent(String resource) throws IOException {
+        String defaultImagePath;
         if (WorkItemAttachmentUrlResolver.isSvg(resource)) {
-            sadBearPath = "/webapp/ria/images/image_not_accessible_svg.png";
+            defaultImagePath = "/webapp/ria/images/image_not_accessible_svg.png";
         } else if (!StringUtils.isEmpty(MediaUtils.getImageFormat(resource))) {
-            sadBearPath = "/webapp/ria/images/image_not_accessible.png";
+            defaultImagePath = "/webapp/ria/images/image_not_accessible.png";
         } else {
             return new byte[0];
         }
-        File sorryBear = new File(BundleHelper.getPath("com.polarion.alm.ui", sadBearPath));
+        File sorryBear = new File(BundleHelper.getPath("com.polarion.alm.ui", defaultImagePath));
         return StreamUtils.suckStreamThenClose(new FileInputStream(sorryBear));
     }
 
-    private String readAttachmentInfo(@NotNull String url) {
-        String suffix = getSuffix(url, "/polarion/wi-attachment/");
-        Pattern pattern = Pattern.compile("([^/]*)/([^/]*)/([^/\\?]*)(?:\\?(.*))?");
-        Matcher matcher = pattern.matcher(suffix);
-        if (matcher.matches()) {
-            return PolarionUrlResolver.decode(matcher.group(2));
-        }
-        return null;
-    }
-
-    private String getSuffix(@NotNull String url, @NotNull String prefix) {
-        if (!url.startsWith(prefix)) {
-            try {
+    @VisibleForTesting
+    String getWorkItemIdFromAttachmentUrl(@NotNull String url) {
+        String prefix = "/polarion/wi-attachment/";
+        try {
+            if (!url.startsWith(prefix)) {
                 URI uri = new URI(url);
                 url = StringUtils.stripDuplicateLeadingSlashes(uri.getPath());
                 String query = uri.getQuery();
                 if (query != null) {
                     url = url + "?" + query;
                 }
-            } catch (URISyntaxException var4) {
-                return "";
             }
-        }
 
-        return url.substring(prefix.length());
+            String suffix = url.substring(prefix.length());
+            Pattern pattern = Pattern.compile("([^/]*)/([^/]*)/([^/?]*)(?:\\?(.*))?");
+            Matcher matcher = pattern.matcher(suffix);
+            if (matcher.matches()) {
+                return PolarionUrlResolver.decode(matcher.group(2));
+            }
+        } catch (URISyntaxException e) {
+            return "";
+        }
+        return null;
     }
 
     @VisibleForTesting
