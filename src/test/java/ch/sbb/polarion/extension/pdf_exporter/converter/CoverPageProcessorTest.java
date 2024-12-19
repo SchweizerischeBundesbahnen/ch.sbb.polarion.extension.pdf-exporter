@@ -3,9 +3,11 @@ package ch.sbb.polarion.extension.pdf_exporter.converter;
 import ch.sbb.polarion.extension.generic.settings.SettingId;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.DocumentType;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.DocumentData;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.id.DocumentProject;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.id.LiveDocId;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.coverpage.CoverPageModel;
 import ch.sbb.polarion.extension.pdf_exporter.settings.CoverPageSettings;
-import ch.sbb.polarion.extension.pdf_exporter.rest.model.DocumentData;
 import ch.sbb.polarion.extension.pdf_exporter.util.PdfGenerationLog;
 import ch.sbb.polarion.extension.pdf_exporter.util.PdfTemplateProcessor;
 import ch.sbb.polarion.extension.pdf_exporter.util.placeholder.PlaceholderProcessor;
@@ -110,9 +112,11 @@ class CoverPageProcessorTest {
 
     private DocumentData<IModule> prepareMocks(CoverPageModel coverPageModel, ExportParams exportParams) {
         when(coverPageSettings.load("testProjectId", SettingId.fromName("test cover page"))).thenReturn(coverPageModel);
-        DocumentData<IModule> documentData = DocumentData.builder(DocumentType.LIVE_DOC, mock(IModule.class))
-                .id("test id")
+        DocumentData<IModule> documentData = DocumentData.creator(DocumentType.LIVE_DOC, mock(IModule.class))
+                .id(new LiveDocId(new DocumentProject("testProjectId", "Test Project"), "_default", "test id"))
                 .title("test document")
+                .lastRevision("12345")
+                .revisionPlaceholder("12345")
                 .build();
         when(placeholderProcessor.replacePlaceholders(documentData, exportParams, "test template html")).thenReturn("replaced template html");
         when(velocityEvaluator.evaluateVelocityExpressions(eq(documentData), anyString())).thenAnswer(a -> a.getArguments()[1]);
