@@ -35,9 +35,6 @@ import static org.mockito.Mockito.*;
 })
 class PdfExporterFileResourceProviderTest {
     @Mock
-    PdfExporterFileResourceProvider resourceProviderMock;
-
-    @Mock
     private IUrlResolver resolverMock;
 
     private PdfExporterFileResourceProvider resourceProvider;
@@ -64,6 +61,7 @@ class PdfExporterFileResourceProviderTest {
             imgBytes = is != null ? is.readAllBytes() : new byte[0];
         }
 
+        PdfExporterFileResourceProvider resourceProviderMock = mock(PdfExporterFileResourceProvider.class);
         when(resourceProviderMock.getResourceAsBytes("http://localhost/some-path/img.png", null)).thenReturn(imgBytes);
         when(resourceProviderMock.getResourceAsBase64String(any(), eq(null))).thenCallRealMethod();
         String result = resourceProviderMock.getResourceAsBase64String("http://localhost/some-path/img.png", null);
@@ -128,8 +126,8 @@ class PdfExporterFileResourceProviderTest {
 
     @Test
     void getWorkItemIdFromAttachmentUrlInvalidUrl() {
-        String url = "http://example.com/invalid/url";
-        String result = resourceProviderMock.getWorkItemIdFromAttachmentUrl(url);
+        String url = "/http://example.com/invalid/url";
+        String result = resourceProvider.getWorkItemIdFromAttachmentUrl(url);
         assertNull(result);
     }
 
@@ -144,7 +142,7 @@ class PdfExporterFileResourceProviderTest {
             mockedMediaUtils.when(() -> MediaUtils.getMimeTypeUsingTikaByResourceName(resource, null))
                     .thenReturn("image/png");
 
-            boolean result = resourceProviderMock.isMediaTypeMismatch(resource, content);
+            boolean result = resourceProvider.isMediaTypeMismatch(resource, content);
             assertFalse(result);
         }
     }
@@ -157,8 +155,8 @@ class PdfExporterFileResourceProviderTest {
             mockedMediaUtils.when(() -> MediaUtils.getImageFormat(resource))
                     .thenReturn("");
 
-            byte[] content = resourceProviderMock.getDefaultContent(resource);
-            assertNull(content);
+            byte[] content = resourceProvider.getDefaultContent(resource);
+            assertArrayEquals(new byte[0], content);
         }
     }
 

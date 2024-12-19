@@ -109,16 +109,17 @@ public class PdfExporterFileResourceProvider implements FileResourceProvider {
     }
 
     @VisibleForTesting
+    @SuppressWarnings("java:S1075")
     byte[] getDefaultContent(String resource) throws IOException {
-        String defaultImagePath;
+        String pathToDefaultImage;
         if (WorkItemAttachmentUrlResolver.isSvg(resource)) {
-            defaultImagePath = "/webapp/ria/images/image_not_accessible_svg.png";
+            pathToDefaultImage = "/webapp/ria/images/image_not_accessible_svg.png";
         } else if (!StringUtils.isEmpty(MediaUtils.getImageFormat(resource))) {
-            defaultImagePath = "/webapp/ria/images/image_not_accessible.png";
+            pathToDefaultImage = "/webapp/ria/images/image_not_accessible.png";
         } else {
             return new byte[0];
         }
-        File defaultImage = new File(BundleHelper.getPath("com.polarion.alm.ui", defaultImagePath));
+        File defaultImage = new File(BundleHelper.getPath("com.polarion.alm.ui", pathToDefaultImage));
         return StreamUtils.suckStreamThenClose(new FileInputStream(defaultImage));
     }
 
