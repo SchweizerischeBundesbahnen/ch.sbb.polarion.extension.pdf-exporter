@@ -120,6 +120,20 @@ class PdfExporterFileResourceProviderTest {
     }
 
     @Test
+    void getWorkItemIdFromAttachmentUrlValidUrl() {
+        String url = "http://localhost/polarion/wi-attachment/elibrary/EL-14852/attachment.png";
+        String result = resourceProvider.getWorkItemIdFromAttachmentUrl(url);
+        assertEquals("EL-14852", result);
+    }
+
+    @Test
+    void getWorkItemIdFromAttachmentUrl_InvalidUrl() {
+        String url = "http://example.com/invalid/url";
+        String result = resourceProvider.getWorkItemIdFromAttachmentUrl(url);
+        assertNull(result);
+    }
+
+    @Test
     void isMediaTypeMismatchMatchingMimeTypes() {
         String resource = "image.png";
         byte[] content = new byte[0];

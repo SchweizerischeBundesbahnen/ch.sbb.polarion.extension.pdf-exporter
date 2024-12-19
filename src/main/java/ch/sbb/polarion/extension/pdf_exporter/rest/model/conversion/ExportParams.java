@@ -118,7 +118,7 @@ public class ExportParams {
     public List<String> getWorkItemsIdContainUnavailableAttachments() {
         return unavailableWorkItemAttachments.stream()
                 .distinct()
-                .collect(Collectors.toList());
+                .toList();
     }
 
     public @NotNull DocumentType getDocumentType() {
