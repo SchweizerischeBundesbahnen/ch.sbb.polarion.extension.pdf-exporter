@@ -89,13 +89,12 @@ public class PdfExporterFileResourceProvider implements FileResourceProvider {
                 InputStream stream = resolver.resolve(resource);
                 if (stream != null) {
                     byte[] result = StreamUtils.suckStreamThenClose(stream);
-                    if (result.length > 0) {
-                        if (WorkItemAttachmentUrlResolver.isWorkItemAttachmentUrl(resource) && isMediaTypeMismatch(resource, result)) {
-                            unavailableWorkItemAttachments.add(getWorkItemIdFromAttachmentUrl(resource));
-                            return getDefaultContent(resource);
-                        }
-                        return result;
+                    if (result.length > 0 && WorkItemAttachmentUrlResolver.isWorkItemAttachmentUrl(resource) && isMediaTypeMismatch(resource, result)) {
+                        unavailableWorkItemAttachments.add(getWorkItemIdFromAttachmentUrl(resource));
+                        return getDefaultContent(resource);
                     }
+                    return result;
+
                 }
             }
         }
@@ -119,8 +118,8 @@ public class PdfExporterFileResourceProvider implements FileResourceProvider {
         } else {
             return new byte[0];
         }
-        File sorryBear = new File(BundleHelper.getPath("com.polarion.alm.ui", defaultImagePath));
-        return StreamUtils.suckStreamThenClose(new FileInputStream(sorryBear));
+        File defaultImage = new File(BundleHelper.getPath("com.polarion.alm.ui", defaultImagePath));
+        return StreamUtils.suckStreamThenClose(new FileInputStream(defaultImage));
     }
 
     @VisibleForTesting
@@ -163,8 +162,9 @@ public class PdfExporterFileResourceProvider implements FileResourceProvider {
     /**
      * Remove GenericUrlResolver because it has no explicit timeouts declared
      */
+    @VisibleForTesting
     @SneakyThrows
-    private IAttachmentUrlResolver getPolarionUrlResolverWithoutGenericUrlChildResolver() {
+    IAttachmentUrlResolver getPolarionUrlResolverWithoutGenericUrlChildResolver() {
         IAttachmentUrlResolver attachmentUrlResolver = PolarionUrlResolver.getInstance();
 
         if (attachmentUrlResolver instanceof ParentUrlResolver parentUrlResolver) {
