@@ -176,10 +176,10 @@ public class MediaUtils {
         return resourceUrl != null && resourceUrl.startsWith(DATA_URL_PREFIX);
     }
 
-    public String inlineBase64Resources(String content, FileResourceProvider fileResourceProvider) {
+    public String inlineBase64Resources(String content, FileResourceProvider fileResourceProvider, List<String> unavailableWorkItemAttachments) {
         RegexMatcher.IReplacementCalculator dataReplacement = engine -> {
             String url = engine.group("url");
-            String base64String = MediaUtils.isDataUrl(url) ? url : fileResourceProvider.getResourceAsBase64String(url);
+            String base64String = MediaUtils.isDataUrl(url) ? url : fileResourceProvider.getResourceAsBase64String(url, unavailableWorkItemAttachments);
             return base64String == null ? null : engine.group().replace(url, base64String);
         };
 
@@ -238,12 +238,12 @@ public class MediaUtils {
         return Files.probeContentType(Paths.get(resource));
     }
 
-    private String getMimeTypeUsingTikaByResourceName(@NotNull String resource, byte[] resourceBytes) {
+    public String getMimeTypeUsingTikaByResourceName(@NotNull String resource, byte[] resourceBytes) {
         String detected = tika.detect(resource);
         return MimeTypes.OCTET_STREAM.equals(detected) ? null : detected; // ignore 'application/octet-stream' fallback
     }
 
-    private String getMimeTypeUsingTikaByContent(@NotNull String resource, byte[] resourceBytes) {
+    public String getMimeTypeUsingTikaByContent(@NotNull String resource, byte[] resourceBytes) {
         String detected = tika.detect(resourceBytes);
         return MimeTypes.OCTET_STREAM.equals(detected) ? null : detected; // ignore 'application/octet-stream' fallback
     }

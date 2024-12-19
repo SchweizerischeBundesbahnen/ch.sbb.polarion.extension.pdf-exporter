@@ -6,7 +6,10 @@ import com.polarion.alm.tracker.internal.url.IAttachmentUrlResolver;
 import com.polarion.alm.tracker.internal.url.IUrlResolver;
 import com.polarion.alm.tracker.internal.url.ParentUrlResolver;
 import com.polarion.alm.tracker.internal.url.PolarionUrlResolver;
+import com.polarion.alm.tracker.internal.url.WorkItemAttachmentUrlResolver;
 import com.polarion.core.util.StreamUtils;
+import com.polarion.core.util.StringUtils;
+import com.polarion.core.util.eclipse.BundleHelper;
 import com.polarion.core.util.logging.Logger;
 import com.polarion.platform.internal.ExecutionThreadMonitor;
 import lombok.SneakyThrows;
@@ -14,13 +17,19 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Field;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static ch.sbb.polarion.extension.pdf_exporter.util.exporter.Constants.MIME_TYPE_SVG;
 
@@ -45,11 +54,11 @@ public class PdfExporterFileResourceProvider implements FileResourceProvider {
     @SneakyThrows
     @Override
     @Nullable
-    public String getResourceAsBase64String(@NotNull String resource) {
+    public String getResourceAsBase64String(@NotNull String resource, List<String> unavailableWorkItemAttachments) {
         if (MediaUtils.isDataUrl(resource)) { // do nothing if it's already has 'data' url
             return resource;
         }
-        byte[] resourceBytes = getResourceAsBytes(resource);
+        byte[] resourceBytes = getResourceAsBytes(resource, unavailableWorkItemAttachments);
         if (resourceBytes != null && resourceBytes.length != 0) { // Don't make any manipulations if resource wasn't resolved
             String mimeType = MediaUtils.guessMimeType(resource, resourceBytes);
             if (MIME_TYPE_SVG.equals(mimeType)) {
@@ -60,11 +69,11 @@ public class PdfExporterFileResourceProvider implements FileResourceProvider {
         return null;
     }
 
-    public byte[] getResourceAsBytes(@NotNull String resource) {
+    public byte[] getResourceAsBytes(@NotNull String resource, List<String> unavailableWorkItemAttachments) {
         // Non-default icons are getting via project and thus requires open transaction
         return TransactionalExecutor.executeSafelyInReadOnlyTransaction(transaction -> {
             try {
-                return getResourceAsBytesImpl(resource);
+                return getResourceAsBytesImpl(resource, unavailableWorkItemAttachments);
             } catch (Exception e) {
                 logger.error("Error loading resource '" + resource + "' for PDF export.", e);
             } finally {
@@ -74,19 +83,69 @@ public class PdfExporterFileResourceProvider implements FileResourceProvider {
         });
     }
 
-    private byte[] getResourceAsBytesImpl(String resource) throws IOException {
+    private byte[] getResourceAsBytesImpl(String resource, List<String> unavailableWorkItemAttachments) throws IOException {
         for (IUrlResolver resolver : resolvers) {
             if (resolver.canResolve(resource)) {
                 InputStream stream = resolver.resolve(resource);
                 if (stream != null) {
                     byte[] result = StreamUtils.suckStreamThenClose(stream);
-                    if (result.length > 0) {
-                        return result;
+                    if (result.length > 0 && WorkItemAttachmentUrlResolver.isWorkItemAttachmentUrl(resource) && isMediaTypeMismatch(resource, result)) {
+                        unavailableWorkItemAttachments.add(getWorkItemIdFromAttachmentUrl(resource));
+                        return getDefaultContent(resource);
                     }
+                    return result;
+
                 }
             }
         }
         return new byte[0];
+    }
+
+    @VisibleForTesting
+    boolean isMediaTypeMismatch(String resource, byte[] content) {
+        String detectedMimeType = MediaUtils.getMimeTypeUsingTikaByContent(resource, content);
+        String expectedMimeType = MediaUtils.getMimeTypeUsingTikaByResourceName(resource, null);
+        return expectedMimeType != null && !expectedMimeType.equals(detectedMimeType);
+    }
+
+    @VisibleForTesting
+    @SuppressWarnings("java:S1075")
+    byte[] getDefaultContent(String resource) throws IOException {
+        String pathToDefaultImage;
+        if (WorkItemAttachmentUrlResolver.isSvg(resource)) {
+            pathToDefaultImage = "/webapp/ria/images/image_not_accessible_svg.png";
+        } else if (!StringUtils.isEmpty(MediaUtils.getImageFormat(resource))) {
+            pathToDefaultImage = "/webapp/ria/images/image_not_accessible.png";
+        } else {
+            return new byte[0];
+        }
+        File defaultImage = new File(BundleHelper.getPath("com.polarion.alm.ui", pathToDefaultImage));
+        return StreamUtils.suckStreamThenClose(new FileInputStream(defaultImage));
+    }
+
+    @VisibleForTesting
+    String getWorkItemIdFromAttachmentUrl(@NotNull String url) {
+        String prefix = "/polarion/wi-attachment/";
+        try {
+            if (!url.startsWith(prefix)) {
+                URI uri = new URI(url);
+                url = StringUtils.stripDuplicateLeadingSlashes(uri.getPath());
+                String query = uri.getQuery();
+                if (query != null) {
+                    url = url + "?" + query;
+                }
+            }
+
+            String suffix = url.substring(prefix.length());
+            Pattern pattern = Pattern.compile("([^/]*)/([^/]*)/([^/?]*)(?:\\?(.*))?");
+            Matcher matcher = pattern.matcher(suffix);
+            if (matcher.matches()) {
+                return PolarionUrlResolver.decode(matcher.group(2));
+            }
+        } catch (URISyntaxException e) {
+            return "";
+        }
+        return null;
     }
 
     @VisibleForTesting
@@ -104,8 +163,9 @@ public class PdfExporterFileResourceProvider implements FileResourceProvider {
     /**
      * Remove GenericUrlResolver because it has no explicit timeouts declared
      */
+    @VisibleForTesting
     @SneakyThrows
-    private IAttachmentUrlResolver getPolarionUrlResolverWithoutGenericUrlChildResolver() {
+    IAttachmentUrlResolver getPolarionUrlResolverWithoutGenericUrlChildResolver() {
         IAttachmentUrlResolver attachmentUrlResolver = PolarionUrlResolver.getInstance();
 
         if (attachmentUrlResolver instanceof ParentUrlResolver parentUrlResolver) {
