@@ -1,5 +1,17 @@
 # Changelog
 
+## [8.0.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v7.5.0...v8.0.0) (2024-12-19)
+
+
+### ⚠ BREAKING CHANGES
+
+* support only Polarion 2410 ([#315](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/315))
+
+### Features
+
+* refactor the object model and cover with unit tests ([#313](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/313)) ([dd955b0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/dd955b0fb0d8577434a98d207921d4ef401762c5))
+* support only Polarion 2410 ([#315](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/315)) ([3725e4e](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/3725e4eb6b67adb36a803164dbec2c5091c59f46)), closes [#299](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/299)
+
 ## [7.5.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v7.4.0...v7.5.0) (2024-12-10)
 
 
