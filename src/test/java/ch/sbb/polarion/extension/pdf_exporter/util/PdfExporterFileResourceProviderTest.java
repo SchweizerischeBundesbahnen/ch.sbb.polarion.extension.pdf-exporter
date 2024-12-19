@@ -127,9 +127,9 @@ class PdfExporterFileResourceProviderTest {
     }
 
     @Test
-    void getWorkItemIdFromAttachmentUrl_InvalidUrl() {
+    void getWorkItemIdFromAttachmentUrlInvalidUrl() {
         String url = "http://example.com/invalid/url";
-        String result = resourceProvider.getWorkItemIdFromAttachmentUrl(url);
+        String result = resourceProviderMock.getWorkItemIdFromAttachmentUrl(url);
         assertNull(result);
     }
 
