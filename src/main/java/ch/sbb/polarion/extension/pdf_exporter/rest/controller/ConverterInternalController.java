@@ -83,13 +83,7 @@ public class ConverterInternalController {
     }
 
     @VisibleForTesting
-    ConverterInternalController(
-            PdfConverter pdfConverter,
-            PdfValidationService pdfValidationService,
-            PdfConverterJobsService pdfConverterJobService,
-            UriInfo uriInfo,
-            HtmlToPdfConverter htmlToPdfConverter
-    ) {
+    ConverterInternalController(PdfConverter pdfConverter, PdfValidationService pdfValidationService, PdfConverterJobsService pdfConverterJobService, UriInfo uriInfo, HtmlToPdfConverter htmlToPdfConverter) {
         this.pdfConverter = pdfConverter;
         this.pdfValidationService = pdfValidationService;
         this.pdfConverterJobService = pdfConverterJobService;
