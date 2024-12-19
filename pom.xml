@@ -5,7 +5,7 @@
     <parent>
         <groupId>ch.sbb.polarion.extensions</groupId>
         <artifactId>ch.sbb.polarion.extension.generic</artifactId>
-        <version>7.7.0</version>
+        <version>8.0.0</version>
     </parent>
 
     <artifactId>ch.sbb.polarion.extension.pdf-exporter</artifactId>
@@ -73,33 +73,15 @@
 
         <!--suppress UnresolvedMavenProperty -->
         <skipJavaScriptTests>${skipTests}</skipJavaScriptTests>
-
-        <!-- exclude rest controllers from coverage report -->
-        <sonar.coverage.exclusions>**/rest/controller/**</sonar.coverage.exclusions>
     </properties>
 
     <profiles>
-        <!-- default profile: polarion2404 -->
+        <!-- default profile: polarion2410 -->
         <profile>
-            <id>polarion2404</id>
+            <id>polarion2410</id>
             <activation>
                 <activeByDefault>true</activeByDefault>
             </activation>
-            <properties>
-                <velocity-engine-core.artifactId>velocity-engine-core-2.3</velocity-engine-core.artifactId>
-            </properties>
-        </profile>
-
-        <!-- deprecated profile: polarion2310 -->
-        <profile>
-            <id>polarion2310</id>
-            <properties>
-                <velocity-engine-core.artifactId>velocity-engine-core-2.3</velocity-engine-core.artifactId>
-            </properties>
-        </profile>
-
-        <profile>
-            <id>polarion2410</id>
             <properties>
                 <velocity-engine-core.artifactId>org.apache.velocity.engine-core_2.3.0</velocity-engine-core.artifactId>
             </properties>
@@ -216,26 +198,6 @@
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
-
-        <!-- required for mocking InternalReadOnlyTransaction -->
-        <dependency>
-            <groupId>com.polarion.alm.builder</groupId>
-            <artifactId>builder</artifactId>
-            <version>${polarion.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.siemens.polarion.integration.ci</groupId>
-            <artifactId>integrationci</artifactId>
-            <version>${polarion.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.polarion.alm.oslc</groupId>
-            <artifactId>oslc</artifactId>
-            <version>${polarion.version}</version>
-            <scope>test</scope>
-        </dependency>
     </dependencies>
 
     <build>
@@ -286,7 +248,8 @@
                 <configuration>
                     <outputFormat>JSON</outputFormat>
                     <resourcePackages>
-                        <package>ch.sbb.polarion.extension.generic.rest.controller</package>
+                        <package>ch.sbb.polarion.extension.generic.rest.controller.info</package>
+                        <package>ch.sbb.polarion.extension.generic.rest.controller.settings</package>
                         <package>ch.sbb.polarion.extension.generic.rest.model</package>
                         <package>ch.sbb.polarion.extension.pdf_exporter.rest.controller</package>
                         <package>ch.sbb.polarion.extension.pdf_exporter.rest.model</package>
