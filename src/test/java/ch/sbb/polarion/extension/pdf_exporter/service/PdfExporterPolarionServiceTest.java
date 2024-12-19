@@ -5,7 +5,6 @@ import ch.sbb.polarion.extension.generic.settings.SettingId;
 import ch.sbb.polarion.extension.generic.settings.SettingName;
 import ch.sbb.polarion.extension.generic.util.PObjectListStub;
 import ch.sbb.polarion.extension.generic.util.ScopeUtils;
-import ch.sbb.polarion.extension.pdf_exporter.exception.BaselineExecutionException;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.attachments.TestRunAttachment;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.collections.DocumentCollectionEntry;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.stylepackage.StylePackageModel;
@@ -15,8 +14,6 @@ import com.polarion.alm.projects.IProjectService;
 import com.polarion.alm.shared.api.model.baselinecollection.BaselineCollection;
 import com.polarion.alm.shared.api.model.baselinecollection.BaselineCollectionReference;
 import com.polarion.alm.shared.api.transaction.ReadOnlyTransaction;
-import com.polarion.alm.shared.api.utils.PolarionUtils;
-import com.polarion.alm.shared.api.utils.RunnableWithResult;
 import com.polarion.alm.tracker.ITestManagementService;
 import com.polarion.alm.tracker.ITrackerService;
 import com.polarion.alm.tracker.model.IModule;
@@ -29,8 +26,6 @@ import com.polarion.platform.IPlatformService;
 import com.polarion.platform.security.ISecurityService;
 import com.polarion.platform.service.repository.IRepositoryService;
 import com.polarion.subterra.base.location.ILocation;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedConstruction;
@@ -305,43 +300,6 @@ class PdfExporterPolarionServiceTest {
             assertEquals("2", resultWithRevision.get(1).getRevision());
 
         }
-    }
-
-    @Test
-    void testExecuteInBaseline() {
-        PolarionUtils polarionUtils = new PolarionUtils() {
-            @Override
-            public @Nullable <T> T executeInBaseline(@NotNull String s, @NotNull RunnableWithResult<T> runnableWithResult) {
-                return runnableWithResult.run();
-            }
-
-            @Override
-            public @Nullable <T> T executeOutsideBaseline(@NotNull RunnableWithResult<T> runnableWithResult) {
-                return null;
-            }
-
-            @Override
-            public @NotNull String convertToAscii(@Nullable String s) {
-                return "";
-            }
-
-            @Override
-            public @NotNull String convertToAscii(@Nullable String s, @Nullable String s1) {
-                return "";
-            }
-        };
-
-        ReadOnlyTransaction mockReadOnlyTransaction = mock(ReadOnlyTransaction.class);
-        when(mockReadOnlyTransaction.utils()).thenReturn(polarionUtils);
-
-        assertEquals("valueWithoutBaseline", service.executeInBaseline(null, mockReadOnlyTransaction, () -> "valueWithoutBaseline"));
-
-        assertEquals("valueInBaseline", service.executeInBaseline("1234", mockReadOnlyTransaction, () -> "valueInBaseline"));
-        assertThrows(BaselineExecutionException.class, () -> service.executeInBaseline("5678", mockReadOnlyTransaction, this::testCallable));
-    }
-
-    private String testCallable() throws Exception {
-        throw new Exception("argument");
     }
 
 }

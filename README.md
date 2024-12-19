@@ -226,6 +226,10 @@ All good so far.
 
 ## Upgrade
 
+### Upgrade from version 7.x.x to 8.0.0
+
+In version 8.0.0 support for Polarion 2404 and older has been dropped. This extensions supports only Polarion 2410.
+
 ### Upgrade from version 6.x.x to 7.0.0
 
 In version 7.0.0 `/export-filename` REST API endpoint changed. As a result, if the endpoint has been used, it's required to adjust the calls accordingly.

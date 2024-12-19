@@ -109,7 +109,7 @@ public class UtilityResourcesInternalController {
             }
     )
     public String getFileName(ExportParams exportParams) {
-        return new DocumentFileNameHelper(pdfExporterPolarionService).getDocumentFileName(exportParams);
+        return new DocumentFileNameHelper().getDocumentFileName(exportParams);
     }
 
     @GET

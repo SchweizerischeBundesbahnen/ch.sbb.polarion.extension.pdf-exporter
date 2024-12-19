@@ -1,7 +1,7 @@
 package ch.sbb.polarion.extension.pdf_exporter.util.velocity;
 
 import ch.sbb.polarion.extension.generic.util.ObjectUtils;
-import ch.sbb.polarion.extension.pdf_exporter.rest.model.DocumentData;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.DocumentData;
 import com.polarion.alm.projects.model.IUniqueObject;
 import com.polarion.alm.shared.api.transaction.ReadOnlyTransaction;
 import com.polarion.alm.shared.api.transaction.TransactionalExecutor;
@@ -45,7 +45,7 @@ public class VelocityEvaluator {
     private @NotNull VelocityContext createVelocityContext(@NotNull ReadOnlyTransaction transaction, @NotNull DocumentData<? extends IUniqueObject> documentData) {
         VelocityContext velocityContext = new VelocityContextInitializer(transaction).create();
 
-        switch (documentData.getDocumentType()) {
+        switch (documentData.getType()) {
             case LIVE_DOC -> {
                 if (documentData.getDocumentObject() instanceof IModule) {
                     velocityContext.put("document", documentData.getDocumentObject());
@@ -73,7 +73,7 @@ public class VelocityEvaluator {
             }
         }
 
-        velocityContext.put("projectName", documentData.getProjectName());
+        velocityContext.put("projectName", documentData.getId().getDocumentProject() != null ? documentData.getId().getDocumentProject().getName() : "");
 
         return velocityContext;
     }

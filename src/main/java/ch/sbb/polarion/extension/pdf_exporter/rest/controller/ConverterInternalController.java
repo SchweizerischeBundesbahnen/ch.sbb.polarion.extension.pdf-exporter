@@ -11,12 +11,14 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.DocumentType
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.Orientation;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PaperSize;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.DocumentData;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.jobs.ConverterJobDetails;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.jobs.ConverterJobStatus;
-import ch.sbb.polarion.extension.pdf_exporter.service.PdfExporterPolarionService;
-import ch.sbb.polarion.extension.pdf_exporter.util.DocumentDataHelper;
+import ch.sbb.polarion.extension.pdf_exporter.util.DocumentDataFactory;
 import ch.sbb.polarion.extension.pdf_exporter.util.DocumentFileNameHelper;
+import ch.sbb.polarion.extension.pdf_exporter.util.NumberedListsSanitizer;
 import ch.sbb.polarion.extension.pdf_exporter.util.PdfValidationService;
+import com.polarion.alm.tracker.model.IModule;
 import com.polarion.core.util.StringUtils;
 import com.polarion.platform.core.PlatformContext;
 import com.polarion.platform.security.ISecurityService;
@@ -29,6 +31,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
 import org.springframework.http.HttpStatus;
@@ -49,6 +52,7 @@ import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
 import java.net.URI;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -60,10 +64,8 @@ public class ConverterInternalController {
 
     private static final String EXPORT_FILENAME_HEADER = "Export-Filename";
 
-    private final PdfExporterPolarionService pdfExporterPolarionService;
     private final PdfConverter pdfConverter;
     private final PdfValidationService pdfValidationService;
-    private final DocumentDataHelper documentDataHelper;
     private final PdfConverterJobsService pdfConverterJobService;
     private final PropertiesUtility propertiesUtility;
     private final HtmlToPdfConverter htmlToPdfConverter;
@@ -72,10 +74,8 @@ public class ConverterInternalController {
     private UriInfo uriInfo;
 
     public ConverterInternalController() {
-        this.pdfExporterPolarionService = new PdfExporterPolarionService();
         this.pdfConverter = new PdfConverter();
         this.pdfValidationService = new PdfValidationService(pdfConverter);
-        this.documentDataHelper = new DocumentDataHelper(pdfExporterPolarionService);
         ISecurityService securityService = PlatformContext.getPlatform().lookupService(ISecurityService.class);
         this.pdfConverterJobService = new PdfConverterJobsService(pdfConverter, securityService);
         this.propertiesUtility = new PropertiesUtility();
@@ -83,17 +83,9 @@ public class ConverterInternalController {
     }
 
     @VisibleForTesting
-    ConverterInternalController(PdfExporterPolarionService pdfExporterPolarionService,
-                                PdfConverter pdfConverter,
-                                PdfValidationService pdfValidationService,
-                                DocumentDataHelper documentDataHelper,
-                                PdfConverterJobsService pdfConverterJobService,
-                                UriInfo uriInfo,
-                                HtmlToPdfConverter htmlToPdfConverter) {
-        this.pdfExporterPolarionService = pdfExporterPolarionService;
+    ConverterInternalController(PdfConverter pdfConverter, PdfValidationService pdfValidationService, PdfConverterJobsService pdfConverterJobService, UriInfo uriInfo, HtmlToPdfConverter htmlToPdfConverter) {
         this.pdfConverter = pdfConverter;
         this.pdfValidationService = pdfValidationService;
-        this.documentDataHelper = documentDataHelper;
         this.pdfConverterJobService = pdfConverterJobService;
         this.uriInfo = uriInfo;
         this.propertiesUtility = new PropertiesUtility();
@@ -364,7 +356,10 @@ public class ConverterInternalController {
     )
     @SuppressWarnings("java:S1166")
     public NestedListsCheck checkNestedLists(ExportParams exportParams) {
-        boolean containsNestedLists = documentDataHelper.hasLiveDocNestedNumberedLists(exportParams);
+        DocumentData<IModule> documentData = DocumentDataFactory.getDocumentData(exportParams, true);
+        @NotNull String content = Objects.requireNonNull(documentData.getContent());
+        boolean containsNestedLists = new NumberedListsSanitizer().containsNestedNumberedLists(content);
+
         return NestedListsCheck.builder().containsNestedLists(containsNestedLists).build();
     }
 
@@ -386,8 +381,8 @@ public class ConverterInternalController {
     private String getFileName(@Nullable ExportParams exportParams) {
         if (exportParams != null) {
             return StringUtils.isEmpty(exportParams.getFileName())
-                ? new DocumentFileNameHelper(pdfExporterPolarionService).getDocumentFileName(exportParams)
-                : exportParams.getFileName();
+                    ? new DocumentFileNameHelper().getDocumentFileName(exportParams)
+                    : exportParams.getFileName();
         } else {
             return "document.pdf";
         }
