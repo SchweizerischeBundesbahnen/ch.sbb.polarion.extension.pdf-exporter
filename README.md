@@ -15,6 +15,10 @@ This Polarion extension provides possibility to convert Polarion Documents to PD
 This is an alternative to native Polarion's solution.
 The extension uses [WeasyPrint](https://weasyprint.org/) as a PDF engine and requires it to run in [Docker as Service](#weasyprint-configuration).
 
+> [!IMPORTANT]
+> Starting from version 8.0.0 only latest version of Polarion is supported.
+> Right now it is Polarion 2410.
+
 ## Quick start
 
 Please see separate [quick start page](QUICK_START.md) where briefly summarized all most important and applicable steps and configurations.
