@@ -7,6 +7,8 @@ import com.polarion.alm.tracker.internal.url.IAttachmentUrlResolver;
 import com.polarion.alm.tracker.internal.url.IUrlResolver;
 import com.polarion.alm.tracker.internal.url.ParentUrlResolver;
 import com.polarion.alm.tracker.internal.url.PolarionUrlResolver;
+import com.polarion.alm.tracker.internal.url.WorkItemAttachmentUrlResolver;
+import com.polarion.core.util.StreamUtils;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -118,16 +120,68 @@ class PdfExporterFileResourceProviderTest {
     }
 
     @Test
+    @SneakyThrows
+    void getResourceAsBytesImplSuccessfully() {
+        try (MockedStatic<StreamUtils> streamUtilsMockedStatic = mockStatic(StreamUtils.class)) {
+            String resource = "valid/resource/url";
+            byte[] expectedBytes = "expectedBytes".getBytes();
+            streamUtilsMockedStatic.when(() -> StreamUtils.suckStreamThenClose(any(InputStream.class))).thenReturn(expectedBytes);
+
+            IUrlResolver resolver = mock(IUrlResolver.class);
+            when(resolver.canResolve(resource)).thenReturn(true);
+            when(resolver.resolve(resource)).thenReturn(new ByteArrayInputStream(expectedBytes));
+
+            List<IUrlResolver> resolvers = List.of(resolver);
+            List<String> unavailableWorkItemAttachments = new ArrayList<>();
+
+            PdfExporterFileResourceProvider fileResourceProvider = new PdfExporterFileResourceProvider(resolvers);
+
+            byte[] result = fileResourceProvider.getResourceAsBytesImpl(resource, unavailableWorkItemAttachments);
+
+            assertArrayEquals(expectedBytes, result);
+            assertTrue(unavailableWorkItemAttachments.isEmpty());
+        }
+    }
+
+    @Test
+    @SneakyThrows
+    void getResourceAsBytesImplWithMediaTypeMismatch() {
+        try (MockedStatic<StreamUtils> streamUtilsMockedStatic = mockStatic(StreamUtils.class); MockedStatic<WorkItemAttachmentUrlResolver> workItemAttachmentUrlResolverMockedStatic = mockStatic(WorkItemAttachmentUrlResolver.class)) {
+            String resource = "workitem/attachment/url";
+            byte[] resolvedBytes = "resolved".getBytes();
+            byte[] defaultBytes = "default".getBytes();
+            streamUtilsMockedStatic.when(() -> StreamUtils.suckStreamThenClose(any(InputStream.class))).thenReturn(resolvedBytes);
+            workItemAttachmentUrlResolverMockedStatic.when(() -> WorkItemAttachmentUrlResolver.isWorkItemAttachmentUrl(resource)).thenReturn(true);
+            IUrlResolver resolver = mock(IUrlResolver.class);
+            when(resolver.canResolve(resource)).thenReturn(true);
+            when(resolver.resolve(resource)).thenReturn(new ByteArrayInputStream(resolvedBytes));
+
+            PdfExporterFileResourceProvider fileResourceProvider = spy(new PdfExporterFileResourceProvider(List.of(resolver)));
+            doReturn(true).when(fileResourceProvider).isMediaTypeMismatch(resource, resolvedBytes);
+            doReturn(defaultBytes).when(fileResourceProvider).getDefaultContent(resource);
+            doReturn("unavailableId").when(fileResourceProvider).getWorkItemIdsWithUnavailableAttachments(resource);
+
+            List<String> unavailableWorkItemAttachments = new ArrayList<>();
+
+            byte[] result = fileResourceProvider.getResourceAsBytesImpl(resource, unavailableWorkItemAttachments);
+
+            assertArrayEquals(defaultBytes, result);
+            assertEquals(1, unavailableWorkItemAttachments.size());
+            assertEquals("unavailableId", unavailableWorkItemAttachments.get(0));
+        }
+    }
+
+    @Test
     void getWorkItemIdFromAttachmentUrlValidUrl() {
         String url = "http://localhost/polarion/wi-attachment/elibrary/EL-14852/attachment.png";
-        String result = resourceProvider.getWorkItemIdFromAttachmentUrl(url);
+        String result = resourceProvider.getWorkItemIdsWithUnavailableAttachments(url);
         assertEquals("EL-14852", result);
     }
 
     @Test
     void getWorkItemIdFromAttachmentUrlInvalidUrl() {
         String url = "/http://example.com/invalid/url";
-        String result = resourceProvider.getWorkItemIdFromAttachmentUrl(url);
+        String result = resourceProvider.getWorkItemIdsWithUnavailableAttachments(url);
         assertNull(result);
     }
 

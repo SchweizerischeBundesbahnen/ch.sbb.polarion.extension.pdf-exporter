@@ -83,14 +83,15 @@ public class PdfExporterFileResourceProvider implements FileResourceProvider {
         });
     }
 
-    private byte[] getResourceAsBytesImpl(String resource, List<String> unavailableWorkItemAttachments) throws IOException {
+    @VisibleForTesting
+    byte[] getResourceAsBytesImpl(String resource, List<String> unavailableWorkItemAttachments) throws IOException {
         for (IUrlResolver resolver : resolvers) {
             if (resolver.canResolve(resource)) {
                 InputStream stream = resolver.resolve(resource);
                 if (stream != null) {
                     byte[] result = StreamUtils.suckStreamThenClose(stream);
                     if (result.length > 0 && WorkItemAttachmentUrlResolver.isWorkItemAttachmentUrl(resource) && isMediaTypeMismatch(resource, result)) {
-                        unavailableWorkItemAttachments.add(getWorkItemIdFromAttachmentUrl(resource));
+                        unavailableWorkItemAttachments.add(getWorkItemIdsWithUnavailableAttachments(resource));
                         return getDefaultContent(resource);
                     }
                     return result;
@@ -124,7 +125,7 @@ public class PdfExporterFileResourceProvider implements FileResourceProvider {
     }
 
     @VisibleForTesting
-    String getWorkItemIdFromAttachmentUrl(@NotNull String url) {
+    String getWorkItemIdsWithUnavailableAttachments(@NotNull String url) {
         String prefix = "/polarion/wi-attachment/";
         try {
             if (!url.startsWith(prefix)) {
