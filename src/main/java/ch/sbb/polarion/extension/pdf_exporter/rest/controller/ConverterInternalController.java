@@ -63,6 +63,8 @@ import java.util.stream.Collectors;
 public class ConverterInternalController {
 
     private static final String EXPORT_FILENAME_HEADER = "Export-Filename";
+    private static final String UNAVAILABLE_WI_ATTACHMENTS_COUNT_HEADER = "Unavailable-Work-Items-Attachments-Count";
+    private static final String UNAVAILABLE_WI_ATTACHMENTS_HEADER = "Unavailable-Work-Items-Attachments";
 
     private final PdfConverter pdfConverter;
     private final PdfValidationService pdfValidationService;
@@ -115,6 +117,14 @@ public class ConverterInternalController {
                                     @Header(name = EXPORT_FILENAME_HEADER,
                                             description = "File name for converted PDF document",
                                             schema = @Schema(implementation = String.class)
+                                    ),
+                                    @Header(name = UNAVAILABLE_WI_ATTACHMENTS_COUNT_HEADER,
+                                            description = "Unavailable work item attachments count",
+                                            schema = @Schema(implementation = String.class)
+                                    ),
+                                    @Header(name = UNAVAILABLE_WI_ATTACHMENTS_COUNT_HEADER,
+                                            description = "Work items contained unavailable attachments",
+                                            schema = @Schema(implementation = String.class)
                                     )
                             }
                     )
@@ -126,6 +136,8 @@ public class ConverterInternalController {
         return Response.ok(pdfBytes)
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
                 .header(EXPORT_FILENAME_HEADER, fileName)
+                .header(UNAVAILABLE_WI_ATTACHMENTS_COUNT_HEADER, exportParams.getUnavailableWorkItemAttachmentsCount())
+                .header(UNAVAILABLE_WI_ATTACHMENTS_HEADER, exportParams.getWorkItemsIdContainUnavailableAttachments())
                 .build();
     }
 
@@ -233,7 +245,16 @@ public class ConverterInternalController {
                                     @Header(name = EXPORT_FILENAME_HEADER,
                                             description = "File name for converted PDF document",
                                             schema = @Schema(implementation = String.class)
+                                    ),
+                                    @Header(name = UNAVAILABLE_WI_ATTACHMENTS_COUNT_HEADER,
+                                            description = "Unavailable work item attachments count",
+                                            schema = @Schema(implementation = String.class)
+                                    ),
+                                    @Header(name = UNAVAILABLE_WI_ATTACHMENTS_COUNT_HEADER,
+                                            description = "Work items contained unavailable attachments",
+                                            schema = @Schema(implementation = String.class)
                                     )
+
                             }
                     ),
                     @ApiResponse(responseCode = "204",
@@ -253,10 +274,22 @@ public class ConverterInternalController {
         }
         ExportParams exportParams = pdfConverterJobService.getJobParams(jobId);
         String fileName = getFileName(exportParams);
-        return Response.ok(pdfContent.get())
+
+        Response.ResponseBuilder responseBuilder = Response.ok(pdfContent.get())
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
-                .header(EXPORT_FILENAME_HEADER, fileName)
-                .build();
+                .header(EXPORT_FILENAME_HEADER, fileName);
+
+        if (exportParams != null) {
+            responseBuilder.header(
+                    UNAVAILABLE_WI_ATTACHMENTS_COUNT_HEADER,
+                    exportParams.getUnavailableWorkItemAttachmentsCount()
+            );
+            responseBuilder.header(
+                    UNAVAILABLE_WI_ATTACHMENTS_HEADER,
+                    exportParams.getWorkItemsIdContainUnavailableAttachments()
+            );
+        }
+        return responseBuilder.build();
     }
 
     @GET

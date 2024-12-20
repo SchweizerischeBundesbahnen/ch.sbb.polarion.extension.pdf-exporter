@@ -56,7 +56,15 @@ const ExportCommon = {
                     console.log('Async PDF conversion: still in progress, retrying...');
                     this.pullAndGetResultPdf(url, successCallback, errorCallback);
                 } else if (request.status === 200) {
-                    successCallback(request.response, request.getResponseHeader("Export-Filename"));
+                    let attachment = request.getResponseHeader("Unavailable-Work-Items-Attachments")
+                    if (attachment) {
+                        let count = request.getResponseHeader("Unavailable-Work-Items-Attachments-Count");
+                        warningMessage = `${count} image(s) in WI(s) ${attachment} were not exported. They were replaced with an image containing 'This image is not accessible'.`;
+                    }
+                    successCallback({
+                        response: request.response,
+                        warning: warningMessage
+                    });
                 }
             },
             onError: (status, errorMessage, request) => {
@@ -139,9 +147,9 @@ const ExportCommon = {
 
                     this.asyncConvertPdf(
                         exportParams.toJSON(),
-                        (responseBody, fileName) => {
+                        (result, fileName) => {
                             const downloadFileName = fileName || `${collectionDocument.projectId}_${collectionDocument.spaceId}_${collectionDocument.documentName}.pdf`;
-                            this.downloadBlob(responseBody, downloadFileName);
+                            this.downloadBlob(result.response, downloadFileName);
 
                             completedCount++;
                             if (completedCount === collectionDocuments.length && !hasErrors) {
