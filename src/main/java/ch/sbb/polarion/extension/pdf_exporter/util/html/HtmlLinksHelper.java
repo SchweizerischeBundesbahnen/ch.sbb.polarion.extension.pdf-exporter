@@ -2,6 +2,7 @@ package ch.sbb.polarion.extension.pdf_exporter.util.html;
 
 import ch.sbb.polarion.extension.generic.regex.RegexMatcher;
 import ch.sbb.polarion.extension.pdf_exporter.util.FileResourceProvider;
+import com.google.inject.Inject;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -14,6 +15,7 @@ public class HtmlLinksHelper {
 
     private final Set<LinkInternalizer> linkInliners;
 
+    @Inject
     public HtmlLinksHelper(FileResourceProvider fileResourceProvider) {
         this (Set.of(
                 new ExternalCssInternalizer(fileResourceProvider)

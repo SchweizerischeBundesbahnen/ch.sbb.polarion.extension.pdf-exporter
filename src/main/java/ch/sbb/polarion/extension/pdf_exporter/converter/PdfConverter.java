@@ -16,28 +16,25 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.webhooks.Webho
 import ch.sbb.polarion.extension.pdf_exporter.service.PdfExporterPolarionService;
 import ch.sbb.polarion.extension.pdf_exporter.settings.CssSettings;
 import ch.sbb.polarion.extension.pdf_exporter.settings.HeaderFooterSettings;
-import ch.sbb.polarion.extension.pdf_exporter.settings.LocalizationSettings;
 import ch.sbb.polarion.extension.pdf_exporter.settings.WebhooksSettings;
 import ch.sbb.polarion.extension.pdf_exporter.util.DocumentDataFactory;
 import ch.sbb.polarion.extension.pdf_exporter.util.EnumValuesProvider;
 import ch.sbb.polarion.extension.pdf_exporter.util.HtmlLogger;
 import ch.sbb.polarion.extension.pdf_exporter.util.HtmlProcessor;
-import ch.sbb.polarion.extension.pdf_exporter.util.PdfExporterFileResourceProvider;
 import ch.sbb.polarion.extension.pdf_exporter.util.PdfExporterListStyleProvider;
 import ch.sbb.polarion.extension.pdf_exporter.util.PdfGenerationLog;
 import ch.sbb.polarion.extension.pdf_exporter.util.PdfTemplateProcessor;
-import ch.sbb.polarion.extension.pdf_exporter.util.html.HtmlLinksHelper;
 import ch.sbb.polarion.extension.pdf_exporter.util.placeholder.PlaceholderProcessor;
 import ch.sbb.polarion.extension.pdf_exporter.util.velocity.VelocityEvaluator;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.WeasyPrintOptions;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.service.WeasyPrintServiceConnector;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.inject.Inject;
 import com.polarion.alm.projects.model.IUniqueObject;
 import com.polarion.alm.tracker.model.ITrackerProject;
 import com.polarion.core.util.StringUtils;
 import com.polarion.core.util.logging.Logger;
 import com.polarion.platform.internal.security.UserAccountVault;
-import lombok.AllArgsConstructor;
 import org.glassfish.jersey.media.multipart.FormDataBodyPart;
 import org.glassfish.jersey.media.multipart.FormDataMultiPart;
 import org.glassfish.jersey.media.multipart.MultiPartFeature;
@@ -60,7 +57,6 @@ import java.util.Base64;
 import java.util.Collections;
 import java.util.List;
 
-@AllArgsConstructor
 @SuppressWarnings("java:S1200")
 public class PdfConverter {
     private final Logger logger = Logger.getLogger(PdfConverter.class);
@@ -76,17 +72,17 @@ public class PdfConverter {
     private final HtmlProcessor htmlProcessor;
     private final PdfTemplateProcessor pdfTemplateProcessor;
 
-    public PdfConverter() {
-        pdfExporterPolarionService = new PdfExporterPolarionService();
-        headerFooterSettings = new HeaderFooterSettings();
-        cssSettings = new CssSettings();
-        placeholderProcessor = new PlaceholderProcessor();
-        velocityEvaluator = new VelocityEvaluator();
-        coverPageProcessor = new CoverPageProcessor();
-        weasyPrintServiceConnector = new WeasyPrintServiceConnector();
-        PdfExporterFileResourceProvider fileResourceProvider = new PdfExporterFileResourceProvider();
-        htmlProcessor = new HtmlProcessor(fileResourceProvider, new LocalizationSettings(), new HtmlLinksHelper(fileResourceProvider), pdfExporterPolarionService);
-        pdfTemplateProcessor = new PdfTemplateProcessor();
+    @Inject
+    public PdfConverter(PdfExporterPolarionService pdfExporterPolarionService, HeaderFooterSettings headerFooterSettings, CssSettings cssSettings, PlaceholderProcessor placeholderProcessor, VelocityEvaluator velocityEvaluator, CoverPageProcessor coverPageProcessor, WeasyPrintServiceConnector weasyPrintServiceConnector, HtmlProcessor htmlProcessor, PdfTemplateProcessor pdfTemplateProcessor) {
+        this.pdfExporterPolarionService = pdfExporterPolarionService;
+        this.headerFooterSettings = headerFooterSettings;
+        this.cssSettings = cssSettings;
+        this.placeholderProcessor = placeholderProcessor;
+        this.velocityEvaluator = velocityEvaluator;
+        this.coverPageProcessor = coverPageProcessor;
+        this.weasyPrintServiceConnector = weasyPrintServiceConnector;
+        this.htmlProcessor = htmlProcessor;
+        this.pdfTemplateProcessor = pdfTemplateProcessor;
     }
 
     public byte[] convertToPdf(@NotNull ExportParams exportParams, @Nullable ExportMetaInfoCallback metaInfoCallback) {
