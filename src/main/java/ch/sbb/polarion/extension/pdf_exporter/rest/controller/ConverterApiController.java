@@ -12,13 +12,12 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.Orientation;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PaperSize;
 import ch.sbb.polarion.extension.pdf_exporter.service.PdfExporterPolarionService;
 import ch.sbb.polarion.extension.pdf_exporter.util.PdfValidationService;
-import org.jetbrains.annotations.VisibleForTesting;
+import com.google.inject.Inject;
 import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
 
 import javax.ws.rs.Path;
 import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
 
 @Secured
 @Path("/api")
@@ -26,14 +25,10 @@ public class ConverterApiController extends ConverterInternalController {
 
     private final PdfExporterPolarionService polarionService;
 
-    public ConverterApiController() {
-        this.polarionService = new PdfExporterPolarionService();
-    }
-
-    @VisibleForTesting
     @SuppressWarnings("squid:S5803")
-    ConverterApiController(PdfExporterPolarionService pdfExporterPolarionService, PdfConverter pdfConverter, PdfValidationService pdfValidationService, PdfConverterJobsService pdfConverterJobService, UriInfo uriInfo, HtmlToPdfConverter htmlToPdfConverter) {
-        super(pdfConverter, pdfValidationService, pdfConverterJobService, uriInfo, htmlToPdfConverter);
+    @Inject
+    public ConverterApiController(PdfExporterPolarionService pdfExporterPolarionService, PdfConverter pdfConverter, PdfValidationService pdfValidationService, PdfConverterJobsService pdfConverterJobService, HtmlToPdfConverter htmlToPdfConverter) {
+        super(pdfConverter, pdfValidationService, pdfConverterJobService, htmlToPdfConverter);
         this.polarionService = pdfExporterPolarionService;
     }
 

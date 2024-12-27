@@ -6,6 +6,7 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams
 import ch.sbb.polarion.extension.pdf_exporter.service.PdfExporterPolarionService;
 import ch.sbb.polarion.extension.pdf_exporter.util.DocumentFileNameHelper;
 import ch.sbb.polarion.extension.pdf_exporter.util.EnumValuesProvider;
+import com.google.inject.Inject;
 import com.polarion.alm.tracker.model.IModule;
 import com.polarion.alm.tracker.model.ITrackerProject;
 import com.polarion.platform.persistence.IEnumOption;
@@ -39,10 +40,7 @@ public class UtilityResourcesInternalController {
 
     private final PdfExporterPolarionService pdfExporterPolarionService;
 
-    public UtilityResourcesInternalController() {
-        pdfExporterPolarionService = new PdfExporterPolarionService();
-    }
-
+    @Inject
     public UtilityResourcesInternalController(PdfExporterPolarionService pdfExporterPolarionService) {
         this.pdfExporterPolarionService = pdfExporterPolarionService;
     }

@@ -2,6 +2,7 @@ package ch.sbb.polarion.extension.pdf_exporter.rest.controller;
 
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.attachments.TestRunAttachment;
 import ch.sbb.polarion.extension.pdf_exporter.service.PdfExporterPolarionService;
+import com.google.inject.Inject;
 import com.polarion.alm.tracker.model.ITestRunAttachment;
 import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
@@ -31,10 +32,7 @@ public class TestRunAttachmentsInternalController {
 
     private final PdfExporterPolarionService pdfExporterPolarionService;
 
-    public TestRunAttachmentsInternalController() {
-        pdfExporterPolarionService = new PdfExporterPolarionService();
-    }
-
+    @Inject
     public TestRunAttachmentsInternalController(PdfExporterPolarionService pdfExporterPolarionService) {
         this.pdfExporterPolarionService = pdfExporterPolarionService;
     }

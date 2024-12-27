@@ -3,6 +3,8 @@ package ch.sbb.polarion.extension.pdf_exporter.rest.controller;
 import ch.sbb.polarion.extension.generic.rest.filter.Secured;
 import ch.sbb.polarion.extension.generic.service.PolarionService;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.attachments.TestRunAttachment;
+import ch.sbb.polarion.extension.pdf_exporter.service.PdfExporterPolarionService;
+import com.google.inject.Inject;
 
 import javax.ws.rs.Path;
 import javax.ws.rs.core.Response;
@@ -13,6 +15,11 @@ import java.util.List;
 public class TestRunAttachmentsApiController extends TestRunAttachmentsInternalController {
 
     private static final PolarionService polarionService = new PolarionService();
+
+    @Inject
+    public TestRunAttachmentsApiController(PdfExporterPolarionService pdfExporterPolarionService) {
+        super(pdfExporterPolarionService);
+    }
 
     @Override
     public List<TestRunAttachment> getTestRunAttachments(String projectId, String testRunId, String revision, String filter) {

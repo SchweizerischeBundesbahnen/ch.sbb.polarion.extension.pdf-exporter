@@ -3,6 +3,7 @@ package ch.sbb.polarion.extension.pdf_exporter.rest.controller;
 
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.collections.DocumentCollectionEntry;
 import ch.sbb.polarion.extension.pdf_exporter.service.PdfExporterPolarionService;
+import com.google.inject.Inject;
 import com.polarion.alm.shared.api.transaction.TransactionalExecutor;
 import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
@@ -26,8 +27,9 @@ import java.util.List;
 public class CollectionInternalController {
     private final PdfExporterPolarionService pdfExporterPolarionService;
 
-    public CollectionInternalController() {
-        pdfExporterPolarionService = new PdfExporterPolarionService();
+    @Inject
+    public CollectionInternalController(PdfExporterPolarionService pdfExporterPolarionService) {
+        this.pdfExporterPolarionService = pdfExporterPolarionService;
     }
 
     @GET
