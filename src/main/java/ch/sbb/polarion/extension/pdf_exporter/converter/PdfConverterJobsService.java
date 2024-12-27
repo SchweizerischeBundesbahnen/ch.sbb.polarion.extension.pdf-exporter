@@ -2,6 +2,7 @@ package ch.sbb.polarion.extension.pdf_exporter.converter;
 
 import ch.sbb.polarion.extension.generic.rest.filter.LogoutFilter;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
+import com.google.inject.Inject;
 import com.polarion.core.util.logging.Logger;
 import com.polarion.platform.security.ISecurityService;
 import lombok.Builder;
@@ -36,6 +37,7 @@ public class PdfConverterJobsService {
     private final PdfConverter pdfConverter;
     private final ISecurityService securityService;
 
+    @Inject
     public PdfConverterJobsService(PdfConverter pdfConverter, ISecurityService securityService) {
         this.pdfConverter = pdfConverter;
         this.securityService = securityService;
