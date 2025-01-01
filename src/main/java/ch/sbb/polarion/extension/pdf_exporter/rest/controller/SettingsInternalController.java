@@ -9,6 +9,7 @@ import ch.sbb.polarion.extension.pdf_exporter.service.PdfExporterPolarionService
 import ch.sbb.polarion.extension.pdf_exporter.settings.CoverPageSettings;
 import ch.sbb.polarion.extension.pdf_exporter.settings.LocalizationSettings;
 import ch.sbb.polarion.extension.pdf_exporter.util.LocalizationHelper;
+import com.google.inject.Inject;
 import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
@@ -49,8 +50,15 @@ import java.util.UUID;
 @SecurityRequirement(name = "bearerAuth")
 public class SettingsInternalController {
 
-    private final PdfExporterPolarionService pdfExporterPolarionService = new PdfExporterPolarionService();
+    private final PdfExporterPolarionService pdfExporterPolarionService;
+    private final CoverPageSettings coverPageSettings;
     private Set<String> predefinedCoverPageTemplates;
+
+    @Inject
+    public SettingsInternalController(PdfExporterPolarionService pdfExporterPolarionService, CoverPageSettings coverPageSettings) {
+        this.pdfExporterPolarionService = pdfExporterPolarionService;
+        this.coverPageSettings = coverPageSettings;
+    }
 
     @GET
     @Path("/settings/localization/names/{name}/download")
@@ -106,7 +114,7 @@ public class SettingsInternalController {
     )
     public Collection<String> getCoverPageTemplateNames() {
         if (predefinedCoverPageTemplates == null) {
-            predefinedCoverPageTemplates = new CoverPageSettings().getPredefinedTemplates();
+            predefinedCoverPageTemplates = coverPageSettings.getPredefinedTemplates();
         }
         return predefinedCoverPageTemplates;
     }
@@ -123,7 +131,6 @@ public class SettingsInternalController {
             throw new NotFoundException(String.format("There's no predefined template with name '%s'", template));
         }
 
-        CoverPageSettings coverPageSettings = new CoverPageSettings();
         Collection<SettingName> persistedNames = coverPageSettings.readNames(scope);
         String nonClashingName = coverPageSettings.getNonClashingName(template, persistedNames);
         CoverPageModel templateModel = coverPageSettings.defaultValuesFor(template);
@@ -142,7 +149,7 @@ public class SettingsInternalController {
             }
     )
     public void deleteImages(@PathParam("name") String coverPageName, @QueryParam("scope") @DefaultValue("") String scope) {
-        new CoverPageSettings().deleteCoverPageImages(coverPageName, scope);
+        coverPageSettings.deleteCoverPageImages(coverPageName, scope);
     }
 
     @GET

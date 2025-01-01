@@ -4,6 +4,9 @@ import ch.sbb.polarion.extension.generic.rest.filter.Secured;
 import ch.sbb.polarion.extension.generic.service.PolarionService;
 import ch.sbb.polarion.extension.generic.settings.SettingName;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.stylepackage.StylePackageWeightInfo;
+import ch.sbb.polarion.extension.pdf_exporter.service.PdfExporterPolarionService;
+import ch.sbb.polarion.extension.pdf_exporter.settings.CoverPageSettings;
+import com.google.inject.Inject;
 import org.glassfish.jersey.media.multipart.FormDataBodyPart;
 
 import javax.ws.rs.Path;
@@ -17,6 +20,11 @@ import java.util.Map;
 public class SettingsApiController extends SettingsInternalController {
 
     private static final PolarionService polarionService = new PolarionService();
+
+    @Inject
+    public SettingsApiController(PdfExporterPolarionService pdfExporterPolarionService, CoverPageSettings coverPageSettings) {
+        super(pdfExporterPolarionService, coverPageSettings);
+    }
 
     @Override
     public Response downloadTranslations(String name, String language, String revision, String scope) {

@@ -2,7 +2,7 @@ package ch.sbb.polarion.extension.pdf_exporter.rest;
 
 import ch.sbb.polarion.extension.generic.rest.GenericRestApplication;
 import ch.sbb.polarion.extension.generic.settings.NamedSettingsRegistry;
-import ch.sbb.polarion.extension.pdf_exporter.PdfExporterInternModule;
+import ch.sbb.polarion.extension.pdf_exporter.PdfExporterInternalModule;
 import ch.sbb.polarion.extension.pdf_exporter.converter.PdfConverterJobsCleaner;
 import ch.sbb.polarion.extension.pdf_exporter.rest.controller.CollectionApiController;
 import ch.sbb.polarion.extension.pdf_exporter.rest.controller.CollectionInternalController;
@@ -25,6 +25,7 @@ import ch.sbb.polarion.extension.pdf_exporter.settings.HeaderFooterSettings;
 import ch.sbb.polarion.extension.pdf_exporter.settings.LocalizationSettings;
 import ch.sbb.polarion.extension.pdf_exporter.settings.StylePackageSettings;
 import ch.sbb.polarion.extension.pdf_exporter.settings.WebhooksSettings;
+import com.google.inject.ConfigurationException;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.polarion.core.util.logging.Logger;
@@ -67,7 +68,7 @@ public class PdfExporterRestApplication extends GenericRestApplication {
     @Override
     protected @NotNull Set<Object> getExtensionControllerSingletons() {
         try {
-            Injector injector = Guice.createInjector(new PdfExporterInternModule());
+            Injector injector = Guice.createInjector(new PdfExporterInternalModule());
 
             return Set.of(
                     injector.getInstance(ConverterApiController.class),
@@ -78,11 +79,11 @@ public class PdfExporterRestApplication extends GenericRestApplication {
                     injector.getInstance(CollectionInternalController.class),
                     injector.getInstance(UtilityResourcesApiController.class),
                     injector.getInstance(UtilityResourcesInternalController.class),
-                    new SettingsApiController(),
-                    new SettingsInternalController()
+                    injector.getInstance(SettingsApiController.class),
+                    injector.getInstance(SettingsInternalController.class)
             );
-        } catch (Exception e) {
-            logger.error("Cannot instantiate controllers: " + e.getMessage(), e);
+        } catch (ConfigurationException e) {
+            logger.error("Cannot instantiate controllers: " + e.getErrorMessages(), e);
             throw new IllegalStateException(e);
         }
     }

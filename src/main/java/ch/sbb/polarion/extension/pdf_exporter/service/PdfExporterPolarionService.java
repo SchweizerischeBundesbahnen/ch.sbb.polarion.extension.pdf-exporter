@@ -11,6 +11,7 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.stylepackage.S
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.stylepackage.StylePackageWeightInfo;
 import ch.sbb.polarion.extension.pdf_exporter.settings.StylePackageSettings;
 import ch.sbb.polarion.extension.pdf_exporter.util.WildcardUtils;
+import com.google.inject.Inject;
 import com.polarion.alm.projects.IProjectService;
 import com.polarion.alm.shared.api.model.baselinecollection.BaselineCollection;
 import com.polarion.alm.shared.api.model.baselinecollection.BaselineCollectionReference;
@@ -44,9 +45,14 @@ public class PdfExporterPolarionService extends PolarionService {
 
     protected final ITestManagementService testManagementService;
 
+    // TODO: refactor and remove to use injection option only
     public PdfExporterPolarionService() {
-        super();
         this.testManagementService = new TestManagementServiceAccessor().getTestingService();
+    }
+
+    @Inject
+    public PdfExporterPolarionService(ITestManagementService testManagementService) {
+        this.testManagementService = testManagementService;
     }
 
     public PdfExporterPolarionService(
