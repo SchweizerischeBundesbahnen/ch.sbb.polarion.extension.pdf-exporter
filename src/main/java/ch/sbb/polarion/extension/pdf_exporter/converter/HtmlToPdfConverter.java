@@ -23,7 +23,7 @@ public class HtmlToPdfConverter {
     @Getter
     private final WeasyPrintServiceConnector weasyPrintServiceConnector;
 
-    @Inject
+    // TODO: refactor and remove to use injection option only
     public HtmlToPdfConverter() {
         this.pdfTemplateProcessor = new PdfTemplateProcessor();
         PdfExporterFileResourceProvider fileResourceProvider = new PdfExporterFileResourceProvider();
@@ -31,7 +31,7 @@ public class HtmlToPdfConverter {
         this.weasyPrintServiceConnector = new WeasyPrintServiceConnector();
     }
 
-    @VisibleForTesting
+    @Inject
     public HtmlToPdfConverter(PdfTemplateProcessor pdfTemplateProcessor, HtmlProcessor htmlProcessor, WeasyPrintServiceConnector weasyPrintServiceConnector) {
         this.pdfTemplateProcessor = pdfTemplateProcessor;
         this.htmlProcessor = htmlProcessor;
