@@ -248,17 +248,15 @@ class PdfExporterPolarionServiceTest {
         IModule mockModule1 = mock(IModule.class);
         IModule mockModule2 = mock(IModule.class);
 
-        ILocation mockLocation1 = mock(ILocation.class);
-        ILocation mockLocation2 = mock(ILocation.class);
-
-        when(mockModule1.getModuleLocation()).thenReturn(mockLocation1);
+        when(mockModule1.getProjectId()).thenReturn(projectId);
+        when(mockModule1.getModuleFolder()).thenReturn("space 1");
+        when(mockModule1.getModuleName()).thenReturn("test Module1");
         when(mockModule1.getRevision()).thenReturn("1");
 
-        when(mockModule2.getModuleLocation()).thenReturn(mockLocation2);
+        when(mockModule2.getProjectId()).thenReturn(projectId);
+        when(mockModule2.getModuleFolder()).thenReturn("_default");
+        when(mockModule2.getModuleName()).thenReturn("test Module2");
         when(mockModule2.getRevision()).thenReturn("2");
-
-        when(mockLocation1.getLocationPath()).thenReturn("space 1/test Module1");
-        when(mockLocation2.getLocationPath()).thenReturn("_default/test Module2");
 
         IBaselineCollectionElement mockElement1 = mock(IBaselineCollectionElement.class);
         IBaselineCollectionElement mockElement2 = mock(IBaselineCollectionElement.class);
