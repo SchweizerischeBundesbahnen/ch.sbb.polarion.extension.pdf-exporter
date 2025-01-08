@@ -7,6 +7,7 @@ import ch.sbb.polarion.extension.generic.util.PObjectListStub;
 import ch.sbb.polarion.extension.generic.util.ScopeUtils;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.attachments.TestRunAttachment;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.collections.DocumentCollectionEntry;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.stylepackage.DocIdentifier;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.stylepackage.StylePackageModel;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.stylepackage.StylePackageWeightInfo;
 import ch.sbb.polarion.extension.pdf_exporter.settings.StylePackageSettings;
@@ -133,9 +134,21 @@ class PdfExporterPolarionServiceTest {
 
     @Test
     void testGetSuitableStylePackages() {
+        Collection<SettingName> result = service.getSuitableStylePackages(List.of());
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+
         String projectId = "someProjectId";
         String spaceId = "someSpaceId";
         String documentName = "documentName";
+        Collection<SettingName> defaultSettingNames = List.of(
+                SettingName.builder().id("d1").name("default1").scope("").build(),
+                SettingName.builder().id("d2").name("default2").scope("").build()
+        );
+        StylePackageModel defaultMockModel1 = mock(StylePackageModel.class);
+        when(defaultMockModel1.getWeight()).thenReturn(10f);
+        StylePackageModel defaultMockModel2 = mock(StylePackageModel.class);
+        when(defaultMockModel2.getWeight()).thenReturn(16f);
         Collection<SettingName> settingNames = List.of(
                 SettingName.builder().id("id1").name("name1").scope("project/someProjectId/").build(),
                 SettingName.builder().id("id4").name("name4").scope("project/someProjectId/").build(),
@@ -154,18 +167,26 @@ class PdfExporterPolarionServiceTest {
         StylePackageModel mockModel5 = mock(StylePackageModel.class);
         when(mockModel5.getWeight()).thenReturn(50.0f);
 
+        when(stylePackageSettings.readNames("")).thenReturn(defaultSettingNames);
         when(stylePackageSettings.readNames(ScopeUtils.getScopeFromProject(projectId))).thenReturn(settingNames);
+        when(stylePackageSettings.read(eq(""), eq(SettingId.fromName("default1")), isNull())).thenReturn(defaultMockModel1);
+        when(stylePackageSettings.read(eq(""), eq(SettingId.fromName("default2")), isNull())).thenReturn(defaultMockModel2);
         when(stylePackageSettings.read(eq("project/someProjectId/"), eq(SettingId.fromName("name1")), isNull())).thenReturn(mockModel1);
         when(stylePackageSettings.read(eq("project/someProjectId/"), eq(SettingId.fromName("name2")), isNull())).thenReturn(mockModel2);
         when(stylePackageSettings.read(eq("project/someProjectId/"), eq(SettingId.fromName("name3")), isNull())).thenReturn(mockModel3);
         when(stylePackageSettings.read(eq("project/someProjectId/"), eq(SettingId.fromName("name4")), isNull())).thenReturn(mockModel4);
         when(stylePackageSettings.read(eq("project/someProjectId/"), eq(SettingId.fromName("name5")), isNull())).thenReturn(mockModel5);
 
-        Collection<SettingName> result = service.getSuitableStylePackages(projectId, spaceId, documentName);
+        result = service.getSuitableStylePackages(List.of(new DocIdentifier(projectId, spaceId, documentName)));
 
         assertNotNull(result);
         assertEquals(5, result.size());
         assertEquals(List.of("name2", "name3", "name4", "name5", "name1"), result.stream().map(SettingName::getName).toList());
+
+        result = service.getSuitableStylePackages(List.of(new DocIdentifier(projectId, spaceId, documentName), new DocIdentifier("anotherProject", spaceId, documentName)));
+        assertNotNull(result);
+        assertEquals(2, result.size());
+        assertEquals(List.of("default2", "default1"), result.stream().map(SettingName::getName).toList());
     }
 
     @Test
