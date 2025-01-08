@@ -13,6 +13,6 @@ jobs:
         with:
           fetch-depth: 0
       - name: 🧪 Validate OpenAPI definition
-        uses: swaggerexpert/swagger-editor-validate@e8e51dbc8c18e87f96b082b18a6a7cbd3c44abd8 # v1.4.2
+        uses: swaggerexpert/swagger-editor-validate@e8e51dbc8c18e87f96b082b18a6a7cbd3c44abd8  # v1.4.2
         with:
           definition-file: docs/openapi.json

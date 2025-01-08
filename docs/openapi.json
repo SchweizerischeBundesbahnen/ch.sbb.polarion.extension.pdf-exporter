@@ -886,11 +886,6 @@
             "description": "Images deleted successfully"
           }
         },
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
         "summary": "Deletes images in SVN linked to specified cover page within specified scope (global or certain project)",
         "tags": [
           "Settings"
@@ -905,11 +900,6 @@
             "description": "Template names retrieved successfully"
           }
         },
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
         "summary": "Get list of cover page predefined template names",
         "tags": [
           "Settings"
@@ -941,11 +931,6 @@
             "description": "Template persisted successfully"
           }
         },
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
         "summary": "Persist content of cover page predefined template",
         "tags": [
           "Settings"
@@ -991,11 +976,6 @@
             "description": "Localization file downloaded successfully"
           }
         },
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
         "summary": "Downloads localization values by name of localization settings",
         "tags": [
           "Settings"
@@ -1040,11 +1020,6 @@
             "description": "Localization file uploaded successfully"
           }
         },
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
         "summary": "Uploads localization values",
         "tags": [
           "Settings"
@@ -1052,42 +1027,28 @@
       }
     },
     "/api/settings/style-package/suitable-names": {
-      "get": {
+      "post": {
         "operationId": "getSuitableStylePackageNames",
-        "parameters": [
-          {
-            "in": "query",
-            "name": "projectId",
-            "schema": {
-              "type": "string"
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "items": {
+                  "$ref": "#/components/schemas/DocIdentifier"
+                },
+                "type": "array"
+              }
             }
           },
-          {
-            "in": "query",
-            "name": "spaceId",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "in": "query",
-            "name": "documentName",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+          "description": "List of document identifiers",
+          "required": true
+        },
         "responses": {
           "200": {
             "description": "Successfully retrieved the list of style package names"
           }
         },
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "summary": "Get list of style packages suitable for a document",
+        "summary": "Get list of style packages suitable for the specified list of documents (sorted by weight)",
         "tags": [
           "Settings"
         ]
@@ -1110,11 +1071,6 @@
             "description": "Successfully retrieved the list of style package names with the weight information"
           }
         },
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
         "summary": "Get full list of available style packages for the specific scope with the weight information",
         "tags": [
           "Settings"
@@ -1144,11 +1100,6 @@
             "description": "default response"
           }
         },
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
         "summary": "Update weight information for the provided style packages",
         "tags": [
           "Settings"
@@ -1646,6 +1597,24 @@
               "CANCELLED"
             ],
             "example": "IN_PROGRESS",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "DocIdentifier": {
+        "description": "Unique document identifier data",
+        "properties": {
+          "documentName": {
+            "description": "Document name",
+            "type": "string"
+          },
+          "projectId": {
+            "description": "Project ID",
+            "type": "string"
+          },
+          "spaceId": {
+            "description": "Space ID",
             "type": "string"
           }
         },

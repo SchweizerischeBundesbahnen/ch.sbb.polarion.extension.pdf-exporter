@@ -3,6 +3,7 @@ package ch.sbb.polarion.extension.pdf_exporter.rest.controller;
 import ch.sbb.polarion.extension.generic.rest.filter.Secured;
 import ch.sbb.polarion.extension.generic.service.PolarionService;
 import ch.sbb.polarion.extension.generic.settings.SettingName;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.stylepackage.DocIdentifier;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.stylepackage.StylePackageWeightInfo;
 import org.glassfish.jersey.media.multipart.FormDataBodyPart;
 
@@ -44,8 +45,8 @@ public class SettingsApiController extends SettingsInternalController {
     }
 
     @Override
-    public Collection<SettingName> getSuitableStylePackageNames(String projectId, String spaceId, String documentName) {
-        return polarionService.callPrivileged(() -> super.getSuitableStylePackageNames(projectId, spaceId, documentName));
+    public Collection<SettingName> getSuitableStylePackageNames(List<DocIdentifier> docIdentifiers) {
+        return polarionService.callPrivileged(() -> super.getSuitableStylePackageNames(docIdentifiers));
     }
 
     @Override

@@ -4,6 +4,7 @@ import ch.sbb.polarion.extension.generic.settings.SettingId;
 import ch.sbb.polarion.extension.generic.settings.SettingName;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.coverpage.CoverPageModel;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.localization.LocalizationModel;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.stylepackage.DocIdentifier;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.stylepackage.StylePackageWeightInfo;
 import ch.sbb.polarion.extension.pdf_exporter.service.PdfExporterPolarionService;
 import ch.sbb.polarion.extension.pdf_exporter.settings.CoverPageSettings;
@@ -16,7 +17,6 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import net.sf.okapi.lib.xliff2.reader.XLIFFReader;
 import org.glassfish.jersey.media.multipart.FormDataBodyPart;
@@ -46,7 +46,6 @@ import java.util.UUID;
 @Hidden
 @Path("/internal")
 @Tag(name = "Settings", description = "Operations related to PDF-exporter settings management")
-@SecurityRequirement(name = "bearerAuth")
 public class SettingsInternalController {
 
     private final PdfExporterPolarionService pdfExporterPolarionService = new PdfExporterPolarionService();
@@ -145,20 +144,27 @@ public class SettingsInternalController {
         new CoverPageSettings().deleteCoverPageImages(coverPageName, scope);
     }
 
-    @GET
+    @POST
     @Path("/settings/style-package/suitable-names")
+    @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     @Tag(name = "Settings")
-    @Operation(summary = "Get list of style packages suitable for a document",
+    @Operation(summary = "Get list of style packages suitable for the specified list of documents (sorted by weight)",
+            requestBody = @RequestBody(description = "List of document identifiers",
+                    required = true,
+                    content = @Content(array = @ArraySchema(schema = @Schema(implementation = DocIdentifier.class)),
+                            mediaType = MediaType.APPLICATION_JSON
+                    )
+            ),
             responses = {
                     @ApiResponse(responseCode = "200", description = "Successfully retrieved the list of style package names")
             }
     )
-    public Collection<SettingName> getSuitableStylePackageNames(@QueryParam("projectId") String projectId, @QueryParam("spaceId") String spaceId, @QueryParam("documentName") String documentName) {
-        if (spaceId == null || documentName == null) {
-            throw new BadRequestException("Parameters 'spaceId' and 'documentName' are required'");
+    public Collection<SettingName> getSuitableStylePackageNames(List<DocIdentifier> docIdentifiers) {
+        if (docIdentifiers.isEmpty()) {
+            throw new BadRequestException("At least one document identifier required");
         }
-        return pdfExporterPolarionService.getSuitableStylePackages(projectId, spaceId, documentName);
+        return pdfExporterPolarionService.getSuitableStylePackages(docIdentifiers);
     }
 
     @GET

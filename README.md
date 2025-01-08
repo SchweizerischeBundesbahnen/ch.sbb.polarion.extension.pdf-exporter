@@ -232,7 +232,8 @@ All good so far.
 
 ### Upgrade from version 7.x.x to 8.0.0
 
-In version 8.0.0 support for Polarion 2404 and older has been dropped. This extensions supports only Polarion 2410.
+In version 8.0.0 support for Polarion 2404 and older has been dropped. This extension supports only Polarion 2410.
+Recommended version of WeasyPrint Service is 63.1.0.
 
 ### Upgrade from version 6.x.x to 7.0.0
 
