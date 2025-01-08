@@ -1,7 +1,7 @@
 package ch.sbb.polarion.extension.pdf_exporter.widgets;
 
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.DocumentType;
-import com.polarion.alm.projects.internal.model.Project;
+import com.polarion.alm.projects.model.IUniqueObject;
 import com.polarion.alm.server.api.model.rp.widget.AbstractWidgetRenderer;
 import com.polarion.alm.server.api.model.rp.widget.BottomQueryLinksBuilder;
 import com.polarion.alm.shared.api.model.ModelObject;
@@ -196,7 +196,7 @@ public class BulkPdfExportWidgetRenderer extends AbstractWidgetRenderer {
     }
 
     private String getProject(@NotNull ModelObject item) {
-        return item.getOldApi().getValue("project") instanceof Project project ? project.getId() : "";
+        return ((IUniqueObject) item.getOldApi()).getProjectId();
     }
 
     private String getValue(@NotNull ModelObject item, @NotNull String fieldName) {
