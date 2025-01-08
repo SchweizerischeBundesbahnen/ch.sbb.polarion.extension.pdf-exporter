@@ -886,11 +886,6 @@
             "description": "Images deleted successfully"
           }
         },
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
         "summary": "Deletes images in SVN linked to specified cover page within specified scope (global or certain project)",
         "tags": [
           "Settings"
@@ -905,11 +900,6 @@
             "description": "Template names retrieved successfully"
           }
         },
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
         "summary": "Get list of cover page predefined template names",
         "tags": [
           "Settings"
@@ -941,11 +931,6 @@
             "description": "Template persisted successfully"
           }
         },
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
         "summary": "Persist content of cover page predefined template",
         "tags": [
           "Settings"
@@ -991,11 +976,6 @@
             "description": "Localization file downloaded successfully"
           }
         },
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
         "summary": "Downloads localization values by name of localization settings",
         "tags": [
           "Settings"
@@ -1040,11 +1020,6 @@
             "description": "Localization file uploaded successfully"
           }
         },
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
         "summary": "Uploads localization values",
         "tags": [
           "Settings"
@@ -1082,11 +1057,6 @@
             "description": "Successfully retrieved the list of style package names"
           }
         },
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
         "summary": "Get list of style packages suitable for a document",
         "tags": [
           "Settings"
@@ -1110,11 +1080,6 @@
             "description": "Successfully retrieved the list of style package names with the weight information"
           }
         },
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
         "summary": "Get full list of available style packages for the specific scope with the weight information",
         "tags": [
           "Settings"
@@ -1144,11 +1109,6 @@
             "description": "default response"
           }
         },
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
         "summary": "Update weight information for the provided style packages",
         "tags": [
           "Settings"

@@ -190,15 +190,13 @@ public class PdfExporterPolarionService extends PolarionService {
                 .toList();
 
         for (IModule module : modules) {
-            String[] locationParts = module.getModuleLocation().getLocationPath().split("/");
-            if (locationParts.length == 2) {
-                result.add(new DocumentCollectionEntry(
-                        module.getProjectId(),
-                        locationParts[0],
-                        locationParts[1],
-                        module.getRevision()
-                ));
-            }
+            DocumentCollectionEntry documentCollectionEntry = new DocumentCollectionEntry(
+                    module.getProjectId(),
+                    module.getModuleFolder(),
+                    module.getModuleName(),
+                    module.getRevision()
+            );
+            result.add(documentCollectionEntry);
         }
 
         return result;

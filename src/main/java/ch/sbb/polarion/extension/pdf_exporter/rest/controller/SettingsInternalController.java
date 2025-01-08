@@ -16,7 +16,6 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import net.sf.okapi.lib.xliff2.reader.XLIFFReader;
 import org.glassfish.jersey.media.multipart.FormDataBodyPart;
@@ -46,7 +45,6 @@ import java.util.UUID;
 @Hidden
 @Path("/internal")
 @Tag(name = "Settings", description = "Operations related to PDF-exporter settings management")
-@SecurityRequirement(name = "bearerAuth")
 public class SettingsInternalController {
 
     private final PdfExporterPolarionService pdfExporterPolarionService = new PdfExporterPolarionService();
