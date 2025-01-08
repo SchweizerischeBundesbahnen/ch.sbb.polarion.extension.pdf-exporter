@@ -20,18 +20,12 @@ import org.jetbrains.annotations.NotNull;
 @Schema(description = "Unique document identifier data")
 public class DocIdentifier {
 
-    @Schema(
-            description = "Project ID"
-    )
+    @Schema(description = "Project ID")
     private @NotNull String projectId;
 
-    @Schema(
-            description = "Space ID"
-    )
+    @Schema(description = "Space ID")
     private @NotNull String spaceId;
 
-    @Schema(
-            description = "Document name"
-    )
+    @Schema(description = "Document name")
     private @NotNull String documentName;
 }

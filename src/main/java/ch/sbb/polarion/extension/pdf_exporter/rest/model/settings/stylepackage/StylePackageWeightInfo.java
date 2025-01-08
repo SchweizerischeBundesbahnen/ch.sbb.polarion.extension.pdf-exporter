@@ -18,19 +18,13 @@ import lombok.ToString;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class StylePackageWeightInfo {
 
-    @Schema(
-            description = "The name of the setting"
-    )
+    @Schema(description = "The name of the setting")
     private String name;
 
-    @Schema(
-            description = "The scope of the setting"
-    )
+    @Schema(description = "The scope of the setting")
     private String scope;
 
-    @Schema(
-            description = "The weight of the setting"
-    )
+    @Schema(description = "The weight of the setting")
     private Float weight;
 
 }
