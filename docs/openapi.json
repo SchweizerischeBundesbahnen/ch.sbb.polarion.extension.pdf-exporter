@@ -1027,37 +1027,28 @@
       }
     },
     "/api/settings/style-package/suitable-names": {
-      "get": {
+      "post": {
         "operationId": "getSuitableStylePackageNames",
-        "parameters": [
-          {
-            "in": "query",
-            "name": "projectId",
-            "schema": {
-              "type": "string"
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "items": {
+                  "$ref": "#/components/schemas/DocIdentifier"
+                },
+                "type": "array"
+              }
             }
           },
-          {
-            "in": "query",
-            "name": "spaceId",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "in": "query",
-            "name": "documentName",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+          "description": "List of document identifiers",
+          "required": true
+        },
         "responses": {
           "200": {
             "description": "Successfully retrieved the list of style package names"
           }
         },
-        "summary": "Get list of style packages suitable for a document",
+        "summary": "Get list of style packages suitable for the specified list of documents (sorted by weight)",
         "tags": [
           "Settings"
         ]
@@ -1606,6 +1597,24 @@
               "CANCELLED"
             ],
             "example": "IN_PROGRESS",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "DocIdentifier": {
+        "description": "Unique document identifier data",
+        "properties": {
+          "documentName": {
+            "description": "Document name",
+            "type": "string"
+          },
+          "projectId": {
+            "description": "Project ID",
+            "type": "string"
+          },
+          "spaceId": {
+            "description": "Space ID",
             "type": "string"
           }
         },

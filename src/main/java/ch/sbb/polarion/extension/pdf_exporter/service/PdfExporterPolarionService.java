@@ -1,12 +1,14 @@
 package ch.sbb.polarion.extension.pdf_exporter.service;
 
 import ch.sbb.polarion.extension.generic.service.PolarionService;
+import ch.sbb.polarion.extension.generic.settings.GenericNamedSettings;
 import ch.sbb.polarion.extension.generic.settings.NamedSettingsRegistry;
 import ch.sbb.polarion.extension.generic.settings.SettingId;
 import ch.sbb.polarion.extension.generic.settings.SettingName;
 import ch.sbb.polarion.extension.generic.util.ScopeUtils;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.attachments.TestRunAttachment;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.collections.DocumentCollectionEntry;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.stylepackage.DocIdentifier;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.stylepackage.StylePackageModel;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.stylepackage.StylePackageWeightInfo;
 import ch.sbb.polarion.extension.pdf_exporter.settings.StylePackageSettings;
@@ -100,10 +102,13 @@ public class PdfExporterPolarionService extends PolarionService {
         }
     }
 
-    public Collection<SettingName> getSuitableStylePackages(@Nullable String projectId, @NotNull String spaceId, @NotNull String documentName) {
+    public Collection<SettingName> getSuitableStylePackages(List<DocIdentifier> docIdentifiers) {
         StylePackageSettings stylePackageSettings = (StylePackageSettings) NamedSettingsRegistry.INSTANCE.getByFeatureName(StylePackageSettings.FEATURE_NAME);
-        Collection<SettingName> stylePackageNames = stylePackageSettings.readNames(ScopeUtils.getScopeFromProject(projectId));
-        List<SettingName> names = stylePackageNames.stream().filter(stylePackageName -> isStylePackageSuitable(projectId, spaceId, documentName, stylePackageSettings, stylePackageName)).toList();
+        // if user mixes items from different projects then we can use only 'default'-level style packages
+        boolean multipleProjects = docIdentifiers.stream().map(DocIdentifier::getProjectId).distinct().count() > 1;
+        Collection<SettingName> stylePackageNames = stylePackageSettings.readNames(ScopeUtils.getScopeFromProject(multipleProjects ? GenericNamedSettings.DEFAULT_SCOPE : docIdentifiers.get(0).getProjectId()));
+        List<SettingName> names = stylePackageNames.stream().filter(stylePackageName -> docIdentifiers.stream().allMatch(
+                i -> isStylePackageSuitable(i.getProjectId(), i.getSpaceId(), i.getDocumentName(), stylePackageSettings, stylePackageName))).toList();
         Map<SettingName, Float> weightsMap = new HashMap<>();
         names.forEach(name -> weightsMap.put(name, stylePackageSettings.read(name.getScope(), SettingId.fromName(name.getName()), null).getWeight()));
         return names.stream().sorted((o1, o2) -> {
