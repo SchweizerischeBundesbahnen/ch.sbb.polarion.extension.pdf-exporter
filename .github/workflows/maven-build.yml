@@ -2,7 +2,7 @@
 name: maven-build
 on:
   push:
-    branches: ['**/**']
+    branches: ['**']
   pull_request:
     branches: [main]
     types: [opened, synchronize, reopened, ready_for_review]
@@ -131,7 +131,7 @@ jobs:
             /home/runner/work
           key: ${{ needs.build.outputs.cache_key }}
       - name: 📦 Deploy artifacts to Maven Central
-        run: mvn --batch-mode deploy -P gpg-sign -P nexus-staging
+        run: mvn --batch-mode -Dmaven.test.skip=true deploy -P gpg-sign -P nexus-staging
 
   # Deploy releases and snapshots for main branch to GitHub Packages
   deploy-github-packages:
@@ -160,7 +160,7 @@ jobs:
             /home/runner/work
           key: ${{ needs.build.outputs.cache_key }}
       - name: 📦 Deploy artifacts to GitHub Packages
-        run: mvn --batch-mode -Dmaven.javadoc.skip=true -Dmaven.source.skip=true deploy -P deploy-github-packages
+        run: mvn --batch-mode -Dmaven.test.skip=true -Dmaven.javadoc.skip=true -Dmaven.source.skip=true deploy -P deploy-github-packages
       - name: 📦 Upload assets to GitHub Release
         if: ${{ !endsWith(needs.build.outputs.project_version, '-SNAPSHOT') }}
         run: |-
