@@ -56,9 +56,10 @@ const ExportCommon = {
                     console.log('Async PDF conversion: still in progress, retrying...');
                     this.pullAndGetResultPdf(url, successCallback, errorCallback);
                 } else if (request.status === 200) {
-                    let attachment = request.getResponseHeader("Unavailable-Work-Items-Attachments")
-                    if (attachment) {
-                        let count = request.getResponseHeader("Unavailable-Work-Items-Attachments-Count");
+                    let warningMessage;
+                    let count = request.getResponseHeader("Unavailable-Work-Items-Attachments-Count");
+                    if (count > 0) {
+                        let attachment = request.getResponseHeader("Unavailable-Work-Items-Attachments")
                         warningMessage = `${count} image(s) in WI(s) ${attachment} were not exported. They were replaced with an image containing 'This image is not accessible'.`;
                     }
                     successCallback({
