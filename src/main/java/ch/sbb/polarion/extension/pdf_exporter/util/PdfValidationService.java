@@ -5,6 +5,7 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.ExportMetaInfoCallback;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.WidthValidationResult;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.WorkItemRefData;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
+import com.google.inject.Inject;
 import lombok.SneakyThrows;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -23,10 +24,7 @@ public class PdfValidationService {
 
     private final PdfConverter pdfConverter;
 
-    public PdfValidationService() {
-        this.pdfConverter = new PdfConverter();
-    }
-
+    @Inject
     public PdfValidationService(PdfConverter pdfConverter) {
         this.pdfConverter = pdfConverter;
     }

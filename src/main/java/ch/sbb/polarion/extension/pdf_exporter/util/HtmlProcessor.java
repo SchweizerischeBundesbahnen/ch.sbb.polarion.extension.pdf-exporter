@@ -12,6 +12,7 @@ import ch.sbb.polarion.extension.pdf_exporter.service.PdfExporterPolarionService
 import ch.sbb.polarion.extension.pdf_exporter.settings.LocalizationSettings;
 import ch.sbb.polarion.extension.pdf_exporter.util.exporter.CustomPageBreakPart;
 import ch.sbb.polarion.extension.pdf_exporter.util.html.HtmlLinksHelper;
+import com.google.inject.Inject;
 import com.polarion.alm.shared.util.StringUtils;
 import com.polarion.core.util.xml.CSSStyle;
 import lombok.SneakyThrows;
@@ -147,6 +148,7 @@ public class HtmlProcessor {
     private final HtmlLinksHelper httpLinksHelper;
     private final PdfExporterPolarionService pdfExporterPolarionService;
 
+    @Inject
     public HtmlProcessor(FileResourceProvider fileResourceProvider, LocalizationSettings localizationSettings, HtmlLinksHelper httpLinksHelper, PdfExporterPolarionService pdfExporterPolarionService) {
         this.fileResourceProvider = fileResourceProvider;
         this.localizationSettings = localizationSettings;

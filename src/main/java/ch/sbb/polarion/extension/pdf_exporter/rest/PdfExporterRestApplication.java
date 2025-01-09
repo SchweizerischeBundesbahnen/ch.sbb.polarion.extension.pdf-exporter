@@ -2,6 +2,7 @@ package ch.sbb.polarion.extension.pdf_exporter.rest;
 
 import ch.sbb.polarion.extension.generic.rest.GenericRestApplication;
 import ch.sbb.polarion.extension.generic.settings.NamedSettingsRegistry;
+import ch.sbb.polarion.extension.pdf_exporter.PdfExporterInternalModule;
 import ch.sbb.polarion.extension.pdf_exporter.converter.PdfConverterJobsCleaner;
 import ch.sbb.polarion.extension.pdf_exporter.rest.controller.CollectionApiController;
 import ch.sbb.polarion.extension.pdf_exporter.rest.controller.CollectionInternalController;
@@ -24,6 +25,9 @@ import ch.sbb.polarion.extension.pdf_exporter.settings.HeaderFooterSettings;
 import ch.sbb.polarion.extension.pdf_exporter.settings.LocalizationSettings;
 import ch.sbb.polarion.extension.pdf_exporter.settings.StylePackageSettings;
 import ch.sbb.polarion.extension.pdf_exporter.settings.WebhooksSettings;
+import com.google.inject.ConfigurationException;
+import com.google.inject.Guice;
+import com.google.inject.Injector;
 import com.polarion.core.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 
@@ -63,18 +67,25 @@ public class PdfExporterRestApplication extends GenericRestApplication {
 
     @Override
     protected @NotNull Set<Object> getExtensionControllerSingletons() {
-        return Set.of(
-                new ConverterApiController(),
-                new ConverterInternalController(),
-                new SettingsApiController(),
-                new SettingsInternalController(),
-                new TestRunAttachmentsApiController(),
-                new TestRunAttachmentsInternalController(),
-                new CollectionApiController(),
-                new CollectionInternalController(),
-                new UtilityResourcesApiController(),
-                new UtilityResourcesInternalController()
-        );
+        try {
+            Injector injector = Guice.createInjector(new PdfExporterInternalModule());
+
+            return Set.of(
+                    injector.getInstance(ConverterApiController.class),
+                    injector.getInstance(ConverterInternalController.class),
+                    injector.getInstance(TestRunAttachmentsApiController.class),
+                    injector.getInstance(TestRunAttachmentsInternalController.class),
+                    injector.getInstance(CollectionApiController.class),
+                    injector.getInstance(CollectionInternalController.class),
+                    injector.getInstance(UtilityResourcesApiController.class),
+                    injector.getInstance(UtilityResourcesInternalController.class),
+                    injector.getInstance(SettingsApiController.class),
+                    injector.getInstance(SettingsInternalController.class)
+            );
+        } catch (ConfigurationException e) {
+            logger.error("Cannot instantiate controllers: " + e.getErrorMessages(), e);
+            throw new IllegalStateException(e);
+        }
     }
 
     @Override
