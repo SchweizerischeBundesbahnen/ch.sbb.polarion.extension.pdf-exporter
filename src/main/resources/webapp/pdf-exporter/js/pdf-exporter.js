@@ -141,11 +141,13 @@ const PdfExporter = {
         });
     },
 
-    loadSettingNames: function ({setting, scope, selectElement, customUrl}) {
+    loadSettingNames: function ({setting, scope, selectElement, customUrl, customMethod, customBody, customContentType}) {
         return new Promise((resolve, reject) => {
             this.callAsync({
-                method: "GET",
+                method: customMethod ? customMethod : "GET",
                 url: customUrl ? customUrl : `/polarion/pdf-exporter/rest/internal/settings/${setting}/names?scope=${scope}`,
+                body: customBody ? customBody : undefined,
+                contentType: customContentType ? customContentType : undefined,
                 responseType: "json",
             }).then(({response}) => {
                 selectElement.innerHTML = ""; // Clear previously loaded content
@@ -248,20 +250,26 @@ const PdfExporter = {
     },
 
     loadStylePackages: function (exportContext) {
-        let stylePackagesUrl;
+        let stylePackagesUrl = `/polarion/pdf-exporter/rest/internal/settings/style-package/suitable-names`;
+        const docIdentifiers = [];
         if (exportContext.getExportType() === ExportParams.ExportType.BULK) {
-            stylePackagesUrl = `/polarion/pdf-exporter/rest/internal/settings/style-package/names?scope=${exportContext.getScope()}`;
+            this.exportContext.bulkExportWidget.querySelectorAll('input[type="checkbox"]:not(.export-all):checked').forEach((selectedCheckbox) => {
+                docIdentifiers.push({
+                    projectId: selectedCheckbox.dataset["project"], spaceId: selectedCheckbox.dataset["space"], documentName: selectedCheckbox.dataset["id"]
+                });
+            });
         } else {
-            stylePackagesUrl = `/polarion/pdf-exporter/rest/internal/settings/style-package/suitable-names`
-                + `?spaceId=${exportContext.getSpaceId()}&documentName=${exportContext.getDocumentName()}`;
-            if (exportContext.getProjectId()) {
-                stylePackagesUrl += `&projectId=${exportContext.getProjectId()}`
-            }
+            docIdentifiers.push({
+                projectId: `${exportContext.getProjectId()}`, spaceId: `${exportContext.getSpaceId()}`, documentName: `${exportContext.getDocumentName()}`
+            });
         }
 
         return this.loadSettingNames({
             customUrl: stylePackagesUrl,
-            selectElement: document.getElementById("popup-style-package-select")
+            selectElement: document.getElementById("popup-style-package-select"),
+            customMethod: 'POST',
+            customBody: JSON.stringify(docIdentifiers),
+            customContentType: 'application/json'
         }).then(() => {
             const stylePackageSelect = document.getElementById("popup-style-package-select");
             const valueToPreselect = SbbCommon.getCookie(SELECTED_STYLE_PACKAGE_COOKIE);

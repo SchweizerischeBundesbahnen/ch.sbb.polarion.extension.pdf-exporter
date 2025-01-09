@@ -65,6 +65,7 @@ const BulkPdfExporter = {
                 const div = document.createElement("div");
                 div.className = "export-item paused";
                 div.dataset["type"] = selectedCheckbox.dataset["type"];
+                div.dataset["project"] = selectedCheckbox.dataset["project"];
                 div.dataset["space"] = selectedCheckbox.dataset["space"];
                 div.dataset["id"] = selectedCheckbox.dataset["id"];
 
@@ -211,6 +212,7 @@ const BulkPdfExporter = {
             currentItem.classList.add("in-progress");
 
             const documentType = this.getDocumentType(currentItem.dataset["type"]);
+            this.exportParams["projectId"] = `${currentItem.dataset["project"]}`;
             this.exportParams["documentType"] = documentType;
             const documentId = currentItem.dataset["id"];
             if (documentType === ExportParams.DocumentType.TEST_RUN) {

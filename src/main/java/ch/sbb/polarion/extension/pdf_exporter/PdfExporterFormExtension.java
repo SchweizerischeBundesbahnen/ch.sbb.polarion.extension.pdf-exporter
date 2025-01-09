@@ -9,6 +9,7 @@ import ch.sbb.polarion.extension.pdf_exporter.properties.PdfExporterExtensionCon
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.DocumentType;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.localization.Language;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.stylepackage.DocIdentifier;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.stylepackage.StylePackageModel;
 import ch.sbb.polarion.extension.pdf_exporter.service.PdfExporterPolarionService;
 import ch.sbb.polarion.extension.pdf_exporter.service.PolarionBaselineExecutor;
@@ -173,7 +174,7 @@ public class PdfExporterFormExtension implements IFormExtension {
         } else {
             documentName = locationPath;
         }
-        return polarionService.getSuitableStylePackages(module.getProject().getId(), spaceId, documentName);
+        return polarionService.getSuitableStylePackages(List.of(new DocIdentifier(module.getProject().getId(), spaceId, documentName)));
     }
 
     private Collection<SettingName> getSettingNames(@NotNull String featureName, @NotNull String scope) {

@@ -8,6 +8,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
+import org.jetbrains.annotations.NotNull;
 
 @Data
 @Builder
@@ -16,15 +17,15 @@ import lombok.ToString;
 @ToString
 @EqualsAndHashCode(callSuper = false)
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class StylePackageWeightInfo {
+@Schema(description = "Unique document identifier data")
+public class DocIdentifier {
 
-    @Schema(description = "The name of the setting")
-    private String name;
+    @Schema(description = "Project ID")
+    private @NotNull String projectId;
 
-    @Schema(description = "The scope of the setting")
-    private String scope;
+    @Schema(description = "Space ID")
+    private @NotNull String spaceId;
 
-    @Schema(description = "The weight of the setting")
-    private Float weight;
-
+    @Schema(description = "Document name")
+    private @NotNull String documentName;
 }
