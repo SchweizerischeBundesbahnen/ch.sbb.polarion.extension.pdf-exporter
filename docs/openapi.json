@@ -225,6 +225,13 @@
                   "type": "string"
                 },
                 "style": "simple"
+              },
+              "Unavailable-Work-Items-Attachments-Count": {
+                "description": "Work items contained unavailable attachments",
+                "schema": {
+                  "type": "string"
+                },
+                "style": "simple"
               }
             }
           }
@@ -442,6 +449,13 @@
               },
               "Export-Filename": {
                 "description": "File name for converted PDF document",
+                "schema": {
+                  "type": "string"
+                },
+                "style": "simple"
+              },
+              "Unavailable-Work-Items-Attachments-Count": {
+                "description": "Work items contained unavailable attachments",
                 "schema": {
                   "type": "string"
                 },
