@@ -2,10 +2,11 @@
 name: maven-build
 on:
   push:
-    branches: ['**/**']
+    branches: ['**']
   pull_request:
     branches: [main]
     types: [opened, synchronize, reopened, ready_for_review]
+  workflow_dispatch:
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -20,11 +21,11 @@ jobs:
       MARKDOWN2HTML_MAVEN_PLUGIN_FAIL_ON_ERROR: true
     steps:
       - name: 📄 Checkout the repository
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
         with:
           fetch-depth: 0
       - name: 🧱 Set up JDK and Maven
-        uses: actions/setup-java@7a6d8a8234af8eb26422e24e3006232cccaa061b # v4
+        uses: actions/setup-java@7a6d8a8234af8eb26422e24e3006232cccaa061b  # v4.6.0
         with:
           distribution: adopt
           java-version: 17
@@ -37,7 +38,7 @@ jobs:
         run: echo "cache_key=${{ runner.os }}-mvn-${{ hashFiles('**/pom.xml') }}-${{ github.sha }}" >> $GITHUB_OUTPUT
       - name: 💾 Prepare cache using cache key
         id: prepare-cache
-        uses: actions/cache@1bd1e32a3bdc45362d1e726936510720a7c30a57 # v4
+        uses: actions/cache@1bd1e32a3bdc45362d1e726936510720a7c30a57  # v4.2.0
         with:
           path: |
             /home/runner/.m2
@@ -116,27 +117,27 @@ jobs:
       COM_SONATYPE_CENTRAL_POLARION_OPENSOURCE_GPG_PASSPHRASE: ${{ secrets.COM_SONATYPE_CENTRAL_POLARION_OPENSOURCE_GPG_PASSPHRASE }}
     steps:
       - name: 🧱 Set up JDK and Maven
-        uses: actions/setup-java@7a6d8a8234af8eb26422e24e3006232cccaa061b # v4
+        uses: actions/setup-java@7a6d8a8234af8eb26422e24e3006232cccaa061b  # v4.6.0
         with:
           distribution: adopt
           java-version: 17
           gpg-private-key: ${{ secrets.COM_SONATYPE_CENTRAL_POLARION_OPENSOURCE_GPG_PRIVATE_KEY }}
       - name: 💾 Restore cache using cache key
         id: restore-cache
-        uses: actions/cache@1bd1e32a3bdc45362d1e726936510720a7c30a57 # v4
+        uses: actions/cache@1bd1e32a3bdc45362d1e726936510720a7c30a57  # v4.2.0
         with:
           path: |
             /home/runner/.m2
             /home/runner/work
           key: ${{ needs.build.outputs.cache_key }}
       - name: 📦 Deploy artifacts to Maven Central
-        run: mvn --batch-mode deploy -P gpg-sign -P nexus-staging
+        run: mvn --batch-mode -Dmaven.test.skip=true deploy -P gpg-sign -P nexus-staging
 
-  # Deploy release to GitHub Packages
+  # Deploy releases and snapshots for main branch to GitHub Packages
   deploy-github-packages:
     needs: build
     runs-on: ubuntu-latest
-    if: ${{ !endsWith(needs.build.outputs.project_version, '-SNAPSHOT') && github.ref == 'refs/heads/main' }}
+    if: ${{ github.ref == 'refs/heads/main' }}
     permissions:
       contents: write
       packages: write
@@ -146,20 +147,21 @@ jobs:
       GITHUB_TOKEN: ${{ github.token }}
     steps:
       - name: 🧱 Set up JDK and Maven
-        uses: actions/setup-java@7a6d8a8234af8eb26422e24e3006232cccaa061b # v4
+        uses: actions/setup-java@7a6d8a8234af8eb26422e24e3006232cccaa061b  # v4.6.0
         with:
           distribution: adopt
           java-version: 17
       - name: 💾 Restore cache using cache key
         id: restore-cache
-        uses: actions/cache@1bd1e32a3bdc45362d1e726936510720a7c30a57 # v4
+        uses: actions/cache@1bd1e32a3bdc45362d1e726936510720a7c30a57  # v4.2.0
         with:
           path: |
             /home/runner/.m2
             /home/runner/work
           key: ${{ needs.build.outputs.cache_key }}
       - name: 📦 Deploy artifacts to GitHub Packages
-        run: mvn --batch-mode -Dmaven.javadoc.skip=true -Dmaven.source.skip=true deploy -P deploy-github-packages
+        run: mvn --batch-mode -Dmaven.test.skip=true -Dmaven.javadoc.skip=true -Dmaven.source.skip=true deploy -P deploy-github-packages
       - name: 📦 Upload assets to GitHub Release
+        if: ${{ !endsWith(needs.build.outputs.project_version, '-SNAPSHOT') }}
         run: |-
           gh release upload v${{ needs.build.outputs.project_version }} target/*-${{ needs.build.outputs.project_version }}.jar
