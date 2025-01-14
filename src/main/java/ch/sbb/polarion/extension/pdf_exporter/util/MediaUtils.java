@@ -103,6 +103,7 @@ public class MediaUtils {
         return diffImages(referenceImage, imageToCompare).isEmpty();
     }
 
+    @SuppressWarnings("java:S3776") // ignore cognitive complexity complaint
     public List<Point> diffImages(BufferedImage referenceImage, BufferedImage imageToCompare) {
         List<Point> diffPoints = new ArrayList<>();
         int width = imageToCompare.getWidth();
