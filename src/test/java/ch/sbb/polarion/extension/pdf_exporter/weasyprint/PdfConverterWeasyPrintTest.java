@@ -131,7 +131,7 @@ class PdfConverterWeasyPrintTest extends BaseWeasyPrintTest {
         when(cssSettings.defaultValues()).thenCallRealMethod();
         String defaultCss = cssSettings.defaultValues().getCss();
         //here we concatenate basic css with the default one in order to override font everywhere (also we have to cut some lines to achieve that)
-        when(cssSettings.load(any(), any())).thenReturn(new CssModel(basicCss + defaultCss.replaceAll("@font-face[^}]+}", "").replaceAll("font-family:[^;]+;", "font-family: Custom Font")));
+        when(cssSettings.load(any(), any())).thenReturn(new CssModel(basicCss + defaultCss.replaceAll("@font-face[^}]+}", "").replaceAll("font-family:[^;]+;", "font-family: Custom Font;")));
 
         WeasyPrintServiceConnector weasyPrintServiceConnector = mock(WeasyPrintServiceConnector.class);
         when(weasyPrintServiceConnector.convertToPdf(anyString(), any())).thenAnswer((Answer<byte[]>) invocation -> exportToPdf(invocation.getArgument(0), invocation.getArgument(1)));
