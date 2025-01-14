@@ -49,12 +49,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.stubbing.Answer;
 
 import javax.imageio.ImageIO;
+import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
@@ -129,8 +130,8 @@ class PdfConverterWeasyPrintTest extends BaseWeasyPrintTest {
         CssSettings cssSettings = mock(CssSettings.class);
         when(cssSettings.defaultValues()).thenCallRealMethod();
         String defaultCss = cssSettings.defaultValues().getCss();
-        //here we concatenate basic css witch the default one in order to override font everywhere (also we have to cut some lines to achieve that)
-        when(cssSettings.load(any(), any())).thenReturn(new CssModel(basicCss + defaultCss.replaceAll("font-family:[^;]+;", "")));
+        //here we concatenate basic css with the default one in order to override font everywhere (also we have to cut some lines to achieve that)
+        when(cssSettings.load(any(), any())).thenReturn(new CssModel(basicCss + defaultCss.replaceAll("@font-face[^}]+}", "").replaceAll("font-family:[^;]+;", "font-family: Custom Font")));
 
         WeasyPrintServiceConnector weasyPrintServiceConnector = mock(WeasyPrintServiceConnector.class);
         when(weasyPrintServiceConnector.convertToPdf(anyString(), any())).thenAnswer((Answer<byte[]>) invocation -> exportToPdf(invocation.getArgument(0), invocation.getArgument(1)));
@@ -287,9 +288,17 @@ class PdfConverterWeasyPrintTest extends BaseWeasyPrintTest {
         //NOTE: if something changes in the future and the images are no longer identical, simply copy&replace the reference resource images
         //with the new ones from the reports folder after test execution
         List<BufferedImage> resultImages = getAllPagesAsImagesAndLogAsReports(testName, pdf);
+        boolean hasDiff = false;
         for (int i = 0; i < resultImages.size(); i++) {
             BufferedImage expectedImage = ImageIO.read(readPngResource(testName + PAGE_SUFFIX + i));
-            assertTrue(MediaUtils.compareImages(expectedImage, resultImages.get(i)));
+            BufferedImage resultImage = resultImages.get(i);
+            List<Point> diffPoints = MediaUtils.diffImages(expectedImage, resultImage);
+            if (!diffPoints.isEmpty()) {
+                MediaUtils.fillImagePoints(resultImage, diffPoints, Color.BLUE.getRGB());
+                writeReportImage(String.format("%s%s%d_diff", testName, PAGE_SUFFIX, i), resultImage);
+                hasDiff = true;
+            }
         }
+        assertFalse(hasDiff);
     }
 }
