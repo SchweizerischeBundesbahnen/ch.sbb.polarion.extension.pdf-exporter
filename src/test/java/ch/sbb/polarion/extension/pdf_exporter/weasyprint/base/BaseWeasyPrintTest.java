@@ -1,6 +1,7 @@
 package ch.sbb.polarion.extension.pdf_exporter.weasyprint.base;
 
 import ch.sbb.polarion.extension.pdf_exporter.configuration.PdfExporterExtensionConfigurationExtension;
+import ch.sbb.polarion.extension.pdf_exporter.properties.PdfExporterExtensionConfiguration;
 import ch.sbb.polarion.extension.pdf_exporter.util.MediaUtils;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.WeasyPrintOptions;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.service.WeasyPrintServiceConnector;
@@ -24,6 +25,7 @@ import java.util.Base64;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.when;
 
 @ExtendWith({MockitoExtension.class, PdfExporterExtensionConfigurationExtension.class})
 @SkipTestWhenParamNotSet
@@ -87,6 +89,7 @@ public abstract class BaseWeasyPrintTest {
 
             assertTrue(weasyPrintService.isRunning());
 
+            when(PdfExporterExtensionConfiguration.getInstance().getWeasyprintPdfVariant()).thenReturn("pdf/a-2b");
             String weasyPrintServiceBaseUrl = "http://" + weasyPrintService.getHost() + ":" + weasyPrintService.getFirstMappedPort();
             WeasyPrintServiceConnector weasyPrintServiceConnector = new WeasyPrintServiceConnector(weasyPrintServiceBaseUrl);
             return weasyPrintServiceConnector.convertToPdf(html, weasyPrintOptions);
