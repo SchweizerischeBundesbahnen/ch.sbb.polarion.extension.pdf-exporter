@@ -145,7 +145,7 @@ class BulkPdfExportWidgetRendererTest {
         when(oldApi.getPrototype()).thenReturn(prototype);
         when(oldApi.getProjectId()).thenReturn("projectId");
         when(oldApi.getId()).thenReturn("objectId");
-        when(prototype.getName()).thenReturn(PrototypeEnum.BaselineCollection.name());
+        when(prototype.getName()).thenReturn(PrototypeEnum.WorkItem.name());
         ILocalId localId = mock(ILocalId.class);
         when(oldApi.getLocalId()).thenReturn(localId);
         when(localId.getObjectName()).thenReturn("objectName");
@@ -181,11 +181,9 @@ class BulkPdfExportWidgetRendererTest {
         renderer.renderItem(builder, item);
 
         verify(checkboxAttributesBuilder, times(1)).byName("type", "checkbox");
-        verify(checkboxAttributesBuilder, times(1)).byName("data-type", PrototypeEnum.BaselineCollection.name());
+        verify(checkboxAttributesBuilder, times(1)).byName("data-type", PrototypeEnum.WorkItem.name());
         verify(checkboxAttributesBuilder, times(1)).byName("data-project", "projectId");
-        verify(checkboxAttributesBuilder, times(1)).byName("data-space", "");
         verify(checkboxAttributesBuilder, times(1)).byName("data-id", "objectId");
-        verify(checkboxAttributesBuilder, times(1)).byName("data-name", "objectName");
         verify(checkboxAttributesBuilder, times(1)).className("export-item");
     }
 

@@ -20,9 +20,11 @@ import com.polarion.alm.shared.api.utils.html.HtmlFragmentBuilder;
 import com.polarion.alm.shared.api.utils.html.HtmlTagBuilder;
 import com.polarion.alm.tracker.model.IModule;
 import com.polarion.alm.tracker.model.IRichPage;
+import com.polarion.alm.tracker.model.baselinecollection.IBaselineCollection;
 import com.polarion.alm.ui.shared.LinearGradientColor;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Iterator;
 
@@ -166,12 +168,16 @@ public class BulkPdfExportWidgetRenderer extends AbstractWidgetRenderer {
                     .byName("type", "checkbox")
                     .byName("data-type", item.getOldApi().getPrototype().getName())
                     .byName("data-project", getProjectId(item))
-                    .byName("data-space", getSpace(item))
                     .byName("data-id", getObjectId(item))
                     .className("export-item");
 
-            if (PrototypeEnum.BaselineCollection.name().equals(item.getOldApi().getPrototype().getName())) {
-                checkbox.attributes().byName("data-name", getObjectName(item));
+            String spaceId = getSpaceId(item);
+            if (spaceId != null) {
+                checkbox.attributes().byName("data-space", spaceId);
+            }
+            String objectName = getObjectName(item);
+            if (objectName != null) {
+                checkbox.attributes().byName("data-name", objectName);
             }
 
             for (Field column : this.columns) {
@@ -181,22 +187,25 @@ public class BulkPdfExportWidgetRenderer extends AbstractWidgetRenderer {
         }
     }
 
-    private @NotNull String getSpace(@NotNull ModelObject item) {
+    private @Nullable String getSpaceId(@NotNull ModelObject item) {
         if (item.getOldApi() instanceof IModule module) {
             return module.getModuleFolder();
         }
         if (item.getOldApi() instanceof IRichPage richPage) {
             return richPage.getSpaceId();
         }
-        return "";
+        return null;
     }
 
-    private String getProjectId(@NotNull ModelObject item) {
+    private @NotNull String getProjectId(@NotNull ModelObject item) {
         return ((IUniqueObject) item.getOldApi()).getProjectId();
     }
 
-    private String getObjectName(@NotNull ModelObject item) {
-        return item.getOldApi().getLocalId().getObjectName();
+    private @Nullable String getObjectName(@NotNull ModelObject item) {
+        if (item.getOldApi() instanceof IBaselineCollection baselineCollection) {
+            return baselineCollection.getName();
+        }
+        return null;
     }
 
     private String getObjectId(@NotNull ModelObject item) {
