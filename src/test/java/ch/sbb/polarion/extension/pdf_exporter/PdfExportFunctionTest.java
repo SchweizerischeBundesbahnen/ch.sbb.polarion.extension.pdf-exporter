@@ -121,7 +121,7 @@ class PdfExportFunctionTest {
         when(newWorkItem.createAttachment(anyString(), anyString(), any())).thenReturn(mock(IAttachment.class));
         when(module.getTitleWithSpace()).thenReturn("Some space / Document Title");
         doReturn("Status name").when(pdfExportFunction).getStatusName(any(), anyString());
-        doReturn("Attach Title.pdf").when(pdfExportFunction).getDocumentFileName(eq(params));
+        doReturn("Attach Title.pdf").when(pdfExportFunction).getDocumentFileName(params);
 
         Arguments args = new Arguments(Map.of("create_wi_type_id", "someType"));
         pdfExportFunction.savePdfAsWorkItemAttachment(module, params, "TargetStatus", args, new byte[0]);
