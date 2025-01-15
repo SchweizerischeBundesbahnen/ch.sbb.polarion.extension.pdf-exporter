@@ -9,6 +9,7 @@
             <parameter name="Title to set into created workitem" id="create_wi_title" />
             <parameter name="Description to set into created workitem" id="create_wi_description" />
             <parameter name="Project ID where to create or find the target work item" id="project_id" />
+            <parameter name="The title of the attached file" id="attachment_title" />
             <parameter name="Prefer last baseline" id="prefer_last_baseline" />
             <parameter name="Style package" id="style_package" />
         </function>

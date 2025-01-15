@@ -204,10 +204,9 @@ ch.sbb.polarion.extension.pdf-exporter.weasyprint.pdf.variant=pdf/a-2b
 The default value is `pdf/a-2b`.
 
 ### Workflow function configuration
-It is possible to configure the workflow function which automatically creates a new workitem with the generated pdf as an attachment.
+It is possible to configure the workflow function which exports a PDF file and attaches it to a newly created or already existing work item.
 
 To create workflow functions do following:
-
 1. On the top of the project's navigation pane click ⚙ (Actions) ➙ 🔧 Administration. Project's administration pane will be opened.
 2. On the administration's navigation pane select Documents & Pages ➙ Document Workflow.
 3. On the opened page you will see a list of document types with their actions. Find type you are interested in and click `Edit` or `Create` button for it.
@@ -218,15 +217,16 @@ To create workflow functions do following:
 
 Supported function parameters:
 
-| Parameter             | Required | Description                                                                 | Default value                                                                                                                   |
-|-----------------------|----------|-----------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------|
-| existing_wi_id        | yes (*)  | Workitem ID to reuse                                                        | -                                                                                                                               |
-| create_wi_type_id     | yes (*)  | Type ID of workitem to create                                               | -                                                                                                                               |
-| create_wi_title       | no       | Value to set as a workitem title (used only with 'create_wi_type_id')       | Value like "modified document title with space -> target status name" (e.g., "Specification / Product Specification -> Closed") |
-| create_wi_description | no       | Value to set as a workitem description (used only with 'create_wi_type_id') | "This item was created automatically. Check 'Attachments' section for the generated PDF document."                              |
-| project_id            | no       | Project ID where to create or find the target work item                     | Project ID of the modified document                                                                                             |
-| style_package         | no       | The name of the style package to use                                        | Default                                                                                                                         |
-| prefer_last_baseline  | no       | Use the last baseline revision instead of the last document's revision      | false                                                                                                                           |
+| Parameter             | Required | Description                                                                 | Default value                                                                                                                     |
+|-----------------------|----------|-----------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------|
+| existing_wi_id        | yes (*)  | Workitem ID to reuse                                                        | -                                                                                                                                 |
+| create_wi_type_id     | yes (*)  | Type ID of workitem to create                                               | -                                                                                                                                 |
+| create_wi_title       | no       | Value to set as a workitem title (used only with 'create_wi_type_id')       | Value like "modified document title with space -> target status name" (e.g., "Specification / Product Specification -> Archived") |
+| create_wi_description | no       | Value to set as a workitem description (used only with 'create_wi_type_id') | "This item was created automatically. Check 'Attachments' section for the generated PDF document."                                |
+| project_id            | no       | Project ID where to create or search for the target work item               | Project ID of the modified document                                                                                               |
+| attachment_title      | no       | The title of the attached file                                              | The name of the generated file (without '.pdf' at the end)                                                                        |
+| style_package         | no       | The name of the style package to use                                        | Default                                                                                                                           |
+| prefer_last_baseline  | no       | Use the last baseline revision instead of the last document's revision      | false                                                                                                                             |
 (*) - either 'existing_wi_id' or 'create_wi_type_id' parameter required.
 Providing the first one means reuse already existing workitem to attach the file whereas the second will create a new workitem with the specified type.
 In case if both of them specified 'existing_wi_id' has higher priority.

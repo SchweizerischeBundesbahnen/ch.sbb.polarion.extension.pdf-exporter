@@ -125,24 +125,24 @@ class PdfExportFunctionTest {
 
         Arguments args = new Arguments(Map.of("create_wi_type_id", "someType"));
         pdfExportFunction.savePdfAsWorkItemAttachment(module, params, "TargetStatus", args, new byte[0]);
-        verify(pdfExporterPolarionService, times(1)).getTrackerProject(eq("projectId"));
-        verify(trackerProject, times(1)).createWorkItem(eq("someType"));
+        verify(pdfExporterPolarionService, times(1)).getTrackerProject("projectId");
+        verify(trackerProject, times(1)).createWorkItem("someType");
         verify(newWorkItem, times(1)).createAttachment(eq("Attach Title.pdf"), eq("Attach Title"), any());
-        verify(newWorkItem, times(1)).setTitle(eq("Some space / Document Title -> Status name"));
-        verify(newWorkItem, times(1)).setDescription(eq(Text.html("This item was created automatically. Check 'Attachments' section for the generated PDF document.")));
+        verify(newWorkItem, times(1)).setTitle("Some space / Document Title -> Status name");
+        verify(newWorkItem, times(1)).setDescription(Text.html("This item was created automatically. Check 'Attachments' section for the generated PDF document."));
 
         // custom project, attachment title & description
         args = new Arguments(Map.of("create_wi_type_id", "someType", "project_id", "proj1", "attachment_title", "Custom title", "create_wi_description", "Custom description"));
         pdfExportFunction.savePdfAsWorkItemAttachment(module, params, "TargetStatus", args, new byte[0]);
-        verify(pdfExporterPolarionService, times(1)).getTrackerProject(eq("proj1"));
+        verify(pdfExporterPolarionService, times(1)).getTrackerProject("proj1");
         verify(newWorkItem, times(1)).createAttachment(eq("Attach Title.pdf"), eq("Custom title"), any());
-        verify(newWorkItem, times(1)).setDescription(eq(Text.html("Custom description")));
+        verify(newWorkItem, times(1)).setDescription(Text.html("Custom description"));
 
         // use existing work item
         args = new Arguments(Map.of("existing_wi_id", "ID-123"));
         IWorkItem foundWorkItem = mock(IWorkItem.class);
         when(foundWorkItem.createAttachment(anyString(), anyString(), any())).thenReturn(mock(IAttachment.class));
-        when(pdfExporterPolarionService.getWorkItem(eq("projectId"), eq("ID-123"))).thenReturn(foundWorkItem);
+        when(pdfExporterPolarionService.getWorkItem("projectId", "ID-123")).thenReturn(foundWorkItem);
         pdfExportFunction.savePdfAsWorkItemAttachment(module, params, "TargetStatus", args, new byte[0]);
         verify(foundWorkItem, times(1)).createAttachment(any(), any(), any());
 
@@ -150,7 +150,7 @@ class PdfExportFunctionTest {
         args = new Arguments(Map.of("existing_wi_id", "ID-345", "project_id", "proj2"));
         foundWorkItem = mock(IWorkItem.class);
         when(foundWorkItem.createAttachment(anyString(), anyString(), any())).thenReturn(mock(IAttachment.class));
-        when(pdfExporterPolarionService.getWorkItem(eq("proj2"), eq("ID-345"))).thenReturn(foundWorkItem);
+        when(pdfExporterPolarionService.getWorkItem("proj2", "ID-345")).thenReturn(foundWorkItem);
         pdfExportFunction.savePdfAsWorkItemAttachment(module, params, "TargetStatus", args, new byte[0]);
         verify(foundWorkItem, times(1)).createAttachment(any(), any(), any());
     }
