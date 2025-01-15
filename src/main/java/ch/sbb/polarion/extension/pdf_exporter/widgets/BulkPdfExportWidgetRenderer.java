@@ -154,7 +154,7 @@ public class BulkPdfExportWidgetRenderer extends AbstractWidgetRenderer {
 
     }
 
-    private void renderItem(@NotNull HtmlContentBuilder builder, @NotNull ModelObject item) {
+    public void renderItem(@NotNull HtmlContentBuilder builder, @NotNull ModelObject item) {
         if (item.isUnresolvable()) {
             this.renderNotReadableRow(builder, this.localization.getString("richpages.widget.table.unresolvableItem", item.getReferenceToCurrent().toPath()));
         } else if (!item.can().read()) {
@@ -165,13 +165,13 @@ public class BulkPdfExportWidgetRenderer extends AbstractWidgetRenderer {
             checkbox.attributes()
                     .byName("type", "checkbox")
                     .byName("data-type", item.getOldApi().getPrototype().getName())
-                    .byName("data-project", getProject(item))
+                    .byName("data-project", getProjectId(item))
                     .byName("data-space", getSpace(item))
-                    .byName("data-id", getValue(item, "id"))
+                    .byName("data-id", getObjectId(item))
                     .className("export-item");
 
             if (PrototypeEnum.BaselineCollection.name().equals(item.getOldApi().getPrototype().getName())) {
-                checkbox.attributes().byName("data-name", getValue(item, "name"));
+                checkbox.attributes().byName("data-name", getObjectName(item));
             }
 
             for (Field column : this.columns) {
@@ -181,27 +181,26 @@ public class BulkPdfExportWidgetRenderer extends AbstractWidgetRenderer {
         }
     }
 
-    private String getSpace(@NotNull ModelObject item) {
-        String spaceFieldId = null;
-        if (item.getOldApi() instanceof IModule) {
-            spaceFieldId = "moduleFolder";
-        } else if (item.getOldApi() instanceof IRichPage) {
-            spaceFieldId = "spaceId";
+    private @NotNull String getSpace(@NotNull ModelObject item) {
+        if (item.getOldApi() instanceof IModule module) {
+            return module.getModuleFolder();
         }
-        if (spaceFieldId != null) {
-            return getValue(item, spaceFieldId);
-        } else {
-            return "";
+        if (item.getOldApi() instanceof IRichPage richPage) {
+            return richPage.getSpaceId();
         }
+        return "";
     }
 
-    private String getProject(@NotNull ModelObject item) {
+    private String getProjectId(@NotNull ModelObject item) {
         return ((IUniqueObject) item.getOldApi()).getProjectId();
     }
 
-    private String getValue(@NotNull ModelObject item, @NotNull String fieldName) {
-        Object fieldValue = item.getOldApi().getValue(fieldName);
-        return fieldValue == null ? "" : fieldValue.toString();
+    private String getObjectName(@NotNull ModelObject item) {
+        return item.getOldApi().getLocalId().getObjectName();
+    }
+
+    private String getObjectId(@NotNull ModelObject item) {
+        return ((IUniqueObject) item.getOldApi()).getId();
     }
 
     private void renderNotReadableRow(@NotNull HtmlContentBuilder builder, @NotNull String message) {
