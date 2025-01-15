@@ -1,6 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <module id="ch.sbb.polarion.extension.pdf_exporter" version="1.0.0">
 
+    <contribution configuration-id="com.polarion.alm.tracker.workflow.functions">
+        <function name="PDF Export" prototype="Module"
+                  clazz="ch.sbb.polarion.extension.pdf_exporter.PdfExportFunction">
+            <parameter name="Workitem ID to reuse" id="existing_wi_id" />
+            <parameter name="Workitem type ID to create" id="create_wi_type_id" />
+            <parameter name="Title to set into created workitem" id="create_wi_title" />
+            <parameter name="Description to set into created workitem" id="create_wi_description" />
+            <parameter name="Project ID where to create or find the target work item" id="project_id" />
+            <parameter name="The title of the attached file" id="attachment_title" />
+            <parameter name="Prefer last baseline" id="prefer_last_baseline" />
+            <parameter name="Style package" id="style_package" />
+        </function>
+    </contribution>
+
     <contribution configuration-id="com.polarion.xray.webui.administrationPageExtenders">
         <extender id="about"
                   name="About"
