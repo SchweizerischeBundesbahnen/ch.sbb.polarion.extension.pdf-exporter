@@ -12,6 +12,7 @@ import ch.sbb.polarion.extension.pdf_exporter.util.PdfTemplateProcessor;
 import ch.sbb.polarion.extension.pdf_exporter.util.html.HtmlLinksHelper;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.WeasyPrintOptions;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.service.WeasyPrintServiceConnector;
+import com.google.inject.Inject;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.VisibleForTesting;
@@ -22,6 +23,7 @@ public class HtmlToPdfConverter {
     @Getter
     private final WeasyPrintServiceConnector weasyPrintServiceConnector;
 
+    // TODO: refactor and remove to use injection option only
     public HtmlToPdfConverter() {
         this.pdfTemplateProcessor = new PdfTemplateProcessor();
         PdfExporterFileResourceProvider fileResourceProvider = new PdfExporterFileResourceProvider();
@@ -29,7 +31,7 @@ public class HtmlToPdfConverter {
         this.weasyPrintServiceConnector = new WeasyPrintServiceConnector();
     }
 
-    @VisibleForTesting
+    @Inject
     public HtmlToPdfConverter(PdfTemplateProcessor pdfTemplateProcessor, HtmlProcessor htmlProcessor, WeasyPrintServiceConnector weasyPrintServiceConnector) {
         this.pdfTemplateProcessor = pdfTemplateProcessor;
         this.htmlProcessor = htmlProcessor;

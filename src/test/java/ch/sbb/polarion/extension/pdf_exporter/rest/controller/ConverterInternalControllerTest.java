@@ -49,6 +49,7 @@ class ConverterInternalControllerTest {
                 .build();
         when(pdfConverterJobService.startJob(params, 60)).thenReturn("testJobId");
         when(uriInfo.getRequestUri()).thenReturn(UriBuilder.fromUri("http://testHost:8090/polarion/pdf-exporter/rest/api/convert/jobs").build());
+        internalController.setUriInfo(uriInfo);
         try (Response response = internalController.startPdfConverterJob(params)) {
             assertThat(response.getStatus()).isEqualTo(HttpStatus.ACCEPTED.value());
             assertThat(response.getHeaderString(HttpHeaders.LOCATION)).isEqualTo("/polarion/pdf-exporter/rest/api/convert/jobs/testJobId");
@@ -82,6 +83,7 @@ class ConverterInternalControllerTest {
                                                  String expectedErrorMessage) {
         if (expectedLocationUrl != null) {
             when(uriInfo.getRequestUri()).thenReturn(UriBuilder.fromUri("http://testHost:8090/polarion/pdf-exporter/rest/api/convert/jobs/testJobId").build());
+            internalController.setUriInfo(uriInfo);
         }
         when(pdfConverterJobService.getJobState("testJobId")).thenReturn(jobState);
         try (Response response = internalController.getPdfConverterJobStatus("testJobId")) {

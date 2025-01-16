@@ -12,6 +12,7 @@ import ch.sbb.polarion.extension.pdf_exporter.util.placeholder.PlaceholderProces
 import ch.sbb.polarion.extension.pdf_exporter.util.velocity.VelocityEvaluator;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.WeasyPrintOptions;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.service.WeasyPrintServiceConnector;
+import com.google.inject.Inject;
 import com.polarion.alm.projects.model.IUniqueObject;
 import lombok.SneakyThrows;
 import org.jetbrains.annotations.VisibleForTesting;
@@ -26,14 +27,7 @@ public class CoverPageProcessor {
     private final PdfTemplateProcessor pdfTemplateProcessor;
 
 
-    public CoverPageProcessor() {
-        placeholderProcessor = new PlaceholderProcessor();
-        velocityEvaluator = new VelocityEvaluator();
-        weasyPrintServiceConnector = new WeasyPrintServiceConnector();
-        coverPageSettings = new CoverPageSettings();
-        pdfTemplateProcessor = new PdfTemplateProcessor();
-    }
-
+    @Inject
     public CoverPageProcessor(PlaceholderProcessor placeholderProcessor,
                               VelocityEvaluator velocityEvaluator,
                               WeasyPrintServiceConnector weasyPrintServiceConnector,

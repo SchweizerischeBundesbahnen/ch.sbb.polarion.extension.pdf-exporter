@@ -18,10 +18,9 @@ import ch.sbb.polarion.extension.pdf_exporter.util.DocumentDataFactory;
 import ch.sbb.polarion.extension.pdf_exporter.util.DocumentFileNameHelper;
 import ch.sbb.polarion.extension.pdf_exporter.util.NumberedListsSanitizer;
 import ch.sbb.polarion.extension.pdf_exporter.util.PdfValidationService;
+import com.google.inject.Inject;
 import com.polarion.alm.tracker.model.IModule;
 import com.polarion.core.util.StringUtils;
-import com.polarion.platform.core.PlatformContext;
-import com.polarion.platform.security.ISecurityService;
 import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -73,21 +72,11 @@ public class ConverterInternalController {
     @Context
     private UriInfo uriInfo;
 
-    public ConverterInternalController() {
-        this.pdfConverter = new PdfConverter();
-        this.pdfValidationService = new PdfValidationService(pdfConverter);
-        ISecurityService securityService = PlatformContext.getPlatform().lookupService(ISecurityService.class);
-        this.pdfConverterJobService = new PdfConverterJobsService(pdfConverter, securityService);
-        this.propertiesUtility = new PropertiesUtility();
-        this.htmlToPdfConverter = new HtmlToPdfConverter();
-    }
-
-    @VisibleForTesting
-    ConverterInternalController(PdfConverter pdfConverter, PdfValidationService pdfValidationService, PdfConverterJobsService pdfConverterJobService, UriInfo uriInfo, HtmlToPdfConverter htmlToPdfConverter) {
+    @Inject
+    public ConverterInternalController(PdfConverter pdfConverter, PdfValidationService pdfValidationService, PdfConverterJobsService pdfConverterJobService, HtmlToPdfConverter htmlToPdfConverter) {
         this.pdfConverter = pdfConverter;
         this.pdfValidationService = pdfValidationService;
         this.pdfConverterJobService = pdfConverterJobService;
-        this.uriInfo = uriInfo;
         this.propertiesUtility = new PropertiesUtility();
         this.htmlToPdfConverter = htmlToPdfConverter;
     }
@@ -398,5 +387,10 @@ public class ConverterInternalController {
         } else {
             return ConverterJobStatus.FAILED;
         }
+    }
+
+    @VisibleForTesting
+    void setUriInfo(UriInfo uriInfo) {
+        this.uriInfo = uriInfo;
     }
 }
