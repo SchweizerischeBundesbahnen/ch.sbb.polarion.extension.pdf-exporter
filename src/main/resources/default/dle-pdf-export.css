@@ -140,29 +140,41 @@ ul.toc li > a.page-number::after {
 @page {
     margin: 120px 60px 90px 80px;
     border-bottom: 1px solid #aaa;
-    @top-left {
-        content: element(top-left);
-        display: none;
-    }
     @top-center {
         content: element(top-center);
-        width: 100%;
-    }
-    @top-right {
-        content: element(top-right);
-        display: none;
-    }
-    @bottom-left {
-        content: element(bottom-left);
-        display: none;
     }
     @bottom-center {
         content: element(bottom-center);
-        width: 100%;
+    }
+}
+
+@page :left {
+    @top-left {
+        content: element(top-left);
+    }
+    @top-right {
+        content: element(top-right);
+    }
+    @bottom-left {
+        content: element(bottom-left);
     }
     @bottom-right {
         content: element(bottom-right);
-        display: none;
+    }
+}
+
+@page :right {
+    @top-left {
+        content: element(top-left);
+    }
+    @top-right {
+        content: element(top-right);
+    }
+    @bottom-left {
+        content: element(bottom-left);
+    }
+    @bottom-right {
+        content: element(bottom-right);
     }
 }
 
@@ -306,30 +318,30 @@ ul.toc li > a.page-number::after {
     }
 
     .header, .footer {
-        display: inline-block;
+        display: block;
     }
 
-    .header.top-left {
+    .header .top-left {
         position: running(top-left);
     }
 
-    .header.top-center {
+    .header .top-center {
         position: running(top-center);
     }
 
-    .header.top-right {
+    .header .top-right {
         position: running(top-right);
     }
 
-    .footer.bottom-left {
+    .footer .bottom-left {
         position: running(bottom-left);
     }
 
-    .footer.bottom-center {
+    .footer .bottom-center {
         position: running(bottom-center);
     }
 
-    .footer.bottom-right {
+    .footer .bottom-right {
         position: running(bottom-right);
     }
 
@@ -868,21 +880,12 @@ li span {
     line-height: 1em !important;
 }
 
-.header-footer-wrapper {
-    display: flex;
-}
-
-.header-footer-left {
-    flex: 1;
-}
-
 .header-footer-center {
-    max-width: 30%;
+    /*max-width: 30%;*/
     text-align: center;
 }
 
 .header-footer-right {
-    flex: 1;
     text-align: right;
 }
 

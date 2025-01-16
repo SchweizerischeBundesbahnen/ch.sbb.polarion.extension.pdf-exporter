@@ -195,25 +195,25 @@ class PdfConverterTest {
 
         // Assert
         assertThat(TestStringUtils.removeNonsensicalSymbols(headerFooterContent)).isEqualTo(TestStringUtils.removeNonsensicalSymbols("""
-                <div class='header top-center header-footer-wrapper'>
-                    <div class='header-footer-left'>
+                <div class='header'>
+                    <div class='top-left'>
                         -xheader-left-
                     </div>
-                    <div class='header-footer-center'>
+                    <div class='top-center'>
                         -xheader-center-
                     </div>
-                    <div class='header-footer-right'>
+                    <div class='top-right'>
                         -xheader-right-
                     </div>
                 </div>
-                <div class='footer bottom-center header-footer-wrapper'>
-                    <div class='header-footer-left'>
+                <div class='footer'>
+                    <div class='bottom-left'>
                         -xfooter-left-
                     </div>
-                    <div class='header-footer-center'>
+                    <div class='bottom-center'>
                         -xfooter-center-
                     </div>
-                    <div class='header-footer-right'>
+                    <div class='bottom-right'>
                         -xfooter-right-
                     </div>
                 </div>""".indent(0).trim()));
