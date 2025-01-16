@@ -37,8 +37,8 @@ class CoverPageTest extends BaseWeasyPrintTest {
         byte[] resultBytes = MediaUtils.overwriteFirstPageWithTitle(contentBytes, titleBytes);
         writeReportPdf(testName, "correct", resultBytes);
         try (PDDocument resultDoc = Loader.loadPDF(resultBytes)) {
-            assertTrue(MediaUtils.compareImages(titleImage, MediaUtils.pdfPageToImage(resultDoc, 0))); //now the title remains the same
-            assertTrue(MediaUtils.compareImages(contentImage, MediaUtils.pdfPageToImage(resultDoc, 1))); //initial content too
+            assertTrue(MediaUtils.sameImages(titleImage, MediaUtils.pdfPageToImage(resultDoc, 0))); //now the title remains the same
+            assertTrue(MediaUtils.sameImages(contentImage, MediaUtils.pdfPageToImage(resultDoc, 1))); //initial content too
         }
     }
 
@@ -68,8 +68,8 @@ class CoverPageTest extends BaseWeasyPrintTest {
         writeReportPdf(testName, "merged", resultBytes);
         try (PDDocument resultDoc = Loader.loadPDF(resultBytes)) {
             assertEquals(2, resultDoc.getNumberOfPages());
-            assertTrue(MediaUtils.compareImages(titleImage, MediaUtils.pdfPageToImage(resultDoc, 0))); //page #1 is the first one taken from title
-            assertTrue(MediaUtils.compareImages(contentImage, MediaUtils.pdfPageToImage(resultDoc, 1))); //the second is the content itself
+            assertTrue(MediaUtils.sameImages(titleImage, MediaUtils.pdfPageToImage(resultDoc, 0))); //page #1 is the first one taken from title
+            assertTrue(MediaUtils.sameImages(contentImage, MediaUtils.pdfPageToImage(resultDoc, 1))); //the second is the content itself
         }
     }
 }

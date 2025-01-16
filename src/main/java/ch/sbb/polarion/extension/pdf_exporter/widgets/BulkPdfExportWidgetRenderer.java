@@ -20,9 +20,11 @@ import com.polarion.alm.shared.api.utils.html.HtmlFragmentBuilder;
 import com.polarion.alm.shared.api.utils.html.HtmlTagBuilder;
 import com.polarion.alm.tracker.model.IModule;
 import com.polarion.alm.tracker.model.IRichPage;
+import com.polarion.alm.tracker.model.baselinecollection.IBaselineCollection;
 import com.polarion.alm.ui.shared.LinearGradientColor;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Iterator;
 
@@ -154,7 +156,7 @@ public class BulkPdfExportWidgetRenderer extends AbstractWidgetRenderer {
 
     }
 
-    private void renderItem(@NotNull HtmlContentBuilder builder, @NotNull ModelObject item) {
+    public void renderItem(@NotNull HtmlContentBuilder builder, @NotNull ModelObject item) {
         if (item.isUnresolvable()) {
             this.renderNotReadableRow(builder, this.localization.getString("richpages.widget.table.unresolvableItem", item.getReferenceToCurrent().toPath()));
         } else if (!item.can().read()) {
@@ -165,13 +167,17 @@ public class BulkPdfExportWidgetRenderer extends AbstractWidgetRenderer {
             checkbox.attributes()
                     .byName("type", "checkbox")
                     .byName("data-type", item.getOldApi().getPrototype().getName())
-                    .byName("data-project", getProject(item))
-                    .byName("data-space", getSpace(item))
-                    .byName("data-id", getValue(item, "id"))
+                    .byName("data-project", getProjectId(item))
+                    .byName("data-id", getObjectId(item))
                     .className("export-item");
 
-            if (PrototypeEnum.BaselineCollection.name().equals(item.getOldApi().getPrototype().getName())) {
-                checkbox.attributes().byName("data-name", getValue(item, "name"));
+            String spaceId = getSpaceId(item);
+            if (spaceId != null) {
+                checkbox.attributes().byName("data-space", spaceId);
+            }
+            String objectName = getObjectName(item);
+            if (objectName != null) {
+                checkbox.attributes().byName("data-name", objectName);
             }
 
             for (Field column : this.columns) {
@@ -181,27 +187,29 @@ public class BulkPdfExportWidgetRenderer extends AbstractWidgetRenderer {
         }
     }
 
-    private String getSpace(@NotNull ModelObject item) {
-        String spaceFieldId = null;
-        if (item.getOldApi() instanceof IModule) {
-            spaceFieldId = "moduleFolder";
-        } else if (item.getOldApi() instanceof IRichPage) {
-            spaceFieldId = "spaceId";
+    private @Nullable String getSpaceId(@NotNull ModelObject item) {
+        if (item.getOldApi() instanceof IModule module) {
+            return module.getModuleFolder();
         }
-        if (spaceFieldId != null) {
-            return getValue(item, spaceFieldId);
-        } else {
-            return "";
+        if (item.getOldApi() instanceof IRichPage richPage) {
+            return richPage.getSpaceId();
         }
+        return null;
     }
 
-    private String getProject(@NotNull ModelObject item) {
+    private @NotNull String getProjectId(@NotNull ModelObject item) {
         return ((IUniqueObject) item.getOldApi()).getProjectId();
     }
 
-    private String getValue(@NotNull ModelObject item, @NotNull String fieldName) {
-        Object fieldValue = item.getOldApi().getValue(fieldName);
-        return fieldValue == null ? "" : fieldValue.toString();
+    private @Nullable String getObjectName(@NotNull ModelObject item) {
+        if (item.getOldApi() instanceof IBaselineCollection baselineCollection) {
+            return baselineCollection.getName();
+        }
+        return null;
+    }
+
+    private String getObjectId(@NotNull ModelObject item) {
+        return ((IUniqueObject) item.getOldApi()).getId();
     }
 
     private void renderNotReadableRow(@NotNull HtmlContentBuilder builder, @NotNull String message) {

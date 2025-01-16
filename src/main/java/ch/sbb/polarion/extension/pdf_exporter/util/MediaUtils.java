@@ -22,6 +22,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import javax.imageio.ImageIO;
+import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
@@ -31,6 +32,7 @@ import java.io.InputStream;
 import java.net.URLConnection;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -44,7 +46,7 @@ public class MediaUtils {
     public static final String DATA_URL_PREFIX = "data:";
     private static final Logger logger = Logger.getLogger(MediaUtils.class);
     private static final int RIGHT_WHITE_AREA_PX = 30;
-    private static final int PDF_TO_PNG_DPI = 72;
+    private static final int PDF_TO_PNG_DPI = 300;
     private static final String IMG_FORMAT_PNG = "png";
     private static final String ALLOWED_FOLDER_FOR_BINARY_FILES = "/default/";
     private static final Tika tika = new Tika();
@@ -97,20 +99,46 @@ public class MediaUtils {
         }
     }
 
-    public boolean compareImages(BufferedImage image1, BufferedImage image2) {
-        if (image1.getWidth() != image2.getWidth() || image1.getHeight() != image2.getHeight()) {
-            return false;
-        }
+    public boolean sameImages(BufferedImage referenceImage, BufferedImage imageToCompare) {
+        return diffImages(referenceImage, imageToCompare).isEmpty();
+    }
 
-        for (int y = 0; y < image1.getHeight(); y++) {
-            for (int x = 0; x < image1.getWidth(); x++) {
-                if (image1.getRGB(x, y) != image2.getRGB(x, y)) {
-                    return false;
+    @SuppressWarnings("java:S3776") // ignore cognitive complexity complaint
+    public List<Point> diffImages(BufferedImage referenceImage, BufferedImage imageToCompare) {
+        List<Point> diffPoints = new ArrayList<>();
+        int width = imageToCompare.getWidth();
+        int height = imageToCompare.getHeight();
+        if (referenceImage.getWidth() != imageToCompare.getWidth() || referenceImage.getHeight() != imageToCompare.getHeight()) {
+            // when image size is different we return 1px border
+            for (int x = 0; x < width; x++) {
+                // Top edge
+                diffPoints.add(new Point(x, 0));
+                // Bottom edge
+                diffPoints.add(new Point(x, height - 1));
+            }
+            for (int y = 1; y < height - 1; y++) {
+                // Left edge
+                diffPoints.add(new Point(0, y));
+                // Right edge
+                diffPoints.add(new Point(width - 1, y));
+            }
+        } else {
+            for (int y = 0; y < height; y++) {
+                for (int x = 0; x < width; x++) {
+                    if (referenceImage.getRGB(x, y) != imageToCompare.getRGB(x, y)) {
+                        diffPoints.add(new Point(x, y));
+                    }
                 }
             }
         }
 
-        return true;
+        return diffPoints;
+    }
+
+    public void fillImagePoints(BufferedImage image, List<Point> pointsToFill, int color) {
+        for (Point point : pointsToFill) {
+            image.setRGB(point.x, point.y, color);
+        }
     }
 
     @SneakyThrows
