@@ -27,7 +27,6 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith({
@@ -64,9 +63,9 @@ class PdfExporterFileResourceProviderTest {
         }
 
         PdfExporterFileResourceProvider resourceProviderMock = mock(PdfExporterFileResourceProvider.class);
-        when(resourceProviderMock.getResourceAsBytes("http://localhost/some-path/img.png", null)).thenReturn(imgBytes);
-        when(resourceProviderMock.getResourceAsBase64String(any(), eq(null))).thenCallRealMethod();
-        String result = resourceProviderMock.getResourceAsBase64String("http://localhost/some-path/img.png", null);
+        when(resourceProviderMock.getResourceAsBytes("http://localhost/some-path/img.png")).thenReturn(imgBytes);
+        when(resourceProviderMock.getResourceAsBase64String(any())).thenCallRealMethod();
+        String result = resourceProviderMock.getResourceAsBase64String("http://localhost/some-path/img.png");
         assertEquals("data:image/png;base64," + Base64.getEncoder().encodeToString(imgBytes), result);
     }
 
@@ -75,24 +74,16 @@ class PdfExporterFileResourceProviderTest {
     void getResourceAsBytesSuccess() {
         when(resolverMock.canResolve(TEST_RESOURCE)).thenReturn(true);
         when(resolverMock.resolve(TEST_RESOURCE)).thenReturn(new ByteArrayInputStream(TEST_CONTENT));
-
-        List<String> unavailableAttachments = new ArrayList<>();
-        byte[] result = resourceProvider.getResourceAsBytes(TEST_RESOURCE, unavailableAttachments);
-
+        byte[] result = resourceProvider.getResourceAsBytes(TEST_RESOURCE);
         assertArrayEquals(TEST_CONTENT, result);
-        assertTrue(unavailableAttachments.isEmpty());
     }
 
     @Test
     @SneakyThrows
     void getResourceAsBytesNoResolverFound() {
         when(resolverMock.canResolve(TEST_RESOURCE)).thenReturn(false);
-
-        List<String> unavailableAttachments = new ArrayList<>();
-        byte[] result = resourceProvider.getResourceAsBytes(TEST_RESOURCE, unavailableAttachments);
-
+        byte[] result = resourceProvider.getResourceAsBytes(TEST_RESOURCE);
         assertArrayEquals(new byte[0], result);
-        assertTrue(unavailableAttachments.isEmpty());
     }
 
     @Test
@@ -100,23 +91,17 @@ class PdfExporterFileResourceProviderTest {
     void getResourceAsBytesResolverReturnsNull() {
         when(resolverMock.canResolve(TEST_RESOURCE)).thenReturn(true);
         when(resolverMock.resolve(TEST_RESOURCE)).thenReturn(null);
-
-        List<String> unavailableAttachments = new ArrayList<>();
-        byte[] result = resourceProvider.getResourceAsBytes(TEST_RESOURCE, unavailableAttachments);
-
+        byte[] result = resourceProvider.getResourceAsBytes(TEST_RESOURCE);
         assertArrayEquals(new byte[0], result);
-        assertTrue(unavailableAttachments.isEmpty());
     }
 
     @Test
     void getResourceAsBytesExceptionHandling() {
         when(resolverMock.canResolve(TEST_RESOURCE)).thenThrow(new RuntimeException("Test Exception"));
 
-        List<String> unavailableAttachments = new ArrayList<>();
-        byte[] result = resourceProvider.getResourceAsBytes(TEST_RESOURCE, unavailableAttachments);
+        byte[] result = resourceProvider.getResourceAsBytes(TEST_RESOURCE);
 
         assertArrayEquals(new byte[0], result);
-        assertTrue(unavailableAttachments.isEmpty());
     }
 
     @Test
@@ -136,7 +121,7 @@ class PdfExporterFileResourceProviderTest {
 
             PdfExporterFileResourceProvider fileResourceProvider = new PdfExporterFileResourceProvider(resolvers);
 
-            byte[] result = fileResourceProvider.getResourceAsBytesImpl(resource, unavailableWorkItemAttachments);
+            byte[] result = fileResourceProvider.getResourceAsBytesImpl(resource);
 
             assertArrayEquals(expectedBytes, result);
             assertTrue(unavailableWorkItemAttachments.isEmpty());
@@ -161,13 +146,9 @@ class PdfExporterFileResourceProviderTest {
             doReturn(defaultBytes).when(fileResourceProvider).getDefaultContent(resource);
             doReturn("unavailableId").when(fileResourceProvider).getWorkItemIdsWithUnavailableAttachments(resource);
 
-            List<String> unavailableWorkItemAttachments = new ArrayList<>();
-
-            byte[] result = fileResourceProvider.getResourceAsBytesImpl(resource, unavailableWorkItemAttachments);
+            byte[] result = fileResourceProvider.getResourceAsBytesImpl(resource);
 
             assertArrayEquals(defaultBytes, result);
-            assertEquals(1, unavailableWorkItemAttachments.size());
-            assertEquals("unavailableId", unavailableWorkItemAttachments.get(0));
         }
     }
 

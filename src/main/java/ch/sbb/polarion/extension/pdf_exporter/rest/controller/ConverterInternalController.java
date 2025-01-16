@@ -16,6 +16,7 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.jobs.ConverterJobDetail
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.jobs.ConverterJobStatus;
 import ch.sbb.polarion.extension.pdf_exporter.util.DocumentDataFactory;
 import ch.sbb.polarion.extension.pdf_exporter.util.DocumentFileNameHelper;
+import ch.sbb.polarion.extension.pdf_exporter.util.ExportContext;
 import ch.sbb.polarion.extension.pdf_exporter.util.NumberedListsSanitizer;
 import ch.sbb.polarion.extension.pdf_exporter.util.PdfValidationService;
 import com.polarion.alm.tracker.model.IModule;
@@ -51,6 +52,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
 import java.net.URI;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -63,8 +65,9 @@ import java.util.stream.Collectors;
 public class ConverterInternalController {
 
     private static final String EXPORT_FILENAME_HEADER = "Export-Filename";
-    private static final String UNAVAILABLE_WI_ATTACHMENTS_COUNT_HEADER = "Unavailable-Work-Items-Attachments-Count";
-    private static final String UNAVAILABLE_WI_ATTACHMENTS_HEADER = "Unavailable-Work-Items-Attachments";
+
+    private static final String MISSING_WORKITEM_ATTACHMENTS_COUNT = "Missing-WorkItem-Attachments-Count";
+    private static final String WORKITEM_IDS_WITH_MISSING_ATTACHMENT = "WorkItem-IDs-With-Missing-Attachment";
 
     private final PdfConverter pdfConverter;
     private final PdfValidationService pdfValidationService;
@@ -118,11 +121,11 @@ public class ConverterInternalController {
                                             description = "File name for converted PDF document",
                                             schema = @Schema(implementation = String.class)
                                     ),
-                                    @Header(name = UNAVAILABLE_WI_ATTACHMENTS_COUNT_HEADER,
+                                    @Header(name = MISSING_WORKITEM_ATTACHMENTS_COUNT,
                                             description = "Unavailable work item attachments count",
                                             schema = @Schema(implementation = String.class)
                                     ),
-                                    @Header(name = UNAVAILABLE_WI_ATTACHMENTS_COUNT_HEADER,
+                                    @Header(name = WORKITEM_IDS_WITH_MISSING_ATTACHMENT,
                                             description = "Work items contained unavailable attachments",
                                             schema = @Schema(implementation = String.class)
                                     )
@@ -136,8 +139,8 @@ public class ConverterInternalController {
         return Response.ok(pdfBytes)
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
                 .header(EXPORT_FILENAME_HEADER, fileName)
-                .header(UNAVAILABLE_WI_ATTACHMENTS_COUNT_HEADER, exportParams.getUnavailableWorkItemAttachmentsCount())
-                .header(UNAVAILABLE_WI_ATTACHMENTS_HEADER, exportParams.getWorkItemsIdContainUnavailableAttachments())
+                .header(MISSING_WORKITEM_ATTACHMENTS_COUNT, ExportContext.getWorkItemIDsWithMissingAttachment().size())
+                .header(WORKITEM_IDS_WITH_MISSING_ATTACHMENT, ExportContext.getWorkItemIDsWithMissingAttachment())
                 .build();
     }
 
@@ -246,11 +249,11 @@ public class ConverterInternalController {
                                             description = "File name for converted PDF document",
                                             schema = @Schema(implementation = String.class)
                                     ),
-                                    @Header(name = UNAVAILABLE_WI_ATTACHMENTS_COUNT_HEADER,
+                                    @Header(name = MISSING_WORKITEM_ATTACHMENTS_COUNT,
                                             description = "Unavailable work item attachments count",
                                             schema = @Schema(implementation = String.class)
                                     ),
-                                    @Header(name = UNAVAILABLE_WI_ATTACHMENTS_COUNT_HEADER,
+                                    @Header(name = WORKITEM_IDS_WITH_MISSING_ATTACHMENT,
                                             description = "Work items contained unavailable attachments",
                                             schema = @Schema(implementation = String.class)
                                     )
@@ -273,20 +276,21 @@ public class ConverterInternalController {
             return Response.status(HttpStatus.NO_CONTENT.value()).build();
         }
         ExportParams exportParams = pdfConverterJobService.getJobParams(jobId);
+        List<String> workItemIDsWithMissingAttachment = pdfConverterJobService.getJobContext(jobId).workItemIDsWithMissingAttachment();
         String fileName = getFileName(exportParams);
 
         Response.ResponseBuilder responseBuilder = Response.ok(pdfContent.get())
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
                 .header(EXPORT_FILENAME_HEADER, fileName);
 
-        if (exportParams != null) {
+        if (!workItemIDsWithMissingAttachment.isEmpty()) {
             responseBuilder.header(
-                    UNAVAILABLE_WI_ATTACHMENTS_COUNT_HEADER,
-                    exportParams.getUnavailableWorkItemAttachmentsCount()
+                    MISSING_WORKITEM_ATTACHMENTS_COUNT,
+                    workItemIDsWithMissingAttachment.size()
             );
             responseBuilder.header(
-                    UNAVAILABLE_WI_ATTACHMENTS_HEADER,
-                    exportParams.getWorkItemsIdContainUnavailableAttachments()
+                    WORKITEM_IDS_WITH_MISSING_ATTACHMENT,
+                    workItemIDsWithMissingAttachment
             );
         }
         return responseBuilder.build();

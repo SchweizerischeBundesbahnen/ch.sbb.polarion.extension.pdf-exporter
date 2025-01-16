@@ -204,10 +204,10 @@ public class MediaUtils {
         return resourceUrl != null && resourceUrl.startsWith(DATA_URL_PREFIX);
     }
 
-    public String inlineBase64Resources(String content, FileResourceProvider fileResourceProvider, List<String> unavailableWorkItemAttachments) {
+    public String inlineBase64Resources(String content, FileResourceProvider fileResourceProvider) {
         RegexMatcher.IReplacementCalculator dataReplacement = engine -> {
             String url = engine.group("url");
-            String base64String = MediaUtils.isDataUrl(url) ? url : fileResourceProvider.getResourceAsBase64String(url, unavailableWorkItemAttachments);
+            String base64String = MediaUtils.isDataUrl(url) ? url : fileResourceProvider.getResourceAsBase64String(url);
             return base64String == null ? null : engine.group().replace(url, base64String);
         };
 

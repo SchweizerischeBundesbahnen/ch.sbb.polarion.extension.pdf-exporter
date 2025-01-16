@@ -17,6 +17,7 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.exception.NoSuchElementExcept
 import ch.sbb.polarion.extension.pdf_exporter.rest.exception.UnresolvableObjectExceptionMapper;
 import ch.sbb.polarion.extension.pdf_exporter.rest.exception.WrapperExceptionMapper;
 import ch.sbb.polarion.extension.pdf_exporter.rest.exception.XLIFFExceptionMapper;
+import ch.sbb.polarion.extension.pdf_exporter.rest.filter.ExportContextFilter;
 import ch.sbb.polarion.extension.pdf_exporter.settings.CoverPageSettings;
 import ch.sbb.polarion.extension.pdf_exporter.settings.CssSettings;
 import ch.sbb.polarion.extension.pdf_exporter.settings.FileNameTemplateSettings;
@@ -85,5 +86,10 @@ public class PdfExporterRestApplication extends GenericRestApplication {
                 new WrapperExceptionMapper(),
                 new NoSuchElementExceptionMapper()
         );
+    }
+
+    @Override
+    protected @NotNull Set<Object> getExtensionFilterSingletons() {
+        return Set.of(new ExportContextFilter());
     }
 }

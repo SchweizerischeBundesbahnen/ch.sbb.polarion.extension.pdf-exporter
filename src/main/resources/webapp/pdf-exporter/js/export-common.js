@@ -57,9 +57,9 @@ const ExportCommon = {
                     this.pullAndGetResultPdf(url, successCallback, errorCallback);
                 } else if (request.status === 200) {
                     let warningMessage;
-                    let count = request.getResponseHeader("Unavailable-Work-Items-Attachments-Count");
+                    let count = request.getResponseHeader("Missing-WorkItem-Attachments-Count");
                     if (count > 0) {
-                        let attachment = request.getResponseHeader("Unavailable-Work-Items-Attachments")
+                        let attachment = request.getResponseHeader("WorkItem-IDs-With-Missing-Attachment")
                         warningMessage = `${count} image(s) in WI(s) ${attachment} were not exported. They were replaced with an image containing 'This image is not accessible'.`;
                     }
                     successCallback({

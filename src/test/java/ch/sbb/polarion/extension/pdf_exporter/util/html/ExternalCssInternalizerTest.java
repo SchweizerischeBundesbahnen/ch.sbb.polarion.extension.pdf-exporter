@@ -31,7 +31,7 @@ class ExternalCssInternalizerTest {
 
     @Test
     void shouldConvertStylesheetLink() {
-        when(fileResourceProvider.getResourceAsBytes("my-href-location", null)).thenReturn("test-stylesheet".getBytes());
+        when(fileResourceProvider.getResourceAsBytes("my-href-location")).thenReturn("test-stylesheet".getBytes());
         Optional<String> result = cssLinkInliner.inline(Map.of("rel", "stylesheet", "href", "my-href-location"));
 
         assertThat(result).isNotEmpty();
@@ -40,7 +40,7 @@ class ExternalCssInternalizerTest {
 
     @Test
     void shouldConvertStylesheetLinkAndTransferDataPrecedence() {
-        when(fileResourceProvider.getResourceAsBytes("my-href-location", null)).thenReturn("test-stylesheet".getBytes());
+        when(fileResourceProvider.getResourceAsBytes("my-href-location")).thenReturn("test-stylesheet".getBytes());
         Optional<String> result = cssLinkInliner.inline(Map.of(
                 "rel", "stylesheet",
                 "href", "my-href-location",
@@ -53,7 +53,7 @@ class ExternalCssInternalizerTest {
 
     @Test
     void shouldConvertStylesheetLinkAndProcessRelativeLinks() {
-        when(fileResourceProvider.getResourceAsBytes("/some/location/file.css", null)).thenReturn("""
+        when(fileResourceProvider.getResourceAsBytes("/some/location/file.css")).thenReturn("""
                 @font-face {
                   src: url('../fonts/some-font.woff');
                 }

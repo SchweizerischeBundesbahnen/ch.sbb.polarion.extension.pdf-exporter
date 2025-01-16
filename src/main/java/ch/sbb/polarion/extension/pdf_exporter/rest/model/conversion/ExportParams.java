@@ -105,21 +105,6 @@ public class ExportParams {
     @Schema(description = "Internal content")
     private String internalContent;
 
-    @JsonIgnore
-    private List<String> unavailableWorkItemAttachments = new ArrayList<>();
-
-    @JsonIgnore
-    public int getUnavailableWorkItemAttachmentsCount() {
-        return unavailableWorkItemAttachments.size();
-    }
-
-    @JsonIgnore
-    public List<String> getWorkItemsIdContainUnavailableAttachments() {
-        return unavailableWorkItemAttachments.stream()
-                .distinct()
-                .toList();
-    }
-
     public @NotNull DocumentType getDocumentType() {
         if (documentType == null) {
             documentType = DocumentType.LIVE_DOC;

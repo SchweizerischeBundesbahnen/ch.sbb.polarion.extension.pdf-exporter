@@ -54,11 +54,11 @@ public class PdfExporterFileResourceProvider implements FileResourceProvider {
     @SneakyThrows
     @Override
     @Nullable
-    public String getResourceAsBase64String(@NotNull String resource, List<String> unavailableWorkItemAttachments) {
+    public String getResourceAsBase64String(@NotNull String resource) {
         if (MediaUtils.isDataUrl(resource)) { // do nothing if it's already has 'data' url
             return resource;
         }
-        byte[] resourceBytes = getResourceAsBytes(resource, unavailableWorkItemAttachments);
+        byte[] resourceBytes = getResourceAsBytes(resource);
         if (resourceBytes != null && resourceBytes.length != 0) { // Don't make any manipulations if resource wasn't resolved
             String mimeType = MediaUtils.guessMimeType(resource, resourceBytes);
             if (MIME_TYPE_SVG.equals(mimeType)) {
@@ -69,11 +69,11 @@ public class PdfExporterFileResourceProvider implements FileResourceProvider {
         return null;
     }
 
-    public byte[] getResourceAsBytes(@NotNull String resource, List<String> unavailableWorkItemAttachments) {
+    public byte[] getResourceAsBytes(@NotNull String resource) {
         // Non-default icons are getting via project and thus requires open transaction
         return TransactionalExecutor.executeSafelyInReadOnlyTransaction(transaction -> {
             try {
-                return getResourceAsBytesImpl(resource, unavailableWorkItemAttachments);
+                return getResourceAsBytesImpl(resource);
             } catch (Exception e) {
                 logger.error("Error loading resource '" + resource + "' for PDF export.", e);
             } finally {
@@ -84,14 +84,14 @@ public class PdfExporterFileResourceProvider implements FileResourceProvider {
     }
 
     @VisibleForTesting
-    byte[] getResourceAsBytesImpl(String resource, List<String> unavailableWorkItemAttachments) throws IOException {
+    byte[] getResourceAsBytesImpl(String resource) throws IOException {
         for (IUrlResolver resolver : resolvers) {
             if (resolver.canResolve(resource)) {
                 InputStream stream = resolver.resolve(resource);
                 if (stream != null) {
                     byte[] result = StreamUtils.suckStreamThenClose(stream);
                     if (result.length > 0 && WorkItemAttachmentUrlResolver.isWorkItemAttachmentUrl(resource) && isMediaTypeMismatch(resource, result)) {
-                        unavailableWorkItemAttachments.add(getWorkItemIdsWithUnavailableAttachments(resource));
+                        ExportContext.addWorkItemIDsWithMissingAttachment(getWorkItemIdsWithUnavailableAttachments(resource));
                         return getDefaultContent(resource);
                     }
                     return result;

@@ -189,7 +189,7 @@ public class HtmlProcessor {
             }
             case BASELINE_COLLECTION -> throw new IllegalArgumentException(UNSUPPORTED_DOCUMENT_TYPE.formatted(exportParams.getDocumentType()));
         };
-        html = replaceResourcesAsBase64Encoded(html, exportParams.getUnavailableWorkItemAttachments());
+        html = replaceResourcesAsBase64Encoded(html);
         html = MediaUtils.removeSvgUnsupportedFeatureHint(html); //note that there is one more replacement attempt before replacing images with base64 representation
         html = properTableHeads(html);
         html = cleanExtraTableContent(html);
@@ -978,14 +978,8 @@ public class HtmlProcessor {
 
     @SneakyThrows
     @SuppressWarnings({"java:S5852", "java:S5857"}) //need by design
-    public String replaceResourcesAsBase64Encoded(String html, List<String> unavailableWorkItemAttachments) {
-        return MediaUtils.inlineBase64Resources(html, fileResourceProvider, unavailableWorkItemAttachments);
-    }
-
-    @SneakyThrows
-    @SuppressWarnings({"java:S5852", "java:S5857"}) //need by design
     public String replaceResourcesAsBase64Encoded(String html) {
-        return MediaUtils.inlineBase64Resources(html, fileResourceProvider, null);
+        return MediaUtils.inlineBase64Resources(html, fileResourceProvider);
     }
 
     public String internalizeLinks(String html) {
