@@ -880,15 +880,6 @@ li span {
     line-height: 1em !important;
 }
 
-.header-footer-center {
-    /*max-width: 30%;*/
-    text-align: center;
-}
-
-.header-footer-right {
-    text-align: right;
-}
-
 .comment {
     background: #eee;
     border-left: 5px solid #aaa;
