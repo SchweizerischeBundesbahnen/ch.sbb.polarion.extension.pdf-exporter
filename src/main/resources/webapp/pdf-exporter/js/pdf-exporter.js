@@ -471,7 +471,7 @@ const PdfExporter = {
             return;
         }
 
-        if (this.exportContext.getDocumentType() === ExportParams.DocumentType.TEST_RUN) {
+        if (this.exportContext.getDocumentType() === ExportParams.DocumentType.TEST_RUN && document.getElementById("popup-download-attachments").checked) {
             const testRunId = new URLSearchParams(this.exportContext.getUrlQueryParameters()).get("id")
             ExportCommon.downloadTestRunAttachments(exportParams.projectId, testRunId, exportParams.revision, exportParams.attachmentsFilter);
         }
