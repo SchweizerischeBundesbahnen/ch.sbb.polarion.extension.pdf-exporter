@@ -2,6 +2,7 @@ package ch.sbb.polarion.extension.pdf_exporter.converter;
 
 import ch.sbb.polarion.extension.generic.rest.filter.LogoutFilter;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
+import ch.sbb.polarion.extension.pdf_exporter.util.ExportContext;
 import com.polarion.core.util.logging.Logger;
 import com.polarion.platform.security.ISecurityService;
 import lombok.Builder;
@@ -13,6 +14,8 @@ import javax.security.auth.Subject;
 import java.security.PrivilegedAction;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -45,6 +48,7 @@ public class PdfConverterJobsService {
         String jobId = UUID.randomUUID().toString();
         Subject userSubject = securityService.getCurrentSubject();
         boolean isJobLogoutRequired = isJobLogoutRequired();
+        final JobContext jobContext = JobContext.builder().workItemIDsWithMissingAttachment(new ArrayList<>()).build();
 
         CompletableFuture<byte[]> asyncConversionJob = CompletableFuture.supplyAsync(() -> {
             try {
@@ -55,6 +59,8 @@ public class PdfConverterJobsService {
                 failedJobsReasons.put(jobId, e.getMessage());
                 throw e;
             } finally {
+                jobContext.workItemIDsWithMissingAttachment.addAll(ExportContext.getWorkItemIDsWithMissingAttachment());
+                ExportContext.clear();
                 if ((userSubject != null) && isJobLogoutRequired) {
                     securityService.logout(userSubject);
                 }
@@ -75,7 +81,8 @@ public class PdfConverterJobsService {
         JobDetails jobDetails = JobDetails.builder()
                 .future(asyncConversionJob)
                 .exportParams(exportParams)
-                .startingTime(Instant.now()).build();
+                .startingTime(Instant.now())
+                .jobContext(jobContext).build();
         jobs.put(jobId, jobDetails);
         return jobId;
     }
@@ -123,6 +130,14 @@ public class PdfConverterJobsService {
         return jobDetails.exportParams;
     }
 
+    public JobContext getJobContext(String jobId) {
+        JobDetails jobDetails = jobs.get(jobId);
+        if (jobDetails == null) {
+            throw new NoSuchElementException(String.format(UNKNOWN_JOB_MESSAGE, jobId));
+        }
+        return jobDetails.jobContext;
+    }
+
     public Map<String, JobState> getAllJobsStates() {
         return jobs.keySet().stream()
                 .collect(Collectors.toMap(Function.identity(), this::getJobState));
@@ -153,7 +168,13 @@ public class PdfConverterJobsService {
     public record JobDetails(
             CompletableFuture<byte[]> future,
             ExportParams exportParams,
-            Instant startingTime) {
+            Instant startingTime,
+            JobContext jobContext) {
+    }
+
+    @Builder
+    public record JobContext(
+            List<String> workItemIDsWithMissingAttachment) {
     }
 
     @Builder

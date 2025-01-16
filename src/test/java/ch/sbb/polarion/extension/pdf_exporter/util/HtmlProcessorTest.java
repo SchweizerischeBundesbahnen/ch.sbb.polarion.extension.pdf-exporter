@@ -286,6 +286,7 @@ class HtmlProcessorTest {
                 "<img id='image1' src='data:image/svg+xml;base64," + Base64.getEncoder().encodeToString("<svg></svg>".getBytes(StandardCharsets.UTF_8)) + "'/></div>";
         assertEquals(expected, result);
     }
+
     @Test
     @SneakyThrows
     void processHtmlForPDFTestCutEmptyWorkItemAttributesDisabled() {

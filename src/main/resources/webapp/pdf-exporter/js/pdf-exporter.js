@@ -483,8 +483,11 @@ const PdfExporter = {
             this.checkNestedListsAsync(requestBody);
         }
 
-        ExportCommon.asyncConvertPdf(requestBody, responseBody => {
-            ExportCommon.downloadBlob(responseBody, fileName);
+        ExportCommon.asyncConvertPdf(requestBody, result => {
+            if (result.warning) {
+                this.showNotification({alertType: "warning", message: result.warning});
+            }
+            ExportCommon.downloadBlob(result.response, fileName);
 
             this.showNotification({alertType: "success", message: "PDF was successfully generated"});
             this.actionInProgress({inProgress: false});

@@ -266,12 +266,12 @@ public class MediaUtils {
         return Files.probeContentType(Paths.get(resource));
     }
 
-    private String getMimeTypeUsingTikaByResourceName(@NotNull String resource, byte[] resourceBytes) {
+    public String getMimeTypeUsingTikaByResourceName(@NotNull String resource, byte[] resourceBytes) {
         String detected = tika.detect(resource);
         return MimeTypes.OCTET_STREAM.equals(detected) ? null : detected; // ignore 'application/octet-stream' fallback
     }
 
-    private String getMimeTypeUsingTikaByContent(@NotNull String resource, byte[] resourceBytes) {
+    public String getMimeTypeUsingTikaByContent(@NotNull String resource, byte[] resourceBytes) {
         String detected = tika.detect(resourceBytes);
         return MimeTypes.OCTET_STREAM.equals(detected) ? null : detected; // ignore 'application/octet-stream' fallback
     }

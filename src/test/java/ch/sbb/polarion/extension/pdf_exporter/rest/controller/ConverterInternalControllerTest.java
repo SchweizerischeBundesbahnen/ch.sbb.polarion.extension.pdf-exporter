@@ -21,6 +21,7 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -76,10 +77,10 @@ class ConverterInternalControllerTest {
     @ParameterizedTest
     @MethodSource("getStatusParams")
     void getPdfConverterJobStatus_success(JobState jobState,
-                                                 HttpStatus expectedHttpStatus,
-                                                 ConverterJobStatus expectedJobStatus,
-                                                 String expectedLocationUrl,
-                                                 String expectedErrorMessage) {
+                                          HttpStatus expectedHttpStatus,
+                                          ConverterJobStatus expectedJobStatus,
+                                          String expectedLocationUrl,
+                                          String expectedErrorMessage) {
         if (expectedLocationUrl != null) {
             when(uriInfo.getRequestUri()).thenReturn(UriBuilder.fromUri("http://testHost:8090/polarion/pdf-exporter/rest/api/convert/jobs/testJobId").build());
         }
@@ -105,9 +106,10 @@ class ConverterInternalControllerTest {
                 Arguments.of(new JobState(true, true, false, "test error"), HttpStatus.CONFLICT, ConverterJobStatus.FAILED, null, "test error")
         );
     }
+
     @Test
     void getPdfConverterJobStatus_notFound() {
-        when(pdfConverterJobService.getJobState(anyString())).thenAnswer( id -> {
+        when(pdfConverterJobService.getJobState(anyString())).thenAnswer(id -> {
             throw new NoSuchElementException("Job not found: " + id);
         });
         assertThatThrownBy(() -> internalController.getPdfConverterJobStatus("testJobIdUnknown"))
@@ -118,6 +120,7 @@ class ConverterInternalControllerTest {
     @Test
     void getPdfConverterJobResult_success() {
         when(pdfConverterJobService.getJobResult("testJobId")).thenReturn(Optional.of("test pdf".getBytes()));
+        when(pdfConverterJobService.getJobContext("testJobId")).thenReturn(PdfConverterJobsService.JobContext.builder().workItemIDsWithMissingAttachment(new ArrayList<String>()).build());
         Response jobResult = internalController.getPdfConverterJobResult("testJobId");
 
         assertThat(jobResult.getStatus()).isEqualTo(HttpStatus.OK.value());
@@ -126,7 +129,7 @@ class ConverterInternalControllerTest {
 
     @Test
     void getPdfConverterJobResult_notFound() {
-        when(pdfConverterJobService.getJobResult(anyString())).thenAnswer( id -> {
+        when(pdfConverterJobService.getJobResult(anyString())).thenAnswer(id -> {
             throw new NoSuchElementException("Job not found: " + id);
         });
         assertThatThrownBy(() -> internalController.getPdfConverterJobResult("testJobIdUnknown"))
@@ -147,9 +150,9 @@ class ConverterInternalControllerTest {
     void getAllPdfConverterJobs() {
         when(pdfConverterJobService.getAllJobsStates()).thenReturn(
                 Map.of(
-                    "testJobId1", new JobState(true, false, false, null),
-                    "testJobId2", new JobState(false, false, false, null),
-                    "testJobId3", new JobState(true, true, false, "test error")
+                        "testJobId1", new JobState(true, false, false, null),
+                        "testJobId2", new JobState(false, false, false, null),
+                        "testJobId3", new JobState(true, true, false, "test error")
                 )
         );
 
