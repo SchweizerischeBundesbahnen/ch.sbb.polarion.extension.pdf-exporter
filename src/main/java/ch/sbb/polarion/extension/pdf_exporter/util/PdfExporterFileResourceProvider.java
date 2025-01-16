@@ -94,8 +94,10 @@ public class PdfExporterFileResourceProvider implements FileResourceProvider {
                         ExportContext.addWorkItemIDsWithMissingAttachment(getWorkItemIdsWithUnavailableAttachments(resource));
                         return getDefaultContent(resource);
                     }
-                    return result;
 
+                    if (result.length > 0) {
+                        return result;
+                    }
                 }
             }
         }

@@ -10,8 +10,6 @@ import java.io.IOException;
 public class ExportContextFilter implements ContainerResponseFilter {
     @Override
     public void filter(ContainerRequestContext containerRequestContext, ContainerResponseContext containerResponseContext) throws IOException {
-        if (containerResponseContext.getHeaders().containsKey("Missing-WorkItem-Attachments-Count")) {
-            ExportContext.clear();
-        }
+        ExportContext.clear();
     }
 }
