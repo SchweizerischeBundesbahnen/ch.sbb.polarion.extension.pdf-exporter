@@ -1,8 +1,11 @@
 package ch.sbb.polarion.extension.pdf_exporter.util;
 
+import lombok.experimental.UtilityClass;
+
 import java.util.ArrayList;
 import java.util.List;
 
+@UtilityClass
 public class ExportContext {
     private static final ThreadLocal<List<String>> workItemIDsWithMissingAttachment = ThreadLocal.withInitial(ArrayList::new);
 

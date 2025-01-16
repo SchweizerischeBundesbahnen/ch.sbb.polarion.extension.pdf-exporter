@@ -12,12 +12,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerResponseContext;
 import javax.ws.rs.core.MultivaluedMap;
-import java.io.IOException;
 
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-public class ExportContextFilterTest {
+class ExportContextFilterTest {
 
     private ExportContextFilter exportContextFilter;
 

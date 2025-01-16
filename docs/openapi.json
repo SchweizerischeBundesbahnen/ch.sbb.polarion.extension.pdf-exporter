@@ -226,7 +226,14 @@
                 },
                 "style": "simple"
               },
-              "Unavailable-Work-Items-Attachments-Count": {
+              "Missing-WorkItem-Attachments-Count": {
+                "description": "Unavailable work item attachments count",
+                "schema": {
+                  "type": "string"
+                },
+                "style": "simple"
+              },
+              "WorkItem-IDs-With-Missing-Attachment": {
                 "description": "Work items contained unavailable attachments",
                 "schema": {
                   "type": "string"
@@ -454,7 +461,14 @@
                 },
                 "style": "simple"
               },
-              "Unavailable-Work-Items-Attachments-Count": {
+              "Missing-WorkItem-Attachments-Count": {
+                "description": "Unavailable work item attachments count",
+                "schema": {
+                  "type": "string"
+                },
+                "style": "simple"
+              },
+              "WorkItem-IDs-With-Missing-Attachment": {
                 "description": "Work items contained unavailable attachments",
                 "schema": {
                   "type": "string"

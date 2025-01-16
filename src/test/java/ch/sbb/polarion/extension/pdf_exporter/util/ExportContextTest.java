@@ -14,7 +14,7 @@ import java.util.concurrent.Future;
 import static org.junit.jupiter.api.Assertions.*;
 
 @ExtendWith(MockitoExtension.class)
-public class ExportContextTest {
+class ExportContextTest {
 
     @BeforeEach
     void setUp() {
