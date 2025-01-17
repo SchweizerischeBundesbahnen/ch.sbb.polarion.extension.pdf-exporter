@@ -73,9 +73,8 @@ th {
     border: none;
 }
 
-.footer {
-    margin-top: 10px;
-    margin-bottom: 50px;
+.header .top-center, .footer .bottom-center {
+    text-align: center;
 }
 
 .page-number .number::after {
@@ -142,9 +141,11 @@ ul.toc li > a.page-number::after {
     border-bottom: 1px solid #aaa;
     @top-center {
         content: element(top-center);
+        width: 50%;
     }
     @bottom-center {
         content: element(bottom-center);
+        width: 50%;
     }
 }
 
@@ -166,15 +167,19 @@ ul.toc li > a.page-number::after {
 @page :right {
     @top-left {
         content: element(top-left);
+        text-align: left;
     }
     @top-right {
         content: element(top-right);
+        text-align: right;
     }
     @bottom-left {
         content: element(bottom-left);
+        text-align: left;
     }
     @bottom-right {
         content: element(bottom-right);
+        text-align: right;
     }
 }
 
@@ -335,14 +340,17 @@ ul.toc li > a.page-number::after {
 
     .footer .bottom-left {
         position: running(bottom-left);
+        margin-bottom: 40px;
     }
 
     .footer .bottom-center {
         position: running(bottom-center);
+        margin-bottom: 40px;
     }
 
     .footer .bottom-right {
         position: running(bottom-right);
+        margin-bottom: 40px;
     }
 
     h1 {

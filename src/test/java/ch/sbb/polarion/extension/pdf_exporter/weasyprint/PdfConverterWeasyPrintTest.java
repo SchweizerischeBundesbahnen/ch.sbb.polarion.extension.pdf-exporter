@@ -124,7 +124,7 @@ class PdfConverterWeasyPrintTest extends BaseWeasyPrintTest {
 
         headerFooterSettings = mock(HeaderFooterSettings.class);
         //here we will test "testFieldKey" custom field & special "PAGE_NUMBER" placeholder substitution in the header
-        when(headerFooterSettings.load(any(), any())).thenReturn(new HeaderFooterModel("HL", "HC  {{ testFieldKey }}", "HR", "FL", "FC", "FR {{ PAGE_NUMBER }}"));
+        when(headerFooterSettings.load(any(), any())).thenReturn(new HeaderFooterModel("HL", "HC  {{ testFieldKey }}", "HR", "FL", "FC", "FR_{{ PAGE_NUMBER }}"));
 
         String basicCss = readCssResource(CSS_BASIC, FONT_REGULAR);
         CssSettings cssSettings = mock(CssSettings.class);
@@ -275,7 +275,7 @@ class PdfConverterWeasyPrintTest extends BaseWeasyPrintTest {
                 .revisionPlaceholder("42")
                 .build();
         documentDataFactoryMockedStatic.when(() -> DocumentDataFactory.getDocumentData(eq(params), anyBoolean())).thenReturn(wikiPage);
-        when(headerFooterSettings.load(any(), any())).thenReturn(new HeaderFooterModel("HL", "HC  {{ REVISION }}", "HR", "FL", "FC", "FR {{ PAGE_NUMBER }}"));
+        when(headerFooterSettings.load(any(), any())).thenReturn(new HeaderFooterModel("HL", "HC  {{ REVISION }}", "HR", "FL", "FC", "FR_{{ PAGE_NUMBER }}"));
         params.setDocumentType(DocumentType.WIKI_PAGE);
         params.setLocationPath("wikiFolder/wikiPage");
 
