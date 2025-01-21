@@ -243,6 +243,51 @@ In case if both of them specified 'existing_wi_id' has higher priority.
    (Style package, Stylesheets) there's no `Quick Help` section as their content is self-evident.
 4. To change configuration of PDF Exporter extension just edit corresponding section and press `Save` button.
 
+### CSS for booklet layout
+
+If you export PDF to be printed as a booklet, then you may need to alternate blocks in header/footer depending on the fact if it's even or odd page.
+This can be achieved (since version 8.1.0) by CSS modification. Let us give you an example. Find following definition in standard CSS of the extension:
+
+```
+@page :left {
+    @top-left {
+        content: element(top-left);
+    }
+    @top-right {
+        content: element(top-right);
+    }
+    @bottom-left {
+        content: element(bottom-left);
+    }
+    @bottom-right {
+        content: element(bottom-right);
+    }
+}
+```
+
+...and replace it by this code:
+
+```
+@page :left {
+    @top-left {
+        content: element(top-right);
+    }
+    @top-right {
+        content: element(top-left);
+    }
+    @bottom-left {
+        content: element(bottom-right);
+    }
+    @bottom-right {
+        content: element(bottom-left);
+    }
+}
+```
+
+As a result blocks in header and footer which in normal case are displayed at right side of the header/footer will be displayed at left side and vice versa.
+This is only an example to illustrate an idea, if your use case is different feel free to modify this code according to your requirements.
+
+
 ## Usage
 
 1. Open a document in Polarion.
