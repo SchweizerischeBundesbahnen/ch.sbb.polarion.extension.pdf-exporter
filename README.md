@@ -25,6 +25,10 @@ Please see separate [quick start page](QUICK_START.md) where briefly summarized 
 
 If you need deeper knowledge about all possible steps, configurations and their descriptions, please see sections below.
 
+## Help
+
+Please see separate [help page](HELP.md) for the detailed export panel options description.
+
 ## Build
 
 This extension can be produced using maven:

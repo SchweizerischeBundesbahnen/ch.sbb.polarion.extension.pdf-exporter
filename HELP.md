@@ -1,0 +1,223 @@
+* [Export panel layout](#export-panel-layout)
+* [Style packages](#style-packages)
+* [Options](#options)
+    * [Cover page](#cover-page)
+    * [CSS](#css)
+    * [Header and footer](#header-and-footer)
+    * [Localization](#localization)
+    * [Webhooks](#webhooks)
+    * [Headers color](#headers-color)
+    * [Paper size](#paper-size)
+    * [Orientation](#orientation)
+    * [Fit images and tables to page width](#fit-images-and-tables-to-page-width)
+    * [Follow HTML presentational hints](#follow-html-presentational-hints)
+    * [Comments rendering](#comments-rendering)
+    * [Watermark](#watermark)
+    * [Cut empty chapters](#cut-empty-chapters)
+    * [Cut empty Workitem attributes](#cut-empty-workitem-attributes)
+    * [Cut local Polarion URLs](#cut-local-polarion-urls)
+    * [Mark referenced Workitems](#mark-referenced-workitems)
+    * [Specific higher level chapters](#specific-higher-level-chapters)
+    * [Custom styles of numbered lists](#custom-styles-of-numbered-lists)
+    * [Localize enums](#localize-enums)
+    * [Specific Workitem roles](#specific-workitem-roles)
+    * [File name](#file-name)
+    * [Download attachments](#download-attachments)
+
+## Export panel layout
+As the extension is installed and configured to appear on Document Properties pane, you can open any document in a project where you configured PDF exporter, open Document Properties sidebar and you will see following section added there:
+
+![Side panel](docs/help/img/side_panel.png)
+
+If you use bulk export or button from the toolbar, Live Report or Test Run pages then modal popup appears with the same options but slightly different layout:
+
+![Popup content](docs/help/img/popup.png)
+
+## Style packages
+All exporter settings are combined into named style packages. Different packages can be configured different way as well as can hide their settings from being redefined by end user. In such a case you will be able only to select a package
+to use without possibility to redefine its settings:
+
+![Style packages](docs/help/img/style_packages.png)
+
+## Options
+A package can also expose its options to be redefined by end user before exporting a document into PDF.
+
+### Cover page
+In first line of options pane there's a checkbox "Cover page", if ticked a dropdown will appear right hand side to select predefined cover page template to use during PDF generation:
+
+![Cover page](docs/help/img/cover_page.png)
+
+### CSS
+There can be different CSS settings created on admin pane each having its own name. You can chose which of them to use during PDF generation in second dropdown of options pane:
+
+![CSS](docs/help/img/css.png)
+
+### Header and footer
+Settings for header/footer of generated PDF document also grouped into named settings and can be chosen in next dropdown:
+
+![Header/Footer](docs/help/img/cover_page.png)
+
+### Localization
+The same relates to localization settings, which one to use during PDF generation can be selected in next dropdown:
+
+![Localization](docs/help/img/localization.png)
+
+### Webhooks
+In this section you can choose specific webhook for custom HTML processing before sending it to WeasyPrint:
+
+![Webhooks](docs/help/img/webhooks.png)
+
+### Headers color
+By default dark blue color (Polarion's default) is used for headers, but you can change this selecting any other color:
+
+![Headers color](docs/help/img/headers_color.png)
+
+As a result headers of generated PDF will be of selected color:
+
+![Headers color result](docs/help/img/headers_color_result.png)
+
+### Paper size
+![Paper size](docs/help/img/headers_color.png)
+
+This option specifies paper size of generated PDF document. Default is "A4".
+
+### Orientation
+This option serves as a document wide page orientation setting, either "Portrait" (default) or "Landscape". If you don't have page breaks in a document, then all pages in generated PDF file will have an orientation selected by you in this
+dropbox. However you can insert a page break in document and override this document wide setting for certain pages (starting from page break and above till the beginning of document or till other page break). Page breaks can be inserted via
+toolbar button:
+
+![Orientation](docs/help/img/orientation.png)
+
+And then you can specify custom orientation for this page break:
+
+![Orientation page break](docs/help/img/orientation_page_break.png)
+
+### Fit images and tables to page width
+This option which is on by default tells PDF Exporter to fit images and tables into resulted page width even if their width in Polarion document exceed it.Elements exceed Polarion document width:
+
+![Fit images and tables before](docs/help/img/fit_images_before.png)
+
+And fit into PDF document width after export:
+
+![Fit images and tables after](docs/help/img/fit_images_after.png)
+
+### Follow HTML presentational hints
+If you select this checkbox WeasyPrint will follow HTML presentational hints, i.e. if an HTML element has ```width``` attribute specified, it will be taken into account despite the fact that its usage is discouraged in favor of specifying
+width via element's ```style``` attribute.
+
+### Comments rendering
+This option which is on by default tells PDF Exporter to include Polarion document's comments into generated PDF document (REMARK: please take into account that this relates only to LiveDoc comments, WorkItem comments regardless the fact
+they look like LiveDoc comments **won't be displayed** in generated PDF under any circumstances).Following state of Polarion document:
+
+![Comments](docs/help/img/comments.png)
+
+Will result in following PDF:
+
+![Comments result](docs/help/img/comments_result.png)
+
+If you though don't want comments to be included in generated PDF document - just un-check this checkbox.
+
+### Watermark
+If you select this checkbox all pages of resulted PDF document will include "Confidential" watermark:
+
+![Watermark](docs/help/img/watermark.png)
+
+### Cut empty chapters
+If you select this checkbox empty chapters of any level will be excluded from being exported, like these selected in screenshot:
+
+![Cut empty chapters](docs/help/img/cut_empty_chapters.png)
+
+### Cut empty Workitem attributes
+This option which is on by default tells PDF Exporter to exclude empty WorkItem attributes from resulted PDF document. Empty Workitem attribute in Polarion document (tabular representation):
+
+![Cut empty Workitem attributes before](docs/help/img/cut_empty_wi_attr_before.png)
+
+Excluded from resulted PDF document:
+
+![Cut empty Workitem attributes after](docs/help/img/cut_empty_wi_attr_after.png)
+
+Empty Workitem attribute in Polarion document (non-tabular representation):
+
+![Cut empty Workitem attributes (non-tabular) before](docs/help/img/cut_empty_wi_attr_non_tabular_before.png)
+
+Also excluded from resulted PDF document:
+
+![Cut empty Workitem attributes (non-tabular) after](docs/help/img/cut_empty_wi_attr_non_tabular_after.png)
+
+### Cut local Polarion URLs
+If you select this checkbox all anchors which link to local Polarion resources will be cut off leaving only text they contain:
+
+![Cut local Polarion URLs](docs/help/img/cut_urls.png)
+
+### Mark referenced Workitems
+If you select this checkbox, referenced Workitems will have special styling (dashes left hand side):
+
+![Mark referenced Workitems](docs/help/img/mark_referenced_wi.png)
+
+### Specific higher level chapters
+If you select this checkbox an input field will appear where you can specify which high-level chapters (as comma separated list of numbers) to be exported:
+
+![Specific higher level chapters](docs/help/img/specific_chapters.png)
+
+### Custom styles of numbered lists
+If you select this checkbox an input field will appear where you can override default styles of numbered lists in-lined in text. Shortcuts are used for simplicity:
+
+| Shortcut | Value of ```list-style-type``` CSS property | Result               |
+|----------|---------------------------------------------|----------------------|
+| 1        | decimal                                     | 1..<br>2..           |
+| a        | lower-alpha                                 | a..<br>b..<br>c..    |
+| i        | lower-roman                                 | i..<br>ii..<br>iii.. |
+| A        | upper-alpha                                 | A..<br>B..<br>C..    |
+| I        | upper-roman                                 | I..<br>II..<br>III.. |
+
+Default styles are ```1ai```. You can enter any combination, eg. ```a1iAI```. Maximum depth of levels is 9. If you specify styles of less length, they will be repeated to form length of 9. For example if you enter 1ai resulted styles will
+be ```1ai1ai1ai```.
+
+### Localize enums
+If you check this checkbox and select some non-English language from appeared dropbox:
+
+![Localize enums](docs/help/img/localize_enums.png)
+
+Enumeration values which translations into specified language are provided in administration will be replaced by their translations in resulted PDF document.
+
+Enumeration values in Polarion document:
+
+![Localize enums before](docs/help/img/localize_enums_before.png)
+
+As a result are replaced by their translations:
+
+![Localize enums after](docs/help/img/localize_enums_after.png)
+
+### Specific Workitem roles
+If you check this checkbox and select only certain roles of Workitem relations:
+
+![Specific Workitem roles](docs/help/img/specific_wi_roles.png)
+
+...then among all possible Linked Workitems:
+
+![Specific Workitem roles before 1](docs/help/img/specific_wi_roles_before_1.png)
+
+...will be taken only those which correspond selected roles (both direct and reverse directions):
+
+![Specific Workitem roles before 2](docs/help/img/specific_wi_roles_before_2.png)
+
+And here is the resulted PDF document:
+
+![Specific Workitem roles after](docs/help/img/specific_wi_roles_after.png)
+
+### File name
+Here you can specify the resulting file name:
+
+![File name](docs/help/img/filename.png)
+
+Note that the pre-generated value can be defined on the 'Filename' administration pane. In this section you can configure a schema for the generation of the used PDF-filename. Variables can be used as well. Each pane is designated for the
+particular document type:
+
+![File name templates](docs/help/img/filename_templates.png)
+
+### Download attachments
+Option available only for Test Runs:
+
+![Download attachments](docs/help/img/download_attachments.png)
+
+By selecting this checkbox, you can set a mask for attachment file names that will be extracted from current Test Run and downloaded along with the regular PDF file.
