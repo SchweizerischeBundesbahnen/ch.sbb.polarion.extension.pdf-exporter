@@ -6,11 +6,12 @@
     document.addEventListener('DOMContentLoaded', function () {
         document.querySelectorAll('a').forEach(function (element) {
             if (element.innerHTML === 'help page') {
+                const helpUrl = top.location.href.replace('/about', '/help');
+                element.href = helpUrl;
                 element.target = "";
-                element.href = "";
                 element.onclick = function(event) {
                     event.preventDefault();
-                    parent.document.location = top.location.href.replace('/about', '/help')
+                    parent.document.location = helpUrl;
                 };
             }
         });
