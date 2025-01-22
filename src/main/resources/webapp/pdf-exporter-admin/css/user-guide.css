@@ -1,0 +1,71 @@
+.user-guide-page {
+    font-size: 13px;
+}
+
+/* make images non-clickable */
+a:has(img) {
+    pointer-events: none;
+    cursor: default;
+}
+
+.user-guide-page img {
+    margin: 10px;
+    border: 15px solid #eee;
+}
+
+.monospace {
+    font-family: monospace;
+}
+
+.user-guide-page table {
+    border-collapse: collapse;
+}
+
+.user-guide-page table th {
+    height: 12px;
+    padding: 5px;
+    text-align: left;
+    border: 1px solid #CCCCCC;
+    font-weight: bold;
+    vertical-align: top;
+    white-space: nowrap;
+    background-color: #F0F0F0;
+}
+
+.user-guide-page table td {
+    height: 12px;
+    text-align: left;
+    vertical-align: top;
+    line-height: 18px;
+    border: 1px solid #CCCCCC;
+    padding: 5px;
+}
+
+.user-guide-page table td:first-child {
+    padding-left: 10px
+}
+
+.user-guide-page .app-icon {
+    position: absolute;
+    right: 25px;
+}
+
+.user-guide-page code {
+    background-clip: padding-box;
+    border-radius: 3px;
+    border: 1px solid #DFE1E6;
+    background-color: #F4F5F7;
+    display: inline-block;
+    margin: 0 2px -1px;
+    padding: 0 3px;
+    text-decoration: inherit;
+    vertical-align: baseline;
+}
+
+.user-guide-page pre code {
+    display: block;
+    font-size: 12px;
+    line-height: 18px;
+    white-space: pre-wrap;
+    padding: 6px 10px;
+}

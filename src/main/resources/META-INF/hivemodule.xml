@@ -27,6 +27,15 @@
                   projectGroupScope="false"
                   repositoryScope="true"/>
 
+        <extender id="user-guide"
+                  name="User Guide"
+                  parentNodeId="pdf-export"
+                  iconUrl="/polarion/pdf-exporter-admin/ui/images/menu/16x16/user_guide.svg"
+                  pageUrl="/polarion/pdf-exporter-admin/pages/user-guide.jsp?scope=$scope$"
+                  projectScope="true"
+                  projectGroupScope="false"
+                  repositoryScope="true"/>
+
         <extender id="rest-api"
                   name="REST API"
                   parentNodeId="pdf-export"

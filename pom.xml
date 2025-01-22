@@ -64,7 +64,11 @@
         <web.app.name>${maven-jar-plugin.Extension-Context}</web.app.name>
 
         <!--suppress UnresolvedMavenProperty -->
+        <markdown2html-maven-plugin.version>1.6.0</markdown2html-maven-plugin.version>
         <markdown2html-maven-plugin.failOnError>${env.MARKDOWN2HTML_MAVEN_PLUGIN_FAIL_ON_ERROR}</markdown2html-maven-plugin.failOnError>
+        <markdown2html-maven-plugin.user-guide.inputFile>${project.basedir}/USER_GUIDE.md</markdown2html-maven-plugin.user-guide.inputFile>
+        <markdown2html-maven-plugin.user-guide.outputFileName>user-guide.html</markdown2html-maven-plugin.user-guide.outputFileName>
+        <markdown2html-maven-plugin.user-guide.outputFile>${markdown2html-maven-plugin.extensionContextAdminHtml}/${markdown2html-maven-plugin.user-guide.outputFileName}</markdown2html-maven-plugin.user-guide.outputFile>
         <swagger-maven-plugin.version>2.2.22</swagger-maven-plugin.version>
 
         <frontend-maven-plugin.version>1.15.1</frontend-maven-plugin.version>
@@ -205,11 +209,49 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-clean-plugin</artifactId>
+                <configuration>
+                    <filesets>
+                        <fileset>
+                            <directory>${markdown2html-maven-plugin.extensionContextAdminHtml}</directory>
+                            <includes>
+                                <include>${markdown2html-maven-plugin.user-guide.outputFileName}</include>
+                                <include>${markdown2html-maven-plugin.outputFileName}</include>
+                            </includes>
+                            <followSymlinks>false</followSymlinks>
+                        </fileset>
+                    </filesets>
+                </configuration>
             </plugin>
 
             <plugin>
                 <groupId>ch.sbb.maven.plugins</groupId>
                 <artifactId>markdown2html-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>readme.md-to-about.html</id>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>convert</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>user_guide.md-to-user-guide.html</id>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>convert</goal>
+                        </goals>
+                        <configuration>
+                            <inputFile>USER_GUIDE.md</inputFile>
+                            <outputFile>${markdown2html-maven-plugin.user-guide.outputFile}</outputFile>
+                            <tokenEnvVarName>${markdown2html-maven-plugin.tokenEnvVarName}</tokenEnvVarName>
+                            <failOnError>${markdown2html-maven-plugin.failOnError}</failOnError>
+                            <generateHeadingIds>${markdown2html-maven-plugin.generateHeadingIds}</generateHeadingIds>
+                            <relativeLinkPrefix>${project.scm.url}</relativeLinkPrefix>
+                            <openExternalLinksInNewTab>true</openExternalLinksInNewTab>
+                            <imageProcessingType>EMBED</imageProcessingType>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
 
             <plugin>

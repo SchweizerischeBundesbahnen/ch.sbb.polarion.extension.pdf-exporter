@@ -113,15 +113,6 @@ First of all you need to inject appropriate JavaScript code into Polarion:
 Then open a project, its Live Report you wish to export, and click "Expand Tools" on top of the page.
 As a result report's toolbar will appear. Click "Edit" button in a toolbar, as a result the report will be switched into an edit mode. Add an empty region on top of the report, place cursor there, choose "PDF Export" tag on "Widgets" sidebar on right hand side of the page, find "Export to PDF Button" widget there and click it to add to the report. Then save a report clicking 💾 in a toolbar and then return to a view mode clicking "Back" button. When you click "Export to PDF" button just added to the report, PDF Exporter view will be opened in a popup and you will be able to proceed with exporting the report to PDF. Be aware that in report's context limited set of properties are available for configuration in PDF popup, the rest of them are relevant only in Live Document context.
 
-### Bulk PDF Export
-There is a possibility to export multiple documents in one run. This can be achieved with help of special widget.
-
-Open a project where you wish do bulk export. Open its Default Space in Documents & Pages and create Live Report with name "Bulk PDF Export". Newly created report will be opened in edit mode. Change its title to "Bulk PDF Export" or whatever value you wish, then place cursor in a region you wish the widget to appear, choose "PDF Export" tag on "Widgets" sidebar on right hand side of the page, find "Bulk PDF Export" widget there and click it to add to the report. Then save a report clicking 💾 in a toolbar and then return to a view mode clicking "Back" button.
-
-As a result you will see a table listing all Live Documents in a current project (with pagination). This widget is an extension of standard Polarion table with a data set and can be configured the similar way, for example you can specify a Lucene query to narrow list of displaying documents, change set of columns or modify soring rule.
-
-When you are ready with filtering, sorting etc. of documents you can select multiple documents to be exported, ticking appropriate checkboxes and click Export to PDF button, a popup with export configuration will be opened. Select appropriate configuration and click Export button, new popup will be opened showing progress of exporting. When export is finished click Close button to hide popup. Also, you can click Stop button when export is in progress, in this case document which is exporting at the moment will finish and the rest which were pending will be cancelled.
-
 ### Configuring logs
 
 For better problem analyses extended logging can be configured in Polarion. By default, Polarion log level is set to INFO. It can be changed to debug in `log4j2.xml` file.
@@ -289,7 +280,7 @@ This is only an example to illustrate an idea, if your use case is different fee
 1. Open a document in Polarion.
 2. In the toolbar choose Show Sidebar ➙ Document Properties.
 3. Choose desired options in the `PDF Exporter` block and click `Export to PDF`.
-   For the options details please refer [plugin documentation](docs/pdf-exporter.pdf).
+   For the options details please refer [user guide](USER_GUIDE.md).
 
 ## REST API
 This extension provides REST API. OpenAPI Specification can be obtained [here](docs/openapi.json).
