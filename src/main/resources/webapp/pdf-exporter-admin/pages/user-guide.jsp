@@ -16,22 +16,22 @@
     <title>Help</title>
     <link rel="stylesheet" href="../ui/generic/css/common.css?bundle=<%= version.getBundleBuildTimestampDigitsOnly() %>">
     <link rel="stylesheet" href="../ui/generic/css/github-markdown-light.css?bundle=<%= version.getBundleBuildTimestampDigitsOnly() %>">
-    <link rel="stylesheet" href="../css/help.css?bundle=<%= version.getBundleBuildTimestampDigitsOnly() %>">
+    <link rel="stylesheet" href="../css/user-guide.css?bundle=<%= version.getBundleBuildTimestampDigitsOnly() %>">
 </head>
 
 <body>
-<div class="standard-admin-page help-page">
+<div class="standard-admin-page user-guide-page">
     <h1>Help</h1>
 
     <div>
         <article class="markdown-body">
             <%
                 String extensionContext = context.getExtensionContext();
-                try (InputStream inputStream = ExtensionInfo.class.getResourceAsStream("/webapp/" + extensionContext + "-admin/html/help.html")) {
+                try (InputStream inputStream = ExtensionInfo.class.getResourceAsStream("/webapp/" + extensionContext + "-admin/html/user-guide.html")) {
                     if (inputStream != null) {
                         out.println(new String(inputStream.readAllBytes(), StandardCharsets.UTF_8));
                     } else {
-                        out.println("No help has been generated during build. Please check <a href=\"" + version.getProjectURL() + "/HELP.md\" target=\"_blank\">the online documentation</a>.");
+                        out.println("No help has been generated during build. Please check <a href=\"" + version.getProjectURL() + "/USER_GUIDE.md\" target=\"_blank\">the online documentation</a>.");
                     }
                 }
             %>

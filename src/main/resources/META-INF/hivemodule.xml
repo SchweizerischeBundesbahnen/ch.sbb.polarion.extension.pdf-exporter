@@ -27,13 +27,13 @@
                   projectGroupScope="false"
                   repositoryScope="true"/>
 
-        <extender id="help"
-                  name="Help"
+        <extender id="user-guide"
+                  name="User Guide"
                   parentNodeId="pdf-export"
                   parentNodeName="PDF Export"
                   parentNodeIconUrl="/polarion/pdf-exporter-admin/ui/images/menu/30x30/_parent.svg"
                   iconUrl="/polarion/pdf-exporter-admin/ui/images/menu/16x16/about.svg"
-                  pageUrl="/polarion/pdf-exporter-admin/pages/help.jsp?scope=$scope$"
+                  pageUrl="/polarion/pdf-exporter-admin/pages/user-guide.jsp?scope=$scope$"
                   projectScope="true"
                   projectGroupScope="false"
                   repositoryScope="true"/>

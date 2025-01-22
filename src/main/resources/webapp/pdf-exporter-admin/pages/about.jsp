@@ -5,8 +5,8 @@
     // override help link behavior - jump to the menu item instead of external MD file page
     document.addEventListener('DOMContentLoaded', function () {
         document.querySelectorAll('a').forEach(function (element) {
-            if (element.innerHTML === 'help page') {
-                const helpUrl = top.location.href.replace('/about', '/help');
+            if (element.innerHTML === 'user guide') {
+                const helpUrl = top.location.href.replace('/about', '/user-guide');
                 element.href = helpUrl;
                 element.target = "";
                 element.onclick = function(event) {

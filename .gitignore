@@ -35,7 +35,7 @@ target/
 dependency-reduced-pom.xml
 
 src/main/resources/webapp/*-admin/html/about.html
-src/main/resources/webapp/*-admin/html/help.html
+src/main/resources/webapp/*-admin/html/user-guide.html
 README.html
 
 node/

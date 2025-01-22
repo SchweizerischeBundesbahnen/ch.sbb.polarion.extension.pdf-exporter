@@ -1,4 +1,4 @@
-.help-page {
+.user-guide-page {
     font-size: 13px;
 }
 
@@ -8,7 +8,7 @@ a:has(img) {
     cursor: default;
 }
 
-.help-page img {
+.user-guide-page img {
     margin: 10px;
     border: 15px solid #eee;
 }
@@ -17,11 +17,11 @@ a:has(img) {
     font-family: monospace;
 }
 
-.help-page table {
+.user-guide-page table {
     border-collapse: collapse;
 }
 
-.help-page table th {
+.user-guide-page table th {
     height: 12px;
     padding: 5px;
     text-align: left;
@@ -32,7 +32,7 @@ a:has(img) {
     background-color: #F0F0F0;
 }
 
-.help-page table td {
+.user-guide-page table td {
     height: 12px;
     text-align: left;
     vertical-align: top;
@@ -41,16 +41,16 @@ a:has(img) {
     padding: 5px;
 }
 
-.help-page table td:first-child {
+.user-guide-page table td:first-child {
     padding-left: 10px
 }
 
-.help-page .app-icon {
+.user-guide-page .app-icon {
     position: absolute;
     right: 25px;
 }
 
-.help-page code {
+.user-guide-page code {
     background-clip: padding-box;
     border-radius: 3px;
     border: 1px solid #DFE1E6;
@@ -62,7 +62,7 @@ a:has(img) {
     vertical-align: baseline;
 }
 
-.help-page pre code {
+.user-guide-page pre code {
     display: block;
     font-size: 12px;
     line-height: 18px;

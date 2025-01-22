@@ -23,6 +23,7 @@
     * [Specific Workitem roles](#specific-workitem-roles)
     * [File name](#file-name)
     * [Download attachments](#download-attachments)
+* [Bulk PDF Export](#bulk-pdf-export)
 
 ## Export panel layout
 As the extension is installed and configured to appear on Document Properties pane, you can open any document in a project where you configured PDF exporter, open Document Properties sidebar and you will see following section added there:
@@ -221,3 +222,16 @@ Option available only for Test Runs:
 ![Download attachments](docs/help/img/download_attachments.png)
 
 By selecting this checkbox, you can set a mask for attachment file names that will be extracted from current Test Run and downloaded along with the regular PDF file.
+
+## Bulk PDF Export
+There is a possibility to export multiple documents in one run. This can be achieved with help of special widget:
+
+![Bulk PDF Export widget](docs/help/img/bulk_widget.png)
+
+Open a project where you wish do bulk export. Open its Default Space in Documents & Pages and create Live Report with name "Bulk PDF Export". Newly created report will be opened in edit mode. Change its title to "Bulk PDF Export" or whatever value you wish, then place cursor in a region you wish the widget to appear, choose "PDF Export" tag on "Widgets" sidebar on right hand side of the page, find "Bulk PDF Export" widget there and click it to add to the report. Then save a report clicking 💾 in a toolbar and then return to a view mode clicking "Back" button.
+
+As a result you will see a table listing all Live Documents in a current project (with pagination). This widget is an extension of standard Polarion table with a data set and can be configured the similar way, for example you can specify a Lucene query to narrow list of displaying documents, change set of columns or modify soring rule:
+
+![Bulk PDF Export widget configuration](docs/help/img/bulk_configuration.png)
+
+When you are ready with filtering, sorting etc. of documents you can select multiple documents to be exported, ticking appropriate checkboxes and click Export to PDF button, a popup with export configuration will be opened. Select appropriate configuration and click Export button, new popup will be opened showing progress of exporting. When export is finished click Close button to hide popup. Also, you can click Stop button when export is in progress, in this case document which is exporting at the moment will finish and the rest which were pending will be cancelled.
