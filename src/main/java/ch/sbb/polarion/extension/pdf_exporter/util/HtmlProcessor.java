@@ -563,7 +563,7 @@ public class HtmlProcessor {
             // This regexp searches for <td> or <th> elements of regular tables which width in styles specified in pixels ("px").
             // <td> or <th> element till "width:" in styles matched into first unnamed group and width value - into second unnamed group.
             // Then we replace matched content by first group content plus "auto" instead of value in pixels.
-            html = RegexMatcher.get("(<t[dh][^>]+?width:.*?)(\\d+px)")
+            html = RegexMatcher.get("(<t[dh][^>]+?width:\\s*)(\\d+px)")
                     .replace(html, regexEngine -> regexEngine.group(1) + "auto");
         }
 
@@ -937,7 +937,9 @@ public class HtmlProcessor {
                         width = width * EX_TO_PX_RATIO;
                     }
                 }
-                float maxWidth = orientation == Orientation.PORTRAIT ? MAX_PORTRAIT_WIDTHS_IN_TABLES.get(paperSize) : MAX_LANDSCAPE_WIDTHS_IN_TABLES.get(paperSize);
+                float columnCountBasedWidth = getImageWidthBasedOnColumnsCount(tableHtml, regexEngine.group(), orientation, paperSize);
+                float paramsBasedWidth = orientation == Orientation.PORTRAIT ? MAX_PORTRAIT_WIDTHS_IN_TABLES.get(paperSize) : MAX_LANDSCAPE_WIDTHS_IN_TABLES.get(paperSize);
+                float maxWidth = columnCountBasedWidth != -1 && columnCountBasedWidth < paramsBasedWidth ? columnCountBasedWidth : paramsBasedWidth;
                 return width <= maxWidth ? null : regexEngine.group()
                         .replaceAll("max-width:\\s*?([\\d.]*?(px|ex)|auto);", "") //it seems that max-width doesn't work in WP
                         .replaceAll("width:\\s*?([\\d.]*?(px|ex)|auto);", "")     //remove width too, we will add it later
@@ -974,6 +976,26 @@ public class HtmlProcessor {
             }
         }
         return tableEnd;
+    }
+
+    @VisibleForTesting
+    int getImageWidthBasedOnColumnsCount(String table, String imgTag, @NotNull Orientation orientation, @NotNull PaperSize paperSize) {
+        int imgPosition = table.indexOf(imgTag);
+        int trStartPosition = table.substring(0, imgPosition).lastIndexOf("<tr");
+        int trEndPosition = table.indexOf("</tr>", imgPosition);
+        if (trStartPosition != -1 && trEndPosition != -1) {
+            int columnsCount = columnsCount(table.substring(trStartPosition, trEndPosition));
+            if (columnsCount > 0) {
+                return (orientation == Orientation.PORTRAIT ? MAX_PORTRAIT_WIDTHS.get(paperSize) : MAX_LANDSCAPE_WIDTHS.get(paperSize)) / columnsCount;
+            }
+        }
+        return -1;
+    }
+
+    @VisibleForTesting
+    int columnsCount(String string) {
+        String columnOpenTag = "<td";
+        return (string.length() - string.replace(columnOpenTag, "").length()) / columnOpenTag.length();
     }
 
     @SneakyThrows
