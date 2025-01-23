@@ -575,6 +575,22 @@ class HtmlProcessorTest {
         assertEquals(TestStringUtils.removeNonsensicalSymbols(expectedHtml), TestStringUtils.removeNonsensicalSymbols(processedHtml.replaceAll(" ", "")));
     }
 
+    @Test
+    void getImageWidthBasedOnColumnsCountTest() {
+        assertEquals(-1, processor.getImageWidthBasedOnColumnsCount("<tr><img/></tr>", "<img/>", Orientation.PORTRAIT, PaperSize.A4));
+        assertEquals(-1, processor.getImageWidthBasedOnColumnsCount("<tr><td></td><td><img/></td><td></td>", "<img/>", Orientation.PORTRAIT, PaperSize.A4));
+        assertEquals(197, processor.getImageWidthBasedOnColumnsCount("<tr><td></td><td><img/></td><td></td></tr>", "<img/>", Orientation.PORTRAIT, PaperSize.A4));
+        assertEquals(437, processor.getImageWidthBasedOnColumnsCount("<tr><td></td></tr><tr><td></td><td><img/></td><td></td></tr><tr><td></td></tr>", "<img/>", Orientation.LANDSCAPE, PaperSize.A3));
+    }
+
+
+    @Test
+    void columnsCountTest() {
+        assertEquals(0, processor.columnsCount(""));
+        assertEquals(0, processor.columnsCount("<div></div>"));
+        assertEquals(3, processor.columnsCount("<div><td></td><td><span/></td><td></div>"));
+    }
+
     private ExportParams getExportParams() {
         return ExportParams.builder()
                 .projectId("test_project")

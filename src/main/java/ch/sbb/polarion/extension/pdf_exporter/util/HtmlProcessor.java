@@ -128,6 +128,10 @@ public class HtmlProcessor {
     private static final String MEASURE_PERCENT = "%";
     private static final String TABLE_OPEN_TAG = "<table";
     private static final String TABLE_END_TAG = "</table>";
+    private static final String TABLE_ROW_OPEN_TAG = "<tr";
+    private static final String TABLE_ROW_END_TAG = "</tr>";
+    private static final String TABLE_COLUMN_OPEN_TAG = "<td";
+    private static final String TABLE_COLUMN_END_TAG = "</td>";
     private static final String DIV_START_TAG = "<div>";
     private static final String DIV_END_TAG = "</div>";
     private static final String SPAN_END_TAG = "</span>";
@@ -409,7 +413,7 @@ public class HtmlProcessor {
     }
 
     private int getLinkedWorkItemsCellEnd(@NotNull String html, int cellStart) {
-        return cellStart > 0 ? html.indexOf("</td>", cellStart) + "</td>".length() : -1;
+        return cellStart > 0 ? html.indexOf(TABLE_COLUMN_END_TAG, cellStart) + TABLE_COLUMN_END_TAG.length() : -1;
     }
 
     @NotNull
@@ -509,7 +513,7 @@ public class HtmlProcessor {
         while (res.contains(emptyTableAttributeMarker)) {
             String[] parts = res.split(emptyTableAttributeMarker, 2);
             int trStart = parts[0].lastIndexOf("<tr>");
-            int trEnd = res.indexOf("</tr>", trStart) + "</tr>".length();
+            int trEnd = res.indexOf(TABLE_ROW_END_TAG, trStart) + TABLE_ROW_END_TAG.length();
 
             res = res.substring(0, trStart) + res.substring(trEnd);
         }
@@ -563,7 +567,7 @@ public class HtmlProcessor {
             // This regexp searches for <td> or <th> elements of regular tables which width in styles specified in pixels ("px").
             // <td> or <th> element till "width:" in styles matched into first unnamed group and width value - into second unnamed group.
             // Then we replace matched content by first group content plus "auto" instead of value in pixels.
-            html = RegexMatcher.get("(<t[dh][^>]+?width:.*?)(\\d+px)")
+            html = RegexMatcher.get("(<t[dh][^>]+?width:\\s*)(\\d+px)")
                     .replace(html, regexEngine -> regexEngine.group(1) + "auto");
         }
 
@@ -937,7 +941,9 @@ public class HtmlProcessor {
                         width = width * EX_TO_PX_RATIO;
                     }
                 }
-                float maxWidth = orientation == Orientation.PORTRAIT ? MAX_PORTRAIT_WIDTHS_IN_TABLES.get(paperSize) : MAX_LANDSCAPE_WIDTHS_IN_TABLES.get(paperSize);
+                float columnCountBasedWidth = getImageWidthBasedOnColumnsCount(tableHtml, regexEngine.group(), orientation, paperSize);
+                float paramsBasedWidth = orientation == Orientation.PORTRAIT ? MAX_PORTRAIT_WIDTHS_IN_TABLES.get(paperSize) : MAX_LANDSCAPE_WIDTHS_IN_TABLES.get(paperSize);
+                float maxWidth = columnCountBasedWidth != -1 && columnCountBasedWidth < paramsBasedWidth ? columnCountBasedWidth : paramsBasedWidth;
                 return width <= maxWidth ? null : regexEngine.group()
                         .replaceAll("max-width:\\s*?([\\d.]*?(px|ex)|auto);", "") //it seems that max-width doesn't work in WP
                         .replaceAll("width:\\s*?([\\d.]*?(px|ex)|auto);", "")     //remove width too, we will add it later
@@ -974,6 +980,25 @@ public class HtmlProcessor {
             }
         }
         return tableEnd;
+    }
+
+    @VisibleForTesting
+    int getImageWidthBasedOnColumnsCount(String table, String imgTag, @NotNull Orientation orientation, @NotNull PaperSize paperSize) {
+        int imgPosition = table.indexOf(imgTag);
+        int trStartPosition = table.substring(0, imgPosition).lastIndexOf(TABLE_ROW_OPEN_TAG);
+        int trEndPosition = table.indexOf(TABLE_ROW_END_TAG, imgPosition);
+        if (trStartPosition != -1 && trEndPosition != -1) {
+            int columnsCount = columnsCount(table.substring(trStartPosition, trEndPosition));
+            if (columnsCount > 0) {
+                return (orientation == Orientation.PORTRAIT ? MAX_PORTRAIT_WIDTHS.get(paperSize) : MAX_LANDSCAPE_WIDTHS.get(paperSize)) / columnsCount;
+            }
+        }
+        return -1;
+    }
+
+    @VisibleForTesting
+    int columnsCount(String string) {
+        return (string.length() - string.replace(TABLE_COLUMN_OPEN_TAG, "").length()) / TABLE_COLUMN_OPEN_TAG.length();
     }
 
     @SneakyThrows
