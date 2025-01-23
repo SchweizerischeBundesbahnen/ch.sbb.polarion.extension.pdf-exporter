@@ -128,6 +128,10 @@ public class HtmlProcessor {
     private static final String MEASURE_PERCENT = "%";
     private static final String TABLE_OPEN_TAG = "<table";
     private static final String TABLE_END_TAG = "</table>";
+    private static final String TABLE_ROW_OPEN_TAG = "<tr";
+    private static final String TABLE_ROW_END_TAG = "</tr>";
+    private static final String TABLE_COLUMN_OPEN_TAG = "<td";
+    private static final String TABLE_COLUMN_END_TAG = "</td>";
     private static final String DIV_START_TAG = "<div>";
     private static final String DIV_END_TAG = "</div>";
     private static final String SPAN_END_TAG = "</span>";
@@ -409,7 +413,7 @@ public class HtmlProcessor {
     }
 
     private int getLinkedWorkItemsCellEnd(@NotNull String html, int cellStart) {
-        return cellStart > 0 ? html.indexOf("</td>", cellStart) + "</td>".length() : -1;
+        return cellStart > 0 ? html.indexOf(TABLE_COLUMN_END_TAG, cellStart) + TABLE_COLUMN_END_TAG.length() : -1;
     }
 
     @NotNull
@@ -509,7 +513,7 @@ public class HtmlProcessor {
         while (res.contains(emptyTableAttributeMarker)) {
             String[] parts = res.split(emptyTableAttributeMarker, 2);
             int trStart = parts[0].lastIndexOf("<tr>");
-            int trEnd = res.indexOf("</tr>", trStart) + "</tr>".length();
+            int trEnd = res.indexOf(TABLE_ROW_END_TAG, trStart) + TABLE_ROW_END_TAG.length();
 
             res = res.substring(0, trStart) + res.substring(trEnd);
         }
@@ -981,8 +985,8 @@ public class HtmlProcessor {
     @VisibleForTesting
     int getImageWidthBasedOnColumnsCount(String table, String imgTag, @NotNull Orientation orientation, @NotNull PaperSize paperSize) {
         int imgPosition = table.indexOf(imgTag);
-        int trStartPosition = table.substring(0, imgPosition).lastIndexOf("<tr");
-        int trEndPosition = table.indexOf("</tr>", imgPosition);
+        int trStartPosition = table.substring(0, imgPosition).lastIndexOf(TABLE_ROW_OPEN_TAG);
+        int trEndPosition = table.indexOf(TABLE_ROW_END_TAG, imgPosition);
         if (trStartPosition != -1 && trEndPosition != -1) {
             int columnsCount = columnsCount(table.substring(trStartPosition, trEndPosition));
             if (columnsCount > 0) {
@@ -994,8 +998,7 @@ public class HtmlProcessor {
 
     @VisibleForTesting
     int columnsCount(String string) {
-        String columnOpenTag = "<td";
-        return (string.length() - string.replace(columnOpenTag, "").length()) / columnOpenTag.length();
+        return (string.length() - string.replace(TABLE_COLUMN_OPEN_TAG, "").length()) / TABLE_COLUMN_OPEN_TAG.length();
     }
 
     @SneakyThrows
