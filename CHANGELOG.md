@@ -1,5 +1,24 @@
 # Changelog
 
+## [8.1.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v8.0.0...v8.1.0) (2025-01-24)
+
+
+### Features
+
+* Added logic for handling unavailable images ([#316](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/316)) ([b81c438](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/b81c438a9a9746b3654c87b435c0b59fbb85dba8)), closes [#307](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/307)
+* advanced images scaling in tables ([#343](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/343)) ([728bf2b](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/728bf2bf3ef3fca60646d9bdcef20e3875f703ab)), closes [#293](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/293)
+* evaluate velocity using RichPageScriptRenderer ([#345](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/345)) ([f351c65](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/f351c656897710ea4637952b065ca774da1d93c6)), closes [#344](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/344)
+* export of LiveDoc as Workflow Function ([#336](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/336)) ([2d5f47c](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/2d5f47ceb4c08af224ef601bcd71e2d23651f6c8)), closes [#291](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/291)
+* user guide page ([#341](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/341)) ([34f5e27](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/34f5e2761282f101aff09ab12099294e5c6a5106))
+
+
+### Bug Fixes
+
+* improve getters implementation in widget renderer ([#334](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/334)) ([badae65](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/badae65d4b7fd70aeb8587e80816604cbe49e77c))
+* Make it possible to alternate content of header/footer for even/odd pages ([#340](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/340)) ([394e831](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/394e8316ebe7029b42523c734819590037fc477b))
+* test run attachments downloaded despite the checkbox 'Download a… ([#338](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/338)) ([99890e7](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/99890e76730580a21c1deb53431da9d9f397d0c8)), closes [#337](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/337)
+* test run attachments downloaded despite the checkbox 'Download attachments' is unchecked ([99890e7](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/99890e76730580a21c1deb53431da9d9f397d0c8))
+
 ## [8.0.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v7.5.0...v8.0.0) (2025-01-08)
 
 
