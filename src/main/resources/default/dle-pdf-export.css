@@ -97,7 +97,7 @@ ul.toc, ul.toc ul {
 }
 
 ul.toc ul {
-    padding-inline-start: .6em;
+    padding-left: .6em;
     margin-top: .2em;
     margin-bottom: .2em;
 }
