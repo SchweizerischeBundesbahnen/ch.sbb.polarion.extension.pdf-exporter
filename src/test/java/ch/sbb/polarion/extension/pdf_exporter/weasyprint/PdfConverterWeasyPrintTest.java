@@ -146,18 +146,19 @@ class PdfConverterWeasyPrintTest extends BaseWeasyPrintTest {
         lenient().when(coverPageSettings.load(any(), any())).thenReturn(new CoverPageModel("<dev>TITLE {{ testFieldKey }}</div>", basicCss));
         lenient().when(coverPageSettings.processImagePlaceholders(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
+        HtmlLinksHelper htmlLinksHelper = mock(HtmlLinksHelper.class);
+        when(htmlLinksHelper.internalizeLinks(anyString())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        FileResourceProvider fileResourceProvider = mock(FileResourceProvider.class);
+        HtmlProcessor htmlProcessor = new HtmlProcessor(fileResourceProvider, localizationSettings, htmlLinksHelper, pdfExporterPolarionService);
         CoverPageProcessor coverPageProcessor = new CoverPageProcessor(
                 placeholderProcessor,
                 velocityEvaluator,
                 weasyPrintServiceConnector,
                 coverPageSettings,
-                new PdfTemplateProcessor()
+                new PdfTemplateProcessor(),
+                htmlProcessor
         );
-
-        HtmlLinksHelper htmlLinksHelper = mock(HtmlLinksHelper.class);
-        when(htmlLinksHelper.internalizeLinks(anyString())).thenAnswer(invocation -> invocation.getArgument(0));
-
-        FileResourceProvider fileResourceProvider = mock(FileResourceProvider.class);
 
         converter = new PdfConverter(
                 pdfExporterPolarionService,
@@ -167,7 +168,7 @@ class PdfConverterWeasyPrintTest extends BaseWeasyPrintTest {
                 velocityEvaluator,
                 coverPageProcessor,
                 weasyPrintServiceConnector,
-                new HtmlProcessor(fileResourceProvider, localizationSettings, htmlLinksHelper, pdfExporterPolarionService),
+                htmlProcessor,
                 new PdfTemplateProcessor()
         );
     }

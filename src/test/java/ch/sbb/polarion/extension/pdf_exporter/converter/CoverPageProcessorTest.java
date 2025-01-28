@@ -8,6 +8,7 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.id.DocumentPr
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.id.LiveDocId;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.coverpage.CoverPageModel;
 import ch.sbb.polarion.extension.pdf_exporter.settings.CoverPageSettings;
+import ch.sbb.polarion.extension.pdf_exporter.util.HtmlProcessor;
 import ch.sbb.polarion.extension.pdf_exporter.util.PdfGenerationLog;
 import ch.sbb.polarion.extension.pdf_exporter.util.PdfTemplateProcessor;
 import ch.sbb.polarion.extension.pdf_exporter.util.placeholder.PlaceholderProcessor;
@@ -46,6 +47,8 @@ class CoverPageProcessorTest {
     private CoverPageSettings coverPageSettings;
     @Mock
     private PdfTemplateProcessor pdfTemplateProcessor;
+    @Mock
+    private HtmlProcessor htmlProcessor;
 
     @InjectMocks
     private CoverPageProcessor coverPageProcessor;
@@ -122,6 +125,8 @@ class CoverPageProcessorTest {
         when(velocityEvaluator.evaluateVelocityExpressions(eq(documentData), anyString())).thenAnswer(a -> a.getArguments()[1]);
         when(coverPageSettings.processImagePlaceholders("test template css")).thenCallRealMethod();
         when(pdfTemplateProcessor.processUsing(exportParams, "test document", "test template css", "replaced template html")).thenReturn("result title html");
+        when(htmlProcessor.replaceResourcesAsBase64Encoded("replaced template html")).thenReturn("replaced template html");
+        when(htmlProcessor.replaceResourcesAsBase64Encoded("test template css")).thenReturn("test template css");
         return documentData;
     }
 }

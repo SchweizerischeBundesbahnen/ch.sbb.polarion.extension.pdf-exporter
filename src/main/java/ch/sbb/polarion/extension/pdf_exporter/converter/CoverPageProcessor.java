@@ -5,6 +5,7 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.DocumentData;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.coverpage.CoverPageModel;
 import ch.sbb.polarion.extension.pdf_exporter.settings.CoverPageSettings;
+import ch.sbb.polarion.extension.pdf_exporter.util.HtmlProcessor;
 import ch.sbb.polarion.extension.pdf_exporter.util.MediaUtils;
 import ch.sbb.polarion.extension.pdf_exporter.util.PdfGenerationLog;
 import ch.sbb.polarion.extension.pdf_exporter.util.PdfTemplateProcessor;
@@ -24,26 +25,29 @@ public class CoverPageProcessor {
     private final WeasyPrintServiceConnector weasyPrintServiceConnector;
     private final CoverPageSettings coverPageSettings;
     private final PdfTemplateProcessor pdfTemplateProcessor;
+    private final HtmlProcessor htmlProcessor;
 
-
-    public CoverPageProcessor() {
+    public CoverPageProcessor(HtmlProcessor htmlProcessor) {
         placeholderProcessor = new PlaceholderProcessor();
         velocityEvaluator = new VelocityEvaluator();
         weasyPrintServiceConnector = new WeasyPrintServiceConnector();
         coverPageSettings = new CoverPageSettings();
         pdfTemplateProcessor = new PdfTemplateProcessor();
+        this.htmlProcessor = htmlProcessor;
     }
 
     public CoverPageProcessor(PlaceholderProcessor placeholderProcessor,
                               VelocityEvaluator velocityEvaluator,
                               WeasyPrintServiceConnector weasyPrintServiceConnector,
                               CoverPageSettings coverPageSettings,
-                              PdfTemplateProcessor pdfTemplateProcessor) {
+                              PdfTemplateProcessor pdfTemplateProcessor,
+                              HtmlProcessor htmlProcessor) {
         this.placeholderProcessor = placeholderProcessor;
         this.velocityEvaluator = velocityEvaluator;
         this.weasyPrintServiceConnector = weasyPrintServiceConnector;
         this.coverPageSettings = coverPageSettings;
         this.pdfTemplateProcessor = pdfTemplateProcessor;
+        this.htmlProcessor = htmlProcessor;
     }
 
     @SneakyThrows
@@ -67,8 +71,11 @@ public class CoverPageProcessor {
         CoverPageModel settings = coverPageSettings.load(exportParams.getProjectId(), SettingId.fromName(exportParams.getCoverPage()));
         String templateHtml = settings.getTemplateHtml();
         String content = placeholderProcessor.replacePlaceholders(documentData, exportParams, templateHtml);
+        content = htmlProcessor.replaceResourcesAsBase64Encoded(content);
         String evaluatedContent = velocityEvaluator.evaluateVelocityExpressions(documentData, content);
-        return pdfTemplateProcessor.processUsing(exportParams, documentData.getTitle(), coverPageSettings.processImagePlaceholders(settings.getTemplateCss()), evaluatedContent);
+        String css = coverPageSettings.processImagePlaceholders(settings.getTemplateCss());
+        css = htmlProcessor.replaceResourcesAsBase64Encoded(css);
+        return pdfTemplateProcessor.processUsing(exportParams, documentData.getTitle(), css, evaluatedContent);
     }
 
 }
