@@ -1,5 +1,16 @@
 # Changelog
 
+## [8.1.1](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v8.1.0...v8.1.1) (2025-01-30)
+
+
+### Bug Fixes
+
+* **deps:** update dependency net.bytebuddy:byte-buddy to v1.16.1 ([#347](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/347)) ([2d4617c](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/2d4617c8e3d4d4afefd058b89e6414aa5c8b72f7))
+* **deps:** update dependency net.bytebuddy:byte-buddy to v1.17.0 ([#365](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/365)) ([472cc9f](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/472cc9fb27f30ff369d9cfaede8f2b842e45fc19))
+* **deps:** update dependency org.apache.pdfbox:pdfbox to v3.0.4 ([#351](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/351)) ([fc3cb02](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/fc3cb0256542e747968ab5a491855e06e478a0cf))
+* Embed images as base64 data into cover page ([#359](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/359)) ([e30d6b7](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/e30d6b713eba1d694b134cda7e1511dd3c34beb9)), closes [#356](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/356)
+* table of content indentation fix ([#357](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/357)) ([2a8c739](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/2a8c73983480388a4a306c2305da9f370c64ae79)), closes [#354](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/354)
+
 ## [8.1.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v8.0.0...v8.1.0) (2025-01-24)
 
 
