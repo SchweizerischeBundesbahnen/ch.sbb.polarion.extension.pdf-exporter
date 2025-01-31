@@ -93,7 +93,7 @@
 
         <jsp:include page='/common/jsp/configurations.jsp'/>
 
-        <h2 class="align-left">List of webhooks <%= PdfExporterExtensionConfiguration.getInstance().getWebhooksEnabled() %></h2>
+        <h2 class="align-left">List of webhooks</h2>
         <table id="webhooks-table"><!-- Filled by JS --></table>
         <button class="toolbar-button webhook-button" onclick="Webhooks.addWebhook()" title="Add a webhook" style="margin-top: 10px; margin-left: 3px;">
             <img src='/polarion/ria/images/control/tablePlus.png' alt="Plus">
