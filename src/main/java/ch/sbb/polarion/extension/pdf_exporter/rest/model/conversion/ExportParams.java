@@ -55,6 +55,9 @@ public class ExportParams {
     @Schema(description = "The paper size of the exported document", defaultValue = "A4")
     private PaperSize paperSize = PaperSize.A4;
 
+    @Schema(description = "Target format of the exported document", defaultValue = "PDF")
+    private TargetFormat targetFormat = TargetFormat.PDF;
+
     @Schema(description = "Content should be scaled to fit the page", defaultValue = "true")
     private boolean fitToPage = true;
 

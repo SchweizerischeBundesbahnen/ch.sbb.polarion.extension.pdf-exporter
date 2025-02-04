@@ -178,6 +178,14 @@
     <div id='export-error'></div>
     <div id='export-warning'></div>
 </div>
+<div class='buttons-wrapper'>
+    <button type='button' id='export-pdf' onclick='ExportPdf.loadDocx({LOAD_PDF_PARAMS})'>
+        Export to DOCX
+    </button>
+    <img id='export-pdf-progress' src='/polarion/ria/images/progress_grey.gif' alt=''/>
+    <div id='export-error'></div>
+    <div id='export-warning'></div>
+</div>
 <div class='buttons-wrapper' id='page-width-validation'>
     <button type='button' id='validate-pdf' onclick='ExportPdf.validatePdf({VALIDATE_PDF_PARAMS})'>
         <img class='append-build-number' src='/polarion/ria/images/dle/align_center.png' alt=''/>Validate pages width

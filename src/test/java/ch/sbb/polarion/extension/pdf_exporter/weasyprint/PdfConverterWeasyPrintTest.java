@@ -2,6 +2,7 @@ package ch.sbb.polarion.extension.pdf_exporter.weasyprint;
 
 import ch.sbb.polarion.extension.pdf_exporter.converter.CoverPageProcessor;
 import ch.sbb.polarion.extension.pdf_exporter.converter.PdfConverter;
+import ch.sbb.polarion.extension.pdf_exporter.pandoc.PandocServiceConnector;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.DocumentType;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.Orientation;
@@ -168,6 +169,7 @@ class PdfConverterWeasyPrintTest extends BaseWeasyPrintTest {
                 velocityEvaluator,
                 coverPageProcessor,
                 weasyPrintServiceConnector,
+                null,
                 htmlProcessor,
                 new PdfTemplateProcessor()
         );

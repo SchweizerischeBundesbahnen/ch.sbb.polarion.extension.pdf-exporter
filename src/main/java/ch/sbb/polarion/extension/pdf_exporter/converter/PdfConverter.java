@@ -3,11 +3,13 @@ package ch.sbb.polarion.extension.pdf_exporter.converter;
 import ch.sbb.polarion.extension.generic.settings.NamedSettings;
 import ch.sbb.polarion.extension.generic.settings.SettingId;
 import ch.sbb.polarion.extension.generic.util.ScopeUtils;
+import ch.sbb.polarion.extension.pdf_exporter.pandoc.PandocServiceConnector;
 import ch.sbb.polarion.extension.pdf_exporter.properties.PdfExporterExtensionConfiguration;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.ExportMetaInfoCallback;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.WorkItemRefData;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.DocumentType;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.TargetFormat;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.DocumentData;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.headerfooter.HeaderFooterModel;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.webhooks.AuthType;
@@ -73,6 +75,7 @@ public class PdfConverter {
     private final VelocityEvaluator velocityEvaluator;
     private final CoverPageProcessor coverPageProcessor;
     private final WeasyPrintServiceConnector weasyPrintServiceConnector;
+    private final PandocServiceConnector pandocServiceConnector;
     private final HtmlProcessor htmlProcessor;
     private final PdfTemplateProcessor pdfTemplateProcessor;
 
@@ -83,6 +86,7 @@ public class PdfConverter {
         placeholderProcessor = new PlaceholderProcessor();
         velocityEvaluator = new VelocityEvaluator();
         weasyPrintServiceConnector = new WeasyPrintServiceConnector();
+        pandocServiceConnector = new PandocServiceConnector();
         PdfExporterFileResourceProvider fileResourceProvider = new PdfExporterFileResourceProvider();
         htmlProcessor = new HtmlProcessor(fileResourceProvider, new LocalizationSettings(), new HtmlLinksHelper(fileResourceProvider), pdfExporterPolarionService);
         coverPageProcessor = new CoverPageProcessor(htmlProcessor);
@@ -226,11 +230,23 @@ public class PdfConverter {
             ExportMetaInfoCallback metaInfoCallback,
             String htmlPage,
             PdfGenerationLog generationLog) {
-        if (metaInfoCallback == null && exportParams.getInternalContent() == null && exportParams.getCoverPage() != null) {
+        if (metaInfoCallback == null && exportParams.getInternalContent() == null && exportParams.getTargetFormat() != TargetFormat.DOCX && exportParams.getCoverPage() != null) {
             return coverPageProcessor.generatePdfWithTitle(documentData, exportParams, htmlPage, generationLog);
         } else {
-            WeasyPrintOptions weasyPrintOptions = WeasyPrintOptions.builder().followHTMLPresentationalHints(exportParams.isFollowHTMLPresentationalHints()).build();
-            return weasyPrintServiceConnector.convertToPdf(htmlPage, weasyPrintOptions);
+            if (exportParams.getTargetFormat() == TargetFormat.PDF) {
+                WeasyPrintOptions weasyPrintOptions = WeasyPrintOptions.builder().followHTMLPresentationalHints(exportParams.isFollowHTMLPresentationalHints()).build();
+                return weasyPrintServiceConnector.convertToPdf(htmlPage, weasyPrintOptions);
+            } else if (exportParams.getTargetFormat() == TargetFormat.DOCX) {
+                int headerIndex = htmlPage.indexOf("<div class='header'>");
+                if (headerIndex > -1) {
+                    int contentIndex = htmlPage.indexOf("<div class='content'>");
+                    htmlPage = htmlPage.substring(0, headerIndex) + htmlPage.substring(contentIndex);
+                }
+                htmlPage = htmlPage.replace("<div style='break-after:page'>page to be removed</div><?xml version='1.0' encoding='UTF-8'?>", "");
+                return pandocServiceConnector.convertToDocx(htmlPage);
+            } else {
+                throw new IllegalStateException("Unknown target format: " + exportParams.getTargetFormat());
+            }
         }
     }
 

@@ -7,6 +7,11 @@ export default class ExportParams {
         BASELINE_COLLECTION: 'BASELINE_COLLECTION',
     };
 
+    static TargetFormat = {
+        PDF: 'PDF',
+        DOCX: 'DOCX',
+    }
+
     static Orientation = {
         PORTRAIT: 'PORTRAIT',
         LANDSCAPE: 'LANDSCAPE',
@@ -44,6 +49,7 @@ export default class ExportParams {
         this.headersColor = builder.headersColor;
         this.orientation = builder.orientation;
         this.paperSize = builder.paperSize;
+        this.targetFormat = builder.targetFormat;
         this.fitToPage = builder.fitToPage;
         this.enableCommentsRendering = builder.enableCommentsRendering;
         this.watermark = builder.watermark;
@@ -94,6 +100,7 @@ export default class ExportParams {
                 this.headersColor = undefined;
                 this.orientation = undefined;
                 this.paperSize = undefined;
+                this.targetFormat = undefined;
                 this.fitToPage = undefined;
                 this.enableCommentsRendering = undefined;
                 this.watermark = undefined;
@@ -169,6 +176,11 @@ export default class ExportParams {
 
             setPaperSize(paperSize) {
                 this.paperSize = paperSize;
+                return this;
+            }
+
+            setTargetFormat(targetFormat) {
+                this.targetFormat = targetFormat;
                 return this;
             }
 

@@ -1822,6 +1822,15 @@
             "description": "The specific revision of the document",
             "type": "string"
           },
+          "targetFormat": {
+            "default": "PDF",
+            "description": "Target format of the exported document",
+            "enum": [
+              "PDF",
+              "DOCX"
+            ],
+            "type": "string"
+          },
           "urlQueryParameters": {
             "additionalProperties": {
               "description": "Map of attributes extracted from the URL",

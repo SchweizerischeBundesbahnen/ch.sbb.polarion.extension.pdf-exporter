@@ -91,7 +91,7 @@ const ExportPdf = {
         document.getElementById(elementId).className = className;
     },
 
-    prepareRequest: function (projectId, locationPath, baselineRevision, revision, fileName) {
+    prepareRequest: function (projectId, locationPath, baselineRevision, revision, fileName, targetFormat) {
         let selectedChapters = null;
         if (document.getElementById("specific-chapters").checked) {
             selectedChapters = this.getSelectedChapters();
@@ -119,10 +119,10 @@ const ExportPdf = {
             selectedRoles.push(...selectedOptions.map(opt => opt.value));
         }
 
-        return this.buildRequestJson(projectId, locationPath, baselineRevision, revision, selectedChapters, numberedListStyles, selectedRoles, fileName);
+        return this.buildRequestJson(projectId, locationPath, baselineRevision, revision, selectedChapters, numberedListStyles, selectedRoles, fileName, targetFormat);
     },
 
-    buildRequestJson: function (projectId, locationPath, baselineRevision, revision, selectedChapters, numberedListStyles, selectedRoles, fileName) {
+    buildRequestJson: function (projectId, locationPath, baselineRevision, revision, selectedChapters, numberedListStyles, selectedRoles, fileName, targetFormat) {
         const urlSearchParams = new URL(window.location.href.replace('#', '/')).searchParams;
         return new ExportParams.Builder(ExportParams.DocumentType.LIVE_DOC)
             .setProjectId(projectId)
@@ -137,6 +137,7 @@ const ExportPdf = {
             .setHeadersColor(document.getElementById("headers-color").value)
             .setPaperSize(document.getElementById("paper-size-selector").value)
             .setOrientation(document.getElementById("orientation-selector").value)
+            .setTargetFormat(targetFormat)
             .setFitToPage(document.getElementById('fit-to-page').checked)
             .setEnableCommentsRendering(document.getElementById('enable-comments-rendering').checked)
             .setWatermark(document.getElementById("watermark").checked)
@@ -195,7 +196,7 @@ const ExportPdf = {
             fileName += ".pdf";
         }
 
-        let request = this.prepareRequest(projectId, locationPath, baselineRevision, revision, fileName);
+        let request = this.prepareRequest(projectId, locationPath, baselineRevision, revision, fileName, "pdf");
         if (request === undefined) {
             return;
         }
@@ -236,6 +237,59 @@ const ExportPdf = {
         });
     },
 
+    loadDocx: function (projectId, locationPath, baselineRevision, revision) {
+        //clean previous errors
+        $("#export-error").empty();
+        $("#export-warning").empty();
+
+        let fileName = document.getElementById("filename").value;
+        if (!fileName) {
+            fileName = document.getElementById("filename").dataset.default;
+        }
+        if (fileName && !fileName.endsWith(".docx")) {
+            fileName += ".docx";
+        }
+
+        let request = this.prepareRequest(projectId, locationPath, baselineRevision, revision, fileName, "docx");
+        if (request === undefined) {
+            return;
+        }
+
+        this.actionInProgress(true);
+
+        SbbCommon.callAsync({
+            method: "POST",
+            url: "/polarion/pdf-exporter/rest/internal/checknestedlists",
+            contentType: "application/json",
+            responseType: "json",
+            body: request,
+            onOk: (responseText, request) => {
+                if (request.response.containsNestedLists) {
+                    $("#export-warning").append("Document contains nested numbered lists which structures were not valid. " +
+                        "We did our best to fix it, but be aware of it.");
+                }
+            },
+            onError: (status, errorMessage, request) => {
+                $("#export-error").append("Error occurred validating nested lists" + (request.response.message ? ":<br>" + request.response.message : ""));
+            }
+        });
+
+        ExportCommon.asyncConvertPdf(request, result => {
+            if (result.warning) {
+                $("#export-warning").append(result.warning);
+            }
+            this.actionInProgress(false);
+
+            ExportCommon.downloadBlob(result.response, fileName);
+        }, errorResponse => {
+            this.actionInProgress(false);
+            errorResponse.text().then(errorJson => {
+                const error = errorJson && JSON.parse(errorJson);
+                const errorMessage = error && (error.message ? error.message : error.errorMessage);
+                $("#export-error").append("Error occurred during PDF generation" + (errorMessage ? ":<br>" + errorMessage : ""));
+            });
+        });
+    },
     actionInProgress: function (inProgress) {
         if (inProgress) {
             //disable components
