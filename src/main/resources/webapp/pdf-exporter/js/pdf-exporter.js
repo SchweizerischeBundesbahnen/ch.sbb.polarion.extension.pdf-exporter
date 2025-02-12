@@ -254,14 +254,20 @@ const PdfExporter = {
         const docIdentifiers = [];
         if (exportContext.getExportType() === ExportParams.ExportType.BULK) {
             this.exportContext.bulkExportWidget.querySelectorAll('input[type="checkbox"]:not(.export-all):checked').forEach((selectedCheckbox) => {
-                docIdentifiers.push({
-                    projectId: selectedCheckbox.dataset["project"], spaceId: selectedCheckbox.dataset["space"], documentName: selectedCheckbox.dataset["id"]
-                });
+                const docIdentifier = {
+                    ...(selectedCheckbox.dataset["project"] ? { projectId: selectedCheckbox.dataset["project"] } : {}),
+                    spaceId: selectedCheckbox.dataset["space"],
+                    documentName: selectedCheckbox.dataset["id"]
+                };
+                docIdentifiers.push(docIdentifier);
             });
         } else {
-            docIdentifiers.push({
-                projectId: `${exportContext.getProjectId()}`, spaceId: `${exportContext.getSpaceId()}`, documentName: `${exportContext.getDocumentName()}`
-            });
+            const docIdentifier = {
+                ...(exportContext.getProjectId() !== null && { projectId: `${exportContext.getProjectId()}` }),
+                spaceId: `${exportContext.getSpaceId()}`,
+                documentName: `${exportContext.getDocumentName()}`
+            };
+            docIdentifiers.push(docIdentifier);
         }
 
         return this.loadSettingNames({
