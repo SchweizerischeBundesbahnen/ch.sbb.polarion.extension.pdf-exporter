@@ -17,14 +17,14 @@ public class PolarionStatusProvider extends ConfigurationStatusProvider {
     public @NotNull ConfigurationStatus getStatus(@NotNull Context context) {
         String currentCompatibleVersionPolarion = VersionUtils.getCurrentCompatibleVersionPolarion();
         if (currentCompatibleVersionPolarion == null || currentCompatibleVersionPolarion.trim().isEmpty()) {
-            return new ConfigurationStatus(POLARION_ALM, Status.ERROR, "Official supported version not set");
+            return new ConfigurationStatus(POLARION_ALM, Status.ERROR, "Officially supported version not specified");
         }
 
         String versionName = Configuration.getInstance().getProduct().versionName();
         if (versionName.startsWith(currentCompatibleVersionPolarion)) {
             return new ConfigurationStatus(POLARION_ALM, Status.OK, versionName);
         } else {
-            return new ConfigurationStatus(POLARION_ALM, Status.WARNING, "%s is not official supported".formatted(versionName));
+            return new ConfigurationStatus(POLARION_ALM, Status.WARNING, "%s is not officially supported".formatted(versionName));
         }
     }
 }
