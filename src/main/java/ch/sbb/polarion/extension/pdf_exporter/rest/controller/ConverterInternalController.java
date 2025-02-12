@@ -365,9 +365,7 @@ public class ConverterInternalController {
     public WidthValidationResult validatePdfWidth(
             ExportParams exportParams,
             @Parameter(description = "Limit of 'invalid' pages in response", required = true) @QueryParam("max-results") int maxResults) {
-        if (exportParams.getProjectId() == null || exportParams.getLocationPath() == null) {
-            throw new BadRequestException("Both 'projectId' and 'locationPath' parameters should be provided to locate a document for validation");
-        }
+        validateExportParameters(exportParams);
         return pdfValidationService.validateWidth(exportParams, maxResults);
     }
 
