@@ -1,6 +1,5 @@
 package ch.sbb.polarion.extension.pdf_exporter.util;
 
-import ch.sbb.polarion.extension.pdf_exporter.util.configuration.WeasyPrintStatusProvider;
 import lombok.experimental.UtilityClass;
 import org.jetbrains.annotations.Nullable;
 
