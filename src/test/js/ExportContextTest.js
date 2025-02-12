@@ -216,4 +216,20 @@ describe('ExportContext Class', function () {
         expect(exportContext.getSpaceId()).to.equal('Specification');
         expect(exportContext.getDocumentName()).to.equal('Epic Statistics');
     });
+
+    it('URL: #/wiki/space/LiveReport', function () {
+        const locationHash = "#/wiki/space/LiveReport";
+        const exportContext = new ExportContext({documentType: ExportParams.DocumentType.LIVE_REPORT, polarionLocationHash: locationHash});
+
+        expect(exportContext.documentType).to.equal(ExportParams.DocumentType.LIVE_REPORT);
+        expect(exportContext.projectId).to.be.null;
+        expect(exportContext.locationPath).to.equal('space/LiveReport');
+        expect(exportContext.baselineRevision).to.be.undefined;
+        expect(exportContext.revision).to.be.undefined;
+        expect(exportContext.urlQueryParameters).to.be.undefined;
+
+        expect(exportContext.getSpaceId()).to.equal('space');
+        expect(exportContext.getDocumentName()).to.equal('LiveReport');
+    });
+
 });
