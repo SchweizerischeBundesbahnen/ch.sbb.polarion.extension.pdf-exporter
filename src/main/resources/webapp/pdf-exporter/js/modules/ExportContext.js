@@ -99,7 +99,7 @@ export default class ExportContext {
                 const extractedPath = pathMatch ? (pathMatch[3] || pathMatch[2]) : undefined;
                 return pathMatch ? addDefaultSpaceIfRequired(extractedPath) : undefined;
             } else {
-                const globalPathPattern = /wiki\/([^/?#]+)/;
+                const globalPathPattern = /wiki\/([^?#]+)/;
                 const pathMatch = globalPathPattern.exec(locationHash);
                 return pathMatch ? addDefaultSpaceIfRequired(pathMatch[1]) : undefined;
             }

@@ -9,6 +9,7 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 @Data
 @Builder
@@ -21,7 +22,7 @@ import org.jetbrains.annotations.NotNull;
 public class DocIdentifier {
 
     @Schema(description = "Project ID")
-    private @NotNull String projectId;
+    private @Nullable String projectId;
 
     @Schema(description = "Space ID")
     private @NotNull String spaceId;
