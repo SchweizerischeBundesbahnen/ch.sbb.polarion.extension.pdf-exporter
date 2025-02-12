@@ -23,9 +23,9 @@ class PolarionStatusProviderTest {
         return Stream.of(
                 Arguments.of("2410", "2410", configurationStatus(Status.OK, "2410")),
                 Arguments.of("2410.1", "2410", configurationStatus(Status.OK, "2410.1")),
-                Arguments.of("2310", "2410", configurationStatus(Status.WARNING, "2310 is not official supported")),
-                Arguments.of("2310.1", "2410", configurationStatus(Status.WARNING, "2310.1 is not official supported")),
-                Arguments.of("2410", "", configurationStatus(Status.ERROR, "Official supported version not set"))
+                Arguments.of("2310", "2410", configurationStatus(Status.WARNING, "2310 is not officially supported")),
+                Arguments.of("2310.1", "2410", configurationStatus(Status.WARNING, "2310.1 is not officially supported")),
+                Arguments.of("2410", "", configurationStatus(Status.ERROR, "Officially supported version not specified"))
         );
     }
 
