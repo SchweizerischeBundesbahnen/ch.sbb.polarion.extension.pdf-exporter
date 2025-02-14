@@ -141,6 +141,13 @@
             <scope>provided</scope>
         </dependency>
 
+        <dependency>
+            <groupId>com.polarion.thirdparty</groupId>
+            <artifactId>org.jsoup_1.15.2</artifactId>
+            <version>${polarion.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
         <!--  3rd-party libraries to be packaged into resulting jar  -->
         <dependency>
             <groupId>org.apache.pdfbox</groupId>

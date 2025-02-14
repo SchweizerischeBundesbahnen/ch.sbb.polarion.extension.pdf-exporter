@@ -13,6 +13,7 @@ Require-Bundle: com.polarion.portal.tomcat,
  org.springframework.spring-core,
  org.springframework.spring-web,
  com.polarion.alm.wiki,
+ org.jsoup,
  org.apache.tika.patched;resolution:=optional,
  org.apache.tika;resolution:=optional
 Guice-Modules: ch.sbb.polarion.extension.pdf_exporter.PdfExporterModule

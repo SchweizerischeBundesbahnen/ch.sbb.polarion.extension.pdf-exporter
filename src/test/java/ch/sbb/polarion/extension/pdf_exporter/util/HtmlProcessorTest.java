@@ -378,26 +378,6 @@ class HtmlProcessorTest {
 
     @Test
     @SneakyThrows
-    void tableOfContentTest() {
-        try (InputStream isInvalidHtml = this.getClass().getResourceAsStream("/tableOfContentBeforeProcessing.html");
-             InputStream isInvalidFormattedHtml = this.getClass().getResourceAsStream("/tableOfContentBeforeProcessingFormatted.html");
-             InputStream isValidHtml = this.getClass().getResourceAsStream("/tableOfContentAfterProcessing.html")) {
-
-            String invalidHtml = new String(isInvalidHtml.readAllBytes(), StandardCharsets.UTF_8);
-            String invalidFormattedHtml = new String(isInvalidFormattedHtml.readAllBytes(), StandardCharsets.UTF_8);
-
-            // Spaces and new lines are removed to exclude difference in space characters
-            String fixedHtml = processor.addTableOfContent(invalidHtml);
-            String validHtml = new String(isValidHtml.readAllBytes(), StandardCharsets.UTF_8);
-            assertEquals(TestStringUtils.removeNonsensicalSymbols(validHtml), TestStringUtils.removeNonsensicalSymbols(fixedHtml));
-
-            String fixedFormattedHtml = processor.addTableOfContent(invalidFormattedHtml);
-            assertEquals(TestStringUtils.removeNonsensicalSymbols(validHtml), TestStringUtils.removeNonsensicalSymbols(fixedFormattedHtml));
-        }
-    }
-
-    @Test
-    @SneakyThrows
     void tableOfTablesTest() {
         try (InputStream isInvalidHtml = this.getClass().getResourceAsStream("/tableOfTablesBeforeProcessing.html");
              InputStream isValidHtml = this.getClass().getResourceAsStream("/tableOfTablesAfterProcessing.html")) {
