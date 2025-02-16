@@ -29,7 +29,7 @@ public class TocLeaf {
             if (children.isEmpty()) {
                 return "";
             } else {
-                return String.format("<ul class='toc'>%s</ul>", getChildrenString(startLevel, maxLevel));
+                return String.format("<ul class=\"toc\">%s</ul>", getChildrenString(startLevel, maxLevel));
             }
         } else {
             if (children.isEmpty()) {
@@ -44,16 +44,16 @@ public class TocLeaf {
         if (level >= startLevel && level <= maxLevel) {
             return String.format(""
                             + "<li>"
-                            + "  <a href='#%s'>" // Link ID
-                            + "    <span class='number' %s>%s</span>" // List item number, it is null in case of wiki headers - then we hide it
-                            + "    <span class='text'>%s</span>" // List item text
+                            + "  <a href=\"#%s\">" // Link ID
+                            + "    <span class=\"number\" %s>%s</span>" // List item number, it is null in case of wiki headers - then we hide it
+                            + "    <span class=\"text\">%s</span>" // List item text
                             + "  </a>"
-                            + "  <a href='#%s' class='page-number'>" // Link ID one more time
+                            + "  <a href=\"#%s\" class=\"page-number\">" // Link ID one more time
                             + "  </a>"
                             + "</li>"
                             + "%s" // Sub-list
                             + "",
-                    id, number == null ? "style='display:none;'" : "", number, text, id, (!StringUtils.isEmpty(children) ? String.format("<ul>%s</ul>", children) : ""));
+                    id, number == null ? "style=\"display:none;\"" : "", number, text, id, (!StringUtils.isEmpty(children) ? String.format("<ul>%s</ul>", children) : ""));
 
         } else {
             return children; // Render only children nodes output (also filtered) if this node is out of required levels range
