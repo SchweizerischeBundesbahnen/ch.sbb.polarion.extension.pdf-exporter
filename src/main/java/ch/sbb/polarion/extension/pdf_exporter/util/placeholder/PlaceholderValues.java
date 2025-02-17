@@ -31,6 +31,7 @@ import java.util.stream.Collectors;
 public class PlaceholderValues {
     public static final String DOC_LANGUAGE_FIELD = "docLanguage";
     public static final String DOC_TIME_ZONE_FIELD = "docTimeZone";
+
     private String productName;
     private String productVersion;
     private String projectName;
@@ -54,7 +55,7 @@ public class PlaceholderValues {
     @Builder.Default
     private Map<String, String> customVariables = new HashMap<>();
 
-    public Map<String, String> getAllVariables() {
+    public @NotNull Map<String, String> getAllVariables() {
         Map<String, String> variables = new HashMap<>();
         variables.put(Placeholder.PROJECT_NAME.name(), projectName);
         variables.put(Placeholder.DOCUMENT_ID.name(), documentId);
@@ -71,6 +72,15 @@ public class PlaceholderValues {
 
         variables.putAll(customVariables);
         return variables;
+    }
+
+    public @NotNull Map<String, String> getDefinedVariables() {
+        Map<String, String> allVariables = getAllVariables();
+
+        allVariables.entrySet()
+                .removeIf(entry -> entry.getValue() == null);
+
+        return allVariables;
     }
 
     @SuppressWarnings("java:S1166")

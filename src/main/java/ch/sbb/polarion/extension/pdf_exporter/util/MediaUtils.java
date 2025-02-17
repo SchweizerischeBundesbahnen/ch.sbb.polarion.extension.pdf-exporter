@@ -142,10 +142,10 @@ public class MediaUtils {
     }
 
     @SneakyThrows
-    public byte[] overwriteFirstPageWithTitle(byte[] destinationPdf, byte[] titlePdf) {
+    public byte[] overwriteFirstPageWithTitle(byte[] destinationPdf, byte[] firstPage) {
         ByteArrayOutputStream modifiedTitleOutputStream = new ByteArrayOutputStream();
         ByteArrayOutputStream modifiedContentOutputStream = new ByteArrayOutputStream();
-        try (PDDocument titleDoc = Loader.loadPDF(titlePdf);
+        try (PDDocument titleDoc = Loader.loadPDF(firstPage);
              PDDocument contentDoc = Loader.loadPDF(destinationPdf)) {
             while (titleDoc.getNumberOfPages() > 1) { //remove all pages except the first one from title pdf
                 titleDoc.removePage(1);
@@ -163,6 +163,13 @@ public class MediaUtils {
         merger.mergeDocuments(null);
 
         return resultOutputStream.toByteArray();
+    }
+
+    @SneakyThrows
+    public static long getNumberOfPages(byte[] pdfContent) {
+        try (PDDocument contentDoc = Loader.loadPDF(pdfContent)) {
+            return contentDoc.getNumberOfPages();
+        }
     }
 
     @SuppressWarnings("java:S1168")
