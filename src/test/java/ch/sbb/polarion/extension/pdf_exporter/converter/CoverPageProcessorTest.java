@@ -12,6 +12,7 @@ import ch.sbb.polarion.extension.pdf_exporter.util.HtmlProcessor;
 import ch.sbb.polarion.extension.pdf_exporter.util.PdfGenerationLog;
 import ch.sbb.polarion.extension.pdf_exporter.util.PdfTemplateProcessor;
 import ch.sbb.polarion.extension.pdf_exporter.util.placeholder.PlaceholderProcessor;
+import ch.sbb.polarion.extension.pdf_exporter.util.placeholder.PlaceholderValues;
 import ch.sbb.polarion.extension.pdf_exporter.util.velocity.VelocityEvaluator;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.WeasyPrintOptions;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.service.WeasyPrintServiceConnector;
@@ -32,8 +33,7 @@ import java.util.stream.IntStream;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class CoverPageProcessorTest {
@@ -84,8 +84,8 @@ class CoverPageProcessorTest {
         try (PDDocument document = new PDDocument()) {
             IntStream.range(0, pageNumber)
                     .forEach(i -> {
-                            PDPage pdPage = new PDPage();
-                            document.addPage(pdPage);
+                        PDPage pdPage = new PDPage();
+                        document.addPage(pdPage);
                     });
             bos = new ByteArrayOutputStream();
             document.save(bos);
@@ -107,7 +107,7 @@ class CoverPageProcessorTest {
         DocumentData<IModule> documentData = prepareMocks(coverPageModel, exportParams);
 
         // Act
-        String result = coverPageProcessor.composeTitleHtml(documentData, exportParams);
+        String result = coverPageProcessor.composeTitleHtml(documentData, exportParams, null);
 
         // Assert
         assertThat(result).isEqualTo("result title html");
@@ -121,7 +121,8 @@ class CoverPageProcessorTest {
                 .lastRevision("12345")
                 .revisionPlaceholder("12345")
                 .build();
-        when(placeholderProcessor.replacePlaceholders(documentData, exportParams, "test template html")).thenReturn("replaced template html");
+        lenient().when(placeholderProcessor.replacePlaceholders(documentData, exportParams, "test template html", null)).thenReturn("replaced template html");
+        lenient().when(placeholderProcessor.replacePlaceholders(any(DocumentData.class), any(ExportParams.class), eq("test template html"), any(PlaceholderValues.class))).thenReturn("replaced template html");
         when(velocityEvaluator.evaluateVelocityExpressions(eq(documentData), anyString())).thenAnswer(a -> a.getArguments()[1]);
         when(coverPageSettings.processImagePlaceholders("test template css")).thenCallRealMethod();
         when(pdfTemplateProcessor.processUsing(exportParams, "test document", "test template css", "replaced template html")).thenReturn("result title html");
