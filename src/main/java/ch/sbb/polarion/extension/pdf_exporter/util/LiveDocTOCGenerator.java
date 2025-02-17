@@ -8,12 +8,14 @@ public class LiveDocTOCGenerator extends AbstractTOCGenerator {
 
     @Override
     protected @Nullable String getId(@NotNull Element heading) {
-        return heading.selectFirst("a[id]") != null ? heading.selectFirst("a[id]").id() : null;
+        Element anchorElement = heading.selectFirst("a[id]");
+        return anchorElement != null ? anchorElement.id() : null;
     }
 
     @Override
     protected @Nullable String getNumber(@NotNull Element heading) {
-        return heading.selectFirst("span span") != null ? heading.selectFirst("span span").text() : null;
+        Element spanElement = heading.selectFirst("span span");
+        return spanElement != null ? spanElement.text() : null;
     }
 
     @Override
