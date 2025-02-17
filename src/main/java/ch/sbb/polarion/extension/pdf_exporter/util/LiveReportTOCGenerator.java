@@ -13,7 +13,7 @@ public class LiveReportTOCGenerator extends AbstractTOCGenerator {
 
     @Override
     protected @Nullable String getNumber(@NotNull Element heading) {
-        return heading.text().split(" ")[0]; // extract chapter number, e.g., "1.1.1";
+        return heading.text().split(" ")[0]; // extract chapter number, like "1.1.1"
     }
 
     @Override
