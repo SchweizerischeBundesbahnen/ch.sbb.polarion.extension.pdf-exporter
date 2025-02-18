@@ -1,13 +1,13 @@
 const ExportPdf = {
     stylePackageChanged: function () {
-        const selectedStylePackage = document.getElementById("style-package-select").value;
-        const scope = document.querySelector("input[name='scope']").value;
+        const selectedStylePackage = ExportCommon.getElementById("style-package-select").value;
+        const scope = ExportCommon.querySelector("input[name='scope']").value;
         if (selectedStylePackage && scope) {
-            document.querySelectorAll('button').forEach(actionButton => {
+            ExportCommon.querySelectorAll('button').forEach(actionButton => {
                 actionButton.disabled = true;
             });
 
-            const $stylePackageError = $("#style-package-error");
+            const $stylePackageError = ExportCommon.getJQueryElement("#style-package-error");
             $stylePackageError.empty();
 
             SbbCommon.callAsync({
@@ -16,7 +16,7 @@ const ExportPdf = {
                 responseType: "json",
                 onOk: (responseText, request) => {
                     ExportPdf.stylePackageSelected(request.response);
-                    document.querySelectorAll('button').forEach(actionButton => {
+                    ExportCommon.querySelectorAll('button').forEach(actionButton => {
                         actionButton.disabled = false;
                     });
                 },
@@ -31,7 +31,7 @@ const ExportPdf = {
         if (!stylePackage) {
             return;
         }
-        const documentLanguage = document.getElementById("document-language").value;
+        const documentLanguage = ExportCommon.getElementById("document-language").value;
 
         ExportCommon.setCheckbox("cover-page-checkbox", stylePackage.coverPage);
 
@@ -71,12 +71,12 @@ const ExportPdf = {
         ExportCommon.displayIf("language", stylePackage.language);
 
         ExportCommon.setCheckbox("selected-roles", stylePackage.linkedWorkitemRoles);
-        document.querySelectorAll(`#roles-selector option`).forEach(roleOption => {
+        ExportCommon.querySelectorAll(`#roles-selector option`).forEach(roleOption => {
             roleOption.selected = false;
         });
         if (stylePackage.linkedWorkitemRoles) {
             for (const role of stylePackage.linkedWorkitemRoles) {
-                document.querySelectorAll(`#roles-selector option[value='${role}']`).forEach(roleOption => {
+                ExportCommon.querySelectorAll(`#roles-selector option[value='${role}']`).forEach(roleOption => {
                     roleOption.selected = true;
                 });
             }
@@ -88,34 +88,34 @@ const ExportPdf = {
     },
 
     setClass: function (elementId, className) {
-        document.getElementById(elementId).className = className;
+        ExportCommon.getElementById(elementId).className = className;
     },
 
     prepareRequest: function (projectId, locationPath, baselineRevision, revision, fileName) {
         let selectedChapters = null;
-        if (document.getElementById("specific-chapters").checked) {
+        if (ExportCommon.getElementById("specific-chapters").checked) {
             selectedChapters = this.getSelectedChapters();
             this.setClass("chapters", selectedChapters ? "" : "error");
             if (!selectedChapters) {
-                $("#export-error").append("Please, provide comma separated list of integer values in chapters field");
+                ExportCommon.getJQueryElement("#export-error").append("Please, provide comma separated list of integer values in chapters field");
                 return undefined;
             }
         }
 
         let numberedListStyles = null;
-        if (document.getElementById("custom-list-styles").checked) {
-            numberedListStyles = document.getElementById("numbered-list-styles").value;
+        if (ExportCommon.getElementById("custom-list-styles").checked) {
+            numberedListStyles = ExportCommon.getElementById("numbered-list-styles").value;
             const error = this.validateNumberedListStyles(numberedListStyles);
             this.setClass("numbered-list-styles", error ? "error" : "");
             if (error) {
-                $("#export-error").append(error);
+                ExportCommon.getJQueryElement("#export-error").append(error);
                 return undefined;
             }
         }
 
         const selectedRoles = [];
-        if (document.getElementById("selected-roles").checked) {
-            const selectedOptions = Array.from(document.getElementById("roles-selector").options).filter(opt => opt.selected);
+        if (ExportCommon.getElementById("selected-roles").checked) {
+            const selectedOptions = Array.from(ExportCommon.getElementById("roles-selector").options).filter(opt => opt.selected);
             selectedRoles.push(...selectedOptions.map(opt => opt.value));
         }
 
@@ -129,25 +129,25 @@ const ExportPdf = {
             .setLocationPath(locationPath)
             .setBaselineRevision(baselineRevision)
             .setRevision(revision)
-            .setCoverPage(document.getElementById("cover-page-checkbox").checked ? document.getElementById("cover-page-selector").value : null)
-            .setCss(document.getElementById("css-selector").value)
-            .setHeaderFooter(document.getElementById("header-footer-selector").value)
-            .setLocalization(document.getElementById("localization-selector").value)
-            .setWebhooks(document.getElementById("webhooks-checkbox").checked ? document.getElementById("webhooks-selector").value : null)
-            .setHeadersColor(document.getElementById("headers-color").value)
-            .setPaperSize(document.getElementById("paper-size-selector").value)
-            .setOrientation(document.getElementById("orientation-selector").value)
-            .setFitToPage(document.getElementById('fit-to-page').checked)
-            .setEnableCommentsRendering(document.getElementById('enable-comments-rendering').checked)
-            .setWatermark(document.getElementById("watermark").checked)
-            .setMarkReferencedWorkitems(document.getElementById("mark-referenced-workitems").checked)
-            .setCutEmptyChapters(document.getElementById("cut-empty-chapters").checked)
-            .setCutEmptyWIAttributes(document.getElementById('cut-empty-wi-attributes').checked)
-            .setCutLocalUrls(document.getElementById("cut-urls").checked)
-            .setFollowHTMLPresentationalHints(document.getElementById("presentational-hints").checked)
+            .setCoverPage(ExportCommon.getElementById("cover-page-checkbox").checked ? ExportCommon.getElementById("cover-page-selector").value : null)
+            .setCss(ExportCommon.getElementById("css-selector").value)
+            .setHeaderFooter(ExportCommon.getElementById("header-footer-selector").value)
+            .setLocalization(ExportCommon.getElementById("localization-selector").value)
+            .setWebhooks(ExportCommon.getElementById("webhooks-checkbox").checked ? ExportCommon.getElementById("webhooks-selector").value : null)
+            .setHeadersColor(ExportCommon.getElementById("headers-color").value)
+            .setPaperSize(ExportCommon.getElementById("paper-size-selector").value)
+            .setOrientation(ExportCommon.getElementById("orientation-selector").value)
+            .setFitToPage(ExportCommon.getElementById('fit-to-page').checked)
+            .setEnableCommentsRendering(ExportCommon.getElementById('enable-comments-rendering').checked)
+            .setWatermark(ExportCommon.getElementById("watermark").checked)
+            .setMarkReferencedWorkitems(ExportCommon.getElementById("mark-referenced-workitems").checked)
+            .setCutEmptyChapters(ExportCommon.getElementById("cut-empty-chapters").checked)
+            .setCutEmptyWIAttributes(ExportCommon.getElementById('cut-empty-wi-attributes').checked)
+            .setCutLocalUrls(ExportCommon.getElementById("cut-urls").checked)
+            .setFollowHTMLPresentationalHints(ExportCommon.getElementById("presentational-hints").checked)
             .setNumberedListStyles(numberedListStyles)
             .setChapters(selectedChapters)
-            .setLanguage(document.getElementById('localization').checked ? document.getElementById("language").value : null)
+            .setLanguage(ExportCommon.getElementById('localization').checked ? ExportCommon.getElementById("language").value : null)
             .setLinkedWorkitemRoles(selectedRoles)
             .setFileName(fileName)
             .setUrlQueryParameters(Object.fromEntries([...urlSearchParams]))
@@ -156,7 +156,7 @@ const ExportPdf = {
     },
 
     getSelectedChapters: function () {
-        const chaptersValue = document.getElementById("chapters").value;
+        const chaptersValue = ExportCommon.getElementById("chapters").value;
         let chapters = (chaptersValue?.replaceAll(" ", "") || "").split(",");
         if (chapters && chapters.length > 0) {
             for (const chapter of chapters) {
@@ -184,12 +184,12 @@ const ExportPdf = {
 
     loadPdf: function (projectId, locationPath, baselineRevision, revision) {
         //clean previous errors
-        $("#export-error").empty();
-        $("#export-warning").empty();
+        ExportCommon.getJQueryElement("#export-error").empty();
+        ExportCommon.getJQueryElement("#export-warning").empty();
 
-        let fileName = document.getElementById("filename").value;
+        let fileName = ExportCommon.getElementById("filename").value;
         if (!fileName) {
-            fileName = document.getElementById("filename").dataset.default;
+            fileName = ExportCommon.getElementById("filename").dataset.default;
         }
         if (fileName && !fileName.endsWith(".pdf")) {
             fileName += ".pdf";
@@ -210,18 +210,18 @@ const ExportPdf = {
             body: request,
             onOk: (responseText, request) => {
                 if (request.response.containsNestedLists) {
-                    $("#export-warning").append("Document contains nested numbered lists which structures were not valid. " +
+                    ExportCommon.getJQueryElement("#export-warning").append("Document contains nested numbered lists which structures were not valid. " +
                         "We did our best to fix it, but be aware of it.");
                 }
             },
             onError: (status, errorMessage, request) => {
-                $("#export-error").append("Error occurred validating nested lists" + (request.response.message ? ":<br>" + request.response.message : ""));
+                ExportCommon.getJQueryElement("#export-error").append("Error occurred validating nested lists" + (request.response.message ? ":<br>" + request.response.message : ""));
             }
         });
 
         ExportCommon.asyncConvertPdf(request, result => {
             if (result.warning) {
-                $("#export-warning").append(result.warning);
+                ExportCommon.getJQueryElement("#export-warning").append(result.warning);
             }
             this.actionInProgress(false);
 
@@ -231,7 +231,7 @@ const ExportPdf = {
             errorResponse.text().then(errorJson => {
                 const error = errorJson && JSON.parse(errorJson);
                 const errorMessage = error && (error.message ? error.message : error.errorMessage);
-                $("#export-error").append("Error occurred during PDF generation" + (errorMessage ? ":<br>" + errorMessage : ""));
+                ExportCommon.getJQueryElement("#export-error").append("Error occurred during PDF generation" + (errorMessage ? ":<br>" + errorMessage : ""));
             });
         });
     },
@@ -239,21 +239,21 @@ const ExportPdf = {
     actionInProgress: function (inProgress) {
         if (inProgress) {
             //disable components
-            $("#" + $("#export-pdf").parent().parent().attr("id") + " :input").attr("disabled", true);
+            ExportCommon.getJQueryElement(":input").attr("disabled", true);
             //show loading icon
-            $("#export-pdf-progress").show();
+            ExportCommon.getJQueryElement("#export-pdf-progress").show();
         } else {
             //enable components
-            $("#" + $("#export-pdf").parent().parent().attr("id") + " :input").attr("disabled", false);
+            ExportCommon.getJQueryElement(":input").attr("disabled", false);
             //hide loading icon
-            $("#export-pdf-progress").hide();
+            ExportCommon.getJQueryElement("#export-pdf-progress").hide();
         }
     },
 
     validatePdf: function (projectId, locationPath, baselineRevision, revision) {
         //clean previous errors
-        $("#validate-error").empty();
-        $("#validate-ok").empty();
+        ExportCommon.getJQueryElement("#validate-error").empty();
+        ExportCommon.getJQueryElement("#validate-ok").empty();
 
         let request = this.prepareRequest(projectId, locationPath, baselineRevision, revision);
         if (request === undefined) {
@@ -261,16 +261,16 @@ const ExportPdf = {
         }
 
         //disable components
-        $("#" + $("#export-pdf").parent().parent().attr("id") + " :input").attr("disabled", true);
+        ExportCommon.getJQueryElement(":input").attr("disabled", true);
         //show loading icon
-        $("#validate-pdf-progress").show();
+        ExportCommon.getJQueryElement("#validate-pdf-progress").show();
 
         const stopProgress = function () {
             //enable components
-            $("#" + $("#export-pdf").parent().parent().attr("id") + " :input").attr("disabled", false);
+            ExportCommon.getJQueryElement(":input").attr("disabled", false);
             //hide loading icon
-            $("#validate-pdf-progress").hide();
-            document.getElementById('validate-error').replaceChildren(); //remove div content
+            ExportCommon.getJQueryElement("#validate-pdf-progress").hide();
+            ExportCommon.getElementById('validate-error').replaceChildren(); //remove div content
         };
 
         SbbCommon.callAsync({
@@ -281,11 +281,11 @@ const ExportPdf = {
             body: request,
             onOk: (responseText, request) => {
                 stopProgress();
-                const container = document.getElementById('validate-error');
+                const container = ExportCommon.getElementById('validate-error');
                 let result = request.response;
                 let pages = result.invalidPages.length;
                 if (pages === 0) {
-                    $("#validate-ok").append("OK");
+                    ExportCommon.getJQueryElement("#validate-ok").append("OK");
                     return;
                 }
                 let message = (pages > 5 ? 'More than 5' : pages) + ' invalid page' + (pages === 1 ? '' : 's') + ' found:';
@@ -320,7 +320,7 @@ const ExportPdf = {
             },
             onError: (status, errorMessage, request) => {
                 stopProgress();
-                $("#validate-error").append("Error occurred validating pages width" + (request.response.message ? ":<br>" + request.response.message : ""));
+                ExportCommon.getJQueryElement("#validate-error").append("Error occurred validating pages width" + (request.response.message ? ":<br>" + request.response.message : ""));
             }
         });
     }

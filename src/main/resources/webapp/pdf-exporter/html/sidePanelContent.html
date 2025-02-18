@@ -2,188 +2,190 @@
   but the attribute 'onload' below allows to execute our javascript which will load the rest needed js files.  -->
 <link href='/polarion/pdf-exporter/ui/css/pdf-exporter.css' rel='stylesheet' onload='$.getScript("/polarion/pdf-exporter/ui/js/side-panel-starter.js");'>
 
-<p>Select one of style packages in dropdown below which you wish to use during export.</p>
-<div class='property-wrapper'>
-    <input type='hidden' name='scope' value='{SCOPE_VALUE}'/>
-    <label for='style-package-select'>Style package:</label>
-    <select id='style-package-select' onchange='ExportPdf.stylePackageChanged()'>
-        {STYLE_PACKAGE_OPTIONS}
-    </select>
-</div>
-<div id='style-package-error'></div>
+<div class="pdf-exporter form-wrapper">
+    <p>Select one of style packages in dropdown below which you wish to use during export.</p>
+    <div class='property-wrapper'>
+        <input type='hidden' name='scope' value='{SCOPE_VALUE}'/>
+        <label for='style-package-select'>Style package:</label>
+        <select id='style-package-select' onchange='ExportPdf.stylePackageChanged()'>
+            {STYLE_PACKAGE_OPTIONS}
+        </select>
+    </div>
+    <div id='style-package-error'></div>
 
-<div id='style-package-content' style='border-top: 1px solid #eee; padding-top: 10px;'>
-    <p>Selected style package exposes its settings, so you can redefine them.</p>
-    <div class='property-wrapper'>
-        <label for='cover-page-selector'>
-            <input id='cover-page-checkbox' onchange='document.getElementById("cover-page-selector").style.display = this.checked ? "inline-block" : "none"' type='checkbox' {COVER_PAGE_SELECTED}/>
-            Cover page:
-        </label>
-        <select id='cover-page-selector' style="display: {COVER_PAGE_DISPLAY}">
-            {COVER_PAGE_OPTIONS}
-        </select>
-    </div>
-    <div class='property-wrapper'>
-        <label for='css-selector'>CSS:</label>
-        <select id='css-selector'>
-            {CSS_OPTIONS}
-        </select>
-    </div>
-    <div class='property-wrapper'>
-        <label for='header-footer-selector'>Header/Footer:</label>
-        <select id='header-footer-selector'>
-            {HEADER_FOOTER_OPTIONS}
-        </select>
-    </div>
-    <div class='property-wrapper'>
-        <label for='localization-selector'>Localization:</label>
-        <select id='localization-selector'>
-            {LOCALIZATION_OPTIONS}
-        </select>
-    </div>
-    <div class='property-wrapper {WEBHOOKS_DISPLAY}' style='border-top: 1px solid #eee; padding-top: 10px;'>
-        <label for='webhooks-selector'>
-            <input id='webhooks-checkbox' onchange='document.getElementById("webhooks-selector").style.display = this.checked ? "inline-block" : "none"' type='checkbox' {WEBHOOKS_SELECTED}/>
-            Webhooks:
-        </label>
-        <select id='webhooks-selector' style="display: {WEBHOOKS_SELECTOR_DISPLAY}">
-            {WEBHOOKS_OPTIONS}
-        </select>
-    </div>
-    <div class='property-wrapper' style='border-top: 1px solid #eee; padding-top: 10px;'>
-        <label for='headers-color'>Headers color:</label>
-        <input id='headers-color' type='color' value='{HEADERS_COLOR_VALUE}'/>
-    </div>
-    <div class='property-wrapper'>
-        <label for='paper-size-selector'>Paper size:</label>
-        <select id='paper-size-selector'>
-            <option value='A5'>A5</option>
-            <option value='A4'>A4</option>
-            <option value='A3'>A3</option>
-            <option value='B5'>B5</option>
-            <option value='B4'>B4</option>
-            <option value='JIS_B5'>JIS-B5</option>
-            <option value='JIS_B4'>JIS-B4</option>
-            <option value='LETTER'>Letter</option>
-            <option value='LEGAL'>Legal</option>
-            <option value='LEDGER'>Ledger</option>
-        </select>
-    </div>
-    <div class='property-wrapper'>
-        <label for='orientation-selector'>Orientation:</label>
-        <select id='orientation-selector'>
-            <option value='PORTRAIT'>Portrait</option>
-            <option value='LANDSCAPE'>Landscape</option>
-        </select>
-    </div>
-    <div class='property-wrapper'>
-        <label for='fit-to-page'>
-            <input id='fit-to-page' type='checkbox'/>
-            Fit images and tables to page
-        </label>
-    </div>
-    <div class='property-wrapper'>
-        <label for='presentational-hints'>
-            <input id='presentational-hints' type='checkbox'/>
-            Follow HTML presentational hints
-        </label>
-    </div>
-    <div class='property-wrapper'>
-        <label for='enable-comments-rendering'>
-            <input id='enable-comments-rendering' type='checkbox'/>
-            Comments rendering
-        </label>
-    </div>
-    <div class='property-wrapper'>
-        <label for='watermark'>
-            <input id='watermark' type='checkbox'/>
-            Watermark
-        </label>
-    </div>
-    <div class='property-wrapper'>
-        <label for='cut-empty-chapters'>
-            <input id='cut-empty-chapters' type='checkbox'/>
-            Cut empty chapters (any level)
-        </label>
-    </div>
-    <div class='property-wrapper'>
-        <label for='cut-empty-wi-attributes'>
-            <input id='cut-empty-wi-attributes' type='checkbox'/>
-            Cut empty Workitem attributes
-        </label>
-    </div>
-    <div class='property-wrapper'>
-        <label for='cut-urls'>
-            <input id='cut-urls' type='checkbox'/>
-            Cut local Polarion URLs
-        </label>
-    </div>
-    <div class='property-wrapper'>
-        <label for='mark-referenced-workitems'>
-            <input id='mark-referenced-workitems' type='checkbox'/>
-            Mark referenced Workitems
-        </label>
-    </div>
-    <div class='property-wrapper'>
-        <label for='specific-chapters' style='width: 195px'>
-            <input id='specific-chapters' onchange='document.getElementById("chapters").style.display = this.checked ? "block" : "none"' type='checkbox'/>
-            Specific higher level chapters
-        </label>
-        <input id='chapters' style='display: none; width: 100px' placeholder='eg. 1,2,4 etc.' type='text'/>
-    </div>
-    <div class='property-wrapper'>
-        <label for='custom-list-styles' style='width: 210px'>
-            <input id='custom-list-styles' onchange='document.getElementById("numbered-list-styles").style.display = this.checked ? "block" : "none"' type='checkbox'/>
-            Custom styles of numbered lists
-        </label>
-        <input id='numbered-list-styles' style='display: none; width: 80px' placeholder='eg. 1ai' type='text'/>
-    </div>
-    <div class='property-wrapper'>
-        <label for='localization'>
-            <input id='localization' onchange='document.getElementById("language").style.display = this.checked ? "block" : "none"' type='checkbox'/>
-            Localize enums
-        </label>
-        <select id='language' style='display: none'>
-            <option value='de'>Deutsch</option>
-            <option value='fr'>Français</option>
-            <option value='it'>Italiano</option>
-        </select>
-    </div>
-    <input type="hidden" id="document-language" value="{DOCUMENT_LANGUAGE}"/>
-    <div class='roles-fields'>
+    <div id='style-package-content' style='border-top: 1px solid #eee; padding-top: 10px;'>
+        <p>Selected style package exposes its settings, so you can redefine them.</p>
         <div class='property-wrapper'>
-            <label for='selected-roles'>
-                <input id='selected-roles' onchange='document.getElementById("roles-wrapper").style.display = this.checked ? "block" : "none"' type='checkbox'/>
-                Specific Workitem roles
+            <label for='cover-page-selector'>
+                <input id='cover-page-checkbox' onchange='ExportCommon.getElementById("cover-page-selector").style.display = this.checked ? "inline-block" : "none"' type='checkbox' {COVER_PAGE_SELECTED}/>
+                Cover page:
             </label>
-        </div>
-        <div class='property-wrapper' id='roles-wrapper' style='display: none'>
-            <select id='roles-selector' multiple>
-                {ROLES_OPTIONS}
+            <select id='cover-page-selector' style="display: {COVER_PAGE_DISPLAY}">
+                {COVER_PAGE_OPTIONS}
             </select>
         </div>
+        <div class='property-wrapper'>
+            <label for='css-selector'>CSS:</label>
+            <select id='css-selector'>
+                {CSS_OPTIONS}
+            </select>
+        </div>
+        <div class='property-wrapper'>
+            <label for='header-footer-selector'>Header/Footer:</label>
+            <select id='header-footer-selector'>
+                {HEADER_FOOTER_OPTIONS}
+            </select>
+        </div>
+        <div class='property-wrapper'>
+            <label for='localization-selector'>Localization:</label>
+            <select id='localization-selector'>
+                {LOCALIZATION_OPTIONS}
+            </select>
+        </div>
+        <div class='property-wrapper {WEBHOOKS_DISPLAY}' style='border-top: 1px solid #eee; padding-top: 10px;'>
+            <label for='webhooks-selector'>
+                <input id='webhooks-checkbox' onchange='ExportCommon.getElementById("webhooks-selector").style.display = this.checked ? "inline-block" : "none"' type='checkbox' {WEBHOOKS_SELECTED}/>
+                Webhooks:
+            </label>
+            <select id='webhooks-selector' style="display: {WEBHOOKS_SELECTOR_DISPLAY}">
+                {WEBHOOKS_OPTIONS}
+            </select>
+        </div>
+        <div class='property-wrapper' style='border-top: 1px solid #eee; padding-top: 10px;'>
+            <label for='headers-color'>Headers color:</label>
+            <input id='headers-color' type='color' value='{HEADERS_COLOR_VALUE}'/>
+        </div>
+        <div class='property-wrapper'>
+            <label for='paper-size-selector'>Paper size:</label>
+            <select id='paper-size-selector'>
+                <option value='A5'>A5</option>
+                <option value='A4'>A4</option>
+                <option value='A3'>A3</option>
+                <option value='B5'>B5</option>
+                <option value='B4'>B4</option>
+                <option value='JIS_B5'>JIS-B5</option>
+                <option value='JIS_B4'>JIS-B4</option>
+                <option value='LETTER'>Letter</option>
+                <option value='LEGAL'>Legal</option>
+                <option value='LEDGER'>Ledger</option>
+            </select>
+        </div>
+        <div class='property-wrapper'>
+            <label for='orientation-selector'>Orientation:</label>
+            <select id='orientation-selector'>
+                <option value='PORTRAIT'>Portrait</option>
+                <option value='LANDSCAPE'>Landscape</option>
+            </select>
+        </div>
+        <div class='property-wrapper'>
+            <label for='fit-to-page'>
+                <input id='fit-to-page' type='checkbox'/>
+                Fit images and tables to page
+            </label>
+        </div>
+        <div class='property-wrapper'>
+            <label for='presentational-hints'>
+                <input id='presentational-hints' type='checkbox'/>
+                Follow HTML presentational hints
+            </label>
+        </div>
+        <div class='property-wrapper'>
+            <label for='enable-comments-rendering'>
+                <input id='enable-comments-rendering' type='checkbox'/>
+                Comments rendering
+            </label>
+        </div>
+        <div class='property-wrapper'>
+            <label for='watermark'>
+                <input id='watermark' type='checkbox'/>
+                Watermark
+            </label>
+        </div>
+        <div class='property-wrapper'>
+            <label for='cut-empty-chapters'>
+                <input id='cut-empty-chapters' type='checkbox'/>
+                Cut empty chapters (any level)
+            </label>
+        </div>
+        <div class='property-wrapper'>
+            <label for='cut-empty-wi-attributes'>
+                <input id='cut-empty-wi-attributes' type='checkbox'/>
+                Cut empty Workitem attributes
+            </label>
+        </div>
+        <div class='property-wrapper'>
+            <label for='cut-urls'>
+                <input id='cut-urls' type='checkbox'/>
+                Cut local Polarion URLs
+            </label>
+        </div>
+        <div class='property-wrapper'>
+            <label for='mark-referenced-workitems'>
+                <input id='mark-referenced-workitems' type='checkbox'/>
+                Mark referenced Workitems
+            </label>
+        </div>
+        <div class='property-wrapper'>
+            <label for='specific-chapters' style='width: 195px'>
+                <input id='specific-chapters' onchange='ExportCommon.getElementById("chapters").style.display = this.checked ? "block" : "none"' type='checkbox'/>
+                Specific higher level chapters
+            </label>
+            <input id='chapters' style='display: none; width: 100px' placeholder='eg. 1,2,4 etc.' type='text'/>
+        </div>
+        <div class='property-wrapper'>
+            <label for='custom-list-styles' style='width: 210px'>
+                <input id='custom-list-styles' onchange='ExportCommon.getElementById("numbered-list-styles").style.display = this.checked ? "block" : "none"' type='checkbox'/>
+                Custom styles of numbered lists
+            </label>
+            <input id='numbered-list-styles' style='display: none; width: 80px' placeholder='eg. 1ai' type='text'/>
+        </div>
+        <div class='property-wrapper'>
+            <label for='localization'>
+                <input id='localization' onchange='ExportCommon.getElementById("language").style.display = this.checked ? "block" : "none"' type='checkbox'/>
+                Localize enums
+            </label>
+            <select id='language' style='display: none'>
+                <option value='de'>Deutsch</option>
+                <option value='fr'>Français</option>
+                <option value='it'>Italiano</option>
+            </select>
+        </div>
+        <input type="hidden" id="document-language" value="{DOCUMENT_LANGUAGE}"/>
+        <div class='roles-fields'>
+            <div class='property-wrapper'>
+                <label for='selected-roles'>
+                    <input id='selected-roles' onchange='ExportCommon.getElementById("roles-wrapper").style.display = this.checked ? "block" : "none"' type='checkbox'/>
+                    Specific Workitem roles
+                </label>
+            </div>
+            <div class='property-wrapper' id='roles-wrapper' style='display: none'>
+                <select id='roles-selector' multiple>
+                    {ROLES_OPTIONS}
+                </select>
+            </div>
+        </div>
     </div>
-</div>
 
-<div class='property-wrapper'>
-    <label for='filename' style="width: 80px">File name:</label>
-    <input id='filename' style='width: 100%' type='text' value="{FILENAME}" data-default="{DATA_FILENAME}"/>
-</div>
+    <div class='property-wrapper'>
+        <label for='filename' style="width: 80px">File name:</label>
+        <input id='filename' style='width: 100%' type='text' value="{FILENAME}" data-default="{DATA_FILENAME}"/>
+    </div>
 
-<div class='buttons-wrapper'>
-    <button type='button' id='export-pdf' onclick='ExportPdf.loadPdf({LOAD_PDF_PARAMS})'>
-        <img class='append-build-number' src='/polarion/ria/images/dle/operations/actionPdfExport16.svg' alt=''/>Export to PDF
-    </button>
-    <img id='export-pdf-progress' src='/polarion/ria/images/progress_grey.gif' alt=''/>
-    <div id='export-error'></div>
-    <div id='export-warning'></div>
-</div>
-<div class='buttons-wrapper' id='page-width-validation'>
-    <button type='button' id='validate-pdf' onclick='ExportPdf.validatePdf({VALIDATE_PDF_PARAMS})'>
-        <img class='append-build-number' src='/polarion/ria/images/dle/align_center.png' alt=''/>Validate pages width
-    </button>
-    <div id='validate-ok'></div>
-    <img id='validate-pdf-progress' src='/polarion/ria/images/progress_grey.gif' alt=''/>
-    <br>
-    <div id='validate-error'></div>
+    <div class='buttons-wrapper'>
+        <button type='button' id='export-pdf' onclick='ExportPdf.loadPdf({LOAD_PDF_PARAMS})'>
+            <img class='append-build-number' src='/polarion/ria/images/dle/operations/actionPdfExport16.svg' alt=''/>Export to PDF
+        </button>
+        <img id='export-pdf-progress' src='/polarion/ria/images/progress_grey.gif' alt=''/>
+        <div id='export-error'></div>
+        <div id='export-warning'></div>
+    </div>
+    <div class='buttons-wrapper' id='page-width-validation'>
+        <button type='button' id='validate-pdf' onclick='ExportPdf.validatePdf({VALIDATE_PDF_PARAMS})'>
+            <img class='append-build-number' src='/polarion/ria/images/dle/align_center.png' alt=''/>Validate pages width
+        </button>
+        <div id='validate-ok'></div>
+        <img id='validate-pdf-progress' src='/polarion/ria/images/progress_grey.gif' alt=''/>
+        <br>
+        <div id='validate-error'></div>
+    </div>
 </div>
