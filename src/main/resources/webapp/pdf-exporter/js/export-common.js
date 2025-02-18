@@ -1,28 +1,46 @@
 
 const ExportCommon = {
 
+    TOP_SELECTOR: ".pdf-exporter",
     DOC_PDF_CONVERSION_PULL_INTERVAL: 1000,
     DEFAULT_SETTING_NAME: "Default",
 
+    getElementById: function (elementId) {
+        return document.querySelector(`${this.TOP_SELECTOR} #${elementId}`);
+    },
+
+    getJQueryElement: function (selector) {
+        return $(`${this.TOP_SELECTOR} ${selector}`);
+    },
+
+
+    querySelector: function (selector) {
+        return document.querySelector(`${this.TOP_SELECTOR} ${selector}`);
+    },
+
+    querySelectorAll: function (selector) {
+        return document.querySelectorAll(`${this.TOP_SELECTOR} ${selector}`);
+    },
+
     setCheckbox: function (elementId, value) {
-        document.getElementById(elementId).checked = !!value;
+        this.getElementById(elementId).checked = !!value;
     },
 
     setValue: function (elementId, value) {
-        document.getElementById(elementId).value = value;
+        this.getElementById(elementId).value = value;
     },
 
     setSelector: function (elementId, value) {
-        const selector = document.getElementById(elementId);
+        const selector = this.getElementById(elementId);
         selector.value = this.containsOption(selector, value) ? value : this.DEFAULT_SETTING_NAME;
     },
 
     displayIf: function (elementId, condition, displayStyle = "block") {
-        document.getElementById(elementId).style.display = condition ? displayStyle : "none";
+        this.getElementById(elementId).style.display = condition ? displayStyle : "none";
     },
 
     visibleIf: function (elementId, condition) {
-        document.getElementById(elementId).style.visibility = condition ? "visible" : "hidden";
+        this.getElementById(elementId).style.visibility = condition ? "visible" : "hidden";
     },
 
     containsOption: function (selectElement, option) {
