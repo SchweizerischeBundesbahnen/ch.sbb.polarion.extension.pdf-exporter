@@ -143,7 +143,8 @@ class PdfConverterWeasyPrintTest extends BaseWeasyPrintTest {
 
         CoverPageSettings coverPageSettings = mock(CoverPageSettings.class);
         //check "testFieldKey" custom field substitution in the title + use basic css here, otherwise fonts may differ on different OS
-        lenient().when(coverPageSettings.load(any(), any())).thenReturn(new CoverPageModel("<dev>TITLE {{ testFieldKey }}</div>", basicCss));
+        // additionally we check PAGE_NUMBER and PAGES_TOTAL_COUNT supported on cover page
+        lenient().when(coverPageSettings.load(any(), any())).thenReturn(new CoverPageModel("<div>TITLE {{ testFieldKey }} </div> <div>PAGE_NUMBER = {{ PAGE_NUMBER }} and PAGES_TOTAL_COUNT = {{ PAGES_TOTAL_COUNT }}</div>", basicCss));
         lenient().when(coverPageSettings.processImagePlaceholders(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
         HtmlLinksHelper htmlLinksHelper = mock(HtmlLinksHelper.class);
