@@ -2,9 +2,10 @@ package ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -12,10 +13,11 @@ import java.util.List;
 import java.util.Map;
 
 @Data
-@Builder
+@SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ExportParams {
+@EqualsAndHashCode(callSuper = true)
+public class ExportParams extends ConversionParams {
     @Schema(description = "The unique identifier for the project", example = "elibrary")
     private @Nullable String projectId;
 
@@ -49,15 +51,6 @@ public class ExportParams {
     @Schema(description = "Color to be used for headers in the document. By default dark blue color (Polarion's default)")
     private String headersColor;
 
-    @Schema(description = "The page orientation of the exported document", defaultValue = "PORTRAIT")
-    private Orientation orientation = Orientation.PORTRAIT;
-
-    @Schema(description = "The paper size of the exported document", defaultValue = "A4")
-    private PaperSize paperSize = PaperSize.A4;
-
-    @Schema(description = "Content should be scaled to fit the page", defaultValue = "true")
-    private boolean fitToPage = true;
-
     @Schema(description = "Comments should be rendered in the exported document", defaultValue = "true")
     private boolean enableCommentsRendering = true;
 
@@ -76,9 +69,6 @@ public class ExportParams {
     @Schema(description = "Local Polarion URLs should be removed from the document")
     private boolean cutLocalUrls;
 
-    @Schema(description = "HTML presentational hints should be followed", defaultValue = "true")
-    private boolean followHTMLPresentationalHints = true;
-
     @Schema(description = "SCC styles to be applied to numbered lists in the document")
     private String numberedListStyles;
 
@@ -90,9 +80,6 @@ public class ExportParams {
 
     @Schema(description = "Specific Workitem roles", example = "[\"has parent\", \"depends on\"]")
     private List<String> linkedWorkitemRoles;
-
-    @Schema(description = "Target file name of exported document")
-    private String fileName;
 
     @Schema(description = "Map of attributes extracted from the URL")
     private Map<String, String> urlQueryParameters;
