@@ -7,6 +7,7 @@ import ch.sbb.polarion.extension.pdf_exporter.converter.PdfConverterJobsService.
 import ch.sbb.polarion.extension.pdf_exporter.converter.PropertiesUtility;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.NestedListsCheck;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.WidthValidationResult;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ConversionParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.DocumentType;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.Orientation;
@@ -342,8 +343,16 @@ public class ConverterInternalController {
             @Parameter(description = "input html (must include html and body elements)") String html,
             @Parameter(description = "default value: portrait") @QueryParam("orientation") Orientation orientation,
             @Parameter(description = "default value: A4") @QueryParam("paperSize") PaperSize paperSize,
+            @Parameter(description = "default value: false") @QueryParam("fitToPage") boolean fitToPage,
             @Parameter(description = "default value: document.pdf") @QueryParam("fileName") String fileName) {
-        byte[] pdfBytes = htmlToPdfConverter.convert(html, orientation, paperSize);
+        ConversionParams conversionParams = ConversionParams.builder()
+                .orientation(orientation)
+                .paperSize(paperSize)
+                .fitToPage(fitToPage)
+                .followHTMLPresentationalHints(true)
+                .fileName(fileName)
+                .build();
+        byte[] pdfBytes = htmlToPdfConverter.convert(html, conversionParams);
         String headerFileName = (fileName != null) ? fileName : "document.pdf";
         return Response.ok(pdfBytes)
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + headerFileName)

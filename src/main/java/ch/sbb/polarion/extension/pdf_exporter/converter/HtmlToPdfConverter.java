@@ -2,6 +2,7 @@ package ch.sbb.polarion.extension.pdf_exporter.converter;
 
 import ch.sbb.polarion.extension.generic.regex.RegexMatcher;
 import ch.sbb.polarion.extension.pdf_exporter.properties.PdfExporterExtensionConfiguration;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ConversionParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.Orientation;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PaperSize;
 import ch.sbb.polarion.extension.pdf_exporter.settings.LocalizationSettings;
@@ -36,13 +37,17 @@ public class HtmlToPdfConverter {
         this.weasyPrintServiceConnector = weasyPrintServiceConnector;
     }
 
-    public byte[] convert(String origHtml, Orientation orientation, PaperSize paperSize) {
+    public byte[] convert(@NotNull String origHtml, @NotNull ConversionParams conversionParams) {
         validateHtml(origHtml);
-        String html = preprocessHtml(origHtml, orientation, paperSize);
+        String html = preprocessHtml(origHtml, conversionParams);
         if (PdfExporterExtensionConfiguration.getInstance().isDebug()) {
             new HtmlLogger().log(origHtml, html, "");
         }
-        return weasyPrintServiceConnector.convertToPdf(html, WeasyPrintOptions.builder().followHTMLPresentationalHints(true).build());
+
+        WeasyPrintOptions weasyPrintOptions = WeasyPrintOptions.builder()
+                .followHTMLPresentationalHints(conversionParams.isFollowHTMLPresentationalHints())
+                .build();
+        return weasyPrintServiceConnector.convertToPdf(html, weasyPrintOptions);
     }
 
     private void validateHtml(String origHtml) {
@@ -57,12 +62,12 @@ public class HtmlToPdfConverter {
 
     @NotNull
     @VisibleForTesting
-    String preprocessHtml(String origHtml, Orientation orientation, PaperSize paperSize) {
+    String preprocessHtml(@NotNull String origHtml, @NotNull ConversionParams conversionParams) {
         String origHead = extractTagContent(origHtml, "head");
         String origCss = extractTagContent(origHead, "style");
 
         String head = origHead + pdfTemplateProcessor.buildBaseUrlHeader();
-        String css = origCss + pdfTemplateProcessor.buildSizeCss(orientation, paperSize);
+        String css = origCss + pdfTemplateProcessor.buildSizeCss(conversionParams.getOrientation(), conversionParams.getPaperSize());
         if (origCss.isBlank()) {
             head = head + String.format("<style>%s</style>", css);
         } else {
@@ -74,6 +79,11 @@ public class HtmlToPdfConverter {
         } else {
             html = replaceTagContent(origHtml, "head", head);
         }
+
+        if (conversionParams.isFitToPage()) {
+            html = htmlProcessor.adjustContentToFitPage(html, conversionParams);
+        }
+
         html = htmlProcessor.replaceResourcesAsBase64Encoded(html);
         html = htmlProcessor.internalizeLinks(html);
 

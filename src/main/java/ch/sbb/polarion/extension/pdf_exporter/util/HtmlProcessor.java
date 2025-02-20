@@ -5,6 +5,7 @@ import ch.sbb.polarion.extension.generic.regex.RegexMatcher;
 import ch.sbb.polarion.extension.generic.settings.NamedSettings;
 import ch.sbb.polarion.extension.generic.settings.SettingId;
 import ch.sbb.polarion.extension.generic.util.HtmlUtils;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ConversionParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.Orientation;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PaperSize;
@@ -46,7 +47,7 @@ public class HtmlProcessor {
     private static final float NEXT_SIZE_ASPECT_RATIO = 1.41f;
     private static final float NEXT_SIZE_ASPECT_RATIO_TWICE = NEXT_SIZE_ASPECT_RATIO * NEXT_SIZE_ASPECT_RATIO;
 
-    private static final Map<PaperSize, Integer> MAX_PORTRAIT_WIDTHS = Map.of(
+    public static final Map<PaperSize, Integer> MAX_PORTRAIT_WIDTHS = Map.of(
             PaperSize.A5, A5_PORTRAIT_WIDTH,
             PaperSize.A4, (int) (A5_PORTRAIT_WIDTH * NEXT_SIZE_ASPECT_RATIO),
             PaperSize.A3, (int) (A5_PORTRAIT_WIDTH * NEXT_SIZE_ASPECT_RATIO_TWICE),
@@ -58,7 +59,7 @@ public class HtmlProcessor {
             PaperSize.LEGAL, 610,
             PaperSize.LEDGER, 790
     );
-    private static final Map<PaperSize, Integer> MAX_LANDSCAPE_WIDTHS = Map.of(
+    public static final Map<PaperSize, Integer> MAX_LANDSCAPE_WIDTHS = Map.of(
             PaperSize.A5, A5_LANDSCAPE_WIDTH,
             PaperSize.A4, (int) (A5_LANDSCAPE_WIDTH * NEXT_SIZE_ASPECT_RATIO),
             PaperSize.A3, (int) (A5_LANDSCAPE_WIDTH * NEXT_SIZE_ASPECT_RATIO_TWICE),
@@ -70,7 +71,7 @@ public class HtmlProcessor {
             PaperSize.LEGAL, 1150,
             PaperSize.LEDGER, 1400
     );
-    private static final Map<PaperSize, Integer> MAX_PORTRAIT_HEIGHTS = Map.of(
+    public static final Map<PaperSize, Integer> MAX_PORTRAIT_HEIGHTS = Map.of(
             PaperSize.A5, A5_PORTRAIT_HEIGHT,
             PaperSize.A4, (int) (A5_PORTRAIT_HEIGHT * NEXT_SIZE_ASPECT_RATIO),
             PaperSize.A3, (int) (A5_PORTRAIT_HEIGHT * NEXT_SIZE_ASPECT_RATIO_TWICE),
@@ -82,7 +83,7 @@ public class HtmlProcessor {
             PaperSize.LEGAL, 1050,
             PaperSize.LEDGER, 1270
     );
-    private static final Map<PaperSize, Integer> MAX_LANDSCAPE_HEIGHTS = Map.of(
+    public static final Map<PaperSize, Integer> MAX_LANDSCAPE_HEIGHTS = Map.of(
             PaperSize.A5, A5_LANDSCAPE_HEIGHT,
             PaperSize.A4, (int) (A5_LANDSCAPE_HEIGHT * NEXT_SIZE_ASPECT_RATIO),
             PaperSize.A3, (int) (A5_LANDSCAPE_HEIGHT * NEXT_SIZE_ASPECT_RATIO_TWICE),
@@ -234,8 +235,9 @@ public class HtmlProcessor {
         if (hasCustomPageBreaks(html)) {
             //processPageBrakes contains its own adjustContentToFitPage() calls
             html = processPageBrakes(html, exportParams);
-        } else if (exportParams.isFitToPage()) {
-            html = adjustContentToFitPage(html, exportParams.getOrientation(), exportParams.getPaperSize());
+        }
+        if (exportParams.isFitToPage()) {
+            html = adjustContentToFitPage(html, exportParams);
         }
 
         // Do not change this entry order, '&nbsp;' can be used in the logic above, so we must cut them off as the last step
@@ -297,7 +299,7 @@ public class HtmlProcessor {
 
             //here we can make additional areas processing
             if (exportParams.isFitToPage()) {
-                area = adjustContentToFitPage(area, landscape ? Orientation.LANDSCAPE : Orientation.PORTRAIT, exportParams.getPaperSize());
+                area = adjustContentToFitPage(area, exportParams);
             }
 
             resultBuf.insert(0, area);
@@ -510,13 +512,23 @@ public class HtmlProcessor {
         // with class "polarion-dle-workitem-fields-end-table-value"
         String emptyTableAttributeMarker = "class=\"polarion-dle-workitem-fields-end-table-value\" style=\"width: 80%;\" onmousedown=\"return false;\" contentEditable=\"false\"></td>";
         String res = html;
-        while (res.contains(emptyTableAttributeMarker)) {
-            String[] parts = res.split(emptyTableAttributeMarker, 2);
-            int trStart = parts[0].lastIndexOf("<tr>");
-            int trEnd = res.indexOf(TABLE_ROW_END_TAG, trStart) + TABLE_ROW_END_TAG.length();
 
-            res = res.substring(0, trStart) + res.substring(trEnd);
-        }
+        String searchMarkerLower = emptyTableAttributeMarker.toLowerCase();
+
+        int markerIndex;
+        do {
+            markerIndex = res.toLowerCase().indexOf(searchMarkerLower);
+            if (markerIndex == -1) {
+                break;
+            }
+
+            int trStart = res.lastIndexOf("<tr>", markerIndex);
+            int trEnd = res.indexOf(TABLE_ROW_END_TAG, markerIndex) + TABLE_ROW_END_TAG.length();
+
+            if (trStart >= 0 && trEnd > trStart) {
+                res = res.substring(0, trStart) + res.substring(trEnd);
+            }
+        } while (true);
 
         // This is a sign of empty (no value) WorkItem attribute in case of non-tabular view - <span>-element
         // with title "This field is empty"
@@ -585,11 +597,12 @@ public class HtmlProcessor {
     }
 
     @NotNull
-    @VisibleForTesting
-    String adjustContentToFitPage(@NotNull String html, @NotNull Orientation orientation, @NotNull PaperSize paperSize) {
-        html = adjustImageSizeInTables(html, orientation, paperSize);
-        html = adjustImageSize(html, orientation, paperSize);
-        return adjustTableSize(html, orientation, paperSize);
+    public String adjustContentToFitPage(@NotNull String html, @NotNull ConversionParams conversionParams) {
+        html = adjustImageSizeInTables(html, conversionParams.getOrientation(), conversionParams.getPaperSize());
+        PageWidthAdjuster pageWidthAdjuster = new PageWidthAdjuster(html, conversionParams);
+        pageWidthAdjuster.adjustImageSize();
+        html = pageWidthAdjuster.toHTML();
+        return adjustTableSize(html, conversionParams.getOrientation(), conversionParams.getPaperSize());
     }
 
     @NotNull
@@ -761,58 +774,6 @@ public class HtmlProcessor {
             group = "<div style=\"text-align: " + align + "\">" + group + DIV_END_TAG;
             regexEngine.appendReplacement(sb, group);
         }
-    }
-
-    @NotNull
-    @VisibleForTesting
-    @SuppressWarnings("java:S5852") //regex checked
-    public String adjustImageSize(@NotNull String html, @NotNull Orientation orientation, @NotNull PaperSize paperSize) {
-        // We are looking here for images which widths and heights are explicitly specified.
-        // Named group "prepend" - is everything which stands before width/height and named group "append" - after.
-        // Then we check if width (named group "width") exceeds limit we override it by value "100%"
-        return RegexMatcher.get("(<img(?<prepend>[^>]+?)width:\\s*?(?<width>[\\d.]*?)(?<measureWidth>px|ex);\\s*?height:\\s*?(?<height>[\\d.]*?)(?<measureHeight>px|ex)(?<append>[^>]*?)>)")
-                .replace(html, regexEngine -> {
-                    float maxWidth = orientation == Orientation.PORTRAIT ? MAX_PORTRAIT_WIDTHS.get(paperSize) : MAX_LANDSCAPE_WIDTHS.get(paperSize);
-                    float maxHeight = orientation == Orientation.PORTRAIT ? MAX_PORTRAIT_HEIGHTS.get(paperSize) : MAX_LANDSCAPE_HEIGHTS.get(paperSize);
-
-                    float width = parseDimension(regexEngine, WIDTH, MEASURE_WIDTH);
-                    float height = parseDimension(regexEngine, HEIGHT, MEASURE_HEIGHT);
-
-                    String prepend = regexEngine.group("prepend");
-                    String append = regexEngine.group("append");
-
-                    return generateAdjustedImageTag(prepend, append, width, height, maxWidth, maxHeight);
-                });
-    }
-
-    private float parseDimension(IRegexEngine regexEngine, String dimension, String measure) {
-        float value = Float.parseFloat(regexEngine.group(dimension));
-        if (MEASURE_EX.equals(regexEngine.group(measure))) {
-            value *= EX_TO_PX_RATIO;
-        }
-        return value;
-    }
-
-    private String generateAdjustedImageTag(String prepend, String append, float width, float height, float maxWidth, float maxHeight) {
-        float widthExceedingRatio = width / maxWidth;
-        float heightExceedingRatio = height / maxHeight;
-
-        if (widthExceedingRatio <= 1 && heightExceedingRatio <= 1) {
-            return null;
-        }
-
-        final float adjustedWidth;
-        final float adjustedHeight;
-
-        if (widthExceedingRatio > heightExceedingRatio) {
-            adjustedWidth = width / widthExceedingRatio;
-            adjustedHeight = height / widthExceedingRatio;
-        } else {
-            adjustedWidth = width / heightExceedingRatio;
-            adjustedHeight = height / heightExceedingRatio;
-        }
-
-        return "<img" + prepend + "width: " + ((int) adjustedWidth) + "px; height: " + ((int) adjustedHeight) + "px" + append + ">";
     }
 
     @NotNull

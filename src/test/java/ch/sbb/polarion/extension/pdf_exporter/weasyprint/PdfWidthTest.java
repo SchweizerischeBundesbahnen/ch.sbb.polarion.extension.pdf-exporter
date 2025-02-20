@@ -1,10 +1,12 @@
 package ch.sbb.polarion.extension.pdf_exporter.weasyprint;
 
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ConversionParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.Orientation;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PaperSize;
 import ch.sbb.polarion.extension.pdf_exporter.util.FileResourceProvider;
 import ch.sbb.polarion.extension.pdf_exporter.util.HtmlProcessor;
 import ch.sbb.polarion.extension.pdf_exporter.util.MediaUtils;
+import ch.sbb.polarion.extension.pdf_exporter.util.PageWidthAdjuster;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.base.BaseWeasyPrintTest;
 import lombok.SneakyThrows;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -30,7 +32,11 @@ public class PdfWidthTest extends BaseWeasyPrintTest {
         return Stream.of(
                 Arguments.of("longWordsInAutoColumns", null),
                 Arguments.of("nbspAfterSpan", (Function<String, String>) htmlProcessor::cutExtraNbsp),
-                Arguments.of("wideImage", (Function<String, String>) html -> htmlProcessor.adjustImageSize(html, Orientation.PORTRAIT, PaperSize.A4)),
+                Arguments.of("wideImage", (Function<String, String>) html -> {
+                    PageWidthAdjuster pageWidthAdjuster = new PageWidthAdjuster(html, ConversionParams.builder().build());
+                    pageWidthAdjuster.adjustImageSize();
+                    return pageWidthAdjuster.toHTML();
+                }),
                 Arguments.of("wideTable", (Function<String, String>) html -> htmlProcessor.adjustTableSize(html, Orientation.PORTRAIT, PaperSize.A4)),
                 Arguments.of("wideImagesInTable", (Function<String, String>) html -> htmlProcessor.adjustImageSizeInTables(html, Orientation.PORTRAIT, PaperSize.A4))
         );

@@ -5,6 +5,7 @@ import ch.sbb.polarion.extension.generic.configuration.ConfigurationStatusProvid
 import ch.sbb.polarion.extension.generic.configuration.Status;
 import ch.sbb.polarion.extension.generic.util.Discoverable;
 import ch.sbb.polarion.extension.pdf_exporter.converter.HtmlToPdfConverter;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ConversionParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.Orientation;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PaperSize;
 import org.jetbrains.annotations.NotNull;
@@ -27,7 +28,7 @@ public class WeasyPrintProbeStatusProvider extends ConfigurationStatusProvider {
     @Override
     public @NotNull ConfigurationStatus getStatus(@NotNull Context context) {
         try {
-            htmlToPdfConverter.convert("<html><body>test html</body></html>", Orientation.PORTRAIT, PaperSize.A4);
+            htmlToPdfConverter.convert("<html><body>test html</body></html>", ConversionParams.builder().build());
 
             return new ConfigurationStatus(WEASY_PRINT_SERVICE_TEST_CONVERSION, Status.OK);
         } catch (Exception e) {

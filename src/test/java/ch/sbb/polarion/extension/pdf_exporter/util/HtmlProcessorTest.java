@@ -2,6 +2,7 @@ package ch.sbb.polarion.extension.pdf_exporter.util;
 
 import ch.sbb.polarion.extension.generic.settings.SettingId;
 import ch.sbb.polarion.extension.pdf_exporter.TestStringUtils;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ConversionParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.DocumentType;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.Orientation;
@@ -336,12 +337,19 @@ class HtmlProcessorTest {
 
             String invalidHtml = new String(isInvalidHtml.readAllBytes(), StandardCharsets.UTF_8);
 
+            ConversionParams conversionParamsPortrait = ConversionParams.builder()
+                    .orientation(Orientation.PORTRAIT)
+                    .build();
+
             // Spaces and new lines are removed to exclude difference in space characters
-            String fixedHtml = processor.adjustContentToFitPage(invalidHtml, Orientation.PORTRAIT, PaperSize.A4);
+            String fixedHtml = processor.adjustContentToFitPage(invalidHtml, conversionParamsPortrait);
             String validHtml = new String(isValidPortraitHtml.readAllBytes(), StandardCharsets.UTF_8);
             assertEquals(TestStringUtils.removeNonsensicalSymbols(validHtml), TestStringUtils.removeNonsensicalSymbols(fixedHtml));
 
-            fixedHtml = processor.adjustContentToFitPage(invalidHtml, Orientation.LANDSCAPE, PaperSize.A4);
+            ConversionParams conversionParamsLandscape = ConversionParams.builder()
+                    .orientation(Orientation.LANDSCAPE)
+                    .build();
+            fixedHtml = processor.adjustContentToFitPage(invalidHtml, conversionParamsLandscape);
             validHtml = new String(isValidLandscapeHtml.readAllBytes(), StandardCharsets.UTF_8);
             assertEquals(TestStringUtils.removeNonsensicalSymbols(validHtml), TestStringUtils.removeNonsensicalSymbols(fixedHtml));
         }
@@ -356,7 +364,7 @@ class HtmlProcessorTest {
             String invalidHtml = new String(isInvalidHtml.readAllBytes(), StandardCharsets.UTF_8);
 
             // Spaces and new lines are removed to exclude difference in space characters
-            String fixedHtml = processor.adjustContentToFitPage(invalidHtml, Orientation.PORTRAIT, PaperSize.A4);
+            String fixedHtml = processor.adjustContentToFitPage(invalidHtml, ConversionParams.builder().build());
             String validHtml = new String(isValidHtml.readAllBytes(), StandardCharsets.UTF_8);
             assertEquals(TestStringUtils.removeNonsensicalSymbols(validHtml), TestStringUtils.removeNonsensicalSymbols(fixedHtml));
         }
