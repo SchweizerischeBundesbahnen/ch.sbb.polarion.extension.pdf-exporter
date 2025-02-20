@@ -256,7 +256,7 @@ const PdfExporter = {
             this.exportContext.bulkExportWidget.querySelectorAll('input[type="checkbox"]:not(.export-all):checked').forEach((selectedCheckbox) => {
                 const docIdentifier = {
                     ...(selectedCheckbox.dataset["project"] ? { projectId: selectedCheckbox.dataset["project"] } : {}),
-                    spaceId: selectedCheckbox.dataset["space"],
+                    ...(selectedCheckbox.dataset["space"] ? { spaceId: selectedCheckbox.dataset["space"] } : {}),
                     documentName: selectedCheckbox.dataset["id"]
                 };
                 docIdentifiers.push(docIdentifier);
@@ -264,7 +264,7 @@ const PdfExporter = {
         } else {
             const docIdentifier = {
                 ...(exportContext.getProjectId() !== null && { projectId: `${exportContext.getProjectId()}` }),
-                spaceId: `${exportContext.getSpaceId()}`,
+                ...(exportContext.getSpaceId() !== null && { spaceId: `${exportContext.getSpaceId()}` }),
                 documentName: `${exportContext.getDocumentName()}`
             };
             docIdentifiers.push(docIdentifier);

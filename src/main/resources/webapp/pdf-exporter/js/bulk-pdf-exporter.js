@@ -65,8 +65,12 @@ const BulkPdfExporter = {
                 const div = document.createElement("div");
                 div.className = "export-item paused";
                 div.dataset["type"] = selectedCheckbox.dataset["type"];
-                div.dataset["project"] = selectedCheckbox.dataset["project"];
-                div.dataset["space"] = selectedCheckbox.dataset["space"];
+                if (selectedCheckbox.dataset["project"]) {
+                    div.dataset["project"] = selectedCheckbox.dataset["project"];
+                }
+                if (selectedCheckbox.dataset["space"]) {
+                    div.dataset["space"] = selectedCheckbox.dataset["space"];
+                }
                 div.dataset["id"] = selectedCheckbox.dataset["id"];
 
                 const iconSpan = document.createElement("span");
