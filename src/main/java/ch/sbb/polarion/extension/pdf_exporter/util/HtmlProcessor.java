@@ -139,9 +139,6 @@ public class HtmlProcessor {
     private static final String COMMENT_END = "[/span]";
     private static final String WIDTH = "width";
     private static final String MEASURE = "measure";
-    private static final String MEASURE_WIDTH = "measureWidth";
-    private static final String HEIGHT = "height";
-    private static final String MEASURE_HEIGHT = "measureHeight";
     private static final String NUMBER = "number";
 
     private static final String UNSUPPORTED_DOCUMENT_TYPE = "Unsupported document type: %s";
@@ -235,8 +232,7 @@ public class HtmlProcessor {
         if (hasCustomPageBreaks(html)) {
             //processPageBrakes contains its own adjustContentToFitPage() calls
             html = processPageBrakes(html, exportParams);
-        }
-        if (exportParams.isFitToPage()) {
+        } else if (exportParams.isFitToPage()) {
             html = adjustContentToFitPage(html, exportParams);
         }
 
