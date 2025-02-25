@@ -1,5 +1,14 @@
 # Changelog
 
+## [8.1.3](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v8.1.2...v8.1.3) (2025-02-20)
+
+
+### Bug Fixes
+
+* invalid "undefined" added to filename during bulk export of test runs ([#387](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/387)) ([4a6c3b5](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/4a6c3b50ea12a3f22c3337d2c60e4fcb2560812c)), closes [#386](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/386)
+* support {{ PAGE_NUMBER }} and {{ PAGES_TOTAL_COUNT }} on cover page ([#383](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/383)) ([eae60e1](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/eae60e171919382c56daa82da5fac78ad7ec679f)), closes [#382](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/382)
+* Table of Content for LiveReports/TestRuns ([#380](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/380)) ([f1ae421](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/f1ae421e7d4094f55fec9639fb9c453db1291baa)), closes [#378](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/378)
+
 ## [8.1.2](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v8.1.1...v8.1.2) (2025-02-12)
 
 
