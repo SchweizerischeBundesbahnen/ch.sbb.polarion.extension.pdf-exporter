@@ -1,6 +1,8 @@
+import ExtensionContext from "/polarion/pdf-exporter/ui/generic/js/modules/ExtensionContext.js";
 import ExportParams from "./ExportParams.js";
 
-export default class ExportContext {
+export default class ExportContext extends ExtensionContext {
+    static PULL_INTERVAL = 1000;
     projectId = undefined;
     locationPath = undefined;
     baselineRevision = undefined;
@@ -10,21 +12,25 @@ export default class ExportContext {
     urlQueryParameters = undefined;
     bulkExportWidget = undefined;
 
-    constructor({documentType = ExportParams.DocumentType.LIVE_DOC, exportType = ExportParams.ExportType.SINGLE, polarionLocationHash = window.location.hash, bulkExportWidget}) {
-        this.documentType = documentType;
-        this.exportType = exportType;
-
+    constructor({
+                    documentType = ExportParams.DocumentType.LIVE_DOC,
+                    exportType = ExportParams.ExportType.SINGLE,
+                    polarionLocationHash = window.location.hash,
+                    bulkExportWidget,
+                    rootComponentSelector}) {
         const urlPathAndSearchParams = getPathAndQueryParams(polarionLocationHash);
         const normalizedPolarionLocationHash = urlPathAndSearchParams.path;
-        const searchParameters = urlPathAndSearchParams.searchParameters;
+        const scope = getScope(normalizedPolarionLocationHash);
+        super({extension: "pdf-exporter", setting: "pdf-exporter", rootComponentSelector: rootComponentSelector, scope: scope});
+
+        this.documentType = documentType;
+        this.exportType = exportType;
+        this.projectId = getProjectId(scope);
 
         const baseline = getBaseline(normalizedPolarionLocationHash);
         if (baseline) {
             this.baselineRevision = getBaselineRevision(baseline);
         }
-
-        const scope = getScope(normalizedPolarionLocationHash);
-        this.projectId = getProjectId(scope);
 
         if (this.exportType !== ExportParams.ExportType.BULK) {
             this.locationPath = getPath(normalizedPolarionLocationHash, scope);
@@ -36,15 +42,11 @@ export default class ExportContext {
             }
         }
 
+        const searchParameters = urlPathAndSearchParams.searchParameters;
         this.urlQueryParameters = getQueryParams(searchParameters);
         this.revision = this.urlQueryParameters?.revision;
 
         this.bulkExportWidget = bulkExportWidget;
-
-        // print the context to console only in browser
-        if (isWindowDefined()) {
-            console.log(this);
-        }
 
         function getPathAndQueryParams(polarionLocationHash) {
             const result = {
@@ -52,7 +54,7 @@ export default class ExportContext {
                 searchParameters: undefined
             };
 
-            if (isWindowDefined() && polarionLocationHash.endsWith("/testruns")) {
+            if (typeof window !== 'undefined' && polarionLocationHash.endsWith("/testruns")) {
                 // TestRun opened from the list doesn't have proper URL, so we attempt to fetch it from the specific tag
                 // WARNING: the way we get this URL isn't convenient and may stop working in the future, but it seems the only way to do it atm
                 polarionLocationHash = window.document.querySelector('.polarion-TestRunLabelWidget-container a').getAttribute('href');
@@ -119,7 +121,7 @@ export default class ExportContext {
             }
             // otherwise, prepend '_default/' to the path
             return `_default/${extractedPath}`;
-        };
+        }
 
         function getQueryParams(searchParams) {
             if (!searchParameters) {
@@ -195,13 +197,141 @@ export default class ExportContext {
             .setUrlQueryParameters(this.urlQueryParameters)
             .build();
     }
-}
 
-// expose ExportContext to the global scope
-if (isWindowDefined()) {
-    window.ExportContext = ExportContext;
-}
+    async asyncConvertPdf(request, successCallback, errorCallback) {
+        this.callAsync({
+            method: "POST",
+            url: "/polarion/pdf-exporter/rest/internal/convert/jobs",
+            contentType: "application/json",
+            responseType: "blob",
+            body: request,
+            onOk: (responseText, request) => {
+                this.pullAndGetResultPdf(request.getResponseHeader("Location"), successCallback, errorCallback);
+            },
+            onError: (status, errorMessage, request) => {
+                errorCallback(request.response);
+            }
+        });
+    }
 
-function isWindowDefined() {
-    return typeof window !== 'undefined';
+    async pullAndGetResultPdf(url, successCallback, errorCallback) {
+        await new Promise(resolve => setTimeout(resolve, ExportContext.PULL_INTERVAL));
+        this.callAsync({
+            method: "GET",
+            url: url,
+            responseType: "blob",
+            onOk: (responseText, request) => {
+                if (request.status === 202) {
+                    console.log('Async PDF conversion: still in progress, retrying...');
+                    this.pullAndGetResultPdf(url, successCallback, errorCallback);
+                } else if (request.status === 200) {
+                    let warningMessage;
+                    let count = request.getResponseHeader("Missing-WorkItem-Attachments-Count");
+                    if (count > 0) {
+                        let attachment = request.getResponseHeader("WorkItem-IDs-With-Missing-Attachment")
+                        warningMessage = `${count} image(s) in WI(s) ${attachment} were not exported. They were replaced with an image containing 'This image is not accessible'.`;
+                    }
+                    successCallback({
+                        response: request.response,
+                        warning: warningMessage
+                    });
+                }
+            },
+            onError: (status, errorMessage, request) => {
+                errorCallback(request.response);
+            }
+        });
+    }
+
+    downloadTestRunAttachments(projectId, testRunId, revision = null, filter = null) {
+        let url = `/polarion/pdf-exporter/rest/internal/projects/${projectId}/testruns/${testRunId}/attachments?`;
+        if (revision) url += `&revision=${revision}`;
+        if (filter) url += `&filter=${filter}`;
+
+        this.callAsync({
+            method: "GET",
+            url: url,
+            responseType: "json",
+            onOk: (responseText, request) => {
+                for (const attachment of request.response) {
+                    this.downloadAttachmentContent(projectId, testRunId, attachment.id, revision);
+                }
+            },
+            onError: (status, errorMessage, request) => {
+                console.error('Error fetching attachments:', request.response);
+            }
+        });
+    }
+
+    downloadAttachmentContent(projectId, testRunId, attachmentId, revision = null) {
+        let url = `/polarion/pdf-exporter/rest/internal/projects/${projectId}/testruns/${testRunId}/attachments/${attachmentId}/content?`;
+        if (revision) url += `&revision=${revision}`;
+
+        this.callAsync({
+            method: "GET",
+            url: url,
+            responseType: "blob",
+            onOk: (responseText, request) => {
+                this.downloadBlob(request.response, request.getResponseHeader("Filename"));
+            },
+            onError: (status, errorMessage, request) => {
+                console.error(`Error downloading attachment ${attachmentId}:`, request.response);
+            }
+        });
+    }
+
+    convertCollectionDocuments(exportParams, collectionId, onComplete, onError) {
+        let url = `/polarion/pdf-exporter/rest/internal/projects/${exportParams.projectId}/collections/${collectionId}/documents`;
+        this.callAsync({
+            method: "GET",
+            url: url,
+            responseType: "json",
+            onOk: (responseText, request) => {
+                const collectionDocuments = request.response;
+
+                if (!collectionDocuments || collectionDocuments.length === 0) {
+                    console.warn("No documents found in the collection.");
+                    onComplete && onComplete();
+                    return;
+                }
+
+                let completedCount = 0;
+                let hasErrors = false;
+
+                const convertCollectionDocument = (collectionDocument) => {
+                    exportParams["projectId"] = collectionDocument.projectId;
+                    exportParams["locationPath"] = collectionDocument.spaceId + "/" + collectionDocument.documentName;
+                    exportParams["revision"] = collectionDocument.revision;
+                    exportParams["documentType"] = ExportParams.DocumentType.LIVE_DOC;
+
+                    this.asyncConvertPdf(
+                        exportParams.toJSON(),
+                        (result, fileName) => {
+                            const downloadFileName = fileName || `${collectionDocument.projectId}_${collectionDocument.spaceId}_${collectionDocument.documentName}.pdf`;
+                            this.downloadBlob(result.response, downloadFileName);
+
+                            completedCount++;
+                            if (completedCount === collectionDocuments.length && !hasErrors) {
+                                onComplete && onComplete();
+                            }
+                        },
+                        (errorResponse) => {
+                            console.error("Error converting collection document:", errorResponse);
+                            hasErrors = true;
+                            completedCount++;
+                            if (completedCount === collectionDocuments.length) {
+                                onError && onError(errorResponse);
+                            }
+                        }
+                    );
+                };
+
+                collectionDocuments.forEach(convertCollectionDocument);
+            },
+            onError: (status, errorMessage, request) => {
+                console.error("Error loading collection documents:", request.response);
+                onError && onError(errorMessage);
+            }
+        });
+    }
 }

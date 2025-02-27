@@ -105,7 +105,7 @@ public class PdfExporterFormExtension implements IFormExtension {
             form = adjustLocalizeEnums(form, selectedStylePackage, module.getCustomField(DOC_LANGUAGE_FIELD));
             form = adjustLinkRoles(form, EnumValuesProvider.getAllLinkRoleNames(module.getProject()), selectedStylePackage);
             form = adjustFilename(form, module);
-            form = adjustButtons(form, module, selectedStylePackage, context.baselineRevision());
+            form = adjustButtons(form, selectedStylePackage);
 
             builder.html(form);
         }
@@ -306,18 +306,10 @@ public class PdfExporterFormExtension implements IFormExtension {
         return form.replace("{FILENAME}", filename).replace("{DATA_FILENAME}", filename);
     }
 
-    private String adjustButtons(@NotNull String form, @NotNull IModule module, @NotNull StylePackageModel stylePackage, @Nullable String baselineRevision) {
-        IProject project = module.getProject();
-        String moduleLocationPath = module.getModuleLocation().getLocationPath();
-        String params = fillParams(project.getId(), moduleLocationPath, baselineRevision, module.getRevision());
-        form = form.replace("{LOAD_PDF_PARAMS}", params);
-
-        form = form.replace("{VALIDATE_PDF_PARAMS}", params);
-
+    private String adjustButtons(@NotNull String form, @NotNull StylePackageModel stylePackage) {
         if (!stylePackage.isExposePageWidthValidation()) {
             form = form.replace("id='page-width-validation'", "id='page-width-validation' style='display: none;'");
         }
-
         return form;
     }
 

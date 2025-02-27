@@ -27,6 +27,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Iterator;
+import java.util.UUID;
 
 public class BulkPdfExportWidgetRenderer extends AbstractWidgetRenderer {
     private final @NotNull DataSet dataSet;
@@ -84,8 +85,9 @@ public class BulkPdfExportWidgetRenderer extends AbstractWidgetRenderer {
         if (this.topItems < 0) {
             builder.html(this.context.renderWarning(this.localization.getString("richpages.widget.table.invalidTopValue")));
         } else {
+            String panelId = "bulk-%s".formatted(UUID.randomUUID().toString());
             HtmlTagBuilder wrap = builder.tag().div();
-            wrap.attributes().className("polarion-PdfExporter-BulkExportWidget");
+            wrap.attributes().className("polarion-PdfExporter-BulkExportWidget").id(panelId);
 
             HtmlTagBuilder header = wrap.append().tag().div();
             header.attributes().className("header");
@@ -105,8 +107,17 @@ public class BulkPdfExportWidgetRenderer extends AbstractWidgetRenderer {
             HtmlTagBuilder mainTable = exportItems.append().tag().table();
 
             mainTable.attributes().className("polarion-rpw-table-main");
+
+//            mainTable.attributes().onClick("BulkPdfExporter.updateBulkExportButton(this);");
+
+            HtmlTagBuilder script = wrap.append().tag().script();
+            script.attributes().type("module");
             //language=JS
-            mainTable.attributes().onClick("BulkPdfExporter.updateBulkExportButton(this);");
+            script.append().javaScript("""
+                    console.log('before import');
+                    import('/polarion/pdf-exporter/ui/js/modules/ExportBulk.js')
+                                        .then(module => new module.default('#%s'))
+                                        .catch(console.error);""".formatted(panelId));
 
             HtmlContentBuilder contentBuilder = mainTable.append();
             this.renderContentTable(contentBuilder.tag().tr().append().tag().td().append());
@@ -225,7 +236,7 @@ public class BulkPdfExportWidgetRenderer extends AbstractWidgetRenderer {
         HtmlTagBuilder checkbox = th.append().tag().byName("input");
         checkbox.attributes().byName("type", "checkbox").className("export-all");
         //language=JS
-        checkbox.attributes().onClick("BulkPdfExporter.selectAllItems(this);");
+//        checkbox.attributes().onClick("BulkPdfExporter.selectAllItems(this);");
 
         for (Field column : this.columns) {
             row.append().tag().th().append().text(column.label());

@@ -1589,17 +1589,14 @@
         "properties": {
           "baseUrl": {
             "description": "Returns the base URL constructed with the extension context",
-            "example": "/polarion/pdf-exporter",
             "type": "string"
           },
           "extensionContext": {
             "description": "The extension context used as a base for URL construction",
-            "example": "pdf-exporter",
             "type": "string"
           },
           "restUrl": {
             "description": "Returns the REST API URL constructed with the extension context",
-            "example": "/polarion/pdf-exporter/rest",
             "type": "string"
           },
           "swaggerUiUrl": {
