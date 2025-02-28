@@ -10,13 +10,11 @@ export default class ExportContext extends ExtensionContext {
     documentType = undefined;
     exportType = undefined;
     urlQueryParameters = undefined;
-    bulkExportWidget = undefined;
 
     constructor({
                     documentType = ExportParams.DocumentType.LIVE_DOC,
                     exportType = ExportParams.ExportType.SINGLE,
                     polarionLocationHash = window.location.hash,
-                    bulkExportWidget,
                     rootComponentSelector}) {
         const urlPathAndSearchParams = getPathAndQueryParams(polarionLocationHash);
         const normalizedPolarionLocationHash = urlPathAndSearchParams.path;
@@ -45,8 +43,6 @@ export default class ExportContext extends ExtensionContext {
         const searchParameters = urlPathAndSearchParams.searchParameters;
         this.urlQueryParameters = getQueryParams(searchParameters);
         this.revision = this.urlQueryParameters?.revision;
-
-        this.bulkExportWidget = bulkExportWidget;
 
         function getPathAndQueryParams(polarionLocationHash) {
             const result = {
@@ -160,10 +156,6 @@ export default class ExportContext extends ExtensionContext {
 
     getUrlQueryParameters() {
         return this.urlQueryParameters;
-    }
-
-    getBulkExportWidget() {
-        return this.bulkExportWidget;
     }
 
     getScope() {

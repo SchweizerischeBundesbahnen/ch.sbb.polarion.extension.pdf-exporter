@@ -1,5 +1,6 @@
 package ch.sbb.polarion.extension.pdf_exporter.widgets;
 
+import ch.sbb.polarion.extension.generic.util.ScopeUtils;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.DocumentType;
 import com.polarion.alm.projects.model.IUniqueObject;
 import com.polarion.alm.server.api.model.rp.widget.AbstractWidgetRenderer;
@@ -108,16 +109,14 @@ public class BulkPdfExportWidgetRenderer extends AbstractWidgetRenderer {
 
             mainTable.attributes().className("polarion-rpw-table-main");
 
-//            mainTable.attributes().onClick("BulkPdfExporter.updateBulkExportButton(this);");
-
-            HtmlTagBuilder script = wrap.append().tag().script();
-            script.attributes().type("module");
             //language=JS
-            script.append().javaScript("""
-                    console.log('before import');
+            wrap.append().tag().script().append().javaScript("""
                     import('/polarion/pdf-exporter/ui/js/modules/ExportBulk.js')
-                                        .then(module => new module.default('#%s'))
-                                        .catch(console.error);""".formatted(panelId));
+                        .then(module => new module.default('#%s'))
+                        .catch(console.error);""".formatted(panelId));
+
+            wrap.append().tag().style().append().html(ScopeUtils.getFileContent("/webapp/pdf-exporter/css/micromodal.css"));
+            wrap.append().tag().style().append().html(ScopeUtils.getFileContent("/webapp/pdf-exporter/css/pdf-exporter.css"));
 
             HtmlContentBuilder contentBuilder = mainTable.append();
             this.renderContentTable(contentBuilder.tag().tr().append().tag().td().append());
@@ -132,7 +131,7 @@ public class BulkPdfExportWidgetRenderer extends AbstractWidgetRenderer {
 
         HtmlTagBuilder a = buttonSpan.append().tag().a();
         HtmlTagBuilder button = a.append().tag().div();
-        button.attributes().className("polarion-TestsExecutionButton-buttons polarion-TestsExecutionButton-buttons-defaultCursor").style(color.getStyle());
+        button.attributes().id("bulk-export-pdf").className("polarion-TestsExecutionButton-buttons polarion-TestsExecutionButton-buttons-defaultCursor").style(color.getStyle());
 
         HtmlTagBuilder content = button.append().tag().table();
         content.attributes().className("polarion-TestsExecutionButton-buttons-content");
@@ -234,9 +233,7 @@ public class BulkPdfExportWidgetRenderer extends AbstractWidgetRenderer {
         row.attributes().className("polarion-rpw-table-header-row");
         HtmlTagBuilder th = row.append().tag().th();
         HtmlTagBuilder checkbox = th.append().tag().byName("input");
-        checkbox.attributes().byName("type", "checkbox").className("export-all");
-        //language=JS
-//        checkbox.attributes().onClick("BulkPdfExporter.selectAllItems(this);");
+        checkbox.attributes().byName("type", "checkbox").id("export-all");
 
         for (Field column : this.columns) {
             row.append().tag().th().append().text(column.label());

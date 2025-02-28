@@ -82,18 +82,6 @@ export default class ExportPopup {
         MicroModal.show(POPUP_ID);
     }
 
-    openPopupForBulkExport(bulkExportWidget) {
-        const documentType = bulkExportWidget?.querySelector(".polarion-PdfExporter-BulkExportWidget .header")?.getAttribute("document-type");
-
-        this.openPopup({ exportContext: new ExportContext(
-                {
-                    documentType: documentType,
-                    exportType: ExportParams.ExportType.BULK,
-                    bulkExportWidget: bulkExportWidget
-                })
-        });
-    }
-
     closePopup() {
         MicroModal.close(POPUP_ID);
     }
@@ -251,7 +239,7 @@ export default class ExportPopup {
         let stylePackagesUrl = `/polarion/pdf-exporter/rest/internal/settings/style-package/suitable-names`;
         const docIdentifiers = [];
         if (this.ctx.getExportType() === ExportParams.ExportType.BULK) {
-            this.ctx.bulkExportWidget.querySelectorAll('input[type="checkbox"]:not(.export-all):checked').forEach((selectedCheckbox) => {
+            this.ctx.bulkExportWidget.querySelectorAll('input[type="checkbox"]:not(#export-all):checked').forEach((selectedCheckbox) => {
                 const docIdentifier = {
                     ...(selectedCheckbox.dataset["project"] ? { projectId: selectedCheckbox.dataset["project"] } : {}),
                     ...(selectedCheckbox.dataset["space"] ? { spaceId: selectedCheckbox.dataset["space"] } : {}),
@@ -470,11 +458,11 @@ export default class ExportPopup {
             return;
         }
 
-        if (this.ctx.getBulkExportWidget() && this.ctx.getExportType() === ExportParams.ExportType.BULK) {
-            this.closePopup();
-            BulkPdfExporter.openPopup(this.ctx.getBulkExportWidget(), exportParams);
-            return;
-        }
+        // if (this.ctx.getBulkExportWidget() && this.ctx.getExportType() === ExportParams.ExportType.BULK) {
+        //     this.closePopup();
+        //     BulkPdfExporter.openPopup(this.ctx.getBulkExportWidget(), exportParams);
+        //     return;
+        // }
 
         if (this.ctx.getDocumentType() === ExportParams.DocumentType.TEST_RUN && this.ctx.getElementById("popup-download-attachments").checked) {
             const testRunId = new URLSearchParams(this.ctx.getUrlQueryParameters()).get("id")

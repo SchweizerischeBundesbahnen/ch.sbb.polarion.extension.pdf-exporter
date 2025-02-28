@@ -18,7 +18,11 @@ public class ExportToPdfButtonRenderer extends AbstractWidgetRenderer {
             @Override
             protected void configureLinkAttributes(@NotNull HtmlTagBuilder a) {
                 //language=JS
-                String onClickAction = "PdfExporter.openPopup({ exportContext: new ExportContext({ documentType: ExportParams.DocumentType.LIVE_REPORT}) });";
+                String onClickAction = """
+                        import('/polarion/pdf-exporter/ui/js/modules/ExportPopup.js')
+                            .then(module => new module.default())
+                            .catch(console.error);""";
+//                String onClickAction = "PdfExporter.openPopup({ exportContext: new ExportContext({ documentType: ExportParams.DocumentType.LIVE_REPORT}) });";
                 a.attributes().onClick(builder.target().escapeForAttribute(onClickAction));
             }
         };

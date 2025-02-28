@@ -25,7 +25,6 @@
     injectStyles("pdf-exporter-styles", `/polarion/pdf-exporter/css/pdf-exporter.css${timestampParam}`);
     injectStyles("pdf-micromodal-styles", `/polarion/pdf-exporter/css/micromodal.css${timestampParam}`);
     injectScript("pdf-micromodal-script", `/polarion/pdf-exporter/js/micromodal.min.js${timestampParam}`);
-    // injectScript("bulk-pdf-exporter-script", `/polarion/pdf-exporter/js/bulk-pdf-exporter.js${timestampParam}`);
 
     const TOOLBAR_HTML = `
         <table class="dleToolBarTable">
