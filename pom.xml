@@ -56,6 +56,7 @@
         <weasyprint.version>62.3</weasyprint.version>
         <awaitility.version>4.2.2</awaitility.version>
         <tika.version>1.28.5</tika.version>
+        <cssparser.version>0.9.30</cssparser.version>
 
         <maven-jar-plugin.Extension-Context>pdf-exporter</maven-jar-plugin.Extension-Context>
         <maven-jar-plugin.Automatic-Module-Name>ch.sbb.polarion.extension.pdf_exporter</maven-jar-plugin.Automatic-Module-Name>
@@ -169,6 +170,11 @@
             <groupId>net.bytebuddy</groupId>
             <artifactId>byte-buddy</artifactId>
             <version>${byte-buddy.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>net.sourceforge.cssparser</groupId>
+            <artifactId>cssparser</artifactId>
+            <version>${cssparser.version}</version>
         </dependency>
 
         <!--  Test dependencies  -->
