@@ -1,5 +1,7 @@
 package ch.sbb.polarion.extension.pdf_exporter.util;
 
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ConversionParams;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.Orientation;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PaperSize;
 import lombok.experimental.UtilityClass;
 
@@ -96,5 +98,23 @@ public class PaperSizeConstants {
             PaperSize.LEGAL, MAX_LANDSCAPE_WIDTHS.get(PaperSize.LEGAL) / 3,
             PaperSize.LEDGER, MAX_LANDSCAPE_WIDTHS.get(PaperSize.LEDGER) / 3
     );
+
+    public static int getMaxWidth(ConversionParams conversionParams) {
+        return conversionParams.getOrientation() == Orientation.PORTRAIT
+                ? PaperSizeConstants.MAX_PORTRAIT_WIDTHS.get(conversionParams.getPaperSize())
+                : PaperSizeConstants.MAX_LANDSCAPE_WIDTHS.get(conversionParams.getPaperSize());
+    }
+
+    public static int getMaxHeight(ConversionParams conversionParams) {
+        return conversionParams.getOrientation() == Orientation.PORTRAIT
+                ? PaperSizeConstants.MAX_PORTRAIT_HEIGHTS.get(conversionParams.getPaperSize())
+                : PaperSizeConstants.MAX_LANDSCAPE_HEIGHTS.get(conversionParams.getPaperSize());
+    }
+
+    public static int getMaxWidthInTables(ConversionParams conversionParams) {
+        return conversionParams.getOrientation() == Orientation.PORTRAIT
+                ? PaperSizeConstants.MAX_PORTRAIT_WIDTHS_IN_TABLES.get(conversionParams.getPaperSize())
+                : PaperSizeConstants.MAX_LANDSCAPE_WIDTHS_IN_TABLES.get(conversionParams.getPaperSize());
+    }
 
 }

@@ -40,10 +40,10 @@ public class HtmlProcessor {
     private static final String MEASURE_PERCENT = "%";
     private static final String TABLE_OPEN_TAG = "<table";
     private static final String TABLE_END_TAG = "</table>";
-    private static final String TABLE_ROW_OPEN_TAG = "<tr";
-    private static final String TABLE_ROW_END_TAG = "</tr>";
-    private static final String TABLE_COLUMN_OPEN_TAG = "<td";
-    private static final String TABLE_COLUMN_END_TAG = "</td>";
+    public static final String TABLE_ROW_OPEN_TAG = "<tr";
+    public static final String TABLE_ROW_END_TAG = "</tr>";
+    public static final String TABLE_COLUMN_OPEN_TAG = "<td";
+    public static final String TABLE_COLUMN_END_TAG = "</td>";
     private static final String DIV_START_TAG = "<div>";
     private static final String DIV_END_TAG = "</div>";
     private static final String SPAN_END_TAG = "</span>";
@@ -506,7 +506,6 @@ public class HtmlProcessor {
 
     @NotNull
     public String adjustContentToFitPage(@NotNull String html, @NotNull ConversionParams conversionParams) {
-        html = adjustImageSizeInTables(html, conversionParams.getOrientation(), conversionParams.getPaperSize());
         return new PageWidthAdjuster(html, conversionParams)
                 .adjustImageSizeInTables()
                 .adjustImageSize()
@@ -683,110 +682,6 @@ public class HtmlProcessor {
             group = "<div style=\"text-align: " + align + "\">" + group + DIV_END_TAG;
             regexEngine.appendReplacement(sb, group);
         }
-    }
-
-    @NotNull
-    @VisibleForTesting
-    @SuppressWarnings({"java:S3776", "java:S5852", "java:S5857", "java:S135"}) //regex checked
-    public String adjustImageSizeInTables(@NotNull String html, @NotNull Orientation orientation, @NotNull PaperSize paperSize) {
-        StringBuilder buf = new StringBuilder();
-        int pos = 0;
-
-        //The main idea below is:
-        // 1) find the most top-level tables
-        // 2) replace all suspicious img tags inside tables with reduced width
-
-        while (true) {
-            int tableStart = html.indexOf(TABLE_OPEN_TAG, pos);
-            if (tableStart == -1) {
-                buf.append(html.substring(pos));
-                break;
-            }
-            int tableEnd = findTableEnd(html, tableStart);
-            if (tableEnd == -1) {
-                buf.append(html.substring(pos));
-                break;
-            } else {
-                tableEnd = tableEnd + TABLE_END_TAG.length();
-            }
-            if (pos != tableStart) {
-                buf.append(html, pos, tableStart);
-            }
-            String tableHtml = html.substring(tableStart, tableEnd);
-
-            String modifiedTableContent = RegexMatcher.get("(<img[^>]+?width:\\s*?(?<widthValue>(?<width>[\\d.]*?)(?<measure>px|ex)|auto);[^>]+?>)").replace(tableHtml, regexEngine -> {
-                String widthValue = regexEngine.group("widthValue");
-                float width;
-                if (widthValue.equals("auto")) {
-                    width = Float.MAX_VALUE;
-                } else {
-                    width = Float.parseFloat(regexEngine.group(WIDTH));
-                    if (MEASURE_EX.equals(regexEngine.group(MEASURE))) {
-                        width = width * EX_TO_PX_RATIO;
-                    }
-                }
-                float columnCountBasedWidth = getImageWidthBasedOnColumnsCount(tableHtml, regexEngine.group(), orientation, paperSize);
-                float paramsBasedWidth = orientation == Orientation.PORTRAIT
-                        ? PaperSizeConstants.MAX_PORTRAIT_WIDTHS_IN_TABLES.get(paperSize)
-                        : PaperSizeConstants.MAX_LANDSCAPE_WIDTHS_IN_TABLES.get(paperSize);
-                float maxWidth = columnCountBasedWidth != -1 && columnCountBasedWidth < paramsBasedWidth ? columnCountBasedWidth : paramsBasedWidth;
-                return width <= maxWidth ? null : regexEngine.group()
-                        .replaceAll("max-width:\\s*?([\\d.]*?(px|ex)|auto);", "") //it seems that max-width doesn't work in WP
-                        .replaceAll("width:\\s*?([\\d.]*?(px|ex)|auto);", "")     //remove width too, we will add it later
-                        .replaceAll("height:\\s*?[\\d.]*?(px|ex);", "")           //remove height completely in order to keep image ratio
-                        .replace("style=\"", "style=\"width: " + ((int) maxWidth) + "px;");
-            });
-
-            buf.append(modifiedTableContent);
-            pos = tableEnd;
-        }
-        return buf.toString();
-    }
-
-    @SuppressWarnings("java:S135")
-    private int findTableEnd(String html, int tableStart) {
-        int pos = tableStart;
-        int tableEnd = -1;
-        int depth = 0;
-        while (pos < html.length()) {
-            int nextTableStart = html.indexOf(TABLE_OPEN_TAG, pos);
-            int nextTableEnd = html.indexOf(TABLE_END_TAG, pos);
-            if (nextTableStart != -1 && nextTableStart < nextTableEnd) {
-                depth++;
-                pos = nextTableStart + TABLE_OPEN_TAG.length();
-            } else if (nextTableEnd != -1) {
-                depth--;
-                pos = nextTableEnd + TABLE_END_TAG.length();
-                if (depth == 0) {
-                    tableEnd = nextTableEnd;
-                    break;
-                }
-            } else {
-                break;
-            }
-        }
-        return tableEnd;
-    }
-
-    @VisibleForTesting
-    int getImageWidthBasedOnColumnsCount(String table, String imgTag, @NotNull Orientation orientation, @NotNull PaperSize paperSize) {
-        int imgPosition = table.indexOf(imgTag);
-        int trStartPosition = table.substring(0, imgPosition).lastIndexOf(TABLE_ROW_OPEN_TAG);
-        int trEndPosition = table.indexOf(TABLE_ROW_END_TAG, imgPosition);
-        if (trStartPosition != -1 && trEndPosition != -1) {
-            int columnsCount = columnsCount(table.substring(trStartPosition, trEndPosition));
-            if (columnsCount > 0) {
-                return (orientation == Orientation.PORTRAIT
-                        ? PaperSizeConstants.MAX_PORTRAIT_WIDTHS.get(paperSize)
-                        : PaperSizeConstants.MAX_LANDSCAPE_WIDTHS.get(paperSize)) / columnsCount;
-            }
-        }
-        return -1;
-    }
-
-    @VisibleForTesting
-    int columnsCount(String string) {
-        return (string.length() - string.replace(TABLE_COLUMN_OPEN_TAG, "").length()) / TABLE_COLUMN_OPEN_TAG.length();
     }
 
     @SneakyThrows

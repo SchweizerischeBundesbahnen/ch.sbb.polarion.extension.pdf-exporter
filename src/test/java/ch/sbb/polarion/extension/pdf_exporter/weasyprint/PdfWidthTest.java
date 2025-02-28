@@ -1,7 +1,5 @@
 package ch.sbb.polarion.extension.pdf_exporter.weasyprint;
 
-import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.Orientation;
-import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PaperSize;
 import ch.sbb.polarion.extension.pdf_exporter.util.FileResourceProvider;
 import ch.sbb.polarion.extension.pdf_exporter.util.HtmlProcessor;
 import ch.sbb.polarion.extension.pdf_exporter.util.MediaUtils;
@@ -33,7 +31,7 @@ public class PdfWidthTest extends BaseWeasyPrintTest {
                 Arguments.of("nbspAfterSpan", (Function<String, String>) htmlProcessor::cutExtraNbsp),
                 Arguments.of("wideImage", (Function<String, String>) html -> new PageWidthAdjuster(html).adjustImageSize().toHTML()),
                 Arguments.of("wideTable", (Function<String, String>) html -> new PageWidthAdjuster(html).adjustTableSize().toHTML()),
-                Arguments.of("wideImagesInTable", (Function<String, String>) html -> htmlProcessor.adjustImageSizeInTables(html, Orientation.PORTRAIT, PaperSize.A4))
+                Arguments.of("wideImagesInTable", (Function<String, String>) html -> new PageWidthAdjuster(html).adjustImageSizeInTables().toHTML())
         );
     }
 
