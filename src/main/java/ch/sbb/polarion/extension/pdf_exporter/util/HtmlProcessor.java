@@ -11,6 +11,7 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.Orientation;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PaperSize;
 import ch.sbb.polarion.extension.pdf_exporter.service.PdfExporterPolarionService;
 import ch.sbb.polarion.extension.pdf_exporter.settings.LocalizationSettings;
+import ch.sbb.polarion.extension.pdf_exporter.util.adjuster.PageWidthAdjuster;
 import ch.sbb.polarion.extension.pdf_exporter.util.exporter.CustomPageBreakPart;
 import ch.sbb.polarion.extension.pdf_exporter.util.html.HtmlLinksHelper;
 import com.polarion.alm.shared.util.StringUtils;
@@ -32,20 +33,20 @@ import static ch.sbb.polarion.extension.pdf_exporter.util.exporter.Constants.*;
 
 public class HtmlProcessor {
 
-    private static final int A5_PORTRAIT_WIDTH = 420;
-    private static final int A5_PORTRAIT_HEIGHT = 620;
-    private static final int A5_LANDSCAPE_WIDTH = 660;
-    private static final int A5_LANDSCAPE_HEIGHT = 380;
-    private static final int B5_PORTRAIT_WIDTH = 500;
-    private static final int B5_PORTRAIT_HEIGHT = 760;
-    private static final int B5_LANDSCAPE_WIDTH = 810;
-    private static final int B5_LANDSCAPE_HEIGHT = 460;
-    private static final int JIS_B5_PORTRAIT_WIDTH = 520;
-    private static final int JIS_B5_PORTRAIT_HEIGHT = 770;
-    private static final int JIS_B5_LANDSCAPE_WIDTH = 830;
-    private static final int JIS_B5_LANDSCAPE_HEIGHT = 480;
-    private static final float NEXT_SIZE_ASPECT_RATIO = 1.41f;
-    private static final float NEXT_SIZE_ASPECT_RATIO_TWICE = NEXT_SIZE_ASPECT_RATIO * NEXT_SIZE_ASPECT_RATIO;
+    public static final int A5_PORTRAIT_WIDTH = 420;
+    public static final int A5_PORTRAIT_HEIGHT = 620;
+    public static final int A5_LANDSCAPE_WIDTH = 660;
+    public static final int A5_LANDSCAPE_HEIGHT = 380;
+    public static final int B5_PORTRAIT_WIDTH = 500;
+    public static final int B5_PORTRAIT_HEIGHT = 760;
+    public static final int B5_LANDSCAPE_WIDTH = 810;
+    public static final int B5_LANDSCAPE_HEIGHT = 460;
+    public static final int JIS_B5_PORTRAIT_WIDTH = 520;
+    public static final int JIS_B5_PORTRAIT_HEIGHT = 770;
+    public static final int JIS_B5_LANDSCAPE_WIDTH = 830;
+    public static final int JIS_B5_LANDSCAPE_HEIGHT = 480;
+    public static final float NEXT_SIZE_ASPECT_RATIO = 1.41f;
+    public static final float NEXT_SIZE_ASPECT_RATIO_TWICE = NEXT_SIZE_ASPECT_RATIO * NEXT_SIZE_ASPECT_RATIO;
 
     public static final Map<PaperSize, Integer> MAX_PORTRAIT_WIDTHS = Map.of(
             PaperSize.A5, A5_PORTRAIT_WIDTH,
@@ -96,7 +97,7 @@ public class HtmlProcessor {
             PaperSize.LEDGER, 730
     );
 
-    private static final Map<PaperSize, Integer> MAX_PORTRAIT_WIDTHS_IN_TABLES = Map.of(
+    public static final Map<PaperSize, Integer> MAX_PORTRAIT_WIDTHS_IN_TABLES = Map.of(
             PaperSize.A5, MAX_PORTRAIT_WIDTHS.get(PaperSize.A5) / 3,
             PaperSize.A4, MAX_PORTRAIT_WIDTHS.get(PaperSize.A4) / 3,
             PaperSize.A3, MAX_PORTRAIT_WIDTHS.get(PaperSize.A3) / 3,
@@ -108,7 +109,7 @@ public class HtmlProcessor {
             PaperSize.LEGAL, MAX_PORTRAIT_WIDTHS.get(PaperSize.LEGAL) / 3,
             PaperSize.LEDGER, MAX_PORTRAIT_WIDTHS.get(PaperSize.LEDGER) / 3
     );
-    private static final Map<PaperSize, Integer> MAX_LANDSCAPE_WIDTHS_IN_TABLES = Map.of(
+    public static final Map<PaperSize, Integer> MAX_LANDSCAPE_WIDTHS_IN_TABLES = Map.of(
             PaperSize.A5, MAX_LANDSCAPE_WIDTHS.get(PaperSize.A5) / 3,
             PaperSize.A4, MAX_LANDSCAPE_WIDTHS.get(PaperSize.A4) / 3,
             PaperSize.A3, MAX_LANDSCAPE_WIDTHS.get(PaperSize.A3) / 3,
@@ -595,9 +596,11 @@ public class HtmlProcessor {
     @NotNull
     public String adjustContentToFitPage(@NotNull String html, @NotNull ConversionParams conversionParams) {
         html = adjustImageSizeInTables(html, conversionParams.getOrientation(), conversionParams.getPaperSize());
-        PageWidthAdjuster pageWidthAdjuster = new PageWidthAdjuster(html, conversionParams);
-        pageWidthAdjuster.adjustImageSize();
-        html = pageWidthAdjuster.toHTML();
+        html = new PageWidthAdjuster(html, conversionParams)
+                .adjustImageSizeInTables()
+                .adjustImageSize()
+                .adjustTableSize()
+                .toHTML();
         return adjustTableSize(html, conversionParams.getOrientation(), conversionParams.getPaperSize());
     }
 
