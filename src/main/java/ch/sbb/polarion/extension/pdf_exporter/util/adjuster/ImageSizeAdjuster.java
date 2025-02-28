@@ -33,13 +33,13 @@ public class ImageSizeAdjuster extends AbstractAdjuster {
         String style = img.attr("style");
         CSSStyleDeclaration cssStyle = parseCss(style);
 
-        float width = extractDimension(cssStyle, "width");
-        float mWidth = extractDimension(cssStyle, "max-width");
-        float height = extractDimension(cssStyle, "height");
+        float cssWidth = extractDimension(cssStyle, "width");
+        float cssMaxWidth = extractDimension(cssStyle, "max-width");
+        float cssHeight = extractDimension(cssStyle, "height");
 
-        float widthExceedingRatio = width / maxWidth;
-        float maxWidthExceedingRatio = mWidth / maxWidth;
-        float heightExceedingRatio = height / maxHeight;
+        float widthExceedingRatio = cssWidth / maxWidth;
+        float maxWidthExceedingRatio = cssMaxWidth / maxWidth;
+        float heightExceedingRatio = cssHeight / maxHeight;
 
         if (widthExceedingRatio <= 1 && heightExceedingRatio <= 1 && maxWidthExceedingRatio <= 1) {
             return;
@@ -50,15 +50,15 @@ public class ImageSizeAdjuster extends AbstractAdjuster {
         float adjustedHeight = 0;
 
         if (widthExceedingRatio > heightExceedingRatio) {
-            adjustedWidth = width / widthExceedingRatio;
-            adjustedHeight = height / widthExceedingRatio;
+            adjustedWidth = divide(cssWidth, widthExceedingRatio);
+            adjustedHeight = divide(cssHeight, widthExceedingRatio);
         } else if (maxWidthExceedingRatio > heightExceedingRatio) {
-            adjustedMaxWidth = mWidth / maxWidthExceedingRatio;
-            adjustedHeight = height / maxWidthExceedingRatio;
+            adjustedMaxWidth = divide(cssMaxWidth, maxWidthExceedingRatio);
+            adjustedHeight = divide(cssHeight, maxWidthExceedingRatio);
         } else {
-            adjustedMaxWidth = mWidth / heightExceedingRatio;
-            adjustedWidth = width / heightExceedingRatio;
-            adjustedHeight = height / heightExceedingRatio;
+            adjustedMaxWidth = divide(cssMaxWidth, heightExceedingRatio);
+            adjustedWidth = divide(cssWidth, heightExceedingRatio);
+            adjustedHeight = divide(cssHeight, heightExceedingRatio);
         }
 
         if (adjustedWidth > 0) {
@@ -92,4 +92,7 @@ public class ImageSizeAdjuster extends AbstractAdjuster {
         }
     }
 
+    private float divide(float value, float divisor) {
+        return divisor != 0 ? value / divisor : value;
+    }
 }
