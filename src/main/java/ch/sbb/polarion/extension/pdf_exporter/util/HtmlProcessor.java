@@ -32,11 +32,6 @@ import static ch.sbb.polarion.extension.pdf_exporter.util.exporter.Constants.*;
 
 public class HtmlProcessor {
 
-    private static final int FULL_WIDTH_PERCENT = 100;
-    public static final float EX_TO_PX_RATIO = 6.5F;
-    private static final String MEASURE_PX = "px";
-    private static final String MEASURE_EX = "ex";
-    private static final String MEASURE_PERCENT = "%";
     private static final String TABLE_OPEN_TAG = "<table";
     private static final String TABLE_END_TAG = "</table>";
     public static final String TABLE_ROW_OPEN_TAG = "<tr";
@@ -48,8 +43,6 @@ public class HtmlProcessor {
     private static final String SPAN_END_TAG = "</span>";
     private static final String COMMENT_START = "[span";
     private static final String COMMENT_END = "[/span]";
-    private static final String WIDTH = "width";
-    private static final String MEASURE = "measure";
     private static final String NUMBER = "number";
 
     private static final String UNSUPPORTED_DOCUMENT_TYPE = "Unsupported document type: %s";

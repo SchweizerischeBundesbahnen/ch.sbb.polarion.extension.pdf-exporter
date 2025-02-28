@@ -32,8 +32,7 @@ public class PageWidthAdjuster {
 
     public @NotNull String toHTML() {
         String html = document.body().html();
-        // after processing with Jsoup we need to replace $ with &dollar;
-        // because of regular expressions, as it has special meaning there
+        // after processing with jsoup we need to replace $-symbol with "&dollar;" because of regular expressions, as it has special meaning there
         html = html.replace("$", "&dollar;");
         return html;
     }

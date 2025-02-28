@@ -11,12 +11,11 @@ import org.w3c.dom.css.CSSStyleDeclaration;
 import java.io.StringReader;
 
 public abstract class AbstractAdjuster {
-
     protected final @NotNull Document document;
     protected final @NotNull ConversionParams conversionParams;
     protected final @NotNull CSSOMParser parser;
 
-    public AbstractAdjuster(@NotNull Document document, @NotNull ConversionParams conversionParams) {
+    protected AbstractAdjuster(@NotNull Document document, @NotNull ConversionParams conversionParams) {
         this.document = document;
         this.conversionParams = conversionParams;
         this.parser = new CSSOMParser();

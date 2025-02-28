@@ -1,4 +1,4 @@
-package ch.sbb.polarion.extension.pdf_exporter.util;
+package ch.sbb.polarion.extension.pdf_exporter.constants;
 
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ConversionParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.Orientation;

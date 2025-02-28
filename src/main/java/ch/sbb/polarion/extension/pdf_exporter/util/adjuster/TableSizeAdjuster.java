@@ -1,7 +1,10 @@
 package ch.sbb.polarion.extension.pdf_exporter.util.adjuster;
 
+import ch.sbb.polarion.extension.pdf_exporter.constants.CssStyle;
+import ch.sbb.polarion.extension.pdf_exporter.constants.HtmlTagAttr;
+import ch.sbb.polarion.extension.pdf_exporter.constants.Measure;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ConversionParams;
-import ch.sbb.polarion.extension.pdf_exporter.util.PaperSizeConstants;
+import ch.sbb.polarion.extension.pdf_exporter.constants.PaperSizeConstants;
 import org.jetbrains.annotations.NotNull;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -20,15 +23,15 @@ public class TableSizeAdjuster extends AbstractAdjuster {
 
         Elements tables = document.select("table[style]");
         for (Element table : tables) {
-            CSSStyleDeclaration cssStyle = parseCss(table.attr("style"));
+            CSSStyleDeclaration cssStyle = parseCss(table.attr(HtmlTagAttr.STYLE));
 
-            float width = extractDimension(cssStyle.getPropertyValue("width"));
+            float width = extractDimension(cssStyle.getPropertyValue(CssStyle.WIDTH));
 
             if (width > maxWidth) {
-                cssStyle.setProperty("width", "100%", "");
+                cssStyle.setProperty(CssStyle.WIDTH, "100%", "");
             }
 
-            table.attr("style", cssStyle.getCssText());
+            table.attr(HtmlTagAttr.STYLE, cssStyle.getCssText());
         }
     }
 
@@ -38,10 +41,10 @@ public class TableSizeAdjuster extends AbstractAdjuster {
         }
 
         value = value.trim();
-        if (value.endsWith("px")) {
-            return Float.parseFloat(value.replace("px", "").trim());
-        } else if (value.endsWith("%")) {
-            return PaperSizeConstants.getMaxWidth(conversionParams) * Float.parseFloat(value.replace("%", "").trim());
+        if (value.endsWith(Measure.PX)) {
+            return Float.parseFloat(value.replace(Measure.PX, "").trim());
+        } else if (value.endsWith(Measure.PERCENT)) {
+            return PaperSizeConstants.getMaxWidth(conversionParams) * Float.parseFloat(value.replace(Measure.PERCENT, "").trim());
         }
         return 0;
     }
