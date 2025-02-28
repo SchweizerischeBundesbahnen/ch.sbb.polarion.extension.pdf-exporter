@@ -8,7 +8,6 @@ import ch.sbb.polarion.extension.generic.util.HtmlUtils;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ConversionParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.Orientation;
-import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PaperSize;
 import ch.sbb.polarion.extension.pdf_exporter.service.PdfExporterPolarionService;
 import ch.sbb.polarion.extension.pdf_exporter.settings.LocalizationSettings;
 import ch.sbb.polarion.extension.pdf_exporter.util.adjuster.PageWidthAdjuster;

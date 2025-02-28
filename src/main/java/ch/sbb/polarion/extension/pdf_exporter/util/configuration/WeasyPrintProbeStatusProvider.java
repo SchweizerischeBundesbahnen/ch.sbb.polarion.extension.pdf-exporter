@@ -6,8 +6,6 @@ import ch.sbb.polarion.extension.generic.configuration.Status;
 import ch.sbb.polarion.extension.generic.util.Discoverable;
 import ch.sbb.polarion.extension.pdf_exporter.converter.HtmlToPdfConverter;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ConversionParams;
-import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.Orientation;
-import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PaperSize;
 import org.jetbrains.annotations.NotNull;
 
 @Discoverable

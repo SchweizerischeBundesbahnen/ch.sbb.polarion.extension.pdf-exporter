@@ -3,8 +3,6 @@ package ch.sbb.polarion.extension.pdf_exporter.converter;
 import ch.sbb.polarion.extension.generic.regex.RegexMatcher;
 import ch.sbb.polarion.extension.pdf_exporter.properties.PdfExporterExtensionConfiguration;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ConversionParams;
-import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.Orientation;
-import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PaperSize;
 import ch.sbb.polarion.extension.pdf_exporter.settings.LocalizationSettings;
 import ch.sbb.polarion.extension.pdf_exporter.util.HtmlLogger;
 import ch.sbb.polarion.extension.pdf_exporter.util.HtmlProcessor;

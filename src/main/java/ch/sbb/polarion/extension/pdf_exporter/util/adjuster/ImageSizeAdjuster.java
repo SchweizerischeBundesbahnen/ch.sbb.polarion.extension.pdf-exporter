@@ -2,7 +2,6 @@ package ch.sbb.polarion.extension.pdf_exporter.util.adjuster;
 
 import ch.sbb.polarion.extension.generic.regex.RegexMatcher;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ConversionParams;
-import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.Orientation;
 import ch.sbb.polarion.extension.pdf_exporter.util.HtmlProcessor;
 import ch.sbb.polarion.extension.pdf_exporter.util.PaperSizeConstants;
 import org.jetbrains.annotations.NotNull;
