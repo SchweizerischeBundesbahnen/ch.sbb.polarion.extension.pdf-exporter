@@ -8,10 +8,7 @@ import org.jsoup.nodes.Entities;
 
 public class PageWidthAdjuster {
 
-    public static final float EX_TO_PX_RATIO = 6.5F;
-
     private final @NotNull Document document;
-    private final @NotNull ConversionParams conversionParams;
 
     private final @NotNull ImageSizeInTablesAdjuster imageSizeInTablesAdjuster;
     private final @NotNull ImageSizeAdjuster imageSizeAdjuster;
@@ -27,7 +24,6 @@ public class PageWidthAdjuster {
                 .syntax(Document.OutputSettings.Syntax.xml)
                 .escapeMode(Entities.EscapeMode.base)
                 .prettyPrint(false);
-        this.conversionParams = conversionParams;
 
         imageSizeInTablesAdjuster = new ImageSizeInTablesAdjuster(document, conversionParams);
         imageSizeAdjuster = new ImageSizeAdjuster(document, conversionParams);

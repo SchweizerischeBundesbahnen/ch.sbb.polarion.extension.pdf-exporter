@@ -34,7 +34,7 @@ import static ch.sbb.polarion.extension.pdf_exporter.util.exporter.Constants.*;
 public class HtmlProcessor {
 
     private static final int FULL_WIDTH_PERCENT = 100;
-    private static final float EX_TO_PX_RATIO = 6.5F;
+    public static final float EX_TO_PX_RATIO = 6.5F;
     private static final String MEASURE_PX = "px";
     private static final String MEASURE_EX = "ex";
     private static final String MEASURE_PERCENT = "%";
