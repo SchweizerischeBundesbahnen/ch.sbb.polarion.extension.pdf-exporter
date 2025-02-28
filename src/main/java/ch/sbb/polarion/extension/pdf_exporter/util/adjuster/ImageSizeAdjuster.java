@@ -3,14 +3,13 @@ package ch.sbb.polarion.extension.pdf_exporter.util.adjuster;
 import ch.sbb.polarion.extension.generic.regex.RegexMatcher;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ConversionParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.Orientation;
+import ch.sbb.polarion.extension.pdf_exporter.util.PaperSizeConstants;
 import org.jetbrains.annotations.NotNull;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 import java.util.Optional;
-
-import static ch.sbb.polarion.extension.pdf_exporter.util.HtmlProcessor.*;
 
 public class ImageSizeAdjuster extends AbstractAdjuster {
 
@@ -23,11 +22,11 @@ public class ImageSizeAdjuster extends AbstractAdjuster {
 
         // get max width and height depending on page orientation
         float maxWidth = conversionParams.getOrientation() == Orientation.PORTRAIT
-                ? MAX_PORTRAIT_WIDTHS.get(conversionParams.getPaperSize())
-                : MAX_LANDSCAPE_WIDTHS.get(conversionParams.getPaperSize());
+                ? PaperSizeConstants.MAX_PORTRAIT_WIDTHS.get(conversionParams.getPaperSize())
+                : PaperSizeConstants.MAX_LANDSCAPE_WIDTHS.get(conversionParams.getPaperSize());
         float maxHeight = conversionParams.getOrientation() == Orientation.PORTRAIT
-                ? MAX_PORTRAIT_HEIGHTS.get(conversionParams.getPaperSize())
-                : MAX_LANDSCAPE_HEIGHTS.get(conversionParams.getPaperSize());
+                ? PaperSizeConstants.MAX_PORTRAIT_HEIGHTS.get(conversionParams.getPaperSize())
+                : PaperSizeConstants.MAX_LANDSCAPE_HEIGHTS.get(conversionParams.getPaperSize());
 
         // We are looking here for images which widths and heights are explicitly specified.
         // Then we check if width exceeds limit we override it by value "100%"

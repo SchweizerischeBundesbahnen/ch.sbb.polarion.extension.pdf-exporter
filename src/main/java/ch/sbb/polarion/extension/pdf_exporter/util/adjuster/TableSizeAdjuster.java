@@ -2,12 +2,11 @@ package ch.sbb.polarion.extension.pdf_exporter.util.adjuster;
 
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ConversionParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.Orientation;
+import ch.sbb.polarion.extension.pdf_exporter.util.PaperSizeConstants;
 import org.jetbrains.annotations.NotNull;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
-
-import static ch.sbb.polarion.extension.pdf_exporter.util.HtmlProcessor.*;
 
 public class TableSizeAdjuster extends AbstractAdjuster {
 
@@ -18,8 +17,8 @@ public class TableSizeAdjuster extends AbstractAdjuster {
     @Override
     public void execute() {
         float maxWidth = conversionParams.getOrientation() == Orientation.PORTRAIT
-                ? MAX_PORTRAIT_WIDTHS.get(conversionParams.getPaperSize())
-                : MAX_LANDSCAPE_WIDTHS.get(conversionParams.getPaperSize());
+                ? PaperSizeConstants.MAX_PORTRAIT_WIDTHS.get(conversionParams.getPaperSize())
+                : PaperSizeConstants.MAX_LANDSCAPE_WIDTHS.get(conversionParams.getPaperSize());
 
         Elements tables = document.select("table[style*=width]");
         for (Element table : tables) {
