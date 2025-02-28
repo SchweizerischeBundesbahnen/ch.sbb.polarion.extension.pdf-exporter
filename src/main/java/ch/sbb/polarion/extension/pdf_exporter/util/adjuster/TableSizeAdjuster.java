@@ -1,7 +1,6 @@
 package ch.sbb.polarion.extension.pdf_exporter.util.adjuster;
 
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ConversionParams;
-import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.Orientation;
 import ch.sbb.polarion.extension.pdf_exporter.util.PaperSizeConstants;
 import org.jetbrains.annotations.NotNull;
 import org.jsoup.nodes.Document;
@@ -16,9 +15,7 @@ public class TableSizeAdjuster extends AbstractAdjuster {
 
     @Override
     public void execute() {
-        float maxWidth = conversionParams.getOrientation() == Orientation.PORTRAIT
-                ? PaperSizeConstants.MAX_PORTRAIT_WIDTHS.get(conversionParams.getPaperSize())
-                : PaperSizeConstants.MAX_LANDSCAPE_WIDTHS.get(conversionParams.getPaperSize());
+        float maxWidth = PaperSizeConstants.getMaxWidth(conversionParams);
 
         Elements tables = document.select("table[style*=width]");
         for (Element table : tables) {

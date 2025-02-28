@@ -22,12 +22,8 @@ public class ImageSizeAdjuster extends AbstractAdjuster {
     public void execute() {
 
         // get max width and height depending on page orientation
-        float maxWidth = conversionParams.getOrientation() == Orientation.PORTRAIT
-                ? PaperSizeConstants.MAX_PORTRAIT_WIDTHS.get(conversionParams.getPaperSize())
-                : PaperSizeConstants.MAX_LANDSCAPE_WIDTHS.get(conversionParams.getPaperSize());
-        float maxHeight = conversionParams.getOrientation() == Orientation.PORTRAIT
-                ? PaperSizeConstants.MAX_PORTRAIT_HEIGHTS.get(conversionParams.getPaperSize())
-                : PaperSizeConstants.MAX_LANDSCAPE_HEIGHTS.get(conversionParams.getPaperSize());
+        float maxWidth = PaperSizeConstants.getMaxWidth(conversionParams);
+        float maxHeight = PaperSizeConstants.getMaxHeight(conversionParams);
 
         // We are looking here for images which widths and heights are explicitly specified.
         // Then we check if width exceeds limit we override it by value "100%"
