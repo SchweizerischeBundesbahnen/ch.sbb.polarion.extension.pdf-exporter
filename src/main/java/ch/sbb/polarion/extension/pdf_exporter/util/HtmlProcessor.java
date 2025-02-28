@@ -32,11 +32,7 @@ import static ch.sbb.polarion.extension.pdf_exporter.util.exporter.Constants.*;
 
 public class HtmlProcessor {
 
-    private static final String TABLE_OPEN_TAG = "<table";
-    private static final String TABLE_END_TAG = "</table>";
-    public static final String TABLE_ROW_OPEN_TAG = "<tr";
     public static final String TABLE_ROW_END_TAG = "</tr>";
-    public static final String TABLE_COLUMN_OPEN_TAG = "<td";
     public static final String TABLE_COLUMN_END_TAG = "</td>";
     private static final String DIV_START_TAG = "<div>";
     private static final String DIV_END_TAG = "</div>";
