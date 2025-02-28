@@ -3,16 +3,12 @@ package ch.sbb.polarion.extension.pdf_exporter.util.adjuster;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ConversionParams;
 import ch.sbb.polarion.extension.pdf_exporter.util.HtmlProcessor;
 import ch.sbb.polarion.extension.pdf_exporter.util.PaperSizeConstants;
-import com.steadystate.css.dom.CSSStyleDeclarationImpl;
-import com.steadystate.css.parser.CSSOMParser;
 import org.jetbrains.annotations.NotNull;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
-import org.w3c.css.sac.InputSource;
 import org.w3c.dom.css.CSSStyleDeclaration;
 
-import java.io.StringReader;
 import java.util.Optional;
 
 public class ImageSizeAdjuster extends AbstractAdjuster {
@@ -96,12 +92,4 @@ public class ImageSizeAdjuster extends AbstractAdjuster {
         }
     }
 
-    private CSSStyleDeclaration parseCss(String style) {
-        CSSOMParser parser = new CSSOMParser();
-        try {
-            return parser.parseStyleDeclaration(new InputSource(new StringReader(style)));
-        } catch (Exception e) {
-            return new CSSStyleDeclarationImpl();
-        }
-    }
 }

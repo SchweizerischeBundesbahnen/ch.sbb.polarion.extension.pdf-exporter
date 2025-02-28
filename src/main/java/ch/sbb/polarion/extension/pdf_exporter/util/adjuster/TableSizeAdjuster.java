@@ -6,6 +6,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import org.w3c.dom.css.CSSStyleDeclaration;
 
 public class TableSizeAdjuster extends AbstractAdjuster {
 
@@ -17,36 +18,32 @@ public class TableSizeAdjuster extends AbstractAdjuster {
     public void execute() {
         float maxWidth = PaperSizeConstants.getMaxWidth(conversionParams);
 
-        Elements tables = document.select("table[style*=width]");
+        Elements tables = document.select("table[style]");
         for (Element table : tables) {
-            String style = table.attr("style");
-            String[] styles = style.split(";");
-            StringBuilder newStyle = new StringBuilder();
+            CSSStyleDeclaration cssStyle = parseCss(table.attr("style"));
 
-            for (String s : styles) {
-                if (s.trim().startsWith("width")) {
-                    String[] parts = s.split(":");
-                    if (parts.length == 2) {
-                        String value = parts[1].trim();
-                        if (value.endsWith("px")) {
-                            float widthParsed = Float.parseFloat(value.replace("px", "").trim());
-                            if (widthParsed > maxWidth) {
-                                newStyle.append("width: 100%;");
-                                continue;
-                            }
-                        } else if (value.endsWith("%")) {
-                            float widthParsed = Float.parseFloat(value.replace("%", "").trim());
-                            if (widthParsed > 100) {
-                                newStyle.append("width: 100%;");
-                                continue;
-                            }
-                        }
-                    }
-                }
-                newStyle.append(s).append(";");
+            float width = extractDimension(cssStyle.getPropertyValue("width"));
+
+            if (width > maxWidth) {
+                cssStyle.setProperty("width", "100%", "");
             }
 
-            table.attr("style", newStyle.toString());
+            table.attr("style", cssStyle.getCssText());
         }
     }
+
+    private float extractDimension(String value) {
+        if (value == null || value.trim().isEmpty()) {
+            return 0;
+        }
+
+        value = value.trim();
+        if (value.endsWith("px")) {
+            return Float.parseFloat(value.replace("px", "").trim());
+        } else if (value.endsWith("%")) {
+            return PaperSizeConstants.getMaxWidth(conversionParams) * Float.parseFloat(value.replace("%", "").trim());
+        }
+        return 0;
+    }
+
 }
