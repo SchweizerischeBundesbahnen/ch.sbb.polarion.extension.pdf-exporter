@@ -32,7 +32,7 @@ public class PdfWidthTest extends BaseWeasyPrintTest {
                 Arguments.of("longWordsInAutoColumns", null),
                 Arguments.of("nbspAfterSpan", (Function<String, String>) htmlProcessor::cutExtraNbsp),
                 Arguments.of("wideImage", (Function<String, String>) html -> new PageWidthAdjuster(html).adjustImageSize().toHTML()),
-                Arguments.of("wideTable", (Function<String, String>) html -> htmlProcessor.adjustTableSize(html, Orientation.PORTRAIT, PaperSize.A4)),
+                Arguments.of("wideTable", (Function<String, String>) html -> new PageWidthAdjuster(html).adjustTableSize().toHTML()),
                 Arguments.of("wideImagesInTable", (Function<String, String>) html -> htmlProcessor.adjustImageSizeInTables(html, Orientation.PORTRAIT, PaperSize.A4))
         );
     }

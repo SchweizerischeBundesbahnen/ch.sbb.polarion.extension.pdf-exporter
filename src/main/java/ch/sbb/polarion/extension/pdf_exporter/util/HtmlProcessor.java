@@ -596,12 +596,11 @@ public class HtmlProcessor {
     @NotNull
     public String adjustContentToFitPage(@NotNull String html, @NotNull ConversionParams conversionParams) {
         html = adjustImageSizeInTables(html, conversionParams.getOrientation(), conversionParams.getPaperSize());
-        html = new PageWidthAdjuster(html, conversionParams)
+        return new PageWidthAdjuster(html, conversionParams)
                 .adjustImageSizeInTables()
                 .adjustImageSize()
                 .adjustTableSize()
                 .toHTML();
-        return adjustTableSize(html, conversionParams.getOrientation(), conversionParams.getPaperSize());
     }
 
     @NotNull
@@ -773,24 +772,6 @@ public class HtmlProcessor {
             group = "<div style=\"text-align: " + align + "\">" + group + DIV_END_TAG;
             regexEngine.appendReplacement(sb, group);
         }
-    }
-
-    @NotNull
-    @VisibleForTesting
-    public String adjustTableSize(@NotNull String html, @NotNull Orientation orientation, @NotNull PaperSize paperSize) {
-        // We are looking here for tables which widths are explicitly specified.
-        // When width exceeds limit we override it by value "100%"
-        return RegexMatcher.get("<table[^>]+?width:\\s*?(?<width>[\\d.]+?)(?<measure>px|%)").replace(html, regexEngine -> {
-            String width = regexEngine.group(WIDTH);
-            String measure = regexEngine.group(MEASURE);
-            float widthParsed = Float.parseFloat(width);
-            float maxWidth = orientation == Orientation.PORTRAIT ? MAX_PORTRAIT_WIDTHS.get(paperSize) : MAX_LANDSCAPE_WIDTHS.get(paperSize);
-            if (MEASURE_PX.equals(measure) && widthParsed > maxWidth || MEASURE_PERCENT.equals(measure) && widthParsed > FULL_WIDTH_PERCENT) {
-                return regexEngine.group().replace(width + measure, "100%");
-            } else {
-                return null;
-            }
-        });
     }
 
     @NotNull
