@@ -19,6 +19,7 @@ import lombok.SneakyThrows;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
+import org.jsoup.nodes.Document;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -492,8 +493,15 @@ public class HtmlProcessor {
                 .replace(html, regexEngine -> regexEngine.group() + " style=\"width: 80%;\"");
     }
 
-    @NotNull
-    public String adjustContentToFitPage(@NotNull String html, @NotNull ConversionParams conversionParams) {
+    public @NotNull Document adjustContentToFitPage(@NotNull Document document, @NotNull ConversionParams conversionParams) {
+        return new PageWidthAdjuster(document, conversionParams)
+                .adjustImageSizeInTables()
+                .adjustImageSize()
+                .adjustTableSize()
+                .getDocument();
+    }
+
+    public @NotNull String adjustContentToFitPage(@NotNull String html, @NotNull ConversionParams conversionParams) {
         return new PageWidthAdjuster(html, conversionParams)
                 .adjustImageSizeInTables()
                 .adjustImageSize()

@@ -4,4 +4,5 @@ import lombok.experimental.UtilityClass;
 
 @UtilityClass
 public class HtmlTag {
+    public static final String STYLE = "style";
 }

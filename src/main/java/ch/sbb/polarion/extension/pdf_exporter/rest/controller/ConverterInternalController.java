@@ -343,15 +343,24 @@ public class ConverterInternalController {
             @Parameter(description = "input html (must include html and body elements)") String html,
             @Parameter(description = "default value: portrait") @QueryParam("orientation") Orientation orientation,
             @Parameter(description = "default value: A4") @QueryParam("paperSize") PaperSize paperSize,
-            @Parameter(description = "default value: false") @QueryParam("fitToPage") boolean fitToPage,
+            @Parameter(description = "default value: false") @QueryParam("fitToPage") Boolean fitToPage,
             @Parameter(description = "default value: document.pdf") @QueryParam("fileName") String fileName) {
-        ConversionParams conversionParams = ConversionParams.builder()
-                .orientation(orientation)
-                .paperSize(paperSize)
-                .fitToPage(fitToPage)
-                .followHTMLPresentationalHints(true)
-                .fileName(fileName)
-                .build();
+        ConversionParams.ConversionParamsBuilder<?, ?> conversionParamsBuilder = ConversionParams.builder();
+        if (orientation != null) {
+            conversionParamsBuilder.orientation(orientation);
+        }
+        if (paperSize != null) {
+            conversionParamsBuilder.paperSize(paperSize);
+        }
+        if (fitToPage != null) {
+            conversionParamsBuilder.fitToPage(fitToPage);
+        }
+        conversionParamsBuilder.followHTMLPresentationalHints(true);
+        if (fileName != null) {
+            conversionParamsBuilder.fileName(fileName);
+        }
+        ConversionParams conversionParams = conversionParamsBuilder.build();
+
         byte[] pdfBytes = htmlToPdfConverter.convert(html, conversionParams);
         String headerFileName = (fileName != null) ? fileName : "document.pdf";
         return Response.ok(pdfBytes)

@@ -66,7 +66,7 @@ public class ConverterApiController extends ConverterInternalController {
     }
 
     @Override
-    public Response convertHtmlToPdf(String html, Orientation orientation, PaperSize paperSize, boolean fitToPage, String fileName) {
+    public Response convertHtmlToPdf(String html, Orientation orientation, PaperSize paperSize, Boolean fitToPage, String fileName) {
         return polarionService.callPrivileged(() -> super.convertHtmlToPdf(html, orientation, paperSize, fitToPage, fileName));
     }
 

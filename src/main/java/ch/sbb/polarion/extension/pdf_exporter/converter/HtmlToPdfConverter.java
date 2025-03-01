@@ -1,6 +1,7 @@
 package ch.sbb.polarion.extension.pdf_exporter.converter;
 
 import ch.sbb.polarion.extension.generic.regex.RegexMatcher;
+import ch.sbb.polarion.extension.pdf_exporter.constants.HtmlTag;
 import ch.sbb.polarion.extension.pdf_exporter.properties.PdfExporterExtensionConfiguration;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ConversionParams;
 import ch.sbb.polarion.extension.pdf_exporter.settings.LocalizationSettings;
@@ -13,7 +14,11 @@ import ch.sbb.polarion.extension.pdf_exporter.weasyprint.WeasyPrintOptions;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.service.WeasyPrintServiceConnector;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
 
 public class HtmlToPdfConverter {
     private final PdfTemplateProcessor pdfTemplateProcessor;
@@ -61,45 +66,27 @@ public class HtmlToPdfConverter {
     @NotNull
     @VisibleForTesting
     String preprocessHtml(@NotNull String origHtml, @NotNull ConversionParams conversionParams) {
-        String origHead = extractTagContent(origHtml, "head");
-        String origCss = extractTagContent(origHead, "style");
+        Document document = Jsoup.parse(origHtml);
+        Element head = document.head();
+        @Nullable Element styleTag = head.selectFirst(HtmlTag.STYLE);
 
-        String head = origHead + pdfTemplateProcessor.buildBaseUrlHeader();
-        String css = origCss + pdfTemplateProcessor.buildSizeCss(conversionParams.getOrientation(), conversionParams.getPaperSize());
-        if (origCss.isBlank()) {
-            head = head + String.format("<style>%s</style>", css);
+        head.append(pdfTemplateProcessor.buildBaseUrlHeader());
+
+        String additionalCss = pdfTemplateProcessor.buildSizeCss(conversionParams.getOrientation(), conversionParams.getPaperSize());
+        if (styleTag != null) {
+            styleTag.appendText(additionalCss);
         } else {
-            head = replaceTagContent(head, "style", css);
-        }
-        String html;
-        if (origHead.isBlank()) {
-            html = addHeadTag(origHtml, head);
-        } else {
-            html = replaceTagContent(origHtml, "head", head);
+            head.appendElement(HtmlTag.STYLE).text(additionalCss);
         }
 
         if (conversionParams.isFitToPage()) {
-            html = htmlProcessor.adjustContentToFitPage(html, conversionParams);
+            document = htmlProcessor.adjustContentToFitPage(document, conversionParams);
         }
 
-        html = htmlProcessor.replaceResourcesAsBase64Encoded(html);
-        html = htmlProcessor.internalizeLinks(html);
+        String processedHtml = htmlProcessor.replaceResourcesAsBase64Encoded(document.html());
+        processedHtml = htmlProcessor.internalizeLinks(processedHtml);
 
-        return html;
+        return processedHtml;
     }
 
-    private String extractTagContent(String html, String tag) {
-        return RegexMatcher.get("<" + tag + ">(.*?)</" + tag + ">", RegexMatcher.DOTALL)
-                .findFirst(html, regexEngine -> regexEngine.group(1)).orElse("");
-    }
-
-    private String replaceTagContent(String container, String tag, String newContent) {
-        return RegexMatcher.get("<" + tag + ">(.*?)</" + tag + ">", RegexMatcher.DOTALL)
-                .replaceAll(container, "<" + tag + ">" + newContent + "</" + tag + ">");
-    }
-
-    private String addHeadTag(String html, String headContent) {
-        String pattern = "(<html[^<>]*>)";
-        return html.replaceAll(pattern, "$1<head>" + headContent + "</head>");
-    }
 }
