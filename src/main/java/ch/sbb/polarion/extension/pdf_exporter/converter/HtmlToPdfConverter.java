@@ -1,9 +1,9 @@
 package ch.sbb.polarion.extension.pdf_exporter.converter;
 
 import ch.sbb.polarion.extension.generic.regex.RegexMatcher;
+import ch.sbb.polarion.extension.pdf_exporter.constants.HtmlTag;
 import ch.sbb.polarion.extension.pdf_exporter.properties.PdfExporterExtensionConfiguration;
-import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.Orientation;
-import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PaperSize;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ConversionParams;
 import ch.sbb.polarion.extension.pdf_exporter.settings.LocalizationSettings;
 import ch.sbb.polarion.extension.pdf_exporter.util.HtmlLogger;
 import ch.sbb.polarion.extension.pdf_exporter.util.HtmlProcessor;
@@ -14,7 +14,11 @@ import ch.sbb.polarion.extension.pdf_exporter.weasyprint.WeasyPrintOptions;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.service.WeasyPrintServiceConnector;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
 
 public class HtmlToPdfConverter {
     private final PdfTemplateProcessor pdfTemplateProcessor;
@@ -36,13 +40,17 @@ public class HtmlToPdfConverter {
         this.weasyPrintServiceConnector = weasyPrintServiceConnector;
     }
 
-    public byte[] convert(String origHtml, Orientation orientation, PaperSize paperSize) {
+    public byte[] convert(@NotNull String origHtml, @NotNull ConversionParams conversionParams) {
         validateHtml(origHtml);
-        String html = preprocessHtml(origHtml, orientation, paperSize);
+        String html = preprocessHtml(origHtml, conversionParams);
         if (PdfExporterExtensionConfiguration.getInstance().isDebug()) {
             new HtmlLogger().log(origHtml, html, "");
         }
-        return weasyPrintServiceConnector.convertToPdf(html, WeasyPrintOptions.builder().followHTMLPresentationalHints(true).build());
+
+        WeasyPrintOptions weasyPrintOptions = WeasyPrintOptions.builder()
+                .followHTMLPresentationalHints(conversionParams.isFollowHTMLPresentationalHints())
+                .build();
+        return weasyPrintServiceConnector.convertToPdf(html, weasyPrintOptions);
     }
 
     private void validateHtml(String origHtml) {
@@ -57,41 +65,28 @@ public class HtmlToPdfConverter {
 
     @NotNull
     @VisibleForTesting
-    String preprocessHtml(String origHtml, Orientation orientation, PaperSize paperSize) {
-        String origHead = extractTagContent(origHtml, "head");
-        String origCss = extractTagContent(origHead, "style");
+    String preprocessHtml(@NotNull String origHtml, @NotNull ConversionParams conversionParams) {
+        Document document = Jsoup.parse(origHtml);
+        Element head = document.head();
+        @Nullable Element styleTag = head.selectFirst(HtmlTag.STYLE);
 
-        String head = origHead + pdfTemplateProcessor.buildBaseUrlHeader();
-        String css = origCss + pdfTemplateProcessor.buildSizeCss(orientation, paperSize);
-        if (origCss.isBlank()) {
-            head = head + String.format("<style>%s</style>", css);
+        head.append(pdfTemplateProcessor.buildBaseUrlHeader());
+
+        String additionalCss = pdfTemplateProcessor.buildSizeCss(conversionParams.getOrientation(), conversionParams.getPaperSize());
+        if (styleTag != null) {
+            styleTag.appendText(additionalCss);
         } else {
-            head = replaceTagContent(head, "style", css);
+            head.appendElement(HtmlTag.STYLE).text(additionalCss);
         }
-        String html;
-        if (origHead.isBlank()) {
-            html = addHeadTag(origHtml, head);
-        } else {
-            html = replaceTagContent(origHtml, "head", head);
+
+        if (conversionParams.isFitToPage()) {
+            document = htmlProcessor.adjustContentToFitPage(document, conversionParams);
         }
-        html = htmlProcessor.replaceResourcesAsBase64Encoded(html);
-        html = htmlProcessor.internalizeLinks(html);
 
-        return html;
+        String processedHtml = htmlProcessor.replaceResourcesAsBase64Encoded(document.html());
+        processedHtml = htmlProcessor.internalizeLinks(processedHtml);
+
+        return processedHtml;
     }
 
-    private String extractTagContent(String html, String tag) {
-        return RegexMatcher.get("<" + tag + ">(.*?)</" + tag + ">", RegexMatcher.DOTALL)
-                .findFirst(html, regexEngine -> regexEngine.group(1)).orElse("");
-    }
-
-    private String replaceTagContent(String container, String tag, String newContent) {
-        return RegexMatcher.get("<" + tag + ">(.*?)</" + tag + ">", RegexMatcher.DOTALL)
-                .replaceAll(container, "<" + tag + ">" + newContent + "</" + tag + ">");
-    }
-
-    private String addHeadTag(String html, String headContent) {
-        String pattern = "(<html[^<>]*>)";
-        return html.replaceAll(pattern, "$1<head>" + headContent + "</head>");
-    }
 }

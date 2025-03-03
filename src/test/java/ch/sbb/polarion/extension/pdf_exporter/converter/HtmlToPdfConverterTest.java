@@ -1,22 +1,26 @@
 package ch.sbb.polarion.extension.pdf_exporter.converter;
 
+import ch.sbb.polarion.extension.pdf_exporter.TestStringUtils;
 import ch.sbb.polarion.extension.pdf_exporter.configuration.PdfExporterExtensionConfigurationExtension;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ConversionParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.Orientation;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PaperSize;
 import ch.sbb.polarion.extension.pdf_exporter.util.HtmlProcessor;
 import ch.sbb.polarion.extension.pdf_exporter.util.PdfTemplateProcessor;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.WeasyPrintOptions;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.service.WeasyPrintServiceConnector;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -45,17 +49,17 @@ class HtmlToPdfConverterTest {
 
         when(pdfTemplateProcessor.buildBaseUrlHeader()).thenReturn("<base href='http://test' />");
         when(pdfTemplateProcessor.buildSizeCss(Orientation.PORTRAIT, PaperSize.A4)).thenReturn("@page {size: test;}");
-        when(htmlProcessor.replaceResourcesAsBase64Encoded(anyString())).thenAnswer(invocation ->
-                invocation.getArgument(0));
+        when(htmlProcessor.replaceResourcesAsBase64Encoded(anyString())).thenAnswer(invocation -> invocation.getArgument(0));
         when(htmlProcessor.internalizeLinks(anyString())).thenAnswer(a -> a.getArgument(0));
-        String resultHtml = htmlToPdfConverter.preprocessHtml(html, Orientation.PORTRAIT, PaperSize.A4);
+        when(htmlProcessor.adjustContentToFitPage(any(Document.class), any())).thenAnswer(a -> a.getArgument(0));
+        String resultHtml = htmlToPdfConverter.preprocessHtml(html, ConversionParams.builder().build());
 
-        assertThat(resultHtml).isEqualTo("""
-                <html><head><base href='http://test' /><style>@page {size: test;}</style></head>
+        assertThat(TestStringUtils.removeNonsensicalSymbols(resultHtml)).isEqualTo(TestStringUtils.removeNonsensicalSymbols("""
+                <html><head><base href="http://test"><style>@page {size: test;}</style></head>
                     <body>
                         <span>example text</span>
                     </body>
-                </html>""");
+                </html>"""));
 
         verify(htmlProcessor).replaceResourcesAsBase64Encoded(resultHtml);
     }
@@ -65,7 +69,6 @@ class HtmlToPdfConverterTest {
         String html = """
                 <html>
                     <head>
-                        test head content before
                         <style>style content</style>
                     </head>
                     <body>
@@ -75,21 +78,25 @@ class HtmlToPdfConverterTest {
 
         when(pdfTemplateProcessor.buildBaseUrlHeader()).thenReturn("<base href='http://test' />");
         when(pdfTemplateProcessor.buildSizeCss(Orientation.LANDSCAPE, PaperSize.A3)).thenReturn(" @page {size: test;}");
-        when(htmlProcessor.replaceResourcesAsBase64Encoded(anyString())).thenAnswer(invocation ->
-                invocation.getArgument(0));
+        when(htmlProcessor.replaceResourcesAsBase64Encoded(anyString())).thenAnswer(invocation -> invocation.getArgument(0));
         when(htmlProcessor.internalizeLinks(anyString())).thenAnswer(a -> a.getArgument(0));
-        String resultHtml = htmlToPdfConverter.preprocessHtml(html, Orientation.LANDSCAPE, PaperSize.A3);
+        when(htmlProcessor.adjustContentToFitPage(any(Document.class), any())).thenAnswer(a -> a.getArgument(0));
+        ConversionParams conversionParams = ConversionParams.builder()
+                .orientation(Orientation.LANDSCAPE)
+                .paperSize(PaperSize.A3)
+                .build();
+        String resultHtml = htmlToPdfConverter.preprocessHtml(html, conversionParams);
 
-        assertThat(resultHtml).isEqualTo("""
+        assertThat(TestStringUtils.removeNonsensicalSymbols(resultHtml)).isEqualTo(TestStringUtils.removeNonsensicalSymbols("""
                 <html>
                     <head>
-                        test head content before
                         <style>style content @page {size: test;}</style>
-                    <base href='http://test' /></head>
+                        <base href="http://test">
+                    </head>
                     <body>
                         <span>example text</span>
                     </body>
-                </html>""");
+                </html>"""));
 
         verify(htmlProcessor).replaceResourcesAsBase64Encoded(resultHtml);
     }
@@ -99,7 +106,7 @@ class HtmlToPdfConverterTest {
         String html = """
                 <html>
                     <head>
-                        test head content before
+                        <meta charset="UTF-8">
                     </head>
                     <body>
                         <span>example text</span>
@@ -108,20 +115,26 @@ class HtmlToPdfConverterTest {
 
         when(pdfTemplateProcessor.buildBaseUrlHeader()).thenReturn("<base href='http://test' />");
         when(pdfTemplateProcessor.buildSizeCss(Orientation.LANDSCAPE, PaperSize.A3)).thenReturn(" @page {size: test;}");
-        when(htmlProcessor.replaceResourcesAsBase64Encoded(anyString())).thenAnswer(invocation ->
-                invocation.getArgument(0));
+        when(htmlProcessor.replaceResourcesAsBase64Encoded(anyString())).thenAnswer(invocation -> invocation.getArgument(0));
         when(htmlProcessor.internalizeLinks(anyString())).thenAnswer(a -> a.getArgument(0));
-        String resultHtml = htmlToPdfConverter.preprocessHtml(html, Orientation.LANDSCAPE, PaperSize.A3);
+        when(htmlProcessor.adjustContentToFitPage(any(Document.class), any())).thenAnswer(a -> a.getArgument(0));
+        ConversionParams conversionParams = ConversionParams.builder()
+                .orientation(Orientation.LANDSCAPE)
+                .paperSize(PaperSize.A3)
+                .build();
+        String resultHtml = htmlToPdfConverter.preprocessHtml(html, conversionParams);
 
-        assertThat(resultHtml).isEqualTo("""
+        assertThat(TestStringUtils.removeNonsensicalSymbols(resultHtml)).isEqualTo(TestStringUtils.removeNonsensicalSymbols("""
                 <html>
                     <head>
-                        test head content before
-                    <base href='http://test' /><style> @page {size: test;}</style></head>
+                        <metacharset="UTF-8">
+                        <base href="http://test">
+                        <style> @page {size: test;}</style>
+                    </head>
                     <body>
                         <span>example text</span>
                     </body>
-                </html>""");
+                </html>"""));
 
         verify(htmlProcessor).replaceResourcesAsBase64Encoded(resultHtml);
     }
@@ -130,7 +143,11 @@ class HtmlToPdfConverterTest {
     void shouldThrowIllegalArgumentForMalformedHtml() {
         String html = "<span>example text</span>";
 
-        assertThatThrownBy(() -> htmlToPdfConverter.convert(html, Orientation.LANDSCAPE, PaperSize.A3))
+        ConversionParams conversionParams = ConversionParams.builder()
+                .orientation(Orientation.LANDSCAPE)
+                .paperSize(PaperSize.A3)
+                .build();
+        assertThatThrownBy(() -> htmlToPdfConverter.convert(html, conversionParams))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("html is malformed");
     }
@@ -144,15 +161,15 @@ class HtmlToPdfConverterTest {
 
         when(pdfTemplateProcessor.buildBaseUrlHeader()).thenReturn("<base href='http://test' />");
         when(pdfTemplateProcessor.buildSizeCss(Orientation.PORTRAIT, PaperSize.A4)).thenReturn("@page {size: test;}");
-        when(htmlProcessor.replaceResourcesAsBase64Encoded(anyString())).thenAnswer(invocation ->
-                invocation.getArgument(0));
+        when(htmlProcessor.replaceResourcesAsBase64Encoded(anyString())).thenAnswer(invocation -> invocation.getArgument(0));
         when(htmlProcessor.internalizeLinks(anyString())).thenAnswer(a -> a.getArgument(0));
-        String resultHtml = htmlToPdfConverter.preprocessHtml(html, Orientation.PORTRAIT, PaperSize.A4);
+        when(htmlProcessor.adjustContentToFitPage(any(Document.class), any())).thenAnswer(a -> a.getArgument(0));
+        String resultHtml = htmlToPdfConverter.preprocessHtml(html, ConversionParams.builder().build());
 
-        assertThat(resultHtml).isEqualTo("""
-                <html myAttribute="test"><head><base href='http://test' /><style>@page {size: test;}</style></head>
-                    <body/>
-                </html>""");
+        assertThat(TestStringUtils.removeNonsensicalSymbols(resultHtml)).isEqualTo(TestStringUtils.removeNonsensicalSymbols("""
+                <html myattribute="test"><head><base href="http://test"><style>@page {size: test;}</style></head>
+                    <body></body>
+                </html>"""));
 
         verify(htmlProcessor).replaceResourcesAsBase64Encoded(resultHtml);
     }
@@ -161,16 +178,21 @@ class HtmlToPdfConverterTest {
     @Test
     void shouldInvokeWeasyPrint() {
         String origHtml = "<html><body>test html</body></html>";
-        String resultHtml = "<html><head><base href='http://test' /><style>@page {size: test;}</style></head><body>test html</body></html>";
+        String resultHtml = Jsoup.parse("<html><head><base href=\"http://test\"><style>@page {size: test;}</style></head><body>test html</body></html>").html();
 
         when(pdfTemplateProcessor.buildBaseUrlHeader()).thenReturn("<base href='http://test' />");
         when(pdfTemplateProcessor.buildSizeCss(Orientation.LANDSCAPE, PaperSize.A3)).thenReturn("@page {size: test;}");
-        when(htmlProcessor.replaceResourcesAsBase64Encoded(anyString())).thenAnswer(invocation ->
-                invocation.getArgument(0));
+        when(htmlProcessor.replaceResourcesAsBase64Encoded(anyString())).thenAnswer(invocation -> invocation.getArgument(0));
         when(htmlProcessor.internalizeLinks(anyString())).thenAnswer(a -> a.getArgument(0));
+        when(htmlProcessor.adjustContentToFitPage(any(Document.class), any())).thenAnswer(a -> a.getArgument(0));
         when(weasyPrintServiceConnector.convertToPdf(resultHtml, new WeasyPrintOptions(true))).thenReturn("test content".getBytes());
 
-        byte[] result = htmlToPdfConverter.convert(origHtml, Orientation.LANDSCAPE, PaperSize.A3);
+        ConversionParams conversionParams = ConversionParams.builder()
+                .orientation(Orientation.LANDSCAPE)
+                .paperSize(PaperSize.A3)
+                .followHTMLPresentationalHints(true)
+                .build();
+        byte[] result = htmlToPdfConverter.convert(origHtml, conversionParams);
         assertThat(result).isEqualTo("test content".getBytes());
     }
 }

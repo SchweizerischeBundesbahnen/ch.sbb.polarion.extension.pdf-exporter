@@ -46,8 +46,7 @@ class PdfTemplateProcessorTest {
             String resultHtml = pdfTemplateProcessor.processUsing(exportParams, "testDocumentName", "test css content", "test html content");
 
             // Assert
-            assertThat(TestStringUtils.removeNonsensicalSymbols(resultHtml).replaceAll(" ", ""))
-                    .isEqualTo(TestStringUtils.removeNonsensicalSymbols(expectedResult).replaceAll(" ", ""));
+            assertThat(TestStringUtils.removeNonsensicalSymbols(resultHtml)).isEqualTo(TestStringUtils.removeNonsensicalSymbols(expectedResult));
         } finally {
             if (configuration != null) {
                 configuration.close();
@@ -56,7 +55,11 @@ class PdfTemplateProcessorTest {
     }
 
     @ParameterizedTest
-    @CsvSource({"test, <base href='http://test' />", "http://test, <base href='http://test' />", "https://test, <base href='https://test' />"})
+    @CsvSource({
+            "test, <base href='http://test' />",
+            "http://test, <base href='http://test' />",
+            "https://test, <base href='https://test' />"
+    })
     void shouldBuildBaseUrlFromProperties(String baseUrl, String expectedResult) {
         System.setProperty(PolarionProperties.BASE_URL, baseUrl);
         try {
@@ -80,53 +83,59 @@ class PdfTemplateProcessorTest {
     private static Stream<Arguments> paramsForProcessHtmlTemplate() {
         return Stream.of(
                 Arguments.of(false, Orientation.PORTRAIT, null, """
-                    <?xml version='1.0' encoding='UTF-8'?>
-                    <!DOCTYPE html PUBLIC '-//W3C//DTD XHTML 1.0 Strict//EN' 'http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd'>
-                    <html lang='en' xml:lang='en' xmlns='http://www.w3.org/1999/xhtml'>
-                    <head>
-                        <title>testDocumentName</title>
-                        <meta content='text/html; charset=UTF-8' http-equiv='Content-Type'/>
-                        <base href='http://testClusterNodeHostName' />
-                        <link crossorigin='anonymous' href='/polarion/ria/font-awesome-4.0.3/css/font-awesome.css' referrerpolicy='no-referrer' rel='stylesheet'/>
-                        <style>
-                            test css content
-                        </style>
-                    </head>
-                    <body>
-                    test html content
-                    </body>
-                    </html>""".indent(0).trim()),
-
-                Arguments.of(true, Orientation.LANDSCAPE, "custom base url","""
-                    <?xml version='1.0' encoding='UTF-8'?>
-                    <!DOCTYPE html PUBLIC '-//W3C//DTD XHTML 1.0 Strict//EN' 'http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd'>
-                    <html lang='en' xml:lang='en' xmlns='http://www.w3.org/1999/xhtml'>
-                    <head>
-                        <title>testDocumentName</title>
-                        <meta content='text/html; charset=UTF-8' http-equiv='Content-Type'/>
-                        <base href='http://custom base url' />
-                        <link crossorigin='anonymous' href='/polarion/ria/font-awesome-4.0.3/css/font-awesome.css' referrerpolicy='no-referrer' rel='stylesheet'/>
-                        <style>
-                            test css content
-                            @media print {
-                                body::before {
-                                    content: "Confidential";
-                                    font-size: 8em;
-                                    text-transform: uppercase;
-                                    color: rgba(255, 5, 5, 0.17);
-                                    position: fixed;
-                                    top: 50%;
-                                    left: 50%;
-                                    transform: translate(-50%, -50%) rotate(-45deg);
+                        <?xml version='1.0' encoding='UTF-8'?>
+                        <!DOCTYPE html PUBLIC '-//W3C//DTD XHTML 1.0 Strict//EN' 'http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd'>
+                        <html lang='en' xml:lang='en' xmlns='http://www.w3.org/1999/xhtml'>
+                        <head>
+                            <title>testDocumentName</title>
+                            <meta content='text/html; charset=UTF-8' http-equiv='Content-Type'/>
+                            <base href='http://testClusterNodeHostName' />
+                            <link crossorigin='anonymous' href='/polarion/ria/font-awesome-4.0.3/css/font-awesome.css' referrerpolicy='no-referrer' rel='stylesheet'/>
+                            <style>
+                                test css content
+                                img {
+                                    max-width: 100%;
                                 }
-                            }
-                            @page {size: A4 landscape;}
-                        </style>
-                    </head>
-                    <body>
-                    test html content
-                    </body>
-                    </html>""".indent(0).trim())
+                            </style>
+                        </head>
+                        <body>
+                        test html content
+                        </body>
+                        </html>""".indent(0).trim()),
+
+                Arguments.of(true, Orientation.LANDSCAPE, "custom base url", """
+                        <?xml version='1.0' encoding='UTF-8'?>
+                        <!DOCTYPE html PUBLIC '-//W3C//DTD XHTML 1.0 Strict//EN' 'http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd'>
+                        <html lang='en' xml:lang='en' xmlns='http://www.w3.org/1999/xhtml'>
+                        <head>
+                            <title>testDocumentName</title>
+                            <meta content='text/html; charset=UTF-8' http-equiv='Content-Type'/>
+                            <base href='http://custom base url' />
+                            <link crossorigin='anonymous' href='/polarion/ria/font-awesome-4.0.3/css/font-awesome.css' referrerpolicy='no-referrer' rel='stylesheet'/>
+                            <style>
+                                test css content
+                                @media print {
+                                    body::before {
+                                        content: "Confidential";
+                                        font-size: 8em;
+                                        text-transform: uppercase;
+                                        color: rgba(255, 5, 5, 0.17);
+                                        position: fixed;
+                                        top: 50%;
+                                        left: 50%;
+                                        transform: translate(-50%, -50%) rotate(-45deg);
+                                    }
+                                }
+                                @page {size: A4 landscape;}
+                                img {
+                                    max-width: 100%;
+                                }
+                            </style>
+                        </head>
+                        <body>
+                        test html content
+                        </body>
+                        </html>""".indent(0).trim())
         );
     }
 }

@@ -5,11 +5,12 @@ import ch.sbb.polarion.extension.generic.regex.RegexMatcher;
 import ch.sbb.polarion.extension.generic.settings.NamedSettings;
 import ch.sbb.polarion.extension.generic.settings.SettingId;
 import ch.sbb.polarion.extension.generic.util.HtmlUtils;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ConversionParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.Orientation;
-import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PaperSize;
 import ch.sbb.polarion.extension.pdf_exporter.service.PdfExporterPolarionService;
 import ch.sbb.polarion.extension.pdf_exporter.settings.LocalizationSettings;
+import ch.sbb.polarion.extension.pdf_exporter.util.adjuster.PageWidthAdjuster;
 import ch.sbb.polarion.extension.pdf_exporter.util.exporter.CustomPageBreakPart;
 import ch.sbb.polarion.extension.pdf_exporter.util.html.HtmlLinksHelper;
 import com.polarion.alm.shared.util.StringUtils;
@@ -18,6 +19,7 @@ import lombok.SneakyThrows;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
+import org.jsoup.nodes.Document;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -31,116 +33,13 @@ import static ch.sbb.polarion.extension.pdf_exporter.util.exporter.Constants.*;
 
 public class HtmlProcessor {
 
-    private static final int A5_PORTRAIT_WIDTH = 420;
-    private static final int A5_PORTRAIT_HEIGHT = 620;
-    private static final int A5_LANDSCAPE_WIDTH = 660;
-    private static final int A5_LANDSCAPE_HEIGHT = 380;
-    private static final int B5_PORTRAIT_WIDTH = 500;
-    private static final int B5_PORTRAIT_HEIGHT = 760;
-    private static final int B5_LANDSCAPE_WIDTH = 810;
-    private static final int B5_LANDSCAPE_HEIGHT = 460;
-    private static final int JIS_B5_PORTRAIT_WIDTH = 520;
-    private static final int JIS_B5_PORTRAIT_HEIGHT = 770;
-    private static final int JIS_B5_LANDSCAPE_WIDTH = 830;
-    private static final int JIS_B5_LANDSCAPE_HEIGHT = 480;
-    private static final float NEXT_SIZE_ASPECT_RATIO = 1.41f;
-    private static final float NEXT_SIZE_ASPECT_RATIO_TWICE = NEXT_SIZE_ASPECT_RATIO * NEXT_SIZE_ASPECT_RATIO;
-
-    private static final Map<PaperSize, Integer> MAX_PORTRAIT_WIDTHS = Map.of(
-            PaperSize.A5, A5_PORTRAIT_WIDTH,
-            PaperSize.A4, (int) (A5_PORTRAIT_WIDTH * NEXT_SIZE_ASPECT_RATIO),
-            PaperSize.A3, (int) (A5_PORTRAIT_WIDTH * NEXT_SIZE_ASPECT_RATIO_TWICE),
-            PaperSize.B5, B5_PORTRAIT_WIDTH,
-            PaperSize.B4, (int) (B5_PORTRAIT_WIDTH * NEXT_SIZE_ASPECT_RATIO),
-            PaperSize.JIS_B5, JIS_B5_PORTRAIT_WIDTH,
-            PaperSize.JIS_B4, (int) (JIS_B5_PORTRAIT_WIDTH * NEXT_SIZE_ASPECT_RATIO),
-            PaperSize.LETTER, 610,
-            PaperSize.LEGAL, 610,
-            PaperSize.LEDGER, 790
-    );
-    private static final Map<PaperSize, Integer> MAX_LANDSCAPE_WIDTHS = Map.of(
-            PaperSize.A5, A5_LANDSCAPE_WIDTH,
-            PaperSize.A4, (int) (A5_LANDSCAPE_WIDTH * NEXT_SIZE_ASPECT_RATIO),
-            PaperSize.A3, (int) (A5_LANDSCAPE_WIDTH * NEXT_SIZE_ASPECT_RATIO_TWICE),
-            PaperSize.B5, B5_LANDSCAPE_WIDTH,
-            PaperSize.B4, (int) (B5_LANDSCAPE_WIDTH * NEXT_SIZE_ASPECT_RATIO),
-            PaperSize.JIS_B5, JIS_B5_LANDSCAPE_WIDTH,
-            PaperSize.JIS_B4, (int) (JIS_B5_LANDSCAPE_WIDTH * NEXT_SIZE_ASPECT_RATIO),
-            PaperSize.LETTER, 900,
-            PaperSize.LEGAL, 1150,
-            PaperSize.LEDGER, 1400
-    );
-    private static final Map<PaperSize, Integer> MAX_PORTRAIT_HEIGHTS = Map.of(
-            PaperSize.A5, A5_PORTRAIT_HEIGHT,
-            PaperSize.A4, (int) (A5_PORTRAIT_HEIGHT * NEXT_SIZE_ASPECT_RATIO),
-            PaperSize.A3, (int) (A5_PORTRAIT_HEIGHT * NEXT_SIZE_ASPECT_RATIO_TWICE),
-            PaperSize.B5, B5_PORTRAIT_HEIGHT,
-            PaperSize.B4, (int) (B5_PORTRAIT_HEIGHT * NEXT_SIZE_ASPECT_RATIO),
-            PaperSize.JIS_B5, JIS_B5_PORTRAIT_HEIGHT,
-            PaperSize.JIS_B4, (int) (JIS_B5_PORTRAIT_HEIGHT * NEXT_SIZE_ASPECT_RATIO),
-            PaperSize.LETTER, 820,
-            PaperSize.LEGAL, 1050,
-            PaperSize.LEDGER, 1270
-    );
-    private static final Map<PaperSize, Integer> MAX_LANDSCAPE_HEIGHTS = Map.of(
-            PaperSize.A5, A5_LANDSCAPE_HEIGHT,
-            PaperSize.A4, (int) (A5_LANDSCAPE_HEIGHT * NEXT_SIZE_ASPECT_RATIO),
-            PaperSize.A3, (int) (A5_LANDSCAPE_HEIGHT * NEXT_SIZE_ASPECT_RATIO_TWICE),
-            PaperSize.B5, B5_LANDSCAPE_HEIGHT,
-            PaperSize.B4, (int) (B5_LANDSCAPE_HEIGHT * NEXT_SIZE_ASPECT_RATIO),
-            PaperSize.JIS_B5, JIS_B5_LANDSCAPE_HEIGHT,
-            PaperSize.JIS_B4, (int) (JIS_B5_LANDSCAPE_HEIGHT * NEXT_SIZE_ASPECT_RATIO),
-            PaperSize.LETTER, 550,
-            PaperSize.LEGAL, 550,
-            PaperSize.LEDGER, 730
-    );
-
-    private static final Map<PaperSize, Integer> MAX_PORTRAIT_WIDTHS_IN_TABLES = Map.of(
-            PaperSize.A5, MAX_PORTRAIT_WIDTHS.get(PaperSize.A5) / 3,
-            PaperSize.A4, MAX_PORTRAIT_WIDTHS.get(PaperSize.A4) / 3,
-            PaperSize.A3, MAX_PORTRAIT_WIDTHS.get(PaperSize.A3) / 3,
-            PaperSize.B5, MAX_PORTRAIT_WIDTHS.get(PaperSize.B5) / 3,
-            PaperSize.B4, MAX_PORTRAIT_WIDTHS.get(PaperSize.B4) / 3,
-            PaperSize.JIS_B5, MAX_PORTRAIT_WIDTHS.get(PaperSize.JIS_B5) / 3,
-            PaperSize.JIS_B4, MAX_PORTRAIT_WIDTHS.get(PaperSize.JIS_B4) / 3,
-            PaperSize.LETTER, MAX_PORTRAIT_WIDTHS.get(PaperSize.LETTER) / 3,
-            PaperSize.LEGAL, MAX_PORTRAIT_WIDTHS.get(PaperSize.LEGAL) / 3,
-            PaperSize.LEDGER, MAX_PORTRAIT_WIDTHS.get(PaperSize.LEDGER) / 3
-    );
-    private static final Map<PaperSize, Integer> MAX_LANDSCAPE_WIDTHS_IN_TABLES = Map.of(
-            PaperSize.A5, MAX_LANDSCAPE_WIDTHS.get(PaperSize.A5) / 3,
-            PaperSize.A4, MAX_LANDSCAPE_WIDTHS.get(PaperSize.A4) / 3,
-            PaperSize.A3, MAX_LANDSCAPE_WIDTHS.get(PaperSize.A3) / 3,
-            PaperSize.B5, MAX_LANDSCAPE_WIDTHS.get(PaperSize.B5) / 3,
-            PaperSize.B4, MAX_LANDSCAPE_WIDTHS.get(PaperSize.B4) / 3,
-            PaperSize.JIS_B5, MAX_LANDSCAPE_WIDTHS.get(PaperSize.JIS_B5) / 3,
-            PaperSize.JIS_B4, MAX_LANDSCAPE_WIDTHS.get(PaperSize.JIS_B4) / 3,
-            PaperSize.LETTER, MAX_LANDSCAPE_WIDTHS.get(PaperSize.LETTER) / 3,
-            PaperSize.LEGAL, MAX_LANDSCAPE_WIDTHS.get(PaperSize.LEGAL) / 3,
-            PaperSize.LEDGER, MAX_LANDSCAPE_WIDTHS.get(PaperSize.LEDGER) / 3
-    );
-
-    private static final int FULL_WIDTH_PERCENT = 100;
-    private static final float EX_TO_PX_RATIO = 6.5F;
-    private static final String MEASURE_PX = "px";
-    private static final String MEASURE_EX = "ex";
-    private static final String MEASURE_PERCENT = "%";
-    private static final String TABLE_OPEN_TAG = "<table";
-    private static final String TABLE_END_TAG = "</table>";
-    private static final String TABLE_ROW_OPEN_TAG = "<tr";
-    private static final String TABLE_ROW_END_TAG = "</tr>";
-    private static final String TABLE_COLUMN_OPEN_TAG = "<td";
-    private static final String TABLE_COLUMN_END_TAG = "</td>";
+    public static final String TABLE_ROW_END_TAG = "</tr>";
+    public static final String TABLE_COLUMN_END_TAG = "</td>";
     private static final String DIV_START_TAG = "<div>";
     private static final String DIV_END_TAG = "</div>";
     private static final String SPAN_END_TAG = "</span>";
     private static final String COMMENT_START = "[span";
     private static final String COMMENT_END = "[/span]";
-    private static final String WIDTH = "width";
-    private static final String MEASURE = "measure";
-    private static final String MEASURE_WIDTH = "measureWidth";
-    private static final String HEIGHT = "height";
-    private static final String MEASURE_HEIGHT = "measureHeight";
     private static final String NUMBER = "number";
 
     private static final String UNSUPPORTED_DOCUMENT_TYPE = "Unsupported document type: %s";
@@ -235,7 +134,7 @@ public class HtmlProcessor {
             //processPageBrakes contains its own adjustContentToFitPage() calls
             html = processPageBrakes(html, exportParams);
         } else if (exportParams.isFitToPage()) {
-            html = adjustContentToFitPage(html, exportParams.getOrientation(), exportParams.getPaperSize());
+            html = adjustContentToFitPage(html, exportParams);
         }
 
         // Do not change this entry order, '&nbsp;' can be used in the logic above, so we must cut them off as the last step
@@ -297,7 +196,7 @@ public class HtmlProcessor {
 
             //here we can make additional areas processing
             if (exportParams.isFitToPage()) {
-                area = adjustContentToFitPage(area, landscape ? Orientation.LANDSCAPE : Orientation.PORTRAIT, exportParams.getPaperSize());
+                area = adjustContentToFitPage(area, exportParams);
             }
 
             resultBuf.insert(0, area);
@@ -510,13 +409,23 @@ public class HtmlProcessor {
         // with class "polarion-dle-workitem-fields-end-table-value"
         String emptyTableAttributeMarker = "class=\"polarion-dle-workitem-fields-end-table-value\" style=\"width: 80%;\" onmousedown=\"return false;\" contentEditable=\"false\"></td>";
         String res = html;
-        while (res.contains(emptyTableAttributeMarker)) {
-            String[] parts = res.split(emptyTableAttributeMarker, 2);
-            int trStart = parts[0].lastIndexOf("<tr>");
-            int trEnd = res.indexOf(TABLE_ROW_END_TAG, trStart) + TABLE_ROW_END_TAG.length();
 
-            res = res.substring(0, trStart) + res.substring(trEnd);
-        }
+        String searchMarkerLower = emptyTableAttributeMarker.toLowerCase();
+
+        int markerIndex;
+        do {
+            markerIndex = res.toLowerCase().indexOf(searchMarkerLower);
+            if (markerIndex == -1) {
+                break;
+            }
+
+            int trStart = res.lastIndexOf("<tr>", markerIndex);
+            int trEnd = res.indexOf(TABLE_ROW_END_TAG, markerIndex) + TABLE_ROW_END_TAG.length();
+
+            if (trStart >= 0 && trEnd > trStart) {
+                res = res.substring(0, trStart) + res.substring(trEnd);
+            }
+        } while (true);
 
         // This is a sign of empty (no value) WorkItem attribute in case of non-tabular view - <span>-element
         // with title "This field is empty"
@@ -584,12 +493,20 @@ public class HtmlProcessor {
                 .replace(html, regexEngine -> regexEngine.group() + " style=\"width: 80%;\"");
     }
 
-    @NotNull
-    @VisibleForTesting
-    String adjustContentToFitPage(@NotNull String html, @NotNull Orientation orientation, @NotNull PaperSize paperSize) {
-        html = adjustImageSizeInTables(html, orientation, paperSize);
-        html = adjustImageSize(html, orientation, paperSize);
-        return adjustTableSize(html, orientation, paperSize);
+    public @NotNull Document adjustContentToFitPage(@NotNull Document document, @NotNull ConversionParams conversionParams) {
+        return new PageWidthAdjuster(document, conversionParams)
+                .adjustImageSizeInTables()
+                .adjustImageSize()
+                .adjustTableSize()
+                .getDocument();
+    }
+
+    public @NotNull String adjustContentToFitPage(@NotNull String html, @NotNull ConversionParams conversionParams) {
+        return new PageWidthAdjuster(html, conversionParams)
+                .adjustImageSizeInTables()
+                .adjustImageSize()
+                .adjustTableSize()
+                .toHTML();
     }
 
     @NotNull
@@ -761,176 +678,6 @@ public class HtmlProcessor {
             group = "<div style=\"text-align: " + align + "\">" + group + DIV_END_TAG;
             regexEngine.appendReplacement(sb, group);
         }
-    }
-
-    @NotNull
-    @VisibleForTesting
-    @SuppressWarnings("java:S5852") //regex checked
-    public String adjustImageSize(@NotNull String html, @NotNull Orientation orientation, @NotNull PaperSize paperSize) {
-        // We are looking here for images which widths and heights are explicitly specified.
-        // Named group "prepend" - is everything which stands before width/height and named group "append" - after.
-        // Then we check if width (named group "width") exceeds limit we override it by value "100%"
-        return RegexMatcher.get("(<img(?<prepend>[^>]+?)width:\\s*?(?<width>[\\d.]*?)(?<measureWidth>px|ex);\\s*?height:\\s*?(?<height>[\\d.]*?)(?<measureHeight>px|ex)(?<append>[^>]*?)>)")
-                .replace(html, regexEngine -> {
-                    float maxWidth = orientation == Orientation.PORTRAIT ? MAX_PORTRAIT_WIDTHS.get(paperSize) : MAX_LANDSCAPE_WIDTHS.get(paperSize);
-                    float maxHeight = orientation == Orientation.PORTRAIT ? MAX_PORTRAIT_HEIGHTS.get(paperSize) : MAX_LANDSCAPE_HEIGHTS.get(paperSize);
-
-                    float width = parseDimension(regexEngine, WIDTH, MEASURE_WIDTH);
-                    float height = parseDimension(regexEngine, HEIGHT, MEASURE_HEIGHT);
-
-                    String prepend = regexEngine.group("prepend");
-                    String append = regexEngine.group("append");
-
-                    return generateAdjustedImageTag(prepend, append, width, height, maxWidth, maxHeight);
-                });
-    }
-
-    private float parseDimension(IRegexEngine regexEngine, String dimension, String measure) {
-        float value = Float.parseFloat(regexEngine.group(dimension));
-        if (MEASURE_EX.equals(regexEngine.group(measure))) {
-            value *= EX_TO_PX_RATIO;
-        }
-        return value;
-    }
-
-    private String generateAdjustedImageTag(String prepend, String append, float width, float height, float maxWidth, float maxHeight) {
-        float widthExceedingRatio = width / maxWidth;
-        float heightExceedingRatio = height / maxHeight;
-
-        if (widthExceedingRatio <= 1 && heightExceedingRatio <= 1) {
-            return null;
-        }
-
-        final float adjustedWidth;
-        final float adjustedHeight;
-
-        if (widthExceedingRatio > heightExceedingRatio) {
-            adjustedWidth = width / widthExceedingRatio;
-            adjustedHeight = height / widthExceedingRatio;
-        } else {
-            adjustedWidth = width / heightExceedingRatio;
-            adjustedHeight = height / heightExceedingRatio;
-        }
-
-        return "<img" + prepend + "width: " + ((int) adjustedWidth) + "px; height: " + ((int) adjustedHeight) + "px" + append + ">";
-    }
-
-    @NotNull
-    @VisibleForTesting
-    public String adjustTableSize(@NotNull String html, @NotNull Orientation orientation, @NotNull PaperSize paperSize) {
-        // We are looking here for tables which widths are explicitly specified.
-        // When width exceeds limit we override it by value "100%"
-        return RegexMatcher.get("<table[^>]+?width:\\s*?(?<width>[\\d.]+?)(?<measure>px|%)").replace(html, regexEngine -> {
-            String width = regexEngine.group(WIDTH);
-            String measure = regexEngine.group(MEASURE);
-            float widthParsed = Float.parseFloat(width);
-            float maxWidth = orientation == Orientation.PORTRAIT ? MAX_PORTRAIT_WIDTHS.get(paperSize) : MAX_LANDSCAPE_WIDTHS.get(paperSize);
-            if (MEASURE_PX.equals(measure) && widthParsed > maxWidth || MEASURE_PERCENT.equals(measure) && widthParsed > FULL_WIDTH_PERCENT) {
-                return regexEngine.group().replace(width + measure, "100%");
-            } else {
-                return null;
-            }
-        });
-    }
-
-    @NotNull
-    @VisibleForTesting
-    @SuppressWarnings({"java:S3776", "java:S5852", "java:S5857", "java:S135"}) //regex checked
-    public String adjustImageSizeInTables(@NotNull String html, @NotNull Orientation orientation, @NotNull PaperSize paperSize) {
-        StringBuilder buf = new StringBuilder();
-        int pos = 0;
-
-        //The main idea below is:
-        // 1) find the most top-level tables
-        // 2) replace all suspicious img tags inside tables with reduced width
-
-        while (true) {
-            int tableStart = html.indexOf(TABLE_OPEN_TAG, pos);
-            if (tableStart == -1) {
-                buf.append(html.substring(pos));
-                break;
-            }
-            int tableEnd = findTableEnd(html, tableStart);
-            if (tableEnd == -1) {
-                buf.append(html.substring(pos));
-                break;
-            } else {
-                tableEnd = tableEnd + TABLE_END_TAG.length();
-            }
-            if (pos != tableStart) {
-                buf.append(html, pos, tableStart);
-            }
-            String tableHtml = html.substring(tableStart, tableEnd);
-
-            String modifiedTableContent = RegexMatcher.get("(<img[^>]+?width:\\s*?(?<widthValue>(?<width>[\\d.]*?)(?<measure>px|ex)|auto);[^>]+?>)").replace(tableHtml, regexEngine -> {
-                String widthValue = regexEngine.group("widthValue");
-                float width;
-                if (widthValue.equals("auto")) {
-                    width = Float.MAX_VALUE;
-                } else {
-                    width = Float.parseFloat(regexEngine.group(WIDTH));
-                    if (MEASURE_EX.equals(regexEngine.group(MEASURE))) {
-                        width = width * EX_TO_PX_RATIO;
-                    }
-                }
-                float columnCountBasedWidth = getImageWidthBasedOnColumnsCount(tableHtml, regexEngine.group(), orientation, paperSize);
-                float paramsBasedWidth = orientation == Orientation.PORTRAIT ? MAX_PORTRAIT_WIDTHS_IN_TABLES.get(paperSize) : MAX_LANDSCAPE_WIDTHS_IN_TABLES.get(paperSize);
-                float maxWidth = columnCountBasedWidth != -1 && columnCountBasedWidth < paramsBasedWidth ? columnCountBasedWidth : paramsBasedWidth;
-                return width <= maxWidth ? null : regexEngine.group()
-                        .replaceAll("max-width:\\s*?([\\d.]*?(px|ex)|auto);", "") //it seems that max-width doesn't work in WP
-                        .replaceAll("width:\\s*?([\\d.]*?(px|ex)|auto);", "")     //remove width too, we will add it later
-                        .replaceAll("height:\\s*?[\\d.]*?(px|ex);", "")           //remove height completely in order to keep image ratio
-                        .replace("style=\"", "style=\"width: " + ((int) maxWidth) + "px;");
-            });
-
-            buf.append(modifiedTableContent);
-            pos = tableEnd;
-        }
-        return buf.toString();
-    }
-
-    @SuppressWarnings("java:S135")
-    private int findTableEnd(String html, int tableStart) {
-        int pos = tableStart;
-        int tableEnd = -1;
-        int depth = 0;
-        while (pos < html.length()) {
-            int nextTableStart = html.indexOf(TABLE_OPEN_TAG, pos);
-            int nextTableEnd = html.indexOf(TABLE_END_TAG, pos);
-            if (nextTableStart != -1 && nextTableStart < nextTableEnd) {
-                depth++;
-                pos = nextTableStart + TABLE_OPEN_TAG.length();
-            } else if (nextTableEnd != -1) {
-                depth--;
-                pos = nextTableEnd + TABLE_END_TAG.length();
-                if (depth == 0) {
-                    tableEnd = nextTableEnd;
-                    break;
-                }
-            } else {
-                break;
-            }
-        }
-        return tableEnd;
-    }
-
-    @VisibleForTesting
-    int getImageWidthBasedOnColumnsCount(String table, String imgTag, @NotNull Orientation orientation, @NotNull PaperSize paperSize) {
-        int imgPosition = table.indexOf(imgTag);
-        int trStartPosition = table.substring(0, imgPosition).lastIndexOf(TABLE_ROW_OPEN_TAG);
-        int trEndPosition = table.indexOf(TABLE_ROW_END_TAG, imgPosition);
-        if (trStartPosition != -1 && trEndPosition != -1) {
-            int columnsCount = columnsCount(table.substring(trStartPosition, trEndPosition));
-            if (columnsCount > 0) {
-                return (orientation == Orientation.PORTRAIT ? MAX_PORTRAIT_WIDTHS.get(paperSize) : MAX_LANDSCAPE_WIDTHS.get(paperSize)) / columnsCount;
-            }
-        }
-        return -1;
-    }
-
-    @VisibleForTesting
-    int columnsCount(String string) {
-        return (string.length() - string.replace(TABLE_COLUMN_OPEN_TAG, "").length()) / TABLE_COLUMN_OPEN_TAG.length();
     }
 
     @SneakyThrows
