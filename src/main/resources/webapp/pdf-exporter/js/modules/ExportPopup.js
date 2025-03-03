@@ -3,12 +3,17 @@ import ExportContext from "./ExportContext.js";
 
 export default class ExportPopup {
 
-    constructor() {
-        this.ctx = new ExportContext({rootComponentSelector: "#pdf-export-popup"});
+    constructor(bulkCallback) {
+        this.ctx = new ExportContext({
+            rootComponentSelector: "#pdf-export-popup",
+            exportType: bulkCallback ? ExportParams.ExportType.BULK : ExportParams.ExportType.SINGLE,
+        });
+        this.bulkCallback = bulkCallback;
         this.initPopup();
     }
 
     initPopup() {
+        document.getElementById(POPUP_ID)?.remove();
         const popup = document.createElement('div');
         popup.classList.add("modal");
         popup.classList.add("micromodal-slide");
@@ -237,24 +242,12 @@ export default class ExportPopup {
 
     loadStylePackages() {
         let stylePackagesUrl = `/polarion/pdf-exporter/rest/internal/settings/style-package/suitable-names`;
-        const docIdentifiers = [];
-        if (this.ctx.getExportType() === ExportParams.ExportType.BULK) {
-            this.ctx.bulkExportWidget.querySelectorAll('input[type="checkbox"]:not(#export-all):checked').forEach((selectedCheckbox) => {
-                const docIdentifier = {
-                    ...(selectedCheckbox.dataset["project"] ? { projectId: selectedCheckbox.dataset["project"] } : {}),
-                    ...(selectedCheckbox.dataset["space"] ? { spaceId: selectedCheckbox.dataset["space"] } : {}),
-                    documentName: selectedCheckbox.dataset["id"]
-                };
-                docIdentifiers.push(docIdentifier);
-            });
-        } else {
-            const docIdentifier = {
-                ...(this.ctx.getProjectId() !== null && { projectId: `${this.ctx.getProjectId()}` }),
-                ...(this.ctx.getSpaceId() !== null && { spaceId: `${this.ctx.getSpaceId()}` }),
+        const docIdentifiers = this.ctx.getExportType() === ExportParams.ExportType.BULK ? this.bulkCallback.getDocIdentifiers() :
+            [{
+                ...(this.ctx.getProjectId() !== null && {projectId: `${this.ctx.getProjectId()}`}),
+                ...(this.ctx.getSpaceId() !== null && {spaceId: `${this.ctx.getSpaceId()}`}),
                 documentName: `${this.ctx.getDocumentName()}`
-            };
-            docIdentifiers.push(docIdentifier);
-        }
+            }];
 
         return this.loadSettingNames({
             customUrl: stylePackagesUrl,
@@ -458,11 +451,11 @@ export default class ExportPopup {
             return;
         }
 
-        // if (this.ctx.getBulkExportWidget() && this.ctx.getExportType() === ExportParams.ExportType.BULK) {
-        //     this.closePopup();
-        //     BulkPdfExporter.openPopup(this.ctx.getBulkExportWidget(), exportParams);
-        //     return;
-        // }
+        if (this.bulkCallback && this.ctx.getExportType() === ExportParams.ExportType.BULK) {
+            this.closePopup();
+            this.bulkCallback.openPopup(exportParams);
+            return;
+        }
 
         if (this.ctx.getDocumentType() === ExportParams.DocumentType.TEST_RUN && this.ctx.getElementById("popup-download-attachments").checked) {
             const testRunId = new URLSearchParams(this.ctx.getUrlQueryParameters()).get("id")

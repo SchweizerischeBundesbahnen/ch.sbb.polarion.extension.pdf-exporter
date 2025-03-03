@@ -1,5 +1,6 @@
 import ExportParams from "./ExportParams.js";
 import ExportContext from "./ExportContext.js";
+import ExportPopup from "./ExportPopup.js";
 import('/polarion/pdf-exporter/js/micromodal.min.js');
 
 export default class ExportBulk {
@@ -21,8 +22,7 @@ export default class ExportBulk {
                 if (this.getExportButton().classList.contains(DISABLED_BUTTON_CLASS)) {
                     return;
                 }
-                const documentType = this.ctx.querySelector(".header")?.getAttribute("document-type");
-                this.openPopup(new ExportParams.Builder(documentType).build());
+                new ExportPopup(this);
             });
         this.getAllDocumentCheckboxes().forEach((checkbox) => {
             checkbox.addEventListener('click', () => {
@@ -59,7 +59,21 @@ export default class ExportBulk {
         return this.ctx.querySelectorAll('input[type="checkbox"]:not(#export-all)');
     }
 
+    getDocIdentifiers() {
+        const docIdentifiers = [];
+        this.ctx.querySelectorAll('input[type="checkbox"]:not(#export-all):checked').forEach((selectedCheckbox) => {
+            const docIdentifier = {
+                ...(selectedCheckbox.dataset["project"] ? { projectId: selectedCheckbox.dataset["project"] } : {}),
+                ...(selectedCheckbox.dataset["space"] ? { spaceId: selectedCheckbox.dataset["space"] } : {}),
+                documentName: selectedCheckbox.dataset["id"]
+            };
+            docIdentifiers.push(docIdentifier);
+        });
+        return docIdentifiers;
+    }
+
     initPopup() {
+        document.getElementById(BULK_POPUP_ID)?.remove();
         this.popup = document.createElement('div');
         this.popup.classList.add("modal");
         this.popup.classList.add("micromodal-slide");
@@ -72,6 +86,9 @@ export default class ExportBulk {
     }
 
     openPopup(exportParams) {
+        // const documentType = this.ctx.querySelector(".header")?.getAttribute("document-type");
+        // this.openPopup(new ExportParams.Builder(documentType).build());
+
         this.exportParams = exportParams;
         this.itemsCount = 0;
         this.finishedCount = 0;
