@@ -1,10 +1,10 @@
 package ch.sbb.polarion.extension.pdf_exporter.util.adjuster;
 
-import ch.sbb.polarion.extension.pdf_exporter.constants.CssStyle;
+import ch.sbb.polarion.extension.pdf_exporter.constants.CssProp;
 import ch.sbb.polarion.extension.pdf_exporter.constants.HtmlTagAttr;
 import ch.sbb.polarion.extension.pdf_exporter.constants.Measure;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ConversionParams;
-import ch.sbb.polarion.extension.pdf_exporter.constants.PaperSizeConstants;
+import ch.sbb.polarion.extension.pdf_exporter.util.PaperSizeUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -19,16 +19,16 @@ public class TableSizeAdjuster extends AbstractAdjuster {
 
     @Override
     public void execute() {
-        float maxWidth = PaperSizeConstants.getMaxWidth(conversionParams);
+        float maxWidth = PaperSizeUtils.getMaxWidth(conversionParams);
 
         Elements tables = document.select("table[style]");
         for (Element table : tables) {
             CSSStyleDeclaration cssStyle = parseCss(table.attr(HtmlTagAttr.STYLE));
 
-            float width = extractDimension(cssStyle.getPropertyValue(CssStyle.WIDTH));
+            float width = extractDimension(cssStyle.getPropertyValue(CssProp.WIDTH));
 
             if (width > maxWidth) {
-                cssStyle.setProperty(CssStyle.WIDTH, "100%", "");
+                cssStyle.setProperty(CssProp.WIDTH, "100%", "");
             }
 
             table.attr(HtmlTagAttr.STYLE, cssStyle.getCssText());
@@ -44,7 +44,7 @@ public class TableSizeAdjuster extends AbstractAdjuster {
         if (value.endsWith(Measure.PX)) {
             return Float.parseFloat(value.replace(Measure.PX, "").trim());
         } else if (value.endsWith(Measure.PERCENT)) {
-            return PaperSizeConstants.getMaxWidth(conversionParams) * Float.parseFloat(value.replace(Measure.PERCENT, "").trim());
+            return PaperSizeUtils.getMaxWidth(conversionParams) * Float.parseFloat(value.replace(Measure.PERCENT, "").trim());
         }
         return 0;
     }

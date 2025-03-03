@@ -1,9 +1,9 @@
 package ch.sbb.polarion.extension.pdf_exporter.util.adjuster;
 
-import ch.sbb.polarion.extension.pdf_exporter.constants.CssStyle;
+import ch.sbb.polarion.extension.pdf_exporter.constants.CssProp;
 import ch.sbb.polarion.extension.pdf_exporter.constants.HtmlTagAttr;
 import ch.sbb.polarion.extension.pdf_exporter.constants.Measure;
-import ch.sbb.polarion.extension.pdf_exporter.constants.PaperSizeConstants;
+import ch.sbb.polarion.extension.pdf_exporter.util.PaperSizeUtils;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ConversionParams;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.VisibleForTesting;
@@ -28,11 +28,11 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
             Elements images = table.select("img");
 
             for (Element img : images) {
-                float cssWidth = extractWidth(img, CssStyle.WIDTH);
-                float cssMaxWidth = extractWidth(img, CssStyle.MAX_WIDTH);
+                float cssWidth = extractWidth(img, CssProp.WIDTH);
+                float cssMaxWidth = extractWidth(img, CssProp.MAX_WIDTH);
 
                 float columnCountBasedWidth = getImageWidthBasedOnColumnsCount(img);
-                float paramsBasedWidth = PaperSizeConstants.getMaxWidthInTables(conversionParams);
+                float paramsBasedWidth = PaperSizeUtils.getMaxWidthInTables(conversionParams);
 
                 float maxWidth = (columnCountBasedWidth != -1 && columnCountBasedWidth < paramsBasedWidth)
                         ? columnCountBasedWidth
@@ -64,23 +64,23 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
         } else if (value.endsWith(Measure.PX)) {
             return Float.parseFloat(value.replace(Measure.PX, ""));
         } else if (value.endsWith(Measure.PERCENT)) {
-            return PaperSizeConstants.getMaxWidthInTables(conversionParams) * Float.parseFloat(value.replace(Measure.PERCENT, ""));
+            return PaperSizeUtils.getMaxWidthInTables(conversionParams) * Float.parseFloat(value.replace(Measure.PERCENT, ""));
         } else {
             return 0;
         }
     }
 
     private void adjustImageStyle(Element img, float maxWidth) {
-        img.removeAttr(CssStyle.WIDTH);
-        img.removeAttr(CssStyle.HEIGHT);
+        img.removeAttr(CssProp.WIDTH);
+        img.removeAttr(CssProp.HEIGHT);
 
         String style = img.attr(HtmlTagAttr.STYLE);
         CSSStyleDeclaration cssStyle = parseCss(style);
 
-        cssStyle.removeProperty(CssStyle.MAX_WIDTH); //it seems that max-width doesn't work in WeasyPrint
-        cssStyle.removeProperty(CssStyle.HEIGHT); //remove height completely in order to keep image ratio
+        cssStyle.removeProperty(CssProp.MAX_WIDTH); //it seems that max-width doesn't work in WeasyPrint
+        cssStyle.removeProperty(CssProp.HEIGHT); //remove height completely in order to keep image ratio
 
-        cssStyle.setProperty(CssStyle.WIDTH, ((int) maxWidth) + Measure.PX, "");
+        cssStyle.setProperty(CssProp.WIDTH, ((int) maxWidth) + Measure.PX, "");
         img.attr(HtmlTagAttr.STYLE, cssStyle.getCssText());
     }
 
@@ -90,7 +90,7 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
         if (row != null) {
             int columnsCount = columnsCount(row);
             if (columnsCount > 0) {
-                return PaperSizeConstants.getMaxWidth(conversionParams) / columnsCount;
+                return PaperSizeUtils.getMaxWidth(conversionParams) / columnsCount;
             }
         }
         return -1;

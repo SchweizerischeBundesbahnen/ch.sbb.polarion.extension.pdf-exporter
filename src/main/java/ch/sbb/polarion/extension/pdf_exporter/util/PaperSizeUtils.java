@@ -1,4 +1,4 @@
-package ch.sbb.polarion.extension.pdf_exporter.constants;
+package ch.sbb.polarion.extension.pdf_exporter.util;
 
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ConversionParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.Orientation;
@@ -8,7 +8,7 @@ import lombok.experimental.UtilityClass;
 import java.util.Map;
 
 @UtilityClass
-public class PaperSizeConstants {
+public class PaperSizeUtils {
 
     public static final int A5_PORTRAIT_WIDTH = 420;
     public static final int A5_PORTRAIT_HEIGHT = 620;
@@ -86,6 +86,7 @@ public class PaperSizeConstants {
             PaperSize.LEGAL, MAX_PORTRAIT_WIDTHS.get(PaperSize.LEGAL) / 3,
             PaperSize.LEDGER, MAX_PORTRAIT_WIDTHS.get(PaperSize.LEDGER) / 3
     );
+
     public static final Map<PaperSize, Integer> MAX_LANDSCAPE_WIDTHS_IN_TABLES = Map.of(
             PaperSize.A5, MAX_LANDSCAPE_WIDTHS.get(PaperSize.A5) / 3,
             PaperSize.A4, MAX_LANDSCAPE_WIDTHS.get(PaperSize.A4) / 3,
@@ -101,20 +102,20 @@ public class PaperSizeConstants {
 
     public static int getMaxWidth(ConversionParams conversionParams) {
         return conversionParams.getOrientation() == Orientation.PORTRAIT
-                ? PaperSizeConstants.MAX_PORTRAIT_WIDTHS.get(conversionParams.getPaperSize())
-                : PaperSizeConstants.MAX_LANDSCAPE_WIDTHS.get(conversionParams.getPaperSize());
+                ? PaperSizeUtils.MAX_PORTRAIT_WIDTHS.get(conversionParams.getPaperSize())
+                : PaperSizeUtils.MAX_LANDSCAPE_WIDTHS.get(conversionParams.getPaperSize());
     }
 
     public static int getMaxHeight(ConversionParams conversionParams) {
         return conversionParams.getOrientation() == Orientation.PORTRAIT
-                ? PaperSizeConstants.MAX_PORTRAIT_HEIGHTS.get(conversionParams.getPaperSize())
-                : PaperSizeConstants.MAX_LANDSCAPE_HEIGHTS.get(conversionParams.getPaperSize());
+                ? PaperSizeUtils.MAX_PORTRAIT_HEIGHTS.get(conversionParams.getPaperSize())
+                : PaperSizeUtils.MAX_LANDSCAPE_HEIGHTS.get(conversionParams.getPaperSize());
     }
 
     public static int getMaxWidthInTables(ConversionParams conversionParams) {
         return conversionParams.getOrientation() == Orientation.PORTRAIT
-                ? PaperSizeConstants.MAX_PORTRAIT_WIDTHS_IN_TABLES.get(conversionParams.getPaperSize())
-                : PaperSizeConstants.MAX_LANDSCAPE_WIDTHS_IN_TABLES.get(conversionParams.getPaperSize());
+                ? PaperSizeUtils.MAX_PORTRAIT_WIDTHS_IN_TABLES.get(conversionParams.getPaperSize())
+                : PaperSizeUtils.MAX_LANDSCAPE_WIDTHS_IN_TABLES.get(conversionParams.getPaperSize());
     }
 
 }

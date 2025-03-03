@@ -1,9 +1,9 @@
 package ch.sbb.polarion.extension.pdf_exporter.util.adjuster;
 
-import ch.sbb.polarion.extension.pdf_exporter.constants.CssStyle;
+import ch.sbb.polarion.extension.pdf_exporter.constants.CssProp;
 import ch.sbb.polarion.extension.pdf_exporter.constants.HtmlTagAttr;
 import ch.sbb.polarion.extension.pdf_exporter.constants.Measure;
-import ch.sbb.polarion.extension.pdf_exporter.constants.PaperSizeConstants;
+import ch.sbb.polarion.extension.pdf_exporter.util.PaperSizeUtils;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ConversionParams;
 import org.jetbrains.annotations.NotNull;
 import org.jsoup.nodes.Document;
@@ -21,8 +21,8 @@ public class ImageSizeAdjuster extends AbstractAdjuster {
 
     @Override
     public void execute() {
-        float maxWidth = PaperSizeConstants.getMaxWidth(conversionParams);
-        float maxHeight = PaperSizeConstants.getMaxHeight(conversionParams);
+        float maxWidth = PaperSizeUtils.getMaxWidth(conversionParams);
+        float maxHeight = PaperSizeUtils.getMaxHeight(conversionParams);
 
         Elements images = document.select("img[style]");
 
@@ -35,9 +35,9 @@ public class ImageSizeAdjuster extends AbstractAdjuster {
         String style = img.attr(HtmlTagAttr.STYLE);
         CSSStyleDeclaration cssStyle = parseCss(style);
 
-        float cssWidth = extractDimension(cssStyle, CssStyle.WIDTH);
-        float cssMaxWidth = extractDimension(cssStyle, CssStyle.MAX_WIDTH);
-        float cssHeight = extractDimension(cssStyle, CssStyle.HEIGHT);
+        float cssWidth = extractDimension(cssStyle, CssProp.WIDTH);
+        float cssMaxWidth = extractDimension(cssStyle, CssProp.MAX_WIDTH);
+        float cssHeight = extractDimension(cssStyle, CssProp.HEIGHT);
 
         float widthExceedingRatio = cssWidth / maxWidth;
         float maxWidthExceedingRatio = cssMaxWidth / maxWidth;
@@ -64,13 +64,13 @@ public class ImageSizeAdjuster extends AbstractAdjuster {
         }
 
         if (adjustedWidth > 0) {
-            cssStyle.setProperty(CssStyle.WIDTH, (int) adjustedWidth + Measure.PX, "");
+            cssStyle.setProperty(CssProp.WIDTH, (int) adjustedWidth + Measure.PX, "");
         }
         if (adjustedMaxWidth > 0) {
-            cssStyle.setProperty(CssStyle.MAX_WIDTH, (int) adjustedMaxWidth + Measure.PX, "");
+            cssStyle.setProperty(CssProp.MAX_WIDTH, (int) adjustedMaxWidth + Measure.PX, "");
         }
         if (adjustedHeight > 0) {
-            cssStyle.setProperty(CssStyle.HEIGHT, (int) adjustedHeight + Measure.PX, "");
+            cssStyle.setProperty(CssProp.HEIGHT, (int) adjustedHeight + Measure.PX, "");
         }
 
         img.attr(HtmlTagAttr.STYLE, cssStyle.getCssText());

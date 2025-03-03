@@ -355,10 +355,10 @@ public class ConverterInternalController {
         if (fitToPage != null) {
             conversionParamsBuilder.fitToPage(fitToPage);
         }
-        conversionParamsBuilder.followHTMLPresentationalHints(true);
         if (fileName != null) {
             conversionParamsBuilder.fileName(fileName);
         }
+        conversionParamsBuilder.followHTMLPresentationalHints(true);
         ConversionParams conversionParams = conversionParamsBuilder.build();
 
         byte[] pdfBytes = htmlToPdfConverter.convert(html, conversionParams);
