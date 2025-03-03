@@ -110,7 +110,7 @@ class PdfConverterTest {
         when(placeholderProcessor.replacePlaceholders(eq(documentData), eq(exportParams), anyList())).thenReturn(List.of("hl", "hc", "hr", "fl", "fc", "fr"));
         when(velocityEvaluator.evaluateVelocityExpressions(eq(documentData), anyString())).thenAnswer(a -> a.getArguments()[1]);
         when(pdfTemplateProcessor.processUsing(eq(exportParams), eq("testDocument"), eq("css content"), anyString())).thenReturn("test html content");
-        when(weasyPrintServiceConnector.convertToPdf("test html content", new WeasyPrintOptions())).thenReturn("test document content".getBytes());
+        when(weasyPrintServiceConnector.convertToPdf("test html content", new WeasyPrintOptions(true))).thenReturn("test document content".getBytes());
         when(htmlProcessor.internalizeLinks(anyString())).thenAnswer(a -> a.getArgument(0));
         when(htmlProcessor.replaceResourcesAsBase64Encoded(anyString())).thenAnswer(a -> a.getArgument(0));
 
@@ -288,7 +288,7 @@ class PdfConverterTest {
         if (useCoverPageProcessor) {
             when(coverPageProcessor.generatePdfWithTitle(documentData, exportParams, "test html content", pdfGenerationLog)).thenReturn("pdf result".getBytes());
         } else {
-            when(weasyPrintServiceConnector.convertToPdf("test html content", new WeasyPrintOptions())).thenReturn("pdf result".getBytes());
+            when(weasyPrintServiceConnector.convertToPdf("test html content", new WeasyPrintOptions(true))).thenReturn("pdf result".getBytes());
         }
 
         // Act
@@ -300,7 +300,7 @@ class PdfConverterTest {
         if (useCoverPageProcessor) {
             verify(coverPageProcessor).generatePdfWithTitle(documentData, exportParams, "test html content", pdfGenerationLog);
         } else {
-            verify(weasyPrintServiceConnector).convertToPdf("test html content", new WeasyPrintOptions());
+            verify(weasyPrintServiceConnector).convertToPdf("test html content", new WeasyPrintOptions(true));
         }
     }
 

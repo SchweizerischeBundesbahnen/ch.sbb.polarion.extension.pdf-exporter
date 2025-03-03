@@ -288,6 +288,14 @@
             }
           },
           {
+            "description": "default value: false",
+            "in": "query",
+            "name": "fitToPage",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
             "description": "default value: document.pdf",
             "in": "query",
             "name": "fileName",
