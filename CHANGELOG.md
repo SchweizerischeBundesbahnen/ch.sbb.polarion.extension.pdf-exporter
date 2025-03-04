@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.2.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v8.1.3...v8.2.0) (2025-03-04)
+
+
+### Features
+
+* fit html content when converted to pdf using the api ([#392](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/392)) ([5fc8fd7](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/5fc8fd7bd218ebf6b61706e4ea966bd9895ff2a3))
+
 ## [8.1.3](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v8.1.2...v8.1.3) (2025-02-20)
 
 
