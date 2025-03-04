@@ -3,7 +3,7 @@ package ch.sbb.polarion.extension.pdf_exporter.util.configuration;
 import ch.sbb.polarion.extension.generic.configuration.ConfigurationStatus;
 import ch.sbb.polarion.extension.generic.configuration.ConfigurationStatusProvider;
 import ch.sbb.polarion.extension.generic.configuration.Status;
-import ch.sbb.polarion.extension.pdf_exporter.util.VersionUtils;
+import ch.sbb.polarion.extension.generic.util.VersionUtils;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.service.WeasyPrintServiceConnector;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.service.model.WeasyPrintInfo;
 import org.junit.jupiter.api.Test;
@@ -18,6 +18,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 
+import static ch.sbb.polarion.extension.pdf_exporter.util.exporter.Constants.VERSION_FILE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
@@ -41,7 +42,7 @@ class WeasyPrintStatusProviderTest {
         WeasyPrintStatusProvider weasyPrintStatusProvider = new WeasyPrintStatusProvider(weasyPrintServiceConnector);
 
         try (MockedStatic<VersionUtils> versionsUtilsMockedStatic = mockStatic(VersionUtils.class)) {
-            versionsUtilsMockedStatic.when(VersionUtils::getLatestCompatibleVersionWeasyPrintService).thenReturn("62.4.6");
+            versionsUtilsMockedStatic.when(() -> VersionUtils.getValueFromProperties(VERSION_FILE, "weasyprint-service.version")).thenReturn("62.4.6");
 
             List<ConfigurationStatus> configurationStatuses = weasyPrintStatusProvider.getStatuses(ConfigurationStatusProvider.Context.builder().build());
 
@@ -85,7 +86,7 @@ class WeasyPrintStatusProviderTest {
         WeasyPrintStatusProvider weasyPrintStatusProvider = new WeasyPrintStatusProvider(weasyPrintServiceConnector);
 
         try (MockedStatic<VersionUtils> versionsUtilsMockedStatic = mockStatic(VersionUtils.class)) {
-            versionsUtilsMockedStatic.when(VersionUtils::getLatestCompatibleVersionWeasyPrintService).thenReturn("62.4.6");
+            versionsUtilsMockedStatic.when(() -> VersionUtils.getValueFromProperties(VERSION_FILE, "weasyprint-service.version")).thenReturn("62.4.6");
 
             List<ConfigurationStatus> configurationStatuses = weasyPrintStatusProvider.getStatuses(ConfigurationStatusProvider.Context.builder().build());
 
@@ -115,7 +116,7 @@ class WeasyPrintStatusProviderTest {
         WeasyPrintStatusProvider weasyPrintStatusProvider = new WeasyPrintStatusProvider(weasyPrintServiceConnector);
 
         try (MockedStatic<VersionUtils> versionsUtilsMockedStatic = mockStatic(VersionUtils.class)) {
-            versionsUtilsMockedStatic.when(VersionUtils::getLatestCompatibleVersionWeasyPrintService).thenReturn("62.4.6");
+            versionsUtilsMockedStatic.when(() -> VersionUtils.getValueFromProperties(VERSION_FILE, "weasyprint-service.version")).thenReturn("62.4.6");
 
             List<ConfigurationStatus> configurationStatuses = weasyPrintStatusProvider.getStatuses(ConfigurationStatusProvider.Context.builder().build());
 
@@ -144,7 +145,7 @@ class WeasyPrintStatusProviderTest {
         WeasyPrintStatusProvider weasyPrintStatusProvider = new WeasyPrintStatusProvider(weasyPrintServiceConnector);
 
         try (MockedStatic<VersionUtils> versionsUtilsMockedStatic = mockStatic(VersionUtils.class)) {
-            versionsUtilsMockedStatic.when(VersionUtils::getLatestCompatibleVersionWeasyPrintService).thenReturn("62.4.6");
+            versionsUtilsMockedStatic.when(() -> VersionUtils.getValueFromProperties(VERSION_FILE, "weasyprint-service.version")).thenReturn("62.4.6");
 
             List<ConfigurationStatus> configurationStatuses = weasyPrintStatusProvider.getStatuses(ConfigurationStatusProvider.Context.builder().build());
 
@@ -173,7 +174,7 @@ class WeasyPrintStatusProviderTest {
         WeasyPrintStatusProvider weasyPrintStatusProvider = new WeasyPrintStatusProvider(weasyPrintServiceConnector);
 
         try (MockedStatic<VersionUtils> versionsUtilsMockedStatic = mockStatic(VersionUtils.class)) {
-            versionsUtilsMockedStatic.when(VersionUtils::getLatestCompatibleVersionWeasyPrintService).thenReturn("62.4.6");
+            versionsUtilsMockedStatic.when(() -> VersionUtils.getValueFromProperties(VERSION_FILE, "weasyprint-service.version")).thenReturn("62.4.6");
 
             List<ConfigurationStatus> configurationStatuses = weasyPrintStatusProvider.getStatuses(ConfigurationStatusProvider.Context.builder().build());
 
@@ -203,7 +204,7 @@ class WeasyPrintStatusProviderTest {
         WeasyPrintStatusProvider weasyPrintStatusProvider = new WeasyPrintStatusProvider(weasyPrintServiceConnector);
 
         try (MockedStatic<VersionUtils> versionsUtilsMockedStatic = mockStatic(VersionUtils.class)) {
-            versionsUtilsMockedStatic.when(VersionUtils::getLatestCompatibleVersionWeasyPrintService).thenReturn("62.4.6");
+            versionsUtilsMockedStatic.when(() -> VersionUtils.getValueFromProperties(VERSION_FILE, "weasyprint-service.version")).thenReturn("62.4.6");
 
             List<ConfigurationStatus> configurationStatuses = weasyPrintStatusProvider.getStatuses(ConfigurationStatusProvider.Context.builder().build());
 
@@ -233,7 +234,7 @@ class WeasyPrintStatusProviderTest {
         WeasyPrintStatusProvider weasyPrintStatusProvider = new WeasyPrintStatusProvider(weasyPrintServiceConnector);
 
         try (MockedStatic<VersionUtils> versionsUtilsMockedStatic = mockStatic(VersionUtils.class)) {
-            versionsUtilsMockedStatic.when(VersionUtils::getLatestCompatibleVersionWeasyPrintService).thenReturn("62.4.6");
+            versionsUtilsMockedStatic.when(() -> VersionUtils.getValueFromProperties(VERSION_FILE, "weasyprint-service.version")).thenReturn("62.4.6");
 
             List<ConfigurationStatus> configurationStatuses = weasyPrintStatusProvider.getStatuses(ConfigurationStatusProvider.Context.builder().build());
 

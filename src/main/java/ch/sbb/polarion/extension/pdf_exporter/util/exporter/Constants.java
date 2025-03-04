@@ -14,6 +14,8 @@ public final class Constants {
     public static final String PAGE_BREAK_LANDSCAPE_ABOVE = PAGE_BREAK_MARK + LANDSCAPE_ABOVE_MARK;
     public static final String MIME_TYPE_SVG = "image/svg+xml";
 
+    public static final String VERSION_FILE = "versions.properties";
+
     private Constants() {
         // Constants class, not to be instantiated
     }

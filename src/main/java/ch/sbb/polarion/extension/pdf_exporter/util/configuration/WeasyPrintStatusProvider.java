@@ -4,7 +4,7 @@ import ch.sbb.polarion.extension.generic.configuration.ConfigurationStatus;
 import ch.sbb.polarion.extension.generic.configuration.ConfigurationStatusProvider;
 import ch.sbb.polarion.extension.generic.configuration.Status;
 import ch.sbb.polarion.extension.generic.util.Discoverable;
-import ch.sbb.polarion.extension.pdf_exporter.util.VersionUtils;
+import ch.sbb.polarion.extension.generic.util.VersionUtils;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.service.WeasyPrintServiceConnector;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.service.model.WeasyPrintInfo;
 import org.jetbrains.annotations.NotNull;
@@ -12,6 +12,8 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 import java.util.Map;
+
+import static ch.sbb.polarion.extension.pdf_exporter.util.exporter.Constants.VERSION_FILE;
 
 @Discoverable
 public class WeasyPrintStatusProvider extends ConfigurationStatusProvider {
@@ -45,7 +47,8 @@ public class WeasyPrintStatusProvider extends ConfigurationStatusProvider {
         try {
             WeasyPrintInfo weasyPrintInfo = weasyPrintServiceConnector.getWeasyPrintInfo();
             return List.of(
-                    createWeasyPrintStatus(WEASY_PRINT_SERVICE_INFO.get(WeasyPrintServiceInfo.VERSION), weasyPrintInfo.getWeasyprintService(), weasyPrintInfo.getTimestamp(), VersionUtils.getLatestCompatibleVersionWeasyPrintService()),
+                    createWeasyPrintStatus(WEASY_PRINT_SERVICE_INFO.get(WeasyPrintServiceInfo.VERSION), weasyPrintInfo.getWeasyprintService(), weasyPrintInfo.getTimestamp(),
+                            VersionUtils.getValueFromProperties(VERSION_FILE, "weasyprint-service.version")),
                     createWeasyPrintStatus(WEASY_PRINT_SERVICE_INFO.get(WeasyPrintServiceInfo.PYTHON), weasyPrintInfo.getPython()),
                     createWeasyPrintStatus(WEASY_PRINT_SERVICE_INFO.get(WeasyPrintServiceInfo.WEASYPRINT), weasyPrintInfo.getWeasyprint()),
                     createWeasyPrintStatus(WEASY_PRINT_SERVICE_INFO.get(WeasyPrintServiceInfo.CHROMIUM), weasyPrintInfo.getChromium())
