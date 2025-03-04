@@ -6,7 +6,7 @@
   "type": "module",
   "version": "1.0.0",
   "devDependencies": {
-    "chai": "5.1.2",
+    "chai": "5.2.0",
     "mocha": "11.1.0"
   }
 }
