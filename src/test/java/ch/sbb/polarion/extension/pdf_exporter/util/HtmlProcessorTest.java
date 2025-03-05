@@ -275,16 +275,16 @@ class HtmlProcessorTest {
     void replaceSvgImagesAsBase64EncodedTest() {
         String html = "<div><img id=\"image1\" src=\"http://localhost/some-path/img1.svg\"/> <img id='image2' src='http://localhost/some-path/img2.svg'/> <img id='image1' src='http://localhost/some-path/img1.svg'/></div>";
         byte[] imgBytes;
-        try (InputStream is = new ByteArrayInputStream("<svg><switch><g requiredFeatures=\"http://www.w3.org/TR/SVG11/feature#Extensibility\"/></switch></svg>".getBytes(StandardCharsets.UTF_8))) {
+        try (InputStream is = new ByteArrayInputStream("<?xml version=\"1.0\" encoding=\"UTF-8\"?><svg xmlns=\"http://www.w3.org/2000/svg\"><switch><g requiredFeatures=\"http://www.w3.org/TR/SVG11/feature#Extensibility\"/></switch></svg>".getBytes(StandardCharsets.UTF_8))) {
             imgBytes = is.readAllBytes();
         }
         when(fileResourceProvider.getResourceAsBytes(any())).thenReturn(imgBytes);
         when(fileResourceProvider.getResourceAsBase64String(any())).thenCallRealMethod();
         when(fileResourceProvider.processPossibleSvgImage(any())).thenCallRealMethod();
         String result = processor.replaceResourcesAsBase64Encoded(html);
-        String expected = "<div><img id=\"image1\" src=\"data:image/svg+xml;base64," + Base64.getEncoder().encodeToString("<svg></svg>".getBytes(StandardCharsets.UTF_8)) + "\"/> " +
-                "<img id='image2' src='data:image/svg+xml;base64," + Base64.getEncoder().encodeToString("<svg></svg>".getBytes(StandardCharsets.UTF_8)) + "'/> " +
-                "<img id='image1' src='data:image/svg+xml;base64," + Base64.getEncoder().encodeToString("<svg></svg>".getBytes(StandardCharsets.UTF_8)) + "'/></div>";
+        String expected = "<div><img id=\"image1\" src=\"data:image/svg+xml;base64," + Base64.getEncoder().encodeToString("<?xml version=\"1.0\" encoding=\"UTF-8\"?><svg xmlns=\"http://www.w3.org/2000/svg\"></svg>".getBytes(StandardCharsets.UTF_8)) + "\"/> " +
+                "<img id='image2' src='data:image/svg+xml;base64," + Base64.getEncoder().encodeToString("<?xml version=\"1.0\" encoding=\"UTF-8\"?><svg xmlns=\"http://www.w3.org/2000/svg\"></svg>".getBytes(StandardCharsets.UTF_8)) + "'/> " +
+                "<img id='image1' src='data:image/svg+xml;base64," + Base64.getEncoder().encodeToString("<?xml version=\"1.0\" encoding=\"UTF-8\"?><svg xmlns=\"http://www.w3.org/2000/svg\"></svg>".getBytes(StandardCharsets.UTF_8)) + "'/></div>";
         assertEquals(expected, result);
     }
 
