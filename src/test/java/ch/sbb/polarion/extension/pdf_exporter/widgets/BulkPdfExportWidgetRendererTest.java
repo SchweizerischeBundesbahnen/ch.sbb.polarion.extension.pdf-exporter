@@ -22,7 +22,6 @@ import com.polarion.alm.shared.api.transaction.internal.InternalReadOnlyTransact
 import com.polarion.alm.shared.api.utils.SharedLocalization;
 import com.polarion.alm.shared.api.utils.html.HtmlAttributesBuilder;
 import com.polarion.alm.shared.api.utils.html.HtmlContentBuilder;
-import com.polarion.alm.shared.api.utils.html.HtmlFragmentBuilder;
 import com.polarion.alm.shared.api.utils.html.HtmlTagBuilder;
 import com.polarion.alm.shared.api.utils.html.HtmlTagSelector;
 import com.polarion.alm.shared.api.utils.html.impl.HtmlBuilderConsumer;

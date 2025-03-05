@@ -83,6 +83,7 @@ public class BulkPdfExportWidgetRenderer extends AbstractWidgetRenderer {
         };
     }
 
+    @Override
     @VisibleForTesting
     public void render(@NotNull HtmlFragmentBuilder builder) {
         if (this.topItems < 0) {
