@@ -253,8 +253,3 @@ export default class ExportParams {
         };
     }
 }
-
-// expose ExportParams to the global scope
-if (typeof window !== 'undefined') {
-    window.ExportParams = ExportParams;
-}

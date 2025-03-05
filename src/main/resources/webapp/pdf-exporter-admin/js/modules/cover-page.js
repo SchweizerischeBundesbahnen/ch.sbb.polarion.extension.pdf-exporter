@@ -1,16 +1,29 @@
-SbbCommon.init({
+import ExtensionContext from '../../ui/generic/js/modules/ExtensionContext.js';
+import ConfigurationsPane from '../../ui/generic/js/modules/ConfigurationsPane.js';
+import CustomSelect from '../../ui/generic/js/modules/CustomSelect.js';
+
+const ctx = new ExtensionContext({
     extension: 'pdf-exporter',
     setting: 'cover-page',
-    scope: SbbCommon.getValueById('scope'),
+    scopeFieldId: 'scope',
     initCodeInput: true
 });
-Configurations.init({
+
+const conf = new ConfigurationsPane({
+    ctx: ctx,
     setConfigurationContentCallback: setCoverPageContent,
     preDeleteCallback: coverPagePreDeleteRoutine
 });
 
+ctx.onClick(
+    'save-toolbar-button', saveCoverPage,
+    'cancel-toolbar-button', ctx.cancelEdit,
+    'default-toolbar-button', revertToDefault,
+    'revisions-toolbar-button', ctx.toggleRevisions,
+);
+
 const Templates = {
-    templatesSelect: new SbbCustomSelect({
+    templatesSelect: new CustomSelect({
         selectContainer: document.getElementById("templates-select"),
         label: document.getElementById("templates-label")
     }),
@@ -18,9 +31,13 @@ const Templates = {
     load: function () {
         this.hideAlerts();
 
-        SbbCommon.callAsync({
+        ctx.onClick(
+            'persist-selected-template', () => this.persistSelected()
+        );
+
+        ctx.callAsync({
             method: 'GET',
-            url: `/polarion/${SbbCommon.extension}/rest/internal/settings/${SbbCommon.setting}/templates`,
+            url: `/polarion/${ctx.extension}/rest/internal/settings/${ctx.setting}/templates`,
             contentType: 'application/json',
             onOk: (responseText) => {
                 let templatesDefined = false;
@@ -39,13 +56,13 @@ const Templates = {
     persistSelected: function () {
         this.hideAlerts();
 
-        SbbCommon.callAsync({
+        ctx.callAsync({
             method: 'POST',
-            url: `/polarion/${SbbCommon.extension}/rest/internal/settings/${SbbCommon.setting}/templates/${this.templatesSelect.getSelectedValue()}?scope=${SbbCommon.scope}`,
+            url: `/polarion/${ctx.extension}/rest/internal/settings/${ctx.setting}/templates/${this.templatesSelect.getSelectedValue()}?scope=${ctx.scope}`,
             contentType: 'application/json',
             onOk: () => {
                 Templates.showAlert("template-save-success");
-                Configurations.loadConfigurationNames();
+                conf.loadConfigurationNames();
             },
             onError: () => Templates.showAlert("template-save-error")
         });
@@ -66,57 +83,57 @@ const Templates = {
 }
 
 function saveCoverPage() {
-    SbbCommon.hideActionAlerts();
+    ctx.hideActionAlerts();
 
-    SbbCommon.callAsync({
+    ctx.callAsync({
         method: 'PUT',
-        url: `/polarion/${SbbCommon.extension}/rest/internal/settings/${SbbCommon.setting}/names/${Configurations.getSelectedConfiguration()}/content?scope=${SbbCommon.scope}`,
+        url: `/polarion/${ctx.extension}/rest/internal/settings/${ctx.setting}/names/${conf.getSelectedConfiguration()}/content?scope=${ctx.scope}`,
         contentType: 'application/json',
         body: JSON.stringify({
-            'templateHtml': SbbCommon.getValueById('template-html-input'),
-            'templateCss': SbbCommon.getValueById('template-css-input')
+            'templateHtml': ctx.getValueById('template-html-input'),
+            'templateCss': ctx.getValueById('template-css-input')
         }),
         onOk: () => {
-            SbbCommon.showSaveSuccessAlert();
-            SbbCommon.setNewerVersionNotificationVisible(false);
-            Configurations.loadConfigurationNames();
+            ctx.showSaveSuccessAlert();
+            ctx.setNewerVersionNotificationVisible(false);
+            conf.loadConfigurationNames();
         },
-        onError: () => SbbCommon.showSaveErrorAlert()
+        onError: () => ctx.showSaveErrorAlert()
     });
 }
 
 function revertToDefault() {
     if (confirm("Are you sure you want to return the default values?")) {
-        SbbCommon.setLoadingErrorNotificationVisible(false);
-        SbbCommon.hideActionAlerts();
+        ctx.setLoadingErrorNotificationVisible(false);
+        ctx.hideActionAlerts();
 
-        SbbCommon.callAsync({
+        ctx.callAsync({
             method: 'GET',
-            url: `/polarion/${SbbCommon.extension}/rest/internal/settings/${SbbCommon.setting}/default-content`,
+            url: `/polarion/${ctx.extension}/rest/internal/settings/${ctx.setting}/default-content`,
             contentType: 'application/json',
             onOk: (responseText) => {
-                SbbCommon.showRevertedToDefaultAlert();
+                ctx.showRevertedToDefaultAlert();
                 setCoverPageContent(responseText);
             },
-            onError: () => SbbCommon.setLoadingErrorNotificationVisible(true)
+            onError: () => ctx.setLoadingErrorNotificationVisible(true)
         });
     }
 }
 
 function setCoverPageContent(content) {
     const model = JSON.parse(content);
-    SbbCommon.setValueById('template-html-input', model.templateHtml);
-    SbbCommon.setValueById('template-css-input', model.templateCss);
-    if (model.bundleTimestamp !== SbbCommon.getValueById('bundle-timestamp')) {
-        SbbCommon.setNewerVersionNotificationVisible(true);
+    ctx.setValueById('template-html-input', model.templateHtml);
+    ctx.setValueById('template-css-input', model.templateCss);
+    if (model.bundleTimestamp !== ctx.getValueById('bundle-timestamp')) {
+        ctx.setNewerVersionNotificationVisible(true);
     }
 }
 
 function coverPagePreDeleteRoutine(coverPageName) {
     return new Promise((resolve, reject) => {
-        SbbCommon.callAsync({
+        ctx.callAsync({
             method: 'DELETE',
-            url: `/polarion/${SbbCommon.extension}/rest/internal/settings/${SbbCommon.setting}/names/${coverPageName}/images?scope=${SbbCommon.scope}`,
+            url: `/polarion/${ctx.extension}/rest/internal/settings/${ctx.setting}/names/${coverPageName}/images?scope=${ctx.scope}`,
             contentType: 'application/json',
             onOk: () => resolve(),
             onError: () => reject()
@@ -124,5 +141,5 @@ function coverPagePreDeleteRoutine(coverPageName) {
     });
 }
 
-Configurations.loadConfigurationNames();
+conf.loadConfigurationNames();
 Templates.load();

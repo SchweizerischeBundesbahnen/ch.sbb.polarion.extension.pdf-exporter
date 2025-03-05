@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="../ui/generic/css/common.css?bundle=<%= bundleTimestamp %>">
     <link rel="stylesheet" href="../ui/generic/css/custom-select.css?bundle=<%= bundleTimestamp %>">
     <link rel="stylesheet" href="../ui/generic/css/configurations.css?bundle=<%= bundleTimestamp %>">
+    <script type="module" src="../js/modules/webhooks.js?bundle=<%= bundleTimestamp %>"></script>
     <style type="text/css">
         html {
             height: 100%;
@@ -95,7 +96,7 @@
 
         <h2 class="align-left">List of webhooks</h2>
         <table id="webhooks-table"><!-- Filled by JS --></table>
-        <button class="toolbar-button webhook-button" onclick="Webhooks.addWebhook()" title="Add a webhook" style="margin-top: 10px; margin-left: 3px;">
+        <button id="add-webhook-button" class="toolbar-button webhook-button" title="Add a webhook" style="margin-top: 10px; margin-left: 3px;">
             <img src='/polarion/ria/images/control/tablePlus.png' alt="Plus">
         </button>
 
@@ -103,11 +104,7 @@
         <input id="bundle-timestamp" type="hidden" value="<%= ch.sbb.polarion.extension.generic.util.VersionUtils.getVersion().getBundleBuildTimestamp() %>"/>
     </div>
 
-    <jsp:include page='/common/jsp/buttons.jsp'>
-        <jsp:param name="saveFunction" value="Webhooks.saveWebhooks()"/>
-        <jsp:param name="cancelFunction" value="SbbCommon.cancelEdit()"/>
-        <jsp:param name="defaultFunction" value="Webhooks.revertToDefault()"/>
-    </jsp:include>
+    <jsp:include page='/common/jsp/buttons.jsp'/>
 
     <div class="standard-admin-page help">
         <h2 class="align-left">Quick Help</h2>
@@ -138,10 +135,5 @@
     <h1>PDF Exporter: Webhooks</h1>
     <p style="font-style: italic; color: palevioletred;">Webhooks are not enabled. Please contact system administrator if this functionality should be available.</p>
 </div>
-
-<script type="text/javascript" src="../ui/generic/js/common.js?bundle=<%= bundleTimestamp %>"></script>
-<script type="text/javascript" src="../ui/generic/js/custom-select.js?bundle=<%= bundleTimestamp %>"></script>
-<script type="text/javascript" src="../ui/generic/js/configurations.js?bundle=<%= bundleTimestamp %>"></script>
-<script type="text/javascript" src="../js/webhooks.js?bundle=<%= bundleTimestamp %>"></script>
 </body>
 </html>

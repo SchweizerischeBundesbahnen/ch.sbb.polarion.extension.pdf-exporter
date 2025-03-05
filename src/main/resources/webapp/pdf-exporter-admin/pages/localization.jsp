@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="../ui/generic/css/common.css?bundle=<%= bundleTimestamp %>">
     <link rel="stylesheet" href="../ui/generic/css/custom-select.css?bundle=<%= bundleTimestamp %>">
     <link rel="stylesheet" href="../ui/generic/css/configurations.css?bundle=<%= bundleTimestamp %>">
+    <script type="module" src="../js/modules/localization.js?bundle=<%= bundleTimestamp %>"></script>
     <style type="text/css">
 
         .pdf-admin-text table {
@@ -86,7 +87,7 @@
             <div style="display: table-cell; width: 24%; text-align: center"></div>
             <div style="display: table-cell; width: 24%; text-align: center">
                 <span>
-                    <button class="toolbar-button" id="lang-de" onclick="downloadLocalization('de')">Export</button>
+                    <button class="toolbar-button" id="lang-de">Export</button>
                 </span>
                 <span>
                     <label for="file-de" class="toolbar-button label">Import</label>
@@ -95,7 +96,7 @@
             </div>
             <div style="display: table-cell; width: 24%; text-align: center">
                 <span>
-                    <button class="toolbar-button" id="lang-fr" onclick="downloadLocalization('fr')">Export</button>
+                    <button class="toolbar-button" id="lang-fr">Export</button>
                 </span>
                 <span>
                     <label for="file-fr" class="toolbar-button label">Import</label>
@@ -104,7 +105,7 @@
             </div>
             <div style="display: table-cell; width: 24%; text-align: center">
                 <span>
-                    <button class="toolbar-button" id="lang-it" onclick="downloadLocalization('it')">Export</button>
+                    <button class="toolbar-button" id="lang-it">Export</button>
                 </span>
                 <span>
                     <label for="file-it" class="toolbar-button label">Import</label>
@@ -112,7 +113,7 @@
                 </span>
 
             </div>
-            <button style="display: table-cell;" class="action" onclick="createEmptyTableRow()" title="Add">
+            <button style="display: table-cell;" id="create-empty-row" class="action" title="Add">
                 <img src="/polarion/ria/images/control/tablePlus.png" alt="">
             </button>
         </div>
@@ -121,11 +122,7 @@
     <input id="scope" type="hidden" value="<%= request.getParameter("scope")%>"/>
 </div>
 
-<jsp:include page='/common/jsp/buttons.jsp'>
-    <jsp:param name="saveFunction" value="saveLocalizations()"/>
-    <jsp:param name="cancelFunction" value="SbbCommon.cancelEdit()"/>
-    <jsp:param name="defaultFunction" value="revertToDefault()"/>
-</jsp:include>
+<jsp:include page='/common/jsp/buttons.jsp'/>
 
 <div class="standard-admin-page">
     <h2 class="align-left">Quick Help</h2>
@@ -139,10 +136,5 @@
 
     </div>
 </div>
-
-<script type="text/javascript" src="../ui/generic/js/common.js?bundle=<%= bundleTimestamp %>"></script>
-<script type="text/javascript" src="../ui/generic/js/custom-select.js?bundle=<%= bundleTimestamp %>"></script>
-<script type="text/javascript" src="../ui/generic/js/configurations.js?bundle=<%= bundleTimestamp %>"></script>
-<script type="text/javascript" src="../js/localization.js?bundle=<%= bundleTimestamp %>"></script>
 </body>
 </html>

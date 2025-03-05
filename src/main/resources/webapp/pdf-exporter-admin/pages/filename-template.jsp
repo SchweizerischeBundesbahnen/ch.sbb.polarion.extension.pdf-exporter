@@ -10,6 +10,8 @@
     <link rel="stylesheet" href="../ui/generic/css/code-input.min.css?bundle=<%= bundleTimestamp %>">
     <script type="text/javascript" src="../ui/generic/js/code-input.min.js?bundle=<%= bundleTimestamp %>"></script>
     <link rel="stylesheet" href="../ui/generic/css/common.css?bundle=<%= bundleTimestamp %>">
+    <script type="module" src="../js/modules/filename-template.js?bundle=<%= bundleTimestamp %>"></script>
+    <script type="text/javascript" defer src="../js/prism-velocity.min.js?bundle=<%= bundleTimestamp %>"></script>
 
     <style type="text/css">
         table {
@@ -78,11 +80,7 @@
     <input id="bundle-timestamp" type="hidden" value="<%= ch.sbb.polarion.extension.generic.util.VersionUtils.getVersion().getBundleBuildTimestamp() %>"/>
 </div>
 
-<jsp:include page='/common/jsp/buttons.jsp'>
-    <jsp:param name="saveFunction" value="saveSettings()"/>
-    <jsp:param name="cancelFunction" value="SbbCommon.cancelEdit()"/>
-    <jsp:param name="defaultFunction" value="revertToDefault()"/>
-</jsp:include>
+<jsp:include page='/common/jsp/buttons.jsp'/>
 
 <div class="standard-admin-page help">
     <h2 class="align-left">Quick Help</h2>
@@ -98,9 +96,5 @@
         <jsp:include page="../pages/placeholders.jsp"/>
     </div>
 </div>
-
-<script type="text/javascript" src="../ui/generic/js/common.js?bundle=<%= bundleTimestamp %>"></script>
-<script type="text/javascript" src="../js/filename-template.js?bundle=<%= bundleTimestamp %>"></script>
-<script type="text/javascript" src="../js/prism-velocity.min.js?bundle=<%= bundleTimestamp %>"></script>
 </body>
 </html>

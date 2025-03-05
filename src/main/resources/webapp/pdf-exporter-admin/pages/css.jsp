@@ -12,6 +12,7 @@
     <link rel="stylesheet" href="../ui/generic/css/common.css?bundle=<%= bundleTimestamp %>">
     <link rel="stylesheet" href="../ui/generic/css/custom-select.css?bundle=<%= bundleTimestamp %>">
     <link rel="stylesheet" href="../ui/generic/css/configurations.css?bundle=<%= bundleTimestamp %>">
+    <script type="module" src="../js/modules/css.js?bundle=<%= bundleTimestamp %>"></script>
     <style type="text/css">
         html {
             height: 100%;
@@ -63,15 +64,7 @@
     <input id="bundle-timestamp" type="hidden" value="<%= ch.sbb.polarion.extension.generic.util.VersionUtils.getVersion().getBundleBuildTimestamp() %>"/>
 </div>
 
-<jsp:include page='/common/jsp/buttons.jsp'>
-    <jsp:param name="saveFunction" value="saveCss()"/>
-    <jsp:param name="cancelFunction" value="SbbCommon.cancelEdit()"/>
-    <jsp:param name="defaultFunction" value="revertToDefault()"/>
-</jsp:include>
+<jsp:include page='/common/jsp/buttons.jsp'/>
 
-<script type="text/javascript" src="../ui/generic/js/common.js?bundle=<%= bundleTimestamp %>"></script>
-<script type="text/javascript" src="../ui/generic/js/custom-select.js?bundle=<%= bundleTimestamp %>"></script>
-<script type="text/javascript" src="../ui/generic/js/configurations.js?bundle=<%= bundleTimestamp %>"></script>
-<script type="text/javascript" src="../js/css.js?bundle=<%= bundleTimestamp %>"></script>
 </body>
 </html>

@@ -18,11 +18,15 @@ import com.polarion.alm.shared.api.model.wi.WorkItem;
 import com.polarion.alm.shared.api.model.wi.WorkItemFields;
 import com.polarion.alm.shared.api.model.wi.WorkItemPermissions;
 import com.polarion.alm.shared.api.model.wi.WorkItemReference;
+import com.polarion.alm.shared.api.transaction.internal.InternalReadOnlyTransaction;
 import com.polarion.alm.shared.api.utils.SharedLocalization;
 import com.polarion.alm.shared.api.utils.html.HtmlAttributesBuilder;
 import com.polarion.alm.shared.api.utils.html.HtmlContentBuilder;
 import com.polarion.alm.shared.api.utils.html.HtmlTagBuilder;
 import com.polarion.alm.shared.api.utils.html.HtmlTagSelector;
+import com.polarion.alm.shared.api.utils.html.impl.HtmlBuilderConsumer;
+import com.polarion.alm.shared.api.utils.html.impl.HtmlBuilderFactory;
+import com.polarion.alm.shared.api.utils.html.impl.HtmlFragmentBuilderImpl;
 import com.polarion.alm.tracker.model.IWorkItem;
 import com.polarion.platform.persistence.model.IPrototype;
 import com.polarion.subterra.base.data.identification.ILocalId;
@@ -185,6 +189,27 @@ class BulkPdfExportWidgetRendererTest {
         verify(checkboxAttributesBuilder, times(1)).byName("data-project", "projectId");
         verify(checkboxAttributesBuilder, times(1)).byName("data-id", "objectId");
         verify(checkboxAttributesBuilder, times(1)).className("export-item");
+    }
+
+    @Test
+    void testRenderPanel() {
+        RichPageWidgetCommonContext context = mock(RichPageWidgetCommonContext.class, RETURNS_DEEP_STUBS);
+        when(context.transaction()).thenReturn(mock(InternalReadOnlyTransaction.class, RETURNS_DEEP_STUBS));
+
+        DataSetParameter dataSetParameter = mock(DataSetParameter.class, RETURNS_DEEP_STUBS);
+        when(context.parameter("dataSet")).thenReturn(dataSetParameter);
+        when(dataSetParameter.get("columns")).thenReturn(mock(FieldsParameter.class, RETURNS_DEEP_STUBS));
+        when(dataSetParameter.get("sortBy")).thenReturn(mock(SortingParameter.class, RETURNS_DEEP_STUBS));
+        when(dataSetParameter.prototype()).thenReturn(PrototypeEnum.Document);
+
+        CompositeParameter advanced = mock(CompositeParameter.class);
+        when(context.parameter("advanced")).thenReturn(advanced);
+        when(advanced.get("top")).thenReturn(mock(IntegerParameter.class, RETURNS_DEEP_STUBS));
+
+        BulkPdfExportWidgetRenderer renderer = new BulkPdfExportWidgetRenderer(context);
+        HtmlFragmentBuilderImpl<HtmlBuilderConsumer> builder = new HtmlFragmentBuilderImpl<>(mock(HtmlBuilderConsumer.class, RETURNS_DEEP_STUBS), mock(HtmlBuilderFactory.class, RETURNS_DEEP_STUBS));
+
+        assertDoesNotThrow(() -> renderer.render(builder));
     }
 
     @Test

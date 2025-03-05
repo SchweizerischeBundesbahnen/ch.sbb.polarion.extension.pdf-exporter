@@ -1,28 +1,44 @@
-SbbCommon.init({
+import ExtensionContext from '../../ui/generic/js/modules/ExtensionContext.js';
+import ConfigurationsPane from '../../ui/generic/js/modules/ConfigurationsPane.js';
+
+const ctx = new ExtensionContext({
     extension: 'pdf-exporter',
     setting: 'localization',
-    scope: SbbCommon.getValueById('scope')
+    scopeFieldId: 'scope'
 });
-Configurations.init({
+
+const conf = new ConfigurationsPane({
+    ctx: ctx,
     setConfigurationContentCallback: composeTranslationsTable,
     setContentAreaEnabledCallback: setContentAreaEnabled
 });
 
-function saveLocalizations() {
-    SbbCommon.hideActionAlerts();
+ctx.onClick(
+    'save-toolbar-button', saveLocalizations,
+    'cancel-toolbar-button', ctx.cancelEdit,
+    'default-toolbar-button', revertToDefault,
+    'revisions-toolbar-button', ctx.toggleRevisions,
+    'lang-de', () => downloadLocalization('de'),
+    'lang-fr', () => downloadLocalization('fr'),
+    'lang-it', () => downloadLocalization('it'),
+    'create-empty-row', createEmptyTableRow
+);
 
-    SbbCommon.callAsync({
+function saveLocalizations() {
+    ctx.hideActionAlerts();
+
+    ctx.callAsync({
         method: 'PUT',
-        url: `/polarion/${SbbCommon.extension}/rest/internal/settings/${SbbCommon.setting}/names/${Configurations.getSelectedConfiguration()}/content?scope=${SbbCommon.scope}`,
+        url: `/polarion/${ctx.extension}/rest/internal/settings/${ctx.setting}/names/${conf.getSelectedConfiguration()}/content?scope=${ctx.scope}`,
         contentType: 'application/json',
         body: JSON.stringify({
             'translations': Object.fromEntries(getTranslationsMap()),
         }),
         onOk: () => {
-            SbbCommon.showSaveSuccessAlert();
-            Configurations.loadConfigurationNames();
+            ctx.showSaveSuccessAlert();
+            conf.loadConfigurationNames();
         },
-        onError: () => SbbCommon.showSaveErrorAlert()
+        onError: () => ctx.showSaveErrorAlert()
     });
 }
 
@@ -45,9 +61,9 @@ function getTranslationsMap() {
 }
 
 function downloadLocalization(language) {
-    SbbCommon.callAsync({
+    ctx.callAsync({
         method: "GET",
-        url: `/polarion/${SbbCommon.extension}/rest/internal/settings/${SbbCommon.setting}/names/${Configurations.getSelectedConfiguration()}/download?language=${language}&scope=${SbbCommon.scope}`,
+        url: `/polarion/${ctx.extension}/rest/internal/settings/${ctx.setting}/names/${conf.getSelectedConfiguration()}/download?language=${language}&scope=${ctx.scope}`,
         responseType: "blob",
         onOk: (responseText, request) => {
             const objectURL = (window.URL ? window.URL : window.webkitURL).createObjectURL(request.response);
@@ -60,7 +76,7 @@ function downloadLocalization(language) {
             setTimeout(() => URL.revokeObjectURL(objectURL), 100);
         },
         onError: () => {
-            SbbCommon.showActionAlert({
+            ctx.showActionAlert({
                 containerId: 'action-error',
                 message: 'Error downloading translations file for language ' + language
             });
@@ -70,25 +86,25 @@ function downloadLocalization(language) {
 
 function revertToDefault() {
     if (confirm("Are you sure you want to return the default values?")) {
-        SbbCommon.setLoadingErrorNotificationVisible(false);
-        SbbCommon.hideActionAlerts();
+        ctx.setLoadingErrorNotificationVisible(false);
+        ctx.hideActionAlerts();
 
-        SbbCommon.callAsync({
+        ctx.callAsync({
             method: 'GET',
-            url: `/polarion/${SbbCommon.extension}/rest/internal/settings/${SbbCommon.setting}/default-content`,
+            url: `/polarion/${ctx.extension}/rest/internal/settings/${ctx.setting}/default-content`,
             contentType: 'application/json',
             onOk: (responseText) => {
-                SbbCommon.showRevertedToDefaultAlert();
+                ctx.showRevertedToDefaultAlert();
                 composeTranslationsTable(responseText);
             },
-            onError: () => SbbCommon.setLoadingErrorNotificationVisible(true)
+            onError: () => ctx.setLoadingErrorNotificationVisible(true)
         });
     }
 }
 
 function composeTranslationsTable(translations) {
     // Remove old table
-    const tableContainer = document.getElementById('translation-table');
+    const tableContainer = ctx.getElementById('translation-table');
     let table = tableContainer.getElementsByTagName('table')[0];
     if (table !== undefined && table !== null) {
         table.remove();
@@ -171,7 +187,7 @@ function createActionColumn(row) {
 }
 
 function createEmptyTableRow() {
-    const translationTable = document.getElementById('translation-table');
+    const translationTable = ctx.getElementById('translation-table');
     const tbody = translationTable.getElementsByTagName('tbody')[0];
     const row = createEditableTableRow();
     tbody.appendChild(row);
@@ -179,7 +195,7 @@ function createEmptyTableRow() {
 }
 
 function getTableRows() {
-    const translationTable = document.getElementById('translation-table');
+    const translationTable = ctx.getElementById('translation-table');
     const tbody = translationTable.getElementsByTagName('tbody')[0];
     return tbody.getElementsByTagName('tr');
 }
@@ -221,38 +237,38 @@ function attachUploadActions() {
 }
 
 function attachUploadActionsForLanguage(language) {
-    document.getElementById('file-' + language).onclick = function () {
+    ctx.getElementById('file-' + language).onclick = function () {
         this.value = '';
-        SbbCommon.hideActionAlerts();
+        ctx.hideActionAlerts();
     };
-    document.getElementById('file-' + language).onchange = function () {
+    ctx.getElementById('file-' + language).onchange = function () {
         uploadLocalization(language);
     };
 }
 
 function uploadLocalization(language) {
-    const file = document.getElementById('file-' + language).files[0];
+    const file = ctx.getElementById('file-' + language).files[0];
     const formData = new FormData();
     formData.append('file', file);
-    SbbCommon.callAsync({
+    ctx.callAsync({
         method: 'POST',
-        url: `/polarion/${SbbCommon.extension}/rest/internal/settings/${SbbCommon.setting}/upload?language=${language}&scope=${SbbCommon.scope}`,
+        url: `/polarion/${ctx.extension}/rest/internal/settings/${ctx.setting}/upload?language=${language}&scope=${ctx.scope}`,
         body: formData,
         onOk: (response) => {
             replaceTranslationsForLanguage(language, JSON.parse(response));
-            SbbCommon.showActionAlert({
+            ctx.showActionAlert({
                 containerId: 'action-success',
                 message: `Translation for language ${language} successfully uploaded. Don't forget to save the data before leaving.`
             });
         },
-        onError: () => SbbCommon.showActionAlert({
+        onError: () => ctx.showActionAlert({
             containerId: 'action-error',
             message: `Error occurred while uploading translation file for language ${language}`
         })
     });
 }
 function replaceTranslationsForLanguage(language, translations) {
-    const translationTable = document.getElementById('translation-table');
+    const translationTable = ctx.getElementById('translation-table');
     const tBody = translationTable.getElementsByTagName('tbody')[0];
     const rows = tBody.getElementsByTagName('tr');
     const translationKeysMap = getTranslationKeys(rows);
@@ -300,13 +316,13 @@ function getTranslationKeys(tableRows) {
 
 function setContentAreaEnabled(enabled) {
     if (enabled) {
-        document.getElementById('translation-table').style.display = "block";
-        document.getElementById('export-import-table').style.display = "table";
+        ctx.getElementById('translation-table').style.display = "block";
+        ctx.getElementById('export-import-table').style.display = "table";
     } else {
-        document.getElementById('translation-table').style.display = "none";
-        document.getElementById('export-import-table').style.display = "none";
+        ctx.getElementById('translation-table').style.display = "none";
+        ctx.getElementById('export-import-table').style.display = "none";
     }
 }
 
 attachUploadActions();
-Configurations.loadConfigurationNames();
+conf.loadConfigurationNames();

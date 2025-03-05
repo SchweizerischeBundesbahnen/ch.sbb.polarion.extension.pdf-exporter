@@ -12,6 +12,7 @@
     <link rel="stylesheet" href="../ui/generic/css/common.css?bundle=<%= bundleTimestamp %>">
     <link rel="stylesheet" href="../ui/generic/css/custom-select.css?bundle=<%= bundleTimestamp %>">
     <link rel="stylesheet" href="../ui/generic/css/configurations.css?bundle=<%= bundleTimestamp %>">
+    <script type="module" src="../js/modules/header-footer.js?bundle=<%= bundleTimestamp %>"></script>
     <style type="text/css">
         table {
             border-collapse: collapse;
@@ -93,11 +94,7 @@
     <input id="bundle-timestamp" type="hidden" value="<%= ch.sbb.polarion.extension.generic.util.VersionUtils.getVersion().getBundleBuildTimestamp() %>"/>
 </div>
 
-<jsp:include page='/common/jsp/buttons.jsp'>
-    <jsp:param name="saveFunction" value="saveHeaderFooter()"/>
-    <jsp:param name="cancelFunction" value="SbbCommon.cancelEdit()"/>
-    <jsp:param name="defaultFunction" value="revertToDefault()"/>
-</jsp:include>
+<jsp:include page='/common/jsp/buttons.jsp'/>
 
 <div class="standard-admin-page help">
     <h2 class="align-left">Quick Help</h2>
@@ -116,10 +113,5 @@
         <jsp:include page="../pages/placeholders.jsp"/>
     </div>
 </div>
-
-<script type="text/javascript" src="../ui/generic/js/common.js?bundle=<%= bundleTimestamp %>"></script>
-<script type="text/javascript" src="../ui/generic/js/custom-select.js?bundle=<%= bundleTimestamp %>"></script>
-<script type="text/javascript" src="../ui/generic/js/configurations.js?bundle=<%= bundleTimestamp %>"></script>
-<script type="text/javascript" src="../js/header-footer.js?bundle=<%= bundleTimestamp %>"></script>
 </body>
 </html>

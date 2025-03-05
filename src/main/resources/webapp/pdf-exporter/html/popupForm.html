@@ -12,7 +12,7 @@
         <div class="flex-column">
             <div class='property-wrapper'>
                 <label for='popup-style-package-select' class="fixed-width w-1">Style package:</label>
-                <select id='popup-style-package-select' onchange="PdfExporter.onStylePackageChanged()"></select>
+                <select id='popup-style-package-select'></select>
             </div>
         </div>
     </div>
@@ -200,7 +200,7 @@
 </div>
 
 <div class='buttons-wrapper' id="popup-page-width-validation" style='display: none; padding-top: 10px;'>
-    <button type='button' id='popup-validate-pdf' class="action-button" onclick="PdfExporter.validatePdf()">
+    <button type='button' id='popup-validate-pdf' class="action-button">
         <img class='append-build-number' src='/polarion/ria/images/dle/align_center.png' alt=""/>Validate pages width
     </button>
     <div class="validation-alerts">
