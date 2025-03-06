@@ -96,6 +96,7 @@ class PdfConverterTest {
         PdfConverter pdfConverter = new PdfConverter(pdfExporterPolarionService, headerFooterSettings, cssSettings, placeholderProcessor, velocityEvaluator, coverPageProcessor, weasyPrintServiceConnector, htmlProcessor, pdfTemplateProcessor);
         CssModel cssModel = CssModel.builder().css("test css").build();
         when(cssSettings.load("testProjectId", SettingId.fromName("Default"))).thenReturn(cssModel);
+        when(cssSettings.defaultValues()).thenReturn(CssModel.builder().build());
         DocumentData<IModule> documentData = DocumentData.creator(DocumentType.LIVE_DOC, module)
                 .id(LiveDocId.from("testProjectId", "_default", "testDocumentId"))
                 .title("testDocument")
@@ -139,6 +140,7 @@ class PdfConverterTest {
 
         CssModel cssModel = CssModel.builder().css("my test css: {{ DOCUMENT_TITLE }} {{DOCUMENT_REVISION}} {{ REVISION }} {{ PRODUCT_NAME }} {{ PRODUCT_VERSION }} {{customField}}").build();
         when(cssSettings.load("testProjectId", SettingId.fromName("testCssSetting"))).thenReturn(cssModel);
+        when(cssSettings.defaultValues()).thenReturn(CssModel.builder().build());
         PlaceholderProcessor processor = new PlaceholderProcessor(pdfExporterPolarionService);
         when(velocityEvaluator.evaluateVelocityExpressions(eq(documentData), anyString())).thenAnswer(a -> a.getArguments()[1]);
         PdfConverter pdfConverter = new PdfConverter(null, null, cssSettings, processor, velocityEvaluator, null, null, htmlProcessor, pdfTemplateProcessor);

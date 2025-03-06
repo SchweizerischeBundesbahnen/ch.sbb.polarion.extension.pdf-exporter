@@ -16,8 +16,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.contains;
 import static org.mockito.Mockito.*;
@@ -74,6 +73,7 @@ class FileNameTemplateSettingsTest {
             mockScopeUtils.when(() -> ScopeUtils.getContextLocation("project/test_project/")).thenReturn(mockProjectLocation);
 
             FileNameTemplateModel customProjectModel = FileNameTemplateModel.builder()
+                    .useCustomValues(true)
                     .documentNameTemplate("customDocumentNameTemplate")
                     .reportNameTemplate("customReportTemplate")
                     .testRunNameTemplate("customTestrunTemplate")
@@ -86,6 +86,7 @@ class FileNameTemplateSettingsTest {
             when(mockedSettingsService.getPersistedSettingFileNames(mockProjectLocation)).thenReturn(List.of("Any setting name"));
 
             FileNameTemplateModel loadedModel = exporterSettings.load(projectName, SettingId.fromName("Any setting name"));
+            assertTrue(loadedModel.isUseCustomValues());
             assertEquals("customDocumentNameTemplate", loadedModel.getDocumentNameTemplate());
             assertEquals("customReportTemplate", loadedModel.getReportNameTemplate());
             assertEquals("customTestrunTemplate", loadedModel.getTestRunNameTemplate());
@@ -125,6 +126,7 @@ class FileNameTemplateSettingsTest {
             when(mockedSettingsService.getLastRevision(mockProjectLocation)).thenReturn("some_revision");
 
             FileNameTemplateModel settingOneModel = FileNameTemplateModel.builder()
+                    .useCustomValues(true)
                     .documentNameTemplate("setting_oneDocumentNameTemplate")
                     .reportNameTemplate("setting_oneReportTemplate")
                     .testRunNameTemplate("setting_oneTestrunTemplate")
@@ -143,6 +145,7 @@ class FileNameTemplateSettingsTest {
             when(mockedSettingsService.read(eq(settingTwoLocation), any())).thenReturn(settingTwoModel.serialize());
 
             FileNameTemplateModel loadedOneModel = settings.load(projectName, SettingId.fromName(settingOne));
+            assertTrue(loadedOneModel.isUseCustomValues());
             assertEquals("setting_oneDocumentNameTemplate", loadedOneModel.getDocumentNameTemplate());
             assertEquals("setting_oneReportTemplate", loadedOneModel.getReportNameTemplate());
             assertEquals("setting_oneTestrunTemplate", loadedOneModel.getTestRunNameTemplate());
@@ -150,6 +153,7 @@ class FileNameTemplateSettingsTest {
             assertEquals("setting_one", loadedOneModel.getBundleTimestamp());
 
             FileNameTemplateModel loadedTwoModel = settings.load(projectName, SettingId.fromName(settingTwo));
+            assertFalse(loadedTwoModel.isUseCustomValues());
             assertEquals("setting_twoDocumentNameTemplate", loadedTwoModel.getDocumentNameTemplate());
             assertEquals("setting_twoReportTemplate", loadedTwoModel.getReportNameTemplate());
             assertEquals("setting_twoTestrunTemplate", loadedTwoModel.getTestRunNameTemplate());

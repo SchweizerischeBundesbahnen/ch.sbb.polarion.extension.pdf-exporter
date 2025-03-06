@@ -8,17 +8,20 @@ const ctx = new ExtensionContext({
     initCodeInput: true
 });
 
+ctx.getElementById("default-toolbar-button").style.display = "none";
+
+ctx.onClick(
+    'save-toolbar-button', saveCss,
+    'cancel-toolbar-button', ctx.cancelEdit,
+    'revisions-toolbar-button', ctx.toggleRevisions,
+);
+
 const conf = new ConfigurationsPane({
     ctx: ctx,
     setConfigurationContentCallback: setCss,
 });
 
-ctx.onClick(
-    'save-toolbar-button', saveCss,
-    'cancel-toolbar-button', ctx.cancelEdit,
-    'default-toolbar-button', revertToDefault,
-    'revisions-toolbar-button', ctx.toggleRevisions,
-);
+let defaultCss = null;
 
 function saveCss() {
     ctx.hideActionAlerts();
@@ -28,56 +31,48 @@ function saveCss() {
         url: `/polarion/${ctx.extension}/rest/internal/settings/${ctx.setting}/names/${conf.getSelectedConfiguration()}/content?scope=${ctx.scope}`,
         contentType: 'application/json',
         body: JSON.stringify({
-            'css': ctx.getValueById('css-input')
+            'disableDefaultCss': ctx.getCheckboxValueById('disable-default-css'),
+            'css': ctx.getValueById('custom-css-input')
         }),
         onOk: () => {
             ctx.showSaveSuccessAlert();
-            ctx.setNewerVersionNotificationVisible(false);
             conf.loadConfigurationNames();
         },
         onError: () => ctx.showSaveErrorAlert()
     });
 }
 
-function revertToDefault() {
-    if (confirm("Are you sure you want to return the default value?")) {
-        loadDefaultContent()
-            .then((responseText) => {
-                setCss(responseText);
-                ctx.showRevertedToDefaultAlert();
-            })
-    }
-}
-
 function setCss(text) {
     const cssModel = JSON.parse(text);
-    ctx.setValueById('css-input', cssModel.css);
-    if (cssModel.bundleTimestamp !== ctx.getValueById('bundle-timestamp')) {
-        loadDefaultContent()
-            .then((responseText) => {
-                const defaultCssModel = JSON.parse(responseText);
-                ctx.setNewerVersionNotificationVisible(cssModel.css && defaultCssModel.css
-                    && (cssModel.css.length !== defaultCssModel.css.length || cssModel.css !== defaultCssModel.css));
-            })
-    }
+    ctx.setCheckboxValueById('disable-default-css', cssModel.disableDefaultCss);
+    ctx.setValueById('custom-css-input', cssModel.css);
+
+    loadDefaultContent().then((defaultCss) => { ctx.setValueById('default-css-input', defaultCss); });
 }
 
 function loadDefaultContent() {
-    return new Promise((resolve, reject) => {
-        ctx.setLoadingErrorNotificationVisible(false);
-        ctx.hideActionAlerts();
+    if (defaultCss != null) {
+        return Promise.resolve(defaultCss);
+    } else {
+        return new Promise((resolve, reject) => {
+            ctx.setLoadingErrorNotificationVisible(false);
+            ctx.hideActionAlerts();
 
-        ctx.callAsync({
-            method: 'GET',
-            url: `/polarion/${ctx.extension}/rest/internal/settings/${ctx.setting}/default-content`,
-            contentType: 'application/json',
-            onOk: (responseText) => resolve(responseText),
-            onError: () => {
-                ctx.setLoadingErrorNotificationVisible(true);
-                reject();
-            }
+            ctx.callAsync({
+                method: 'GET',
+                url: `/polarion/${ctx.extension}/rest/internal/settings/${ctx.setting}/default-content`,
+                contentType: 'application/json',
+                onOk: (responseText) => {
+                    defaultCss = JSON.parse(responseText).css;
+                    resolve(defaultCss);
+                },
+                onError: () => {
+                    ctx.setLoadingErrorNotificationVisible(true);
+                    reject();
+                }
+            });
         });
-    });
+    }
 }
 
 conf.loadConfigurationNames();

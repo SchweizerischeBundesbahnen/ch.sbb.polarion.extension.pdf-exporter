@@ -9,6 +9,7 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.WorkItemRefData;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.DocumentType;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.DocumentData;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.css.CssModel;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.headerfooter.HeaderFooterModel;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.webhooks.AuthType;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.webhooks.WebhookConfig;
@@ -260,9 +261,11 @@ public class PdfConverter {
             @NotNull DocumentData<? extends IUniqueObject> documentData,
             @NotNull ExportParams exportParams) {
         String cssSettingsName = exportParams.getCss() != null ? exportParams.getCss() : NamedSettings.DEFAULT_NAME;
-        String pdfStyles = cssSettings.load(exportParams.getProjectId(), SettingId.fromName(cssSettingsName)).getCss();
+        String defaultStyles = cssSettings.defaultValues().getCss();
+        CssModel cssModel = cssSettings.load(exportParams.getProjectId(), SettingId.fromName(cssSettingsName));
         String listStyles = new PdfExporterListStyleProvider(exportParams.getNumberedListStyles()).getStyle();
-        String css = pdfStyles
+        String css = (cssModel.isDisableDefaultCss() ? "" : defaultStyles)
+                + cssModel.getCss()
                 + (exportParams.getHeadersColor() != null ?
                 "      h1, h2, h3, h4, h5, h6, .content .title {" +
                 "        color: " + exportParams.getHeadersColor() + ";" +

@@ -18,17 +18,26 @@ import lombok.ToString;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class CssModel extends SettingsModel {
 
+    public static final String DISABLE_DEFAULT_CSS_ENTRY_NAME = "DISABLE DEFAULT CSS";
     public static final String CSS_ENTRY_NAME = "CSS";
 
-    private String css;
+    private boolean disableDefaultCss;
+    @Builder.Default
+    private String css = "";
+
+    public CssModel(String css) {
+        this.css = css;
+    }
 
     @Override
     protected String serializeModelData() {
-        return serializeEntry(CSS_ENTRY_NAME, css);
+        return serializeEntry(DISABLE_DEFAULT_CSS_ENTRY_NAME, disableDefaultCss) +
+                serializeEntry(CSS_ENTRY_NAME, css);
     }
 
     @Override
     protected void deserializeModelData(String serializedString) {
+        disableDefaultCss = Boolean.parseBoolean(deserializeEntry(DISABLE_DEFAULT_CSS_ENTRY_NAME, serializedString));
         css = deserializeEntry(CSS_ENTRY_NAME, serializedString);
     }
 }
