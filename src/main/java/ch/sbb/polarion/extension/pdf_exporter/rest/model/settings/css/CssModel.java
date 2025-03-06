@@ -25,10 +25,6 @@ public class CssModel extends SettingsModel {
     @Builder.Default
     private String css = "";
 
-    public CssModel(String css) {
-        this.css = css;
-    }
-
     @Override
     protected String serializeModelData() {
         return serializeEntry(DISABLE_DEFAULT_CSS_ENTRY_NAME, disableDefaultCss) +

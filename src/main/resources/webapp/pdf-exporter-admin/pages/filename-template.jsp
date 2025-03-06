@@ -121,22 +121,22 @@
         <div class="tab-content">
             <p style="margin: 20px 25px 30px">
                 Here are displayed default filename templates, which will be used unless checkbox above is ticked. They are displayed here
-                only for informational purposes, you can't modify them.
+                only for informational purposes and can't be modified.
             </p>
             <div class="input-container">
                 <div class="input-block left w-32">
                     <div class="label-block"><span>Document filename template:</span></div>
-                    <code-input class="html-input" id="default-document-name-template" lang="velocity" placeholder=""></code-input>
+                    <code-input class="html-input" id="default-document-name-template" lang="velocity" readonly></code-input>
                 </div>
 
                 <div class="input-block w-32">
                     <div class="label-block"><span>Report filename template:</span></div>
-                    <code-input class="html-input" id="default-report-name-template" lang="velocity" placeholder=""></code-input>
+                    <code-input class="html-input" id="default-report-name-template" lang="velocity" readonly></code-input>
                 </div>
 
                 <div class="input-block right w-32">
                     <div class="label-block"><span>Test run filename template:</span></div>
-                    <code-input class="html-input" id="default-testrun-name-template" lang="velocity" placeholder=""></code-input>
+                    <code-input class="html-input" id="default-testrun-name-template" lang="velocity" readonly></code-input>
                 </div>
             </div>
         </div>

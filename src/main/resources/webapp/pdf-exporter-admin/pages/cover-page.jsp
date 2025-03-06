@@ -12,6 +12,7 @@
     <link rel="stylesheet" href="../ui/generic/css/common.css?bundle=<%= bundleTimestamp %>">
     <link rel="stylesheet" href="../ui/generic/css/custom-select.css?bundle=<%= bundleTimestamp %>">
     <link rel="stylesheet" href="../ui/generic/css/configurations.css?bundle=<%= bundleTimestamp %>">
+    <link rel="stylesheet" href="../css/tabs.css?bundle=<%= bundleTimestamp %>">
     <script type="module" src="../js/modules/cover-page.js?bundle=<%= bundleTimestamp %>"></script>
     <style type="text/css">
         html {
@@ -59,6 +60,22 @@
         .w-48 {
             width: 48%;
         }
+
+        .flex-container {
+            display: flex;
+            column-gap: 20px;
+            flex-wrap: wrap;
+        }
+        .flex-column {
+            width: 440px;
+        }
+        input[type="checkbox"] {
+            width: auto;
+            vertical-align: middle;
+        }
+        .checkbox.input-group label {
+            width: auto;
+        }
     </style>
 </head>
 
@@ -70,15 +87,57 @@
 
     <jsp:include page='/common/jsp/configurations.jsp' />
 
-    <h2 class="align-left">Cover Page Template</h2>
-    <div class="input-container">
-        <div class="input-block left w-48">
-            <div class="label-block"><span>Template HTML</span></div>
-            <code-input class="html-input" id="template-html-input" lang="HTML" placeholder=""></code-input>
+    <div class="flex-container" style="border-top: 1px solid #ccc; margin-top: 20px; padding-top: 15px;">
+        <div class="flex-column">
+            <div class='checkbox input-group'>
+                <label for='use-custom-values'>
+                    <input id='use-custom-values' type='checkbox'/>
+                    Use custom templates
+                </label>
+            </div>
         </div>
-        <div class="input-block right w-48">
-            <div class="label-block"><span>Template CSS</span></div>
-            <code-input class="html-input" id="template-css-input" lang="CSS" placeholder=""></code-input>
+    </div>
+
+    <div class="tabbed">
+        <input type="radio" id="custom-template" name="cover-page-template" checked>
+        <input type="radio" id="default-template" name="cover-page-template">
+
+        <ul class="tabs">
+            <li class="tab"><label for="custom-template">Custom Template</label></li>
+            <li class="tab"><label for="default-template">Default Template</label></li>
+        </ul>
+
+        <div class="tab-content">
+            <p style="margin: 20px 25px 30px">
+                Here you can define your custom cover page template, and force it to be used instead of default one by ticking checkbox above.
+            </p>
+            <div class="input-container">
+                <div class="input-block left w-48">
+                    <div class="label-block"><span>Template HTML</span></div>
+                    <code-input class="html-input" id="custom-template-html-input" lang="HTML" placeholder="Enter HTML part of cover page template here"></code-input>
+                </div>
+                <div class="input-block right w-48">
+                    <div class="label-block"><span>Template CSS</span></div>
+                    <code-input class="html-input" id="custom-template-css-input" lang="CSS" placeholder="Enter CSS part of cover page template here"></code-input>
+                </div>
+            </div>
+        </div>
+        <div class="tab-content">
+            <p style="margin: 20px 25px 30px">
+                Here are displayed default cover page template, which will be used unless checkbox above is ticked. It's displayed here
+                only for informational purposes and can't be modified.
+            </p>
+            <div class="input-container">
+                <div class="input-block left w-48">
+                    <div class="label-block"><span>Template HTML</span></div>
+                    <code-input class="html-input" id="default-template-html-input" lang="HTML" readonly></code-input>
+                </div>
+                <div class="input-block right w-48">
+                    <div class="label-block"><span>Template CSS</span></div>
+                    <code-input class="html-input" id="default-template-css-input" lang="CSS" readonly></code-input>
+                </div>
+            </div>
+
         </div>
     </div>
 

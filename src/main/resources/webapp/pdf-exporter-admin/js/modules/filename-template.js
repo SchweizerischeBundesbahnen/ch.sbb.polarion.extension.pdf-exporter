@@ -44,7 +44,6 @@ function saveSettings() {
         body: requestBody,
         onOk: () => {
             ctx.showSaveSuccessAlert();
-            ctx.setNewerVersionNotificationVisible(false);
             readAndFillRevisions();
         },
         onError: () => ctx.showSaveErrorAlert()
@@ -55,8 +54,10 @@ function setSettings(content) {
     const settings = JSON.parse(content);
     ctx.setCheckboxValueById('use-custom-values', settings.useCustomValues);
     ctx.getElementById("use-custom-values").dispatchEvent(new Event('change'));
-    if (!settings.useCustomValues) {
-        ctx.getElementById("default-templates").checked = true; // Preselect default templates tab if usage of custom templates wasn't activated
+    if (settings.useCustomValues) {
+        ctx.getElementById("custom-templates").checked = true;
+    } else {
+        ctx.getElementById("default-templates").checked = true;
     }
     ctx.setValueById('custom-document-name-template', settings.documentNameTemplate);
     ctx.setValueById('custom-report-name-template', settings.reportNameTemplate);
