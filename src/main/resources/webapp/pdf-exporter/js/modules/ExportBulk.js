@@ -22,7 +22,7 @@ export default class ExportBulk {
                 if (this.getExportButton().classList.contains(DISABLED_BUTTON_CLASS)) {
                     return;
                 }
-                new ExportPopup(this);
+                new ExportPopup({bulkCallback: this});
             });
         this.getAllDocumentCheckboxes().forEach((checkbox) => {
             checkbox.addEventListener('click', () => {
