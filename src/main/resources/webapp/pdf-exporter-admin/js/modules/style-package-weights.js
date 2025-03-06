@@ -1,7 +1,14 @@
-SbbCommon.init({
+import ExtensionContext from '../../ui/generic/js/modules/ExtensionContext.js';
+import StylePackageUtils from './style-package-utils.js';
+import '../sortable.js';
+
+const ctx = new ExtensionContext({
     extension: 'pdf-exporter',
-    scope: SbbCommon.getValueById('scope')
+    scopeFieldId: 'scope'
 });
+
+ctx.getElementById("default-toolbar-button").style.display = "none";
+ctx.getElementById("revisions-toolbar-button").style.display = "none";
 
 const StylePackageWeights = {
 
@@ -11,7 +18,7 @@ const StylePackageWeights = {
 
     init: function (listId) {
         this.name = 'StylePackageWeights';
-        this.sortableList = document.getElementById(listId);
+        this.sortableList = ctx.getElementById(listId);
 
         this.sortable = new Sortable(this.sortableList, {
             animation: 150,
@@ -24,14 +31,14 @@ const StylePackageWeights = {
     },
 
     loadPackageList: function () {
-        SbbCommon.callAsync({
+        ctx.callAsync({
             method: 'GET',
-            url: `/polarion/${SbbCommon.extension}/rest/internal/settings/style-package/weights?scope=${SbbCommon.scope}`,
+            url: `/polarion/${ctx.extension}/rest/internal/settings/style-package/weights?scope=${ctx.scope}`,
             contentType: 'application/json',
             onOk: (responseText) => {
                 this.setData(responseText);
             },
-            onError: () => SbbCommon.setLoadingErrorNotificationVisible(true)
+            onError: () => ctx.setLoadingErrorNotificationVisible(true)
         });
     },
 
@@ -45,22 +52,22 @@ const StylePackageWeights = {
             const input = item.querySelector('input');
             const name = input.id.replace(this.ID_PREFIX, '');
             const weight = parseFloat(input.value);
-            const scope = SbbCommon.scope;
+            const scope = ctx.scope;
 
             result.push({
                 name: name, scope: scope, weight: weight
             });
         });
 
-        SbbCommon.callAsync({
+        ctx.callAsync({
             method: 'POST',
-            url: `/polarion/${SbbCommon.extension}/rest/internal/settings/style-package/weights`,
+            url: `/polarion/${ctx.extension}/rest/internal/settings/style-package/weights`,
             contentType: 'application/json',
             body: JSON.stringify(result),
             onOk: () => {
-                SbbCommon.showSaveSuccessAlert();
+                ctx.showSaveSuccessAlert();
             },
-            onError: () => SbbCommon.showSaveErrorAlert()
+            onError: () => ctx.showSaveErrorAlert()
         });
     },
 
@@ -71,7 +78,7 @@ const StylePackageWeights = {
         this.data.forEach((item) => {
             const li = document.createElement("li");
             li.classList.add(this.STYLE_ITEM.replace('.', ''));
-            const globalScopedItem = item.scope === "" && SbbCommon.scope !== "";
+            const globalScopedItem = item.scope === "" && ctx.scope !== "";
             if (globalScopedItem) {
                 li.classList.add("static"); // Add static class when scope is empty
             }
@@ -200,6 +207,11 @@ const StylePackageWeights = {
         throw new Error(`Unknown name "${name}"`);
     }
 }
+
+ctx.onClick(
+    'save-toolbar-button', () => StylePackageWeights.saveWeights(),
+    'cancel-toolbar-button', () => StylePackageWeights.loadPackageList()
+);
 
 StylePackageWeights.init('sortable-list');
 StylePackageWeights.loadPackageList();

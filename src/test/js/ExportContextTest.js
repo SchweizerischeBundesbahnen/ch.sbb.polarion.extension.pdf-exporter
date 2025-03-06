@@ -1,6 +1,11 @@
 import { expect } from 'chai';
-import ExportContext from '../../main/resources/webapp/pdf-exporter/js/modules/ExportContext.js';
-import ExportParams from "../../main/resources/webapp/pdf-exporter/js/modules/ExportParams.js";
+import TestUtils from "./TestUtils.js";
+
+/** @type {typeof ExportContext} */
+const ExportContext = await TestUtils.importUsingGeneric('ExportContext.js');
+
+/** @type {typeof ExportParams} */
+const ExportParams = await TestUtils.importUsingGeneric('ExportParams.js');
 
 describe('ExportContext Class', function () {
     it('URL: #/project/elibrary/wiki/BigDoc', function () {
