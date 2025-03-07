@@ -26,6 +26,7 @@ import com.polarion.alm.ui.shared.LinearGradientColor;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.VisibleForTesting;
 
 import java.util.Iterator;
 import java.util.UUID;
@@ -82,7 +83,9 @@ public class BulkPdfExportWidgetRenderer extends AbstractWidgetRenderer {
         };
     }
 
-    protected void render(@NotNull HtmlFragmentBuilder builder) {
+    @Override
+    @VisibleForTesting
+    public void render(@NotNull HtmlFragmentBuilder builder) {
         if (this.topItems < 0) {
             builder.html(this.context.renderWarning(this.localization.getString("richpages.widget.table.invalidTopValue")));
         } else {

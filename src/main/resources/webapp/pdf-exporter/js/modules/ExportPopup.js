@@ -3,9 +3,10 @@ import ExportContext from "./ExportContext.js";
 
 export default class ExportPopup {
 
-    constructor(bulkCallback) {
+    constructor({documentType = ExportParams.DocumentType.LIVE_DOC, bulkCallback}) {
         this.ctx = new ExportContext({
             rootComponentSelector: "#pdf-export-popup",
+            documentType: documentType,
             exportType: bulkCallback ? ExportParams.ExportType.BULK : ExportParams.ExportType.SINGLE,
         });
         this.bulkCallback = bulkCallback;

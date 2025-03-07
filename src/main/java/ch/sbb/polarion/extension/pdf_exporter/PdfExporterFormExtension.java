@@ -22,7 +22,6 @@ import ch.sbb.polarion.extension.pdf_exporter.settings.WebhooksSettings;
 import ch.sbb.polarion.extension.pdf_exporter.util.DocumentFileNameHelper;
 import ch.sbb.polarion.extension.pdf_exporter.util.EnumValuesProvider;
 import ch.sbb.polarion.extension.pdf_exporter.util.ExceptionHandler;
-import com.polarion.alm.projects.model.IProject;
 import com.polarion.alm.shared.api.SharedContext;
 import com.polarion.alm.shared.api.transaction.TransactionalExecutor;
 import com.polarion.alm.shared.api.utils.html.HtmlFragmentBuilder;
@@ -36,7 +35,6 @@ import com.polarion.platform.persistence.model.IPObject;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -336,9 +334,5 @@ public class PdfExporterFormExtension implements IFormExtension {
     @Nullable
     public String getLabel(@NotNull IPObject object, @Nullable Map<String, String> attributes) {
         return "PDF Exporter";
-    }
-
-    private String fillParams(String... params) {
-        return Arrays.stream(params).map(p -> p == null ? null : "\"" + p + "\"").collect(Collectors.joining(","));
     }
 }
