@@ -124,14 +124,14 @@ class PdfConverterWeasyPrintTest extends BaseWeasyPrintTest {
 
         headerFooterSettings = mock(HeaderFooterSettings.class);
         //here we will test "testFieldKey" custom field & special "PAGE_NUMBER" placeholder substitution in the header
-        when(headerFooterSettings.load(any(), any())).thenReturn(HeaderFooterModel.builder().headerLeft("HL").headerCenter("HC  {{ testFieldKey }}").headerRight("HR").footerLeft("FL").footerCenter("FC").footerRight("FR_{{ PAGE_NUMBER }}").build());
+        when(headerFooterSettings.load(any(), any())).thenReturn(HeaderFooterModel.builder().useCustomValues(true).headerLeft("HL").headerCenter("HC  {{ testFieldKey }}").headerRight("HR").footerLeft("FL").footerCenter("FC").footerRight("FR_{{ PAGE_NUMBER }}").build());
 
         String basicCss = readCssResource(CSS_BASIC, FONT_REGULAR);
         CssSettings cssSettings = mock(CssSettings.class);
         when(cssSettings.defaultValues()).thenCallRealMethod();
         String defaultCss = cssSettings.defaultValues().getCss();
         //here we concatenate basic css with the default one in order to override font everywhere (also we have to cut some lines to achieve that)
-        when(cssSettings.load(any(), any())).thenReturn(CssModel.builder().css(basicCss + defaultCss.replaceAll("@font-face[^}]+}", "").replaceAll("font-family:[^;]+;", "font-family: Custom Font;")).build());
+        when(cssSettings.load(any(), any())).thenReturn(CssModel.builder().disableDefaultCss(true).css(basicCss + defaultCss.replaceAll("@font-face[^}]+}", "").replaceAll("font-family:[^;]+;", "font-family: Custom Font;")).build());
 
         WeasyPrintServiceConnector weasyPrintServiceConnector = mock(WeasyPrintServiceConnector.class);
         when(weasyPrintServiceConnector.convertToPdf(anyString(), any())).thenAnswer((Answer<byte[]>) invocation -> exportToPdf(invocation.getArgument(0), invocation.getArgument(1)));
@@ -144,7 +144,7 @@ class PdfConverterWeasyPrintTest extends BaseWeasyPrintTest {
         CoverPageSettings coverPageSettings = mock(CoverPageSettings.class);
         //check "testFieldKey" custom field substitution in the title + use basic css here, otherwise fonts may differ on different OS
         // additionally we check PAGE_NUMBER and PAGES_TOTAL_COUNT supported on cover page
-        lenient().when(coverPageSettings.load(any(), any())).thenReturn(CoverPageModel.builder().templateHtml("<div>TITLE {{ testFieldKey }} </div> <div>PAGE_NUMBER = {{ PAGE_NUMBER }} and PAGES_TOTAL_COUNT = {{ PAGES_TOTAL_COUNT }}</div>").templateCss(basicCss).build());
+        lenient().when(coverPageSettings.load(any(), any())).thenReturn(CoverPageModel.builder().useCustomValues(true).templateHtml("<div>TITLE {{ testFieldKey }} </div> <div>PAGE_NUMBER = {{ PAGE_NUMBER }} and PAGES_TOTAL_COUNT = {{ PAGES_TOTAL_COUNT }}</div>").templateCss(basicCss).build());
         lenient().when(coverPageSettings.processImagePlaceholders(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
         HtmlLinksHelper htmlLinksHelper = mock(HtmlLinksHelper.class);
@@ -299,7 +299,7 @@ class PdfConverterWeasyPrintTest extends BaseWeasyPrintTest {
                 .revisionPlaceholder("42")
                 .build();
         documentDataFactoryMockedStatic.when(() -> DocumentDataFactory.getDocumentData(eq(params), anyBoolean())).thenReturn(wikiPage);
-        when(headerFooterSettings.load(any(), any())).thenReturn(HeaderFooterModel.builder().headerLeft("HL").headerCenter("HC  {{ REVISION }}").headerRight("HR").footerLeft("FL").footerCenter("FC").footerRight("FR_{{ PAGE_NUMBER }}").build());
+        when(headerFooterSettings.load(any(), any())).thenReturn(HeaderFooterModel.builder().useCustomValues(true).headerLeft("HL").headerCenter("HC  {{ REVISION }}").headerRight("HR").footerLeft("FL").footerCenter("FC").footerRight("FR_{{ PAGE_NUMBER }}").build());
         params.setDocumentType(DocumentType.WIKI_PAGE);
         params.setLocationPath("wikiFolder/wikiPage");
 
