@@ -106,7 +106,7 @@ class PdfConverterTest {
                 .build();
 
         documentDataFactoryMockedStatic.when(() -> DocumentDataFactory.getDocumentData(eq(exportParams), anyBoolean())).thenReturn(documentData);
-        when(headerFooterSettings.load("testProjectId", SettingId.fromName("Default"))).thenReturn(HeaderFooterModel.builder().build());
+        when(headerFooterSettings.load("testProjectId", SettingId.fromName("Default"))).thenReturn(HeaderFooterModel.builder().useCustomValues(true).build());
         when(placeholderProcessor.replacePlaceholders(documentData, exportParams, "test css")).thenReturn("css content");
         when(placeholderProcessor.replacePlaceholders(eq(documentData), eq(exportParams), anyList())).thenReturn(List.of("hl", "hc", "hr", "fl", "fc", "fr"));
         when(velocityEvaluator.evaluateVelocityExpressions(eq(documentData), anyString())).thenAnswer(a -> a.getArguments()[1]);
@@ -172,6 +172,7 @@ class PdfConverterTest {
                 .build();
 
         HeaderFooterModel headerFooterModel = HeaderFooterModel.builder()
+                .useCustomValues(true)
                 .headerLeft("-header-left-")
                 .headerCenter("-header-center-")
                 .headerRight("-header-right-")

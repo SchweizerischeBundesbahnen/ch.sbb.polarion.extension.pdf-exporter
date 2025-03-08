@@ -286,6 +286,9 @@ public class PdfConverter {
             @NotNull ExportParams exportParams) {
         String headerFooterSettingsName = exportParams.getHeaderFooter() != null ? exportParams.getHeaderFooter() : NamedSettings.DEFAULT_NAME;
         HeaderFooterModel headerFooter = headerFooterSettings.load(exportParams.getProjectId(), SettingId.fromName(headerFooterSettingsName));
+        if (!headerFooter.isUseCustomValues()) {
+            headerFooter = headerFooterSettings.defaultValues();
+        }
 
         List<String> headersFooters = Arrays.asList(
                 headerFooter.getHeaderLeft(),
