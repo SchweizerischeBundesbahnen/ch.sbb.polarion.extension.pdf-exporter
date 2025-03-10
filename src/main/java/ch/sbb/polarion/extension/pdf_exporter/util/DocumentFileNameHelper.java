@@ -37,8 +37,9 @@ public class DocumentFileNameHelper {
 
         final DocumentData<? extends IUniqueObject> documentData = DocumentDataFactory.getDocumentData(exportParams, false);
 
-        FileNameTemplateModel fileNameTemplateModel = getFileNameTemplateModel(ScopeUtils.getScopeFromProject(exportParams.getProjectId()));
-        @NotNull String fileNameTemplate = getFileNameTemplate(exportParams.getDocumentType(), fileNameTemplateModel);
+        FileNameTemplateSettings fileNameTemplateSettings = (FileNameTemplateSettings) NamedSettingsRegistry.INSTANCE.getByFeatureName(FileNameTemplateSettings.FEATURE_NAME);
+        FileNameTemplateModel fileNameTemplateModel = getFileNameTemplateModel(fileNameTemplateSettings, ScopeUtils.getScopeFromProject(exportParams.getProjectId()));
+        @NotNull String fileNameTemplate = getFileNameTemplate(exportParams.getDocumentType(), fileNameTemplateModel.isUseCustomValues() ? fileNameTemplateModel : fileNameTemplateSettings.defaultValues());
         fileNameTemplate = new PlaceholderProcessor().replacePlaceholders(documentData, exportParams, fileNameTemplate);
         String evaluatedFileName = evaluateVelocity(documentData, fileNameTemplate);
         return replaceIllegalFileNameSymbols(evaluatedFileName).trim();
@@ -66,9 +67,8 @@ public class DocumentFileNameHelper {
         };
     }
 
-    private FileNameTemplateModel getFileNameTemplateModel(String scope) {
+    private FileNameTemplateModel getFileNameTemplateModel(FileNameTemplateSettings fileNameTemplateSettings, String scope) {
         try {
-            FileNameTemplateSettings fileNameTemplateSettings = (FileNameTemplateSettings) NamedSettingsRegistry.INSTANCE.getByFeatureName(FileNameTemplateSettings.FEATURE_NAME);
             return fileNameTemplateSettings.read(scope, SettingId.fromName(NamedSettings.DEFAULT_NAME), null);
         } catch (IllegalStateException e) {
             return ExceptionHandler.handleTransactionIllegalStateException(e, new FileNameTemplateSettings().defaultValues());

@@ -9,18 +9,21 @@ const ctx = new ExtensionContext({
     initCodeInput: true
 });
 
+ctx.getElementById("default-toolbar-button").style.display = "none";
+
+ctx.onClick(
+    'save-toolbar-button', saveCoverPage,
+    'cancel-toolbar-button', ctx.cancelEdit,
+    'revisions-toolbar-button', ctx.toggleRevisions,
+);
+
 const conf = new ConfigurationsPane({
     ctx: ctx,
     setConfigurationContentCallback: setCoverPageContent,
     preDeleteCallback: coverPagePreDeleteRoutine
 });
 
-ctx.onClick(
-    'save-toolbar-button', saveCoverPage,
-    'cancel-toolbar-button', ctx.cancelEdit,
-    'default-toolbar-button', revertToDefault,
-    'revisions-toolbar-button', ctx.toggleRevisions,
-);
+let defaultSettings = null;
 
 const Templates = {
     templatesSelect: new CustomSelect({
@@ -85,47 +88,75 @@ const Templates = {
 function saveCoverPage() {
     ctx.hideActionAlerts();
 
+    const useCustomValues = ctx.getCheckboxValueById('use-custom-values');
+
+    const requestBody = useCustomValues
+        ? {
+            'useCustomValues' : true,
+            'templateHtml': ctx.getValueById('custom-template-html-input'),
+            'templateCss': ctx.getValueById('custom-template-css-input')
+        }
+        : {
+            'useCustomValues' : false,
+            'templateHtml': '',
+            'templateCss': ''
+        };
+
     ctx.callAsync({
         method: 'PUT',
         url: `/polarion/${ctx.extension}/rest/internal/settings/${ctx.setting}/names/${conf.getSelectedConfiguration()}/content?scope=${ctx.scope}`,
         contentType: 'application/json',
-        body: JSON.stringify({
-            'templateHtml': ctx.getValueById('template-html-input'),
-            'templateCss': ctx.getValueById('template-css-input')
-        }),
+        body: JSON.stringify(requestBody),
         onOk: () => {
             ctx.showSaveSuccessAlert();
-            ctx.setNewerVersionNotificationVisible(false);
             conf.loadConfigurationNames();
         },
         onError: () => ctx.showSaveErrorAlert()
     });
 }
 
-function revertToDefault() {
-    if (confirm("Are you sure you want to return the default values?")) {
-        ctx.setLoadingErrorNotificationVisible(false);
-        ctx.hideActionAlerts();
-
-        ctx.callAsync({
-            method: 'GET',
-            url: `/polarion/${ctx.extension}/rest/internal/settings/${ctx.setting}/default-content`,
-            contentType: 'application/json',
-            onOk: (responseText) => {
-                ctx.showRevertedToDefaultAlert();
-                setCoverPageContent(responseText);
-            },
-            onError: () => ctx.setLoadingErrorNotificationVisible(true)
-        });
+function setCoverPageContent(content) {
+    const settings = JSON.parse(content);
+    ctx.setCheckboxValueById('use-custom-values', settings.useCustomValues);
+    ctx.getElementById("use-custom-values").dispatchEvent(new Event('change'));
+    if (settings.useCustomValues) {
+        ctx.getElementById("custom-template").checked = true;
+    } else {
+        ctx.getElementById("default-template").checked = true;
     }
+
+    ctx.setValueById('custom-template-html-input', settings.templateHtml);
+    ctx.setValueById('custom-template-css-input', settings.templateCss);
+
+    loadDefaultContent().then((defaultSettings) => {
+        ctx.setValueById('default-template-html-input', defaultSettings.templateHtml);
+        ctx.setValueById('default-template-css-input', defaultSettings.templateCss);
+    });
 }
 
-function setCoverPageContent(content) {
-    const model = JSON.parse(content);
-    ctx.setValueById('template-html-input', model.templateHtml);
-    ctx.setValueById('template-css-input', model.templateCss);
-    if (model.bundleTimestamp !== ctx.getValueById('bundle-timestamp')) {
-        ctx.setNewerVersionNotificationVisible(true);
+function loadDefaultContent() {
+    if (defaultSettings != null) {
+        return Promise.resolve(defaultSettings);
+    } else {
+        return new Promise((resolve, reject) => {
+            ctx.setLoadingErrorNotificationVisible(false);
+            ctx.hideActionAlerts();
+
+            ctx.callAsync({
+                method: 'GET',
+                url: `/polarion/${ctx.extension}/rest/internal/settings/${ctx.setting}/default-content`,
+                contentType: 'application/json',
+                onOk: (responseText) => {
+                    defaultSettings = JSON.parse(responseText);
+                    resolve(defaultSettings);
+                },
+                onError: () => {
+                    ctx.setLoadingErrorNotificationVisible(true);
+                    reject();
+                }
+            });
+        });
+
     }
 }
 
@@ -140,6 +171,16 @@ function coverPagePreDeleteRoutine(coverPageName) {
         });
     });
 }
+
+ctx.getElementById("use-custom-values").addEventListener("change", (event) => {
+    if (event.target.checked) {
+        ctx.getElementById("custom-template").disabled = false;
+        ctx.getElementById("custom-template").checked = true;
+    } else {
+        ctx.getElementById("default-template").checked = true;
+        ctx.getElementById("custom-template").disabled = true;
+    }
+});
 
 conf.loadConfigurationNames();
 Templates.load();

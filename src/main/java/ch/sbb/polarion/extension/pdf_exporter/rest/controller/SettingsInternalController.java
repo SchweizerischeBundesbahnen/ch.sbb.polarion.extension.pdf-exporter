@@ -126,6 +126,7 @@ public class SettingsInternalController {
         Collection<SettingName> persistedNames = coverPageSettings.readNames(scope);
         String nonClashingName = coverPageSettings.getNonClashingName(template, persistedNames);
         CoverPageModel templateModel = coverPageSettings.defaultValuesFor(template);
+        templateModel.setUseCustomValues(true);
         templateModel.setName(nonClashingName);
         UUID uuid = UUID.randomUUID();
         coverPageSettings.processImagePaths(templateModel, template, scope, uuid);
