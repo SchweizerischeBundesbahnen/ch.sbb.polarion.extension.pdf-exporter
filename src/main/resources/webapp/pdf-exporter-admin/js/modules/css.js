@@ -26,14 +26,22 @@ let defaultCss = null;
 function saveCss() {
     ctx.hideActionAlerts();
 
+    const disableDefaultCss = ctx.getCheckboxValueById('disable-default-css');
+    const requestBody = disableDefaultCss
+        ? {
+            'disableDefaultCss': true,
+            'css': ''
+        }
+        : {
+            'disableDefaultCss': false,
+            'css': ctx.getValueById('custom-css-input')
+        };
+
     ctx.callAsync({
         method: 'PUT',
         url: `/polarion/${ctx.extension}/rest/internal/settings/${ctx.setting}/names/${conf.getSelectedConfiguration()}/content?scope=${ctx.scope}`,
         contentType: 'application/json',
-        body: JSON.stringify({
-            'disableDefaultCss': ctx.getCheckboxValueById('disable-default-css'),
-            'css': ctx.getValueById('custom-css-input')
-        }),
+        body: JSON.stringify(requestBody),
         onOk: () => {
             ctx.showSaveSuccessAlert();
             conf.loadConfigurationNames();

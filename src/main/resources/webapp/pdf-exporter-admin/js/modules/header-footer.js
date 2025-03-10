@@ -29,7 +29,7 @@ function saveHeaderFooter() {
     const useCustomValues = ctx.getCheckboxValueById('use-custom-values');
 
     const requestBody = useCustomValues
-        ? JSON.stringify({
+        ? {
             'useCustomValues' : true,
             'headerLeft': ctx.getValueById('custom-top-left'),
             'headerCenter': ctx.getValueById('custom-top-center'),
@@ -37,8 +37,8 @@ function saveHeaderFooter() {
             'footerLeft': ctx.getValueById('custom-bottom-left'),
             'footerCenter': ctx.getValueById('custom-bottom-center'),
             'footerRight': ctx.getValueById('custom-bottom-right')
-        })
-        : JSON.stringify({
+        }
+        : {
             'useCustomValues' : false,
             'headerLeft': '',
             'headerCenter': '',
@@ -46,13 +46,13 @@ function saveHeaderFooter() {
             'footerLeft': '',
             'footerCenter': '',
             'footerRight': ''
-        });
+        };
 
     ctx.callAsync({
         method: 'PUT',
         url: `/polarion/${ctx.extension}/rest/internal/settings/${ctx.setting}/names/${conf.getSelectedConfiguration()}/content?scope=${ctx.scope}`,
         contentType: 'application/json',
-        body: requestBody,
+        body: JSON.stringify(requestBody),
         onOk: () => {
             ctx.showSaveSuccessAlert();
             conf.loadConfigurationNames();
@@ -116,6 +116,7 @@ function loadDefaultContent() {
 ctx.getElementById("use-custom-values").addEventListener("change", (event) => {
     if (event.target.checked) {
         ctx.getElementById("custom-templates").disabled = false;
+        ctx.getElementById("custom-templates").checked = true;
     } else {
         ctx.getElementById("default-templates").checked = true;
         ctx.getElementById("custom-templates").disabled = true;

@@ -24,24 +24,24 @@ function saveSettings() {
 
     const useCustomValues = ctx.getCheckboxValueById('use-custom-values');
     const requestBody = useCustomValues
-        ? JSON.stringify({
+        ? {
             'useCustomValues' : true,
             'documentNameTemplate': ctx.getValueById('custom-document-name-template'),
             'reportNameTemplate': ctx.getValueById('custom-report-name-template'),
             'testRunNameTemplate': ctx.getValueById('custom-testrun-name-template')
-        })
-        : JSON.stringify({
+        }
+        : {
             'useCustomValues' : false,
             'documentNameTemplate': '',
             'reportNameTemplate': '',
             'testRunNameTemplate': ''
-        });
+        };
 
     ctx.callAsync({
         method: 'PUT',
         url: `/polarion/${ctx.extension}/rest/internal/settings/${ctx.setting}/names/${DEFAULT_SETTING_NAME}/content?scope=${ctx.scope}`,
         contentType: 'application/json',
-        body: requestBody,
+        body: JSON.stringify(requestBody),
         onOk: () => {
             ctx.showSaveSuccessAlert();
             readAndFillRevisions();
@@ -116,6 +116,7 @@ function loadDefaultContent() {
 ctx.getElementById("use-custom-values").addEventListener("change", (event) => {
     if (event.target.checked) {
         ctx.getElementById("custom-templates").disabled = false;
+        ctx.getElementById("custom-templates").checked = true;
     } else {
         ctx.getElementById("default-templates").checked = true;
         ctx.getElementById("custom-templates").disabled = true;
