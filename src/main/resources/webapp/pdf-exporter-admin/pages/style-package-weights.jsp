@@ -73,6 +73,7 @@
             text-align: center;
         }
     </style>
+    <script type="module" src="../js/modules/style-package-weights.js?bundle=<%= bundleTimestamp %>"></script>
 </head>
 
 <body>
@@ -89,19 +90,7 @@
     <input id="bundle-timestamp" type="hidden" value="<%= ch.sbb.polarion.extension.generic.util.VersionUtils.getVersion().getBundleBuildTimestamp() %>"/>
 </div>
 
-<jsp:include page='/common/jsp/buttons.jsp'>
-    <jsp:param name="saveFunction" value="StylePackageWeights.saveWeights()"/>
-    <jsp:param name="cancelFunction" value="StylePackageWeights.loadPackageList()"/>
-</jsp:include>
+<jsp:include page='/common/jsp/buttons.jsp'/>
 
-<script type="text/javascript">
-    document.getElementById("default-toolbar-button").style.display = "none";
-    document.getElementById("revisions-toolbar-button").style.display = "none";
-</script>
-
-<script type="text/javascript" src="../ui/generic/js/common.js?bundle=<%= bundleTimestamp %>"></script>
-<script type="text/javascript" src="../js/style-package-utils.js?bundle=<%= bundleTimestamp %>"></script>
-<script type="text/javascript" src="../js/sortable.js?bundle=<%= bundleTimestamp %>"></script>
-<script type="text/javascript" src="../js/style-package-weights.js?bundle=<%= bundleTimestamp %>"></script>
 </body>
 </html>

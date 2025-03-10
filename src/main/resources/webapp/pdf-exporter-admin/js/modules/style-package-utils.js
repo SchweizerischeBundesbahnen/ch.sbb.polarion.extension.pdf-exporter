@@ -1,5 +1,6 @@
 const StylePackageUtils = {
     adjustWeight: function (input) {
+        input = input || this; // input can be provided explicitly or implicitly during the listener call
         let value = parseFloat(input.value); // Get the current value and convert to float
 
         // 1. If the number > 100, set the value to 100
@@ -22,3 +23,5 @@ const StylePackageUtils = {
         input.value = value;
     }
 }
+
+export default StylePackageUtils;

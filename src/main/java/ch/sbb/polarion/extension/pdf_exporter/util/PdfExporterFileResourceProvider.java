@@ -62,7 +62,11 @@ public class PdfExporterFileResourceProvider implements FileResourceProvider {
         if (resourceBytes != null && resourceBytes.length != 0) { // Don't make any manipulations if resource wasn't resolved
             String mimeType = MediaUtils.guessMimeType(resource, resourceBytes);
             if (MIME_TYPE_SVG.equals(mimeType)) {
-                resourceBytes = processPossibleSvgImage(resourceBytes);
+                // Additional check to verify that the content is indeed an SVG
+                mimeType = MediaUtils.getMimeTypeUsingTikaByContent(resource, resourceBytes);
+                if (MIME_TYPE_SVG.equals(mimeType)) {
+                    resourceBytes = processPossibleSvgImage(resourceBytes);
+                }
             }
             return String.format("data:%s;base64,%s", mimeType, Base64.getEncoder().encodeToString(resourceBytes));
         }
@@ -90,7 +94,8 @@ public class PdfExporterFileResourceProvider implements FileResourceProvider {
                 InputStream stream = resolver.resolve(resource);
                 if (stream != null) {
                     byte[] result = StreamUtils.suckStreamThenClose(stream);
-                    if (result.length > 0 && WorkItemAttachmentUrlResolver.isWorkItemAttachmentUrl(resource) && isMediaTypeMismatch(resource, result)) {
+                    if (result.length > 0 && WorkItemAttachmentUrlResolver.isWorkItemAttachmentUrl(resource) &&
+                            (!WorkItemAttachmentUrlResolver.isSvg(resource) && isMediaTypeMismatch(resource, result))) {
                         ExportContext.addWorkItemIDsWithMissingAttachment(getWorkItemIdsWithUnavailableAttachments(resource));
                         return getDefaultContent(resource);
                     }
