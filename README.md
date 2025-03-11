@@ -226,9 +226,11 @@ In case if both of them specified 'existing_wi_id' has higher priority.
 
 1. On the top of the project's navigation pane click ⚙ (Actions) ➙ 🔧 Administration. Project's administration page will be opened.
 2. On the administration's navigation pane select `PDF Export`. There are expandable sub-menus with different configuration options for PDF Exporter.
-3. For some of these options (Cover page, Header and Footer, Localization, Webhooks and Filename template) `Quick Help` section available with option short description. For the rest
-   (Style package, Stylesheets) there's no `Quick Help` section as their content is self-evident.
-4. To change configuration of PDF Exporter extension just edit corresponding section and press `Save` button.
+3. For some of these options (Cover page, Header and Footer, Localization, Webhooks and Filename template) `Quick Help` section available with short description of appropriate option. For the rest
+   (Style package, Style package weights, CSS) there's no `Quick Help` section as their content is self-evident.
+4. Sections Cover page, Header and Footer, and Filename template have possibility to use default values (can't be edited) or custom. Section CSS has different approach -
+   its area for custom values is always enabled, but default values can be enabled or disabled. Therefore, either only custom CSS is used or default CSS is combined with custom.
+5. To change configuration of PDF Exporter extension just edit corresponding section and press `Save` button.
 
 ### CSS for booklet layout
 
@@ -302,6 +304,12 @@ jobs.timeout.in-progress.minutes=60
 All good so far.
 
 ## Upgrade
+
+### Upgrade from version 8.1.3 to 8.2.0
+
+Sections Cover page, CSS, Header and Footer, Filename template were modified to split custom values (provided by user) and default values (provided by application, which can't be modified by user).
+For a smooth migration from previous version we consider all already stored settings as custom, even if they contained default values, not to erase all your already stored settings.
+Be aware that you'll need to tidy this up, storing explicitly either your custom values or switching to use default values.
 
 ### Upgrade from version 7.x.x to 8.0.0
 

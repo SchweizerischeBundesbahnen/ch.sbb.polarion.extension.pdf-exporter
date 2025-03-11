@@ -85,6 +85,9 @@ public class CoverPageProcessor {
     @VisibleForTesting
     String composeTitleHtml(@NotNull DocumentData<? extends IUniqueObject> documentData, @NotNull ExportParams exportParams, @Nullable PlaceholderValues overridenPlaceholderValues) {
         CoverPageModel settings = coverPageSettings.load(exportParams.getProjectId(), SettingId.fromName(exportParams.getCoverPage()));
+        if (!settings.isUseCustomValues()) {
+            settings = coverPageSettings.defaultValues();
+        }
         String templateHtml = settings.getTemplateHtml();
         String content = placeholderProcessor.replacePlaceholders(documentData, exportParams, templateHtml, overridenPlaceholderValues);
         content = htmlProcessor.replaceResourcesAsBase64Encoded(content);

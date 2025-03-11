@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="../ui/generic/css/code-input.min.css?bundle=<%= bundleTimestamp %>">
     <script type="text/javascript" src="../ui/generic/js/code-input.min.js?bundle=<%= bundleTimestamp %>"></script>
     <link rel="stylesheet" href="../ui/generic/css/common.css?bundle=<%= bundleTimestamp %>">
+    <link rel="stylesheet" href="../css/tabs.css?bundle=<%= bundleTimestamp %>">
     <script type="module" src="../js/modules/filename-template.js?bundle=<%= bundleTimestamp %>"></script>
     <script type="text/javascript" defer src="../js/prism-velocity.min.js?bundle=<%= bundleTimestamp %>"></script>
 
@@ -51,6 +52,23 @@
         .w-32 {
             width: 32%;
         }
+
+        .flex-container {
+            display: flex;
+            column-gap: 20px;
+            flex-wrap: wrap;
+        }
+        .flex-column {
+            width: 440px;
+        }
+        input[type="checkbox"] {
+            width: auto;
+            vertical-align: middle;
+        }
+        .checkbox.input-group label {
+            width: auto;
+        }
+
     </style>
 </head>
 
@@ -59,20 +77,68 @@
     <h1>PDF Exporter: Filename template</h1>
     <jsp:include page='/common/jsp/notifications.jsp' />
 
-    <div class="input-container">
-        <div class="input-block left w-32">
-            <div class="label-block"><span>Document filename template:</span></div>
-            <code-input class="html-input" id="document-name-template" lang="velocity" placeholder=""></code-input>
+    <div class="flex-container">
+        <div class="flex-column">
+            <div class='checkbox input-group'>
+                <label for='use-custom-values'>
+                    <input id='use-custom-values' type='checkbox'/>
+                    Use custom templates
+                </label>
+            </div>
         </div>
+    </div>
 
-        <div class="input-block w-32">
-            <div class="label-block"><span>Report filename template:</span></div>
-            <code-input class="html-input" id="report-name-template" lang="velocity" placeholder=""></code-input>
+    <div class="tabbed">
+        <input type="radio" id="custom-templates" name="file-templates" checked>
+        <input type="radio" id="default-templates" name="file-templates">
+
+        <ul class="tabs">
+            <li class="tab"><label for="custom-templates">Custom Templates</label></li>
+            <li class="tab"><label for="default-templates">Default Templates</label></li>
+        </ul>
+
+        <div class="tab-content">
+            <p style="margin: 20px 25px 30px">
+                Here you can define your custom filename templates, and force them to be used instead of default ones by ticking checkbox above.
+            </p>
+            <div class="input-container">
+                <div class="input-block left w-32">
+                    <div class="label-block"><span>Document filename template:</span></div>
+                    <code-input class="html-input" id="custom-document-name-template" lang="velocity" placeholder="Enter file name template for exported Live Document"></code-input>
+                </div>
+
+                <div class="input-block w-32">
+                    <div class="label-block"><span>Report filename template:</span></div>
+                    <code-input class="html-input" id="custom-report-name-template" lang="velocity" placeholder="Enter file name template for exported Live Report"></code-input>
+                </div>
+
+                <div class="input-block right w-32">
+                    <div class="label-block"><span>Test run filename template:</span></div>
+                    <code-input class="html-input" id="custom-testrun-name-template" lang="velocity" placeholder="Enter file name template for exported Test Run"></code-input>
+                </div>
+            </div>
         </div>
+        <div class="tab-content">
+            <p style="margin: 20px 25px 30px">
+                Here are displayed default filename templates, which will be used unless checkbox above is ticked. They are displayed here
+                only for informational purposes and can't be modified.
+            </p>
+            <div class="input-container">
+                <div class="input-block left w-32">
+                    <div class="label-block"><span>Document filename template:</span></div>
+                    <code-input class="html-input" id="default-document-name-template" lang="velocity" readonly></code-input>
+                </div>
 
-        <div class="input-block right w-32">
-            <div class="label-block"><span>Test run filename template:</span></div>
-            <code-input class="html-input" id="testrun-name-template" lang="velocity" placeholder=""></code-input>
+                <div class="input-block w-32">
+                    <div class="label-block"><span>Report filename template:</span></div>
+                    <code-input class="html-input" id="default-report-name-template" lang="velocity" readonly></code-input>
+                </div>
+
+                <div class="input-block right w-32">
+                    <div class="label-block"><span>Test run filename template:</span></div>
+                    <code-input class="html-input" id="default-testrun-name-template" lang="velocity" readonly></code-input>
+                </div>
+            </div>
         </div>
     </div>
 

@@ -62,6 +62,7 @@ class CoverPageProcessorTest {
                 .coverPage("test cover page")
                 .build();
         CoverPageModel coverPageModel = CoverPageModel.builder()
+                .useCustomValues(true)
                 .templateHtml("test template html")
                 .templateCss("test template css")
                 .build();
@@ -101,6 +102,7 @@ class CoverPageProcessorTest {
                 .coverPage("test cover page")
                 .build();
         CoverPageModel coverPageModel = CoverPageModel.builder()
+                .useCustomValues(true)
                 .templateHtml("test template html")
                 .templateCss("test template css")
                 .build();
