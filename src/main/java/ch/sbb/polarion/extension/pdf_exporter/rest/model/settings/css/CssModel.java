@@ -2,6 +2,7 @@ package ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.css;
 
 import ch.sbb.polarion.extension.generic.settings.SettingsModel;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.polarion.core.util.StringUtils;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -33,7 +34,12 @@ public class CssModel extends SettingsModel {
 
     @Override
     protected void deserializeModelData(String serializedString) {
-        disableDefaultCss = Boolean.parseBoolean(deserializeEntry(DISABLE_DEFAULT_CSS_ENTRY_NAME, serializedString));
+        String serializedDisableDefaultCss = deserializeEntry(DISABLE_DEFAULT_CSS_ENTRY_NAME, serializedString);
+        if (StringUtils.isEmptyTrimmed(serializedDisableDefaultCss)) {
+            disableDefaultCss = true; // Fallback to backwards compatibility with older versions when values were by default always custom, without adding any default part
+        } else {
+            disableDefaultCss = Boolean.parseBoolean(deserializeEntry(DISABLE_DEFAULT_CSS_ENTRY_NAME, serializedString));
+        }
         css = deserializeEntry(CSS_ENTRY_NAME, serializedString);
     }
 }

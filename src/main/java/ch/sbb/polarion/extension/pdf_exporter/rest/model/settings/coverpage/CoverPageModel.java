@@ -2,6 +2,7 @@ package ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.coverpage;
 
 import ch.sbb.polarion.extension.generic.settings.SettingsModel;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.polarion.core.util.StringUtils;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -35,7 +36,12 @@ public class CoverPageModel extends SettingsModel {
 
     @Override
     protected void deserializeModelData(String serializedString) {
-        useCustomValues = Boolean.parseBoolean(deserializeEntry(USE_CUSTOM_VALUES_ENTRY_NAME, serializedString));
+        String serializedUseCustomValues = deserializeEntry(USE_CUSTOM_VALUES_ENTRY_NAME, serializedString);
+        if (StringUtils.isEmptyTrimmed(serializedUseCustomValues)) {
+            useCustomValues = true; // Fallback to backwards compatibility with older versions when values were by default always custom
+        } else {
+            useCustomValues = Boolean.parseBoolean(deserializeEntry(USE_CUSTOM_VALUES_ENTRY_NAME, serializedString));
+        }
         templateHtml = deserializeEntry(TEMPLATE_HTML, serializedString);
         templateCss = deserializeEntry(TEMPLATE_CSS, serializedString);
     }

@@ -305,6 +305,12 @@ All good so far.
 
 ## Upgrade
 
+### Upgrade from version 8.1.3 to 8.2.0
+
+Sections Cover page, CSS, Header and Footer, Filename template were modified to split custom values (provided by user) and default values (provided by application, which can't be modified by user).
+For a smooth migration from previous version we consider all already stored settings as custom, even if they contained default values, not to erase all your already stored settings.
+Be aware that you'll need to tidy this up, storing explicitly either your custom values or switching to use default values.
+
 ### Upgrade from version 7.x.x to 8.0.0
 
 In version 8.0.0 support for Polarion 2404 and older has been dropped. This extension supports only Polarion 2410.

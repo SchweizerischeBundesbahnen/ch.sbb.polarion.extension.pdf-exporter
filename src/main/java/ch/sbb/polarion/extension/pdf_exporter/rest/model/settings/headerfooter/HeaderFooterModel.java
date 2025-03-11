@@ -2,6 +2,7 @@ package ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.headerfooter;
 
 import ch.sbb.polarion.extension.generic.settings.SettingsModel;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.polarion.core.util.StringUtils;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -47,7 +48,12 @@ public class HeaderFooterModel extends SettingsModel {
 
     @Override
     protected void deserializeModelData(String serializedString) {
-        useCustomValues = Boolean.parseBoolean(deserializeEntry(USE_CUSTOM_VALUES_ENTRY_NAME, serializedString));
+        String serializedUseCustomValues = deserializeEntry(USE_CUSTOM_VALUES_ENTRY_NAME, serializedString);
+        if (StringUtils.isEmptyTrimmed(serializedUseCustomValues)) {
+            useCustomValues = true; // Fallback to backwards compatibility with older versions when values were by default always custom
+        } else {
+            useCustomValues = Boolean.parseBoolean(deserializeEntry(USE_CUSTOM_VALUES_ENTRY_NAME, serializedString));
+        }
         headerLeft = deserializeEntry(HEADER_LEFT, serializedString);
         headerCenter = deserializeEntry(HEADER_CENTER, serializedString);
         headerRight = deserializeEntry(HEADER_RIGHT, serializedString);
