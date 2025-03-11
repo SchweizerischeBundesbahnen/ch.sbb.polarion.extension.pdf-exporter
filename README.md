@@ -229,7 +229,7 @@ In case if both of them specified 'existing_wi_id' has higher priority.
 3. For some of these options (Cover page, Header and Footer, Localization, Webhooks and Filename template) `Quick Help` section available with short description of appropriate option. For the rest
    (Style package, Style package weights, CSS) there's no `Quick Help` section as their content is self-evident.
 4. Sections Cover page, Header and Footer, and Filename template have possibility to use default values (can't be edited) or custom. Section CSS has different approach -
-   its area for custom values is always enabled, but default values can be enabled or disabled. Therefor either only custom CSS is used or default CSS is combined with custom.
+   its area for custom values is always enabled, but default values can be enabled or disabled. Therefore, either only custom CSS is used or default CSS is combined with custom.
 5. To change configuration of PDF Exporter extension just edit corresponding section and press `Save` button.
 
 ### CSS for booklet layout
