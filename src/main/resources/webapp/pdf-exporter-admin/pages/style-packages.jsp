@@ -193,10 +193,11 @@
                     </label>
                 </div>
                 <div class='checkbox input-group'>
-                    <label for='enable-comments-rendering'>
-                        <input id="enable-comments-rendering" type='checkbox' />
+                    <label for='render-comments' id='render-comments-label'>
+                        <input id="render-comments" onchange='document.getElementById("render-comments-select").style.visibility = this.checked ? "visible" : "hidden"' type='checkbox' />
                         Comments rendering
                     </label>
+                    <div id="render-comments-select" style="visibility: hidden; margin-left: 10px; width: 200px"></div>
                 </div>
                 <div class='checkbox input-group'>
                     <label for='watermark'>

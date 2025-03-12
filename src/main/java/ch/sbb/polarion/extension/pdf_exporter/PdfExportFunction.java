@@ -116,7 +116,7 @@ public class PdfExportFunction implements IFunction<IModule> {
                 .orientation(Orientation.valueOf(stylePackage.getOrientation()))
                 .paperSize(PaperSize.valueOf(stylePackage.getPaperSize()))
                 .fitToPage(stylePackage.isFitToPage())
-                .enableCommentsRendering(stylePackage.isRenderComments())
+                .renderComments(stylePackage.getRenderComments())
                 .watermark(stylePackage.isWatermark())
                 .markReferencedWorkitems(stylePackage.isMarkReferencedWorkitems())
                 .cutEmptyChapters(stylePackage.isCutEmptyChapters())

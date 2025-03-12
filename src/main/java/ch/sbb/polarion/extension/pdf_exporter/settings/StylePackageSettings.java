@@ -2,6 +2,7 @@ package ch.sbb.polarion.extension.pdf_exporter.settings;
 
 import ch.sbb.polarion.extension.generic.settings.GenericNamedSettings;
 import ch.sbb.polarion.extension.generic.settings.SettingsService;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.CommentsRenderType;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.Orientation;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PaperSize;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.stylepackage.StylePackageModel;
@@ -39,7 +40,7 @@ public class StylePackageSettings extends GenericNamedSettings<StylePackageModel
                 .paperSize(PaperSize.A4.name())
                 .orientation(Orientation.PORTRAIT.name())
                 .fitToPage(true)
-                .renderComments(true)
+                .renderComments(CommentsRenderType.OPEN)
                 .cutEmptyWorkitemAttributes(true)
                 .followHTMLPresentationalHints(true)
                 .weight(StylePackageModel.DEFAULT_WEIGHT)

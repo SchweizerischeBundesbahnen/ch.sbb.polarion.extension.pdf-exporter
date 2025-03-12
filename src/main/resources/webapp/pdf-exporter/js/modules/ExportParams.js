@@ -45,7 +45,7 @@ export default class ExportParams {
         this.orientation = builder.orientation;
         this.paperSize = builder.paperSize;
         this.fitToPage = builder.fitToPage;
-        this.enableCommentsRendering = builder.enableCommentsRendering;
+        this.renderComments = builder.renderComments;
         this.watermark = builder.watermark;
         this.markReferencedWorkitems = builder.markReferencedWorkitems;
         this.cutEmptyChapters = builder.cutEmptyChapters;
@@ -95,7 +95,7 @@ export default class ExportParams {
                 this.orientation = undefined;
                 this.paperSize = undefined;
                 this.fitToPage = undefined;
-                this.enableCommentsRendering = undefined;
+                this.renderComments = undefined;
                 this.watermark = undefined;
                 this.markReferencedWorkitems = undefined;
                 this.cutEmptyChapters = undefined;
@@ -177,8 +177,8 @@ export default class ExportParams {
                 return this;
             }
 
-            setEnableCommentsRendering(enableCommentsRendering) {
-                this.enableCommentsRendering = enableCommentsRendering;
+            setRenderComments(renderComments) {
+                this.renderComments = renderComments;
                 return this;
             }
 

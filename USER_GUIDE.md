@@ -116,7 +116,9 @@ Will result in following PDF:
 
 ![Comments result](docs/user_guide/img/comments_result.png)
 
-If you though don't want comments to be included in generated PDF document - just un-check this checkbox.
+You can control which comments will be included in generated PDF document - only 'Open' or 'All' (both 'Open' and 'Resolved'):
+
+![Comments rendering type](docs/user_guide/img/comments_rendering_type.png)
 
 ### Watermark
 If you select this checkbox all pages of resulted PDF document will include "Confidential" watermark:

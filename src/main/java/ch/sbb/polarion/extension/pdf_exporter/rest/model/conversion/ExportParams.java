@@ -51,8 +51,8 @@ public class ExportParams extends ConversionParams {
     @Schema(description = "Color to be used for headers in the document. By default dark blue color (Polarion's default)")
     private String headersColor;
 
-    @Schema(description = "Comments should be rendered in the exported document", defaultValue = "true")
-    private boolean enableCommentsRendering = true;
+    @Schema(description = "Which comments should be rendered in the exported document")
+    private CommentsRenderType renderComments;
 
     @Schema(description = "Watermark content to be applied to the document")
     private boolean watermark;

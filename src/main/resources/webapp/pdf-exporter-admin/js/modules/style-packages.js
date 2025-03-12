@@ -157,6 +157,18 @@ const Orientations = {
     }
 }
 
+const RenderComments = {
+    renderCommentsSelect: new CustomSelect({
+        selectContainer: ctx.getElementById("render-comments-select"),
+        label: ctx.getElementById("render-comments-label")
+    }),
+
+    init: function () {
+        this.renderCommentsSelect.addOption('OPEN', 'Open');
+        this.renderCommentsSelect.addOption('ALL', 'All');
+    }
+}
+
 const Languages = {
     languageSelect: new CustomSelect({
         selectContainer: ctx.getElementById("language-select")
@@ -189,7 +201,7 @@ function saveStylePackage() {
             'paperSize': PaperSizes.paperSizeSelect.getSelectedValue(),
             'orientation': Orientations.orientationSelect.getSelectedValue(),
             'fitToPage': ctx.getCheckboxValueById('fit-to-page'),
-            'renderComments': ctx.getCheckboxValueById('enable-comments-rendering'),
+            'renderComments': ctx.getCheckboxValueById('render-comments') ? RenderComments.renderCommentsSelect.getSelectedValue() : null,
             'watermark': ctx.getCheckboxValueById('watermark'),
             'markReferencedWorkitems': ctx.getCheckboxValueById('mark-referenced-workitems'),
             'cutEmptyChapters': ctx.getCheckboxValueById('cut-empty-chapters'),
@@ -253,7 +265,11 @@ function setStylePackage(content) {
     Orientations.orientationSelect.selectValue(stylePackage.orientation);
 
     ctx.setCheckboxValueById('fit-to-page', stylePackage.fitToPage);
-    ctx.setCheckboxValueById('enable-comments-rendering', stylePackage.renderComments);
+
+    ctx.setCheckboxValueById('render-comments', !!stylePackage.renderComments);
+    ctx.getElementById('render-comments').dispatchEvent(new Event('change'));
+    RenderComments.renderCommentsSelect.selectValue(stylePackage.renderComments || 'OPEN');
+
     ctx.setCheckboxValueById('watermark', stylePackage.watermark);
     ctx.setCheckboxValueById('mark-referenced-workitems', stylePackage.markReferencedWorkitems);
 
@@ -296,6 +312,7 @@ function newConfigurationCreated() {
 
 PaperSizes.init();
 Orientations.init();
+RenderComments.init();
 Languages.init();
 Promise.all([
     LinkRoles.load(),

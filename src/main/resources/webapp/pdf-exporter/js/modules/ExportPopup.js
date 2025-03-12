@@ -312,7 +312,11 @@ export default class ExportPopup {
         this.ctx.setValue("popup-paper-size-selector", stylePackage.paperSize || ExportParams.PaperSize.A4);
         this.ctx.setValue("popup-orientation-selector", stylePackage.orientation || ExportParams.Orientation.PORTRAIT);
         this.ctx.setCheckbox("popup-fit-to-page", stylePackage.fitToPage);
-        this.ctx.setCheckbox("popup-enable-comments-rendering", stylePackage.renderComments);
+
+        this.ctx.setCheckbox("popup-render-comments", !!stylePackage.renderComments);
+        this.ctx.setValue("popup-render-comments-selector", stylePackage.renderComments || 'OPEN');
+        this.ctx.visibleIf("popup-render-comments-selector", !!stylePackage.renderComments);
+
         this.ctx.setCheckbox("popup-watermark", stylePackage.watermark);
         this.ctx.setCheckbox("popup-mark-referenced-workitems", stylePackage.markReferencedWorkitems);
         this.ctx.setCheckbox("popup-cut-urls", stylePackage.cutLocalURLs);
@@ -557,7 +561,7 @@ export default class ExportPopup {
             .setPaperSize(this.ctx.getElementById("popup-paper-size-selector").value)
             .setOrientation(this.ctx.getElementById("popup-orientation-selector").value)
             .setFitToPage((live_doc || test_run) && this.ctx.getElementById('popup-fit-to-page').checked)
-            .setEnableCommentsRendering(live_doc && this.ctx.getElementById('popup-enable-comments-rendering').checked)
+            .setRenderComments(live_doc && this.ctx.getElementById('popup-render-comments').checked ? this.ctx.getElementById("popup-render-comments-selector").value : null)
             .setWatermark(this.ctx.getElementById("popup-watermark").checked)
             .setMarkReferencedWorkitems(live_doc && this.ctx.getElementById("popup-mark-referenced-workitems").checked)
             .setCutEmptyChapters(live_doc && this.ctx.getElementById("popup-cut-empty-chapters").checked)
