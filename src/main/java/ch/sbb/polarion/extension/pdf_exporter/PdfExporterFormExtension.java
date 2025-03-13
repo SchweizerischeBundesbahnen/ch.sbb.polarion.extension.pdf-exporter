@@ -316,6 +316,7 @@ public class PdfExporterFormExtension implements IFormExtension {
         return form;
     }
 
+    @SuppressWarnings("java:S3252") // allow to build ExportParams using its own builder
     private String getFilename(@NotNull IModule module) {
         DocumentFileNameHelper documentFileNameHelper = new DocumentFileNameHelper();
 
