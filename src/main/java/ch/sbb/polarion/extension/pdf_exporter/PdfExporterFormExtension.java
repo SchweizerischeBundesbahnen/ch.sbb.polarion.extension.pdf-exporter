@@ -91,7 +91,7 @@ public class PdfExporterFormExtension implements IFormExtension {
             form = adjustPaperSize(form, selectedStylePackage);
             form = adjustOrientation(form, selectedStylePackage);
             form = adjustFitToPage(form, selectedStylePackage);
-            form = adjustCommentsRendering(form, selectedStylePackage);
+            form = adjustRenderComments(form, selectedStylePackage);
             form = adjustWatermark(form, selectedStylePackage);
             form = adjustMarkReferencedWorkitems(form, selectedStylePackage);
             form = adjustCutEmptyChapters(form, selectedStylePackage);
@@ -213,8 +213,13 @@ public class PdfExporterFormExtension implements IFormExtension {
         return stylePackage.isFitToPage() ? form.replace("<input id='fit-to-page'", "<input id='fit-to-page' checked") : form;
     }
 
-    private String adjustCommentsRendering(String form, StylePackageModel stylePackage) {
-        return stylePackage.isRenderComments() ? form.replace("<input id='enable-comments-rendering'", "<input id='enable-comments-rendering' checked") : form;
+    private String adjustRenderComments(String form, StylePackageModel stylePackage) {
+        if (stylePackage.getRenderComments() != null) {
+            form = form.replace("<input id='render-comments'", "<input id='render-comments' checked");
+            form = form.replace("id='render-comments' style='display: none'", "id='render-comments'");
+            form = form.replace(String.format(OPTION_VALUE, stylePackage.getRenderComments()), String.format(OPTION_SELECTED, stylePackage.getRenderComments()));
+        }
+        return form;
     }
 
     private String adjustWatermark(String form, StylePackageModel stylePackage) {
@@ -311,6 +316,7 @@ public class PdfExporterFormExtension implements IFormExtension {
         return form;
     }
 
+    @SuppressWarnings("java:S3252") // allow to build ExportParams using its own builder
     private String getFilename(@NotNull IModule module) {
         DocumentFileNameHelper documentFileNameHelper = new DocumentFileNameHelper();
 

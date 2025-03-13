@@ -906,6 +906,11 @@ li span {
     justify-content: space-between;
 }
 
+.comment .status-resolved {
+    padding-right: 5px;
+    color: green;
+}
+
 .comment .text {
     display: block;
     font-size: x-small;

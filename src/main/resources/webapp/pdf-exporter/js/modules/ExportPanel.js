@@ -68,7 +68,11 @@ export default class ExportPanel {
         this.ctx.setValue("headers-color", stylePackage.headersColor);
         this.ctx.setValue("orientation-selector", stylePackage.orientation || 'PORTRAIT');
         this.ctx.setCheckbox("fit-to-page", stylePackage.fitToPage);
-        this.ctx.setCheckbox("enable-comments-rendering", stylePackage.renderComments);
+
+        this.ctx.setCheckbox("render-comments", !!stylePackage.renderComments);
+        this.ctx.setValue("render-comments-selector", stylePackage.renderComments  || 'OPEN');
+        this.ctx.displayIf("render-comments-selector", !!stylePackage.renderComments)
+
         this.ctx.setCheckbox("watermark", stylePackage.watermark);
         this.ctx.setCheckbox("mark-referenced-workitems", stylePackage.markReferencedWorkitems);
         this.ctx.setCheckbox("cut-empty-chapters", stylePackage.cutEmptyChapters);
@@ -156,7 +160,7 @@ export default class ExportPanel {
             .setPaperSize(this.ctx.getElementById("paper-size-selector").value)
             .setOrientation(this.ctx.getElementById("orientation-selector").value)
             .setFitToPage(this.ctx.getElementById('fit-to-page').checked)
-            .setEnableCommentsRendering(this.ctx.getElementById('enable-comments-rendering').checked)
+            .setRenderComments(this.ctx.getElementById('render-comments').checked ? this.ctx.getElementById("render-comments-selector").value : null)
             .setWatermark(this.ctx.getElementById("watermark").checked)
             .setMarkReferencedWorkitems(this.ctx.getElementById("mark-referenced-workitems").checked)
             .setCutEmptyChapters(this.ctx.getElementById("cut-empty-chapters").checked)

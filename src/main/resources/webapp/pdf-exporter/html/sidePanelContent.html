@@ -93,10 +93,14 @@
             </label>
         </div>
         <div class='property-wrapper'>
-            <label for='enable-comments-rendering'>
-                <input id='enable-comments-rendering' type='checkbox'/>
+            <label for='render-comments'>
+                <input id='render-comments' onchange='document.querySelector("#pdf-exporter-panel #render-comments-selector").style.display = this.checked ? "block" : "none"' type='checkbox'/>
                 Comments rendering
             </label>
+            <select id='render-comments-selector'>
+                <option value='OPEN'>Open</option>
+                <option value='ALL'>All</option>
+            </select>
         </div>
         <div class='property-wrapper'>
             <label for='watermark'>

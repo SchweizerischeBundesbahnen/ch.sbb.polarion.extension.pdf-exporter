@@ -85,6 +85,7 @@ public class PdfExportFunction implements IFunction<IModule> {
     }
 
     @VisibleForTesting
+    @SuppressWarnings("java:S3252") // allow to build ExportParams using its own builder
     ExportParams getExportParams(IModule module, @NotNull IArguments args) {
         String projectId = module.getProjectId();
         String stylePackageName = args.getAsString(PARAM_NAME_STYLE_PACKAGE, STYLE_PACKAGE_DEFAULT);
@@ -116,7 +117,7 @@ public class PdfExportFunction implements IFunction<IModule> {
                 .orientation(Orientation.valueOf(stylePackage.getOrientation()))
                 .paperSize(PaperSize.valueOf(stylePackage.getPaperSize()))
                 .fitToPage(stylePackage.isFitToPage())
-                .enableCommentsRendering(stylePackage.isRenderComments())
+                .renderComments(stylePackage.getRenderComments())
                 .watermark(stylePackage.isWatermark())
                 .markReferencedWorkitems(stylePackage.isMarkReferencedWorkitems())
                 .cutEmptyChapters(stylePackage.isCutEmptyChapters())

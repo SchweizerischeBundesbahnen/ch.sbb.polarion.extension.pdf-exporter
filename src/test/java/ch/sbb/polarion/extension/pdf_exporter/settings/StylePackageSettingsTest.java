@@ -7,6 +7,7 @@ import ch.sbb.polarion.extension.generic.settings.GenericNamedSettings;
 import ch.sbb.polarion.extension.generic.settings.SettingId;
 import ch.sbb.polarion.extension.generic.settings.SettingsService;
 import ch.sbb.polarion.extension.generic.util.ScopeUtils;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.CommentsRenderType;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.Orientation;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PaperSize;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.stylepackage.StylePackageModel;
@@ -90,6 +91,12 @@ class StylePackageSettingsTest {
             assertEquals("customCoverPage", loadedModel.getCoverPage());
             assertEquals("customOrientation", loadedModel.getOrientation());
             assertEquals("custom", loadedModel.getBundleTimestamp());
+            assertNull(loadedModel.getRenderComments());
+
+            // check 'render comments' backward boolean compatibility
+            customProjectModel.setRenderComments(CommentsRenderType.OPEN);
+            when(mockedSettingsService.read(eq(mockProjectLocation), any())).thenReturn(customProjectModel.serialize().replace("OPEN", "true"));
+            assertEquals(CommentsRenderType.OPEN, stylePackageSettings.load(projectName, SettingId.fromName("Any setting name")).getRenderComments());
         }
     }
 

@@ -1729,7 +1729,8 @@
           },
           "enableCommentsRendering": {
             "default": true,
-            "description": "Comments should be rendered in the exported document",
+            "deprecated": true,
+            "description": "Comments should be rendered in the exported document. Deprecated: use 'renderComments' instead",
             "type": "boolean"
           },
           "fileName": {
@@ -1821,6 +1822,14 @@
           "projectId": {
             "description": "The unique identifier for the project",
             "example": "elibrary",
+            "type": "string"
+          },
+          "renderComments": {
+            "description": "Which comments should be rendered in the exported document",
+            "enum": [
+              "OPEN",
+              "ALL"
+            ],
             "type": "string"
           },
           "revision": {

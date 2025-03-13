@@ -27,13 +27,13 @@ import java.util.Map;
 @SuppressWarnings("java:S1200")
 public class LiveDocCommentsProcessor {
 
-    private Map<String, LiveDocComment> getCommentsFromDocument(ProxyDocument document) {
+    private Map<String, LiveDocComment> getCommentsFromDocument(ProxyDocument document, boolean onlyOpen) {
         final UpdatableDocumentFields fields = document.fields();
         final CommentBasesTreeField<CommentBase> comments = fields.comments();
         Map<String, LiveDocComment> liveDocCommentMap = new HashMap<>();
         comments.forEach(commentBase -> {
             LiveDocComment liveDocComment = getCommentFromCommentBase(commentBase);
-            if (commentBase.fields().parentComment().get() == null) {
+            if ((!onlyOpen || !liveDocComment.getResolved().get()) && commentBase.fields().parentComment().get() == null) {
                 liveDocCommentMap.put(liveDocComment.getId().get(), liveDocComment);
             }
         });
@@ -76,11 +76,11 @@ public class LiveDocCommentsProcessor {
     }
 
     @NotNull
-    public String addLiveDocComments(ProxyDocument document, @NotNull String html) {
+    public String addLiveDocComments(ProxyDocument document, @NotNull String html, boolean onlyOpen) {
         //Polarion document keeps comments position in spans marked with id 'polarion-comment:commentId'.
         //<span id="polarion-comment:1"></span>"
         //Following expression retrieves such spans.
-        final Map<String, LiveDocComment> liveDocComments = getCommentsFromDocument(document);
+        final Map<String, LiveDocComment> liveDocComments = getCommentsFromDocument(document, onlyOpen);
         return RegexMatcher.get("(?s)(<span id=\"polarion-comment:(?<commentId>\\d+)\"></span>)").replace(html, regexEngine -> {
             String commentId = regexEngine.group("commentId");
             LiveDocComment liveDocComment = liveDocComments.get(commentId);
@@ -103,9 +103,10 @@ public class LiveDocCommentsProcessor {
 
     private String getCommentSpan(CommentData commentData, int nestingLevel) {
         String dateSpan = String.format("[span class=date]%s[/span]", commentData.getDate());
+        String statusSpan = commentData.isResolved() ? "[span class=status-resolved]Resolved[/span]" : "";
         String authorSpan = commentData.getAuthor() != null ? String.format("[span class=author]%s[/span]", commentData.getAuthor()) : "";
         String textSpan = String.format("[span class=text]%s[/span]", commentData.getText());
-        return String.format("[span class=comment level-%d][span class=meta]%s%s[/span]%s[/span]", nestingLevel, dateSpan, authorSpan, textSpan);
+        return String.format("[span class=comment level-%d][span class=meta]%s[span class=details]%s%s[/span][/span]%s[/span]", nestingLevel, dateSpan, statusSpan, authorSpan, textSpan);
     }
 
     private CommentData getCommentData(LiveDocComment liveDocComment) {
@@ -113,10 +114,12 @@ public class LiveDocCommentsProcessor {
         User user = liveDocComment.getAuthor().get();
         String authorName = user != null ? user.fields().name().get() : null;
         String commentText = liveDocComment.getText().persistedHtml();
+        boolean resolved = liveDocComment.getResolved().get();
         return CommentData.builder()
                 .date(date)
                 .author(authorName)
                 .text(commentText)
+                .resolved(resolved)
                 .build();
     }
 
@@ -126,6 +129,7 @@ public class LiveDocCommentsProcessor {
         private String date;
         private String author;
         private String text;
+        private boolean resolved;
     }
 
 }

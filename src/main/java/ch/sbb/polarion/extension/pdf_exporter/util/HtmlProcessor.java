@@ -127,7 +127,7 @@ public class HtmlProcessor {
             case BASELINE_COLLECTION -> throw new IllegalArgumentException(UNSUPPORTED_DOCUMENT_TYPE.formatted(exportParams.getDocumentType()));
         };
 
-        if (exportParams.isEnableCommentsRendering()) {
+        if (exportParams.getRenderComments() != null) {
             html = processComments(html);
         }
         if (hasCustomPageBreaks(html)) {
@@ -525,7 +525,9 @@ public class HtmlProcessor {
             return String.format("<span class='comment level-%s'>", nestingLevel);
         });
         html = html.replace("[span class=meta]", "<span class='meta'>");
+        html = html.replace("[span class=details]", "<span class='details'>");
         html = html.replace("[span class=date]", "<span class='date'>");
+        html = html.replace("[span class=status-resolved]", "<span class='status-resolved'>");
         html = html.replace("[span class=author]", "<span class='author'>");
         html = html.replace("[span class=text]", "<span class='text'>");
         html = html.replace(COMMENT_END, SPAN_END_TAG);

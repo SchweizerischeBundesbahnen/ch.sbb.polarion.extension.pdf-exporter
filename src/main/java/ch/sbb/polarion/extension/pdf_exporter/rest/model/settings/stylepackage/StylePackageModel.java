@@ -2,6 +2,7 @@ package ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.stylepackage;
 
 import ch.sbb.polarion.extension.generic.settings.NamedSettings;
 import ch.sbb.polarion.extension.generic.settings.SettingsModel;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.CommentsRenderType;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -12,6 +13,7 @@ import lombok.ToString;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 @Data
 @Builder
@@ -63,7 +65,7 @@ public class StylePackageModel extends SettingsModel {
     private String paperSize;
     private String orientation;
     private boolean fitToPage;
-    private boolean renderComments;
+    private CommentsRenderType renderComments;
     private boolean watermark;
     private boolean markReferencedWorkitems;
     private boolean cutEmptyChapters;
@@ -91,7 +93,7 @@ public class StylePackageModel extends SettingsModel {
                 serializeEntry(PAPER_SIZE_ENTRY_NAME, paperSize) +
                 serializeEntry(ORIENTATION_ENTRY_NAME, orientation) +
                 serializeEntry(FIT_TO_PAGE_ENTRY_NAME, fitToPage) +
-                serializeEntry(RENDER_COMMENTS_ENTRY_NAME, renderComments) +
+                serializeEntry(RENDER_COMMENTS_ENTRY_NAME, renderComments == null ? null : renderComments.name()) +
                 serializeEntry(WATERMARK_ENTRY_NAME, watermark) +
                 serializeEntry(MARK_REFERENCED_WORKITEMS_ENTRY_NAME, markReferencedWorkitems) +
                 serializeEntry(CUT_EMPTY_CHAPTERS_ENTRY_NAME, cutEmptyChapters) +
@@ -121,7 +123,7 @@ public class StylePackageModel extends SettingsModel {
         paperSize = deserializeEntry(PAPER_SIZE_ENTRY_NAME, serializedString);
         orientation = deserializeEntry(ORIENTATION_ENTRY_NAME, serializedString);
         fitToPage = Boolean.parseBoolean(deserializeEntry(FIT_TO_PAGE_ENTRY_NAME, serializedString));
-        renderComments = Boolean.parseBoolean(deserializeEntry(RENDER_COMMENTS_ENTRY_NAME, serializedString));
+        renderComments = parseRenderComments(deserializeEntry(RENDER_COMMENTS_ENTRY_NAME, serializedString));
         watermark = Boolean.parseBoolean(deserializeEntry(WATERMARK_ENTRY_NAME, serializedString));
         markReferencedWorkitems = Boolean.parseBoolean(deserializeEntry(MARK_REFERENCED_WORKITEMS_ENTRY_NAME, serializedString));
         cutEmptyChapters = Boolean.parseBoolean(deserializeEntry(CUT_EMPTY_CHAPTERS_ENTRY_NAME, serializedString));
@@ -134,5 +136,17 @@ public class StylePackageModel extends SettingsModel {
         linkedWorkitemRoles = deserializeListEntry(LINKED_WORKITEM_ROLES_ENTRY_NAME, serializedString, String.class);
         exposePageWidthValidation = Boolean.parseBoolean(deserializeEntry(EXPOSE_PAGE_WIDTH_VALIDATION_ENTRY_NAME, serializedString));
         attachmentsFilter = deserializeEntry(ATTACHMENTS_FILTER, serializedString);
+    }
+
+    /**
+     * Previously 'renderComments' had boolean type, so it may contain 'true' / 'false' values.
+     * In case if it's 'true' now we must use OPEN type.
+     */
+    private CommentsRenderType parseRenderComments(String value) {
+        if (Stream.of(CommentsRenderType.OPEN.name(), "true").anyMatch(v -> v.equalsIgnoreCase(value))) {
+            return CommentsRenderType.OPEN;
+        } else {
+            return CommentsRenderType.ALL.name().equals(value) ? CommentsRenderType.ALL : null;
+        }
     }
 }
