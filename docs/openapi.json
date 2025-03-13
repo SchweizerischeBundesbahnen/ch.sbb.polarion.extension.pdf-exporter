@@ -1727,6 +1727,12 @@
             "example": "LIVE_DOC",
             "type": "string"
           },
+          "enableCommentsRendering": {
+            "default": true,
+            "deprecated": true,
+            "description": "Comments should be rendered in the exported document. Deprecated: use 'renderComments' instead",
+            "type": "boolean"
+          },
           "fileName": {
             "description": "Target file name of exported document",
             "type": "string"
