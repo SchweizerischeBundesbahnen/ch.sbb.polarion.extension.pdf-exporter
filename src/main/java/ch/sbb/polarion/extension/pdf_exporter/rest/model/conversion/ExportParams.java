@@ -106,6 +106,7 @@ public class ExportParams extends ConversionParams {
     /**
      * REMOVE in next major version together with 'enableCommentsRendering'
      */
+    @SuppressWarnings("java:S3358") // ignore sonar complaint about nested ternary operation - this method is going to be removed soon
     public CommentsRenderType getRenderComments() {
         return renderComments != null ? renderComments : enableCommentsRendering ? CommentsRenderType.ALL : null;
     }
