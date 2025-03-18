@@ -1,5 +1,20 @@
 # Changelog
 
+## [8.2.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v8.1.3...v8.2.0) (2025-03-13)
+
+
+### Features
+
+* ability to filter out resolved comments ([#401](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/401)) ([9ce8a51](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/9ce8a511fe02cb01802033b6dd520b1e2151a27e)), closes [#400](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/400)
+* fit html content when converted to pdf using the api ([#392](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/392)) ([5fc8fd7](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/5fc8fd7bd218ebf6b61706e4ea966bd9895ff2a3))
+* Splitting setting (some) files into generic and custom one ([#398](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/398)) ([8f36e90](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/8f36e909830b5cb719faecf622f4efeb24afda3c))
+
+
+### Bug Fixes
+
+* **deps:** update dependency ch.sbb.polarion.extensions:ch.sbb.polarion.extension.generic to v8.1.0 ([#394](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/394)) ([1303725](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/13037256fe6cd0afc0720163f2ed7b668f63a1c1))
+* Fixed export of LiveDoc containing SVG pictures. ([#396](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/396)) ([1ae6bbb](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/1ae6bbbb65e4ecc86707dbbfb0455ebfac222447)), closes [#395](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/395)
+
 ## [8.1.3](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v8.1.2...v8.1.3) (2025-02-20)
 
 
