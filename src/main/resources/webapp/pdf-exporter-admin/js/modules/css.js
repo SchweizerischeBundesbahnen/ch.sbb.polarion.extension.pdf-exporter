@@ -27,15 +27,10 @@ function saveCss() {
     ctx.hideActionAlerts();
 
     const disableDefaultCss = ctx.getCheckboxValueById('disable-default-css');
-    const requestBody = disableDefaultCss
-        ? {
-            'disableDefaultCss': true,
-            'css': ''
-        }
-        : {
-            'disableDefaultCss': false,
-            'css': ctx.getValueById('custom-css-input')
-        };
+    const requestBody = {
+        'disableDefaultCss': disableDefaultCss,
+        'css': ctx.getValueById('custom-css-input')
+    };
 
     ctx.callAsync({
         method: 'PUT',
