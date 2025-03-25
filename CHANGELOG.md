@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.2.1](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v8.2.0...v8.2.1) (2025-03-25)
+
+
+### Bug Fixes
+
+* Fix storing custom CSS ([#404](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/404)) ([6cfd704](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/6cfd70447f5e739a4dd469631f04c0dbcd30268e))
+
 ## [8.2.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v8.1.3...v8.2.0) (2025-03-13)
 
 
