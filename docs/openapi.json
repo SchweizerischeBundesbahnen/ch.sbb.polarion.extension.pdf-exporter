@@ -53,7 +53,10 @@
             "description": "Successfully retrieved CORS configuration"
           }
         },
-        "summary": "Checks CORS configuration"
+        "summary": "Checks CORS configuration",
+        "tags": [
+          "Internal Configuration"
+        ]
       }
     },
     "/api/configuration/default-settings": {
@@ -81,7 +84,10 @@
             "description": "Successfully retrieved default settings configuration"
           }
         },
-        "summary": "Checks default settings configuration"
+        "summary": "Checks default settings configuration",
+        "tags": [
+          "Internal Configuration"
+        ]
       }
     },
     "/api/configuration/dle-toolbar-config": {
@@ -99,7 +105,10 @@
             "description": "Successfully retrieved DLE Toolbar configuration"
           }
         },
-        "summary": "Checks DLE Toolbar configuration"
+        "summary": "Checks DLE Toolbar configuration",
+        "tags": [
+          "Internal Configuration"
+        ]
       }
     },
     "/api/configuration/document-properties-pane-config": {
@@ -127,7 +136,10 @@
             "description": "Successfully retrieved document properties pane configuration"
           }
         },
-        "summary": "Checks document properties pane configuration"
+        "summary": "Checks document properties pane configuration",
+        "tags": [
+          "Internal Configuration"
+        ]
       }
     },
     "/api/configuration/live-report-config": {
@@ -145,7 +157,10 @@
             "description": "Successfully retrieved Live Report configuration"
           }
         },
-        "summary": "Checks Live Report configuration"
+        "summary": "Checks Live Report configuration",
+        "tags": [
+          "Internal Configuration"
+        ]
       }
     },
     "/api/configuration/weasyprint": {
@@ -167,7 +182,10 @@
             "description": "Successfully retrieved WeasyPrint configuration"
           }
         },
-        "summary": "Checks WeasyPrint configuration"
+        "summary": "Checks WeasyPrint configuration",
+        "tags": [
+          "Internal Configuration"
+        ]
       }
     },
     "/api/context": {

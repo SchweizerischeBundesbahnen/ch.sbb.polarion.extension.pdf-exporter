@@ -5,6 +5,7 @@ import ch.sbb.polarion.extension.generic.settings.NamedSettingsRegistry;
 import ch.sbb.polarion.extension.pdf_exporter.converter.PdfConverterJobsCleaner;
 import ch.sbb.polarion.extension.pdf_exporter.rest.controller.CollectionApiController;
 import ch.sbb.polarion.extension.pdf_exporter.rest.controller.CollectionInternalController;
+import ch.sbb.polarion.extension.pdf_exporter.rest.controller.ConfigurationApiController;
 import ch.sbb.polarion.extension.pdf_exporter.rest.controller.ConverterApiController;
 import ch.sbb.polarion.extension.pdf_exporter.rest.controller.ConverterInternalController;
 import ch.sbb.polarion.extension.pdf_exporter.rest.controller.SettingsApiController;
@@ -74,7 +75,8 @@ public class PdfExporterRestApplication extends GenericRestApplication {
                 new CollectionApiController(),
                 new CollectionInternalController(),
                 new UtilityResourcesApiController(),
-                new UtilityResourcesInternalController()
+                new UtilityResourcesInternalController(),
+                new ConfigurationApiController()
         );
     }
 
