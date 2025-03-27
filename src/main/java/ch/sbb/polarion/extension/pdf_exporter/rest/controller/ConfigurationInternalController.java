@@ -14,6 +14,7 @@ import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.jetbrains.annotations.NotNull;
 
 import javax.ws.rs.DefaultValue;
@@ -26,6 +27,7 @@ import java.util.List;
 
 @Hidden
 @Path("/internal")
+@Tag(name = "Configuration status")
 public class ConfigurationInternalController {
 
     @GET
@@ -122,7 +124,6 @@ public class ConfigurationInternalController {
                     )
             }
     )
-
     public @NotNull List<ConfigurationStatus> checkWeasyPrint() {
         return new WeasyPrintStatusProvider().getStatuses(ConfigurationStatusProvider.Context.builder().build());
     }
