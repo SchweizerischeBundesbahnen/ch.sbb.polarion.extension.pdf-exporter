@@ -16,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
+import org.testcontainers.images.PullPolicy;
 
 import java.awt.image.BufferedImage;
 import java.io.FileOutputStream;
@@ -83,6 +84,7 @@ public abstract class BaseWeasyPrintTest {
     protected byte[] exportToPdf(String html, @NotNull WeasyPrintOptions weasyPrintOptions) {
         try (GenericContainer<?> weasyPrintService = new GenericContainer<>(DOCKER_IMAGE_NAME)) {
             weasyPrintService
+                    .withImagePullPolicy(PullPolicy.alwaysPull())
                     .withExposedPorts(9080)
                     .waitingFor(Wait.forHttp("/version").forPort(9080))
                     .start();
