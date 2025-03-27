@@ -54,7 +54,7 @@
 
         <exec-maven-plugin.version>3.3.0</exec-maven-plugin.version>
         <weasyprint.version>62.3</weasyprint.version>
-        <awaitility.version>4.2.2</awaitility.version>
+        <awaitility.version>4.3.0</awaitility.version>
         <tika.version>1.28.5</tika.version>
         <cssparser.version>0.9.30</cssparser.version>
 
