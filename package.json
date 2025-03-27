@@ -8,6 +8,6 @@
   "devDependencies": {
     "chai": "5.1.2",
     "mocha": "11.1.0",
-    "testdouble": "^3.20.2"
+    "testdouble": "3.20.2"
   }
 }
