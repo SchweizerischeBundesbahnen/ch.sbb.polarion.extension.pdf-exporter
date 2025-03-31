@@ -1,5 +1,18 @@
 # Changelog
 
+## [8.3.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v8.2.1...v8.3.0) (2025-03-31)
+
+
+### Features
+
+* weasypring-service v65.0.0 support ([#410](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/410)) ([35c9b4c](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/35c9b4c63208fd95893e7d894cc3849a2ddba13a)), closes [#409](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/409)
+
+
+### Bug Fixes
+
+* **deps:** update dependency net.bytebuddy:byte-buddy to v1.17.4 ([f3d2ce1](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/f3d2ce1a511c44201efaedd4e5d063090c4b88d3))
+* **deps:** update dependency net.bytebuddy:byte-buddy to v1.17.5 ([2c29859](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/2c298599efa344a0b3766537697765cb40856b50))
+
 ## [8.2.1](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v8.2.0...v8.2.1) (2025-03-25)
 
 
