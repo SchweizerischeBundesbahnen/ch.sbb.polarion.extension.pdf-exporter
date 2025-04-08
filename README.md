@@ -237,7 +237,7 @@ In case if both of them specified 'existing_wi_id' has higher priority.
 If you export PDF to be printed as a booklet, then you may need to alternate blocks in header/footer depending on the fact if it's even or odd page.
 This can be achieved (since version 8.1.0) by CSS modification. Let us give you an example. Find following definition in standard CSS of the extension:
 
-```
+```css
 @page :left {
     @top-left {
         content: element(top-left);
@@ -256,7 +256,7 @@ This can be achieved (since version 8.1.0) by CSS modification. Let us give you 
 
 ...and replace it by this code:
 
-```
+```css
 @page :left {
     @top-left {
         content: element(top-right);

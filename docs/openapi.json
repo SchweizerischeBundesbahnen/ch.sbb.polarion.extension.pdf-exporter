@@ -55,7 +55,7 @@
         },
         "summary": "Checks CORS configuration",
         "tags": [
-          "Internal Configuration"
+          "Configuration status"
         ]
       }
     },
@@ -86,7 +86,7 @@
         },
         "summary": "Checks default settings configuration",
         "tags": [
-          "Internal Configuration"
+          "Configuration status"
         ]
       }
     },
@@ -107,7 +107,7 @@
         },
         "summary": "Checks DLE Toolbar configuration",
         "tags": [
-          "Internal Configuration"
+          "Configuration status"
         ]
       }
     },
@@ -138,7 +138,7 @@
         },
         "summary": "Checks document properties pane configuration",
         "tags": [
-          "Internal Configuration"
+          "Configuration status"
         ]
       }
     },
@@ -159,7 +159,7 @@
         },
         "summary": "Checks Live Report configuration",
         "tags": [
-          "Internal Configuration"
+          "Configuration status"
         ]
       }
     },
@@ -184,7 +184,7 @@
         },
         "summary": "Checks WeasyPrint configuration",
         "tags": [
-          "Internal Configuration"
+          "Configuration status"
         ]
       }
     },
