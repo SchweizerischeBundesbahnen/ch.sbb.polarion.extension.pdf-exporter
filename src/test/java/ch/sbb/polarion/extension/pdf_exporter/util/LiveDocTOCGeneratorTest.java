@@ -29,4 +29,22 @@ class LiveDocTOCGeneratorTest {
         }
     }
 
+    @Test
+    @SneakyThrows
+    void tableOfContentWikiContent() {
+        try (
+                InputStream isInitialHtml = this.getClass().getResourceAsStream("/tableOfContentLiveDocWikiContentBeforeProcessingFormatted.html");
+                InputStream isExceptedHtml = this.getClass().getResourceAsStream("/tableOfContentLiveDocWikiContentAfterProcessing.html")
+        ) {
+            String initialHtml = new String(isInitialHtml.readAllBytes(), StandardCharsets.UTF_8);
+            String expectedHtml = new String(isExceptedHtml.readAllBytes(), StandardCharsets.UTF_8);
+
+            LiveDocTOCGenerator liveDocTOCGenerator = new LiveDocTOCGenerator();
+            String processedHtml = liveDocTOCGenerator.addTableOfContent(initialHtml);
+
+            // Spaces and new lines are removed to exclude difference in space characters
+            assertEquals(TestStringUtils.removeNonsensicalSymbols(expectedHtml), TestStringUtils.removeNonsensicalSymbols(processedHtml));
+        }
+    }
+
 }
