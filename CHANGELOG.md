@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.3.1](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v8.3.0...v8.3.1) (2025-04-09)
+
+
+### Bug Fixes
+
+* wiki content toc support ([#416](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/416)) ([02f014c](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/02f014c3797168c91b51499405e26897c7510a8b)), closes [#415](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/415)
+
 ## [8.3.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v8.2.1...v8.3.0) (2025-03-31)
 
 
