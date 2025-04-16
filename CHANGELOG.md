@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.3.2](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v8.3.1...v8.3.2) (2025-04-16)
+
+
+### Bug Fixes
+
+* **deps:** update dependency ch.sbb.polarion.extensions:ch.sbb.polarion.extension.generic to v8.1.1 ([#420](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/420)) ([b485970](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/b48597080950070791a1766628b4d91f9a13bad3))
+
 ## [8.3.1](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v8.3.0...v8.3.1) (2025-04-09)
 
 
