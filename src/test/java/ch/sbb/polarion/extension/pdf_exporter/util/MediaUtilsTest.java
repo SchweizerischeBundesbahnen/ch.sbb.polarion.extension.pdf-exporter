@@ -1,6 +1,5 @@
 package ch.sbb.polarion.extension.pdf_exporter.util;
 
-import com.google.common.primitives.Bytes;
 import lombok.SneakyThrows;
 import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.Test;
@@ -75,7 +74,7 @@ class MediaUtilsTest {
         assertEquals("text/plain", MediaUtils.guessMimeType("noExtension", "text".getBytes()));
 
         assertNull(MediaUtils.guessMimeType("unknownExtensionEmptyContent.unk", emptyArray));
-        assertNull(MediaUtils.guessMimeType("unknownExtensionNonsenseContent.unk", Bytes.toArray(List.of(0, 0, 0, 0, 0))));
+        assertNull(MediaUtils.guessMimeType("unknownExtensionNonsenseContent.unk", new byte[] {0, 0, 0, 0, 0}));
 
         assertTrue(InMemoryAppender.anyMessageContains("Cannot get mime type for the resource: unknownExtensionEmptyContent.unk"));
         assertTrue(InMemoryAppender.anyMessageContains("Cannot get mime type for the resource: unknownExtensionNonsenseContent.unk"));
