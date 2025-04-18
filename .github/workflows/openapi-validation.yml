@@ -3,15 +3,21 @@ name: openapi-validate
 on:
   push:
   workflow_dispatch:
+# Set default permissions for all jobs
+permissions:
+  contents: read
 jobs:
   check-openapi-definition:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     name: Swagger Editor Validator Remote
     steps:
       - name: 📄 Checkout the repository
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
         with:
-          fetch-depth: 0
+          fetch-depth: 1
+          persist-credentials: false  # Do not persist credentials for security
       - name: 🧪 Validate OpenAPI definition
         uses: swaggerexpert/swagger-editor-validate@264fd875d3c6e1bf65da1f0a63e095cbe41ffef3  # v1.5.1
         with:
