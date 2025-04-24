@@ -1,5 +1,5 @@
 ---
-name: maven-build
+name: Build & Release
 on:
   push:
     branches: ['**']
@@ -7,9 +7,16 @@ on:
     branches: [main]
     types: [opened, synchronize, reopened, ready_for_review]
   workflow_dispatch:
+# Set default permissions for all jobs
+permissions:
+  contents: read
+  packages: read
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
     env:
       S3_SBB_POLARION_MAVEN_REPO_RW_ACCESS_KEY: ${{ secrets.S3_SBB_POLARION_MAVEN_REPO_RW_ACCESS_KEY }}
       S3_SBB_POLARION_MAVEN_REPO_RW_SECRET_ACCESS_KEY: ${{ secrets.S3_SBB_POLARION_MAVEN_REPO_RW_SECRET_ACCESS_KEY }}
@@ -23,7 +30,8 @@ jobs:
       - name: 📄 Checkout the repository
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
         with:
-          fetch-depth: 0
+          fetch-depth: 1
+          persist-credentials: false
       - name: 🧱 Set up JDK and Maven
         uses: actions/setup-java@c5195efecf7bdfc987ee8bae7a71cb8b11521c00  # v4.7.1
         with:
@@ -32,10 +40,10 @@ jobs:
           gpg-private-key: ${{ secrets.COM_SONATYPE_CENTRAL_POLARION_OPENSOURCE_GPG_PRIVATE_KEY }}
       - name: 📝 Get the project version
         id: project_version
-        run: echo "project_version=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)" >> $GITHUB_OUTPUT
+        run: echo "project_version=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)" >> "$GITHUB_OUTPUT"
       - name: 📝 Store cache key
         id: cache_key
-        run: echo "cache_key=${{ runner.os }}-mvn-${{ hashFiles('**/pom.xml') }}-${{ github.sha }}" >> $GITHUB_OUTPUT
+        run: echo "cache_key=${{ runner.os }}-mvn-${{ hashFiles('**/pom.xml') }}-${{ github.sha }}" >> "$GITHUB_OUTPUT"
       - name: 💾 Prepare cache using cache key
         id: prepare-cache
         uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684  # v4.2.3
@@ -95,11 +103,16 @@ jobs:
         run: cat /home/runner/.m2/settings.xml
       - name: 📦 Build with Maven for Pushes
         if: github.event_name == 'push'
-        run: mvn --batch-mode clean package -P tests-with-weasyprint-docker sonar:sonar -Dsonar.branch.name=${{ github.head_ref }}
+        env:
+          GITHUB_HEAD_REF: ${{ github.head_ref }}
+        run: mvn --batch-mode clean package sonar:sonar -Dsonar.branch.name="${GITHUB_HEAD_REF}"
       - name: 📦 Build with Maven for PRs
         if: github.event_name == 'pull_request'
-        run: mvn --batch-mode clean package -P tests-with-weasyprint-docker sonar:sonar -Dsonar.pullrequest.base=${{ github.base_ref }} -Dsonar.pullrequest.branch=${{ github.head_ref }}
-          -Dsonar.pullrequest.key=${{ github.event.pull_request.number }}
+        env:
+          GITHUB_HEAD_REF: ${{ github.head_ref }}
+          GITHUB_BASE_REF: ${{ github.base_ref }}
+          GITHUB_PR_NUMBER_REF: ${{ github.event.pull_request.number }}
+        run: mvn --batch-mode clean package sonar:sonar -Dsonar.pullrequest.base="${GITHUB_HEAD_REF}" -Dsonar.pullrequest.branch="${GITHUB_BASE_REF}" -Dsonar.pullrequest.key="${GITHUB_PR_NUMBER_REF}"
     outputs:
       project_version: ${{ steps.project_version.outputs.project_version }}
       cache_key: ${{ steps.cache_key.outputs.cache_key }}
@@ -108,6 +121,9 @@ jobs:
   deploy-maven-central:
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
     if: ${{ !endsWith(needs.build.outputs.project_version, '-SNAPSHOT') && github.ref == 'refs/heads/main' }}
     env:
       S3_SBB_POLARION_MAVEN_REPO_RW_ACCESS_KEY: ${{ secrets.S3_SBB_POLARION_MAVEN_REPO_RW_ACCESS_KEY }}
@@ -162,6 +178,8 @@ jobs:
       - name: 📦 Deploy artifacts to GitHub Packages
         run: mvn --batch-mode -Dmaven.test.skip=true -Dmaven.javadoc.skip=true -Dmaven.source.skip=true deploy -P deploy-github-packages
       - name: 📦 Upload assets to GitHub Release
-        if: ${{ !endsWith(needs.build.outputs.project_version, '-SNAPSHOT') }}
+        env:
+          RELEASE_VERSION: ${{ needs.build.outputs.project_version }}
+        if: ${{ !endsWith(env.RELEASE_VERSION, '-SNAPSHOT') }}
         run: |-
-          gh release upload v${{ needs.build.outputs.project_version }} target/*-${{ needs.build.outputs.project_version }}.jar
+          gh release upload "v${RELEASE_VERSION}" "target/*-${RELEASE_VERSION}.jar" --clobber
