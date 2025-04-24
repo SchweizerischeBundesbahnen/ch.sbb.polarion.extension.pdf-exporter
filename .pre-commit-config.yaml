@@ -34,6 +34,11 @@ repos:
         entry: \b([uUeE]{1,2})\d{5,6}\b
         language: pygrep
         types: [text]
+      - id: sensitive-data-leak-dev-ticket-numbers
+        name: Sensitive data leak - DEV ticket numbers
+        entry: \bDEV-\d{1,6}\b
+        language: pygrep
+        types: [text]
   - repo: https://github.com/zricethezav/gitleaks
     rev: v8.24.3
     hooks:
@@ -48,7 +53,7 @@ repos:
     hooks:
       - id: commitizen
   - repo: https://github.com/woodruffw/zizmor-pre-commit
-    rev: v1.5.2
+    rev: v1.6.0
     hooks:
       - id: zizmor
   - repo: https://github.com/rhysd/actionlint

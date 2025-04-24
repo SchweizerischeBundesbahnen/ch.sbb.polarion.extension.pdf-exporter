@@ -180,6 +180,6 @@ jobs:
       - name: 📦 Upload assets to GitHub Release
         env:
           RELEASE_VERSION: ${{ needs.build.outputs.project_version }}
-        if: ${{ contains(env.RELEASE_VERSION, '^[0-9]+\\.[0-9]+\\.[0-9]+$') }}
+        if: ${{ !endsWith(env.RELEASE_VERSION, '-SNAPSHOT') }}
         run: |-
-          gh release upload "v${RELEASE_VERSION}" "target/*-${RELEASE_VERSION}.jar"
+          gh release upload "v${RELEASE_VERSION}" "target/*-${RELEASE_VERSION}.jar" --clobber
