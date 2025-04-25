@@ -54,9 +54,10 @@ public class TestRunAttachmentsInternalController {
             @Parameter(description = "Project ID", required = true) @PathParam("projectId") String projectId,
             @Parameter(description = "TestRun ID", required = true) @PathParam("testRunId") String testRunId,
             @Parameter(description = "TestRun revision") @QueryParam("revision") String revision,
-            @Parameter(description = "Filename filter for attachment") @QueryParam("filter") String filter
+            @Parameter(description = "Filename filter for attachment") @QueryParam("filter") String filter,
+            @Parameter(description = "Testcase boolean filter field ID") @QueryParam("testCaseFilterFieldId") String testCaseFilterFieldId
     ) {
-        return pdfExporterPolarionService.getTestRunAttachments(projectId, testRunId, revision, filter);
+        return pdfExporterPolarionService.getTestRunAttachments(projectId, testRunId, revision, filter, testCaseFilterFieldId);
     }
 
     @GET

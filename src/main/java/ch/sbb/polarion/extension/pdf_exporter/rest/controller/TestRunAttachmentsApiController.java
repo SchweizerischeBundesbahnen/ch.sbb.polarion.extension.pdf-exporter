@@ -15,8 +15,8 @@ public class TestRunAttachmentsApiController extends TestRunAttachmentsInternalC
     private static final PolarionService polarionService = new PolarionService();
 
     @Override
-    public List<TestRunAttachment> getTestRunAttachments(String projectId, String testRunId, String revision, String filter) {
-        return polarionService.callPrivileged(() -> super.getTestRunAttachments(projectId, testRunId, revision, filter));
+    public List<TestRunAttachment> getTestRunAttachments(String projectId, String testRunId, String revision, String filter, String testCaseFilterFieldId) {
+        return polarionService.callPrivileged(() -> super.getTestRunAttachments(projectId, testRunId, revision, filter, testCaseFilterFieldId));
     }
 
     @Override

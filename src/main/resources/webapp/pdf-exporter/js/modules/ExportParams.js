@@ -59,6 +59,7 @@ export default class ExportParams {
         this.fileName = builder.fileName;
         this.urlQueryParameters = builder.urlQueryParameters;
         this.attachmentsFilter = builder.attachmentsFilter;
+        this.testcaseFieldId = builder.testcaseFieldId;
         this.internalContent = builder.internalContent;
     }
 
@@ -109,6 +110,7 @@ export default class ExportParams {
                 this.fileName = undefined;
                 this.urlQueryParameters = undefined;
                 this.attachmentsFilter = undefined;
+                this.testcaseFieldId = undefined;
                 this.internalContent = undefined;
             }
 
@@ -244,6 +246,11 @@ export default class ExportParams {
 
             setAttachmentsFilter(attachmentsFilter) {
                 this.attachmentsFilter = attachmentsFilter;
+                return this;
+            }
+
+            setTestcaseFieldId(testcaseFieldId) {
+                this.testcaseFieldId = testcaseFieldId;
                 return this;
             }
 

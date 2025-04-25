@@ -214,6 +214,7 @@ function saveStylePackage() {
             'linkedWorkitemRoles': ctx.getCheckboxValueById('selected-roles') ? LinkRoles.rolesSelect.getSelectedValue() : null,
             'exposePageWidthValidation': ctx.getCheckboxValueById('expose-page-width-validation'),
             'attachmentsFilter': ctx.getCheckboxValueById('download-attachments') ? ctx.getValueById('attachments-filter') : null,
+            'testcaseFieldId': ctx.getCheckboxValueById('download-attachments') ? ctx.getValueById('testcase-field-id') : null,
         }),
         onOk: () => {
             ctx.showSaveSuccessAlert();
@@ -295,9 +296,10 @@ function setStylePackage(content) {
     ctx.getElementById('selected-roles').dispatchEvent(new Event('change'));
     LinkRoles.rolesSelect.selectMultipleValues(stylePackage.linkedWorkitemRoles);
 
-    ctx.setCheckboxValueById('download-attachments', !!stylePackage.attachmentsFilter);
+    ctx.setCheckboxValueById('download-attachments', !!stylePackage.attachmentsFilter || !!stylePackage.testcaseFieldId);
     ctx.getElementById('download-attachments').dispatchEvent(new Event('change'));
     ctx.setValueById('attachments-filter', stylePackage.attachmentsFilter || "");
+    ctx.setValueById('testcase-field-id', stylePackage.testcaseFieldId || "");
 
     ctx.setCheckboxValueById('expose-page-width-validation', stylePackage.exposePageWidthValidation);
 

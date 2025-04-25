@@ -235,10 +235,11 @@ export default class ExportContext extends ExtensionContext {
         });
     }
 
-    downloadTestRunAttachments(projectId, testRunId, revision = null, filter = null) {
+    downloadTestRunAttachments(projectId, testRunId, revision = null, filter = null, testCaseFieldId) {
         let url = `/polarion/pdf-exporter/rest/internal/projects/${projectId}/testruns/${testRunId}/attachments?`;
         if (revision) url += `&revision=${revision}`;
         if (filter) url += `&filter=${filter}`;
+        if (testCaseFieldId) url += `&testCaseFilterFieldId=${testCaseFieldId}`;
 
         this.callAsync({
             method: "GET",

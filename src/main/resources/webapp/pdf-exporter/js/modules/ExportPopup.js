@@ -362,9 +362,12 @@ export default class ExportPopup {
         this.ctx.displayIf("popup-style-package-content", stylePackage.exposeSettings);
         this.ctx.displayIf("popup-page-width-validation", this.ctx.getExportType() !== ExportParams.ExportType.BULK && stylePackage.exposePageWidthValidation);
 
-        this.ctx.setCheckbox("popup-download-attachments", stylePackage.attachmentsFilter);
+        let attachmentFieldsVisible = stylePackage.attachmentsFilter || stylePackage.testcaseFieldId;
+        this.ctx.setCheckbox("popup-download-attachments", attachmentFieldsVisible);
         this.ctx.setValue("popup-attachments-filter", stylePackage.attachmentsFilter || "");
-        this.ctx.visibleIf("popup-attachments-filter", stylePackage.attachmentsFilter);
+        this.ctx.setValue("popup-testcase-field-id", stylePackage.testcaseFieldId || "");
+        this.ctx.visibleIf("popup-attachments-filter", attachmentFieldsVisible);
+        this.ctx.visibleIf("popup-testcase-field-id", attachmentFieldsVisible);
     }
 
     validatePdf() {
@@ -464,7 +467,7 @@ export default class ExportPopup {
 
         if (this.ctx.getDocumentType() === ExportParams.DocumentType.TEST_RUN && this.ctx.getElementById("popup-download-attachments").checked) {
             const testRunId = new URLSearchParams(this.ctx.getUrlQueryParameters()).get("id")
-            this.ctx.downloadTestRunAttachments(exportParams.projectId, testRunId, exportParams.revision, exportParams.attachmentsFilter);
+            this.ctx.downloadTestRunAttachments(exportParams.projectId, testRunId, exportParams.revision, exportParams.attachmentsFilter, exportParams.testcaseFieldId);
         }
 
         this.actionInProgress({inProgress: true, message: "Generating PDF"})
@@ -537,14 +540,16 @@ export default class ExportPopup {
         }
 
         let attachmentsFilter = null;
+        let testcaseFieldId = null;
         if (this.ctx.getElementById("popup-download-attachments").checked) {
             attachmentsFilter = this.ctx.getElementById("popup-attachments-filter").value;
+            testcaseFieldId = this.ctx.getElementById("popup-testcase-field-id").value;
         }
 
-        return this.buildExportParams(selectedChapters, numberedListStyles, selectedRoles, fileName, attachmentsFilter);
+        return this.buildExportParams(selectedChapters, numberedListStyles, selectedRoles, fileName, attachmentsFilter, testcaseFieldId);
     }
 
-    buildExportParams(selectedChapters, numberedListStyles, selectedRoles, fileName, attachmentsFilter) {
+    buildExportParams(selectedChapters, numberedListStyles, selectedRoles, fileName, attachmentsFilter, testcaseFieldId) {
         const live_doc = this.ctx.getDocumentType() === ExportParams.DocumentType.LIVE_DOC;
         const test_run = this.ctx.getDocumentType() === ExportParams.DocumentType.TEST_RUN;
         return new ExportParams.Builder(this.ctx.getDocumentType())
@@ -575,6 +580,7 @@ export default class ExportPopup {
             .setFileName(fileName)
             .setUrlQueryParameters(this.ctx.getUrlQueryParameters())
             .setAttachmentsFilter(test_run && attachmentsFilter ? attachmentsFilter : null)
+            .setTestcaseFieldId(test_run && testcaseFieldId ? testcaseFieldId : null)
             .build();
     }
 

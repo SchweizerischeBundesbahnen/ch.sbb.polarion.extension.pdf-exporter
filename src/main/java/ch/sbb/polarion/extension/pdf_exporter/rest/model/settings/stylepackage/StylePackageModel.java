@@ -47,6 +47,7 @@ public class StylePackageModel extends SettingsModel {
     private static final String CUT_LOCAL_URLS_ENTRY_NAME= "CUT LOCAL URLS";
     private static final String FOLLOW_HTML_PRESENTATIONAL_HINTS_ENTRY_NAME = "FOLLOW HTML PRESENTATIONAL HINTS";
     private static final String SPECIFIC_CHAPTERS_ENTRY_NAME = "SPECIFIC CHAPTERS";
+    private static final String TESTCASE_FIELD_ID_ENTRY_NAME = "TESTCASE FILTER ATTACHMENTS FIELD ID";
     private static final String CUSTOM_NUMBERED_LIST_STYLES_ENTRY_NAME = "CUSTOM NUMBERED LIST STYLES";
     private static final String LANGUAGE_ENTRY_NAME = "LANGUAGE";
     private static final String LINKED_WORKITEM_ROLES_ENTRY_NAME = "LINKED WORKITEM ROLES";
@@ -78,6 +79,7 @@ public class StylePackageModel extends SettingsModel {
     private List<String> linkedWorkitemRoles;
     private boolean exposePageWidthValidation;
     private String attachmentsFilter;
+    private String testcaseFieldId;
 
     @Override
     protected String serializeModelData() {
@@ -105,7 +107,8 @@ public class StylePackageModel extends SettingsModel {
                 serializeEntry(LANGUAGE_ENTRY_NAME, language) +
                 serializeEntry(LINKED_WORKITEM_ROLES_ENTRY_NAME, linkedWorkitemRoles) +
                 serializeEntry(EXPOSE_PAGE_WIDTH_VALIDATION_ENTRY_NAME, exposePageWidthValidation) +
-                serializeEntry(ATTACHMENTS_FILTER, attachmentsFilter);
+                serializeEntry(ATTACHMENTS_FILTER, attachmentsFilter) +
+                serializeEntry(TESTCASE_FIELD_ID_ENTRY_NAME, testcaseFieldId);
     }
 
     @Override
@@ -136,6 +139,7 @@ public class StylePackageModel extends SettingsModel {
         linkedWorkitemRoles = deserializeListEntry(LINKED_WORKITEM_ROLES_ENTRY_NAME, serializedString, String.class);
         exposePageWidthValidation = Boolean.parseBoolean(deserializeEntry(EXPOSE_PAGE_WIDTH_VALIDATION_ENTRY_NAME, serializedString));
         attachmentsFilter = deserializeEntry(ATTACHMENTS_FILTER, serializedString);
+        testcaseFieldId = deserializeEntry(TESTCASE_FIELD_ID_ENTRY_NAME, serializedString);
     }
 
     /**
