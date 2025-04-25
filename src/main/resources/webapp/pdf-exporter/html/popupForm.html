@@ -148,10 +148,11 @@
                 </div>
                 <div class='property-wrapper hidden visible-for-TEST_RUN'>
                     <label for='popup-download-attachments'>
-                        <input id='popup-download-attachments' onchange='document.getElementById("popup-attachments-filter").style.visibility = this.checked ? "visible" : "hidden"' type='checkbox'/>
+                        <input id='popup-download-attachments' onchange='document.getElementById("popup-attachments-filter").style.visibility = this.checked ? "visible" : "hidden";document.getElementById("popup-testcase-field-id").style.visibility = this.checked ? "visible" : "hidden"' type='checkbox'/>
                         Download attachments
                     </label>
-                    <input id='popup-attachments-filter' placeholder='*.*' style='width: 101px' type='text'/>
+                    <input id='popup-attachments-filter' title="Filter for attachments to be downloaded, example: '*.pdf'" placeholder='*.*' style='width: 50px' type='text'/>
+                    <input id='popup-testcase-field-id' title='A boolean testcase field ID. Attachments will be downloaded only from the testcases which have True value in the provided field. Leaving field empty will process all testcases.' style='width: 70px' type='text'/>
                 </div>
             </div>
         </div>

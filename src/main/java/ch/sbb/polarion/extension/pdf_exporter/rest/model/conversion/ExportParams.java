@@ -93,6 +93,9 @@ public class ExportParams extends ConversionParams {
     @Schema(description = "Filter for attachments to be downloaded, example: '*.pdf'")
     private String attachmentsFilter;
 
+    @Schema(description = "A boolean testcase field ID. Attachments will be downloaded only from the testcases which have True value in the provided field. Leaving field empty will process all testcases.")
+    private String testcaseFieldId;
+
     @Schema(description = "Internal content")
     private String internalContent;
 

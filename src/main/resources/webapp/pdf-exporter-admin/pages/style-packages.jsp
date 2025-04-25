@@ -267,10 +267,11 @@
                 </div>
                 <div class='checkbox input-group'>
                     <label for='download-attachments' style="margin-top: 5px">
-                        <input id='download-attachments' onchange='document.getElementById("attachments-filter").style.visibility = this.checked ? "visible" : "hidden"' type='checkbox'/>
+                        <input id='download-attachments' onchange='document.getElementById("attachments-filter").style.visibility = this.checked ? "visible" : "hidden";document.getElementById("testcase-field-id").style.visibility = this.checked ? "visible" : "hidden";' type='checkbox'/>
                         Download attachments
                     </label>
-                    <input id='attachments-filter' placeholder='*.*' type='text' style="visibility: hidden; margin-left: 10px; width: 117px"/>
+                    <input id='attachments-filter' title="Filter for attachments to be downloaded, example: '*.pdf'" placeholder='*.*' type='text' style="visibility: hidden; margin-left: 10px; width: 100px"/>
+                    <input id='testcase-field-id' title='A boolean testcase field ID. Attachments will be downloaded only from the testcases which have True value in the provided field. Leaving field empty will process all testcases.' type='text' style="visibility: hidden; margin-left: 10px; width: 100px"/>
                 </div>
             </div>
         </div>

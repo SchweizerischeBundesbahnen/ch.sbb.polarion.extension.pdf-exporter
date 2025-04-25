@@ -129,6 +129,7 @@ public class PdfExportFunction implements IFunction<IModule> {
                 .language(stylePackage.getLanguage())
                 .linkedWorkitemRoles(stylePackage.getLinkedWorkitemRoles())
                 .attachmentsFilter(stylePackage.getAttachmentsFilter())
+                .testcaseFieldId(stylePackage.getTestcaseFieldId())
                 .build();
     }
 

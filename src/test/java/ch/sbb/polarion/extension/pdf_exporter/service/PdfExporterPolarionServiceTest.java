@@ -3,7 +3,6 @@ package ch.sbb.polarion.extension.pdf_exporter.service;
 import ch.sbb.polarion.extension.generic.settings.NamedSettingsRegistry;
 import ch.sbb.polarion.extension.generic.settings.SettingId;
 import ch.sbb.polarion.extension.generic.settings.SettingName;
-import ch.sbb.polarion.extension.generic.util.PObjectListStub;
 import ch.sbb.polarion.extension.generic.util.ScopeUtils;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.attachments.TestRunAttachment;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.collections.DocumentCollectionEntry;
@@ -18,9 +17,11 @@ import com.polarion.alm.shared.api.transaction.ReadOnlyTransaction;
 import com.polarion.alm.tracker.ITestManagementService;
 import com.polarion.alm.tracker.ITrackerService;
 import com.polarion.alm.tracker.model.IModule;
+import com.polarion.alm.tracker.model.ITestRecord;
 import com.polarion.alm.tracker.model.ITestRun;
 import com.polarion.alm.tracker.model.ITestRunAttachment;
 import com.polarion.alm.tracker.model.ITrackerProject;
+import com.polarion.alm.tracker.model.IWorkItem;
 import com.polarion.alm.tracker.model.baselinecollection.IBaselineCollection;
 import com.polarion.alm.tracker.model.baselinecollection.IBaselineCollectionElement;
 import com.polarion.platform.IPlatformService;
@@ -207,38 +208,62 @@ class PdfExporterPolarionServiceTest {
 
     @Test
     void testGetTestRunAttachments() {
-        PObjectListStub<ITestRunAttachment> attachments = new PObjectListStub<>();
+        ITestRecord record1 = mock(ITestRecord.class);
         ITestRunAttachment testRunAttachment1 = mock(ITestRunAttachment.class);
         when(testRunAttachment1.getFileName()).thenReturn("test1.pdf");
-        attachments.add(testRunAttachment1);
+        when(record1.getAttachments()).thenReturn(List.of(testRunAttachment1));
+
+        ITestRecord record2 = mock(ITestRecord.class);
         ITestRunAttachment testRunAttachment2 = mock(ITestRunAttachment.class);
         when(testRunAttachment2.getFileName()).thenReturn("test2.txt");
-        attachments.add(testRunAttachment2);
+        when(record2.getAttachments()).thenReturn(List.of(testRunAttachment2));
 
         ITestRun testRun = mock(ITestRun.class);
         when(testRun.isUnresolvable()).thenReturn(false);
-        when(testRun.getAttachments()).thenReturn(attachments);
+        when(testRun.getAllRecords()).thenReturn(List.of(record1, record2));
         when(testManagementService.getTestRun("testProjectId", "testTestRunId", null)).thenReturn(testRun);
 
-        List<TestRunAttachment> testRunAttachments = service.getTestRunAttachments("testProjectId", "testTestRunId", null, null);
+        List<TestRunAttachment> testRunAttachments = service.getTestRunAttachments("testProjectId", "testTestRunId", null, null, null);
         assertNotNull(testRunAttachments);
         assertEquals(2, testRunAttachments.size());
 
-        List<TestRunAttachment> testRunAttachmentsFilteredPdf = service.getTestRunAttachments("testProjectId", "testTestRunId", null, "*.pdf");
+        List<TestRunAttachment> testRunAttachmentsFilteredPdf = service.getTestRunAttachments("testProjectId", "testTestRunId", null, "*.pdf", null);
         assertNotNull(testRunAttachmentsFilteredPdf);
         assertEquals(1, testRunAttachmentsFilteredPdf.size());
 
-        List<TestRunAttachment> testRunAttachmentsFilteredTxt = service.getTestRunAttachments("testProjectId", "testTestRunId", null, "*.pdf");
+        List<TestRunAttachment> testRunAttachmentsFilteredTxt = service.getTestRunAttachments("testProjectId", "testTestRunId", null, "*.pdf", null);
         assertNotNull(testRunAttachmentsFilteredTxt);
         assertEquals(1, testRunAttachmentsFilteredTxt.size());
 
-        List<TestRunAttachment> testRunAttachmentsFilteredAll = service.getTestRunAttachments("testProjectId", "testTestRunId", null, "*.*");
+        List<TestRunAttachment> testRunAttachmentsFilteredAll = service.getTestRunAttachments("testProjectId", "testTestRunId", null, "*.*", null);
         assertNotNull(testRunAttachmentsFilteredAll);
         assertEquals(2, testRunAttachmentsFilteredAll.size());
 
-        List<TestRunAttachment> testRunAttachmentsFilteredNone = service.getTestRunAttachments("testProjectId", "testTestRunId", null, "*.png");
+        List<TestRunAttachment> testRunAttachmentsFilteredNone = service.getTestRunAttachments("testProjectId", "testTestRunId", null, "*.png", null);
         assertNotNull(testRunAttachmentsFilteredNone);
         assertEquals(0, testRunAttachmentsFilteredNone.size());
+
+        IWorkItem workItem1 = mock(IWorkItem.class);
+        when(record1.getTestCase()).thenReturn(workItem1);
+
+        List<TestRunAttachment> testRunAttachmentsFilteredWithNullValue = service.getTestRunAttachments("testProjectId", "testTestRunId", null, "*.*", "someBooleanField");
+        assertNotNull(testRunAttachmentsFilteredWithNullValue);
+        assertEquals(1, testRunAttachmentsFilteredWithNullValue.size());
+
+        when(workItem1.getValue("someBooleanField")).thenReturn("true");
+        List<TestRunAttachment> testRunAttachmentsFilteredWithWrongTypeValue = service.getTestRunAttachments("testProjectId", "testTestRunId", null, "*.*", "someBooleanField");
+        assertNotNull(testRunAttachmentsFilteredWithWrongTypeValue);
+        assertEquals(1, testRunAttachmentsFilteredWithWrongTypeValue.size());
+
+        when(workItem1.getValue("someBooleanField")).thenReturn(false);
+        List<TestRunAttachment> testRunAttachmentsFilteredWithFalseValue = service.getTestRunAttachments("testProjectId", "testTestRunId", null, "*.*", "someBooleanField");
+        assertNotNull(testRunAttachmentsFilteredWithFalseValue);
+        assertEquals(1, testRunAttachmentsFilteredWithFalseValue.size());
+
+        when(workItem1.getValue("someBooleanField")).thenReturn(true);
+        List<TestRunAttachment> testRunAttachmentsFilteredWithTrueValue = service.getTestRunAttachments("testProjectId", "testTestRunId", null, "*.*", "someBooleanField");
+        assertNotNull(testRunAttachmentsFilteredWithTrueValue);
+        assertEquals(2, testRunAttachmentsFilteredWithTrueValue.size());
     }
 
     @Test

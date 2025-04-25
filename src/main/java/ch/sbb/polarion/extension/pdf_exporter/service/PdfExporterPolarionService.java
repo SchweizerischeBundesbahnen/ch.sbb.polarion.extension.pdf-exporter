@@ -20,6 +20,7 @@ import com.polarion.alm.shared.api.transaction.ReadOnlyTransaction;
 import com.polarion.alm.tracker.ITestManagementService;
 import com.polarion.alm.tracker.ITrackerService;
 import com.polarion.alm.tracker.model.IModule;
+import com.polarion.alm.tracker.model.ITestRecord;
 import com.polarion.alm.tracker.model.ITestRun;
 import com.polarion.alm.tracker.model.ITestRunAttachment;
 import com.polarion.alm.tracker.model.ITrackerProject;
@@ -155,16 +156,19 @@ public class PdfExporterPolarionService extends PolarionService {
         return testRun;
     }
 
-    public @NotNull List<TestRunAttachment> getTestRunAttachments(@NotNull String projectId, @NotNull String testRunId, @Nullable String revision, @Nullable String filter) {
+    public @NotNull List<TestRunAttachment> getTestRunAttachments(@NotNull String projectId, @NotNull String testRunId, @Nullable String revision, @Nullable String filter, @Nullable String testCaseFilterFieldId) {
         ITestRun testRun = getTestRun(projectId, testRunId, revision);
 
         List<TestRunAttachment> result = new ArrayList<>();
 
-        IPObjectList<ITestRunAttachment> workItemAttachments = testRun.getAttachments();
-
-        for (ITestRunAttachment testRunAttachment : workItemAttachments) {
-            if (filter == null || WildcardUtils.matches(testRunAttachment.getFileName(), filter)) {
-                result.add(TestRunAttachment.fromAttachment(testRunAttachment));
+        List<ITestRecord> records = testRun.getAllRecords();
+        for (ITestRecord testRecord : records) {
+            if (StringUtils.isEmpty(testCaseFilterFieldId) || testRecord.getTestCase() == null || Boolean.TRUE.equals(testRecord.getTestCase().getValue(testCaseFilterFieldId))) {
+                for (ITestRunAttachment testRunAttachment : testRecord.getAttachments()) {
+                    if (filter == null || WildcardUtils.matches(testRunAttachment.getFileName(), filter)) {
+                        result.add(TestRunAttachment.fromAttachment(testRunAttachment));
+                    }
+                }
             }
         }
 
