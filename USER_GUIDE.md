@@ -223,7 +223,9 @@ Option available only for Test Runs:
 
 ![Download attachments](docs/user_guide/img/download_attachments.png)
 
-By selecting this checkbox, you can set a mask for attachment file names that will be extracted from current Test Run and downloaded along with the regular PDF file.
+By selecting this checkbox, you can:
+  * set a mask for attachment file names that will be extracted from current Test Run and downloaded along with the regular PDF file
+  * enter a boolean testcase field ID - attachments will be downloaded only from the testcases which have True value in the provided field
 
 ## Bulk PDF Export
 There is a possibility to export multiple documents in one run. This can be achieved with help of special widget:

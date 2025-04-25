@@ -162,9 +162,9 @@ public class PdfExporterPolarionService extends PolarionService {
         List<TestRunAttachment> result = new ArrayList<>();
 
         List<ITestRecord> records = testRun.getAllRecords();
-        for (ITestRecord record : records) {
-            if (StringUtils.isEmpty(testCaseFilterFieldId) || record.getTestCase() == null || Boolean.TRUE.equals(record.getTestCase().getValue(testCaseFilterFieldId))) {
-                for (ITestRunAttachment testRunAttachment : record.getAttachments()) {
+        for (ITestRecord testRecord : records) {
+            if (StringUtils.isEmpty(testCaseFilterFieldId) || testRecord.getTestCase() == null || Boolean.TRUE.equals(testRecord.getTestCase().getValue(testCaseFilterFieldId))) {
+                for (ITestRunAttachment testRunAttachment : testRecord.getAttachments()) {
                     if (filter == null || WildcardUtils.matches(testRunAttachment.getFileName(), filter)) {
                         result.add(TestRunAttachment.fromAttachment(testRunAttachment));
                     }
