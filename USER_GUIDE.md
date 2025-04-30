@@ -55,7 +55,7 @@ There can be different CSS settings created on admin pane each having its own na
 ### Header and footer
 Settings for header/footer of generated PDF document are also grouped into named settings and can be chosen in next dropdown:
 
-![Header/Footer](docs/user_guide/img/cover_page.png)
+![Header/Footer](docs/user_guide/img/header_footer.png)
 
 ### Localization
 The same relates to localization settings. The one to use during PDF generation can be selected in the next dropdown:
