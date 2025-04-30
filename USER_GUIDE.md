@@ -77,9 +77,7 @@ As a result, the headers of the generated PDF will be of the selected color:
 ![Headers color result](docs/user_guide/img/headers_color_result.png)
 
 ### Paper size
-![Paper size](docs/user_guide/img/headers_color.png)
-
-This option specifies paper size of generated PDF document. Default is "A4".
+This option specifies the paper size of the generated PDF document. Default is "A4".
 
 ### Orientation
 This option serves as a document-wide page orientation setting, either "Portrait" (default) or "Landscape". If you don't have page breaks in a document, then all pages in generated PDF file will have an orientation selected by you in this dropdown. However you can insert a page break in document and override this document-wide setting for certain pages (starting from page break and above till the beginning of document or till other page break). Page breaks can be inserted via the toolbar button:
