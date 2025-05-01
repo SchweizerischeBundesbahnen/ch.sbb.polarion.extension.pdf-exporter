@@ -7,6 +7,7 @@ on:
     branches: [main]
     types: [opened, synchronize, reopened, ready_for_review]
   workflow_dispatch:
+  pull_request_target:
 # Set default permissions for all jobs
 permissions:
   contents: read
