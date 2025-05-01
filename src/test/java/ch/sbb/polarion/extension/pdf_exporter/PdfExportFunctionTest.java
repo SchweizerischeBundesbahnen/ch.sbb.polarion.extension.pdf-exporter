@@ -48,7 +48,7 @@ class PdfExportFunctionTest {
     private SettingsService settingsService;
 
     @BeforeEach
-    public void beforeEach() {
+    void beforeEach() {
         NamedSettingsRegistry.INSTANCE.getAll().clear();
         pdfExporterPolarionService = mock(PdfExporterPolarionService.class);
         pdfConverter = mock(PdfConverter.class);
