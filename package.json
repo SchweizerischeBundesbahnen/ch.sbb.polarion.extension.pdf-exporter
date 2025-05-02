@@ -7,7 +7,7 @@
   "version": "1.0.0",
   "devDependencies": {
     "chai": "5.2.0",
-    "mocha": "11.1.0",
+    "mocha": "11.2.2",
     "testdouble": "3.20.2"
   }
 }
