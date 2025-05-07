@@ -4,10 +4,10 @@
     "github>SchweizerischeBundesbahnen/casc-renovate-preset-polarion-java"
   ],
   "customManagers": [
-      {
+    {
       "customType": "regex",
-      "fileMatch": [
-        "versions.properties$"
+      "managerFilePatterns": [
+        "/versions.properties$/"
       ],
       "datasourceTemplate": "github-releases",
       "depNameTemplate": "SchweizerischeBundesbahnen/weasyprint-service",
