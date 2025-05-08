@@ -6,7 +6,7 @@
     * [Header and footer](#header-and-footer)
     * [Localization](#localization)
     * [Webhooks](#webhooks)
-    * [Headers color](#headers-color)
+    * [Headings color](#headings-color)
     * [Paper size](#paper-size)
     * [Orientation](#orientation)
     * [Fit images and tables to page width](#fit-images-and-tables-to-page-width)
@@ -68,12 +68,12 @@ In this section you can choose specific webhook for custom HTML processing befor
 
 ![Webhooks](docs/user_guide/img/webhooks.png)
 
-### Headers color
-By default dark blue color (Polarion's default) is used for headers, but you can change this selecting any other color:
+### Headings color
+By default dark blue color (Polarion's default) is used for headings, but you can change this selecting any other color:
 
 ![Headers color](docs/user_guide/img/headers_color.png)
 
-As a result headers of generated PDF will be of selected color:
+As a result headings of generated PDF will be of selected color:
 
 ![Headers color result](docs/user_guide/img/headers_color_result.png)
 
