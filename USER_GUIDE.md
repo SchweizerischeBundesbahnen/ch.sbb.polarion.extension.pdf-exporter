@@ -6,7 +6,7 @@
     * [Header and footer](#header-and-footer)
     * [Localization](#localization)
     * [Webhooks](#webhooks)
-    * [Headers color](#headers-color)
+    * [Headings color](#headings-color)
     * [Paper size](#paper-size)
     * [Orientation](#orientation)
     * [Fit images and tables to page width](#fit-images-and-tables-to-page-width)
@@ -67,14 +67,14 @@ In this section, you can choose a specific webhook for custom HTML processing be
 
 ![Webhooks](docs/user_guide/img/webhooks.png)
 
-### Headers color
-By default, dark blue color (Polarion's default) is used for headers, but you can change this by selecting any other color:
+### Headings color
+By default, dark blue color (Polarion's default) is used for headings, but you can change this by selecting any other color:
 
-![Headers color](docs/user_guide/img/headers_color.png)
+![Headings color](docs/user_guide/img/headers_color.png)
 
-As a result, the headers of the generated PDF will be of the selected color:
+As a result, the headings of the generated PDF will be of selected color:
 
-![Headers color result](docs/user_guide/img/headers_color_result.png)
+![Headings color result](docs/user_guide/img/headers_color_result.png)
 
 ### Paper size
 This option specifies the paper size of the generated PDF document. Default is "A4".
