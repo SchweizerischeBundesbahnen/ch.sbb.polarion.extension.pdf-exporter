@@ -162,7 +162,7 @@
         <div class="flex-container" style="border-top: 1px solid #ccc; margin-top: 20px; padding-top: 15px;">
             <div class="flex-column">
                 <div class='input-group'>
-                    <label for='headers-color'>Headers color:</label>
+                    <label for='headers-color'>Headings color:</label>
                     <input id='headers-color' type='color' value='#004d73' style="width: 30px"/>
                 </div>
             </div>
