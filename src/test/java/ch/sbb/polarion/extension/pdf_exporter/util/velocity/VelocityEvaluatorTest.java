@@ -97,32 +97,4 @@ class VelocityEvaluatorTest {
         ImmutableStrictMap<String, RichPageParameter> result = velocityEvaluator.getPageParameters(documentData);
         assertEquals(immutableStrictMap, result);
     }
-
-//    @Test
-//    void getPageParameters_ValidContentWithParameters_ReturnsParametersMap() {
-//        // This test requires more complex mocking due to static and final methods
-//        // We'll need to use MockedStatic for ServerUiContext and mock the HTML parsing chain
-//
-//        try (MockedStatic<StringUtils> stringUtilsMock = mockStatic(StringUtils.class)) {
-//            // Skip the StringUtils.isEmpty check
-//            stringUtilsMock.when(() -> StringUtils.isEmpty(anyString())).thenReturn(false);
-//
-//            // Set up mock for content with parameters HTML
-//            String contentWithParameters = "<div data-parameters=\"true\">Some content with parameters</div>";
-////            when(documentData.getContent()).thenReturn(contentWithParameters);
-////            when(documentObject.getProjectId()).thenReturn("TEST_PROJECT");
-//
-//            // Use a spy to avoid complex mocking of the HTML parsing chain
-//            VelocityEvaluator spyEvaluator = spy(velocityEvaluator);
-//            ImmutableStrictMap<String, RichPageParameter> mockMap = mock(ImmutableStrictMap.class);
-//            doReturn(mockMap).when(spyEvaluator).getPageParameters(documentData);
-//
-//            // When
-//            ImmutableStrictMap<String, RichPageParameter> result = spyEvaluator.getPageParameters(documentData);
-//
-//            // Then
-//            assertNotNull(result);
-//            assertSame(mockMap, result);
-//        }
-//    }
 }
