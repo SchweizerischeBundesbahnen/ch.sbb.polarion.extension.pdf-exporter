@@ -215,6 +215,13 @@
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
+        <!-- Required for mocking HtmlFragmentParser -->
+        <dependency>
+            <groupId>com.polarion.thirdparty</groupId>
+            <artifactId>nu.xom_1.3.7.osgi</artifactId>
+            <version>${polarion.version}</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
