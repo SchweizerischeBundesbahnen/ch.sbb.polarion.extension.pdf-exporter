@@ -81,7 +81,7 @@ jobs:
                 "password": "${env.GITHUB_TOKEN}"
               },
               {
-                "id": "ossrh",
+                "id": "sonatype-central",
                 "username": "${env.COM_SONATYPE_CENTRAL_POLARION_OPENSOURCE_USERNAME}",
                 "password": "${env.COM_SONATYPE_CENTRAL_POLARION_OPENSOURCE_TOKEN}"
               },
@@ -148,7 +148,7 @@ jobs:
             /home/runner/work
           key: ${{ needs.build.outputs.cache_key }}
       - name: 📦 Deploy artifacts to Maven Central
-        run: mvn --batch-mode -Dmaven.test.skip=true deploy -P gpg-sign -P nexus-staging
+        run: mvn --batch-mode -Dmaven.test.skip=true deploy -P gpg-sign -P central-publishing
 
   # Deploy releases and snapshots for main branch to GitHub Packages
   deploy-github-packages:
