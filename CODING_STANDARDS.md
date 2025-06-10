@@ -8,6 +8,8 @@ Following the standards means anyone will be able to understand a section of cod
 
 If you are planning to contribute, you need to familiarize yourself with these standards, as any code you submit will need to comply with them.
 
+> **Note:** For detailed information about setting up your development environment, project structure, building, testing, and debugging, please refer to our comprehensive [Development Guide](./DEVELOPMENT.md).
+
 ## Java Coding Standards and Best Practices
 
 This document outlines the coding standards and best practices to be followed when writing Java code for this project. Consistency in coding style and adherence to best practices not only improve code readability but also facilitate collaboration and maintenance.

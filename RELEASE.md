@@ -1,4 +1,3 @@
-
 # Guidelines for Releases
 
 ## Code Ownership and Automated Release Management
