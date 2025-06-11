@@ -3,9 +3,6 @@ name: openapi-validate
 on:
   push:
   workflow_dispatch:
-# Set default permissions for all jobs
-permissions:
-  contents: read
 jobs:
   check-openapi-definition:
     runs-on: ubuntu-latest

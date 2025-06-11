@@ -19,4 +19,7 @@ jobs:
           python-version: 3.x
       - run: pip install commitizen
       - name: Check commit messages
-        run: cz check --rev-range "FETCH_HEAD~.."
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: cz check --rev-range "$BASE_SHA..$HEAD_SHA"

@@ -7,11 +7,8 @@ on:
     branches: [main]
     types: [opened, synchronize, reopened, ready_for_review]
   workflow_dispatch:
-  pull_request_target:
-# Set default permissions for all jobs
-permissions:
-  contents: read
-  packages: read
+env:
+  SETTINGS_XML: ${{ github.workspace }}/.mvn/settings.xml
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -19,12 +16,7 @@ jobs:
       contents: read
       packages: read
     env:
-      S3_SBB_POLARION_MAVEN_REPO_RW_ACCESS_KEY: ${{ secrets.S3_SBB_POLARION_MAVEN_REPO_RW_ACCESS_KEY }}
-      S3_SBB_POLARION_MAVEN_REPO_RW_SECRET_ACCESS_KEY: ${{ secrets.S3_SBB_POLARION_MAVEN_REPO_RW_SECRET_ACCESS_KEY }}
-      COM_SONATYPE_CENTRAL_POLARION_OPENSOURCE_USERNAME: ${{ secrets.COM_SONATYPE_CENTRAL_POLARION_OPENSOURCE_USERNAME }}
-      COM_SONATYPE_CENTRAL_POLARION_OPENSOURCE_TOKEN: ${{ secrets.COM_SONATYPE_CENTRAL_POLARION_OPENSOURCE_TOKEN }}
-      COM_SONATYPE_CENTRAL_POLARION_OPENSOURCE_GPG_PASSPHRASE: ${{ secrets.COM_SONATYPE_CENTRAL_POLARION_OPENSOURCE_GPG_PASSPHRASE }}
-      GITHUB_TOKEN: ${{ github.token }}
+      IO_JFROG_SBB_POLARION_TOKEN: ${{ secrets.IO_JFROG_SBB_POLARION_TOKEN }}
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
       MARKDOWN2HTML_MAVEN_PLUGIN_FAIL_ON_ERROR: true
     steps:
@@ -36,9 +28,8 @@ jobs:
       - name: 🧱 Set up JDK and Maven
         uses: actions/setup-java@c5195efecf7bdfc987ee8bae7a71cb8b11521c00  # v4.7.1
         with:
-          distribution: adopt
+          distribution: temurin
           java-version: 17
-          gpg-private-key: ${{ secrets.COM_SONATYPE_CENTRAL_POLARION_OPENSOURCE_GPG_PRIVATE_KEY }}
       - name: 📝 Get the project version
         id: project_version
         run: echo "project_version=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)" >> "$GITHUB_OUTPUT"
@@ -53,67 +44,20 @@ jobs:
             /home/runner/.m2
             /home/runner/work
           key: ${{ steps.cache_key.outputs.cache_key }}
-      - name: 🔘 Generate settings.xml for Maven
-        uses: whelk-io/maven-settings-xml-action@9dc09b23833fa9aa7f27b63db287951856f3433d  # v22
-        with:
-          repositories: >
-            [
-              {
-                "id": "s3",
-                "name": "s3.sbb.polarion.maven.repo",
-                "url": "s3://sbb-polarion-maven-repo/polarion.mvn",
-                "releases": {
-                  "enabled": "true",
-                  "updatePolicy": "never"
-                }
-              }
-            ]
-          servers: >
-            [
-              {
-                "id": "s3",
-                "username": "${env.S3_SBB_POLARION_MAVEN_REPO_RW_ACCESS_KEY}",
-                "password": "${env.S3_SBB_POLARION_MAVEN_REPO_RW_SECRET_ACCESS_KEY}"
-              },
-              {
-                "id": "github",
-                "username": "${env.GITHUB_ACTOR}",
-                "password": "${env.GITHUB_TOKEN}"
-              },
-              {
-                "id": "sonatype-central",
-                "username": "${env.COM_SONATYPE_CENTRAL_POLARION_OPENSOURCE_USERNAME}",
-                "password": "${env.COM_SONATYPE_CENTRAL_POLARION_OPENSOURCE_TOKEN}"
-              },
-              {
-                "id": "gpg.passphrase",
-                "passphrase": "${env.COM_SONATYPE_CENTRAL_POLARION_OPENSOURCE_GPG_PASSPHRASE}"
-              }
-            ]
-          profiles: >
-            [
-              {
-                "id": "deploy-github-packages",
-                "properties":
-                {
-                  "altDeploymentRepository": "github::default::https://maven.pkg.github.com/${{ github.repository }}"
-                }
-              }
-            ]
       - name: 🔘 Print settings.xml
-        run: cat /home/runner/.m2/settings.xml
+        run: cat "${SETTINGS_XML}"
       - name: 📦 Build with Maven for Pushes
         if: github.event_name == 'push'
         env:
           GITHUB_HEAD_REF: ${{ github.head_ref }}
-        run: mvn --batch-mode clean package sonar:sonar -Dsonar.branch.name="${GITHUB_HEAD_REF}"
+        run: mvn --batch-mode -s "${SETTINGS_XML}" clean package sonar:sonar -Dsonar.branch.name="${GITHUB_HEAD_REF}"
       - name: 📦 Build with Maven for PRs
         if: github.event_name == 'pull_request'
         env:
           GITHUB_HEAD_REF: ${{ github.head_ref }}
           GITHUB_BASE_REF: ${{ github.base_ref }}
           GITHUB_PR_NUMBER_REF: ${{ github.event.pull_request.number }}
-        run: mvn --batch-mode clean package sonar:sonar -Dsonar.pullrequest.base="${GITHUB_HEAD_REF}" -Dsonar.pullrequest.branch="${GITHUB_BASE_REF}" -Dsonar.pullrequest.key="${GITHUB_PR_NUMBER_REF}"
+        run: mvn --batch-mode -s "${SETTINGS_XML}" clean package sonar:sonar -Dsonar.pullrequest.base="${GITHUB_HEAD_REF}" -Dsonar.pullrequest.branch="${GITHUB_BASE_REF}" -Dsonar.pullrequest.key="${GITHUB_PR_NUMBER_REF}"
     outputs:
       project_version: ${{ steps.project_version.outputs.project_version }}
       cache_key: ${{ steps.cache_key.outputs.cache_key }}
@@ -127,8 +71,7 @@ jobs:
       packages: read
     if: ${{ !endsWith(needs.build.outputs.project_version, '-SNAPSHOT') && github.ref == 'refs/heads/main' }}
     env:
-      S3_SBB_POLARION_MAVEN_REPO_RW_ACCESS_KEY: ${{ secrets.S3_SBB_POLARION_MAVEN_REPO_RW_ACCESS_KEY }}
-      S3_SBB_POLARION_MAVEN_REPO_RW_SECRET_ACCESS_KEY: ${{ secrets.S3_SBB_POLARION_MAVEN_REPO_RW_SECRET_ACCESS_KEY }}
+      IO_JFROG_SBB_POLARION_TOKEN: ${{ secrets.IO_JFROG_SBB_POLARION_TOKEN }}
       COM_SONATYPE_CENTRAL_POLARION_OPENSOURCE_USERNAME: ${{ secrets.COM_SONATYPE_CENTRAL_POLARION_OPENSOURCE_USERNAME }}
       COM_SONATYPE_CENTRAL_POLARION_OPENSOURCE_TOKEN: ${{ secrets.COM_SONATYPE_CENTRAL_POLARION_OPENSOURCE_TOKEN }}
       COM_SONATYPE_CENTRAL_POLARION_OPENSOURCE_GPG_PASSPHRASE: ${{ secrets.COM_SONATYPE_CENTRAL_POLARION_OPENSOURCE_GPG_PASSPHRASE }}
@@ -136,9 +79,8 @@ jobs:
       - name: 🧱 Set up JDK and Maven
         uses: actions/setup-java@c5195efecf7bdfc987ee8bae7a71cb8b11521c00  # v4.7.1
         with:
-          distribution: adopt
+          distribution: temurin
           java-version: 17
-          gpg-private-key: ${{ secrets.COM_SONATYPE_CENTRAL_POLARION_OPENSOURCE_GPG_PRIVATE_KEY }}
       - name: 💾 Restore cache using cache key
         id: restore-cache
         uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684  # v4.2.3
@@ -148,7 +90,7 @@ jobs:
             /home/runner/work
           key: ${{ needs.build.outputs.cache_key }}
       - name: 📦 Deploy artifacts to Maven Central
-        run: mvn --batch-mode -Dmaven.test.skip=true deploy -P gpg-sign -P central-publishing
+        run: mvn --batch-mode -s "${SETTINGS_XML}" -Dmaven.test.skip=true deploy -P gpg-sign -P central-publishing
 
   # Deploy releases and snapshots for main branch to GitHub Packages
   deploy-github-packages:
@@ -159,14 +101,14 @@ jobs:
       contents: write
       packages: write
     env:
-      S3_SBB_POLARION_MAVEN_REPO_RW_ACCESS_KEY: ${{ secrets.S3_SBB_POLARION_MAVEN_REPO_RW_ACCESS_KEY }}
-      S3_SBB_POLARION_MAVEN_REPO_RW_SECRET_ACCESS_KEY: ${{ secrets.S3_SBB_POLARION_MAVEN_REPO_RW_SECRET_ACCESS_KEY }}
+      IO_JFROG_SBB_POLARION_TOKEN: ${{ secrets.IO_JFROG_SBB_POLARION_TOKEN }}
       GITHUB_TOKEN: ${{ github.token }}
+      GITHUB_REPO_NAME: ${{ github.repository }}
     steps:
       - name: 🧱 Set up JDK and Maven
         uses: actions/setup-java@c5195efecf7bdfc987ee8bae7a71cb8b11521c00  # v4.7.1
         with:
-          distribution: adopt
+          distribution: temurin
           java-version: 17
       - name: 💾 Restore cache using cache key
         id: restore-cache
@@ -177,7 +119,7 @@ jobs:
             /home/runner/work
           key: ${{ needs.build.outputs.cache_key }}
       - name: 📦 Deploy artifacts to GitHub Packages
-        run: mvn --batch-mode -Dmaven.test.skip=true -Dmaven.javadoc.skip=true -Dmaven.source.skip=true deploy -P deploy-github-packages
+        run: mvn --batch-mode -s "${SETTINGS_XML}" -Dmaven.test.skip=true -Dmaven.javadoc.skip=true -Dmaven.source.skip=true deploy -P deploy-github-packages
       - name: 📦 Upload assets to GitHub Release
         env:
           RELEASE_VERSION: ${{ needs.build.outputs.project_version }}
