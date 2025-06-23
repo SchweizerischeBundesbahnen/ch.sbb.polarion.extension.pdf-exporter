@@ -12,6 +12,7 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.DocumentType
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.Orientation;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PaperSize;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PdfVariant;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.DocumentData;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.jobs.ConverterJobDetails;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.jobs.ConverterJobStatus;
@@ -343,6 +344,7 @@ public class ConverterInternalController {
             @Parameter(description = "input html (must include html and body elements)") String html,
             @Parameter(description = "default value: portrait") @QueryParam("orientation") Orientation orientation,
             @Parameter(description = "default value: A4") @QueryParam("paperSize") PaperSize paperSize,
+            @Parameter(description = "default value: pdf/a-2b") @QueryParam("pdfVariant") PdfVariant pdfVariant,
             @Parameter(description = "default value: false") @QueryParam("fitToPage") Boolean fitToPage,
             @Parameter(description = "default value: document.pdf") @QueryParam("fileName") String fileName) {
         ConversionParams.ConversionParamsBuilder<?, ?> conversionParamsBuilder = ConversionParams.builder();
@@ -351,6 +353,9 @@ public class ConverterInternalController {
         }
         if (paperSize != null) {
             conversionParamsBuilder.paperSize(paperSize);
+        }
+        if (pdfVariant != null) {
+            conversionParamsBuilder.pdfVariant(pdfVariant);
         }
         if (fitToPage != null) {
             conversionParamsBuilder.fitToPage(fitToPage);

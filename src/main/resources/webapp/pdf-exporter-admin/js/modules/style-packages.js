@@ -157,6 +157,24 @@ const Orientations = {
     }
 }
 
+const PdfVariants = {
+    pdfVariantSelect: new CustomSelect({
+        selectContainer: ctx.getElementById("pdf-variant-select"),
+        label: ctx.getElementById("pdf-variant-label")
+    }),
+
+    init: function () {
+        this.pdfVariantSelect.addOption('PDF_A_1B', 'pdf/a-1b');
+        this.pdfVariantSelect.addOption('PDF_A_2B', 'pdf/a-2b');
+        this.pdfVariantSelect.addOption('PDF_A_3B', 'pdf/a-3b');
+        this.pdfVariantSelect.addOption('PDF_A_4B', 'pdf/a-4b');
+        this.pdfVariantSelect.addOption('PDF_A_2U', 'pdf/a-2u');
+        this.pdfVariantSelect.addOption('PDF_A_3U', 'pdf/a-3u');
+        this.pdfVariantSelect.addOption('PDF_A_4U', 'pdf/a-4u');
+        this.pdfVariantSelect.addOption('PDF_UA_1', 'pdf/ua-1');
+    }
+}
+
 const RenderComments = {
     renderCommentsSelect: new CustomSelect({
         selectContainer: ctx.getElementById("render-comments-select"),
@@ -200,6 +218,7 @@ function saveStylePackage() {
             'headersColor': ctx.getValueById('headers-color'),
             'paperSize': PaperSizes.paperSizeSelect.getSelectedValue(),
             'orientation': Orientations.orientationSelect.getSelectedValue(),
+            'pdfVariant': PdfVariants.pdfVariantSelect.getSelectedValue(),
             'fitToPage': ctx.getCheckboxValueById('fit-to-page'),
             'renderComments': ctx.getCheckboxValueById('render-comments') ? RenderComments.renderCommentsSelect.getSelectedValue() : null,
             'watermark': ctx.getCheckboxValueById('watermark'),
@@ -263,7 +282,8 @@ function setStylePackage(content) {
 
     ctx.setValueById('headers-color', stylePackage.headersColor);
     PaperSizes.paperSizeSelect.selectValue(stylePackage.paperSize || 'A4');
-    Orientations.orientationSelect.selectValue(stylePackage.orientation);
+    Orientations.orientationSelect.selectValue(stylePackage.orientation || 'PORTRAIT');
+    PdfVariants.pdfVariantSelect.selectValue(stylePackage.pdfVariant || 'PDF_A_2B');
 
     ctx.setCheckboxValueById('fit-to-page', stylePackage.fitToPage);
 
@@ -314,6 +334,7 @@ function newConfigurationCreated() {
 
 PaperSizes.init();
 Orientations.init();
+PdfVariants.init();
 RenderComments.init();
 Languages.init();
 Promise.all([

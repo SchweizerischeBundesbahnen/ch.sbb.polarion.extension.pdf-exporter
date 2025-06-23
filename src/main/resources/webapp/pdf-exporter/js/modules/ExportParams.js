@@ -25,6 +25,17 @@ export default class ExportParams {
         LEDGER: 'LEDGER',
     };
 
+    static PdfVariant = {
+        PDF_A_1B: 'pdf/a-1b',
+        PDF_A_2B: 'pdf/a-2b',
+        PDF_A_3B: 'pdf/a-3b',
+        PDF_A_4B: 'pdf/a-4b',
+        PDF_A_2U: 'pdf/a-2u',
+        PDF_A_3U: 'pdf/a-3u',
+        PDF_A_4U: 'pdf/a-4u',
+        PDF_UA_1: 'pdf/ua-1',
+    };
+
     static ExportType = {
         SINGLE: 'SINGLE',
         BULK: 'BULK',
@@ -44,6 +55,7 @@ export default class ExportParams {
         this.headersColor = builder.headersColor;
         this.orientation = builder.orientation;
         this.paperSize = builder.paperSize;
+        this.pdfVariant = builder.pdfVariant;
         this.fitToPage = builder.fitToPage;
         this.renderComments = builder.renderComments;
         this.watermark = builder.watermark;
@@ -95,6 +107,7 @@ export default class ExportParams {
                 this.headersColor = undefined;
                 this.orientation = undefined;
                 this.paperSize = undefined;
+                this.pdfVariant = undefined;
                 this.fitToPage = undefined;
                 this.renderComments = undefined;
                 this.watermark = undefined;
@@ -171,6 +184,11 @@ export default class ExportParams {
 
             setPaperSize(paperSize) {
                 this.paperSize = paperSize;
+                return this;
+            }
+
+            setPdfVariant(pdfVariant) {
+                this.pdfVariant = pdfVariant;
                 return this;
             }
 

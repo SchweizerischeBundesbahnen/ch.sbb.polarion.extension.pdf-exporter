@@ -67,8 +67,8 @@ class CoverPageProcessorTest {
                 .templateCss("test template css")
                 .build();
         DocumentData<IModule> documentData = prepareMocks(coverPageModel, exportParams);
-        when(weasyPrintServiceConnector.convertToPdf("result title html", new WeasyPrintOptions(true))).thenReturn(createEmptyPdf(2));
-        when(weasyPrintServiceConnector.convertToPdf("test content", new WeasyPrintOptions(true))).thenReturn(createEmptyPdf(3));
+        when(weasyPrintServiceConnector.convertToPdf("result title html", new WeasyPrintOptions())).thenReturn(createEmptyPdf(2));
+        when(weasyPrintServiceConnector.convertToPdf("test content", new WeasyPrintOptions())).thenReturn(createEmptyPdf(3));
 
         // Act
         byte[] result = coverPageProcessor.generatePdfWithTitle(documentData, exportParams, "test content", new PdfGenerationLog());

@@ -10,6 +10,7 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.WidthValidationResult;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.Orientation;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PaperSize;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PdfVariant;
 import ch.sbb.polarion.extension.pdf_exporter.service.PdfExporterPolarionService;
 import ch.sbb.polarion.extension.pdf_exporter.util.PdfValidationService;
 import org.jetbrains.annotations.VisibleForTesting;
@@ -66,8 +67,8 @@ public class ConverterApiController extends ConverterInternalController {
     }
 
     @Override
-    public Response convertHtmlToPdf(String html, Orientation orientation, PaperSize paperSize, Boolean fitToPage, String fileName) {
-        return polarionService.callPrivileged(() -> super.convertHtmlToPdf(html, orientation, paperSize, fitToPage, fileName));
+    public Response convertHtmlToPdf(String html, Orientation orientation, PaperSize paperSize, PdfVariant pdfVariant, Boolean fitToPage, String fileName) {
+        return polarionService.callPrivileged(() -> super.convertHtmlToPdf(html, orientation, paperSize, pdfVariant, fitToPage, fileName));
     }
 
     @Override

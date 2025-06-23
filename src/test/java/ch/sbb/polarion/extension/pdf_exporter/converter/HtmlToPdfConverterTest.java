@@ -185,7 +185,7 @@ class HtmlToPdfConverterTest {
         when(htmlProcessor.replaceResourcesAsBase64Encoded(anyString())).thenAnswer(invocation -> invocation.getArgument(0));
         when(htmlProcessor.internalizeLinks(anyString())).thenAnswer(a -> a.getArgument(0));
         when(htmlProcessor.adjustContentToFitPage(any(Document.class), any())).thenAnswer(a -> a.getArgument(0));
-        when(weasyPrintServiceConnector.convertToPdf(resultHtml, new WeasyPrintOptions(true))).thenReturn("test content".getBytes());
+        when(weasyPrintServiceConnector.convertToPdf(resultHtml, new WeasyPrintOptions())).thenReturn("test content".getBytes());
 
         ConversionParams conversionParams = ConversionParams.builder()
                 .orientation(Orientation.LANDSCAPE)

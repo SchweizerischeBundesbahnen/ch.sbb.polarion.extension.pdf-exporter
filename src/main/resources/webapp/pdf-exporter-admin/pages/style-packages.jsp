@@ -175,6 +175,10 @@
                     <label for="orientation-select" id='orientation-label'>Orientation:</label>
                     <div id="orientation-select"></div>
                 </div>
+                <div class='input-group'>
+                    <label for="pdf-variant-select" id='pdf-variant-label'>PDF Variant:</label>
+                    <div id="pdf-variant-select"></div>
+                </div>
             </div>
         </div>
 

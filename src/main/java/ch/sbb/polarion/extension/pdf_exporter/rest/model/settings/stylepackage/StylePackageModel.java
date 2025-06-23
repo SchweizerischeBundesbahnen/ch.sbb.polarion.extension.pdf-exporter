@@ -38,6 +38,7 @@ public class StylePackageModel extends SettingsModel {
     private static final String HEADERS_COLOR_ENTRY_NAME = "HEADERS COLOR";
     private static final String PAPER_SIZE_ENTRY_NAME = "PAPER SIZE";
     private static final String ORIENTATION_ENTRY_NAME = "ORIENTATION";
+    private static final String PDF_VARIANT_ENTRY_NAME = "PDF VARIANT";
     private static final String FIT_TO_PAGE_ENTRY_NAME = "FIT TO PAGE";
     private static final String RENDER_COMMENTS_ENTRY_NAME = "RENDER COMMENTS";
     private static final String WATERMARK_ENTRY_NAME = "WATERMARK";
@@ -65,6 +66,7 @@ public class StylePackageModel extends SettingsModel {
     private String headersColor;
     private String paperSize;
     private String orientation;
+    private String pdfVariant;
     private boolean fitToPage;
     private CommentsRenderType renderComments;
     private boolean watermark;
@@ -94,6 +96,7 @@ public class StylePackageModel extends SettingsModel {
                 serializeEntry(HEADERS_COLOR_ENTRY_NAME, headersColor) +
                 serializeEntry(PAPER_SIZE_ENTRY_NAME, paperSize) +
                 serializeEntry(ORIENTATION_ENTRY_NAME, orientation) +
+                serializeEntry(PDF_VARIANT_ENTRY_NAME, pdfVariant) +
                 serializeEntry(FIT_TO_PAGE_ENTRY_NAME, fitToPage) +
                 serializeEntry(RENDER_COMMENTS_ENTRY_NAME, renderComments == null ? null : renderComments.name()) +
                 serializeEntry(WATERMARK_ENTRY_NAME, watermark) +
@@ -125,6 +128,7 @@ public class StylePackageModel extends SettingsModel {
         headersColor = deserializeEntry(HEADERS_COLOR_ENTRY_NAME, serializedString);
         paperSize = deserializeEntry(PAPER_SIZE_ENTRY_NAME, serializedString);
         orientation = deserializeEntry(ORIENTATION_ENTRY_NAME, serializedString);
+        pdfVariant = deserializeEntry(PDF_VARIANT_ENTRY_NAME, serializedString);
         fitToPage = Boolean.parseBoolean(deserializeEntry(FIT_TO_PAGE_ENTRY_NAME, serializedString));
         renderComments = parseRenderComments(deserializeEntry(RENDER_COMMENTS_ENTRY_NAME, serializedString));
         watermark = Boolean.parseBoolean(deserializeEntry(WATERMARK_ENTRY_NAME, serializedString));

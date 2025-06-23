@@ -56,7 +56,10 @@ public class CoverPageProcessor {
     @SneakyThrows
     public byte[] generatePdfWithTitle(DocumentData<? extends IUniqueObject> documentData, ExportParams exportParams,
                                        String contentHtml, PdfGenerationLog generationLog) {
-        WeasyPrintOptions weasyPrintOptions = WeasyPrintOptions.builder().followHTMLPresentationalHints(exportParams.isFollowHTMLPresentationalHints()).build();
+        WeasyPrintOptions weasyPrintOptions = WeasyPrintOptions.builder()
+                .followHTMLPresentationalHints(exportParams.isFollowHTMLPresentationalHints())
+                .pdfVariant(exportParams.getPdfVariant())
+                .build();
 
         generationLog.log("Starting generation for document content...");
         CompletableFuture<byte[]> generateContentFuture = CompletableFuture.supplyAsync(() -> weasyPrintServiceConnector.convertToPdf(contentHtml, weasyPrintOptions));
