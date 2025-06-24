@@ -2,6 +2,9 @@ package ch.sbb.polarion.extension.pdf_exporter.properties;
 
 import ch.sbb.polarion.extension.generic.properties.CurrentExtensionConfiguration;
 import ch.sbb.polarion.extension.generic.properties.ExtensionConfiguration;
+import ch.sbb.polarion.extension.generic.properties.mappings.PropertyMapping;
+import ch.sbb.polarion.extension.generic.properties.mappings.PropertyMappingDefaultValue;
+import ch.sbb.polarion.extension.generic.properties.mappings.PropertyMappingDescription;
 import ch.sbb.polarion.extension.generic.util.Discoverable;
 import com.polarion.core.config.impl.SystemValueReader;
 import org.jetbrains.annotations.NotNull;
@@ -27,31 +30,37 @@ public class PdfExporterExtensionConfiguration extends ExtensionConfiguration {
         return DEBUG_DESCRIPTION;
     }
 
-    public String getWeasyprintService() {
+    @PropertyMapping(WEASYPRINT_SERVICE)
+    public String getWeasyPrintService() {
         return SystemValueReader.getInstance().readString(getPropertyPrefix() + WEASYPRINT_SERVICE, WEASYPRINT_SERVICE_DEFAULT_VALUE);
     }
 
     @SuppressWarnings("unused")
-    public String getWeasyprintServiceDescription() {
+    @PropertyMappingDescription(WEASYPRINT_SERVICE)
+    public String getWeasyPrintServiceDescription() {
         return WEASYPRINT_SERVICE_DESCRIPTION;
     }
 
     @SuppressWarnings("unused")
-    public String getWeasyprintServiceDefaultValue() {
+    @PropertyMappingDefaultValue(WEASYPRINT_SERVICE)
+    public String getWeasyPrintServiceDefaultValue() {
         return WEASYPRINT_SERVICE_DEFAULT_VALUE;
     }
 
     @NotNull
+    @PropertyMapping(WEBHOOKS_ENABLED)
     public Boolean getWebhooksEnabled() {
         return SystemValueReader.getInstance().readBoolean(getPropertyPrefix() + WEBHOOKS_ENABLED, WEBHOOKS_ENABLED_DEFAULT_VALUE);
     }
 
     @SuppressWarnings("unused")
+    @PropertyMappingDescription(WEBHOOKS_ENABLED)
     public String getWebhooksEnabledDescription() {
         return WEBHOOKS_ENABLED_DESCRIPTION;
     }
 
     @SuppressWarnings("unused")
+    @PropertyMappingDefaultValue(WEBHOOKS_ENABLED)
     public String getWebhooksEnabledDefaultValue() {
         return String.valueOf(WEBHOOKS_ENABLED_DEFAULT_VALUE);
     }

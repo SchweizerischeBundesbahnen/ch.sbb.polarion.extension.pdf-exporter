@@ -37,7 +37,7 @@ public class WeasyPrintServiceConnector implements WeasyPrintConverter {
     private final @NotNull String weasyPrintServiceBaseUrl;
 
     public WeasyPrintServiceConnector() {
-        this(PdfExporterExtensionConfiguration.getInstance().getWeasyprintService());
+        this(PdfExporterExtensionConfiguration.getInstance().getWeasyPrintService());
     }
 
     public WeasyPrintServiceConnector(@NotNull String weasyPrintServiceBaseUrl) {
