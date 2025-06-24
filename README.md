@@ -171,29 +171,6 @@ If HTML logging is switched on, then in standard polarion log file there will be
 
 Here you can find out in which files HTML was stored.
 
-### PDF Variants configuration
-
-This configuration property allows selecting a PDF variant to be used for PDF generation. The following variants are supported:
-
-| Variant      | Description                                                      |
-|--------------|------------------------------------------------------------------|
-| **pdf/a-1b** | Basic visual preservation (older PDF standard)                   |
-| **pdf/a-2b** | Basic visual preservation with modern features like transparency |
-| **pdf/a-3b** | Visual preservation with file attachments                        |
-| **pdf/a-4b** | Visual preservation using PDF 2.0 standard                       |
-| **pdf/a-2u** | Visual preservation + searchable text (Unicode)                  |
-| **pdf/a-3u** | Visual preservation + searchable text with file attachments      |
-| **pdf/a-4u** | Searchable text + PDF 2.0 features                               |
-| **pdf/ua-1** | Accessible PDF for assistive technologies                        |
-
-To configure the PDF variant, adjust the following property in the `polarion.properties` file:
-
-```properties
-ch.sbb.polarion.extension.pdf-exporter.weasyprint.pdf.variant=pdf/a-2b
-```
-
-The default value is `pdf/a-2b`.
-
 ### Workflow function configuration
 It is possible to configure the workflow function which exports a PDF file and attaches it to a newly created or already existing work item.
 
@@ -304,6 +281,12 @@ jobs.timeout.in-progress.minutes=60
 All good so far.
 
 ## Upgrade
+
+### Upgrade from version 8.x.x to 9.0.0
+
+In version 9.0.0 support for Polarion 2410 and older has been dropped. This extension supports only Polarion 2506.
+
+PDF variant configuration has been moved to style package instead of using configuration properties.
 
 ### Upgrade from version 8.1.3 to 8.2.0
 
