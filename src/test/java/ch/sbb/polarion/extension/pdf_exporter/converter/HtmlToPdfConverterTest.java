@@ -19,8 +19,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -185,7 +184,7 @@ class HtmlToPdfConverterTest {
         when(htmlProcessor.replaceResourcesAsBase64Encoded(anyString())).thenAnswer(invocation -> invocation.getArgument(0));
         when(htmlProcessor.internalizeLinks(anyString())).thenAnswer(a -> a.getArgument(0));
         when(htmlProcessor.adjustContentToFitPage(any(Document.class), any())).thenAnswer(a -> a.getArgument(0));
-        when(weasyPrintServiceConnector.convertToPdf(resultHtml, new WeasyPrintOptions())).thenReturn("test content".getBytes());
+        when(weasyPrintServiceConnector.convertToPdf(eq(resultHtml), any(WeasyPrintOptions.class))).thenReturn("test content".getBytes());
 
         ConversionParams conversionParams = ConversionParams.builder()
                 .orientation(Orientation.LANDSCAPE)

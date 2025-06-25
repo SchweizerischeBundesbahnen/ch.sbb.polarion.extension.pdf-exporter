@@ -9,6 +9,6 @@ public record WeasyPrintOptions(
         PdfVariant pdfVariant
 ) {
     public WeasyPrintOptions() {
-        this(true, PdfVariant.PDF_A_2B);
+        this(false, PdfVariant.PDF_A_2B);
     }
 }
