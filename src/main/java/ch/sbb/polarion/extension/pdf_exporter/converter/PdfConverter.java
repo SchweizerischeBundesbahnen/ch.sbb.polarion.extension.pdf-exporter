@@ -230,7 +230,10 @@ public class PdfConverter {
         if (metaInfoCallback == null && exportParams.getInternalContent() == null && exportParams.getCoverPage() != null) {
             return coverPageProcessor.generatePdfWithTitle(documentData, exportParams, htmlPage, generationLog);
         } else {
-            WeasyPrintOptions weasyPrintOptions = WeasyPrintOptions.builder().followHTMLPresentationalHints(exportParams.isFollowHTMLPresentationalHints()).build();
+            WeasyPrintOptions weasyPrintOptions = WeasyPrintOptions.builder()
+                    .followHTMLPresentationalHints(exportParams.isFollowHTMLPresentationalHints())
+                    .pdfVariant(exportParams.getPdfVariant())
+                    .build();
             return weasyPrintServiceConnector.convertToPdf(htmlPage, weasyPrintOptions);
         }
     }

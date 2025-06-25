@@ -37,7 +37,7 @@ public class WeasyPrintServiceConnector implements WeasyPrintConverter {
     private final @NotNull String weasyPrintServiceBaseUrl;
 
     public WeasyPrintServiceConnector() {
-        this(PdfExporterExtensionConfiguration.getInstance().getWeasyprintService());
+        this(PdfExporterExtensionConfiguration.getInstance().getWeasyPrintService());
     }
 
     public WeasyPrintServiceConnector(@NotNull String weasyPrintServiceBaseUrl) {
@@ -50,12 +50,8 @@ public class WeasyPrintServiceConnector implements WeasyPrintConverter {
         try {
             client = ClientBuilder.newClient();
             WebTarget webTarget = client.target(getWeasyPrintServiceBaseUrl() + "/convert/html")
-                    .queryParam("presentational_hints", weasyPrintOptions.followHTMLPresentationalHints());
-
-            String weasyprintPdfVariant = PdfExporterExtensionConfiguration.getInstance().getWeasyprintPdfVariant();
-            if (weasyprintPdfVariant != null) {
-                webTarget = webTarget.queryParam("pdf_variant", weasyprintPdfVariant);
-            }
+                    .queryParam("presentational_hints", weasyPrintOptions.followHTMLPresentationalHints())
+                    .queryParam("pdf_variant", weasyPrintOptions.pdfVariant().toWeasyPrintParameter());
 
             try (Response response = webTarget.request("application/pdf").post(Entity.entity(htmlPage, MediaType.TEXT_HTML))) {
                 if (response.getStatus() == Response.Status.OK.getStatusCode()) {

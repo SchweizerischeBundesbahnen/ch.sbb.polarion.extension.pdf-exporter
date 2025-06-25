@@ -67,6 +67,7 @@ export default class ExportPanel {
         this.ctx.setValue("paper-size-selector", stylePackage.paperSize || 'A4');
         this.ctx.setValue("headers-color", stylePackage.headersColor);
         this.ctx.setValue("orientation-selector", stylePackage.orientation || 'PORTRAIT');
+        this.ctx.setValue("pdf-variant-selector", stylePackage.pdfVariant || 'PDF_A_2B');
         this.ctx.setCheckbox("fit-to-page", stylePackage.fitToPage);
 
         this.ctx.setCheckbox("render-comments", !!stylePackage.renderComments);
@@ -159,6 +160,7 @@ export default class ExportPanel {
             .setHeadersColor(this.ctx.getElementById("headers-color").value)
             .setPaperSize(this.ctx.getElementById("paper-size-selector").value)
             .setOrientation(this.ctx.getElementById("orientation-selector").value)
+            .setPdfVariant(this.ctx.getElementById("pdf-variant-selector").value)
             .setFitToPage(this.ctx.getElementById('fit-to-page').checked)
             .setRenderComments(this.ctx.getElementById('render-comments').checked ? this.ctx.getElementById("render-comments-selector").value : null)
             .setWatermark(this.ctx.getElementById("watermark").checked)

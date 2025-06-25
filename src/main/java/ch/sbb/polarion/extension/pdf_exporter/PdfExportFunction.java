@@ -9,6 +9,7 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.DocumentType
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.Orientation;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PaperSize;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PdfVariant;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.stylepackage.StylePackageModel;
 import ch.sbb.polarion.extension.pdf_exporter.service.PdfExporterPolarionService;
 import ch.sbb.polarion.extension.pdf_exporter.settings.StylePackageSettings;
@@ -116,6 +117,7 @@ public class PdfExportFunction implements IFunction<IModule> {
                 .headersColor(stylePackage.getHeadersColor())
                 .orientation(Orientation.valueOf(stylePackage.getOrientation()))
                 .paperSize(PaperSize.valueOf(stylePackage.getPaperSize()))
+                .pdfVariant(PdfVariant.valueOf(stylePackage.getPdfVariant()))
                 .fitToPage(stylePackage.isFitToPage())
                 .renderComments(stylePackage.getRenderComments())
                 .watermark(stylePackage.isWatermark())

@@ -9,6 +9,7 @@
     * [Headings color](#headings-color)
     * [Paper size](#paper-size)
     * [Orientation](#orientation)
+    * [PDF variant](#pdf-variant)
     * [Fit images and tables to page width](#fit-images-and-tables-to-page-width)
     * [Follow HTML presentational hints](#follow-html-presentational-hints)
     * [Comments rendering](#comments-rendering)
@@ -87,6 +88,23 @@ This option serves as a document-wide page orientation setting, either "Portrait
 And then you can specify custom orientation for this page break:
 
 ![Orientation page break](docs/user_guide/img/orientation_page_break.png)
+
+### PDF variant
+
+This configuration property allows selecting a PDF variant to be used for PDF generation. The following variants are supported:
+
+| Variant      | Description                                                      |
+|--------------|------------------------------------------------------------------|
+| **pdf/a-1b** | Basic visual preservation (older PDF standard)                   |
+| **pdf/a-2b** | Basic visual preservation with modern features like transparency |
+| **pdf/a-3b** | Visual preservation with file attachments                        |
+| **pdf/a-4b** | Visual preservation using PDF 2.0 standard                       |
+| **pdf/a-2u** | Visual preservation + searchable text (Unicode)                  |
+| **pdf/a-3u** | Visual preservation + searchable text with file attachments      |
+| **pdf/a-4u** | Searchable text + PDF 2.0 features                               |
+| **pdf/ua-1** | Accessible PDF for assistive technologies                        |
+
+The default value is `pdf/a-2b`.
 
 ### Fit images and tables to page width
 This option which is on by default tells PDF Exporter to fit images and tables into resulted page width even if their width in the Polarion document exceeds it. Elements exceeding Polarion document width:

@@ -21,6 +21,10 @@ public class ConversionParams {
     @Builder.Default
     protected PaperSize paperSize = PaperSize.A4;
 
+    @Schema(description = "PDF variant to be used for conversion", defaultValue = "PDF_A_2B")
+    @Builder.Default
+    private PdfVariant pdfVariant = PdfVariant.PDF_A_2B;
+
     @Schema(description = "Content should be scaled to fit the page", defaultValue = "true")
     @Builder.Default
     protected boolean fitToPage = true;

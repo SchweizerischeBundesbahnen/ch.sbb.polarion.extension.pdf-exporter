@@ -311,6 +311,7 @@ export default class ExportPopup {
         this.ctx.setValue("popup-headers-color", stylePackage.headersColor);
         this.ctx.setValue("popup-paper-size-selector", stylePackage.paperSize || ExportParams.PaperSize.A4);
         this.ctx.setValue("popup-orientation-selector", stylePackage.orientation || ExportParams.Orientation.PORTRAIT);
+        this.ctx.setValue("popup-pdf-variant-selector", stylePackage.pdfVariant || ExportParams.PdfVariant.PDF_A_2B);
         this.ctx.setCheckbox("popup-fit-to-page", stylePackage.fitToPage);
 
         this.ctx.setCheckbox("popup-render-comments", !!stylePackage.renderComments);
@@ -565,6 +566,7 @@ export default class ExportPopup {
             .setHeadersColor(this.ctx.getElementById("popup-headers-color").value)
             .setPaperSize(this.ctx.getElementById("popup-paper-size-selector").value)
             .setOrientation(this.ctx.getElementById("popup-orientation-selector").value)
+            .setPdfVariant(this.ctx.getElementById("popup-pdf-variant-selector").value)
             .setFitToPage((live_doc || test_run) && this.ctx.getElementById('popup-fit-to-page').checked)
             .setRenderComments(live_doc && this.ctx.getElementById('popup-render-comments').checked ? this.ctx.getElementById("popup-render-comments-selector").value : null)
             .setWatermark(this.ctx.getElementById("popup-watermark").checked)

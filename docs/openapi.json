@@ -306,6 +306,25 @@
             }
           },
           {
+            "description": "default value: pdf/a-2b",
+            "in": "query",
+            "name": "pdfVariant",
+            "schema": {
+              "description": "PDF variants",
+              "enum": [
+                "PDF_A_1B",
+                "PDF_A_2B",
+                "PDF_A_3B",
+                "PDF_A_4B",
+                "PDF_A_2U",
+                "PDF_A_3U",
+                "PDF_A_4U",
+                "PDF_UA_1"
+              ],
+              "type": "string"
+            }
+          },
+          {
             "description": "default value: false",
             "in": "query",
             "name": "fitToPage",
@@ -1842,6 +1861,21 @@
               "LETTER",
               "LEGAL",
               "LEDGER"
+            ],
+            "type": "string"
+          },
+          "pdfVariant": {
+            "default": "PDF_A_2B",
+            "description": "PDF variants",
+            "enum": [
+              "PDF_A_1B",
+              "PDF_A_2B",
+              "PDF_A_3B",
+              "PDF_A_4B",
+              "PDF_A_2U",
+              "PDF_A_3U",
+              "PDF_A_4U",
+              "PDF_UA_1"
             ],
             "type": "string"
           },

@@ -5,6 +5,7 @@ import ch.sbb.polarion.extension.generic.settings.SettingsService;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.CommentsRenderType;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.Orientation;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PaperSize;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PdfVariant;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.stylepackage.StylePackageModel;
 import com.polarion.core.util.StringUtils;
 import org.jetbrains.annotations.NotNull;
@@ -39,6 +40,7 @@ public class StylePackageSettings extends GenericNamedSettings<StylePackageModel
                 .headersColor(DEFAULT_HEADERS_COLOR)
                 .paperSize(PaperSize.A4.name())
                 .orientation(Orientation.PORTRAIT.name())
+                .pdfVariant(PdfVariant.PDF_A_2B.name())
                 .fitToPage(true)
                 .renderComments(CommentsRenderType.OPEN)
                 .cutEmptyWorkitemAttributes(true)
