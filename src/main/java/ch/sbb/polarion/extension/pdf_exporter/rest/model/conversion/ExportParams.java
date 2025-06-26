@@ -51,12 +51,6 @@ public class ExportParams extends ConversionParams {
     @Schema(description = "Color to be used for headers in the document. By default dark blue color (Polarion's default)")
     private String headersColor;
 
-    /**
-     * Deprecated param. Will be removed in next major version.
-     */
-    @Schema(description = "Comments should be rendered in the exported document. Deprecated: use 'renderComments' instead", defaultValue = "true", deprecated = true)
-    private boolean enableCommentsRendering;
-
     @Schema(description = "Which comments should be rendered in the exported document")
     private CommentsRenderType renderComments;
 
@@ -104,13 +98,5 @@ public class ExportParams extends ConversionParams {
             documentType = DocumentType.LIVE_DOC;
         }
         return documentType;
-    }
-
-    /**
-     * REMOVE in next major version together with 'enableCommentsRendering'
-     */
-    @SuppressWarnings("java:S3358") // ignore sonar complaint about nested ternary operation - this method is going to be removed soon
-    public CommentsRenderType getRenderComments() {
-        return renderComments != null ? renderComments : enableCommentsRendering ? CommentsRenderType.ALL : null;
     }
 }
