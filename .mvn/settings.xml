@@ -22,7 +22,7 @@
         <profile>
             <id>deploy-github-packages</id>
             <properties>
-                <altDeploymentRepository>github::default::https://maven.pkg.github.com/${env.GITHUB_REPO_NAME}</altDeploymentRepository>
+                <altDeploymentRepository>github::https://maven.pkg.github.com/${env.GITHUB_REPO_NAME}</altDeploymentRepository>
             </properties>
         </profile>
     </profiles>
