@@ -17,46 +17,68 @@ jobs:
     permissions:
       contents: read
       packages: read
+    outputs:
+      project_version: ${{ steps.project_metadata.outputs.version }}
+      is_release: ${{ steps.project_metadata.outputs.is_release }}
     env:
       IO_JFROG_SBB_POLARION_TOKEN: ${{ secrets.IO_JFROG_SBB_POLARION_TOKEN }}
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
       MARKDOWN2HTML_MAVEN_PLUGIN_FAIL_ON_ERROR: true
+      GITHUB_TOKEN: ${{ github.token }}  # providing this prevent from reaching GitHub requests limit
     steps:
       - name: 📄 Checkout the repository
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
         with:
           fetch-depth: 0  # Sonar needs full history
           persist-credentials: false
-      - name: 🧱 Set up JDK and Maven with cache
+      - name: 🧱 Set up JDK and Maven
         uses: actions/setup-java@c5195efecf7bdfc987ee8bae7a71cb8b11521c00  # v4.7.1
         with:
           distribution: ${{ env.JAVA_DISTRIBUTION }}
           java-version: ${{ env.JAVA_VERSION }}
           cache: maven
-      - name: 📝 Extract project metadata and build
+      - name: 📝 Extract project metadata
         id: project_metadata
         run: |
           VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
-          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
           # Check if it is a release
           if [[ ! "${VERSION}" =~ -SNAPSHOT$ ]]; then
-            echo "is_release=true" >> "$GITHUB_OUTPUT"
+            IS_RELEASE=true
           else
-            echo "is_release=false" >> "$GITHUB_OUTPUT"
+            IS_RELEASE=false
           fi
+          {
+            echo "version=${VERSION}"
+            echo "is_release=${IS_RELEASE}"
+          } >> "$GITHUB_OUTPUT"
+      - name: 🔍 Cache SonarQube packages
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684  # v4.2.3
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
       - name: 📦 Build with Maven for Pushes
         if: github.event_name == 'push'
         env:
           GITHUB_HEAD_REF: ${{ github.head_ref }}
-        run: mvn --batch-mode -s "${SETTINGS_XML}" clean verify sonar:sonar -Dsonar.branch.name="${GITHUB_HEAD_REF}"
+        run: |
+          if [ -n "${GITHUB_HEAD_REF}" ]; then
+            mvn --batch-mode -s "${SETTINGS_XML}" clean verify sonar:sonar -Dsonar.branch.name="${GITHUB_HEAD_REF}"
+          else
+            mvn --batch-mode -s "${SETTINGS_XML}" clean verify sonar:sonar
+          fi
       - name: 📦 Build with Maven for PRs
         if: github.event_name == 'pull_request'
         env:
           GITHUB_HEAD_REF: ${{ github.head_ref }}
           GITHUB_BASE_REF: ${{ github.base_ref }}
           GITHUB_PR_NUMBER_REF: ${{ github.event.pull_request.number }}
-        run: mvn --batch-mode -s "${SETTINGS_XML}" clean verify sonar:sonar -Dsonar.pullrequest.base="${GITHUB_HEAD_REF}" -Dsonar.pullrequest.branch="${GITHUB_BASE_REF}" -Dsonar.pullrequest.key="${GITHUB_PR_NUMBER_REF}"
+        run: mvn --batch-mode -s "${SETTINGS_XML}" clean verify sonar:sonar -Dsonar.pullrequest.base="${GITHUB_BASE_REF}" -Dsonar.pullrequest.branch="${GITHUB_HEAD_REF}" -Dsonar.pullrequest.key="${GITHUB_PR_NUMBER_REF}"
+      - name: 📋 Analyze dependencies
+        run: mvn --batch-mode -s "${SETTINGS_XML}" dependency:analyze
+        continue-on-error: false
       - name: 📦 Upload build artifacts
+        # needed for uploads to Github Releases
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
         with:
           name: maven-artifacts
@@ -64,9 +86,7 @@ jobs:
             target/*.jar
             target/*.pom
           retention-days: 1
-    outputs:
-      project_version: ${{ steps.project_metadata.outputs.version }}
-      is_release: ${{ steps.project_metadata.outputs.is_release }}
+          if-no-files-found: error
   deploy-maven-central:
     needs: build
     if: ${{ needs.build.outputs.is_release == 'true' && github.ref == 'refs/heads/main' }}
@@ -77,18 +97,14 @@ jobs:
     env:
       COM_SONATYPE_CENTRAL_POLARION_OPENSOURCE_USERNAME: ${{ secrets.COM_SONATYPE_CENTRAL_POLARION_OPENSOURCE_USERNAME }}
       COM_SONATYPE_CENTRAL_POLARION_OPENSOURCE_TOKEN: ${{ secrets.COM_SONATYPE_CENTRAL_POLARION_OPENSOURCE_TOKEN }}
-      COM_SONATYPE_CENTRAL_POLARION_OPENSOURCE_GPG_PRIVATE_KEY: ${{ secrets.COM_SONATYPE_CENTRAL_POLARION_OPENSOURCE_GPG_PRIVATE_KEY }}
       COM_SONATYPE_CENTRAL_POLARION_OPENSOURCE_GPG_PASSPHRASE: ${{ secrets.COM_SONATYPE_CENTRAL_POLARION_OPENSOURCE_GPG_PASSPHRASE }}
+      GITHUB_TOKEN: ${{ github.token }}  # providing this prevent from reaching GitHub requests limit
     steps:
       - name: 📄 Checkout the repository
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
         with:
           fetch-depth: 1
           persist-credentials: false
-      - name: 📥 Download build artifacts
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093  # v4.3.0
-        with:
-          name: maven-artifacts
       - name: 🧱 Set up JDK and Maven with cache
         uses: actions/setup-java@c5195efecf7bdfc987ee8bae7a71cb8b11521c00  # v4.7.1
         with:
@@ -98,13 +114,13 @@ jobs:
           gpg-private-key: ${{ secrets.COM_SONATYPE_CENTRAL_POLARION_OPENSOURCE_GPG_PRIVATE_KEY }}
       - name: 📦 Deploy to Maven Central
         run: |
-          mvn --batch-mode -s "${SETTINGS_XML}" deploy \
+          # it cannot be implemented using deploy:deploy-file
+          # central-publishing-maven-plugin needs to be used instead due to a specific deployment
+          mvn --batch-mode -s "${SETTINGS_XML}" clean deploy \
             -Dmaven.test.skip=true \
-            -Dmaven.main.skip=true \
-            -Dmaven.javadoc.skip=true \
-            -Dmaven.source.skip=true \
             -P gpg-sign \
-            -P central-publishing
+            -P central-publishing \
+            -Dcentral.timeout=3600
   deploy-github-packages:
     needs: build
     if: ${{ github.ref == 'refs/heads/main' }}
@@ -115,6 +131,7 @@ jobs:
     env:
       GITHUB_TOKEN: ${{ github.token }}
       GITHUB_REPO_NAME: ${{ github.repository }}
+      PROJECT_VERSION: ${{ needs.build.outputs.project_version }}
     steps:
       - name: 📄 Checkout the repository
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
@@ -122,26 +139,28 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
       - name: 📥 Download build artifacts
+        # needed for uploads to GitHub Releases
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093  # v4.3.0
         with:
           name: maven-artifacts
-      - name: 🧱 Set up JDK and Maven with cache
+          path: target/
+      - name: 🧱 Set up JDK and Maven
         uses: actions/setup-java@c5195efecf7bdfc987ee8bae7a71cb8b11521c00  # v4.7.1
         with:
           distribution: ${{ env.JAVA_DISTRIBUTION }}
           java-version: ${{ env.JAVA_VERSION }}
           cache: maven
       - name: 📦 Deploy to GitHub Packages
+        # Releases should be only deployed to GitHub packages when the repo is private
+        # only snapshots must be always deployed here
+        if: ${{ needs.build.outputs.is_release == 'false' }}
         run: |
           mvn --batch-mode -s "${SETTINGS_XML}" deploy \
             -Dmaven.test.skip=true \
-            -Dmaven.main.skip=true \
             -Dmaven.javadoc.skip=true \
             -Dmaven.source.skip=true \
             -P deploy-github-packages
       - name: 📦 Upload assets to GitHub Release
         if: ${{ needs.build.outputs.is_release == 'true' }}
-        env:
-          RELEASE_VERSION: ${{ needs.build.outputs.project_version }}
         run: |-
-          gh release upload "v${RELEASE_VERSION}" "target/*-${RELEASE_VERSION}.jar" --clobber
+          gh release upload "v${PROJECT_VERSION}" "target/*-${PROJECT_VERSION}.jar" --clobber
