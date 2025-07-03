@@ -5,6 +5,8 @@ import ch.sbb.polarion.extension.generic.settings.SettingsService;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.webhooks.WebhooksModel;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.List;
+
 public class WebhooksSettings extends GenericNamedSettings<WebhooksModel> {
     public static final String FEATURE_NAME = "webhooks";
 
@@ -18,6 +20,6 @@ public class WebhooksSettings extends GenericNamedSettings<WebhooksModel> {
 
     @Override
     public @NotNull WebhooksModel defaultValues() {
-        return WebhooksModel.builder().build();
+        return WebhooksModel.builder().webhookConfigs(List.of()).build();
     }
 }

@@ -5,7 +5,7 @@
     <parent>
         <groupId>ch.sbb.polarion.extensions</groupId>
         <artifactId>ch.sbb.polarion.extension.generic</artifactId>
-        <version>10.1.0</version>
+        <version>11.0.1</version>
     </parent>
 
     <artifactId>ch.sbb.polarion.extension.pdf-exporter</artifactId>
@@ -81,9 +81,8 @@
     </properties>
 
     <profiles>
-        <!-- default profile: polarion2410 -->
         <profile>
-            <id>polarion2410</id>
+            <id>polarion2506</id>
             <activation>
                 <activeByDefault>true</activeByDefault>
             </activation>
