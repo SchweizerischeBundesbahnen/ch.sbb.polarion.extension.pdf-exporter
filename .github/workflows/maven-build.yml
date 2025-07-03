@@ -113,14 +113,17 @@ jobs:
           cache: maven
           gpg-private-key: ${{ secrets.COM_SONATYPE_CENTRAL_POLARION_OPENSOURCE_GPG_PRIVATE_KEY }}
       - name: 📦 Deploy to Maven Central
+        # This cannot be implemented using deploy:deploy-file
+        # The central-publishing-maven-plugin must be used instead due to specific deployment requirements
+        # Additionally, timeouts are set to 1 hour to avoid issues with the connection to Sonatype Central during deployment
         run: |
-          # it cannot be implemented using deploy:deploy-file
-          # central-publishing-maven-plugin needs to be used instead due to a specific deployment
           mvn --batch-mode -s "${SETTINGS_XML}" clean deploy \
             -Dmaven.test.skip=true \
             -P gpg-sign \
             -P central-publishing \
-            -Dcentral.timeout=3600
+            -Dcentral.timeout=3600 \
+            -Dmaven.wagon.http.connectionTimeout=3600000 \
+            -Dmaven.wagon.http.readTimeout=3600000
   deploy-github-packages:
     needs: build
     if: ${{ github.ref == 'refs/heads/main' }}

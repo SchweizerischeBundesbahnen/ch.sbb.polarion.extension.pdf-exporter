@@ -81,7 +81,6 @@
     </properties>
 
     <profiles>
-        <!-- default profile: polarion2506 -->
         <profile>
             <id>polarion2506</id>
             <activation>
