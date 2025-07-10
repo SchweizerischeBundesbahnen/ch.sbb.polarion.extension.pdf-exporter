@@ -1,5 +1,31 @@
 # Changelog
 
+## [9.0.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v8.4.0...v9.0.0) (2025-07-09)
+
+
+### ⚠ BREAKING CHANGES
+
+* Polarion 2506 support ([#458](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/458))
+* remove deprecated enableCommentsRendering param ([#455](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/455))
+* PDF Variant configurable on style-package level ([#451](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/451))
+
+### Features
+
+* PDF Variant configurable on style-package level ([#451](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/451)) ([270cc8d](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/270cc8d836f33f6d7ea3023c0f90aaecc2079979)), closes [#450](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/450)
+
+
+### Bug Fixes
+
+* **deps:** update dependency ch.sbb.polarion.extensions:ch.sbb.polarion.extension.generic to v10.1.0 ([33be69d](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/33be69dc0b54eea54734698cdb63fb87718c4780))
+* **deps:** update dependency net.bytebuddy:byte-buddy to v1.17.6 ([ca61cb3](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/ca61cb3ebf13d91f25af06a333a1cf1a72d9b774))
+* migrate to generic v10 ([#445](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/445)) ([a07cd75](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/a07cd7572da47f7a00277ce65e57c95477f45ec5))
+
+
+### Miscellaneous Chores
+
+* Polarion 2506 support ([#458](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/458)) ([3c07f39](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/3c07f396591fb421931183f69a9beb87b4100bf3))
+* remove deprecated enableCommentsRendering param ([#455](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/455)) ([deb0baa](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/deb0baa667868b04e50c30c8affad17a94dc4fe3))
+
 ## [8.4.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v8.3.1...v8.4.0) (2025-06-02)
 
 
