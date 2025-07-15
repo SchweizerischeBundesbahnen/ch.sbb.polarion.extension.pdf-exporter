@@ -161,13 +161,13 @@ public class PdfExporterPolarionService extends PolarionService {
         if (!StringUtils.isEmpty(testCaseFilterFieldId)) {
             // filter out attachments from test records that do not match the test case filter
             testRun.getAllRecords().stream()
-                    .filter(record -> record.getTestCase() != null)
-                    .filter(record -> !Objects.equals(Boolean.TRUE, record.getTestCase().getValue(testCaseFilterFieldId)))
-                    .forEach(record -> {
+                    .filter(testRecord -> testRecord.getTestCase() != null)
+                    .filter(testRecord -> !Objects.equals(Boolean.TRUE, testRecord.getTestCase().getValue(testCaseFilterFieldId)))
+                    .forEach(testRecord -> {
                         // attachments on the test record itself (the last summary step)
-                        attachments.removeAll(record.getAttachments());
+                        attachments.removeAll(testRecord.getAttachments());
                         // attachments on the test steps
-                        attachments.removeAll(record.getTestStepResults().stream().flatMap(res -> res.getAttachments().stream()).toList());
+                        attachments.removeAll(testRecord.getTestStepResults().stream().flatMap(res -> res.getAttachments().stream()).toList());
                     });
         }
         return attachments.stream().filter(a -> filter == null || WildcardUtils.matches(a.getFileName(), filter))
