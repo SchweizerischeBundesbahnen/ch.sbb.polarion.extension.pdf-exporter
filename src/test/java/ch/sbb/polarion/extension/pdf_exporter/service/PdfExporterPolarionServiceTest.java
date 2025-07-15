@@ -20,11 +20,13 @@ import com.polarion.alm.tracker.model.IModule;
 import com.polarion.alm.tracker.model.ITestRecord;
 import com.polarion.alm.tracker.model.ITestRun;
 import com.polarion.alm.tracker.model.ITestRunAttachment;
+import com.polarion.alm.tracker.model.ITestStepResult;
 import com.polarion.alm.tracker.model.ITrackerProject;
 import com.polarion.alm.tracker.model.IWorkItem;
 import com.polarion.alm.tracker.model.baselinecollection.IBaselineCollection;
 import com.polarion.alm.tracker.model.baselinecollection.IBaselineCollectionElement;
 import com.polarion.platform.IPlatformService;
+import com.polarion.platform.persistence.spi.PObjectList;
 import com.polarion.platform.security.ISecurityService;
 import com.polarion.platform.service.repository.IRepositoryService;
 import org.junit.jupiter.api.BeforeEach;
@@ -207,25 +209,45 @@ class PdfExporterPolarionServiceTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     void testGetTestRunAttachments() {
+
+        ITestRunAttachment rootAttachment = mock(ITestRunAttachment.class); // an attachment on the test run itself
+        when(rootAttachment.getFileName()).thenReturn("rootAttachment.txt");
+
         ITestRecord record1 = mock(ITestRecord.class);
-        ITestRunAttachment testRunAttachment1 = mock(ITestRunAttachment.class);
-        when(testRunAttachment1.getFileName()).thenReturn("test1.pdf");
-        when(record1.getAttachments()).thenReturn(List.of(testRunAttachment1));
+        ITestRunAttachment record1Attachment = mock(ITestRunAttachment.class);
+        when(record1Attachment.getFileName()).thenReturn("record1.pdf");
+        when(record1.getAttachments()).thenReturn(List.of(record1Attachment));
 
         ITestRecord record2 = mock(ITestRecord.class);
-        ITestRunAttachment testRunAttachment2 = mock(ITestRunAttachment.class);
-        when(testRunAttachment2.getFileName()).thenReturn("test2.txt");
-        when(record2.getAttachments()).thenReturn(List.of(testRunAttachment2));
+        ITestRunAttachment record2Attachment = mock(ITestRunAttachment.class);
+        when(record2Attachment.getFileName()).thenReturn("record2.txt");
+        when(record2.getAttachments()).thenReturn(List.of(record2Attachment));
+
+        ITestRunAttachment record2step1Attachment1 = mock(ITestRunAttachment.class);
+        when(record2step1Attachment1.getFileName()).thenReturn("record2step1Attachment1.txt");
+        ITestRunAttachment record2step1Attachment2 = mock(ITestRunAttachment.class);
+        when(record2step1Attachment2.getFileName()).thenReturn("record2step1Attachment2.txt");
+        ITestRunAttachment record2step2Attachment1 = mock(ITestRunAttachment.class);
+        when(record2step2Attachment1.getFileName()).thenReturn("record2step2Attachment1.txt");
+
+        ITestStepResult record2step1 = mock(ITestStepResult.class);
+        when(record2step1.getAttachments()).thenReturn(List.of(record2step1Attachment1, record2step1Attachment2));
+        ITestStepResult record2step2 = mock(ITestStepResult.class);
+        when(record2step2.getAttachments()).thenReturn(List.of(record2step2Attachment1));
+        when(record2.getTestStepResults()).thenReturn(List.of(record2step1, record2step2));
 
         ITestRun testRun = mock(ITestRun.class);
         when(testRun.isUnresolvable()).thenReturn(false);
         when(testRun.getAllRecords()).thenReturn(List.of(record1, record2));
+        when(testRun.getAttachments()).thenReturn(new PObjectList(null,
+                List.of(rootAttachment, record1Attachment, record2Attachment, record2step1Attachment1, record2step1Attachment2, record2step2Attachment1)));
         when(testManagementService.getTestRun("testProjectId", "testTestRunId", null)).thenReturn(testRun);
 
         List<TestRunAttachment> testRunAttachments = service.getTestRunAttachments("testProjectId", "testTestRunId", null, null, null);
         assertNotNull(testRunAttachments);
-        assertEquals(2, testRunAttachments.size());
+        assertEquals(6, testRunAttachments.size());
 
         List<TestRunAttachment> testRunAttachmentsFilteredPdf = service.getTestRunAttachments("testProjectId", "testTestRunId", null, "*.pdf", null);
         assertNotNull(testRunAttachmentsFilteredPdf);
@@ -237,7 +259,7 @@ class PdfExporterPolarionServiceTest {
 
         List<TestRunAttachment> testRunAttachmentsFilteredAll = service.getTestRunAttachments("testProjectId", "testTestRunId", null, "*.*", null);
         assertNotNull(testRunAttachmentsFilteredAll);
-        assertEquals(2, testRunAttachmentsFilteredAll.size());
+        assertEquals(6, testRunAttachmentsFilteredAll.size());
 
         List<TestRunAttachment> testRunAttachmentsFilteredNone = service.getTestRunAttachments("testProjectId", "testTestRunId", null, "*.png", null);
         assertNotNull(testRunAttachmentsFilteredNone);
@@ -248,22 +270,22 @@ class PdfExporterPolarionServiceTest {
 
         List<TestRunAttachment> testRunAttachmentsFilteredWithNullValue = service.getTestRunAttachments("testProjectId", "testTestRunId", null, "*.*", "someBooleanField");
         assertNotNull(testRunAttachmentsFilteredWithNullValue);
-        assertEquals(1, testRunAttachmentsFilteredWithNullValue.size());
+        assertEquals(5, testRunAttachmentsFilteredWithNullValue.size());
 
         when(workItem1.getValue("someBooleanField")).thenReturn("true");
         List<TestRunAttachment> testRunAttachmentsFilteredWithWrongTypeValue = service.getTestRunAttachments("testProjectId", "testTestRunId", null, "*.*", "someBooleanField");
         assertNotNull(testRunAttachmentsFilteredWithWrongTypeValue);
-        assertEquals(1, testRunAttachmentsFilteredWithWrongTypeValue.size());
+        assertEquals(5, testRunAttachmentsFilteredWithWrongTypeValue.size());
 
         when(workItem1.getValue("someBooleanField")).thenReturn(false);
         List<TestRunAttachment> testRunAttachmentsFilteredWithFalseValue = service.getTestRunAttachments("testProjectId", "testTestRunId", null, "*.*", "someBooleanField");
         assertNotNull(testRunAttachmentsFilteredWithFalseValue);
-        assertEquals(1, testRunAttachmentsFilteredWithFalseValue.size());
+        assertEquals(5, testRunAttachmentsFilteredWithFalseValue.size());
 
         when(workItem1.getValue("someBooleanField")).thenReturn(true);
         List<TestRunAttachment> testRunAttachmentsFilteredWithTrueValue = service.getTestRunAttachments("testProjectId", "testTestRunId", null, "*.*", "someBooleanField");
         assertNotNull(testRunAttachmentsFilteredWithTrueValue);
-        assertEquals(2, testRunAttachmentsFilteredWithTrueValue.size());
+        assertEquals(6, testRunAttachmentsFilteredWithTrueValue.size());
     }
 
     @Test
@@ -283,6 +305,7 @@ class PdfExporterPolarionServiceTest {
     }
 
     @Test
+    @SuppressWarnings("unused")
     void testGetDocumentsFromCollection() {
         String projectId = "testProjectId";
         String collectionId = "testCollectionId";
