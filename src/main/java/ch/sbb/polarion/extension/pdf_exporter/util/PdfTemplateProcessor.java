@@ -19,23 +19,6 @@ public class PdfTemplateProcessor {
 
     @NotNull
     public String processUsing(@NotNull ExportParams exportParams, @NotNull String documentName, @NotNull String css, @NotNull String content) {
-        if (exportParams.isWatermark()) {
-            css += """
-            @media print {
-                body::before {
-                  content: "Confidential";
-                  font-size: 8em;
-                  text-transform: uppercase;
-                  color: rgba(255, 5, 5, 0.17);
-                  position: fixed;
-                  top: 50%;
-                  left: 50%;
-                  transform: translate(-50%, -50%) rotate(-45deg);
-                }
-            }
-            """;
-        }
-
         css += buildSizeCss(exportParams.getOrientation(), exportParams.getPaperSize());
 
         if (exportParams.isMarkReferencedWorkitems()) {
@@ -59,6 +42,7 @@ public class PdfTemplateProcessor {
                 .replace("{DOC_NAME}", documentName)
                 .replace("{BASE_URL}", buildBaseUrlHeader())
                 .replace("{CSS}", css)
+                .replace("{BODY_CLASS}", exportParams.isWatermark() ? "watermark" : "")
                 .replace("{DOC_CONTENT}", content);
     }
 

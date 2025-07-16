@@ -98,7 +98,7 @@ class PdfTemplateProcessorTest {
                                 }
                             </style>
                         </head>
-                        <body>
+                        <body class="">
                         test html content
                         </body>
                         </html>""".indent(0).trim()),
@@ -114,25 +114,13 @@ class PdfTemplateProcessorTest {
                             <link crossorigin='anonymous' href='/polarion/ria/font-awesome-4.0.3/css/font-awesome.css' referrerpolicy='no-referrer' rel='stylesheet'/>
                             <style>
                                 test css content
-                                @media print {
-                                    body::before {
-                                        content: "Confidential";
-                                        font-size: 8em;
-                                        text-transform: uppercase;
-                                        color: rgba(255, 5, 5, 0.17);
-                                        position: fixed;
-                                        top: 50%;
-                                        left: 50%;
-                                        transform: translate(-50%, -50%) rotate(-45deg);
-                                    }
-                                }
                                 @page {size: A4 landscape;}
                                 img {
                                     max-width: 100%;
                                 }
                             </style>
                         </head>
-                        <body>
+                        <body class="watermark">
                         test html content
                         </body>
                         </html>""".indent(0).trim())
