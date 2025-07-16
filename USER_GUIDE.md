@@ -136,6 +136,34 @@ If you select this checkbox, all pages of the resulting PDF document will includ
 
 ![Watermark](docs/user_guide/img/watermark.png)
 
+Text and its styling can be overridden in the administration pane of the extension, its CSS section. The default styling is:
+
+```css
+@media print {
+  body.watermark::before {
+    content: "Confidential";
+    font-size: 8em;
+    text-transform: uppercase;
+    color: rgba(255, 5, 5, 0.17);
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-45deg);
+  }
+}
+```
+
+Be aware that when overriding styling you are free to modify CSS attributes but not selectors definition, they should remain the same as in the default styling:
+
+```css
+@media print {
+  body.watermark::before {
+    ...
+  }
+}
+```
+
+
 ### Cut empty chapters
 If you select this checkbox, empty chapters of any level will be excluded from being exported, like these selected in the screenshot:
 
