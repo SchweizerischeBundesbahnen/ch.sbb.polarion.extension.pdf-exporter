@@ -149,6 +149,7 @@ Text and its styling can be overridden in the administration pane of the extensi
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%) rotate(-45deg);
+    z-index: 100;
   }
 }
 ```
