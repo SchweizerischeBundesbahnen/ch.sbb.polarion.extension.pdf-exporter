@@ -62,9 +62,7 @@ public class CoverPageProcessor {
                 .build();
 
         generationLog.log("Starting generation for document content...");
-        CompletableFuture<byte[]> generateContentFuture = CompletableFuture.supplyAsync(() -> weasyPrintServiceConnector.convertToPdf(contentHtml, weasyPrintOptions));
-        generateContentFuture.join();
-        byte[] pdfContent = generateContentFuture.get();
+        byte[] pdfContent = weasyPrintServiceConnector.convertToPdf(contentHtml, weasyPrintOptions);
         generationLog.log("Document content has been completed");
 
         generationLog.log("Starting generation for cover page ...");
@@ -74,9 +72,7 @@ public class CoverPageProcessor {
                 .pagesTotalCount(String.valueOf(numberOfPages))
                 .build();
         String titleHtml = composeTitleHtml(documentData, exportParams, overridenPlaceholderValues);
-        CompletableFuture<byte[]> generateTitleFuture = CompletableFuture.supplyAsync(() -> weasyPrintServiceConnector.convertToPdf(titleHtml, weasyPrintOptions));
-        generateTitleFuture.join();
-        byte[] pdfCoverPage = generateTitleFuture.get();
+        byte[] pdfCoverPage = weasyPrintServiceConnector.convertToPdf(titleHtml, weasyPrintOptions);
         generationLog.log("Cover page generation has been completed");
 
         generationLog.log("Both generations are completed, starting pages merge...");
