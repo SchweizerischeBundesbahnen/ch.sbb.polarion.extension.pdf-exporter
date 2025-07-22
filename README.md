@@ -282,6 +282,13 @@ All good so far.
 
 ## Upgrade
 
+### Upgrade from version 9.0.0 to 9.0.1
+
+Due to a conflict of HTML elements' IDs in default cover page templates, their HTML/CSS were modified
+to make IDs more unique and to replace IDs by classes where relevant. If you ever created your custom cover page templates
+based on default ones, you can be interested in revising these changes and replicate them in your custom templates. Otherwise,
+if you always used either default template(-s) or/and custom templates not inherited from default ones, no additional actions required.
+
 ### Upgrade from version 8.x.x to 9.0.0
 
 In version 9.0.0 support for Polarion 2410 and older has been dropped. This extension supports only Polarion 2506.
