@@ -282,7 +282,7 @@ All good so far.
 
 ## Upgrade
 
-### Upgrade from version 9.0.0 to 9.0.1
+### Upgrade from version 9.0.0 to 9.x.x
 
 Due to a conflict of HTML elements' IDs in default cover page templates, their HTML/CSS were modified
 to make IDs more unique and to replace IDs by classes where relevant. If you ever created your custom cover page templates
