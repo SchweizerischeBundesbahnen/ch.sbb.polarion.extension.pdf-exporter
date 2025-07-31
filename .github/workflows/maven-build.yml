@@ -63,9 +63,9 @@ jobs:
           GITHUB_HEAD_REF: ${{ github.head_ref }}
         run: |
           if [ -n "${GITHUB_HEAD_REF}" ]; then
-            mvn --batch-mode -s "${SETTINGS_XML}" clean verify sonar:sonar -Dsonar.branch.name="${GITHUB_HEAD_REF}"
+            mvn --batch-mode -s "${SETTINGS_XML}" clean verify -P tests-with-weasyprint-docker sonar:sonar -Dsonar.branch.name="${GITHUB_HEAD_REF}"
           else
-            mvn --batch-mode -s "${SETTINGS_XML}" clean verify sonar:sonar
+            mvn --batch-mode -s "${SETTINGS_XML}" clean verify -P tests-with-weasyprint-docker sonar:sonar
           fi
       - name: 📦 Build with Maven for PRs
         if: github.event_name == 'pull_request'
@@ -73,7 +73,8 @@ jobs:
           GITHUB_HEAD_REF: ${{ github.head_ref }}
           GITHUB_BASE_REF: ${{ github.base_ref }}
           GITHUB_PR_NUMBER_REF: ${{ github.event.pull_request.number }}
-        run: mvn --batch-mode -s "${SETTINGS_XML}" clean verify sonar:sonar -Dsonar.pullrequest.base="${GITHUB_BASE_REF}" -Dsonar.pullrequest.branch="${GITHUB_HEAD_REF}" -Dsonar.pullrequest.key="${GITHUB_PR_NUMBER_REF}"
+        run: mvn --batch-mode -s "${SETTINGS_XML}" clean verify -P tests-with-weasyprint-docker sonar:sonar -Dsonar.pullrequest.base="${GITHUB_BASE_REF}" -Dsonar.pullrequest.branch="${GITHUB_HEAD_REF}"
+          -Dsonar.pullrequest.key="${GITHUB_PR_NUMBER_REF}"
       - name: 📋 Analyze dependencies
         run: mvn --batch-mode -s "${SETTINGS_XML}" dependency:analyze
         continue-on-error: false
