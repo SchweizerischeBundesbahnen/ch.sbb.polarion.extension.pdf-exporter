@@ -1,5 +1,19 @@
 # Changelog
 
+## [9.1.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v9.0.0...v9.1.0) (2025-07-31)
+
+
+### Features
+
+* Configurable watermark ([#468](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/468)) ([3a3f348](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/3a3f3487e58f715d9468dd55c5c69866c1f62df5)), closes [#461](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/461)
+
+
+### Bug Fixes
+
+* add WeasyPrint Docker profile to Maven build commands ([#475](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/475)) ([bc8b838](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/bc8b838afd9cca73525ecaeab2b8c91b22481210))
+* **deps:** update dependency ch.sbb.polarion.extensions:ch.sbb.polarion.extension.generic to v11.0.2 ([c5fd3b4](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/c5fd3b44e58b51dea902d3eb6745d19a95a08de2))
+* missing test run attachments ([#463](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/463)) ([b50da5f](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/b50da5f1c5becc3134a92b6e13747dc4b50cee29)), closes [#462](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/462)
+
 ## [9.0.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v8.4.0...v9.0.0) (2025-07-09)
 
 
