@@ -466,7 +466,7 @@ export default class ExportPopup {
             return;
         }
 
-        if (this.ctx.getDocumentType() === ExportParams.DocumentType.TEST_RUN && this.ctx.getElementById("popup-download-attachments").checked) {
+        if (this.ctx.getDocumentType() === ExportParams.DocumentType.TEST_RUN && exportParams.attachmentsFilter !== null) {
             const testRunId = new URLSearchParams(this.ctx.getUrlQueryParameters()).get("id")
             this.ctx.downloadTestRunAttachments(exportParams.projectId, testRunId, exportParams.revision, exportParams.attachmentsFilter, exportParams.testcaseFieldId);
         }
@@ -553,6 +553,7 @@ export default class ExportPopup {
     buildExportParams(selectedChapters, numberedListStyles, selectedRoles, fileName, attachmentsFilter, testcaseFieldId) {
         const live_doc = this.ctx.getDocumentType() === ExportParams.DocumentType.LIVE_DOC;
         const test_run = this.ctx.getDocumentType() === ExportParams.DocumentType.TEST_RUN;
+        const bulk = this.ctx.getExportType() === ExportParams.ExportType.BULK;
         return new ExportParams.Builder(this.ctx.getDocumentType())
             .setProjectId(this.ctx.getProjectId())
             .setLocationPath(this.ctx.getLocationPath())
@@ -581,8 +582,8 @@ export default class ExportPopup {
             .setLinkedWorkitemRoles(selectedRoles)
             .setFileName(fileName)
             .setUrlQueryParameters(this.ctx.getUrlQueryParameters())
-            .setAttachmentsFilter(test_run && attachmentsFilter ? attachmentsFilter : null)
-            .setTestcaseFieldId(test_run && testcaseFieldId ? testcaseFieldId : null)
+            .setAttachmentsFilter((test_run || bulk) && this.ctx.getElementById("popup-download-attachments").checked ? attachmentsFilter ?? '' : null)
+            .setTestcaseFieldId((test_run || bulk) && this.ctx.getElementById("popup-download-attachments").checked && testcaseFieldId ? testcaseFieldId : null)
             .build();
     }
 

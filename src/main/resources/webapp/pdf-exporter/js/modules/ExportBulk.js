@@ -1,10 +1,11 @@
 import ExportParams from "./ExportParams.js";
 import ExportContext from "./ExportContext.js";
 import ExportPopup from "./ExportPopup.js";
-import('/polarion/pdf-exporter/js/micromodal.min.js');
+import('./../micromodal.min.js');
 
 export default class ExportBulk {
     ctx = null;
+    widgetDocumentType = null;
     popupCtx = null;
     exportParams = null;
     itemsCount = 0;
@@ -14,6 +15,10 @@ export default class ExportBulk {
 
     constructor(rootComponentSelector) {
         this.ctx = new ExportContext({rootComponentSelector: rootComponentSelector});
+        this.widgetDocumentType = this.ctx.querySelector(".header")?.getAttribute("document-type");
+        if (!this.widgetDocumentType) {
+            throw new Error("unable to get documentType from the header");
+        }
         this.ctx.onClick(
             'export-all', () => {
                 this.selectAllItems()
@@ -22,14 +27,16 @@ export default class ExportBulk {
                 if (this.getExportButton().classList.contains(DISABLED_BUTTON_CLASS)) {
                     return;
                 }
-                new ExportPopup({bulkCallback: this});
+                new ExportPopup({
+                    documentType: this.widgetDocumentType,
+                    bulkCallback: this
+                });
             });
         this.getAllDocumentCheckboxes().forEach((checkbox) => {
             checkbox.addEventListener('click', () => {
                 this.validateActiveComponentsState();
             })
         })
-        this.initPopup();
     }
 
     validateActiveComponentsState() {
@@ -72,36 +79,40 @@ export default class ExportBulk {
         return docIdentifiers;
     }
 
-    initPopup() {
-        document.getElementById(BULK_POPUP_ID)?.remove();
-        this.popup = document.createElement('div');
-        this.popup.classList.add("modal");
-        this.popup.classList.add("micromodal-slide");
-        this.popup.id = BULK_POPUP_ID;
-        this.popup.setAttribute("aria-hidden", "true");
-        this.popup.innerHTML = BULK_POPUP_HTML;
-        document.body.appendChild(this.popup);
+    openPopup(exportParams) {
+        this.removePopupIfExists();
+        const popup = document.createElement('div');
+        popup.classList.add("modal");
+        popup.classList.add("micromodal-slide");
+        popup.id = BULK_POPUP_ID;
+        popup.setAttribute("aria-hidden", "true");
+        popup.innerHTML = BULK_POPUP_HTML;
+        document.body.appendChild(popup);
 
         this.popupCtx = new ExportContext({rootComponentSelector: "#" + BULK_POPUP_ID});
-    }
-
-    openPopup(exportParams) {
-        // const documentType = this.ctx.querySelector(".header")?.getAttribute("document-type");
-        // this.openPopup(new ExportParams.Builder(documentType).build());
-
         this.exportParams = exportParams;
         this.itemsCount = 0;
         this.finishedCount = 0;
         this.errors = false;
         this.updateState(BULK_EXPORT_IN_PROGRESS);
         this.renderBulkExportItems();
-        MicroModal.show(BULK_POPUP_ID);
+
+        MicroModal.show(BULK_POPUP_ID, {
+            onClose: () => {
+                // remove popup after usage otherwise it leads to extra UI artifacts creation after page edit
+                this.removePopupIfExists();
+            }
+        });
 
         this.popupCtx.onClick('bulk-stop-export-pdf', () => {
             this.stopBulkExport();
         });
 
         this.startNextItemExport();
+    }
+
+    removePopupIfExists() {
+        document.getElementById(BULK_POPUP_ID)?.remove();
     }
 
     renderBulkExportItems() {
@@ -235,7 +246,9 @@ export default class ExportBulk {
             const documentId = currentItem.dataset["id"];
             if (documentType === ExportParams.DocumentType.TEST_RUN) {
                 this.exportParams["urlQueryParameters"] = {id: documentId};
-                this.ctx.downloadTestRunAttachments(this.exportParams.projectId, documentId, this.exportParams.revision, this.exportParams.attachmentsFilter);
+                if (this.exportParams.attachmentsFilter !== null) {
+                    this.ctx.downloadTestRunAttachments(this.exportParams.projectId, documentId, this.exportParams.revision, this.exportParams.attachmentsFilter);
+                }
             } else if (documentType === ExportParams.DocumentType.BASELINE_COLLECTION) {
                 this.ctx.convertCollectionDocuments(this.exportParams, documentId, () => {
                         currentItem.classList.remove("in-progress");
