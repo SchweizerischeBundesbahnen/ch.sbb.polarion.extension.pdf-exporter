@@ -323,9 +323,7 @@ function setStylePackage(content) {
 
     ctx.setCheckboxValueById('expose-page-width-validation', stylePackage.exposePageWidthValidation);
 
-    if (stylePackage.bundleTimestamp !== ctx.getValueById('bundle-timestamp')) {
-        ctx.setNewerVersionNotificationVisible(true);
-    }
+    ctx.setNewerVersionNotificationVisible(stylePackage.bundleTimestamp && stylePackage.bundleTimestamp !== ctx.getValueById('bundle-timestamp'));
 }
 
 function newConfigurationCreated() {
