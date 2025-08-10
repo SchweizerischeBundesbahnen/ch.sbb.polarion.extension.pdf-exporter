@@ -1,5 +1,13 @@
 # Changelog
 
+## [9.1.1](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v9.1.0...v9.1.1) (2025-08-10)
+
+
+### Bug Fixes
+
+* test run attachments always get downloaded even if checkbox is n… ([#479](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/479)) ([2baa38d](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/2baa38dcfa7d817417cb0ec297b688538a540ae0))
+* test run attachments always get downloaded even if checkbox is not selected ([2baa38d](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/2baa38dcfa7d817417cb0ec297b688538a540ae0)), closes [#462](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/462)
+
 ## [9.1.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v9.0.0...v9.1.0) (2025-07-31)
 
 
