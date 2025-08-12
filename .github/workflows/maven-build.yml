@@ -27,7 +27,7 @@ jobs:
       GITHUB_TOKEN: ${{ github.token }}  # providing this prevent from reaching GitHub requests limit
     steps:
       - name: 📄 Checkout the repository
-        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955  # v4.3.0
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8  # v5.0.0
         with:
           fetch-depth: 0  # Sonar needs full history
           persist-credentials: false
@@ -102,7 +102,7 @@ jobs:
       GITHUB_TOKEN: ${{ github.token }}  # providing this prevent from reaching GitHub requests limit
     steps:
       - name: 📄 Checkout the repository
-        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955  # v4.3.0
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8  # v5.0.0
         with:
           fetch-depth: 1
           persist-credentials: false
@@ -138,7 +138,7 @@ jobs:
       PROJECT_VERSION: ${{ needs.build.outputs.project_version }}
     steps:
       - name: 📄 Checkout the repository
-        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955  # v4.3.0
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8  # v5.0.0
         with:
           fetch-depth: 1
           persist-credentials: false
