@@ -315,6 +315,7 @@ class PdfExporterPolarionServiceTest {
 
         IModule mockModule1 = mock(IModule.class);
         IModule mockModule2 = mock(IModule.class);
+        IModule mockModule3 = mock(IModule.class);
 
         when(mockModule1.getProjectId()).thenReturn(projectId);
         when(mockModule1.getModuleFolder()).thenReturn("space 1");
@@ -326,14 +327,25 @@ class PdfExporterPolarionServiceTest {
         when(mockModule2.getModuleName()).thenReturn("test Module2");
         when(mockModule2.getRevision()).thenReturn("2");
 
+        when(mockModule3.getProjectId()).thenReturn(projectId);
+        when(mockModule3.getModuleFolder()).thenReturn("upstream_space");
+        when(mockModule3.getModuleName()).thenReturn("upstream Module");
+        when(mockModule3.getRevision()).thenReturn("3");
+
         IBaselineCollectionElement mockElement1 = mock(IBaselineCollectionElement.class);
         IBaselineCollectionElement mockElement2 = mock(IBaselineCollectionElement.class);
+        IBaselineCollectionElement mockUpstreamElement = mock(IBaselineCollectionElement.class);
 
         when(mockElement1.getObjectWithRevision()).thenReturn(mockModule1);
         when(mockElement2.getObjectWithRevision()).thenReturn(mockModule2);
+        when(mockUpstreamElement.getObjectWithRevision()).thenReturn(mockModule3);
+
+        IBaselineCollection mockUpstreamCollection = mock(IBaselineCollection.class);
+        when(mockUpstreamCollection.getElements()).thenReturn(List.of(mockUpstreamElement));
+        when(mockCollection.getElements()).thenReturn(List.of(mockElement1, mockElement2));
+        when(mockCollection.getUpstreamCollections()).thenReturn(List.of(mockUpstreamCollection));
 
         BaselineCollection baselineCollection = mock(BaselineCollection.class);
-        when(mockCollection.getElements()).thenReturn(List.of(mockElement1, mockElement2));
         when(mockBaselineCollectionReference.get(Mockito.any())).thenReturn(baselineCollection);
         when(baselineCollection.getOldApi()).thenReturn(mockCollection);
 
@@ -344,7 +356,7 @@ class PdfExporterPolarionServiceTest {
             List<DocumentCollectionEntry> result = service.getDocumentsFromCollection(projectId, collectionId, null, mock(ReadOnlyTransaction.class));
 
             assertNotNull(result);
-            assertEquals(2, result.size());
+            assertEquals(3, result.size());
             assertEquals("space 1", result.get(0).getSpaceId());
             assertEquals("test Module1", result.get(0).getDocumentName());
             assertEquals("1", result.get(0).getRevision());
@@ -353,10 +365,14 @@ class PdfExporterPolarionServiceTest {
             assertEquals("test Module2", result.get(1).getDocumentName());
             assertEquals("2", result.get(1).getRevision());
 
+            assertEquals("upstream_space", result.get(2).getSpaceId());
+            assertEquals("upstream Module", result.get(2).getDocumentName());
+            assertEquals("3", result.get(2).getRevision());
+
             List<DocumentCollectionEntry> resultWithRevision = service.getDocumentsFromCollection(projectId, collectionId, "1234", mock(ReadOnlyTransaction.class));
 
             assertNotNull(resultWithRevision);
-            assertEquals(2, resultWithRevision.size());
+            assertEquals(3, resultWithRevision.size());
             assertEquals("space 1", resultWithRevision.get(0).getSpaceId());
             assertEquals("test Module1", resultWithRevision.get(0).getDocumentName());
             assertEquals("1", resultWithRevision.get(0).getRevision());
@@ -365,6 +381,9 @@ class PdfExporterPolarionServiceTest {
             assertEquals("test Module2", resultWithRevision.get(1).getDocumentName());
             assertEquals("2", resultWithRevision.get(1).getRevision());
 
+            assertEquals("upstream_space", resultWithRevision.get(2).getSpaceId());
+            assertEquals("upstream Module", resultWithRevision.get(2).getDocumentName());
+            assertEquals("3", resultWithRevision.get(2).getRevision());
         }
     }
 
