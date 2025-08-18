@@ -206,7 +206,7 @@ public class PdfExporterPolarionService extends PolarionService {
                         .map(IBaselineCollectionElement::getObjectWithRevision)
                         .filter(IModule.class::isInstance)
                         .map(IModule.class::cast)
-                        .collect(Collectors.toCollection(ArrayList::new));
+                        .toList();
 
         for (IModule module : modules) {
             DocumentCollectionEntry documentCollectionEntry = new DocumentCollectionEntry(
