@@ -41,6 +41,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class PdfExporterPolarionService extends PolarionService {
 
@@ -195,11 +197,16 @@ public class PdfExporterPolarionService extends PolarionService {
         BaselineCollection baselineCollection = baselineCollectionReference.get(transaction);
         IBaselineCollection collection = baselineCollection.getOldApi();
 
-        List<IModule> modules = collection.getElements().stream()
-                .map(IBaselineCollectionElement::getObjectWithRevision)
-                .filter(IModule.class::isInstance)
-                .map(IModule.class::cast)
-                .toList();
+        List<IModule> modules =
+                Stream.concat(
+                                collection.getElements().stream(),
+                                collection.getUpstreamCollections().stream()
+                                        .flatMap(upstream -> upstream.getElements().stream())
+                        )
+                        .map(IBaselineCollectionElement::getObjectWithRevision)
+                        .filter(IModule.class::isInstance)
+                        .map(IModule.class::cast)
+                        .collect(Collectors.toCollection(ArrayList::new));
 
         for (IModule module : modules) {
             DocumentCollectionEntry documentCollectionEntry = new DocumentCollectionEntry(
