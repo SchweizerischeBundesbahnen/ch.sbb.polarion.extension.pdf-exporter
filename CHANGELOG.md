@@ -1,5 +1,19 @@
 # Changelog
 
+## [9.2.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v9.1.1...v9.2.0) (2025-08-19)
+
+
+### Features
+
+* Additional flag for downloading attachments on individual test-… ([#486](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/486)) ([5dc80d4](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/5dc80d4c4414cc2d524d001a80809ef2ac4236cc))
+* Additional flag for downloading attachments on individual test-case level ([5dc80d4](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/5dc80d4c4414cc2d524d001a80809ef2ac4236cc)), closes [#483](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/483)
+* Updated logic to aggregate modules from both the main and upstr… ([#485](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/485)) ([ae90b8c](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/ae90b8c0c9c91c62d33f06659d13a3bdbbb14d7b)), closes [#477](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/477)
+
+
+### Bug Fixes
+
+* **deps:** update dependency net.bytebuddy:byte-buddy to v1.17.7 ([8a57bb1](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/8a57bb18d5359055db4a167551201f1ffbd71e9b))
+
 ## [9.1.1](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v9.1.0...v9.1.1) (2025-08-10)
 
 
