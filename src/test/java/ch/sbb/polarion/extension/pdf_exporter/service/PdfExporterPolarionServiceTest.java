@@ -266,11 +266,19 @@ class PdfExporterPolarionServiceTest {
         assertEquals(0, testRunAttachmentsFilteredNone.size());
 
         IWorkItem workItem1 = mock(IWorkItem.class);
+        IWorkItem workItem2 = mock(IWorkItem.class);
         when(record1.getTestCase()).thenReturn(workItem1);
+        when(record2.getTestCase()).thenReturn(workItem2);
+
+        when(testRun.getValue("someBooleanField")).thenReturn(true);
+        when(workItem1.getValue("someBooleanField")).thenReturn(null);
+        when(workItem2.getValue("someBooleanField")).thenReturn(null);
+        List<TestRunAttachment> result = service.getTestRunAttachments("testProjectId", "testTestRunId", null, "*.*", "someBooleanField");
+        assertEquals(6, result.size());
 
         List<TestRunAttachment> testRunAttachmentsFilteredWithNullValue = service.getTestRunAttachments("testProjectId", "testTestRunId", null, "*.*", "someBooleanField");
         assertNotNull(testRunAttachmentsFilteredWithNullValue);
-        assertEquals(5, testRunAttachmentsFilteredWithNullValue.size());
+        assertEquals(6, testRunAttachmentsFilteredWithNullValue.size());
 
         when(workItem1.getValue("someBooleanField")).thenReturn("true");
         List<TestRunAttachment> testRunAttachmentsFilteredWithWrongTypeValue = service.getTestRunAttachments("testProjectId", "testTestRunId", null, "*.*", "someBooleanField");
@@ -283,9 +291,38 @@ class PdfExporterPolarionServiceTest {
         assertEquals(5, testRunAttachmentsFilteredWithFalseValue.size());
 
         when(workItem1.getValue("someBooleanField")).thenReturn(true);
-        List<TestRunAttachment> testRunAttachmentsFilteredWithTrueValue = service.getTestRunAttachments("testProjectId", "testTestRunId", null, "*.*", "someBooleanField");
-        assertNotNull(testRunAttachmentsFilteredWithTrueValue);
-        assertEquals(6, testRunAttachmentsFilteredWithTrueValue.size());
+        when(workItem2.getValue("someBooleanField")).thenReturn(false);
+        result = service.getTestRunAttachments("testProjectId", "testTestRunId", null, "*.*", "someBooleanField");
+        assertEquals(2, result.size());
+
+        when(testRun.getValue("someBooleanField")).thenReturn(false);
+        when(workItem1.getValue("someBooleanField")).thenReturn(true);
+        when(workItem2.getValue("someBooleanField")).thenReturn(true);
+        result = service.getTestRunAttachments("testProjectId", "testTestRunId", null, "*.*", "someBooleanField");
+        assertEquals(6, result.size());
+
+        when(workItem1.getValue("someBooleanField")).thenReturn(false);
+        when(workItem2.getValue("someBooleanField")).thenReturn(false);
+        result = service.getTestRunAttachments("testProjectId", "testTestRunId", null, "*.*", "someBooleanField");
+        assertEquals(1, result.size());
+
+        when(testRun.getValue("someBooleanField")).thenReturn(true);
+        when(workItem1.getValue("someBooleanField")).thenReturn(null);
+        when(workItem2.getValue("someBooleanField")).thenReturn(false);
+        result = service.getTestRunAttachments("testProjectId", "testTestRunId", null, "*.*", "someBooleanField");
+        assertEquals(2, result.size());
+
+        when(testRun.getValue("someBooleanField")).thenReturn(null);
+        when(workItem1.getValue("someBooleanField")).thenReturn(false);
+        when(workItem2.getValue("someBooleanField")).thenReturn(null);
+        result = service.getTestRunAttachments("testProjectId", "testTestRunId", null, "*.*", "someBooleanField");
+        assertEquals(1, result.size());
+
+        when(testRun.getValue("someBooleanField")).thenReturn(false);
+        when(workItem1.getValue("someBooleanField")).thenReturn("notBoolean");
+        when(workItem2.getValue("someBooleanField")).thenReturn(null);
+        result = service.getTestRunAttachments("testProjectId", "testTestRunId", null, "*.*", "someBooleanField");
+        assertEquals(1, result.size());
     }
 
     @Test

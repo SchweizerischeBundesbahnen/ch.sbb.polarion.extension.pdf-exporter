@@ -257,7 +257,7 @@ Note that the pre-generated value can be defined on the 'Filename' administratio
 ![File name templates](docs/user_guide/img/filename_templates.png)
 
 ### Download attachments
-Option available only for Test Runs:
+Downloads attachments based on the custom boolean field. A test case value overrides the test-run setting.
 
 ![Download attachments](docs/user_guide/img/download_attachments.png)
 

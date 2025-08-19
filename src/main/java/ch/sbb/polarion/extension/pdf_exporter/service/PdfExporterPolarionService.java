@@ -159,12 +159,20 @@ public class PdfExporterPolarionService extends PolarionService {
 
     public @NotNull List<TestRunAttachment> getTestRunAttachments(@NotNull String projectId, @NotNull String testRunId, @Nullable String revision, @Nullable String filter, @Nullable String testCaseFilterFieldId) {
         ITestRun testRun = getTestRun(projectId, testRunId, revision);
+
+        Object testRunFieldObj = testRun.getValue(testCaseFilterFieldId);
+        boolean testRunFieldValue = testRunFieldObj instanceof Boolean b && b;
+
         List<ITestRunAttachment> attachments = new ArrayList<>(testRun.getAttachments()); // initially take all attachments
         if (!StringUtils.isEmpty(testCaseFilterFieldId)) {
             // filter out attachments from test records that do not match the test case filter
             testRun.getAllRecords().stream()
                     .filter(testRecord -> testRecord.getTestCase() != null)
-                    .filter(testRecord -> !Objects.equals(Boolean.TRUE, testRecord.getTestCase().getValue(testCaseFilterFieldId)))
+                    .filter(testRecord -> {
+                        Object value = testRecord.getTestCase().getValue(testCaseFilterFieldId);
+                        boolean testCaseValue = value instanceof Boolean b && b;
+                        return !Objects.equals(Boolean.TRUE, value != null ? testCaseValue : testRunFieldValue);
+                    })
                     .forEach(testRecord -> {
                         // attachments on the test record itself (the last summary step)
                         attachments.removeAll(testRecord.getAttachments());
