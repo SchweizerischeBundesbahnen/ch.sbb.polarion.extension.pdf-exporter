@@ -323,6 +323,11 @@ class PdfExporterPolarionServiceTest {
         when(workItem2.getValue("someBooleanField")).thenReturn(null);
         result = service.getTestRunAttachments("testProjectId", "testTestRunId", null, "*.*", "someBooleanField");
         assertEquals(1, result.size());
+
+        when(workItem1.getValue("someBooleanField")).thenReturn(true);
+        when(workItem2.getValue("someBooleanField")).thenReturn(true);
+        result = service.getTestRunAttachments("testProjectId", "testTestRunId", null, "*.*", null);
+        assertEquals(6, result.size());
     }
 
     @Test
