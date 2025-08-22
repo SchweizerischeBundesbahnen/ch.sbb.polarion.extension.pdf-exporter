@@ -1,5 +1,17 @@
 # Changelog
 
+## [9.3.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v9.2.0...v9.3.0) (2025-08-22)
+
+
+### Features
+
+* fix NPE during bulk export ([#489](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/489)) ([7cbd681](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/7cbd6817535821839d41dc33e00336365503c83b)), closes [#488](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/488)
+
+
+### Bug Fixes
+
+* fixed loading of test runs ([#494](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/494)) ([52bf223](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/52bf22301b5fbb25b67302071fc933fe4bc934b7)), closes [#493](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/493)
+
 ## [9.2.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v9.1.1...v9.2.0) (2025-08-19)
 
 
