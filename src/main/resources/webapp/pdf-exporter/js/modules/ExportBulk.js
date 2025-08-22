@@ -247,7 +247,7 @@ export default class ExportBulk {
             if (documentType === ExportParams.DocumentType.TEST_RUN) {
                 this.exportParams["urlQueryParameters"] = {id: documentId};
                 if (this.exportParams.attachmentsFilter !== null) {
-                    this.ctx.downloadTestRunAttachments(this.exportParams.projectId, documentId, this.exportParams.revision, this.exportParams.attachmentsFilter);
+                    this.ctx.downloadTestRunAttachments(this.exportParams.projectId, documentId, this.exportParams.revision, this.exportParams.attachmentsFilter, this.exportParams.testcaseFieldId);
                 }
             } else if (documentType === ExportParams.DocumentType.BASELINE_COLLECTION) {
                 this.ctx.convertCollectionDocuments(this.exportParams, documentId, () => {
