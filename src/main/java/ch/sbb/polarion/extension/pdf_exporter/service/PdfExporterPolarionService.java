@@ -159,7 +159,7 @@ public class PdfExporterPolarionService extends PolarionService {
     public @NotNull List<TestRunAttachment> getTestRunAttachments(@NotNull String projectId, @NotNull String testRunId, @Nullable String revision, @Nullable String filter, @Nullable String testCaseFilterFieldId) {
         ITestRun testRun = getTestRun(projectId, testRunId, revision);
 
-        boolean testRunFieldValue;
+        Boolean testRunFieldValue;
         if (testCaseFilterFieldId != null) {
             Object testRunFieldObj = testRun.getValue(testCaseFilterFieldId);
             testRunFieldValue = testRunFieldObj instanceof Boolean b && b;
