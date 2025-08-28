@@ -1,5 +1,12 @@
 # Changelog
 
+## [9.3.1](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v9.3.0...v9.3.1) (2025-08-28)
+
+
+### Bug Fixes
+
+* bump weasyprint-service to 66.0.1 to support chinese characters ([#499](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/499)) ([d4cd65b](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/d4cd65b2ffa82634485ec72147eb6432a6f60d95)), closes [#491](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/491)
+
 ## [9.3.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v9.2.0...v9.3.0) (2025-08-22)
 
 
