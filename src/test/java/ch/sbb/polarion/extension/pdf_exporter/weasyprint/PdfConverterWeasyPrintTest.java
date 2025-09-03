@@ -282,6 +282,27 @@ class PdfConverterWeasyPrintTest extends BaseWeasyPrintTest {
     }
 
     @Test
+    void testConverterSvgImageAsBase64() {
+        ExportParams params = ExportParams.builder()
+                .projectId("test")
+                .locationPath("testLocation")
+                .orientation(Orientation.PORTRAIT)
+                .paperSize(PaperSize.A4)
+                .build();
+
+        DocumentData<IModule> liveDoc4 = DocumentData.creator(DocumentType.LIVE_DOC, module)
+                .id(LiveDocId.from("testProjectId", "_default", "testDocumentId"))
+                .title("svgImageTitle")
+                .lastRevision("12345")
+                .revisionPlaceholder("12345")
+                .content(readHtmlResource("svgImageAsBase64"))
+                .build();
+        documentDataFactoryMockedStatic.when(() -> DocumentDataFactory.getDocumentData(eq(params), anyBoolean())).thenReturn(liveDoc4);
+
+        compareContentUsingReferenceImages(getCurrentMethodName(), converter.convertToPdf(params, null));
+    }
+
+    @Test
     void testConverterWiki() {
         ExportParams params = ExportParams.builder()
                 .projectId("test")
