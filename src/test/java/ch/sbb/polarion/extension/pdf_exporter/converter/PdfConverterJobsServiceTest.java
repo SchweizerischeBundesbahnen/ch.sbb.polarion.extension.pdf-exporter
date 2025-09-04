@@ -90,6 +90,7 @@ class PdfConverterJobsServiceTest {
         assertThat(jobState.isCancelled()).isFalse();
         jobResult = pdfConverterJobsService.getJobResult(jobId);
         assertThat(jobResult).isNotEmpty();
+        assertNotNull(pdfConverterJobsService.getJobContext(jobId));
 
         verify(securityService).logout(subject);
 
@@ -101,6 +102,8 @@ class PdfConverterJobsServiceTest {
                 .getMessage().startsWith("Converter Job is unknown:"));
         assertTrue(assertThrows(NoSuchElementException.class, () -> pdfConverterJobsService.getJobParams(jobId))
                 .getMessage().startsWith("Converter Job is unknown:"));
+        assertTrue(assertThrows(NoSuchElementException.class, () -> pdfConverterJobsService.getJobContext(jobId))
+                .getMessage().startsWith("Converter Job is unknown:"));
         assertTrue(pdfConverterJobsService.getAllJobsStates().isEmpty());
 
         // double check that job is still accessible for the user who started it
@@ -108,6 +111,7 @@ class PdfConverterJobsServiceTest {
         assertDoesNotThrow(() -> pdfConverterJobsService.getJobResult(jobId));
         assertDoesNotThrow(() -> pdfConverterJobsService.getJobState(jobId));
         assertDoesNotThrow(() -> pdfConverterJobsService.getJobParams(jobId));
+        assertDoesNotThrow(() -> pdfConverterJobsService.getJobContext(jobId));
         assertEquals(1, pdfConverterJobsService.getAllJobsStates().size());
     }
 
