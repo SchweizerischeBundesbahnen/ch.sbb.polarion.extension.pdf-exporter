@@ -21,18 +21,23 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 import javax.security.auth.Subject;
 import java.security.PrivilegedAction;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class PdfConverterJobsServiceTest {
+
+    private static final String TEST_USER = "testUser";
+
     @Mock
     private PdfConverter pdfConverter;
 
@@ -70,6 +75,7 @@ class PdfConverterJobsServiceTest {
 
         assertThat(jobId).isNotBlank();
         waitToFinishJob(jobId);
+        assertEquals(1, pdfConverterJobsService.getAllJobsStates().size());
         JobState jobState = pdfConverterJobsService.getJobState(jobId);
         assertThat(jobState.isCompletedExceptionally()).isFalse();
         assertThat(jobState.isCancelled()).isFalse();
@@ -84,8 +90,28 @@ class PdfConverterJobsServiceTest {
         assertThat(jobState.isCancelled()).isFalse();
         jobResult = pdfConverterJobsService.getJobResult(jobId);
         assertThat(jobResult).isNotEmpty();
+        assertNotNull(pdfConverterJobsService.getJobContext(jobId));
+
+        // check unknown job ID
+        assertThrows(NoSuchElementException.class, () -> pdfConverterJobsService.getJobResult("unknownJobId"));
 
         verify(securityService).logout(subject);
+
+        // check job is not accessible for other users
+        when(securityService.getCurrentUser()).thenReturn("other_" + TEST_USER);
+        assertThrows(NoSuchElementException.class, () -> pdfConverterJobsService.getJobResult(jobId));
+        assertThrows(NoSuchElementException.class, () -> pdfConverterJobsService.getJobState(jobId));
+        assertThrows(NoSuchElementException.class, () -> pdfConverterJobsService.getJobParams(jobId));
+        assertThrows(NoSuchElementException.class, () -> pdfConverterJobsService.getJobContext(jobId));
+        assertTrue(pdfConverterJobsService.getAllJobsStates().isEmpty());
+
+        // double check that job is still accessible for the user who started it
+        when(securityService.getCurrentUser()).thenReturn(TEST_USER);
+        assertDoesNotThrow(() -> pdfConverterJobsService.getJobResult(jobId));
+        assertDoesNotThrow(() -> pdfConverterJobsService.getJobState(jobId));
+        assertDoesNotThrow(() -> pdfConverterJobsService.getJobParams(jobId));
+        assertDoesNotThrow(() -> pdfConverterJobsService.getJobContext(jobId));
+        assertEquals(1, pdfConverterJobsService.getAllJobsStates().size());
     }
 
     @Test
@@ -249,6 +275,7 @@ class PdfConverterJobsServiceTest {
 
     @SuppressWarnings("unchecked")
     private void prepareSecurityServiceSubject(Subject userSubject) {
+        when(securityService.getCurrentUser()).thenReturn(TEST_USER);
         when(securityService.getCurrentSubject()).thenReturn(userSubject);
         when(securityService.doAsUser(eq(userSubject), any(PrivilegedAction.class))).thenAnswer(invocation ->
                 ((PrivilegedAction<?>) invocation.getArgument(1)).run());

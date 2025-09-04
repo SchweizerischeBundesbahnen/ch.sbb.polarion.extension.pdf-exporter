@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -26,7 +27,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class PdfConverterJobsService {
@@ -80,6 +80,7 @@ public class PdfConverterJobsService {
                 });
         JobDetails jobDetails = JobDetails.builder()
                 .future(asyncConversionJob)
+                .user(securityService.getCurrentUser())
                 .exportParams(exportParams)
                 .startingTime(Instant.now())
                 .jobContext(jobContext).build();
@@ -88,11 +89,7 @@ public class PdfConverterJobsService {
     }
 
     public JobState getJobState(String jobId) {
-        JobDetails jobDetails = jobs.get(jobId);
-        if (jobDetails == null) {
-            throw new NoSuchElementException(String.format(UNKNOWN_JOB_MESSAGE, jobId));
-        }
-        CompletableFuture<byte[]> future = jobDetails.future();
+        CompletableFuture<byte[]> future = getJobDetails(jobId).future();
         return JobState.builder()
                 .isDone(future.isDone())
                 .isCompletedExceptionally(future.isCompletedExceptionally())
@@ -101,11 +98,7 @@ public class PdfConverterJobsService {
     }
 
     public Optional<byte[]> getJobResult(String jobId) {
-        JobDetails jobDetails = jobs.get(jobId);
-        if (jobDetails == null) {
-            throw new NoSuchElementException(String.format(UNKNOWN_JOB_MESSAGE, jobId));
-        }
-        CompletableFuture<byte[]> future = jobDetails.future();
+        CompletableFuture<byte[]> future = getJobDetails(jobId).future();
         if (!future.isDone()) {
             return Optional.empty();
         }
@@ -123,24 +116,17 @@ public class PdfConverterJobsService {
     }
 
     public ExportParams getJobParams(String jobId) {
-        JobDetails jobDetails = jobs.get(jobId);
-        if (jobDetails == null) {
-            throw new NoSuchElementException(String.format(UNKNOWN_JOB_MESSAGE, jobId));
-        }
-        return jobDetails.exportParams;
+        return getJobDetails(jobId).exportParams;
     }
 
     public JobContext getJobContext(String jobId) {
-        JobDetails jobDetails = jobs.get(jobId);
-        if (jobDetails == null) {
-            throw new NoSuchElementException(String.format(UNKNOWN_JOB_MESSAGE, jobId));
-        }
-        return jobDetails.jobContext;
+        return getJobDetails(jobId).jobContext;
     }
 
     public Map<String, JobState> getAllJobsStates() {
-        return jobs.keySet().stream()
-                .collect(Collectors.toMap(Function.identity(), this::getJobState));
+        return jobs.entrySet().stream()
+                .filter(entry -> Objects.equals(entry.getValue().user, securityService.getCurrentUser()))
+                .collect(Collectors.toMap(Map.Entry::getKey, entry -> getJobState(entry.getKey())));
     }
 
     public static void cleanupExpiredJobs(int timeout) {
@@ -167,6 +153,7 @@ public class PdfConverterJobsService {
     @Builder
     public record JobDetails(
             CompletableFuture<byte[]> future,
+            String user,
             ExportParams exportParams,
             Instant startingTime,
             JobContext jobContext) {
@@ -183,6 +170,14 @@ public class PdfConverterJobsService {
             boolean isCompletedExceptionally,
             boolean isCancelled,
             String errorMessage) {
+    }
+
+    private JobDetails getJobDetails(String jobId) {
+        JobDetails jobDetails = jobs.get(jobId);
+        if (jobDetails == null || !Objects.equals(jobDetails.user, securityService.getCurrentUser())) {
+            throw new NoSuchElementException(String.format(UNKNOWN_JOB_MESSAGE, jobId));
+        }
+        return jobDetails;
     }
 
     private boolean isJobLogoutRequired() {
