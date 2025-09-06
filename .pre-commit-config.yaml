@@ -2,7 +2,7 @@
 default_install_hook_types: [pre-commit, commit-msg]
 repos:
   - repo: https://github.com/lyz-code/yamlfix
-    rev: 1.17.0
+    rev: 1.18.0
     hooks:
       - id: yamlfix
         args: [-c, .yamlfix.toml]
