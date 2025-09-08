@@ -128,6 +128,7 @@ public class PdfExportFunction implements IFunction<IModule> {
                 .followHTMLPresentationalHints(stylePackage.isFollowHTMLPresentationalHints())
                 .numberedListStyles(stylePackage.getCustomNumberedListStyles())
                 .chapters(stylePackage.getSpecificChapters() == null ? null : List.of(stylePackage.getSpecificChapters().split(",")))
+                .metadataFields(stylePackage.getMetadataFields() == null ? null : List.of(stylePackage.getMetadataFields().split(",")))
                 .language(stylePackage.getLanguage())
                 .linkedWorkitemRoles(stylePackage.getLinkedWorkitemRoles())
                 .attachmentsFilter(stylePackage.getAttachmentsFilter())

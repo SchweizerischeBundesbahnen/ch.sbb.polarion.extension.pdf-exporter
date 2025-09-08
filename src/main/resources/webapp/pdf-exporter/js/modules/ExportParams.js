@@ -66,6 +66,7 @@ export default class ExportParams {
         this.followHTMLPresentationalHints = builder.followHTMLPresentationalHints;
         this.numberedListStyles = builder.numberedListStyles;
         this.chapters = builder.chapters;
+        this.metadataFields = builder.metadataFields;
         this.language = builder.language;
         this.linkedWorkitemRoles = builder.linkedWorkitemRoles;
         this.fileName = builder.fileName;
@@ -118,6 +119,7 @@ export default class ExportParams {
                 this.followHTMLPresentationalHints = undefined;
                 this.numberedListStyles = undefined;
                 this.chapters = undefined;
+                this.metadataFields = undefined;
                 this.language = undefined;
                 this.linkedWorkitemRoles = undefined;
                 this.fileName = undefined;
@@ -239,6 +241,11 @@ export default class ExportParams {
 
             setChapters(chapters) {
                 this.chapters = chapters;
+                return this;
+            }
+
+            setMetadataFields(metadataFields) {
+                this.metadataFields = metadataFields;
                 return this;
             }
 

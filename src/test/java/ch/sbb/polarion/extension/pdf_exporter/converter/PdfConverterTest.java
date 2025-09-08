@@ -110,7 +110,7 @@ class PdfConverterTest {
         when(placeholderProcessor.replacePlaceholders(documentData, exportParams, "test css")).thenReturn("css content");
         when(placeholderProcessor.replacePlaceholders(eq(documentData), eq(exportParams), anyList())).thenReturn(List.of("hl", "hc", "hr", "fl", "fc", "fr"));
         when(velocityEvaluator.evaluateVelocityExpressions(eq(documentData), anyString())).thenAnswer(a -> a.getArguments()[1]);
-        when(pdfTemplateProcessor.processUsing(eq(exportParams), eq("testDocument"), eq("css content"), anyString())).thenReturn("test html content");
+        when(pdfTemplateProcessor.processUsing(eq(exportParams), eq("testDocument"), eq("css content"), anyString(), anyString())).thenReturn("test html content");
         when(weasyPrintServiceConnector.convertToPdf(eq("test html content"), any(WeasyPrintOptions.class))).thenReturn("test document content".getBytes());
         when(htmlProcessor.internalizeLinks(anyString())).thenAnswer(a -> a.getArgument(0));
         when(htmlProcessor.replaceResourcesAsBase64Encoded(anyString())).thenAnswer(a -> a.getArgument(0));

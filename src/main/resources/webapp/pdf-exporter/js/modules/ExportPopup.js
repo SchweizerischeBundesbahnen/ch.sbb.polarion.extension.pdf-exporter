@@ -333,6 +333,10 @@ export default class ExportPopup {
         this.ctx.setValue("popup-chapters", stylePackage.specificChapters || "");
         this.ctx.visibleIf("popup-chapters", stylePackage.specificChapters);
 
+        this.ctx.setCheckbox("popup-metadata-fields", stylePackage.metadataFields);
+        this.ctx.setValue("popup-metadata-fields-input", stylePackage.metadataFields || "");
+        this.ctx.visibleIf("popup-metadata-fields-input", stylePackage.metadataFields);
+
         this.ctx.setCheckbox("popup-localization", stylePackage.language);
         let languageValue;
         if (stylePackage.exposeSettings && stylePackage.language && this.documentLanguage) {
@@ -523,6 +527,16 @@ export default class ExportPopup {
             }
         }
 
+        let selectedMetadataFields = null;
+        if (this.ctx.getElementById("popup-metadata-fields").checked) {
+            selectedMetadataFields = this.getSelectedMetadataFields();
+            if (!selectedMetadataFields) {
+                this.ctx.getElementById("popup-metadata-fields-input").classList.add("error");
+                this.showNotification({alertType: "error", message: "Please, provide comma separated list of values in 'Metadata fields' field"});
+                return undefined;
+            }
+        }
+
         let numberedListStyles = null;
         if (this.ctx.getElementById("popup-custom-list-styles").checked) {
             numberedListStyles = this.ctx.getElementById("popup-numbered-list-styles").value;
@@ -547,10 +561,10 @@ export default class ExportPopup {
             testcaseFieldId = this.ctx.getElementById("popup-testcase-field-id").value;
         }
 
-        return this.buildExportParams(selectedChapters, numberedListStyles, selectedRoles, fileName, attachmentsFilter, testcaseFieldId);
+        return this.buildExportParams(selectedChapters, selectedMetadataFields, numberedListStyles, selectedRoles, fileName, attachmentsFilter, testcaseFieldId);
     }
 
-    buildExportParams(selectedChapters, numberedListStyles, selectedRoles, fileName, attachmentsFilter, testcaseFieldId) {
+    buildExportParams(selectedChapters, selectedMetadataFields, numberedListStyles, selectedRoles, fileName, attachmentsFilter, testcaseFieldId) {
         const live_doc = this.ctx.getDocumentType() === ExportParams.DocumentType.LIVE_DOC;
         const test_run = this.ctx.getDocumentType() === ExportParams.DocumentType.TEST_RUN;
         return new ExportParams.Builder(this.ctx.getDocumentType())
@@ -577,6 +591,7 @@ export default class ExportPopup {
             .setFollowHTMLPresentationalHints(this.ctx.getElementById("popup-presentational-hints").checked)
             .setNumberedListStyles(numberedListStyles)
             .setChapters(selectedChapters)
+            .setMetadataFields(live_doc && selectedMetadataFields)
             .setLanguage(live_doc && this.ctx.getElementById('popup-localization').checked ? this.ctx.getElementById("popup-language").value : null)
             .setLinkedWorkitemRoles(selectedRoles)
             .setFileName(fileName)
@@ -599,6 +614,14 @@ export default class ExportPopup {
             }
         }
         return selectedChapters;
+    }
+
+    getSelectedMetadataFields() {
+        const metadataFieldsValue = this.ctx.getElementById("popup-metadata-fields-input")?.value ?? "";
+        return metadataFieldsValue
+            .split(",")
+            .map(f => f.trim())
+            .filter(f => f.length > 0);
     }
 
     validateNumberedListStyles(numberedListStyles) {

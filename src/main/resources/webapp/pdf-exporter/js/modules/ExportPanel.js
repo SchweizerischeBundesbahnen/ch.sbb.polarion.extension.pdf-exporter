@@ -89,6 +89,10 @@ export default class ExportPanel {
         this.ctx.setValue("chapters", stylePackage.specificChapters || "");
         this.ctx.displayIf("chapters", stylePackage.specificChapters);
 
+        this.ctx.setCheckbox("metadata-fields", stylePackage.metadataFields);
+        this.ctx.setValue("metadata-fields-input", stylePackage.metadataFields || "");
+        this.ctx.displayIf("metadata-fields-input", stylePackage.metadataFields);
+
         this.ctx.setCheckbox("localization", stylePackage.language);
         this.ctx.setValue("language", (stylePackage.exposeSettings && stylePackage.language && documentLanguage) ? documentLanguage : stylePackage.language);
         this.ctx.displayIf("language", stylePackage.language);
@@ -125,6 +129,16 @@ export default class ExportPanel {
             }
         }
 
+        let selectedMetadataFields = null;
+        if (this.ctx.getElementById("metadata-fields").checked) {
+            selectedMetadataFields = this.getSelectedMetadataFields();
+            this.setClass("metadata-fields-input", selectedMetadataFields ? "" : "error");
+            if (!selectedMetadataFields) {
+                this.ctx.getJQueryElement("#export-error").append("Please, provide comma separated list of values in metadatas field");
+                return undefined;
+            }
+        }
+
         let numberedListStyles = null;
         if (this.ctx.getElementById("custom-list-styles").checked) {
             numberedListStyles = this.ctx.getElementById("numbered-list-styles").value;
@@ -142,10 +156,10 @@ export default class ExportPanel {
             selectedRoles.push(...selectedOptions.map(opt => opt.value));
         }
 
-        return this.buildRequestJson(projectId, locationPath, baselineRevision, revision, selectedChapters, numberedListStyles, selectedRoles, fileName);
+        return this.buildRequestJson(projectId, locationPath, baselineRevision, revision, selectedChapters, selectedMetadataFields, numberedListStyles, selectedRoles, fileName);
     }
 
-    buildRequestJson(projectId, locationPath, baselineRevision, revision, selectedChapters, numberedListStyles, selectedRoles, fileName) {
+    buildRequestJson(projectId, locationPath, baselineRevision, revision, selectedChapters, selectedMetadataFields, numberedListStyles, selectedRoles, fileName) {
         const urlSearchParams = new URL(window.location.href.replace('#', '/')).searchParams;
         return new ExportParams.Builder(ExportParams.DocumentType.LIVE_DOC)
             .setProjectId(projectId)
@@ -171,6 +185,7 @@ export default class ExportPanel {
             .setFollowHTMLPresentationalHints(this.ctx.getElementById("presentational-hints").checked)
             .setNumberedListStyles(numberedListStyles)
             .setChapters(selectedChapters)
+            .setMetadataFields(selectedMetadataFields)
             .setLanguage(this.ctx.getElementById('localization').checked ? this.ctx.getElementById("language").value : null)
             .setLinkedWorkitemRoles(selectedRoles)
             .setFileName(fileName)
@@ -192,6 +207,14 @@ export default class ExportPanel {
             }
         }
         return chapters;
+    }
+
+    getSelectedMetadataFields() {
+        const metadataFieldsValue = this.ctx.getElementById("metadata-fields-input")?.value ?? "";
+        return metadataFieldsValue
+            .split(",")
+            .map(f => f.trim())
+            .filter(f => f.length > 0);
     }
 
     validateNumberedListStyles(numberedListStyles) {

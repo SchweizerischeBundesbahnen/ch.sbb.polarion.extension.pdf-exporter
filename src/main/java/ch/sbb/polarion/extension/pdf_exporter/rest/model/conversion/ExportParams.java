@@ -75,6 +75,9 @@ public class ExportParams extends ConversionParams {
     @Schema(description = "Specific higher level chapters")
     private List<String> chapters;
 
+    @Schema(description = "CSV list of document field names or wildcard patterns to be exported as HTML meta (LiveDoc only)")
+    private List<String> metadataFields;
+
     @Schema(description = "Language in the exported document")
     private String language;
 
