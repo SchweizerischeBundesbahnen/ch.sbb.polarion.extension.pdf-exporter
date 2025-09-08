@@ -83,8 +83,11 @@ public class TestRunAdapter extends CommonUniqueObjectAdapter {
     }
 
     private Path createAttachmentTempFile(IAttachmentBase attachment) throws IOException {
-        String[] fileNameParts = attachment.getFileName().split("\\.(?=[^\\.]+$)");
-        Path tempFile = Files.createTempFile(fileNameParts[0], fileNameParts.length > 1 ? String.format(".%s", fileNameParts[1]) : "");
+        String fileName = attachment.getFileName();
+        int dotIndex = fileName.lastIndexOf('.');
+        String baseName = (dotIndex != -1) ? fileName.substring(0, dotIndex) : fileName;
+        String extension = (dotIndex != -1) ? fileName.substring(dotIndex) : "";
+        Path tempFile = Files.createTempFile(baseName, extension);
         Files.copy(attachment.getDataStream(), tempFile, StandardCopyOption.REPLACE_EXISTING);
         tempFile.toFile().deleteOnExit();
         return tempFile;
