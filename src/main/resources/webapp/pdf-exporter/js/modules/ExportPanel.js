@@ -124,7 +124,7 @@ export default class ExportPanel {
             selectedChapters = this.getSelectedChapters();
             this.setClass("chapters", selectedChapters ? "" : "error");
             if (!selectedChapters) {
-                this.ctx.getJQueryElement("#export-error").append("Please, provide comma separated list of integer values in chapters field");
+                this.ctx.getJQueryElement("#export-error").append("Please, provide comma separated list of integer values in 'Specific higher level chapters' field");
                 return undefined;
             }
         }
@@ -134,7 +134,7 @@ export default class ExportPanel {
             selectedMetadataFields = this.getSelectedMetadataFields();
             this.setClass("metadata-fields-input", selectedMetadataFields ? "" : "error");
             if (!selectedMetadataFields) {
-                this.ctx.getJQueryElement("#export-error").append("Please, provide comma separated list of values in metadatas field");
+                this.ctx.getJQueryElement("#export-error").append("Please, provide comma separated list of values in 'Metadata fields' field");
                 return undefined;
             }
         }
