@@ -300,10 +300,6 @@ function setStylePackage(content) {
     ctx.setCheckboxValueById('cut-urls', stylePackage.cutLocalURLs);
     ctx.setCheckboxValueById('presentational-hints', stylePackage.followHTMLPresentationalHints);
 
-    ctx.setCheckboxValueById('metadata-fields', !!stylePackage.metadataFields);
-    ctx.getElementById('metadata-fields').dispatchEvent(new Event('change'));
-    ctx.setValueById('metadata-fields-input', stylePackage.metadataFields || "");
-
     ctx.setCheckboxValueById('specific-chapters', !!stylePackage.specificChapters);
     ctx.getElementById('specific-chapters').dispatchEvent(new Event('change'));
     ctx.setValueById('chapters', stylePackage.specificChapters || "");

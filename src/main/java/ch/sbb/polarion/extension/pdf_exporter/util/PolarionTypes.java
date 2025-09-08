@@ -79,9 +79,7 @@ public class PolarionTypes {
     }
 
     public @NotNull String formatForTimeZone(@NotNull Date fieldValue, @NotNull DateFormat format, @NotNull TimeZone timeZone) {
-        if (timeZone != null) {
-            format.setTimeZone(timeZone);
-        }
+        format.setTimeZone(timeZone);
         return format.format(fieldValue);
     }
 
