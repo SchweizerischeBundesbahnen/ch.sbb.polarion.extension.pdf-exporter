@@ -41,6 +41,7 @@ import com.polarion.core.util.StringUtils;
 import com.polarion.core.util.logging.Logger;
 import com.polarion.platform.internal.security.UserAccountVault;
 import lombok.AllArgsConstructor;
+import org.apache.commons.text.StringEscapeUtils;
 import org.glassfish.jersey.media.multipart.FormDataBodyPart;
 import org.glassfish.jersey.media.multipart.FormDataMultiPart;
 import org.glassfish.jersey.media.multipart.MultiPartFeature;
@@ -348,9 +349,9 @@ public class PdfConverter {
             if (!value.isEmpty()) {
                 result
                         .append("<meta name=\"")
-                        .append(escapeHtmlAttr(metadataField))
+                        .append(StringEscapeUtils.escapeHtml4(metadataField))
                         .append("\" content=\"")
-                        .append(escapeHtmlAttr(value))
+                        .append(StringEscapeUtils.escapeHtml4(value))
                         .append("\"/>");
             }
         }
@@ -358,33 +359,6 @@ public class PdfConverter {
             return "<!--" + CUSTOM_METADATA_TAG + "-->" + result + "<!--/" + CUSTOM_METADATA_TAG + "-->";
         }
         return "";
-    }
-
-    private static String escapeHtmlAttr(String input) {
-        if (input == null || input.isEmpty()) {
-            return "";
-        }
-
-        StringBuilder sb = new StringBuilder(input.length() * 2);
-        for (int i = 0; i < input.length(); i++) {
-            char c = input.charAt(i);
-            switch (c) {
-                case '&' -> sb.append("&amp;");
-                case '<' -> sb.append("&lt;");
-                case '>' -> sb.append("&gt;");
-                case '"' -> sb.append("&quot;");
-                case '\'' -> sb.append("&#39;"); // safer than &apos; for HTML
-                default -> {
-                    // control chars: escape everything under 0x20 except tab, newline, carriage return
-                    if (c < 0x20 && c != '\t' && c != '\n' && c != '\r') {
-                        sb.append("&#").append((int) c).append(';');
-                    } else {
-                        sb.append(c);
-                    }
-                }
-            }
-        }
-        return sb.toString();
     }
 
     record HtmlData(String cssContent, String documentContent, String headerFooterContent) {
