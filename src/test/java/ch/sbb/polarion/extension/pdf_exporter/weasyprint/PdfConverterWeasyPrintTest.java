@@ -134,7 +134,8 @@ class PdfConverterWeasyPrintTest extends BaseWeasyPrintTest {
         when(cssSettings.load(any(), any())).thenReturn(CssModel.builder().disableDefaultCss(true).css(basicCss + defaultCss.replaceAll("@font-face[^}]+}", "").replaceAll("font-family:[^;]+;", "font-family: Custom Font;")).build());
 
         WeasyPrintServiceConnector weasyPrintServiceConnector = mock(WeasyPrintServiceConnector.class);
-        when(weasyPrintServiceConnector.convertToPdf(anyString(), any())).thenAnswer((Answer<byte[]>) invocation -> exportToPdf(invocation.getArgument(0), invocation.getArgument(1)));
+        lenient().when(weasyPrintServiceConnector.convertToPdf(anyString(), any())).thenAnswer((Answer<byte[]>) invocation -> exportToPdf(invocation.getArgument(0), invocation.getArgument(1)));
+        lenient().when(weasyPrintServiceConnector.convertToPdf(anyString(), any(), any())).thenAnswer((Answer<byte[]>) invocation -> exportToPdf(invocation.getArgument(0), invocation.getArgument(1)));
 
         PlaceholderProcessor placeholderProcessor = new PlaceholderProcessor(pdfExporterPolarionService);
 
