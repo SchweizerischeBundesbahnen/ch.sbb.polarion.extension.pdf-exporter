@@ -51,6 +51,8 @@ import org.mockito.stubbing.Answer;
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
@@ -135,7 +137,7 @@ class PdfConverterWeasyPrintTest extends BaseWeasyPrintTest {
 
         WeasyPrintServiceConnector weasyPrintServiceConnector = mock(WeasyPrintServiceConnector.class);
         lenient().when(weasyPrintServiceConnector.convertToPdf(anyString(), any())).thenAnswer((Answer<byte[]>) invocation -> exportToPdf(invocation.getArgument(0), invocation.getArgument(1)));
-        lenient().when(weasyPrintServiceConnector.convertToPdf(anyString(), any(), any())).thenAnswer((Answer<byte[]>) invocation -> exportToPdf(invocation.getArgument(0), invocation.getArgument(1)));
+        lenient().when(weasyPrintServiceConnector.convertToPdf(anyString(), any(), any())).thenAnswer((Answer<byte[]>) invocation -> exportToPdf(invocation.getArgument(0), invocation.getArgument(1), invocation.getArgument(2)));
 
         PlaceholderProcessor placeholderProcessor = new PlaceholderProcessor(pdfExporterPolarionService);
 
@@ -197,6 +199,7 @@ class PdfConverterWeasyPrintTest extends BaseWeasyPrintTest {
     }
 
     @Test
+    @SneakyThrows
     void testConverterComplexWithTitle() {
         ExportParams params = ExportParams.builder()
                 .projectId("test")
@@ -206,12 +209,16 @@ class PdfConverterWeasyPrintTest extends BaseWeasyPrintTest {
                 .coverPage("test")
                 .build();
 
+        Path tempFile = Files.createTempFile("attachment", ".pdf");
+        Files.writeString(tempFile, "test content");
+
         DocumentData<IModule> liveDoc2 = DocumentData.creator(DocumentType.LIVE_DOC, module)
                 .id(LiveDocId.from("testProjectId", "_default", "testDocumentId"))
                 .title("testTitle")
                 .content("<div>TEST page 1</div><!--PAGE_BREAK--><!--PORTRAIT_ABOVE--><div>TEST page 2</div><!--PAGE_BREAK--><!--LANDSCAPE_ABOVE--><div>TEST page 3</div>")
                 .lastRevision("42")
                 .revisionPlaceholder("42")
+                .attachmentFiles(List.of(tempFile))
                 .build();
         documentDataFactoryMockedStatic.when(() -> DocumentDataFactory.getDocumentData(eq(params), anyBoolean())).thenReturn(liveDoc2);
 

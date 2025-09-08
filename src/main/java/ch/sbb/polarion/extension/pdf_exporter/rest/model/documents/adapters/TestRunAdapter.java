@@ -82,6 +82,7 @@ public class TestRunAdapter extends CommonUniqueObjectAdapter {
         }
     }
 
+    @SuppressWarnings({"java:S5443"}) // Files created in a temp folder of a server are unlikely be accessible by non-authorised users
     private Path createAttachmentTempFile(IAttachmentBase attachment) throws IOException {
         String fileName = attachment.getFileName();
         int dotIndex = fileName.lastIndexOf('.');

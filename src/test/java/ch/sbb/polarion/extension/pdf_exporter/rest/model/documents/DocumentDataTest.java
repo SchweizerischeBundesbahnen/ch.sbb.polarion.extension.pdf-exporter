@@ -22,7 +22,6 @@ import com.polarion.alm.shared.rpe.RpeRenderer;
 import com.polarion.alm.tracker.ITrackerService;
 import com.polarion.alm.tracker.model.IAttachmentBase;
 import com.polarion.alm.tracker.model.IBaseline;
-import com.polarion.alm.tracker.model.IComment;
 import com.polarion.alm.tracker.model.IModule;
 import com.polarion.alm.tracker.model.IRichPage;
 import com.polarion.alm.tracker.model.ITestRun;
