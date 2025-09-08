@@ -316,4 +316,101 @@ class PdfConverterTest {
                 Arguments.of(null, null, null, false)
         );
     }
+
+    @Test
+    void shouldBuildMetaTagsAndPassToTemplate() {
+        // Arrange
+        ExportParams exportParams = ExportParams.builder()
+                .projectId("testProjectId")
+                .documentType(DocumentType.LIVE_DOC)
+                .metadataFields(List.of("field1", "my_field", "empty", "test name"))
+                .build();
+
+        DocumentData<IModule> documentData = DocumentData.creator(DocumentType.LIVE_DOC, module)
+                .id(LiveDocId.from("testProjectId", "_default", "testDocumentId"))
+                .title("testDocument")
+                .content("test document content")
+                .lastRevision("12345")
+                .revisionPlaceholder("12345")
+                .build();
+
+        documentDataFactoryMockedStatic.when(() -> DocumentDataFactory.getDocumentData(eq(exportParams), anyBoolean())).thenReturn(documentData);
+
+        CssModel cssModel = CssModel.builder().css("test css").build();
+        when(cssSettings.load("testProjectId", SettingId.fromName("Default"))).thenReturn(cssModel);
+        when(cssSettings.defaultValues()).thenReturn(CssModel.builder().build());
+        when(headerFooterSettings.load("testProjectId", SettingId.fromName("Default"))).thenReturn(HeaderFooterModel.builder().useCustomValues(true).build());
+
+        when(placeholderProcessor.replacePlaceholders(documentData, exportParams, "test css")).thenReturn("css content");
+        when(placeholderProcessor.replacePlaceholders(eq(documentData), eq(exportParams), anyList())).thenReturn(List.of("hl", "hc", "hr", "fl", "fc", "fr"));
+        when(velocityEvaluator.evaluateVelocityExpressions(eq(documentData), anyString())).thenAnswer(a -> a.getArguments()[1]);
+        when(htmlProcessor.internalizeLinks(anyString())).thenAnswer(a -> a.getArgument(0));
+        when(htmlProcessor.replaceResourcesAsBase64Encoded(anyString())).thenAnswer(a -> a.getArgument(0));
+
+        when(module.getValue("field1")).thenReturn("Value & <one>");
+        when(module.getValue("my_field")).thenReturn("Quote\"Val");
+        when(module.getValue("empty")).thenReturn("");
+        when(module.getValue("test name")).thenReturn("Ampersand & and <tag>");
+
+        ArgumentCaptor<String> metaCaptor = ArgumentCaptor.forClass(String.class);
+        when(pdfTemplateProcessor.processUsing(eq(exportParams), eq("testDocument"), eq("css content"), anyString(), metaCaptor.capture()))
+                .thenReturn("test html content");
+        when(weasyPrintServiceConnector.convertToPdf(eq("test html content"), any(WeasyPrintOptions.class))).thenReturn("pdf".getBytes());
+
+        PdfConverter pdfConverter = new PdfConverter(pdfExporterPolarionService, headerFooterSettings, cssSettings, placeholderProcessor, velocityEvaluator, coverPageProcessor, weasyPrintServiceConnector, htmlProcessor, pdfTemplateProcessor);
+
+        // Act
+        pdfConverter.convertToPdf(exportParams, null);
+
+        // Assert
+        String meta = metaCaptor.getValue();
+        assertThat(meta).isEqualTo("<!--CUSTOM_METADATA-->" +
+                "<meta name=\"field1\" content=\"Value &amp; &lt;one&gt;\"/>" +
+                "<meta name=\"my_field\" content=\"Quote&quot;Val\"/>" +
+                "<meta name=\"test name\" content=\"Ampersand &amp; and &lt;tag&gt;\"/>" +
+                "<!--/CUSTOM_METADATA-->");
+    }
+
+    @Test
+    void shouldNotAddMetaTagsForNonLiveDocOrEmptyConfig() {
+        // Arrange
+        ExportParams exportParams = ExportParams.builder()
+                .projectId("testProjectId")
+                .documentType(DocumentType.WIKI_PAGE)
+                .metadataFields(List.of("field1"))
+                .build();
+
+        DocumentData<IModule> documentData = DocumentData.creator(DocumentType.WIKI_PAGE, module)
+                .id(LiveDocId.from("testProjectId", "_default", "testDocumentId"))
+                .title("testDocument")
+                .content("test document content")
+                .lastRevision("12345")
+                .revisionPlaceholder("12345")
+                .build();
+
+        documentDataFactoryMockedStatic.when(() -> DocumentDataFactory.getDocumentData(eq(exportParams), anyBoolean())).thenReturn(documentData);
+
+        CssModel cssModel = CssModel.builder().css("test css").build();
+        when(cssSettings.load("testProjectId", SettingId.fromName("Default"))).thenReturn(cssModel);
+        when(cssSettings.defaultValues()).thenReturn(CssModel.builder().build());
+        when(headerFooterSettings.load("testProjectId", SettingId.fromName("Default"))).thenReturn(HeaderFooterModel.builder().useCustomValues(true).build());
+        when(placeholderProcessor.replacePlaceholders(documentData, exportParams, "test css")).thenReturn("css content");
+        when(placeholderProcessor.replacePlaceholders(eq(documentData), eq(exportParams), anyList())).thenReturn(List.of("hl", "hc", "hr", "fl", "fc", "fr"));
+        when(velocityEvaluator.evaluateVelocityExpressions(eq(documentData), anyString())).thenAnswer(a -> a.getArguments()[1]);
+        when(htmlProcessor.internalizeLinks(anyString())).thenAnswer(a -> a.getArgument(0));
+        when(htmlProcessor.replaceResourcesAsBase64Encoded(anyString())).thenAnswer(a -> a.getArgument(0));
+
+        ArgumentCaptor<String> metaCaptor = ArgumentCaptor.forClass(String.class);
+        when(pdfTemplateProcessor.processUsing(any(ExportParams.class), anyString(), anyString(), anyString(), metaCaptor.capture()))
+                .thenReturn("test html content");
+        when(weasyPrintServiceConnector.convertToPdf(eq("test html content"), any(WeasyPrintOptions.class))).thenReturn("pdf".getBytes());
+
+        PdfConverter pdfConverter = new PdfConverter(pdfExporterPolarionService, headerFooterSettings, cssSettings, placeholderProcessor, velocityEvaluator, coverPageProcessor, weasyPrintServiceConnector, htmlProcessor, pdfTemplateProcessor);
+
+        // Act
+        pdfConverter.convertToPdf(exportParams, null);
+
+        // Assert
+        assertThat(metaCaptor.getValue()).isEmpty();
+    }
 }

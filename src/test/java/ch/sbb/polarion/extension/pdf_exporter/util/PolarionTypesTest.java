@@ -77,16 +77,18 @@ class PolarionTypesTest {
     void convertsTimeOnlyWithTimezone() throws Exception {
         String result = PolarionTypes.convertSingleFieldValueToString(TimeOnly.parse("12:01:02.000 +0000"), Locale.US, TimeZone.getTimeZone("CET"));
         // Locale.US long time style should produce 'PM' marker
-        assertThat(result).contains("PM");
-        assertThat(result).contains(":01:02");
+        assertThat(result)
+                .contains("PM")
+                .contains(":01:02");
     }
 
     @Test
     void convertsDateWithTimezone() throws Exception {
         Date date = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss.SSS Z").parse("2018-09-09 12:13:14.000 +0000");
         String result = PolarionTypes.convertSingleFieldValueToString(date, Locale.US, TimeZone.getTimeZone("Europe/Zurich"));
-        assertThat(result).contains("September 9, 2018");
-        assertThat(result).contains("2:13:14 AM"); // CET/CEST offset vs UTC
+        assertThat(result)
+                .contains("September 9, 2018")
+                .contains("2:13:14 AM"); // CET/CEST offset vs UTC
     }
 
     @Test
