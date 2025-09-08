@@ -14,8 +14,17 @@ import com.polarion.alm.shared.api.utils.collections.StrictMapImpl;
 import com.polarion.alm.shared.api.utils.html.RichTextRenderTarget;
 import com.polarion.alm.shared.rpe.RpeModelAspect;
 import com.polarion.alm.shared.rpe.RpeRenderer;
+import com.polarion.alm.tracker.model.IAttachmentBase;
 import com.polarion.alm.tracker.model.ITestRun;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
+import java.util.List;
 
 public class TestRunAdapter extends CommonUniqueObjectAdapter {
     private final @NotNull ITestRun testRun;
@@ -60,4 +69,24 @@ public class TestRunAdapter extends CommonUniqueObjectAdapter {
         });
     }
 
+    @Override
+    public @Nullable List<Path> getAttachmentFiles(@NotNull ExportParams exportParams) throws IOException {
+        if (exportParams.isEmbedAttachments()) {
+            List<Path> attachmentFiles = new ArrayList<>();
+            for (IAttachmentBase attachment : testRun.getAttachments()) {
+                attachmentFiles.add(createAttachmentTempFile(attachment));
+            }
+            return attachmentFiles;
+        } else {
+            return null;
+        }
+    }
+
+    private Path createAttachmentTempFile(IAttachmentBase attachment) throws IOException {
+        String[] fileNameParts = attachment.getFileName().split("\\.(?=[^\\.]+$)");
+        Path tempFile = Files.createTempFile(fileNameParts[0], fileNameParts.length > 1 ? String.format(".%s", fileNameParts[1]) : "");
+        Files.copy(attachment.getDataStream(), tempFile, StandardCopyOption.REPLACE_EXISTING);
+        tempFile.toFile().deleteOnExit();
+        return tempFile;
+    }
 }

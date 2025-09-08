@@ -1772,6 +1772,10 @@
             "example": "LIVE_DOC",
             "type": "string"
           },
+          "embedAttachments": {
+            "description": "If attachments should be embedded into PDF",
+            "type": "boolean"
+          },
           "fileName": {
             "description": "Target file name of exported document",
             "type": "string"

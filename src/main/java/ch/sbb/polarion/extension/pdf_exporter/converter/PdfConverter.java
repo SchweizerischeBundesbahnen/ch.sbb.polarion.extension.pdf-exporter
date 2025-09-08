@@ -234,7 +234,7 @@ public class PdfConverter {
                     .followHTMLPresentationalHints(exportParams.isFollowHTMLPresentationalHints())
                     .pdfVariant(exportParams.getPdfVariant())
                     .build();
-            return weasyPrintServiceConnector.convertToPdf(htmlPage, weasyPrintOptions);
+            return weasyPrintServiceConnector.convertToPdf(htmlPage, weasyPrintOptions, documentData);
         }
     }
 

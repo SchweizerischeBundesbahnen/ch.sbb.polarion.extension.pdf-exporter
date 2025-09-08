@@ -93,6 +93,9 @@ public class ExportParams extends ConversionParams {
     @Schema(description = "Internal content")
     private String internalContent;
 
+    @Schema(description = "If attachments should be embedded into PDF")
+    private boolean embedAttachments;
+
     public @NotNull DocumentType getDocumentType() {
         if (documentType == null) {
             documentType = DocumentType.LIVE_DOC;

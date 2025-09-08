@@ -54,6 +54,7 @@ public class StylePackageModel extends SettingsModel {
     private static final String LINKED_WORKITEM_ROLES_ENTRY_NAME = "LINKED WORKITEM ROLES";
     private static final String EXPOSE_PAGE_WIDTH_VALIDATION_ENTRY_NAME = "EXPOSE PAGE WIDTH VALIDATION";
     private static final String ATTACHMENTS_FILTER = "ATTACHMENTS_FILTER";
+    private static final String EMBED_ATTACHMENTS = "EMBED ATTACHMENTS";
 
     private String matchingQuery;
     private Float weight;
@@ -82,6 +83,7 @@ public class StylePackageModel extends SettingsModel {
     private boolean exposePageWidthValidation;
     private String attachmentsFilter;
     private String testcaseFieldId;
+    private boolean embedAttachments;
 
     @Override
     protected String serializeModelData() {
@@ -111,7 +113,8 @@ public class StylePackageModel extends SettingsModel {
                 serializeEntry(LINKED_WORKITEM_ROLES_ENTRY_NAME, linkedWorkitemRoles) +
                 serializeEntry(EXPOSE_PAGE_WIDTH_VALIDATION_ENTRY_NAME, exposePageWidthValidation) +
                 serializeEntry(ATTACHMENTS_FILTER, attachmentsFilter) +
-                serializeEntry(TESTCASE_FIELD_ID_ENTRY_NAME, testcaseFieldId);
+                serializeEntry(TESTCASE_FIELD_ID_ENTRY_NAME, testcaseFieldId) +
+                serializeEntry(EMBED_ATTACHMENTS, embedAttachments);
     }
 
     @Override
@@ -144,6 +147,7 @@ public class StylePackageModel extends SettingsModel {
         exposePageWidthValidation = Boolean.parseBoolean(deserializeEntry(EXPOSE_PAGE_WIDTH_VALIDATION_ENTRY_NAME, serializedString));
         attachmentsFilter = deserializeEntry(ATTACHMENTS_FILTER, serializedString);
         testcaseFieldId = deserializeEntry(TESTCASE_FIELD_ID_ENTRY_NAME, serializedString);
+        embedAttachments = Boolean.parseBoolean(deserializeEntry(EMBED_ATTACHMENTS, serializedString));
     }
 
     /**

@@ -72,6 +72,7 @@ export default class ExportParams {
         this.urlQueryParameters = builder.urlQueryParameters;
         this.attachmentsFilter = builder.attachmentsFilter;
         this.testcaseFieldId = builder.testcaseFieldId;
+        this.embedAttachments = builder.embedAttachments;
         this.internalContent = builder.internalContent;
     }
 
@@ -124,6 +125,7 @@ export default class ExportParams {
                 this.urlQueryParameters = undefined;
                 this.attachmentsFilter = undefined;
                 this.testcaseFieldId = undefined;
+                this.embedAttachments = undefined;
                 this.internalContent = undefined;
             }
 
@@ -269,6 +271,11 @@ export default class ExportParams {
 
             setTestcaseFieldId(testcaseFieldId) {
                 this.testcaseFieldId = testcaseFieldId;
+                return this;
+            }
+
+            setEmbedAttachments(embedAttachments) {
+                this.embedAttachments = embedAttachments;
                 return this;
             }
 

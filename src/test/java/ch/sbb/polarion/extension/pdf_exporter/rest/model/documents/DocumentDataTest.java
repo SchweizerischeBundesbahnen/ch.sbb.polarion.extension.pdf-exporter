@@ -20,7 +20,9 @@ import com.polarion.alm.shared.api.transaction.internal.InternalReadOnlyTransact
 import com.polarion.alm.shared.rpe.RpeModelAspect;
 import com.polarion.alm.shared.rpe.RpeRenderer;
 import com.polarion.alm.tracker.ITrackerService;
+import com.polarion.alm.tracker.model.IAttachmentBase;
 import com.polarion.alm.tracker.model.IBaseline;
+import com.polarion.alm.tracker.model.IComment;
 import com.polarion.alm.tracker.model.IModule;
 import com.polarion.alm.tracker.model.IRichPage;
 import com.polarion.alm.tracker.model.ITestRun;
@@ -29,6 +31,9 @@ import com.polarion.alm.tracker.model.IWikiPage;
 import com.polarion.alm.tracker.model.baselinecollection.IBaselineCollection;
 import com.polarion.alm.tracker.model.ipi.IInternalBaselinesManager;
 import com.polarion.alm.tracker.spi.model.IInternalModule;
+import com.polarion.platform.persistence.IDataService;
+import com.polarion.platform.persistence.model.IPObjectList;
+import com.polarion.platform.persistence.spi.PObjectList;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -36,6 +41,10 @@ import org.mockito.Mock;
 import org.mockito.MockedConstruction;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.io.ByteArrayInputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -247,8 +256,14 @@ class DocumentDataTest {
         when(testRun.getProject()).thenReturn(project);
         when(testRun.getLabel()).thenReturn("test run title");
 
+        IAttachmentBase attachment = mock(IAttachmentBase.class);
+        when(attachment.getFileName()).thenReturn("attachment.ext");
+        when(attachment.getDataStream()).thenReturn(new ByteArrayInputStream("test content".getBytes(StandardCharsets.UTF_8)));
+        IPObjectList attachments = new PObjectList(mock(IDataService.class), List.of(attachment));
+        when(testRun.getAttachments()).thenReturn(attachments);
+
         UniqueObjectConverter uniqueObjectConverter = new UniqueObjectConverter(testRun);
-        DocumentData<IRichPage> documentData = uniqueObjectConverter.toDocumentData();
+        DocumentData<IRichPage> documentData = uniqueObjectConverter.withExportParams(ExportParams.builder().embedAttachments(true).build()).toDocumentData();
 
         assertEquals("project id", documentData.getId().getDocumentProject().getId());
         assertEquals("project name", documentData.getId().getDocumentProject().getName());
@@ -262,6 +277,11 @@ class DocumentDataTest {
         assertEquals("pb. projectBaselineName | db. documentBaselineName", uniqueObjectConverter.getUniqueObjectAdapter().getDocumentBaseline().asPlaceholder());
         assertNull(documentData.getRevision());
         assertEquals("12345", documentData.getLastRevision());
+        assertNotNull(documentData.getAttachmentFiles());
+        assertEquals(1, documentData.getAttachmentFiles().size());
+        String fileName = documentData.getAttachmentFiles().get(0).getFileName().toString();
+        assertTrue(fileName.contains("attachment"));
+        assertTrue(fileName.contains(".ext"));
         assertNull(documentData.getContent());
 
         ExportParams exportParams = ExportParams.builder()

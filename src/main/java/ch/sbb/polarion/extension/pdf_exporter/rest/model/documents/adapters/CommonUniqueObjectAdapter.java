@@ -12,6 +12,9 @@ import com.polarion.alm.tracker.model.ipi.IInternalBaselinesManager;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.List;
 import java.util.Objects;
 
 public abstract class CommonUniqueObjectAdapter implements IUniqueObjectAdapter {
@@ -34,6 +37,11 @@ public abstract class CommonUniqueObjectAdapter implements IUniqueObjectAdapter 
     @Override
     public @NotNull String getContent(@NotNull ExportParams exportParams) {
         return Objects.requireNonNull(TransactionalExecutor.executeSafelyInReadOnlyTransaction(transaction -> getContent(exportParams, transaction)));
+    }
+
+    @Override
+    public @Nullable List<Path> getAttachmentFiles(@NotNull ExportParams exportParams) throws IOException {
+        return null;
     }
 
     @Override
