@@ -30,13 +30,12 @@ import ch.sbb.polarion.extension.pdf_exporter.util.PdfTemplateProcessor;
 import ch.sbb.polarion.extension.pdf_exporter.util.PolarionTypes;
 import ch.sbb.polarion.extension.pdf_exporter.util.html.HtmlLinksHelper;
 import ch.sbb.polarion.extension.pdf_exporter.util.placeholder.PlaceholderProcessor;
-import ch.sbb.polarion.extension.pdf_exporter.util.placeholder.PlaceholderValues;
 import ch.sbb.polarion.extension.pdf_exporter.util.velocity.VelocityEvaluator;
-import com.polarion.alm.tracker.model.IModule;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.WeasyPrintOptions;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.service.WeasyPrintServiceConnector;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.polarion.alm.projects.model.IUniqueObject;
+import com.polarion.alm.tracker.model.IModule;
 import com.polarion.alm.tracker.model.ITrackerProject;
 import com.polarion.core.util.StringUtils;
 import com.polarion.core.util.logging.Logger;
@@ -62,9 +61,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 
 @AllArgsConstructor
 @SuppressWarnings("java:S1200")
@@ -227,7 +224,8 @@ public class PdfConverter {
         };
     }
 
-    private static boolean metaTagsPresent(String htmlPage) {
+    @VisibleForTesting
+    static boolean metaTagsPresent(String htmlPage) {
         return htmlPage != null && htmlPage.contains("<!--" + CUSTOM_METADATA_TAG + "-->");
     }
 
@@ -238,14 +236,16 @@ public class PdfConverter {
             ExportMetaInfoCallback metaInfoCallback,
             String htmlPage,
             PdfGenerationLog generationLog) {
+
+        WeasyPrintOptions weasyPrintOptions = WeasyPrintOptions.builder()
+                .followHTMLPresentationalHints(exportParams.isFollowHTMLPresentationalHints())
+                .pdfVariant(exportParams.getPdfVariant())
+                .customMetadata(metaTagsPresent(htmlPage))
+                .build();
+
         if (metaInfoCallback == null && exportParams.getInternalContent() == null && exportParams.getCoverPage() != null) {
-            return coverPageProcessor.generatePdfWithTitle(documentData, exportParams, htmlPage, generationLog);
+            return coverPageProcessor.generatePdfWithTitle(documentData, exportParams, htmlPage, weasyPrintOptions, generationLog);
         } else {
-            WeasyPrintOptions weasyPrintOptions = WeasyPrintOptions.builder()
-                    .followHTMLPresentationalHints(exportParams.isFollowHTMLPresentationalHints())
-                    .pdfVariant(exportParams.getPdfVariant())
-                    .customMetadata(metaTagsPresent(htmlPage))
-                    .build();
             return weasyPrintServiceConnector.convertToPdf(htmlPage, weasyPrintOptions);
         }
     }
@@ -341,20 +341,21 @@ public class PdfConverter {
             return "";
         }
 
-        StringBuilder sb = new StringBuilder();
+        StringBuilder result = new StringBuilder();
         for (String metadataField : metadataFields) {
-            Object valueObject = module.getCustomField(metadataField);
+            Object valueObject = module.getValue(metadataField);
             String value = PolarionTypes.convertFieldValueToString(valueObject);
             if (!value.isEmpty()) {
-                sb.append("<meta name=\"")
-                  .append(escapeHtmlAttr(metadataField))
-                  .append("\" content=\"")
-                  .append(escapeHtmlAttr(value))
-                  .append("\"/>");
+                result
+                        .append("<meta name=\"")
+                        .append(escapeHtmlAttr(metadataField))
+                        .append("\" content=\"")
+                        .append(escapeHtmlAttr(value))
+                        .append("\"/>");
             }
         }
-        if (!sb.isEmpty()) {
-            return "<!--" + CUSTOM_METADATA_TAG + "-->" + sb + "<!--/" + CUSTOM_METADATA_TAG + "-->";
+        if (!result.isEmpty()) {
+            return "<!--" + CUSTOM_METADATA_TAG + "-->" + result + "<!--/" + CUSTOM_METADATA_TAG + "-->";
         }
         return "";
     }

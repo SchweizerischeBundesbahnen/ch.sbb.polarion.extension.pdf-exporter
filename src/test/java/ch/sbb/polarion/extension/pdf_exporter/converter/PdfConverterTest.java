@@ -289,7 +289,7 @@ class PdfConverterTest {
                 .build();
         PdfGenerationLog pdfGenerationLog = new PdfGenerationLog();
         if (useCoverPageProcessor) {
-            when(coverPageProcessor.generatePdfWithTitle(documentData, exportParams, "test html content", pdfGenerationLog)).thenReturn("pdf result".getBytes());
+            when(coverPageProcessor.generatePdfWithTitle(eq(documentData), eq(exportParams), eq("test html content"), any(WeasyPrintOptions.class), eq(pdfGenerationLog))).thenReturn("pdf result".getBytes());
         } else {
             when(weasyPrintServiceConnector.convertToPdf(eq("test html content"), any(WeasyPrintOptions.class))).thenReturn("pdf result".getBytes());
         }
@@ -301,7 +301,7 @@ class PdfConverterTest {
         // Assert
         assertThat(result).isEqualTo("pdf result".getBytes());
         if (useCoverPageProcessor) {
-            verify(coverPageProcessor).generatePdfWithTitle(documentData, exportParams, "test html content", pdfGenerationLog);
+            verify(coverPageProcessor).generatePdfWithTitle(eq(documentData), eq(exportParams), eq("test html content"), any(WeasyPrintOptions.class), eq(pdfGenerationLog));
         } else {
             verify(weasyPrintServiceConnector).convertToPdf(eq("test html content"), any(WeasyPrintOptions.class));
         }
