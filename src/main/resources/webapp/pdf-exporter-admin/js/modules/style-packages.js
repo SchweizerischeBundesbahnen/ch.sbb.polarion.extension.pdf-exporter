@@ -228,6 +228,7 @@ function saveStylePackage() {
             'cutLocalURLs': ctx.getCheckboxValueById('cut-urls'),
             'followHTMLPresentationalHints': ctx.getCheckboxValueById('presentational-hints'),
             'specificChapters': ctx.getCheckboxValueById('specific-chapters') ? ctx.getValueById('chapters') : null,
+            'metadataFields': ctx.getCheckboxValueById('metadata-fields') ? ctx.getValueById('metadata-fields-input') : null,
             'customNumberedListStyles': ctx.getCheckboxValueById('custom-list-styles') ? ctx.getValueById('numbered-list-styles') : null,
             'language': ctx.getCheckboxValueById('localization') ? Languages.languageSelect.getSelectedValue() : null,
             'linkedWorkitemRoles': ctx.getCheckboxValueById('selected-roles') ? LinkRoles.rolesSelect.getSelectedValue() : null,
@@ -302,6 +303,10 @@ function setStylePackage(content) {
     ctx.setCheckboxValueById('specific-chapters', !!stylePackage.specificChapters);
     ctx.getElementById('specific-chapters').dispatchEvent(new Event('change'));
     ctx.setValueById('chapters', stylePackage.specificChapters || "");
+
+    ctx.setCheckboxValueById('metadata-fields', !!stylePackage.metadataFields);
+    ctx.getElementById('metadata-fields').dispatchEvent(new Event('change'));
+    ctx.setValueById('metadata-fields-input', stylePackage.metadataFields || "");
 
     ctx.setCheckboxValueById('custom-list-styles', !!stylePackage.customNumberedListStyles);
     ctx.getElementById('custom-list-styles').dispatchEvent(new Event('change'));

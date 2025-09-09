@@ -57,6 +57,7 @@
         <awaitility.version>4.3.0</awaitility.version>
         <tika.version>1.28.5</tika.version>
         <cssparser.version>0.9.30</cssparser.version>
+        <commons-text.version>1.14.0</commons-text.version>
 
         <maven-jar-plugin.Extension-Context>pdf-exporter</maven-jar-plugin.Extension-Context>
         <maven-jar-plugin.Automatic-Module-Name>ch.sbb.polarion.extension.pdf_exporter</maven-jar-plugin.Automatic-Module-Name>
@@ -79,6 +80,7 @@
         <!--suppress UnresolvedMavenProperty -->
         <skipJavaScriptTests>${skipTests}</skipJavaScriptTests>
     </properties>
+
 
     <profiles>
         <profile>
@@ -174,6 +176,11 @@
             <groupId>net.sourceforge.cssparser</groupId>
             <artifactId>cssparser</artifactId>
             <version>${cssparser.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-text</artifactId>
+            <version>${commons-text.version}</version>
         </dependency>
 
         <!--  Test dependencies  -->

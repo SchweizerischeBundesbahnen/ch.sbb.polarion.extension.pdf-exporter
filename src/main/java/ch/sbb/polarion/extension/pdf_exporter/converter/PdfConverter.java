@@ -27,6 +27,7 @@ import ch.sbb.polarion.extension.pdf_exporter.util.PdfExporterFileResourceProvid
 import ch.sbb.polarion.extension.pdf_exporter.util.PdfExporterListStyleProvider;
 import ch.sbb.polarion.extension.pdf_exporter.util.PdfGenerationLog;
 import ch.sbb.polarion.extension.pdf_exporter.util.PdfTemplateProcessor;
+import ch.sbb.polarion.extension.pdf_exporter.util.PolarionTypes;
 import ch.sbb.polarion.extension.pdf_exporter.util.html.HtmlLinksHelper;
 import ch.sbb.polarion.extension.pdf_exporter.util.placeholder.PlaceholderProcessor;
 import ch.sbb.polarion.extension.pdf_exporter.util.velocity.VelocityEvaluator;
@@ -34,11 +35,13 @@ import ch.sbb.polarion.extension.pdf_exporter.weasyprint.WeasyPrintOptions;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.service.WeasyPrintServiceConnector;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.polarion.alm.projects.model.IUniqueObject;
+import com.polarion.alm.tracker.model.IModule;
 import com.polarion.alm.tracker.model.ITrackerProject;
 import com.polarion.core.util.StringUtils;
 import com.polarion.core.util.logging.Logger;
 import com.polarion.platform.internal.security.UserAccountVault;
 import lombok.AllArgsConstructor;
+import org.apache.commons.text.StringEscapeUtils;
 import org.glassfish.jersey.media.multipart.FormDataBodyPart;
 import org.glassfish.jersey.media.multipart.FormDataMultiPart;
 import org.glassfish.jersey.media.multipart.MultiPartFeature;
@@ -64,6 +67,7 @@ import java.util.List;
 @AllArgsConstructor
 @SuppressWarnings("java:S1200")
 public class PdfConverter {
+    public static final String CUSTOM_METADATA_TAG = "CUSTOM_METADATA";
     private final Logger logger = Logger.getLogger(PdfConverter.class);
     private final PdfExporterPolarionService pdfExporterPolarionService;
 
@@ -133,7 +137,8 @@ public class PdfConverter {
         String preparedDocumentContent = postProcessDocumentContent(exportParams, project, documentData.getContent());
         String headerFooterContent = getHeaderFooterContent(documentData, exportParams);
         HtmlData htmlData = new HtmlData(cssContent, preparedDocumentContent, headerFooterContent);
-        String htmlContent = composeHtml(documentData.getTitle(), htmlData, exportParams);
+        String metaTags = buildMetaTags(documentData, exportParams);
+        String htmlContent = composeHtml(documentData.getTitle(), htmlData, exportParams, metaTags);
         if (metaInfoCallback != null) {
             metaInfoCallback.setLinkedWorkItems(WorkItemRefData.extractListFromHtml(htmlContent, exportParams.getProjectId()));
         }
@@ -221,19 +226,27 @@ public class PdfConverter {
     }
 
     @VisibleForTesting
+    static boolean metaTagsPresent(String htmlPage) {
+        return htmlPage != null && htmlPage.contains("<!--" + CUSTOM_METADATA_TAG + "-->");
+    }
+
+    @VisibleForTesting
     byte[] generatePdf(
             DocumentData<? extends IUniqueObject> documentData,
             ExportParams exportParams,
             ExportMetaInfoCallback metaInfoCallback,
             String htmlPage,
             PdfGenerationLog generationLog) {
+
+        WeasyPrintOptions weasyPrintOptions = WeasyPrintOptions.builder()
+                .followHTMLPresentationalHints(exportParams.isFollowHTMLPresentationalHints())
+                .pdfVariant(exportParams.getPdfVariant())
+                .customMetadata(metaTagsPresent(htmlPage))
+                .build();
+
         if (metaInfoCallback == null && exportParams.getInternalContent() == null && exportParams.getCoverPage() != null) {
-            return coverPageProcessor.generatePdfWithTitle(documentData, exportParams, htmlPage, generationLog);
+            return coverPageProcessor.generatePdfWithTitle(documentData, exportParams, htmlPage, weasyPrintOptions, generationLog);
         } else {
-            WeasyPrintOptions weasyPrintOptions = WeasyPrintOptions.builder()
-                    .followHTMLPresentationalHints(exportParams.isFollowHTMLPresentationalHints())
-                    .pdfVariant(exportParams.getPdfVariant())
-                    .build();
             return weasyPrintServiceConnector.convertToPdf(htmlPage, weasyPrintOptions);
         }
     }
@@ -252,10 +265,11 @@ public class PdfConverter {
     @VisibleForTesting
     String composeHtml(@NotNull String documentName,
                        @NotNull HtmlData htmlData,
-                       @NotNull ExportParams exportParams) {
+                       @NotNull ExportParams exportParams,
+                       @NotNull String metaTags) {
         String content = htmlData.headerFooterContent
                 + "<div class='content'>" + htmlData.documentContent + "</div>";
-        return pdfTemplateProcessor.processUsing(exportParams, documentName, htmlData.cssContent, content);
+        return pdfTemplateProcessor.processUsing(exportParams, documentName, htmlData.cssContent, content, metaTags);
     }
 
     @NotNull
@@ -314,6 +328,37 @@ public class PdfConverter {
 
     private String appendWikiCss(String css) {
         return css + System.lineSeparator() + ScopeUtils.getFileContent("default/wiki.css");
+    }
+
+    private String buildMetaTags(@NotNull DocumentData<? extends IUniqueObject> documentData, @NotNull ExportParams exportParams) {
+        if (exportParams.getDocumentType() != DocumentType.LIVE_DOC) {
+            return "";
+        }
+        List<String> metadataFields = exportParams.getMetadataFields();
+        if (metadataFields == null || metadataFields.isEmpty()) {
+            return "";
+        }
+        if (!(documentData.getDocumentObject() instanceof IModule module)) {
+            return "";
+        }
+
+        StringBuilder result = new StringBuilder();
+        for (String metadataField : metadataFields) {
+            Object valueObject = module.getValue(metadataField);
+            String value = PolarionTypes.convertFieldValueToString(valueObject);
+            if (!value.isEmpty()) {
+                result
+                        .append("<meta name=\"")
+                        .append(StringEscapeUtils.escapeHtml4(metadataField))
+                        .append("\" content=\"")
+                        .append(StringEscapeUtils.escapeHtml4(value))
+                        .append("\"/>");
+            }
+        }
+        if (!result.isEmpty()) {
+            return "<!--" + CUSTOM_METADATA_TAG + "-->" + result + "<!--/" + CUSTOM_METADATA_TAG + "-->";
+        }
+        return "";
     }
 
     record HtmlData(String cssContent, String documentContent, String headerFooterContent) {

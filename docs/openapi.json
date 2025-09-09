@@ -1828,6 +1828,14 @@
             "description": "Referenced work items should be marked in the document",
             "type": "boolean"
           },
+          "metadataFields": {
+            "description": "CSV list of document field names or wildcard patterns to be exported as HTML meta (LiveDoc only)",
+            "items": {
+              "description": "CSV list of document field names or wildcard patterns to be exported as HTML meta (LiveDoc only)",
+              "type": "string"
+            },
+            "type": "array"
+          },
           "numberedListStyles": {
             "description": "SCC styles to be applied to numbered lists in the document",
             "type": "string"
