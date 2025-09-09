@@ -309,15 +309,15 @@ export default class ExportPanel {
         this.ctx.getJQueryElement("#validate-error").empty();
         this.ctx.getJQueryElement("#validate-ok").empty();
 
-        let request = this.prepareRequest(projectId, locationPath, baselineRevision, revision);
-        if (request === undefined) {
-            return;
-        }
-
         const projectId = this.ctx.getProjectId();
         const locationPath = this.ctx.getLocationPath();
         const baselineRevision = this.ctx.getBaselineRevision();
         const revision = this.ctx.getRevision();
+
+        const request = this.prepareRequest(projectId, locationPath, baselineRevision, revision);
+        if (request === undefined) {
+            return;
+        }
 
         //disable components
         this.ctx.getJQueryElement(":input").attr("disabled", true);
