@@ -101,6 +101,7 @@ public class PdfExporterFormExtension implements IFormExtension {
             form = adjustPresentationalHints(form, selectedStylePackage);
             form = adjustCustomNumberedListsStyles(form, selectedStylePackage);
             form = adjustChapters(form, selectedStylePackage);
+            form = adjustMetadataFields(form, selectedStylePackage);
             form = adjustLocalizeEnums(form, selectedStylePackage, module.getCustomField(DOC_LANGUAGE_FIELD));
             form = adjustLinkRoles(form, EnumValuesProvider.getAllLinkRoleNames(module.getProject()), selectedStylePackage);
             form = adjustFilename(form, module);
@@ -263,6 +264,14 @@ public class PdfExporterFormExtension implements IFormExtension {
         if (!StringUtils.isEmpty(stylePackage.getSpecificChapters())) {
             form = form.replace("<input id='specific-chapters'", "<input id='specific-chapters' checked");
             form = form.replace("<input id='chapters' style='display: none;", String.format("<input id='chapters' value='%s' style='", stylePackage.getSpecificChapters()));
+        }
+        return form;
+    }
+
+    private String adjustMetadataFields(String form, StylePackageModel stylePackage) {
+        if (!StringUtils.isEmpty(stylePackage.getMetadataFields())) {
+            form = form.replace("<input id='metadata-fields'", "<input id='metadata-fields' checked");
+            form = form.replace("<input id='metadata-fields-input' style='display: none;", String.format("<input id='metadata-fields-input' value='%s' style='", stylePackage.getMetadataFields()));
         }
         return form;
     }

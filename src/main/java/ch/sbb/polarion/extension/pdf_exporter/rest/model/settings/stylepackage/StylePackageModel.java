@@ -48,6 +48,7 @@ public class StylePackageModel extends SettingsModel {
     private static final String CUT_LOCAL_URLS_ENTRY_NAME= "CUT LOCAL URLS";
     private static final String FOLLOW_HTML_PRESENTATIONAL_HINTS_ENTRY_NAME = "FOLLOW HTML PRESENTATIONAL HINTS";
     private static final String SPECIFIC_CHAPTERS_ENTRY_NAME = "SPECIFIC CHAPTERS";
+    private static final String METADATA_FIELDS_ENTRY_NAME = "METADATA FIELDS";
     private static final String TESTCASE_FIELD_ID_ENTRY_NAME = "TESTCASE FILTER ATTACHMENTS FIELD ID";
     private static final String CUSTOM_NUMBERED_LIST_STYLES_ENTRY_NAME = "CUSTOM NUMBERED LIST STYLES";
     private static final String LANGUAGE_ENTRY_NAME = "LANGUAGE";
@@ -77,6 +78,7 @@ public class StylePackageModel extends SettingsModel {
     private boolean cutLocalURLs;
     private boolean followHTMLPresentationalHints;
     private String specificChapters;
+    private String metadataFields;
     private String customNumberedListStyles;
     private String language;
     private List<String> linkedWorkitemRoles;
@@ -108,6 +110,7 @@ public class StylePackageModel extends SettingsModel {
                 serializeEntry(CUT_LOCAL_URLS_ENTRY_NAME, cutLocalURLs) +
                 serializeEntry(FOLLOW_HTML_PRESENTATIONAL_HINTS_ENTRY_NAME, followHTMLPresentationalHints) +
                 serializeEntry(SPECIFIC_CHAPTERS_ENTRY_NAME, specificChapters) +
+                serializeEntry(METADATA_FIELDS_ENTRY_NAME, metadataFields) +
                 serializeEntry(CUSTOM_NUMBERED_LIST_STYLES_ENTRY_NAME, customNumberedListStyles) +
                 serializeEntry(LANGUAGE_ENTRY_NAME, language) +
                 serializeEntry(LINKED_WORKITEM_ROLES_ENTRY_NAME, linkedWorkitemRoles) +
@@ -141,6 +144,7 @@ public class StylePackageModel extends SettingsModel {
         cutLocalURLs = Boolean.parseBoolean(deserializeEntry(CUT_LOCAL_URLS_ENTRY_NAME, serializedString));
         followHTMLPresentationalHints = Boolean.parseBoolean(deserializeEntry(FOLLOW_HTML_PRESENTATIONAL_HINTS_ENTRY_NAME, serializedString));
         specificChapters = deserializeEntry(SPECIFIC_CHAPTERS_ENTRY_NAME, serializedString);
+        metadataFields = deserializeEntry(METADATA_FIELDS_ENTRY_NAME, serializedString);
         customNumberedListStyles = deserializeEntry(CUSTOM_NUMBERED_LIST_STYLES_ENTRY_NAME, serializedString);
         language = deserializeEntry(LANGUAGE_ENTRY_NAME, serializedString);
         linkedWorkitemRoles = deserializeListEntry(LINKED_WORKITEM_ROLES_ENTRY_NAME, serializedString, String.class);

@@ -251,7 +251,14 @@
                         <input id='specific-chapters' onchange='document.getElementById("chapters").style.visibility = this.checked ? "visible" : "hidden"' type='checkbox'/>
                         Specific higher level chapters
                     </label>
-                    <input id='chapters' placeholder='eg. 1,2,4 etc.' type='text' style="visibility: hidden; margin-left: 10px; width: 117px"/>
+                    <input id='chapters' placeholder='eg. 1,2,4 etc.' type='text' style="visibility: hidden; margin-left: 10px; width: 202px"/>
+                </div>
+                <div class='checkbox input-group'>
+                    <label for='metadata-fields'>
+                        <input id='metadata-fields' onchange='document.getElementById("metadata-fields-input").style.visibility = this.checked ? "visible" : "hidden"' type='checkbox'/>
+                        Metadata fields
+                    </label>
+                    <input id='metadata-fields-input' placeholder='e.g. docOwner, docLanguage, customField*' type='text' style='visibility: hidden; margin-left: 10px; width: 280px'/>
                 </div>
             </div>
             <div class="flex-column">

@@ -19,6 +19,10 @@ public class PdfTemplateProcessor {
 
     @NotNull
     public String processUsing(@NotNull ExportParams exportParams, @NotNull String documentName, @NotNull String css, @NotNull String content) {
+        return processUsing(exportParams, documentName, css, content, "");
+    }
+
+    public String processUsing(@NotNull ExportParams exportParams, @NotNull String documentName, @NotNull String css, @NotNull String content, @NotNull String metaTags) {
         css += buildSizeCss(exportParams.getOrientation(), exportParams.getPaperSize());
 
         if (exportParams.isMarkReferencedWorkitems()) {
@@ -43,7 +47,8 @@ public class PdfTemplateProcessor {
                 .replace("{BASE_URL}", buildBaseUrlHeader())
                 .replace("{CSS}", css)
                 .replace("{BODY_CLASS}", exportParams.isWatermark() ? "watermark" : "")
-                .replace("{DOC_CONTENT}", content);
+                .replace("{DOC_CONTENT}", content)
+                .replace("{META_TAGS}", metaTags);
     }
 
     public String buildSizeCss(Orientation orientation, PaperSize paperSize) {

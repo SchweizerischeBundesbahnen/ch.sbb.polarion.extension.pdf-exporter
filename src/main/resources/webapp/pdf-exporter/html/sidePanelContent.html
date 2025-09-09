@@ -150,7 +150,14 @@
                 <input id='specific-chapters' onchange='document.querySelector("#pdf-exporter-panel #chapters").style.display = this.checked ? "block" : "none"' type='checkbox'/>
                 Specific higher level chapters
             </label>
-            <input id='chapters' style='display: none; width: 100px' placeholder='eg. 1,2,4 etc.' type='text'/>
+            <input id='chapters' style='display: none; width: 200px' placeholder='eg. 1,2,4 etc.' type='text'/>
+        </div>
+        <div class='property-wrapper'>
+            <label for='metadata-fields' style='width: 115px'>
+                <input id='metadata-fields' onchange='document.querySelector("#pdf-exporter-panel #metadata-fields-input").style.display = this.checked ? "block" : "none"' type='checkbox'/>
+                Metadata fields
+            </label>
+            <input id='metadata-fields-input' style='display: none; width: 280px' placeholder='e.g. docOwner, docLanguage, customField*' type='text'/>
         </div>
         <div class='property-wrapper'>
             <label for='custom-list-styles' style='width: 210px'>

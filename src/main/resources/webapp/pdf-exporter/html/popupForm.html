@@ -176,7 +176,14 @@
                         <input id='popup-specific-chapters' onchange='document.getElementById("popup-chapters").style.visibility = this.checked ? "visible" : "hidden"' type='checkbox'/>
                         Specific higher level chapters
                     </label>
-                    <input id='popup-chapters' placeholder='eg. 1,2,4 etc.' style='width: 101px' type='text'/>
+                    <input id='popup-chapters' placeholder='eg. 1,2,4 etc.' style='width: 122px' type='text'/>
+                </div>
+                <div class='property-wrapper hidden visible-for-LIVE_DOC'>
+                    <label for='popup-metadata-fields'>
+                        <input id='popup-metadata-fields' onchange='document.getElementById("popup-metadata-fields-input").style.visibility = this.checked ? "visible" : "hidden"' type='checkbox'/>
+                        Metadata fields
+                    </label>
+                    <input id='popup-metadata-fields-input' placeholder='e.g. docOwner, docLanguage, customField*' style='width: 200px' type='text'/>
                 </div>
             </div>
             <div class="flex-column">
