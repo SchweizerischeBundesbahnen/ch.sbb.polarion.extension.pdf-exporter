@@ -160,6 +160,8 @@ export default class ExportPanel {
     }
 
     buildRequestJson(projectId, locationPath, baselineRevision, revision, selectedChapters, selectedMetadataFields, numberedListStyles, selectedRoles, fileName) {
+        const live_doc = this.ctx.getDocumentType() === ExportParams.DocumentType.LIVE_DOC;
+        const test_run = this.ctx.getDocumentType() === ExportParams.DocumentType.TEST_RUN;
         const urlSearchParams = new URL(window.location.href.replace('#', '/')).searchParams;
         return new ExportParams.Builder(ExportParams.DocumentType.LIVE_DOC)
             .setProjectId(projectId)
@@ -175,18 +177,18 @@ export default class ExportPanel {
             .setPaperSize(this.ctx.getElementById("paper-size-selector").value)
             .setOrientation(this.ctx.getElementById("orientation-selector").value)
             .setPdfVariant(this.ctx.getElementById("pdf-variant-selector").value)
-            .setFitToPage(this.ctx.getElementById('fit-to-page').checked)
+            .setFitToPage((live_doc || test_run) && this.ctx.getElementById('fit-to-page').checked)
             .setRenderComments(this.ctx.getElementById('render-comments').checked ? this.ctx.getElementById("render-comments-selector").value : null)
             .setWatermark(this.ctx.getElementById("watermark").checked)
-            .setMarkReferencedWorkitems(this.ctx.getElementById("mark-referenced-workitems").checked)
-            .setCutEmptyChapters(this.ctx.getElementById("cut-empty-chapters").checked)
-            .setCutEmptyWIAttributes(this.ctx.getElementById('cut-empty-wi-attributes').checked)
+            .setMarkReferencedWorkitems(live_doc && this.ctx.getElementById("mark-referenced-workitems").checked)
+            .setCutEmptyChapters(live_doc && this.ctx.getElementById("cut-empty-chapters").checked)
+            .setCutEmptyWIAttributes(live_doc && this.ctx.getElementById('cut-empty-wi-attributes').checked)
             .setCutLocalUrls(this.ctx.getElementById("cut-urls").checked)
             .setFollowHTMLPresentationalHints(this.ctx.getElementById("presentational-hints").checked)
             .setNumberedListStyles(numberedListStyles)
             .setChapters(selectedChapters)
-            .setMetadataFields(this.ctx.getElementById('metadata-fields').checked ? selectedMetadataFields : null)
-            .setLanguage(this.ctx.getElementById('localization').checked ? this.ctx.getElementById("language").value : null)
+            .setMetadataFields(live_doc && this.ctx.getElementById('metadata-fields').checked ? selectedMetadataFields : null)
+            .setLanguage(live_doc && this.ctx.getElementById('localization').checked ? this.ctx.getElementById("language").value : null)
             .setLinkedWorkitemRoles(selectedRoles)
             .setFileName(fileName)
             .setUrlQueryParameters(Object.fromEntries([...urlSearchParams]))
