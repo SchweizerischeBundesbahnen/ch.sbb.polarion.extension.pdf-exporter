@@ -9,6 +9,10 @@ import com.polarion.alm.shared.api.transaction.ReadOnlyTransaction;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.List;
+
 public interface IUniqueObjectAdapter {
 
     @NotNull <T extends IUniqueObject> T getUniqueObject();
@@ -28,6 +32,9 @@ public interface IUniqueObjectAdapter {
     @NotNull String getContent(@NotNull ExportParams exportParams);
 
     @NotNull String getContent(@NotNull ExportParams exportParams, @NotNull ReadOnlyTransaction transaction);
+
+    @Nullable
+    List<Path> getAttachmentFiles(@NotNull ExportParams exportParams) throws IOException;
 
     @NotNull DocumentBaseline getDocumentBaseline();
 

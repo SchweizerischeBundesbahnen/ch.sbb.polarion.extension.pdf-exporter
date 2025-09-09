@@ -11,6 +11,9 @@ import lombok.Setter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.nio.file.Path;
+import java.util.List;
+
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Builder
 @Getter
@@ -26,6 +29,7 @@ public class DocumentData<T extends IUniqueObject> {
     private final @NotNull String title;
 
     private final @Nullable String content;
+    private final @Nullable List<Path> attachmentFiles;
 
     private final @Nullable DocumentBaseline baseline;
     private final @Nullable String revision;

@@ -72,6 +72,7 @@ public class UniqueObjectConverter {
                 .revisionPlaceholder(uniqueObjectAdapter.getRevisionPlaceholder())
                 .baseline(uniqueObjectAdapter.getDocumentBaseline(transaction))
                 .content(withContent && exportParams != null ? uniqueObjectAdapter.getContent(exportParams, transaction) : null)
+                .attachmentFiles(exportParams != null ? uniqueObjectAdapter.getAttachmentFiles(exportParams) : null)
                 .build());
     }
 

@@ -1,9 +1,11 @@
 package ch.sbb.polarion.extension.pdf_exporter.weasyprint.base;
 
 import ch.sbb.polarion.extension.pdf_exporter.configuration.PdfExporterExtensionConfigurationExtension;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.DocumentData;
 import ch.sbb.polarion.extension.pdf_exporter.util.MediaUtils;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.WeasyPrintOptions;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.service.WeasyPrintServiceConnector;
+import com.polarion.alm.projects.model.IUniqueObject;
 import com.polarion.core.util.StringUtils;
 import lombok.SneakyThrows;
 import org.apache.pdfbox.Loader;
@@ -92,6 +94,22 @@ public abstract class BaseWeasyPrintTest {
             String weasyPrintServiceBaseUrl = "http://" + weasyPrintService.getHost() + ":" + weasyPrintService.getFirstMappedPort();
             WeasyPrintServiceConnector weasyPrintServiceConnector = new WeasyPrintServiceConnector(weasyPrintServiceBaseUrl);
             return weasyPrintServiceConnector.convertToPdf(html, weasyPrintOptions);
+        }
+    }
+
+    protected byte[] exportToPdf(String html, @NotNull WeasyPrintOptions weasyPrintOptions, @NotNull DocumentData<? extends IUniqueObject> documentData) {
+        try (GenericContainer<?> weasyPrintService = new GenericContainer<>(DOCKER_IMAGE_NAME)) {
+            weasyPrintService
+                    .withImagePullPolicy(PullPolicy.alwaysPull())
+                    .withExposedPorts(9080)
+                    .waitingFor(Wait.forHttp("/version").forPort(9080))
+                    .start();
+
+            assertTrue(weasyPrintService.isRunning());
+
+            String weasyPrintServiceBaseUrl = "http://" + weasyPrintService.getHost() + ":" + weasyPrintService.getFirstMappedPort();
+            WeasyPrintServiceConnector weasyPrintServiceConnector = new WeasyPrintServiceConnector(weasyPrintServiceBaseUrl);
+            return weasyPrintServiceConnector.convertToPdf(html, weasyPrintOptions, documentData);
         }
     }
 

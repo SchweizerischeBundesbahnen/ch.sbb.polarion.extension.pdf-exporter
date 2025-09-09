@@ -159,14 +159,6 @@
                         Mark referenced Workitems
                     </label>
                 </div>
-                <div class='property-wrapper hidden visible-for-TEST_RUN'>
-                    <label for='popup-download-attachments'>
-                        <input id='popup-download-attachments' onchange='document.getElementById("popup-attachments-filter").style.visibility = this.checked ? "visible" : "hidden";document.getElementById("popup-testcase-field-id").style.visibility = this.checked ? "visible" : "hidden"' type='checkbox'/>
-                        Download attachments
-                    </label>
-                    <input id='popup-attachments-filter' title="Filter for attachments to be downloaded, example: '*.pdf'" placeholder='*.*' style='width: 50px' type='text'/>
-                    <input id='popup-testcase-field-id' title='A boolean testcase field ID. Attachments will be downloaded only from the testcases which have True value in the provided field. Leaving field empty will process all testcases.' style='width: 70px' type='text'/>
-                </div>
             </div>
         </div>
 
@@ -212,6 +204,33 @@
                         Specific Workitem roles
                     </label>
                     <select id='popup-roles-selector' multiple style="width: 142px"></select>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex-container" style='border-top: 1px solid #eee; margin-top: 15px; padding-top: 5px;'>
+            <div class="flex-column">
+                <div class='property-wrapper hidden visible-for-TEST_RUN' style="flex-wrap: wrap;">
+                    <label for='popup-download-attachments'>
+                        <input id='popup-download-attachments' onchange='document.getElementById("popup-attachments-filter-container").style.display = this.checked ? "flex" : "none";document.getElementById("popup-testcase-field-id-container").style.display = this.checked ? "flex" : "none";document.getElementById("popup-embed-attachments-label").style.display = this.checked ? "block" : "none";' type='checkbox'/>
+                        Download attachments
+                    </label>
+                </div>
+                <div class='property-wrapper' id="popup-attachments-filter-container">
+                    <label for='popup-attachments-filter'>Attachments filter</label>
+                    <input id='popup-attachments-filter' title="Filter for attachments to be downloaded, example: '*.pdf'" placeholder='*.*' type='text' style="width: 200px;"/>
+                </div>
+            </div>
+            <div class="flex-column">
+                <div class='property-wrapper hidden visible-for-TEST_RUN' style="flex-wrap: wrap;">
+                    <label for='popup-embed-attachments' id='popup-embed-attachments-label'>
+                        <input id='popup-embed-attachments' type='checkbox'/>
+                        Embed attachments into resulted PDF
+                    </label>
+                </div>
+                <div class='property-wrapper' id="popup-testcase-field-id-container">
+                    <label for='popup-testcase-field-id' class="fixed-width w-1">Custom field ID</label>
+                    <input id='popup-testcase-field-id' title='A boolean testcase field ID. Attachments will be downloaded only from the testcases which have True value in the provided field. Leaving field empty will process all testcases.' type='text' style="width: 200px;"/>
                 </div>
             </div>
         </div>
