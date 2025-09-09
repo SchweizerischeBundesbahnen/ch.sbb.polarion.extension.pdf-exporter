@@ -247,7 +247,7 @@ public class PdfConverter {
         if (metaInfoCallback == null && exportParams.getInternalContent() == null && exportParams.getCoverPage() != null) {
             return coverPageProcessor.generatePdfWithTitle(documentData, exportParams, htmlPage, weasyPrintOptions, generationLog);
         } else {
-            return weasyPrintServiceConnector.convertToPdf(htmlPage, weasyPrintOptions);
+            return weasyPrintServiceConnector.convertToPdf(htmlPage, weasyPrintOptions, documentData);
         }
     }
 

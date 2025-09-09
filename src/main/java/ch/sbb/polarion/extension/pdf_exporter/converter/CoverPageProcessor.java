@@ -58,7 +58,7 @@ public class CoverPageProcessor {
                                        WeasyPrintOptions weasyPrintOptions,
                                        PdfGenerationLog generationLog) {
         generationLog.log("Starting generation for document content...");
-        byte[] pdfContent = weasyPrintServiceConnector.convertToPdf(contentHtml, weasyPrintOptions);
+        byte[] pdfContent = weasyPrintServiceConnector.convertToPdf(contentHtml, weasyPrintOptions, documentData);
         generationLog.log("Document content has been completed");
 
         generationLog.log("Starting generation for cover page ...");

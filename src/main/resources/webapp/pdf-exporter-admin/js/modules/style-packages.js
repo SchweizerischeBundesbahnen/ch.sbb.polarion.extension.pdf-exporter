@@ -235,6 +235,7 @@ function saveStylePackage() {
             'exposePageWidthValidation': ctx.getCheckboxValueById('expose-page-width-validation'),
             'attachmentsFilter': ctx.getCheckboxValueById('download-attachments') ? ctx.getValueById('attachments-filter') : null,
             'testcaseFieldId': ctx.getCheckboxValueById('download-attachments') ? ctx.getValueById('testcase-field-id') : null,
+            'embedAttachments': ctx.getCheckboxValueById('download-attachments') && ctx.getCheckboxValueById('embed-attachments'),
         }),
         onOk: () => {
             ctx.showSaveSuccessAlert();
@@ -325,6 +326,7 @@ function setStylePackage(content) {
     ctx.getElementById('download-attachments').dispatchEvent(new Event('change'));
     ctx.setValueById('attachments-filter', stylePackage.attachmentsFilter || "");
     ctx.setValueById('testcase-field-id', stylePackage.testcaseFieldId || "");
+    ctx.setCheckboxValueById('embed-attachments', (!!stylePackage.attachmentsFilter || !!stylePackage.testcaseFieldId) && stylePackage.embedAttachments);
 
     ctx.setCheckboxValueById('expose-page-width-validation', stylePackage.exposePageWidthValidation);
 

@@ -276,13 +276,35 @@
                     </label>
                     <div id="roles-select" style="display: none; margin-left: 10px; width: 152px"></div>
                 </div>
+            </div>
+        </div>
+        <div class="flex-container" style="border-top: 1px solid #ccc; margin-top: 20px; padding-top: 15px;">
+            <div class="flex-column">
                 <div class='checkbox input-group'>
                     <label for='download-attachments' style="margin-top: 5px">
-                        <input id='download-attachments' onchange='document.getElementById("attachments-filter").style.visibility = this.checked ? "visible" : "hidden";document.getElementById("testcase-field-id").style.visibility = this.checked ? "visible" : "hidden";' type='checkbox'/>
+                        <input id='download-attachments' onchange='
+                                document.getElementById("attachments-filter-container").style.display = this.checked ? "block" : "none";
+                                document.getElementById("attachments-filter").value = document.getElementById("attachments-filter").value || "*.*";
+                                document.getElementById("testcase-field-id-container").style.display = this.checked ? "block" : "none";
+                                document.getElementById("embed-attachments-label").style.display = this.checked ? "block" : "none";' type='checkbox'/>
                         Download attachments
                     </label>
-                    <input id='attachments-filter' title="Filter for attachments to be downloaded, example: '*.pdf'" placeholder='*.*' type='text' style="visibility: hidden; margin-left: 10px; width: 100px"/>
-                    <input id='testcase-field-id' title='A boolean testcase field ID. Attachments will be downloaded only from the testcases which have True value in the provided field. Leaving field empty will process all testcases.' type='text' style="visibility: hidden; margin-left: 10px; width: 100px"/>
+                </div>
+                <div class='input-group' id="attachments-filter-container" style="display: none;">
+                    <label for="attachments-filter">Attachments filter:</label>
+                    <input id='attachments-filter' title="Filter for attachments to be downloaded, example: '*.pdf'" placeholder='*.*' type='text' />
+                </div>
+            </div>
+            <div class="flex-column">
+                <div class='checkbox input-group'>
+                    <label for='embed-attachments' id='embed-attachments-label' style="margin-top: 12px;">
+                        <input id='embed-attachments' type='checkbox'/>
+                        Embed attachments into resulted PDF
+                    </label>
+                </div>
+                <div class='input-group' id="testcase-field-id-container" style="display: none;">
+                    <label for="testcase-field-id">Custom field ID:</label>
+                    <input id='testcase-field-id' title='A boolean testcase field ID. Attachments will be downloaded only from the testcases which have True value in the provided field. Leaving field empty will process all testcases.' type='text' />
                 </div>
             </div>
         </div>

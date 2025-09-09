@@ -371,8 +371,11 @@ export default class ExportPopup {
         this.ctx.setCheckbox("popup-download-attachments", attachmentFieldsVisible);
         this.ctx.setValue("popup-attachments-filter", stylePackage.attachmentsFilter || "");
         this.ctx.setValue("popup-testcase-field-id", stylePackage.testcaseFieldId || "");
-        this.ctx.visibleIf("popup-attachments-filter", attachmentFieldsVisible);
-        this.ctx.visibleIf("popup-testcase-field-id", attachmentFieldsVisible);
+        this.ctx.displayIf("popup-attachments-filter-container", attachmentFieldsVisible, "flex");
+        this.ctx.displayIf("popup-testcase-field-id-container", attachmentFieldsVisible, "flex");
+
+        this.ctx.displayIf("popup-embed-attachments-label", attachmentFieldsVisible);
+        this.ctx.setCheckbox("popup-embed-attachments", stylePackage.embedAttachments);
     }
 
     validatePdf() {
@@ -470,7 +473,7 @@ export default class ExportPopup {
             return;
         }
 
-        if (this.ctx.getDocumentType() === ExportParams.DocumentType.TEST_RUN && exportParams.attachmentsFilter !== null) {
+        if (this.ctx.getDocumentType() === ExportParams.DocumentType.TEST_RUN && exportParams.attachmentsFilter !== null && !exportParams.embedAttachments) {
             const testRunId = new URLSearchParams(this.ctx.getUrlQueryParameters()).get("id")
             this.ctx.downloadTestRunAttachments(exportParams.projectId, testRunId, exportParams.revision, exportParams.attachmentsFilter, exportParams.testcaseFieldId);
         }
@@ -591,13 +594,14 @@ export default class ExportPopup {
             .setFollowHTMLPresentationalHints(this.ctx.getElementById("popup-presentational-hints").checked)
             .setNumberedListStyles(numberedListStyles)
             .setChapters(selectedChapters)
-            .setMetadataFields(live_doc && selectedMetadataFields)
+            .setMetadataFields(live_doc ? (selectedMetadataFields || []) : [])
             .setLanguage(live_doc && this.ctx.getElementById('popup-localization').checked ? this.ctx.getElementById("popup-language").value : null)
             .setLinkedWorkitemRoles(selectedRoles)
             .setFileName(fileName)
             .setUrlQueryParameters(this.ctx.getUrlQueryParameters())
             .setAttachmentsFilter(test_run && this.ctx.getElementById("popup-download-attachments").checked ? attachmentsFilter ?? '' : null)
             .setTestcaseFieldId(test_run && this.ctx.getElementById("popup-download-attachments").checked && testcaseFieldId ? testcaseFieldId : null)
+            .setEmbedAttachments(test_run && this.ctx.getElementById("popup-download-attachments").checked && this.ctx.getElementById("popup-embed-attachments").checked)
             .build();
     }
 

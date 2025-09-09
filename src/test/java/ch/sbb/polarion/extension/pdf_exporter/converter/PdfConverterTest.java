@@ -111,7 +111,7 @@ class PdfConverterTest {
         when(placeholderProcessor.replacePlaceholders(eq(documentData), eq(exportParams), anyList())).thenReturn(List.of("hl", "hc", "hr", "fl", "fc", "fr"));
         when(velocityEvaluator.evaluateVelocityExpressions(eq(documentData), anyString())).thenAnswer(a -> a.getArguments()[1]);
         when(pdfTemplateProcessor.processUsing(eq(exportParams), eq("testDocument"), eq("css content"), anyString(), anyString())).thenReturn("test html content");
-        when(weasyPrintServiceConnector.convertToPdf(eq("test html content"), any(WeasyPrintOptions.class))).thenReturn("test document content".getBytes());
+        when(weasyPrintServiceConnector.convertToPdf(eq("test html content"), any(WeasyPrintOptions.class), any())).thenReturn("test document content".getBytes());
         when(htmlProcessor.internalizeLinks(anyString())).thenAnswer(a -> a.getArgument(0));
         when(htmlProcessor.replaceResourcesAsBase64Encoded(anyString())).thenAnswer(a -> a.getArgument(0));
 
@@ -291,7 +291,7 @@ class PdfConverterTest {
         if (useCoverPageProcessor) {
             when(coverPageProcessor.generatePdfWithTitle(eq(documentData), eq(exportParams), eq("test html content"), any(WeasyPrintOptions.class), eq(pdfGenerationLog))).thenReturn("pdf result".getBytes());
         } else {
-            when(weasyPrintServiceConnector.convertToPdf(eq("test html content"), any(WeasyPrintOptions.class))).thenReturn("pdf result".getBytes());
+            when(weasyPrintServiceConnector.convertToPdf(eq("test html content"), any(WeasyPrintOptions.class), any())).thenReturn("pdf result".getBytes());
         }
 
         // Act
@@ -303,7 +303,7 @@ class PdfConverterTest {
         if (useCoverPageProcessor) {
             verify(coverPageProcessor).generatePdfWithTitle(eq(documentData), eq(exportParams), eq("test html content"), any(WeasyPrintOptions.class), eq(pdfGenerationLog));
         } else {
-            verify(weasyPrintServiceConnector).convertToPdf(eq("test html content"), any(WeasyPrintOptions.class));
+            verify(weasyPrintServiceConnector).convertToPdf(eq("test html content"), any(WeasyPrintOptions.class), any());
         }
     }
 
@@ -355,7 +355,7 @@ class PdfConverterTest {
         ArgumentCaptor<String> metaCaptor = ArgumentCaptor.forClass(String.class);
         when(pdfTemplateProcessor.processUsing(eq(exportParams), eq("testDocument"), eq("css content"), anyString(), metaCaptor.capture()))
                 .thenReturn("test html content");
-        when(weasyPrintServiceConnector.convertToPdf(eq("test html content"), any(WeasyPrintOptions.class))).thenReturn("pdf".getBytes());
+        when(weasyPrintServiceConnector.convertToPdf(eq("test html content"), any(WeasyPrintOptions.class), any())).thenReturn("pdf".getBytes());
 
         PdfConverter pdfConverter = new PdfConverter(pdfExporterPolarionService, headerFooterSettings, cssSettings, placeholderProcessor, velocityEvaluator, coverPageProcessor, weasyPrintServiceConnector, htmlProcessor, pdfTemplateProcessor);
 
@@ -403,7 +403,7 @@ class PdfConverterTest {
         ArgumentCaptor<String> metaCaptor = ArgumentCaptor.forClass(String.class);
         when(pdfTemplateProcessor.processUsing(any(ExportParams.class), anyString(), anyString(), anyString(), metaCaptor.capture()))
                 .thenReturn("test html content");
-        when(weasyPrintServiceConnector.convertToPdf(eq("test html content"), any(WeasyPrintOptions.class))).thenReturn("pdf".getBytes());
+        when(weasyPrintServiceConnector.convertToPdf(eq("test html content"), any(WeasyPrintOptions.class), any())).thenReturn("pdf".getBytes());
 
         PdfConverter pdfConverter = new PdfConverter(pdfExporterPolarionService, headerFooterSettings, cssSettings, placeholderProcessor, velocityEvaluator, coverPageProcessor, weasyPrintServiceConnector, htmlProcessor, pdfTemplateProcessor);
 

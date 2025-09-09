@@ -14,8 +14,17 @@ import com.polarion.alm.shared.api.utils.collections.StrictMapImpl;
 import com.polarion.alm.shared.api.utils.html.RichTextRenderTarget;
 import com.polarion.alm.shared.rpe.RpeModelAspect;
 import com.polarion.alm.shared.rpe.RpeRenderer;
+import com.polarion.alm.tracker.model.IAttachmentBase;
 import com.polarion.alm.tracker.model.ITestRun;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
+import java.util.List;
 
 public class TestRunAdapter extends CommonUniqueObjectAdapter {
     private final @NotNull ITestRun testRun;
@@ -60,4 +69,28 @@ public class TestRunAdapter extends CommonUniqueObjectAdapter {
         });
     }
 
+    @Override
+    public @Nullable List<Path> getAttachmentFiles(@NotNull ExportParams exportParams) throws IOException {
+        if (exportParams.isEmbedAttachments()) {
+            List<Path> attachmentFiles = new ArrayList<>();
+            for (IAttachmentBase attachment : testRun.getAttachments()) {
+                attachmentFiles.add(createAttachmentTempFile(attachment));
+            }
+            return attachmentFiles;
+        } else {
+            return null;
+        }
+    }
+
+    @SuppressWarnings({"java:S5443"}) // Files created in a temp folder of a server are unlikely be accessible by non-authorised users
+    private Path createAttachmentTempFile(IAttachmentBase attachment) throws IOException {
+        String fileName = attachment.getFileName();
+        int dotIndex = fileName.lastIndexOf('.');
+        String baseName = (dotIndex != -1) ? fileName.substring(0, dotIndex) : fileName;
+        String extension = (dotIndex != -1) ? fileName.substring(dotIndex) : "";
+        Path tempFile = Files.createTempFile(baseName, extension);
+        Files.copy(attachment.getDataStream(), tempFile, StandardCopyOption.REPLACE_EXISTING);
+        tempFile.toFile().deleteOnExit();
+        return tempFile;
+    }
 }
