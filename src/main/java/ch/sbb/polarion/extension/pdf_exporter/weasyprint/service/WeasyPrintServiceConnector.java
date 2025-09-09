@@ -88,7 +88,7 @@ public class WeasyPrintServiceConnector implements WeasyPrintConverter {
     private byte[] sendMultiPartRequest(@NotNull WebTarget webTarget, @NotNull String htmlPage, @NotNull List<Path> attachmentFiles) {
         webTarget.register(MultiPartFeature.class);
         try (FormDataMultiPart multipart = new FormDataMultiPart()) {
-            multipart.bodyPart(new FormDataBodyPart("html", htmlPage.getBytes(StandardCharsets.UTF_8), MediaType.APPLICATION_OCTET_STREAM_TYPE));
+            multipart.bodyPart(new FormDataBodyPart("html", htmlPage.getBytes(StandardCharsets.UTF_8), MediaType.TEXT_HTML_TYPE));
             attachmentFiles.forEach(filePath -> {
                 FileDataBodyPart filePart = new FileDataBodyPart("files", filePath.toFile());
                 multipart.bodyPart(filePart);
