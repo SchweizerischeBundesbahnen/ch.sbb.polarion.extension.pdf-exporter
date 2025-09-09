@@ -314,7 +314,7 @@ export default class ExportPanel {
         const baselineRevision = this.ctx.getBaselineRevision();
         const revision = this.ctx.getRevision();
 
-        let request = this.prepareRequest(projectId, locationPath, baselineRevision, revision);
+        const request = this.prepareRequest(projectId, locationPath, baselineRevision, revision);
         if (request === undefined) {
             return;
         }
