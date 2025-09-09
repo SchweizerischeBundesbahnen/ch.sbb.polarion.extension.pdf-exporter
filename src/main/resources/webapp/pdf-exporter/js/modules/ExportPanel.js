@@ -185,7 +185,7 @@ export default class ExportPanel {
             .setFollowHTMLPresentationalHints(this.ctx.getElementById("presentational-hints").checked)
             .setNumberedListStyles(numberedListStyles)
             .setChapters(selectedChapters)
-            .setMetadataFields(selectedMetadataFields)
+            .setMetadataFields(this.ctx.getElementById('metadata-fields').checked ? selectedMetadataFields : null)
             .setLanguage(this.ctx.getElementById('localization').checked ? this.ctx.getElementById("language").value : null)
             .setLinkedWorkitemRoles(selectedRoles)
             .setFileName(fileName)

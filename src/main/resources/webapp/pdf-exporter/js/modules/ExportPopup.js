@@ -591,7 +591,7 @@ export default class ExportPopup {
             .setFollowHTMLPresentationalHints(this.ctx.getElementById("popup-presentational-hints").checked)
             .setNumberedListStyles(numberedListStyles)
             .setChapters(selectedChapters)
-            .setMetadataFields(live_doc && selectedMetadataFields)
+            .setMetadataFields(live_doc && this.ctx.getElementById('popup-metadata-fields').checked ? selectedMetadataFields : null)
             .setLanguage(live_doc && this.ctx.getElementById('popup-localization').checked ? this.ctx.getElementById("popup-language").value : null)
             .setLinkedWorkitemRoles(selectedRoles)
             .setFileName(fileName)
