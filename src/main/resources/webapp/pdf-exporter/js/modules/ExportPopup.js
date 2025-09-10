@@ -602,6 +602,7 @@ export default class ExportPopup {
             .setAttachmentsFilter(test_run && this.ctx.getElementById("popup-download-attachments").checked ? attachmentsFilter ?? '' : null)
             .setTestcaseFieldId(test_run && this.ctx.getElementById("popup-download-attachments").checked && testcaseFieldId ? testcaseFieldId : null)
             .setEmbedAttachments(test_run && this.ctx.getElementById("popup-download-attachments").checked && this.ctx.getElementById("popup-embed-attachments").checked)
+            .setScaleFactor(this.ctx.getElementById("popup-scale-factor-selector").value)
             .build();
     }
 

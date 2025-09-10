@@ -7,9 +7,10 @@ import lombok.Builder;
 public record WeasyPrintOptions(
         boolean followHTMLPresentationalHints,
         PdfVariant pdfVariant,
-        boolean customMetadata
+        boolean customMetadata,
+        double scaleFactor
 ) {
     public WeasyPrintOptions() {
-        this(false, PdfVariant.PDF_A_2B, false);
+        this(false, PdfVariant.PDF_A_2B, false, 96);
     }
 }

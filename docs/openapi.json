@@ -1902,6 +1902,11 @@
             "description": "The specific revision of the document",
             "type": "string"
           },
+          "scaleFactor": {
+            "description": "Quality of PNG images converted from SVG, by default 96 dpi",
+            "format": "double",
+            "type": "number"
+          },
           "testcaseFieldId": {
             "description": "A boolean testcase field ID. Attachments will be downloaded only from the testcases which have True value in the provided field. Leaving field empty will process all testcases.",
             "type": "string"

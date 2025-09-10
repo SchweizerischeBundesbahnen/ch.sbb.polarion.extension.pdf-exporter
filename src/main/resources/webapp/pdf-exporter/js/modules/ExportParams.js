@@ -75,6 +75,7 @@ export default class ExportParams {
         this.testcaseFieldId = builder.testcaseFieldId;
         this.embedAttachments = builder.embedAttachments;
         this.internalContent = builder.internalContent;
+        this.scaleFactor = builder.scaleFactor;
     }
 
     toJSON() {
@@ -129,6 +130,7 @@ export default class ExportParams {
                 this.testcaseFieldId = undefined;
                 this.embedAttachments = undefined;
                 this.internalContent = undefined;
+                this.scaleFactor = undefined;
             }
 
             setProjectId(projectId) {
@@ -283,6 +285,11 @@ export default class ExportParams {
 
             setEmbedAttachments(embedAttachments) {
                 this.embedAttachments = embedAttachments;
+                return this;
+            }
+
+            setScaleFactor(scaleFactor) {
+                this.scaleFactor = scaleFactor;
                 return this;
             }
 

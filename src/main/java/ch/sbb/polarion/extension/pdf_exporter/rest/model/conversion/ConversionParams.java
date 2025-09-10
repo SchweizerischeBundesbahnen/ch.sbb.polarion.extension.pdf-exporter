@@ -35,4 +35,7 @@ public class ConversionParams {
 
     @Schema(description = "Target file name of exported document")
     protected String fileName;
+
+    @Schema(description = "Quality of PNG images converted from SVG, by default 96 dpi")
+    protected double scaleFactor = 96;
 }
