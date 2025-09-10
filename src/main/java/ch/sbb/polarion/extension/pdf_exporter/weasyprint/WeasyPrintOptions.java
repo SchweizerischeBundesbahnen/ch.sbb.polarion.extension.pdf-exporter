@@ -8,9 +8,9 @@ public record WeasyPrintOptions(
         boolean followHTMLPresentationalHints,
         PdfVariant pdfVariant,
         boolean customMetadata,
-        double scaleFactor
+        Double scaleFactor
 ) {
     public WeasyPrintOptions() {
-        this(false, PdfVariant.PDF_A_2B, false, 96);
+        this(false, PdfVariant.PDF_A_2B, false, null);
     }
 }
