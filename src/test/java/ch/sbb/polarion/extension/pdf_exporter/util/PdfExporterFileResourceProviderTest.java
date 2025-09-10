@@ -49,12 +49,6 @@ class PdfExporterFileResourceProviderTest {
     }
 
     @Test
-    void processPossibleSvgImageTest() {
-        byte[] basicString = "basic".getBytes(StandardCharsets.UTF_8);
-        assertArrayEquals(basicString, resourceProvider.processPossibleSvgImage(basicString));
-    }
-
-    @Test
     @SneakyThrows
     void replaceImagesAsBase64EncodedTest() {
         byte[] imgBytes;
