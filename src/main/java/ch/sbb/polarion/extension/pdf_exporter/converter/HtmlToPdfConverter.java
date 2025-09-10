@@ -50,6 +50,7 @@ public class HtmlToPdfConverter {
         WeasyPrintOptions weasyPrintOptions = WeasyPrintOptions.builder()
                 .followHTMLPresentationalHints(conversionParams.isFollowHTMLPresentationalHints())
                 .pdfVariant(conversionParams.getPdfVariant())
+                .scaleFactor(conversionParams.getScaleFactor())
                 .build();
         return weasyPrintServiceConnector.convertToPdf(html, weasyPrintOptions);
     }

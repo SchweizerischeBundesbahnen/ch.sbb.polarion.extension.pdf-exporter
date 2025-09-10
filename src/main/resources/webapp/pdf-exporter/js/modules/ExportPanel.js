@@ -190,6 +190,7 @@ export default class ExportPanel {
             .setMetadataFields(live_doc && this.ctx.getElementById('metadata-fields').checked ? selectedMetadataFields : null)
             .setLanguage(live_doc && this.ctx.getElementById('localization').checked ? this.ctx.getElementById("language").value : null)
             .setLinkedWorkitemRoles(selectedRoles)
+            .setScaleFactor(this.ctx.getElementById("scale-factor-selector").value)
             .setFileName(fileName)
             .setUrlQueryParameters(Object.fromEntries([...urlSearchParams]))
             .build()

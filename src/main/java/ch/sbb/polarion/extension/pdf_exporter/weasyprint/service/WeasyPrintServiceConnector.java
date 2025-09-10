@@ -68,7 +68,8 @@ public class WeasyPrintServiceConnector implements WeasyPrintConverter {
             WebTarget webTarget = client.target(getWeasyPrintServiceBaseUrl() + getConvertingUrl(documentData))
                     .queryParam("presentational_hints", weasyPrintOptions.followHTMLPresentationalHints())
                     .queryParam("pdf_variant", weasyPrintOptions.pdfVariant().toWeasyPrintParameter())
-                    .queryParam("custom_metadata", weasyPrintOptions.customMetadata());
+                    .queryParam("custom_metadata", weasyPrintOptions.customMetadata())
+                    .queryParam("scale_factor", weasyPrintOptions.scaleFactor().getScale());
 
             if (documentData != null && documentData.getAttachmentFiles() != null) {
                 return sendMultiPartRequest(webTarget, htmlPage, documentData.getAttachmentFiles());
