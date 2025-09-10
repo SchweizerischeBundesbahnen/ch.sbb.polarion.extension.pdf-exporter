@@ -242,7 +242,7 @@ public class PdfConverter {
                 .followHTMLPresentationalHints(exportParams.isFollowHTMLPresentationalHints())
                 .pdfVariant(exportParams.getPdfVariant())
                 .customMetadata(metaTagsPresent(htmlPage))
-                .scaleFactor(exportParams.getScaleFactor().getScale())
+                .scaleFactor(exportParams.getScaleFactor())
                 .build();
 
         if (metaInfoCallback == null && exportParams.getInternalContent() == null && exportParams.getCoverPage() != null) {
