@@ -24,7 +24,6 @@ import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
@@ -64,9 +63,6 @@ public class PdfExporterFileResourceProvider implements FileResourceProvider {
             if (MIME_TYPE_SVG.equals(mimeType)) {
                 // Additional check to verify that the content is indeed an SVG
                 mimeType = MediaUtils.getMimeTypeUsingTikaByContent(resource, resourceBytes);
-                if (MIME_TYPE_SVG.equals(mimeType)) {
-                    resourceBytes = processPossibleSvgImage(resourceBytes);
-                }
             }
             return String.format("data:%s;base64,%s", mimeType, Base64.getEncoder().encodeToString(resourceBytes));
         }
@@ -154,18 +150,6 @@ public class PdfExporterFileResourceProvider implements FileResourceProvider {
             return "";
         }
         return null;
-    }
-
-    @VisibleForTesting
-    @SuppressWarnings("squid:S1166") // no need to log or rethrow exception by design
-    public byte[] processPossibleSvgImage(byte[] possibleSvgImageBytes) {
-        try {
-            String svgContent = new String(possibleSvgImageBytes, StandardCharsets.UTF_8);
-            return MediaUtils.removeSvgUnsupportedFeatureHint(svgContent).getBytes(StandardCharsets.UTF_8);
-        } catch (Exception e) {
-            // not a valid string, just nvm
-        }
-        return possibleSvgImageBytes;
     }
 
     /**
