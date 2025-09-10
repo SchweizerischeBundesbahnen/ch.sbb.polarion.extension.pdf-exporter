@@ -224,10 +224,6 @@ public class MediaUtils {
         return RegexMatcher.get(URL_REGEX).useJavaUtil().replace(intermediateResult, dataReplacement);
     }
 
-    public String removeSvgUnsupportedFeatureHint(String html) {
-        return html.replaceAll("(?s)<switch>[^<]*?<g requiredFeatures=\"[^\"]+?\"/>.*?</switch>", "");
-    }
-
     /**
      * Attempt to guess media type using resource name or its content.
      * <a href="https://www.iana.org/assignments/media-types/media-types.xhtml">More about media types.</a>

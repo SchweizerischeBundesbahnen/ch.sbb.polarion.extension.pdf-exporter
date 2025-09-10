@@ -93,7 +93,6 @@ public class HtmlProcessor {
             case BASELINE_COLLECTION -> throw new IllegalArgumentException(UNSUPPORTED_DOCUMENT_TYPE.formatted(exportParams.getDocumentType()));
         };
         html = replaceResourcesAsBase64Encoded(html);
-        html = MediaUtils.removeSvgUnsupportedFeatureHint(html); //note that there is one more replacement attempt before replacing images with base64 representation
         html = properTableHeads(html);
         html = cleanExtraTableContent(html);
         html = switch (exportParams.getDocumentType()) {

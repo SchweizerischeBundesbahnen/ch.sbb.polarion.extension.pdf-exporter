@@ -280,11 +280,11 @@ class HtmlProcessorTest {
         }
         when(fileResourceProvider.getResourceAsBytes(any())).thenReturn(imgBytes);
         when(fileResourceProvider.getResourceAsBase64String(any())).thenCallRealMethod();
-        when(fileResourceProvider.processPossibleSvgImage(any())).thenCallRealMethod();
         String result = processor.replaceResourcesAsBase64Encoded(html);
-        String expected = "<div><img id=\"image1\" src=\"data:image/svg+xml;base64," + Base64.getEncoder().encodeToString("<?xml version=\"1.0\" encoding=\"UTF-8\"?><svg xmlns=\"http://www.w3.org/2000/svg\"></svg>".getBytes(StandardCharsets.UTF_8)) + "\"/> " +
-                "<img id='image2' src='data:image/svg+xml;base64," + Base64.getEncoder().encodeToString("<?xml version=\"1.0\" encoding=\"UTF-8\"?><svg xmlns=\"http://www.w3.org/2000/svg\"></svg>".getBytes(StandardCharsets.UTF_8)) + "'/> " +
-                "<img id='image1' src='data:image/svg+xml;base64," + Base64.getEncoder().encodeToString("<?xml version=\"1.0\" encoding=\"UTF-8\"?><svg xmlns=\"http://www.w3.org/2000/svg\"></svg>".getBytes(StandardCharsets.UTF_8)) + "'/></div>";
+        String base64SvgImage = Base64.getEncoder().encodeToString("<?xml version=\"1.0\" encoding=\"UTF-8\"?><svg xmlns=\"http://www.w3.org/2000/svg\"><switch><g requiredFeatures=\"http://www.w3.org/TR/SVG11/feature#Extensibility\"/></switch></svg>".getBytes(StandardCharsets.UTF_8));
+        String expected = "<div><img id=\"image1\" src=\"data:image/svg+xml;base64," + base64SvgImage + "\"/> " +
+                "<img id='image2' src='data:image/svg+xml;base64," + base64SvgImage + "'/> " +
+                "<img id='image1' src='data:image/svg+xml;base64," + base64SvgImage + "'/></div>";
         assertEquals(expected, result);
     }
 
