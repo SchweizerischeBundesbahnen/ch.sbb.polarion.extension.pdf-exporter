@@ -36,6 +36,13 @@ export default class ExportParams {
         PDF_UA_1: 'pdf/ua-1',
     };
 
+    static ImageDensity = {
+        DPI_96: 'DPI_96',
+        DPI_192: 'DPI_192',
+        DPI_300: 'DPI_300',
+        DPI_600: 'DPI_600',
+    };
+
     static ExportType = {
         SINGLE: 'SINGLE',
         BULK: 'BULK',
@@ -75,7 +82,7 @@ export default class ExportParams {
         this.testcaseFieldId = builder.testcaseFieldId;
         this.embedAttachments = builder.embedAttachments;
         this.internalContent = builder.internalContent;
-        this.scaleFactor = builder.scaleFactor;
+        this.imageDensity = builder.imageDensity;
     }
 
     toJSON() {
@@ -130,7 +137,7 @@ export default class ExportParams {
                 this.testcaseFieldId = undefined;
                 this.embedAttachments = undefined;
                 this.internalContent = undefined;
-                this.scaleFactor = undefined;
+                this.imageDensity = undefined;
             }
 
             setProjectId(projectId) {
@@ -288,8 +295,8 @@ export default class ExportParams {
                 return this;
             }
 
-            setScaleFactor(scaleFactor) {
-                this.scaleFactor = scaleFactor;
+            setImageDensity(imageDensity) {
+                this.imageDensity = imageDensity;
                 return this;
             }
 

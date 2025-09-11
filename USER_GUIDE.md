@@ -10,6 +10,7 @@
     * [Paper size](#paper-size)
     * [Orientation](#orientation)
     * [PDF variant](#pdf-variant)
+    * [Image density](#image-density)
     * [Fit images and tables to page width](#fit-images-and-tables-to-page-width)
     * [Follow HTML presentational hints](#follow-html-presentational-hints)
     * [Comments rendering](#comments-rendering)
@@ -22,8 +23,10 @@
     * [Custom styles of numbered lists](#custom-styles-of-numbered-lists)
     * [Localize enums](#localize-enums)
     * [Specific Workitem roles](#specific-workitem-roles)
+    * [Metadata fields](#metadata-fields)
     * [File name](#file-name)
     * [Download attachments](#download-attachments)
+    * [Embed attachments into resulted PDF](#embed-attachments-into-resulted-pdf)
 * [Bulk PDF Export](#bulk-pdf-export)
 
 ## Export panel layout
@@ -105,6 +108,19 @@ This configuration property allows selecting a PDF variant to be used for PDF ge
 | **pdf/ua-1** | Accessible PDF for assistive technologies                        |
 
 The default value is `pdf/a-2b`.
+
+### Image density
+
+This configuration property allows selecting the density (DPI) for PNG images converted from SVG. The following options are supported:
+
+| Density (DPI) | Scale Factor | Description                                |
+|---------------|--------------|--------------------------------------------|
+| 96            | 1.0          | Standard screen density (default)          |
+| 192           | 2.0          | High density, suitable for retina displays |
+| 300           | 3.125        | Print quality, good for most printers      |
+| 600           | 6.25         | High print quality, for professional output|
+
+The default value is 96.
 
 ### Fit images and tables to page width
 This option which is on by default tells PDF Exporter to fit images and tables into resulted page width even if their width in the Polarion document exceeds it. Elements exceeding Polarion document width:
@@ -202,6 +218,11 @@ If you select this checkbox, an input field will appear where you can specify wh
 
 ![Specific higher level chapters](docs/user_guide/img/specific_chapters.png)
 
+### Metadata fields
+The fields specified in this setting will be automatically embedded into the resulting PDF as metadata.
+
+![Metadata fields](docs/user_guide/img/metadata_fields.png)
+
 ### Custom styles of numbered lists
 If you select this checkbox, an input field will appear where you can override the default styles of numbered lists inlined in text. Shortcuts are used for simplicity:
 
@@ -264,6 +285,11 @@ Downloads attachments based on the custom boolean field. A test case value overr
 By selecting this checkbox, you can:
   * set a mask for attachment file names that will be extracted from the current Test Run and downloaded along with the regular PDF file
   * enter a boolean testcase field ID - attachments will be downloaded only from the testcases which have True value in the provided field
+
+### Embed attachments into resulted PDF
+By selecting this checkbox, all attachments of the current document will be embedded into the resulted PDF file as embedded files. You can also specify a mask for attachment file names that will be embedded into the PDF file.
+
+![Embed attachments](docs/user_guide/img/embed_attachments.png)
 
 ## Bulk PDF Export
 There is a possibility to export multiple documents in one run. This can be achieved with the help of a special widget:

@@ -175,6 +175,20 @@ const PdfVariants = {
     }
 }
 
+const ImageDensity = {
+    imageDensitySelect: new CustomSelect({
+        selectContainer: ctx.getElementById("image-density-select"),
+        label: ctx.getElementById("image-density-label")
+    }),
+
+    init: function () {
+        this.imageDensitySelect.addOption('DPI_96', '96 dpi');
+        this.imageDensitySelect.addOption('DPI_192', '192 dpi');
+        this.imageDensitySelect.addOption('DPI_300', '300 dpi');
+        this.imageDensitySelect.addOption('DPI_600', '600 dpi');
+    }
+}
+
 const RenderComments = {
     renderCommentsSelect: new CustomSelect({
         selectContainer: ctx.getElementById("render-comments-select"),
@@ -219,6 +233,7 @@ function saveStylePackage() {
             'paperSize': PaperSizes.paperSizeSelect.getSelectedValue(),
             'orientation': Orientations.orientationSelect.getSelectedValue(),
             'pdfVariant': PdfVariants.pdfVariantSelect.getSelectedValue(),
+            'imageDensity': ImageDensity.imageDensitySelect.getSelectedValue(),
             'fitToPage': ctx.getCheckboxValueById('fit-to-page'),
             'renderComments': ctx.getCheckboxValueById('render-comments') ? RenderComments.renderCommentsSelect.getSelectedValue() : null,
             'watermark': ctx.getCheckboxValueById('watermark'),
@@ -286,6 +301,7 @@ function setStylePackage(content) {
     PaperSizes.paperSizeSelect.selectValue(stylePackage.paperSize || 'A4');
     Orientations.orientationSelect.selectValue(stylePackage.orientation || 'PORTRAIT');
     PdfVariants.pdfVariantSelect.selectValue(stylePackage.pdfVariant || 'PDF_A_2B');
+    ImageDensity.imageDensitySelect.selectValue(stylePackage.imageDensity || 'DPI_96');
 
     ctx.setCheckboxValueById('fit-to-page', stylePackage.fitToPage);
 
@@ -341,6 +357,7 @@ PaperSizes.init();
 Orientations.init();
 PdfVariants.init();
 RenderComments.init();
+ImageDensity.init();
 Languages.init();
 Promise.all([
     LinkRoles.load(),

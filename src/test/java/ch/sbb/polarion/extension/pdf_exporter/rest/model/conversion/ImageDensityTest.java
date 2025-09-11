@@ -6,34 +6,34 @@ import javax.ws.rs.WebApplicationException;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class ScaleFactorTest {
+class ImageDensityTest {
     @Test
     void testFromStringValidValues() {
-        for (ScaleFactor factor : ScaleFactor.values()) {
+        for (ImageDensity factor : ImageDensity.values()) {
             String name = factor.name().toLowerCase();
-            ScaleFactor result = ScaleFactor.fromString(name);
+            ImageDensity result = ImageDensity.fromString(name);
             assertEquals(factor, result, "Should parse " + name + " correctly");
         }
     }
 
     @Test
     void testFromStringNull() {
-        assertNull(ScaleFactor.fromString(null), "Should return null for null input");
+        assertNull(ImageDensity.fromString(null), "Should return null for null input");
     }
 
     @Test
     void testFromStringInvalidValue() {
         String invalid = "dpi_999";
-        WebApplicationException ex = assertThrows(WebApplicationException.class, () -> ScaleFactor.fromString(invalid));
+        WebApplicationException ex = assertThrows(WebApplicationException.class, () -> ImageDensity.fromString(invalid));
         assertEquals(400, ex.getResponse().getStatus());
         assertTrue(ex.getResponse().getEntity().toString().contains(invalid));
     }
 
     @Test
     void testScaleValues() {
-        assertEquals(1.0, ScaleFactor.DPI_96.getScale());
-        assertEquals(2.0, ScaleFactor.DPI_192.getScale());
-        assertEquals(3.125, ScaleFactor.DPI_300.getScale());
-        assertEquals(6.25, ScaleFactor.DPI_600.getScale());
+        assertEquals(1.0, ImageDensity.DPI_96.getScale());
+        assertEquals(2.0, ImageDensity.DPI_192.getScale());
+        assertEquals(3.125, ImageDensity.DPI_300.getScale());
+        assertEquals(6.25, ImageDensity.DPI_600.getScale());
     }
 }
