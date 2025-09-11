@@ -9,7 +9,7 @@ import javax.ws.rs.core.Response;
 
 @Schema(description = "Quality of PNG images converted from SVG")
 @Getter
-public enum ScaleFactor {
+public enum ImageDensity {
     DPI_96(1.0),
     DPI_192(2.0),
     DPI_300(3.125),
@@ -17,12 +17,12 @@ public enum ScaleFactor {
 
     private final double scale;
 
-    ScaleFactor(double scale) {
+    ImageDensity(double scale) {
         this.scale = scale;
     }
 
     @JsonCreator
-    public static ScaleFactor fromString(String name) {
+    public static ImageDensity fromString(String name) {
         try {
             return (name != null) ? valueOf(name.toUpperCase()) : null;
         } catch (IllegalArgumentException e) {

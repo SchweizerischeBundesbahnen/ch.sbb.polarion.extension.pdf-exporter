@@ -179,6 +179,10 @@
                     <label for="pdf-variant-select" id='pdf-variant-label'>PDF Variant:</label>
                     <div id="pdf-variant-select"></div>
                 </div>
+                <div class='input-group'>
+                    <label for="image-density-select" id='image-density-label'>Image density:</label>
+                    <div id="image-density-select"></div>
+                </div>
             </div>
         </div>
 

@@ -52,7 +52,6 @@ repos:
     rev: v4.9.1
     hooks:
       - id: commitizen
-        additional_dependencies: [Deprecated>=1.2.0]
   - repo: https://github.com/woodruffw/zizmor-pre-commit
     rev: v1.12.1
     hooks:

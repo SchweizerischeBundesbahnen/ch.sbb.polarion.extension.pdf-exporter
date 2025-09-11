@@ -26,7 +26,6 @@ import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
@@ -69,7 +68,7 @@ public class WeasyPrintServiceConnector implements WeasyPrintConverter {
                     .queryParam("presentational_hints", weasyPrintOptions.followHTMLPresentationalHints())
                     .queryParam("pdf_variant", weasyPrintOptions.pdfVariant().toWeasyPrintParameter())
                     .queryParam("custom_metadata", weasyPrintOptions.customMetadata())
-                    .queryParam("scale_factor", weasyPrintOptions.scaleFactor().getScale());
+                    .queryParam("scale_factor", weasyPrintOptions.imageDensity().getScale());
 
             if (documentData != null && documentData.getAttachmentFiles() != null) {
                 return sendMultiPartRequest(webTarget, htmlPage, documentData.getAttachmentFiles());

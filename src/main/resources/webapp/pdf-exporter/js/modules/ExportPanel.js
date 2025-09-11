@@ -68,6 +68,7 @@ export default class ExportPanel {
         this.ctx.setValue("headers-color", stylePackage.headersColor);
         this.ctx.setValue("orientation-selector", stylePackage.orientation || 'PORTRAIT');
         this.ctx.setValue("pdf-variant-selector", stylePackage.pdfVariant || 'PDF_A_2B');
+        this.ctx.setValue("image-density-selector", stylePackage.imageDensity || 'DPI_96');
         this.ctx.setCheckbox("fit-to-page", stylePackage.fitToPage);
 
         this.ctx.setCheckbox("render-comments", !!stylePackage.renderComments);
@@ -190,7 +191,7 @@ export default class ExportPanel {
             .setMetadataFields(live_doc && this.ctx.getElementById('metadata-fields').checked ? selectedMetadataFields : null)
             .setLanguage(live_doc && this.ctx.getElementById('localization').checked ? this.ctx.getElementById("language").value : null)
             .setLinkedWorkitemRoles(selectedRoles)
-            .setScaleFactor(this.ctx.getElementById("scale-factor-selector").value)
+            .setImageDensity(this.ctx.getElementById("image-density-selector").value)
             .setFileName(fileName)
             .setUrlQueryParameters(Object.fromEntries([...urlSearchParams]))
             .build()

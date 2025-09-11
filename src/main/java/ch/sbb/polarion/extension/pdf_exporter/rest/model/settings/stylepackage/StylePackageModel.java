@@ -56,6 +56,7 @@ public class StylePackageModel extends SettingsModel {
     private static final String EXPOSE_PAGE_WIDTH_VALIDATION_ENTRY_NAME = "EXPOSE PAGE WIDTH VALIDATION";
     private static final String ATTACHMENTS_FILTER = "ATTACHMENTS_FILTER";
     private static final String EMBED_ATTACHMENTS = "EMBED ATTACHMENTS";
+    private static final String IMAGE_DENSITY_ENTRY_NAME = "IMAGE DENSITY";
 
     private String matchingQuery;
     private Float weight;
@@ -86,6 +87,7 @@ public class StylePackageModel extends SettingsModel {
     private String attachmentsFilter;
     private String testcaseFieldId;
     private boolean embedAttachments;
+    private String imageDensity;
 
     @Override
     protected String serializeModelData() {
@@ -117,7 +119,8 @@ public class StylePackageModel extends SettingsModel {
                 serializeEntry(EXPOSE_PAGE_WIDTH_VALIDATION_ENTRY_NAME, exposePageWidthValidation) +
                 serializeEntry(ATTACHMENTS_FILTER, attachmentsFilter) +
                 serializeEntry(TESTCASE_FIELD_ID_ENTRY_NAME, testcaseFieldId) +
-                serializeEntry(EMBED_ATTACHMENTS, embedAttachments);
+                serializeEntry(EMBED_ATTACHMENTS, embedAttachments) +
+                serializeEntry(IMAGE_DENSITY_ENTRY_NAME, imageDensity);
     }
 
     @Override
@@ -152,6 +155,7 @@ public class StylePackageModel extends SettingsModel {
         attachmentsFilter = deserializeEntry(ATTACHMENTS_FILTER, serializedString);
         testcaseFieldId = deserializeEntry(TESTCASE_FIELD_ID_ENTRY_NAME, serializedString);
         embedAttachments = Boolean.parseBoolean(deserializeEntry(EMBED_ATTACHMENTS, serializedString));
+        imageDensity = deserializeEntry(IMAGE_DENSITY_ENTRY_NAME, serializedString);
     }
 
     /**

@@ -1798,6 +1798,16 @@
             "description": "Color to be used for headers in the document. By default dark blue color (Polarion's default)",
             "type": "string"
           },
+          "imageDensity": {
+            "description": "Quality of PNG images converted from SVG",
+            "enum": [
+              "DPI_96",
+              "DPI_192",
+              "DPI_300",
+              "DPI_600"
+            ],
+            "type": "string"
+          },
           "internalContent": {
             "description": "Internal content",
             "type": "string"
@@ -1900,16 +1910,6 @@
           },
           "revision": {
             "description": "The specific revision of the document",
-            "type": "string"
-          },
-          "scaleFactor": {
-            "description": "Quality of PNG images converted from SVG",
-            "enum": [
-              "DPI_96",
-              "DPI_192",
-              "DPI_300",
-              "DPI_600"
-            ],
             "type": "string"
           },
           "testcaseFieldId": {

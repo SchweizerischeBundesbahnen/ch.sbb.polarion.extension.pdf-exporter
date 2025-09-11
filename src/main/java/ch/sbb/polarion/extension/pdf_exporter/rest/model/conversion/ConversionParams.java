@@ -38,5 +38,5 @@ public class ConversionParams {
 
     @Schema(description = "Quality of PNG images converted from SVG, by default 96 dpi")
     @Builder.Default
-    protected ScaleFactor scaleFactor = ScaleFactor.DPI_96;
+    protected ImageDensity imageDensity = ImageDensity.DPI_96;
 }
