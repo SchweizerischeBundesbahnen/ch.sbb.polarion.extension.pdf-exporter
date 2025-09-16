@@ -1,5 +1,19 @@
 # Changelog
 
+## [9.4.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v9.3.1...v9.4.0) (2025-09-16)
+
+
+### Features
+
+* added ability to set scale factor ([#514](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/514)) ([5a23545](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/5a235454924ffbc6454d1e471519b99994d19283)), closes [#509](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/509)
+* Include attachments into PDF ([#507](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/507)) ([b33ea4b](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/b33ea4bf9e711b4eae20cb664f47082c82c51135)), closes [#497](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/497)
+* include meta data in generated PDF ([#508](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/508)) ([75a7e3d](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/75a7e3daf07fa1f3f5855e712aa3a357131d7352)), closes [#498](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/498)
+
+
+### Bug Fixes
+
+* fixed page width validation ([#513](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/513)) ([697ce06](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/697ce06cfa4564e2d8045019e9e47d4df6f55026)), closes [#512](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/512)
+
 ## [9.3.1](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v9.3.0...v9.3.1) (2025-09-04)
 
 
