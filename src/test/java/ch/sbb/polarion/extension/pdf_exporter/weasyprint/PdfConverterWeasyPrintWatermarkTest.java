@@ -136,25 +136,10 @@ class PdfConverterWeasyPrintWatermarkTest extends BaseWeasyPrintTest {
         CssSettings cssSettings = mock(CssSettings.class);
         when(cssSettings.defaultValues()).thenCallRealMethod();
 
-        // Include watermark CSS that will be used when watermark is enabled
-        // The watermark CSS is already in the default CSS, but we need to ensure it's present
-        String watermarkCss = """
-                body.watermark::before {
-                    content: "Confidential";
-                    font-size: 8em;
-                    text-transform: uppercase;
-                    color: rgba(255, 5, 5, 0.17);
-                    position: fixed;
-                    top: 50%;
-                    left: 50%;
-                    transform: translate(-50%, -50%) rotate(-45deg);
-                    z-index: 100;
-                }
-                """;
-
+        // Use default CSS which already includes watermark styles in @media print block
         when(cssSettings.load(any(), any())).thenReturn(CssModel.builder()
                 .disableDefaultCss(false)
-                .css(basicCss + watermarkCss)
+                .css(basicCss)
                 .build());
 
         WeasyPrintServiceConnector weasyPrintServiceConnector = mock(WeasyPrintServiceConnector.class);
