@@ -304,7 +304,13 @@ class PdfConverterWeasyPrintWatermarkTest extends BaseWeasyPrintTest {
         DocumentData<IModule> liveDoc = DocumentData.creator(DocumentType.LIVE_DOC, module)
                 .id(LiveDocId.from("testProjectId", "_default", "testDocumentId"))
                 .title("Document with Cover and Watermark")
-                .content("<h1>Page 1</h1><p>First page content with watermark.</p>" + PAGE_BREAK + "<h1>Page 2</h1><p>Second page content with watermark.</p>")
+                .content("""
+<h1>Page 1</h1>
+<p>First page content with watermark.</p>
+""" + PAGE_BREAK + """
+<h1>Page 2</h1>
+<p>Second page content with watermark.</p>
+""")
                 .lastRevision("42")
                 .revisionPlaceholder("42")
                 .attachmentFiles(List.of(tempFile))
