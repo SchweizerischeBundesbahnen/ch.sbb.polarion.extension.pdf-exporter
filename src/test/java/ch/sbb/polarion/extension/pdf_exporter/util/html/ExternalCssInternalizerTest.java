@@ -35,7 +35,7 @@ class ExternalCssInternalizerTest {
         Optional<String> result = cssLinkInliner.inline(Map.of("rel", "stylesheet", "href", "my-href-location"));
 
         assertThat(result).isNotEmpty();
-        assertThat(result.get()).contains("<style>test-stylesheet</style>");
+        assertThat(result.get()).isEqualTo("<style>test-stylesheet</style>");
     }
 
     @Test
