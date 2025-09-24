@@ -2,7 +2,7 @@ package ch.sbb.polarion.extension.pdf_exporter.rest.controller;
 
 
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.collections.DocumentCollectionEntry;
-import ch.sbb.polarion.extension.pdf_exporter.service.PdfExporterPolarionService;
+import ch.sbb.polarion.extension.pdf_exporter.util.DocumentCollectionHelper;
 import com.polarion.alm.shared.api.transaction.TransactionalExecutor;
 import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
@@ -24,10 +24,10 @@ import java.util.List;
 @Path("/internal")
 @Tag(name = "Collections")
 public class CollectionInternalController {
-    private final PdfExporterPolarionService pdfExporterPolarionService;
+    private final DocumentCollectionHelper documentCollectionHelper;
 
     public CollectionInternalController() {
-        pdfExporterPolarionService = new PdfExporterPolarionService();
+        documentCollectionHelper = new DocumentCollectionHelper();
     }
 
     @GET
@@ -46,6 +46,6 @@ public class CollectionInternalController {
             @Parameter(description = "Collection ID", required = true) @PathParam("collectionId") String collectionId,
             @Parameter(description = "The specific revision of the provided collection") @QueryParam("revision") String revision
     ) {
-        return TransactionalExecutor.executeSafelyInReadOnlyTransaction(transaction -> pdfExporterPolarionService.getDocumentsFromCollection(projectId, collectionId, revision, transaction));
+        return TransactionalExecutor.executeSafelyInReadOnlyTransaction(transaction -> documentCollectionHelper.getDocumentsFromCollection(projectId, collectionId, revision, transaction));
     }
 }

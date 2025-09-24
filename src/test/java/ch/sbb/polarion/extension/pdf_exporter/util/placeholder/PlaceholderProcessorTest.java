@@ -1,7 +1,6 @@
 package ch.sbb.polarion.extension.pdf_exporter.util.placeholder;
 
 import ch.sbb.polarion.extension.pdf_exporter.service.PdfExporterPolarionService;
-import ch.sbb.polarion.extension.pdf_exporter.util.DocumentFileNameHelper;
 import com.polarion.alm.projects.IProjectService;
 import com.polarion.alm.tracker.ITestManagementService;
 import com.polarion.alm.tracker.ITrackerService;
@@ -57,8 +56,7 @@ class PlaceholderProcessorTest {
                 mock(ISecurityService.class),
                 mock(IPlatformService.class),
                 mock(IRepositoryService.class),
-                mock(ITestManagementService.class),
-                mock(DocumentFileNameHelper.class)
+                mock(ITestManagementService.class)
         );
         placeholderProcessor = new PlaceholderProcessor(pdfExporterPolarionService);
     }

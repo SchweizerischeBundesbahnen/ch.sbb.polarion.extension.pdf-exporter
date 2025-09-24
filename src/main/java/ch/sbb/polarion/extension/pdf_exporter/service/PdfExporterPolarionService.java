@@ -7,27 +7,18 @@ import ch.sbb.polarion.extension.generic.settings.SettingId;
 import ch.sbb.polarion.extension.generic.settings.SettingName;
 import ch.sbb.polarion.extension.generic.util.ScopeUtils;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.attachments.TestRunAttachment;
-import ch.sbb.polarion.extension.pdf_exporter.rest.model.collections.DocumentCollectionEntry;
-import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.DocumentType;
-import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.stylepackage.DocIdentifier;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.stylepackage.StylePackageModel;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.stylepackage.StylePackageWeightInfo;
 import ch.sbb.polarion.extension.pdf_exporter.settings.StylePackageSettings;
-import ch.sbb.polarion.extension.pdf_exporter.util.DocumentFileNameHelper;
 import ch.sbb.polarion.extension.pdf_exporter.util.WildcardUtils;
 import com.polarion.alm.projects.IProjectService;
-import com.polarion.alm.shared.api.model.baselinecollection.BaselineCollection;
-import com.polarion.alm.shared.api.model.baselinecollection.BaselineCollectionReference;
-import com.polarion.alm.shared.api.transaction.ReadOnlyTransaction;
 import com.polarion.alm.tracker.ITestManagementService;
 import com.polarion.alm.tracker.ITrackerService;
 import com.polarion.alm.tracker.model.IModule;
 import com.polarion.alm.tracker.model.ITestRun;
 import com.polarion.alm.tracker.model.ITestRunAttachment;
 import com.polarion.alm.tracker.model.ITrackerProject;
-import com.polarion.alm.tracker.model.baselinecollection.IBaselineCollection;
-import com.polarion.alm.tracker.model.baselinecollection.IBaselineCollectionElement;
 import com.polarion.core.util.StringUtils;
 import com.polarion.platform.IPlatformService;
 import com.polarion.platform.persistence.IDataService;
@@ -44,17 +35,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Stream;
 
 public class PdfExporterPolarionService extends PolarionService {
 
     protected final ITestManagementService testManagementService;
-    protected final DocumentFileNameHelper documentFileNameHelper;
 
     public PdfExporterPolarionService() {
         super();
         this.testManagementService = new TestManagementServiceAccessor().getTestingService();
-        this.documentFileNameHelper = new DocumentFileNameHelper();
     }
 
     public PdfExporterPolarionService(
@@ -63,12 +51,10 @@ public class PdfExporterPolarionService extends PolarionService {
             @NotNull ISecurityService securityService,
             @NotNull IPlatformService platformService,
             @NotNull IRepositoryService repositoryService,
-            @NotNull ITestManagementService testManagementService,
-            @NotNull DocumentFileNameHelper documentFileNameHelper
+            @NotNull ITestManagementService testManagementService
     ) {
         super(trackerService, projectService, securityService, platformService, repositoryService);
         this.testManagementService = testManagementService;
-        this.documentFileNameHelper = documentFileNameHelper;
     }
 
     public @Nullable ITrackerProject getProjectFromScope(@Nullable String scope) {
@@ -204,48 +190,4 @@ public class PdfExporterPolarionService extends PolarionService {
         }
         return testRunAttachment;
     }
-
-    public @NotNull List<DocumentCollectionEntry> getDocumentsFromCollection(@NotNull String projectId, @NotNull String collectionId, @Nullable String revision, @NotNull ReadOnlyTransaction transaction) {
-        List<DocumentCollectionEntry> result = new ArrayList<>();
-
-        BaselineCollectionReference baselineCollectionReference = new BaselineCollectionReference(projectId, collectionId);
-        if (revision != null) {
-            baselineCollectionReference = baselineCollectionReference.getWithRevision(revision);
-        }
-
-        BaselineCollection baselineCollection = baselineCollectionReference.get(transaction);
-        IBaselineCollection collection = baselineCollection.getOldApi();
-
-        List<IModule> modules =
-                Stream.concat(
-                                collection.getElements().stream(),
-                                collection.getUpstreamCollections().stream()
-                                        .flatMap(upstream -> upstream.getElements().stream())
-                        )
-                        .map(IBaselineCollectionElement::getObjectWithRevision)
-                        .filter(IModule.class::isInstance)
-                        .map(IModule.class::cast)
-                        .toList();
-
-        for (IModule module : modules) {
-            DocumentCollectionEntry documentCollectionEntry = new DocumentCollectionEntry(
-                    module.getProjectId(),
-                    module.getModuleFolder(),
-                    module.getModuleName(),
-                    module.getRevision(),
-                    documentFileNameHelper.getDocumentFileName(
-                            ExportParams.builder()
-                                    .projectId(projectId)
-                                    .documentType(DocumentType.LIVE_DOC)
-                                    .locationPath(module.getModuleLocation().getLocationPath())
-                                    .revision(module.getRevision())
-                                    .build()
-                    )
-            );
-            result.add(documentCollectionEntry);
-        }
-
-        return result;
-    }
-
 }
