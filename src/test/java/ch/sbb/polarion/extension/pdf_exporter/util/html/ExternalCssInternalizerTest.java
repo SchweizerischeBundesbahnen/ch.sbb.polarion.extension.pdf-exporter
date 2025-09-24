@@ -47,9 +47,7 @@ class ExternalCssInternalizerTest {
                 "data-precedence", "test-data-precedence"));
 
         assertThat(result).isNotEmpty();
-        assertThat(result.get()).contains("""
-                <style data-precedence="test-data-precedence">test-stylesheet</style>
-                """);
+        assertThat(result.get()).contains("<style data-precedence=\"test-data-precedence\">test-stylesheet</style>");
     }
 
     @Test
