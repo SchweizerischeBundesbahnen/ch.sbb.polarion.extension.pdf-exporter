@@ -4,7 +4,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
-import org.testcontainers.images.PullPolicy;
 
 /**
  * Singleton container holder for WeasyPrint service.
@@ -30,7 +29,6 @@ public final class SharedWeasyPrintContainer {
             try {
                 logger.info("Initializing shared WeasyPrint container...");
                 GenericContainer<?> container = new GenericContainer<>(DOCKER_IMAGE_NAME)
-                        .withImagePullPolicy(PullPolicy.alwaysPull())
                         .withExposedPorts(9080)
                         .withReuse(true)  // Enable container reuse
                         .waitingFor(Wait.forHttp("/version").forPort(9080).forStatusCode(200));
@@ -69,7 +67,7 @@ public final class SharedWeasyPrintContainer {
     public static void stopIfRunning() {
         try {
             GenericContainer<?> container = ContainerHolder.INSTANCE;
-            if (container != null && container.isRunning()) {
+            if (container.isRunning()) {
                 logger.info("Stopping shared WeasyPrint container...");
                 container.stop();
             }
