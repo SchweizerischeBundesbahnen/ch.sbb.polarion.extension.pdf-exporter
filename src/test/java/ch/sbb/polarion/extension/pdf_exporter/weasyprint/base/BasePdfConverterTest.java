@@ -255,9 +255,11 @@ public abstract class BasePdfConverterTest extends BaseWeasyPrintTest {
     /**
      * Compares PDF content with reference images.
      * Writes report PDFs and images for debugging when tests fail.
+     *
+     * @return true if there were differences, false otherwise
      */
     @SneakyThrows
-    protected void compareContentUsingReferenceImages(String testName, byte[] pdf) {
+    protected boolean compareContentUsingReferenceImages(String testName, byte[] pdf) {
         writeReportPdf(testName, "generated", pdf);
         // NOTE: if something changes in the future and the images are no longer identical,
         // simply copy & replace the reference resource images with the new ones from the reports folder
@@ -273,13 +275,7 @@ public abstract class BasePdfConverterTest extends BaseWeasyPrintTest {
                 hasDiff = true;
             }
         }
-        assertFalse(hasDiff);
+        return hasDiff;
     }
 
-    /**
-     * Gets the current test method name for use in file naming.
-     */
-    protected String getCurrentMethodName() {
-        return Thread.currentThread().getStackTrace()[2].getMethodName();
-    }
 }

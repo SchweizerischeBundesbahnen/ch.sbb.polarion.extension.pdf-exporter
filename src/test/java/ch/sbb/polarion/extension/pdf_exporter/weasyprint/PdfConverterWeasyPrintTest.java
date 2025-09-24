@@ -22,6 +22,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
@@ -88,9 +89,10 @@ class PdfConverterWeasyPrintTest extends BasePdfConverterTest {
                 .lastRevision("42")
                 .revisionPlaceholder("42")
                 .build();
-        documentDataFactoryMockedStatic.when(() -> ch.sbb.polarion.extension.pdf_exporter.util.DocumentDataFactory.getDocumentData(eq(params), anyBoolean())).thenReturn(liveDoc1);
+        documentDataFactoryMockedStatic.when(() -> DocumentDataFactory.getDocumentData(eq(params), anyBoolean())).thenReturn(liveDoc1);
 
-        compareContentUsingReferenceImages(getCurrentMethodName(), converter.convertToPdf(params, null));
+        boolean hasDiff = compareContentUsingReferenceImages(getCurrentMethodName(), converter.convertToPdf(params, null));
+        assertFalse(hasDiff);
     }
 
     @Test
@@ -115,9 +117,10 @@ class PdfConverterWeasyPrintTest extends BasePdfConverterTest {
                 .revisionPlaceholder("42")
                 .attachmentFiles(List.of(tempFile))
                 .build();
-        documentDataFactoryMockedStatic.when(() -> ch.sbb.polarion.extension.pdf_exporter.util.DocumentDataFactory.getDocumentData(eq(params), anyBoolean())).thenReturn(liveDoc2);
+        documentDataFactoryMockedStatic.when(() -> DocumentDataFactory.getDocumentData(eq(params), anyBoolean())).thenReturn(liveDoc2);
 
-        compareContentUsingReferenceImages(getCurrentMethodName(), converter.convertToPdf(params, null));
+        boolean hasDiff = compareContentUsingReferenceImages(getCurrentMethodName(), converter.convertToPdf(params, null));
+        assertFalse(hasDiff);
     }
 
     @Test
@@ -136,9 +139,10 @@ class PdfConverterWeasyPrintTest extends BasePdfConverterTest {
                 .revisionPlaceholder("12345")
                 .content(readHtmlResource("specialSymbols"))
                 .build();
-        documentDataFactoryMockedStatic.when(() -> ch.sbb.polarion.extension.pdf_exporter.util.DocumentDataFactory.getDocumentData(eq(params), anyBoolean())).thenReturn(liveDoc3);
+        documentDataFactoryMockedStatic.when(() -> DocumentDataFactory.getDocumentData(eq(params), anyBoolean())).thenReturn(liveDoc3);
 
-        compareContentUsingReferenceImages(getCurrentMethodName(), converter.convertToPdf(params, null));
+        boolean hasDiff = compareContentUsingReferenceImages(getCurrentMethodName(), converter.convertToPdf(params, null));
+        assertFalse(hasDiff);
     }
 
     @Test
@@ -158,9 +162,10 @@ class PdfConverterWeasyPrintTest extends BasePdfConverterTest {
                 .revisionPlaceholder("12345")
                 .content(readHtmlResource("imageWidthBasedOnColumnsCount"))
                 .build();
-        documentDataFactoryMockedStatic.when(() -> ch.sbb.polarion.extension.pdf_exporter.util.DocumentDataFactory.getDocumentData(eq(params), anyBoolean())).thenReturn(liveDoc3);
+        documentDataFactoryMockedStatic.when(() -> DocumentDataFactory.getDocumentData(eq(params), anyBoolean())).thenReturn(liveDoc3);
 
-        compareContentUsingReferenceImages(getCurrentMethodName(), converter.convertToPdf(params, null));
+        boolean hasDiff = compareContentUsingReferenceImages(getCurrentMethodName(), converter.convertToPdf(params, null));
+        assertFalse(hasDiff);
     }
 
     @Test
@@ -179,9 +184,10 @@ class PdfConverterWeasyPrintTest extends BasePdfConverterTest {
                 .revisionPlaceholder("12345")
                 .content(readHtmlResource("svgImage"))
                 .build();
-        documentDataFactoryMockedStatic.when(() -> ch.sbb.polarion.extension.pdf_exporter.util.DocumentDataFactory.getDocumentData(eq(params), anyBoolean())).thenReturn(liveDoc4);
+        documentDataFactoryMockedStatic.when(() -> DocumentDataFactory.getDocumentData(eq(params), anyBoolean())).thenReturn(liveDoc4);
 
-        compareContentUsingReferenceImages(getCurrentMethodName(), converter.convertToPdf(params, null));
+        boolean hasDiff = compareContentUsingReferenceImages(getCurrentMethodName(), converter.convertToPdf(params, null));
+        assertFalse(hasDiff);
     }
 
     @Test
@@ -200,9 +206,10 @@ class PdfConverterWeasyPrintTest extends BasePdfConverterTest {
                 .revisionPlaceholder("12345")
                 .content(readHtmlResource("svgImageAsBase64"))
                 .build();
-        documentDataFactoryMockedStatic.when(() -> ch.sbb.polarion.extension.pdf_exporter.util.DocumentDataFactory.getDocumentData(eq(params), anyBoolean())).thenReturn(liveDoc4);
+        documentDataFactoryMockedStatic.when(() -> DocumentDataFactory.getDocumentData(eq(params), anyBoolean())).thenReturn(liveDoc4);
 
-        compareContentUsingReferenceImages(getCurrentMethodName(), converter.convertToPdf(params, null));
+        boolean hasDiff = compareContentUsingReferenceImages(getCurrentMethodName(), converter.convertToPdf(params, null));
+        assertFalse(hasDiff);
     }
 
     @Test
@@ -227,6 +234,7 @@ class PdfConverterWeasyPrintTest extends BasePdfConverterTest {
         params.setDocumentType(DocumentType.WIKI_PAGE);
         params.setLocationPath("wikiFolder/wikiPage");
 
-        compareContentUsingReferenceImages(getCurrentMethodName(), converter.convertToPdf(params, null));
+        boolean hasDiff = compareContentUsingReferenceImages(getCurrentMethodName(), converter.convertToPdf(params, null));
+        assertFalse(hasDiff);
     }
 }
