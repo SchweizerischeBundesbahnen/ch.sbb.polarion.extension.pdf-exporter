@@ -25,6 +25,7 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -33,6 +34,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public abstract class BaseWeasyPrintTest {
 
     public static final String DOCKER_IMAGE_NAME = "ghcr.io/schweizerischebundesbahnen/weasyprint-service:latest";
+
+    private static final ConcurrentHashMap<Class<?>, GenericContainer<?>> sharedContainers = new ConcurrentHashMap<>();
 
     public static final String IMPL_NAME_PARAM = "wpExporterImpl";
     public static final String PAGE_SUFFIX = "_page_";
@@ -82,35 +85,19 @@ public abstract class BaseWeasyPrintTest {
     }
 
     protected byte[] exportToPdf(String html, @NotNull WeasyPrintOptions weasyPrintOptions) {
-        try (GenericContainer<?> weasyPrintService = new GenericContainer<>(DOCKER_IMAGE_NAME)) {
-            weasyPrintService
-                    .withImagePullPolicy(PullPolicy.alwaysPull())
-                    .withExposedPorts(9080)
-                    .waitingFor(Wait.forHttp("/version").forPort(9080))
-                    .start();
+        GenericContainer<?> weasyPrintService = getOrCreateSharedContainer();
 
-            assertTrue(weasyPrintService.isRunning());
-
-            String weasyPrintServiceBaseUrl = "http://" + weasyPrintService.getHost() + ":" + weasyPrintService.getFirstMappedPort();
-            WeasyPrintServiceConnector weasyPrintServiceConnector = new WeasyPrintServiceConnector(weasyPrintServiceBaseUrl);
-            return weasyPrintServiceConnector.convertToPdf(html, weasyPrintOptions);
-        }
+        String weasyPrintServiceBaseUrl = "http://" + weasyPrintService.getHost() + ":" + weasyPrintService.getFirstMappedPort();
+        WeasyPrintServiceConnector weasyPrintServiceConnector = new WeasyPrintServiceConnector(weasyPrintServiceBaseUrl);
+        return weasyPrintServiceConnector.convertToPdf(html, weasyPrintOptions);
     }
 
     protected byte[] exportToPdf(String html, @NotNull WeasyPrintOptions weasyPrintOptions, @NotNull DocumentData<? extends IUniqueObject> documentData) {
-        try (GenericContainer<?> weasyPrintService = new GenericContainer<>(DOCKER_IMAGE_NAME)) {
-            weasyPrintService
-                    .withImagePullPolicy(PullPolicy.alwaysPull())
-                    .withExposedPorts(9080)
-                    .waitingFor(Wait.forHttp("/version").forPort(9080))
-                    .start();
+        GenericContainer<?> weasyPrintService = getOrCreateSharedContainer();
 
-            assertTrue(weasyPrintService.isRunning());
-
-            String weasyPrintServiceBaseUrl = "http://" + weasyPrintService.getHost() + ":" + weasyPrintService.getFirstMappedPort();
-            WeasyPrintServiceConnector weasyPrintServiceConnector = new WeasyPrintServiceConnector(weasyPrintServiceBaseUrl);
-            return weasyPrintServiceConnector.convertToPdf(html, weasyPrintOptions, documentData);
-        }
+        String weasyPrintServiceBaseUrl = "http://" + weasyPrintService.getHost() + ":" + weasyPrintService.getFirstMappedPort();
+        WeasyPrintServiceConnector weasyPrintServiceConnector = new WeasyPrintServiceConnector(weasyPrintServiceBaseUrl);
+        return weasyPrintServiceConnector.convertToPdf(html, weasyPrintOptions, documentData);
     }
 
     protected List<BufferedImage> exportAndGetAsImages(String fileName) {
@@ -165,5 +152,31 @@ public abstract class BaseWeasyPrintTest {
      */
     protected String getCurrentMethodName() {
         return Thread.currentThread().getStackTrace()[2].getMethodName();
+    }
+
+    /**
+     * Gets or creates a shared Docker container for WeasyPrint service.
+     * Container is reused across all tests in the same test class to improve performance.
+     */
+    private GenericContainer<?> getOrCreateSharedContainer() {
+        Class<?> testClass = this.getClass();
+        return sharedContainers.computeIfAbsent(testClass, k -> {
+            GenericContainer<?> container = new GenericContainer<>(DOCKER_IMAGE_NAME)
+                    .withImagePullPolicy(PullPolicy.alwaysPull())
+                    .withExposedPorts(9080)
+                    .waitingFor(Wait.forHttp("/version").forPort(9080));
+            container.start();
+            assertTrue(container.isRunning());
+
+            // Register shutdown hook to stop container when JVM exits
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                if (container.isRunning()) {
+                    container.stop();
+                }
+                sharedContainers.remove(testClass);
+            }));
+
+            return container;
+        });
     }
 }
