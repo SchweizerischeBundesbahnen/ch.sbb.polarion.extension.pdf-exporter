@@ -19,6 +19,7 @@ public class ExportToPdfButton extends GenericButtonWidget {
     }
 
     @NotNull
+    @Override
     public Iterable<String> getTags(@NotNull SharedContext context) {
         return new ImmutableStrictList<>(Constants.PDF_EXPORT_TAG);
     }
