@@ -11,6 +11,8 @@ import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -34,8 +36,8 @@ class ExternalCssInternalizerTest {
         when(fileResourceProvider.getResourceAsBytes("my-href-location")).thenReturn("test-stylesheet".getBytes());
         Optional<String> result = cssLinkInliner.inline(Map.of("rel", "stylesheet", "href", "my-href-location"));
 
-        assertThat(result).isNotEmpty();
-        assertThat(result.get()).isEqualTo("<style>test-stylesheet</style>");
+        assertNotNull(result);
+        assertEquals("<style>test-stylesheet</style>", result.get());
     }
 
     @Test
@@ -46,8 +48,8 @@ class ExternalCssInternalizerTest {
                 "href", "my-href-location",
                 "data-precedence", "test-data-precedence"));
 
-        assertThat(result).isNotEmpty();
-        assertThat(result.get()).contains("<style data-precedence=\"test-data-precedence\">test-stylesheet</style>");
+        assertNotNull(result);
+        assertEquals("<style data-precedence=\"test-data-precedence\">test-stylesheet</style>", result.get());
     }
 
     @Test
