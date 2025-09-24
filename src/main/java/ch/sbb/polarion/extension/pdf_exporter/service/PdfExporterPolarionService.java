@@ -8,10 +8,13 @@ import ch.sbb.polarion.extension.generic.settings.SettingName;
 import ch.sbb.polarion.extension.generic.util.ScopeUtils;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.attachments.TestRunAttachment;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.collections.DocumentCollectionEntry;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.DocumentType;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.stylepackage.DocIdentifier;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.stylepackage.StylePackageModel;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.stylepackage.StylePackageWeightInfo;
 import ch.sbb.polarion.extension.pdf_exporter.settings.StylePackageSettings;
+import ch.sbb.polarion.extension.pdf_exporter.util.DocumentFileNameHelper;
 import ch.sbb.polarion.extension.pdf_exporter.util.WildcardUtils;
 import com.polarion.alm.projects.IProjectService;
 import com.polarion.alm.shared.api.model.baselinecollection.BaselineCollection;
@@ -46,10 +49,12 @@ import java.util.stream.Stream;
 public class PdfExporterPolarionService extends PolarionService {
 
     protected final ITestManagementService testManagementService;
+    protected final DocumentFileNameHelper documentFileNameHelper;
 
     public PdfExporterPolarionService() {
         super();
         this.testManagementService = new TestManagementServiceAccessor().getTestingService();
+        this.documentFileNameHelper = new DocumentFileNameHelper();
     }
 
     public PdfExporterPolarionService(
@@ -58,10 +63,12 @@ public class PdfExporterPolarionService extends PolarionService {
             @NotNull ISecurityService securityService,
             @NotNull IPlatformService platformService,
             @NotNull IRepositoryService repositoryService,
-            @NotNull ITestManagementService testManagementService
+            @NotNull ITestManagementService testManagementService,
+            @NotNull DocumentFileNameHelper documentFileNameHelper
     ) {
         super(trackerService, projectService, securityService, platformService, repositoryService);
         this.testManagementService = testManagementService;
+        this.documentFileNameHelper = documentFileNameHelper;
     }
 
     public @Nullable ITrackerProject getProjectFromScope(@Nullable String scope) {
@@ -225,7 +232,15 @@ public class PdfExporterPolarionService extends PolarionService {
                     module.getProjectId(),
                     module.getModuleFolder(),
                     module.getModuleName(),
-                    module.getRevision()
+                    module.getRevision(),
+                    documentFileNameHelper.getDocumentFileName(
+                            ExportParams.builder()
+                                    .projectId(projectId)
+                                    .documentType(DocumentType.LIVE_DOC)
+                                    .locationPath(module.getModuleLocation().getLocationPath())
+                                    .revision(module.getRevision())
+                                    .build()
+                    )
             );
             result.add(documentCollectionEntry);
         }

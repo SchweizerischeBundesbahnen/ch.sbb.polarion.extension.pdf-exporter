@@ -21,4 +21,7 @@ public class DocumentCollectionEntry {
 
     @Schema(description = "The revision of the document")
     private String revision;
+
+    @Schema(description = "Target file name of exported document")
+    protected String fileName;
 }

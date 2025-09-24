@@ -3,6 +3,8 @@ package ch.sbb.polarion.extension.pdf_exporter.service;
 import ch.sbb.polarion.extension.generic.settings.NamedSettingsRegistry;
 import ch.sbb.polarion.extension.generic.settings.SettingId;
 import ch.sbb.polarion.extension.generic.settings.SettingName;
+import ch.sbb.polarion.extension.generic.test_extensions.PlatformContextMockExtension;
+import ch.sbb.polarion.extension.generic.test_extensions.TransactionalExecutorExtension;
 import ch.sbb.polarion.extension.generic.util.ScopeUtils;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.attachments.TestRunAttachment;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.collections.DocumentCollectionEntry;
@@ -10,6 +12,7 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.stylepackage.D
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.stylepackage.StylePackageModel;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.stylepackage.StylePackageWeightInfo;
 import ch.sbb.polarion.extension.pdf_exporter.settings.StylePackageSettings;
+import ch.sbb.polarion.extension.pdf_exporter.util.DocumentFileNameHelper;
 import com.polarion.alm.projects.IProjectService;
 import com.polarion.alm.shared.api.model.baselinecollection.BaselineCollection;
 import com.polarion.alm.shared.api.model.baselinecollection.BaselineCollectionReference;
@@ -29,8 +32,10 @@ import com.polarion.platform.IPlatformService;
 import com.polarion.platform.persistence.spi.PObjectList;
 import com.polarion.platform.security.ISecurityService;
 import com.polarion.platform.service.repository.IRepositoryService;
+import com.polarion.subterra.base.location.ILocation;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.MockedConstruction;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
@@ -42,18 +47,22 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+@ExtendWith({PlatformContextMockExtension.class, TransactionalExecutorExtension.class})
 class PdfExporterPolarionServiceTest {
 
     private final ITrackerService trackerService = mock(ITrackerService.class);
     private final ITestManagementService testManagementService = mock(ITestManagementService.class);
     private StylePackageSettings stylePackageSettings;
+    private final DocumentFileNameHelper documentFileNameHelper = mock(DocumentFileNameHelper.class);
+
     private final PdfExporterPolarionService service = new PdfExporterPolarionService(
             trackerService,
             mock(IProjectService.class),
             mock(ISecurityService.class),
             mock(IPlatformService.class),
             mock(IRepositoryService.class),
-            testManagementService
+            testManagementService,
+            documentFileNameHelper
     );
 
     @BeforeEach
@@ -62,6 +71,7 @@ class PdfExporterPolarionServiceTest {
         when(stylePackageSettings.getFeatureName()).thenReturn("style-package");
         NamedSettingsRegistry.INSTANCE.getAll().clear();
         NamedSettingsRegistry.INSTANCE.register(List.of(stylePackageSettings));
+        when(documentFileNameHelper.getDocumentFileName(any())).thenReturn("testDocumentName.pdf");
     }
 
     @Test
@@ -362,16 +372,25 @@ class PdfExporterPolarionServiceTest {
         when(mockModule1.getProjectId()).thenReturn(projectId);
         when(mockModule1.getModuleFolder()).thenReturn("space 1");
         when(mockModule1.getModuleName()).thenReturn("test Module1");
+        ILocation mockLocation1 = mock(ILocation.class);
+        when(mockModule1.getModuleLocation()).thenReturn(mockLocation1);
+        when(mockLocation1.getLocationPath()).thenReturn("space 1");
         when(mockModule1.getRevision()).thenReturn("1");
 
         when(mockModule2.getProjectId()).thenReturn(projectId);
         when(mockModule2.getModuleFolder()).thenReturn("_default");
         when(mockModule2.getModuleName()).thenReturn("test Module2");
+        ILocation mockLocation2 = mock(ILocation.class);
+        when(mockModule2.getModuleLocation()).thenReturn(mockLocation2);
+        when(mockLocation2.getLocationPath()).thenReturn("space 2");
         when(mockModule2.getRevision()).thenReturn("2");
 
         when(mockModule3.getProjectId()).thenReturn(projectId);
         when(mockModule3.getModuleFolder()).thenReturn("upstream_space");
         when(mockModule3.getModuleName()).thenReturn("upstream Module");
+        ILocation mockLocation3 = mock(ILocation.class);
+        when(mockModule3.getModuleLocation()).thenReturn(mockLocation3);
+        when(mockLocation3.getLocationPath()).thenReturn("space 3");
         when(mockModule3.getRevision()).thenReturn("3");
 
         IBaselineCollectionElement mockElement1 = mock(IBaselineCollectionElement.class);

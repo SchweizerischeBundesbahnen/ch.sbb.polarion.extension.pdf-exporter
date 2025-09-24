@@ -20,6 +20,7 @@ import ch.sbb.polarion.extension.pdf_exporter.settings.CssSettings;
 import ch.sbb.polarion.extension.pdf_exporter.settings.HeaderFooterSettings;
 import ch.sbb.polarion.extension.pdf_exporter.settings.LocalizationSettings;
 import ch.sbb.polarion.extension.pdf_exporter.util.DocumentDataFactory;
+import ch.sbb.polarion.extension.pdf_exporter.util.DocumentFileNameHelper;
 import ch.sbb.polarion.extension.pdf_exporter.util.FileResourceProvider;
 import ch.sbb.polarion.extension.pdf_exporter.util.HtmlProcessor;
 import ch.sbb.polarion.extension.pdf_exporter.util.MediaUtils;
@@ -108,7 +109,8 @@ class PdfConverterWeasyPrintTest extends BaseWeasyPrintTest {
                 mock(ISecurityService.class),
                 mock(IPlatformService.class),
                 mock(IRepositoryService.class),
-                mock(ITestManagementService.class)
+                mock(ITestManagementService.class),
+                mock(DocumentFileNameHelper.class)
         );
 
         IProject project = mock(IProject.class);
