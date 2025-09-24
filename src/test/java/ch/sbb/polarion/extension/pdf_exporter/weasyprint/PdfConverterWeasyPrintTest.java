@@ -52,11 +52,9 @@ class PdfConverterWeasyPrintTest extends BasePdfConverterTest {
     protected void setupCssSettings() {
         String basicCss = readCssResource(CSS_BASIC, FONT_REGULAR);
         when(cssSettings.defaultValues()).thenCallRealMethod();
-        String defaultCss = cssSettings.defaultValues().getCss();
-        // Concatenate basic css with the default one in order to override font everywhere
         when(cssSettings.load(any(), any())).thenReturn(CssModel.builder()
-                .disableDefaultCss(true)
-                .css(basicCss + defaultCss.replaceAll("@font-face[^}]+}", "").replaceAll("font-family:[^;]+;", "font-family: Custom Font;"))
+                .disableDefaultCss(false)
+                .css(basicCss)
                 .build());
     }
 
