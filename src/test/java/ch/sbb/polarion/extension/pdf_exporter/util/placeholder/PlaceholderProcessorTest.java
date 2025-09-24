@@ -36,7 +36,7 @@ class PlaceholderProcessorTest {
     private PlaceholderValues placeholderValues;
 
     @BeforeEach
-    public void setup() {
+    void setup() {
         placeholderValues = PlaceholderValues.builder()
                 .documentId("testDocId")
                 .documentTitle("testDocTitle")
@@ -59,6 +59,11 @@ class PlaceholderProcessorTest {
                 mock(ITestManagementService.class)
         );
         placeholderProcessor = new PlaceholderProcessor(pdfExporterPolarionService);
+    }
+
+    @AfterEach
+    void cleanup() {
+        mockPlatformContext.close();
     }
 
     @Test
@@ -101,8 +106,4 @@ class PlaceholderProcessorTest {
         assertTrue(result.isEmpty());
     }
 
-    @AfterEach
-    public void cleanup() {
-        mockPlatformContext.close();
-    }
 }
