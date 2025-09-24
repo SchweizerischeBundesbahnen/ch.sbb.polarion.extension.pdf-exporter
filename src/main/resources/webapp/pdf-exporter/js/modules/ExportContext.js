@@ -300,7 +300,7 @@ export default class ExportContext extends ExtensionContext {
                     this.asyncConvertPdf(
                         exportParams.toJSON(),
                         (result, fileName) => {
-                            const downloadFileName = fileName || `${collectionDocument.projectId}_${collectionDocument.spaceId}_${collectionDocument.documentName}.pdf`;
+                            const downloadFileName = collectionDocument.fileName || `${collectionDocument.projectId}_${collectionDocument.spaceId}_${collectionDocument.documentName}.pdf`;
                             this.downloadBlob(result.response, downloadFileName);
 
                             completedCount++;

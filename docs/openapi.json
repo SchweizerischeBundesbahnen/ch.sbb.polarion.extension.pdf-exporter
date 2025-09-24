@@ -1705,6 +1705,10 @@
             "description": "The name of the document",
             "type": "string"
           },
+          "fileName": {
+            "description": "Target file name of exported document",
+            "type": "string"
+          },
           "projectId": {
             "description": "The unique identifier for the project",
             "example": "elibrary",
