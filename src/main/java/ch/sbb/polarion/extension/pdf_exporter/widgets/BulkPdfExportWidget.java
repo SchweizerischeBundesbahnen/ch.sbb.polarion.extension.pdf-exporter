@@ -29,6 +29,7 @@ public class BulkPdfExportWidget extends TableWidget {
     }
 
     @NotNull
+    @Override
     public Iterable<String> getTags(@NotNull SharedContext context) {
         return new ImmutableStrictList<>(Constants.PDF_EXPORT_TAG);
     }

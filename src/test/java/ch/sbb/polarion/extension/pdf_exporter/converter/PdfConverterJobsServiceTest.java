@@ -54,12 +54,12 @@ class PdfConverterJobsServiceTest {
     private PdfConverterJobsService pdfConverterJobsService;
 
     @BeforeEach
-    public void setup() {
+    void setup() {
         RequestContextHolder.setRequestAttributes(requestAttributes);
     }
 
     @AfterEach
-    public void tearDown() {
+    void tearDown() {
         pdfConverterJobsService.cancelJobsAndCleanMap();
     }
 

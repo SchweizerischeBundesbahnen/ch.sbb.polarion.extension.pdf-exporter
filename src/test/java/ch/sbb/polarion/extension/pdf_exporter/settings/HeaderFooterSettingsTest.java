@@ -44,9 +44,8 @@ class HeaderFooterSettingsTest {
             mockScopeUtils.when(ScopeUtils::getDefaultLocation).thenReturn(mockDefaultLocation);
             mockScopeUtils.when(() -> ScopeUtils.getContextLocation("")).thenReturn(mockDefaultLocation);
 
-            assertThrows(ObjectNotFoundException.class, () -> {
-                HeaderFooterModel loadedModel = headerFooterSettings.load(projectName, SettingId.fromName("Any setting name"));
-            });
+            SettingId anySettingName = SettingId.fromName("Any setting name");
+            assertThrows(ObjectNotFoundException.class, () -> headerFooterSettings.load(projectName, anySettingName));
         }
     }
 
