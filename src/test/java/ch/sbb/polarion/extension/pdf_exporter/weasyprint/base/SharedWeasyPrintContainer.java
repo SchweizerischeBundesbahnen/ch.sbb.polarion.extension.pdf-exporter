@@ -27,7 +27,7 @@ public final class SharedWeasyPrintContainer {
 
         private static GenericContainer<?> createAndStartContainer() {
             try {
-                logger.info("Initializing shared WeasyPrint container...");
+                logger.info("=== INITIALIZING SHARED WEASYPRINT CONTAINER (This should happen only once) ===");
                 GenericContainer<?> container = new GenericContainer<>(DOCKER_IMAGE_NAME)
                         .withExposedPorts(9080)
                         .withReuse(true)  // Enable container reuse
@@ -39,7 +39,7 @@ public final class SharedWeasyPrintContainer {
                     throw new IllegalStateException("Container failed to start");
                 }
 
-                logger.info("Shared WeasyPrint container started successfully on port {}",
+                logger.info("=== SHARED WEASYPRINT CONTAINER STARTED SUCCESSFULLY on port {} ===",
                     container.getFirstMappedPort());
 
                 return container;
