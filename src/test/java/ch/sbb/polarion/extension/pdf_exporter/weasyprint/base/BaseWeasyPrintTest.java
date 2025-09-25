@@ -78,21 +78,21 @@ public abstract class BaseWeasyPrintTest {
     }
 
     protected byte[] exportToPdf(String html, @NotNull WeasyPrintOptions weasyPrintOptions) {
-        GenericContainer<?> weasyPrintService = SharedWeasyPrintContainer.getInstance();
-        assertTrue(weasyPrintService.isRunning(), "WeasyPrint container should be running");
-
-        String weasyPrintServiceBaseUrl = "http://" + weasyPrintService.getHost() + ":" + weasyPrintService.getFirstMappedPort();
-        WeasyPrintServiceConnector weasyPrintServiceConnector = new WeasyPrintServiceConnector(weasyPrintServiceBaseUrl);
+        WeasyPrintServiceConnector weasyPrintServiceConnector = getWeasyPrintServiceConnector();
         return weasyPrintServiceConnector.convertToPdf(html, weasyPrintOptions);
     }
 
     protected byte[] exportToPdf(String html, @NotNull WeasyPrintOptions weasyPrintOptions, @NotNull DocumentData<? extends IUniqueObject> documentData) {
+        WeasyPrintServiceConnector weasyPrintServiceConnector = getWeasyPrintServiceConnector();
+        return weasyPrintServiceConnector.convertToPdf(html, weasyPrintOptions, documentData);
+    }
+
+    public static @NotNull WeasyPrintServiceConnector getWeasyPrintServiceConnector() {
         GenericContainer<?> weasyPrintService = SharedWeasyPrintContainer.getInstance();
         assertTrue(weasyPrintService.isRunning(), "WeasyPrint container should be running");
 
         String weasyPrintServiceBaseUrl = "http://" + weasyPrintService.getHost() + ":" + weasyPrintService.getFirstMappedPort();
-        WeasyPrintServiceConnector weasyPrintServiceConnector = new WeasyPrintServiceConnector(weasyPrintServiceBaseUrl);
-        return weasyPrintServiceConnector.convertToPdf(html, weasyPrintOptions, documentData);
+        return new WeasyPrintServiceConnector(weasyPrintServiceBaseUrl);
     }
 
     protected List<BufferedImage> exportAndGetAsImages(String fileName) {
