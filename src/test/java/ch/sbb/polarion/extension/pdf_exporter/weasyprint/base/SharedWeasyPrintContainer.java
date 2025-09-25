@@ -5,6 +5,8 @@ import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
 
+import java.time.Duration;
+
 /**
  * Singleton container holder for WeasyPrint service.
  * Uses proper lazy initialization with thread safety.
@@ -27,20 +29,24 @@ public final class SharedWeasyPrintContainer {
 
         private static GenericContainer<?> createAndStartContainer() {
             try {
-                logger.info("=== INITIALIZING SHARED WEASYPRINT CONTAINER (This should happen only once) ===");
                 GenericContainer<?> container = new GenericContainer<>(DOCKER_IMAGE_NAME)
                         .withExposedPorts(9080)
                         .withReuse(true)  // Enable container reuse
-                        .waitingFor(Wait.forHttp("/version").forPort(9080).forStatusCode(200));
+                        .waitingFor(
+                                Wait.forHttp("/version").forPort(9080)
+                                        .forStatusCode(200)
+                                        .withStartupTimeout(Duration.ofMinutes(2))
+                        )
+                        .withCreateContainerCmdModifier(createContainerCmd ->
+                                createContainerCmd.getHostConfig()
+                                        .withMemory(2 * 1024 * 1024 * 1024L)  // Limit to 2GB
+                                        .withCpuCount(2L));  // Limit CPU cores
 
                 container.start();
 
                 if (!container.isRunning()) {
                     throw new IllegalStateException("Container failed to start");
                 }
-
-                logger.info("=== SHARED WEASYPRINT CONTAINER STARTED SUCCESSFULLY on port {} ===",
-                    container.getFirstMappedPort());
 
                 return container;
             } catch (Exception e) {
