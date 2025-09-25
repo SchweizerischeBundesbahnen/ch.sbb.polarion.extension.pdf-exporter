@@ -52,11 +52,11 @@ public class CoverPageProcessor {
     }
 
     @SneakyThrows
-    public byte[] generatePdfWithTitle(DocumentData<? extends IUniqueObject> documentData,
-                                       ExportParams exportParams,
-                                       String contentHtml,
-                                       WeasyPrintOptions weasyPrintOptions,
-                                       PdfGenerationLog generationLog) {
+    public byte[] generatePdfWithTitle(@NotNull DocumentData<? extends IUniqueObject> documentData,
+                                       @NotNull ExportParams exportParams,
+                                       @NotNull String contentHtml,
+                                       @NotNull WeasyPrintOptions weasyPrintOptions,
+                                       @NotNull PdfGenerationLog generationLog) {
         generationLog.log("Starting generation for document content...");
         byte[] pdfContent = weasyPrintServiceConnector.convertToPdf(contentHtml, weasyPrintOptions, documentData);
         generationLog.log("Document content has been completed");

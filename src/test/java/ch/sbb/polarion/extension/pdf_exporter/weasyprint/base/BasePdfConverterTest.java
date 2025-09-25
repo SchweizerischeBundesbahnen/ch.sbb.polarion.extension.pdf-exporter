@@ -19,7 +19,6 @@ import ch.sbb.polarion.extension.pdf_exporter.util.PdfTemplateProcessor;
 import ch.sbb.polarion.extension.pdf_exporter.util.html.HtmlLinksHelper;
 import ch.sbb.polarion.extension.pdf_exporter.util.placeholder.PlaceholderProcessor;
 import ch.sbb.polarion.extension.pdf_exporter.util.velocity.VelocityEvaluator;
-import ch.sbb.polarion.extension.pdf_exporter.weasyprint.service.WeasyPrintServiceConnector;
 import com.polarion.alm.projects.IProjectService;
 import com.polarion.alm.projects.model.IProject;
 import com.polarion.alm.tracker.ITestManagementService;
@@ -66,7 +65,6 @@ public abstract class BasePdfConverterTest extends BaseWeasyPrintTest {
     protected CssSettings cssSettings;
     protected LocalizationSettings localizationSettings;
     protected CoverPageSettings coverPageSettings;
-    protected WeasyPrintServiceConnector weasyPrintServiceConnector;
     protected PlaceholderProcessor placeholderProcessor;
     protected VelocityEvaluator velocityEvaluator;
     protected HtmlProcessor htmlProcessor;
@@ -131,7 +129,6 @@ public abstract class BasePdfConverterTest extends BaseWeasyPrintTest {
                 "testFieldKey".equals(invocation.getArgument(0)) ? "testFieldValue" : null);
 
         setupBasicSettings();
-        setupWeasyPrintConnector();
         setupHelperComponents();
     }
 
@@ -194,17 +191,6 @@ public abstract class BasePdfConverterTest extends BaseWeasyPrintTest {
     }
 
     /**
-     * Sets up WeasyPrint service connector.
-     */
-    protected void setupWeasyPrintConnector() {
-        weasyPrintServiceConnector = mock(WeasyPrintServiceConnector.class);
-        lenient().when(weasyPrintServiceConnector.convertToPdf(anyString(), any()))
-                .thenAnswer((Answer<byte[]>) invocation -> exportToPdf(invocation.getArgument(0), invocation.getArgument(1)));
-        lenient().when(weasyPrintServiceConnector.convertToPdf(anyString(), any(), any()))
-                .thenAnswer((Answer<byte[]>) invocation -> exportToPdf(invocation.getArgument(0), invocation.getArgument(1), invocation.getArgument(2)));
-    }
-
-    /**
      * Sets up helper components (placeholder processor, velocity evaluator, etc.).
      */
     protected void setupHelperComponents() {
@@ -227,7 +213,7 @@ public abstract class BasePdfConverterTest extends BaseWeasyPrintTest {
         CoverPageProcessor coverPageProcessor = new CoverPageProcessor(
                 placeholderProcessor,
                 velocityEvaluator,
-                weasyPrintServiceConnector,
+                getWeasyPrintServiceConnector(),
                 coverPageSettings,
                 new PdfTemplateProcessor(),
                 htmlProcessor
@@ -240,7 +226,7 @@ public abstract class BasePdfConverterTest extends BaseWeasyPrintTest {
                 placeholderProcessor,
                 velocityEvaluator,
                 coverPageProcessor,
-                weasyPrintServiceConnector,
+                getWeasyPrintServiceConnector(),
                 htmlProcessor,
                 new PdfTemplateProcessor()
         );

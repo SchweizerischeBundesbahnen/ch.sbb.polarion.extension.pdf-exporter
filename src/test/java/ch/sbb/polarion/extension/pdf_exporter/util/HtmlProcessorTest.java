@@ -16,6 +16,9 @@ import lombok.SneakyThrows;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -27,6 +30,7 @@ import java.util.Base64;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -307,25 +311,20 @@ class HtmlProcessorTest {
         }
     }
 
-    @Test
-    void adjustHeadingForPDFTestH1ReplacedWithDiv() {
-        String html = "<h1>First level heading</h1>";
-        String result = processor.processHtmlForPDF(html, getExportParams(), List.of());
-        assertEquals("<div class=\"title\">First level heading</div>", result);
+    private static Stream<Arguments> provideHtmlTestCases() {
+        return Stream.of(
+                Arguments.of("<h1>First level heading</h1>", "<div class=\"title\">First level heading</div>"),
+                Arguments.of("<h2>First level heading</h2>", "<h1>First level heading</h1>"),
+                Arguments.of("<div>100$</div>", "<div>100&dollar;</div>")
+        );
     }
 
-    @Test
-    void adjustHeadingForPDFTestLiftHeadingTag() {
-        String html = "<h2>First level heading</h2>";
-        String result = processor.processHtmlForPDF(html, getExportParams(), List.of());
-        assertEquals("<h1>First level heading</h1>", result);
-    }
+    @ParameterizedTest
+    @MethodSource("provideHtmlTestCases")
+    void processHtmlForPDFTest(String inputHtml, String expectedResult) {
+        String result = processor.processHtmlForPDF(inputHtml, getExportParams(), List.of());
 
-    @Test
-    void replaceDollars() {
-        String html = "<div>100$</div>";
-        String result = processor.processHtmlForPDF(html, getExportParams(), List.of());
-        assertEquals("<div>100&dollar;</div>", result);
+        assertEquals(expectedResult, result);
     }
 
     @Test

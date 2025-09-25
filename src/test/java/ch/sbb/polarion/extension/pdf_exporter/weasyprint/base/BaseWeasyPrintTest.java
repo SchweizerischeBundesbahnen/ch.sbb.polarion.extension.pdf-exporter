@@ -16,8 +16,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.containers.wait.strategy.Wait;
-import org.testcontainers.images.PullPolicy;
 
 import java.awt.image.BufferedImage;
 import java.io.FileOutputStream;
@@ -31,8 +29,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @ExtendWith({MockitoExtension.class, PdfExporterExtensionConfigurationExtension.class})
 @SkipTestWhenParamNotSet
 public abstract class BaseWeasyPrintTest {
-
-    public static final String DOCKER_IMAGE_NAME = "ghcr.io/schweizerischebundesbahnen/weasyprint-service:latest";
 
     public static final String IMPL_NAME_PARAM = "wpExporterImpl";
     public static final String PAGE_SUFFIX = "_page_";
@@ -82,35 +78,21 @@ public abstract class BaseWeasyPrintTest {
     }
 
     protected byte[] exportToPdf(String html, @NotNull WeasyPrintOptions weasyPrintOptions) {
-        try (GenericContainer<?> weasyPrintService = new GenericContainer<>(DOCKER_IMAGE_NAME)) {
-            weasyPrintService
-                    .withImagePullPolicy(PullPolicy.alwaysPull())
-                    .withExposedPorts(9080)
-                    .waitingFor(Wait.forHttp("/version").forPort(9080))
-                    .start();
-
-            assertTrue(weasyPrintService.isRunning());
-
-            String weasyPrintServiceBaseUrl = "http://" + weasyPrintService.getHost() + ":" + weasyPrintService.getFirstMappedPort();
-            WeasyPrintServiceConnector weasyPrintServiceConnector = new WeasyPrintServiceConnector(weasyPrintServiceBaseUrl);
-            return weasyPrintServiceConnector.convertToPdf(html, weasyPrintOptions);
-        }
+        WeasyPrintServiceConnector weasyPrintServiceConnector = getWeasyPrintServiceConnector();
+        return weasyPrintServiceConnector.convertToPdf(html, weasyPrintOptions);
     }
 
     protected byte[] exportToPdf(String html, @NotNull WeasyPrintOptions weasyPrintOptions, @NotNull DocumentData<? extends IUniqueObject> documentData) {
-        try (GenericContainer<?> weasyPrintService = new GenericContainer<>(DOCKER_IMAGE_NAME)) {
-            weasyPrintService
-                    .withImagePullPolicy(PullPolicy.alwaysPull())
-                    .withExposedPorts(9080)
-                    .waitingFor(Wait.forHttp("/version").forPort(9080))
-                    .start();
+        WeasyPrintServiceConnector weasyPrintServiceConnector = getWeasyPrintServiceConnector();
+        return weasyPrintServiceConnector.convertToPdf(html, weasyPrintOptions, documentData);
+    }
 
-            assertTrue(weasyPrintService.isRunning());
+    public static @NotNull WeasyPrintServiceConnector getWeasyPrintServiceConnector() {
+        GenericContainer<?> weasyPrintService = SharedWeasyPrintContainer.getInstance();
+        assertTrue(weasyPrintService.isRunning(), "WeasyPrint container should be running");
 
-            String weasyPrintServiceBaseUrl = "http://" + weasyPrintService.getHost() + ":" + weasyPrintService.getFirstMappedPort();
-            WeasyPrintServiceConnector weasyPrintServiceConnector = new WeasyPrintServiceConnector(weasyPrintServiceBaseUrl);
-            return weasyPrintServiceConnector.convertToPdf(html, weasyPrintOptions, documentData);
-        }
+        String weasyPrintServiceBaseUrl = "http://" + weasyPrintService.getHost() + ":" + weasyPrintService.getFirstMappedPort();
+        return new WeasyPrintServiceConnector(weasyPrintServiceBaseUrl);
     }
 
     protected List<BufferedImage> exportAndGetAsImages(String fileName) {
