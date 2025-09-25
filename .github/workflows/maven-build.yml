@@ -25,6 +25,7 @@ jobs:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
       MARKDOWN2HTML_MAVEN_PLUGIN_FAIL_ON_ERROR: true
       GITHUB_TOKEN: ${{ github.token }}  # providing this prevent from reaching GitHub requests limit
+      TESTCONTAINERS_LOG_LEVEL: DEBUG
     steps:
       - name: 📄 Checkout the repository
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8  # v5.0.0

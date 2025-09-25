@@ -4,6 +4,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
+import org.testcontainers.images.ImagePullPolicy;
+import org.testcontainers.images.PullPolicy;
 
 import java.time.Duration;
 
@@ -31,7 +33,6 @@ public final class SharedWeasyPrintContainer {
             try {
                 GenericContainer<?> container = new GenericContainer<>(DOCKER_IMAGE_NAME)
                         .withExposedPorts(9080)
-                        .withReuse(true)  // Enable container reuse
                         .waitingFor(
                                 Wait.forHttp("/version").forPort(9080)
                                         .forStatusCode(200)
@@ -39,8 +40,8 @@ public final class SharedWeasyPrintContainer {
                         )
                         .withCreateContainerCmdModifier(createContainerCmd ->
                                 createContainerCmd.getHostConfig()
-                                        .withMemory(2 * 1024 * 1024 * 1024L)  // Limit to 2GB
-                                        .withCpuCount(2L));  // Limit CPU cores
+                                        .withNanoCPUs(500_000_000L) // 0.5 vCPU
+                                        .withMemory(4 * 1024 * 1024 * 1024L)); // 4 GB
 
                 container.start();
 
