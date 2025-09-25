@@ -572,6 +572,7 @@ export default class ExportPopup {
         const live_doc = this.ctx.getDocumentType() === ExportParams.DocumentType.LIVE_DOC;
         const test_run = this.ctx.getDocumentType() === ExportParams.DocumentType.TEST_RUN;
         return new ExportParams.Builder(this.ctx.getDocumentType())
+            .setAutoSelectStylePackage(this.ctx.getExportType() === ExportParams.ExportType.BULK)
             .setProjectId(this.ctx.getProjectId())
             .setLocationPath(this.ctx.getLocationPath())
             .setBaselineRevision(this.ctx.getBaselineRevision())

@@ -1731,6 +1731,10 @@
             "description": "Filter for attachments to be downloaded, example: '*.pdf'",
             "type": "string"
           },
+          "autoSelectStylePackage": {
+            "description": "Indicator that most parameters from this object should be ignored, best suitable style package should be found and properties from it should be taken instead",
+            "type": "boolean"
+          },
           "baselineRevision": {
             "description": "The specific revision of the provided baseline",
             "type": "string"

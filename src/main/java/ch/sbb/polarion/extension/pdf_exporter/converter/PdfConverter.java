@@ -11,6 +11,8 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.DocumentData;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.css.CssModel;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.headerfooter.HeaderFooterModel;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.stylepackage.DocIdentifier;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.stylepackage.StylePackageModel;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.webhooks.AuthType;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.webhooks.WebhookConfig;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.webhooks.WebhooksModel;
@@ -99,6 +101,11 @@ public class PdfConverter {
 
         PdfGenerationLog generationLog = new PdfGenerationLog();
         generationLog.log("Starting html generation");
+
+        if (exportParams.isAutoSelectStylePackage()) {
+            StylePackageModel mostSuitableStylePackageModel = pdfExporterPolarionService.getMostSuitableStylePackageModel(DocIdentifier.of(exportParams));
+            exportParams.overwriteByStylePackage(mostSuitableStylePackageModel);
+        }
 
         @Nullable ITrackerProject project = getTrackerProject(exportParams);
         @NotNull final DocumentData<? extends IUniqueObject> documentData = DocumentDataFactory.getDocumentData(exportParams, true);

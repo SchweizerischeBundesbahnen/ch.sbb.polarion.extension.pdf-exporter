@@ -1,5 +1,6 @@
 package ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.stylepackage;
 
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
@@ -29,4 +30,15 @@ public class DocIdentifier {
 
     @Schema(description = "Document name")
     private @NotNull String documentName;
+
+    public static DocIdentifier of(@NotNull ExportParams exportParams) {
+        String locationPath = exportParams.getLocationPath();
+        String[] locationParts = locationPath != null ? locationPath.split("/") : new String[0];
+
+        return DocIdentifier.builder()
+                .projectId(exportParams.getProjectId())
+                .spaceId(locationParts.length > 0 ? locationParts[0] : "_default")
+                .documentName(locationParts.length > 1 ? locationParts[1] : "")
+                .build();
+    }
 }
