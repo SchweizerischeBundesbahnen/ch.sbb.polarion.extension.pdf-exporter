@@ -40,7 +40,7 @@ public final class SharedWeasyPrintContainer {
                         )
                         .withCreateContainerCmdModifier(createContainerCmd ->
                                 createContainerCmd.getHostConfig()
-                                        .withNanoCPUs(500_000_000L) // 0.5 vCPU
+                                        .withNanoCPUs(1_000_000_000L) // 1.0 vCPU
                                         .withMemory(4 * 1024 * 1024 * 1024L)); // 4 GB
 
                 container.start();
