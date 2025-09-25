@@ -19,7 +19,6 @@ import ch.sbb.polarion.extension.pdf_exporter.util.PdfTemplateProcessor;
 import ch.sbb.polarion.extension.pdf_exporter.util.html.HtmlLinksHelper;
 import ch.sbb.polarion.extension.pdf_exporter.util.placeholder.PlaceholderProcessor;
 import ch.sbb.polarion.extension.pdf_exporter.util.velocity.VelocityEvaluator;
-import ch.sbb.polarion.extension.pdf_exporter.weasyprint.service.WeasyPrintServiceConnector;
 import com.polarion.alm.projects.IProjectService;
 import com.polarion.alm.projects.model.IProject;
 import com.polarion.alm.tracker.ITestManagementService;
