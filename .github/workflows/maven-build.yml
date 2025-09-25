@@ -26,12 +26,6 @@ jobs:
       MARKDOWN2HTML_MAVEN_PLUGIN_FAIL_ON_ERROR: true
       GITHUB_TOKEN: ${{ github.token }}  # providing this prevent from reaching GitHub requests limit
     steps:
-      - name: Print CPU info
-        run: |
-          nproc
-          lscpu
-          free -h
-          df -h
       - name: 📄 Checkout the repository
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8  # v5.0.0
         with:
