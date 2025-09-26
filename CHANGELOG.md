@@ -1,5 +1,13 @@
 # Changelog
 
+## [9.4.2](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v9.4.1...v9.4.2) (2025-09-26)
+
+
+### Bug Fixes
+
+* Autoselect most suitable style package during bulk export ([#533](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/533)) ([8ee6e91](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/8ee6e91607622b3070d3ff9d48df90848b55e10b)), closes [#532](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/532)
+* **deps:** update dependency ch.sbb.polarion.extensions:ch.sbb.polarion.extension.generic to v11.1.0 ([8b785c7](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/8b785c7bdf0716a63920ec3be67664ff32865ac5))
+
 ## [9.4.1](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v9.4.0...v9.4.1) (2025-09-24)
 
 
