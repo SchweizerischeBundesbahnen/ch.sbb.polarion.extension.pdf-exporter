@@ -126,7 +126,6 @@ public class ExportParams extends ConversionParams {
         renderComments = stylePackageModel.getRenderComments();
         watermark = stylePackageModel.isWatermark();
         markReferencedWorkitems = stylePackageModel.isMarkReferencedWorkitems();
-        cutEmptyChapters = stylePackageModel.isCutEmptyChapters();
         setCutEmptyWIAttributes(stylePackageModel.isCutEmptyWorkitemAttributes());
         cutLocalUrls = stylePackageModel.isCutLocalURLs();
         cutEmptyChapters = stylePackageModel.isCutEmptyChapters();
