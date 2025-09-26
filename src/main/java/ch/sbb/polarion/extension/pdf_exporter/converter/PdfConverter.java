@@ -239,11 +239,11 @@ public class PdfConverter {
 
     @VisibleForTesting
     byte[] generatePdf(
-            DocumentData<? extends IUniqueObject> documentData,
-            ExportParams exportParams,
-            ExportMetaInfoCallback metaInfoCallback,
-            String htmlPage,
-            PdfGenerationLog generationLog) {
+            @NotNull DocumentData<? extends IUniqueObject> documentData,
+            @NotNull ExportParams exportParams,
+            @Nullable ExportMetaInfoCallback metaInfoCallback,
+            @NotNull String htmlPage,
+            @NotNull PdfGenerationLog generationLog) {
 
         WeasyPrintOptions weasyPrintOptions = WeasyPrintOptions.builder()
                 .followHTMLPresentationalHints(exportParams.isFollowHTMLPresentationalHints())

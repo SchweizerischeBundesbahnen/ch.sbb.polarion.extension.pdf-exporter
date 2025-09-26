@@ -50,9 +50,8 @@ class CssSettingsTest {
             mockScopeUtils.when(ScopeUtils::getDefaultLocation).thenReturn(mockDefaultLocation);
             mockScopeUtils.when(() -> ScopeUtils.getContextLocation("")).thenReturn(mockDefaultLocation);
 
-            assertThrows(ObjectNotFoundException.class, () -> {
-                CssModel loadedModel = cssSettings.load(projectName, SettingId.fromName("Any setting name"));
-            });
+            SettingId anySettingName = SettingId.fromName("Any setting name");
+            assertThrows(ObjectNotFoundException.class, () -> cssSettings.load(projectName, anySettingName));
         }
     }
 
