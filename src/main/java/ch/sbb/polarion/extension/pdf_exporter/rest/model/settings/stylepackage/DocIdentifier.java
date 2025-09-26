@@ -22,6 +22,8 @@ import org.jetbrains.annotations.Nullable;
 @Schema(description = "Unique document identifier data")
 public class DocIdentifier {
 
+    private static final String DEFAULT_SPACE_ID = "_default";
+
     @Schema(description = "Project ID")
     private @Nullable String projectId;
 
@@ -37,7 +39,7 @@ public class DocIdentifier {
 
         return DocIdentifier.builder()
                 .projectId(exportParams.getProjectId())
-                .spaceId(locationParts.length > 0 ? locationParts[0] : "_default")
+                .spaceId(locationParts.length > 0 ? locationParts[0] : DEFAULT_SPACE_ID)
                 .documentName(locationParts.length > 1 ? locationParts[1] : "")
                 .build();
     }
