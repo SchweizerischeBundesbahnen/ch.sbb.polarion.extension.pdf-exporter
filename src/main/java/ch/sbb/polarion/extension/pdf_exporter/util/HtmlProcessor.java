@@ -23,11 +23,15 @@ import org.jsoup.nodes.Document;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static ch.sbb.polarion.extension.pdf_exporter.util.exporter.Constants.*;
 
@@ -115,6 +119,9 @@ public class HtmlProcessor {
         if (exportParams.isCutEmptyWIAttributes()) {
             html = cutEmptyWIAttributes(html);
         }
+
+        html = rewritePolarionLinks(html);
+
         if (exportParams.isCutLocalUrls()) {
             html = cutLocalUrls(html);
         }
@@ -156,6 +163,40 @@ public class HtmlProcessor {
                     String content = regexEngine.group("content");
                     return content != null ? content : regexEngine.group("imgContent");
                 });
+    }
+
+    @NotNull
+    @VisibleForTesting
+    @SuppressWarnings({"java:S5843", "java:S5852"})
+    String rewritePolarionLinks(String html) {
+        Pattern anchorPattern = Pattern.compile("<a[^>]+id=\"(work-item-anchor-[^\"]+)\"");
+        Matcher anchorMatcher = anchorPattern.matcher(html);
+        Set<String> anchors = new HashSet<>();
+        while (anchorMatcher.find()) {
+            anchors.add(anchorMatcher.group(1));
+        }
+
+        Pattern linkPattern = Pattern.compile(
+                "<a[^>]+?href=\"[^\"]*?/polarion/#/project/([^/]+)/workitem\\?id=([^\"]+)\"[^>]*>([\\s\\S]+?)</a>"
+        );
+        Matcher linkMatcher = linkPattern.matcher(html);
+        StringBuffer sb = new StringBuffer();
+        while (linkMatcher.find()) {
+            String projectId = linkMatcher.group(1);
+            String workItemId = linkMatcher.group(2);
+            String content = linkMatcher.group(3);
+
+            String anchorId = "work-item-anchor-" + projectId + "/" + workItemId;
+
+            if (anchors.contains(anchorId)) {
+                linkMatcher.appendReplacement(sb,
+                        "<a href=\"#" + anchorId + "\">" + content + "</a>");
+            } else {
+                linkMatcher.appendReplacement(sb, linkMatcher.group(0));
+            }
+        }
+        linkMatcher.appendTail(sb);
+        return sb.toString();
     }
 
     /**
