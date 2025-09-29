@@ -1,12 +1,12 @@
 package ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.adapters;
 
+import ch.sbb.polarion.extension.generic.service.PolarionBaselineExecutor;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.CommentsRenderType;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.DocumentType;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.id.DocumentId;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.id.DocumentProject;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.id.LiveDocId;
-import ch.sbb.polarion.extension.pdf_exporter.service.PolarionBaselineExecutor;
 import ch.sbb.polarion.extension.pdf_exporter.util.LiveDocCommentsProcessor;
 import ch.sbb.polarion.extension.pdf_exporter.util.exporter.ModifiedDocumentRenderer;
 import com.polarion.alm.projects.model.IUniqueObject;

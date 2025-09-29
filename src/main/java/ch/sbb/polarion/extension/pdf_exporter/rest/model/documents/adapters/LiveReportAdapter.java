@@ -1,11 +1,11 @@
 package ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.adapters;
 
+import ch.sbb.polarion.extension.generic.service.PolarionBaselineExecutor;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.DocumentType;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.id.DocumentId;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.id.DocumentProject;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.id.LiveReportId;
-import ch.sbb.polarion.extension.pdf_exporter.service.PolarionBaselineExecutor;
 import com.polarion.alm.projects.model.IUniqueObject;
 import com.polarion.alm.server.api.model.rp.ProxyRichPage;
 import com.polarion.alm.shared.api.transaction.ReadOnlyTransaction;

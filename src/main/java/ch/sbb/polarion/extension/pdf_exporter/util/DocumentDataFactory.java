@@ -1,10 +1,10 @@
 package ch.sbb.polarion.extension.pdf_exporter.util;
 
+import ch.sbb.polarion.extension.generic.service.PolarionBaselineExecutor;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.DocumentData;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.ModelObjectProvider;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.UniqueObjectConverter;
-import ch.sbb.polarion.extension.pdf_exporter.service.PolarionBaselineExecutor;
 import com.polarion.alm.projects.model.IUniqueObject;
 import com.polarion.alm.shared.api.model.ModelObject;
 import com.polarion.alm.shared.api.transaction.TransactionalExecutor;
