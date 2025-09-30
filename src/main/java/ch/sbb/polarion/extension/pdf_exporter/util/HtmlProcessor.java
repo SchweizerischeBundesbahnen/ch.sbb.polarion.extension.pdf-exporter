@@ -167,7 +167,7 @@ public class HtmlProcessor {
 
     @NotNull
     @VisibleForTesting
-    @SuppressWarnings({"java:S5843", "java:S5852"})
+    @SuppressWarnings({"java:S5843", "java:S5852"}) // The regular expressions used in this method are intentionally written to match specific HTML anchor/link patterns in Polarion exports.
     String rewritePolarionLinks(String html) {
         Pattern anchorPattern = Pattern.compile("<a[^>]+id=\"(work-item-anchor-[^\"]+)\"");
         Matcher anchorMatcher = anchorPattern.matcher(html);
