@@ -71,7 +71,7 @@ class CoverPageProcessorTest {
         when(weasyPrintServiceConnector.convertToPdf(eq("test content"), any(WeasyPrintOptions.class), any())).thenReturn(createEmptyPdf(3));
 
         // Act
-        byte[] result = coverPageProcessor.generatePdfWithTitle(documentData, exportParams, "test content", new WeasyPrintOptions(), new PdfGenerationLog());
+        byte[] result = coverPageProcessor.generatePdfWithTitle(documentData, exportParams, "test content", WeasyPrintOptions.builder().build(), new PdfGenerationLog());
 
         // Assert
         try (PDDocument document = Loader.loadPDF(result)) {

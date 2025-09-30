@@ -102,7 +102,7 @@ public abstract class BaseWeasyPrintTest {
     @SneakyThrows
     @NotNull
     protected List<BufferedImage> exportAndGetAsImages(String fileName, String html) {
-        byte[] pdfBytes = exportToPdf(html, new WeasyPrintOptions());
+        byte[] pdfBytes = exportToPdf(html, WeasyPrintOptions.builder().build());
         if (pdfBytes != null) {
             return getAllPagesAsImagesAndLogAsReports(fileName, pdfBytes);
         } else {
