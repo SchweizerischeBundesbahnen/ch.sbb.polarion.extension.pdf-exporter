@@ -1,5 +1,12 @@
 # Changelog
 
+## [9.4.3](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v9.4.2...v9.4.3) (2025-09-30)
+
+
+### Bug Fixes
+
+* correct projectId assignment in document file name generation ([#538](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/538)) ([6cf623b](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/6cf623b0cb55c44ecc4687c78d99a87be424e2c9)), closes [#537](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/537)
+
 ## [9.4.2](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v9.4.1...v9.4.2) (2025-09-26)
 
 
