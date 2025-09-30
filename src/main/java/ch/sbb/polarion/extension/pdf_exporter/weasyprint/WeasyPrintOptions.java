@@ -4,10 +4,8 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ImageDensity
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PdfVariant;
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
-@NoArgsConstructor
-@AllArgsConstructor
+@AllArgsConstructor(access = lombok.AccessLevel.PRIVATE)
 @Data
 public class WeasyPrintOptions {
     private boolean followHTMLPresentationalHints;
