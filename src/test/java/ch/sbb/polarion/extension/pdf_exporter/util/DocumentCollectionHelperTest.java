@@ -3,6 +3,8 @@ package ch.sbb.polarion.extension.pdf_exporter.util;
 import ch.sbb.polarion.extension.generic.test_extensions.PlatformContextMockExtension;
 import ch.sbb.polarion.extension.generic.test_extensions.TransactionalExecutorExtension;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.collections.DocumentCollectionEntry;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.DocumentType;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
 import com.polarion.alm.shared.api.model.baselinecollection.BaselineCollection;
 import com.polarion.alm.shared.api.model.baselinecollection.BaselineCollectionReference;
 import com.polarion.alm.shared.api.transaction.ReadOnlyTransaction;
@@ -28,9 +30,10 @@ class DocumentCollectionHelperTest {
     @SuppressWarnings("unused")
     void testGetDocumentsFromCollection() {
         DocumentFileNameHelper documentFileNameHelper = mock(DocumentFileNameHelper.class);
-        when(documentFileNameHelper.getDocumentFileName(any())).thenReturn("testFileName");
+
         DocumentCollectionHelper helper = new DocumentCollectionHelper(documentFileNameHelper);
         String projectId = "testProjectId";
+        String secondProjectId = "testProject2Id";
         String collectionId = "testCollectionId";
 
         IBaselineCollection mockCollection = mock(IBaselineCollection.class);
@@ -56,13 +59,36 @@ class DocumentCollectionHelperTest {
         when(mockLocation2.getLocationPath()).thenReturn("space 2");
         when(mockModule2.getRevision()).thenReturn("2");
 
-        when(mockModule3.getProjectId()).thenReturn(projectId);
+        when(mockModule3.getProjectId()).thenReturn(secondProjectId);
         when(mockModule3.getModuleFolder()).thenReturn("upstream_space");
         when(mockModule3.getModuleName()).thenReturn("upstream Module");
         ILocation mockLocation3 = mock(ILocation.class);
         when(mockModule3.getModuleLocation()).thenReturn(mockLocation3);
         when(mockLocation3.getLocationPath()).thenReturn("space 3");
         when(mockModule3.getRevision()).thenReturn("3");
+
+        when(documentFileNameHelper.getDocumentFileName(any())).thenThrow(new IllegalStateException("Unexpected call to documentFileNameHelper"));
+        doReturn("testFileName1").when(documentFileNameHelper).getDocumentFileName(
+                ExportParams.builder()
+                        .projectId(projectId)
+                        .documentType(DocumentType.LIVE_DOC)
+                        .locationPath("space 1")
+                        .revision("1")
+                        .build());
+        doReturn("testFileName2").when(documentFileNameHelper).getDocumentFileName(
+                ExportParams.builder()
+                        .projectId(projectId)
+                        .documentType(DocumentType.LIVE_DOC)
+                        .locationPath("space 2")
+                        .revision("2")
+                        .build());
+        doReturn("testFileName3").when(documentFileNameHelper).getDocumentFileName(
+                ExportParams.builder()
+                        .projectId(secondProjectId)
+                        .documentType(DocumentType.LIVE_DOC)
+                        .locationPath("space 3")
+                        .revision("3")
+                        .build());
 
         IBaselineCollectionElement mockElement1 = mock(IBaselineCollectionElement.class);
         IBaselineCollectionElement mockElement2 = mock(IBaselineCollectionElement.class);
