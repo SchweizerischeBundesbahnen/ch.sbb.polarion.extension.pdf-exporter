@@ -20,8 +20,8 @@ class CoverPageTest extends BaseWeasyPrintTest {
 
         String testName = getCurrentMethodName();
 
-        byte[] titleBytes = exportToPdf("<div>HEADER</div>", new WeasyPrintOptions());
-        byte[] contentBytes = exportToPdf("<div style='break-after:page'>page to be removed</div><div>TEST</div>", new WeasyPrintOptions());
+        byte[] titleBytes = exportToPdf("<div>HEADER</div>", WeasyPrintOptions.builder().build());
+        byte[] contentBytes = exportToPdf("<div style='break-after:page'>page to be removed</div><div>TEST</div>", WeasyPrintOptions.builder().build());
 
         BufferedImage titleImage;
         BufferedImage contentImage;
@@ -48,8 +48,8 @@ class CoverPageTest extends BaseWeasyPrintTest {
 
         String testName = getCurrentMethodName();
 
-        byte[] titleBytes = exportToPdf("<div style='break-after:page'>HEADER 1</div><div style='break-after:page'>HEADER 2</div><div style='break-after:page'>HEADER 3</div>", new WeasyPrintOptions());
-        byte[] contentBytes = exportToPdf("<div style='break-after:page'>page to be removed</div><div>TEST</div>", new WeasyPrintOptions());
+        byte[] titleBytes = exportToPdf("<div style='break-after:page'>HEADER 1</div><div style='break-after:page'>HEADER 2</div><div style='break-after:page'>HEADER 3</div>", WeasyPrintOptions.builder().build());
+        byte[] contentBytes = exportToPdf("<div style='break-after:page'>page to be removed</div><div>TEST</div>", WeasyPrintOptions.builder().build());
 
         BufferedImage titleImage;
         BufferedImage contentImage;
