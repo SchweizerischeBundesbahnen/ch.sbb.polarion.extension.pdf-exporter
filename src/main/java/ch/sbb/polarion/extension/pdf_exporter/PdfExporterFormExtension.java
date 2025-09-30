@@ -1,5 +1,6 @@
 package ch.sbb.polarion.extension.pdf_exporter;
 
+import ch.sbb.polarion.extension.generic.service.PolarionBaselineExecutor;
 import ch.sbb.polarion.extension.generic.settings.NamedSettings;
 import ch.sbb.polarion.extension.generic.settings.NamedSettingsRegistry;
 import ch.sbb.polarion.extension.generic.settings.SettingId;
@@ -12,7 +13,6 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.localization.L
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.stylepackage.DocIdentifier;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.stylepackage.StylePackageModel;
 import ch.sbb.polarion.extension.pdf_exporter.service.PdfExporterPolarionService;
-import ch.sbb.polarion.extension.pdf_exporter.service.PolarionBaselineExecutor;
 import ch.sbb.polarion.extension.pdf_exporter.settings.CoverPageSettings;
 import ch.sbb.polarion.extension.pdf_exporter.settings.CssSettings;
 import ch.sbb.polarion.extension.pdf_exporter.settings.HeaderFooterSettings;
