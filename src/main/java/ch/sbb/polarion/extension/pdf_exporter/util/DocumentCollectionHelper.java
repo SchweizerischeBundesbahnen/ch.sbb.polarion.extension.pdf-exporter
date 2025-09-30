@@ -62,7 +62,7 @@ public class DocumentCollectionHelper {
                     module.getRevision(),
                     documentFileNameHelper.getDocumentFileName(
                             ExportParams.builder()
-                                    .projectId(projectId)
+                                    .projectId(module.getProjectId())
                                     .documentType(DocumentType.LIVE_DOC)
                                     .locationPath(module.getModuleLocation().getLocationPath())
                                     .revision(module.getRevision())
