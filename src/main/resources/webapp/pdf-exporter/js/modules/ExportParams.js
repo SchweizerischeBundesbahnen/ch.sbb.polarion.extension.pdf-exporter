@@ -83,6 +83,7 @@ export default class ExportParams {
         this.embedAttachments = builder.embedAttachments;
         this.internalContent = builder.internalContent;
         this.imageDensity = builder.imageDensity;
+        this.autoSelectStylePackage = builder.autoSelectStylePackage;
     }
 
     toJSON() {
@@ -138,6 +139,12 @@ export default class ExportParams {
                 this.embedAttachments = undefined;
                 this.internalContent = undefined;
                 this.imageDensity = undefined;
+                this.autoSelectStylePackage = undefined;
+            }
+
+            setAutoSelectStylePackage(autoSelectStylePackage) {
+                this.autoSelectStylePackage = autoSelectStylePackage;
+                return this;
             }
 
             setProjectId(projectId) {

@@ -114,6 +114,23 @@ public class PdfExporterPolarionService extends PolarionService {
         }).toList();
     }
 
+    public @NotNull StylePackageModel getMostSuitableStylePackageModel(@NotNull DocIdentifier docIdentifier) {
+        StylePackageSettings stylePackageSettings = (StylePackageSettings) NamedSettingsRegistry.INSTANCE.getByFeatureName(StylePackageSettings.FEATURE_NAME);
+        // if user mixes items from different projects then we can use only 'default'-level style packages
+        String stylePackageScope = ScopeUtils.getScopeFromProject(docIdentifier.getProjectId());
+        Collection<SettingName> stylePackageNames = stylePackageSettings.readNames(stylePackageScope);
+        List<SettingName> names = stylePackageNames.stream().filter(stylePackageName ->
+                isStylePackageSuitable(docIdentifier.getProjectId(), docIdentifier.getSpaceId(), docIdentifier.getDocumentName(), stylePackageSettings, stylePackageScope, stylePackageName)).toList();
+        Map<SettingName, Float> weightsMap = new HashMap<>();
+        names.forEach(name -> weightsMap.put(name, stylePackageSettings.read(name.getScope(), SettingId.fromName(name.getName()), null).getWeight()));
+        SettingName mostSuitableName = names.stream().min((o1, o2) -> {
+            int compareResult = weightsMap.get(o2).compareTo(weightsMap.get(o1));
+            return compareResult == 0 ? o1.getName().compareToIgnoreCase(o2.getName()) : compareResult;
+        }).orElse(null);
+
+        return mostSuitableName != null ? stylePackageSettings.read(stylePackageScope, SettingId.fromName(mostSuitableName.getName()), null) : stylePackageSettings.defaultValues();
+    }
+
     @SuppressWarnings("unchecked")
     private boolean isStylePackageSuitable(@Nullable String projectId, @NotNull String spaceId, @NotNull String documentName,
                                            @NotNull StylePackageSettings stylePackageSettings, @NotNull String stylePackageScope, @NotNull SettingName stylePackageName) {

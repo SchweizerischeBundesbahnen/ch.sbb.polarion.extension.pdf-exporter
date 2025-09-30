@@ -45,6 +45,17 @@ export default class ExportPopup {
                 this.exportToPdf()
             });
 
+        this.ctx.displayIf("popup-auto-select-style-package-container", this.autoSelectStylePackageAvailable());
+        this.ctx.onChange('popup-auto-select-style-package', (event) => {
+            this.ctx.displayIf("popup-style-package", !event.target.checked);
+            if (event.target.checked) {
+                this.ctx.displayIf("popup-style-package-content", false);
+            } else {
+                this.ctx.getElementById("popup-style-package-select").dispatchEvent(new Event('change'));
+            }
+        });
+        this.ctx.displayIf("popup-style-package", !this.autoSelectStylePackageAvailable());
+
         this.openPopup();
     }
 
@@ -365,7 +376,8 @@ export default class ExportPopup {
         }
         this.ctx.displayIf("popup-roles-selector", this.ctx.getExportType() !== ExportParams.ExportType.BULK && rolesProvided, "inline-block");
 
-        this.ctx.displayIf("popup-style-package-content", stylePackage.exposeSettings);
+        this.ctx.displayIf("popup-style-package-content",
+            (!this.autoSelectStylePackageAvailable() || !this.ctx.getCheckboxValueById("popup-auto-select-style-package")) && stylePackage.exposeSettings);
         this.ctx.displayIf("popup-page-width-validation", this.ctx.getExportType() !== ExportParams.ExportType.BULK && stylePackage.exposePageWidthValidation);
 
         let attachmentFieldsVisible = stylePackage.attachmentsFilter || stylePackage.testcaseFieldId;
@@ -572,6 +584,7 @@ export default class ExportPopup {
         const live_doc = this.ctx.getDocumentType() === ExportParams.DocumentType.LIVE_DOC;
         const test_run = this.ctx.getDocumentType() === ExportParams.DocumentType.TEST_RUN;
         return new ExportParams.Builder(this.ctx.getDocumentType())
+            .setAutoSelectStylePackage(this.autoSelectStylePackageAvailable() && this.ctx.getCheckboxValueById("popup-auto-select-style-package"))
             .setProjectId(this.ctx.getProjectId())
             .setLocationPath(this.ctx.getLocationPath())
             .setBaselineRevision(this.ctx.getBaselineRevision())
@@ -708,6 +721,11 @@ export default class ExportPopup {
                 }
             });
         });
+    }
+
+    autoSelectStylePackageAvailable() {
+        return this.ctx.getExportType() === ExportParams.ExportType.BULK
+            && (this.ctx.getDocumentType() === ExportParams.DocumentType.LIVE_DOC || this.ctx.getDocumentType() === ExportParams.DocumentType.BASELINE_COLLECTION);
     }
 }
 

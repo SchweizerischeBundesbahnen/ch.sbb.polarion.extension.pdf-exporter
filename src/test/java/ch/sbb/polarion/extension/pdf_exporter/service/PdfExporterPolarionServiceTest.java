@@ -12,6 +12,7 @@ import ch.sbb.polarion.extension.pdf_exporter.settings.StylePackageSettings;
 import com.polarion.alm.projects.IProjectService;
 import com.polarion.alm.tracker.ITestManagementService;
 import com.polarion.alm.tracker.ITrackerService;
+import com.polarion.alm.tracker.model.IModule;
 import com.polarion.alm.tracker.model.ITestRecord;
 import com.polarion.alm.tracker.model.ITestRun;
 import com.polarion.alm.tracker.model.ITestRunAttachment;
@@ -19,9 +20,12 @@ import com.polarion.alm.tracker.model.ITestStepResult;
 import com.polarion.alm.tracker.model.ITrackerProject;
 import com.polarion.alm.tracker.model.IWorkItem;
 import com.polarion.platform.IPlatformService;
+import com.polarion.platform.persistence.IDataService;
+import com.polarion.platform.persistence.model.IPObjectList;
 import com.polarion.platform.persistence.spi.PObjectList;
 import com.polarion.platform.security.ISecurityService;
 import com.polarion.platform.service.repository.IRepositoryService;
+import com.polarion.subterra.base.location.ILocation;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
@@ -182,6 +186,61 @@ class PdfExporterPolarionServiceTest {
         assertNotNull(result);
         assertEquals(2, result.size());
         assertEquals(List.of("default2", "default1"), result.stream().map(SettingName::getName).toList());
+    }
+
+    @Test
+    void testGetMostSuitableStylePackageModel() {
+        IDataService dataService = mock(IDataService.class);
+        when(trackerService.getDataService()).thenReturn(dataService);
+        IModule module = mock(IModule.class);
+        when(module.getProjectId()).thenReturn("someProjectId");
+        ILocation location = mock(ILocation.class);
+        when(module.getModuleLocation()).thenReturn(location);
+        when(location.getLocationPath()).thenReturn("someSpaceId/documentName");
+        IPObjectList matchingDocuments = new PObjectList(dataService, List.of(module));
+        when(dataService.searchInstances(IModule.PROTO, "matching", "name")).thenReturn(matchingDocuments);
+        IPObjectList notMatchingDocuments = new PObjectList(dataService, List.of());
+        when(dataService.searchInstances(IModule.PROTO, "not_matching", "name")).thenReturn(notMatchingDocuments);
+
+        String projectId = "someProjectId";
+        String spaceId = "someSpaceId";
+        String documentName = "documentName";
+        Collection<SettingName> defaultSettingNames = List.of(
+                SettingName.builder().id("d1").name("default1").scope("").build(),
+                SettingName.builder().id("d2").name("default2").scope("").build()
+        );
+        StylePackageModel defaultMockModel1 = mock(StylePackageModel.class);
+        when(defaultMockModel1.getWeight()).thenReturn(10f);
+        StylePackageModel defaultMockModel2 = mock(StylePackageModel.class);
+        when(defaultMockModel2.getWeight()).thenReturn(16f);
+        Collection<SettingName> settingNames = List.of(
+                SettingName.builder().id("id1").name("name1").scope("project/someProjectId/").build(),
+                SettingName.builder().id("id4").name("name4").scope("project/someProjectId/").build(),
+                SettingName.builder().id("id2").name("name2").scope("project/someProjectId/").build(),
+                SettingName.builder().id("id5").name("name5").scope("project/someProjectId/").build(),
+                SettingName.builder().id("id3").name("name3").scope("project/someProjectId/").build()
+        );
+        StylePackageModel model1 = StylePackageModel.builder().weight(0.5f).matchingQuery("not_matching").build();
+        StylePackageModel model2 = StylePackageModel.builder().weight(50.1f).matchingQuery("not_matching").build();
+        StylePackageModel model3 = StylePackageModel.builder().weight(55.0f).matchingQuery("matching").build();
+        StylePackageModel model4 = StylePackageModel.builder().weight(60.0f).matchingQuery("matching").build();
+        StylePackageModel model5 = StylePackageModel.builder().weight(50.0f).build();
+
+        when(stylePackageSettings.readNames("")).thenReturn(defaultSettingNames);
+        when(stylePackageSettings.readNames(ScopeUtils.getScopeFromProject(projectId))).thenReturn(settingNames);
+        when(stylePackageSettings.read(eq(""), eq(SettingId.fromName("default1")), isNull())).thenReturn(defaultMockModel1);
+        when(stylePackageSettings.read(eq(""), eq(SettingId.fromName("default2")), isNull())).thenReturn(defaultMockModel2);
+        when(stylePackageSettings.read(eq("project/someProjectId/"), eq(SettingId.fromName("name1")), isNull())).thenReturn(model1);
+        when(stylePackageSettings.read(eq("project/someProjectId/"), eq(SettingId.fromName("name2")), isNull())).thenReturn(model2);
+        when(stylePackageSettings.read(eq("project/someProjectId/"), eq(SettingId.fromName("name3")), isNull())).thenReturn(model3);
+        when(stylePackageSettings.read(eq("project/someProjectId/"), eq(SettingId.fromName("name4")), isNull())).thenReturn(model4);
+        when(stylePackageSettings.read(eq("project/someProjectId/"), eq(SettingId.fromName("name5")), isNull())).thenReturn(model5);
+
+        StylePackageModel result = service.getMostSuitableStylePackageModel(new DocIdentifier(projectId, spaceId, documentName));
+
+        assertNotNull(result);
+        assertEquals(60.0f, result.getWeight());
+        assertEquals("matching", result.getMatchingQuery());
     }
 
     @Test

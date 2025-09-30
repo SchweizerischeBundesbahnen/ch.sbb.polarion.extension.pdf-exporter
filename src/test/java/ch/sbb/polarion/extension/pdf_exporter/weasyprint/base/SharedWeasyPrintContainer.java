@@ -35,11 +35,7 @@ public final class SharedWeasyPrintContainer {
                                 Wait.forHttp("/version").forPort(9080)
                                         .forStatusCode(200)
                                         .withStartupTimeout(Duration.ofMinutes(2))
-                        )
-                        .withCreateContainerCmdModifier(createContainerCmd ->
-                                createContainerCmd.getHostConfig()
-                                        .withNanoCPUs(4_000_000_000L) // 4.0 vCPU
-                                        .withMemory(4 * 1024 * 1024 * 1024L)); // 4 GB
+                        );
 
                 container.start();
 
