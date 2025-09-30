@@ -60,7 +60,7 @@ class RewritePolarionLinksTest extends BasePdfConverterTest {
                 .lastRevision("42")
                 .revisionPlaceholder("42")
                 .build();
-
+        //Act
         documentDataFactoryMockedStatic.when(() -> DocumentDataFactory.getDocumentData(eq(params), anyBoolean())).thenReturn(liveDoc);
         List<String> links = new ArrayList<>();
         byte[] result = converter.convertToPdf(params, null);
@@ -84,6 +84,7 @@ class RewritePolarionLinksTest extends BasePdfConverterTest {
             links.forEach(System.out::println);
         }
 
+        //Assert
         assertFalse(links.isEmpty());
         assertTrue(links.contains("work-item-anchor-elibrary/EL-227"));
         assertFalse(links.contains("/polarion/#/project/elibrary/workitem?id=EL-134")); // this link be removed, because it is a local link without anchor
@@ -91,6 +92,6 @@ class RewritePolarionLinksTest extends BasePdfConverterTest {
 
     @Override
     protected void prepareSpecificMocks() {
-
+        // No specific mocks needed for this test
     }
 }
