@@ -81,7 +81,6 @@ class RewritePolarionLinksTest extends BasePdfConverterTest {
                     }
                 }
             }
-            links.forEach(System.out::println);
         }
 
         //Assert
