@@ -46,17 +46,7 @@ class RewritePolarionLinksTest extends BasePdfConverterTest {
         DocumentData<IModule> liveDoc = DocumentData.creator(DocumentType.LIVE_DOC, module)
                 .id(LiveDocId.from("testProjectId", "_default", "testDocumentId"))
                 .title("Multi-page Watermarked Document")
-                .content("""
-                        <div>
-                            <a id="work-item-anchor-elibrary/EL-227"></a>
-                            <p>
-                                <a href="http://localhost/polarion/#/project/elibrary/workitem?id=EL-227">Link to EL-227</a>
-                            </p>
-                            <p>
-                                <a href="/polarion/#/project/elibrary/workitem?id=EL-134">Link to EL-134</a>
-                            </p>
-                        </div>
-                        """)
+                .content(readHtmlResource("rewritePolarionLinks"))
                 .lastRevision("42")
                 .revisionPlaceholder("42")
                 .build();
@@ -85,12 +75,7 @@ class RewritePolarionLinksTest extends BasePdfConverterTest {
 
         //Assert
         assertFalse(links.isEmpty());
-        assertTrue(links.contains("work-item-anchor-elibrary/EL-227"));
-        assertFalse(links.contains("/polarion/#/project/elibrary/workitem?id=EL-134")); // this link be removed, because it is a local link without anchor
-    }
-
-    @Override
-    protected void prepareSpecificMocks() {
-        // No specific mocks needed for this test
+        assertTrue(links.contains("work-item-anchor-elibrary/EL-165"));
+        assertFalse(links.contains("/polarion/#/project/elibrary/workitem?id=EL-149")); // this link be removed, because it is a local link without anchor
     }
 }

@@ -106,15 +106,15 @@ class HtmlProcessorTest {
 
     @Test
     @SneakyThrows
-    void rewritePolarionLinksTest() {
+    void rewritePolarionUrlsTest() {
         String anchor = "<a id=\"work-item-anchor-testProject/12345\"></a>";
         String link = "<a href=\"http://localhost/polarion/#/project/testProject/workitem?id=12345\">Work Item 12345</a>";
         String htmlWithAnchor = anchor + link;
         String expected = anchor + "<a href=\"#work-item-anchor-testProject/12345\">Work Item 12345</a>";
-        assertEquals(expected, processor.rewritePolarionLinks(htmlWithAnchor));
+        assertEquals(expected, processor.rewritePolarionUrls(htmlWithAnchor));
 
         String htmlWithoutAnchor = link;
-        assertEquals(link, processor.rewritePolarionLinks(htmlWithoutAnchor));
+        assertEquals(link, processor.rewritePolarionUrls(htmlWithoutAnchor));
     }
 
     @Test

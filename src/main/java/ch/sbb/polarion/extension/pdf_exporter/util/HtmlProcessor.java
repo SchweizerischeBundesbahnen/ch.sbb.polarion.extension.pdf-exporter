@@ -19,7 +19,9 @@ import lombok.SneakyThrows;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
+import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -30,8 +32,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import static ch.sbb.polarion.extension.pdf_exporter.util.exporter.Constants.*;
 
@@ -120,7 +120,7 @@ public class HtmlProcessor {
             html = cutEmptyWIAttributes(html);
         }
 
-        html = rewritePolarionLinks(html);
+        html = rewritePolarionUrls(html);
 
         if (exportParams.isCutLocalUrls()) {
             html = cutLocalUrls(html);
@@ -167,36 +167,58 @@ public class HtmlProcessor {
 
     @NotNull
     @VisibleForTesting
-    @SuppressWarnings({"java:S5843", "java:S5852"}) // The regular expressions used in this method are intentionally written to match specific HTML anchor/link patterns in Polarion exports.
-    String rewritePolarionLinks(String html) {
-        Pattern anchorPattern = Pattern.compile("<a[^>]+id=\"(work-item-anchor-[^\"]+)\"");
-        Matcher anchorMatcher = anchorPattern.matcher(html);
-        Set<String> anchors = new HashSet<>();
-        while (anchorMatcher.find()) {
-            anchors.add(anchorMatcher.group(1));
-        }
+    String rewritePolarionUrls(@NotNull String html) {
+        Document doc = Jsoup.parse(html);
 
-        Pattern linkPattern = Pattern.compile(
-                "<a[^>]+?href=\"[^\"]*?/polarion/#/project/([^/]+)/workitem\\?id=([^\"]+)\"[^>]*>([\\s\\S]+?)</a>"
-        );
-        Matcher linkMatcher = linkPattern.matcher(html);
-        StringBuffer sb = new StringBuffer();
-        while (linkMatcher.find()) {
-            String projectId = linkMatcher.group(1);
-            String workItemId = linkMatcher.group(2);
-            String content = linkMatcher.group(3);
-
-            String anchorId = "work-item-anchor-" + projectId + "/" + workItemId;
-
-            if (anchors.contains(anchorId)) {
-                linkMatcher.appendReplacement(sb,
-                        "<a href=\"#" + anchorId + "\">" + content + "</a>");
-            } else {
-                linkMatcher.appendReplacement(sb, linkMatcher.group(0));
+        Set<String> workItemAnchors = new HashSet<>();
+        for (Element anchor : doc.select("a[id^=work-item-anchor-]")) {
+            String id = anchor.id();
+            if (!id.isEmpty()) {
+                workItemAnchors.add(id);
             }
         }
-        linkMatcher.appendTail(sb);
-        return sb.toString();
+
+        if (workItemAnchors.isEmpty()) {
+            return html;
+        }
+
+        boolean modified = false;
+        for (Element link : doc.select("a[href]")) {
+            String href = link.attr("href");
+            int polarionIdx = href.indexOf("/polarion/#/project/");
+            if (polarionIdx < 0) {
+                continue;
+            }
+            String afterProject = href.substring(polarionIdx + "/polarion/#/project/".length());
+            int slashIdx = afterProject.indexOf('/');
+            if (slashIdx < 0) {
+                continue;
+            }
+            String projectId = afterProject.substring(0, slashIdx);
+            int workItemIdx = afterProject.indexOf("workitem?id=");
+            if (workItemIdx < 0) {
+                continue;
+            }
+            String workItemPart = afterProject.substring(workItemIdx + "workitem?id=".length());
+            int ampIdx = workItemPart.indexOf('&');
+            if (ampIdx >= 0) {
+                workItemPart = workItemPart.substring(ampIdx >= 0 ? 0 : 0, ampIdx);
+            }
+            int hashIdx = workItemPart.indexOf('#');
+            if (hashIdx >= 0) {
+                workItemPart = workItemPart.substring(0, hashIdx);
+            }
+            if (workItemPart.isEmpty()) {
+                continue;
+            }
+            String expectedAnchorId = "work-item-anchor-" + projectId + "/" + workItemPart;
+            if (workItemAnchors.contains(expectedAnchorId)) {
+                link.attr("href", "#" + expectedAnchorId);
+            }
+        }
+
+        html = doc.body().html().replace("$", "&dollar;");
+        return html;
     }
 
     /**
