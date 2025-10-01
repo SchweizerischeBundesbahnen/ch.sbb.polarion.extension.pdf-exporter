@@ -55,19 +55,18 @@ public class DocumentCollectionHelper {
                         .toList();
 
         for (IModule module : modules) {
+            ExportParams exportParams = ExportParams.builder()
+                    .projectId(module.getProjectId())
+                    .documentType(DocumentType.LIVE_DOC)
+                    .locationPath(module.getModuleLocation().getLocationPath())
+                    .revision(module.getRevision())
+                    .build();
             DocumentCollectionEntry documentCollectionEntry = new DocumentCollectionEntry(
                     module.getProjectId(),
                     module.getModuleFolder(),
                     module.getModuleName(),
                     module.getRevision(),
-                    documentFileNameHelper.getDocumentFileName(
-                            ExportParams.builder()
-                                    .projectId(projectId)
-                                    .documentType(DocumentType.LIVE_DOC)
-                                    .locationPath(module.getModuleLocation().getLocationPath())
-                                    .revision(module.getRevision())
-                                    .build()
-                    )
+                    documentFileNameHelper.getDocumentFileName(exportParams)
             );
             result.add(documentCollectionEntry);
         }
