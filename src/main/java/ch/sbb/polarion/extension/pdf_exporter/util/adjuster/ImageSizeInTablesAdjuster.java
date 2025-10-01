@@ -34,9 +34,7 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
                 float columnCountBasedWidth = getImageWidthBasedOnColumnsCount(img);
                 float paramsBasedWidth = PaperSizeUtils.getMaxWidthInTables(conversionParams);
 
-                float maxWidth = (columnCountBasedWidth != -1 && columnCountBasedWidth < paramsBasedWidth)
-                        ? columnCountBasedWidth
-                        : paramsBasedWidth;
+                float maxWidth = columnCountBasedWidth != -1 ? columnCountBasedWidth : paramsBasedWidth;
 
                 if (cssWidth > maxWidth || cssMaxWidth > maxWidth) {
                     adjustImageStyle(img, maxWidth);
