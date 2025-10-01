@@ -165,6 +165,9 @@ public class HtmlProcessor {
                 });
     }
 
+    /**
+     * Rewrites Polarion Work Item hyperlinks so they become intra-document anchor links.
+     **/
     @NotNull
     @VisibleForTesting
     String rewritePolarionUrls(@NotNull String html) {
@@ -182,7 +185,6 @@ public class HtmlProcessor {
             return html;
         }
 
-        boolean modified = false;
         for (Element link : doc.select("a[href]")) {
             String href = link.attr("href");
             int polarionIdx = href.indexOf("/polarion/#/project/");
@@ -202,7 +204,7 @@ public class HtmlProcessor {
             String workItemPart = afterProject.substring(workItemIdx + "workitem?id=".length());
             int ampIdx = workItemPart.indexOf('&');
             if (ampIdx >= 0) {
-                workItemPart = workItemPart.substring(ampIdx >= 0 ? 0 : 0, ampIdx);
+                workItemPart = workItemPart.substring(0, ampIdx);
             }
             int hashIdx = workItemPart.indexOf('#');
             if (hashIdx >= 0) {
@@ -217,7 +219,7 @@ public class HtmlProcessor {
             }
         }
 
-        html = doc.body().html().replace("$", "&dollar;");
+        html = doc.body().html().replace("$", "&dollar;"); // Jsoup may convert &dollar; back to $ in some cases, so we need to replace it again
         return html;
     }
 

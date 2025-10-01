@@ -76,6 +76,6 @@ class RewritePolarionLinksTest extends BasePdfConverterTest {
         //Assert
         assertFalse(links.isEmpty());
         assertTrue(links.contains("work-item-anchor-elibrary/EL-165"));
-        assertFalse(links.contains("/polarion/#/project/elibrary/workitem?id=EL-149")); // this link be removed, because it is a local link without anchor
+        assertFalse(links.contains("/polarion/#/project/elibrary/workitem?id=EL-149")); // This link should be removed because it is a local link without an anchor
     }
 }

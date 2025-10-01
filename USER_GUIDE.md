@@ -204,7 +204,7 @@ Also excluded from the resulting PDF document:
 ![Cut empty Workitem attributes (non-tabular) after](docs/user_guide/img/cut_empty_wi_attr_non_tabular_after.png)
 
 ### Cut local Polarion URLs
-By default, all links to local Polarion resources are converted into internal anchors. If this checkbox is selected, links without a matching anchor will be removed and only their text will remain
+By default, all links to local Polarion resources are converted into internal anchors. If this checkbox is selected, links without a matching anchor will be removed and only their text will remain.
 
 ![Cut local Polarion URLs](docs/user_guide/img/cut_urls.png)
 
