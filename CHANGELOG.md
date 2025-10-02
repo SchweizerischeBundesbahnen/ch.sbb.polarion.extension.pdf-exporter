@@ -1,5 +1,15 @@
 # Changelog
 
+## [9.4.4](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v9.4.3...v9.4.4) (2025-10-02)
+
+
+### Bug Fixes
+
+* **deps:** update dependency ch.sbb.polarion.extensions:ch.sbb.polarion.extension.generic to v11.2.0 ([#542](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/542)) ([bbfa265](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/bbfa2655a79598df206c63e6409a942e26ee60a1))
+* Fixes max height of images ([#549](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/549)) ([8ec9d66](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/8ec9d66b942aac5aba9555ed75f512045a5d01bc)), closes [#547](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/547)
+* Improve fit images in tables ([#545](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/545)) ([b76e9e4](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/b76e9e4b5784e2b0ef9156777cae26e2016b8e63))
+* SVG images embedded into tables are not adjusted to page width ([#548](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/548)) ([eb19f0e](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/eb19f0e40e22ebfde1aa69ca46507b8b496fa2a0)), closes [#547](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/547)
+
 ## [9.4.3](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v9.4.2...v9.4.3) (2025-09-30)
 
 
