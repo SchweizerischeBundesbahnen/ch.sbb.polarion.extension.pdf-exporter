@@ -75,10 +75,11 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
         String style = img.attr(HtmlTagAttr.STYLE);
         CSSStyleDeclaration cssStyle = parseCss(style);
 
-        cssStyle.removeProperty(CssProp.MAX_WIDTH); //it seems that max-width doesn't work in WeasyPrint
         cssStyle.removeProperty(CssProp.HEIGHT); //remove height completely in order to keep image ratio
 
         cssStyle.setProperty(CssProp.WIDTH, ((int) maxWidth) + Measure.PX, "");
+        cssStyle.setProperty(CssProp.MAX_WIDTH, ((int) maxWidth) + Measure.PX, "");
+
         img.attr(HtmlTagAttr.STYLE, cssStyle.getCssText());
     }
 
