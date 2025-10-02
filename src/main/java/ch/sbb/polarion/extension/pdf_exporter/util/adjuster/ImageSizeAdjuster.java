@@ -35,6 +35,10 @@ public class ImageSizeAdjuster extends AbstractAdjuster {
         String style = img.attr(HtmlTagAttr.STYLE);
         CSSStyleDeclaration cssStyle = parseCss(style);
 
+        // As a fallback we always restrict max height for the cases when image doesn't have any explicit width/height attributes
+        cssStyle.setProperty(CssProp.MAX_HEIGHT, (int) maxHeight + Measure.PX, "");
+        img.attr(HtmlTagAttr.STYLE, cssStyle.getCssText());
+
         float cssWidth = extractDimension(cssStyle, CssProp.WIDTH);
         float cssMaxWidth = extractDimension(cssStyle, CssProp.MAX_WIDTH);
         float cssHeight = extractDimension(cssStyle, CssProp.HEIGHT);
