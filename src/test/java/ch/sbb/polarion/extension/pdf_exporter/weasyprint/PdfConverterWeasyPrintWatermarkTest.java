@@ -24,11 +24,6 @@ import static org.mockito.Mockito.when;
 class PdfConverterWeasyPrintWatermarkTest extends BasePdfConverterTest {
 
     @Override
-    protected void prepareSpecificMocks() {
-        // No specific mocks needed for watermark tests
-    }
-
-    @Override
     protected void setupHeaderFooterSettings() {
         // Custom header/footer settings for watermark tests
         when(headerFooterSettings.load(any(), any())).thenReturn(HeaderFooterModel.builder()

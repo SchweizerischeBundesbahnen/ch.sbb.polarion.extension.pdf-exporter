@@ -19,15 +19,19 @@ import lombok.SneakyThrows;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
+import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 import static ch.sbb.polarion.extension.pdf_exporter.util.exporter.Constants.*;
 
@@ -115,6 +119,9 @@ public class HtmlProcessor {
         if (exportParams.isCutEmptyWIAttributes()) {
             html = cutEmptyWIAttributes(html);
         }
+
+        html = rewritePolarionUrls(html);
+
         if (exportParams.isCutLocalUrls()) {
             html = cutLocalUrls(html);
         }
@@ -156,6 +163,64 @@ public class HtmlProcessor {
                     String content = regexEngine.group("content");
                     return content != null ? content : regexEngine.group("imgContent");
                 });
+    }
+
+    /**
+     * Rewrites Polarion Work Item hyperlinks so they become intra-document anchor links.
+     **/
+    @NotNull
+    @VisibleForTesting
+    String rewritePolarionUrls(@NotNull String html) {
+        Document doc = Jsoup.parse(html);
+
+        Set<String> workItemAnchors = new HashSet<>();
+        for (Element anchor : doc.select("a[id^=work-item-anchor-]")) {
+            String id = anchor.id();
+            if (!id.isEmpty()) {
+                workItemAnchors.add(id);
+            }
+        }
+
+        if (workItemAnchors.isEmpty()) {
+            return html;
+        }
+
+        for (Element link : doc.select("a[href]")) {
+            String href = link.attr("href");
+            int polarionIdx = href.indexOf("/polarion/#/project/");
+            if (polarionIdx < 0) {
+                continue;
+            }
+            String afterProject = href.substring(polarionIdx + "/polarion/#/project/".length());
+            int slashIdx = afterProject.indexOf('/');
+            if (slashIdx < 0) {
+                continue;
+            }
+            String projectId = afterProject.substring(0, slashIdx);
+            int workItemIdx = afterProject.indexOf("workitem?id=");
+            if (workItemIdx < 0) {
+                continue;
+            }
+            String workItemPart = afterProject.substring(workItemIdx + "workitem?id=".length());
+            int ampIdx = workItemPart.indexOf('&');
+            if (ampIdx >= 0) {
+                workItemPart = workItemPart.substring(0, ampIdx);
+            }
+            int hashIdx = workItemPart.indexOf('#');
+            if (hashIdx >= 0) {
+                workItemPart = workItemPart.substring(0, hashIdx);
+            }
+            if (workItemPart.isEmpty()) {
+                continue;
+            }
+            String expectedAnchorId = "work-item-anchor-" + projectId + "/" + workItemPart;
+            if (workItemAnchors.contains(expectedAnchorId)) {
+                link.attr("href", "#" + expectedAnchorId);
+            }
+        }
+
+        html = doc.body().html().replace("$", "&dollar;"); // Jsoup may convert &dollar; back to $ in some cases, so we need to replace it again
+        return html;
     }
 
     /**

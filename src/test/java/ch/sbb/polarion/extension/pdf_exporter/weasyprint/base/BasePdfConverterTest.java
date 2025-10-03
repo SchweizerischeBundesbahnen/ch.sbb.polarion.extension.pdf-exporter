@@ -74,7 +74,6 @@ public abstract class BasePdfConverterTest extends BaseWeasyPrintTest {
     @BeforeEach
     protected void setUp() {
         prepareBaseMocks();
-        prepareSpecificMocks();
 
         // Change behavior for CompletableFuture.supplyAsync() from async to sync
         // because we have static mocks which cannot be shared between threads
@@ -231,11 +230,6 @@ public abstract class BasePdfConverterTest extends BaseWeasyPrintTest {
                 new PdfTemplateProcessor()
         );
     }
-
-    /**
-     * Override this method to prepare test-specific mocks.
-     */
-    protected abstract void prepareSpecificMocks();
 
     /**
      * Compares PDF content with reference images.
