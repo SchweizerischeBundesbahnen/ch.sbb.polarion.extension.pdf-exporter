@@ -34,9 +34,7 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
                 float columnCountBasedWidth = getImageWidthBasedOnColumnsCount(img);
                 float paramsBasedWidth = PaperSizeUtils.getMaxWidthInTables(conversionParams);
 
-                float maxWidth = (columnCountBasedWidth != -1 && columnCountBasedWidth < paramsBasedWidth)
-                        ? columnCountBasedWidth
-                        : paramsBasedWidth;
+                float maxWidth = columnCountBasedWidth != -1 ? columnCountBasedWidth : paramsBasedWidth;
 
                 if (cssWidth > maxWidth || cssMaxWidth > maxWidth) {
                     adjustImageStyle(img, maxWidth);
@@ -77,10 +75,12 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
         String style = img.attr(HtmlTagAttr.STYLE);
         CSSStyleDeclaration cssStyle = parseCss(style);
 
-        cssStyle.removeProperty(CssProp.MAX_WIDTH); //it seems that max-width doesn't work in WeasyPrint
         cssStyle.removeProperty(CssProp.HEIGHT); //remove height completely in order to keep image ratio
 
         cssStyle.setProperty(CssProp.WIDTH, ((int) maxWidth) + Measure.PX, "");
+        // For svg-images in tables width attribute is not enough, WeasyPrint needs max-width as well
+        cssStyle.setProperty(CssProp.MAX_WIDTH, ((int) maxWidth) + Measure.PX, "");
+
         img.attr(HtmlTagAttr.STYLE, cssStyle.getCssText());
     }
 
