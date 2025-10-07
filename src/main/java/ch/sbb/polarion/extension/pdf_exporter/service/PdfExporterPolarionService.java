@@ -13,16 +13,17 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.stylepackage.S
 import ch.sbb.polarion.extension.pdf_exporter.settings.StylePackageSettings;
 import ch.sbb.polarion.extension.pdf_exporter.util.WildcardUtils;
 import com.polarion.alm.projects.IProjectService;
+import com.polarion.alm.projects.model.IUniqueObject;
 import com.polarion.alm.tracker.ITestManagementService;
 import com.polarion.alm.tracker.ITrackerService;
 import com.polarion.alm.tracker.model.IModule;
+import com.polarion.alm.tracker.model.IRichPage;
 import com.polarion.alm.tracker.model.ITestRun;
 import com.polarion.alm.tracker.model.ITestRunAttachment;
 import com.polarion.alm.tracker.model.ITrackerProject;
 import com.polarion.core.util.StringUtils;
 import com.polarion.platform.IPlatformService;
 import com.polarion.platform.persistence.IDataService;
-import com.polarion.platform.persistence.model.IPObjectList;
 import com.polarion.platform.security.ISecurityService;
 import com.polarion.platform.service.repository.IRepositoryService;
 import com.polarion.portal.internal.server.navigation.TestManagementServiceAccessor;
@@ -35,6 +36,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Stream;
 
 public class PdfExporterPolarionService extends PolarionService {
 
@@ -140,22 +142,17 @@ public class PdfExporterPolarionService extends PolarionService {
             return true;
         } else {
             IDataService dataService = getTrackerService().getDataService();
-            IPObjectList<IModule> suitableDocuments = dataService.searchInstances(IModule.PROTO, model.getMatchingQuery(), "name");
-            for (IModule suitableDocument : suitableDocuments) {
-                if (sameDocument(projectId, spaceId, documentName, suitableDocument)) {
-                    return true;
-                }
-            }
-            return false;
+            return Stream.of(IModule.PROTO, IRichPage.PROTO)
+                    .map(proto -> dataService.searchInstances(proto, model.getMatchingQuery(), "name"))
+                    .flatMap(Collection::stream)
+                    .anyMatch(suitableDocument -> sameDocument(projectId, spaceId, documentName, (IUniqueObject) suitableDocument));
         }
     }
 
-    private boolean sameDocument(@Nullable String projectId, @NotNull String spaceId, @NotNull String documentName, @NotNull IModule document) {
-        if (projectId == null) {
-            return document.getProjectId() == null && String.format("%s/%s", spaceId, documentName).equals(document.getModuleLocation().getLocationPath());
-        } else {
-            return projectId.equals(document.getProjectId()) && String.format("%s/%s", spaceId, documentName).equals(document.getModuleLocation().getLocationPath());
-        }
+    private boolean sameDocument(@Nullable String projectId, @NotNull String spaceId, @NotNull String documentName, @NotNull IUniqueObject document) {
+        String path = document instanceof IModule ? ((IModule) document).getModuleLocation().getLocationPath() : ((IRichPage) document).getPageNameWithSpace();
+        String expectedPath = String.format("%s/%s", spaceId, documentName);
+        return expectedPath.equals(path) && Objects.equals(projectId, document.getProjectId());
     }
 
     public @NotNull ITestRun getTestRun(@NotNull String projectId, @NotNull String testRunId, @Nullable String revision) {

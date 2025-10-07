@@ -7,6 +7,7 @@ import com.polarion.alm.shared.api.model.baselinecollection.BaselineCollection;
 import com.polarion.alm.shared.api.model.baselinecollection.BaselineCollectionReference;
 import com.polarion.alm.shared.api.transaction.ReadOnlyTransaction;
 import com.polarion.alm.tracker.model.IModule;
+import com.polarion.alm.tracker.model.IRichPage;
 import com.polarion.alm.tracker.model.baselinecollection.IBaselineCollection;
 import com.polarion.alm.tracker.model.baselinecollection.IBaselineCollectionElement;
 import org.jetbrains.annotations.NotNull;
@@ -65,7 +66,26 @@ public class DocumentCollectionHelper {
                     module.getProjectId(),
                     module.getModuleFolder(),
                     module.getModuleName(),
+                    DocumentType.LIVE_DOC,
                     module.getRevision(),
+                    documentFileNameHelper.getDocumentFileName(exportParams)
+            );
+            result.add(documentCollectionEntry);
+        }
+
+        for (IRichPage page : collection.getRichPages()) {
+            ExportParams exportParams = ExportParams.builder()
+                    .projectId(page.getProjectId())
+                    .documentType(DocumentType.LIVE_REPORT)
+                    .locationPath(page.getPageNameWithSpace())
+                    .revision(page.getRevision())
+                    .build();
+            DocumentCollectionEntry documentCollectionEntry = new DocumentCollectionEntry(
+                    page.getProjectId(),
+                    page.getFolder().getName(),
+                    page.getPageName(),
+                    DocumentType.LIVE_REPORT,
+                    page.getRevision(),
                     documentFileNameHelper.getDocumentFileName(exportParams)
             );
             result.add(documentCollectionEntry);
