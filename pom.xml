@@ -47,6 +47,7 @@
         <pdfbox.version>3.0.5</pdfbox.version>
         <okapi.xliff.version>1.47.0</okapi.xliff.version>
         <byte-buddy.version>1.17.7</byte-buddy.version>
+        <flying-saucer.version>9.13.3</flying-saucer.version>
 
         <slf4j.version>1.7.36</slf4j.version>
         <testcontainers.version>1.21.3</testcontainers.version>
@@ -188,6 +189,12 @@
             <version>${commons-text.version}</version>
         </dependency>
 
+        <dependency>
+            <groupId>org.xhtmlrenderer</groupId>
+            <artifactId>flying-saucer-core</artifactId>
+            <version>${flying-saucer.version}</version>
+        </dependency>
+
         <!--  Test dependencies  -->
         <dependency>
             <groupId>org.slf4j</groupId>
@@ -232,12 +239,6 @@
             <artifactId>nu.xom_1.3.7.osgi</artifactId>
             <version>${polarion.version}</version>
             <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.xhtmlrenderer</groupId>
-            <artifactId>flying-saucer-core</artifactId>
-            <version>9.13.3</version>
         </dependency>
     </dependencies>
 

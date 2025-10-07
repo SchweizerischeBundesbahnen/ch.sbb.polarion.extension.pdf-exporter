@@ -5,7 +5,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jsoup.helper.W3CDom;
 import org.jsoup.nodes.Element;
 import org.w3c.dom.Document;
-import org.xhtmlrenderer.newtable.TableRowBox;
 import org.xhtmlrenderer.newtable.TableSectionBox;
 import org.xhtmlrenderer.render.Box;
 import org.xhtmlrenderer.render.LineBox;
@@ -28,6 +27,7 @@ public class TableAnalyzer {
     private static final String TR = "tr";
     private static final String TD = "td";
     private static final String TH = "th";
+    private static final int PAGE_HEIGHT = 1000;
 
     public Map<Integer, Integer> getColumnWidths(@NotNull Element tableElement, int pageWidth) {
         Map<Integer, Integer> columnWidths = new HashMap<>();
@@ -48,13 +48,14 @@ public class TableAnalyzer {
     private Box render(@NotNull Document doc, int pageWidth) {
         Graphics2DRenderer renderer = new Graphics2DRenderer(doc, "");
 
-        BufferedImage image = new BufferedImage(pageWidth, 1000, BufferedImage.TYPE_INT_ARGB);
+        BufferedImage image = new BufferedImage(pageWidth, PAGE_HEIGHT, BufferedImage.TYPE_INT_ARGB);
         Graphics2D g2d = image.createGraphics();
-
-        Dimension dim = new Dimension(pageWidth, 1000);
-        renderer.layout(g2d, dim);
-
-        g2d.dispose();
+        try {
+            Dimension dim = new Dimension(pageWidth, PAGE_HEIGHT);
+            renderer.layout(g2d, dim);
+        } finally {
+            g2d.dispose();
+        }
 
         return renderer.getPanel().getRootBox();
     }
@@ -110,10 +111,12 @@ public class TableAnalyzer {
 
     private Map<Integer, Integer> adjustWidths(Map<Integer, Integer> renderedWidths, int pageWidth) {
         int renderedWidth = renderedWidths.values().stream().reduce(0, Integer::sum);
-        float adjustingRatio = (float) pageWidth / renderedWidth;
         Map<Integer, Integer> adjustedWidths = new HashMap<>();
-        for (int column : renderedWidths.keySet()) {
-            adjustedWidths.put(column, (int) (renderedWidths.get(column) * adjustingRatio));
+        if (renderedWidth > 0) {
+            float adjustingRatio = (float) pageWidth / renderedWidth;
+            for (int column : renderedWidths.keySet()) {
+                adjustedWidths.put(column, (int) (renderedWidths.get(column) * adjustingRatio));
+            }
         }
         return adjustedWidths;
     }
