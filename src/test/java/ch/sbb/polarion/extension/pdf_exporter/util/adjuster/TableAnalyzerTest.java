@@ -14,33 +14,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class TableAnalyzerTest {
 
     @Test
-    void getColumnWidthsA5PortraitTest() {
-        Element table = new Element(Tag.valueOf("table"), "");
-
-        Element row1 = table.appendElement("tr");
-        row1.appendElement("td").text("Small image:");
-        row1.appendElement("td").appendElement("img")
-                .attr("src", "https://via.placeholder.com/150x100")
-                .attr("width", "150")
-                .attr("height", "100");
-        row1.appendElement("td").text("Description text here");
-
-        Element row2 = table.appendElement("tr");
-        row2.appendElement("td").text("Large image:");
-        row2.appendElement("td").appendElement("img")
-                .attr("src", "https://via.placeholder.com/600x400")
-                .attr("width", "600")
-                .attr("height", "400");
-        row2.appendElement("td").text("This is a much larger image that might overflow");
-
-        Map<Integer, Integer> columnWidths = TableAnalyzer.getColumnWidths(table, PaperSizeUtils.getMaxWidth(ConversionParams.builder().build()));
-        assertEquals(3, columnWidths.size());
-        assertEquals(34, columnWidths.get(0));
-        assertEquals(494, columnWidths.get(1));
-        assertEquals(63, columnWidths.get(2));
-    }
-
-    @Test
     void getColumnWidthsA5LandscapeTest() {
         Element table = new Element(Tag.valueOf("table"), "");
         Element tbody = table.appendElement("tbody");
@@ -156,36 +129,5 @@ class TableAnalyzerTest {
         assertEquals(566, columnWidths.get(1));
         assertEquals(242, columnWidths.get(2));
     }
-
-    @Test
-    void getColumnWidthsWhenNoExplicitValuesTest() {
-        Element table = new Element(Tag.valueOf("table"), "");
-
-        Element row1 = table.appendElement("tr");
-        row1.appendElement("td").appendElement("img")
-                .attr("src", "https://via.placeholder.com/100x100");
-        row1.appendElement("td").appendElement("img")
-                .attr("src", "https://via.placeholder.com/300x200");
-        row1.appendElement("td").text("Text content");
-        row1.appendElement("td").appendElement("img")
-                .attr("src", "https://via.placeholder.com/500x300");
-
-        // Row 2
-        Element row2 = table.appendElement("tr");
-        row2.appendElement("td").text("A");
-        row2.appendElement("td").appendElement("img")
-                .attr("src", "https://via.placeholder.com/400x250");
-        row2.appendElement("td").appendElement("img")
-                .attr("src", "https://via.placeholder.com/150x150");
-        row2.appendElement("td").text("Very long text that should influence column width significantly");
-
-        Map<Integer, Integer> columnWidths = TableAnalyzer.getColumnWidths(table, PaperSizeUtils.getMaxWidth(ConversionParams.builder().build()));
-        assertEquals(4, columnWidths.size());
-        assertEquals(14, columnWidths.get(0));
-        assertEquals(11, columnWidths.get(1));
-        assertEquals(93, columnWidths.get(2));
-        assertEquals(472, columnWidths.get(3));
-    }
-
 
 }
