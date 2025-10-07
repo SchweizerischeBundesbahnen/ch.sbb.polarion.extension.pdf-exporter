@@ -170,6 +170,7 @@ public class HtmlProcessor {
      **/
     @NotNull
     @VisibleForTesting
+    @SuppressWarnings({"java:S3776", "java:S135"}) //complexity is acceptable here
     String rewritePolarionUrls(@NotNull String html) {
         Document doc = Jsoup.parse(html);
 
