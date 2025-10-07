@@ -94,7 +94,7 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
         img.attr(HtmlTagAttr.STYLE, cssStyle.getCssText());
     }
 
-    int getImageColumn(Element img) {
+    private int getImageColumn(Element img) {
         Element columnElement = img.closest("td");
         if (columnElement != null) {
             int column = 0;
@@ -131,6 +131,4 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
         }
         return count;
     }
-
-
 }
