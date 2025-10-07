@@ -60,24 +60,14 @@ public class TableAnalyzer {
         return renderer.getPanel().getRootBox();
     }
 
-    private static void findTableAndAnalyze(Box box, Map<Integer, Integer> columnWidths) {
+    private void findTableAndAnalyze(Box box, Map<Integer, Integer> columnWidths) {
         if (box == null) {
             return;
         }
 
         // Check if this is a table box
         if (box.getElement() != null && TABLE.equalsIgnoreCase(box.getElement().getNodeName())) {
-            List<Box> tbody = findChildrenByTag(box, TBODY);
-            List<Box> rows = findChildrenByTag(!tbody.isEmpty() ? tbody.get(0) : box, TR);
-            if (!rows.isEmpty()) {
-                Box firstRow = rows.get(0);
-                List<Box> cells = findChildrenByTag(firstRow, TD, TH);
-                for (int i = 0; i < cells.size(); i++) {
-                    Box cell = cells.get(i);
-                    int width = cell.getContentWidth();
-                    columnWidths.put(i, width);
-                }
-            }
+            gatherColumnWidths(box, columnWidths);
             return; // Found and analyzed, no need to go deeper
         }
 
@@ -93,7 +83,21 @@ public class TableAnalyzer {
         }
     }
 
-    private static List<Box> findChildrenByTag(Box parent, String... tagNames) {
+    private void gatherColumnWidths(@NotNull Box tableBox, @NotNull Map<Integer, Integer> columnWidths) {
+        List<Box> tbody = findChildrenByTag(tableBox, TBODY);
+        List<Box> rows = findChildrenByTag(!tbody.isEmpty() ? tbody.get(0) : tableBox, TR);
+        if (!rows.isEmpty()) {
+            Box firstRow = rows.get(0);
+            List<Box> cells = findChildrenByTag(firstRow, TD, TH);
+            for (int i = 0; i < cells.size(); i++) {
+                Box cell = cells.get(i);
+                int width = cell.getContentWidth();
+                columnWidths.put(i, width);
+            }
+        }
+    }
+
+    private List<Box> findChildrenByTag(Box parent, String... tagNames) {
         List<Box> result = new ArrayList<>();
         Set<String> tags = new HashSet<>(Arrays.asList(tagNames));
 
@@ -114,8 +118,8 @@ public class TableAnalyzer {
         Map<Integer, Integer> adjustedWidths = new HashMap<>();
         if (renderedWidth > 0) {
             float adjustingRatio = (float) pageWidth / renderedWidth;
-            for (int column : renderedWidths.keySet()) {
-                adjustedWidths.put(column, (int) (renderedWidths.get(column) * adjustingRatio));
+            for (Map.Entry<Integer, Integer> entry : renderedWidths.entrySet()) {
+                adjustedWidths.put(entry.getKey(), (int) (entry.getValue() * adjustingRatio));
             }
         }
         return adjustedWidths;
