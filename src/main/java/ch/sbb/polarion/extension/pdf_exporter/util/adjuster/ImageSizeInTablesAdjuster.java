@@ -12,6 +12,7 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.w3c.dom.css.CSSStyleDeclaration;
 
+import java.util.Map;
 import java.util.Optional;
 
 public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
@@ -25,16 +26,25 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
         Elements tables = document.select("table");
 
         for (Element table : tables) {
-            Elements images = table.select("img");
+            // Pre-render table and get rendered column widths proportionally adjusted to page width
+            Map<Integer, Integer> columnWidths = TableAnalyzer.getColumnWidths(table, PaperSizeUtils.getMaxWidth(conversionParams));
 
-            for (Element img : images) {
+            for (Element img : table.select("img")) {
                 float cssWidth = extractWidth(img, CssProp.WIDTH);
                 float cssMaxWidth = extractWidth(img, CssProp.MAX_WIDTH);
 
                 float columnCountBasedWidth = getImageWidthBasedOnColumnsCount(img);
                 float paramsBasedWidth = PaperSizeUtils.getMaxWidthInTables(conversionParams);
 
-                float maxWidth = columnCountBasedWidth != -1 ? columnCountBasedWidth : paramsBasedWidth;
+                final float maxWidth;
+                int column = getImageColumn(img);
+                if (columnWidths.containsKey(column)) {
+                    // If column widths were successfully obtained from pre-rendering - take it. Most precise approach.
+                    maxWidth = columnWidths.get(column);
+                } else {
+                    // ... otherwise calculate columns width based on columns count - page width equally divided on columns count, as a fallback. Not ideal but works pretty well for most cases.
+                    maxWidth = columnCountBasedWidth != -1 ? columnCountBasedWidth : paramsBasedWidth;
+                }
 
                 if (cssWidth > maxWidth || cssMaxWidth > maxWidth) {
                     adjustImageStyle(img, maxWidth);
@@ -84,6 +94,21 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
         img.attr(HtmlTagAttr.STYLE, cssStyle.getCssText());
     }
 
+    int getImageColumn(Element img) {
+        Element columnElement = img.closest("td");
+        if (columnElement != null) {
+            int column = 0;
+            Element prevSibling = columnElement.previousElementSibling();
+            while (prevSibling != null) {
+                column++;
+                prevSibling = prevSibling.previousElementSibling();
+            }
+            return column;
+        } else {
+            return -1;
+        }
+    }
+
     @VisibleForTesting
     int getImageWidthBasedOnColumnsCount(Element img) {
         Element row = img.closest("tr");
@@ -106,5 +131,6 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
         }
         return count;
     }
+
 
 }

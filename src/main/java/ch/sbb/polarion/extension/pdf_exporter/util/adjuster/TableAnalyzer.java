@@ -1,0 +1,120 @@
+package ch.sbb.polarion.extension.pdf_exporter.util.adjuster;
+
+import lombok.experimental.UtilityClass;
+import org.jetbrains.annotations.NotNull;
+import org.jsoup.helper.W3CDom;
+import org.jsoup.nodes.Element;
+import org.w3c.dom.Document;
+import org.xhtmlrenderer.newtable.TableRowBox;
+import org.xhtmlrenderer.newtable.TableSectionBox;
+import org.xhtmlrenderer.render.Box;
+import org.xhtmlrenderer.render.LineBox;
+import org.xhtmlrenderer.simple.Graphics2DRenderer;
+
+import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+@UtilityClass
+public class TableAnalyzer {
+    private static final String TABLE = "table";
+    private static final String TBODY = "tbody";
+    private static final String TR = "tr";
+    private static final String TD = "td";
+    private static final String TH = "th";
+
+    public Map<Integer, Integer> getColumnWidths(@NotNull Element tableElement, int pageWidth) {
+        Map<Integer, Integer> columnWidths = new HashMap<>();
+
+        Document doc = toSelfDocument(tableElement);
+        Box rootBox = render(doc, pageWidth);
+        findTableAndAnalyze(rootBox, columnWidths);
+
+        return adjustWidths(columnWidths, pageWidth);
+    }
+
+    private Document toSelfDocument(@NotNull Element tableElement) {
+        org.jsoup.nodes.Document tempDoc = org.jsoup.nodes.Document.createShell("");
+        tempDoc.body().appendChild(tableElement.clone());
+        return new W3CDom().fromJsoup(tempDoc);
+    }
+
+    private Box render(@NotNull Document doc, int pageWidth) {
+        Graphics2DRenderer renderer = new Graphics2DRenderer(doc, "");
+
+        BufferedImage image = new BufferedImage(pageWidth, 1000, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g2d = image.createGraphics();
+
+        Dimension dim = new Dimension(pageWidth, 1000);
+        renderer.layout(g2d, dim);
+
+        g2d.dispose();
+
+        return renderer.getPanel().getRootBox();
+    }
+
+    private static void findTableAndAnalyze(Box box, Map<Integer, Integer> columnWidths) {
+        if (box == null) {
+            return;
+        }
+
+        // Check if this is a table box
+        if (box.getElement() != null && TABLE.equalsIgnoreCase(box.getElement().getNodeName())) {
+            List<Box> tbody = findChildrenByTag(box, TBODY);
+            List<Box> rows = findChildrenByTag(!tbody.isEmpty() ? tbody.get(0) : box, TR);
+            if (!rows.isEmpty()) {
+                Box firstRow = rows.get(0);
+                List<Box> cells = findChildrenByTag(firstRow, TD, TH);
+                for (int i = 0; i < cells.size(); i++) {
+                    Box cell = cells.get(i);
+                    int width = cell.getContentWidth();
+                    columnWidths.put(i, width);
+                }
+            }
+            return; // Found and analyzed, no need to go deeper
+        }
+
+        // Recursively search children
+        if (box instanceof LineBox lineBox) {
+            for (Box inlinedBox : lineBox.getNonFlowContent()) {
+                findTableAndAnalyze(inlinedBox, columnWidths);
+            }
+        } else {
+            for (int i = 0; i < box.getChildCount(); i++) {
+                findTableAndAnalyze(box.getChild(i), columnWidths);
+            }
+        }
+    }
+
+    private static List<Box> findChildrenByTag(Box parent, String... tagNames) {
+        List<Box> result = new ArrayList<>();
+        Set<String> tags = new HashSet<>(Arrays.asList(tagNames));
+
+        for (int i = 0; i < parent.getChildCount(); i++) {
+            Box child = parent.getChild(i);
+            // When no tbody exists and rows are included directly to table element, rows are enclosed into artificial TableSectionBox which we should just skip and go deeper into hierarchy
+            if (child instanceof TableSectionBox tableSectionBox) {
+                result.addAll(findChildrenByTag(tableSectionBox, tagNames));
+            } else if (child.getElement() != null && tags.contains(child.getElement().getNodeName().toLowerCase())) {
+                result.add(child);
+            }
+        }
+        return result;
+    }
+
+    private Map<Integer, Integer> adjustWidths(Map<Integer, Integer> renderedWidths, int pageWidth) {
+        int renderedWidth = renderedWidths.values().stream().reduce(0, Integer::sum);
+        float adjustingRatio = (float) pageWidth / renderedWidth;
+        Map<Integer, Integer> adjustedWidths = new HashMap<>();
+        for (int column : renderedWidths.keySet()) {
+            adjustedWidths.put(column, (int) (renderedWidths.get(column) * adjustingRatio));
+        }
+        return adjustedWidths;
+    }
+}

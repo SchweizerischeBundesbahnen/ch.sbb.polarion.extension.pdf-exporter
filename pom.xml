@@ -233,6 +233,12 @@
             <version>${polarion.version}</version>
             <scope>test</scope>
         </dependency>
+
+        <dependency>
+            <groupId>org.xhtmlrenderer</groupId>
+            <artifactId>flying-saucer-core</artifactId>
+            <version>9.13.3</version>
+        </dependency>
     </dependencies>
 
     <build>
