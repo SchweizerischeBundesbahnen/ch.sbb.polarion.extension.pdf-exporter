@@ -28,7 +28,7 @@ import static org.mockito.Mockito.*;
 class DocumentCollectionHelperTest {
 
     @Test
-    @SuppressWarnings("unused")
+    @SuppressWarnings({"unused", "java:S5961"})
     void testGetDocumentsFromCollection() {
         DocumentFileNameHelper documentFileNameHelper = mock(DocumentFileNameHelper.class);
 
