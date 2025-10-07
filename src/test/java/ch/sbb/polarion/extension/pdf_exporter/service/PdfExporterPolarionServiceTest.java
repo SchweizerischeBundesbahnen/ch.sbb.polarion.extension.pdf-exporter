@@ -208,7 +208,7 @@ class PdfExporterPolarionServiceTest {
         IRichPage page = mock(IRichPage.class);
         when(page.getProjectId()).thenReturn("someProjectId");
         when(page.getPageNameWithSpace()).thenReturn("someSpaceId/pageName");
-        IPObjectList matchingPages = new PObjectList(dataService, List.of(module));
+        IPObjectList matchingPages = new PObjectList(dataService, List.of(page));
         when(dataService.searchInstances(IRichPage.PROTO, "matching", "name")).thenReturn(matchingPages);
         IPObjectList notMatchingPages = new PObjectList(dataService, List.of());
         when(dataService.searchInstances(IRichPage.PROTO, "not_matching", "name")).thenReturn(notMatchingPages);
@@ -253,7 +253,7 @@ class PdfExporterPolarionServiceTest {
         assertEquals("matching", result.getMatchingQuery());
 
         when(stylePackageSettings.read(eq("project/someProjectId/"), eq(SettingId.fromName("name1")), isNull())).thenReturn(model1Page);
-        result = service.getMostSuitableStylePackageModel(new DocIdentifier(projectId, spaceId, documentName));
+        result = service.getMostSuitableStylePackageModel(new DocIdentifier(projectId, spaceId, "pageName"));
         assertEquals(88f, result.getWeight());
         assertEquals("matching", result.getMatchingQuery());
     }

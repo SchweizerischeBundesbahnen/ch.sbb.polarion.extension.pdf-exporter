@@ -24,6 +24,7 @@ import com.polarion.alm.tracker.model.ITrackerProject;
 import com.polarion.core.util.StringUtils;
 import com.polarion.platform.IPlatformService;
 import com.polarion.platform.persistence.IDataService;
+import com.polarion.platform.persistence.model.IPObjectList;
 import com.polarion.platform.security.ISecurityService;
 import com.polarion.platform.service.repository.IRepositoryService;
 import com.polarion.portal.internal.server.navigation.TestManagementServiceAccessor;
@@ -150,7 +151,14 @@ public class PdfExporterPolarionService extends PolarionService {
     }
 
     private boolean sameDocument(@Nullable String projectId, @NotNull String spaceId, @NotNull String documentName, @NotNull IUniqueObject document) {
-        String path = document instanceof IModule ? ((IModule) document).getModuleLocation().getLocationPath() : ((IRichPage) document).getPageNameWithSpace();
+        String path;
+        if (document instanceof IModule module) {
+            path = module.getModuleLocation().getLocationPath();
+        } else if (document instanceof IRichPage page) {
+            path = page.getPageNameWithSpace();
+        } else {
+            return false;
+        }
         String expectedPath = String.format("%s/%s", spaceId, documentName);
         return expectedPath.equals(path) && Objects.equals(projectId, document.getProjectId());
     }

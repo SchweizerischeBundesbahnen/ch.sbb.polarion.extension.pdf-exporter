@@ -50,7 +50,7 @@ public class BulkPdfExportWidget extends TableWidget {
     @NotNull
     @Override
     public ReadOnlyStrictMap<String, RichPageParameter> getParametersDefinition(@NotNull ParameterFactory parameterFactory) {
-        StrictMap<String, RichPageParameter> parameters = new StrictMapImpl();
+        StrictMap<String, RichPageParameter> parameters = new StrictMapImpl<>();
         SharedLocalization localization = parameterFactory.context().localization();
         FieldsParameter columns = parameterFactory.fields(localization.getString("richpages.widget.table.columns")).build();
         SortingParameter sortBy = parameterFactory.sorting(localization.getString("richpages.widget.table.sortBy")).build();
@@ -79,9 +79,10 @@ public class BulkPdfExportWidget extends TableWidget {
     @NotNull
     @Override
     public String renderHtml(@NotNull RichPageWidgetRenderingContext renderingContext) {
-        return (new BulkPdfExportWidgetRenderer(renderingContext)).render();
+        return new BulkPdfExportWidgetRenderer(renderingContext).render();
     }
 
+    @Override
     public void processParameterDependencies(@NotNull RichPageWidgetDependenciesContext context) {
         super.processParameterDependencies(context);
         DataSetParameter dataSet = context.parameter("dataSet");
