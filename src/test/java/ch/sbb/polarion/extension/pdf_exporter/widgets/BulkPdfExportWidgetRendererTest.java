@@ -5,6 +5,7 @@ import com.polarion.alm.shared.api.model.ModelObject;
 import com.polarion.alm.shared.api.model.PrototypeEnum;
 import com.polarion.alm.shared.api.model.Renderer;
 import com.polarion.alm.shared.api.model.fields.Field;
+import com.polarion.alm.shared.api.model.rp.parameter.BooleanParameter;
 import com.polarion.alm.shared.api.model.rp.parameter.CompositeParameter;
 import com.polarion.alm.shared.api.model.rp.parameter.DataSet;
 import com.polarion.alm.shared.api.model.rp.parameter.DataSetAccessor;
@@ -200,6 +201,7 @@ class BulkPdfExportWidgetRendererTest {
         when(context.parameter("dataSet")).thenReturn(dataSetParameter);
         when(dataSetParameter.get("columns")).thenReturn(mock(FieldsParameter.class, RETURNS_DEEP_STUBS));
         when(dataSetParameter.get("sortBy")).thenReturn(mock(SortingParameter.class, RETURNS_DEEP_STUBS));
+        when(dataSetParameter.get("exportPages")).thenReturn(mock(BooleanParameter.class, RETURNS_DEEP_STUBS));
         when(dataSetParameter.prototype()).thenReturn(PrototypeEnum.Document);
 
         CompositeParameter advanced = mock(CompositeParameter.class);
