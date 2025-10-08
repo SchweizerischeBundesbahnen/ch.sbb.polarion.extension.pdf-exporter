@@ -31,10 +31,15 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
         Elements tables = document.select(TABLE_SELECTOR);
 
         for (Element table : tables) {
+            Elements images = table.select(IMG_SELECTOR);
+            if (images.isEmpty()) {
+                continue;
+            }
+
             // Pre-render table and get rendered column widths proportionally adjusted to page width
             Map<Integer, Integer> columnWidths = TableAnalyzer.getColumnWidths(table, PaperSizeUtils.getMaxWidth(conversionParams));
 
-            for (Element img : table.select(IMG_SELECTOR)) {
+            for (Element img : images) {
                 float cssWidth = extractWidth(img, CssProp.WIDTH);
                 float cssMaxWidth = extractWidth(img, CssProp.MAX_WIDTH);
 
