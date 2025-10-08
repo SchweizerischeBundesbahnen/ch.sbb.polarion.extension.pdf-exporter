@@ -55,11 +55,12 @@ public class TableAnalyzer {
         try {
             Dimension dim = new Dimension(pageWidth, PAGE_HEIGHT);
             renderer.layout(g2d, dim);
+            return renderer.getPanel().getRootBox();
         } finally {
+            // Explicitly dispose the Graphics2D and flush the BufferedImage to release resources
             g2d.dispose();
+            image.flush();
         }
-
-        return renderer.getPanel().getRootBox();
     }
 
     private void findTableAndAnalyze(Box box, Map<Integer, Integer> columnWidths) {
