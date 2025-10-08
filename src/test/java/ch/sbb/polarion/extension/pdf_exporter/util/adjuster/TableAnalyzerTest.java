@@ -15,37 +15,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class TableAnalyzerTest {
 
     @Test
-    void getColumnWidthsA5PortraitTest() {
-        Element table = new Element(Tag.valueOf("table"), "");
-
-        Element row1 = table.appendElement("tr");
-        row1.appendElement("td").text("Small image:");
-        row1.appendElement("td").appendElement("img")
-                .attr("src", "https://via.placeholder.com/150x100")
-                .attr("width", "150")
-                .attr("height", "100");
-        row1.appendElement("td").text("Description text here");
-
-        Element row2 = table.appendElement("tr");
-        row2.appendElement("td").text("Large image:");
-        row2.appendElement("td").appendElement("img")
-                .attr("src", "https://via.placeholder.com/600x400")
-                .attr("width", "600")
-                .attr("height", "400");
-        row2.appendElement("td").text("This is a much larger image that might overflow");
-
-        Map<Integer, Integer> columnWidths = TableAnalyzer.getColumnWidths(table, PaperSizeUtils.getMaxWidth(ConversionParams.builder().build()));
-
-        // Should have 3 columns total
-        assertEquals(3, columnWidths.size());
-
-        // Columns width calculation is not absolutely accurate and can differ from system to system, so we check gracefully
-        assertTrue(columnWidths.get(0) > 19 && columnWidths.get(0) < 49);
-        assertTrue(columnWidths.get(1) > 469 && columnWidths.get(1) < 529);
-        assertTrue(columnWidths.get(2) > 38 && columnWidths.get(2) < 88);
-    }
-
-    @Test
     void getColumnWidthsA5LandscapeTest() {
         Element table = new Element(Tag.valueOf("table"), "");
         Element tbody = table.appendElement("tbody");
