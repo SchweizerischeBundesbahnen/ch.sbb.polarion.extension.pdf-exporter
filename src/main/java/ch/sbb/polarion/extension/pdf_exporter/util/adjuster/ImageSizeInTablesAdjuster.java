@@ -107,35 +107,13 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
             int column = 0;
             Element prevSibling = columnElement.previousElementSibling();
             while (prevSibling != null) {
-                // Account for colspan in previous cells
-                String colspanAttr = prevSibling.attr("colspan");
-                try {
-                    int colspan = colspanAttr.isEmpty() ? 1 : Integer.parseInt(colspanAttr);
-                    column += colspan;
-                } catch (NumberFormatException e) {
-                    column++;
-                }
+                column += getColspan(prevSibling);
                 prevSibling = prevSibling.previousElementSibling();
             }
             return column;
         } else {
             return -1;
         }
-    }
-
-    private int getImageColspan(Element img) {
-        Element columnElement = img.closest("td, th");
-        if (columnElement != null) {
-            String colspanAttr = columnElement.attr("colspan");
-            if (!colspanAttr.isEmpty()) {
-                try {
-                    return Integer.parseInt(colspanAttr);
-                } catch (NumberFormatException e) {
-                    return 1;
-                }
-            }
-        }
-        return 1;
     }
 
     @VisibleForTesting
@@ -154,10 +132,29 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
     int columnsCount(Element row) {
         int count = 0;
         for (Element cell : row.select("td, th")) {
-            String colspanAttr = cell.attr("colspan");
-            int colspan = colspanAttr.isEmpty() ? 1 : Integer.parseInt(colspanAttr);
-            count += colspan;
+            count += getColspan(cell);
         }
         return count;
+    }
+
+    private int getImageColspan(Element img) {
+        Element columnElement = img.closest("td, th");
+        if (columnElement != null) {
+            return getColspan(columnElement);
+        }
+        return 1;
+    }
+
+    private int getColspan(Element element) {
+        String colspanAttr = element.attr("colspan");
+        if (!colspanAttr.isEmpty()) {
+            try {
+                return Integer.parseInt(colspanAttr);
+            } catch (NumberFormatException e) {
+                // Wrong value in colspan attribute. We shouldn't do anything in this case as it won't be handled properly in final rendering as well, just ignore
+            }
+        }
+        // When colspan is not specified or malformed
+        return 1;
     }
 }
