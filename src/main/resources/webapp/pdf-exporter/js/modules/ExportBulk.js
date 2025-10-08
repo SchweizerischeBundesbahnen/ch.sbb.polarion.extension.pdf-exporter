@@ -13,8 +13,8 @@ export default class ExportBulk {
     state = null;
     errors = false;
 
-    constructor(rootComponentSelector) {
-        this.ctx = new ExportContext({rootComponentSelector: rootComponentSelector});
+    constructor(rootComponentSelector, exportPages) {
+        this.ctx = new ExportContext({rootComponentSelector: rootComponentSelector, exportPages: exportPages});
         this.widgetDocumentType = this.ctx.querySelector(".header")?.getAttribute("document-type");
         if (!this.widgetDocumentType) {
             throw new Error("unable to get documentType from the header");
