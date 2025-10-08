@@ -54,7 +54,7 @@ public class ModifiedDocumentRenderer {
         if (this.renderingContext.documentLazyLoad()) {
             renderer = transaction.documents().createPlaceholderFieldRichTextRenderer();
         } else {
-            renderer = transaction.documents().createFieldRichTextRenderer();
+            renderer = new ModifiedServerFieldRichTextRenderer(transaction);
         }
 
         if (this.renderingContext.documentLazyLoad()) {
