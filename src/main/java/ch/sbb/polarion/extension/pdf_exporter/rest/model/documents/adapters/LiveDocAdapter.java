@@ -19,6 +19,7 @@ import com.polarion.core.util.StringUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Map;
+import java.util.Optional;
 
 public class LiveDocAdapter extends CommonUniqueObjectAdapter {
     public static final String DOC_REVISION_CUSTOM_FIELD = "docRevision";
@@ -65,12 +66,16 @@ public class LiveDocAdapter extends CommonUniqueObjectAdapter {
     public @NotNull String getContent(@NotNull ExportParams exportParams, @NotNull ReadOnlyTransaction transaction) {
         return PolarionBaselineExecutor.executeInBaseline(exportParams.getBaselineRevision(), transaction, () -> {
             ProxyDocument document = new ProxyDocument(module, (InternalReadOnlyTransaction) transaction);
-
-            String internalContent = processComments(exportParams, document, StringUtils.getEmptyIfNull(exportParams.getInternalContent() != null ? exportParams.getInternalContent() : document.getHomePageContentHtml()));
             Map<String, String> documentParameters = exportParams.getUrlQueryParameters() == null ? Map.of() : exportParams.getUrlQueryParameters();
             DocumentRendererParameters parameters = new DocumentRendererParameters(null, documentParameters.get(URL_QUERY_PARAM_LANGUAGE));
             ModifiedDocumentRenderer documentRenderer = new ModifiedDocumentRenderer((InternalReadOnlyTransaction) transaction, document, RichTextRenderTarget.PDF_EXPORT, parameters);
-            return processComments(exportParams, document, documentRenderer.render(internalContent));
+
+            String internalContent = StringUtils.getEmptyIfNull(Optional.ofNullable(exportParams.getInternalContent()).orElse(document.getHomePageContentHtml()));
+            // Process comments in document itself (workitem descriptions aren't rendered yet)
+            internalContent = processComments(exportParams, document, internalContent);
+            String renderedContent = documentRenderer.render(internalContent);
+            // Now process comments again to catch comments in workitem descriptions
+            return processComments(exportParams, document, renderedContent);
         });
     }
 
