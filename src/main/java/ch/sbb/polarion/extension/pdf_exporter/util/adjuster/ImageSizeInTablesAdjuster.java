@@ -38,9 +38,16 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
 
                 final float maxWidth;
                 int column = getImageColumn(img);
+                int colspan = getImageColspan(img);
+
                 if (columnWidths.containsKey(column)) {
                     // If column widths were successfully obtained from pre-rendering - take it. Most precise approach.
-                    maxWidth = columnWidths.get(column);
+                    // Sum up widths of all spanned columns if colspan > 1
+                    int totalWidth = 0;
+                    for (int i = 0; i < colspan; i++) {
+                        totalWidth += columnWidths.getOrDefault(column + i, 0);
+                    }
+                    maxWidth = totalWidth;
                 } else {
                     // ... otherwise calculate columns width based on columns count - page width equally divided on columns count, as a fallback. Not ideal but works pretty well for most cases.
                     maxWidth = columnCountBasedWidth != -1 ? columnCountBasedWidth : paramsBasedWidth;
@@ -95,18 +102,36 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
     }
 
     private int getImageColumn(Element img) {
-        Element columnElement = img.closest("td");
+        Element columnElement = img.closest("td, th");
         if (columnElement != null) {
             int column = 0;
             Element prevSibling = columnElement.previousElementSibling();
             while (prevSibling != null) {
-                column++;
+                // Account for colspan in previous cells
+                String colspanAttr = prevSibling.attr("colspan");
+                int colspan = colspanAttr.isEmpty() ? 1 : Integer.parseInt(colspanAttr);
+                column += colspan;
                 prevSibling = prevSibling.previousElementSibling();
             }
             return column;
         } else {
             return -1;
         }
+    }
+
+    private int getImageColspan(Element img) {
+        Element columnElement = img.closest("td, th");
+        if (columnElement != null) {
+            String colspanAttr = columnElement.attr("colspan");
+            if (!colspanAttr.isEmpty()) {
+                try {
+                    return Integer.parseInt(colspanAttr);
+                } catch (NumberFormatException e) {
+                    return 1;
+                }
+            }
+        }
+        return 1;
     }
 
     @VisibleForTesting

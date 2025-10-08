@@ -86,15 +86,49 @@ public class TableAnalyzer {
     private void gatherColumnWidths(@NotNull Box tableBox, @NotNull Map<Integer, Integer> columnWidths) {
         List<Box> tbody = findChildrenByTag(tableBox, TBODY);
         List<Box> rows = findChildrenByTag(!tbody.isEmpty() ? tbody.get(0) : tableBox, TR);
-        if (!rows.isEmpty()) {
-            Box firstRow = rows.get(0);
-            List<Box> cells = findChildrenByTag(firstRow, TD, TH);
-            for (int i = 0; i < cells.size(); i++) {
-                Box cell = cells.get(i);
-                int width = cell.getContentWidth();
-                columnWidths.put(i, width);
+
+        // Analyze all rows to properly handle colspan
+        for (Box row : rows) {
+            List<Box> cells = findChildrenByTag(row, TD, TH);
+            int columnIndex = 0;
+
+            for (Box cell : cells) {
+                int colspan = getColspan(cell);
+                int cellWidth = cell.getContentWidth();
+
+                if (colspan == 1) {
+                    addColumnWidth(columnWidths, columnIndex, cellWidth);
+                    columnIndex++;
+                } else {
+                    // Multi-column cell - distribute width proportionally
+                    int widthPerColumn = cellWidth / colspan;
+                    for (int i = 0; i < colspan; i++) {
+                        addColumnWidth(columnWidths, columnIndex + i, widthPerColumn);
+                    }
+                    columnIndex += colspan;
+                }
             }
         }
+    }
+
+    private void addColumnWidth(@NotNull Map<Integer, Integer> columnWidths, int index, int width) {
+        if (!columnWidths.containsKey(index)) {
+            columnWidths.put(index, width);
+        } else {
+            // Update with maximum width seen
+            columnWidths.put(index, Math.max(columnWidths.get(index), width));
+        }
+    }
+
+    private int getColspan(@NotNull Box cell) {
+        if (cell.getElement() != null && cell.getElement().hasAttribute("colspan")) {
+            try {
+                return Integer.parseInt(cell.getElement().getAttribute("colspan"));
+            } catch (NumberFormatException e) {
+                return 1;
+            }
+        }
+        return 1;
     }
 
     private List<Box> findChildrenByTag(Box parent, String... tagNames) {
