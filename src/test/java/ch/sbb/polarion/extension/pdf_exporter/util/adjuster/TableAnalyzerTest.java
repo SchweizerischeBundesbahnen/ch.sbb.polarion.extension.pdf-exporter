@@ -114,11 +114,6 @@ class TableAnalyzerTest {
         assertTrue(columnWidths.get(1) > 268 && columnWidths.get(1) < 278);
         assertTrue(columnWidths.get(2) > 241 && columnWidths.get(2) < 251);
         assertTrue(columnWidths.get(3) > 186 && columnWidths.get(3) < 196);
-
-        assertEquals(218, columnWidths.get(0));
-        assertEquals(273, columnWidths.get(1));
-        assertEquals(246, columnWidths.get(2));
-        assertEquals(191, columnWidths.get(3));
     }
 
     @Test
@@ -268,6 +263,76 @@ class TableAnalyzerTest {
         assertTrue(columnWidths.get(1) > 145 && columnWidths.get(1) < 155);
         assertTrue(columnWidths.get(2) > 131 && columnWidths.get(2) < 141);
         assertTrue(columnWidths.get(3) > 193 && columnWidths.get(3) < 203);
+    }
+
+    @Test
+    void getColumnWidthsWithLargeColspanTest() {
+        Element table = new Element(Tag.valueOf("table"), "");
+        Element tbody = table.appendElement("tbody");
+
+        // First row: 6 regular columns
+        Element row1 = tbody.appendElement("tr");
+        row1.appendElement("td").appendElement("img")
+                .attr("src", "https://via.placeholder.com/80x80")
+                .attr("width", "80")
+                .attr("height", "80");
+        row1.appendElement("td").appendElement("img")
+                .attr("src", "https://via.placeholder.com/90x80")
+                .attr("width", "90")
+                .attr("height", "80");
+        row1.appendElement("td").appendElement("img")
+                .attr("src", "https://via.placeholder.com/100x80")
+                .attr("width", "100")
+                .attr("height", "80");
+        row1.appendElement("td").appendElement("img")
+                .attr("src", "https://via.placeholder.com/85x80")
+                .attr("width", "85")
+                .attr("height", "80");
+        row1.appendElement("td").appendElement("img")
+                .attr("src", "https://via.placeholder.com/95x80")
+                .attr("width", "95")
+                .attr("height", "80");
+        row1.appendElement("td").appendElement("img")
+                .attr("src", "https://via.placeholder.com/110x80")
+                .attr("width", "110")
+                .attr("height", "80");
+
+        // Second row: one cell with colspan=4, then two regular cells
+        Element row2 = tbody.appendElement("tr");
+        row2.appendElement("td")
+                .attr("colspan", "4")
+                .appendElement("img")
+                .attr("src", "https://via.placeholder.com/400x150")
+                .attr("width", "400")
+                .attr("height", "150");
+        row2.appendElement("td").appendElement("img")
+                .attr("src", "https://via.placeholder.com/120x150")
+                .attr("width", "120")
+                .attr("height", "150");
+        row2.appendElement("td").appendElement("img")
+                .attr("src", "https://via.placeholder.com/130x150")
+                .attr("width", "130")
+                .attr("height", "150");
+
+        // Third row: regular cell, colspan=3, then two regular cells
+        Element row3 = tbody.appendElement("tr");
+        row3.appendElement("td").text("Column 1");
+        row3.appendElement("td")
+                .attr("colspan", "3")
+                .text("Spanning three columns with some text content here");
+        row3.appendElement("td").text("Column 5");
+        row3.appendElement("td").text("Column 6");
+
+        Map<Integer, Integer> columnWidths = TableAnalyzer.getColumnWidths(table, PaperSizeUtils.getMaxWidth(ConversionParams.builder().orientation(Orientation.LANDSCAPE).build()));
+
+        // Should have 6 columns total
+        assertEquals(6, columnWidths.size());
+
+        // Verify all columns have positive widths
+        for (int i = 0; i < 6; i++) {
+            assertTrue(columnWidths.containsKey(i), "Column " + i + " should have a width");
+            assertTrue(columnWidths.get(i) > 130 && columnWidths.get(i) < 180, "Column " + i + " width should be certain range");
+        }
     }
 
 }

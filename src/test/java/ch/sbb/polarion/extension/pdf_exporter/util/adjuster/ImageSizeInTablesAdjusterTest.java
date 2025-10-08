@@ -16,9 +16,13 @@ import org.w3c.css.sac.InputSource;
 import org.w3c.dom.css.CSSStyleDeclaration;
 
 import java.io.StringReader;
+import java.util.Collections;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
 
 class ImageSizeInTablesAdjusterTest {
 
@@ -74,6 +78,42 @@ class ImageSizeInTablesAdjusterTest {
         assertNotNull(maxWidthStr);
         float maxWidth = Float.parseFloat(maxWidthStr.replace(Measure.PX, ""));
         assertTrue(maxWidth > 400 && maxWidth < 450);
+    }
+
+    @Test
+    void testImageAdjustmentWhenTableAnalyzerReturnsEmptyMap() {
+        String html = """
+                <table>
+                    <tr>
+                        <td><img id='test-img' src='large.jpg' width='800' height='600' style='width:800px;'/></td>
+                        <td><img src='placeholder.jpg' width='100' height='100' style='width:100px;'/></td>
+                    </tr>
+                </table>
+                """;
+
+        Document doc = Jsoup.parse(html);
+
+        // Mock TableAnalyzer.getColumnWidths to return an empty map
+        try (var mockedTableAnalyzer = mockStatic(TableAnalyzer.class)) {
+            mockedTableAnalyzer.when(() -> TableAnalyzer.getColumnWidths(any(Element.class), anyInt()))
+                    .thenReturn(Collections.emptyMap());
+
+            ImageSizeInTablesAdjuster adjuster = new ImageSizeInTablesAdjuster(doc, ConversionParams.builder().build());
+            adjuster.execute();
+
+            // The image should still be adjusted using the fallback mechanism (columnCountBasedWidth)
+            Element testImg = doc.getElementById("test-img");
+            assertNotNull(testImg);
+
+            String style = testImg.attr(HtmlTagAttr.STYLE);
+            CSSStyleDeclaration cssStyle = parseCss(style);
+            String maxWidthStr = cssStyle.getPropertyValue(CssProp.MAX_WIDTH);
+            assertNotNull(maxWidthStr, "max-width should be set even when TableAnalyzer returns empty map");
+
+            float maxWidth = Float.parseFloat(maxWidthStr.replace(Measure.PX, ""));
+            // The fallback should use columnCountBasedWidth which is pageWidth / columnsCount = 593 / 2 = 296
+            assertTrue(maxWidth > 290 && maxWidth <= 300, "Image should be adjusted using fallback width calculation");
+        }
     }
 
     protected CSSStyleDeclaration parseCss(String style) {

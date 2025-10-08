@@ -27,6 +27,8 @@ public class TableAnalyzer {
     private static final String TR = "tr";
     private static final String TD = "td";
     private static final String TH = "th";
+
+    // Doesn't really matter, our concern here are widths
     private static final int PAGE_HEIGHT = 1000;
 
     public Map<Integer, Integer> getColumnWidths(@NotNull Element tableElement, int pageWidth) {
@@ -48,7 +50,7 @@ public class TableAnalyzer {
     private Box render(@NotNull Document doc, int pageWidth) {
         Graphics2DRenderer renderer = new Graphics2DRenderer(doc, "");
 
-        BufferedImage image = new BufferedImage(pageWidth, PAGE_HEIGHT, BufferedImage.TYPE_INT_ARGB);
+        BufferedImage image = new BufferedImage(pageWidth, PAGE_HEIGHT, BufferedImage.TYPE_BYTE_GRAY);
         Graphics2D g2d = image.createGraphics();
         try {
             Dimension dim = new Dimension(pageWidth, PAGE_HEIGHT);

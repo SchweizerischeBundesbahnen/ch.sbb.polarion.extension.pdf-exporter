@@ -109,8 +109,12 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
             while (prevSibling != null) {
                 // Account for colspan in previous cells
                 String colspanAttr = prevSibling.attr("colspan");
-                int colspan = colspanAttr.isEmpty() ? 1 : Integer.parseInt(colspanAttr);
-                column += colspan;
+                try {
+                    int colspan = colspanAttr.isEmpty() ? 1 : Integer.parseInt(colspanAttr);
+                    column += colspan;
+                } catch (NumberFormatException e) {
+                    column++;
+                }
                 prevSibling = prevSibling.previousElementSibling();
             }
             return column;
