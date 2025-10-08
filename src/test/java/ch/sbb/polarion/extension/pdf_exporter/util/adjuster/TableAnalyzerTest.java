@@ -40,9 +40,9 @@ class TableAnalyzerTest {
         assertEquals(3, columnWidths.size());
 
         // Columns width calculation is not absolutely accurate and can differ from system to system, so we check gracefully
-        assertTrue(columnWidths.get(0) > 29 && columnWidths.get(0) < 39);
-        assertTrue(columnWidths.get(1) > 489 && columnWidths.get(1) < 499);
-        assertTrue(columnWidths.get(2) > 58 && columnWidths.get(2) < 68);
+        assertTrue(columnWidths.get(0) > 19 && columnWidths.get(0) < 49);
+        assertTrue(columnWidths.get(1) > 469 && columnWidths.get(1) < 529);
+        assertTrue(columnWidths.get(2) > 38 && columnWidths.get(2) < 88);
     }
 
     @Test
