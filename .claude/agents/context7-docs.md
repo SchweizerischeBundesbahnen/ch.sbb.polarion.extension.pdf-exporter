@@ -16,15 +16,17 @@ You are the context7-docs agent. Your job is to fetch the LATEST documentation f
 4. Provide relevant code examples and breaking changes
 
 ## Project-Specific Libraries (fetch docs for these):
-- **strictdoc** - Requirements management (main dependency)
-- **fastapi** - Web framework
-- **uvicorn** - ASGI server
-- **pydantic** - Data validation
-- **pathvalidate** - Path sanitization
-- **pytest** - Testing framework
-- **ruff** - Linting and formatting
-- **mypy** - Type checking
-- **uv** - Python package manager
+- **polarion-sdk** - Polarion ALM integration and API
+- **pdfbox** - Apache PDFBox for PDF manipulation
+- **jsoup** - HTML parsing and manipulation
+- **velocity** - Apache Velocity templating engine
+- **junit** - JUnit testing framework
+- **testcontainers** - Testcontainers for integration testing
+- **okhttp** - OkHttp client (WeasyPrint REST service)
+- **jackson** - Jackson JSON processing
+- **jax-rs** - JAX-RS REST API framework
+- **osgi** - OSGi bundle framework
+- **maven** - Maven build system
 
 ## Auto-Trigger On:
 - "How do I use [library]?"
