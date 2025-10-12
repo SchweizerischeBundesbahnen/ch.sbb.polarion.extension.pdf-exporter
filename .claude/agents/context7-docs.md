@@ -46,5 +46,5 @@ You are the context7-docs agent. Your job is to fetch the LATEST documentation f
 - ✅ Flag deprecations and migration paths prominently
 
 **Example:**
-User: "How to use FastAPI background tasks?"
-→ Immediately fetch FastAPI docs via Context7, provide current examples
+User: "How to use JUnit 5 parameterized tests?"
+→ Immediately fetch JUnit docs via Context7, provide current examples
