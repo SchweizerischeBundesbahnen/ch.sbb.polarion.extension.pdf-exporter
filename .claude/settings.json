@@ -1,0 +1,25 @@
+{
+  "enabledMcpjsonServers": [
+    "context7"
+  ],
+  "permissions": {
+    "allow": [
+      "Bash(git fetch:*)",
+      "Bash(git checkout:*)",
+      "Bash(gh run list:*)",
+      "Bash(gh run view:*)",
+      "Bash(gh run watch:*)",
+      "Bash(gh pr view:*)",
+      "Bash(gh pr checks:*)",
+      "Bash(gh issue create:*)",
+      "Bash(gh issue view:*)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "mcp__context7__resolve-library-id",
+      "mcp__context7__get-library-docs"
+    ],
+    "ask": [],
+    "deny": []
+  },
+  "spinnerTipsEnabled": false
+}

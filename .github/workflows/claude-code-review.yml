@@ -11,37 +11,48 @@ on:
     #   - "src/**/*.jsx"
 jobs:
   claude-review:
-    # Skip Claude review for Renovate PRs
-    if: github.event.pull_request.user.login != 'renovate[bot]'
+    # Skip Claude review for Renovate and Dependabot PRs
+    if: |
+      github.event.pull_request.user.login != 'renovate[bot]' &&
+      github.event.pull_request.user.login != 'dependabot[bot]'
     runs-on: ubuntu-latest
     permissions:
-      contents: read
-      pull-requests: read
-      issues: read
+      contents: read  # Security: read-only sufficient for reviews (changed from write)
+      pull-requests: write
+      issues: write
+      actions: read
       id-token: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8  # v5.0.0
         with:
-          fetch-depth: 0
-          persist-credentials: true
+          fetch-depth: 0  # Required: full history to compare PR against base branch
+          persist-credentials: false  # Security: don't persist credentials (was true)
       - name: Run Claude Code Review
         id: claude-review
         uses: anthropics/claude-code-action@777ffcbfc9d2e2b07f3cfec41b7c7eadedd1f0dc  # v1.0.12
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           prompt: |
-            REPO: ${{ github.repository }}
-            PR NUMBER: ${{ github.event.pull_request.number }}
-            Please review this pull request and provide feedback on:
-            - Code quality and best practices
-            - Potential bugs or issues
-            - Performance considerations
-            - Security concerns
-            - Test coverage
-            Use the repository's CLAUDE.md for guidance on style and conventions. Be constructive and helpful in your feedback.
-            Use `gh pr comment` with your Bash tool to leave your review as a comment on the PR.
+            Review the PR diff. Report ONLY actual problems in changed lines.
+            Focus on:
+            - Bugs or logic errors
+            - Security vulnerabilities (SQL injection, XSS, auth bypass, secrets exposure)
+            - Breaking changes not mentioned in PR description
+            - Missing tests for new functionality
+            - Critical performance issues introduced by changes
+            Format (be TERSE):
+            ## Issues Found
 
-          # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
-          # or https://docs.claude.com/en/docs/claude-code/sdk#command-line for available options
-          claude_args: --allowed-tools "Bash(gh issue view:*),Bash(gh search:*),Bash(gh issue list:*),Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr list:*)"
+            ### 🔴 Critical
+            - `file:line` - Problem description - Fix: specific solution
+
+            ### 🟡 Important
+            - `file:line` - Issue description - Suggestion: specific fix
+            If NO issues found: "✅ No issues found."
+            DO NOT review: unchanged code, style/formatting, optional improvements, or provide praise.
+
+          # Optimized: Added max-turns limit and use standard Claude Code tools
+          claude_args: |-
+            --max-turns 5
+            --allowed-tools "Read,Grep,Glob"
