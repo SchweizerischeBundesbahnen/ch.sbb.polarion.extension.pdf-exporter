@@ -5,10 +5,18 @@ on:
     types: [opened, synchronize]
     # Optional: Only run on specific file changes
     # paths:
-    #   - "src/**/*.ts"
-    #   - "src/**/*.tsx"
+    #   - "src/**/*.java"
     #   - "src/**/*.js"
-    #   - "src/**/*.jsx"
+    #   - "src/**/*.html"
+    #   - "src/**/*.css"
+    #   - "src/**/*.vm"
+    #   - "src/**/*.xml"
+    #   - "src/**/*.properties"
+    #   - "pom.xml"
+    #   - ".github/workflows/*.yml"
+    #   - ".github/workflows/*.yaml"
+    #   - "docs/**/*.md"
+    #   - "*.md"
 jobs:
   claude-review:
     # Skip Claude review for Renovate and Dependabot PRs
@@ -34,6 +42,8 @@ jobs:
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           prompt: |
+            REPO: ${{ github.repository }}
+            PR NUMBER: ${{ github.event.pull_request.number }}
             Review the PR diff. Report ONLY actual problems in changed lines.
             Focus on:
             - Bugs or logic errors
@@ -51,8 +61,11 @@ jobs:
             - `file:line` - Issue description - Suggestion: specific fix
             If NO issues found: "✅ No issues found."
             DO NOT review: unchanged code, style/formatting, optional improvements, or provide praise.
+            Note: The PR branch is already checked out in the current working directory.
+            Use `gh pr comment` to post your review as a top-level PR comment.
+            Only post GitHub comments - don't submit review text as messages.
 
-          # Optimized: Added max-turns limit and use standard Claude Code tools
+          # Official recommendation: Enable GitHub commenting tools for posting PR comments
           claude_args: |-
-            --max-turns 5
-            --allowed-tools "Read,Grep,Glob"
+            --max-turns 10
+            --allowed-tools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Read,Grep,Glob"
