@@ -722,29 +722,25 @@ public class HtmlProcessor {
 
         for (Element table : tables) {
             Element thead = table.selectFirst("thead");
-            if (thead == null) {
-                continue;
-            }
+            if (thead != null) {
+                Element headRow = getHeadRow(thead);
+                if (headRow != null) {
+                    int maxRowspan = getMaxRowspan(headRow);
+                    // If all cells have rowspan=1 or no rowspan, nothing to fix
+                    if (maxRowspan <= 1) {
+                        continue;
+                    }
 
-            Element headRow = getHeadRow(thead);
-            if (headRow == null) {
-                continue;
-            }
+                    Elements tbodyRows = getBodyRows(table);
 
-            int maxRowspan = getMaxRowspan(headRow);
-            // If all cells have rowspan=1 or no rowspan, nothing to fix
-            if (maxRowspan <= 1) {
-                continue;
-            }
-
-            Elements tbodyRows = getBodyRows(table);
-
-            // Move (maxRowspan - 1) rows from tbody to thead
-            int rowsToMove = Math.min(maxRowspan - 1, tbodyRows.size());
-            for (int i = 0; i < rowsToMove; i++) {
-                Element rowToMove = tbodyRows.get(i);
-                rowToMove.remove();
-                thead.appendChild(rowToMove);
+                    // Move (maxRowspan - 1) rows from tbody to thead
+                    int rowsToMove = Math.min(maxRowspan - 1, tbodyRows.size());
+                    for (int i = 0; i < rowsToMove; i++) {
+                        Element rowToMove = tbodyRows.get(i);
+                        rowToMove.remove();
+                        thead.appendChild(rowToMove);
+                    }
+                }
             }
         }
 
