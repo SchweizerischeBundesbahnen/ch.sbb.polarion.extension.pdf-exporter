@@ -47,4 +47,22 @@ class LiveDocTOCGeneratorTest {
         }
     }
 
+    @Test
+    @SneakyThrows
+    void tableOfContentWithAngleBrackets() {
+        try (
+                InputStream isInitialHtml = this.getClass().getResourceAsStream("/tableOfContentWithAngleBracketsBeforeProcessing.html");
+                InputStream isExceptedHtml = this.getClass().getResourceAsStream("/tableOfContentWithAngleBracketsAfterProcessing.html")
+        ) {
+            String initialHtml = new String(isInitialHtml.readAllBytes(), StandardCharsets.UTF_8);
+            String expectedHtml = new String(isExceptedHtml.readAllBytes(), StandardCharsets.UTF_8);
+
+            LiveDocTOCGenerator liveDocTOCGenerator = new LiveDocTOCGenerator();
+            String processedHtml = liveDocTOCGenerator.addTableOfContent(initialHtml);
+
+            // Spaces and new lines are removed to exclude difference in space characters
+            assertEquals(TestStringUtils.removeNonsensicalSymbols(expectedHtml), TestStringUtils.removeNonsensicalSymbols(processedHtml));
+        }
+    }
+
 }
