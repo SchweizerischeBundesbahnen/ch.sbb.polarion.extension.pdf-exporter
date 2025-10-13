@@ -19,7 +19,11 @@ import lombok.SneakyThrows;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
+import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.nodes.Entities;
+import org.jsoup.select.Elements;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -135,6 +139,8 @@ public class HtmlProcessor {
         } else if (exportParams.isFitToPage()) {
             html = adjustContentToFitPage(html, exportParams);
         }
+
+        html = fixTableHeadRowspan(html);
 
         // Do not change this entry order, '&nbsp;' can be used in the logic above, so we must cut them off as the last step
         html = cutExtraNbsp(html);
@@ -695,4 +701,90 @@ public class HtmlProcessor {
         return html.contains(PAGE_BREAK_MARK);
     }
 
+    /**
+     * Fixes malformed tables where thead contains single one row which cells has rowspan attribute greater than 1.
+     * Such cells semantically extend beyond the thead boundary, which causes incorrect table rendering.
+     * This method extends thead by moving rows from tbody into thead to match the rowspan values.
+     *
+     * @param sourceHtml HTML to process
+     * @return the same HTML with fixed table structure
+     */
+    @NotNull
+    @VisibleForTesting
+    public String fixTableHeadRowspan(@NotNull String sourceHtml) {
+        Document document = Jsoup.parse(sourceHtml);
+        document.outputSettings()
+                .syntax(Document.OutputSettings.Syntax.xml)
+                .escapeMode(Entities.EscapeMode.base)
+                .prettyPrint(false);
+
+        Elements tables = document.select("table");
+
+        for (Element table : tables) {
+            Element thead = table.selectFirst("thead");
+            if (thead != null) {
+                Element headRow = getHeadRow(thead);
+                if (headRow != null) {
+                    int maxRowspan = getMaxRowspan(headRow);
+                    // If all cells have rowspan=1 or no rowspan, nothing to fix
+                    if (maxRowspan <= 1) {
+                        continue;
+                    }
+
+                    Elements tbodyRows = getBodyRows(table);
+
+                    // Move (maxRowspan - 1) rows from tbody to thead
+                    int rowsToMove = Math.min(maxRowspan - 1, tbodyRows.size());
+                    for (int i = 0; i < rowsToMove; i++) {
+                        Element rowToMove = tbodyRows.get(i);
+                        rowToMove.remove();
+                        thead.appendChild(rowToMove);
+                    }
+                }
+            }
+        }
+
+        String resultedHtml = document.body().html();
+        // after processing with jsoup we need to replace $-symbol with "&dollar;" because of regular expressions, as it has special meaning there
+        resultedHtml = resultedHtml.replace("$", "&dollar;");
+        return resultedHtml;
+    }
+
+    private Element getHeadRow(@NotNull Element thead) {
+        Elements theadRows = thead.select("> tr");
+        if (theadRows.size() != 1) {
+            return null;
+        }
+        return theadRows.first();
+    }
+
+    private int getMaxRowspan(@NotNull Element headRow) {
+        Elements cells = headRow.select("> th, > td");
+        int maxRowspan = 1;
+
+        // Find the maximum rowspan value
+        for (Element cell : cells) {
+            if (cell.hasAttr("rowspan")) {
+                try {
+                    int rowspan = Integer.parseInt(cell.attr("rowspan"));
+                    if (rowspan > maxRowspan) {
+                        maxRowspan = rowspan;
+                    }
+                } catch (NumberFormatException e) {
+                    // Ignore invalid rowspan values
+                }
+            }
+        }
+        return maxRowspan;
+    }
+
+    private Elements getBodyRows(@NotNull Element table) {
+        Element tbody = table.selectFirst("tbody");
+        if (tbody == null) {
+            // No tbody, nothing to move
+            return new Elements();
+        }
+
+        return tbody.select("> tr");
+    }
 }
