@@ -1,5 +1,6 @@
 package ch.sbb.polarion.extension.pdf_exporter.rest.model.collections;
 
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.DocumentType;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -18,6 +19,9 @@ public class DocumentCollectionEntry {
 
     @Schema(description = "The name of the document")
     private String documentName;
+
+    @Schema(description = "The type of the document")
+    private DocumentType documentType;
 
     @Schema(description = "The revision of the document")
     private String revision;

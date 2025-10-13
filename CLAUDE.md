@@ -158,3 +158,117 @@ Key properties in `polarion.properties`:
 2. **REST API**: Requires `com.siemens.polarion.rest.enabled=true` in polarion.properties
 3. **CORS**: Must be explicitly configured if needed (see README.md)
 4. **Debugging**: Use remote debugging on port 5005 (see DEVELOPMENT.md)
+
+## GitHub PR Code Reviews (Automated Workflow)
+
+**Philosophy**: Reviews should be **terse, actionable, and problem-focused**. No praise, no analysis of unchanged code.
+
+**When reviewing PRs via the automated workflow:**
+- ONLY review lines changed in the PR diff
+- ONLY report actual problems (bugs, security issues, breaking changes, missing tests)
+- Use terse format: `[file:line] Problem - Fix: Solution`
+- If no issues found, say "No issues found." and stop
+- Do NOT: praise code quality, review unchanged code, suggest optional improvements, analyze performance if not changed
+
+**Review categories:**
+- 🔴 **Critical**: Bugs, security vulnerabilities, breaking changes
+- 🟡 **Important**: Missing tests for new functionality, significant issues
+
+### Skip Reviews For (Automated Tools Handle These)
+
+**The following are already checked by automated tools - DO NOT comment on them:**
+
+**Code Formatting & Style** (handled by Maven plugins + pre-commit hooks):
+- Java code formatting (Spotless/google-java-format)
+- Import organization
+- Indentation and whitespace
+- Line length
+- Code style consistency
+
+**Static Analysis** (handled by Maven plugins):
+- SonarCloud integration for code quality
+- SpotBugs for bug detection
+- Checkstyle for style violations
+- PMD for code quality issues
+
+**Testing** (handled by Maven + Surefire/Failsafe):
+- Test execution and coverage
+- JUnit test configuration
+- JavaScript test execution (Mocha)
+- Integration test setup
+
+**Security & Compliance** (handled by pre-commit hooks):
+- Sensitive data leak detection (gitleaks)
+- Internal URL/email exposure
+- UE numbers and DEV ticket numbers
+- Secret scanning
+
+**YAML & Documentation** (handled by pre-commit hooks):
+- YAML formatting (yamlfix)
+- GitHub Actions validation (actionlint, zizmor)
+- Commit message format (commitizen)
+
+**Don't suggest these common patterns (already established in codebase):**
+- Using Lombok annotations
+- JAX-RS patterns for REST endpoints
+- OSGi bundle structure
+- Polarion extension patterns from parent POM
+- Maven plugin configurations already in use
+- JavaScript testing with Mocha/Chai
+- Testcontainers for integration tests
+
+### Project-Specific Review Focus
+
+**DO focus on:**
+
+1. **Security**:
+   - Proper input validation in REST endpoints
+   - SQL injection in queries (especially in settings/repository access)
+   - XSS vulnerabilities in HTML processing
+   - Path traversal in file operations
+   - Secrets exposure in logs or error messages
+   - CORS configuration if changed
+
+2. **Polarion Integration**:
+   - Correct OSGi service registration/unregistration
+   - Proper transaction handling with Polarion API
+   - Resource cleanup (sessions, connections)
+   - Settings inheritance and overrides
+   - Widget integration patterns
+
+3. **PDF Export Logic**:
+   - HTML transformation pipeline correctness
+   - WeasyPrint service error handling
+   - Image and table sizing calculations
+   - CSS handling and internalization
+   - Link resolution (internal vs external)
+
+4. **Async Job Processing**:
+   - Proper job lifecycle management
+   - Timeout handling
+   - Job cleanup and resource management
+   - Concurrent job execution safety
+
+5. **Breaking Changes**:
+   - REST API endpoint changes
+   - Settings structure changes
+   - JavaScript API changes
+   - OpenAPI specification updates
+   - Backward compatibility with existing configurations
+
+6. **Resource Management**:
+   - Temporary file cleanup
+   - Memory leaks in long-running jobs
+   - Database connection handling
+   - OSGi service lifecycle
+
+7. **Multi-language Support**:
+   - Proper localization handling (XLIFF)
+   - Character encoding in exports
+   - Velocity template rendering
+
+8. **JavaScript Components**:
+   - DOM manipulation safety
+   - Event handler cleanup
+   - API request error handling
+   - Browser compatibility (if UI changes)
