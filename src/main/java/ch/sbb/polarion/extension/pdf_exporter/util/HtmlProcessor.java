@@ -702,7 +702,7 @@ public class HtmlProcessor {
     }
 
     /**
-     * Fixes malformed tables where thead contains cells with rowspan attribute greater than 1.
+     * Fixes malformed tables where thead contains single one row which cells has rowspan attribute greater than 1.
      * Such cells semantically extend beyond the thead boundary, which causes incorrect table rendering.
      * This method extends thead by moving rows from tbody into thead to match the rowspan values.
      *
@@ -756,7 +756,6 @@ public class HtmlProcessor {
 
     private Element getHeadRow(@NotNull Element thead) {
         Elements theadRows = thead.select("> tr");
-        // Logic this method belongs to, fixes the issue of Polarion which generates a table with single row in thead even when thead contains a cell with rowspan > 1
         if (theadRows.size() != 1) {
             return null;
         }
