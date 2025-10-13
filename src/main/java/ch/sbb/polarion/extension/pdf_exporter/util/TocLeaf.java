@@ -2,6 +2,7 @@ package ch.sbb.polarion.extension.pdf_exporter.util;
 
 import com.polarion.core.util.StringUtils;
 import lombok.Getter;
+import org.jsoup.nodes.Entities;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -42,6 +43,8 @@ public class TocLeaf {
 
     private String getLeafHtml(int startLevel, int maxLevel, String children) {
         if (level >= startLevel && level <= maxLevel) {
+            String escapedNumber = number != null ? Entities.escape(number) : null;
+            String escapedText = Entities.escape(text);
             return String.format(""
                             + "<li>"
                             + "  <a href=\"#%s\">" // Link ID
@@ -53,7 +56,7 @@ public class TocLeaf {
                             + "</li>"
                             + "%s" // Sub-list
                             + "",
-                    id, number == null ? "style=\"display:none;\"" : "", number, text, id, (!StringUtils.isEmpty(children) ? String.format("<ul>%s</ul>", children) : ""));
+                    id, escapedNumber == null ? "style=\"display:none;\"" : "", escapedNumber, escapedText, id, (!StringUtils.isEmpty(children) ? String.format("<ul>%s</ul>", children) : ""));
 
         } else {
             return children; // Render only children nodes output (also filtered) if this node is out of required levels range
