@@ -328,9 +328,15 @@ class HtmlProcessorTest {
 
     private static Stream<Arguments> provideHtmlTestCases() {
         return Stream.of(
-                Arguments.of("<h1>First level heading</h1>", "<div class=\"title\">First level heading</div>"),
+                Arguments.of("<h1>First level heading</h1>", """
+                        <div class="title">
+                         First level heading
+                        </div>"""),
                 Arguments.of("<h2>First level heading</h2>", "<h1>First level heading</h1>"),
-                Arguments.of("<div>100$</div>", "<div>100&dollar;</div>")
+                Arguments.of("<div>100$</div>", """
+                        <div>
+                         100&dollar;
+                        </div>""")
         );
     }
 
