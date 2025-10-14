@@ -189,7 +189,7 @@ public class HtmlProcessor {
         }
 
         if (workItemAnchors.isEmpty()) {
-            return html;
+            return encodeDollarSigns(html);
         }
 
         for (Element link : doc.select("a[href]")) {
