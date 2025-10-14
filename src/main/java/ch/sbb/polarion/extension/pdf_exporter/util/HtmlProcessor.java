@@ -47,6 +47,8 @@ public class HtmlProcessor {
     private static final String COMMENT_START = "[span";
     private static final String COMMENT_END = "[/span]";
     private static final String NUMBER = "number";
+    private static final String DOLLAR_SIGN = "$";
+    private static final String DOLLAR_ENTITY = "&dollar;";
 
     private static final String UNSUPPORTED_DOCUMENT_TYPE = "Unsupported document type: %s";
 
@@ -64,7 +66,7 @@ public class HtmlProcessor {
 
     public String processHtmlForPDF(@NotNull String html, @NotNull ExportParams exportParams, @NotNull List<String> selectedRoleEnumValues) {
         // Replace all dollar-characters in HTML document before applying any regular expressions, as it has special meaning there
-        html = html.replace("$", "&dollar;");
+        html = encodeDollarSigns(html);
 
         html = removePd4mlTags(html);
         html = html.replace("/ria/images/enums/", "/icons/default/enums/");
@@ -224,7 +226,7 @@ public class HtmlProcessor {
             }
         }
 
-        html = doc.body().html().replace("$", "&dollar;"); // Jsoup may convert &dollar; back to $ in some cases, so we need to replace it again
+        html = encodeDollarSigns(doc.body().html()); // Jsoup may convert &dollar; back to $ in some cases, so we need to replace it again
         return html;
     }
 
@@ -810,7 +812,7 @@ public class HtmlProcessor {
 
         String resultedHtml = document.body().html();
         // after processing with jsoup we need to replace $-symbol with "&dollar;" because of regular expressions, as it has special meaning there
-        resultedHtml = resultedHtml.replace("$", "&dollar;");
+        resultedHtml = encodeDollarSigns(resultedHtml);
         return resultedHtml;
     }
 
@@ -850,5 +852,16 @@ public class HtmlProcessor {
         }
 
         return tbody.select("> tr");
+    }
+
+    /**
+     * Escapes dollar signs in HTML to prevent them from being interpreted as regex special characters.
+     * Should be called after Jsoup parsing operations that may convert &dollar; back to $.
+     *
+     * @param html HTML content to escape
+     * @return HTML with dollar signs replaced by &dollar; entity
+     */
+    private String encodeDollarSigns(@NotNull String html) {
+        return html.replace(DOLLAR_SIGN, DOLLAR_ENTITY);
     }
 }
