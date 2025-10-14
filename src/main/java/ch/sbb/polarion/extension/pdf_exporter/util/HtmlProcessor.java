@@ -188,10 +188,6 @@ public class HtmlProcessor {
             }
         }
 
-        if (workItemAnchors.isEmpty()) {
-            return encodeDollarSigns(html);
-        }
-
         for (Element link : doc.select("a[href]")) {
             String href = link.attr("href");
             int polarionIdx = href.indexOf("/polarion/#/project/");
