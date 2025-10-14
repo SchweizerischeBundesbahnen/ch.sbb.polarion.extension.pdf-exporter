@@ -1705,6 +1705,17 @@
             "description": "The name of the document",
             "type": "string"
           },
+          "documentType": {
+            "description": "Type of the document",
+            "enum": [
+              "BASELINE_COLLECTION",
+              "LIVE_DOC",
+              "LIVE_REPORT",
+              "TEST_RUN",
+              "WIKI_PAGE"
+            ],
+            "type": "string"
+          },
           "fileName": {
             "description": "Target file name of exported document",
             "type": "string"

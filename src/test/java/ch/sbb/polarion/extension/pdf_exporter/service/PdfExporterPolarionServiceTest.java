@@ -13,6 +13,7 @@ import com.polarion.alm.projects.IProjectService;
 import com.polarion.alm.tracker.ITestManagementService;
 import com.polarion.alm.tracker.ITrackerService;
 import com.polarion.alm.tracker.model.IModule;
+import com.polarion.alm.tracker.model.IRichPage;
 import com.polarion.alm.tracker.model.ITestRecord;
 import com.polarion.alm.tracker.model.ITestRun;
 import com.polarion.alm.tracker.model.ITestRunAttachment;
@@ -189,9 +190,11 @@ class PdfExporterPolarionServiceTest {
     }
 
     @Test
+    @SuppressWarnings("rawtypes")
     void testGetMostSuitableStylePackageModel() {
         IDataService dataService = mock(IDataService.class);
         when(trackerService.getDataService()).thenReturn(dataService);
+
         IModule module = mock(IModule.class);
         when(module.getProjectId()).thenReturn("someProjectId");
         ILocation location = mock(ILocation.class);
@@ -201,6 +204,14 @@ class PdfExporterPolarionServiceTest {
         when(dataService.searchInstances(IModule.PROTO, "matching", "name")).thenReturn(matchingDocuments);
         IPObjectList notMatchingDocuments = new PObjectList(dataService, List.of());
         when(dataService.searchInstances(IModule.PROTO, "not_matching", "name")).thenReturn(notMatchingDocuments);
+
+        IRichPage page = mock(IRichPage.class);
+        when(page.getProjectId()).thenReturn("someProjectId");
+        when(page.getPageNameWithSpace()).thenReturn("someSpaceId/pageName");
+        IPObjectList matchingPages = new PObjectList(dataService, List.of(page));
+        when(dataService.searchInstances(IRichPage.PROTO, "matching", "name")).thenReturn(matchingPages);
+        IPObjectList notMatchingPages = new PObjectList(dataService, List.of());
+        when(dataService.searchInstances(IRichPage.PROTO, "not_matching", "name")).thenReturn(notMatchingPages);
 
         String projectId = "someProjectId";
         String spaceId = "someSpaceId";
@@ -225,6 +236,7 @@ class PdfExporterPolarionServiceTest {
         StylePackageModel model3 = StylePackageModel.builder().weight(55.0f).matchingQuery("matching").build();
         StylePackageModel model4 = StylePackageModel.builder().weight(60.0f).matchingQuery("matching").build();
         StylePackageModel model5 = StylePackageModel.builder().weight(50.0f).build();
+        StylePackageModel model1Page = StylePackageModel.builder().weight(88f).matchingQuery("matching").build();
 
         when(stylePackageSettings.readNames("")).thenReturn(defaultSettingNames);
         when(stylePackageSettings.readNames(ScopeUtils.getScopeFromProject(projectId))).thenReturn(settingNames);
@@ -237,9 +249,12 @@ class PdfExporterPolarionServiceTest {
         when(stylePackageSettings.read(eq("project/someProjectId/"), eq(SettingId.fromName("name5")), isNull())).thenReturn(model5);
 
         StylePackageModel result = service.getMostSuitableStylePackageModel(new DocIdentifier(projectId, spaceId, documentName));
-
-        assertNotNull(result);
         assertEquals(60.0f, result.getWeight());
+        assertEquals("matching", result.getMatchingQuery());
+
+        when(stylePackageSettings.read(eq("project/someProjectId/"), eq(SettingId.fromName("name1")), isNull())).thenReturn(model1Page);
+        result = service.getMostSuitableStylePackageModel(new DocIdentifier(projectId, spaceId, "pageName"));
+        assertEquals(88f, result.getWeight());
         assertEquals("matching", result.getMatchingQuery());
     }
 

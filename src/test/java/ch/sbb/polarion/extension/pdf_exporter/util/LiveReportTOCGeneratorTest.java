@@ -16,10 +16,10 @@ class LiveReportTOCGeneratorTest {
     void tableOfContent() {
         try (
                 InputStream isInitialHtml = this.getClass().getResourceAsStream("/tableOfContentLiveReportBeforeProcessingFormatted.html");
-                InputStream isExceptedHtml = this.getClass().getResourceAsStream("/tableOfContentLiveReportAfterProcessing.html")
+                InputStream isExpectedHtml = this.getClass().getResourceAsStream("/tableOfContentLiveReportAfterProcessing.html")
         ) {
             String initialHtml = new String(isInitialHtml.readAllBytes(), StandardCharsets.UTF_8);
-            String expectedHtml = new String(isExceptedHtml.readAllBytes(), StandardCharsets.UTF_8);
+            String expectedHtml = new String(isExpectedHtml.readAllBytes(), StandardCharsets.UTF_8);
 
             LiveReportTOCGenerator liveReportTOCGenerator = new LiveReportTOCGenerator();
             String processedHtml = liveReportTOCGenerator.addTableOfContent(initialHtml);

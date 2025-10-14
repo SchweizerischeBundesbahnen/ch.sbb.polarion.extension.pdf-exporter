@@ -7,6 +7,7 @@ import com.polarion.alm.server.api.model.rp.widget.AbstractWidgetRenderer;
 import com.polarion.alm.server.api.model.rp.widget.BottomQueryLinksBuilder;
 import com.polarion.alm.shared.api.model.ModelObject;
 import com.polarion.alm.shared.api.model.PrototypeEnum;
+import com.polarion.alm.shared.api.model.rp.parameter.BooleanParameter;
 import com.polarion.alm.shared.api.model.rp.parameter.CompositeParameter;
 import com.polarion.alm.shared.api.model.rp.parameter.DataSet;
 import com.polarion.alm.shared.api.model.rp.parameter.DataSetParameter;
@@ -40,6 +41,7 @@ public class BulkPdfExportWidgetRenderer extends AbstractWidgetRenderer {
     @Getter
     private final @NotNull IterableWithSize<Field> columns;
     private final @NotNull PrototypeEnum itemsPrototype;
+    private final BooleanParameter exportPages;
 
     public BulkPdfExportWidgetRenderer(@NotNull RichPageWidgetCommonContext context) {
         super(context);
@@ -51,6 +53,7 @@ public class BulkPdfExportWidgetRenderer extends AbstractWidgetRenderer {
         this.items = this.dataSet.items();
         itemsPrototype = dataSetParameter.prototype();
         this.columns = columnsParameter.fields();
+        this.exportPages = dataSetParameter.get("exportPages");
 
         CompositeParameter advanced = context.parameter("advanced");
         IntegerParameter top = advanced.get("top");
@@ -115,8 +118,8 @@ public class BulkPdfExportWidgetRenderer extends AbstractWidgetRenderer {
             //language=JS
             wrap.append().tag().script().append().javaScript("""
                     import('/polarion/pdf-exporter/ui/js/modules/ExportBulk.js')
-                        .then(module => new module.default('#%s'))
-                        .catch(console.error);""".formatted(panelId));
+                        .then(module => new module.default('#%s', '%s' === 'true'))
+                        .catch(console.error);""".formatted(panelId, exportPages.value()));
 
             wrap.append().tag().style().append().html(ScopeUtils.getFileContent("/webapp/pdf-exporter/css/micromodal.css"));
             wrap.append().tag().style().append().html(ScopeUtils.getFileContent("/webapp/pdf-exporter/css/pdf-exporter.css"));

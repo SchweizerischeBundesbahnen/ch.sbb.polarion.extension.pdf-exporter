@@ -13,6 +13,8 @@ import ch.sbb.polarion.extension.pdf_exporter.service.PdfExporterPolarionService
 import ch.sbb.polarion.extension.pdf_exporter.settings.LocalizationSettings;
 import ch.sbb.polarion.extension.pdf_exporter.util.html.HtmlLinksHelper;
 import lombok.SneakyThrows;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -573,6 +575,211 @@ class HtmlProcessorTest {
                     <div style="clear: both;"></div>
                 """;
         assertEquals(TestStringUtils.removeNonsensicalSymbols(expectedHtml), TestStringUtils.removeNonsensicalSymbols(processedHtml.replaceAll(" ", "")));
+    }
+
+    @Test
+    void fixTableHeadRowspanSimpleTest() {
+        String html = """
+                <table>
+                    <thead>
+                        <tr>
+                            <th rowspan="3">Column 1</th>
+                            <th rowspan="2">Column 2</th>
+                            <th>Column 3</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Data 1</td>
+                            <td>Data 2</td>
+                        </tr>
+                        <tr>
+                            <td>Data 3</td>
+                            <td>Data 4</td>
+                        </tr>
+                        <tr>
+                            <td>Data 5</td>
+                            <td>Data 6</td>
+                        </tr>
+                    </tbody>
+                </table>
+                """;
+
+        String result = processor.fixTableHeadRowspan(html);
+        Document resultDoc = Jsoup.parse(result);
+
+        // After fixing: thead should have 3 rows (1 original + 2 moved from tbody)
+        assertEquals(3, resultDoc.select("thead tr").size());
+        // tbody should have 1 row left
+        assertEquals(1, resultDoc.select("tbody tr").size());
+    }
+
+    @Test
+    void fixTableHeadRowspanNoRowspanTest() {
+        String html = """
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Column 1</th>
+                            <th>Column 2</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Data 1</td>
+                            <td>Data 2</td>
+                        </tr>
+                    </tbody>
+                </table>
+                """;
+
+        String result = processor.fixTableHeadRowspan(html);
+        Document resultDoc = Jsoup.parse(result);
+
+        // Should remain unchanged
+        assertEquals(1, resultDoc.select("thead tr").size());
+        assertEquals(1, resultDoc.select("tbody tr").size());
+    }
+
+    @Test
+    void fixTableHeadRowspanNoTheadTest() {
+        String html = """
+                <table>
+                    <tbody>
+                        <tr>
+                            <td rowspan="2">Data 1</td>
+                            <td>Data 2</td>
+                        </tr>
+                        <tr>
+                            <td>Data 3</td>
+                        </tr>
+                    </tbody>
+                </table>
+                """;
+
+        String result = processor.fixTableHeadRowspan(html);
+        Document resultDoc = Jsoup.parse(result);
+
+        // Should remain unchanged (no thead)
+        assertEquals(0, resultDoc.select("thead").size());
+        assertEquals(2, resultDoc.select("tbody tr").size());
+    }
+
+    @Test
+    void fixTableHeadRowspanWithColspanTest() {
+        String html = """
+                <table>
+                    <thead>
+                        <tr>
+                            <th rowspan="2" colspan="2">Header 1</th>
+                            <th>Header 2</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Data 1</td>
+                            <td>Data 2</td>
+                        </tr>
+                        <tr>
+                            <td>Data 3</td>
+                            <td>Data 4</td>
+                        </tr>
+                    </tbody>
+                </table>
+                """;
+
+        String result = processor.fixTableHeadRowspan(html);
+        Document resultDoc = Jsoup.parse(result);
+
+        // After fixing: thead should have 2 rows (1 original + 1 moved from tbody)
+        assertEquals(2, resultDoc.select("thead tr").size());
+        // tbody should have 1 row left
+        assertEquals(1, resultDoc.select("tbody tr").size());
+    }
+
+    @Test
+    void fixTableHeadRowspanMultipleTablesTest() {
+        String html = """
+                <table>
+                    <thead>
+                        <tr>
+                            <th rowspan="2">Header 1</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>Data 1</td></tr>
+                        <tr><td>Data 2</td></tr>
+                    </tbody>
+                </table>
+                <table>
+                    <thead>
+                        <tr>
+                            <th rowspan="3">Header 2</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>Data 3</td></tr>
+                        <tr><td>Data 4</td></tr>
+                        <tr><td>Data 5</td></tr>
+                    </tbody>
+                </table>
+                """;
+
+        String result = processor.fixTableHeadRowspan(html);
+        Document resultDoc = Jsoup.parse(result);
+
+        // Both tables should be processed
+        assertEquals(2, resultDoc.select("table").size());
+        // First table thead should have 2 rows, tbody should have 1 row
+        assertEquals(2, resultDoc.select("table").get(0).select("thead tr").size());
+        assertEquals(1, resultDoc.select("table").get(0).select("tbody tr").size());
+        // Second table thead should have 3 rows, tbody should have 1 row
+        assertEquals(3, resultDoc.select("table").get(1).select("thead tr").size());
+        assertEquals(1, resultDoc.select("table").get(1).select("tbody tr").size());
+    }
+
+    @Test
+    void fixTableHeadRowspanNoTbodyTest() {
+        String html = """
+                <table>
+                    <thead>
+                        <tr>
+                            <th rowspan="2">Header 1</th>
+                            <th>Header 2</th>
+                        </tr>
+                    </thead>
+                </table>
+                """;
+
+        String result = processor.fixTableHeadRowspan(html);
+        Document resultDoc = Jsoup.parse(result);
+
+        // Should remain unchanged (no tbody to move rows from)
+        assertEquals(1, resultDoc.select("thead tr").size());
+    }
+
+    @Test
+    void fixTableHeadRowspanInsufficientRowsTest() {
+        String html = """
+                <table>
+                    <thead>
+                        <tr>
+                            <th rowspan="5">Header 1</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>Data 1</td></tr>
+                        <tr><td>Data 2</td></tr>
+                    </tbody>
+                </table>
+                """;
+
+        String result = processor.fixTableHeadRowspan(html);
+        Document resultDoc = Jsoup.parse(result);
+
+        // Should move only available rows (2 rows) even though rowspan is 5
+        assertEquals(3, resultDoc.select("thead tr").size()); // 1 original + 2 moved
+        assertEquals(0, resultDoc.select("tbody tr").size()); // all rows moved
     }
 
     private ExportParams getExportParams() {
