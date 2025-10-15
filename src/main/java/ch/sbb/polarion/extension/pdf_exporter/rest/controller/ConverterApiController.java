@@ -5,7 +5,6 @@ import ch.sbb.polarion.extension.generic.rest.filter.Secured;
 import ch.sbb.polarion.extension.pdf_exporter.converter.HtmlToPdfConverter;
 import ch.sbb.polarion.extension.pdf_exporter.converter.PdfConverter;
 import ch.sbb.polarion.extension.pdf_exporter.converter.PdfConverterJobsService;
-import ch.sbb.polarion.extension.pdf_exporter.rest.model.NestedListsCheck;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.WidthValidationResult;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.Orientation;
@@ -79,11 +78,6 @@ public class ConverterApiController extends ConverterInternalController {
     @Override
     public WidthValidationResult validatePdfWidth(ExportParams exportParams, int maxResults) {
         return polarionService.callPrivileged(() -> super.validatePdfWidth(exportParams, maxResults));
-    }
-
-    @Override
-    public NestedListsCheck checkNestedLists(ExportParams exportParams) {
-        return polarionService.callPrivileged(() -> super.checkNestedLists(exportParams));
     }
 
     private void deactivateLogoutFilter() {

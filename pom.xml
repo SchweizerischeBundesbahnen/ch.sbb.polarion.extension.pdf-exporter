@@ -72,6 +72,9 @@
         <markdown2html-maven-plugin.user-guide.inputFile>${project.basedir}/USER_GUIDE.md</markdown2html-maven-plugin.user-guide.inputFile>
         <markdown2html-maven-plugin.user-guide.outputFileName>user-guide.html</markdown2html-maven-plugin.user-guide.outputFileName>
         <markdown2html-maven-plugin.user-guide.outputFile>${markdown2html-maven-plugin.extensionContextAdminHtml}/${markdown2html-maven-plugin.user-guide.outputFileName}</markdown2html-maven-plugin.user-guide.outputFile>
+        <markdown2html-maven-plugin.disclaimer.inputFile>${project.basedir}/DISCLAIMER.md</markdown2html-maven-plugin.disclaimer.inputFile>
+        <markdown2html-maven-plugin.disclaimer.outputFileName>disclaimer.html</markdown2html-maven-plugin.disclaimer.outputFileName>
+        <markdown2html-maven-plugin.disclaimer.outputFile>${markdown2html-maven-plugin.extensionContextAdminHtml}/${markdown2html-maven-plugin.disclaimer.outputFileName}</markdown2html-maven-plugin.disclaimer.outputFile>
         <swagger-maven-plugin.version>2.2.22</swagger-maven-plugin.version>
 
         <frontend-maven-plugin.version>1.15.4</frontend-maven-plugin.version>
@@ -252,6 +255,7 @@
                         <fileset>
                             <directory>${markdown2html-maven-plugin.extensionContextAdminHtml}</directory>
                             <includes>
+                                <include>${markdown2html-maven-plugin.disclaimer.outputFileName}</include>
                                 <include>${markdown2html-maven-plugin.user-guide.outputFileName}</include>
                                 <include>${markdown2html-maven-plugin.outputFileName}</include>
                             </includes>
@@ -281,6 +285,23 @@
                         <configuration>
                             <inputFile>USER_GUIDE.md</inputFile>
                             <outputFile>${markdown2html-maven-plugin.user-guide.outputFile}</outputFile>
+                            <tokenEnvVarName>${markdown2html-maven-plugin.tokenEnvVarName}</tokenEnvVarName>
+                            <failOnError>${markdown2html-maven-plugin.failOnError}</failOnError>
+                            <generateHeadingIds>${markdown2html-maven-plugin.generateHeadingIds}</generateHeadingIds>
+                            <relativeLinkPrefix>${project.scm.url}</relativeLinkPrefix>
+                            <openExternalLinksInNewTab>true</openExternalLinksInNewTab>
+                            <imageProcessingType>EMBED</imageProcessingType>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>disclaimer.md-to-disclaimer.html</id>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>convert</goal>
+                        </goals>
+                        <configuration>
+                            <inputFile>DISCLAIMER.md</inputFile>
+                            <outputFile>${markdown2html-maven-plugin.disclaimer.outputFile}</outputFile>
                             <tokenEnvVarName>${markdown2html-maven-plugin.tokenEnvVarName}</tokenEnvVarName>
                             <failOnError>${markdown2html-maven-plugin.failOnError}</failOnError>
                             <generateHeadingIds>${markdown2html-maven-plugin.generateHeadingIds}</generateHeadingIds>

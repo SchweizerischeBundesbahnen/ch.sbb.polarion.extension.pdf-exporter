@@ -5,38 +5,6 @@
     "version": "v1"
   },
   "paths": {
-    "/api/checknestedlists": {
-      "post": {
-        "operationId": "checkNestedLists",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ExportParams"
-              }
-            }
-          },
-          "description": "Export parameters used to locate and check the document for nested lists",
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/NestedListsCheck"
-                }
-              }
-            },
-            "description": "Check completed successfully, returning whether nested lists are present"
-          }
-        },
-        "summary": "Checks whether document contains nested lists",
-        "tags": [
-          "PDF Processing"
-        ]
-      }
-    },
     "/api/configuration/cors-config": {
       "get": {
         "description": "Retrieves the status of the CORS configuration.",
@@ -2129,16 +2097,6 @@
           },
           "providers": {
             "type": "object"
-          }
-        },
-        "type": "object"
-      },
-      "NestedListsCheck": {
-        "description": "Check result indicating whether nested lists are present",
-        "properties": {
-          "containsNestedLists": {
-            "description": "Indicates whether the content contains nested lists",
-            "type": "boolean"
           }
         },
         "type": "object"
