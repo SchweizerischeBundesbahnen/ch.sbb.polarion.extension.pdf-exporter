@@ -28,12 +28,6 @@ import static org.mockito.Mockito.*;
 
 class PdfConverterWeasyPrintTest extends BasePdfConverterTest {
 
-
-    @Override
-    protected void prepareSpecificMocks() {
-        // No specific mocks needed for general tests
-    }
-
     @Override
     protected void setupHeaderFooterSettings() {
         // Test "testFieldKey" custom field & special "PAGE_NUMBER" placeholder substitution in the header

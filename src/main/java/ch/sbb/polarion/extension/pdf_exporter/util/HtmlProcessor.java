@@ -27,11 +27,13 @@ import org.jsoup.select.Elements;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 import static ch.sbb.polarion.extension.pdf_exporter.util.exporter.Constants.*;
 
@@ -45,6 +47,8 @@ public class HtmlProcessor {
     private static final String COMMENT_START = "[span";
     private static final String COMMENT_END = "[/span]";
     private static final String NUMBER = "number";
+    private static final String DOLLAR_SIGN = "$";
+    private static final String DOLLAR_ENTITY = "&dollar;";
 
     private static final String UNSUPPORTED_DOCUMENT_TYPE = "Unsupported document type: %s";
 
@@ -62,7 +66,7 @@ public class HtmlProcessor {
 
     public String processHtmlForPDF(@NotNull String html, @NotNull ExportParams exportParams, @NotNull List<String> selectedRoleEnumValues) {
         // Replace all dollar-characters in HTML document before applying any regular expressions, as it has special meaning there
-        html = html.replace("$", "&dollar;");
+        html = encodeDollarSigns(html);
 
         html = removePd4mlTags(html);
         html = html.replace("/ria/images/enums/", "/icons/default/enums/");
@@ -119,6 +123,9 @@ public class HtmlProcessor {
         if (exportParams.isCutEmptyWIAttributes()) {
             html = cutEmptyWIAttributes(html);
         }
+
+        html = rewritePolarionUrls(html);
+
         if (exportParams.isCutLocalUrls()) {
             html = cutLocalUrls(html);
         }
@@ -162,6 +169,61 @@ public class HtmlProcessor {
                     String content = regexEngine.group("content");
                     return content != null ? content : regexEngine.group("imgContent");
                 });
+    }
+
+    /**
+     * Rewrites Polarion Work Item hyperlinks so they become intra-document anchor links.
+     **/
+    @NotNull
+    @VisibleForTesting
+    @SuppressWarnings({"java:S3776", "java:S135"}) //complexity is acceptable here
+    String rewritePolarionUrls(@NotNull String html) {
+        Document doc = Jsoup.parse(html);
+
+        Set<String> workItemAnchors = new HashSet<>();
+        for (Element anchor : doc.select("a[id^=work-item-anchor-]")) {
+            String id = anchor.id();
+            if (!id.isEmpty()) {
+                workItemAnchors.add(id);
+            }
+        }
+
+        for (Element link : doc.select("a[href]")) {
+            String href = link.attr("href");
+            int polarionIdx = href.indexOf("/polarion/#/project/");
+            if (polarionIdx < 0) {
+                continue;
+            }
+            String afterProject = href.substring(polarionIdx + "/polarion/#/project/".length());
+            int slashIdx = afterProject.indexOf('/');
+            if (slashIdx < 0) {
+                continue;
+            }
+            String projectId = afterProject.substring(0, slashIdx);
+            int workItemIdx = afterProject.indexOf("workitem?id=");
+            if (workItemIdx < 0) {
+                continue;
+            }
+            String workItemPart = afterProject.substring(workItemIdx + "workitem?id=".length());
+            int ampIdx = workItemPart.indexOf('&');
+            if (ampIdx >= 0) {
+                workItemPart = workItemPart.substring(0, ampIdx);
+            }
+            int hashIdx = workItemPart.indexOf('#');
+            if (hashIdx >= 0) {
+                workItemPart = workItemPart.substring(0, hashIdx);
+            }
+            if (workItemPart.isEmpty()) {
+                continue;
+            }
+            String expectedAnchorId = "work-item-anchor-" + projectId + "/" + workItemPart;
+            if (workItemAnchors.contains(expectedAnchorId)) {
+                link.attr("href", "#" + expectedAnchorId);
+            }
+        }
+
+        html = encodeDollarSigns(doc.body().html()); // Jsoup may convert &dollar; back to $ in some cases, so we need to replace it again
+        return html;
     }
 
     /**
@@ -746,7 +808,7 @@ public class HtmlProcessor {
 
         String resultedHtml = document.body().html();
         // after processing with jsoup we need to replace $-symbol with "&dollar;" because of regular expressions, as it has special meaning there
-        resultedHtml = resultedHtml.replace("$", "&dollar;");
+        resultedHtml = encodeDollarSigns(resultedHtml);
         return resultedHtml;
     }
 
@@ -786,5 +848,16 @@ public class HtmlProcessor {
         }
 
         return tbody.select("> tr");
+    }
+
+    /**
+     * Escapes dollar signs in HTML to prevent them from being interpreted as regex special characters.
+     * Should be called after Jsoup parsing operations that may convert &dollar; back to $.
+     *
+     * @param html HTML content to escape
+     * @return HTML with dollar signs replaced by &dollar; entity
+     */
+    private String encodeDollarSigns(@NotNull String html) {
+        return html.replace(DOLLAR_SIGN, DOLLAR_ENTITY);
     }
 }
