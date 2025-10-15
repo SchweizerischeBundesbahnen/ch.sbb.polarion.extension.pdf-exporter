@@ -19,6 +19,9 @@ The extension uses [WeasyPrint](https://weasyprint.org/) as a PDF engine and req
 > Starting from version 8.0.0 only latest version of Polarion is supported.
 > Right now it is Polarion 2506.
 
+> [!IMPORTANT]
+> Please, read our [disclaimer](DISCLAIMER.md) before using this extension.
+
 ## Quick start
 
 Please see separate [quick start page](QUICK_START.md) where briefly summarized all most important and applicable steps and configurations.

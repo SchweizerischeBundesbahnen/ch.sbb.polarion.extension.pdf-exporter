@@ -258,23 +258,6 @@ export default class ExportPanel {
 
         this.actionInProgress(true);
 
-        this.ctx.callAsync({
-            method: "POST",
-            url: "/polarion/pdf-exporter/rest/internal/checknestedlists",
-            contentType: "application/json",
-            responseType: "json",
-            body: request,
-            onOk: (responseText, request) => {
-                if (request.response.containsNestedLists) {
-                    this.ctx.getJQueryElement("#export-warning").append("Document contains nested numbered lists which structures were not valid. " +
-                        "We did our best to fix it, but be aware of it.");
-                }
-            },
-            onError: (status, errorMessage, request) => {
-                this.ctx.getJQueryElement("#export-error").append("Error occurred validating nested lists" + (request.response.message ? ":<br>" + request.response.message : ""));
-            }
-        });
-
         this.ctx.asyncConvertPdf(request, result => {
             if (result.warning) {
                 this.ctx.getJQueryElement("#export-warning").append(result.warning);

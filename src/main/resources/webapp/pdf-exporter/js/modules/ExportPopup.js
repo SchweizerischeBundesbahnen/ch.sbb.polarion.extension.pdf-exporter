@@ -494,9 +494,6 @@ export default class ExportPopup {
         this.actionInProgress({inProgress: true, message: "Generating PDF"})
 
         const requestBody = exportParams.toJSON();
-        if (this.ctx.getDocumentType() !== ExportParams.DocumentType.LIVE_REPORT && this.ctx.getDocumentType() !== ExportParams.DocumentType.TEST_RUN) {
-            this.checkNestedListsAsync(requestBody);
-        }
 
         this.ctx.asyncConvertPdf(requestBody, result => {
             if (result.warning) {
@@ -514,21 +511,6 @@ export default class ExportPopup {
             });
             this.actionInProgress({inProgress: false});
         });
-    }
-
-    checkNestedListsAsync(requestBody) {
-        this.callAsync({
-            method: "POST",
-            url: "/polarion/pdf-exporter/rest/internal/checknestedlists",
-            body: requestBody,
-            responseType: "json"
-        }).then(({response}) => {
-            if (response?.containsNestedLists) {
-                this.showNotification({alertType: "warning", message: "Document contains nested numbered lists which structures were not valid. We tried to fix this, but be aware of it."});
-            }
-        }).catch((error) => {
-            this.showNotification({alertType: "error", message: "Error occurred validating nested lists" + (error?.response.message ? ": " + error.response.message : "")});
-        })
     }
 
     getExportParams(fileName) {
