@@ -202,39 +202,32 @@ public class HtmlProcessor {
 
         // Process from lowest to highest priority (h6 to h1), otherwise logic can be broken
         for (int headingLevel = H_TAG_MIN_PRIORITY; headingLevel >= 1; headingLevel--) {
-            List<Element> headingsToRemove = JSoupUtils.selectEmptyHeadings(document, headingLevel);
-            for (Element heading : headingsToRemove) {
-
-                // In addition to removing empty heading itself, remove all following empty siblings until next heading
-                removeEmptySiblings(heading);
-
-                heading.remove();
-            }
+            removeEmptyHeadings(document, headingLevel);
         }
 
         return document;
     }
 
-    private void removeEmptySiblings(@NotNull Element heading) {
-        Node nextSibling = heading.nextSibling();
-        while (nextSibling != null) {
-            if (JSoupUtils.isHeading(nextSibling)) {
-                break;
-            } else {
-                Node siblingToRemove = null;
-                if (nextSibling instanceof Element element) {
-                    if (JSoupUtils.isEmptyElement(element)) {
-                        siblingToRemove = element;
-                    }
-                } else if (JSoupUtils.isEmptyTextNode(nextSibling) || !(nextSibling instanceof Comment)) { // Do not remove comments as they can have special meaning
-                    siblingToRemove = nextSibling;
-                }
+    private void removeEmptyHeadings(@NotNull Document document, int headingLevel) {
+        List<Element> headingsToRemove = JSoupUtils.selectEmptyHeadings(document, headingLevel);
+        for (Element heading : headingsToRemove) {
 
-                nextSibling = nextSibling.nextSibling();
-                if (siblingToRemove != null) {
-                    siblingToRemove.remove();
+            // In addition to removing heading itself, remove all following empty siblings until next heading, but not comments as they can have special meaning
+            // We don't check additionally if sibling is empty, because if a heading was selected for removal there are only empty siblings under it
+            Node nextSibling = heading.nextSibling();
+            while (nextSibling != null) {
+                if (JSoupUtils.isHeading(nextSibling)) {
+                    break;
+                } else {
+                    Node siblingToRemove = nextSibling instanceof Comment ? null : nextSibling;
+                    nextSibling = nextSibling.nextSibling();
+                    if (siblingToRemove != null) {
+                        siblingToRemove.remove();
+                    }
                 }
             }
+
+            heading.remove();
         }
     }
 
