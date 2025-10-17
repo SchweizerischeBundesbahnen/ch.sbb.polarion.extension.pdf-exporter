@@ -251,7 +251,7 @@ public class HtmlProcessor {
     }
 
     /**
-     * Rewrites Polarion Work Item hyperlinks so, that they become intra-document anchor links.
+     * Rewrites Polarion Work Item hyperlinks so that they become intra-document anchor links.
      **/
     @NotNull
     @VisibleForTesting

@@ -88,6 +88,13 @@ public class JSoupUtils {
         while (current != null) {
             if (current instanceof Element element) {
                 // If we encounter a heading of same or higher level, the chapter is empty
+                if (isHeading(element)) {
+                    int lvl = element.tagName().charAt(1) - '0';
+                    if (lvl > 0 && lvl <= headingLevel) {
+                        return true;
+                    }
+                }
+
                 if (element.tagName().matches("h[1-" + headingLevel + "]")) {
                     return true;
                 }
@@ -111,7 +118,7 @@ public class JSoupUtils {
     }
 
     public boolean isHeading(@NotNull Node node) {
-        return node instanceof Element element && element.tagName().startsWith("h");
+        return node instanceof Element element && element.tagName().length() == 2 && element.tagName().startsWith("h");
     }
 
 }
