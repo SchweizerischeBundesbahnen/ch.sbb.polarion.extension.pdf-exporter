@@ -70,7 +70,7 @@ public class LiveDocAdapter extends CommonUniqueObjectAdapter {
             DocumentRendererParameters parameters = new DocumentRendererParameters(null, documentParameters.get(URL_QUERY_PARAM_LANGUAGE));
             ModifiedDocumentRenderer documentRenderer = new ModifiedDocumentRenderer((InternalReadOnlyTransaction) transaction, document, RichTextRenderTarget.PDF_EXPORT, parameters);
 
-            String internalContent = StringUtils.getEmptyIfNull(Optional.ofNullable(exportParams.getInternalContent()).orElse(document.getHomePageContentHtml()));
+            String internalContent = StringUtils.getEmptyIfNull(Optional.ofNullable(exportParams.getInternalContent()).orElseGet(document::getHomePageContentHtml));
             // Process comments in document itself (workitem descriptions aren't rendered yet)
             internalContent = processComments(exportParams, document, internalContent);
             String renderedContent = documentRenderer.render(internalContent);

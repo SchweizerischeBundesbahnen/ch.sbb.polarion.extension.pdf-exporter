@@ -24,14 +24,14 @@ public class ModifiedServerFieldRichTextRenderer extends ServerFieldRichTextRend
     @Override
     @SneakyThrows
     public boolean renderDescription(@NotNull HtmlContentBuilder builder, @NotNull WorkItemReference workItem, boolean withNA) {
-        RichTextRenderingContext contextBackup = this.context;
+        RichTextRenderTarget backupTarget = this.context.getRenderTarget();
         Field renderTargetField = RichTextRenderingContext.class.getDeclaredField("renderTarget");
         renderTargetField.setAccessible(true);
         renderTargetField.set(context, RichTextRenderTarget.PREVIEW);
         try {
             return super.renderDescription(builder, workItem, withNA);
         } finally {
-            this.context = contextBackup;
+            renderTargetField.set(context, backupTarget);
         }
     }
 
