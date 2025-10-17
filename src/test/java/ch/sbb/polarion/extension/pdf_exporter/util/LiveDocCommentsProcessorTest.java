@@ -1,5 +1,6 @@
 package ch.sbb.polarion.extension.pdf_exporter.util;
 
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.CommentsRenderType;
 import com.polarion.alm.server.api.model.document.ProxyDocument;
 import com.polarion.alm.shared.api.model.comment.CommentBase;
 import com.polarion.alm.shared.api.model.comment.CommentBasesTreeField;
@@ -38,7 +39,7 @@ class LiveDocCommentsProcessorTest {
                 <div>some content2</div>
                 <span id="polarion-comment:2"></span>
                 <div>some content3</div>
-                <span id="polarion-comment:3"></span>
+                <img id="polarion-comment:3" class="polarion-dle-comment-icon"/>
                 <div>some content4</div>
                 """;
 
@@ -55,11 +56,11 @@ class LiveDocCommentsProcessorTest {
                 <div>some content1</div>
                 [span class=comment level-0][span class=meta][span class=date]2025-03-13 16:21[/span][span class=details][span class=author]author1[/span][/span][/span][span class=text]text1[/span][/span]
                 <div>some content2</div>
-                <span id="polarion-comment:2"></span>
+
                 <div>some content3</div>
                 [span class=comment level-0][span class=meta][span class=date]2025-03-13 16:23[/span][span class=details][span class=author]author3[/span][/span][/span][span class=text]text3[/span][/span]
                 <div>some content4</div>
-                """, new LiveDocCommentsProcessor().addLiveDocComments(document, html, true));
+                """, new LiveDocCommentsProcessor().addLiveDocComments(document, html, CommentsRenderType.OPEN));
 
         when(comments.iterator()).thenReturn(commentBases.iterator());
 
@@ -72,7 +73,18 @@ class LiveDocCommentsProcessorTest {
                 <div>some content3</div>
                 [span class=comment level-0][span class=meta][span class=date]2025-03-13 16:23[/span][span class=details][span class=author]author3[/span][/span][/span][span class=text]text3[/span][/span]
                 <div>some content4</div>
-                """, new LiveDocCommentsProcessor().addLiveDocComments(document, html, false));
+                """, new LiveDocCommentsProcessor().addLiveDocComments(document, html, CommentsRenderType.ALL));
+
+        // null commentsRenderType means remove comments
+        assertEquals("""
+                <div>some content1</div>
+
+                <div>some content2</div>
+
+                <div>some content3</div>
+
+                <div>some content4</div>
+                """, new LiveDocCommentsProcessor().addLiveDocComments(document, html, null));
     }
 
     @SneakyThrows

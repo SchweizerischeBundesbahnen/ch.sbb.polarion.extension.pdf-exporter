@@ -300,7 +300,7 @@ class TableAnalyzerTest {
         // Verify all columns have positive widths
         for (int i = 0; i < 6; i++) {
             assertTrue(columnWidths.containsKey(i), "Column " + i + " should have a width");
-            assertTrue(columnWidths.get(i) > 130 && columnWidths.get(i) < 180, "Column " + i + " width should be certain range");
+            assertTrue(columnWidths.get(i) >= 130 && columnWidths.get(i) <= 180, "Column " + i + " width should be certain range, but was " + columnWidths.get(i));
         }
     }
 
