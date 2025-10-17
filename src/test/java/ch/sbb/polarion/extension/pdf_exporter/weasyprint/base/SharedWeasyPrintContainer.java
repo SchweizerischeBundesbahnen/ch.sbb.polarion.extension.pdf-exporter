@@ -14,7 +14,8 @@ import java.time.Duration;
 public final class SharedWeasyPrintContainer {
 
     private static final Logger logger = LoggerFactory.getLogger(SharedWeasyPrintContainer.class);
-    private static final String DOCKER_IMAGE_NAME = "ghcr.io/schweizerischebundesbahnen/weasyprint-service:latest";
+//    private static final String DOCKER_IMAGE_NAME = "ghcr.io/schweizerischebundesbahnen/weasyprint-service:latest";
+    private static final String DOCKER_IMAGE_NAME = "weasyprint-service:0.0.0";
 
     private SharedWeasyPrintContainer() {
         // Private constructor to prevent instantiation
