@@ -200,16 +200,8 @@ public class HtmlProcessor {
         // i.e. there are only not visible or whitespace elements between itself and next heading of same/higher level or end of parent/document.
 
         // Process from lowest to highest priority (h6 to h1), otherwise logic can be broken
-        for (int level = H_TAG_MIN_PRIORITY; level >= 1; level--) {
-            Elements headings = document.select("h" + level);
-
-            List<Element> headingsToRemove = new LinkedList<>();
-            for (Element heading : headings) {
-                if (JSoupUtils.isEmptyChapter(heading, level)) {
-                    headingsToRemove.add(heading);
-                }
-            }
-
+        for (int headingLevel = H_TAG_MIN_PRIORITY; headingLevel >= 1; headingLevel--) {
+            List<Element> headingsToRemove = JSoupUtils.selectEmptyHeadings(document, headingLevel);
             for (Element heading : headingsToRemove) {
 
                 // In addition to removing heading itself, remove all following empty siblings until next heading, but not comments as they can have special meaning

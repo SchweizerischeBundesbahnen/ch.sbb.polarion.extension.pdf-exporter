@@ -2,11 +2,13 @@ package ch.sbb.polarion.extension.pdf_exporter.util;
 
 import lombok.experimental.UtilityClass;
 import org.jetbrains.annotations.NotNull;
+import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
 import org.jsoup.nodes.TextNode;
 import org.jsoup.select.Elements;
 
+import java.util.LinkedList;
 import java.util.List;
 
 @UtilityClass
@@ -79,11 +81,23 @@ public class JSoupUtils {
         return true;
     }
 
+    public List<Element> selectEmptyHeadings(@NotNull Document document, int headingLevel) {
+        Elements headings = document.select("h" + headingLevel);
+
+        List<Element> emptyHeadings = new LinkedList<>();
+        for (Element heading : headings) {
+            if (JSoupUtils.isEmptyHeading(heading, headingLevel)) {
+                emptyHeadings.add(heading);
+            }
+        }
+        return emptyHeadings;
+    }
+
     /**
      * Checks if a heading represents an empty chapter.
      * A chapter is empty if there are only not visible or whitespace elements between itself and next heading of same/higher level or end of parent/document.
      */
-    public boolean isEmptyChapter(@NotNull Element heading, int headingLevel) {
+    public boolean isEmptyHeading(@NotNull Element heading, int headingLevel) {
         Node current = heading.nextSibling();
         while (current != null) {
             if (current instanceof Element element) {
@@ -99,11 +113,8 @@ public class JSoupUtils {
                 if (!isEmptyElement(element)) {
                     return false;
                 }
-            } else if (current instanceof TextNode textNode) {
-                // Check if text node has non-whitespace content
-                if (!textNode.text().trim().isEmpty()) {
-                    return false;
-                }
+            } else if (current instanceof TextNode textNode && !textNode.text().trim().isEmpty()) { // Check if text node has non-whitespace content
+                return false;
             }
 
             current = current.nextSibling();
