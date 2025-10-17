@@ -135,7 +135,7 @@ Fitting into PDF document width after export:
 If you select this checkbox, WeasyPrint will follow HTML presentational hints. For example, if an HTML element has a ```width``` attribute specified, it will be taken into account despite the fact that its usage is discouraged in favor of specifying width via element's ```style``` attribute.
 
 ### Comments rendering
-This option, which is on by default, tells PDF Exporter to include Polarion document's comments in the generated PDF document. Following state of the Polarion document:
+This option, which is on by default, tells PDF Exporter to include Polarion document's comments in the generated PDF document (REMARK: please take into account that this relates only to LiveDoc comments. WorkItem comments regardless of the fact that they look like LiveDoc comments, **will not be displayed** in the generated PDF under any circumstances). Following state of the Polarion document:
 
 ![Comments](docs/user_guide/img/comments.png)
 
