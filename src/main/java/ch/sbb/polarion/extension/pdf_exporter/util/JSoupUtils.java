@@ -95,10 +95,6 @@ public class JSoupUtils {
                     }
                 }
 
-                if (element.tagName().matches("h[1-" + headingLevel + "]")) {
-                    return true;
-                }
-
                 // If we encounter any non-empty content, the chapter is not empty
                 if (!isEmptyElement(element)) {
                     return false;
@@ -118,7 +114,8 @@ public class JSoupUtils {
     }
 
     public boolean isHeading(@NotNull Node node) {
-        return node instanceof Element element && element.tagName().length() == 2 && element.tagName().startsWith("h");
+        // <h1>, <h2>, <h3> etc. - are headings, but <hr> is not
+        return node instanceof Element element && element.tagName().length() == 2 && element.tagName().startsWith("h") && !element.tagName().endsWith("r");
     }
 
 }
