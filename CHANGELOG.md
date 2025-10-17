@@ -1,5 +1,14 @@
 # Changelog
 
+## [10.0.1](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v10.0.0...v10.0.1) (2025-10-17)
+
+
+### Bug Fixes
+
+* **deps:** update dependency org.apache.pdfbox:pdfbox to v3.0.6 ([e11731c](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/e11731c72fc858d5fdb7b43e4c0171fbdd9af06b))
+* **deps:** update dependency org.testcontainers:testcontainers-bom to v2.0.1 ([62be70f](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/62be70f743e8b66ab8f71f21d36becbf9842ff7b))
+* Revert "feat: export comments within a workitem description ([#559](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/559))" ([#574](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/574)) ([dccaed7](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/dccaed741ed1f6e70265e44578bfc1bc2847d702))
+
 ## [10.0.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v9.4.4...v10.0.0) (2025-10-15)
 
 
