@@ -14,6 +14,7 @@ import ch.sbb.polarion.extension.pdf_exporter.util.adjuster.PageWidthAdjuster;
 import ch.sbb.polarion.extension.pdf_exporter.util.exporter.CustomPageBreakPart;
 import ch.sbb.polarion.extension.pdf_exporter.util.html.HtmlLinksHelper;
 import com.polarion.alm.shared.util.StringUtils;
+import com.polarion.core.util.types.Text;
 import com.polarion.core.util.xml.CSSStyle;
 import lombok.SneakyThrows;
 import org.jetbrains.annotations.NotNull;
@@ -204,25 +205,37 @@ public class HtmlProcessor {
             List<Element> headingsToRemove = JSoupUtils.selectEmptyHeadings(document, headingLevel);
             for (Element heading : headingsToRemove) {
 
-                // In addition to removing heading itself, remove all following empty siblings until next heading, but not comments as they can have special meaning
-                Node nextSibling = heading.nextSibling();
-                while (nextSibling != null) {
-                    if (JSoupUtils.isHeading(nextSibling)) {
-                        break;
-                    } else {
-                        Node siblingToRemove = nextSibling instanceof Comment ? null : nextSibling;
-                        nextSibling = nextSibling.nextSibling();
-                        if (siblingToRemove != null) {
-                            siblingToRemove.remove();
-                        }
-                    }
-                }
+                // In addition to removing empty heading itself, remove all following empty siblings until next heading
+                removeEmptySiblings(heading);
 
                 heading.remove();
             }
         }
 
         return document;
+    }
+
+    private void removeEmptySiblings(@NotNull Element heading) {
+        Node nextSibling = heading.nextSibling();
+        while (nextSibling != null) {
+            if (JSoupUtils.isHeading(nextSibling)) {
+                break;
+            } else {
+                Node siblingToRemove = null;
+                if (nextSibling instanceof Element element) {
+                    if (JSoupUtils.isEmptyElement(element)) {
+                        siblingToRemove = element;
+                    }
+                } else if (JSoupUtils.isEmptyTextNode(nextSibling) || !(nextSibling instanceof Comment)) { // Do not remove comments as they can have special meaning
+                    siblingToRemove = nextSibling;
+                }
+
+                nextSibling = nextSibling.nextSibling();
+                if (siblingToRemove != null) {
+                    siblingToRemove.remove();
+                }
+            }
+        }
     }
 
     @NotNull

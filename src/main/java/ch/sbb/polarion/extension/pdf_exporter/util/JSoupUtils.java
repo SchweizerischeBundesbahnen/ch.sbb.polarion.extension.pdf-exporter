@@ -113,7 +113,7 @@ public class JSoupUtils {
                 if (!isEmptyElement(element)) {
                     return false;
                 }
-            } else if (current instanceof TextNode textNode && !textNode.text().trim().isEmpty()) { // Check if text node has non-whitespace content
+            } else if (isNonEmptyTextNode(current)) { // Check if text node has non-whitespace content
                 return false;
             }
 
@@ -122,6 +122,14 @@ public class JSoupUtils {
 
         // If we reached the end of siblings without finding content, the chapter is empty
         return true;
+    }
+
+    public boolean isEmptyTextNode(@NotNull Node node) {
+        return node instanceof TextNode textNode && textNode.text().trim().isEmpty();
+    }
+
+    public boolean isNonEmptyTextNode(@NotNull Node node) {
+        return node instanceof TextNode textNode && !textNode.text().trim().isEmpty();
     }
 
     public boolean isHeading(@NotNull Node node) {
