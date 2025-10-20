@@ -2,6 +2,7 @@ package ch.sbb.polarion.extension.pdf_exporter.util;
 
 import lombok.experimental.UtilityClass;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
@@ -13,23 +14,24 @@ import java.util.List;
 
 @UtilityClass
 public class JSoupUtils {
-    private static final String BR_TAG  = "br";
-    private static final String BUTTON_TAG  = "button";
-    private static final String CANVAS_TAG  = "canvas";
-    private static final String EMBED_TAG = "embed";
-    private static final String IMG_TAG     = "img";
-    private static final String INPUT_TAG = "input";
-    private static final String HR_TAG = "hr";
-    private static final String MAP_TAG = "map";
-    private static final String METER_TAG = "meter";
-    private static final String OBJECT_TAG = "object";
-    private static final String PICTURE_TAG = "picture";
-    private static final String PROGRESS_TAG = "progress";
-    private static final String TABLE_TAG = "table";
-    private static final String TEXTAREA_TAG = "textarea";
-    private static final String SELECT_TAG = "select";
-    private static final String SVG_TAG = "svg";
-    private static final String VIDEO_TAG   = "video";
+    public static final String BR_TAG  = "br";
+    public static final String BUTTON_TAG  = "button";
+    public static final String CANVAS_TAG  = "canvas";
+    public static final String EMBED_TAG = "embed";
+    public static final String IMG_TAG     = "img";
+    public static final String INPUT_TAG = "input";
+    public static final String H1_TAG = "h1";
+    public static final String HR_TAG = "hr";
+    public static final String MAP_TAG = "map";
+    public static final String METER_TAG = "meter";
+    public static final String OBJECT_TAG = "object";
+    public static final String PICTURE_TAG = "picture";
+    public static final String PROGRESS_TAG = "progress";
+    public static final String TABLE_TAG = "table";
+    public static final String TEXTAREA_TAG = "textarea";
+    public static final String SELECT_TAG = "select";
+    public static final String SVG_TAG = "svg";
+    public static final String VIDEO_TAG   = "video";
 
     private static final List<String> WITHOUT_TEXT_BUT_VISIBLE = List.of(
             BUTTON_TAG,
@@ -113,7 +115,7 @@ public class JSoupUtils {
                 if (!isEmptyElement(element)) {
                     return false;
                 }
-            } else if (isNonEmptyTextNode(current)) { // Check if text node has non-whitespace content
+            } else if (isNotEmptyTextNode(current)) { // Check if text node has non-whitespace content
                 return false;
             }
 
@@ -128,13 +130,17 @@ public class JSoupUtils {
         return node instanceof TextNode textNode && textNode.text().trim().isEmpty();
     }
 
-    public boolean isNonEmptyTextNode(@NotNull Node node) {
+    public boolean isNotEmptyTextNode(@NotNull Node node) {
         return node instanceof TextNode textNode && !textNode.text().trim().isEmpty();
     }
 
     public boolean isHeading(@NotNull Node node) {
         // <h1>, <h2>, <h3> etc. - are headings, but <hr> is not
         return node instanceof Element element && element.tagName().length() == 2 && element.tagName().startsWith("h") && !element.tagName().endsWith("r");
+    }
+
+    public boolean isH1(@Nullable Node node) {
+        return node instanceof Element element && element.tagName().equals(H1_TAG);
     }
 
 }
