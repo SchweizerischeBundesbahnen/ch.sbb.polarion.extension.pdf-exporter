@@ -124,10 +124,6 @@ public class JSoupUtils {
         return true;
     }
 
-    public boolean isEmptyTextNode(@NotNull Node node) {
-        return node instanceof TextNode textNode && textNode.text().trim().isEmpty();
-    }
-
     public boolean isNonEmptyTextNode(@NotNull Node node) {
         return node instanceof TextNode textNode && !textNode.text().trim().isEmpty();
     }
