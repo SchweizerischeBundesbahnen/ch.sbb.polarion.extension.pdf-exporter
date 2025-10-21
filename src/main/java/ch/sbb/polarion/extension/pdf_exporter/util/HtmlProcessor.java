@@ -14,15 +14,18 @@ import ch.sbb.polarion.extension.pdf_exporter.util.adjuster.PageWidthAdjuster;
 import ch.sbb.polarion.extension.pdf_exporter.util.exporter.CustomPageBreakPart;
 import ch.sbb.polarion.extension.pdf_exporter.util.html.HtmlLinksHelper;
 import com.polarion.alm.shared.util.StringUtils;
+import com.polarion.core.util.types.Text;
 import com.polarion.core.util.xml.CSSStyle;
 import lombok.SneakyThrows;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
 import org.jsoup.Jsoup;
+import org.jsoup.nodes.Comment;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Entities;
+import org.jsoup.nodes.Node;
 import org.jsoup.select.Elements;
 
 import java.util.Arrays;
@@ -65,27 +68,45 @@ public class HtmlProcessor {
     }
 
     public String processHtmlForPDF(@NotNull String html, @NotNull ExportParams exportParams, @NotNull List<String> selectedRoleEnumValues) {
+
+        // I. FIRST SECTION - manipulate HTML as a String. These changes are either not possible or not made easier with JSoup
+        // ----------------
+
         // Replace all dollar-characters in HTML document before applying any regular expressions, as it has special meaning there
         html = encodeDollarSigns(html);
 
+        // Remove all <pd4ml:page> tags which only have meaning for PD4ML library which we are not using. For all these tags we have either our own implementation or pure CSS solution
         html = removePd4mlTags(html);
+
+        // Change path of enum images from internal Polarion to publicly available
         html = html.replace("/ria/images/enums/", "/icons/default/enums/");
-        html = html.replace("<p><br></p>", "<br/>");
-        html = html.replace("vertical-align:middle;", "page-break-inside:avoid;");
-        html = adjustImageAlignmentForPDF(html);
-        html = html.replaceAll("margin: *auto;", "align:center;");
-        html = adjustHeadingsForPDF(html);
+
+        // II. SECOND SECTION - manipulate HTML as a JSoup document. These changes are vice versa fulfilled easier with JSoup.
+        // ----------------
+
+        Document document = Jsoup.parse(html);
+        document.outputSettings()
+                .syntax(Document.OutputSettings.Syntax.xml)
+                .escapeMode(Entities.EscapeMode.base)
+                .prettyPrint(false);
+
         if (exportParams.isCutEmptyChapters()) {
-            html = cutEmptyChapters(html);
+            document = cutEmptyChapters(document);
         }
 
+        html = document.body().html();
+
+        // TODO: rework below, migrating to JSoup processing when reasonable
+
+        html = adjustImageAlignmentForPDF(html);
+        html = adjustHeadingsForPDF(html);
+
         html = adjustCellWidth(html, exportParams);
-        html = html.replace(">\n ", "> ");
-        html = html.replace("\n</", "</");
         if (exportParams.getChapters() != null) {
             html = cutNotNeededChapters(html, exportParams.getChapters());
         }
 
+        // TODO: This should be String processing either right before or right after JSoup, check this
         html = switch (exportParams.getDocumentType()) {
             case LIVE_DOC, WIKI_PAGE -> {
                 String processingHtml = new LiveDocTOCGenerator().addTableOfContent(html);
@@ -100,9 +121,11 @@ public class HtmlProcessor {
             }
             case BASELINE_COLLECTION -> throw new IllegalArgumentException(UNSUPPORTED_DOCUMENT_TYPE.formatted(exportParams.getDocumentType()));
         };
+
         html = replaceResourcesAsBase64Encoded(html);
         html = properTableHeads(html);
         html = cleanExtraTableContent(html);
+
         html = switch (exportParams.getDocumentType()) {
             case LIVE_DOC, WIKI_PAGE -> {
                 String processingHtml = new PageBreakAvoidRemover().removePageBreakAvoids(html);
@@ -155,6 +178,60 @@ public class HtmlProcessor {
     }
 
     @NotNull
+    private String removePd4mlTags(@NotNull String html) {
+        return RegexMatcher.get("(<pd4ml:page.*>)(.)").replace(html, regexEngine -> regexEngine.group(2));
+    }
+
+    /**
+     * Escapes dollar signs in HTML to prevent them from being interpreted as regex special characters.
+     * Should be called after Jsoup parsing operations that may convert &dollar; back to $.
+     *
+     * @param html HTML content to escape
+     * @return HTML with dollar signs replaced by &dollar; entity
+     */
+    @NotNull
+    private String encodeDollarSigns(@NotNull String html) {
+        return html.replace(DOLLAR_SIGN, DOLLAR_ENTITY);
+    }
+
+    @NotNull
+    @VisibleForTesting
+    Document cutEmptyChapters(@NotNull Document document) {
+        // 'Empty chapter' is a heading tag which doesn't have any visible content "under it",
+        // i.e. there are only not visible or whitespace elements between itself and next heading of same/higher level or end of parent/document.
+
+        // Process from lowest to highest priority (h6 to h1), otherwise logic can be broken
+        for (int headingLevel = H_TAG_MIN_PRIORITY; headingLevel >= 1; headingLevel--) {
+            removeEmptyHeadings(document, headingLevel);
+        }
+
+        return document;
+    }
+
+    private void removeEmptyHeadings(@NotNull Document document, int headingLevel) {
+        List<Element> headingsToRemove = JSoupUtils.selectEmptyHeadings(document, headingLevel);
+        for (Element heading : headingsToRemove) {
+
+            // In addition to removing heading itself, remove all following empty siblings until next heading, but not comments as they can have special meaning
+            // We don't check additionally if sibling is empty, because if a heading was selected for removal there are only empty siblings under it
+            Node nextSibling = heading.nextSibling();
+            while (nextSibling != null) {
+                if (JSoupUtils.isHeading(nextSibling)) {
+                    break;
+                } else {
+                    Node siblingToRemove = nextSibling instanceof Comment ? null : nextSibling;
+                    nextSibling = nextSibling.nextSibling();
+                    if (siblingToRemove != null) {
+                        siblingToRemove.remove();
+                    }
+                }
+            }
+
+            heading.remove();
+        }
+    }
+
+    @NotNull
     @VisibleForTesting
     @SuppressWarnings({"java:S5843", "java:S5852"})
     String cutLocalUrls(@NotNull String html) {
@@ -172,7 +249,7 @@ public class HtmlProcessor {
     }
 
     /**
-     * Rewrites Polarion Work Item hyperlinks so they become intra-document anchor links.
+     * Rewrites Polarion Work Item hyperlinks so that they become intra-document anchor links.
      **/
     @NotNull
     @VisibleForTesting
@@ -277,22 +354,6 @@ public class HtmlProcessor {
             landscape = Objects.equals(LANDSCAPE_ABOVE_MARK, mark); //calculate orientation for the next/previous area
         }
         return resultBuf.toString();
-    }
-
-    @NotNull
-    @VisibleForTesting
-    String cutEmptyChapters(@NotNull String html) {
-        //We have to traverse all existing heading levels from the lowest priority to the highest and find corresponding 'empty chapters'.
-        //'Empty chapter' is the area which starts from heading tag and followed by any number of empty 'p', 'br' or page brake related tags.
-        //Area must be followed either by the next opening heading tag with the same or higher importance or any closing tag except 'p'.
-        for (int i = H_TAG_MIN_PRIORITY; i >= 1; i--) {
-            html = RegexMatcher.get(String.format("(?s)(?><h%1$d.*?</h%1$d>)(\\s|<p[^>]*?>|<br/>|</p>|%2$s)*?(?=<h[1-%1$d]|</[^p])",
-                    i, String.join("|", PAGE_BREAK_MARK, PORTRAIT_ABOVE_MARK, LANDSCAPE_ABOVE_MARK))).useJavaUtil().replace(html, regexEngine -> {
-                String areaToDelete = regexEngine.group();
-                return getTopPageBrake(areaToDelete);
-            });
-        }
-        return html;
     }
 
     @NotNull
@@ -513,11 +574,6 @@ public class HtmlProcessor {
     }
 
     @NotNull
-    private String removePd4mlTags(@NotNull String html) {
-        return RegexMatcher.get("(<pd4ml:page.*>)(.)").replace(html, regexEngine -> regexEngine.group(2));
-    }
-
-    @NotNull
     @VisibleForTesting
     @SuppressWarnings({"java:S5869", "java:S6019"})
     String properTableHeads(@NotNull String html) {
@@ -711,6 +767,8 @@ public class HtmlProcessor {
         };
     }
 
+    // Images with styles and "display: block" are searched here. For such image we do following: wrap it into div with text-align style
+    // and value "right" if image margin is "auto 0px auto auto" or "center" otherwise.
     @NotNull
     @SuppressWarnings({"java:S5852", "java:S5857"}) //need by design
     private String adjustImageAlignmentForPDF(@NotNull String html) {
@@ -850,14 +908,4 @@ public class HtmlProcessor {
         return tbody.select("> tr");
     }
 
-    /**
-     * Escapes dollar signs in HTML to prevent them from being interpreted as regex special characters.
-     * Should be called after Jsoup parsing operations that may convert &dollar; back to $.
-     *
-     * @param html HTML content to escape
-     * @return HTML with dollar signs replaced by &dollar; entity
-     */
-    private String encodeDollarSigns(@NotNull String html) {
-        return html.replace(DOLLAR_SIGN, DOLLAR_ENTITY);
-    }
 }
