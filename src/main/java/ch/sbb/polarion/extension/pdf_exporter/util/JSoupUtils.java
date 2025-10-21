@@ -135,14 +135,11 @@ public class JSoupUtils {
         return node instanceof Element element && element.tagName().length() == 2 && element.tagName().startsWith("h") && !element.tagName().endsWith("r");
     }
 
-    public boolean isH1(@Nullable Node node) {
+    public boolean isH1(@NotNull Node node) {
         return node instanceof Element element && element.tagName().equals(H1_TAG);
     }
 
-    public boolean containsH1(@Nullable Node node) {
-        if (node == null) {
-            return false;
-        }
+    public boolean containsH1(@NotNull Node node) {
         for (Node child : node.childNodes()) {
             if (isH1(child) || containsH1(child)) {
                 return true;
