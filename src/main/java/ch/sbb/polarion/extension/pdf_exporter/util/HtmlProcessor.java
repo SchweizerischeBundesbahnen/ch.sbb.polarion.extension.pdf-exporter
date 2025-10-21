@@ -325,7 +325,7 @@ public class HtmlProcessor {
     @Nullable
     private Node removeChapter(@NotNull ChapterInfo currentChapter) {
         Node current = currentChapter.heading();
-        Node nextChapterNode = null;
+        Node nextChapterNode = null; // Can return null if no next chapter found
 
         // Remove chapter itself and all siblings between it and next h1-tag
         while (current != null) {
@@ -354,9 +354,9 @@ public class HtmlProcessor {
                 continue;
             }
 
-            Element header = document.selectFirst(JSoupUtils.THEAD_TAG);
+            Element header = table.selectFirst(JSoupUtils.THEAD_TAG);
             if (header == null) {
-                header = document.createElement(JSoupUtils.THEAD_TAG);
+                header = new Element(JSoupUtils.THEAD_TAG);
                 table.prependChild(header);
             }
 
