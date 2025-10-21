@@ -233,6 +233,118 @@ public class HtmlProcessor {
 
     @NotNull
     @VisibleForTesting
+    Document cutNotNeededChapters(@NotNull Document document, @NotNull List<String> selectedChapters) {
+        List<ChapterInfo> chapters = getChaptersInfo(document, selectedChapters);
+
+        // Process chapters to remove unwanted ones
+        for (ChapterInfo currentChapter : chapters) {
+            if (!currentChapter.shouldKeep()) {
+                // Remember parent element for possible future usage
+                Element parent = currentChapter.heading().parent();
+
+                // Collect first 2 page break comments in the block to remove
+                List<Comment> topPageBreakComments = collectPageBreakComments(currentChapter);
+
+                Node nextChapterNode = removeChapter(currentChapter);
+
+                // Re-insert page break comments at the position where the block was removed
+                if (nextChapterNode != null) {
+                    // Insert before the next H1
+                    for (Comment pageBreak : topPageBreakComments) {
+                        nextChapterNode.before(pageBreak);
+                    }
+                } else if (parent != null) {
+                    // Otherwise insert at the end of parent
+                    for (Comment pageBreak : topPageBreakComments) {
+                        parent.appendChild(pageBreak);
+                    }
+                }
+            }
+        }
+
+        return document;
+    }
+
+    @NotNull
+    private List<ChapterInfo> getChaptersInfo(@NotNull Document document, @NotNull List<String> selectedChapters) {
+        List<ChapterInfo> chapters = new ArrayList<>();
+
+        for (Element h1 : document.select(JSoupUtils.H1_TAG)) {
+            boolean shouldKeep = false;
+
+            // Extract chapter number from the h1 structure: <h1><span><span>NUMBER</span></span>...</h1>
+            Elements innerSpans = h1.select("span > span");
+            if (!innerSpans.isEmpty()) {
+                String chapterNumber = Objects.requireNonNull(innerSpans.first()).text();
+                shouldKeep = selectedChapters.contains(chapterNumber);
+            }
+            chapters.add(new ChapterInfo(h1, shouldKeep));
+        }
+        return chapters;
+    }
+
+    /**
+     * Collects top PAGE_BREAK related comments starting from current to next chapter (H1 elements)
+     */
+    private List<Comment> collectPageBreakComments(@NotNull ChapterInfo currentChapter) {
+        List<Comment> topPageBreakComments = new ArrayList<>();
+        Node current = currentChapter.heading().nextSibling();
+
+        // Traverse siblings until we reach the next h1 or end of siblings
+        while (current != null && !JSoupUtils.isH1(current) && !JSoupUtils.containsH1(current)) {
+            // Collect top PAGE_BREAK comments at current level
+            collectPageBreakComments(current, topPageBreakComments);
+            current = current.nextSibling();
+        }
+
+        return topPageBreakComments;
+    }
+
+    /**
+     * Recursively collects top PAGE_BREAK related comments from an element and its descendants,
+     * but only first 2 of them: <!--PAGE_BREAK--> and then either <!--PORTRAIT_ABOVE--> or <!--LANDSCAPE_ABOVE-->,
+     * the rest won't be relevant as they belong to removed content.
+     */
+    private void collectPageBreakComments(@NotNull Node node, @NotNull List<Comment> topPageBreakComments) {
+        if (topPageBreakComments.size() < 2) {
+            if (node instanceof Comment comment && isPageBreakComment(comment)) {
+                topPageBreakComments.add(new Comment(comment.getData()));
+            } else if (node instanceof Element element) {
+                for (Node child : element.childNodes()) {
+                    collectPageBreakComments(child, topPageBreakComments);
+                }
+            }
+        }
+    }
+
+    private boolean isPageBreakComment(@NotNull Comment comment) {
+        String commentData = comment.getData();
+        return commentData.equals(PAGE_BREAK) || commentData.equals(LANDSCAPE_ABOVE) || commentData.equals(PORTRAIT_ABOVE);
+    }
+
+    private Node removeChapter(@NotNull ChapterInfo currentChapter) {
+        Node current = currentChapter.heading();
+        Node nextChapterNode = null;
+
+        // Remove chapter itself and all siblings between it and next h1-tag
+        while (current != null) {
+            Node next = current.nextSibling();
+            current.remove();
+
+            // Check if next sibling is H1
+            if (next != null && (JSoupUtils.isH1(next) || JSoupUtils.containsH1(next))) {
+                nextChapterNode = next;
+                break;
+            }
+
+            current = next;
+        }
+
+        return nextChapterNode;
+    }
+
+    @NotNull
+    @VisibleForTesting
     @SuppressWarnings({"java:S5843", "java:S5852"})
     String cutLocalUrls(@NotNull String html) {
         // This regexp consists of 2 parts combined by OR-condition. In first part it looks for <a>-tags
@@ -354,115 +466,6 @@ public class HtmlProcessor {
             landscape = Objects.equals(LANDSCAPE_ABOVE_MARK, mark); //calculate orientation for the next/previous area
         }
         return resultBuf.toString();
-    }
-
-    @NotNull
-    @VisibleForTesting
-    Document cutNotNeededChapters(@NotNull Document document, @NotNull List<String> selectedChapters) {
-        List<ChapterInfo> chapters = getChaptersInfo(document, selectedChapters);
-
-        // Process chapters to remove unwanted ones
-        for (ChapterInfo currentChapter : chapters) {
-            if (!currentChapter.shouldKeep()) {
-                // Collect first 2 page break comments in the block to remove
-                List<Comment> topPageBreakComments = collectPageBreakComments(currentChapter);
-
-                Node nextChapterNode = removeChapter(currentChapter);
-
-                // Re-insert page break comments at the position where the block was removed
-                if (nextChapterNode != null) {
-                    // Insert before the next H1
-                    for (Comment pageBreak : topPageBreakComments) {
-                        nextChapterNode.before(pageBreak);
-                    }
-                } else if (currentChapter.heading().parent() != null) {
-                    Element parent = currentChapter.heading().parent();
-                    // Otherwise insert at the end of parent
-                    for (Comment pageBreak : topPageBreakComments) {
-                        parent.appendChild(pageBreak);
-                    }
-                }
-            }
-        }
-
-        return document;
-    }
-
-    @NotNull
-    private List<ChapterInfo> getChaptersInfo(@NotNull Document document, @NotNull List<String> selectedChapters) {
-        List<ChapterInfo> chapters = new ArrayList<>();
-
-        for (Element h1 : document.select(JSoupUtils.H1_TAG)) {
-            boolean shouldKeep = false;
-
-            // Extract chapter number from the h1 structure: <h1><span><span>NUMBER</span></span>...</h1>
-            Elements innerSpans = h1.select("span > span");
-            if (!innerSpans.isEmpty()) {
-                String chapterNumber = Objects.requireNonNull(innerSpans.first()).text();
-                shouldKeep = selectedChapters.contains(chapterNumber);
-            }
-            chapters.add(new ChapterInfo(h1, shouldKeep));
-        }
-        return chapters;
-    }
-
-    /**
-     * Collects top PAGE_BREAK related comments starting from current to next chapter (H1 elements)
-     */
-    private List<Comment> collectPageBreakComments(@NotNull ChapterInfo currentChapter) {
-        List<Comment> topPageBreakComments = new ArrayList<>();
-        Node current = currentChapter.heading().nextSibling();
-
-        // Traverse siblings until we reach the next h1 or end of siblings
-        while (current != null && !JSoupUtils.isH1(current)) {
-            // Collect top PAGE_BREAK comments at current level
-            collectPageBreakComments(current, topPageBreakComments);
-            current = current.nextSibling();
-        }
-
-        return topPageBreakComments;
-    }
-
-    /**
-     * Recursively collects top PAGE_BREAK related comments from an element and its descendants,
-     * but only first 2 of them: <!--PAGE_BREAK--> and then either <!--PORTRAIT_ABOVE--> or <!--LANDSCAPE_ABOVE-->,
-     * the rest won't be relevant as they belong to removed content.
-     */
-    private void collectPageBreakComments(@NotNull Node node, @NotNull List<Comment> topPageBreakComments) {
-        if (topPageBreakComments.size() < 2) {
-            if (node instanceof Comment comment && isPageBreakComment(comment)) {
-                topPageBreakComments.add(new Comment(comment.getData()));
-            } else if (node instanceof Element element) {
-                for (Node child : element.childNodes()) {
-                    collectPageBreakComments(child, topPageBreakComments);
-                }
-            }
-        }
-    }
-
-    private boolean isPageBreakComment(@NotNull Comment comment) {
-        String commentData = comment.getData();
-        return commentData.equals(PAGE_BREAK) || commentData.equals(LANDSCAPE_ABOVE) || commentData.equals(PORTRAIT_ABOVE);
-    }
-
-    private Node removeChapter(@NotNull ChapterInfo currentChapter) {
-        Node current = currentChapter.heading();
-        Node nextChapterNode = null;
-
-        while (current != null) {
-            Node next = current.nextSibling();
-            current.remove();
-
-            // Check if next sibling is H1
-            if (next != null && JSoupUtils.isH1(next)) {
-                nextChapterNode = next;
-                break;
-            }
-
-            current = next;
-        }
-
-        return nextChapterNode;
     }
 
     @NotNull

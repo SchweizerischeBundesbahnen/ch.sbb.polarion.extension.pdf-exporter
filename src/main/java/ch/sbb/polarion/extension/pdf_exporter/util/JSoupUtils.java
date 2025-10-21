@@ -139,4 +139,16 @@ public class JSoupUtils {
         return node instanceof Element element && element.tagName().equals(H1_TAG);
     }
 
+    public boolean containsH1(@Nullable Node node) {
+        if (node == null) {
+            return false;
+        }
+        for (Node child : node.childNodes()) {
+            if (isH1(child) || containsH1(child)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
 }
