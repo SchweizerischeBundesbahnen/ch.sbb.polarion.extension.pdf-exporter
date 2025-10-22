@@ -442,10 +442,10 @@ public class HtmlProcessor {
         for (Element heading : headings) {
             if (JSoupUtils.isH1(heading)) {
                 heading.tagName(JSoupUtils.DIV_TAG);
-                headings.addClass("title");
+                heading.addClass("title");
             } else {
                 int level = heading.tagName().charAt(1) - '0';
-                heading.tagName("h" + (level -1 ));
+                heading.tagName("h" + (level - 1));
             }
         }
     }
