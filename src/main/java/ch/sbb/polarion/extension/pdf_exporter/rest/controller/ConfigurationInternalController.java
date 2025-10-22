@@ -2,6 +2,7 @@ package ch.sbb.polarion.extension.pdf_exporter.rest.controller;
 
 import ch.sbb.polarion.extension.generic.configuration.ConfigurationStatus;
 import ch.sbb.polarion.extension.generic.configuration.ConfigurationStatusProvider;
+import ch.sbb.polarion.extension.pdf_exporter.exception.WeasyPrintServiceHealthException;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.WeasyPrintHealth;
 import ch.sbb.polarion.extension.pdf_exporter.util.configuration.CORSStatusProvider;
 import ch.sbb.polarion.extension.pdf_exporter.util.configuration.DefaultSettingsStatusProvider;
@@ -25,7 +26,6 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
 import java.util.List;
 
 @Hidden
@@ -157,15 +157,11 @@ public class ConfigurationInternalController {
                     )
             }
     )
-    public @NotNull Response getWeasyPrintHealth() {
+    public @NotNull WeasyPrintHealth getWeasyPrintHealth() {
         try {
-            WeasyPrintHealth health = weasyPrintServiceConnector.getHealth();
-            return Response.ok(health).build();
+            return weasyPrintServiceConnector.getHealth();
         } catch (Exception e) {
-            return Response.status(Response.Status.SERVICE_UNAVAILABLE)
-                    .entity("{\"status\":\"unavailable\",\"error\":\"" + e.getMessage() + "\"}")
-                    .type(MediaType.APPLICATION_JSON)
-                    .build();
+            throw new WeasyPrintServiceHealthException("Failed to retrieve WeasyPrint service health", e);
         }
     }
 }

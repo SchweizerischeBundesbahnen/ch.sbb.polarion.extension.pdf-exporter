@@ -3,10 +3,10 @@ package ch.sbb.polarion.extension.pdf_exporter.rest.controller;
 import ch.sbb.polarion.extension.generic.configuration.ConfigurationStatus;
 import ch.sbb.polarion.extension.generic.rest.filter.Secured;
 import ch.sbb.polarion.extension.generic.service.PolarionService;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.WeasyPrintHealth;
 import org.jetbrains.annotations.NotNull;
 
 import javax.ws.rs.Path;
-import javax.ws.rs.core.Response;
 import java.util.List;
 
 @Secured
@@ -46,7 +46,7 @@ public class ConfigurationApiController extends ConfigurationInternalController 
     }
 
     @Override
-    public @NotNull Response getWeasyPrintHealth() {
+    public @NotNull WeasyPrintHealth getWeasyPrintHealth() {
         return polarionService.callPrivileged(super::getWeasyPrintHealth);
     }
 }
