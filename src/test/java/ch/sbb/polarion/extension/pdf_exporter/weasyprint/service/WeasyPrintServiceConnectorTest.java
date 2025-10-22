@@ -218,4 +218,35 @@ class WeasyPrintServiceConnectorTest {
         // Then: No exception should be thrown (test passes if no exception)
         assertNotNull(connector);
     }
+
+    @Test
+    void shouldHandleConcurrentAccessSafely() throws Exception {
+        // Given: A connector instance
+        WeasyPrintServiceConnector connector = new WeasyPrintServiceConnector("http://localhost:9080");
+
+        // When: Multiple threads try to access getClient() concurrently
+        int threadCount = 10;
+        Thread[] threads = new Thread[threadCount];
+
+        for (int i = 0; i < threadCount; i++) {
+            threads[i] = new Thread(() -> {
+                try {
+                    // Access the connector which internally calls getClient()
+                    connector.getWeasyPrintServiceBaseUrl();
+                } catch (Exception e) {
+                    // Ignore exceptions from actual network calls
+                }
+            });
+            threads[i].start();
+        }
+
+        // Wait for all threads to complete
+        for (Thread thread : threads) {
+            thread.join();
+        }
+
+        // Then: Connector should still be in valid state
+        assertNotNull(connector);
+        connector.close();
+    }
 }

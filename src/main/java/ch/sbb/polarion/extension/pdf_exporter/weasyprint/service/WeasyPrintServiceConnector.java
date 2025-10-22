@@ -47,8 +47,8 @@ public class WeasyPrintServiceConnector implements WeasyPrintConverter {
     @Getter
     private final @NotNull String weasyPrintServiceBaseUrl;
 
-    // Lazy-initialized, thread-safe Client instance
-    private volatile Client client;
+    // Thread-safe Client instance using AtomicReference
+    private final AtomicReference<Client> client = new AtomicReference<>();
 
     public WeasyPrintServiceConnector() {
         this(PdfExporterExtensionConfiguration.getInstance().getWeasyPrintService());
@@ -60,17 +60,21 @@ public class WeasyPrintServiceConnector implements WeasyPrintConverter {
 
     /**
      * Gets or creates a singleton JAX-RS Client instance.
-     * Thread-safe lazy initialization using double-checked locking.
+     * Thread-safe lazy initialization using AtomicReference.
      */
     private Client getClient() {
-        if (client == null) {
-            synchronized (this) {
-                if (client == null) {
-                    client = ClientBuilder.newClient();
-                }
+        Client currentClient = client.get();
+        if (currentClient == null) {
+            Client newClient = ClientBuilder.newClient();
+            if (client.compareAndSet(null, newClient)) {
+                return newClient;
+            } else {
+                // Another thread initialized the client, close the one we just created
+                newClient.close();
+                return client.get();
             }
         }
-        return client;
+        return currentClient;
     }
 
     /**
@@ -78,13 +82,9 @@ public class WeasyPrintServiceConnector implements WeasyPrintConverter {
      * Should be called when the connector is no longer needed.
      */
     public void close() {
-        if (client != null) {
-            synchronized (this) {
-                if (client != null) {
-                    client.close();
-                    client = null;
-                }
-            }
+        Client currentClient = client.getAndSet(null);
+        if (currentClient != null) {
+            currentClient.close();
         }
     }
 
