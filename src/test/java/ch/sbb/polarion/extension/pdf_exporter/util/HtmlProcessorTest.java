@@ -365,7 +365,7 @@ class HtmlProcessorTest {
         ExportParams exportParams = getExportParams();
         exportParams.setCutEmptyChapters(true);
         exportParams.setChapters(List.of("1"));
-        String result = processor.processHtmlForPDF(inputHtml, getExportParams(), List.of());
+        String result = processor.processHtmlForPDF(inputHtml, exportParams, List.of());
 
         assertEquals(expectedResult, result);
     }
