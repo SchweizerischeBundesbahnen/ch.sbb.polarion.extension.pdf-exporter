@@ -17,6 +17,7 @@ public class JSoupUtils {
     public static final String BR_TAG = "br";
     public static final String BUTTON_TAG = "button";
     public static final String CANVAS_TAG = "canvas";
+    public static final String DIV_TAG = "div";
     public static final String EMBED_TAG = "embed";
     public static final String IMG_TAG = "img";
     public static final String INPUT_TAG = "input";

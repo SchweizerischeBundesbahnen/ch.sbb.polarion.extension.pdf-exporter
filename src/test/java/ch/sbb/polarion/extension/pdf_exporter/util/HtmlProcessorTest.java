@@ -145,15 +145,17 @@ class HtmlProcessorTest {
         try (InputStream isInvalidHtml = this.getClass().getResourceAsStream("/emptyChaptersBeforeProcessing.html");
              InputStream isValidHtml = this.getClass().getResourceAsStream("/emptyChaptersAfterProcessing.html")) {
 
-            Document invalidDocument = Jsoup.parse(new String(isInvalidHtml.readAllBytes(), StandardCharsets.UTF_8));
-            invalidDocument.outputSettings()
+            Document document = Jsoup.parse(new String(isInvalidHtml.readAllBytes(), StandardCharsets.UTF_8));
+            document.outputSettings()
                     .syntax(Document.OutputSettings.Syntax.xml)
                     .escapeMode(Entities.EscapeMode.base)
                     .prettyPrint(false);
 
-            // Spaces and new lines are removed to exclude difference in space characters
-            String fixedHtml = processor.cutEmptyChapters(invalidDocument).body().html();
+            processor.cutEmptyChapters(document);
+            String fixedHtml = document.body().html();
             String validHtml = new String(isValidHtml.readAllBytes(), StandardCharsets.UTF_8);
+
+            // Spaces and new lines are removed to exclude difference in space characters
             assertEquals(TestStringUtils.removeNonsensicalSymbols(validHtml), TestStringUtils.removeNonsensicalSymbols(fixedHtml));
         }
     }
@@ -179,15 +181,17 @@ class HtmlProcessorTest {
         try (InputStream isInvalidHtml = this.getClass().getResourceAsStream("/invalidTableHeads.html");
              InputStream isValidHtml = this.getClass().getResourceAsStream("/validTableHeads.html")) {
 
-            Document invalidDocument = Jsoup.parse(new String(isInvalidHtml.readAllBytes(), StandardCharsets.UTF_8));
-            invalidDocument.outputSettings()
+            Document document = Jsoup.parse(new String(isInvalidHtml.readAllBytes(), StandardCharsets.UTF_8));
+            document.outputSettings()
                     .syntax(Document.OutputSettings.Syntax.xml)
                     .escapeMode(Entities.EscapeMode.base)
                     .prettyPrint(false);
 
-            // Spaces and new lines are removed to exclude difference in space characters
-            String fixedHtml = processor.fixTableHeads(invalidDocument).body().html();
+            processor.fixTableHeads(document);
+            String fixedHtml = document.body().html();
             String validHtml = new String(isValidHtml.readAllBytes(), StandardCharsets.UTF_8);
+
+            // Spaces and new lines are removed to exclude difference in space characters
             assertEquals(TestStringUtils.removeNonsensicalSymbols(validHtml), TestStringUtils.removeNonsensicalSymbols(fixedHtml));
         }
     }
@@ -213,15 +217,17 @@ class HtmlProcessorTest {
         try (InputStream isInvalidHtml = this.getClass().getResourceAsStream("/notNeededChaptersBeforeProcessing.html");
              InputStream isValidHtml = this.getClass().getResourceAsStream("/notNeededChaptersAfterProcessing.html")) {
 
-            Document invalidDocument = Jsoup.parse(new String(isInvalidHtml.readAllBytes(), StandardCharsets.UTF_8));
-            invalidDocument.outputSettings()
+            Document document = Jsoup.parse(new String(isInvalidHtml.readAllBytes(), StandardCharsets.UTF_8));
+            document.outputSettings()
                     .syntax(Document.OutputSettings.Syntax.xml)
                     .escapeMode(Entities.EscapeMode.base)
                     .prettyPrint(false);
 
-            // Spaces and new lines are removed to exclude difference in space characters
-            String fixedHtml = processor.cutNotNeededChapters(invalidDocument, List.of("3", "4", "7")).body().html();
+            processor.cutNotNeededChapters(document, List.of("3", "4", "7"));
+            String fixedHtml = document.body().html();
             String validHtml = new String(isValidHtml.readAllBytes(), StandardCharsets.UTF_8);
+
+            // Spaces and new lines are removed to exclude difference in space characters
             assertEquals(TestStringUtils.removeNonsensicalSymbols(validHtml), TestStringUtils.removeNonsensicalSymbols(fixedHtml));
         }
     }
@@ -357,6 +363,31 @@ class HtmlProcessorTest {
     @MethodSource("provideHtmlTestCases")
     void processHtmlForPDFTest(String inputHtml, String expectedResult) {
         String result = processor.processHtmlForPDF(inputHtml, getExportParams(), List.of());
+
+        assertEquals(expectedResult, result);
+    }
+
+    @Test
+    void processHtmlForPDFExtendedTest() {
+        ExportParams exportParams = getExportParams();
+        exportParams.setCutEmptyChapters(true);
+        exportParams.setChapters(List.of("1"));
+        String result = processor.processHtmlForPDF("""
+                <article>
+                 <h2><span><span>1</span></span>Heading 1</h2>
+                 <p>Text</p>
+
+                 <h2><span><span>2</span></span>Heading 2</h2>
+                 <p>Text</p>
+
+                 <h2><span><span>3</span></span>Heading 3</h2>
+                </article>""", exportParams, List.of());
+
+        String expectedResult = """
+                <article>
+                 <h1><span><span>1</span></span>Heading 1</h1>
+                 <p>Text</p>
+                </article>""";
 
         assertEquals(expectedResult, result);
     }
@@ -624,12 +655,13 @@ class HtmlProcessorTest {
                 </table>
                 """;
 
-        Document resultDoc = processor.fixTableHeadRowspan(Jsoup.parse(html));
+        Document document = Jsoup.parse(html);
+        processor.fixTableHeadRowspan(document);
 
         // After fixing: thead should have 3 rows (1 original + 2 moved from tbody)
-        assertEquals(3, resultDoc.select("thead tr").size());
+        assertEquals(3, document.select("thead tr").size());
         // tbody should have 1 row left
-        assertEquals(1, resultDoc.select("tbody tr").size());
+        assertEquals(1, document.select("tbody tr").size());
     }
 
     @Test
@@ -651,11 +683,12 @@ class HtmlProcessorTest {
                 </table>
                 """;
 
-        Document resultDoc = processor.fixTableHeadRowspan(Jsoup.parse(html));
+        Document document = Jsoup.parse(html);
+        processor.fixTableHeadRowspan(document);
 
         // Should remain unchanged
-        assertEquals(1, resultDoc.select("thead tr").size());
-        assertEquals(1, resultDoc.select("tbody tr").size());
+        assertEquals(1, document.select("thead tr").size());
+        assertEquals(1, document.select("tbody tr").size());
     }
 
     @Test
@@ -674,11 +707,12 @@ class HtmlProcessorTest {
                 </table>
                 """;
 
-        Document resultDoc = processor.fixTableHeadRowspan(Jsoup.parse(html));
+        Document document = Jsoup.parse(html);
+        processor.fixTableHeadRowspan(document);
 
         // Should remain unchanged (no thead)
-        assertEquals(0, resultDoc.select("thead").size());
-        assertEquals(2, resultDoc.select("tbody tr").size());
+        assertEquals(0, document.select("thead").size());
+        assertEquals(2, document.select("tbody tr").size());
     }
 
     @Test
@@ -704,12 +738,13 @@ class HtmlProcessorTest {
                 </table>
                 """;
 
-        Document resultDoc = processor.fixTableHeadRowspan(Jsoup.parse(html));
+        Document document = Jsoup.parse(html);
+        processor.fixTableHeadRowspan(document);
 
         // After fixing: thead should have 2 rows (1 original + 1 moved from tbody)
-        assertEquals(2, resultDoc.select("thead tr").size());
+        assertEquals(2, document.select("thead tr").size());
         // tbody should have 1 row left
-        assertEquals(1, resultDoc.select("tbody tr").size());
+        assertEquals(1, document.select("tbody tr").size());
     }
 
     @Test
@@ -740,16 +775,17 @@ class HtmlProcessorTest {
                 </table>
                 """;
 
-        Document resultDoc = processor.fixTableHeadRowspan(Jsoup.parse(html));
+        Document document = Jsoup.parse(html);
+        processor.fixTableHeadRowspan(document);
 
         // Both tables should be processed
-        assertEquals(2, resultDoc.select("table").size());
+        assertEquals(2, document.select("table").size());
         // First table thead should have 2 rows, tbody should have 1 row
-        assertEquals(2, resultDoc.select("table").get(0).select("thead tr").size());
-        assertEquals(1, resultDoc.select("table").get(0).select("tbody tr").size());
+        assertEquals(2, document.select("table").get(0).select("thead tr").size());
+        assertEquals(1, document.select("table").get(0).select("tbody tr").size());
         // Second table thead should have 3 rows, tbody should have 1 row
-        assertEquals(3, resultDoc.select("table").get(1).select("thead tr").size());
-        assertEquals(1, resultDoc.select("table").get(1).select("tbody tr").size());
+        assertEquals(3, document.select("table").get(1).select("thead tr").size());
+        assertEquals(1, document.select("table").get(1).select("tbody tr").size());
     }
 
     @Test
@@ -765,10 +801,11 @@ class HtmlProcessorTest {
                 </table>
                 """;
 
-        Document resultDoc = processor.fixTableHeadRowspan(Jsoup.parse(html));
+        Document document = Jsoup.parse(html);
+        processor.fixTableHeadRowspan(document);
 
         // Should remain unchanged (no tbody to move rows from)
-        assertEquals(1, resultDoc.select("thead tr").size());
+        assertEquals(1, document.select("thead tr").size());
     }
 
     @Test
@@ -787,11 +824,12 @@ class HtmlProcessorTest {
                 </table>
                 """;
 
-        Document resultDoc = processor.fixTableHeadRowspan(Jsoup.parse(html));
+        Document document = Jsoup.parse(html);
+        processor.fixTableHeadRowspan(document);
 
         // Should move only available rows (2 rows) even though rowspan is 5
-        assertEquals(3, resultDoc.select("thead tr").size()); // 1 original + 2 moved
-        assertEquals(0, resultDoc.select("tbody tr").size()); // all rows moved
+        assertEquals(3, document.select("thead tr").size()); // 1 original + 2 moved
+        assertEquals(0, document.select("tbody tr").size()); // all rows moved
     }
 
     private ExportParams getExportParams() {
