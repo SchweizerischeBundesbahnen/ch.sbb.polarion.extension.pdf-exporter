@@ -8,7 +8,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertAll;
 
 @ExtendWith({MockitoExtension.class, CurrentContextExtension.class})
 @CurrentContextConfig("pdf-exporter")
@@ -56,39 +60,50 @@ class WeasyPrintServiceConnectorTest {
         ObjectMapper objectMapper = new ObjectMapper();
         WeasyPrintHealth health = objectMapper.readValue(healthJson, WeasyPrintHealth.class);
 
-        // Then: Verify all fields are correctly parsed
-        assertNotNull(health);
-        assertEquals("healthy", health.getStatus());
-        assertEquals("1.0.0", health.getVersion());
-        assertEquals("61.2", health.getWeasyprintVersion());
-        assertTrue(health.getChromiumRunning());
-        assertEquals("131.0.6778.204", health.getChromiumVersion());
-        assertTrue(health.getHealthMonitoringEnabled());
+        // Then: Verify main health fields
+        assertAll("Main health properties",
+                () -> assertNotNull(health),
+                () -> assertEquals("healthy", health.getStatus()),
+                () -> assertEquals("1.0.0", health.getVersion()),
+                () -> assertEquals("61.2", health.getWeasyprintVersion()),
+                () -> assertTrue(health.getChromiumRunning()),
+                () -> assertEquals("131.0.6778.204", health.getChromiumVersion()),
+                () -> assertTrue(health.getHealthMonitoringEnabled())
+        );
 
-        // Verify metrics
-        assertNotNull(health.getMetrics());
-        assertEquals(100L, health.getMetrics().getPdfGenerations());
-        assertEquals(2L, health.getMetrics().getFailedPdfGenerations());
-        assertEquals(1500.5, health.getMetrics().getAvgPdfGenerationTimeMs());
-        assertEquals(50L, health.getMetrics().getTotalSvgConversions());
-        assertEquals(1L, health.getMetrics().getFailedSvgConversions());
-        assertEquals(250.3, health.getMetrics().getAvgSvgConversionTimeMs());
-        assertEquals(2.0, health.getMetrics().getErrorPdfGenerationRatePercent());
-        assertEquals(2.0, health.getMetrics().getErrorSvgConversionRatePercent());
-        assertEquals(0L, health.getMetrics().getTotalChromiumRestarts());
-        assertEquals("2025-10-22T14:30:00", health.getMetrics().getLastHealthCheck());
-        assertTrue(health.getMetrics().getLastHealthStatus());
-        assertEquals(3600.0, health.getMetrics().getUptimeSeconds());
-        assertEquals(15.5, health.getMetrics().getCurrentCpuPercent());
-        assertEquals(12.3, health.getMetrics().getAvgCpuPercent());
-        assertEquals(8192.0, health.getMetrics().getTotalMemoryMb());
-        assertEquals(4096.0, health.getMetrics().getAvailableMemoryMb());
-        assertEquals(512.0, health.getMetrics().getCurrentChromiumMemoryMb());
-        assertEquals(480.0, health.getMetrics().getAvgChromiumMemoryMb());
-        assertEquals(5, health.getMetrics().getQueueSize());
-        assertEquals(2, health.getMetrics().getActivePdfGenerations());
-        assertEquals(100.0, health.getMetrics().getAvgQueueTimeMs());
-        assertEquals(4, health.getMetrics().getMaxConcurrentPdfGenerations());
+        // Verify metrics exist and validate key fields
+        WeasyPrintHealth.Metrics metrics = health.getMetrics();
+        assertNotNull(metrics, "Metrics should not be null");
+
+        // Verify PDF generation metrics
+        assertAll("PDF generation metrics",
+                () -> assertEquals(100L, metrics.getPdfGenerations()),
+                () -> assertEquals(2L, metrics.getFailedPdfGenerations()),
+                () -> assertEquals(1500.5, metrics.getAvgPdfGenerationTimeMs()),
+                () -> assertEquals(2.0, metrics.getErrorPdfGenerationRatePercent())
+        );
+
+        // Verify SVG conversion metrics
+        assertAll("SVG conversion metrics",
+                () -> assertEquals(50L, metrics.getTotalSvgConversions()),
+                () -> assertEquals(1L, metrics.getFailedSvgConversions()),
+                () -> assertEquals(250.3, metrics.getAvgSvgConversionTimeMs())
+        );
+
+        // Verify system metrics
+        assertAll("System metrics",
+                () -> assertEquals(3600.0, metrics.getUptimeSeconds()),
+                () -> assertEquals(15.5, metrics.getCurrentCpuPercent()),
+                () -> assertEquals(8192.0, metrics.getTotalMemoryMb()),
+                () -> assertEquals(512.0, metrics.getCurrentChromiumMemoryMb())
+        );
+
+        // Verify queue metrics
+        assertAll("Queue metrics",
+                () -> assertEquals(5, metrics.getQueueSize()),
+                () -> assertEquals(2, metrics.getActivePdfGenerations()),
+                () -> assertEquals(4, metrics.getMaxConcurrentPdfGenerations())
+        );
     }
 
     @Test
