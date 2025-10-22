@@ -362,6 +362,9 @@ class HtmlProcessorTest {
     @ParameterizedTest
     @MethodSource("provideHtmlTestCases")
     void processHtmlForPDFTest(String inputHtml, String expectedResult) {
+        ExportParams exportParams = getExportParams();
+        exportParams.setCutEmptyChapters(true);
+        exportParams.setChapters(List.of("1"));
         String result = processor.processHtmlForPDF(inputHtml, getExportParams(), List.of());
 
         assertEquals(expectedResult, result);
