@@ -8,11 +8,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.assertAll;
 
 @ExtendWith({MockitoExtension.class, CurrentContextExtension.class})
 @CurrentContextConfig("pdf-exporter")
@@ -247,6 +248,49 @@ class WeasyPrintServiceConnectorTest {
 
         // Then: Connector should still be in valid state
         assertNotNull(connector);
+        connector.close();
+    }
+
+    @Test
+    void shouldThrowExceptionWhenHealthEndpointIsUnavailable() {
+        // Given: Connector pointing to unavailable service
+        WeasyPrintServiceConnector connector = new WeasyPrintServiceConnector("http://localhost:19999");
+
+        // When & Then: getHealth() should throw exception
+        Exception exception = assertThrows(Exception.class, connector::getHealth);
+        assertNotNull(exception);
+
+        // Cleanup
+        connector.close();
+    }
+
+    @Test
+    void shouldThrowExceptionWhenHealthEndpointReturnsInvalidJSON() {
+        // Given: Connector with invalid endpoint that returns non-JSON
+        WeasyPrintServiceConnector connector = new WeasyPrintServiceConnector("http://httpbin.org/html");
+
+        // When & Then: getHealth() should throw exception due to JSON parsing error
+        Exception exception = assertThrows(Exception.class, connector::getHealth);
+        assertNotNull(exception);
+
+        // Cleanup
+        connector.close();
+    }
+
+    @Test
+    void shouldThrowExceptionForNon200Response() {
+        // Given: Connector pointing to endpoint that returns 404
+        WeasyPrintServiceConnector connector = new WeasyPrintServiceConnector("http://httpbin.org/status/404");
+
+        // When & Then: getHealth() should throw IllegalStateException
+        IllegalStateException exception = assertThrows(
+                IllegalStateException.class,
+                connector::getHealth
+        );
+
+        assertEquals("Could not get proper response from WeasyPrint Service", exception.getMessage());
+
+        // Cleanup
         connector.close();
     }
 }
