@@ -33,6 +33,16 @@ import java.util.List;
 @Tag(name = "Configuration status")
 public class ConfigurationInternalController {
 
+    private final WeasyPrintServiceConnector weasyPrintServiceConnector;
+
+    public ConfigurationInternalController() {
+        this(new WeasyPrintServiceConnector());
+    }
+
+    protected ConfigurationInternalController(WeasyPrintServiceConnector weasyPrintServiceConnector) {
+        this.weasyPrintServiceConnector = weasyPrintServiceConnector;
+    }
+
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/configuration/default-settings")
@@ -149,8 +159,7 @@ public class ConfigurationInternalController {
     )
     public @NotNull Response getWeasyPrintHealth() {
         try {
-            WeasyPrintServiceConnector connector = new WeasyPrintServiceConnector();
-            WeasyPrintHealth health = connector.getHealth();
+            WeasyPrintHealth health = weasyPrintServiceConnector.getHealth();
             return Response.ok(health).build();
         } catch (Exception e) {
             return Response.status(Response.Status.SERVICE_UNAVAILABLE)
