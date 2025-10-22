@@ -90,6 +90,9 @@ public class HtmlProcessor {
                 .escapeMode(Entities.EscapeMode.base)
                 .prettyPrint(false);
 
+        // From Polarion perspective h1 - is a document title, h2 are h1 heading etc. We are making such headings' uplifting here
+        adjustDocumentHeadings(document);
+
         if (exportParams.isCutEmptyChapters()) {
             // Cut empty chapters if explicitly requested by user
             cutEmptyChapters(document);
@@ -98,9 +101,6 @@ public class HtmlProcessor {
             // Leave only chapters explicitly selected by user
             cutNotNeededChapters(document, exportParams.getChapters());
         }
-
-        // From Polarion perspective h1 - is a document title, h2 are h1 heading etc. We are making such headings' uplifting here
-        adjustDocumentHeadings(document);
 
         // Polarion doesn't place table rows with th-tags into thead, placing them in table's tbody, which is wrong as table header won't
         // repeat on each next page if table is split across multiple pages. We are fixing this moving such rows into thead.

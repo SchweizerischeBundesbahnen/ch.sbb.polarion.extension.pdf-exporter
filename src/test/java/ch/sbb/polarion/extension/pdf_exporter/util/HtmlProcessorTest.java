@@ -362,10 +362,32 @@ class HtmlProcessorTest {
     @ParameterizedTest
     @MethodSource("provideHtmlTestCases")
     void processHtmlForPDFTest(String inputHtml, String expectedResult) {
+        String result = processor.processHtmlForPDF(inputHtml, getExportParams(), List.of());
+
+        assertEquals(expectedResult, result);
+    }
+
+    @Test
+    void processHtmlForPDFExtendedTest() {
         ExportParams exportParams = getExportParams();
         exportParams.setCutEmptyChapters(true);
         exportParams.setChapters(List.of("1"));
-        String result = processor.processHtmlForPDF(inputHtml, exportParams, List.of());
+        String result = processor.processHtmlForPDF("""
+                <article>
+                 <h2><span><span>1</span></span>Heading 1</h2>
+                 <p>Text</p>
+
+                 <h2><span><span>2</span></span>Heading 2</h2>
+                 <p>Text</p>
+
+                 <h2><span><span>3</span></span>Heading 3</h2>
+                </article>""", exportParams, List.of());
+
+        String expectedResult = """
+                <article>
+                 <h1><span><span>1</span></span>Heading 1</h1>
+                 <p>Text</p>
+                </article>""";
 
         assertEquals(expectedResult, result);
     }
