@@ -189,4 +189,18 @@ class WeasyPrintServiceConnectorTest {
         assertTrue(secondChange);
         assertEquals("1.1.0", versionRef.get());
     }
+
+    @Test
+    void shouldHandleMultipleCloseCallsSafely() {
+        // Given: A connector with a custom URL
+        WeasyPrintServiceConnector connector = new WeasyPrintServiceConnector("http://localhost:9080");
+
+        // When: Close is called multiple times
+        connector.close();
+        connector.close();
+        connector.close();
+
+        // Then: No exception should be thrown (test passes if no exception)
+        assertNotNull(connector);
+    }
 }

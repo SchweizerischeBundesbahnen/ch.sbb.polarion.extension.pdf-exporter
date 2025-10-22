@@ -47,12 +47,45 @@ public class WeasyPrintServiceConnector implements WeasyPrintConverter {
     @Getter
     private final @NotNull String weasyPrintServiceBaseUrl;
 
+    // Lazy-initialized, thread-safe Client instance
+    private volatile Client client;
+
     public WeasyPrintServiceConnector() {
         this(PdfExporterExtensionConfiguration.getInstance().getWeasyPrintService());
     }
 
     public WeasyPrintServiceConnector(@NotNull String weasyPrintServiceBaseUrl) {
         this.weasyPrintServiceBaseUrl = weasyPrintServiceBaseUrl;
+    }
+
+    /**
+     * Gets or creates a singleton JAX-RS Client instance.
+     * Thread-safe lazy initialization using double-checked locking.
+     */
+    private Client getClient() {
+        if (client == null) {
+            synchronized (this) {
+                if (client == null) {
+                    client = ClientBuilder.newClient();
+                }
+            }
+        }
+        return client;
+    }
+
+    /**
+     * Closes the underlying JAX-RS Client if it exists.
+     * Should be called when the connector is no longer needed.
+     */
+    public void close() {
+        if (client != null) {
+            synchronized (this) {
+                if (client != null) {
+                    client.close();
+                    client = null;
+                }
+            }
+        }
     }
 
     @Override
@@ -62,24 +95,16 @@ public class WeasyPrintServiceConnector implements WeasyPrintConverter {
 
     @Override
     public byte[] convertToPdf(@NotNull String htmlPage, @NotNull WeasyPrintOptions weasyPrintOptions, @Nullable DocumentData<? extends IUniqueObject> documentData) {
-        Client client = null;
-        try {
-            client = ClientBuilder.newClient();
-            WebTarget webTarget = client.target(getWeasyPrintServiceBaseUrl() + getConvertingUrl(documentData))
-                    .queryParam("presentational_hints", weasyPrintOptions.isFollowHTMLPresentationalHints())
-                    .queryParam("pdf_variant", weasyPrintOptions.getPdfVariant().toWeasyPrintParameter())
-                    .queryParam("custom_metadata", weasyPrintOptions.isCustomMetadata())
-                    .queryParam("scale_factor", weasyPrintOptions.getImageDensity().getScale());
+        WebTarget webTarget = getClient().target(getWeasyPrintServiceBaseUrl() + getConvertingUrl(documentData))
+                .queryParam("presentational_hints", weasyPrintOptions.isFollowHTMLPresentationalHints())
+                .queryParam("pdf_variant", weasyPrintOptions.getPdfVariant().toWeasyPrintParameter())
+                .queryParam("custom_metadata", weasyPrintOptions.isCustomMetadata())
+                .queryParam("scale_factor", weasyPrintOptions.getImageDensity().getScale());
 
-            if (documentData != null && documentData.getAttachmentFiles() != null) {
-                return sendMultiPartRequest(webTarget, htmlPage, documentData.getAttachmentFiles());
-            } else {
-                return sendConvertingRequest(webTarget, Entity.entity(htmlPage, MediaType.TEXT_HTML));
-            }
-        } finally {
-            if (client != null) {
-                client.close();
-            }
+        if (documentData != null && documentData.getAttachmentFiles() != null) {
+            return sendMultiPartRequest(webTarget, htmlPage, documentData.getAttachmentFiles());
+        } else {
+            return sendConvertingRequest(webTarget, Entity.entity(htmlPage, MediaType.TEXT_HTML));
         }
     }
 
@@ -121,27 +146,19 @@ public class WeasyPrintServiceConnector implements WeasyPrintConverter {
 
     @Override
     public WeasyPrintInfo getWeasyPrintInfo() {
-        Client client = null;
-        try {
-            client = ClientBuilder.newClient();
-            WebTarget webTarget = client.target(getWeasyPrintServiceBaseUrl() + "/version");
+        WebTarget webTarget = getClient().target(getWeasyPrintServiceBaseUrl() + "/version");
 
-            try (Response response = webTarget.request(MediaType.TEXT_PLAIN).get()) {
-                if (response.getStatus() == Response.Status.OK.getStatusCode()) {
-                    String responseContent = response.readEntity(String.class);
+        try (Response response = webTarget.request(MediaType.TEXT_PLAIN).get()) {
+            if (response.getStatus() == Response.Status.OK.getStatusCode()) {
+                String responseContent = response.readEntity(String.class);
 
-                    try {
-                        return new ObjectMapper().readValue(responseContent, WeasyPrintInfo.class);
-                    } catch (JsonProcessingException e) {
-                        throw new IllegalStateException("Could not parse response", e);
-                    }
-                } else {
-                    throw new IllegalStateException("Could not get proper response from WeasyPrint Service");
+                try {
+                    return new ObjectMapper().readValue(responseContent, WeasyPrintInfo.class);
+                } catch (JsonProcessingException e) {
+                    throw new IllegalStateException("Could not parse response", e);
                 }
-            }
-        } finally {
-            if (client != null) {
-                client.close();
+            } else {
+                throw new IllegalStateException("Could not get proper response from WeasyPrint Service");
             }
         }
     }
@@ -165,28 +182,20 @@ public class WeasyPrintServiceConnector implements WeasyPrintConverter {
     }
 
     public WeasyPrintHealth getHealth() {
-        Client client = null;
-        try {
-            client = ClientBuilder.newClient();
-            WebTarget webTarget = client.target(getWeasyPrintServiceBaseUrl() + "/health")
-                    .queryParam("detailed", "true");
+        WebTarget webTarget = getClient().target(getWeasyPrintServiceBaseUrl() + "/health")
+                .queryParam("detailed", "true");
 
-            try (Response response = webTarget.request(MediaType.APPLICATION_JSON).get()) {
-                if (response.getStatus() == Response.Status.OK.getStatusCode()) {
-                    String responseContent = response.readEntity(String.class);
+        try (Response response = webTarget.request(MediaType.APPLICATION_JSON).get()) {
+            if (response.getStatus() == Response.Status.OK.getStatusCode()) {
+                String responseContent = response.readEntity(String.class);
 
-                    try {
-                        return new ObjectMapper().readValue(responseContent, WeasyPrintHealth.class);
-                    } catch (JsonProcessingException e) {
-                        throw new IllegalStateException("Could not parse health response", e);
-                    }
-                } else {
-                    throw new IllegalStateException("Could not get proper response from WeasyPrint Service");
+                try {
+                    return new ObjectMapper().readValue(responseContent, WeasyPrintHealth.class);
+                } catch (JsonProcessingException e) {
+                    throw new IllegalStateException("Could not parse health response", e);
                 }
-            }
-        } finally {
-            if (client != null) {
-                client.close();
+            } else {
+                throw new IllegalStateException("Could not get proper response from WeasyPrint Service");
             }
         }
     }
