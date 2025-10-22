@@ -91,20 +91,30 @@ public class HtmlProcessor {
                 .prettyPrint(false);
 
         if (exportParams.isCutEmptyChapters()) {
-            document = cutEmptyChapters(document);
+            // Cut empty chapters if explicitly requested by user
+            cutEmptyChapters(document);
         }
         if (exportParams.getChapters() != null) {
-            document = cutNotNeededChapters(document, exportParams.getChapters());
+            // Leave only chapters explicitly selected by user
+            cutNotNeededChapters(document, exportParams.getChapters());
         }
-        document = fixTableHeads(document);
-        document = fixTableHeadRowspan(document);
+
+        // From Polarion perspective h1 - is a document title, h2 are h1 heading etc. We are making such headings' uplifting here
+        adjustDocumentHeadings(document);
+
+        // Polarion doesn't place table rows with th-tags into thead, placing them in table's tbody, which is wrong as table header won't
+        // repeat on each next page if table is split across multiple pages. We are fixing this moving such rows into thead.
+        fixTableHeads(document);
+
+        // If on next step we placed into thead rows which contain rowspan > 1 and this "covers" rows which are still in tbody, we are fixing
+        // this here, moving such rows also in thead
+        fixTableHeadRowspan(document);
 
         html = document.body().html();
 
         // TODO: rework below, migrating to JSoup processing when reasonable
 
         html = adjustImageAlignmentForPDF(html);
-        html = adjustHeadingsForPDF(html);
 
         html = adjustCellWidth(html, exportParams);
 
@@ -193,9 +203,8 @@ public class HtmlProcessor {
         return html.replace(DOLLAR_SIGN, DOLLAR_ENTITY);
     }
 
-    @NotNull
     @VisibleForTesting
-    Document cutEmptyChapters(@NotNull Document document) {
+    void cutEmptyChapters(@NotNull Document document) {
         // 'Empty chapter' is a heading tag which doesn't have any visible content "under it",
         // i.e. there are only not visible or whitespace elements between itself and next heading of same/higher level or end of parent/document.
 
@@ -203,8 +212,6 @@ public class HtmlProcessor {
         for (int headingLevel = H_TAG_MIN_PRIORITY; headingLevel >= 1; headingLevel--) {
             removeEmptyHeadings(document, headingLevel);
         }
-
-        return document;
     }
 
     private void removeEmptyHeadings(@NotNull Document document, int headingLevel) {
@@ -230,9 +237,8 @@ public class HtmlProcessor {
         }
     }
 
-    @NotNull
     @VisibleForTesting
-    Document cutNotNeededChapters(@NotNull Document document, @NotNull List<String> selectedChapters) {
+    void cutNotNeededChapters(@NotNull Document document, @NotNull List<String> selectedChapters) {
         List<ChapterInfo> chapters = getChaptersInfo(document, selectedChapters);
 
         // Process chapters to remove unwanted ones
@@ -260,8 +266,6 @@ public class HtmlProcessor {
                 }
             }
         }
-
-        return document;
     }
 
     @NotNull
@@ -344,9 +348,8 @@ public class HtmlProcessor {
         return nextChapterNode;
     }
 
-    @NotNull
     @VisibleForTesting
-    Document fixTableHeads(@NotNull Document document) {
+    void fixTableHeads(@NotNull Document document) {
         Elements tables = document.select(JSoupUtils.TABLE_TAG);
         for (Element table : tables) {
             List<Element> headerRows = JSoupUtils.getRowsWithHeaders(table);
@@ -369,7 +372,6 @@ public class HtmlProcessor {
                 }
             }
         }
-        return document;
     }
 
     /**
@@ -377,9 +379,8 @@ public class HtmlProcessor {
      * Such cells semantically extend beyond the thead boundary, which causes incorrect table rendering.
      * This method extends thead by moving rows from tbody into thead to match the rowspan values.
      */
-    @NotNull
     @VisibleForTesting
-    public Document fixTableHeadRowspan(@NotNull Document document) {
+    public void fixTableHeadRowspan(@NotNull Document document) {
         Elements tables = document.select(JSoupUtils.TABLE_TAG);
 
         for (Element table : tables) {
@@ -405,8 +406,6 @@ public class HtmlProcessor {
                 }
             }
         }
-
-        return document;
     }
 
     private Element getHeadRow(@NotNull Element thead) {
@@ -435,6 +434,20 @@ public class HtmlProcessor {
             }
         }
         return maxRowspan;
+    }
+
+    private void adjustDocumentHeadings(@NotNull Document document) {
+        Elements headings = document.select("h1, h2, h3, h4, h5, h6");
+
+        for (Element heading : headings) {
+            if (JSoupUtils.isH1(heading)) {
+                heading.tagName(JSoupUtils.DIV_TAG);
+                headings.addClass("title");
+            } else {
+                int level = heading.tagName().charAt(1) - '0';
+                heading.tagName("h" + (level -1 ));
+            }
+        }
     }
 
     @NotNull
@@ -874,31 +887,6 @@ public class HtmlProcessor {
         // Remove "float: left;" style definition from tables
         return RegexMatcher.get("(?<table><table[^>]*)style=\"float: left;\"")
                 .replace(html, regexEngine -> regexEngine.group("table"));
-    }
-
-    @NotNull
-    private String adjustHeadingsForPDF(@NotNull String html) {
-        html = RegexMatcher.get("<(h[1-6])").replace(html, regexEngine -> {
-            String tag = regexEngine.group(1);
-            return tag.equals("h1") ? "<div class=\"title\"" : ("<" + liftHeadingTag(tag));
-        });
-
-        return RegexMatcher.get("</(h[1-6])>").replace(html, regexEngine -> {
-            String tag = regexEngine.group(1);
-            return tag.equals("h1") ? DIV_END_TAG : ("</" + liftHeadingTag(tag) + ">");
-        });
-    }
-
-    @NotNull
-    private static String liftHeadingTag(@NotNull String tag) {
-        return switch (tag) {
-            case "h2" -> "h1";
-            case "h3" -> "h2";
-            case "h4" -> "h3";
-            case "h5" -> "h4";
-            case "h6" -> "h5";
-            default -> "h6";
-        };
     }
 
     // Images with styles and "display: block" are searched here. For such image we do following: wrap it into div with text-align style
