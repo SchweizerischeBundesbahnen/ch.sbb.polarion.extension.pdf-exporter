@@ -51,6 +51,7 @@ public class HtmlProcessor {
     private static final String NUMBER = "number";
     private static final String DOLLAR_SIGN = "$";
     private static final String DOLLAR_ENTITY = "&dollar;";
+    private static final String ROWSPAN_ATTR = "rowspan";
 
     private static final String UNSUPPORTED_DOCUMENT_TYPE = "Unsupported document type: %s";
 
@@ -92,10 +93,11 @@ public class HtmlProcessor {
         if (exportParams.isCutEmptyChapters()) {
             document = cutEmptyChapters(document);
         }
-
         if (exportParams.getChapters() != null) {
             document = cutNotNeededChapters(document, exportParams.getChapters());
         }
+        document = fixTableHeads(document);
+        document = fixTableHeadRowspan(document);
 
         html = document.body().html();
 
@@ -123,7 +125,6 @@ public class HtmlProcessor {
         };
 
         html = replaceResourcesAsBase64Encoded(html);
-        html = properTableHeads(html);
         html = cleanExtraTableContent(html);
 
         html = switch (exportParams.getDocumentType()) {
@@ -169,8 +170,6 @@ public class HtmlProcessor {
         } else if (exportParams.isFitToPage()) {
             html = adjustContentToFitPage(html, exportParams);
         }
-
-        html = fixTableHeadRowspan(html);
 
         // Do not change this entry order, '&nbsp;' can be used in the logic above, so we must cut them off as the last step
         html = cutExtraNbsp(html);
@@ -286,6 +285,7 @@ public class HtmlProcessor {
     /**
      * Collects top PAGE_BREAK related comments starting from current to next chapter (H1 elements)
      */
+    @NotNull
     private List<Comment> collectPageBreakComments(@NotNull ChapterInfo currentChapter) {
         List<Comment> topPageBreakComments = new ArrayList<>();
         Node current = currentChapter.heading().nextSibling();
@@ -322,9 +322,10 @@ public class HtmlProcessor {
         return commentData.equals(PAGE_BREAK) || commentData.equals(LANDSCAPE_ABOVE) || commentData.equals(PORTRAIT_ABOVE);
     }
 
+    @Nullable
     private Node removeChapter(@NotNull ChapterInfo currentChapter) {
         Node current = currentChapter.heading();
-        Node nextChapterNode = null;
+        Node nextChapterNode = null; // Can return null if no next chapter found
 
         // Remove chapter itself and all siblings between it and next h1-tag
         while (current != null) {
@@ -341,6 +342,99 @@ public class HtmlProcessor {
         }
 
         return nextChapterNode;
+    }
+
+    @NotNull
+    @VisibleForTesting
+    Document fixTableHeads(@NotNull Document document) {
+        Elements tables = document.select(JSoupUtils.TABLE_TAG);
+        for (Element table : tables) {
+            List<Element> headerRows = JSoupUtils.getRowsWithHeaders(table);
+            if (headerRows.isEmpty()) {
+                continue;
+            }
+
+            Element header = table.selectFirst(JSoupUtils.THEAD_TAG);
+            if (header == null) {
+                header = new Element(JSoupUtils.THEAD_TAG);
+                table.prependChild(header);
+            }
+
+            for (Element headerRow : headerRows) {
+                // Parent of each header row can't be null as we got them as child nodes of a table
+                if (!Objects.requireNonNull(headerRow.parent()).tagName().equals(JSoupUtils.THEAD_TAG)) {
+                    // Header row is located not in thead - moving it there
+                    headerRow.remove();
+                    header.appendChild(headerRow);
+                }
+            }
+        }
+        return document;
+    }
+
+    /**
+     * Fixes malformed tables where thead contains single one row which cells has rowspan attribute greater than 1.
+     * Such cells semantically extend beyond the thead boundary, which causes incorrect table rendering.
+     * This method extends thead by moving rows from tbody into thead to match the rowspan values.
+     */
+    @NotNull
+    @VisibleForTesting
+    public Document fixTableHeadRowspan(@NotNull Document document) {
+        Elements tables = document.select(JSoupUtils.TABLE_TAG);
+
+        for (Element table : tables) {
+            Element thead = table.selectFirst(JSoupUtils.THEAD_TAG);
+            if (thead != null) {
+                Element headRow = getHeadRow(thead);
+                if (headRow != null) {
+                    int maxRowspan = getMaxRowspan(headRow);
+                    // If all cells have rowspan=1 or no rowspan, nothing to fix
+                    if (maxRowspan <= 1) {
+                        continue;
+                    }
+
+                    List<Element> tbodyRows = JSoupUtils.getBodyRows(table);
+
+                    // Move (maxRowspan - 1) rows from tbody to thead
+                    int rowsToMove = Math.min(maxRowspan - 1, tbodyRows.size());
+                    for (int i = 0; i < rowsToMove; i++) {
+                        Element rowToMove = tbodyRows.get(i);
+                        rowToMove.remove();
+                        thead.appendChild(rowToMove);
+                    }
+                }
+            }
+        }
+
+        return document;
+    }
+
+    private Element getHeadRow(@NotNull Element thead) {
+        Elements theadRows = thead.select("> tr");
+        if (theadRows.size() != 1) {
+            return null;
+        }
+        return theadRows.first();
+    }
+
+    private int getMaxRowspan(@NotNull Element headRow) {
+        Elements cells = headRow.select("> th, > td");
+        int maxRowspan = 1;
+
+        // Find the maximum rowspan value
+        for (Element cell : cells) {
+            if (cell.hasAttr(ROWSPAN_ATTR)) {
+                try {
+                    int rowspan = Integer.parseInt(cell.attr(ROWSPAN_ATTR));
+                    if (rowspan > maxRowspan) {
+                        maxRowspan = rowspan;
+                    }
+                } catch (NumberFormatException e) {
+                    // Ignore invalid rowspan values
+                }
+            }
+        }
+        return maxRowspan;
     }
 
     @NotNull
@@ -632,23 +726,6 @@ public class HtmlProcessor {
 
     @NotNull
     @VisibleForTesting
-    @SuppressWarnings({"java:S5869", "java:S6019"})
-    String properTableHeads(@NotNull String html) {
-        // Searches for all subsequent table rows (<tr>-tags) inside <tbody> which contain <th>-tags
-        // followed by a row which doesn't contain <th> (or closing </tbody> tag).
-        // There are 2 groups in this regexp, first one is unnamed, containing <tbody> and <tr>-tags containing <th>-tags,
-        // second one is named ("header") and contains those <tr>-tags which include <th>-tags. The regexp is ending
-        // by positive lookahead "(?=<tr)" which doesn't take part in replacement.
-        // The sense in this regexp is to find <tr>-tags containing <th>-tags and move it from <tbody> into <thead>,
-        // for table headers to repeat on each page.
-        return RegexMatcher.get("(<tbody>[^<]*(?<header><tr>[^<]*<th[\\s|\\S]*?))(?=(<tr|</tbody))").useJavaUtil().replace(html, regexEngine -> {
-            String header = regexEngine.group("header");
-            return "<thead>" + header + "</thead><tbody>";
-        });
-    }
-
-    @NotNull
-    @VisibleForTesting
     @SuppressWarnings("java:S5852")
         //regex checked
     String adjustCellWidth(@NotNull String html, @NotNull ExportParams exportParams) {
@@ -876,93 +953,6 @@ public class HtmlProcessor {
 
     private boolean hasCustomPageBreaks(String html) {
         return html.contains(PAGE_BREAK_MARK);
-    }
-
-    /**
-     * Fixes malformed tables where thead contains single one row which cells has rowspan attribute greater than 1.
-     * Such cells semantically extend beyond the thead boundary, which causes incorrect table rendering.
-     * This method extends thead by moving rows from tbody into thead to match the rowspan values.
-     *
-     * @param sourceHtml HTML to process
-     * @return the same HTML with fixed table structure
-     */
-    @NotNull
-    @VisibleForTesting
-    public String fixTableHeadRowspan(@NotNull String sourceHtml) {
-        Document document = Jsoup.parse(sourceHtml);
-        document.outputSettings()
-                .syntax(Document.OutputSettings.Syntax.xml)
-                .escapeMode(Entities.EscapeMode.base)
-                .prettyPrint(false);
-
-        Elements tables = document.select("table");
-
-        for (Element table : tables) {
-            Element thead = table.selectFirst("thead");
-            if (thead != null) {
-                Element headRow = getHeadRow(thead);
-                if (headRow != null) {
-                    int maxRowspan = getMaxRowspan(headRow);
-                    // If all cells have rowspan=1 or no rowspan, nothing to fix
-                    if (maxRowspan <= 1) {
-                        continue;
-                    }
-
-                    Elements tbodyRows = getBodyRows(table);
-
-                    // Move (maxRowspan - 1) rows from tbody to thead
-                    int rowsToMove = Math.min(maxRowspan - 1, tbodyRows.size());
-                    for (int i = 0; i < rowsToMove; i++) {
-                        Element rowToMove = tbodyRows.get(i);
-                        rowToMove.remove();
-                        thead.appendChild(rowToMove);
-                    }
-                }
-            }
-        }
-
-        String resultedHtml = document.body().html();
-        // after processing with jsoup we need to replace $-symbol with "&dollar;" because of regular expressions, as it has special meaning there
-        resultedHtml = encodeDollarSigns(resultedHtml);
-        return resultedHtml;
-    }
-
-    private Element getHeadRow(@NotNull Element thead) {
-        Elements theadRows = thead.select("> tr");
-        if (theadRows.size() != 1) {
-            return null;
-        }
-        return theadRows.first();
-    }
-
-    private int getMaxRowspan(@NotNull Element headRow) {
-        Elements cells = headRow.select("> th, > td");
-        int maxRowspan = 1;
-
-        // Find the maximum rowspan value
-        for (Element cell : cells) {
-            if (cell.hasAttr("rowspan")) {
-                try {
-                    int rowspan = Integer.parseInt(cell.attr("rowspan"));
-                    if (rowspan > maxRowspan) {
-                        maxRowspan = rowspan;
-                    }
-                } catch (NumberFormatException e) {
-                    // Ignore invalid rowspan values
-                }
-            }
-        }
-        return maxRowspan;
-    }
-
-    private Elements getBodyRows(@NotNull Element table) {
-        Element tbody = table.selectFirst("tbody");
-        if (tbody == null) {
-            // No tbody, nothing to move
-            return new Elements();
-        }
-
-        return tbody.select("> tr");
     }
 
     /**

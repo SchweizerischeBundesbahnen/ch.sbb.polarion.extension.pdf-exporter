@@ -179,10 +179,14 @@ class HtmlProcessorTest {
         try (InputStream isInvalidHtml = this.getClass().getResourceAsStream("/invalidTableHeads.html");
              InputStream isValidHtml = this.getClass().getResourceAsStream("/validTableHeads.html")) {
 
-            String invalidHtml = new String(isInvalidHtml.readAllBytes(), StandardCharsets.UTF_8);
+            Document invalidDocument = Jsoup.parse(new String(isInvalidHtml.readAllBytes(), StandardCharsets.UTF_8));
+            invalidDocument.outputSettings()
+                    .syntax(Document.OutputSettings.Syntax.xml)
+                    .escapeMode(Entities.EscapeMode.base)
+                    .prettyPrint(false);
 
             // Spaces and new lines are removed to exclude difference in space characters
-            String fixedHtml = processor.properTableHeads(invalidHtml);
+            String fixedHtml = processor.fixTableHeads(invalidDocument).body().html();
             String validHtml = new String(isValidHtml.readAllBytes(), StandardCharsets.UTF_8);
             assertEquals(TestStringUtils.removeNonsensicalSymbols(validHtml), TestStringUtils.removeNonsensicalSymbols(fixedHtml));
         }
@@ -620,8 +624,7 @@ class HtmlProcessorTest {
                 </table>
                 """;
 
-        String result = processor.fixTableHeadRowspan(html);
-        Document resultDoc = Jsoup.parse(result);
+        Document resultDoc = processor.fixTableHeadRowspan(Jsoup.parse(html));
 
         // After fixing: thead should have 3 rows (1 original + 2 moved from tbody)
         assertEquals(3, resultDoc.select("thead tr").size());
@@ -648,8 +651,7 @@ class HtmlProcessorTest {
                 </table>
                 """;
 
-        String result = processor.fixTableHeadRowspan(html);
-        Document resultDoc = Jsoup.parse(result);
+        Document resultDoc = processor.fixTableHeadRowspan(Jsoup.parse(html));
 
         // Should remain unchanged
         assertEquals(1, resultDoc.select("thead tr").size());
@@ -672,8 +674,7 @@ class HtmlProcessorTest {
                 </table>
                 """;
 
-        String result = processor.fixTableHeadRowspan(html);
-        Document resultDoc = Jsoup.parse(result);
+        Document resultDoc = processor.fixTableHeadRowspan(Jsoup.parse(html));
 
         // Should remain unchanged (no thead)
         assertEquals(0, resultDoc.select("thead").size());
@@ -703,8 +704,7 @@ class HtmlProcessorTest {
                 </table>
                 """;
 
-        String result = processor.fixTableHeadRowspan(html);
-        Document resultDoc = Jsoup.parse(result);
+        Document resultDoc = processor.fixTableHeadRowspan(Jsoup.parse(html));
 
         // After fixing: thead should have 2 rows (1 original + 1 moved from tbody)
         assertEquals(2, resultDoc.select("thead tr").size());
@@ -740,8 +740,7 @@ class HtmlProcessorTest {
                 </table>
                 """;
 
-        String result = processor.fixTableHeadRowspan(html);
-        Document resultDoc = Jsoup.parse(result);
+        Document resultDoc = processor.fixTableHeadRowspan(Jsoup.parse(html));
 
         // Both tables should be processed
         assertEquals(2, resultDoc.select("table").size());
@@ -766,8 +765,7 @@ class HtmlProcessorTest {
                 </table>
                 """;
 
-        String result = processor.fixTableHeadRowspan(html);
-        Document resultDoc = Jsoup.parse(result);
+        Document resultDoc = processor.fixTableHeadRowspan(Jsoup.parse(html));
 
         // Should remain unchanged (no tbody to move rows from)
         assertEquals(1, resultDoc.select("thead tr").size());
@@ -789,8 +787,7 @@ class HtmlProcessorTest {
                 </table>
                 """;
 
-        String result = processor.fixTableHeadRowspan(html);
-        Document resultDoc = Jsoup.parse(result);
+        Document resultDoc = processor.fixTableHeadRowspan(Jsoup.parse(html));
 
         // Should move only available rows (2 rows) even though rowspan is 5
         assertEquals(3, resultDoc.select("thead tr").size()); // 1 original + 2 moved

@@ -2,23 +2,23 @@ package ch.sbb.polarion.extension.pdf_exporter.util;
 
 import lombok.experimental.UtilityClass;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
 import org.jsoup.nodes.TextNode;
 import org.jsoup.select.Elements;
 
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
 @UtilityClass
 public class JSoupUtils {
-    public static final String BR_TAG  = "br";
-    public static final String BUTTON_TAG  = "button";
-    public static final String CANVAS_TAG  = "canvas";
+    public static final String BR_TAG = "br";
+    public static final String BUTTON_TAG = "button";
+    public static final String CANVAS_TAG = "canvas";
     public static final String EMBED_TAG = "embed";
-    public static final String IMG_TAG     = "img";
+    public static final String IMG_TAG = "img";
     public static final String INPUT_TAG = "input";
     public static final String H1_TAG = "h1";
     public static final String HR_TAG = "hr";
@@ -28,7 +28,11 @@ public class JSoupUtils {
     public static final String PICTURE_TAG = "picture";
     public static final String PROGRESS_TAG = "progress";
     public static final String TABLE_TAG = "table";
+    public static final String TBODY_TAG = "tbody";
     public static final String TEXTAREA_TAG = "textarea";
+    public static final String TH_TAG = "th";
+    public static final String THEAD_TAG = "thead";
+    public static final String TR_TAG = "tr";
     public static final String SELECT_TAG = "select";
     public static final String SVG_TAG = "svg";
     public static final String VIDEO_TAG   = "video";
@@ -146,6 +150,52 @@ public class JSoupUtils {
             }
         }
         return false;
+    }
+
+    /**
+     * Returns table rows (direct descendants of table itself or its direct tbody) which contain th-tags
+     */
+    public List<Element> getRowsWithHeaders(@NotNull Element table) {
+        List<Element> headerRows = new ArrayList<>();
+
+        Element body = table.selectFirst("> " + TBODY_TAG);
+        Element container = body == null ? table : body;
+
+        Elements rows = container.select("> " + TR_TAG);
+        for (Element row : rows) {
+            if (containsTH(row)) {
+                headerRows.add(row);
+            }
+        }
+
+        return headerRows;
+    }
+
+    /**
+     * Returns table rows (direct descendants of table itself or its direct tbody)
+     */
+    public List<Element> getBodyRows(@NotNull Element table) {
+        List<Element> bodyRows = new ArrayList<>();
+
+        Element body = table.selectFirst("> " + TBODY_TAG);
+        Element container = body == null ? table : body;
+
+        Elements rows = container.select("> " + TR_TAG);
+        for (Element row : rows) {
+            if (!containsTH(row)) {
+                bodyRows.add(row);
+            }
+        }
+
+        return bodyRows;
+    }
+
+    public boolean containsTH(@NotNull Node row) {
+        return row.childNodes().stream().anyMatch(JSoupUtils::isTH);
+    }
+
+    public boolean isTH(@NotNull Node node) {
+        return node instanceof Element element && element.tagName().equals(TH_TAG);
     }
 
 }
