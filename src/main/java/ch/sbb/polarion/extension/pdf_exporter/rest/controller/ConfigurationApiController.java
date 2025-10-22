@@ -6,6 +6,7 @@ import ch.sbb.polarion.extension.generic.service.PolarionService;
 import org.jetbrains.annotations.NotNull;
 
 import javax.ws.rs.Path;
+import javax.ws.rs.core.Response;
 import java.util.List;
 
 @Secured
@@ -44,4 +45,8 @@ public class ConfigurationApiController extends ConfigurationInternalController 
         return polarionService.callPrivileged(super::checkWeasyPrint);
     }
 
+    @Override
+    public @NotNull Response getWeasyPrintHealth() {
+        return polarionService.callPrivileged(super::getWeasyPrintHealth);
+    }
 }

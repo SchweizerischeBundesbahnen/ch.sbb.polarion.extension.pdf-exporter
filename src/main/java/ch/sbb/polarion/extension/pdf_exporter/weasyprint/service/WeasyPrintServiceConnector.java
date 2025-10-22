@@ -1,6 +1,7 @@
 package ch.sbb.polarion.extension.pdf_exporter.weasyprint.service;
 
 import ch.sbb.polarion.extension.pdf_exporter.properties.PdfExporterExtensionConfiguration;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.WeasyPrintHealth;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.DocumentData;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.WeasyPrintConverter;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.WeasyPrintOptions;
@@ -161,5 +162,32 @@ public class WeasyPrintServiceConnector implements WeasyPrintConverter {
 
     public boolean hasVersionChanged(String actualVersion, AtomicReference<String> version) {
         return !isEmpty(actualVersion) && !actualVersion.equals(version.getAndSet(actualVersion));
+    }
+
+    public WeasyPrintHealth getHealth() {
+        Client client = null;
+        try {
+            client = ClientBuilder.newClient();
+            WebTarget webTarget = client.target(getWeasyPrintServiceBaseUrl() + "/health")
+                    .queryParam("detailed", "true");
+
+            try (Response response = webTarget.request(MediaType.APPLICATION_JSON).get()) {
+                if (response.getStatus() == Response.Status.OK.getStatusCode()) {
+                    String responseContent = response.readEntity(String.class);
+
+                    try {
+                        return new ObjectMapper().readValue(responseContent, WeasyPrintHealth.class);
+                    } catch (JsonProcessingException e) {
+                        throw new IllegalStateException("Could not parse health response", e);
+                    }
+                } else {
+                    throw new IllegalStateException("Could not get proper response from WeasyPrint Service");
+                }
+            }
+        } finally {
+            if (client != null) {
+                client.close();
+            }
+        }
     }
 }

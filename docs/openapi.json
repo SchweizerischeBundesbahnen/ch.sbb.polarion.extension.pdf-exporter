@@ -156,6 +156,31 @@
         ]
       }
     },
+    "/api/configuration/weasyprint-health": {
+      "get": {
+        "description": "Retrieves detailed health metrics from the WeasyPrint service.",
+        "operationId": "getWeasyPrintHealth",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WeasyPrintHealth"
+                }
+              }
+            },
+            "description": "Successfully retrieved WeasyPrint health metrics"
+          },
+          "503": {
+            "description": "WeasyPrint service is unavailable"
+          }
+        },
+        "summary": "Gets WeasyPrint service health",
+        "tags": [
+          "Configuration status"
+        ]
+      }
+    },
     "/api/context": {
       "get": {
         "operationId": "getContext",
@@ -2034,6 +2059,97 @@
       "MessageBodyWorkers": {
         "type": "object"
       },
+      "Metrics": {
+        "properties": {
+          "active_pdf_generations": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "available_memory_mb": {
+            "format": "double",
+            "type": "number"
+          },
+          "avg_chromium_memory_mb": {
+            "format": "double",
+            "type": "number"
+          },
+          "avg_cpu_percent": {
+            "format": "double",
+            "type": "number"
+          },
+          "avg_pdf_generation_time_ms": {
+            "format": "double",
+            "type": "number"
+          },
+          "avg_queue_time_ms": {
+            "format": "double",
+            "type": "number"
+          },
+          "avg_svg_conversion_time_ms": {
+            "format": "double",
+            "type": "number"
+          },
+          "current_chromium_memory_mb": {
+            "format": "double",
+            "type": "number"
+          },
+          "current_cpu_percent": {
+            "format": "double",
+            "type": "number"
+          },
+          "error_pdf_generation_rate_percent": {
+            "format": "double",
+            "type": "number"
+          },
+          "error_svg_conversion_rate_percent": {
+            "format": "double",
+            "type": "number"
+          },
+          "failed_pdf_generations": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "failed_svg_conversions": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "last_health_check": {
+            "type": "string"
+          },
+          "last_health_status": {
+            "type": "boolean"
+          },
+          "max_concurrent_pdf_generations": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "pdf_generations": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "queue_size": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "total_chromium_restarts": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "total_memory_mb": {
+            "format": "double",
+            "type": "number"
+          },
+          "total_svg_conversions": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "uptime_seconds": {
+            "format": "double",
+            "type": "number"
+          }
+        },
+        "type": "object"
+      },
       "MultiPart": {
         "properties": {
           "bodyParts": {
@@ -2240,6 +2356,32 @@
           },
           "supportEmail": {
             "description": "Support email for the bundle",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "WeasyPrintHealth": {
+        "properties": {
+          "chromium_running": {
+            "type": "boolean"
+          },
+          "chromium_version": {
+            "type": "string"
+          },
+          "health_monitoring_enabled": {
+            "type": "boolean"
+          },
+          "metrics": {
+            "$ref": "#/components/schemas/Metrics"
+          },
+          "status": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          },
+          "weasyprint_version": {
             "type": "string"
           }
         },
