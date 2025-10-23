@@ -65,6 +65,7 @@ export default class ExportParams {
         this.pdfVariant = builder.pdfVariant;
         this.fitToPage = builder.fitToPage;
         this.renderComments = builder.renderComments;
+        this.renderNativeComments = builder.renderNativeComments;
         this.watermark = builder.watermark;
         this.markReferencedWorkitems = builder.markReferencedWorkitems;
         this.cutEmptyChapters = builder.cutEmptyChapters;
@@ -121,6 +122,7 @@ export default class ExportParams {
                 this.pdfVariant = undefined;
                 this.fitToPage = undefined;
                 this.renderComments = undefined;
+                this.renderNativeComments = undefined;
                 this.watermark = undefined;
                 this.markReferencedWorkitems = undefined;
                 this.cutEmptyChapters = undefined;
@@ -219,6 +221,11 @@ export default class ExportParams {
 
             setRenderComments(renderComments) {
                 this.renderComments = renderComments;
+                return this;
+            }
+
+            setRenderNativeComments(renderNativeComments) {
+                this.renderNativeComments = renderNativeComments;
                 return this;
             }
 

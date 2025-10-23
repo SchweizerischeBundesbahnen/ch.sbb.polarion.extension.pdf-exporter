@@ -60,7 +60,7 @@ class LiveDocCommentsProcessorTest {
                 <div>some content3</div>
                 [span class=comment level-0][span class=meta][span class=date]2025-03-13 16:23[/span][span class=details][span class=author]author3[/span][/span][/span][span class=text]text3[/span][/span]
                 <div>some content4</div>
-                """, new LiveDocCommentsProcessor().addLiveDocComments(document, html, CommentsRenderType.OPEN));
+                """, new LiveDocCommentsProcessor().addLiveDocComments(document, html, CommentsRenderType.OPEN, false));
 
         when(comments.iterator()).thenReturn(commentBases.iterator());
 
@@ -73,7 +73,7 @@ class LiveDocCommentsProcessorTest {
                 <div>some content3</div>
                 [span class=comment level-0][span class=meta][span class=date]2025-03-13 16:23[/span][span class=details][span class=author]author3[/span][/span][/span][span class=text]text3[/span][/span]
                 <div>some content4</div>
-                """, new LiveDocCommentsProcessor().addLiveDocComments(document, html, CommentsRenderType.ALL));
+                """, new LiveDocCommentsProcessor().addLiveDocComments(document, html, CommentsRenderType.ALL, false));
 
         // null commentsRenderType means remove comments
         assertEquals("""
@@ -84,7 +84,7 @@ class LiveDocCommentsProcessorTest {
                 <div>some content3</div>
 
                 <div>some content4</div>
-                """, new LiveDocCommentsProcessor().addLiveDocComments(document, html, null));
+                """, new LiveDocCommentsProcessor().addLiveDocComments(document, html, null, false));
     }
 
     @SneakyThrows

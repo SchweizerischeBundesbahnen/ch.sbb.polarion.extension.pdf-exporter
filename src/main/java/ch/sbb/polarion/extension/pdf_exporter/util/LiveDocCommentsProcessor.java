@@ -16,6 +16,7 @@ import com.polarion.alm.shared.api.model.fields.StringField;
 import com.polarion.alm.shared.api.model.project.ProjectField;
 import com.polarion.alm.shared.api.model.user.User;
 import com.polarion.alm.shared.api.model.user.UserField;
+import com.polarion.core.util.StringUtils;
 import lombok.Builder;
 import lombok.Data;
 import org.jetbrains.annotations.NotNull;
@@ -79,7 +80,7 @@ public class LiveDocCommentsProcessor {
     }
 
     @NotNull
-    public String addLiveDocComments(ProxyDocument document, @NotNull String html, @Nullable CommentsRenderType commentsRenderType) {
+    public String addLiveDocComments(ProxyDocument document, @NotNull String html, @Nullable CommentsRenderType commentsRenderType, boolean renderNativeComments) {
         //Polarion document keeps comments position in span/img marked with id 'polarion-comment:commentId'.
         //<span id="polarion-comment:1"></span> or <img id="polarion-comment:1" class="polarion-dle-comment-icon"/> (for comments inside workitem description)
         //Following expression retrieves such entries.
@@ -88,7 +89,7 @@ public class LiveDocCommentsProcessor {
                 .replace(html, regexEngine -> {
                     String commentId = Optional.ofNullable(regexEngine.group("imgCommentId")).orElse(regexEngine.group("spanCommentId"));
                     LiveDocComment liveDocComment = liveDocComments.get(commentId);
-                    return liveDocComment == null ? "" : renderComment(liveDocComment, 0);
+                    return liveDocComment == null ? "" : renderNativeComments ? renderNativeComment(liveDocComment, 0) : renderComment(liveDocComment, 0);
                 });
     }
 
@@ -105,6 +106,26 @@ public class LiveDocCommentsProcessor {
         return commentSpan.toString();
     }
 
+    private String renderNativeComment(LiveDocComment liveDocComment, int nestingLevel) {
+        CommentData commentData = getCommentData(liveDocComment);
+        StringBuilder commentDiv = new StringBuilder("""
+                [span class=sticky-note]
+                    [span class=sticky-note-time]%s[/span]
+                    [span class=sticky-note-username]%s[/span]
+                    [span class=sticky-note-title]%s[/span]
+                    [span class=sticky-note-text]%s[/span]
+                """.formatted(commentData.isoDate, StringUtils.getEmptyIfNull(commentData.author), "", commentData.text));
+        Map<String, LiveDocComment> childComments = liveDocComment.getChildComments();
+        if (childComments != null) {
+            nestingLevel++;
+            for (LiveDocComment childComment : childComments.values()) {
+                commentDiv.append(renderNativeComment(childComment, nestingLevel));
+            }
+        }
+        commentDiv.append("[/span]");
+        return commentDiv.toString();
+    }
+
     private String getCommentSpan(CommentData commentData, int nestingLevel) {
         String dateSpan = String.format("[span class=date]%s[/span]", commentData.getDate());
         String statusSpan = commentData.isResolved() ? "[span class=status-resolved]Resolved[/span]" : "";
@@ -114,13 +135,13 @@ public class LiveDocCommentsProcessor {
     }
 
     private CommentData getCommentData(LiveDocComment liveDocComment) {
-        String date = new SimpleDateFormat("yyyy-MM-dd HH:mm").format(liveDocComment.getCreated().get());
         User user = liveDocComment.getAuthor().get();
         String authorName = user != null ? user.fields().name().get() : null;
         String commentText = liveDocComment.getText().persistedHtml();
         boolean resolved = liveDocComment.getResolved().get();
         return CommentData.builder()
-                .date(date)
+                .date(new SimpleDateFormat("yyyy-MM-dd HH:mm").format(liveDocComment.getCreated().get()))
+                .isoDate(new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX").format(liveDocComment.getCreated().get()))
                 .author(authorName)
                 .text(commentText)
                 .resolved(resolved)
@@ -131,6 +152,7 @@ public class LiveDocCommentsProcessor {
     @Builder
     private static class CommentData {
         private String date;
+        private String isoDate;
         private String author;
         private String text;
         private boolean resolved;

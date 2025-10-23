@@ -56,6 +56,9 @@ public class ExportParams extends ConversionParams {
     @Schema(description = "Which comments should be rendered in the exported document")
     private CommentsRenderType renderComments;
 
+    @Schema(description = "Render native comments")
+    private boolean renderNativeComments;
+
     @Schema(description = "Watermark content to be applied to the document")
     private boolean watermark;
 
@@ -124,6 +127,7 @@ public class ExportParams extends ConversionParams {
         imageDensity = ImageDensity.fromString(stylePackageModel.getImageDensity());
         fitToPage = stylePackageModel.isFitToPage();
         renderComments = stylePackageModel.getRenderComments();
+        renderNativeComments = stylePackageModel.isRenderNativeComments();
         watermark = stylePackageModel.isWatermark();
         markReferencedWorkitems = stylePackageModel.isMarkReferencedWorkitems();
         setCutEmptyWIAttributes(stylePackageModel.isCutEmptyWorkitemAttributes());

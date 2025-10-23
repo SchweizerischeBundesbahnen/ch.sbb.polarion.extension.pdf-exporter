@@ -135,13 +135,17 @@
                 </div>
                 <div class='property-wrapper hidden visible-for-LIVE_DOC visible-for-BASELINE_COLLECTION'>
                     <label for='popup-render-comments'>
-                        <input id='popup-render-comments' onchange='document.getElementById("popup-render-comments-selector").style.visibility = this.checked ? "visible" : "hidden"' type='checkbox'/>
+                        <input id='popup-render-comments' onchange='document.getElementById("popup-render-comments-selector").style.visibility = this.checked ? "visible" : "hidden";document.querySelector("#popup-render-native-comments-container").style.display = this.checked ? "flex" : "none"' type='checkbox'/>
                         Comments rendering
                     </label>
-                    <select id='popup-render-comments-selector' style='width: 100px'>
+                    <select id='popup-render-comments-selector' style='width: 60px'>
                         <option value='OPEN'>Open</option>
                         <option value='ALL'>All</option>
                     </select>
+                    <label for='popup-render-native-comments' id='popup-render-native-comments-container'>
+                        <input id='popup-render-native-comments' type='checkbox'/>
+                        as sticky notes
+                    </label>
                 </div>
                 <div class='property-wrapper'>
                     <label for='popup-watermark'>
