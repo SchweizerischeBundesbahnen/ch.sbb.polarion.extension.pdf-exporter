@@ -35,6 +35,7 @@ import static com.polarion.core.util.StringUtils.isEmpty;
 
 public class WeasyPrintServiceConnector implements WeasyPrintConverter {
     private static final Logger logger = Logger.getLogger(WeasyPrintServiceConnector.class);
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     private static final String PYTHON_VERSION_HEADER = "Python-Version";
     private static final String WEASYPRINT_VERSION_HEADER = "Weasyprint-Version";
@@ -153,7 +154,7 @@ public class WeasyPrintServiceConnector implements WeasyPrintConverter {
                 String responseContent = response.readEntity(String.class);
 
                 try {
-                    return new ObjectMapper().readValue(responseContent, WeasyPrintInfo.class);
+                    return OBJECT_MAPPER.readValue(responseContent, WeasyPrintInfo.class);
                 } catch (JsonProcessingException e) {
                     throw new IllegalStateException("Could not parse response", e);
                 }
@@ -190,7 +191,7 @@ public class WeasyPrintServiceConnector implements WeasyPrintConverter {
                 String responseContent = response.readEntity(String.class);
 
                 try {
-                    return new ObjectMapper().readValue(responseContent, WeasyPrintHealth.class);
+                    return OBJECT_MAPPER.readValue(responseContent, WeasyPrintHealth.class);
                 } catch (JsonProcessingException e) {
                     throw new IllegalStateException("Could not parse health response", e);
                 }

@@ -97,6 +97,9 @@
 
 <script>
     (function () {
+        // Store interval ID for cleanup
+        let healthCheckIntervalId = null;
+
         // override help and disclaimer links behavior - jump to the menu item instead of external MD file page
         document.addEventListener('DOMContentLoaded', function () {
             document.querySelectorAll('a').forEach(function (element) {
@@ -110,6 +113,14 @@
 
             // Initialize WeasyPrint widget - insert before markdown article
             initWeasyPrintWidget();
+        });
+
+        // Clean up interval on page unload to prevent memory leaks
+        window.addEventListener('beforeunload', function () {
+            if (healthCheckIntervalId !== null) {
+                clearInterval(healthCheckIntervalId);
+                healthCheckIntervalId = null;
+            }
         });
 
         function replaceAnchorUrl(anchor, targetPath) {
@@ -141,7 +152,7 @@
             // Start monitoring
             loadWeasyPrintHealth();
             // Refresh every 5 seconds
-            setInterval(loadWeasyPrintHealth, 5000);
+            healthCheckIntervalId = setInterval(loadWeasyPrintHealth, 5000);
         }
 
         function loadWeasyPrintHealth() {

@@ -160,7 +160,7 @@ public class ConfigurationInternalController {
     public @NotNull WeasyPrintHealth getWeasyPrintHealth() {
         try {
             return weasyPrintServiceConnector.getHealth();
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             throw new WeasyPrintServiceHealthException("Failed to retrieve WeasyPrint service health", e);
         }
     }
