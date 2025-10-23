@@ -20,15 +20,17 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
 import org.jsoup.Jsoup;
+import org.jsoup.nodes.Comment;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Entities;
+import org.jsoup.nodes.Node;
 import org.jsoup.select.Elements;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -49,6 +51,7 @@ public class HtmlProcessor {
     private static final String NUMBER = "number";
     private static final String DOLLAR_SIGN = "$";
     private static final String DOLLAR_ENTITY = "&dollar;";
+    private static final String ROWSPAN_ATTR = "rowspan";
 
     private static final String UNSUPPORTED_DOCUMENT_TYPE = "Unsupported document type: %s";
 
@@ -65,27 +68,57 @@ public class HtmlProcessor {
     }
 
     public String processHtmlForPDF(@NotNull String html, @NotNull ExportParams exportParams, @NotNull List<String> selectedRoleEnumValues) {
+
+        // I. FIRST SECTION - manipulate HTML as a String. These changes are either not possible or not made easier with JSoup
+        // ----------------
+
         // Replace all dollar-characters in HTML document before applying any regular expressions, as it has special meaning there
         html = encodeDollarSigns(html);
 
+        // Remove all <pd4ml:page> tags which only have meaning for PD4ML library which we are not using. For all these tags we have either our own implementation or pure CSS solution
         html = removePd4mlTags(html);
+
+        // Change path of enum images from internal Polarion to publicly available
         html = html.replace("/ria/images/enums/", "/icons/default/enums/");
-        html = html.replace("<p><br></p>", "<br/>");
-        html = html.replace("vertical-align:middle;", "page-break-inside:avoid;");
-        html = adjustImageAlignmentForPDF(html);
-        html = html.replaceAll("margin: *auto;", "align:center;");
-        html = adjustHeadingsForPDF(html);
+
+        // II. SECOND SECTION - manipulate HTML as a JSoup document. These changes are vice versa fulfilled easier with JSoup.
+        // ----------------
+
+        Document document = Jsoup.parse(html);
+        document.outputSettings()
+                .syntax(Document.OutputSettings.Syntax.xml)
+                .escapeMode(Entities.EscapeMode.base)
+                .prettyPrint(false);
+
+        // From Polarion perspective h1 - is a document title, h2 are h1 heading etc. We are making such headings' uplifting here
+        adjustDocumentHeadings(document);
+
         if (exportParams.isCutEmptyChapters()) {
-            html = cutEmptyChapters(html);
+            // Cut empty chapters if explicitly requested by user
+            cutEmptyChapters(document);
         }
+        if (exportParams.getChapters() != null) {
+            // Leave only chapters explicitly selected by user
+            cutNotNeededChapters(document, exportParams.getChapters());
+        }
+
+        // Polarion doesn't place table rows with th-tags into thead, placing them in table's tbody, which is wrong as table header won't
+        // repeat on each next page if table is split across multiple pages. We are fixing this moving such rows into thead.
+        fixTableHeads(document);
+
+        // If on next step we placed into thead rows which contain rowspan > 1 and this "covers" rows which are still in tbody, we are fixing
+        // this here, moving such rows also in thead
+        fixTableHeadRowspan(document);
+
+        html = document.body().html();
+
+        // TODO: rework below, migrating to JSoup processing when reasonable
+
+        html = adjustImageAlignmentForPDF(html);
 
         html = adjustCellWidth(html, exportParams);
-        html = html.replace(">\n ", "> ");
-        html = html.replace("\n</", "</");
-        if (exportParams.getChapters() != null) {
-            html = cutNotNeededChapters(html, exportParams.getChapters());
-        }
 
+        // TODO: This should be String processing either right before or right after JSoup, check this
         html = switch (exportParams.getDocumentType()) {
             case LIVE_DOC, WIKI_PAGE -> {
                 String processingHtml = new LiveDocTOCGenerator().addTableOfContent(html);
@@ -100,9 +133,10 @@ public class HtmlProcessor {
             }
             case BASELINE_COLLECTION -> throw new IllegalArgumentException(UNSUPPORTED_DOCUMENT_TYPE.formatted(exportParams.getDocumentType()));
         };
+
         html = replaceResourcesAsBase64Encoded(html);
-        html = properTableHeads(html);
         html = cleanExtraTableContent(html);
+
         html = switch (exportParams.getDocumentType()) {
             case LIVE_DOC, WIKI_PAGE -> {
                 String processingHtml = new PageBreakAvoidRemover().removePageBreakAvoids(html);
@@ -147,11 +181,273 @@ public class HtmlProcessor {
             html = adjustContentToFitPage(html, exportParams);
         }
 
-        html = fixTableHeadRowspan(html);
-
         // Do not change this entry order, '&nbsp;' can be used in the logic above, so we must cut them off as the last step
         html = cutExtraNbsp(html);
         return html;
+    }
+
+    @NotNull
+    private String removePd4mlTags(@NotNull String html) {
+        return RegexMatcher.get("(<pd4ml:page.*>)(.)").replace(html, regexEngine -> regexEngine.group(2));
+    }
+
+    /**
+     * Escapes dollar signs in HTML to prevent them from being interpreted as regex special characters.
+     * Should be called after Jsoup parsing operations that may convert &dollar; back to $.
+     *
+     * @param html HTML content to escape
+     * @return HTML with dollar signs replaced by &dollar; entity
+     */
+    @NotNull
+    private String encodeDollarSigns(@NotNull String html) {
+        return html.replace(DOLLAR_SIGN, DOLLAR_ENTITY);
+    }
+
+    @VisibleForTesting
+    void cutEmptyChapters(@NotNull Document document) {
+        // 'Empty chapter' is a heading tag which doesn't have any visible content "under it",
+        // i.e. there are only not visible or whitespace elements between itself and next heading of same/higher level or end of parent/document.
+
+        // Process from lowest to highest priority (h6 to h1), otherwise logic can be broken
+        for (int headingLevel = H_TAG_MIN_PRIORITY; headingLevel >= 1; headingLevel--) {
+            removeEmptyHeadings(document, headingLevel);
+        }
+    }
+
+    private void removeEmptyHeadings(@NotNull Document document, int headingLevel) {
+        List<Element> headingsToRemove = JSoupUtils.selectEmptyHeadings(document, headingLevel);
+        for (Element heading : headingsToRemove) {
+
+            // In addition to removing heading itself, remove all following empty siblings until next heading, but not comments as they can have special meaning
+            // We don't check additionally if sibling is empty, because if a heading was selected for removal there are only empty siblings under it
+            Node nextSibling = heading.nextSibling();
+            while (nextSibling != null) {
+                if (JSoupUtils.isHeading(nextSibling)) {
+                    break;
+                } else {
+                    Node siblingToRemove = nextSibling instanceof Comment ? null : nextSibling;
+                    nextSibling = nextSibling.nextSibling();
+                    if (siblingToRemove != null) {
+                        siblingToRemove.remove();
+                    }
+                }
+            }
+
+            heading.remove();
+        }
+    }
+
+    @VisibleForTesting
+    void cutNotNeededChapters(@NotNull Document document, @NotNull List<String> selectedChapters) {
+        List<ChapterInfo> chapters = getChaptersInfo(document, selectedChapters);
+
+        // Process chapters to remove unwanted ones
+        for (ChapterInfo currentChapter : chapters) {
+            if (!currentChapter.shouldKeep()) {
+                // Remember parent element for possible future usage
+                Element parent = currentChapter.heading().parent();
+
+                // Collect first 2 page break comments in the block to remove
+                List<Comment> topPageBreakComments = collectPageBreakComments(currentChapter);
+
+                Node nextChapterNode = removeChapter(currentChapter);
+
+                // Re-insert page break comments at the position where the block was removed
+                if (nextChapterNode != null) {
+                    // Insert before the next H1
+                    for (Comment pageBreak : topPageBreakComments) {
+                        nextChapterNode.before(pageBreak);
+                    }
+                } else if (parent != null) {
+                    // Otherwise insert at the end of parent
+                    for (Comment pageBreak : topPageBreakComments) {
+                        parent.appendChild(pageBreak);
+                    }
+                }
+            }
+        }
+    }
+
+    @NotNull
+    private List<ChapterInfo> getChaptersInfo(@NotNull Document document, @NotNull List<String> selectedChapters) {
+        List<ChapterInfo> chapters = new ArrayList<>();
+
+        for (Element h1 : document.select(JSoupUtils.H1_TAG)) {
+            boolean shouldKeep = false;
+
+            // Extract chapter number from the h1 structure: <h1><span><span>NUMBER</span></span>...</h1>
+            Elements innerSpans = h1.select("span > span");
+            if (!innerSpans.isEmpty()) {
+                String chapterNumber = Objects.requireNonNull(innerSpans.first()).text();
+                shouldKeep = selectedChapters.contains(chapterNumber);
+            }
+            chapters.add(new ChapterInfo(h1, shouldKeep));
+        }
+        return chapters;
+    }
+
+    /**
+     * Collects top PAGE_BREAK related comments starting from current to next chapter (H1 elements)
+     */
+    @NotNull
+    private List<Comment> collectPageBreakComments(@NotNull ChapterInfo currentChapter) {
+        List<Comment> topPageBreakComments = new ArrayList<>();
+        Node current = currentChapter.heading().nextSibling();
+
+        // Traverse siblings until we reach the next h1 or end of siblings
+        while (current != null && !JSoupUtils.isH1(current) && !JSoupUtils.containsH1(current)) {
+            // Collect top PAGE_BREAK comments at current level
+            collectPageBreakComments(current, topPageBreakComments);
+            current = current.nextSibling();
+        }
+
+        return topPageBreakComments;
+    }
+
+    /**
+     * Recursively collects top PAGE_BREAK related comments from an element and its descendants,
+     * but only first 2 of them: <!--PAGE_BREAK--> and then either <!--PORTRAIT_ABOVE--> or <!--LANDSCAPE_ABOVE-->,
+     * the rest won't be relevant as they belong to removed content.
+     */
+    private void collectPageBreakComments(@NotNull Node node, @NotNull List<Comment> topPageBreakComments) {
+        if (topPageBreakComments.size() < 2) {
+            if (node instanceof Comment comment && isPageBreakComment(comment)) {
+                topPageBreakComments.add(new Comment(comment.getData()));
+            } else if (node instanceof Element element) {
+                for (Node child : element.childNodes()) {
+                    collectPageBreakComments(child, topPageBreakComments);
+                }
+            }
+        }
+    }
+
+    private boolean isPageBreakComment(@NotNull Comment comment) {
+        String commentData = comment.getData();
+        return commentData.equals(PAGE_BREAK) || commentData.equals(LANDSCAPE_ABOVE) || commentData.equals(PORTRAIT_ABOVE);
+    }
+
+    @Nullable
+    private Node removeChapter(@NotNull ChapterInfo currentChapter) {
+        Node current = currentChapter.heading();
+        Node nextChapterNode = null; // Can return null if no next chapter found
+
+        // Remove chapter itself and all siblings between it and next h1-tag
+        while (current != null) {
+            Node next = current.nextSibling();
+            current.remove();
+
+            // Check if next sibling is H1
+            if (next != null && (JSoupUtils.isH1(next) || JSoupUtils.containsH1(next))) {
+                nextChapterNode = next;
+                break;
+            }
+
+            current = next;
+        }
+
+        return nextChapterNode;
+    }
+
+    @VisibleForTesting
+    void fixTableHeads(@NotNull Document document) {
+        Elements tables = document.select(JSoupUtils.TABLE_TAG);
+        for (Element table : tables) {
+            List<Element> headerRows = JSoupUtils.getRowsWithHeaders(table);
+            if (headerRows.isEmpty()) {
+                continue;
+            }
+
+            Element header = table.selectFirst(JSoupUtils.THEAD_TAG);
+            if (header == null) {
+                header = new Element(JSoupUtils.THEAD_TAG);
+                table.prependChild(header);
+            }
+
+            for (Element headerRow : headerRows) {
+                // Parent of each header row can't be null as we got them as child nodes of a table
+                if (!Objects.requireNonNull(headerRow.parent()).tagName().equals(JSoupUtils.THEAD_TAG)) {
+                    // Header row is located not in thead - moving it there
+                    headerRow.remove();
+                    header.appendChild(headerRow);
+                }
+            }
+        }
+    }
+
+    /**
+     * Fixes malformed tables where thead contains single one row which cells has rowspan attribute greater than 1.
+     * Such cells semantically extend beyond the thead boundary, which causes incorrect table rendering.
+     * This method extends thead by moving rows from tbody into thead to match the rowspan values.
+     */
+    @VisibleForTesting
+    public void fixTableHeadRowspan(@NotNull Document document) {
+        Elements tables = document.select(JSoupUtils.TABLE_TAG);
+
+        for (Element table : tables) {
+            Element thead = table.selectFirst(JSoupUtils.THEAD_TAG);
+            if (thead != null) {
+                Element headRow = getHeadRow(thead);
+                if (headRow != null) {
+                    int maxRowspan = getMaxRowspan(headRow);
+                    // If all cells have rowspan=1 or no rowspan, nothing to fix
+                    if (maxRowspan <= 1) {
+                        continue;
+                    }
+
+                    List<Element> tbodyRows = JSoupUtils.getBodyRows(table);
+
+                    // Move (maxRowspan - 1) rows from tbody to thead
+                    int rowsToMove = Math.min(maxRowspan - 1, tbodyRows.size());
+                    for (int i = 0; i < rowsToMove; i++) {
+                        Element rowToMove = tbodyRows.get(i);
+                        rowToMove.remove();
+                        thead.appendChild(rowToMove);
+                    }
+                }
+            }
+        }
+    }
+
+    private Element getHeadRow(@NotNull Element thead) {
+        Elements theadRows = thead.select("> tr");
+        if (theadRows.size() != 1) {
+            return null;
+        }
+        return theadRows.first();
+    }
+
+    private int getMaxRowspan(@NotNull Element headRow) {
+        Elements cells = headRow.select("> th, > td");
+        int maxRowspan = 1;
+
+        // Find the maximum rowspan value
+        for (Element cell : cells) {
+            if (cell.hasAttr(ROWSPAN_ATTR)) {
+                try {
+                    int rowspan = Integer.parseInt(cell.attr(ROWSPAN_ATTR));
+                    if (rowspan > maxRowspan) {
+                        maxRowspan = rowspan;
+                    }
+                } catch (NumberFormatException e) {
+                    // Ignore invalid rowspan values
+                }
+            }
+        }
+        return maxRowspan;
+    }
+
+    private void adjustDocumentHeadings(@NotNull Document document) {
+        Elements headings = document.select("h1, h2, h3, h4, h5, h6");
+
+        for (Element heading : headings) {
+            if (JSoupUtils.isH1(heading)) {
+                heading.tagName(JSoupUtils.DIV_TAG);
+                heading.addClass("title");
+            } else {
+                int level = heading.tagName().charAt(1) - '0';
+                heading.tagName("h" + (level - 1));
+            }
+        }
     }
 
     @NotNull
@@ -172,7 +468,7 @@ public class HtmlProcessor {
     }
 
     /**
-     * Rewrites Polarion Work Item hyperlinks so they become intra-document anchor links.
+     * Rewrites Polarion Work Item hyperlinks so that they become intra-document anchor links.
      **/
     @NotNull
     @VisibleForTesting
@@ -277,77 +573,6 @@ public class HtmlProcessor {
             landscape = Objects.equals(LANDSCAPE_ABOVE_MARK, mark); //calculate orientation for the next/previous area
         }
         return resultBuf.toString();
-    }
-
-    @NotNull
-    @VisibleForTesting
-    String cutEmptyChapters(@NotNull String html) {
-        //We have to traverse all existing heading levels from the lowest priority to the highest and find corresponding 'empty chapters'.
-        //'Empty chapter' is the area which starts from heading tag and followed by any number of empty 'p', 'br' or page brake related tags.
-        //Area must be followed either by the next opening heading tag with the same or higher importance or any closing tag except 'p'.
-        for (int i = H_TAG_MIN_PRIORITY; i >= 1; i--) {
-            html = RegexMatcher.get(String.format("(?s)(?><h%1$d.*?</h%1$d>)(\\s|<p[^>]*?>|<br/>|</p>|%2$s)*?(?=<h[1-%1$d]|</[^p])",
-                    i, String.join("|", PAGE_BREAK_MARK, PORTRAIT_ABOVE_MARK, LANDSCAPE_ABOVE_MARK))).useJavaUtil().replace(html, regexEngine -> {
-                String areaToDelete = regexEngine.group();
-                return getTopPageBrake(areaToDelete);
-            });
-        }
-        return html;
-    }
-
-    @NotNull
-    @VisibleForTesting
-    @SuppressWarnings("java:S5852")
-        //regex checked
-    String cutNotNeededChapters(@NotNull String html, List<String> selectedChapters) {
-        // LinkedHashMap is chosen intentionally to keep an order of insertion
-        Map<String, Boolean> chaptersMapping = new LinkedHashMap<>();
-
-        // This regexp searches for most high level chapters (<h1>-elements) extracting their numbers into
-        // named group "number" and extracting whole <h1>-element into named group "chapter"
-        RegexMatcher.get("(?<chapter><h1[^>]*?>.*?<span[^>]*?><span[^>]*?>(?<number>.+?)</span>.*?</span>.+?</h1>)").processEntry(html, regexEngine -> {
-            String number = regexEngine.group(NUMBER);
-            String chapter = regexEngine.group("chapter");
-            chaptersMapping.put(chapter, selectedChapters.contains(number));
-        });
-
-        StringBuilder buf = new StringBuilder(html);
-        Integer cutStart = null;
-        Integer cutEnd = null;
-        for (Map.Entry<String, Boolean> entry : chaptersMapping.entrySet()) {
-            Boolean entryValue = entry.getValue();
-            if (Boolean.FALSE.equals(entryValue) && cutStart == null) {
-                cutStart = buf.indexOf(entry.getKey());
-            } else if (Boolean.TRUE.equals(entryValue) && cutStart != null) {
-                cutEnd = buf.indexOf(entry.getKey());
-            }
-            if (cutStart != null && cutEnd != null) {
-                buf.replace(cutStart, cutEnd, getTopPageBrake(buf.substring(cutStart, cutEnd)));
-                cutStart = null;
-                cutEnd = null;
-            }
-        }
-        if (cutStart != null) {
-            cutEnd = buf.lastIndexOf(DIV_END_TAG);
-            buf.replace(cutStart, cutEnd, getTopPageBrake(buf.substring(cutStart, cutEnd)));
-        }
-
-        return buf.toString();
-    }
-
-    /**
-     * When we remove some area from html we have to copy the most top page break (if it exists) in order to preserve expected orientation.
-     */
-    @NotNull
-    private String getTopPageBrake(@NotNull String area) {
-        int brakePosition = area.indexOf(PAGE_BREAK_MARK);
-        if (brakePosition == -1) {
-            return "";
-        } else if (area.indexOf(PAGE_BREAK_LANDSCAPE_ABOVE) == brakePosition) {
-            return PAGE_BREAK_LANDSCAPE_ABOVE;
-        } else {
-            return PAGE_BREAK_PORTRAIT_ABOVE;
-        }
     }
 
     @NotNull
@@ -513,28 +738,6 @@ public class HtmlProcessor {
     }
 
     @NotNull
-    private String removePd4mlTags(@NotNull String html) {
-        return RegexMatcher.get("(<pd4ml:page.*>)(.)").replace(html, regexEngine -> regexEngine.group(2));
-    }
-
-    @NotNull
-    @VisibleForTesting
-    @SuppressWarnings({"java:S5869", "java:S6019"})
-    String properTableHeads(@NotNull String html) {
-        // Searches for all subsequent table rows (<tr>-tags) inside <tbody> which contain <th>-tags
-        // followed by a row which doesn't contain <th> (or closing </tbody> tag).
-        // There are 2 groups in this regexp, first one is unnamed, containing <tbody> and <tr>-tags containing <th>-tags,
-        // second one is named ("header") and contains those <tr>-tags which include <th>-tags. The regexp is ending
-        // by positive lookahead "(?=<tr)" which doesn't take part in replacement.
-        // The sense in this regexp is to find <tr>-tags containing <th>-tags and move it from <tbody> into <thead>,
-        // for table headers to repeat on each page.
-        return RegexMatcher.get("(<tbody>[^<]*(?<header><tr>[^<]*<th[\\s|\\S]*?))(?=(<tr|</tbody))").useJavaUtil().replace(html, regexEngine -> {
-            String header = regexEngine.group("header");
-            return "<thead>" + header + "</thead><tbody>";
-        });
-    }
-
-    @NotNull
     @VisibleForTesting
     @SuppressWarnings("java:S5852")
         //regex checked
@@ -686,31 +889,8 @@ public class HtmlProcessor {
                 .replace(html, regexEngine -> regexEngine.group("table"));
     }
 
-    @NotNull
-    private String adjustHeadingsForPDF(@NotNull String html) {
-        html = RegexMatcher.get("<(h[1-6])").replace(html, regexEngine -> {
-            String tag = regexEngine.group(1);
-            return tag.equals("h1") ? "<div class=\"title\"" : ("<" + liftHeadingTag(tag));
-        });
-
-        return RegexMatcher.get("</(h[1-6])>").replace(html, regexEngine -> {
-            String tag = regexEngine.group(1);
-            return tag.equals("h1") ? DIV_END_TAG : ("</" + liftHeadingTag(tag) + ">");
-        });
-    }
-
-    @NotNull
-    private static String liftHeadingTag(@NotNull String tag) {
-        return switch (tag) {
-            case "h2" -> "h1";
-            case "h3" -> "h2";
-            case "h4" -> "h3";
-            case "h5" -> "h4";
-            case "h6" -> "h5";
-            default -> "h6";
-        };
-    }
-
+    // Images with styles and "display: block" are searched here. For such image we do following: wrap it into div with text-align style
+    // and value "right" if image margin is "auto 0px auto auto" or "center" otherwise.
     @NotNull
     @SuppressWarnings({"java:S5852", "java:S5857"}) //need by design
     private String adjustImageAlignmentForPDF(@NotNull String html) {
@@ -764,100 +944,9 @@ public class HtmlProcessor {
     }
 
     /**
-     * Fixes malformed tables where thead contains single one row which cells has rowspan attribute greater than 1.
-     * Such cells semantically extend beyond the thead boundary, which causes incorrect table rendering.
-     * This method extends thead by moving rows from tbody into thead to match the rowspan values.
-     *
-     * @param sourceHtml HTML to process
-     * @return the same HTML with fixed table structure
+     * Internal record to hold chapter information during processing.
      */
-    @NotNull
-    @VisibleForTesting
-    public String fixTableHeadRowspan(@NotNull String sourceHtml) {
-        Document document = Jsoup.parse(sourceHtml);
-        document.outputSettings()
-                .syntax(Document.OutputSettings.Syntax.xml)
-                .escapeMode(Entities.EscapeMode.base)
-                .prettyPrint(false);
-
-        Elements tables = document.select("table");
-
-        for (Element table : tables) {
-            Element thead = table.selectFirst("thead");
-            if (thead != null) {
-                Element headRow = getHeadRow(thead);
-                if (headRow != null) {
-                    int maxRowspan = getMaxRowspan(headRow);
-                    // If all cells have rowspan=1 or no rowspan, nothing to fix
-                    if (maxRowspan <= 1) {
-                        continue;
-                    }
-
-                    Elements tbodyRows = getBodyRows(table);
-
-                    // Move (maxRowspan - 1) rows from tbody to thead
-                    int rowsToMove = Math.min(maxRowspan - 1, tbodyRows.size());
-                    for (int i = 0; i < rowsToMove; i++) {
-                        Element rowToMove = tbodyRows.get(i);
-                        rowToMove.remove();
-                        thead.appendChild(rowToMove);
-                    }
-                }
-            }
-        }
-
-        String resultedHtml = document.body().html();
-        // after processing with jsoup we need to replace $-symbol with "&dollar;" because of regular expressions, as it has special meaning there
-        resultedHtml = encodeDollarSigns(resultedHtml);
-        return resultedHtml;
+    private record ChapterInfo(@NotNull Element heading, boolean shouldKeep) {
     }
 
-    private Element getHeadRow(@NotNull Element thead) {
-        Elements theadRows = thead.select("> tr");
-        if (theadRows.size() != 1) {
-            return null;
-        }
-        return theadRows.first();
-    }
-
-    private int getMaxRowspan(@NotNull Element headRow) {
-        Elements cells = headRow.select("> th, > td");
-        int maxRowspan = 1;
-
-        // Find the maximum rowspan value
-        for (Element cell : cells) {
-            if (cell.hasAttr("rowspan")) {
-                try {
-                    int rowspan = Integer.parseInt(cell.attr("rowspan"));
-                    if (rowspan > maxRowspan) {
-                        maxRowspan = rowspan;
-                    }
-                } catch (NumberFormatException e) {
-                    // Ignore invalid rowspan values
-                }
-            }
-        }
-        return maxRowspan;
-    }
-
-    private Elements getBodyRows(@NotNull Element table) {
-        Element tbody = table.selectFirst("tbody");
-        if (tbody == null) {
-            // No tbody, nothing to move
-            return new Elements();
-        }
-
-        return tbody.select("> tr");
-    }
-
-    /**
-     * Escapes dollar signs in HTML to prevent them from being interpreted as regex special characters.
-     * Should be called after Jsoup parsing operations that may convert &dollar; back to $.
-     *
-     * @param html HTML content to escape
-     * @return HTML with dollar signs replaced by &dollar; entity
-     */
-    private String encodeDollarSigns(@NotNull String html) {
-        return html.replace(DOLLAR_SIGN, DOLLAR_ENTITY);
-    }
 }
