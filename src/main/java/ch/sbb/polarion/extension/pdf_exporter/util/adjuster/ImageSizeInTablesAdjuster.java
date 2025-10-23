@@ -1,6 +1,7 @@
 package ch.sbb.polarion.extension.pdf_exporter.util.adjuster;
 
 import ch.sbb.polarion.extension.pdf_exporter.constants.CssProp;
+import ch.sbb.polarion.extension.pdf_exporter.constants.HtmlTag;
 import ch.sbb.polarion.extension.pdf_exporter.constants.HtmlTagAttr;
 import ch.sbb.polarion.extension.pdf_exporter.constants.Measure;
 import ch.sbb.polarion.extension.pdf_exporter.util.PaperSizeUtils;
@@ -17,10 +18,7 @@ import java.util.Optional;
 
 public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
 
-    private static final String TABLE_SELECTOR = "table";
-    private static final String TR_SELECTOR = "tr";
-    private static final String TD_TH_SELECTOR = "td, th";
-    private static final String IMG_SELECTOR = "img";
+    private static final String TD_TH_SELECTOR = String.format("%s, %s", HtmlTag.TD, HtmlTag.TH);
 
     public ImageSizeInTablesAdjuster(@NotNull Document document, @NotNull ConversionParams conversionParams) {
         super(document, conversionParams);
@@ -28,10 +26,10 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
 
     @Override
     public void execute() {
-        Elements tables = document.select(TABLE_SELECTOR);
+        Elements tables = document.select(HtmlTag.TABLE);
 
         for (Element table : tables) {
-            Elements images = table.select(IMG_SELECTOR);
+            Elements images = table.select(HtmlTag.IMG);
             if (images.isEmpty()) {
                 continue;
             }
@@ -133,7 +131,7 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
 
     @VisibleForTesting
     int getImageWidthBasedOnColumnsCount(Element img) {
-        Element row = img.closest(TR_SELECTOR);
+        Element row = img.closest(HtmlTag.TR);
         if (row != null) {
             int columnsCount = columnsCount(row);
             if (columnsCount > 0) {

@@ -1,10 +1,12 @@
 package ch.sbb.polarion.extension.pdf_exporter.util;
 
-import ch.sbb.polarion.extension.generic.regex.IRegexEngine;
 import ch.sbb.polarion.extension.generic.regex.RegexMatcher;
 import ch.sbb.polarion.extension.generic.settings.NamedSettings;
 import ch.sbb.polarion.extension.generic.settings.SettingId;
 import ch.sbb.polarion.extension.generic.util.HtmlUtils;
+import ch.sbb.polarion.extension.pdf_exporter.constants.CssProp;
+import ch.sbb.polarion.extension.pdf_exporter.constants.HtmlTag;
+import ch.sbb.polarion.extension.pdf_exporter.constants.HtmlTagAttr;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ConversionParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.Orientation;
@@ -14,7 +16,7 @@ import ch.sbb.polarion.extension.pdf_exporter.util.adjuster.PageWidthAdjuster;
 import ch.sbb.polarion.extension.pdf_exporter.util.exporter.CustomPageBreakPart;
 import ch.sbb.polarion.extension.pdf_exporter.util.html.HtmlLinksHelper;
 import com.polarion.alm.shared.util.StringUtils;
-import com.polarion.core.util.xml.CSSStyle;
+import com.steadystate.css.parser.CSSOMParser;
 import lombok.SneakyThrows;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -26,6 +28,7 @@ import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Entities;
 import org.jsoup.nodes.Node;
 import org.jsoup.select.Elements;
+import org.w3c.dom.css.CSSStyleDeclaration;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -35,6 +38,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 
 import static ch.sbb.polarion.extension.pdf_exporter.util.exporter.Constants.*;
@@ -52,6 +56,7 @@ public class HtmlProcessor {
     private static final String DOLLAR_SIGN = "$";
     private static final String DOLLAR_ENTITY = "&dollar;";
     private static final String ROWSPAN_ATTR = "rowspan";
+    private static final String RIGHT_ALIGNMENT_MARGIN = "auto 0px auto auto";
 
     private static final String UNSUPPORTED_DOCUMENT_TYPE = "Unsupported document type: %s";
 
@@ -59,6 +64,8 @@ public class HtmlProcessor {
     private final LocalizationSettings localizationSettings;
     private final HtmlLinksHelper httpLinksHelper;
     private final PdfExporterPolarionService pdfExporterPolarionService;
+
+    private final @NotNull CSSOMParser parser = new CSSOMParser();
 
     public HtmlProcessor(FileResourceProvider fileResourceProvider, LocalizationSettings localizationSettings, HtmlLinksHelper httpLinksHelper, PdfExporterPolarionService pdfExporterPolarionService) {
         this.fileResourceProvider = fileResourceProvider;
@@ -110,11 +117,14 @@ public class HtmlProcessor {
         // this here, moving such rows also in thead
         fixTableHeadRowspan(document);
 
+        // Images with styles and "display: block" are searched here. For such images we do following: wrap them into div with text-align style
+        // and value "right" if image margin is "auto 0px auto auto" or "center" otherwise.
+        adjustImageAlignment(document);
+
         html = document.body().html();
 
         // TODO: rework below, migrating to JSoup processing when reasonable
 
-        html = adjustImageAlignmentForPDF(html);
 
         html = adjustCellWidth(html, exportParams);
 
@@ -272,7 +282,7 @@ public class HtmlProcessor {
     private List<ChapterInfo> getChaptersInfo(@NotNull Document document, @NotNull List<String> selectedChapters) {
         List<ChapterInfo> chapters = new ArrayList<>();
 
-        for (Element h1 : document.select(JSoupUtils.H1_TAG)) {
+        for (Element h1 : document.select(HtmlTag.H1)) {
             boolean shouldKeep = false;
 
             // Extract chapter number from the h1 structure: <h1><span><span>NUMBER</span></span>...</h1>
@@ -350,22 +360,22 @@ public class HtmlProcessor {
 
     @VisibleForTesting
     void fixTableHeads(@NotNull Document document) {
-        Elements tables = document.select(JSoupUtils.TABLE_TAG);
+        Elements tables = document.select(HtmlTag.TABLE);
         for (Element table : tables) {
             List<Element> headerRows = JSoupUtils.getRowsWithHeaders(table);
             if (headerRows.isEmpty()) {
                 continue;
             }
 
-            Element header = table.selectFirst(JSoupUtils.THEAD_TAG);
+            Element header = table.selectFirst(HtmlTag.THEAD);
             if (header == null) {
-                header = new Element(JSoupUtils.THEAD_TAG);
+                header = new Element(HtmlTag.THEAD);
                 table.prependChild(header);
             }
 
             for (Element headerRow : headerRows) {
                 // Parent of each header row can't be null as we got them as child nodes of a table
-                if (!Objects.requireNonNull(headerRow.parent()).tagName().equals(JSoupUtils.THEAD_TAG)) {
+                if (!Objects.requireNonNull(headerRow.parent()).tagName().equals(HtmlTag.THEAD)) {
                     // Header row is located not in thead - moving it there
                     headerRow.remove();
                     header.appendChild(headerRow);
@@ -381,10 +391,10 @@ public class HtmlProcessor {
      */
     @VisibleForTesting
     public void fixTableHeadRowspan(@NotNull Document document) {
-        Elements tables = document.select(JSoupUtils.TABLE_TAG);
+        Elements tables = document.select(HtmlTag.TABLE);
 
         for (Element table : tables) {
-            Element thead = table.selectFirst(JSoupUtils.THEAD_TAG);
+            Element thead = table.selectFirst(HtmlTag.THEAD);
             if (thead != null) {
                 Element headRow = getHeadRow(thead);
                 if (headRow != null) {
@@ -441,11 +451,46 @@ public class HtmlProcessor {
 
         for (Element heading : headings) {
             if (JSoupUtils.isH1(heading)) {
-                heading.tagName(JSoupUtils.DIV_TAG);
+                heading.tagName(HtmlTag.DIV);
                 heading.addClass("title");
             } else {
                 int level = heading.tagName().charAt(1) - '0';
                 heading.tagName("h" + (level - 1));
+            }
+        }
+    }
+
+    @VisibleForTesting
+    void adjustImageAlignment(@NotNull Document document) {
+        Elements images = document.select(HtmlTag.IMG);
+        for (Element image : images) {
+            if (image.hasAttr(HtmlTagAttr.STYLE)) {
+                String style = image.attr(HtmlTagAttr.STYLE);
+                CSSStyleDeclaration cssStyle = parseCss(style);
+
+                String displayValue = Optional.ofNullable(cssStyle.getPropertyValue(CssProp.DISPLAY)).orElse("").trim();
+                if (!CssProp.DISPLAY_BLOCK_VALUE.equals(displayValue)) {
+                    continue;
+                }
+
+                Element wrapper = new Element(HtmlTag.DIV);
+
+                String marginValue = Optional.ofNullable(cssStyle.getPropertyValue(CssProp.MARGIN)).orElse("").trim();
+                if (RIGHT_ALIGNMENT_MARGIN.equals(marginValue)) {
+                    wrapper.attr(HtmlTagAttr.STYLE, String.format("%s: %s;", CssProp.TEXT_ALIGN, CssProp.TEXT_ALIGN_RIGHT_VALUE));
+                } else {
+                    wrapper.attr(HtmlTagAttr.STYLE, String.format("%s: %s;", CssProp.TEXT_ALIGN, CssProp.TEXT_ALIGN_CENTER_VALUE));
+                }
+
+                Element previousSibling = image.previousElementSibling();
+                if (previousSibling != null) {
+                    previousSibling.after(wrapper);
+                } else {
+                    Element parent = image.parent();
+                    Objects.requireNonNullElse(parent, document.body()).prependChild(wrapper);
+                }
+                image.remove();
+                wrapper.appendChild(image);
             }
         }
     }
@@ -889,46 +934,6 @@ public class HtmlProcessor {
                 .replace(html, regexEngine -> regexEngine.group("table"));
     }
 
-    // Images with styles and "display: block" are searched here. For such image we do following: wrap it into div with text-align style
-    // and value "right" if image margin is "auto 0px auto auto" or "center" otherwise.
-    @NotNull
-    @SuppressWarnings({"java:S5852", "java:S5857"}) //need by design
-    private String adjustImageAlignmentForPDF(@NotNull String html) {
-        String startImgPattern = "<img [^>]*style=\"([^>]*)\".*?>";
-        IRegexEngine regexEngine = RegexMatcher.get(startImgPattern).createEngine(html);
-        StringBuilder sb = new StringBuilder();
-
-        while (true) {
-            String group;
-            CSSStyle css;
-            CSSStyle.Rule displayRule;
-            do {
-                do {
-                    if (!regexEngine.find()) {
-                        regexEngine.appendTail(sb);
-                        return sb.toString();
-                    }
-
-                    group = regexEngine.group();
-                    String style = regexEngine.group(1);
-                    css = CSSStyle.parse(style);
-                    displayRule = css.getRule("display");
-                } while (displayRule == null);
-            } while (!"block".equals(displayRule.getValue()));
-
-            final String align;
-            CSSStyle.Rule marginRule = css.getRule("margin");
-            if (marginRule != null && "auto 0px auto auto".equals(marginRule.getValue())) {
-                align = "right";
-            } else {
-                align = "center";
-            }
-
-            group = "<div style=\"text-align: " + align + "\">" + group + DIV_END_TAG;
-            regexEngine.appendReplacement(sb, group);
-        }
-    }
-
     @SneakyThrows
     @SuppressWarnings({"java:S5852", "java:S5857"}) //need by design
     public String replaceResourcesAsBase64Encoded(String html) {
@@ -941,6 +946,10 @@ public class HtmlProcessor {
 
     private boolean hasCustomPageBreaks(String html) {
         return html.contains(PAGE_BREAK_MARK);
+    }
+
+    private CSSStyleDeclaration parseCss(String style) {
+        return CssUtils.parseCss(parser, style);
     }
 
     /**
