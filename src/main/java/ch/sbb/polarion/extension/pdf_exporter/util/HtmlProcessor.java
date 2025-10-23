@@ -88,6 +88,11 @@ public class HtmlProcessor {
         // Change path of enum images from internal Polarion to publicly available
         html = html.replace("/ria/images/enums/", "/icons/default/enums/");
 
+        // Was noticed that some externally imported/pasted elements (at this moment tables) contain strange extra block like
+        // <div style="clear:both;"> with the duplicated content inside.
+        // Potential fix below is simple: just hide these blocks.
+        html = html.replace("style=\"clear:both;\"", "style=\"clear:both;display:none;\"");
+
         // II. SECOND SECTION - manipulate HTML as a JSoup document. These changes are vice versa fulfilled easier with JSoup.
         // ----------------
 
@@ -121,12 +126,11 @@ public class HtmlProcessor {
         // and value "right" if image margin is "auto 0px auto auto" or "center" otherwise.
         adjustImageAlignment(document);
 
+        // Adjusts WorkItem attributes tables to stretch to full page width for better usage of page space and better readability.
+        // Also changes absolute widths of normal table cells from absolute values to "auto" if "Fit tables and images to page" is on
+        adjustCellWidth(document, exportParams);
+
         html = document.body().html();
-
-        // TODO: rework below, migrating to JSoup processing when reasonable
-
-
-        html = adjustCellWidth(html, exportParams);
 
         // TODO: This should be String processing either right before or right after JSoup, check this
         html = switch (exportParams.getDocumentType()) {
@@ -144,8 +148,9 @@ public class HtmlProcessor {
             case BASELINE_COLLECTION -> throw new IllegalArgumentException(UNSUPPORTED_DOCUMENT_TYPE.formatted(exportParams.getDocumentType()));
         };
 
+        // TODO: rework below, migrating to JSoup processing when reasonable
+
         html = replaceResourcesAsBase64Encoded(html);
-        html = cleanExtraTableContent(html);
 
         html = switch (exportParams.getDocumentType()) {
             case LIVE_DOC, WIKI_PAGE -> {
@@ -495,6 +500,46 @@ public class HtmlProcessor {
         }
     }
 
+    @VisibleForTesting
+    void adjustCellWidth(@NotNull Document document, @NotNull ExportParams exportParams) {
+        if (exportParams.isFitToPage()) {
+            autoCellWidth(document);
+        }
+
+        Elements wiAttrTables = document.select("table.polarion-dle-workitem-fields-end-table");
+        for (Element table : wiAttrTables) {
+            table.attr(HtmlTagAttr.STYLE, "width: 100%");
+
+            Elements attrNameCells = table.select("td.polarion-dle-workitem-fields-end-table-label");
+            for (Element attrNameCell : attrNameCells) {
+                attrNameCell.attr(HtmlTagAttr.STYLE, "width: 20%");
+            }
+
+            Elements attrNameValues = table.select("td.polarion-dle-workitem-fields-end-table-value");
+            for (Element attrNameValue : attrNameValues) {
+                attrNameValue.attr(HtmlTagAttr.STYLE, "width: 80%");
+            }
+        }
+    }
+
+    private void autoCellWidth(@NotNull Document document) {
+        // Searches for <td> or <th> elements of regular tables whose width in styles specified not in percentage.
+        // If they contain absolute values we replace them with auto, otherwise tables containing them can easily go outside boundaries of a page.
+        Elements cells = document.select(String.format("%s, %s", HtmlTag.TH, HtmlTag.TD));
+        for (Element cell : cells) {
+            if (cell.hasAttr(HtmlTagAttr.STYLE)) {
+                String style = cell.attr(HtmlTagAttr.STYLE);
+                CSSStyleDeclaration cssStyle = parseCss(style);
+
+                String widthValue = Optional.ofNullable(cssStyle.getPropertyValue(CssProp.WIDTH)).orElse("").trim();
+                if (!widthValue.isEmpty() && !widthValue.contains("%")) {
+                    cssStyle.setProperty(CssProp.WIDTH, CssProp.WIDTH_AUTO_VALUE, null);
+                    cell.attr(HtmlTagAttr.STYLE, cssStyle.getCssText());
+                }
+            }
+        }
+    }
+
     @NotNull
     @VisibleForTesting
     @SuppressWarnings({"java:S5843", "java:S5852"})
@@ -782,32 +827,6 @@ public class HtmlProcessor {
         return res;
     }
 
-    @NotNull
-    @VisibleForTesting
-    @SuppressWarnings("java:S5852")
-        //regex checked
-    String adjustCellWidth(@NotNull String html, @NotNull ExportParams exportParams) {
-        if (exportParams.isFitToPage()) {
-            // This regexp searches for <td> or <th> elements of regular tables which width in styles specified in pixels ("px").
-            // <td> or <th> element till "width:" in styles matched into first unnamed group and width value - into second unnamed group.
-            // Then we replace matched content by first group content plus "auto" instead of value in pixels.
-            html = RegexMatcher.get("(<t[dh][^>]+?width:\\s*)(\\d+px)")
-                    .replace(html, regexEngine -> regexEngine.group(1) + "auto");
-        }
-
-        // Next step we look for tables which represent WorkItem attributes and force them to take 100% of available width
-        html = RegexMatcher.get("(class=\"polarion-dle-workitem-fields-end-table\")")
-                .replace(html, regexEngine -> regexEngine.group() + " style=\"width: 100%;\"");
-
-        // Then for column with attribute name we specify to take 20% of table width
-        html = RegexMatcher.get("(class=\"polarion-dle-workitem-fields-end-table-label\")")
-                .replace(html, regexEngine -> regexEngine.group() + " style=\"width: 20%;\"");
-
-        // ...and for column with attribute value we specify to take 80% of table width
-        return RegexMatcher.get("(class=\"polarion-dle-workitem-fields-end-table-value\")")
-                .replace(html, regexEngine -> regexEngine.group() + " style=\"width: 80%;\"");
-    }
-
     public @NotNull Document adjustContentToFitPage(@NotNull Document document, @NotNull ConversionParams conversionParams) {
         return new PageWidthAdjuster(document, conversionParams)
                 .adjustImageSizeInTables()
@@ -822,14 +841,6 @@ public class HtmlProcessor {
                 .adjustImageSize()
                 .adjustTableSize()
                 .toHTML();
-    }
-
-    @NotNull
-    private String cleanExtraTableContent(@NotNull String html) {
-        //Was noticed that some externally imported/pasted elements (at this moment tables) contain strange extra block like
-        //<div style="clear:both;"> with the duplicated content inside.
-        //Potential fix below is simple: just hide these blocks.
-        return html.replace("style=\"clear:both;\"", "style=\"clear:both;display:none;\"");
     }
 
     @NotNull
