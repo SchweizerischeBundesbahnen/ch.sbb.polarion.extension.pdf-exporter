@@ -487,7 +487,7 @@ public class HtmlProcessor {
                     previousSibling.after(wrapper);
                 } else {
                     Element parent = image.parent();
-                    Objects.requireNonNullElse(parent, document).prependChild(wrapper);
+                    Objects.requireNonNullElse(parent, document.body()).prependChild(wrapper);
                 }
                 image.remove();
                 wrapper.appendChild(image);
