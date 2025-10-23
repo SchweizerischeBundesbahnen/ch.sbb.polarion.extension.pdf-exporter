@@ -202,11 +202,38 @@ class HtmlProcessorTest {
         try (InputStream isInvalidHtml = this.getClass().getResourceAsStream("/cellWidthBeforeProcessing.html");
              InputStream isValidHtml = this.getClass().getResourceAsStream("/cellWidthAfterProcessing.html")) {
 
-            String invalidHtml = new String(isInvalidHtml.readAllBytes(), StandardCharsets.UTF_8);
+            Document document = Jsoup.parse(new String(isInvalidHtml.readAllBytes(), StandardCharsets.UTF_8));
+            document.outputSettings()
+                    .syntax(Document.OutputSettings.Syntax.xml)
+                    .escapeMode(Entities.EscapeMode.base)
+                    .prettyPrint(false);
+
+            processor.adjustCellWidth(document, ExportParams.builder().fitToPage(false).build());
+            String fixedHtml = document.body().html();
+            String validHtml = new String(isValidHtml.readAllBytes(), StandardCharsets.UTF_8);
 
             // Spaces and new lines are removed to exclude difference in space characters
-            String fixedHtml = processor.adjustCellWidth(invalidHtml, new ExportParams());
+            assertEquals(TestStringUtils.removeNonsensicalSymbols(validHtml), TestStringUtils.removeNonsensicalSymbols(fixedHtml));
+        }
+    }
+
+    @Test
+    @SneakyThrows
+    void adjustCellWidthFitToPageTest() {
+        try (InputStream isInvalidHtml = this.getClass().getResourceAsStream("/cellWidthBeforeProcessing.html");
+             InputStream isValidHtml = this.getClass().getResourceAsStream("/cellWidthFitToPageAfterProcessing.html")) {
+
+            Document document = Jsoup.parse(new String(isInvalidHtml.readAllBytes(), StandardCharsets.UTF_8));
+            document.outputSettings()
+                    .syntax(Document.OutputSettings.Syntax.xml)
+                    .escapeMode(Entities.EscapeMode.base)
+                    .prettyPrint(false);
+
+            processor.adjustCellWidth(document, new ExportParams());
+            String fixedHtml = document.body().html();
             String validHtml = new String(isValidHtml.readAllBytes(), StandardCharsets.UTF_8);
+
+            // Spaces and new lines are removed to exclude difference in space characters
             assertEquals(TestStringUtils.removeNonsensicalSymbols(validHtml), TestStringUtils.removeNonsensicalSymbols(fixedHtml));
         }
     }
@@ -357,7 +384,7 @@ class HtmlProcessorTest {
             HtmlProcessor spyHtmlProcessor = spy(processor);
             ExportParams exportParams = getExportParams();
             // to avoid changing input html and check with regular equals
-            when(spyHtmlProcessor.adjustCellWidth(html, exportParams)).thenReturn(html);
+            doNothing().when(spyHtmlProcessor).adjustCellWidth(any(), any());
             exportParams.setCutEmptyChapters(false);
 
             // Spaces, new lines & nbsp symbols are removed to exclude difference in space characters
