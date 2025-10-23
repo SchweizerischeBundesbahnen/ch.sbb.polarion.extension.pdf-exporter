@@ -2,6 +2,7 @@ package ch.sbb.polarion.extension.pdf_exporter.util;
 
 import ch.sbb.polarion.extension.generic.regex.RegexMatcher;
 import ch.sbb.polarion.extension.pdf_exporter.model.LiveDocComment;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.CommentsRenderType;
 import com.polarion.alm.server.api.model.document.ProxyDocument;
 import com.polarion.alm.shared.api.model.comment.CommentBase;
 import com.polarion.alm.shared.api.model.comment.CommentBaseFields;
@@ -18,11 +19,13 @@ import com.polarion.alm.shared.api.model.user.UserField;
 import lombok.Builder;
 import lombok.Data;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.text.SimpleDateFormat;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Optional;
 
 @SuppressWarnings("java:S1200")
 public class LiveDocCommentsProcessor {
@@ -76,16 +79,17 @@ public class LiveDocCommentsProcessor {
     }
 
     @NotNull
-    public String addLiveDocComments(ProxyDocument document, @NotNull String html, boolean onlyOpen) {
-        //Polarion document keeps comments position in spans marked with id 'polarion-comment:commentId'.
-        //<span id="polarion-comment:1"></span>"
-        //Following expression retrieves such spans.
-        final Map<String, LiveDocComment> liveDocComments = getCommentsFromDocument(document, onlyOpen);
-        return RegexMatcher.get("(?s)(<span id=\"polarion-comment:(?<commentId>\\d+)\"></span>)").replace(html, regexEngine -> {
-            String commentId = regexEngine.group("commentId");
-            LiveDocComment liveDocComment = liveDocComments.get(commentId);
-            return liveDocComment == null ? null : renderComment(liveDocComment, 0);
-        });
+    public String addLiveDocComments(ProxyDocument document, @NotNull String html, @Nullable CommentsRenderType commentsRenderType) {
+        //Polarion document keeps comments position in span/img marked with id 'polarion-comment:commentId'.
+        //<span id="polarion-comment:1"></span> or <img id="polarion-comment:1" class="polarion-dle-comment-icon"/> (for comments inside workitem description)
+        //Following expression retrieves such entries.
+        final Map<String, LiveDocComment> liveDocComments = commentsRenderType == null ? Map.of() : getCommentsFromDocument(document, commentsRenderType.equals(CommentsRenderType.OPEN));
+        return RegexMatcher.get("(?s)((<img id=\"polarion-comment:(?<imgCommentId>\\d+)\"[^>]*class=\"polarion-dle-comment-icon\"/>)|(<span id=\"polarion-comment:(?<spanCommentId>\\d+)\"></span>))")
+                .replace(html, regexEngine -> {
+                    String commentId = Optional.ofNullable(regexEngine.group("imgCommentId")).orElse(regexEngine.group("spanCommentId"));
+                    LiveDocComment liveDocComment = liveDocComments.get(commentId);
+                    return liveDocComment == null ? "" : renderComment(liveDocComment, 0);
+                });
     }
 
     private String renderComment(LiveDocComment liveDocComment, int nestingLevel) {
