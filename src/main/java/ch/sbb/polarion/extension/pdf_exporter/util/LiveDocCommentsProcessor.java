@@ -88,38 +88,42 @@ public class LiveDocCommentsProcessor {
         return RegexMatcher.get("(?s)((<img id=\"polarion-comment:(?<imgCommentId>\\d+)\"[^>]*class=\"polarion-dle-comment-icon\"/>)|(<span id=\"polarion-comment:(?<spanCommentId>\\d+)\"></span>))")
                 .replace(html, regexEngine -> {
                     String commentId = Optional.ofNullable(regexEngine.group("imgCommentId")).orElse(regexEngine.group("spanCommentId"));
-                    LiveDocComment liveDocComment = liveDocComments.get(commentId);
-                    return liveDocComment == null ? "" : renderNativeComments ? renderNativeComment(liveDocComment, 0) : renderComment(liveDocComment, 0);
+                    return renderComments(liveDocComments.get(commentId), renderNativeComments);
                 });
     }
 
-    private String renderComment(LiveDocComment liveDocComment, int nestingLevel) {
+    private String renderComments(LiveDocComment liveDocComment, boolean renderNativeComments) {
+        if (liveDocComment == null) {
+            return "";
+        }
+        return renderNativeComments ? renderNativeComment(liveDocComment) : renderInlineComment(liveDocComment, 0);
+    }
+
+    private String renderInlineComment(LiveDocComment liveDocComment, int nestingLevel) {
         CommentData commentData = getCommentData(liveDocComment);
         StringBuilder commentSpan = new StringBuilder(getCommentSpan(commentData, nestingLevel));
         Map<String, LiveDocComment> childComments = liveDocComment.getChildComments();
         if (childComments != null) {
             nestingLevel++;
             for (LiveDocComment childComment : childComments.values()) {
-                commentSpan.append(renderComment(childComment, nestingLevel));
+                commentSpan.append(renderInlineComment(childComment, nestingLevel));
             }
         }
         return commentSpan.toString();
     }
 
-    private String renderNativeComment(LiveDocComment liveDocComment, int nestingLevel) {
+    private String renderNativeComment(LiveDocComment liveDocComment) {
         CommentData commentData = getCommentData(liveDocComment);
         StringBuilder commentDiv = new StringBuilder("""
                 [span class=sticky-note]
                     [span class=sticky-note-time]%s[/span]
                     [span class=sticky-note-username]%s[/span]
-                    [span class=sticky-note-title]%s[/span]
                     [span class=sticky-note-text]%s[/span]
-                """.formatted(commentData.isoDate, StringUtils.getEmptyIfNull(commentData.author), "", commentData.text));
+                """.formatted(commentData.isoDate, StringUtils.getEmptyIfNull(commentData.author), commentData.text));
         Map<String, LiveDocComment> childComments = liveDocComment.getChildComments();
         if (childComments != null) {
-            nestingLevel++;
             for (LiveDocComment childComment : childComments.values()) {
-                commentDiv.append(renderNativeComment(childComment, nestingLevel));
+                commentDiv.append(renderNativeComment(childComment));
             }
         }
         commentDiv.append("[/span]");

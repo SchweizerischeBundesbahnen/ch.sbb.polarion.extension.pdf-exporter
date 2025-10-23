@@ -310,8 +310,8 @@ function setStylePackage(content) {
     ctx.getElementById('render-comments').dispatchEvent(new Event('change'));
     RenderComments.renderCommentsSelect.selectValue(stylePackage.renderComments || 'OPEN');
 
-    this.ctx.visibleIf("render-native-comments-container", !!stylePackage.renderComments)
-    this.ctx.setCheckbox("render-native-comments", !!stylePackage.renderNativeComments);
+    ctx.visibleIf("render-native-comments-container", !!stylePackage.renderComments)
+    ctx.setCheckbox("render-native-comments", !!stylePackage.renderNativeComments);
 
     ctx.setCheckboxValueById('watermark', stylePackage.watermark);
     ctx.setCheckboxValueById('mark-referenced-workitems', stylePackage.markReferencedWorkitems);

@@ -861,9 +861,7 @@ public class HtmlProcessor {
         html = html.replace("[span class=sticky-note]", "<span class='sticky-note'>");
         html = html.replace("[span class=sticky-note-time]", "<span class='sticky-note-time'>");
         html = html.replace("[span class=sticky-note-username]", "<span class='sticky-note-username'>");
-        html = html.replace("[span class=sticky-note-title]", "<span class='sticky-note-title'>");
         html = html.replace("[span class=sticky-note-text]", "<span class='sticky-note-text'>");
-        html = html.replace("[/span]", "</span>");
         return html;
     }
 

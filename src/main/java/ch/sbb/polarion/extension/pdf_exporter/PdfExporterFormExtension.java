@@ -34,6 +34,7 @@ import com.polarion.platform.persistence.IEnumOption;
 import com.polarion.platform.persistence.model.IPObject;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.VisibleForTesting;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -224,7 +225,8 @@ public class PdfExporterFormExtension implements IFormExtension {
         return stylePackage.isFitToPage() ? form.replace("<input id='fit-to-page'", "<input id='fit-to-page' checked") : form;
     }
 
-    private String adjustRenderComments(String form, StylePackageModel stylePackage) {
+    @VisibleForTesting
+    String adjustRenderComments(String form, StylePackageModel stylePackage) {
         if (stylePackage.getRenderComments() != null) {
             form = form.replace("<input id='render-comments'", "<input id='render-comments' checked");
             form = form.replace("id='render-comments-selector' style='display: none'", "id='render-comments-selector'");
