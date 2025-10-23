@@ -14,4 +14,5 @@ public class CssProp {
     public static final String TEXT_ALIGN_CENTER_VALUE = "center";
     public static final String TEXT_ALIGN_RIGHT_VALUE = "right";
     public static final String WIDTH = "width";
+    public static final String WIDTH_AUTO_VALUE = "auto";
 }
