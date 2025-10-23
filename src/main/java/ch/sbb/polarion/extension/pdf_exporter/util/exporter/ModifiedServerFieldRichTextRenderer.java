@@ -5,11 +5,9 @@ import com.polarion.alm.shared.api.model.wi.WorkItemReference;
 import com.polarion.alm.shared.api.transaction.ReadOnlyTransaction;
 import com.polarion.alm.shared.api.utils.html.HtmlContentBuilder;
 import com.polarion.alm.shared.api.utils.html.RichTextRenderTarget;
-import com.polarion.alm.shared.rt.RichTextRenderingContext;
 import lombok.SneakyThrows;
+import org.apache.commons.lang3.reflect.FieldUtils;
 import org.jetbrains.annotations.NotNull;
-
-import java.lang.reflect.Field;
 
 /**
  * Copy of {@link ServerFieldRichTextRenderer} with modified {@link #renderDescription(HtmlContentBuilder, WorkItemReference, boolean)}
@@ -26,13 +24,11 @@ public class ModifiedServerFieldRichTextRenderer extends ServerFieldRichTextRend
     @SneakyThrows
     public boolean renderDescription(@NotNull HtmlContentBuilder builder, @NotNull WorkItemReference workItem, boolean withNA) {
         RichTextRenderTarget backupTarget = this.context.getRenderTarget();
-        Field renderTargetField = RichTextRenderingContext.class.getDeclaredField("renderTarget");
-        renderTargetField.setAccessible(true);
-        renderTargetField.set(context, RichTextRenderTarget.PREVIEW);
+        FieldUtils.writeField(context, "renderTarget", RichTextRenderTarget.PREVIEW, true);
         try {
             return super.renderDescription(builder, workItem, withNA);
         } finally {
-            renderTargetField.set(context, backupTarget);
+            FieldUtils.writeField(context, "renderTarget", backupTarget, true);
         }
     }
 
