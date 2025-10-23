@@ -19,7 +19,6 @@ public class ModifiedServerFieldRichTextRenderer extends ServerFieldRichTextRend
         super(transaction);
     }
 
-    @SuppressWarnings("java:S3011") // Suppress "Reflection should not be used to increase accessibility of classes, methods, or fields" warning
     @Override
     @SneakyThrows
     public boolean renderDescription(@NotNull HtmlContentBuilder builder, @NotNull WorkItemReference workItem, boolean withNA) {
