@@ -503,8 +503,8 @@ public class HtmlProcessor {
     @VisibleForTesting
     void adjustCellWidth(@NotNull Document document, @NotNull ExportParams exportParams) {
         if (exportParams.isFitToPage()) {
-            // Searches for <td> or <th> elements of regular tables which width in styles specified not in percentage.
-            // If they contain absolute values we replace them with auto, otherwise tables containing them easily can go outside boundary of pages.
+            // Searches for <td> or <th> elements of regular tables whose width in styles specified not in percentage.
+            // If they contain absolute values we replace them with auto, otherwise tables containing them can easily go outside boundaries of a page.
             Elements cells = document.select(String.format("%s, %s", HtmlTag.TH, HtmlTag.TD));
             for (Element cell : cells) {
                 if (cell.hasAttr(HtmlTagAttr.STYLE)) {
