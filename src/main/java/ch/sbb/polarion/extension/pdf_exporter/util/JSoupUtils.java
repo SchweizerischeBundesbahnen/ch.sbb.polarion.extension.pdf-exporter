@@ -1,5 +1,6 @@
 package ch.sbb.polarion.extension.pdf_exporter.util;
 
+import ch.sbb.polarion.extension.pdf_exporter.constants.HtmlTag;
 import lombok.experimental.UtilityClass;
 import org.jetbrains.annotations.NotNull;
 import org.jsoup.nodes.Document;
@@ -14,47 +15,24 @@ import java.util.List;
 
 @UtilityClass
 public class JSoupUtils {
-    public static final String BR_TAG = "br";
-    public static final String BUTTON_TAG = "button";
-    public static final String CANVAS_TAG = "canvas";
-    public static final String DIV_TAG = "div";
-    public static final String EMBED_TAG = "embed";
-    public static final String IMG_TAG = "img";
-    public static final String INPUT_TAG = "input";
-    public static final String H1_TAG = "h1";
-    public static final String HR_TAG = "hr";
-    public static final String MAP_TAG = "map";
-    public static final String METER_TAG = "meter";
-    public static final String OBJECT_TAG = "object";
-    public static final String PICTURE_TAG = "picture";
-    public static final String PROGRESS_TAG = "progress";
-    public static final String TABLE_TAG = "table";
-    public static final String TBODY_TAG = "tbody";
-    public static final String TEXTAREA_TAG = "textarea";
-    public static final String TH_TAG = "th";
-    public static final String THEAD_TAG = "thead";
-    public static final String TR_TAG = "tr";
-    public static final String SELECT_TAG = "select";
-    public static final String SVG_TAG = "svg";
-    public static final String VIDEO_TAG   = "video";
 
     private static final List<String> WITHOUT_TEXT_BUT_VISIBLE = List.of(
-            BUTTON_TAG,
-            CANVAS_TAG,
-            EMBED_TAG,
-            IMG_TAG,
-            INPUT_TAG,
-            HR_TAG,
-            MAP_TAG,
-            METER_TAG,
-            OBJECT_TAG,
-            PICTURE_TAG,
-            PROGRESS_TAG,
-            TABLE_TAG,
-            TEXTAREA_TAG,
-            SELECT_TAG,
-            SVG_TAG,
-            VIDEO_TAG
+            HtmlTag.BUTTON,
+            HtmlTag.CANVAS,
+            HtmlTag.EMBED,
+            HtmlTag.IMG,
+            HtmlTag.INPUT,
+            HtmlTag.HR,
+            HtmlTag.MAP,
+            HtmlTag.METER,
+            HtmlTag.OBJECT,
+            HtmlTag.PICTURE,
+            HtmlTag.PROGRESS,
+            HtmlTag.TABLE,
+            HtmlTag.TEXTAREA,
+            HtmlTag.SELECT,
+            HtmlTag.SVG,
+            HtmlTag.VIDEO
     );
 
     /**
@@ -64,7 +42,7 @@ public class JSoupUtils {
         String tagName = element.tagName();
 
         // <br> elements are considered empty - in sense of whitespace
-        if (BR_TAG.equals(tagName)) {
+        if (HtmlTag.BR.equals(tagName)) {
             return true;
         }
 
@@ -141,7 +119,7 @@ public class JSoupUtils {
     }
 
     public boolean isH1(@NotNull Node node) {
-        return node instanceof Element element && element.tagName().equals(H1_TAG);
+        return node instanceof Element element && element.tagName().equals(HtmlTag.H1);
     }
 
     public boolean containsH1(@NotNull Node node) {
@@ -159,10 +137,10 @@ public class JSoupUtils {
     public List<Element> getRowsWithHeaders(@NotNull Element table) {
         List<Element> headerRows = new ArrayList<>();
 
-        Element body = table.selectFirst("> " + TBODY_TAG);
+        Element body = table.selectFirst("> " + HtmlTag.TBODY);
         Element container = body == null ? table : body;
 
-        Elements rows = container.select("> " + TR_TAG);
+        Elements rows = container.select("> " + HtmlTag.TR);
         for (Element row : rows) {
             if (containsTH(row)) {
                 headerRows.add(row);
@@ -178,10 +156,10 @@ public class JSoupUtils {
     public List<Element> getBodyRows(@NotNull Element table) {
         List<Element> bodyRows = new ArrayList<>();
 
-        Element body = table.selectFirst("> " + TBODY_TAG);
+        Element body = table.selectFirst("> " + HtmlTag.TBODY);
         Element container = body == null ? table : body;
 
-        Elements rows = container.select("> " + TR_TAG);
+        Elements rows = container.select("> " + HtmlTag.TR);
         for (Element row : rows) {
             if (!containsTH(row)) {
                 bodyRows.add(row);
@@ -196,7 +174,7 @@ public class JSoupUtils {
     }
 
     public boolean isTH(@NotNull Node node) {
-        return node instanceof Element element && element.tagName().equals(TH_TAG);
+        return node instanceof Element element && element.tagName().equals(HtmlTag.TH);
     }
 
 }
