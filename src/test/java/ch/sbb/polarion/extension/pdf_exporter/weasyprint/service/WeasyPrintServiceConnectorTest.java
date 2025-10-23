@@ -124,7 +124,7 @@ class WeasyPrintServiceConnectorTest {
         // Then: Verify mandatory fields are parsed, optional fields are null
         assertNotNull(health);
         assertEquals("unhealthy", health.getStatus());
-        assertEquals(false, health.getChromiumRunning());
+        assertFalse(health.getChromiumRunning());
     }
 
     @Test
