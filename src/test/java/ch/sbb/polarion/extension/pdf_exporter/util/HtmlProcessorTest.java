@@ -234,6 +234,27 @@ class HtmlProcessorTest {
 
     @Test
     @SneakyThrows
+    void adjustImageAlignmentTest() {
+        try (InputStream isInvalidHtml = this.getClass().getResourceAsStream("/imageAlignmentBeforeProcessing.html");
+             InputStream isValidHtml = this.getClass().getResourceAsStream("/imageAlignmentAfterProcessing.html")) {
+
+            Document document = Jsoup.parse(new String(isInvalidHtml.readAllBytes(), StandardCharsets.UTF_8));
+            document.outputSettings()
+                    .syntax(Document.OutputSettings.Syntax.xml)
+                    .escapeMode(Entities.EscapeMode.base)
+                    .prettyPrint(false);
+
+            processor.adjustImageAlignment(document);
+            String fixedHtml = document.body().html();
+            String validHtml = new String(isValidHtml.readAllBytes(), StandardCharsets.UTF_8);
+
+            // Spaces and new lines are removed to exclude difference in space characters
+            assertEquals(TestStringUtils.removeNonsensicalSymbols(validHtml), TestStringUtils.removeNonsensicalSymbols(fixedHtml));
+        }
+    }
+
+    @Test
+    @SneakyThrows
     void localizeEnumsTest() {
         try (InputStream isInvalidHtml = this.getClass().getResourceAsStream("/localizeEnumsBeforeProcessing.html");
              InputStream isValidHtml = this.getClass().getResourceAsStream("/localizeEnumsAfterProcessing.html")) {
