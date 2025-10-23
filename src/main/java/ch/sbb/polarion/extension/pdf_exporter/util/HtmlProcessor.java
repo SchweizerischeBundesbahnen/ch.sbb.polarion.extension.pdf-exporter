@@ -503,21 +503,7 @@ public class HtmlProcessor {
     @VisibleForTesting
     void adjustCellWidth(@NotNull Document document, @NotNull ExportParams exportParams) {
         if (exportParams.isFitToPage()) {
-            // Searches for <td> or <th> elements of regular tables whose width in styles specified not in percentage.
-            // If they contain absolute values we replace them with auto, otherwise tables containing them can easily go outside boundaries of a page.
-            Elements cells = document.select(String.format("%s, %s", HtmlTag.TH, HtmlTag.TD));
-            for (Element cell : cells) {
-                if (cell.hasAttr(HtmlTagAttr.STYLE)) {
-                    String style = cell.attr(HtmlTagAttr.STYLE);
-                    CSSStyleDeclaration cssStyle = parseCss(style);
-
-                    String widthValue = Optional.ofNullable(cssStyle.getPropertyValue(CssProp.WIDTH)).orElse("").trim();
-                    if (!widthValue.isEmpty() && !widthValue.contains("%")) {
-                        cssStyle.setProperty(CssProp.WIDTH, CssProp.WIDTH_AUTO_VALUE, null);
-                        cell.attr(HtmlTagAttr.STYLE, cssStyle.getCssText());
-                    }
-                }
-            }
+            autoCellWidth(document);
         }
 
         Elements wiAttrTables = document.select("table.polarion-dle-workitem-fields-end-table");
@@ -532,6 +518,24 @@ public class HtmlProcessor {
             Elements attrNameValues = table.select("td.polarion-dle-workitem-fields-end-table-value");
             for (Element attrNameValue : attrNameValues) {
                 attrNameValue.attr(HtmlTagAttr.STYLE, "width: 80%");
+            }
+        }
+    }
+
+    private void autoCellWidth(@NotNull Document document) {
+        // Searches for <td> or <th> elements of regular tables whose width in styles specified not in percentage.
+        // If they contain absolute values we replace them with auto, otherwise tables containing them can easily go outside boundaries of a page.
+        Elements cells = document.select(String.format("%s, %s", HtmlTag.TH, HtmlTag.TD));
+        for (Element cell : cells) {
+            if (cell.hasAttr(HtmlTagAttr.STYLE)) {
+                String style = cell.attr(HtmlTagAttr.STYLE);
+                CSSStyleDeclaration cssStyle = parseCss(style);
+
+                String widthValue = Optional.ofNullable(cssStyle.getPropertyValue(CssProp.WIDTH)).orElse("").trim();
+                if (!widthValue.isEmpty() && !widthValue.contains("%")) {
+                    cssStyle.setProperty(CssProp.WIDTH, CssProp.WIDTH_AUTO_VALUE, null);
+                    cell.attr(HtmlTagAttr.STYLE, cssStyle.getCssText());
+                }
             }
         }
     }
