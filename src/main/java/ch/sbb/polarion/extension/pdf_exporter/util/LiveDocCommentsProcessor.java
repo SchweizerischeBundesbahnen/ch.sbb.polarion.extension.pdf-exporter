@@ -114,12 +114,10 @@ public class LiveDocCommentsProcessor {
 
     private String renderNativeComment(LiveDocComment liveDocComment) {
         CommentData commentData = getCommentData(liveDocComment);
-        StringBuilder commentDiv = new StringBuilder("""
-                [span class=sticky-note]
-                    [span class=sticky-note-time]%s[/span]
-                    [span class=sticky-note-username]%s[/span]
-                    [span class=sticky-note-text]%s[/span]
-                """.formatted(commentData.isoDate, StringUtils.getEmptyIfNull(commentData.author), commentData.text));
+        StringBuilder commentDiv = new StringBuilder(("[span class=sticky-note]" +
+                "[span class=sticky-note-time]%s[/span]" +
+                "[span class=sticky-note-username]%s[/span]" +
+                "[span class=sticky-note-text]%s[/span]").formatted(commentData.isoDate, StringUtils.getEmptyIfNull(commentData.author), commentData.text));
         Map<String, LiveDocComment> childComments = liveDocComment.getChildComments();
         if (childComments != null) {
             for (LiveDocComment childComment : childComments.values()) {
