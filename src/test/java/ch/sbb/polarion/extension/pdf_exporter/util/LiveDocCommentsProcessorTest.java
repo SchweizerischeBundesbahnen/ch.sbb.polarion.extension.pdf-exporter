@@ -119,28 +119,34 @@ class LiveDocCommentsProcessorTest {
         when(comments.iterator()).thenReturn(commentBases.iterator());
 
         // resolved comment isn't rendered
+        LiveDocCommentsProcessor liveDocCommentsProcessor = spy(new LiveDocCommentsProcessor());
+
+        // remove timezone rendering to have predictable output on all systems
+        doAnswer(invocationOnMock -> new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS").format(invocationOnMock.getArguments()[0]))
+                .when(liveDocCommentsProcessor).formatIsoDate(any());
+
         assertEquals("""
                 <div>some content1</div>
-                [span class=sticky-note][span class=sticky-note-time]2025-03-13T16:21:00.000+01:00[/span][span class=sticky-note-username]author1[/span][span class=sticky-note-text]text1[/span][span class=sticky-note][span class=sticky-note-time]2025-03-13T16:21:00.000+01:00[/span][span class=sticky-note-username]author1[/span][span class=sticky-note-text]Reply to text1[/span][/span][/span]
+                [span class=sticky-note][span class=sticky-note-time]2025-03-13T16:21:00.000[/span][span class=sticky-note-username]author1[/span][span class=sticky-note-text]text1[/span][span class=sticky-note][span class=sticky-note-time]2025-03-13T16:21:00.000[/span][span class=sticky-note-username]author1[/span][span class=sticky-note-text]Reply to text1[/span][/span][/span]
                 <div>some content2</div>
 
                 <div>some content3</div>
-                [span class=sticky-note][span class=sticky-note-time]2025-03-13T16:23:00.000+01:00[/span][span class=sticky-note-username]author3[/span][span class=sticky-note-text]text3[/span][/span]
+                [span class=sticky-note][span class=sticky-note-time]2025-03-13T16:23:00.000[/span][span class=sticky-note-username]author3[/span][span class=sticky-note-text]text3[/span][/span]
                 <div>some content4</div>
-                """, new LiveDocCommentsProcessor().addLiveDocComments(document, html, CommentsRenderType.OPEN, true));
+                """, liveDocCommentsProcessor.addLiveDocComments(document, html, CommentsRenderType.OPEN, true));
 
         when(comments.iterator()).thenReturn(commentBases.iterator());
 
         // now resolved comment is here
         assertEquals("""
                 <div>some content1</div>
-                [span class=sticky-note][span class=sticky-note-time]2025-03-13T16:21:00.000+01:00[/span][span class=sticky-note-username]author1[/span][span class=sticky-note-text]text1[/span][span class=sticky-note][span class=sticky-note-time]2025-03-13T16:21:00.000+01:00[/span][span class=sticky-note-username]author1[/span][span class=sticky-note-text]Reply to text1[/span][/span][/span]
+                [span class=sticky-note][span class=sticky-note-time]2025-03-13T16:21:00.000[/span][span class=sticky-note-username]author1[/span][span class=sticky-note-text]text1[/span][span class=sticky-note][span class=sticky-note-time]2025-03-13T16:21:00.000[/span][span class=sticky-note-username]author1[/span][span class=sticky-note-text]Reply to text1[/span][/span][/span]
                 <div>some content2</div>
-                [span class=sticky-note][span class=sticky-note-time]2025-03-13T16:22:00.000+01:00[/span][span class=sticky-note-username]author2[/span][span class=sticky-note-text]text2[/span][span class=sticky-note][span class=sticky-note-time]2025-03-13T16:22:00.000+01:00[/span][span class=sticky-note-username]author2[/span][span class=sticky-note-text]Reply to text2[/span][/span][/span]
+                [span class=sticky-note][span class=sticky-note-time]2025-03-13T16:22:00.000[/span][span class=sticky-note-username]author2[/span][span class=sticky-note-text]text2[/span][span class=sticky-note][span class=sticky-note-time]2025-03-13T16:22:00.000[/span][span class=sticky-note-username]author2[/span][span class=sticky-note-text]Reply to text2[/span][/span][/span]
                 <div>some content3</div>
-                [span class=sticky-note][span class=sticky-note-time]2025-03-13T16:23:00.000+01:00[/span][span class=sticky-note-username]author3[/span][span class=sticky-note-text]text3[/span][/span]
+                [span class=sticky-note][span class=sticky-note-time]2025-03-13T16:23:00.000[/span][span class=sticky-note-username]author3[/span][span class=sticky-note-text]text3[/span][/span]
                 <div>some content4</div>
-                """, new LiveDocCommentsProcessor().addLiveDocComments(document, html, CommentsRenderType.ALL, true));
+                """, liveDocCommentsProcessor.addLiveDocComments(document, html, CommentsRenderType.ALL, true));
 
         // null commentsRenderType means remove comments
         assertEquals("""
@@ -151,7 +157,7 @@ class LiveDocCommentsProcessorTest {
                 <div>some content3</div>
 
                 <div>some content4</div>
-                """, new LiveDocCommentsProcessor().addLiveDocComments(document, html, null, true));
+                """, liveDocCommentsProcessor.addLiveDocComments(document, html, null, true));
     }
 
     @SneakyThrows

@@ -21,8 +21,10 @@ import lombok.Builder;
 import lombok.Data;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.VisibleForTesting;
 
 import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -30,6 +32,9 @@ import java.util.Optional;
 
 @SuppressWarnings("java:S1200")
 public class LiveDocCommentsProcessor {
+
+    private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm");
+    private static final SimpleDateFormat ISO_DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
 
     private Map<String, LiveDocComment> getCommentsFromDocument(ProxyDocument document, boolean onlyOpen) {
         final UpdatableDocumentFields fields = document.fields();
@@ -142,12 +147,17 @@ public class LiveDocCommentsProcessor {
         String commentText = liveDocComment.getText().persistedHtml();
         boolean resolved = liveDocComment.getResolved().get();
         return CommentData.builder()
-                .date(new SimpleDateFormat("yyyy-MM-dd HH:mm").format(liveDocComment.getCreated().get()))
-                .isoDate(new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX").format(liveDocComment.getCreated().get()))
+                .date(DATE_FORMAT.format(liveDocComment.getCreated().get()))
+                .isoDate(formatIsoDate(liveDocComment.getCreated().get()))
                 .author(authorName)
                 .text(commentText)
                 .resolved(resolved)
                 .build();
+    }
+
+    @VisibleForTesting
+    String formatIsoDate(Date date) {
+        return ISO_DATE_FORMAT.format(date);
     }
 
     @Data
