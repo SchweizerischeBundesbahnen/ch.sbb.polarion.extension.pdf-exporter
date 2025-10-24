@@ -2,12 +2,15 @@ package ch.sbb.polarion.extension.pdf_exporter.rest.controller;
 
 import ch.sbb.polarion.extension.generic.configuration.ConfigurationStatus;
 import ch.sbb.polarion.extension.generic.configuration.ConfigurationStatusProvider;
+import ch.sbb.polarion.extension.pdf_exporter.exception.WeasyPrintServiceHealthException;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.WeasyPrintHealth;
 import ch.sbb.polarion.extension.pdf_exporter.util.configuration.CORSStatusProvider;
 import ch.sbb.polarion.extension.pdf_exporter.util.configuration.DefaultSettingsStatusProvider;
 import ch.sbb.polarion.extension.pdf_exporter.util.configuration.DleToolbarStatusProvider;
 import ch.sbb.polarion.extension.pdf_exporter.util.configuration.DocumentPropertiesPaneStatusProvider;
 import ch.sbb.polarion.extension.pdf_exporter.util.configuration.LiveReportMainHeadStatusProvider;
 import ch.sbb.polarion.extension.pdf_exporter.util.configuration.WeasyPrintStatusProvider;
+import ch.sbb.polarion.extension.pdf_exporter.weasyprint.service.WeasyPrintServiceConnector;
 import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
@@ -29,6 +32,16 @@ import java.util.List;
 @Path("/internal")
 @Tag(name = "Configuration status")
 public class ConfigurationInternalController {
+
+    private final WeasyPrintServiceConnector weasyPrintServiceConnector;
+
+    public ConfigurationInternalController() {
+        this(new WeasyPrintServiceConnector());
+    }
+
+    protected ConfigurationInternalController(WeasyPrintServiceConnector weasyPrintServiceConnector) {
+        this.weasyPrintServiceConnector = weasyPrintServiceConnector;
+    }
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
@@ -126,5 +139,29 @@ public class ConfigurationInternalController {
     )
     public @NotNull List<ConfigurationStatus> checkWeasyPrint() {
         return new WeasyPrintStatusProvider().getStatuses(ConfigurationStatusProvider.Context.builder().build());
+    }
+
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path("/configuration/weasyprint-health")
+    @Operation(
+            summary = "Gets WeasyPrint service health",
+            description = "Retrieves detailed health metrics from the WeasyPrint service.",
+            responses = {
+                    @ApiResponse(responseCode = "200",
+                            description = "Successfully retrieved WeasyPrint health metrics",
+                            content = @Content(schema = @Schema(implementation = WeasyPrintHealth.class))
+                    ),
+                    @ApiResponse(responseCode = "503",
+                            description = "WeasyPrint service is unavailable"
+                    )
+            }
+    )
+    public @NotNull WeasyPrintHealth getWeasyPrintHealth() {
+        try {
+            return weasyPrintServiceConnector.getHealth();
+        } catch (RuntimeException e) {
+            throw new WeasyPrintServiceHealthException("Failed to retrieve WeasyPrint service health", e);
+        }
     }
 }
