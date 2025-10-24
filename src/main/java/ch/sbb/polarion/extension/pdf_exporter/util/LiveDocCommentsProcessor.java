@@ -16,12 +16,15 @@ import com.polarion.alm.shared.api.model.fields.StringField;
 import com.polarion.alm.shared.api.model.project.ProjectField;
 import com.polarion.alm.shared.api.model.user.User;
 import com.polarion.alm.shared.api.model.user.UserField;
+import com.polarion.core.util.StringUtils;
 import lombok.Builder;
 import lombok.Data;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.VisibleForTesting;
 
 import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -29,6 +32,9 @@ import java.util.Optional;
 
 @SuppressWarnings("java:S1200")
 public class LiveDocCommentsProcessor {
+
+    private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm");
+    private final SimpleDateFormat isoDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
 
     private Map<String, LiveDocComment> getCommentsFromDocument(ProxyDocument document, boolean onlyOpen) {
         final UpdatableDocumentFields fields = document.fields();
@@ -79,7 +85,7 @@ public class LiveDocCommentsProcessor {
     }
 
     @NotNull
-    public String addLiveDocComments(ProxyDocument document, @NotNull String html, @Nullable CommentsRenderType commentsRenderType) {
+    public String addLiveDocComments(ProxyDocument document, @NotNull String html, @Nullable CommentsRenderType commentsRenderType, boolean renderNativeComments) {
         //Polarion document keeps comments position in span/img marked with id 'polarion-comment:commentId'.
         //<span id="polarion-comment:1"></span> or <img id="polarion-comment:1" class="polarion-dle-comment-icon"/> (for comments inside workitem description)
         //Following expression retrieves such entries.
@@ -87,22 +93,44 @@ public class LiveDocCommentsProcessor {
         return RegexMatcher.get("(?s)((<img id=\"polarion-comment:(?<imgCommentId>\\d+)\"[^>]*class=\"polarion-dle-comment-icon\"/>)|(<span id=\"polarion-comment:(?<spanCommentId>\\d+)\"></span>))")
                 .replace(html, regexEngine -> {
                     String commentId = Optional.ofNullable(regexEngine.group("imgCommentId")).orElse(regexEngine.group("spanCommentId"));
-                    LiveDocComment liveDocComment = liveDocComments.get(commentId);
-                    return liveDocComment == null ? "" : renderComment(liveDocComment, 0);
+                    return renderComments(liveDocComments.get(commentId), renderNativeComments);
                 });
     }
 
-    private String renderComment(LiveDocComment liveDocComment, int nestingLevel) {
+    private String renderComments(LiveDocComment liveDocComment, boolean renderNativeComments) {
+        if (liveDocComment == null) {
+            return "";
+        }
+        return renderNativeComments ? renderNativeComment(liveDocComment) : renderInlineComment(liveDocComment, 0);
+    }
+
+    private String renderInlineComment(LiveDocComment liveDocComment, int nestingLevel) {
         CommentData commentData = getCommentData(liveDocComment);
         StringBuilder commentSpan = new StringBuilder(getCommentSpan(commentData, nestingLevel));
         Map<String, LiveDocComment> childComments = liveDocComment.getChildComments();
         if (childComments != null) {
             nestingLevel++;
             for (LiveDocComment childComment : childComments.values()) {
-                commentSpan.append(renderComment(childComment, nestingLevel));
+                commentSpan.append(renderInlineComment(childComment, nestingLevel));
             }
         }
         return commentSpan.toString();
+    }
+
+    private String renderNativeComment(LiveDocComment liveDocComment) {
+        CommentData commentData = getCommentData(liveDocComment);
+        StringBuilder commentDiv = new StringBuilder(("[span class=sticky-note]" +
+                "[span class=sticky-note-time]%s[/span]" +
+                "[span class=sticky-note-username]%s[/span]" +
+                "[span class=sticky-note-text]%s[/span]").formatted(commentData.isoDate, StringUtils.getEmptyIfNull(commentData.author), commentData.text));
+        Map<String, LiveDocComment> childComments = liveDocComment.getChildComments();
+        if (childComments != null) {
+            for (LiveDocComment childComment : childComments.values()) {
+                commentDiv.append(renderNativeComment(childComment));
+            }
+        }
+        commentDiv.append("[/span]");
+        return commentDiv.toString();
     }
 
     private String getCommentSpan(CommentData commentData, int nestingLevel) {
@@ -114,23 +142,29 @@ public class LiveDocCommentsProcessor {
     }
 
     private CommentData getCommentData(LiveDocComment liveDocComment) {
-        String date = new SimpleDateFormat("yyyy-MM-dd HH:mm").format(liveDocComment.getCreated().get());
         User user = liveDocComment.getAuthor().get();
         String authorName = user != null ? user.fields().name().get() : null;
         String commentText = liveDocComment.getText().persistedHtml();
         boolean resolved = liveDocComment.getResolved().get();
         return CommentData.builder()
-                .date(date)
+                .date(dateFormat.format(liveDocComment.getCreated().get()))
+                .isoDate(formatIsoDate(liveDocComment.getCreated().get()))
                 .author(authorName)
                 .text(commentText)
                 .resolved(resolved)
                 .build();
     }
 
+    @VisibleForTesting
+    String formatIsoDate(Date date) {
+        return isoDateFormat.format(date);
+    }
+
     @Data
     @Builder
     private static class CommentData {
         private String date;
+        private String isoDate;
         private String author;
         private String text;
         private boolean resolved;

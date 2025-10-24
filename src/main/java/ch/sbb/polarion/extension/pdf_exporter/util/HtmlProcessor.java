@@ -857,6 +857,11 @@ public class HtmlProcessor {
         html = html.replace("[span class=author]", "<span class='author'>");
         html = html.replace("[span class=text]", "<span class='text'>");
         html = html.replace(COMMENT_END, SPAN_END_TAG);
+
+        html = html.replace("[span class=sticky-note]", "<span class='sticky-note'>");
+        html = html.replace("[span class=sticky-note-time]", "<span class='sticky-note-time'>");
+        html = html.replace("[span class=sticky-note-username]", "<span class='sticky-note-username'>");
+        html = html.replace("[span class=sticky-note-text]", "<span class='sticky-note-text'>");
         return html;
     }
 

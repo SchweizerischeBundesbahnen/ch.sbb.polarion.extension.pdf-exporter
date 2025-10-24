@@ -1895,6 +1895,10 @@
             ],
             "type": "string"
           },
+          "renderNativeComments": {
+            "description": "Render native comments",
+            "type": "boolean"
+          },
           "revision": {
             "description": "The specific revision of the document",
             "type": "string"

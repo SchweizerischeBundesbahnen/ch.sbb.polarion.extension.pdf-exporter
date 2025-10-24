@@ -330,6 +330,9 @@ export default class ExportPopup {
         this.ctx.setValue("popup-render-comments-selector", stylePackage.renderComments || 'OPEN');
         this.ctx.visibleIf("popup-render-comments-selector", !!stylePackage.renderComments);
 
+        this.ctx.displayIf("popup-render-native-comments-container", !!stylePackage.renderComments)
+        this.ctx.setCheckbox("popup-render-native-comments", !!stylePackage.renderNativeComments);
+
         this.ctx.setCheckbox("popup-watermark", stylePackage.watermark);
         this.ctx.setCheckbox("popup-mark-referenced-workitems", stylePackage.markReferencedWorkitems);
         this.ctx.setCheckbox("popup-cut-urls", stylePackage.cutLocalURLs);
@@ -565,6 +568,7 @@ export default class ExportPopup {
     buildExportParams(selectedChapters, selectedMetadataFields, numberedListStyles, selectedRoles, fileName, attachmentsFilter, testcaseFieldId) {
         const live_doc = this.ctx.getDocumentType() === ExportParams.DocumentType.LIVE_DOC;
         const test_run = this.ctx.getDocumentType() === ExportParams.DocumentType.TEST_RUN;
+        const collection = this.ctx.getDocumentType() === ExportParams.DocumentType.BASELINE_COLLECTION;
         return new ExportParams.Builder(this.ctx.getDocumentType())
             .setAutoSelectStylePackage(this.autoSelectStylePackageAvailable() && this.ctx.getCheckboxValueById("popup-auto-select-style-package"))
             .setProjectId(this.ctx.getProjectId())
@@ -581,7 +585,8 @@ export default class ExportPopup {
             .setOrientation(this.ctx.getElementById("popup-orientation-selector").value)
             .setPdfVariant(this.ctx.getElementById("popup-pdf-variant-selector").value)
             .setFitToPage((live_doc || test_run) && this.ctx.getElementById('popup-fit-to-page').checked)
-            .setRenderComments(live_doc && this.ctx.getElementById('popup-render-comments').checked ? this.ctx.getElementById("popup-render-comments-selector").value : null)
+            .setRenderComments((live_doc || collection) && this.ctx.getElementById('popup-render-comments').checked ? this.ctx.getElementById("popup-render-comments-selector").value : null)
+            .setRenderNativeComments(this.ctx.getElementById("popup-render-native-comments").checked)
             .setWatermark(this.ctx.getElementById("popup-watermark").checked)
             .setMarkReferencedWorkitems(live_doc && this.ctx.getElementById("popup-mark-referenced-workitems").checked)
             .setCutEmptyChapters(live_doc && this.ctx.getElementById("popup-cut-empty-chapters").checked)

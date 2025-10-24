@@ -80,7 +80,7 @@ public class LiveDocAdapter extends CommonUniqueObjectAdapter {
     }
 
     private String processComments(@NotNull ExportParams exportParams, @NotNull ProxyDocument document, @NotNull String content) {
-        return new LiveDocCommentsProcessor().addLiveDocComments(document, content, exportParams.getRenderComments());
+        return new LiveDocCommentsProcessor().addLiveDocComments(document, content, exportParams.getRenderComments(), exportParams.isRenderNativeComments());
     }
 
 }

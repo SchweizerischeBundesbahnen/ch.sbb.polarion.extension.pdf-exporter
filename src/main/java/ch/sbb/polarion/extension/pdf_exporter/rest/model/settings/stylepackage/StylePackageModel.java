@@ -41,6 +41,7 @@ public class StylePackageModel extends SettingsModel {
     private static final String PDF_VARIANT_ENTRY_NAME = "PDF VARIANT";
     private static final String FIT_TO_PAGE_ENTRY_NAME = "FIT TO PAGE";
     private static final String RENDER_COMMENTS_ENTRY_NAME = "RENDER COMMENTS";
+    private static final String RENDER_NATIVE_COMMENTS_ENTRY_NAME = "RENDER NATIVE COMMENTS";
     private static final String WATERMARK_ENTRY_NAME = "WATERMARK";
     private static final String MARK_REFERENCED_WORKITEMS_ENTRY_NAME = "MARK REFERENCED WORKITEMS";
     private static final String CUT_EMPTY_CHAPTERS_ENTRY_NAME = "CUT EMPTY CHAPTERS";
@@ -72,6 +73,7 @@ public class StylePackageModel extends SettingsModel {
     private String pdfVariant;
     private boolean fitToPage;
     private CommentsRenderType renderComments;
+    private boolean renderNativeComments;
     private boolean watermark;
     private boolean markReferencedWorkitems;
     private boolean cutEmptyChapters;
@@ -105,6 +107,7 @@ public class StylePackageModel extends SettingsModel {
                 serializeEntry(PDF_VARIANT_ENTRY_NAME, pdfVariant) +
                 serializeEntry(FIT_TO_PAGE_ENTRY_NAME, fitToPage) +
                 serializeEntry(RENDER_COMMENTS_ENTRY_NAME, renderComments == null ? null : renderComments.name()) +
+                serializeEntry(RENDER_NATIVE_COMMENTS_ENTRY_NAME, renderNativeComments) +
                 serializeEntry(WATERMARK_ENTRY_NAME, watermark) +
                 serializeEntry(MARK_REFERENCED_WORKITEMS_ENTRY_NAME, markReferencedWorkitems) +
                 serializeEntry(CUT_EMPTY_CHAPTERS_ENTRY_NAME, cutEmptyChapters) +
@@ -140,6 +143,7 @@ public class StylePackageModel extends SettingsModel {
         pdfVariant = deserializeEntry(PDF_VARIANT_ENTRY_NAME, serializedString);
         fitToPage = Boolean.parseBoolean(deserializeEntry(FIT_TO_PAGE_ENTRY_NAME, serializedString));
         renderComments = parseRenderComments(deserializeEntry(RENDER_COMMENTS_ENTRY_NAME, serializedString));
+        renderNativeComments = Boolean.parseBoolean(deserializeEntry(RENDER_NATIVE_COMMENTS_ENTRY_NAME, serializedString));
         watermark = Boolean.parseBoolean(deserializeEntry(WATERMARK_ENTRY_NAME, serializedString));
         markReferencedWorkitems = Boolean.parseBoolean(deserializeEntry(MARK_REFERENCED_WORKITEMS_ENTRY_NAME, serializedString));
         cutEmptyChapters = Boolean.parseBoolean(deserializeEntry(CUT_EMPTY_CHAPTERS_ENTRY_NAME, serializedString));

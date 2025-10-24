@@ -147,6 +147,12 @@ You can control which comments will be included in the generated PDF document - 
 
 ![Comments rendering type](docs/user_guide/img/comments_rendering_type.png)
 
+Also there is an option to render comments as native PDF annotations (sticky notes) instead of inlined text:
+![Comments as sticky notes](docs/user_guide/img/comments_as_sticky_notes.png)
+
+In this case, comments will be accessed as native PDF viewer's tools (appearance may vary on different PDF viewers):
+![Comments in PDF viewer](docs/user_guide/img/comments_pdf_viewer.png)
+
 ### Watermark
 If you select this checkbox, all pages of the resulting PDF document will include a "Confidential" watermark:
 
