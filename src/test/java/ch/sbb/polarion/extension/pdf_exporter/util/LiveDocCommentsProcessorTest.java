@@ -186,7 +186,8 @@ class LiveDocCommentsProcessorTest {
     @SuppressWarnings("unchecked")
     private CommentBasesField<CommentBase> mockEmptyChildComment() {
         CommentBasesField<CommentBase> childComments = mock(CommentBasesField.class);
-        when(childComments.iterator()).thenAnswer(invocationOnMock -> Collections.emptyIterator());
+        lenient().when(childComments.iterator()).thenAnswer(invocationOnMock -> Collections.emptyIterator());
+        lenient().when(childComments.isEmpty()).thenReturn(true);
         return childComments;
     }
 }
