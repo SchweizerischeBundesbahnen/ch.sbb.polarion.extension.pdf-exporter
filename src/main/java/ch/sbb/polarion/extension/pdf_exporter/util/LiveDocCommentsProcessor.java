@@ -33,8 +33,8 @@ import java.util.Optional;
 @SuppressWarnings("java:S1200")
 public class LiveDocCommentsProcessor {
 
-    private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm");
-    private static final SimpleDateFormat ISO_DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
+    private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm");
+    private final SimpleDateFormat isoDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
 
     private Map<String, LiveDocComment> getCommentsFromDocument(ProxyDocument document, boolean onlyOpen) {
         final UpdatableDocumentFields fields = document.fields();
@@ -147,7 +147,7 @@ public class LiveDocCommentsProcessor {
         String commentText = liveDocComment.getText().persistedHtml();
         boolean resolved = liveDocComment.getResolved().get();
         return CommentData.builder()
-                .date(DATE_FORMAT.format(liveDocComment.getCreated().get()))
+                .date(dateFormat.format(liveDocComment.getCreated().get()))
                 .isoDate(formatIsoDate(liveDocComment.getCreated().get()))
                 .author(authorName)
                 .text(commentText)
@@ -157,7 +157,7 @@ public class LiveDocCommentsProcessor {
 
     @VisibleForTesting
     String formatIsoDate(Date date) {
-        return ISO_DATE_FORMAT.format(date);
+        return isoDateFormat.format(date);
     }
 
     @Data

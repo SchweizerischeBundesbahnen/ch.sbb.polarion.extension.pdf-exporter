@@ -12,6 +12,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.text.SimpleDateFormat;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
@@ -168,10 +169,8 @@ class LiveDocCommentsProcessorTest {
         lenient().when(comment.fields().created().get()).thenReturn(new SimpleDateFormat("yyyy-MM-dd HH:mm").parse("2025-03-13 16:2%s".formatted(id)));
         lenient().when(comment.fields().text().persistedHtml()).thenReturn(text);
         lenient().when(Objects.requireNonNull(comment.fields().author().get()).fields().name().get()).thenReturn(author);
-        if (addChildComment) {
-            CommentBasesField<CommentBase> childComments = mockChildComment(id, text, author, resolved);
-            lenient().when(comment.fields().childComments()).thenReturn(childComments);
-        }
+        CommentBasesField<CommentBase> childComment = addChildComment ? mockChildComment(id, text, author, resolved) : mockEmptyChildComment();
+        lenient().when(comment.fields().childComments()).thenReturn(childComment);
         lenient().when(comment.fields().resolved().get()).thenReturn(resolved);
         return comment;
     }
@@ -181,6 +180,13 @@ class LiveDocCommentsProcessorTest {
         CommentBasesField<CommentBase> childComments = mock(CommentBasesField.class);
         CommentBase comment = mockComment(id + "_reply", "Reply to " + text, author, resolved, false, false);
         when(childComments.iterator()).thenAnswer(invocationOnMock -> List.of(comment).iterator());
+        return childComments;
+    }
+
+    @SuppressWarnings("unchecked")
+    private CommentBasesField<CommentBase> mockEmptyChildComment() {
+        CommentBasesField<CommentBase> childComments = mock(CommentBasesField.class);
+        when(childComments.iterator()).thenAnswer(invocationOnMock -> Collections.emptyIterator());
         return childComments;
     }
 }
