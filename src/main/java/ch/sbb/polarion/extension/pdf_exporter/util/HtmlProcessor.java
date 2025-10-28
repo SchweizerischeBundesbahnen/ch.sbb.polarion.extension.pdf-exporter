@@ -27,6 +27,7 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Entities;
 import org.jsoup.nodes.Node;
+import org.jsoup.nodes.TextNode;
 import org.jsoup.select.Elements;
 import org.w3c.dom.css.CSSStyleDeclaration;
 
@@ -57,6 +58,7 @@ public class HtmlProcessor {
     private static final String DOLLAR_ENTITY = "&dollar;";
     private static final String ROWSPAN_ATTR = "rowspan";
     private static final String RIGHT_ALIGNMENT_MARGIN = "auto 0px auto auto";
+    private static final String EMPTY_FIELD_TITLE = "This field is empty";
 
     private static final String UNSUPPORTED_DOCUMENT_TYPE = "Unsupported document type: %s";
 
@@ -130,6 +132,18 @@ public class HtmlProcessor {
         // Also changes absolute widths of normal table cells from absolute values to "auto" if "Fit tables and images to page" is on
         adjustCellWidth(document, exportParams);
 
+        // ----
+        // This sequence is important! We need first filter out Linked WorkItems and only then cut empty attributes,
+        // cause after filtering Linked WorkItems can become empty. Also cutting local URLs should happen afterwards
+        // as filtering workitems relies among other on anchors.
+        if (!selectedRoleEnumValues.isEmpty()) {
+            filterTabularLinkedWorkitems(document, selectedRoleEnumValues);
+            filterNonTabularLinkedWorkItems(document, selectedRoleEnumValues);
+        }
+        if (exportParams.isCutEmptyWIAttributes()) {
+            cutEmptyWIAttributes(document);
+        }
+
         html = document.body().html();
 
         // TODO: This should be String processing either right before or right after JSoup, check this
@@ -160,18 +174,6 @@ public class HtmlProcessor {
             case LIVE_REPORT, TEST_RUN -> html;
             case BASELINE_COLLECTION -> throw new IllegalArgumentException(UNSUPPORTED_DOCUMENT_TYPE.formatted(exportParams.getDocumentType()));
         };
-
-        // ----
-        // This sequence is important! We need first filter out Linked WorkItems and only then cut empty attributes,
-        // cause after filtering Linked WorkItems can become empty. Also cutting local URLs should happen afterwards
-        // as filtering workitems relies among other on anchors.
-        if (!selectedRoleEnumValues.isEmpty()) {
-            html = filterTabularLinkedWorkitems(html, selectedRoleEnumValues);
-            html = filterNonTabularLinkedWorkitems(html, selectedRoleEnumValues);
-        }
-        if (exportParams.isCutEmptyWIAttributes()) {
-            html = cutEmptyWIAttributes(html);
-        }
 
         html = rewritePolarionUrls(html);
 
@@ -665,107 +667,132 @@ public class HtmlProcessor {
         return resultBuf.toString();
     }
 
-    @NotNull
-    private String filterTabularLinkedWorkitems(@NotNull String html, @NotNull List<String> selectedRoleEnumValues) {
-        StringBuilder result = new StringBuilder();
-        int cellStart = getLinkedWorkItemsCellStart(html, 0);
-        int cellEnd = getLinkedWorkItemsCellEnd(html, cellStart);
-        if (cellStart > 0 && cellEnd > 0) {
-            result.append(html, 0, cellStart);
-        } else {
-            return html;
+    private void filterTabularLinkedWorkitems(@NotNull Document document, @NotNull List<String> selectedRoleEnumValues) {
+        Elements linkedWorkItemsCells = document.select("td[id='polarion_editor_field=linkedWorkItems']");
+        for (Element linkedWorkItemsCell : linkedWorkItemsCells) {
+            filterByRoles(linkedWorkItemsCell, selectedRoleEnumValues);
         }
+    }
 
-        while (cellStart > 0 && cellEnd > 0) {
-            result.append(filterByRoles(html.substring(cellStart, cellEnd), selectedRoleEnumValues));
+    private void filterNonTabularLinkedWorkItems(@NotNull Document document, @NotNull List<String> selectedRoleEnumValues) {
+        Elements linkedWorkItemsContainers = document.select("span[id='polarion_editor_field=linkedWorkItems']");
+        for (Element linkedWorkItemsContainer : linkedWorkItemsContainers) {
+            filterByRoles(linkedWorkItemsContainer, selectedRoleEnumValues);
+        }
+    }
 
-            cellStart = getLinkedWorkItemsCellStart(html, cellEnd);
-            if (cellEnd < (html.length() - 1)) {
-                result.append(html, cellEnd + 1, cellStart < 0 ? html.length() : cellStart);
+    private void filterByRoles(@NotNull Element linkedWorkItemsContainer, @NotNull List<String> selectedRoleEnumValues) {
+        Element nextChild = linkedWorkItemsContainer.firstElementChild();
+
+        List<LinkedWorkitemNodes> linkedWorkitemNodesList = new LinkedList<>();
+        while (nextChild != null) {
+            LinkedWorkitemNodes linkedWorkitemNodes = extractLinkedWorkItemNodes(nextChild);
+            if (linkedWorkitemNodes != null) {
+                nextChild = linkedWorkitemNodes.getNextSibling();
+                if (!selectedRoleEnumValues.contains(linkedWorkitemNodes.role)) {
+                    linkedWorkitemNodes.removeAll();
+                } else {
+                    linkedWorkitemNodesList.add(linkedWorkitemNodes);
+                }
+            } else {
+                nextChild = null;
             }
-            cellEnd = getLinkedWorkItemsCellEnd(html, cellStart);
         }
 
-        return result.toString();
-    }
-
-    private int getLinkedWorkItemsCellStart(@NotNull String html, int prevCellEnd) {
-        return html.indexOf("<td id=\"polarion_editor_field=linkedWorkItems\"", prevCellEnd);
-    }
-
-    private int getLinkedWorkItemsCellEnd(@NotNull String html, int cellStart) {
-        return cellStart > 0 ? html.indexOf(TABLE_COLUMN_END_TAG, cellStart) + TABLE_COLUMN_END_TAG.length() : -1;
-    }
-
-    @NotNull
-    private String filterNonTabularLinkedWorkitems(@NotNull String html, @NotNull List<String> selectedRoleEnumValues) {
-        StringBuilder result = new StringBuilder();
-        int spanStart = getLinkedWorkItemsSpanStart(html, 0);
-        int spanEnd = getLinkedWorkItemsSpanEnd(html, spanStart);
-        if (spanStart > 0 && spanEnd > 0) {
-            result.append(html, 0, spanStart);
-        } else {
-            return html;
-        }
-
-        while (spanStart > 0 && spanEnd > 0) {
-            String filtered = filterByRoles(html.substring(spanStart, spanEnd), selectedRoleEnumValues);
-            result.append(filtered);
-
-            spanStart = getLinkedWorkItemsSpanStart(html, spanEnd);
-            if (spanEnd < (html.length() - 1)) {
-                result.append(html, spanEnd, spanStart < 0 ? html.length() : spanStart);
+        for (int i = 0; i < linkedWorkitemNodesList.size(); i++) {
+            if (i < linkedWorkitemNodesList.size() - 1) {
+                linkedWorkitemNodesList.get(i).appendComma(); // Separate each group by comma
+            }  else {
+                linkedWorkitemNodesList.get(i).removeBr(); // Remove br-tag after last group
             }
-            spanEnd = getLinkedWorkItemsSpanEnd(html, spanStart);
+        }
+    }
+
+    private LinkedWorkitemNodes extractLinkedWorkItemNodes(@NotNull Element nextChild) {
+        Element roleElement = null;
+        String role = null;
+        if (nextChild.tagName().equals(HtmlTag.DIV)) {
+            Element internalElement = nextChild.children().size() == 1 ? nextChild.firstElementChild() : null;
+            if (internalElement != null && internalElement.tagName().equals(HtmlTag.SPAN) && !internalElement.text().isBlank()) {
+                roleElement = nextChild;
+                role = internalElement.text();
+            }
+        }
+        if (roleElement == null) {
+            return null; // Not expected elements structure, stop processing
         }
 
-        return result.toString();
+        TextNode colonNode = extractColonNode(roleElement.nextSibling());
+        if (colonNode == null) {
+            return null; // Not expected elements structure, stop processing
+        }
+
+        Element linkedWorkItemElement = extractLinkedWorkItemElement(colonNode.nextSibling());
+        if (linkedWorkItemElement == null) {
+            return null; // Not expected elements structure, stop processing
+        }
+
+        // There will be no br-tag after last linked WorkItem, so not obligatory
+        Element brElement = extractBrElement(linkedWorkItemElement.nextElementSibling());
+
+        return new LinkedWorkitemNodes(role, roleElement, colonNode, linkedWorkItemElement, brElement);
     }
 
-    private int getLinkedWorkItemsSpanStart(@NotNull String html, int prevCellEnd) {
-        return html.indexOf("<span id=\"polarion_editor_field=linkedWorkItems\"", prevCellEnd);
+    private TextNode extractColonNode(@Nullable Node node) {
+        if (node instanceof TextNode textNode && textNode.text().contains(":")) {
+            return textNode;
+        } else {
+            return null;
+        }
     }
 
-    private int getLinkedWorkItemsSpanEnd(@NotNull String html, int cellStart) {
-        return cellStart > 0 ? html.indexOf("&nbsp;", cellStart) : -1;
+    private Element extractLinkedWorkItemElement(@Nullable Node node) {
+        if (node instanceof Element element) {
+            return element.select("> a.polarion-Hyperlink").isEmpty() ? null : element;
+        } else {
+            return null;
+        }
     }
 
-    @NotNull
-    @SuppressWarnings("squid:S5843")
-    private String filterByRoles(@NotNull String linkedWorkItems, @NotNull List<String> selectedRoleEnumValues) {
-        String polarionVersion = pdfExporterPolarionService.getPolarionVersion();
-        // This regexp searches for spans (named group "row") containing linked WorkItem with its role (named group "role").
-        // If linked WorkItem role is not among ones selected by user we cut it from resulted HTML
-        String regex = getRegexp(polarionVersion);
+    private Element extractBrElement(@Nullable Element element) {
+        return element != null && element.tagName().equals(HtmlTag.BR) ? element : null;
+    }
 
-        StringBuilder filteredContent = new StringBuilder();
+    @VisibleForTesting
+    void cutEmptyWIAttributes(@NotNull Document document) {
+        cutEmptyWIAttributesInTables(document);
+        cutEmptyWIAttributesInText(document);
+    }
 
-        RegexMatcher.get(regex)
-                .processEntry(linkedWorkItems, regexEngine -> {
-                    String role = regexEngine.group("role");
-                    String row = regexEngine.group("row");
-                    if (selectedRoleEnumValues.contains(role)) {
-                        if (!filteredContent.isEmpty()) {
-                            filteredContent.append(",<br>");
-                        }
-                        filteredContent.append(row);
+    private void cutEmptyWIAttributesInTables(@NotNull Document document) {
+        // Iterates through <td class="polarion-dle-workitem-fields-end-table-value"> elements and if they are empty (no value) removes enclosing them tr-elements
+        Elements attributeValueCells = document.select("td.polarion-dle-workitem-fields-end-table-value");
+        for (Element attributeValueCell : attributeValueCells) {
+            if (attributeValueCell.text().isEmpty()) {
+                Element parent = attributeValueCell.parent();
+                if (parent != null && parent.nodeName().equals(HtmlTag.TR)) {
+                    parent.remove();
+                }
+            }
+        }
+    }
+
+    private void cutEmptyWIAttributesInText(@NotNull Document document) {
+        // Iterates through sequential spans and if second one in this sequence has title="This field is empty", removes such sequence.
+        // Finally replaces double commas ", ," with single comma in parent div of this sequence, but only if such div contains only text and no HTML elements
+        Elements sequentialSpans = document.select("span > span");
+        for (Element span : sequentialSpans) {
+            if (span.text().isEmpty() && EMPTY_FIELD_TITLE.equals(span.attr("title"))) {
+                Element parent = span.parent();
+                if (parent != null) {
+                    Element parentDiv = parent.parent();
+                    parent.remove();
+                    if (parentDiv != null && parentDiv.children().isEmpty()) {
+                        parentDiv.text(parentDiv.text().replace(", ,", ","));
                     }
-                });
-        // filteredContent - is literally content of td or span element, we need to prepend <td>/<span> with its attributes and append </td>/</span> to it
-        return linkedWorkItems.substring(0, linkedWorkItems.indexOf(">") + 1)
-                + filteredContent
-                + linkedWorkItems.substring(linkedWorkItems.lastIndexOf("</"));
-    }
-
-    private @NotNull String getRegexp(@Nullable String polarionVersion) {
-        String filterByRolesRegexBeforePolarion2404 = "(?<row><span>\\s*<span class=\"polarion-JSEnumOption\"[^>]*?>(?<role>[^<]*?)</span>:\\s*<a[^>]*?>\\s*<span[^>]*?>\\s*<img[^>]*?>\\s*<span[^>]*?>[^<]*?</span>\\s*-\\s*<span[^>]*?>[^<]*?</span>\\s*</span>\\s*</a>\\s*</span>)";
-        String filterByRolesRegexAfterPolarion2404 = "(?<row><div\\s*[^>]*?>\\s*<span\\s*[^>]*?>(?<role>[^<]*?)<\\/span>\\s*<\\/div>\\s*:\\s*.*?<\\/span><\\/a><\\/span>)";
-
-        if (polarionVersion == null) {
-            return filterByRolesRegexAfterPolarion2404;
+                }
+            }
         }
-
-        return polarionVersion.compareTo("2404") < 0 ? filterByRolesRegexBeforePolarion2404 : filterByRolesRegexAfterPolarion2404;
     }
 
     @NotNull
@@ -783,48 +810,6 @@ public class HtmlProcessor {
             return StringUtils.isEmptyTrimmed(replacementString) ? null :
                     enumContainingSpan.replace(enumName + SPAN_END_TAG, replacementString + SPAN_END_TAG);
         });
-    }
-
-    @NotNull
-    String cutEmptyWIAttributes(@NotNull String html) {
-        // This is a sign of empty (no value) WorkItem attribute in case of tabular view - an empty <td>-element
-        // with class "polarion-dle-workitem-fields-end-table-value"
-        String emptyTableAttributeMarker = "class=\"polarion-dle-workitem-fields-end-table-value\" style=\"width: 80%;\" onmousedown=\"return false;\" contentEditable=\"false\"></td>";
-        String res = html;
-
-        String searchMarkerLower = emptyTableAttributeMarker.toLowerCase();
-
-        int markerIndex;
-        do {
-            markerIndex = res.toLowerCase().indexOf(searchMarkerLower);
-            if (markerIndex == -1) {
-                break;
-            }
-
-            int trStart = res.lastIndexOf("<tr>", markerIndex);
-            int trEnd = res.indexOf(TABLE_ROW_END_TAG, markerIndex) + TABLE_ROW_END_TAG.length();
-
-            if (trStart >= 0 && trEnd > trStart) {
-                res = res.substring(0, trStart) + res.substring(trEnd);
-            }
-        } while (true);
-
-        // This is a sign of empty (no value) WorkItem attribute in case of non-tabular view - <span>-element
-        // with title "This field is empty"
-        String emptySpanAttributeMarker = "<span style=\"color: #7F7F7F;\" title=\"This field is empty\">";
-        while (res.contains(emptySpanAttributeMarker)) {
-            String[] parts = res.split(emptySpanAttributeMarker, 2);
-            int parentSpanStart = parts[0].lastIndexOf("<span");
-            int trEnd = res.indexOf("</span></span>", parentSpanStart) + "</span></span>".length();
-
-            String firstPart = res.substring(0, parentSpanStart);
-            if (firstPart.endsWith(",&nbsp;")) {
-                firstPart = firstPart.substring(0, firstPart.lastIndexOf(",&nbsp;"));
-            }
-
-            res = firstPart + res.substring(trEnd);
-        }
-        return res;
     }
 
     public @NotNull Document adjustContentToFitPage(@NotNull Document document, @NotNull ConversionParams conversionParams) {
@@ -969,4 +954,30 @@ public class HtmlProcessor {
     private record ChapterInfo(@NotNull Element heading, boolean shouldKeep) {
     }
 
+    private record LinkedWorkitemNodes(@NotNull String role, @NotNull Element roleElement, @NotNull TextNode colonNode,
+                                       @NotNull Element linkedWorkItemElement, @Nullable Element brElement) {
+        Element getNextSibling() {
+            return brElement != null ? brElement.nextElementSibling() : linkedWorkItemElement.nextElementSibling();
+        }
+
+        void removeAll() {
+            roleElement.remove();
+            colonNode.remove();
+            linkedWorkItemElement.remove();
+            if (brElement != null) {
+                brElement.remove();
+            }
+        }
+
+        void removeBr() {
+            if (brElement != null) {
+                brElement.remove();
+            }
+        }
+
+        void appendComma() {
+            linkedWorkItemElement.after(",");
+        }
+
+    }
 }

@@ -27,6 +27,7 @@ public class HtmlTag {
     public static final String THEAD = "thead";
     public static final String TR = "tr";
     public static final String SELECT = "select";
+    public static final String SPAN = "span";
     public static final String SVG = "svg";
     public static final String VIDEO = "video";
 }
