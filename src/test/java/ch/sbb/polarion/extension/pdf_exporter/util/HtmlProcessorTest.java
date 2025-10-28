@@ -9,7 +9,6 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.Orientation;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PaperSize;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.localization.Language;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.localization.LocalizationModel;
-import ch.sbb.polarion.extension.pdf_exporter.service.PdfExporterPolarionService;
 import ch.sbb.polarion.extension.pdf_exporter.settings.LocalizationSettings;
 import ch.sbb.polarion.extension.pdf_exporter.util.html.HtmlLinksHelper;
 import lombok.SneakyThrows;
@@ -49,14 +48,12 @@ class HtmlProcessorTest {
     private LocalizationSettings localizationSettings;
     @Mock
     private HtmlLinksHelper htmlLinksHelper;
-    @Mock
-    private PdfExporterPolarionService pdfExporterPolarionService;
 
     private HtmlProcessor processor;
 
     @BeforeEach
     void init() {
-        processor = new HtmlProcessor(fileResourceProvider, localizationSettings, htmlLinksHelper, pdfExporterPolarionService);
+        processor = new HtmlProcessor(fileResourceProvider, localizationSettings, htmlLinksHelper);
         Map<String, String> deTranslations = Map.of(
                 "draft", "Entwurf",
                 "not reviewed", "Nicht überprüft"
@@ -89,7 +86,6 @@ class HtmlProcessorTest {
     @SneakyThrows
     void cutLocalUrlsWithRolesFilteringTest() {
         when(localizationSettings.load(any(), any(SettingId.class))).thenReturn(new LocalizationModel(Collections.emptyMap(), Collections.emptyMap(), Collections.emptyMap()));
-        when(pdfExporterPolarionService.getPolarionVersion()).thenReturn("2310");
 
         try (InputStream isInvalidHtml = this.getClass().getResourceAsStream("/cutLocalUrlsWithRolesFilteringBeforeProcessing.html");
              InputStream isValidHtml = this.getClass().getResourceAsStream("/cutLocalUrlsWithRolesFilteringAfterProcessing.html")) {
@@ -166,11 +162,17 @@ class HtmlProcessorTest {
         try (InputStream isInvalidHtml = this.getClass().getResourceAsStream("/emptyWIAttributesBeforeProcessing.html");
              InputStream isValidHtml = this.getClass().getResourceAsStream("/emptyWIAttributesAfterProcessing.html")) {
 
-            String invalidHtml = new String(isInvalidHtml.readAllBytes(), StandardCharsets.UTF_8);
+            Document document = Jsoup.parse(new String(isInvalidHtml.readAllBytes(), StandardCharsets.UTF_8));
+            document.outputSettings()
+                    .syntax(Document.OutputSettings.Syntax.xml)
+                    .escapeMode(Entities.EscapeMode.base)
+                    .prettyPrint(false);
+
+            processor.cutEmptyWIAttributes(document);
+            String fixedHtml = document.body().html();
+            String validHtml = new String(isValidHtml.readAllBytes(), StandardCharsets.UTF_8);
 
             // Spaces and new lines are removed to exclude difference in space characters
-            String fixedHtml = processor.cutEmptyWIAttributes(invalidHtml);
-            String validHtml = new String(isValidHtml.readAllBytes(), StandardCharsets.UTF_8);
             assertEquals(TestStringUtils.removeNonsensicalSymbols(validHtml), TestStringUtils.removeNonsensicalSymbols(fixedHtml));
         }
     }
@@ -298,8 +300,6 @@ class HtmlProcessorTest {
     @Test
     @SneakyThrows
     void selectLinkedWorkItemTypesTableTest() {
-        when(pdfExporterPolarionService.getPolarionVersion()).thenReturn("2404");
-
         try (InputStream isInvalidHtml = this.getClass().getResourceAsStream("/linkedWorkItemsTableBeforeProcessing.html");
              InputStream isValidHtml = this.getClass().getResourceAsStream("/linkedWorkItemsTableAfterProcessing.html")) {
 
@@ -320,8 +320,6 @@ class HtmlProcessorTest {
     @Test
     @SneakyThrows
     void selectLinkedWorkItemTypesTest() {
-        when(pdfExporterPolarionService.getPolarionVersion()).thenReturn(null);
-
         try (InputStream isInvalidHtml = this.getClass().getResourceAsStream("/linkedWorkItemsBeforeProcessing.html");
              InputStream isValidHtml = this.getClass().getResourceAsStream("/linkedWorkItemsAfterProcessing.html")) {
 
@@ -335,6 +333,29 @@ class HtmlProcessorTest {
             // Spaces and new lines are removed to exclude difference in space characters
             String fixedHtml = processor.processHtmlForPDF(invalidHtml, exportParams, selectedRoleEnumValues);
             String validHtml = new String(isValidHtml.readAllBytes(), StandardCharsets.UTF_8);
+            assertEquals(TestStringUtils.removeNonsensicalSymbols(validHtml), TestStringUtils.removeNonsensicalSymbols(fixedHtml));
+        }
+    }
+
+    @Test
+    @SneakyThrows
+    void malformedLinkedWorkItemTypesTest() {
+        try (InputStream isInvalidHtml = this.getClass().getResourceAsStream("/malformedLinkedWorkItemsBeforeProcessing.html");
+             InputStream isValidHtml = this.getClass().getResourceAsStream("/malformedLinkedWorkItemsAfterProcessing.html")) {
+
+            Document document = Jsoup.parse(new String(isInvalidHtml.readAllBytes(), StandardCharsets.UTF_8));
+            document.outputSettings()
+                    .syntax(Document.OutputSettings.Syntax.xml)
+                    .escapeMode(Entities.EscapeMode.base)
+                    .prettyPrint(false);
+
+            List<String> selectedRoleEnumValues = Arrays.asList("has parent", "is parent of");
+
+            processor.filterNonTabularLinkedWorkItems(document, selectedRoleEnumValues);
+            String fixedHtml = document.body().html();
+            String validHtml = new String(isValidHtml.readAllBytes(), StandardCharsets.UTF_8);
+
+            // Spaces and new lines are removed to exclude difference in space characters
             assertEquals(TestStringUtils.removeNonsensicalSymbols(validHtml), TestStringUtils.removeNonsensicalSymbols(fixedHtml));
         }
     }

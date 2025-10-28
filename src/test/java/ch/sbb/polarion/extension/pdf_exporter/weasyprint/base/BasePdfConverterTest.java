@@ -202,7 +202,7 @@ public abstract class BasePdfConverterTest extends BaseWeasyPrintTest {
         when(htmlLinksHelper.internalizeLinks(anyString())).thenAnswer(invocation -> invocation.getArgument(0));
 
         FileResourceProvider fileResourceProvider = mock(FileResourceProvider.class);
-        htmlProcessor = new HtmlProcessor(fileResourceProvider, localizationSettings, htmlLinksHelper, pdfExporterPolarionService);
+        htmlProcessor = new HtmlProcessor(fileResourceProvider, localizationSettings, htmlLinksHelper);
     }
 
     /**

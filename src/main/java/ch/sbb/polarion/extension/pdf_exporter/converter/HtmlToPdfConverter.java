@@ -29,7 +29,7 @@ public class HtmlToPdfConverter {
     public HtmlToPdfConverter() {
         this.pdfTemplateProcessor = new PdfTemplateProcessor();
         PdfExporterFileResourceProvider fileResourceProvider = new PdfExporterFileResourceProvider();
-        this.htmlProcessor = new HtmlProcessor(fileResourceProvider, new LocalizationSettings(), new HtmlLinksHelper(fileResourceProvider), null);
+        this.htmlProcessor = new HtmlProcessor(fileResourceProvider, new LocalizationSettings(), new HtmlLinksHelper(fileResourceProvider));
         this.weasyPrintServiceConnector = new WeasyPrintServiceConnector();
     }
 
