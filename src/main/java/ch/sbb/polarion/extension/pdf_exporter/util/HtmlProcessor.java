@@ -702,7 +702,7 @@ public class HtmlProcessor {
         for (int i = 0; i < linkedWorkitemNodesList.size(); i++) {
             if (i < linkedWorkitemNodesList.size() - 1) {
                 linkedWorkitemNodesList.get(i).appendComma(); // Separate each group by comma
-            }  else {
+            } else {
                 linkedWorkitemNodesList.get(i).removeBr(); // Remove br-tag after last group
             }
         }
