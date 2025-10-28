@@ -23,7 +23,7 @@ import static org.mockito.Mockito.mock;
 public class PdfWidthTest extends BaseWeasyPrintTest {
 
     public static final String FIXED_POSTFIX = "Fixed";
-    private static final HtmlProcessor htmlProcessor = new HtmlProcessor(mock(FileResourceProvider.class), null, null, null);
+    private static final HtmlProcessor htmlProcessor = new HtmlProcessor(mock(FileResourceProvider.class), null, null);
 
     private static Stream<Arguments> testWidthViolationParams() {
         return Stream.of(

@@ -49,14 +49,12 @@ class HtmlProcessorTest {
     private LocalizationSettings localizationSettings;
     @Mock
     private HtmlLinksHelper htmlLinksHelper;
-    @Mock
-    private PdfExporterPolarionService pdfExporterPolarionService;
 
     private HtmlProcessor processor;
 
     @BeforeEach
     void init() {
-        processor = new HtmlProcessor(fileResourceProvider, localizationSettings, htmlLinksHelper, pdfExporterPolarionService);
+        processor = new HtmlProcessor(fileResourceProvider, localizationSettings, htmlLinksHelper);
         Map<String, String> deTranslations = Map.of(
                 "draft", "Entwurf",
                 "not reviewed", "Nicht überprüft"
@@ -336,6 +334,29 @@ class HtmlProcessorTest {
             // Spaces and new lines are removed to exclude difference in space characters
             String fixedHtml = processor.processHtmlForPDF(invalidHtml, exportParams, selectedRoleEnumValues);
             String validHtml = new String(isValidHtml.readAllBytes(), StandardCharsets.UTF_8);
+            assertEquals(TestStringUtils.removeNonsensicalSymbols(validHtml), TestStringUtils.removeNonsensicalSymbols(fixedHtml));
+        }
+    }
+
+    @Test
+    @SneakyThrows
+    void malformedLinkedWorkItemTypesTest() {
+        try (InputStream isInvalidHtml = this.getClass().getResourceAsStream("/malformedLinkedWorkItemsBeforeProcessing.html");
+             InputStream isValidHtml = this.getClass().getResourceAsStream("/malformedLinkedWorkItemsAfterProcessing.html")) {
+
+            Document document = Jsoup.parse(new String(isInvalidHtml.readAllBytes(), StandardCharsets.UTF_8));
+            document.outputSettings()
+                    .syntax(Document.OutputSettings.Syntax.xml)
+                    .escapeMode(Entities.EscapeMode.base)
+                    .prettyPrint(false);
+
+            List<String> selectedRoleEnumValues = Arrays.asList("has parent", "is parent of");
+
+            processor.filterNonTabularLinkedWorkItems(document, selectedRoleEnumValues);
+            String fixedHtml = document.body().html();
+            String validHtml = new String(isValidHtml.readAllBytes(), StandardCharsets.UTF_8);
+
+            // Spaces and new lines are removed to exclude difference in space characters
             assertEquals(TestStringUtils.removeNonsensicalSymbols(validHtml), TestStringUtils.removeNonsensicalSymbols(fixedHtml));
         }
     }

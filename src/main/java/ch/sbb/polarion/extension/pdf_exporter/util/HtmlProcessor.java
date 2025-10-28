@@ -46,8 +46,6 @@ import static ch.sbb.polarion.extension.pdf_exporter.util.exporter.Constants.*;
 
 public class HtmlProcessor {
 
-    public static final String TABLE_ROW_END_TAG = "</tr>";
-    public static final String TABLE_COLUMN_END_TAG = "</td>";
     private static final String DIV_START_TAG = "<div>";
     private static final String DIV_END_TAG = "</div>";
     private static final String SPAN_END_TAG = "</span>";
@@ -65,15 +63,13 @@ public class HtmlProcessor {
     private final FileResourceProvider fileResourceProvider;
     private final LocalizationSettings localizationSettings;
     private final HtmlLinksHelper httpLinksHelper;
-    private final PdfExporterPolarionService pdfExporterPolarionService;
 
     private final @NotNull CSSOMParser parser = new CSSOMParser();
 
-    public HtmlProcessor(FileResourceProvider fileResourceProvider, LocalizationSettings localizationSettings, HtmlLinksHelper httpLinksHelper, PdfExporterPolarionService pdfExporterPolarionService) {
+    public HtmlProcessor(FileResourceProvider fileResourceProvider, LocalizationSettings localizationSettings, HtmlLinksHelper httpLinksHelper) {
         this.fileResourceProvider = fileResourceProvider;
         this.localizationSettings = localizationSettings;
         this.httpLinksHelper = httpLinksHelper;
-        this.pdfExporterPolarionService = pdfExporterPolarionService;
     }
 
     public String processHtmlForPDF(@NotNull String html, @NotNull ExportParams exportParams, @NotNull List<String> selectedRoleEnumValues) {
@@ -674,7 +670,8 @@ public class HtmlProcessor {
         }
     }
 
-    private void filterNonTabularLinkedWorkItems(@NotNull Document document, @NotNull List<String> selectedRoleEnumValues) {
+    @VisibleForTesting
+    void filterNonTabularLinkedWorkItems(@NotNull Document document, @NotNull List<String> selectedRoleEnumValues) {
         Elements linkedWorkItemsContainers = document.select("span[id='polarion_editor_field=linkedWorkItems']");
         for (Element linkedWorkItemsContainer : linkedWorkItemsContainers) {
             filterByRoles(linkedWorkItemsContainer, selectedRoleEnumValues);

@@ -91,7 +91,7 @@ public class PdfConverter {
         velocityEvaluator = new VelocityEvaluator();
         weasyPrintServiceConnector = new WeasyPrintServiceConnector();
         PdfExporterFileResourceProvider fileResourceProvider = new PdfExporterFileResourceProvider();
-        htmlProcessor = new HtmlProcessor(fileResourceProvider, new LocalizationSettings(), new HtmlLinksHelper(fileResourceProvider), pdfExporterPolarionService);
+        htmlProcessor = new HtmlProcessor(fileResourceProvider, new LocalizationSettings(), new HtmlLinksHelper(fileResourceProvider));
         coverPageProcessor = new CoverPageProcessor(htmlProcessor);
         pdfTemplateProcessor = new PdfTemplateProcessor();
     }
