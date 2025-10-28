@@ -75,6 +75,9 @@ export default class ExportPanel {
         this.ctx.setValue("render-comments-selector", stylePackage.renderComments  || 'OPEN');
         this.ctx.displayIf("render-comments-selector", !!stylePackage.renderComments)
 
+        this.ctx.displayIf("render-native-comments-container", !!stylePackage.renderComments)
+        this.ctx.setCheckbox("render-native-comments", !!stylePackage.renderNativeComments);
+
         this.ctx.setCheckbox("watermark", stylePackage.watermark);
         this.ctx.setCheckbox("mark-referenced-workitems", stylePackage.markReferencedWorkitems);
         this.ctx.setCheckbox("cut-empty-chapters", stylePackage.cutEmptyChapters);
@@ -180,6 +183,7 @@ export default class ExportPanel {
             .setPdfVariant(this.ctx.getElementById("pdf-variant-selector").value)
             .setFitToPage((live_doc || test_run) && this.ctx.getElementById('fit-to-page').checked)
             .setRenderComments(this.ctx.getElementById('render-comments').checked ? this.ctx.getElementById("render-comments-selector").value : null)
+            .setRenderNativeComments(this.ctx.getElementById('render-native-comments').checked)
             .setWatermark(this.ctx.getElementById("watermark").checked)
             .setMarkReferencedWorkitems(live_doc && this.ctx.getElementById("mark-referenced-workitems").checked)
             .setCutEmptyChapters(live_doc && this.ctx.getElementById("cut-empty-chapters").checked)
