@@ -4,6 +4,8 @@ import ch.sbb.polarion.extension.generic.rest.model.ErrorEntity;
 import com.polarion.platform.persistence.UnresolvableObjectException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -19,10 +21,14 @@ class UnresolvableObjectExceptionMapperTest {
         mapper = new UnresolvableObjectExceptionMapper();
     }
 
-    @Test
-    void testToResponse_WithValidException() {
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "Object with ID 'work-item-123' cannot be resolved",
+            "Object with ID 'very-long-id-that-contains-many-characters-and-detailed-information-about-the-unresolvable-object' cannot be resolved in the current context",
+            "Object with ID 'test-äöü-€-@-#' cannot be resolved: <special&chars>"
+    })
+    void testToResponse_WithVariousMessages(String errorMessage) {
         // Given
-        String errorMessage = "Object with ID 'work-item-123' cannot be resolved";
         UnresolvableObjectException exception = new UnresolvableObjectException(errorMessage);
 
         // When
@@ -75,43 +81,6 @@ class UnresolvableObjectExceptionMapperTest {
         assertEquals("", errorEntity.getMessage());
     }
 
-    @Test
-    void testToResponse_WithLongMessage() {
-        // Given
-        String errorMessage = "Object with ID 'very-long-id-that-contains-many-characters-and-detailed-information-about-the-unresolvable-object' cannot be resolved in the current context";
-        UnresolvableObjectException exception = new UnresolvableObjectException(errorMessage);
-
-        // When
-        Response response = mapper.toResponse(exception);
-
-        // Then
-        assertNotNull(response);
-        assertEquals(Response.Status.NOT_FOUND.getStatusCode(), response.getStatus());
-        assertEquals(MediaType.APPLICATION_JSON, response.getMediaType().toString());
-
-        ErrorEntity errorEntity = (ErrorEntity) response.getEntity();
-        assertNotNull(errorEntity);
-        assertEquals(errorMessage, errorEntity.getMessage());
-    }
-
-    @Test
-    void testToResponse_WithSpecialCharactersInMessage() {
-        // Given
-        String errorMessage = "Object with ID 'test-äöü-€-@-#' cannot be resolved: <special&chars>";
-        UnresolvableObjectException exception = new UnresolvableObjectException(errorMessage);
-
-        // When
-        Response response = mapper.toResponse(exception);
-
-        // Then
-        assertNotNull(response);
-        assertEquals(Response.Status.NOT_FOUND.getStatusCode(), response.getStatus());
-        assertEquals(MediaType.APPLICATION_JSON, response.getMediaType().toString());
-
-        ErrorEntity errorEntity = (ErrorEntity) response.getEntity();
-        assertNotNull(errorEntity);
-        assertEquals(errorMessage, errorEntity.getMessage());
-    }
 
     @Test
     @SuppressWarnings("resource")
