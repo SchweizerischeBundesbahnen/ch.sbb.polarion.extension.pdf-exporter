@@ -15,8 +15,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith({MockitoExtension.class, CurrentContextExtension.class})
@@ -145,6 +144,18 @@ class HeaderFooterSettingsTest {
             assertEquals("center2", loadedTwoModel.getFooterCenter());
             assertEquals("right2", loadedTwoModel.getFooterRight());
             assertEquals("setting_two", loadedTwoModel.getBundleTimestamp());
+        }
+    }
+
+    @Test
+    void testDefaultValue() {
+        try (MockedStatic<ScopeUtils> mockScopeUtils = mockStatic(ScopeUtils.class, RETURNS_DEEP_STUBS)) {
+            SettingsService mockedSettingsService = mock(SettingsService.class);
+            mockScopeUtils.when(() -> ScopeUtils.getFileContent(any())).thenCallRealMethod();
+
+            HeaderFooterSettings headerFooterSettings = new HeaderFooterSettings(mockedSettingsService);
+            HeaderFooterModel headerFooterModel = headerFooterSettings.defaultValues();
+            assertEquals("{{ PROJECT_NAME }}", headerFooterModel.getHeaderLeft());
         }
     }
 
