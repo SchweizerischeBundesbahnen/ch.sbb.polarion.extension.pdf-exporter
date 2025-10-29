@@ -825,8 +825,8 @@ public class HtmlProcessor {
 
         Elements tables = document.select("table");
         for (Element table : tables) {
-            String pageBrakeInsideValue = getCssValue(table, CssProp.PAGE_BRAKE_INSIDE);
-            if (!pageBrakeInsideValue.equals(CssProp.PAGE_BRAKE_INSIDE_AVOID_VALUE)) {
+            String pageBreakInsideValue = getCssValue(table, CssProp.PAGE_BREAK_INSIDE);
+            if (!pageBreakInsideValue.equals(CssProp.PAGE_BREAK_INSIDE_AVOID_VALUE)) {
                 continue;
             }
 
