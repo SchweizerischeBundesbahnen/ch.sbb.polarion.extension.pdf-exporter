@@ -41,7 +41,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
-import static ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.DocumentType.BASELINE_COLLECTION;
+import static ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.DocumentType.*;
 import static ch.sbb.polarion.extension.pdf_exporter.util.exporter.Constants.*;
 
 public class HtmlProcessor {
@@ -116,10 +116,8 @@ public class HtmlProcessor {
             cutNotNeededChapters(document, exportParams.getChapters());
         }
 
-        switch (exportParams.getDocumentType()) {
-            case LIVE_DOC, WIKI_PAGE -> {
-                removePageBreakAvoids(document);
-            }
+        if (exportParams.getDocumentType() == LIVE_DOC || exportParams.getDocumentType() == WIKI_PAGE) {
+            removePageBreakAvoids(document);
         }
 
         // Polarion doesn't place table rows with th-tags into thead, placing them in table's tbody, which is wrong as table header won't
