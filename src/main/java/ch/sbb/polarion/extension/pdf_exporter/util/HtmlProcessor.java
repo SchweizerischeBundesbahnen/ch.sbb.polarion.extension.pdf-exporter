@@ -41,6 +41,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
+import static ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.DocumentType.*;
 import static ch.sbb.polarion.extension.pdf_exporter.util.exporter.Constants.*;
 
 public class HtmlProcessor {
@@ -72,6 +73,10 @@ public class HtmlProcessor {
     }
 
     public String processHtmlForPDF(@NotNull String html, @NotNull ExportParams exportParams, @NotNull List<String> selectedRoleEnumValues) {
+        if (exportParams.getDocumentType() == BASELINE_COLLECTION) {
+            // Unsupported document type
+            throw new IllegalArgumentException(UNSUPPORTED_DOCUMENT_TYPE.formatted(exportParams.getDocumentType()));
+        }
 
         // I. FIRST SECTION - manipulate HTML as a String. These changes are either not possible or not made easier with JSoup
         // ----------------
@@ -109,6 +114,10 @@ public class HtmlProcessor {
         if (exportParams.getChapters() != null) {
             // Leave only chapters explicitly selected by user
             cutNotNeededChapters(document, exportParams.getChapters());
+        }
+
+        if (exportParams.getDocumentType() == LIVE_DOC || exportParams.getDocumentType() == WIKI_PAGE) {
+            removePageBreakAvoids(document);
         }
 
         // Polarion doesn't place table rows with th-tags into thead, placing them in table's tbody, which is wrong as table header won't
@@ -162,10 +171,7 @@ public class HtmlProcessor {
         html = replaceResourcesAsBase64Encoded(html);
 
         html = switch (exportParams.getDocumentType()) {
-            case LIVE_DOC, WIKI_PAGE -> {
-                String processingHtml = new PageBreakAvoidRemover().removePageBreakAvoids(html);
-                yield new NumberedListsSanitizer().fixNumberedLists(processingHtml);
-            }
+            case LIVE_DOC, WIKI_PAGE -> new NumberedListsSanitizer().fixNumberedLists(html);
             case LIVE_REPORT, TEST_RUN -> html;
             case BASELINE_COLLECTION -> throw new IllegalArgumentException(UNSUPPORTED_DOCUMENT_TYPE.formatted(exportParams.getDocumentType()));
         };
@@ -470,7 +476,7 @@ public class HtmlProcessor {
                 String style = image.attr(HtmlTagAttr.STYLE);
                 CSSStyleDeclaration cssStyle = parseCss(style);
 
-                String displayValue = Optional.ofNullable(cssStyle.getPropertyValue(CssProp.DISPLAY)).orElse("").trim();
+                String displayValue = getCssValue(cssStyle, CssProp.DISPLAY);
                 if (!CssProp.DISPLAY_BLOCK_VALUE.equals(displayValue)) {
                     continue;
                 }
@@ -528,7 +534,7 @@ public class HtmlProcessor {
                 String style = cell.attr(HtmlTagAttr.STYLE);
                 CSSStyleDeclaration cssStyle = parseCss(style);
 
-                String widthValue = Optional.ofNullable(cssStyle.getPropertyValue(CssProp.WIDTH)).orElse("").trim();
+                String widthValue = getCssValue(cssStyle, CssProp.WIDTH);
                 if (!widthValue.isEmpty() && !widthValue.contains("%")) {
                     cssStyle.setProperty(CssProp.WIDTH, CssProp.WIDTH_AUTO_VALUE, null);
                     cell.attr(HtmlTagAttr.STYLE, cssStyle.getCssText());
@@ -791,6 +797,53 @@ public class HtmlProcessor {
         }
     }
 
+    void removePageBreakAvoids(@NotNull Document document) {
+        // Polarion wraps content of a work item as it is into table's cell with table's styling "page-break-inside: avoid"
+        // if it's configured to avoid page breaks:
+        //
+        // <table style="page-break-inside:avoid;">
+        //   <tr>
+        //     <td>
+        //       <CONTENT>
+        //     </td>
+        //   </tr>
+        // </table>
+        //
+        // This styling "page-break-inside: avoid" doesn't influence rendering by pd4ml converter,
+        // but breaks rendering of tables with help of WeasyPrint. More over this configuration was initially introduced
+        // for pd4ml converter because table headers are not repeated at page start when table takes more than 1 page.
+        // Last drawback is not applied to WeasyPrint and thus such workaround can be safely removed.
+        //
+        // Taking into account that work item content can also contain tables this task should be done with cautious.
+        // Removing "page-break-inside:avoid;" from table's styling doesn't help, tables are still broken. So, solution
+        // is to remove that table wrapping at all. As a result above example should become just:
+        //
+        // <CONTENT>
+        //
+
+        Elements tables = document.select("table");
+        for (Element table : tables) {
+            String pageBreakInsideValue = getCssValue(table, CssProp.PAGE_BREAK_INSIDE);
+            if (!pageBreakInsideValue.equals(CssProp.PAGE_BREAK_INSIDE_AVOID_VALUE)) {
+                continue;
+            }
+
+            Element tbody = JSoupUtils.getSingleChildByTag(table, HtmlTag.TBODY);
+
+            Element tr = JSoupUtils.getSingleChildByTag(tbody != null ? tbody : table, HtmlTag.TR);
+            if (tr != null) {
+                Element td = JSoupUtils.getSingleChildByTag(tr, HtmlTag.TD);
+                if (td != null) {
+                    // Move td's children to replace the table
+                    for (Node contentNodes : td.childNodes()) {
+                        table.before(contentNodes.clone());
+                    }
+                    table.remove();
+                }
+            }
+        }
+    }
+
     @NotNull
     @VisibleForTesting
     String localizeEnums(@NotNull String html, @NotNull ExportParams exportParams) {
@@ -945,7 +998,21 @@ public class HtmlProcessor {
         return html.contains(PAGE_BREAK_MARK);
     }
 
-    private CSSStyleDeclaration parseCss(String style) {
+    private String getCssValue(@NotNull Element element, @NotNull String cssProperty) {
+        if (element.hasAttr(HtmlTagAttr.STYLE)) {
+            String style = element.attr(HtmlTagAttr.STYLE);
+            CSSStyleDeclaration cssStyle = parseCss(style);
+            return getCssValue(cssStyle, cssProperty);
+        } else {
+            return "";
+        }
+    }
+
+    private String getCssValue(@NotNull CSSStyleDeclaration cssStyle, @NotNull String cssProperty) {
+        return Optional.ofNullable(cssStyle.getPropertyValue(cssProperty)).orElse("").trim();
+    }
+
+    private CSSStyleDeclaration parseCss(@NotNull String style) {
         return CssUtils.parseCss(parser, style);
     }
 
