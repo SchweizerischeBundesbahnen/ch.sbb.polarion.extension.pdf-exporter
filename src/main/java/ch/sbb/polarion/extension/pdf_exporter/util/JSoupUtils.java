@@ -177,4 +177,8 @@ public class JSoupUtils {
         return node instanceof Element element && element.tagName().equals(HtmlTag.TH);
     }
 
+    public Element getSingleChildByTag(@NotNull Element element, @NotNull String tagName) {
+        Element child = element.firstElementChild();
+        return (child != null && child.tagName().equals(tagName) && element.children().size() == 1) ? child : null;
+    }
 }
