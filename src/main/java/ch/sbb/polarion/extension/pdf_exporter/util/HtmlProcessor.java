@@ -119,6 +119,7 @@ public class HtmlProcessor {
         if (exportParams.getDocumentType() == LIVE_DOC || exportParams.getDocumentType() == WIKI_PAGE) {
             removePageBreakAvoids(document);
             fixNestedLists(document);
+            localizeEnums(document, exportParams);
         }
 
         // Polarion doesn't place table rows with th-tags into thead, placing them in table's tbody, which is wrong as table header won't
@@ -148,6 +149,7 @@ public class HtmlProcessor {
         if (exportParams.isCutEmptyWIAttributes()) {
             cutEmptyWIAttributes(document);
         }
+        // ----
 
         html = document.body().html();
 
@@ -175,13 +177,6 @@ public class HtmlProcessor {
         if (exportParams.isCutLocalUrls()) {
             html = cutLocalUrls(html);
         }
-        // ----
-
-        html = switch (exportParams.getDocumentType()) {
-            case LIVE_DOC, WIKI_PAGE -> localizeEnums(html, exportParams);
-            case LIVE_REPORT, TEST_RUN -> html;
-            case BASELINE_COLLECTION -> throw new IllegalArgumentException(UNSUPPORTED_DOCUMENT_TYPE.formatted(exportParams.getDocumentType()));
-        };
 
         if (exportParams.getRenderComments() != null) {
             html = processComments(html);
@@ -890,21 +885,18 @@ public class HtmlProcessor {
         return false;
     }
 
-    @NotNull
     @VisibleForTesting
-    String localizeEnums(@NotNull String html, @NotNull ExportParams exportParams) {
+    void localizeEnums(@NotNull Document document, @NotNull ExportParams exportParams) {
         String localizationSettingsName = exportParams.getLocalization() != null ? exportParams.getLocalization() : NamedSettings.DEFAULT_NAME;
-        final Map<String, String> localizationMap = localizationSettings.load(exportParams.getProjectId(), SettingId.fromName(localizationSettingsName)).getLocalizationMap(exportParams.getLanguage());
+        Map<String, String> localizationMap = localizationSettings.load(exportParams.getProjectId(), SettingId.fromName(localizationSettingsName)).getLocalizationMap(exportParams.getLanguage());
 
-        //Polarion document usually keeps enumerated text values inside of spans marked with class 'polarion-JSEnumOption'.
-        //Following expression retrieves such spans.
-        return RegexMatcher.get("(?s)<span class=\"polarion-JSEnumOption\".+?>(?<enum>[\\w\\s]+)</span>").replace(html, regexEngine -> {
-            String enumContainingSpan = regexEngine.group();
-            String enumName = regexEngine.group("enum");
-            String replacementString = localizationMap.get(enumName);
-            return StringUtils.isEmptyTrimmed(replacementString) ? null :
-                    enumContainingSpan.replace(enumName + SPAN_END_TAG, replacementString + SPAN_END_TAG);
-        });
+        Elements enums = document.select("span.polarion-JSEnumOption");
+        for (Element enumElement : enums) {
+            String replacementString = localizationMap.get(enumElement.text());
+            if (!StringUtils.isEmptyTrimmed(replacementString)) {
+                enumElement.text(replacementString);
+            }
+        }
     }
 
     public @NotNull Document adjustContentToFitPage(@NotNull Document document, @NotNull ConversionParams conversionParams) {
