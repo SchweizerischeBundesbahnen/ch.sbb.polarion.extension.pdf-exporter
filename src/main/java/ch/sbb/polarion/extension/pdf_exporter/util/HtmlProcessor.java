@@ -117,9 +117,19 @@ public class HtmlProcessor {
         }
 
         if (exportParams.getDocumentType() == LIVE_DOC || exportParams.getDocumentType() == WIKI_PAGE) {
+            // Moves WorkItem content out of table wrapping it
             removePageBreakAvoids(document);
+
+            // Fixes nested HTML lists structure
             fixNestedLists(document);
+
+            // Localize enumeration values
             localizeEnums(document, exportParams);
+        }
+
+        if (exportParams.getDocumentType() == LIVE_REPORT || exportParams.getDocumentType() == TEST_RUN) {
+            // Searches for div containing 'Reported by' text and adjusts its styles
+            adjustReportedBy(document);
         }
 
         // Polarion doesn't place table rows with th-tags into thead, placing them in table's tbody, which is wrong as table header won't
@@ -161,7 +171,6 @@ public class HtmlProcessor {
             }
             case LIVE_REPORT, TEST_RUN -> {
                 String processingHtml = new LiveReportTOCGenerator().addTableOfContent(html);
-                processingHtml = adjustReportedBy(processingHtml);
                 processingHtml = cutExportToPdfButton(processingHtml);
                 processingHtml = adjustColumnWidthInReports(processingHtml);
                 yield removeFloatLeftFromReports(processingHtml);
@@ -983,15 +992,15 @@ public class HtmlProcessor {
         return buf.toString();
     }
 
-    @NotNull
     @VisibleForTesting
-    String adjustReportedBy(@NotNull String html) {
-        // This regexp searches for div containing 'Reported by' text and adjusts its styles
-        return RegexMatcher.get("<div style=\"(?<style>[^\"]*)\">Reported by").replace(html, regexEngine -> {
-            String initialStyle = regexEngine.group("style");
-            String styleAdjustment = "top: 0; font-size: 8px;";
-            return String.format("<div style=\"%s;%s\">Reported by", initialStyle, styleAdjustment);
-        });
+    void adjustReportedBy(@NotNull Document document) {
+        Element reportedByDiv = document.select("div:contains(Reported by):not(:has(div))").first();
+        if (reportedByDiv != null) {
+            CSSStyleDeclaration cssStyle = getCssStyle(reportedByDiv);
+            cssStyle.setProperty(CssProp.TOP, "0", null);
+            cssStyle.setProperty(CssProp.FONT_SIZE, "8px", null);
+            reportedByDiv.attr(HtmlTagAttr.STYLE, cssStyle.getCssText());
+        }
     }
 
     @NotNull
@@ -1037,17 +1046,20 @@ public class HtmlProcessor {
     }
 
     private String getCssValue(@NotNull Element element, @NotNull String cssProperty) {
-        if (element.hasAttr(HtmlTagAttr.STYLE)) {
-            String style = element.attr(HtmlTagAttr.STYLE);
-            CSSStyleDeclaration cssStyle = parseCss(style);
-            return getCssValue(cssStyle, cssProperty);
-        } else {
-            return "";
-        }
+        CSSStyleDeclaration cssStyle = getCssStyle(element);
+        return getCssValue(cssStyle, cssProperty);
     }
 
     private String getCssValue(@NotNull CSSStyleDeclaration cssStyle, @NotNull String cssProperty) {
         return Optional.ofNullable(cssStyle.getPropertyValue(cssProperty)).orElse("").trim();
+    }
+
+    private CSSStyleDeclaration getCssStyle(@NotNull Element element) {
+        String style = "";
+        if (element.hasAttr(HtmlTagAttr.STYLE)) {
+            style = element.attr(HtmlTagAttr.STYLE);
+        }
+        return parseCss(style);
     }
 
     private CSSStyleDeclaration parseCss(@NotNull String style) {
