@@ -29,9 +29,10 @@ class CustomPageBreakPartTest {
 
     @Test
     @SuppressWarnings({"unused", "java:S2699"})
-    void testRenderPdfTargetLandscape() {
+    void testRenderPdfTargetPortraitAndLandscape() {
         // Arrange
         PageBreakPart originalPart = mock(PageBreakPart.class, RETURNS_DEEP_STUBS);
+        when(originalPart.getElement().getAttribute().byName("data-is-landscape")).thenReturn("true");
 
         HtmlBuilder builder = mock(HtmlBuilder.class, RETURNS_DEEP_STUBS);
 
@@ -45,26 +46,9 @@ class CustomPageBreakPartTest {
 
             // Act - using reflection internally, so just verify no exceptions
             assertDoesNotThrow(() -> customPart.render(builder, context, 0));
-        }
-    }
 
-    @Test
-    @SuppressWarnings({"unused", "java:S2699"})
-    void testRenderPdfTargetPortrait() {
-        // Arrange
-        PageBreakPart originalPart = mock(PageBreakPart.class, RETURNS_DEEP_STUBS);
-
-        HtmlBuilder builder = mock(HtmlBuilder.class, RETURNS_DEEP_STUBS);
-
-        RichTextRenderingContext context = mock(RichTextRenderingContext.class, RETURNS_DEEP_STUBS);
-        RichTextRenderTarget target = mock(RichTextRenderTarget.class);
-        when(context.getRenderTarget()).thenReturn(target);
-        when(target.isPdf()).thenReturn(true);
-
-        try (MockedConstruction<PartIdGeneratorImpl> ignored = mockConstruction(PartIdGeneratorImpl.class)) {
-            CustomPageBreakPart customPart = new CustomPageBreakPart(originalPart);
-
-            // Act - using reflection internally, so just verify no exceptions
+            when(originalPart.getElement().getAttribute().byName("data-is-landscape")).thenReturn("false");
+            // same for portrait
             assertDoesNotThrow(() -> customPart.render(builder, context, 0));
         }
     }
