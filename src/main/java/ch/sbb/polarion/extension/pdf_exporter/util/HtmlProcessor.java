@@ -868,20 +868,26 @@ public class HtmlProcessor {
             Elements lists = doc.select(listsSelector);
 
             for (Element list : lists) {
-                for (Element child : list.children()) {
-                    if (child.tagName().equals(HtmlTag.OL) || child.tagName().equals(HtmlTag.UL)) {
-                        Element previousSibling = child.previousElementSibling();
-                        if (previousSibling != null && previousSibling.tagName().equals(HtmlTag.LI)) {
-                            child.remove();
-                            previousSibling.appendChild(child);
-                            modified = true;
-                            break; // Restart to avoid concurrent modification
-                        }
-                    }
+                modified = fixNestedLists(list);
+                if (modified) {
+                    break; // Restart to avoid concurrent modification
                 }
-                if (modified) break;
             }
         } while (modified); // Repeat to cover all nesting levels, until the point when nothing was modified / fixed
+    }
+
+    private boolean fixNestedLists(@NotNull Element list) {
+        for (Element child : list.children()) {
+            if (child.tagName().equals(HtmlTag.OL) || child.tagName().equals(HtmlTag.UL)) {
+                Element previousSibling = child.previousElementSibling();
+                if (previousSibling != null && previousSibling.tagName().equals(HtmlTag.LI)) {
+                    child.remove();
+                    previousSibling.appendChild(child);
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     @NotNull
