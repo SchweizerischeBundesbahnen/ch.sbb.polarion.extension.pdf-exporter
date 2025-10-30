@@ -130,6 +130,9 @@ public class HtmlProcessor {
         if (exportParams.getDocumentType() == LIVE_REPORT || exportParams.getDocumentType() == TEST_RUN) {
             // Searches for div containing 'Reported by' text and adjusts its styles
             adjustReportedBy(document);
+
+            // Cuts "Export To PDF" button from report's content
+            cutExportToPdfButton(document);
         }
 
         // Polarion doesn't place table rows with th-tags into thead, placing them in table's tbody, which is wrong as table header won't
@@ -171,7 +174,6 @@ public class HtmlProcessor {
             }
             case LIVE_REPORT, TEST_RUN -> {
                 String processingHtml = new LiveReportTOCGenerator().addTableOfContent(html);
-                processingHtml = cutExportToPdfButton(processingHtml);
                 processingHtml = adjustColumnWidthInReports(processingHtml);
                 yield removeFloatLeftFromReports(processingHtml);
             }
@@ -1003,16 +1005,14 @@ public class HtmlProcessor {
         }
     }
 
-    @NotNull
     @VisibleForTesting
-    @SuppressWarnings({"java:S5852", "java:S5869"})
-        //regex checked
-    String cutExportToPdfButton(@NotNull String html) {
-        // This regexp searches for 'Export to PDF' button enclosed into table-element with class 'polarion-TestsExecutionButton-buttons-content',
+    void cutExportToPdfButton(@NotNull Document document) {
+        // Searches for 'Export to PDF' button enclosed into table-element with class 'polarion-TestsExecutionButton-buttons-content',
         // which in its turn enclosed into div-element with class 'polarion-TestsExecutionButton-buttons-pdf'
-        return RegexMatcher.get("<div[^>]*class=\"polarion-TestsExecutionButton-buttons-pdf\">" +
-                        "[\\w|\\W]*<table class=\"polarion-TestsExecutionButton-buttons-content\">[\\w|\\W]*<div[^>]*>Export to PDF</div>[\\w|\\W]*?</div>")
-                .removeAll(html);
+        Element exportToPdfButtonStructure = document.select("div.polarion-TestsExecutionButton-buttons-pdf:has(table.polarion-TestsExecutionButton-buttons-content:has(div.polarion-TestsExecutionButton-labelTextNew:contains(Export to PDF)))").first();
+        if (exportToPdfButtonStructure != null) {
+            exportToPdfButtonStructure.remove();
+        }
     }
 
     @NotNull
