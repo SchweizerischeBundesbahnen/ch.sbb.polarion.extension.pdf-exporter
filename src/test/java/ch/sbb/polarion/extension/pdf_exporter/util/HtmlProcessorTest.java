@@ -598,32 +598,36 @@ class HtmlProcessorTest {
     @SneakyThrows
     void adjustReportedByTest() {
         String initialHtml = """
-                    <p id="polarion_1">
-                      <span class="polarion-rp-inline-widget" data-widget="com.polarion.scriptInline" id="polarion_1_iw_1">
-                        <span id="polarion-rp-widget-content">
-                          <div style="color: grey; text-align: right; position: absolute; top: 22px; right: 10px">Reported by
+                    <div>
+                      <div>
+                        <div style="color: grey; text-align: right; position: absolute; top: 22px; right: 10px">Reported by
                             <span class="polarion-no-style-cleanup">System Administrator</span>
                             <br/>
                             January 12, 2024 at 4:19:27 PM UTC
-                          </div>
-                        </span>
-                      </span>
-                    </p>
+                        </div>
+                      </div>
+                    </div>
                 """;
-        String processedHtml = processor.adjustReportedBy(initialHtml);
+
+        Document document = Jsoup.parse(initialHtml);
+        document.outputSettings()
+                .syntax(Document.OutputSettings.Syntax.xml)
+                .escapeMode(Entities.EscapeMode.base)
+                .prettyPrint(false);
+
+        processor.adjustReportedBy(document);
+        String processedHtml = document.body().html();
 
         String expectedHtml = """
-                    <p id="polarion_1">
-                      <span class="polarion-rp-inline-widget" data-widget="com.polarion.scriptInline" id="polarion_1_iw_1">
-                        <span id="polarion-rp-widget-content">
-                          <div style="color: grey; text-align: right; position: absolute; top: 22px; right: 10px; top: 0; font-size: 8px;">Reported by
+                    <div>
+                      <div>
+                        <div style="color: grey; text-align: right; position: absolute; top: 0; right: 10px; font-size: 8px">Reported by
                             <span class="polarion-no-style-cleanup">System Administrator</span>
                             <br/>
                             January 12, 2024 at 4:19:27 PM UTC
-                          </div>
-                        </span>
-                      </span>
-                    </p>
+                        </div>
+                      </div>
+                    </div>
                 """;
         assertEquals(TestStringUtils.removeNonsensicalSymbols(expectedHtml), TestStringUtils.removeNonsensicalSymbols(processedHtml.replaceAll(" ", "")));
     }
