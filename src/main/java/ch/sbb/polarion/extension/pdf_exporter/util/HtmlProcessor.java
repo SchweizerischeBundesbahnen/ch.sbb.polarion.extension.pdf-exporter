@@ -862,9 +862,10 @@ public class HtmlProcessor {
         // This method fixes the problem described above.
 
         boolean modified;
+        String listsSelector = String.format("%s, %s", HtmlTag.OL, HtmlTag.UL);
         do {
             modified = false;
-            Elements lists = doc.select(String.format("%s, %s", HtmlTag.OL, HtmlTag.UL));
+            Elements lists = doc.select(listsSelector);
 
             for (Element list : lists) {
                 for (Element child : list.children()) {
