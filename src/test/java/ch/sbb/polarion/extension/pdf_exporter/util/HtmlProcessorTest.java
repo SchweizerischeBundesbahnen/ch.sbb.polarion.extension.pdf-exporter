@@ -634,6 +634,45 @@ class HtmlProcessorTest {
 
     @Test
     @SneakyThrows
+    void dontAdjustReportedFromTest() {
+        // Artificial use case, just to be sure that if text is not "Reported by", HTML stays untouched
+        String initialHtml = """
+                    <div>
+                      <div>
+                        <div style="color: grey; text-align: right; position: absolute; top: 22px; right: 10px">Reported from
+                            <span class="polarion-no-style-cleanup">System Administrator</span>
+                            <br/>
+                            January 12, 2024 at 4:19:27 PM UTC
+                        </div>
+                      </div>
+                    </div>
+                """;
+
+        Document document = Jsoup.parse(initialHtml);
+        document.outputSettings()
+                .syntax(Document.OutputSettings.Syntax.xml)
+                .escapeMode(Entities.EscapeMode.base)
+                .prettyPrint(false);
+
+        processor.adjustReportedBy(document);
+        String processedHtml = document.body().html();
+
+        String expectedHtml = """
+                    <div>
+                      <div>
+                        <div style="color: grey; text-align: right; position: absolute; top: 22px; right: 10px">Reported from
+                            <span class="polarion-no-style-cleanup">System Administrator</span>
+                            <br/>
+                            January 12, 2024 at 4:19:27 PM UTC
+                        </div>
+                      </div>
+                    </div>
+                """;
+        assertEquals(TestStringUtils.removeNonsensicalSymbols(expectedHtml), TestStringUtils.removeNonsensicalSymbols(processedHtml));
+    }
+
+    @Test
+    @SneakyThrows
     void cutExportToPdfButtonTest() {
         String initialHtml = """
                     <p id="polarion_client33">
