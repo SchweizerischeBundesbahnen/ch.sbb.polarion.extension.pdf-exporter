@@ -994,8 +994,7 @@ public class HtmlProcessor {
 
     @VisibleForTesting
     void adjustReportedBy(@NotNull Document document) {
-        Elements divs = document.select("div:not(:has(div))");
-        Element reportedByDiv = divs.stream().filter(div -> div.text().contains("Reported by")).findFirst().orElse(null);
+        Element reportedByDiv = document.select("div:contains(Reported by):not(:has(div))").first();
         if (reportedByDiv != null) {
             CSSStyleDeclaration cssStyle = getCssStyle(reportedByDiv);
             cssStyle.setProperty(CssProp.TOP, "0", null);
