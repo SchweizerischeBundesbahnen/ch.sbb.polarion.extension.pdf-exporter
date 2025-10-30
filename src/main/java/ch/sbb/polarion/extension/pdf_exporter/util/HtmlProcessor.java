@@ -118,6 +118,7 @@ public class HtmlProcessor {
 
         if (exportParams.getDocumentType() == LIVE_DOC || exportParams.getDocumentType() == WIKI_PAGE) {
             removePageBreakAvoids(document);
+            fixNestedLists(document);
         }
 
         // Polarion doesn't place table rows with th-tags into thead, placing them in table's tbody, which is wrong as table header won't
@@ -169,13 +170,6 @@ public class HtmlProcessor {
         // TODO: rework below, migrating to JSoup processing when reasonable
 
         html = replaceResourcesAsBase64Encoded(html);
-
-        html = switch (exportParams.getDocumentType()) {
-            case LIVE_DOC, WIKI_PAGE -> new NumberedListsSanitizer().fixNumberedLists(html);
-            case LIVE_REPORT, TEST_RUN -> html;
-            case BASELINE_COLLECTION -> throw new IllegalArgumentException(UNSUPPORTED_DOCUMENT_TYPE.formatted(exportParams.getDocumentType()));
-        };
-
         html = rewritePolarionUrls(html);
 
         if (exportParams.isCutLocalUrls()) {
@@ -842,6 +836,51 @@ public class HtmlProcessor {
                 }
             }
         }
+    }
+
+    public void fixNestedLists(Document doc) {
+        // Polarion generates not valid HTML for multi-level lists:
+        //
+        // <ol>
+        //   <li>first item</li>
+        //   <ol>
+        //     <li>sub-item</li
+        //   </ol>
+        // </ol>
+        //
+        // By HTML specification ol/ul elements can contain only li-elements as their direct children.
+        // So, valid HTML will be:
+        //
+        // <ol>
+        //   <li>first item
+        //     <ol>
+        //       <li>sub-item</li
+        //     </ol>
+        //   </li>
+        // </ol>
+        //
+        // This method fixes the problem described above.
+
+        boolean modified;
+        do {
+            modified = false;
+            Elements lists = doc.select(String.format("%s, %s", HtmlTag.OL, HtmlTag.UL));
+
+            for (Element list : lists) {
+                for (Element child : list.children()) {
+                    if (child.tagName().equals(HtmlTag.OL) || child.tagName().equals(HtmlTag.UL)) {
+                        Element previousSibling = child.previousElementSibling();
+                        if (previousSibling != null && previousSibling.tagName().equals(HtmlTag.LI)) {
+                            child.remove();
+                            previousSibling.appendChild(child);
+                            modified = true;
+                            break; // Restart to avoid concurrent modification
+                        }
+                    }
+                }
+                if (modified) break;
+            }
+        } while (modified); // Repeat to cover all nesting levels, until the point when nothing was modified / fixed
     }
 
     @NotNull

@@ -382,6 +382,27 @@ class HtmlProcessorTest {
 
     @Test
     @SneakyThrows
+    void fixNumberedListsTest() {
+        try (InputStream isInvalidHtml = this.getClass().getResourceAsStream("/invalidNumberedLists.html");
+             InputStream isValidHtml = this.getClass().getResourceAsStream("/validNumberedLists.html")) {
+
+            Document document = Jsoup.parse(new String(isInvalidHtml.readAllBytes(), StandardCharsets.UTF_8));
+            document.outputSettings()
+                    .syntax(Document.OutputSettings.Syntax.xml)
+                    .escapeMode(Entities.EscapeMode.base)
+                    .prettyPrint(false);
+
+            processor.fixNestedLists(document);
+            String fixedHtml = document.body().html();
+            String validHtml = new String(isValidHtml.readAllBytes(), StandardCharsets.UTF_8);
+
+            // Spaces and new lines are removed to exclude difference in space characters
+            assertEquals(TestStringUtils.removeNonsensicalSymbols(validHtml), TestStringUtils.removeNonsensicalSymbols(fixedHtml));
+        }
+    }
+
+    @Test
+    @SneakyThrows
     void nothingToReplaceTest() {
         String html = "<div></div>";
         String result = processor.replaceResourcesAsBase64Encoded(html);
