@@ -24,7 +24,6 @@ import com.polarion.alm.tracker.model.ITrackerProject;
 import com.polarion.core.util.StringUtils;
 import com.polarion.platform.IPlatformService;
 import com.polarion.platform.persistence.IDataService;
-import com.polarion.platform.persistence.model.IPObjectList;
 import com.polarion.platform.security.ISecurityService;
 import com.polarion.platform.service.repository.IRepositoryService;
 import com.polarion.portal.internal.server.navigation.TestManagementServiceAccessor;

@@ -8,7 +8,9 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 class ExportParamsTest {
+
     @Test
+    @SuppressWarnings("java:S5961") // Suppress "Refactor this method to reduce the number of assertions" warning
     void testOverwriteByStylePackage() {
         ExportParams params = ExportParams.builder()
                 .coverPage("coverPage1")
