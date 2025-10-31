@@ -1,5 +1,18 @@
 # Changelog
 
+## [10.1.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v10.0.1...v10.1.0) (2025-10-31)
+
+
+### Features
+
+* ability to export comments as sticky notes ([#587](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/587)) ([adcc532](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/adcc532fc73b2405ca9e57be5ae26b1c26194f7b)), closes [#576](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/576)
+* export comments within a workitem description ([#577](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/577)) ([0e3e571](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/0e3e5717e406ff161aedcc3059ca5a06bb216e12)), closes [#551](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/551)
+
+
+### Bug Fixes
+
+* **deps:** update dependency ch.sbb.polarion.extensions:ch.sbb.polarion.extension.generic to v11.3.0 ([acc64d4](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/acc64d42c3a1bbc05b2dcc964a1c370d3b87fa0d))
+
 ## [10.0.1](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v10.0.0...v10.0.1) (2025-10-17)
 
 
