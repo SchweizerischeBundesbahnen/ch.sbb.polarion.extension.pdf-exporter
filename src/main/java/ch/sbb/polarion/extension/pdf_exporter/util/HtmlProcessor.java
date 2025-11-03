@@ -558,14 +558,8 @@ public class HtmlProcessor {
         // Looks for <a>-tags containing "/polarion/#" in its href attribute or for <a>-tags which href attribute starts with "http" and containing <img>-tag inside of it.
         // Then it moves content of such links outside it and removing links themselves.
         for (Element link : document.select("a[href]")) {
-            boolean cutUrl = false;
             String href = link.attr(HtmlTagAttr.HREF);
-            if (href.contains(POLARION_URL_MARKER)) {
-                cutUrl = true;
-            } else {
-                cutUrl = JSoupUtils.isImg(link.firstElementChild());
-            }
-
+            boolean cutUrl = href.contains(POLARION_URL_MARKER) || JSoupUtils.isImg(link.firstElementChild());
             if (cutUrl) {
                 for (Node contentNodes : link.childNodes()) {
                     link.before(contentNodes.clone());

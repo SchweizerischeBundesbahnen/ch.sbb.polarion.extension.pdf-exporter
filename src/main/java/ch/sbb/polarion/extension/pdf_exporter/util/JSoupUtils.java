@@ -4,8 +4,10 @@ import ch.sbb.polarion.extension.pdf_exporter.constants.HtmlTag;
 import lombok.experimental.UtilityClass;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
+import org.jsoup.nodes.Entities;
 import org.jsoup.nodes.Node;
 import org.jsoup.nodes.TextNode;
 import org.jsoup.select.Elements;
@@ -35,6 +37,16 @@ public class JSoupUtils {
             HtmlTag.SVG,
             HtmlTag.VIDEO
     );
+
+    @NotNull
+    public Document parseHtml(@NotNull String html) {
+        Document document = Jsoup.parse(html);
+        document.outputSettings()
+                .syntax(Document.OutputSettings.Syntax.xml)
+                .escapeMode(Entities.EscapeMode.base)
+                .prettyPrint(false);
+        return document;
+    }
 
     /**
      * Checks if an element is empty content (is not visible or is a whitespace).

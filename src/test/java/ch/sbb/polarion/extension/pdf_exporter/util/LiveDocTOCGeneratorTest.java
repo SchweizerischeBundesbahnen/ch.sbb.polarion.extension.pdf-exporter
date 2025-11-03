@@ -27,7 +27,7 @@ class LiveDocTOCGeneratorTest {
 
             LiveDocTOCGenerator liveDocTOCGenerator = new LiveDocTOCGenerator();
 
-            Document document = parseHtml(initialHtml);
+            Document document = JSoupUtils.parseHtml(initialHtml);
 
             liveDocTOCGenerator.addTableOfContent(document);
             String processedHtml = document.body().html();
@@ -49,7 +49,7 @@ class LiveDocTOCGeneratorTest {
 
             LiveDocTOCGenerator liveDocTOCGenerator = new LiveDocTOCGenerator();
 
-            Document document = parseHtml(initialHtml);
+            Document document = JSoupUtils.parseHtml(initialHtml);
 
             liveDocTOCGenerator.addTableOfContent(document);
             String processedHtml = document.body().html();
@@ -71,7 +71,7 @@ class LiveDocTOCGeneratorTest {
 
             LiveDocTOCGenerator liveDocTOCGenerator = new LiveDocTOCGenerator();
 
-            Document document = parseHtml(initialHtml);
+            Document document = JSoupUtils.parseHtml(initialHtml);
 
             liveDocTOCGenerator.addTableOfContent(document);
             String processedHtml = document.body().html();
@@ -79,15 +79,5 @@ class LiveDocTOCGeneratorTest {
             // Spaces and new lines are removed to exclude difference in space characters
             assertEquals(TestStringUtils.removeNonsensicalSymbols(expectedHtml), TestStringUtils.removeNonsensicalSymbols(processedHtml));
         }
-    }
-
-    @NotNull
-    private Document parseHtml(@NotNull String html) {
-        Document document = Jsoup.parse(html);
-        document.outputSettings()
-                .syntax(Document.OutputSettings.Syntax.xml)
-                .escapeMode(Entities.EscapeMode.base)
-                .prettyPrint(false);
-        return document;
     }
 }

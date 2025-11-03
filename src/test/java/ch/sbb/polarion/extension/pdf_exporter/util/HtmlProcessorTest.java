@@ -12,10 +12,8 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.localization.L
 import ch.sbb.polarion.extension.pdf_exporter.settings.LocalizationSettings;
 import ch.sbb.polarion.extension.pdf_exporter.util.html.HtmlLinksHelper;
 import lombok.SneakyThrows;
-import org.jetbrains.annotations.NotNull;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Entities;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -76,13 +74,13 @@ class HtmlProcessorTest {
     void cutLocalUrlsTest() {
         String img = "<img title=\"diagram_123.png\" src=\"data:image/png;BASE64Content\" />";
         String imgInsideA = String.format("<a href=\"http://localhost/polarion/module-attachment/elibrary/some-path\">%s</a>", img);
-        Document document = parseHtml(imgInsideA);
+        Document document = JSoupUtils.parseHtml(imgInsideA);
         processor.cutLocalUrls(document);
         assertEquals(img, document.body().html());
 
         String span = "<span id=\"PLANID_Version_1_0\" title=\"Version 1.0 (Version_1_0) (2017-03-31)\" class=\"polarion-Plan\">Version 1.0<span> (2017-03-31)</span></span>";
         String spanInsideA = String.format("<a href=\"http://localhost/polarion/#/project/elibrary/another-path\">%s</a>", span);
-        document = parseHtml(spanInsideA);
+        document = JSoupUtils.parseHtml(spanInsideA);
         processor.cutLocalUrls(document);
         assertEquals(span, document.body().html());
     }
@@ -116,12 +114,12 @@ class HtmlProcessorTest {
         String htmlWithAnchor = anchor + link;
         String expected = anchor + "<a href=\"#work-item-anchor-testProject/12345\">Work Item 12345</a>";
 
-        Document document = parseHtml(htmlWithAnchor);
+        Document document = JSoupUtils.parseHtml(htmlWithAnchor);
         processor.rewritePolarionUrls(document);
         assertEquals(expected, document.body().html());
 
         String htmlWithoutAnchor = link;
-        document = parseHtml(htmlWithoutAnchor);
+        document = JSoupUtils.parseHtml(htmlWithoutAnchor);
         processor.rewritePolarionUrls(document);
         assertEquals(link, document.body().html());
     }
@@ -151,7 +149,7 @@ class HtmlProcessorTest {
         try (InputStream isInvalidHtml = this.getClass().getResourceAsStream("/emptyChaptersBeforeProcessing.html");
              InputStream isValidHtml = this.getClass().getResourceAsStream("/emptyChaptersAfterProcessing.html")) {
 
-            Document document = parseHtml(new String(isInvalidHtml.readAllBytes(), StandardCharsets.UTF_8));
+            Document document = JSoupUtils.parseHtml(new String(isInvalidHtml.readAllBytes(), StandardCharsets.UTF_8));
 
             processor.cutEmptyChapters(document);
             String fixedHtml = document.body().html();
@@ -168,7 +166,7 @@ class HtmlProcessorTest {
         try (InputStream isInvalidHtml = this.getClass().getResourceAsStream("/emptyWIAttributesBeforeProcessing.html");
              InputStream isValidHtml = this.getClass().getResourceAsStream("/emptyWIAttributesAfterProcessing.html")) {
 
-            Document document = parseHtml(new String(isInvalidHtml.readAllBytes(), StandardCharsets.UTF_8));
+            Document document = JSoupUtils.parseHtml(new String(isInvalidHtml.readAllBytes(), StandardCharsets.UTF_8));
 
             processor.cutEmptyWIAttributes(document);
             String fixedHtml = document.body().html();
@@ -185,7 +183,7 @@ class HtmlProcessorTest {
         try (InputStream isInvalidHtml = this.getClass().getResourceAsStream("/invalidTableHeads.html");
              InputStream isValidHtml = this.getClass().getResourceAsStream("/validTableHeads.html")) {
 
-            Document document = parseHtml(new String(isInvalidHtml.readAllBytes(), StandardCharsets.UTF_8));
+            Document document = JSoupUtils.parseHtml(new String(isInvalidHtml.readAllBytes(), StandardCharsets.UTF_8));
 
             processor.fixTableHeads(document);
             String fixedHtml = document.body().html();
@@ -202,7 +200,7 @@ class HtmlProcessorTest {
         try (InputStream isInvalidHtml = this.getClass().getResourceAsStream("/cellWidthBeforeProcessing.html");
              InputStream isValidHtml = this.getClass().getResourceAsStream("/cellWidthAfterProcessing.html")) {
 
-            Document document = parseHtml(new String(isInvalidHtml.readAllBytes(), StandardCharsets.UTF_8));
+            Document document = JSoupUtils.parseHtml(new String(isInvalidHtml.readAllBytes(), StandardCharsets.UTF_8));
 
             processor.adjustCellWidth(document, ExportParams.builder().fitToPage(false).build());
             String fixedHtml = document.body().html();
@@ -219,7 +217,7 @@ class HtmlProcessorTest {
         try (InputStream isInvalidHtml = this.getClass().getResourceAsStream("/cellWidthBeforeProcessing.html");
              InputStream isValidHtml = this.getClass().getResourceAsStream("/cellWidthFitToPageAfterProcessing.html")) {
 
-            Document document = parseHtml(new String(isInvalidHtml.readAllBytes(), StandardCharsets.UTF_8));
+            Document document = JSoupUtils.parseHtml(new String(isInvalidHtml.readAllBytes(), StandardCharsets.UTF_8));
 
             processor.adjustCellWidth(document, new ExportParams());
             String fixedHtml = document.body().html();
@@ -236,7 +234,7 @@ class HtmlProcessorTest {
         try (InputStream isInvalidHtml = this.getClass().getResourceAsStream("/notNeededChaptersBeforeProcessing.html");
              InputStream isValidHtml = this.getClass().getResourceAsStream("/notNeededChaptersAfterProcessing.html")) {
 
-            Document document = parseHtml(new String(isInvalidHtml.readAllBytes(), StandardCharsets.UTF_8));
+            Document document = JSoupUtils.parseHtml(new String(isInvalidHtml.readAllBytes(), StandardCharsets.UTF_8));
 
             processor.cutNotNeededChapters(document, List.of("3", "4", "7"));
             String fixedHtml = document.body().html();
@@ -253,7 +251,7 @@ class HtmlProcessorTest {
         try (InputStream isInvalidHtml = this.getClass().getResourceAsStream("/imageAlignmentBeforeProcessing.html");
              InputStream isValidHtml = this.getClass().getResourceAsStream("/imageAlignmentAfterProcessing.html")) {
 
-            Document document = parseHtml(new String(isInvalidHtml.readAllBytes(), StandardCharsets.UTF_8));
+            Document document = JSoupUtils.parseHtml(new String(isInvalidHtml.readAllBytes(), StandardCharsets.UTF_8));
 
             processor.adjustImageAlignment(document);
             String fixedHtml = document.body().html();
@@ -270,7 +268,7 @@ class HtmlProcessorTest {
         try (InputStream isInvalidHtml = this.getClass().getResourceAsStream("/localizeEnumsBeforeProcessing.html");
              InputStream isValidHtml = this.getClass().getResourceAsStream("/localizeEnumsAfterProcessing.html")) {
 
-            Document document = parseHtml(new String(isInvalidHtml.readAllBytes(), StandardCharsets.UTF_8));
+            Document document = JSoupUtils.parseHtml(new String(isInvalidHtml.readAllBytes(), StandardCharsets.UTF_8));
 
             processor.localizeEnums(document, getExportParams());
             String fixedHtml = document.body().html();
@@ -327,7 +325,7 @@ class HtmlProcessorTest {
         try (InputStream isInvalidHtml = this.getClass().getResourceAsStream("/malformedLinkedWorkItemsBeforeProcessing.html");
              InputStream isValidHtml = this.getClass().getResourceAsStream("/malformedLinkedWorkItemsAfterProcessing.html")) {
 
-            Document document = parseHtml(new String(isInvalidHtml.readAllBytes(), StandardCharsets.UTF_8));
+            Document document = JSoupUtils.parseHtml(new String(isInvalidHtml.readAllBytes(), StandardCharsets.UTF_8));
 
             List<String> selectedRoleEnumValues = Arrays.asList("has parent", "is parent of");
 
@@ -346,7 +344,7 @@ class HtmlProcessorTest {
         try (InputStream isInvalidHtml = this.getClass().getResourceAsStream("/withPageBreakAvoids.html");
              InputStream isValidHtml = this.getClass().getResourceAsStream("/withoutPageBreakAvoids.html")) {
 
-            Document document = parseHtml(new String(isInvalidHtml.readAllBytes(), StandardCharsets.UTF_8));
+            Document document = JSoupUtils.parseHtml(new String(isInvalidHtml.readAllBytes(), StandardCharsets.UTF_8));
 
             processor.removePageBreakAvoids(document);
             String fixedHtml = document.body().html();
@@ -363,7 +361,7 @@ class HtmlProcessorTest {
         try (InputStream isInvalidHtml = this.getClass().getResourceAsStream("/invalidNumberedLists.html");
              InputStream isValidHtml = this.getClass().getResourceAsStream("/validNumberedLists.html")) {
 
-            Document document = parseHtml(new String(isInvalidHtml.readAllBytes(), StandardCharsets.UTF_8));
+            Document document = JSoupUtils.parseHtml(new String(isInvalidHtml.readAllBytes(), StandardCharsets.UTF_8));
 
             processor.fixNestedLists(document);
             String fixedHtml = document.body().html();
@@ -572,7 +570,7 @@ class HtmlProcessorTest {
                     </div>
                 """;
 
-        Document document = parseHtml(initialHtml);
+        Document document = JSoupUtils.parseHtml(initialHtml);
 
         processor.adjustReportedBy(document);
         String processedHtml = document.body().html();
@@ -607,7 +605,7 @@ class HtmlProcessorTest {
                     </div>
                 """;
 
-        Document document = parseHtml(initialHtml);
+        Document document = JSoupUtils.parseHtml(initialHtml);
 
         processor.adjustReportedBy(document);
         String processedHtml = document.body().html();
@@ -651,7 +649,7 @@ class HtmlProcessorTest {
                     </aside>
                 """;
 
-        Document document = parseHtml(initialHtml);
+        Document document = JSoupUtils.parseHtml(initialHtml);
 
         processor.cutExportToPdfButton(document);
         String processedHtml = document.body().html();
@@ -693,7 +691,7 @@ class HtmlProcessorTest {
                     </aside>
                 """;
 
-        Document document = parseHtml(initialHtml);
+        Document document = JSoupUtils.parseHtml(initialHtml);
 
         processor.cutExportToPdfButton(document);
         String processedHtml = document.body().html();
@@ -740,7 +738,7 @@ class HtmlProcessorTest {
                     </table>
                 """;
 
-        Document document = parseHtml(initialHtml);
+        Document document = JSoupUtils.parseHtml(initialHtml);
         processor.adjustColumnWidthInReports(document);
         String processedHtml = document.body().html();
 
@@ -1010,13 +1008,4 @@ class HtmlProcessorTest {
                 .build();
     }
 
-    @NotNull
-    private Document parseHtml(@NotNull String html) {
-        Document document = Jsoup.parse(html);
-        document.outputSettings()
-                .syntax(Document.OutputSettings.Syntax.xml)
-                .escapeMode(Entities.EscapeMode.base)
-                .prettyPrint(false);
-        return document;
-    }
 }
