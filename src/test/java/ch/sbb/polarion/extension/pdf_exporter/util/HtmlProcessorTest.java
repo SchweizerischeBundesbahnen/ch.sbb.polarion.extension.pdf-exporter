@@ -74,13 +74,17 @@ class HtmlProcessorTest {
 
     @Test
     void cutLocalUrlsTest() {
-        String img = "<img title=\"diagram_123.png\" src=\"data:image/png;BASE64Content\"/>";
+        String img = "<img title=\"diagram_123.png\" src=\"data:image/png;BASE64Content\" />";
         String imgInsideA = String.format("<a href=\"http://localhost/polarion/module-attachment/elibrary/some-path\">%s</a>", img);
-        assertEquals(img, processor.cutLocalUrls(imgInsideA));
+        Document document = parseHtml(imgInsideA);
+        processor.cutLocalUrls(document);
+        assertEquals(img, document.body().html());
 
         String span = "<span id=\"PLANID_Version_1_0\" title=\"Version 1.0 (Version_1_0) (2017-03-31)\" class=\"polarion-Plan\">Version 1.0<span> (2017-03-31)</span></span>";
         String spanInsideA = String.format("<a href=\"http://localhost/polarion/#/project/elibrary/another-path\">%s</a>", span);
-        assertEquals(span, processor.cutLocalUrls(spanInsideA));
+        document = parseHtml(spanInsideA);
+        processor.cutLocalUrls(document);
+        assertEquals(span, document.body().html());
     }
 
     @Test
@@ -111,10 +115,15 @@ class HtmlProcessorTest {
         String link = "<a href=\"http://localhost/polarion/#/project/testProject/workitem?id=12345\">Work Item 12345</a>";
         String htmlWithAnchor = anchor + link;
         String expected = anchor + "<a href=\"#work-item-anchor-testProject/12345\">Work Item 12345</a>";
-        assertEquals(expected, processor.rewritePolarionUrls(htmlWithAnchor));
+
+        Document document = parseHtml(htmlWithAnchor);
+        processor.rewritePolarionUrls(document);
+        assertEquals(expected, document.body().html());
 
         String htmlWithoutAnchor = link;
-        assertEquals(link, processor.rewritePolarionUrls(htmlWithoutAnchor));
+        document = parseHtml(htmlWithoutAnchor);
+        processor.rewritePolarionUrls(document);
+        assertEquals(link, document.body().html());
     }
 
     @Test
@@ -422,14 +431,10 @@ class HtmlProcessorTest {
     private static Stream<Arguments> provideHtmlTestCases() {
         return Stream.of(
                 Arguments.of("<h1>First level heading</h1>", """
-                        <div class="title">
-                         First level heading
-                        </div>"""),
+                        <div class="title">First level heading</div>"""),
                 Arguments.of("<h2>First level heading</h2>", "<h1>First level heading</h1>"),
                 Arguments.of("<div>100$</div>", """
-                        <div>
-                         100&dollar;
-                        </div>""")
+                        <div>100&dollar;</div>""")
         );
     }
 
@@ -463,7 +468,7 @@ class HtmlProcessorTest {
                  <p>Text</p>
                 </article>""";
 
-        assertEquals(expectedResult, result);
+        assertEquals(TestStringUtils.removeNonsensicalSymbols(expectedResult), TestStringUtils.removeNonsensicalSymbols(result));
     }
 
     @Test
@@ -723,10 +728,10 @@ class HtmlProcessorTest {
     @SneakyThrows
     void adjustColumnWidthInReportsTest() {
         String initialHtml = """
-                    <table class="polarion-rp-column-layout" style="width: 1000px;">
+                    <table class="polarion-rp-column-layout" style="width: 1000px">
                       <tbody>
                         <tr>
-                          <td class="polarion-rp-column-layout-cell" style="width: 100%;">
+                          <td class="polarion-rp-column-layout-cell" style="width: 100%">
                             <h1 id="polarion_hardcoded_0">PDF Tests</h1>
                             <p id="polarion_hardcoded_1">This Page has no content yet</p>
                           </td>
@@ -734,13 +739,16 @@ class HtmlProcessorTest {
                       </tbody>
                     </table>
                 """;
-        String processedHtml = processor.adjustColumnWidthInReports(initialHtml);
+
+        Document document = parseHtml(initialHtml);
+        processor.adjustColumnWidthInReports(document);
+        String processedHtml = document.body().html();
 
         String expectedHtml = """
-                    <table class="polarion-rp-column-layout" style="width: 100%;">
+                    <table class="polarion-rp-column-layout" style="width: 100%">
                       <tbody>
                         <tr>
-                          <td class="polarion-rp-column-layout-cell" style="width: 100%;">
+                          <td class="polarion-rp-column-layout-cell" style="width: 100%">
                             <h1 id="polarion_hardcoded_0">PDF Tests</h1>
                             <p id="polarion_hardcoded_1">This Page has no content yet</p>
                           </td>

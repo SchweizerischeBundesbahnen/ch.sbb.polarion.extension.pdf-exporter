@@ -3,6 +3,7 @@ package ch.sbb.polarion.extension.pdf_exporter.util;
 import ch.sbb.polarion.extension.pdf_exporter.constants.HtmlTag;
 import lombok.experimental.UtilityClass;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
@@ -175,6 +176,10 @@ public class JSoupUtils {
 
     public boolean isTH(@NotNull Node node) {
         return node instanceof Element element && element.tagName().equals(HtmlTag.TH);
+    }
+
+    public boolean isImg(@Nullable Node node) {
+        return node instanceof Element element && element.tagName().equals(HtmlTag.IMG);
     }
 
     public Element getSingleChildByTag(@NotNull Element element, @NotNull String tagName) {

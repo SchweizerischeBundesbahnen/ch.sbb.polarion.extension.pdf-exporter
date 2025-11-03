@@ -2,6 +2,10 @@ package ch.sbb.polarion.extension.pdf_exporter.util;
 
 import ch.sbb.polarion.extension.pdf_exporter.TestStringUtils;
 import lombok.SneakyThrows;
+import org.jetbrains.annotations.NotNull;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Entities;
 import org.junit.jupiter.api.Test;
 
 import java.io.InputStream;
@@ -22,7 +26,11 @@ class LiveDocTOCGeneratorTest {
             String expectedHtml = new String(isExpectedHtml.readAllBytes(), StandardCharsets.UTF_8);
 
             LiveDocTOCGenerator liveDocTOCGenerator = new LiveDocTOCGenerator();
-            String processedHtml = liveDocTOCGenerator.addTableOfContent(initialHtml);
+
+            Document document = parseHtml(initialHtml);
+
+            liveDocTOCGenerator.addTableOfContent(document);
+            String processedHtml = document.body().html();
 
             // Spaces and new lines are removed to exclude difference in space characters
             assertEquals(TestStringUtils.removeNonsensicalSymbols(expectedHtml), TestStringUtils.removeNonsensicalSymbols(processedHtml));
@@ -40,7 +48,11 @@ class LiveDocTOCGeneratorTest {
             String expectedHtml = new String(isExpectedHtml.readAllBytes(), StandardCharsets.UTF_8);
 
             LiveDocTOCGenerator liveDocTOCGenerator = new LiveDocTOCGenerator();
-            String processedHtml = liveDocTOCGenerator.addTableOfContent(initialHtml);
+
+            Document document = parseHtml(initialHtml);
+
+            liveDocTOCGenerator.addTableOfContent(document);
+            String processedHtml = document.body().html();
 
             // Spaces and new lines are removed to exclude difference in space characters
             assertEquals(TestStringUtils.removeNonsensicalSymbols(expectedHtml), TestStringUtils.removeNonsensicalSymbols(processedHtml));
@@ -58,11 +70,24 @@ class LiveDocTOCGeneratorTest {
             String expectedHtml = new String(isExpectedHtml.readAllBytes(), StandardCharsets.UTF_8);
 
             LiveDocTOCGenerator liveDocTOCGenerator = new LiveDocTOCGenerator();
-            String processedHtml = liveDocTOCGenerator.addTableOfContent(initialHtml);
+
+            Document document = parseHtml(initialHtml);
+
+            liveDocTOCGenerator.addTableOfContent(document);
+            String processedHtml = document.body().html();
 
             // Spaces and new lines are removed to exclude difference in space characters
             assertEquals(TestStringUtils.removeNonsensicalSymbols(expectedHtml), TestStringUtils.removeNonsensicalSymbols(processedHtml));
         }
     }
 
+    @NotNull
+    private Document parseHtml(@NotNull String html) {
+        Document document = Jsoup.parse(html);
+        document.outputSettings()
+                .syntax(Document.OutputSettings.Syntax.xml)
+                .escapeMode(Entities.EscapeMode.base)
+                .prettyPrint(false);
+        return document;
+    }
 }
