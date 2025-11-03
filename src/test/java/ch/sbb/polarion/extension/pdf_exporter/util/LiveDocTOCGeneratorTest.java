@@ -2,10 +2,7 @@ package ch.sbb.polarion.extension.pdf_exporter.util;
 
 import ch.sbb.polarion.extension.pdf_exporter.TestStringUtils;
 import lombok.SneakyThrows;
-import org.jetbrains.annotations.NotNull;
-import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Entities;
 import org.junit.jupiter.api.Test;
 
 import java.io.InputStream;
