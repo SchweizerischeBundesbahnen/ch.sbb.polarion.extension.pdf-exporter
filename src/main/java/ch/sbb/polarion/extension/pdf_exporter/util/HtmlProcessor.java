@@ -573,10 +573,7 @@ public class HtmlProcessor {
     void rewritePolarionUrls(@NotNull Document document) {
         Set<String> workItemAnchors = new HashSet<>();
         for (Element anchor : document.select("a[id^=work-item-anchor-]")) {
-            String id = anchor.id();
-            if (!id.isEmpty()) {
-                workItemAnchors.add(id);
-            }
+            workItemAnchors.add(anchor.id());
         }
 
         for (Element link : document.select("a[href]")) {
@@ -785,7 +782,7 @@ public class HtmlProcessor {
         // Finally replaces double commas ", ," with single comma in parent div of this sequence, but only if such div contains only text and no HTML elements
         Elements sequentialSpans = document.select("span > span");
         for (Element span : sequentialSpans) {
-            if (span.text().isEmpty() && EMPTY_FIELD_TITLE.equals(span.attr("title"))) {
+            if (EMPTY_FIELD_TITLE.equals(span.attr("title"))) {
                 Element parent = span.parent();
                 if (parent != null) {
                     Element parentDiv = parent.parent();

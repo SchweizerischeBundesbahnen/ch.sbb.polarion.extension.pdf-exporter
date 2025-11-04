@@ -118,9 +118,16 @@ class HtmlProcessorTest {
         processor.rewritePolarionUrls(document);
         assertEquals(expected, document.body().html());
 
-        String htmlWithoutAnchor = link;
-        document = JSoupUtils.parseHtml(htmlWithoutAnchor);
+        document = JSoupUtils.parseHtml(link);
         processor.rewritePolarionUrls(document);
+        assertEquals(link, document.body().html());
+
+        link = "<a href=\"http://localhost/polarion/#/project/testProject\">Work Item 12345</a>";
+        document = JSoupUtils.parseHtml(link);
+        assertEquals(link, document.body().html());
+
+        link = "<a href=\"http://localhost/polarion/testProject\">Work Item 12345</a>";
+        document = JSoupUtils.parseHtml(link);
         assertEquals(link, document.body().html());
     }
 
