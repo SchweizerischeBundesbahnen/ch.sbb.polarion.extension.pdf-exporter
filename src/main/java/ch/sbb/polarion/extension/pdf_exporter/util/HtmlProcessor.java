@@ -8,6 +8,7 @@ import ch.sbb.polarion.extension.pdf_exporter.constants.CssProp;
 import ch.sbb.polarion.extension.pdf_exporter.constants.HtmlTag;
 import ch.sbb.polarion.extension.pdf_exporter.constants.HtmlTagAttr;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ConversionParams;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.DocumentType;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.Orientation;
 import ch.sbb.polarion.extension.pdf_exporter.settings.LocalizationSettings;
@@ -57,6 +58,9 @@ public class HtmlProcessor {
     private static final String ROWSPAN_ATTR = "rowspan";
     private static final String RIGHT_ALIGNMENT_MARGIN = "auto 0px auto auto";
     private static final String EMPTY_FIELD_TITLE = "This field is empty";
+    private static final String URL_PROJECT_ID_PREFIX = "/polarion/#/project/";
+    private static final String URL_WORK_ITEM_ID_PREFIX = "workitem?id=";
+    private static final String POLARION_URL_MARKER = "/polarion/#";
 
     private static final String UNSUPPORTED_DOCUMENT_TYPE = "Unsupported document type: %s";
 
@@ -84,8 +88,8 @@ public class HtmlProcessor {
         // Replace all dollar-characters in HTML document before applying any regular expressions, as it has special meaning there
         html = encodeDollarSigns(html);
 
-        // Remove all <pd4ml:page> tags which only have meaning for PD4ML library which we are not using. For all these tags we have either our own implementation or pure CSS solution
-        html = removePd4mlTags(html);
+        // Remove all <pd4ml:page> tags which only have meaning for PD4ML library which we are not using.
+        html = removePd4mlPageTags(html);
 
         // Change path of enum images from internal Polarion to publicly available
         html = html.replace("/ria/images/enums/", "/icons/default/enums/");
@@ -94,6 +98,13 @@ public class HtmlProcessor {
         // <div style="clear:both;"> with the duplicated content inside.
         // Potential fix below is simple: just hide these blocks.
         html = html.replace("style=\"clear:both;\"", "style=\"clear:both;display:none;\"");
+
+        // fix HTML adding closing tag for <pd4ml:toc> - JSoup requires it
+        html = html.replaceAll("(<pd4ml:toc[^>]*)(>)", "$1></pd4ml:toc>");
+
+        if (exportParams.getRenderComments() != null) {
+            html = processComments(html);
+        }
 
         // II. SECOND SECTION - manipulate HTML as a JSoup document. These changes are vice versa fulfilled easier with JSoup.
         // ----------------
@@ -133,6 +144,9 @@ public class HtmlProcessor {
 
             // Cuts "Export To PDF" button from report's content
             cutExportToPdfButton(document);
+
+            // Replaces fixed width value of report tables by relative one
+            adjustColumnWidthInReports(document);
         }
 
         // Polarion doesn't place table rows with th-tags into thead, placing them in table's tbody, which is wrong as table header won't
@@ -164,34 +178,30 @@ public class HtmlProcessor {
         }
         // ----
 
+        // Rewrites Polarion Work Item hyperlinks so that they become intra-document anchor links.
+        rewritePolarionUrls(document);
+
+        if (exportParams.isCutLocalUrls()) {
+            cutLocalUrls(document);
+        }
+
+        getTocGenerator(exportParams.getDocumentType()).addTableOfContent(document);
+
         html = document.body().html();
 
-        // TODO: This should be String processing either right before or right after JSoup, check this
-        html = switch (exportParams.getDocumentType()) {
-            case LIVE_DOC, WIKI_PAGE -> {
-                String processingHtml = new LiveDocTOCGenerator().addTableOfContent(html);
-                yield addTableOfFigures(processingHtml);
-            }
-            case LIVE_REPORT, TEST_RUN -> {
-                String processingHtml = new LiveReportTOCGenerator().addTableOfContent(html);
-                processingHtml = adjustColumnWidthInReports(processingHtml);
-                yield removeFloatLeftFromReports(processingHtml);
-            }
-            case BASELINE_COLLECTION -> throw new IllegalArgumentException(UNSUPPORTED_DOCUMENT_TYPE.formatted(exportParams.getDocumentType()));
-        };
+        // Jsoup may convert &dollar; back to $ in some cases, so we need to replace it again
+        html = encodeDollarSigns(html);
 
         // TODO: rework below, migrating to JSoup processing when reasonable
 
+        if (exportParams.getDocumentType() == LIVE_DOC || exportParams.getDocumentType() == WIKI_PAGE) {
+            html = addTableOfFigures(html);
+        }
+        if (exportParams.getDocumentType() == LIVE_REPORT || exportParams.getDocumentType() == TEST_RUN) {
+            html = removeFloatLeftFromReports(html);
+        }
+
         html = replaceResourcesAsBase64Encoded(html);
-        html = rewritePolarionUrls(html);
-
-        if (exportParams.isCutLocalUrls()) {
-            html = cutLocalUrls(html);
-        }
-
-        if (exportParams.getRenderComments() != null) {
-            html = processComments(html);
-        }
         if (hasCustomPageBreaks(html)) {
             //processPageBrakes contains its own adjustContentToFitPage() calls
             html = processPageBrakes(html, exportParams);
@@ -205,7 +215,7 @@ public class HtmlProcessor {
     }
 
     @NotNull
-    private String removePd4mlTags(@NotNull String html) {
+    private String removePd4mlPageTags(@NotNull String html) {
         return RegexMatcher.get("(<pd4ml:page.*>)(.)").replace(html, regexEngine -> regexEngine.group(2));
     }
 
@@ -543,76 +553,63 @@ public class HtmlProcessor {
         }
     }
 
-    @NotNull
     @VisibleForTesting
-    @SuppressWarnings({"java:S5843", "java:S5852"})
-    String cutLocalUrls(@NotNull String html) {
-        // This regexp consists of 2 parts combined by OR-condition. In first part it looks for <a>-tags
-        // containing "/polarion/#" in its href attribute and match a content inside of this <a> into named group "content".
-        // In second part of this regexp it looks for <a>-tags which href attribute starts with "http" and containing <img>-tag inside of it
-        // and matches a content inside of this <a> into named group "imgContent". The sense of this regexp is to find
-        // all links (as text-link or images) linking to local Polarion resources and to cut these links off, though leaving
-        // their content in text.
-        return RegexMatcher.get("<a[^>]+?href=[^>]*?/polarion/#[^>]*?>(?<content>[\\s\\S]+?)</a>|<a[^>]+?href=\"http[^>]+?>(?<imgContent><img[^>]+?src=\"data:[^>]+?>)</a>")
-                .replace(html, regexEngine -> {
-                    String content = regexEngine.group("content");
-                    return content != null ? content : regexEngine.group("imgContent");
-                });
+    void cutLocalUrls(@NotNull Document document) {
+        // Looks for <a>-tags containing "/polarion/#" in its href attribute or for <a>-tags which href attribute starts with "http" and containing <img>-tag inside of it.
+        // Then it moves content of such links outside it and removing links themselves.
+        for (Element link : document.select("a[href]")) {
+            String href = link.attr(HtmlTagAttr.HREF);
+            boolean cutUrl = href.contains(POLARION_URL_MARKER) || JSoupUtils.isImg(link.firstElementChild());
+            if (cutUrl) {
+                for (Node contentNodes : link.childNodes()) {
+                    link.before(contentNodes.clone());
+                }
+                link.remove();
+            }
+        }
     }
 
-    /**
-     * Rewrites Polarion Work Item hyperlinks so that they become intra-document anchor links.
-     **/
-    @NotNull
     @VisibleForTesting
-    @SuppressWarnings({"java:S3776", "java:S135"}) //complexity is acceptable here
-    String rewritePolarionUrls(@NotNull String html) {
-        Document doc = Jsoup.parse(html);
-
+    void rewritePolarionUrls(@NotNull Document document) {
         Set<String> workItemAnchors = new HashSet<>();
-        for (Element anchor : doc.select("a[id^=work-item-anchor-]")) {
-            String id = anchor.id();
-            if (!id.isEmpty()) {
-                workItemAnchors.add(id);
-            }
+        for (Element anchor : document.select("a[id^=work-item-anchor-]")) {
+            workItemAnchors.add(anchor.id());
         }
 
-        for (Element link : doc.select("a[href]")) {
-            String href = link.attr("href");
-            int polarionIdx = href.indexOf("/polarion/#/project/");
-            if (polarionIdx < 0) {
+        for (Element link : document.select("a[href]")) {
+            String href = link.attr(HtmlTagAttr.HREF);
+
+            String afterProject = substringAfter(href, URL_PROJECT_ID_PREFIX);
+            String projectId = substringBefore(afterProject, "/", false);
+            String workItemId = substringAfter(afterProject, URL_WORK_ITEM_ID_PREFIX);
+
+            if (afterProject == null || projectId == null || workItemId == null) {
                 continue;
             }
-            String afterProject = href.substring(polarionIdx + "/polarion/#/project/".length());
-            int slashIdx = afterProject.indexOf('/');
-            if (slashIdx < 0) {
-                continue;
-            }
-            String projectId = afterProject.substring(0, slashIdx);
-            int workItemIdx = afterProject.indexOf("workitem?id=");
-            if (workItemIdx < 0) {
-                continue;
-            }
-            String workItemPart = afterProject.substring(workItemIdx + "workitem?id=".length());
-            int ampIdx = workItemPart.indexOf('&');
-            if (ampIdx >= 0) {
-                workItemPart = workItemPart.substring(0, ampIdx);
-            }
-            int hashIdx = workItemPart.indexOf('#');
-            if (hashIdx >= 0) {
-                workItemPart = workItemPart.substring(0, hashIdx);
-            }
-            if (workItemPart.isEmpty()) {
-                continue;
-            }
-            String expectedAnchorId = "work-item-anchor-" + projectId + "/" + workItemPart;
-            if (workItemAnchors.contains(expectedAnchorId)) {
-                link.attr("href", "#" + expectedAnchorId);
+
+            workItemId = substringBefore(workItemId, "&", true);
+            workItemId = workItemId != null ? substringBefore(workItemId, "#", true) : null;
+            if (!StringUtils.isEmpty(workItemId)) {
+                String expectedAnchorId = "work-item-anchor-" + projectId + "/" + workItemId;
+                if (workItemAnchors.contains(expectedAnchorId)) {
+                    link.attr(HtmlTagAttr.HREF, "#" + expectedAnchorId);
+                }
             }
         }
+    }
 
-        html = encodeDollarSigns(doc.body().html()); // Jsoup may convert &dollar; back to $ in some cases, so we need to replace it again
-        return html;
+    @Nullable
+    private String substringBefore(@Nullable String str, @NotNull String marker, boolean initialStringIfNotFound) {
+        if (str != null && str.contains(marker)) {
+            return str.substring(0, str.indexOf(marker));
+        } else {
+            return initialStringIfNotFound ? str : null;
+        }
+    }
+
+    @Nullable
+    private String substringAfter(@Nullable String str, @NotNull String marker) {
+        return str != null && str.contains(marker) ? str.substring(str.indexOf(marker) + marker.length()) : null;
     }
 
     /**
@@ -784,7 +781,7 @@ public class HtmlProcessor {
         // Finally replaces double commas ", ," with single comma in parent div of this sequence, but only if such div contains only text and no HTML elements
         Elements sequentialSpans = document.select("span > span");
         for (Element span : sequentialSpans) {
-            if (span.text().isEmpty() && EMPTY_FIELD_TITLE.equals(span.attr("title"))) {
+            if (EMPTY_FIELD_TITLE.equals(span.attr("title"))) {
                 Element parent = span.parent();
                 if (parent != null) {
                     Element parentDiv = parent.parent();
@@ -1015,12 +1012,17 @@ public class HtmlProcessor {
         }
     }
 
-    @NotNull
     @VisibleForTesting
-    String adjustColumnWidthInReports(@NotNull String html) {
-        // Replace fixed width value by relative one
-        return html.replace("<table class=\"polarion-rp-column-layout\" style=\"width: 1000px;\">",
-                "<table class=\"polarion-rp-column-layout\" style=\"width: 100%;\">");
+    void adjustColumnWidthInReports(@NotNull Document document) {
+        Elements reportTables = document.select("table.polarion-rp-column-layout");
+        for (Element reportTable : reportTables) {
+            CSSStyleDeclaration cssStyle = getCssStyle(reportTable);
+            String width = getCssValue(cssStyle, CssProp.WIDTH);
+            if ("1000px".equals(width)) {
+                cssStyle.setProperty(CssProp.WIDTH, "100%", null);
+                reportTable.attr(HtmlTagAttr.STYLE, cssStyle.getCssText());
+            }
+        }
     }
 
     @NotNull
@@ -1064,6 +1066,14 @@ public class HtmlProcessor {
 
     private CSSStyleDeclaration parseCss(@NotNull String style) {
         return CssUtils.parseCss(parser, style);
+    }
+
+    private DocumentTOCGenerator getTocGenerator(DocumentType documentType) {
+        return switch (documentType) {
+            case LIVE_DOC, WIKI_PAGE -> new LiveDocTOCGenerator();
+            case LIVE_REPORT, TEST_RUN -> new LiveReportTOCGenerator();
+            default -> throw new IllegalArgumentException(UNSUPPORTED_DOCUMENT_TYPE.formatted(documentType));
+        };
     }
 
     /**

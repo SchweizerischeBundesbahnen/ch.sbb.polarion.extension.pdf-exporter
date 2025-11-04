@@ -4,7 +4,7 @@ import lombok.experimental.UtilityClass;
 
 @UtilityClass
 public class HtmlTag {
-    public static final String STYLE = "style"; // This constant specifies HTML's style-tag (not tag's attribute)
+    public static final String A = "a";
     public static final String BR = "br";
     public static final String BUTTON = "button";
     public static final String CANVAS = "canvas";
@@ -21,6 +21,7 @@ public class HtmlTag {
     public static final String OL = "ol";
     public static final String PICTURE = "picture";
     public static final String PROGRESS = "progress";
+    public static final String STYLE = "style"; // This constant specifies HTML's style-tag (not tag's attribute)
     public static final String TABLE = "table";
     public static final String TBODY = "tbody";
     public static final String TD = "td";
