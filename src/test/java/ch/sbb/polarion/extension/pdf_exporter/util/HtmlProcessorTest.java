@@ -782,7 +782,10 @@ class HtmlProcessorTest {
                     </table>
                     <div style="clear: both;"></div>
                 """;
-        String processedHtml = processor.removeFloatLeftFromReports(initialHtml);
+
+        Document document = JSoupUtils.parseHtml(initialHtml);
+        processor.removeFloatLeftFromReports(document);
+        String processedHtml = document.body().html();
 
         String expectedHtml = """
                     <table id="polarion_client20" >
