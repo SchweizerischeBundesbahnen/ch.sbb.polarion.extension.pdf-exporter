@@ -580,28 +580,27 @@ public class HtmlProcessor {
             String href = link.attr(HtmlTagAttr.HREF);
 
             String afterProject = substringAfter(href, URL_PROJECT_ID_PREFIX);
-            if (afterProject == null) {
+            String projectId = substringBefore(afterProject, "/", false);
+            String workItemId = substringAfter(afterProject, URL_WORK_ITEM_ID_PREFIX);
+
+            if (afterProject == null || projectId == null || workItemId == null) {
                 continue;
             }
 
-            String projectId = substringBefore(afterProject, "/", false);
-            String workItemId = substringAfter(afterProject, URL_WORK_ITEM_ID_PREFIX);
-            if (projectId != null && workItemId != null) {
-                workItemId = substringBefore(workItemId, "&", true);
-                workItemId = workItemId != null ? substringBefore(workItemId, "#", true) : null;
-                if (!StringUtils.isEmpty(workItemId)) {
-                    String expectedAnchorId = "work-item-anchor-" + projectId + "/" + workItemId;
-                    if (workItemAnchors.contains(expectedAnchorId)) {
-                        link.attr(HtmlTagAttr.HREF, "#" + expectedAnchorId);
-                    }
+            workItemId = substringBefore(workItemId, "&", true);
+            workItemId = workItemId != null ? substringBefore(workItemId, "#", true) : null;
+            if (!StringUtils.isEmpty(workItemId)) {
+                String expectedAnchorId = "work-item-anchor-" + projectId + "/" + workItemId;
+                if (workItemAnchors.contains(expectedAnchorId)) {
+                    link.attr(HtmlTagAttr.HREF, "#" + expectedAnchorId);
                 }
             }
         }
     }
 
     @Nullable
-    private String substringBefore(@NotNull String str, @NotNull String marker, boolean initialStringIfNotFound) {
-        if (str.contains(marker)) {
+    private String substringBefore(@Nullable String str, @NotNull String marker, boolean initialStringIfNotFound) {
+        if (str != null && str.contains(marker)) {
             return str.substring(0, str.indexOf(marker));
         } else {
             return initialStringIfNotFound ? str : null;
@@ -609,8 +608,8 @@ public class HtmlProcessor {
     }
 
     @Nullable
-    private String substringAfter(@NotNull String str, @NotNull String marker) {
-        return str.contains(marker) ? str.substring(str.indexOf(marker) + marker.length()) : null;
+    private String substringAfter(@Nullable String str, @NotNull String marker) {
+        return str != null && str.contains(marker) ? str.substring(str.indexOf(marker) + marker.length()) : null;
     }
 
     /**
