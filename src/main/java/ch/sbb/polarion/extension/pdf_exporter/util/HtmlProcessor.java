@@ -33,7 +33,6 @@ import org.w3c.dom.css.CSSStyleDeclaration;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -47,12 +46,10 @@ import static ch.sbb.polarion.extension.pdf_exporter.util.exporter.Constants.*;
 
 public class HtmlProcessor {
 
-    private static final String DIV_START_TAG = "<div>";
     private static final String DIV_END_TAG = "</div>";
     private static final String SPAN_END_TAG = "</span>";
     private static final String COMMENT_START = "[span";
     private static final String COMMENT_END = "[/span]";
-    private static final String NUMBER = "number";
     private static final String DOLLAR_SIGN = "$";
     private static final String DOLLAR_ENTITY = "&dollar;";
     private static final String ROWSPAN_ATTR = "rowspan";
@@ -61,6 +58,7 @@ public class HtmlProcessor {
     private static final String URL_PROJECT_ID_PREFIX = "/polarion/#/project/";
     private static final String URL_WORK_ITEM_ID_PREFIX = "workitem?id=";
     private static final String POLARION_URL_MARKER = "/polarion/#";
+    private static final String TABLE_OF_FIGURES_ANCHOR_ID_PREFIX = "dlecaption_";
 
     private static final String UNSUPPORTED_DOCUMENT_TYPE = "Unsupported document type: %s";
 
@@ -136,6 +134,8 @@ public class HtmlProcessor {
 
             // Localize enumeration values
             localizeEnums(document, exportParams);
+
+            addTableOfFigures(document);
         }
 
         if (exportParams.getDocumentType() == LIVE_REPORT || exportParams.getDocumentType() == TEST_RUN) {
@@ -196,10 +196,6 @@ public class HtmlProcessor {
         html = encodeDollarSigns(html);
 
         // TODO: rework below, migrating to JSoup processing when reasonable
-
-        if (exportParams.getDocumentType() == LIVE_DOC || exportParams.getDocumentType() == WIKI_PAGE) {
-            html = addTableOfFigures(html);
-        }
 
         html = replaceResourcesAsBase64Encoded(html);
         if (hasCustomPageBreaks(html)) {
@@ -954,30 +950,34 @@ public class HtmlProcessor {
         return html.replaceAll("&nbsp;|\u00A0", " ");
     }
 
-    @NotNull
-    String addTableOfFigures(@NotNull final String html) {
-        Map<String, String> tofByLabel = new HashMap<>();
-        return RegexMatcher.get("<div data-sequence=\"(?<label>[^\"]+)\" id=\"polarion_wiki macro name=tof[^>]*></div>").replace(html, regexEngine -> {
-            String label = regexEngine.group("label");
-            return tofByLabel.computeIfAbsent(label, notYetGeneratedLabel -> generateTableOfFigures(html, notYetGeneratedLabel));
-        });
+    @VisibleForTesting
+    void addTableOfFigures(@NotNull Document document) {
+        for (Element tofPlaceholder : document.select("div[id*=macro name=tof][data-sequence]")) {
+            String label = tofPlaceholder.dataset().get("sequence");
+            Element tof = generateTableOfFigures(document, label);
+            tofPlaceholder.before(tof);
+            tofPlaceholder.remove();
+        }
     }
 
-    @NotNull
-    private String generateTableOfFigures(@NotNull String html, @NotNull String label) {
-        StringBuilder buf = new StringBuilder(DIV_START_TAG);
+    private Element generateTableOfFigures(@NotNull Document document, @NotNull String label) {
+        Element tof = new Element(HtmlTag.DIV);
+        for (Element captionAnchor : document.select(String.format("p.polarion-rte-caption-paragraph span.polarion-rte-caption[data-sequence=%s] a[name^=%s]",
+                escapeCssSelectorValue(label), TABLE_OF_FIGURES_ANCHOR_ID_PREFIX))) {
+            // CSS selector above guarantees that parent below won't be null
+            Element captionNumber = Objects.requireNonNull(captionAnchor.parent());
 
-        // This regexp searches for paragraphs with class 'polarion-rte-caption-paragraph'
-        // with text contained in 'label' parameter in it followed by span-element with class 'polarion-rte-caption' and number inside it (number of figure),
-        // which in its turn followed by a-element with name 'dlecaption_<N>' (where <N> - is figure number), which in its turn is followed by figure caption
-        RegexMatcher.get(String.format("<p[^>]+?class=\"polarion-rte-caption-paragraph\"[^>]*>\\s*?.*?%s[^<]*<span data-sequence=\"%s\" " +
-                "class=\"polarion-rte-caption\">(?<number>\\d+)<a name=\"dlecaption_(?<id>\\d+)\"></a></span>(?<caption>[^<]+)", label, label)).processEntry(html, regexEngine -> {
-            String number = regexEngine.group(NUMBER);
-            String id = regexEngine.group("id");
-            String caption = regexEngine.group("caption");
-            if (caption.contains(SPAN_END_TAG)) {
-                caption = caption.substring(0, caption.indexOf(SPAN_END_TAG));
+            // CSS selector above guarantees that 'name' attribute of anchor below won't be null and will have length at least of TABLE_OF_FIGURES_ANCHOR_ID_PREFIX constant length
+            String anchorId = captionAnchor.attr("name").substring(TABLE_OF_FIGURES_ANCHOR_ID_PREFIX.length());
+            Node numberNode = captionNumber.childNodes().stream().filter(TextNode.class::isInstance).findFirst().orElse(null);
+            String number = numberNode instanceof TextNode numberTextNode ? numberTextNode.text() : null;
+            Node captionNode = captionNumber.nextSibling();
+            String caption = captionNode instanceof TextNode captionTextNode ? captionTextNode.text() : null;
+
+            if (StringUtils.isEmpty(anchorId) || number == null || caption == null) {
+                continue;
             }
+
             while (caption.contains(COMMENT_START)) {
                 StringBuilder captionBuf = new StringBuilder(caption);
                 int start = caption.indexOf(COMMENT_START);
@@ -985,10 +985,29 @@ public class HtmlProcessor {
                 captionBuf.replace(start, ending, "");
                 caption = captionBuf.toString();
             }
-            buf.append(String.format("<a href=\"#dlecaption_%s\">%s %s. %s</a><br>", id, label, number, caption.trim()));
-        });
-        buf.append(DIV_END_TAG);
-        return buf.toString();
+
+            Element tofItem = new Element(HtmlTag.A);
+            tofItem.attr(HtmlTagAttr.HREF, String.format("#dlecaption_%s", anchorId));
+            tofItem.text(String.format("%s %s. %s", label, number, caption.trim()));
+
+            tof.appendChild(tofItem);
+            tof.appendChild(new Element(HtmlTag.BR));
+        }
+
+        return tof;
+    }
+
+    private String escapeCssSelectorValue(String value) {
+        if (value == null) {
+            return "";
+        }
+
+        return "'"
+                + value
+                .replace("\\", "\\\\") // Escape backslash (must be first!)
+                .replace("\"", "\\\"") // Escape double quotes
+                .replace("'", "\\'")   // Escape single quotes
+                + "'";
     }
 
     @VisibleForTesting
