@@ -145,6 +145,9 @@ public class HtmlProcessor {
             // Cuts "Export To PDF" button from report's content
             cutExportToPdfButton(document);
 
+            // Remove "float: left;" style definition from tables
+            removeFloatLeftFromReports(document);
+
             // Replaces fixed width value of report tables by relative one
             adjustColumnWidthInReports(document);
         }
@@ -196,9 +199,6 @@ public class HtmlProcessor {
 
         if (exportParams.getDocumentType() == LIVE_DOC || exportParams.getDocumentType() == WIKI_PAGE) {
             html = addTableOfFigures(html);
-        }
-        if (exportParams.getDocumentType() == LIVE_REPORT || exportParams.getDocumentType() == TEST_RUN) {
-            html = removeFloatLeftFromReports(html);
         }
 
         html = replaceResourcesAsBase64Encoded(html);
@@ -778,17 +778,17 @@ public class HtmlProcessor {
 
     private void cutEmptyWIAttributesInText(@NotNull Document document) {
         // Iterates through sequential spans and if second one in this sequence has title="This field is empty", removes such sequence.
-        // Finally replaces double commas ", ," with single comma in parent div of this sequence, but only if such div contains only text and no HTML elements
+        // Finally removes comma separator which and if precedes this sequence
         Elements sequentialSpans = document.select("span > span");
         for (Element span : sequentialSpans) {
             if (EMPTY_FIELD_TITLE.equals(span.attr("title"))) {
                 Element parent = span.parent();
                 if (parent != null) {
-                    Element parentDiv = parent.parent();
-                    parent.remove();
-                    if (parentDiv != null && parentDiv.children().isEmpty()) {
-                        parentDiv.text(parentDiv.text().replace(", ,", ","));
+                    Node previousSibling = parent.previousSibling();
+                    if (previousSibling instanceof TextNode previousSiblingTextNode && ", ".equals(previousSiblingTextNode.text())) {
+                        previousSiblingTextNode.remove();
                     }
+                    parent.remove();
                 }
             }
         }
@@ -1025,12 +1025,21 @@ public class HtmlProcessor {
         }
     }
 
-    @NotNull
     @VisibleForTesting
-    String removeFloatLeftFromReports(@NotNull String html) {
-        // Remove "float: left;" style definition from tables
-        return RegexMatcher.get("(?<table><table[^>]*)style=\"float: left;\"")
-                .replace(html, regexEngine -> regexEngine.group("table"));
+    void removeFloatLeftFromReports(@NotNull Document document) {
+        Elements tables = document.select("table");
+        for (Element table : tables) {
+            CSSStyleDeclaration cssStyle = getCssStyle(table);
+            String cssFloat = getCssValue(cssStyle, CssProp.FLOAT);
+            if (CssProp.FLOAT_LEFT_VALUE.equals(cssFloat)) {
+                cssStyle.removeProperty(CssProp.FLOAT);
+                if (cssStyle.getLength() == 0) {
+                    table.removeAttr(HtmlTagAttr.STYLE);
+                } else {
+                    table.attr(HtmlTagAttr.STYLE, cssStyle.getCssText());
+                }
+            }
+        }
     }
 
     @SneakyThrows

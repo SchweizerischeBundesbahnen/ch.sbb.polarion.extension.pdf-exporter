@@ -6,6 +6,8 @@ import lombok.experimental.UtilityClass;
 public class CssProp {
     public static final String DISPLAY = "display";
     public static final String DISPLAY_BLOCK_VALUE = "block";
+    public static final String FLOAT = "float";
+    public static final String FLOAT_LEFT_VALUE = "left";
     public static final String FONT_SIZE = "font-size";
     public static final String HEIGHT = "height";
     public static final String MARGIN = "margin";

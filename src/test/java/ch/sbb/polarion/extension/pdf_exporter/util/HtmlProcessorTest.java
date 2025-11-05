@@ -767,39 +767,20 @@ class HtmlProcessorTest {
     @Test
     @SneakyThrows
     void removeFloatLeftFromReportsTest() {
-        String initialHtml = """
-                    <table id="polarion_client20" style="float: left;">
-                      <tbody>
-                        <tr>
-                          <td>Status</td>
-                          <td><span title="Accepted">Accepted</span></td>
-                        </tr>
-                        <tr>
-                          <td>Severity</td>
-                          <td><span title="Nice to Have">Nice to Have</span></td>
-                        </tr>
-                      </tbody>
-                    </table>
-                    <div style="clear: both;"></div>
-                """;
-        String processedHtml = processor.removeFloatLeftFromReports(initialHtml);
+        try (InputStream isInitialHtml = this.getClass().getResourceAsStream("/removeFloatLeftFromReportsBeforeProcessing.html");
+             InputStream isExpectedHtml = this.getClass().getResourceAsStream("/removeFloatLeftFromReportsAfterProcessing.html")) {
 
-        String expectedHtml = """
-                    <table id="polarion_client20" >
-                      <tbody>
-                        <tr>
-                          <td>Status</td>
-                          <td><span title="Accepted">Accepted</span></td>
-                        </tr>
-                        <tr>
-                          <td>Severity</td>
-                          <td><span title="Nice to Have">Nice to Have</span></td>
-                        </tr>
-                      </tbody>
-                    </table>
-                    <div style="clear: both;"></div>
-                """;
-        assertEquals(TestStringUtils.removeNonsensicalSymbols(expectedHtml), TestStringUtils.removeNonsensicalSymbols(processedHtml.replaceAll(" ", "")));
+            String initialHtml = new String(isInitialHtml.readAllBytes(), StandardCharsets.UTF_8);
+            String expectedHtml = new String(isExpectedHtml.readAllBytes(), StandardCharsets.UTF_8);
+
+            Document document = JSoupUtils.parseHtml(initialHtml);
+
+            processor.removeFloatLeftFromReports(document);
+            String processedHtml = document.body().html();
+
+            // Spaces and new lines are removed to exclude difference in space characters
+            assertEquals(TestStringUtils.removeNonsensicalSymbols(expectedHtml), TestStringUtils.removeNonsensicalSymbols(processedHtml));
+        }
     }
 
     @Test
