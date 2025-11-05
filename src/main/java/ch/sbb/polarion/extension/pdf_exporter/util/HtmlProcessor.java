@@ -33,7 +33,6 @@ import org.w3c.dom.css.CSSStyleDeclaration;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -47,12 +46,10 @@ import static ch.sbb.polarion.extension.pdf_exporter.util.exporter.Constants.*;
 
 public class HtmlProcessor {
 
-    private static final String DIV_START_TAG = "<div>";
     private static final String DIV_END_TAG = "</div>";
     private static final String SPAN_END_TAG = "</span>";
     private static final String COMMENT_START = "[span";
     private static final String COMMENT_END = "[/span]";
-    private static final String NUMBER = "number";
     private static final String DOLLAR_SIGN = "$";
     private static final String DOLLAR_ENTITY = "&dollar;";
     private static final String ROWSPAN_ATTR = "rowspan";
@@ -965,12 +962,14 @@ public class HtmlProcessor {
 
     private Element generateTableOfFigures(@NotNull Document document, @NotNull String label) {
         Element tof = new Element(HtmlTag.DIV);
-        for (Element captionAnchor : document.select(String.format("p.polarion-rte-caption-paragraph span.polarion-rte-caption[data-sequence=%s] a[name^=%s]", label, TABLE_OF_FIGURES_ANCHOR_ID_PREFIX))) {
+        for (Element captionAnchor : document.select(String.format("p.polarion-rte-caption-paragraph span.polarion-rte-caption[data-sequence=%s] a[name^=%s]",
+                escapeCssSelectorValue(label), TABLE_OF_FIGURES_ANCHOR_ID_PREFIX))) {
             // CSS selector above guarantees that parent below won't be null
             Element captionNumber = Objects.requireNonNull(captionAnchor.parent());
 
+            // CSS selector above guarantees that 'name' attribute of anchor below won't be null and will have length at least of TABLE_OF_FIGURES_ANCHOR_ID_PREFIX constant length
             String anchorId = captionAnchor.attr("name").substring(TABLE_OF_FIGURES_ANCHOR_ID_PREFIX.length());
-            Node numberNode = captionNumber.childNodes().stream().filter(child -> child instanceof TextNode).findFirst().orElse(null);
+            Node numberNode = captionNumber.childNodes().stream().filter(TextNode.class::isInstance).findFirst().orElse(null);
             String number = numberNode instanceof TextNode numberTextNode ? numberTextNode.text() : null;
             Node captionNode = captionNumber.nextSibling();
             String caption = captionNode instanceof TextNode captionTextNode ? captionTextNode.text() : null;
@@ -996,6 +995,19 @@ public class HtmlProcessor {
         }
 
         return tof;
+    }
+
+    private String escapeCssSelectorValue(String value) {
+        if (value == null) {
+            return "";
+        }
+
+        return "'"
+                + value
+                .replace("\\", "\\\\") // Escape backslash (must be first!)
+                .replace("\"", "\\\"") // Escape double quotes
+                .replace("'", "\\'")   // Escape single quotes
+                + "'";
     }
 
     @VisibleForTesting
