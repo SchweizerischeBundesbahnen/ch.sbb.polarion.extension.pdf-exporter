@@ -778,7 +778,7 @@ public class HtmlProcessor {
 
     private void cutEmptyWIAttributesInText(@NotNull Document document) {
         // Iterates through sequential spans and if second one in this sequence has title="This field is empty", removes such sequence.
-        // Finally replaces double commas ", ," with single comma in parent div of this sequence, but only if such div contains only text and no HTML elements
+        // Finally removes comma separator which and if precedes this sequence
         Elements sequentialSpans = document.select("span > span");
         for (Element span : sequentialSpans) {
             if (EMPTY_FIELD_TITLE.equals(span.attr("title"))) {
