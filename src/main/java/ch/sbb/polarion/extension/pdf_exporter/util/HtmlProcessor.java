@@ -191,9 +191,11 @@ public class HtmlProcessor {
         getTocGenerator(exportParams.getDocumentType()).addTableOfContent(document);
 
         if (exportParams.isFitToPage() && !hasCustomPageBreaks(html)) {
-            // In case of custom page breaks adjustContentToFitPage() will be called separately for each HTML block between page breaks separately (see below),
-            // as paper orientation can be changed by page break
+            // ---- BOOKMARK 1
+            // In case of custom page breaks adjustContentToFitPage() will be called separately for each HTML block between
+            // page breaks separately (see BOOKMARK 2 below), as paper orientation can be changed by page break
             adjustContentToFitPage(document, exportParams);
+            // ----
         }
 
         html = document.body().html();
@@ -204,8 +206,10 @@ public class HtmlProcessor {
         html = replaceResourcesAsBase64Encoded(html);
 
         if (hasCustomPageBreaks(html)) {
-            // processPageBrakes contains its own adjustContentToFitPage() calls
+            // ---- BOOKMARK 2
+            // processPageBrakes() contains its own adjustContentToFitPage() calls, see BOOKMARK 1 for same logic without custom page breaks
             html = processPageBrakes(html, exportParams);
+            // ----
         }
 
         // Do not change this entry order, '&nbsp;' can be used in the logic above, so we must cut them off as the last step
