@@ -383,35 +383,38 @@ class HtmlProcessorTest {
     @SneakyThrows
     void nothingToReplaceTest() {
         String html = "<div></div>";
-        String result = processor.replaceResourcesAsBase64Encoded(html);
-        assertEquals("<div></div>", result);
+        Document document = JSoupUtils.parseHtml(html);
+        processor.replaceImagesAsBase64Encoded(document);
+        assertEquals("<div></div>", document.body().html());
     }
 
     @Test
     @SneakyThrows
     void replaceImagesAsBase64EncodedTest() {
-        String html = "<div><img id=\"image\" src=\"http://localhost/some-path/img.png\"/></div>";
+        String html = "<div><img id=\"image_1\" src=\"http://localhost/some-path/img.png\" /><img id=\"image_2\" src=\"\" /></div>";
+        Document document = JSoupUtils.parseHtml(html);
         when(fileResourceProvider.getResourceAsBase64String(any())).thenReturn("base64Data");
-        String result = processor.replaceResourcesAsBase64Encoded(html);
-        assertEquals("<div><img id=\"image\" src=\"base64Data\"/></div>", result);
+        processor.replaceImagesAsBase64Encoded(document);
+        assertEquals("<div><img id=\"image_1\" src=\"base64Data\" /><img id=\"image_2\" src=\"\" /></div>", document.body().html());
     }
 
     @Test
     @SneakyThrows
     void replaceSvgImagesAsBase64EncodedTest() {
         String html = "<div><img id=\"image1\" src=\"http://localhost/some-path/img1.svg\"/> <img id='image2' src='http://localhost/some-path/img2.svg'/> <img id='image1' src='http://localhost/some-path/img1.svg'/></div>";
+        Document document = JSoupUtils.parseHtml(html);
         byte[] imgBytes;
         try (InputStream is = new ByteArrayInputStream("<?xml version=\"1.0\" encoding=\"UTF-8\"?><svg xmlns=\"http://www.w3.org/2000/svg\"><switch><g requiredFeatures=\"http://www.w3.org/TR/SVG11/feature#Extensibility\"/></switch></svg>".getBytes(StandardCharsets.UTF_8))) {
             imgBytes = is.readAllBytes();
         }
         when(fileResourceProvider.getResourceAsBytes(any())).thenReturn(imgBytes);
         when(fileResourceProvider.getResourceAsBase64String(any())).thenCallRealMethod();
-        String result = processor.replaceResourcesAsBase64Encoded(html);
+        processor.replaceImagesAsBase64Encoded(document);
         String base64SvgImage = Base64.getEncoder().encodeToString("<?xml version=\"1.0\" encoding=\"UTF-8\"?><svg xmlns=\"http://www.w3.org/2000/svg\"><switch><g requiredFeatures=\"http://www.w3.org/TR/SVG11/feature#Extensibility\"/></switch></svg>".getBytes(StandardCharsets.UTF_8));
-        String expected = "<div><img id=\"image1\" src=\"data:image/svg+xml;base64," + base64SvgImage + "\"/> " +
-                "<img id='image2' src='data:image/svg+xml;base64," + base64SvgImage + "'/> " +
-                "<img id='image1' src='data:image/svg+xml;base64," + base64SvgImage + "'/></div>";
-        assertEquals(expected, result);
+        String expected = "<div><img id=\"image1\" src=\"data:image/svg+xml;base64," + base64SvgImage + "\" /> " +
+                "<img id=\"image2\" src=\"data:image/svg+xml;base64," + base64SvgImage + "\" /> " +
+                "<img id=\"image1\" src=\"data:image/svg+xml;base64," + base64SvgImage + "\" /></div>";
+        assertEquals(expected, document.body().html());
     }
 
     @Test
