@@ -218,8 +218,10 @@ public class MediaUtils {
             return base64String == null ? null : engine.group().replace(url, base64String);
         };
 
-        // replace CSS parameters like background: url('/polarion/...
-        return RegexMatcher.get(URL_REGEX).useJavaUtil().replace(content, dataReplacement);
+        // replace tags like <img src="...
+        String intermediateResult = RegexMatcher.get(IMG_SRC_REGEX).replace(content, dataReplacement);
+        // replace CSS parameters like background: src('/polarion/...
+        return RegexMatcher.get(URL_REGEX).useJavaUtil().replace(intermediateResult, dataReplacement);
     }
 
     /**

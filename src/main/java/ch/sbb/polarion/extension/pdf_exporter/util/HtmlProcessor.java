@@ -190,19 +190,14 @@ public class HtmlProcessor {
 
         getTocGenerator(exportParams.getDocumentType()).addTableOfContent(document);
 
-        // Replace URLs of images by base64 encoded image data located by these URLs
-        replaceImagesAsBase64Encoded(document);
-
         html = document.body().html();
 
         // Jsoup may convert &dollar; back to $ in some cases, so we need to replace it again
         html = encodeDollarSigns(html);
 
-        // Replace URLs of any resource (except images which were processed via JSoup above) by base64 encoded data located by these URLs
-        html = replaceResourcesAsBase64Encoded(html);
-
         // TODO: rework below, migrating to JSoup processing when reasonable
 
+        html = replaceResourcesAsBase64Encoded(html);
         if (hasCustomPageBreaks(html)) {
             //processPageBrakes contains its own adjustContentToFitPage() calls
             html = processPageBrakes(html, exportParams);
@@ -1066,19 +1061,8 @@ public class HtmlProcessor {
         }
     }
 
-    void replaceImagesAsBase64Encoded(@NotNull Document document) {
-        for (Element image : document.select("img")) {
-            String url = image.attr(HtmlTagAttr.SRC);
-            if (StringUtils.isEmpty(url)) {
-                continue; // Do nothing if URL is not specified
-            }
-            String base64String = fileResourceProvider.getResourceAsBase64String(url);
-            if (base64String != null) { // Replace URL by encoded data from this URL only if it could be obtained
-                image.attr(HtmlTagAttr.SRC, base64String);
-            }
-        }
-    }
-
+    @SneakyThrows
+    @SuppressWarnings({"java:S5852", "java:S5857"}) //need by design
     public String replaceResourcesAsBase64Encoded(String html) {
         return MediaUtils.inlineBase64Resources(html, fileResourceProvider);
     }
