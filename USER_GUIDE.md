@@ -109,6 +109,10 @@ This configuration property allows selecting a PDF variant to be used for PDF ge
 
 The default value is `pdf/a-2b`.
 
+> **Note:** PDF/A-1b does not support transparency in images. If your document contains images with transparency (e.g., PNG images with alpha channel), the generated PDF may not be fully compliant with the PDF/A-1b standard. Consider using PDF/A-2b or PDF/A-3b variants which support transparency.
+
+> **Note:** PDF/A-4b and PDF/A-4u may not pass strict veraPDF validation due to metadata compliance issues in WeasyPrint/Cairo. The underlying PDF engine generates metadata that does not fully comply with ISO 19005-4:2020 requirements (incorrect XMP schema and Info dictionary structure). For guaranteed standards compliance, consider using PDF/A-2b or PDF/A-3b variants.
+
 ### Image density
 
 This configuration property allows selecting the density (DPI) for PNG images converted from SVG. The following options are supported:
