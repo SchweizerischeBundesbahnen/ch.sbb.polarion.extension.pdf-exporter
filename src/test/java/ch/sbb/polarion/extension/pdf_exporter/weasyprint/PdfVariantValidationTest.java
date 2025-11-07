@@ -8,6 +8,9 @@ import ch.sbb.polarion.extension.pdf_exporter.settings.CssSettings;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.base.BaseWeasyPrintTest;
 import lombok.SneakyThrows;
 import org.jetbrains.annotations.NotNull;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -27,7 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * Integration tests for PDF variant validation using veraPDF library.
  * Tests supported PDF variants (PDF/A-1b, PDF/A-2b, PDF/A-3b, PDF/A-2u, PDF/A-3u, PDF/UA-1)
  * by converting HTML with images to PDF and validating the result.
- * Note: PDF/A-1b, PDF/A-4b and PDF/A-4u are currently excluded from testing.
+ * Note: PDF/A-1b is currently excluded from testing.
  */
 @ExtendWith({CurrentContextExtension.class})
 @CurrentContextConfig("pdf-exporter")
@@ -40,7 +43,7 @@ class PdfVariantValidationTest extends BaseWeasyPrintTest {
     @ParameterizedTest(name = "Test PDF conversion and validation for {0}")
     @EnumSource(
             value = PdfVariant.class,
-            mode = EnumSource.Mode.EXCLUDE, names = {"PDF_A_1B", "PDF_A_4B", "PDF_A_4U"}
+            mode = EnumSource.Mode.EXCLUDE, names = {"PDF_A_1B"}
     )
     @SneakyThrows
     void testPdfVariantConversionAndValidation(PdfVariant pdfVariant) {
@@ -101,8 +104,16 @@ class PdfVariantValidationTest extends BaseWeasyPrintTest {
                 .defaultValues()
                 .getCss();
 
-        // Inject CSS into HTML before </head> tag
-        String cssBlock = "<style>\n" + defaultCss + "\n</style>\n</head>";
-        return html.replace("</head>", cssBlock);
+        // Parse HTML
+        Document doc = Jsoup.parse(html);
+
+        // Create and append style element to head
+        Element head = doc.head();
+        Element styleElement = new Element("style");
+        styleElement.text(defaultCss);
+        head.appendChild(styleElement);
+
+        // Return modified HTML
+        return doc.html();
     }
 }
