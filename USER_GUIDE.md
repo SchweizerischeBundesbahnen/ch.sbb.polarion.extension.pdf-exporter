@@ -109,8 +109,6 @@ This configuration property allows selecting a PDF variant to be used for PDF ge
 
 The default value is `pdf/a-2b`.
 
-> **Note:** PDF/A-1b does not support transparency in images. If your document contains images with transparency (e.g., PNG images with alpha channel), the generated PDF may not be fully compliant with the PDF/A-1b standard. Consider using PDF/A-2b or PDF/A-3b variants which support transparency.
-
 ### Image density
 
 This configuration property allows selecting the density (DPI) for PNG images converted from SVG. The following options are supported:
