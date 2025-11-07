@@ -190,7 +190,8 @@ public class MediaUtils {
      * <p>
      * This method applies the appropriate processor based on the PDF variant:
      * <ul>
-     *     <li>PDF/A-1b: {@link PdfA1bProcessor} to remove xref streams</li>
+     *     <li>PDF/A-1b: {@link PdfA1bProcessor} to remove transparency masks from images
+     *         and save without xref streams (using NO_COMPRESSION)</li>
      *     <li>PDF/A-4 (4b, 4u): {@link PdfA4Processor} to fix version, OutputIntent, and metadata</li>
      * </ul>
      *
