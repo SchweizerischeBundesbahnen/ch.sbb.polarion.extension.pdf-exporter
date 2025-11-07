@@ -9,6 +9,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.util.NoSuchElementException;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -16,8 +17,8 @@ class NoSuchElementExceptionMapperTest {
 
     private NoSuchElementExceptionMapper mapper;
 
-    private static java.util.stream.Stream<String> provideErrorMessages() {
-        return java.util.stream.Stream.of(
+    private static Stream<String> provideErrorMessages() {
+        return Stream.of(
                 "Element with ID 'test-123' not found",
                 "No such element: The requested configuration element 'custom-report-config-v2' could not be found in the system. Please verify the element ID and try again.",
                 "Element '<>&\"' not found in collection"

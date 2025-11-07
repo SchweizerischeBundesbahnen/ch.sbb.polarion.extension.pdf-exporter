@@ -100,7 +100,8 @@ class PdfVariantValidationTest extends BaseWeasyPrintTest {
         assertTrue(contentPdfBytes.length > 0, "Content PDF should not be empty");
 
         // Replace first page of content PDF with cover page
-        byte[] pdfBytesWithCoverPage = MediaUtils.overwriteFirstPageWithTitle(contentPdfBytes, coverPagePdfBytes);
+        // Note: MediaUtils.overwriteFirstPageWithTitle() automatically applies PDF/A post-processing based on pdfVariant
+        byte[] pdfBytesWithCoverPage = MediaUtils.overwriteFirstPageWithTitle(contentPdfBytes, coverPagePdfBytes, pdfVariant);
         assertNotNull(pdfBytesWithCoverPage, "PDF with cover page should not be null");
         assertTrue(pdfBytesWithCoverPage.length > 0, "PDF with cover page should not be empty");
 

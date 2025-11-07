@@ -14,10 +14,10 @@ import org.junit.jupiter.api.io.TempDir;
 
 import javax.imageio.ImageIO;
 import java.awt.Color;
+import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -343,7 +343,7 @@ class PdfA1bProcessorTest {
 
     private BufferedImage createTestImage(int width, int height) {
         BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
-        java.awt.Graphics2D g = image.createGraphics();
+        Graphics2D g = image.createGraphics();
         g.setColor(Color.BLUE);
         g.fillRect(0, 0, width, height);
         g.dispose();

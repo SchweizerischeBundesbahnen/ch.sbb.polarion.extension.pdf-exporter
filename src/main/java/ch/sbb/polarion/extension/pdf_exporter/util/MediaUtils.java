@@ -2,6 +2,7 @@ package ch.sbb.polarion.extension.pdf_exporter.util;
 
 import ch.sbb.polarion.extension.generic.regex.RegexMatcher;
 import ch.sbb.polarion.extension.generic.util.ScopeUtils;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PdfVariant;
 import ch.sbb.polarion.extension.pdf_exporter.service.PdfExporterPolarionService;
 import com.polarion.alm.shared.api.transaction.TransactionalExecutor;
 import com.polarion.core.util.StringUtils;
@@ -141,8 +142,24 @@ public class MediaUtils {
         }
     }
 
+    /**
+     * Overwrites the first page of destination PDF with a cover page.
+     * <p>
+     * This method:
+     * <ul>
+     *     <li>Removes all pages except the first one from the cover page PDF</li>
+     *     <li>Removes the first page from the destination PDF</li>
+     *     <li>Merges the cover page with the remaining pages of destination PDF</li>
+     *     <li>Applies PDF/A post-processing to fix compliance issues after merging</li>
+     * </ul>
+     *
+     * @param destinationPdf the destination PDF bytes
+     * @param firstPage      the cover page PDF bytes
+     * @param pdfVariant     the PDF variant used for conversion (used for post-processing)
+     * @return the merged PDF with the cover page as first page
+     */
     @SneakyThrows
-    public byte[] overwriteFirstPageWithTitle(byte[] destinationPdf, byte[] firstPage) {
+    public byte[] overwriteFirstPageWithTitle(byte[] destinationPdf, byte[] firstPage, @NotNull PdfVariant pdfVariant) {
         ByteArrayOutputStream modifiedTitleOutputStream = new ByteArrayOutputStream();
         ByteArrayOutputStream modifiedContentOutputStream = new ByteArrayOutputStream();
         try (PDDocument titleDoc = Loader.loadPDF(firstPage);
@@ -162,7 +179,32 @@ public class MediaUtils {
         merger.setDestinationStream(resultOutputStream);
         merger.mergeDocuments(null);
 
-        return resultOutputStream.toByteArray();
+        byte[] mergedPdf = resultOutputStream.toByteArray();
+
+        // Apply PDF/A post-processing to fix compliance issues after merging
+        return applyPdfAPostProcessing(mergedPdf, pdfVariant);
+    }
+
+    /**
+     * Applies PDF/A post-processing to fix compliance issues introduced by PDF merging.
+     * <p>
+     * This method applies the appropriate processor based on the PDF variant:
+     * <ul>
+     *     <li>PDF/A-1b: {@link PdfA1bProcessor} to remove xref streams</li>
+     *     <li>PDF/A-4 (4b, 4u): {@link PdfA4Processor} to fix version, OutputIntent, and metadata</li>
+     * </ul>
+     *
+     * @param mergedPdf  the merged PDF bytes
+     * @param pdfVariant the PDF variant used for conversion
+     * @return the processed PDF bytes with compliance fixes applied
+     */
+    @SneakyThrows
+    private byte[] applyPdfAPostProcessing(byte[] mergedPdf, @NotNull PdfVariant pdfVariant) {
+        return switch (pdfVariant) {
+            case PDF_A_1B -> PdfA1bProcessor.processPdfA1b(mergedPdf);
+            case PDF_A_4B, PDF_A_4U -> PdfA4Processor.processPdfA4(mergedPdf);
+            default -> mergedPdf;
+        };
     }
 
     @SneakyThrows

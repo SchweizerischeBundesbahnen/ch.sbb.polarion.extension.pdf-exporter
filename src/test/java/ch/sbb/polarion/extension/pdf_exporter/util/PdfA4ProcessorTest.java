@@ -2,6 +2,7 @@ package ch.sbb.polarion.extension.pdf_exporter.util;
 
 import lombok.SneakyThrows;
 import org.apache.pdfbox.Loader;
+import org.apache.pdfbox.cos.COSArray;
 import org.apache.pdfbox.cos.COSDictionary;
 import org.apache.pdfbox.cos.COSName;
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -39,8 +40,12 @@ class PdfA4ProcessorTest {
                 .isNotNull()
                 .hasSizeGreaterThan(0);
 
-        // Verify metadata was fixed
+        // Verify metadata and version were fixed
         try (PDDocument doc = Loader.loadPDF(result)) {
+            // Verify PDF version is 2.0
+            assertThat(doc.getVersion()).isEqualTo(2.0f);
+
+            // Verify metadata was fixed
             PDMetadata metadata = doc.getDocumentCatalog().getMetadata();
             assertThat(metadata).isNotNull();
 
@@ -122,6 +127,193 @@ class PdfA4ProcessorTest {
             assertThat(resultInfo).isNotNull();
             assertThat(resultInfo.getModificationDate()).isNotNull();
         }
+    }
+
+    @Test
+    @SneakyThrows
+    void testCopyDocumentCatalog_copiesMetadata() {
+        // Create source document with metadata
+        try (PDDocument source = new PDDocument();
+             PDDocument dest = new PDDocument()) {
+
+            // Add metadata to source
+            String xmpMetadata = createPdfA4Metadata(false, false);
+            PDMetadata metadata = new PDMetadata(source);
+            metadata.importXMPMetadata(xmpMetadata.getBytes(StandardCharsets.UTF_8));
+            source.getDocumentCatalog().setMetadata(metadata);
+
+            // Copy catalog
+            PdfA4Processor.copyDocumentCatalog(source, dest);
+
+            // Verify metadata was copied
+            assertThat(dest.getDocumentCatalog().getMetadata()).isNotNull();
+            String destMetadata = new String(dest.getDocumentCatalog().getMetadata().toByteArray(), StandardCharsets.UTF_8);
+            assertThat(destMetadata).contains("pdfaid:part=\"4\"");
+        }
+    }
+
+    @Test
+    @SneakyThrows
+    void testCopyDocumentCatalog_copiesDocumentInfo() {
+        // Create source document with document information
+        try (PDDocument source = new PDDocument();
+             PDDocument dest = new PDDocument()) {
+
+            // Add document information to source
+            PDDocumentInformation info = new PDDocumentInformation();
+            Calendar modDate = Calendar.getInstance();
+            info.setModificationDate(modDate);
+            info.setTitle("Test Title");
+            source.setDocumentInformation(info);
+
+            // Copy catalog
+            PdfA4Processor.copyDocumentCatalog(source, dest);
+
+            // Verify document information was copied (only ModDate)
+            assertThat(dest.getDocumentInformation()).isNotNull();
+            assertThat(dest.getDocumentInformation().getModificationDate()).isNotNull();
+        }
+    }
+
+    @Test
+    @SneakyThrows
+    void testCopyDocumentCatalog_copiesOutputIntents() {
+        // Create source document with OutputIntent
+        try (PDDocument source = new PDDocument();
+             PDDocument dest = new PDDocument()) {
+
+            // Add OutputIntent to source catalog (simple mock)
+            COSDictionary sourceCatalog = source.getDocumentCatalog().getCOSObject();
+            COSDictionary outputIntent = new COSDictionary();
+            outputIntent.setItem(COSName.S, COSName.getPDFName("GTS_PDFA1"));
+            outputIntent.setItem(COSName.OUTPUT_CONDITION_IDENTIFIER, COSName.getPDFName("sRGB"));
+
+            COSArray outputIntents = new COSArray();
+            outputIntents.add(outputIntent);
+            sourceCatalog.setItem(COSName.OUTPUT_INTENTS, outputIntents);
+
+            // Copy catalog
+            PdfA4Processor.copyDocumentCatalog(source, dest);
+
+            // Verify OutputIntents were copied
+            COSDictionary destCatalog = dest.getDocumentCatalog().getCOSObject();
+            assertThat(destCatalog.containsKey(COSName.OUTPUT_INTENTS)).isTrue();
+        }
+    }
+
+    @Test
+    @SneakyThrows
+    void testEnsureOutputIntent_createsWhenMissing() {
+        try (PDDocument doc = new PDDocument()) {
+            // Ensure document has no OutputIntent initially
+            COSDictionary catalog = doc.getDocumentCatalog().getCOSObject();
+            assertThat(catalog.containsKey(COSName.OUTPUT_INTENTS)).isFalse();
+
+            // Ensure OutputIntent
+            PdfA4Processor.ensureOutputIntent(doc);
+
+            // Verify OutputIntent was created
+            assertThat(catalog.containsKey(COSName.OUTPUT_INTENTS)).isTrue();
+            COSArray outputIntents = (COSArray) catalog.getItem(COSName.OUTPUT_INTENTS);
+            assertThat(outputIntents.size()).isEqualTo(1);
+        }
+    }
+
+    @Test
+    @SneakyThrows
+    void testEnsureOutputIntent_doesNotOverwriteExisting() {
+        try (PDDocument doc = new PDDocument()) {
+            // Add custom OutputIntent
+            COSDictionary catalog = doc.getDocumentCatalog().getCOSObject();
+            COSDictionary customOutputIntent = new COSDictionary();
+            customOutputIntent.setString(COSName.OUTPUT_CONDITION_IDENTIFIER, "CustomProfile");
+
+            COSArray outputIntents = new COSArray();
+            outputIntents.add(customOutputIntent);
+            catalog.setItem(COSName.OUTPUT_INTENTS, outputIntents);
+
+            // Ensure OutputIntent (should not overwrite)
+            PdfA4Processor.ensureOutputIntent(doc);
+
+            // Verify custom OutputIntent was preserved
+            COSArray resultIntents = (COSArray) catalog.getItem(COSName.OUTPUT_INTENTS);
+            assertThat(resultIntents.size()).isEqualTo(1);
+            COSDictionary resultIntent = (COSDictionary) resultIntents.get(0);
+            assertThat(resultIntent.getString(COSName.OUTPUT_CONDITION_IDENTIFIER)).isEqualTo("CustomProfile");
+        }
+    }
+
+    @Test
+    @SneakyThrows
+    void testProcessPdfA4_actuallyWritesPdf20Header() {
+        // Create a minimal PDF with version 1.4
+        byte[] pdfBytes;
+        try (PDDocument doc = new PDDocument();
+             ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+            doc.addPage(new org.apache.pdfbox.pdmodel.PDPage());
+            doc.setVersion(1.4f);
+
+            // Add minimal PDF/A-4 metadata
+            PDMetadata metadata = new PDMetadata(doc);
+            metadata.importXMPMetadata(createPdfA4Metadata(false, false).getBytes(StandardCharsets.UTF_8));
+            doc.getDocumentCatalog().setMetadata(metadata);
+
+            doc.save(baos);
+            pdfBytes = baos.toByteArray();
+        }
+
+        // Verify original PDF has version 1.4 header
+        String originalHeader = new String(pdfBytes, 0, Math.min(20, pdfBytes.length), StandardCharsets.UTF_8);
+        assertThat(originalHeader).contains("%PDF-1.");
+
+        // Process it
+        byte[] result = PdfA4Processor.processPdfA4(pdfBytes);
+
+        // Verify the processed PDF has version 2.0 header in the actual file bytes
+        String newHeader = new String(result, 0, Math.min(20, result.length), StandardCharsets.UTF_8);
+        assertThat(newHeader)
+                .as("PDF file header should start with %%PDF-2.0")
+                .contains("%PDF-2.0");
+    }
+
+    @Test
+    void testFixPdfHeader_fixes14To20() {
+        byte[] pdfWith14 = "%PDF-1.4\n% binary data".getBytes(StandardCharsets.UTF_8);
+
+        byte[] result = PdfA4Processor.fixPdfHeader(pdfWith14);
+
+        String header = new String(result, 0, Math.min(20, result.length), StandardCharsets.UTF_8);
+        assertThat(header).startsWith("%PDF-2.0\n");
+    }
+
+    @Test
+    void testFixPdfHeader_alreadyPdf20() {
+        byte[] pdfWith20 = "%PDF-2.0\n% binary data".getBytes(StandardCharsets.UTF_8);
+
+        byte[] result = PdfA4Processor.fixPdfHeader(pdfWith20);
+
+        // Should return the same bytes
+        assertThat(result).isEqualTo(pdfWith20);
+    }
+
+    @Test
+    void testFixPdfHeader_withCRLF() {
+        byte[] pdfWithCRLF = "%PDF-1.7\r\n% binary data".getBytes(StandardCharsets.UTF_8);
+
+        byte[] result = PdfA4Processor.fixPdfHeader(pdfWithCRLF);
+
+        String header = new String(result, 0, Math.min(20, result.length), StandardCharsets.UTF_8);
+        assertThat(header).startsWith("%PDF-2.0\r\n");
+    }
+
+    @Test
+    void testFixPdfHeader_tooSmall() {
+        byte[] smallPdf = "%PDF".getBytes(StandardCharsets.UTF_8);
+
+        byte[] result = PdfA4Processor.fixPdfHeader(smallPdf);
+
+        // Should return unchanged
+        assertThat(result).isEqualTo(smallPdf);
     }
 
     @Test
