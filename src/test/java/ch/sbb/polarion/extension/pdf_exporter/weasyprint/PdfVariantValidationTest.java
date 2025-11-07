@@ -8,6 +8,9 @@ import ch.sbb.polarion.extension.pdf_exporter.settings.CssSettings;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.base.BaseWeasyPrintTest;
 import lombok.SneakyThrows;
 import org.jetbrains.annotations.NotNull;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -101,8 +104,16 @@ class PdfVariantValidationTest extends BaseWeasyPrintTest {
                 .defaultValues()
                 .getCss();
 
-        // Inject CSS into HTML before </head> tag
-        String cssBlock = "<style>\n" + defaultCss + "\n</style>\n</head>";
-        return html.replace("</head>", cssBlock);
+        // Parse HTML
+        Document doc = Jsoup.parse(html);
+
+        // Create and append style element to head
+        Element head = doc.head();
+        Element styleElement = new Element("style");
+        styleElement.text(defaultCss);
+        head.appendChild(styleElement);
+
+        // Return modified HTML
+        return doc.html();
     }
 }
