@@ -140,10 +140,8 @@ class PdfA1bProcessorTest {
             page.setResources(null);
             doc.addPage(page);
 
-            // Process the document (should not throw any exceptions)
-            PdfA1bProcessor.removeImageTransparency(doc);
-
-            // No assertions needed - just verify no exception is thrown
+            // Verify that processing a page with null resources does not throw an exception
+            assertDoesNotThrow(() -> PdfA1bProcessor.removeImageTransparency(doc));
         }
     }
 
