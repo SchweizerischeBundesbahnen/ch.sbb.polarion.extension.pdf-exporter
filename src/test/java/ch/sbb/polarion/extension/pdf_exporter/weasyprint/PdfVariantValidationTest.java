@@ -30,7 +30,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * Integration tests for PDF variant validation using veraPDF library.
  * Tests supported PDF variants (PDF/A-1b, PDF/A-2b, PDF/A-3b, PDF/A-2u, PDF/A-3u, PDF/UA-1)
  * by converting HTML with images to PDF and validating the result.
- * Note: PDF/A-1b is currently excluded from testing.
  */
 @ExtendWith({CurrentContextExtension.class})
 @CurrentContextConfig("pdf-exporter")
@@ -41,10 +40,7 @@ class PdfVariantValidationTest extends BaseWeasyPrintTest {
     }
 
     @ParameterizedTest(name = "Test PDF conversion and validation for {0}")
-    @EnumSource(
-            value = PdfVariant.class,
-            mode = EnumSource.Mode.EXCLUDE, names = {"PDF_A_1B"}
-    )
+    @EnumSource(PdfVariant.class)
     @SneakyThrows
     void testPdfVariantConversionAndValidation(PdfVariant pdfVariant) {
         // Read HTML resource with images
@@ -90,10 +86,9 @@ class PdfVariantValidationTest extends BaseWeasyPrintTest {
             case PDF_A_1B -> PDFAFlavour.PDFA_1_B;
             case PDF_A_2B -> PDFAFlavour.PDFA_2_B;
             case PDF_A_3B -> PDFAFlavour.PDFA_3_B;
-            case PDF_A_4B -> PDFAFlavour.PDFA_4;
+            case PDF_A_4B, PDF_A_4U -> PDFAFlavour.PDFA_4;
             case PDF_A_2U -> PDFAFlavour.PDFA_2_U;
             case PDF_A_3U -> PDFAFlavour.PDFA_3_U;
-            case PDF_A_4U -> PDFAFlavour.PDFA_4;
             case PDF_UA_1 -> PDFAFlavour.PDFUA_1;
         };
     }
