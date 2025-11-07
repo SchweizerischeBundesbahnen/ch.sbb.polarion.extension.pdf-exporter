@@ -72,7 +72,7 @@ public class CoverPageProcessor {
         generationLog.log("Cover page generation has been completed");
 
         generationLog.log("Both generations are completed, starting pages merge...");
-        byte[] resultBytes = MediaUtils.overwriteFirstPageWithTitle(pdfContent, pdfCoverPage);
+        byte[] resultBytes = MediaUtils.overwriteFirstPageWithTitle(pdfContent, pdfCoverPage, weasyPrintOptions.getPdfVariant());
         generationLog.log("Pages merge done");
         return resultBytes;
     }

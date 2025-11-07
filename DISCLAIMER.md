@@ -3,4 +3,3 @@
 * PDF rendering engine: PDF generation is performed by WeasyPrint, which adheres to web standards. Its behavior is outside our control.
 * No guarantee of fidelity: We cannot guarantee that every conversion will be perfectly accurate. Please review each generated PDF to verify that document structure and content are preserved as expected.
 * User responsibility and feedback: You are responsible for validating the output for your use case. If you encounter issues, please report them with sample input and environment details (Polarion version, extension version, WeasyPrint version).
-* PDF/A-1b transparency limitation: PDF/A-1b standard does not support transparency in images. If your document contains images with transparency (e.g., PNG images with alpha channel), the generated PDF may not be fully compliant with the PDF/A-1b standard. We recommend using PDF/A-2b or PDF/A-3b variants for documents with transparent images.

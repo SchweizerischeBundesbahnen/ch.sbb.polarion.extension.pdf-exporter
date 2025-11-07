@@ -1,5 +1,6 @@
 package ch.sbb.polarion.extension.pdf_exporter.weasyprint;
 
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PdfVariant;
 import ch.sbb.polarion.extension.pdf_exporter.util.MediaUtils;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.base.BaseWeasyPrintTest;
 import lombok.SneakyThrows;
@@ -34,7 +35,7 @@ class CoverPageTest extends BaseWeasyPrintTest {
         writeReportPdf(testName, "title", titleBytes);
         writeReportPdf(testName, "content", contentBytes);
 
-        byte[] resultBytes = MediaUtils.overwriteFirstPageWithTitle(contentBytes, titleBytes);
+        byte[] resultBytes = MediaUtils.overwriteFirstPageWithTitle(contentBytes, titleBytes, PdfVariant.PDF_A_2B);
         writeReportPdf(testName, "correct", resultBytes);
         try (PDDocument resultDoc = Loader.loadPDF(resultBytes)) {
             assertTrue(MediaUtils.sameImages(titleImage, MediaUtils.pdfPageToImage(resultDoc, 0))); //now the title remains the same
@@ -64,7 +65,7 @@ class CoverPageTest extends BaseWeasyPrintTest {
         writeReportPdf(testName, "title", titleBytes);
         writeReportPdf(testName, "content", contentBytes);
 
-        byte[] resultBytes = MediaUtils.overwriteFirstPageWithTitle(contentBytes, titleBytes);
+        byte[] resultBytes = MediaUtils.overwriteFirstPageWithTitle(contentBytes, titleBytes, PdfVariant.PDF_A_2B);
         writeReportPdf(testName, "merged", resultBytes);
         try (PDDocument resultDoc = Loader.loadPDF(resultBytes)) {
             assertEquals(2, resultDoc.getNumberOfPages());
