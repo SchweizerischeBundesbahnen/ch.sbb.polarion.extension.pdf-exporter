@@ -1,7 +1,9 @@
 package ch.sbb.polarion.extension.pdf_exporter.weasyprint.service;
 
 import ch.sbb.polarion.extension.pdf_exporter.properties.PdfExporterExtensionConfiguration;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PdfVariant;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.DocumentData;
+import ch.sbb.polarion.extension.pdf_exporter.util.PdfA4Processor;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.WeasyPrintConverter;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.WeasyPrintOptions;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.service.model.WeasyPrintInfo;
@@ -70,15 +72,37 @@ public class WeasyPrintServiceConnector implements WeasyPrintConverter {
                     .queryParam("custom_metadata", weasyPrintOptions.isCustomMetadata())
                     .queryParam("scale_factor", weasyPrintOptions.getImageDensity().getScale());
 
+            byte[] pdfBytes;
             if (documentData != null && documentData.getAttachmentFiles() != null) {
-                return sendMultiPartRequest(webTarget, htmlPage, documentData.getAttachmentFiles());
+                pdfBytes = sendMultiPartRequest(webTarget, htmlPage, documentData.getAttachmentFiles());
             } else {
-                return sendConvertingRequest(webTarget, Entity.entity(htmlPage, MediaType.TEXT_HTML));
+                pdfBytes = sendConvertingRequest(webTarget, Entity.entity(htmlPage, MediaType.TEXT_HTML));
             }
+
+            // Post-process PDF/A-4 documents to ensure compliance with ISO 19005-4:2020
+            if (isPdfA4Variant(weasyPrintOptions.getPdfVariant())) {
+                pdfBytes = postProcessPdfA4(pdfBytes);
+            }
+
+            return pdfBytes;
         } finally {
             if (client != null) {
                 client.close();
             }
+        }
+    }
+
+    private boolean isPdfA4Variant(@NotNull PdfVariant pdfVariant) {
+        return pdfVariant == PdfVariant.PDF_A_4B || pdfVariant == PdfVariant.PDF_A_4U;
+    }
+
+    private byte[] postProcessPdfA4(byte[] pdfBytes) {
+        try {
+            return PdfA4Processor.processPdfA4(pdfBytes);
+        } catch (IOException e) {
+            logger.error("Failed to post-process PDF/A-4 document for compliance", e);
+            // Return original PDF if post-processing fails
+            return pdfBytes;
         }
     }
 
