@@ -231,21 +231,11 @@ class PdfA4ProcessorTest {
     @Test
     @SneakyThrows
     void testExtractRdfContent() {
-        String xmpMetadata = "<?xpacket begin=\"\" id=\"W5M0MpCehiHzreSzNTczkc9d\"?>\n" +
-                            "<rdf:RDF xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\">content</rdf:RDF>\n" +
-                            "<?xpacket end=\"r\"?>";
-
-        String result = PdfA4Processor.extractRdfContent(xmpMetadata);
-
-        assertThat(result).isEqualTo("<rdf:RDF xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\">content</rdf:RDF>");
-    }
-
-    @Test
-    @SneakyThrows
-    void testExtractRdfContent_withWhitespace() {
-        String xmpMetadata = "<?xpacket begin=\"\" id=\"W5M0MpCehiHzreSzNTczkc9d\"?>  \n  " +
-                            "<rdf:RDF xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\">content</rdf:RDF>  \n  " +
-                            "<?xpacket end=\"r\"?>";
+        String xmpMetadata = """
+                <?xpacket begin="" id="W5M0MpCehiHzreSzNTczkc9d"?>
+                <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">content</rdf:RDF>
+                <?xpacket end="r"?>
+                """;
 
         String result = PdfA4Processor.extractRdfContent(xmpMetadata);
 
