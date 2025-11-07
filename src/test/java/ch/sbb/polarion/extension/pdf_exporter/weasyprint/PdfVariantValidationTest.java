@@ -5,6 +5,7 @@ import ch.sbb.polarion.extension.generic.context.CurrentContextExtension;
 import ch.sbb.polarion.extension.generic.settings.SettingsService;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PdfVariant;
 import ch.sbb.polarion.extension.pdf_exporter.settings.CssSettings;
+import ch.sbb.polarion.extension.pdf_exporter.util.MediaUtils;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.base.BaseWeasyPrintTest;
 import lombok.SneakyThrows;
 import org.jetbrains.annotations.NotNull;
@@ -68,6 +69,50 @@ class PdfVariantValidationTest extends BaseWeasyPrintTest {
         ValidationResult result = validatePdf(pdfBytes, flavour);
 
         assertTrue(result.isCompliant(), String.format("PDF must be compliant with %s (VeraPDF flavour: %s). Failed rules: %s", pdfVariant, flavour, result.getTestAssertions()));
+    }
+
+    @ParameterizedTest(name = "Test PDF with replaced first page and validation for {0}")
+    @EnumSource(PdfVariant.class)
+    @SneakyThrows
+    void testPdfVariantConversionWithCoverPageAndValidation(PdfVariant pdfVariant) {
+        // Read HTML resources for cover page and main content
+        String coverPageHtml = readHtmlResource("pdfVariantValidationCoverPage");
+        assertNotNull(coverPageHtml, "Cover page HTML resource should not be null");
+
+        String contentHtml = readHtmlResource("pdfVariantValidation");
+        assertNotNull(contentHtml, "Content HTML resource should not be null");
+
+        // Inject default CSS into both HTML documents
+        coverPageHtml = injectDefaultCss(coverPageHtml);
+        contentHtml = injectDefaultCss(contentHtml);
+
+        // Convert both HTML documents to PDF with the specified PDF variant
+        WeasyPrintOptions options = WeasyPrintOptions.builder()
+                .pdfVariant(pdfVariant)
+                .build();
+
+        byte[] coverPagePdfBytes = exportToPdf(coverPageHtml, options);
+        assertNotNull(coverPagePdfBytes, "Cover page PDF bytes should not be null");
+        assertTrue(coverPagePdfBytes.length > 0, "Cover page PDF should not be empty");
+
+        byte[] contentPdfBytes = exportToPdf(contentHtml, options);
+        assertNotNull(contentPdfBytes, "Content PDF bytes should not be null");
+        assertTrue(contentPdfBytes.length > 0, "Content PDF should not be empty");
+
+        // Replace first page of content PDF with cover page
+        byte[] pdfBytesWithCoverPage = MediaUtils.overwriteFirstPageWithTitle(contentPdfBytes, coverPagePdfBytes);
+        assertNotNull(pdfBytesWithCoverPage, "PDF with cover page should not be null");
+        assertTrue(pdfBytesWithCoverPage.length > 0, "PDF with cover page should not be empty");
+
+        // Write PDF to reports folder for manual inspection
+        String testName = getCurrentMethodName();
+        writeReportPdf(testName, pdfVariant.name() + "_with_cover", pdfBytesWithCoverPage);
+
+        // Validate PDF using veraPDF
+        PDFAFlavour flavour = mapPdfVariantToVeraPDFFlavour(pdfVariant);
+        ValidationResult result = validatePdf(pdfBytesWithCoverPage, flavour);
+
+        assertTrue(result.isCompliant(), String.format("PDF with cover page must be compliant with %s (VeraPDF flavour: %s). Failed rules: %s", pdfVariant, flavour, result.getTestAssertions()));
     }
 
     private ValidationResult validatePdf(byte[] pdfBytes, PDFAFlavour flavour) throws Exception {
