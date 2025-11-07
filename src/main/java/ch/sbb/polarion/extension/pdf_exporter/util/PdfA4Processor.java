@@ -9,11 +9,31 @@ import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDDocumentInformation;
 import org.apache.pdfbox.pdmodel.common.PDMetadata;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.VisibleForTesting;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
 
+import javax.xml.XMLConstants;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.StringReader;
+import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.Calendar;
+import java.util.UUID;
 
 /**
  * Utility class for processing PDF/A-4 documents to ensure compliance with ISO 19005-4:2020 specification.
@@ -29,6 +49,8 @@ import java.util.Calendar;
 @UtilityClass
 public class PdfA4Processor {
     private static final Logger logger = Logger.getLogger(PdfA4Processor.class);
+    private static final String PDF_A_4_REV_YEAR = "2020";
+    private static final String PDFAID_REV = "pdfaid:rev";
 
     /**
      * Processes a PDF/A-4 document to fix compliance issues according to ISO 19005-4:2020.
@@ -58,13 +80,14 @@ public class PdfA4Processor {
      * <p>
      * According to ISO 19005-4:2020 clause 6.1.3:
      * <ul>
-     *     <li>The Info key shall not be present in the trailer dictionary unless there exists a PieceInfo entry</li>
-     *     <li>If a document information dictionary is present, it shall only contain a ModDate entry</li>
+     *     <li>Test 4: The Info key shall not be present in the trailer dictionary unless there exists a PieceInfo entry</li>
+     *     <li>Test 5: If a document information dictionary is present, it shall only contain a ModDate entry</li>
      * </ul>
      *
      * @param document the PDF document to process
      */
-    private void fixDocumentInformation(@NotNull PDDocument document) {
+    @VisibleForTesting
+    void fixDocumentInformation(@NotNull PDDocument document) {
         PDDocumentInformation info = document.getDocumentInformation();
         COSDictionary catalog = document.getDocumentCatalog().getCOSObject();
 
@@ -72,7 +95,7 @@ public class PdfA4Processor {
         boolean hasPieceInfo = catalog.containsKey(COSName.PIECE_INFO);
 
         if (!hasPieceInfo) {
-            // If no PieceInfo exists, we should remove the Info dictionary entirely
+            // If no PieceInfo exists, remove the Info dictionary entirely
             COSDictionary trailer = document.getDocument().getTrailer();
             trailer.removeItem(COSName.INFO);
             logger.debug("Removed Info key from trailer dictionary (no PieceInfo present)");
@@ -97,78 +120,286 @@ public class PdfA4Processor {
     }
 
     /**
-     * Fixes XMP metadata according to PDF/A-4 requirements.
+     * Fixes XMP metadata according to PDF/A-4 requirements using XML DOM parsing.
      * <p>
      * According to ISO 19005-4:2020 clause 6.7.3:
      * <ul>
-     *     <li>The value of "pdfaid:rev" shall be the four-digit year (e.g., "2020" not "4")</li>
-     *     <li>Files not conforming to PDF/A-4e or PDF/A-4f shall not provide "pdfaid:conformance"</li>
+     *     <li>Test 5: The value of "pdfaid:rev" shall be the four-digit year (e.g., "2020" not "4")</li>
+     *     <li>Test 3: Files not conforming to PDF/A-4e or PDF/A-4f shall not provide "pdfaid:conformance"</li>
      * </ul>
      *
      * @param document the PDF document to process
      */
-    private void fixXmpMetadata(@NotNull PDDocument document) throws IOException {
+    @VisibleForTesting
+    void fixXmpMetadata(@NotNull PDDocument document) throws IOException {
         PDMetadata metadata = document.getDocumentCatalog().getMetadata();
         if (metadata == null) {
             logger.warn("No XMP metadata found in document");
             return;
         }
 
-        // Read current metadata as string
-        String metadataString = new String(metadata.toByteArray(), StandardCharsets.UTF_8);
-        String originalMetadata = metadataString;
+        try {
+            // Read current metadata as string
+            String metadataString = new String(metadata.toByteArray(), StandardCharsets.UTF_8);
 
-        // Check if this is PDF/A-4
-        boolean isPdfA4 = metadataString.contains("pdfaid:part=\"4\"") ||
-                          metadataString.contains("pdfaid:part='4'") ||
-                          metadataString.contains("pdfaid:part>4<");
+            // Parse and fix XMP metadata using XML DOM
+            String fixedMetadata = fixXmpMetadataXml(metadataString);
 
-        if (!isPdfA4) {
-            logger.debug("Not PDF/A-4, skipping metadata fixes");
-            return;
+            if (!fixedMetadata.equals(metadataString)) {
+                // Update metadata with fixed version
+                metadata.importXMPMetadata(fixedMetadata.getBytes(StandardCharsets.UTF_8));
+                logger.info("Updated XMP metadata for PDF/A-4 compliance");
+            } else {
+                logger.debug("No XMP metadata changes needed");
+            }
+        } catch (Exception e) {
+            logger.error("Failed to process XMP metadata", e);
+            throw new IOException("Failed to process XMP metadata", e);
+        }
+    }
+
+    /**
+     * Fixes XMP metadata XML content according to PDF/A-4 requirements.
+     * Uses XML DOM parsing for reliable and maintainable metadata manipulation.
+     *
+     * @param xmpMetadata the original XMP metadata as XML string
+     * @return the fixed XMP metadata as XML string
+     * @throws TransformerException if XML parsing or transformation fails
+     * @throws ParserConfigurationException if XML parsing fails
+     * @throws IOException if XML parsing fails
+     * @throws SAXException if XML parsing fails
+     */
+    @VisibleForTesting
+    String fixXmpMetadataXml(@NotNull String xmpMetadata) throws TransformerException, ParserConfigurationException, IOException, SAXException {
+        // Parse XML
+        DocumentBuilderFactory documentBuilderFactory = createSecureDocumentBuilderFactory();
+        DocumentBuilder documentBuilder = documentBuilderFactory.newDocumentBuilder();
+
+        // Extract the RDF content (between <?xpacket...?> tags)
+        String rdfContent = extractRdfContent(xmpMetadata);
+        Document document = documentBuilder.parse(new InputSource(new StringReader(rdfContent)));
+
+        // Find all rdf:Description elements
+        NodeList descriptions = document.getElementsByTagNameNS("http://www.w3.org/1999/02/22-rdf-syntax-ns#", "Description");
+
+        boolean metadataModified = false;
+
+        for (int i = 0; i < descriptions.getLength(); i++) {
+            Element description = (Element) descriptions.item(i);
+
+            // Check if this is a PDF/A identification element (has pdfaid:part attribute)
+            String pdfaidPart = getAttributeValue(description, "pdfaid:part");
+
+            if ("4".equals(pdfaidPart)) {
+                // This is PDF/A-4 identification - fix it
+                metadataModified |= fixPdfA4Identification(description);
+            }
         }
 
-        String fixedMetadata = metadataString;
-
-        // Fix 1: Add pdfaid:rev="2020" if missing or fix if present
-        // WeasyPrint doesn't add pdfaid:rev for PDF/A-4, but it's required by ISO 19005-4:2020
-        if (metadataString.contains("pdfaid:rev")) {
-            // Replace existing rev value with year
-            fixedMetadata = fixedMetadata.replaceAll(
-                    "(pdfaid:rev=['\"])\\d{1,4}(['\"])",
-                    "$12020$2"
-            );
-            logger.debug("Updated existing pdfaid:rev to 2020");
-        } else {
-            // Add pdfaid:rev="2020" to the rdf:Description element that has pdfaid:part
-            fixedMetadata = fixedMetadata.replaceAll(
-                    "(<rdf:Description[^>]*pdfaid:part=\"4\")",
-                    "$1 pdfaid:rev=\"2020\""
-            );
-            fixedMetadata = fixedMetadata.replaceAll(
-                    "(<rdf:Description[^>]*pdfaid:part='4')",
-                    "$1 pdfaid:rev=\"2020\""
-            );
-            logger.debug("Added pdfaid:rev=\"2020\" to XMP metadata");
+        if (!metadataModified) {
+            logger.debug("Not PDF/A-4 or no metadata changes needed");
+            return xmpMetadata;
         }
 
-        // Fix 2: Remove pdfaid:conformance for PDF/A-4b and PDF/A-4u
-        // These variants should not have conformance level (only PDF/A-4e and PDF/A-4f use it)
-        if (metadataString.contains("pdfaid:conformance")) {
-            // Remove conformance in attribute form (both single and double quotes)
-            fixedMetadata = fixedMetadata.replaceAll(
-                    "\\s+pdfaid:conformance=['\"][^'\"]*['\"]",
-                    ""
-            );
+        // Convert back to string with proper XMP packaging
+        String fixedRdf = documentToString(document);
+        return wrapWithXPacket(fixedRdf);
+    }
+
+    /**
+     * Extracts RDF content from XMP metadata (removes xpacket processing instructions).
+     * <p>
+     * XMP metadata format:
+     * <pre>
+     * {@code
+     * <?xpacket begin="..." id="..."?>
+     * <rdf:RDF>...</rdf:RDF>
+     * <?xpacket end="..."?>
+     * }
+     * </pre>
+     * <p>
+     * Uses XML DOM parsing to properly handle XML structure and remove processing instructions.
+     *
+     * @param xmpMetadata the full XMP metadata with xpacket tags
+     * @return the RDF content without xpacket tags
+     * @throws ParserConfigurationException if XML parser cannot be configured
+     * @throws IOException if XML parsing fails
+     * @throws SAXException if XML is malformed
+     * @throws TransformerException if XML transformation fails
+     */
+    @VisibleForTesting
+    String extractRdfContent(@NotNull String xmpMetadata) throws ParserConfigurationException, IOException, SAXException, TransformerException {
+        // Parse the complete XMP metadata (including processing instructions)
+        DocumentBuilderFactory secureDocumentBuilderFactory = createSecureDocumentBuilderFactory();
+        DocumentBuilder documentBuilder = secureDocumentBuilderFactory.newDocumentBuilder();
+
+        // Parse the XMP metadata as XML
+        Document document = documentBuilder.parse(new InputSource(new StringReader(xmpMetadata)));
+
+        // Serialize just the document element (RDF) without processing instructions
+        TransformerFactory transformerFactory = createSecureTransformerFactory();
+        Transformer transformer = transformerFactory.newTransformer();
+        transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
+        transformer.setOutputProperty(OutputKeys.INDENT, "no");
+
+        StringWriter writer = new StringWriter();
+        // Transform only the document element (this excludes processing instructions)
+        transformer.transform(new DOMSource(document.getDocumentElement()), new StreamResult(writer));
+
+        return writer.toString().trim();
+    }
+
+    /**
+     * Wraps RDF content with XMP packet processing instructions.
+     * Generates a unique packet ID using UUID.
+     *
+     * @param rdfContent the RDF content to wrap
+     * @return the complete XMP metadata with xpacket tags
+     */
+    @VisibleForTesting
+    @NotNull String wrapWithXPacket(@NotNull String rdfContent) {
+        // Generate unique packet ID (remove hyphens from UUID to match XMP packet ID format)
+        String packetId = UUID.randomUUID().toString().replace("-", "");
+        return "<?xpacket begin=\"\" id=\"" + packetId + "\"?>\n" +
+               rdfContent + "\n" +
+               "<?xpacket end=\"r\"?>";
+    }
+
+    /**
+     * Fixes PDF/A-4 identification in an rdf:Description element.
+     *
+     * @param description the rdf:Description element to fix
+     * @return true if any changes were made
+     */
+    @VisibleForTesting
+    boolean fixPdfA4Identification(@NotNull Element description) {
+        boolean modified = false;
+
+        // Fix 1: Add or update pdfaid:rev to "2020"
+        String currentRev = getAttributeValue(description, PDFAID_REV);
+        if (currentRev == null || currentRev.isEmpty()) {
+            // Add pdfaid:rev="2020"
+            description.setAttribute(PDFAID_REV, PDF_A_4_REV_YEAR);
+            logger.debug("Added pdfaid:rev=\"" + PDF_A_4_REV_YEAR + "\" to XMP metadata");
+            modified = true;
+        } else if (!PDF_A_4_REV_YEAR.equals(currentRev)) {
+            // Update incorrect rev value
+            description.setAttribute(PDFAID_REV, PDF_A_4_REV_YEAR);
+            logger.debug("Updated pdfaid:rev from \"" + currentRev + "\" to \"" + PDF_A_4_REV_YEAR + "\"");
+            modified = true;
+        }
+
+        // Fix 2: Remove pdfaid:conformance (not allowed for PDF/A-4b and PDF/A-4u)
+        if (description.hasAttribute("pdfaid:conformance")) {
+            description.removeAttribute("pdfaid:conformance");
             logger.debug("Removed pdfaid:conformance from XMP metadata");
+            modified = true;
         }
 
-        if (!fixedMetadata.equals(originalMetadata)) {
-            // Update metadata with fixed version
-            metadata.importXMPMetadata(fixedMetadata.getBytes(StandardCharsets.UTF_8));
-            logger.info("Updated XMP metadata for PDF/A-4 compliance");
-        } else {
-            logger.debug("No XMP metadata changes needed");
+        return modified;
+    }
+
+    /**
+     * Gets attribute value from element, handling namespace prefixes.
+     *
+     * @param element       the XML element
+     * @param attributeName the attribute name (may include namespace prefix like "pdfaid:part")
+     * @return the attribute value, or null if not found
+     */
+    @VisibleForTesting
+    @Nullable String getAttributeValue(@NotNull Element element, @NotNull String attributeName) {
+        // Try with namespace prefix
+        if (element.hasAttribute(attributeName)) {
+            return element.getAttribute(attributeName);
         }
+
+        // Try without prefix (in case of namespace URI)
+        String[] parts = attributeName.split(":");
+        if (parts.length == 2) {
+            String namespaceURI = getNamespaceUriForPrefix(parts[0]);
+            if (namespaceURI != null && element.hasAttributeNS(namespaceURI, parts[1])) {
+                return element.getAttributeNS(namespaceURI, parts[1]);
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Returns namespace URI for common XMP prefixes.
+     *
+     * @param prefix the namespace prefix (e.g., "pdfaid", "pdf", "rdf")
+     * @return the namespace URI, or null if unknown prefix
+     */
+    @VisibleForTesting
+    String getNamespaceUriForPrefix(@NotNull String prefix) {
+        return switch (prefix) {
+            case "pdfaid" -> "http://www.aiim.org/pdfa/ns/id/";
+            case "pdf" -> "http://ns.adobe.com/pdf/1.3/";
+            case "rdf" -> "http://www.w3.org/1999/02/22-rdf-syntax-ns#";
+            case "dc" -> "http://purl.org/dc/elements/1.1/";
+            case "xmp" -> "http://ns.adobe.com/xap/1.0/";
+            default -> null;
+        };
+    }
+
+    /**
+     * Converts XML Document to string.
+     *
+     * @param doc the XML document
+     * @return the XML as string
+     * @throws TransformerException if transformation fails
+     */
+    @VisibleForTesting
+    String documentToString(@NotNull Document doc) throws TransformerException {
+        TransformerFactory transformerFactory = createSecureTransformerFactory();
+        Transformer transformer = transformerFactory.newTransformer();
+        transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
+        transformer.setOutputProperty(OutputKeys.INDENT, "no");
+
+        StringWriter writer = new StringWriter();
+        transformer.transform(new DOMSource(doc), new StreamResult(writer));
+        return writer.toString();
+    }
+
+    /**
+     * Creates a secure DocumentBuilderFactory with XXE protection enabled.
+     * Disables external entity processing to prevent XXE (XML External Entity) attacks.
+     *
+     * @return a secure DocumentBuilderFactory instance
+     * @throws ParserConfigurationException if configuration fails
+     */
+    private static DocumentBuilderFactory createSecureDocumentBuilderFactory() throws ParserConfigurationException {
+        DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
+        documentBuilderFactory.setNamespaceAware(true);
+
+        // Disable external entity processing to prevent XXE attacks
+        documentBuilderFactory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+        documentBuilderFactory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+        documentBuilderFactory.setFeature("http://xml.org/sax/features/external-general-entities", false);
+        documentBuilderFactory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
+        documentBuilderFactory.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
+        documentBuilderFactory.setXIncludeAware(false);
+        documentBuilderFactory.setExpandEntityReferences(false);
+
+        return documentBuilderFactory;
+    }
+
+    /**
+     * Creates a secure TransformerFactory with XXE protection enabled.
+     * Disables external entity processing to prevent XXE (XML External Entity) attacks.
+     *
+     * @return a secure TransformerFactory instance
+     * @throws TransformerException if configuration fails
+     */
+    private static TransformerFactory createSecureTransformerFactory() throws TransformerException {
+        TransformerFactory transformerFactory = TransformerFactory.newInstance();
+
+        // Disable external entity processing to prevent XXE attacks
+        transformerFactory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+        transformerFactory.setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, "");
+        transformerFactory.setAttribute(XMLConstants.ACCESS_EXTERNAL_STYLESHEET, "");
+
+        return transformerFactory;
     }
 }
