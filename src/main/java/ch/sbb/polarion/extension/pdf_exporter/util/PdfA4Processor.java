@@ -181,15 +181,39 @@ public class PdfA4Processor {
      */
     @VisibleForTesting
     void copyDocumentCatalog(@NotNull PDDocument source, @NotNull PDDocument destination) throws IOException {
-        // Copy XMP metadata
+        copyXmpMetadata(source, destination);
+        copyOutputIntents(source, destination);
+        copyDocumentInformation(source, destination);
+        logger.debug("Copied document catalog from source to destination");
+    }
+
+    /**
+     * Copies XMP metadata from source to destination document.
+     *
+     * @param source      the source PDF document
+     * @param destination the destination PDF document
+     * @throws IOException if an error occurs during copying
+     */
+    @VisibleForTesting
+    void copyXmpMetadata(@NotNull PDDocument source, @NotNull PDDocument destination) throws IOException {
         PDMetadata sourceMetadata = source.getDocumentCatalog().getMetadata();
         if (sourceMetadata != null) {
             PDMetadata destMetadata = new PDMetadata(destination);
             destMetadata.importXMPMetadata(sourceMetadata.toByteArray());
             destination.getDocumentCatalog().setMetadata(destMetadata);
+            logger.debug("Copied XMP metadata from source to destination");
         }
+    }
 
-        // Copy OutputIntents (critical for PDF/A compliance)
+    /**
+     * Copies OutputIntents from source to destination document.
+     * OutputIntents are critical for PDF/A compliance.
+     *
+     * @param source      the source PDF document
+     * @param destination the destination PDF document
+     */
+    @VisibleForTesting
+    void copyOutputIntents(@NotNull PDDocument source, @NotNull PDDocument destination) {
         COSDictionary sourceCatalog = source.getDocumentCatalog().getCOSObject();
         COSDictionary destCatalog = destination.getDocumentCatalog().getCOSObject();
 
@@ -197,8 +221,17 @@ public class PdfA4Processor {
             destCatalog.setItem(COSName.OUTPUT_INTENTS, sourceCatalog.getItem(COSName.OUTPUT_INTENTS));
             logger.debug("Copied OutputIntents from source to destination");
         }
+    }
 
-        // Copy document information if present
+    /**
+     * Copies document information from source to destination document.
+     * Only ModificationDate is preserved to ensure PDF/A-4 compliance.
+     *
+     * @param source      the source PDF document
+     * @param destination the destination PDF document
+     */
+    @VisibleForTesting
+    void copyDocumentInformation(@NotNull PDDocument source, @NotNull PDDocument destination) {
         PDDocumentInformation sourceInfo = source.getDocumentInformation();
         if (sourceInfo != null) {
             // Copy only the fields we want to preserve
@@ -207,9 +240,8 @@ public class PdfA4Processor {
                 destInfo.setModificationDate(sourceInfo.getModificationDate());
             }
             destination.setDocumentInformation(destInfo);
+            logger.debug("Copied document information from source to destination");
         }
-
-        logger.debug("Copied document catalog from source to destination");
     }
 
     /**
