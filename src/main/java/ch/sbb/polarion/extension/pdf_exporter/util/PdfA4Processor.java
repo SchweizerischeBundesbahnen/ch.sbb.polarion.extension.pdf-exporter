@@ -143,10 +143,7 @@ public class PdfA4Processor {
         // Find the end of the version line (EOL marker)
         int eolIndex = -1;
         for (int i = 0; i < Math.min(20, pdfBytes.length); i++) {
-            if (pdfBytes[i] == '\n') {
-                eolIndex = i;
-                break;
-            } else if (pdfBytes[i] == '\r') {
+            if (pdfBytes[i] == '\n' || pdfBytes[i] == '\r') {
                 eolIndex = i;
                 break;
             }
