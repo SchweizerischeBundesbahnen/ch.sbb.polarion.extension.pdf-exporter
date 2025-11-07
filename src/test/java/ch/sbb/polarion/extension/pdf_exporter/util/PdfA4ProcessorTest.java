@@ -5,7 +5,6 @@ import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.cos.COSDictionary;
 import org.apache.pdfbox.cos.COSName;
 import org.apache.pdfbox.pdmodel.PDDocument;
-import org.apache.pdfbox.pdmodel.PDDocumentCatalog;
 import org.apache.pdfbox.pdmodel.PDDocumentInformation;
 import org.apache.pdfbox.pdmodel.common.PDMetadata;
 import org.junit.jupiter.api.Test;
@@ -15,7 +14,6 @@ import org.xml.sax.InputSource;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.StringReader;
@@ -24,7 +22,6 @@ import java.util.Calendar;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.*;
 
 class PdfA4ProcessorTest {
 
@@ -38,8 +35,9 @@ class PdfA4ProcessorTest {
         byte[] result = PdfA4Processor.processPdfA4(pdfBytes);
 
         // Verify it's still a valid PDF
-        assertThat(result).isNotNull();
-        assertThat(result.length).isGreaterThan(0);
+        assertThat(result)
+                .isNotNull()
+                .hasSizeGreaterThan(0);
 
         // Verify metadata was fixed
         try (PDDocument doc = Loader.loadPDF(result)) {
@@ -47,8 +45,9 @@ class PdfA4ProcessorTest {
             assertThat(metadata).isNotNull();
 
             String metadataStr = new String(metadata.toByteArray(), StandardCharsets.UTF_8);
-            assertThat(metadataStr).contains("pdfaid:rev=\"2020\"");
-            assertThat(metadataStr).doesNotContain("pdfaid:conformance");
+            assertThat(metadataStr)
+                    .contains("pdfaid:rev=\"2020\"")
+                    .doesNotContain("pdfaid:conformance");
         }
     }
 
@@ -162,9 +161,11 @@ class PdfA4ProcessorTest {
     void testFixXmpMetadata_withInvalidXml() {
         // Create PDF with invalid XML metadata
         try (PDDocument doc = new PDDocument()) {
-            String invalidXml = "<?xpacket begin=\"\" id=\"W5M0MpCehiHzreSzNTczkc9d\"?>\n" +
-                               "<invalid>broken xml<</invalid>\n" +
-                               "<?xpacket end=\"r\"?>";
+            String invalidXml = """
+                    <?xpacket begin="" id="W5M0MpCehiHzreSzNTczkc9d"?>
+                    <invalid>broken xml<</invalid>
+                    <?xpacket end="r"?>
+                    """;
             PDMetadata metadata = new PDMetadata(doc);
             metadata.importXMPMetadata(invalidXml.getBytes(StandardCharsets.UTF_8));
             doc.getDocumentCatalog().setMetadata(metadata);
@@ -193,8 +194,9 @@ class PdfA4ProcessorTest {
 
         String result = PdfA4Processor.fixXmpMetadataXml(xmpMetadata);
 
-        assertThat(result).contains("pdfaid:rev=\"2020\"");
-        assertThat(result).doesNotContain("pdfaid:rev=\"4\"");
+        assertThat(result)
+                .contains("pdfaid:rev=\"2020\"")
+                .doesNotContain("pdfaid:rev=\"4\"");
     }
 
     @Test
@@ -204,18 +206,21 @@ class PdfA4ProcessorTest {
 
         String result = PdfA4Processor.fixXmpMetadataXml(xmpMetadata);
 
-        assertThat(result).doesNotContain("pdfaid:conformance");
-        assertThat(result).contains("pdfaid:rev=\"2020\"");
+        assertThat(result)
+                .doesNotContain("pdfaid:conformance")
+                .contains("pdfaid:rev=\"2020\"");
     }
 
     @Test
     @SneakyThrows
     void testFixXmpMetadataXml_nonPdfA4() {
-        String xmpMetadata = "<?xpacket begin=\"\" id=\"W5M0MpCehiHzreSzNTczkc9d\"?>\n" +
-                            "<rdf:RDF xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\">" +
-                            "<rdf:Description rdf:about=\"\" />" +
-                            "</rdf:RDF>\n" +
-                            "<?xpacket end=\"r\"?>";
+        String xmpMetadata = """
+                <?xpacket begin="" id="W5M0MpCehiHzreSzNTczkc9d"?>
+                <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+                <rdf:Description rdf:about="" />
+                </rdf:RDF>
+                <?xpacket end="r"?>
+                """;
 
         String result = PdfA4Processor.fixXmpMetadataXml(xmpMetadata);
 
@@ -261,7 +266,7 @@ class PdfA4ProcessorTest {
     @SneakyThrows
     void testExtractRdfContent_onlyStartXpacket() {
         String xmpMetadata = "<?xpacket begin=\"\" id=\"W5M0MpCehiHzreSzNTczkc9d\"?>" +
-                            "<rdf:RDF xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\">content</rdf:RDF>";
+                "<rdf:RDF xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\">content</rdf:RDF>";
 
         String result = PdfA4Processor.extractRdfContent(xmpMetadata);
 
@@ -274,9 +279,10 @@ class PdfA4ProcessorTest {
 
         String result = PdfA4Processor.wrapWithXPacket(rdfContent);
 
-        assertThat(result).startsWith("<?xpacket begin=\"\"");
-        assertThat(result).contains(rdfContent);
-        assertThat(result).endsWith("<?xpacket end=\"r\"?>");
+        assertThat(result)
+                .startsWith("<?xpacket begin=\"\"")
+                .contains(rdfContent)
+                .endsWith("<?xpacket end=\"r\"?>");
     }
 
     @Test
@@ -292,12 +298,14 @@ class PdfA4ProcessorTest {
         String id2 = result2.substring(result2.indexOf("id=\"") + 4, result2.indexOf("\"?>"));
 
         // Verify IDs are different (unique)
-        assertThat(id1).isNotEqualTo(id2);
         // Verify ID format (UUID without hyphens = 32 hex chars)
-        assertThat(id1).hasSize(32);
-        assertThat(id2).hasSize(32);
-        assertThat(id1).matches("[a-f0-9]{32}");
-        assertThat(id2).matches("[a-f0-9]{32}");
+        assertThat(id1)
+                .isNotEqualTo(id2)
+                .hasSize(32)
+                .matches("[a-f0-9]{32}");
+        assertThat(id2)
+                .hasSize(32)
+                .matches("[a-f0-9]{32}");
     }
 
     @Test
@@ -409,10 +417,11 @@ class PdfA4ProcessorTest {
 
         String result = PdfA4Processor.documentToString(doc);
 
-        assertThat(result).contains("<root>");
-        assertThat(result).contains("<child>text</child>");
-        assertThat(result).contains("</root>");
-        assertThat(result).doesNotContain("<?xml");
+        assertThat(result)
+                .contains("<root>")
+                .contains("<child>text</child>")
+                .contains("</root>")
+                .doesNotContain("<?xml");
     }
 
     // Helper methods
