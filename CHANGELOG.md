@@ -1,5 +1,21 @@
 # Changelog
 
+## [10.1.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v10.0.1...v10.1.0) (2025-11-07)
+
+
+### Features
+
+* ability to export comments as sticky notes ([#587](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/587)) ([adcc532](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/adcc532fc73b2405ca9e57be5ae26b1c26194f7b)), closes [#576](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/576)
+* export comments within a workitem description ([#577](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/577)) ([0e3e571](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/0e3e5717e406ff161aedcc3059ca5a06bb216e12)), closes [#551](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/551)
+* PDF/A-1b compliance ([#608](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/608)) ([231197a](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/231197af0214276e1091cec82367333f8910b1fe))
+* validate resulting pdfs using verapdf ([#604](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/604)) ([48b1a4d](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/48b1a4d175587f08e0e86c216d99b3d3ad4f032e)), closes [#603](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/603)
+
+
+### Bug Fixes
+
+* **deps:** update dependency ch.sbb.polarion.extensions:ch.sbb.polarion.extension.generic to v11.3.0 ([acc64d4](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/acc64d42c3a1bbc05b2dcc964a1c370d3b87fa0d))
+* PDF/A-4 metadata compliance limitation ([#606](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/606)) ([bad341e](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/bad341eeedfdf5e38cd0f619e500fa36e3d3c7b7)), closes [#605](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/605)
+
 ## [10.0.1](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v10.0.0...v10.0.1) (2025-10-17)
 
 
