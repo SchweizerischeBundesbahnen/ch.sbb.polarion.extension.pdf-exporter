@@ -21,11 +21,9 @@ import lombok.SneakyThrows;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
-import org.jsoup.Jsoup;
 import org.jsoup.nodes.Comment;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
-import org.jsoup.nodes.Entities;
 import org.jsoup.nodes.Node;
 import org.jsoup.nodes.TextNode;
 import org.jsoup.select.Elements;
@@ -107,11 +105,7 @@ public class HtmlProcessor {
         // II. SECOND SECTION - manipulate HTML as a JSoup document. These changes are vice versa fulfilled easier with JSoup.
         // ----------------
 
-        Document document = Jsoup.parse(html);
-        document.outputSettings()
-                .syntax(Document.OutputSettings.Syntax.xml)
-                .escapeMode(Entities.EscapeMode.base)
-                .prettyPrint(false);
+        Document document = JSoupUtils.parseHtml(html);
 
         // From Polarion perspective h1 - is a document title, h2 are h1 heading etc. We are making such headings' uplifting here
         adjustDocumentHeadings(document);
@@ -173,20 +167,18 @@ public class HtmlProcessor {
         // cause after filtering Linked WorkItems can become empty. Also cutting local URLs should happen afterwards
         // as filtering workitems relies among other on anchors.
         if (!selectedRoleEnumValues.isEmpty()) {
-            filterTabularLinkedWorkitems(document, selectedRoleEnumValues);
+            filterTabularLinkedWorkItems(document, selectedRoleEnumValues);
             filterNonTabularLinkedWorkItems(document, selectedRoleEnumValues);
         }
         if (exportParams.isCutEmptyWIAttributes()) {
             cutEmptyWIAttributes(document);
         }
-        // ----
-
         // Rewrites Polarion Work Item hyperlinks so that they become intra-document anchor links.
         rewritePolarionUrls(document);
-
         if (exportParams.isCutLocalUrls()) {
             cutLocalUrls(document);
         }
+        // ----
 
         getTocGenerator(exportParams.getDocumentType()).addTableOfContent(document);
 
@@ -476,7 +468,8 @@ public class HtmlProcessor {
                 heading.addClass("title");
             } else {
                 int level = heading.tagName().charAt(1) - '0';
-                heading.tagName("h" + (level - 1));
+                int newLevel = Math.max(1, Math.min(6, level - 1));
+                heading.tagName("h" + newLevel);
             }
         }
     }
@@ -668,7 +661,7 @@ public class HtmlProcessor {
         return resultBuf.toString();
     }
 
-    private void filterTabularLinkedWorkitems(@NotNull Document document, @NotNull List<String> selectedRoleEnumValues) {
+    private void filterTabularLinkedWorkItems(@NotNull Document document, @NotNull List<String> selectedRoleEnumValues) {
         Elements linkedWorkItemsCells = document.select("td[id='polarion_editor_field=linkedWorkItems']");
         for (Element linkedWorkItemsCell : linkedWorkItemsCells) {
             filterByRoles(linkedWorkItemsCell, selectedRoleEnumValues);
@@ -810,7 +803,7 @@ public class HtmlProcessor {
         // </table>
         //
         // This styling "page-break-inside: avoid" doesn't influence rendering by pd4ml converter,
-        // but breaks rendering of tables with help of WeasyPrint. More over this configuration was initially introduced
+        // but breaks rendering of tables with help of WeasyPrint. Moreover, this configuration was initially introduced
         // for pd4ml converter because table headers are not repeated at page start when table takes more than 1 page.
         // Last drawback is not applied to WeasyPrint and thus such workaround can be safely removed.
         //
@@ -910,12 +903,11 @@ public class HtmlProcessor {
         }
     }
 
-    public @NotNull Document adjustContentToFitPage(@NotNull Document document, @NotNull ConversionParams conversionParams) {
-        return new PageWidthAdjuster(document, conversionParams)
+    public void adjustContentToFitPage(@NotNull Document document, @NotNull ConversionParams conversionParams) {
+        new PageWidthAdjuster(document, conversionParams)
                 .adjustImageSizeInTables()
                 .adjustImageSize()
-                .adjustTableSize()
-                .getDocument();
+                .adjustTableSize();
     }
 
     public @NotNull String adjustContentToFitPage(@NotNull String html, @NotNull ConversionParams conversionParams) {
