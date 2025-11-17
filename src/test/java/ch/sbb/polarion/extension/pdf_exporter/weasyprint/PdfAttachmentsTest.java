@@ -30,7 +30,7 @@ import static ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PdfVa
 import static org.junit.jupiter.api.Assertions.*;
 
 @ExtendWith({MockitoExtension.class})
-public class PdfAttachmentsTest extends BaseWeasyPrintTest {
+class PdfAttachmentsTest extends BaseWeasyPrintTest {
 
     @Mock
     private IModule module;
