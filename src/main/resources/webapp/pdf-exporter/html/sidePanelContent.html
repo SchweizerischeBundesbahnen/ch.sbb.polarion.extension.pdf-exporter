@@ -94,12 +94,12 @@
             </select>
         </div>
         <div class='property-wrapper'>
-            <label for='scale-factor-selector'>Scale factor:</label>
-            <select id='scale-factor-selector'>
-                <option value='DPI_96' selected>96 (default)</option>
-                <option value='DPI_192'>192</option>
-                <option value='DPI_300'>300</option>
-                <option value='DPI_600'>600</option>
+            <label for='image-density-selector'>Image density:</label>
+            <select id='image-density-selector'>
+                <option value='DPI_96'>96 dpi</option>
+                <option value='DPI_192'>192 dpi</option>
+                <option value='DPI_300'>300 dpi</option>
+                <option value='DPI_600'>600 dpi</option>
             </select>
         </div>
         <div class='property-wrapper'>
@@ -116,13 +116,17 @@
         </div>
         <div class='property-wrapper'>
             <label for='render-comments'>
-                <input id='render-comments' onchange='document.querySelector("#pdf-exporter-panel #render-comments-selector").style.display = this.checked ? "block" : "none"' type='checkbox'/>
+                <input id='render-comments' onchange='document.querySelector("#pdf-exporter-panel #render-comments-selector").style.display = this.checked ? "block" : "none";document.querySelector("#pdf-exporter-panel #render-native-comments-container").style.display = this.checked ? "flex" : "none"' type='checkbox'/>
                 Comments rendering
             </label>
-            <select id='render-comments-selector'>
+            <select id='render-comments-selector' style='display: none'>
                 <option value='OPEN'>Open</option>
                 <option value='ALL'>All</option>
             </select>
+            <label for='render-native-comments' id='render-native-comments-container' style='display: none'>
+                <input id='render-native-comments' type='checkbox'/>
+                as sticky notes
+            </label>
         </div>
         <div class='property-wrapper'>
             <label for='watermark'>

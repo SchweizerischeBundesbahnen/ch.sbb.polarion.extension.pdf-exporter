@@ -7,7 +7,14 @@
         <div class="alert alert-success" style="display: none"></div>
     </div>
 
-    <div class="flex-container">
+    <div id='popup-auto-select-style-package-container'  class="flex-container">
+        <label for='popup-auto-select-style-package'>
+            <input id='popup-auto-select-style-package' type='checkbox' checked />
+            Automatically select a style package most suitable for each of the documents to be exported
+        </label>
+    </div>
+
+    <div id='popup-style-package' class="flex-container">
         <p>Select one of style packages in dropdown below which you wish to use during export.</p>
         <div class="flex-column">
             <div class='property-wrapper'>
@@ -101,12 +108,12 @@
                     </select>
                 </div>
                 <div class='property-wrapper'>
-                    <label for='popup-scale-factor-selector' class="fixed-width w-1">Scale factor:</label>
-                    <select id='popup-scale-factor-selector'>
-                        <option value='DPI_96' selected>96 (default)</option>
-                        <option value='DPI_192'>192</option>
-                        <option value='DPI_300'>300</option>
-                        <option value='DPI_600'>600</option>
+                    <label for='popup-image-density-selector' class="fixed-width w-1">Image density:</label>
+                    <select id='popup-image-density-selector'>
+                        <option value='DPI_96'>96 dpi</option>
+                        <option value='DPI_192'>192 dpi</option>
+                        <option value='DPI_300'>300 dpi</option>
+                        <option value='DPI_600'>600 dpi</option>
                     </select>
                 </div>
             </div>
@@ -128,13 +135,17 @@
                 </div>
                 <div class='property-wrapper hidden visible-for-LIVE_DOC visible-for-BASELINE_COLLECTION'>
                     <label for='popup-render-comments'>
-                        <input id='popup-render-comments' onchange='document.getElementById("popup-render-comments-selector").style.visibility = this.checked ? "visible" : "hidden"' type='checkbox'/>
+                        <input id='popup-render-comments' onchange='document.getElementById("popup-render-comments-selector").style.visibility = this.checked ? "visible" : "hidden";document.querySelector("#popup-render-native-comments-container").style.display = this.checked ? "flex" : "none"' type='checkbox'/>
                         Comments rendering
                     </label>
-                    <select id='popup-render-comments-selector' style='width: 100px'>
+                    <select id='popup-render-comments-selector' style='width: 60px'>
                         <option value='OPEN'>Open</option>
                         <option value='ALL'>All</option>
                     </select>
+                    <label for='popup-render-native-comments' id='popup-render-native-comments-container'>
+                        <input id='popup-render-native-comments' type='checkbox'/>
+                        as sticky notes
+                    </label>
                 </div>
                 <div class='property-wrapper'>
                     <label for='popup-watermark'>

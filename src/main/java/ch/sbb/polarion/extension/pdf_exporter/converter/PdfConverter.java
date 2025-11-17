@@ -11,6 +11,8 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.DocumentData;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.css.CssModel;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.headerfooter.HeaderFooterModel;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.stylepackage.DocIdentifier;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.stylepackage.StylePackageModel;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.webhooks.AuthType;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.webhooks.WebhookConfig;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.webhooks.WebhooksModel;
@@ -89,7 +91,7 @@ public class PdfConverter {
         velocityEvaluator = new VelocityEvaluator();
         weasyPrintServiceConnector = new WeasyPrintServiceConnector();
         PdfExporterFileResourceProvider fileResourceProvider = new PdfExporterFileResourceProvider();
-        htmlProcessor = new HtmlProcessor(fileResourceProvider, new LocalizationSettings(), new HtmlLinksHelper(fileResourceProvider), pdfExporterPolarionService);
+        htmlProcessor = new HtmlProcessor(fileResourceProvider, new LocalizationSettings(), new HtmlLinksHelper(fileResourceProvider));
         coverPageProcessor = new CoverPageProcessor(htmlProcessor);
         pdfTemplateProcessor = new PdfTemplateProcessor();
     }
@@ -99,6 +101,11 @@ public class PdfConverter {
 
         PdfGenerationLog generationLog = new PdfGenerationLog();
         generationLog.log("Starting html generation");
+
+        if (exportParams.isAutoSelectStylePackage()) {
+            StylePackageModel mostSuitableStylePackageModel = pdfExporterPolarionService.getMostSuitableStylePackageModel(DocIdentifier.of(exportParams));
+            exportParams.overwriteByStylePackage(mostSuitableStylePackageModel);
+        }
 
         @Nullable ITrackerProject project = getTrackerProject(exportParams);
         @NotNull final DocumentData<? extends IUniqueObject> documentData = DocumentDataFactory.getDocumentData(exportParams, true);
@@ -232,17 +239,17 @@ public class PdfConverter {
 
     @VisibleForTesting
     byte[] generatePdf(
-            DocumentData<? extends IUniqueObject> documentData,
-            ExportParams exportParams,
-            ExportMetaInfoCallback metaInfoCallback,
-            String htmlPage,
-            PdfGenerationLog generationLog) {
+            @NotNull DocumentData<? extends IUniqueObject> documentData,
+            @NotNull ExportParams exportParams,
+            @Nullable ExportMetaInfoCallback metaInfoCallback,
+            @NotNull String htmlPage,
+            @NotNull PdfGenerationLog generationLog) {
 
         WeasyPrintOptions weasyPrintOptions = WeasyPrintOptions.builder()
                 .followHTMLPresentationalHints(exportParams.isFollowHTMLPresentationalHints())
                 .pdfVariant(exportParams.getPdfVariant())
                 .customMetadata(metaTagsPresent(htmlPage))
-                .scaleFactor(exportParams.getScaleFactor())
+                .imageDensity(exportParams.getImageDensity())
                 .build();
 
         if (metaInfoCallback == null && exportParams.getInternalContent() == null && exportParams.getCoverPage() != null) {

@@ -15,6 +15,7 @@ export default class ExportContext extends ExtensionContext {
                     documentType = ExportParams.DocumentType.LIVE_DOC,
                     exportType = ExportParams.ExportType.SINGLE,
                     polarionLocationHash = window.location.hash,
+                    exportPages = false,
                     rootComponentSelector}) {
         const urlPathAndSearchParams = getPathAndQueryParams(polarionLocationHash);
         const normalizedPolarionLocationHash = urlPathAndSearchParams.path;
@@ -24,6 +25,7 @@ export default class ExportContext extends ExtensionContext {
         this.documentType = documentType;
         this.exportType = exportType;
         this.projectId = getProjectId(scope);
+        this.exportPages = exportPages;
 
         const baseline = getBaseline(normalizedPolarionLocationHash);
         if (baseline) {
@@ -280,7 +282,7 @@ export default class ExportContext extends ExtensionContext {
             url: url,
             responseType: "json",
             onOk: (responseText, request) => {
-                const collectionDocuments = request.response;
+                let collectionDocuments = request.response;
 
                 if (!collectionDocuments || collectionDocuments.length === 0) {
                     console.warn("No documents found in the collection.");
@@ -295,12 +297,12 @@ export default class ExportContext extends ExtensionContext {
                     exportParams["projectId"] = collectionDocument.projectId;
                     exportParams["locationPath"] = collectionDocument.spaceId + "/" + collectionDocument.documentName;
                     exportParams["revision"] = collectionDocument.revision;
-                    exportParams["documentType"] = ExportParams.DocumentType.LIVE_DOC;
+                    exportParams["documentType"] = collectionDocument.documentType;
 
                     this.asyncConvertPdf(
                         exportParams.toJSON(),
                         (result, fileName) => {
-                            const downloadFileName = fileName || `${collectionDocument.projectId}_${collectionDocument.spaceId}_${collectionDocument.documentName}.pdf`;
+                            const downloadFileName = collectionDocument.fileName || `${collectionDocument.projectId}_${collectionDocument.spaceId}_${collectionDocument.documentName}.pdf`;
                             this.downloadBlob(result.response, downloadFileName);
 
                             completedCount++;
@@ -319,6 +321,9 @@ export default class ExportContext extends ExtensionContext {
                     );
                 };
 
+                if (!this.exportPages) {
+                    collectionDocuments = collectionDocuments.filter(doc => doc.documentType !== ExportParams.DocumentType.LIVE_REPORT);
+                }
                 collectionDocuments.forEach(convertCollectionDocument);
             },
             onError: (status, errorMessage, request) => {

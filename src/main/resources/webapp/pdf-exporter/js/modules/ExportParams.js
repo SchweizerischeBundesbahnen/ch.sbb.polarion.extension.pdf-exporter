@@ -36,6 +36,13 @@ export default class ExportParams {
         PDF_UA_1: 'pdf/ua-1',
     };
 
+    static ImageDensity = {
+        DPI_96: 'DPI_96',
+        DPI_192: 'DPI_192',
+        DPI_300: 'DPI_300',
+        DPI_600: 'DPI_600',
+    };
+
     static ExportType = {
         SINGLE: 'SINGLE',
         BULK: 'BULK',
@@ -58,6 +65,7 @@ export default class ExportParams {
         this.pdfVariant = builder.pdfVariant;
         this.fitToPage = builder.fitToPage;
         this.renderComments = builder.renderComments;
+        this.renderNativeComments = builder.renderNativeComments;
         this.watermark = builder.watermark;
         this.markReferencedWorkitems = builder.markReferencedWorkitems;
         this.cutEmptyChapters = builder.cutEmptyChapters;
@@ -75,7 +83,8 @@ export default class ExportParams {
         this.testcaseFieldId = builder.testcaseFieldId;
         this.embedAttachments = builder.embedAttachments;
         this.internalContent = builder.internalContent;
-        this.scaleFactor = builder.scaleFactor;
+        this.imageDensity = builder.imageDensity;
+        this.autoSelectStylePackage = builder.autoSelectStylePackage;
     }
 
     toJSON() {
@@ -113,6 +122,7 @@ export default class ExportParams {
                 this.pdfVariant = undefined;
                 this.fitToPage = undefined;
                 this.renderComments = undefined;
+                this.renderNativeComments = undefined;
                 this.watermark = undefined;
                 this.markReferencedWorkitems = undefined;
                 this.cutEmptyChapters = undefined;
@@ -130,7 +140,13 @@ export default class ExportParams {
                 this.testcaseFieldId = undefined;
                 this.embedAttachments = undefined;
                 this.internalContent = undefined;
-                this.scaleFactor = undefined;
+                this.imageDensity = undefined;
+                this.autoSelectStylePackage = undefined;
+            }
+
+            setAutoSelectStylePackage(autoSelectStylePackage) {
+                this.autoSelectStylePackage = autoSelectStylePackage;
+                return this;
             }
 
             setProjectId(projectId) {
@@ -205,6 +221,11 @@ export default class ExportParams {
 
             setRenderComments(renderComments) {
                 this.renderComments = renderComments;
+                return this;
+            }
+
+            setRenderNativeComments(renderNativeComments) {
+                this.renderNativeComments = renderNativeComments;
                 return this;
             }
 
@@ -288,8 +309,8 @@ export default class ExportParams {
                 return this;
             }
 
-            setScaleFactor(scaleFactor) {
-                this.scaleFactor = scaleFactor;
+            setImageDensity(imageDensity) {
+                this.imageDensity = imageDensity;
                 return this;
             }
 

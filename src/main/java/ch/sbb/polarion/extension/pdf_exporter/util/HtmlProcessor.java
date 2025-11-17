@@ -1,139 +1,215 @@
 package ch.sbb.polarion.extension.pdf_exporter.util;
 
-import ch.sbb.polarion.extension.generic.regex.IRegexEngine;
 import ch.sbb.polarion.extension.generic.regex.RegexMatcher;
 import ch.sbb.polarion.extension.generic.settings.NamedSettings;
 import ch.sbb.polarion.extension.generic.settings.SettingId;
 import ch.sbb.polarion.extension.generic.util.HtmlUtils;
+import ch.sbb.polarion.extension.pdf_exporter.constants.CssProp;
+import ch.sbb.polarion.extension.pdf_exporter.constants.HtmlTag;
+import ch.sbb.polarion.extension.pdf_exporter.constants.HtmlTagAttr;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ConversionParams;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.DocumentType;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.Orientation;
-import ch.sbb.polarion.extension.pdf_exporter.service.PdfExporterPolarionService;
 import ch.sbb.polarion.extension.pdf_exporter.settings.LocalizationSettings;
 import ch.sbb.polarion.extension.pdf_exporter.util.adjuster.PageWidthAdjuster;
 import ch.sbb.polarion.extension.pdf_exporter.util.exporter.CustomPageBreakPart;
 import ch.sbb.polarion.extension.pdf_exporter.util.html.HtmlLinksHelper;
 import com.polarion.alm.shared.util.StringUtils;
-import com.polarion.core.util.xml.CSSStyle;
+import com.steadystate.css.parser.CSSOMParser;
 import lombok.SneakyThrows;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Comment;
 import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.nodes.Entities;
+import org.jsoup.nodes.Node;
+import org.jsoup.nodes.TextNode;
+import org.jsoup.select.Elements;
+import org.w3c.dom.css.CSSStyleDeclaration;
 
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 
+import static ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.DocumentType.*;
 import static ch.sbb.polarion.extension.pdf_exporter.util.exporter.Constants.*;
 
 public class HtmlProcessor {
 
-    public static final String TABLE_ROW_END_TAG = "</tr>";
-    public static final String TABLE_COLUMN_END_TAG = "</td>";
-    private static final String DIV_START_TAG = "<div>";
     private static final String DIV_END_TAG = "</div>";
     private static final String SPAN_END_TAG = "</span>";
     private static final String COMMENT_START = "[span";
     private static final String COMMENT_END = "[/span]";
-    private static final String NUMBER = "number";
+    private static final String DOLLAR_SIGN = "$";
+    private static final String DOLLAR_ENTITY = "&dollar;";
+    private static final String ROWSPAN_ATTR = "rowspan";
+    private static final String RIGHT_ALIGNMENT_MARGIN = "auto 0px auto auto";
+    private static final String EMPTY_FIELD_TITLE = "This field is empty";
+    private static final String URL_PROJECT_ID_PREFIX = "/polarion/#/project/";
+    private static final String URL_WORK_ITEM_ID_PREFIX = "workitem?id=";
+    private static final String POLARION_URL_MARKER = "/polarion/#";
+    private static final String TABLE_OF_FIGURES_ANCHOR_ID_PREFIX = "dlecaption_";
 
     private static final String UNSUPPORTED_DOCUMENT_TYPE = "Unsupported document type: %s";
 
     private final FileResourceProvider fileResourceProvider;
     private final LocalizationSettings localizationSettings;
     private final HtmlLinksHelper httpLinksHelper;
-    private final PdfExporterPolarionService pdfExporterPolarionService;
 
-    public HtmlProcessor(FileResourceProvider fileResourceProvider, LocalizationSettings localizationSettings, HtmlLinksHelper httpLinksHelper, PdfExporterPolarionService pdfExporterPolarionService) {
+    private final @NotNull CSSOMParser parser = new CSSOMParser();
+
+    public HtmlProcessor(FileResourceProvider fileResourceProvider, LocalizationSettings localizationSettings, HtmlLinksHelper httpLinksHelper) {
         this.fileResourceProvider = fileResourceProvider;
         this.localizationSettings = localizationSettings;
         this.httpLinksHelper = httpLinksHelper;
-        this.pdfExporterPolarionService = pdfExporterPolarionService;
     }
 
     public String processHtmlForPDF(@NotNull String html, @NotNull ExportParams exportParams, @NotNull List<String> selectedRoleEnumValues) {
+        if (exportParams.getDocumentType() == BASELINE_COLLECTION) {
+            // Unsupported document type
+            throw new IllegalArgumentException(UNSUPPORTED_DOCUMENT_TYPE.formatted(exportParams.getDocumentType()));
+        }
+
+        // I. FIRST SECTION - manipulate HTML as a String. These changes are either not possible or not made easier with JSoup
+        // ----------------
+
         // Replace all dollar-characters in HTML document before applying any regular expressions, as it has special meaning there
-        html = html.replace("$", "&dollar;");
+        html = encodeDollarSigns(html);
 
-        html = removePd4mlTags(html);
+        // Remove all <pd4ml:page> tags which only have meaning for PD4ML library which we are not using.
+        html = removePd4mlPageTags(html);
+
+        // Change path of enum images from internal Polarion to publicly available
         html = html.replace("/ria/images/enums/", "/icons/default/enums/");
-        html = html.replace("<p><br></p>", "<br/>");
-        html = html.replace("vertical-align:middle;", "page-break-inside:avoid;");
-        html = adjustImageAlignmentForPDF(html);
-        html = html.replaceAll("margin: *auto;", "align:center;");
-        html = adjustHeadingsForPDF(html);
+
+        // Was noticed that some externally imported/pasted elements (at this moment tables) contain strange extra block like
+        // <div style="clear:both;"> with the duplicated content inside.
+        // Potential fix below is simple: just hide these blocks.
+        html = html.replace("style=\"clear:both;\"", "style=\"clear:both;display:none;\"");
+
+        // fix HTML adding closing tag for <pd4ml:toc> - JSoup requires it
+        html = html.replaceAll("(<pd4ml:toc[^>]*)(>)", "$1></pd4ml:toc>");
+
+        if (exportParams.getRenderComments() != null) {
+            html = processComments(html);
+        }
+
+        // II. SECOND SECTION - manipulate HTML as a JSoup document. These changes are vice versa fulfilled easier with JSoup.
+        // ----------------
+
+        Document document = Jsoup.parse(html);
+        document.outputSettings()
+                .syntax(Document.OutputSettings.Syntax.xml)
+                .escapeMode(Entities.EscapeMode.base)
+                .prettyPrint(false);
+
+        // From Polarion perspective h1 - is a document title, h2 are h1 heading etc. We are making such headings' uplifting here
+        adjustDocumentHeadings(document);
+
         if (exportParams.isCutEmptyChapters()) {
-            html = cutEmptyChapters(html);
+            // Cut empty chapters if explicitly requested by user
+            cutEmptyChapters(document);
         }
-
-        html = adjustCellWidth(html, exportParams);
-        html = html.replace(">\n ", "> ");
-        html = html.replace("\n</", "</");
         if (exportParams.getChapters() != null) {
-            html = cutNotNeededChapters(html, exportParams.getChapters());
+            // Leave only chapters explicitly selected by user
+            cutNotNeededChapters(document, exportParams.getChapters());
         }
 
-        html = switch (exportParams.getDocumentType()) {
-            case LIVE_DOC, WIKI_PAGE -> {
-                String processingHtml = new LiveDocTOCGenerator().addTableOfContent(html);
-                yield addTableOfFigures(processingHtml);
-            }
-            case LIVE_REPORT, TEST_RUN -> {
-                String processingHtml = new LiveReportTOCGenerator().addTableOfContent(html);
-                processingHtml = adjustReportedBy(processingHtml);
-                processingHtml = cutExportToPdfButton(processingHtml);
-                processingHtml = adjustColumnWidthInReports(processingHtml);
-                yield removeFloatLeftFromReports(processingHtml);
-            }
-            case BASELINE_COLLECTION -> throw new IllegalArgumentException(UNSUPPORTED_DOCUMENT_TYPE.formatted(exportParams.getDocumentType()));
-        };
-        html = replaceResourcesAsBase64Encoded(html);
-        html = properTableHeads(html);
-        html = cleanExtraTableContent(html);
-        html = switch (exportParams.getDocumentType()) {
-            case LIVE_DOC, WIKI_PAGE -> {
-                String processingHtml = new PageBreakAvoidRemover().removePageBreakAvoids(html);
-                yield new NumberedListsSanitizer().fixNumberedLists(processingHtml);
-            }
-            case LIVE_REPORT, TEST_RUN -> html;
-            case BASELINE_COLLECTION -> throw new IllegalArgumentException(UNSUPPORTED_DOCUMENT_TYPE.formatted(exportParams.getDocumentType()));
-        };
+        if (exportParams.getDocumentType() == LIVE_DOC || exportParams.getDocumentType() == WIKI_PAGE) {
+            // Moves WorkItem content out of table wrapping it
+            removePageBreakAvoids(document);
+
+            // Fixes nested HTML lists structure
+            fixNestedLists(document);
+
+            // Localize enumeration values
+            localizeEnums(document, exportParams);
+
+            addTableOfFigures(document);
+        }
+
+        if (exportParams.getDocumentType() == LIVE_REPORT || exportParams.getDocumentType() == TEST_RUN) {
+            // Searches for div containing 'Reported by' text and adjusts its styles
+            adjustReportedBy(document);
+
+            // Cuts "Export To PDF" button from report's content
+            cutExportToPdfButton(document);
+
+            // Remove "float: left;" style definition from tables
+            removeFloatLeftFromReports(document);
+
+            // Replaces fixed width value of report tables by relative one
+            adjustColumnWidthInReports(document);
+        }
+
+        // Polarion doesn't place table rows with th-tags into thead, placing them in table's tbody, which is wrong as table header won't
+        // repeat on each next page if table is split across multiple pages. We are fixing this moving such rows into thead.
+        fixTableHeads(document);
+
+        // If on next step we placed into thead rows which contain rowspan > 1 and this "covers" rows which are still in tbody, we are fixing
+        // this here, moving such rows also in thead
+        fixTableHeadRowspan(document);
+
+        // Images with styles and "display: block" are searched here. For such images we do following: wrap them into div with text-align style
+        // and value "right" if image margin is "auto 0px auto auto" or "center" otherwise.
+        adjustImageAlignment(document);
+
+        // Adjusts WorkItem attributes tables to stretch to full page width for better usage of page space and better readability.
+        // Also changes absolute widths of normal table cells from absolute values to "auto" if "Fit tables and images to page" is on
+        adjustCellWidth(document, exportParams);
 
         // ----
         // This sequence is important! We need first filter out Linked WorkItems and only then cut empty attributes,
         // cause after filtering Linked WorkItems can become empty. Also cutting local URLs should happen afterwards
         // as filtering workitems relies among other on anchors.
         if (!selectedRoleEnumValues.isEmpty()) {
-            html = filterTabularLinkedWorkitems(html, selectedRoleEnumValues);
-            html = filterNonTabularLinkedWorkitems(html, selectedRoleEnumValues);
+            filterTabularLinkedWorkitems(document, selectedRoleEnumValues);
+            filterNonTabularLinkedWorkItems(document, selectedRoleEnumValues);
         }
         if (exportParams.isCutEmptyWIAttributes()) {
-            html = cutEmptyWIAttributes(html);
-        }
-        if (exportParams.isCutLocalUrls()) {
-            html = cutLocalUrls(html);
+            cutEmptyWIAttributes(document);
         }
         // ----
 
-        html = switch (exportParams.getDocumentType()) {
-            case LIVE_DOC, WIKI_PAGE -> localizeEnums(html, exportParams);
-            case LIVE_REPORT, TEST_RUN -> html;
-            case BASELINE_COLLECTION -> throw new IllegalArgumentException(UNSUPPORTED_DOCUMENT_TYPE.formatted(exportParams.getDocumentType()));
-        };
+        // Rewrites Polarion Work Item hyperlinks so that they become intra-document anchor links.
+        rewritePolarionUrls(document);
 
-        if (exportParams.getRenderComments() != null) {
-            html = processComments(html);
+        if (exportParams.isCutLocalUrls()) {
+            cutLocalUrls(document);
         }
+
+        getTocGenerator(exportParams.getDocumentType()).addTableOfContent(document);
+
+        if (exportParams.isFitToPage() && !hasCustomPageBreaks(html)) {
+            // ---- BOOKMARK 1
+            // In case of custom page breaks adjustContentToFitPage() will be called separately for each HTML block between
+            // page breaks separately (see BOOKMARK 2 below), as paper orientation can be changed by page break
+            adjustContentToFitPage(document, exportParams);
+            // ----
+        }
+
+        html = document.body().html();
+
+        // Jsoup may convert &dollar; back to $ in some cases, so we need to replace it again
+        html = encodeDollarSigns(html);
+
+        html = replaceResourcesAsBase64Encoded(html);
+
         if (hasCustomPageBreaks(html)) {
-            //processPageBrakes contains its own adjustContentToFitPage() calls
+            // ---- BOOKMARK 2
+            // processPageBrakes() contains its own adjustContentToFitPage() calls, see BOOKMARK 1 for same logic without custom page breaks
             html = processPageBrakes(html, exportParams);
-        } else if (exportParams.isFitToPage()) {
-            html = adjustContentToFitPage(html, exportParams);
+            // ----
         }
 
         // Do not change this entry order, '&nbsp;' can be used in the logic above, so we must cut them off as the last step
@@ -142,20 +218,401 @@ public class HtmlProcessor {
     }
 
     @NotNull
+    private String removePd4mlPageTags(@NotNull String html) {
+        return RegexMatcher.get("(<pd4ml:page.*>)(.)").replace(html, regexEngine -> regexEngine.group(2));
+    }
+
+    /**
+     * Escapes dollar signs in HTML to prevent them from being interpreted as regex special characters.
+     * Should be called after Jsoup parsing operations that may convert &dollar; back to $.
+     *
+     * @param html HTML content to escape
+     * @return HTML with dollar signs replaced by &dollar; entity
+     */
+    @NotNull
+    private String encodeDollarSigns(@NotNull String html) {
+        return html.replace(DOLLAR_SIGN, DOLLAR_ENTITY);
+    }
+
     @VisibleForTesting
-    @SuppressWarnings({"java:S5843", "java:S5852"})
-    String cutLocalUrls(@NotNull String html) {
-        // This regexp consists of 2 parts combined by OR-condition. In first part it looks for <a>-tags
-        // containing "/polarion/#" in its href attribute and match a content inside of this <a> into named group "content".
-        // In second part of this regexp it looks for <a>-tags which href attribute starts with "http" and containing <img>-tag inside of it
-        // and matches a content inside of this <a> into named group "imgContent". The sense of this regexp is to find
-        // all links (as text-link or images) linking to local Polarion resources and to cut these links off, though leaving
-        // their content in text.
-        return RegexMatcher.get("<a[^>]+?href=[^>]*?/polarion/#[^>]*?>(?<content>[\\s\\S]+?)</a>|<a[^>]+?href=\"http[^>]+?>(?<imgContent><img[^>]+?src=\"data:[^>]+?>)</a>")
-                .replace(html, regexEngine -> {
-                    String content = regexEngine.group("content");
-                    return content != null ? content : regexEngine.group("imgContent");
-                });
+    void cutEmptyChapters(@NotNull Document document) {
+        // 'Empty chapter' is a heading tag which doesn't have any visible content "under it",
+        // i.e. there are only not visible or whitespace elements between itself and next heading of same/higher level or end of parent/document.
+
+        // Process from lowest to highest priority (h6 to h1), otherwise logic can be broken
+        for (int headingLevel = H_TAG_MIN_PRIORITY; headingLevel >= 1; headingLevel--) {
+            removeEmptyHeadings(document, headingLevel);
+        }
+    }
+
+    private void removeEmptyHeadings(@NotNull Document document, int headingLevel) {
+        List<Element> headingsToRemove = JSoupUtils.selectEmptyHeadings(document, headingLevel);
+        for (Element heading : headingsToRemove) {
+
+            // In addition to removing heading itself, remove all following empty siblings until next heading, but not comments as they can have special meaning
+            // We don't check additionally if sibling is empty, because if a heading was selected for removal there are only empty siblings under it
+            Node nextSibling = heading.nextSibling();
+            while (nextSibling != null) {
+                if (JSoupUtils.isHeading(nextSibling)) {
+                    break;
+                } else {
+                    Node siblingToRemove = nextSibling instanceof Comment ? null : nextSibling;
+                    nextSibling = nextSibling.nextSibling();
+                    if (siblingToRemove != null) {
+                        siblingToRemove.remove();
+                    }
+                }
+            }
+
+            heading.remove();
+        }
+    }
+
+    @VisibleForTesting
+    void cutNotNeededChapters(@NotNull Document document, @NotNull List<String> selectedChapters) {
+        List<ChapterInfo> chapters = getChaptersInfo(document, selectedChapters);
+
+        // Process chapters to remove unwanted ones
+        for (ChapterInfo currentChapter : chapters) {
+            if (!currentChapter.shouldKeep()) {
+                // Remember parent element for possible future usage
+                Element parent = currentChapter.heading().parent();
+
+                // Collect first 2 page break comments in the block to remove
+                List<Comment> topPageBreakComments = collectPageBreakComments(currentChapter);
+
+                Node nextChapterNode = removeChapter(currentChapter);
+
+                // Re-insert page break comments at the position where the block was removed
+                if (nextChapterNode != null) {
+                    // Insert before the next H1
+                    for (Comment pageBreak : topPageBreakComments) {
+                        nextChapterNode.before(pageBreak);
+                    }
+                } else if (parent != null) {
+                    // Otherwise insert at the end of parent
+                    for (Comment pageBreak : topPageBreakComments) {
+                        parent.appendChild(pageBreak);
+                    }
+                }
+            }
+        }
+    }
+
+    @NotNull
+    private List<ChapterInfo> getChaptersInfo(@NotNull Document document, @NotNull List<String> selectedChapters) {
+        List<ChapterInfo> chapters = new ArrayList<>();
+
+        for (Element h1 : document.select(HtmlTag.H1)) {
+            boolean shouldKeep = false;
+
+            // Extract chapter number from the h1 structure: <h1><span><span>NUMBER</span></span>...</h1>
+            Elements innerSpans = h1.select("span > span");
+            if (!innerSpans.isEmpty()) {
+                String chapterNumber = Objects.requireNonNull(innerSpans.first()).text();
+                shouldKeep = selectedChapters.contains(chapterNumber);
+            }
+            chapters.add(new ChapterInfo(h1, shouldKeep));
+        }
+        return chapters;
+    }
+
+    /**
+     * Collects top PAGE_BREAK related comments starting from current to next chapter (H1 elements)
+     */
+    @NotNull
+    private List<Comment> collectPageBreakComments(@NotNull ChapterInfo currentChapter) {
+        List<Comment> topPageBreakComments = new ArrayList<>();
+        Node current = currentChapter.heading().nextSibling();
+
+        // Traverse siblings until we reach the next h1 or end of siblings
+        while (current != null && !JSoupUtils.isH1(current) && !JSoupUtils.containsH1(current)) {
+            // Collect top PAGE_BREAK comments at current level
+            collectPageBreakComments(current, topPageBreakComments);
+            current = current.nextSibling();
+        }
+
+        return topPageBreakComments;
+    }
+
+    /**
+     * Recursively collects top PAGE_BREAK related comments from an element and its descendants,
+     * but only first 2 of them: <!--PAGE_BREAK--> and then either <!--PORTRAIT_ABOVE--> or <!--LANDSCAPE_ABOVE-->,
+     * the rest won't be relevant as they belong to removed content.
+     */
+    private void collectPageBreakComments(@NotNull Node node, @NotNull List<Comment> topPageBreakComments) {
+        if (topPageBreakComments.size() < 2) {
+            if (node instanceof Comment comment && isPageBreakComment(comment)) {
+                topPageBreakComments.add(new Comment(comment.getData()));
+            } else if (node instanceof Element element) {
+                for (Node child : element.childNodes()) {
+                    collectPageBreakComments(child, topPageBreakComments);
+                }
+            }
+        }
+    }
+
+    private boolean isPageBreakComment(@NotNull Comment comment) {
+        String commentData = comment.getData();
+        return commentData.equals(PAGE_BREAK) || commentData.equals(LANDSCAPE_ABOVE) || commentData.equals(PORTRAIT_ABOVE);
+    }
+
+    @Nullable
+    private Node removeChapter(@NotNull ChapterInfo currentChapter) {
+        Node current = currentChapter.heading();
+        Node nextChapterNode = null; // Can return null if no next chapter found
+
+        // Remove chapter itself and all siblings between it and next h1-tag
+        while (current != null) {
+            Node next = current.nextSibling();
+            current.remove();
+
+            // Check if next sibling is H1
+            if (next != null && (JSoupUtils.isH1(next) || JSoupUtils.containsH1(next))) {
+                nextChapterNode = next;
+                break;
+            }
+
+            current = next;
+        }
+
+        return nextChapterNode;
+    }
+
+    @VisibleForTesting
+    void fixTableHeads(@NotNull Document document) {
+        Elements tables = document.select(HtmlTag.TABLE);
+        for (Element table : tables) {
+            List<Element> headerRows = JSoupUtils.getRowsWithHeaders(table);
+            if (headerRows.isEmpty()) {
+                continue;
+            }
+
+            Element header = table.selectFirst(HtmlTag.THEAD);
+            if (header == null) {
+                header = new Element(HtmlTag.THEAD);
+                table.prependChild(header);
+            }
+
+            for (Element headerRow : headerRows) {
+                // Parent of each header row can't be null as we got them as child nodes of a table
+                if (!Objects.requireNonNull(headerRow.parent()).tagName().equals(HtmlTag.THEAD)) {
+                    // Header row is located not in thead - moving it there
+                    headerRow.remove();
+                    header.appendChild(headerRow);
+                }
+            }
+        }
+    }
+
+    /**
+     * Fixes malformed tables where thead contains single one row which cells has rowspan attribute greater than 1.
+     * Such cells semantically extend beyond the thead boundary, which causes incorrect table rendering.
+     * This method extends thead by moving rows from tbody into thead to match the rowspan values.
+     */
+    @VisibleForTesting
+    public void fixTableHeadRowspan(@NotNull Document document) {
+        Elements tables = document.select(HtmlTag.TABLE);
+
+        for (Element table : tables) {
+            Element thead = table.selectFirst(HtmlTag.THEAD);
+            if (thead != null) {
+                Element headRow = getHeadRow(thead);
+                if (headRow != null) {
+                    int maxRowspan = getMaxRowspan(headRow);
+                    // If all cells have rowspan=1 or no rowspan, nothing to fix
+                    if (maxRowspan <= 1) {
+                        continue;
+                    }
+
+                    List<Element> tbodyRows = JSoupUtils.getBodyRows(table);
+
+                    // Move (maxRowspan - 1) rows from tbody to thead
+                    int rowsToMove = Math.min(maxRowspan - 1, tbodyRows.size());
+                    for (int i = 0; i < rowsToMove; i++) {
+                        Element rowToMove = tbodyRows.get(i);
+                        rowToMove.remove();
+                        thead.appendChild(rowToMove);
+                    }
+                }
+            }
+        }
+    }
+
+    private Element getHeadRow(@NotNull Element thead) {
+        Elements theadRows = thead.select("> tr");
+        if (theadRows.size() != 1) {
+            return null;
+        }
+        return theadRows.first();
+    }
+
+    private int getMaxRowspan(@NotNull Element headRow) {
+        Elements cells = headRow.select("> th, > td");
+        int maxRowspan = 1;
+
+        // Find the maximum rowspan value
+        for (Element cell : cells) {
+            if (cell.hasAttr(ROWSPAN_ATTR)) {
+                try {
+                    int rowspan = Integer.parseInt(cell.attr(ROWSPAN_ATTR));
+                    if (rowspan > maxRowspan) {
+                        maxRowspan = rowspan;
+                    }
+                } catch (NumberFormatException e) {
+                    // Ignore invalid rowspan values
+                }
+            }
+        }
+        return maxRowspan;
+    }
+
+    private void adjustDocumentHeadings(@NotNull Document document) {
+        Elements headings = document.select("h1, h2, h3, h4, h5, h6");
+
+        for (Element heading : headings) {
+            if (JSoupUtils.isH1(heading)) {
+                heading.tagName(HtmlTag.DIV);
+                heading.addClass("title");
+            } else {
+                int level = heading.tagName().charAt(1) - '0';
+                heading.tagName("h" + (level - 1));
+            }
+        }
+    }
+
+    @VisibleForTesting
+    void adjustImageAlignment(@NotNull Document document) {
+        Elements images = document.select(HtmlTag.IMG);
+        for (Element image : images) {
+            if (image.hasAttr(HtmlTagAttr.STYLE)) {
+                String style = image.attr(HtmlTagAttr.STYLE);
+                CSSStyleDeclaration cssStyle = parseCss(style);
+
+                String displayValue = getCssValue(cssStyle, CssProp.DISPLAY);
+                if (!CssProp.DISPLAY_BLOCK_VALUE.equals(displayValue)) {
+                    continue;
+                }
+
+                Element wrapper = new Element(HtmlTag.DIV);
+
+                String marginValue = Optional.ofNullable(cssStyle.getPropertyValue(CssProp.MARGIN)).orElse("").trim();
+                if (RIGHT_ALIGNMENT_MARGIN.equals(marginValue)) {
+                    wrapper.attr(HtmlTagAttr.STYLE, String.format("%s: %s;", CssProp.TEXT_ALIGN, CssProp.TEXT_ALIGN_RIGHT_VALUE));
+                } else {
+                    wrapper.attr(HtmlTagAttr.STYLE, String.format("%s: %s;", CssProp.TEXT_ALIGN, CssProp.TEXT_ALIGN_CENTER_VALUE));
+                }
+
+                Element previousSibling = image.previousElementSibling();
+                if (previousSibling != null) {
+                    previousSibling.after(wrapper);
+                } else {
+                    Element parent = image.parent();
+                    Objects.requireNonNullElse(parent, document.body()).prependChild(wrapper);
+                }
+                image.remove();
+                wrapper.appendChild(image);
+            }
+        }
+    }
+
+    @VisibleForTesting
+    void adjustCellWidth(@NotNull Document document, @NotNull ExportParams exportParams) {
+        if (exportParams.isFitToPage()) {
+            autoCellWidth(document);
+        }
+
+        Elements wiAttrTables = document.select("table.polarion-dle-workitem-fields-end-table");
+        for (Element table : wiAttrTables) {
+            table.attr(HtmlTagAttr.STYLE, "width: 100%");
+
+            Elements attrNameCells = table.select("td.polarion-dle-workitem-fields-end-table-label");
+            for (Element attrNameCell : attrNameCells) {
+                attrNameCell.attr(HtmlTagAttr.STYLE, "width: 20%");
+            }
+
+            Elements attrNameValues = table.select("td.polarion-dle-workitem-fields-end-table-value");
+            for (Element attrNameValue : attrNameValues) {
+                attrNameValue.attr(HtmlTagAttr.STYLE, "width: 80%");
+            }
+        }
+    }
+
+    private void autoCellWidth(@NotNull Document document) {
+        // Searches for <td> or <th> elements of regular tables whose width in styles specified not in percentage.
+        // If they contain absolute values we replace them with auto, otherwise tables containing them can easily go outside boundaries of a page.
+        Elements cells = document.select(String.format("%s, %s", HtmlTag.TH, HtmlTag.TD));
+        for (Element cell : cells) {
+            if (cell.hasAttr(HtmlTagAttr.STYLE)) {
+                String style = cell.attr(HtmlTagAttr.STYLE);
+                CSSStyleDeclaration cssStyle = parseCss(style);
+
+                String widthValue = getCssValue(cssStyle, CssProp.WIDTH);
+                if (!widthValue.isEmpty() && !widthValue.contains("%")) {
+                    cssStyle.setProperty(CssProp.WIDTH, CssProp.WIDTH_AUTO_VALUE, null);
+                    cell.attr(HtmlTagAttr.STYLE, cssStyle.getCssText());
+                }
+            }
+        }
+    }
+
+    @VisibleForTesting
+    void cutLocalUrls(@NotNull Document document) {
+        // Looks for <a>-tags containing "/polarion/#" in its href attribute or for <a>-tags which href attribute starts with "http" and containing <img>-tag inside of it.
+        // Then it moves content of such links outside it and removing links themselves.
+        for (Element link : document.select("a[href]")) {
+            String href = link.attr(HtmlTagAttr.HREF);
+            boolean cutUrl = href.contains(POLARION_URL_MARKER) || JSoupUtils.isImg(link.firstElementChild());
+            if (cutUrl) {
+                for (Node contentNodes : link.childNodes()) {
+                    link.before(contentNodes.clone());
+                }
+                link.remove();
+            }
+        }
+    }
+
+    @VisibleForTesting
+    void rewritePolarionUrls(@NotNull Document document) {
+        Set<String> workItemAnchors = new HashSet<>();
+        for (Element anchor : document.select("a[id^=work-item-anchor-]")) {
+            workItemAnchors.add(anchor.id());
+        }
+
+        for (Element link : document.select("a[href]")) {
+            String href = link.attr(HtmlTagAttr.HREF);
+
+            String afterProject = substringAfter(href, URL_PROJECT_ID_PREFIX);
+            String projectId = substringBefore(afterProject, "/", false);
+            String workItemId = substringAfter(afterProject, URL_WORK_ITEM_ID_PREFIX);
+
+            if (afterProject == null || projectId == null || workItemId == null) {
+                continue;
+            }
+
+            workItemId = substringBefore(workItemId, "&", true);
+            workItemId = workItemId != null ? substringBefore(workItemId, "#", true) : null;
+            if (!StringUtils.isEmpty(workItemId)) {
+                String expectedAnchorId = "work-item-anchor-" + projectId + "/" + workItemId;
+                if (workItemAnchors.contains(expectedAnchorId)) {
+                    link.attr(HtmlTagAttr.HREF, "#" + expectedAnchorId);
+                }
+            }
+        }
+    }
+
+    @Nullable
+    private String substringBefore(@Nullable String str, @NotNull String marker, boolean initialStringIfNotFound) {
+        if (str != null && str.contains(marker)) {
+            return str.substring(0, str.indexOf(marker));
+        } else {
+            return initialStringIfNotFound ? str : null;
+        }
+    }
+
+    @Nullable
+    private String substringAfter(@Nullable String str, @NotNull String marker) {
+        return str != null && str.contains(marker) ? str.substring(str.indexOf(marker) + marker.length()) : null;
     }
 
     /**
@@ -211,285 +668,246 @@ public class HtmlProcessor {
         return resultBuf.toString();
     }
 
-    @NotNull
+    private void filterTabularLinkedWorkitems(@NotNull Document document, @NotNull List<String> selectedRoleEnumValues) {
+        Elements linkedWorkItemsCells = document.select("td[id='polarion_editor_field=linkedWorkItems']");
+        for (Element linkedWorkItemsCell : linkedWorkItemsCells) {
+            filterByRoles(linkedWorkItemsCell, selectedRoleEnumValues);
+        }
+    }
+
     @VisibleForTesting
-    String cutEmptyChapters(@NotNull String html) {
-        //We have to traverse all existing heading levels from the lowest priority to the highest and find corresponding 'empty chapters'.
-        //'Empty chapter' is the area which starts from heading tag and followed by any number of empty 'p', 'br' or page brake related tags.
-        //Area must be followed either by the next opening heading tag with the same or higher importance or any closing tag except 'p'.
-        for (int i = H_TAG_MIN_PRIORITY; i >= 1; i--) {
-            html = RegexMatcher.get(String.format("(?s)(?><h%1$d.*?</h%1$d>)(\\s|<p[^>]*?>|<br/>|</p>|%2$s)*?(?=<h[1-%1$d]|</[^p])",
-                    i, String.join("|", PAGE_BREAK_MARK, PORTRAIT_ABOVE_MARK, LANDSCAPE_ABOVE_MARK))).useJavaUtil().replace(html, regexEngine -> {
-                String areaToDelete = regexEngine.group();
-                return getTopPageBrake(areaToDelete);
-            });
+    void filterNonTabularLinkedWorkItems(@NotNull Document document, @NotNull List<String> selectedRoleEnumValues) {
+        Elements linkedWorkItemsContainers = document.select("span[id='polarion_editor_field=linkedWorkItems']");
+        for (Element linkedWorkItemsContainer : linkedWorkItemsContainers) {
+            filterByRoles(linkedWorkItemsContainer, selectedRoleEnumValues);
         }
-        return html;
     }
 
-    @NotNull
+    private void filterByRoles(@NotNull Element linkedWorkItemsContainer, @NotNull List<String> selectedRoleEnumValues) {
+        Element nextChild = linkedWorkItemsContainer.firstElementChild();
+
+        List<LinkedWorkitemNodes> linkedWorkitemNodesList = new LinkedList<>();
+        while (nextChild != null) {
+            LinkedWorkitemNodes linkedWorkitemNodes = extractLinkedWorkItemNodes(nextChild);
+            if (linkedWorkitemNodes != null) {
+                nextChild = linkedWorkitemNodes.getNextSibling();
+                if (!selectedRoleEnumValues.contains(linkedWorkitemNodes.role)) {
+                    linkedWorkitemNodes.removeAll();
+                } else {
+                    linkedWorkitemNodesList.add(linkedWorkitemNodes);
+                }
+            } else {
+                nextChild = null;
+            }
+        }
+
+        for (int i = 0; i < linkedWorkitemNodesList.size(); i++) {
+            if (i < linkedWorkitemNodesList.size() - 1) {
+                linkedWorkitemNodesList.get(i).appendComma(); // Separate each group by comma
+            } else {
+                linkedWorkitemNodesList.get(i).removeBr(); // Remove br-tag after last group
+            }
+        }
+    }
+
+    private LinkedWorkitemNodes extractLinkedWorkItemNodes(@NotNull Element nextChild) {
+        Element roleElement = null;
+        String role = null;
+        if (nextChild.tagName().equals(HtmlTag.DIV)) {
+            Element internalElement = nextChild.children().size() == 1 ? nextChild.firstElementChild() : null;
+            if (internalElement != null && internalElement.tagName().equals(HtmlTag.SPAN) && !internalElement.text().isBlank()) {
+                roleElement = nextChild;
+                role = internalElement.text();
+            }
+        }
+        if (roleElement == null) {
+            return null; // Not expected elements structure, stop processing
+        }
+
+        TextNode colonNode = extractColonNode(roleElement.nextSibling());
+        if (colonNode == null) {
+            return null; // Not expected elements structure, stop processing
+        }
+
+        Element linkedWorkItemElement = extractLinkedWorkItemElement(colonNode.nextSibling());
+        if (linkedWorkItemElement == null) {
+            return null; // Not expected elements structure, stop processing
+        }
+
+        // There will be no br-tag after last linked WorkItem, so not obligatory
+        Element brElement = extractBrElement(linkedWorkItemElement.nextElementSibling());
+
+        return new LinkedWorkitemNodes(role, roleElement, colonNode, linkedWorkItemElement, brElement);
+    }
+
+    private TextNode extractColonNode(@Nullable Node node) {
+        if (node instanceof TextNode textNode && textNode.text().contains(":")) {
+            return textNode;
+        } else {
+            return null;
+        }
+    }
+
+    private Element extractLinkedWorkItemElement(@Nullable Node node) {
+        if (node instanceof Element element) {
+            return element.select("> a.polarion-Hyperlink").isEmpty() ? null : element;
+        } else {
+            return null;
+        }
+    }
+
+    private Element extractBrElement(@Nullable Element element) {
+        return element != null && element.tagName().equals(HtmlTag.BR) ? element : null;
+    }
+
     @VisibleForTesting
-    @SuppressWarnings("java:S5852")
-        //regex checked
-    String cutNotNeededChapters(@NotNull String html, List<String> selectedChapters) {
-        // LinkedHashMap is chosen intentionally to keep an order of insertion
-        Map<String, Boolean> chaptersMapping = new LinkedHashMap<>();
+    void cutEmptyWIAttributes(@NotNull Document document) {
+        cutEmptyWIAttributesInTables(document);
+        cutEmptyWIAttributesInText(document);
+    }
 
-        // This regexp searches for most high level chapters (<h1>-elements) extracting their numbers into
-        // named group "number" and extracting whole <h1>-element into named group "chapter"
-        RegexMatcher.get("(?<chapter><h1[^>]*?>.*?<span[^>]*?><span[^>]*?>(?<number>.+?)</span>.*?</span>.+?</h1>)").processEntry(html, regexEngine -> {
-            String number = regexEngine.group(NUMBER);
-            String chapter = regexEngine.group("chapter");
-            chaptersMapping.put(chapter, selectedChapters.contains(number));
-        });
-
-        StringBuilder buf = new StringBuilder(html);
-        Integer cutStart = null;
-        Integer cutEnd = null;
-        for (Map.Entry<String, Boolean> entry : chaptersMapping.entrySet()) {
-            Boolean entryValue = entry.getValue();
-            if (Boolean.FALSE.equals(entryValue) && cutStart == null) {
-                cutStart = buf.indexOf(entry.getKey());
-            } else if (Boolean.TRUE.equals(entryValue) && cutStart != null) {
-                cutEnd = buf.indexOf(entry.getKey());
-            }
-            if (cutStart != null && cutEnd != null) {
-                buf.replace(cutStart, cutEnd, getTopPageBrake(buf.substring(cutStart, cutEnd)));
-                cutStart = null;
-                cutEnd = null;
+    private void cutEmptyWIAttributesInTables(@NotNull Document document) {
+        // Iterates through <td class="polarion-dle-workitem-fields-end-table-value"> elements and if they are empty (no value) removes enclosing them tr-elements
+        Elements attributeValueCells = document.select("td.polarion-dle-workitem-fields-end-table-value");
+        for (Element attributeValueCell : attributeValueCells) {
+            if (attributeValueCell.text().isEmpty()) {
+                Element parent = attributeValueCell.parent();
+                if (parent != null && parent.nodeName().equals(HtmlTag.TR)) {
+                    parent.remove();
+                }
             }
         }
-        if (cutStart != null) {
-            cutEnd = buf.lastIndexOf(DIV_END_TAG);
-            buf.replace(cutStart, cutEnd, getTopPageBrake(buf.substring(cutStart, cutEnd)));
-        }
-
-        return buf.toString();
     }
 
-    /**
-     * When we remove some area from html we have to copy the most top page break (if it exists) in order to preserve expected orientation.
-     */
-    @NotNull
-    private String getTopPageBrake(@NotNull String area) {
-        int brakePosition = area.indexOf(PAGE_BREAK_MARK);
-        if (brakePosition == -1) {
-            return "";
-        } else if (area.indexOf(PAGE_BREAK_LANDSCAPE_ABOVE) == brakePosition) {
-            return PAGE_BREAK_LANDSCAPE_ABOVE;
-        } else {
-            return PAGE_BREAK_PORTRAIT_ABOVE;
-        }
-    }
-
-    @NotNull
-    private String filterTabularLinkedWorkitems(@NotNull String html, @NotNull List<String> selectedRoleEnumValues) {
-        StringBuilder result = new StringBuilder();
-        int cellStart = getLinkedWorkItemsCellStart(html, 0);
-        int cellEnd = getLinkedWorkItemsCellEnd(html, cellStart);
-        if (cellStart > 0 && cellEnd > 0) {
-            result.append(html, 0, cellStart);
-        } else {
-            return html;
-        }
-
-        while (cellStart > 0 && cellEnd > 0) {
-            result.append(filterByRoles(html.substring(cellStart, cellEnd), selectedRoleEnumValues));
-
-            cellStart = getLinkedWorkItemsCellStart(html, cellEnd);
-            if (cellEnd < (html.length() - 1)) {
-                result.append(html, cellEnd + 1, cellStart < 0 ? html.length() : cellStart);
-            }
-            cellEnd = getLinkedWorkItemsCellEnd(html, cellStart);
-        }
-
-        return result.toString();
-    }
-
-    private int getLinkedWorkItemsCellStart(@NotNull String html, int prevCellEnd) {
-        return html.indexOf("<td id=\"polarion_editor_field=linkedWorkItems\"", prevCellEnd);
-    }
-
-    private int getLinkedWorkItemsCellEnd(@NotNull String html, int cellStart) {
-        return cellStart > 0 ? html.indexOf(TABLE_COLUMN_END_TAG, cellStart) + TABLE_COLUMN_END_TAG.length() : -1;
-    }
-
-    @NotNull
-    private String filterNonTabularLinkedWorkitems(@NotNull String html, @NotNull List<String> selectedRoleEnumValues) {
-        StringBuilder result = new StringBuilder();
-        int spanStart = getLinkedWorkItemsSpanStart(html, 0);
-        int spanEnd = getLinkedWorkItemsSpanEnd(html, spanStart);
-        if (spanStart > 0 && spanEnd > 0) {
-            result.append(html, 0, spanStart);
-        } else {
-            return html;
-        }
-
-        while (spanStart > 0 && spanEnd > 0) {
-            String filtered = filterByRoles(html.substring(spanStart, spanEnd), selectedRoleEnumValues);
-            result.append(filtered);
-
-            spanStart = getLinkedWorkItemsSpanStart(html, spanEnd);
-            if (spanEnd < (html.length() - 1)) {
-                result.append(html, spanEnd, spanStart < 0 ? html.length() : spanStart);
-            }
-            spanEnd = getLinkedWorkItemsSpanEnd(html, spanStart);
-        }
-
-        return result.toString();
-    }
-
-    private int getLinkedWorkItemsSpanStart(@NotNull String html, int prevCellEnd) {
-        return html.indexOf("<span id=\"polarion_editor_field=linkedWorkItems\"", prevCellEnd);
-    }
-
-    private int getLinkedWorkItemsSpanEnd(@NotNull String html, int cellStart) {
-        return cellStart > 0 ? html.indexOf("&nbsp;", cellStart) : -1;
-    }
-
-    @NotNull
-    @SuppressWarnings("squid:S5843")
-    private String filterByRoles(@NotNull String linkedWorkItems, @NotNull List<String> selectedRoleEnumValues) {
-        String polarionVersion = pdfExporterPolarionService.getPolarionVersion();
-        // This regexp searches for spans (named group "row") containing linked WorkItem with its role (named group "role").
-        // If linked WorkItem role is not among ones selected by user we cut it from resulted HTML
-        String regex = getRegexp(polarionVersion);
-
-        StringBuilder filteredContent = new StringBuilder();
-
-        RegexMatcher.get(regex)
-                .processEntry(linkedWorkItems, regexEngine -> {
-                    String role = regexEngine.group("role");
-                    String row = regexEngine.group("row");
-                    if (selectedRoleEnumValues.contains(role)) {
-                        if (!filteredContent.isEmpty()) {
-                            filteredContent.append(",<br>");
-                        }
-                        filteredContent.append(row);
+    private void cutEmptyWIAttributesInText(@NotNull Document document) {
+        // Iterates through sequential spans and if second one in this sequence has title="This field is empty", removes such sequence.
+        // Finally removes comma separator which and if precedes this sequence
+        Elements sequentialSpans = document.select("span > span");
+        for (Element span : sequentialSpans) {
+            if (EMPTY_FIELD_TITLE.equals(span.attr("title"))) {
+                Element parent = span.parent();
+                if (parent != null) {
+                    Node previousSibling = parent.previousSibling();
+                    if (previousSibling instanceof TextNode previousSiblingTextNode && ", ".equals(previousSiblingTextNode.text())) {
+                        previousSiblingTextNode.remove();
                     }
-                });
-        // filteredContent - is literally content of td or span element, we need to prepend <td>/<span> with its attributes and append </td>/</span> to it
-        return linkedWorkItems.substring(0, linkedWorkItems.indexOf(">") + 1)
-                + filteredContent
-                + linkedWorkItems.substring(linkedWorkItems.lastIndexOf("</"));
-    }
-
-    private @NotNull String getRegexp(@Nullable String polarionVersion) {
-        String filterByRolesRegexBeforePolarion2404 = "(?<row><span>\\s*<span class=\"polarion-JSEnumOption\"[^>]*?>(?<role>[^<]*?)</span>:\\s*<a[^>]*?>\\s*<span[^>]*?>\\s*<img[^>]*?>\\s*<span[^>]*?>[^<]*?</span>\\s*-\\s*<span[^>]*?>[^<]*?</span>\\s*</span>\\s*</a>\\s*</span>)";
-        String filterByRolesRegexAfterPolarion2404 = "(?<row><div\\s*[^>]*?>\\s*<span\\s*[^>]*?>(?<role>[^<]*?)<\\/span>\\s*<\\/div>\\s*:\\s*.*?<\\/span><\\/a><\\/span>)";
-
-        if (polarionVersion == null) {
-            return filterByRolesRegexAfterPolarion2404;
+                    parent.remove();
+                }
+            }
         }
-
-        return polarionVersion.compareTo("2404") < 0 ? filterByRolesRegexBeforePolarion2404 : filterByRolesRegexAfterPolarion2404;
     }
 
-    @NotNull
-    @VisibleForTesting
-    String localizeEnums(@NotNull String html, @NotNull ExportParams exportParams) {
-        String localizationSettingsName = exportParams.getLocalization() != null ? exportParams.getLocalization() : NamedSettings.DEFAULT_NAME;
-        final Map<String, String> localizationMap = localizationSettings.load(exportParams.getProjectId(), SettingId.fromName(localizationSettingsName)).getLocalizationMap(exportParams.getLanguage());
+    void removePageBreakAvoids(@NotNull Document document) {
+        // Polarion wraps content of a work item as it is into table's cell with table's styling "page-break-inside: avoid"
+        // if it's configured to avoid page breaks:
+        //
+        // <table style="page-break-inside:avoid;">
+        //   <tr>
+        //     <td>
+        //       <CONTENT>
+        //     </td>
+        //   </tr>
+        // </table>
+        //
+        // This styling "page-break-inside: avoid" doesn't influence rendering by pd4ml converter,
+        // but breaks rendering of tables with help of WeasyPrint. More over this configuration was initially introduced
+        // for pd4ml converter because table headers are not repeated at page start when table takes more than 1 page.
+        // Last drawback is not applied to WeasyPrint and thus such workaround can be safely removed.
+        //
+        // Taking into account that work item content can also contain tables this task should be done with cautious.
+        // Removing "page-break-inside:avoid;" from table's styling doesn't help, tables are still broken. So, solution
+        // is to remove that table wrapping at all. As a result above example should become just:
+        //
+        // <CONTENT>
+        //
 
-        //Polarion document usually keeps enumerated text values inside of spans marked with class 'polarion-JSEnumOption'.
-        //Following expression retrieves such spans.
-        return RegexMatcher.get("(?s)<span class=\"polarion-JSEnumOption\".+?>(?<enum>[\\w\\s]+)</span>").replace(html, regexEngine -> {
-            String enumContainingSpan = regexEngine.group();
-            String enumName = regexEngine.group("enum");
-            String replacementString = localizationMap.get(enumName);
-            return StringUtils.isEmptyTrimmed(replacementString) ? null :
-                    enumContainingSpan.replace(enumName + SPAN_END_TAG, replacementString + SPAN_END_TAG);
-        });
+        Elements tables = document.select("table");
+        for (Element table : tables) {
+            String pageBreakInsideValue = getCssValue(table, CssProp.PAGE_BREAK_INSIDE);
+            if (!pageBreakInsideValue.equals(CssProp.PAGE_BREAK_INSIDE_AVOID_VALUE)) {
+                continue;
+            }
+
+            Element tbody = JSoupUtils.getSingleChildByTag(table, HtmlTag.TBODY);
+
+            Element tr = JSoupUtils.getSingleChildByTag(tbody != null ? tbody : table, HtmlTag.TR);
+            if (tr != null) {
+                Element td = JSoupUtils.getSingleChildByTag(tr, HtmlTag.TD);
+                if (td != null) {
+                    // Move td's children to replace the table
+                    for (Node contentNodes : td.childNodes()) {
+                        table.before(contentNodes.clone());
+                    }
+                    table.remove();
+                }
+            }
+        }
     }
 
-    @NotNull
-    String cutEmptyWIAttributes(@NotNull String html) {
-        // This is a sign of empty (no value) WorkItem attribute in case of tabular view - an empty <td>-element
-        // with class "polarion-dle-workitem-fields-end-table-value"
-        String emptyTableAttributeMarker = "class=\"polarion-dle-workitem-fields-end-table-value\" style=\"width: 80%;\" onmousedown=\"return false;\" contentEditable=\"false\"></td>";
-        String res = html;
+    public void fixNestedLists(Document doc) {
+        // Polarion generates not valid HTML for multi-level lists:
+        //
+        // <ol>
+        //   <li>first item</li>
+        //   <ol>
+        //     <li>sub-item</li
+        //   </ol>
+        // </ol>
+        //
+        // By HTML specification ol/ul elements can contain only li-elements as their direct children.
+        // So, valid HTML will be:
+        //
+        // <ol>
+        //   <li>first item
+        //     <ol>
+        //       <li>sub-item</li
+        //     </ol>
+        //   </li>
+        // </ol>
+        //
+        // This method fixes the problem described above.
 
-        String searchMarkerLower = emptyTableAttributeMarker.toLowerCase();
-
-        int markerIndex;
+        boolean modified;
+        String listsSelector = String.format("%s, %s", HtmlTag.OL, HtmlTag.UL);
         do {
-            markerIndex = res.toLowerCase().indexOf(searchMarkerLower);
-            if (markerIndex == -1) {
-                break;
+            modified = false;
+            Elements lists = doc.select(listsSelector);
+
+            for (Element list : lists) {
+                modified = fixNestedLists(list);
+                if (modified) {
+                    break; // Restart to avoid concurrent modification
+                }
             }
+        } while (modified); // Repeat to cover all nesting levels, until the point when nothing was modified / fixed
+    }
 
-            int trStart = res.lastIndexOf("<tr>", markerIndex);
-            int trEnd = res.indexOf(TABLE_ROW_END_TAG, markerIndex) + TABLE_ROW_END_TAG.length();
-
-            if (trStart >= 0 && trEnd > trStart) {
-                res = res.substring(0, trStart) + res.substring(trEnd);
+    private boolean fixNestedLists(@NotNull Element list) {
+        for (Element child : list.children()) {
+            if (child.tagName().equals(HtmlTag.OL) || child.tagName().equals(HtmlTag.UL)) {
+                Element previousSibling = child.previousElementSibling();
+                if (previousSibling != null && previousSibling.tagName().equals(HtmlTag.LI)) {
+                    child.remove();
+                    previousSibling.appendChild(child);
+                    return true;
+                }
             }
-        } while (true);
-
-        // This is a sign of empty (no value) WorkItem attribute in case of non-tabular view - <span>-element
-        // with title "This field is empty"
-        String emptySpanAttributeMarker = "<span style=\"color: #7F7F7F;\" title=\"This field is empty\">";
-        while (res.contains(emptySpanAttributeMarker)) {
-            String[] parts = res.split(emptySpanAttributeMarker, 2);
-            int parentSpanStart = parts[0].lastIndexOf("<span");
-            int trEnd = res.indexOf("</span></span>", parentSpanStart) + "</span></span>".length();
-
-            String firstPart = res.substring(0, parentSpanStart);
-            if (firstPart.endsWith(",&nbsp;")) {
-                firstPart = firstPart.substring(0, firstPart.lastIndexOf(",&nbsp;"));
-            }
-
-            res = firstPart + res.substring(trEnd);
         }
-        return res;
+        return false;
     }
 
-    @NotNull
-    private String removePd4mlTags(@NotNull String html) {
-        return RegexMatcher.get("(<pd4ml:page.*>)(.)").replace(html, regexEngine -> regexEngine.group(2));
-    }
-
-    @NotNull
     @VisibleForTesting
-    @SuppressWarnings({"java:S5869", "java:S6019"})
-    String properTableHeads(@NotNull String html) {
-        // Searches for all subsequent table rows (<tr>-tags) inside <tbody> which contain <th>-tags
-        // followed by a row which doesn't contain <th> (or closing </tbody> tag).
-        // There are 2 groups in this regexp, first one is unnamed, containing <tbody> and <tr>-tags containing <th>-tags,
-        // second one is named ("header") and contains those <tr>-tags which include <th>-tags. The regexp is ending
-        // by positive lookahead "(?=<tr)" which doesn't take part in replacement.
-        // The sense in this regexp is to find <tr>-tags containing <th>-tags and move it from <tbody> into <thead>,
-        // for table headers to repeat on each page.
-        return RegexMatcher.get("(<tbody>[^<]*(?<header><tr>[^<]*<th[\\s|\\S]*?))(?=(<tr|</tbody))").useJavaUtil().replace(html, regexEngine -> {
-            String header = regexEngine.group("header");
-            return "<thead>" + header + "</thead><tbody>";
-        });
-    }
+    void localizeEnums(@NotNull Document document, @NotNull ExportParams exportParams) {
+        String localizationSettingsName = exportParams.getLocalization() != null ? exportParams.getLocalization() : NamedSettings.DEFAULT_NAME;
+        Map<String, String> localizationMap = localizationSettings.load(exportParams.getProjectId(), SettingId.fromName(localizationSettingsName)).getLocalizationMap(exportParams.getLanguage());
 
-    @NotNull
-    @VisibleForTesting
-    @SuppressWarnings("java:S5852")
-        //regex checked
-    String adjustCellWidth(@NotNull String html, @NotNull ExportParams exportParams) {
-        if (exportParams.isFitToPage()) {
-            // This regexp searches for <td> or <th> elements of regular tables which width in styles specified in pixels ("px").
-            // <td> or <th> element till "width:" in styles matched into first unnamed group and width value - into second unnamed group.
-            // Then we replace matched content by first group content plus "auto" instead of value in pixels.
-            html = RegexMatcher.get("(<t[dh][^>]+?width:\\s*)(\\d+px)")
-                    .replace(html, regexEngine -> regexEngine.group(1) + "auto");
+        Elements enums = document.select("span.polarion-JSEnumOption");
+        for (Element enumElement : enums) {
+            String replacementString = localizationMap.get(enumElement.text());
+            if (!StringUtils.isEmptyTrimmed(replacementString)) {
+                enumElement.text(replacementString);
+            }
         }
-
-        // Next step we look for tables which represent WorkItem attributes and force them to take 100% of available width
-        html = RegexMatcher.get("(class=\"polarion-dle-workitem-fields-end-table\")")
-                .replace(html, regexEngine -> regexEngine.group() + " style=\"width: 100%;\"");
-
-        // Then for column with attribute name we specify to take 20% of table width
-        html = RegexMatcher.get("(class=\"polarion-dle-workitem-fields-end-table-label\")")
-                .replace(html, regexEngine -> regexEngine.group() + " style=\"width: 20%;\"");
-
-        // ...and for column with attribute value we specify to take 80% of table width
-        return RegexMatcher.get("(class=\"polarion-dle-workitem-fields-end-table-value\")")
-                .replace(html, regexEngine -> regexEngine.group() + " style=\"width: 80%;\"");
     }
 
     public @NotNull Document adjustContentToFitPage(@NotNull Document document, @NotNull ConversionParams conversionParams) {
@@ -509,14 +927,6 @@ public class HtmlProcessor {
     }
 
     @NotNull
-    private String cleanExtraTableContent(@NotNull String html) {
-        //Was noticed that some externally imported/pasted elements (at this moment tables) contain strange extra block like
-        //<div style="clear:both;"> with the duplicated content inside.
-        //Potential fix below is simple: just hide these blocks.
-        return html.replace("style=\"clear:both;\"", "style=\"clear:both;display:none;\"");
-    }
-
-    @NotNull
     @VisibleForTesting
     String processComments(@NotNull String html) {
         html = RegexMatcher.get("\\[span class=comment level-(?<level>\\d+)\\]").replace(html, regexEngine -> {
@@ -530,6 +940,11 @@ public class HtmlProcessor {
         html = html.replace("[span class=author]", "<span class='author'>");
         html = html.replace("[span class=text]", "<span class='text'>");
         html = html.replace(COMMENT_END, SPAN_END_TAG);
+
+        html = html.replace("[span class=sticky-note]", "<span class='sticky-note'>");
+        html = html.replace("[span class=sticky-note-time]", "<span class='sticky-note-time'>");
+        html = html.replace("[span class=sticky-note-username]", "<span class='sticky-note-username'>");
+        html = html.replace("[span class=sticky-note-text]", "<span class='sticky-note-text'>");
         return html;
     }
 
@@ -542,30 +957,34 @@ public class HtmlProcessor {
         return html.replaceAll("&nbsp;|\u00A0", " ");
     }
 
-    @NotNull
-    String addTableOfFigures(@NotNull final String html) {
-        Map<String, String> tofByLabel = new HashMap<>();
-        return RegexMatcher.get("<div data-sequence=\"(?<label>[^\"]+)\" id=\"polarion_wiki macro name=tof[^>]*></div>").replace(html, regexEngine -> {
-            String label = regexEngine.group("label");
-            return tofByLabel.computeIfAbsent(label, notYetGeneratedLabel -> generateTableOfFigures(html, notYetGeneratedLabel));
-        });
+    @VisibleForTesting
+    void addTableOfFigures(@NotNull Document document) {
+        for (Element tofPlaceholder : document.select("div[id*=macro name=tof][data-sequence]")) {
+            String label = tofPlaceholder.dataset().get("sequence");
+            Element tof = generateTableOfFigures(document, label);
+            tofPlaceholder.before(tof);
+            tofPlaceholder.remove();
+        }
     }
 
-    @NotNull
-    private String generateTableOfFigures(@NotNull String html, @NotNull String label) {
-        StringBuilder buf = new StringBuilder(DIV_START_TAG);
+    private Element generateTableOfFigures(@NotNull Document document, @NotNull String label) {
+        Element tof = new Element(HtmlTag.DIV);
+        for (Element captionAnchor : document.select(String.format("p.polarion-rte-caption-paragraph span.polarion-rte-caption[data-sequence=%s] a[name^=%s]",
+                escapeCssSelectorValue(label), TABLE_OF_FIGURES_ANCHOR_ID_PREFIX))) {
+            // CSS selector above guarantees that parent below won't be null
+            Element captionNumber = Objects.requireNonNull(captionAnchor.parent());
 
-        // This regexp searches for paragraphs with class 'polarion-rte-caption-paragraph'
-        // with text contained in 'label' parameter in it followed by span-element with class 'polarion-rte-caption' and number inside it (number of figure),
-        // which in its turn followed by a-element with name 'dlecaption_<N>' (where <N> - is figure number), which in its turn is followed by figure caption
-        RegexMatcher.get(String.format("<p[^>]+?class=\"polarion-rte-caption-paragraph\"[^>]*>\\s*?.*?%s[^<]*<span data-sequence=\"%s\" " +
-                "class=\"polarion-rte-caption\">(?<number>\\d+)<a name=\"dlecaption_(?<id>\\d+)\"></a></span>(?<caption>[^<]+)", label, label)).processEntry(html, regexEngine -> {
-            String number = regexEngine.group(NUMBER);
-            String id = regexEngine.group("id");
-            String caption = regexEngine.group("caption");
-            if (caption.contains(SPAN_END_TAG)) {
-                caption = caption.substring(0, caption.indexOf(SPAN_END_TAG));
+            // CSS selector above guarantees that 'name' attribute of anchor below won't be null and will have length at least of TABLE_OF_FIGURES_ANCHOR_ID_PREFIX constant length
+            String anchorId = captionAnchor.attr("name").substring(TABLE_OF_FIGURES_ANCHOR_ID_PREFIX.length());
+            Node numberNode = captionNumber.childNodes().stream().filter(TextNode.class::isInstance).findFirst().orElse(null);
+            String number = numberNode instanceof TextNode numberTextNode ? numberTextNode.text() : null;
+            Node captionNode = captionNumber.nextSibling();
+            String caption = captionNode instanceof TextNode captionTextNode ? captionTextNode.text() : null;
+
+            if (StringUtils.isEmpty(anchorId) || number == null || caption == null) {
+                continue;
             }
+
             while (caption.contains(COMMENT_START)) {
                 StringBuilder captionBuf = new StringBuilder(caption);
                 int start = caption.indexOf(COMMENT_START);
@@ -573,111 +992,79 @@ public class HtmlProcessor {
                 captionBuf.replace(start, ending, "");
                 caption = captionBuf.toString();
             }
-            buf.append(String.format("<a href=\"#dlecaption_%s\">%s %s. %s</a><br>", id, label, number, caption.trim()));
-        });
-        buf.append(DIV_END_TAG);
-        return buf.toString();
+
+            Element tofItem = new Element(HtmlTag.A);
+            tofItem.attr(HtmlTagAttr.HREF, String.format("#dlecaption_%s", anchorId));
+            tofItem.text(String.format("%s %s. %s", label, number, caption.trim()));
+
+            tof.appendChild(tofItem);
+            tof.appendChild(new Element(HtmlTag.BR));
+        }
+
+        return tof;
     }
 
-    @NotNull
-    @VisibleForTesting
-    String adjustReportedBy(@NotNull String html) {
-        // This regexp searches for div containing 'Reported by' text and adjusts its styles
-        return RegexMatcher.get("<div style=\"(?<style>[^\"]*)\">Reported by").replace(html, regexEngine -> {
-            String initialStyle = regexEngine.group("style");
-            String styleAdjustment = "top: 0; font-size: 8px;";
-            return String.format("<div style=\"%s;%s\">Reported by", initialStyle, styleAdjustment);
-        });
+    private String escapeCssSelectorValue(String value) {
+        if (value == null) {
+            return "";
+        }
+
+        return "'"
+                + value
+                .replace("\\", "\\\\") // Escape backslash (must be first!)
+                .replace("\"", "\\\"") // Escape double quotes
+                .replace("'", "\\'")   // Escape single quotes
+                + "'";
     }
 
-    @NotNull
     @VisibleForTesting
-    @SuppressWarnings({"java:S5852", "java:S5869"})
-        //regex checked
-    String cutExportToPdfButton(@NotNull String html) {
-        // This regexp searches for 'Export to PDF' button enclosed into table-element with class 'polarion-TestsExecutionButton-buttons-content',
+    void adjustReportedBy(@NotNull Document document) {
+        Element reportedByDiv = document.select("div:contains(Reported by):not(:has(div))").first();
+        if (reportedByDiv != null) {
+            CSSStyleDeclaration cssStyle = getCssStyle(reportedByDiv);
+            cssStyle.setProperty(CssProp.TOP, "0", null);
+            cssStyle.setProperty(CssProp.FONT_SIZE, "8px", null);
+            reportedByDiv.attr(HtmlTagAttr.STYLE, cssStyle.getCssText());
+        }
+    }
+
+    @VisibleForTesting
+    void cutExportToPdfButton(@NotNull Document document) {
+        // Searches for 'Export to PDF' button enclosed into table-element with class 'polarion-TestsExecutionButton-buttons-content',
         // which in its turn enclosed into div-element with class 'polarion-TestsExecutionButton-buttons-pdf'
-        return RegexMatcher.get("<div[^>]*class=\"polarion-TestsExecutionButton-buttons-pdf\">" +
-                        "[\\w|\\W]*<table class=\"polarion-TestsExecutionButton-buttons-content\">[\\w|\\W]*<div[^>]*>Export to PDF</div>[\\w|\\W]*?</div>")
-                .removeAll(html);
+        Element exportToPdfButtonStructure = document.select("div.polarion-TestsExecutionButton-buttons-pdf:has(table.polarion-TestsExecutionButton-buttons-content:has(div.polarion-TestsExecutionButton-labelTextNew:contains(Export to PDF)))").first();
+        if (exportToPdfButtonStructure != null) {
+            exportToPdfButtonStructure.remove();
+        }
     }
 
-    @NotNull
     @VisibleForTesting
-    String adjustColumnWidthInReports(@NotNull String html) {
-        // Replace fixed width value by relative one
-        return html.replace("<table class=\"polarion-rp-column-layout\" style=\"width: 1000px;\">",
-                "<table class=\"polarion-rp-column-layout\" style=\"width: 100%;\">");
-    }
-
-    @NotNull
-    @VisibleForTesting
-    String removeFloatLeftFromReports(@NotNull String html) {
-        // Remove "float: left;" style definition from tables
-        return RegexMatcher.get("(?<table><table[^>]*)style=\"float: left;\"")
-                .replace(html, regexEngine -> regexEngine.group("table"));
-    }
-
-    @NotNull
-    private String adjustHeadingsForPDF(@NotNull String html) {
-        html = RegexMatcher.get("<(h[1-6])").replace(html, regexEngine -> {
-            String tag = regexEngine.group(1);
-            return tag.equals("h1") ? "<div class=\"title\"" : ("<" + liftHeadingTag(tag));
-        });
-
-        return RegexMatcher.get("</(h[1-6])>").replace(html, regexEngine -> {
-            String tag = regexEngine.group(1);
-            return tag.equals("h1") ? DIV_END_TAG : ("</" + liftHeadingTag(tag) + ">");
-        });
-    }
-
-    @NotNull
-    private static String liftHeadingTag(@NotNull String tag) {
-        return switch (tag) {
-            case "h2" -> "h1";
-            case "h3" -> "h2";
-            case "h4" -> "h3";
-            case "h5" -> "h4";
-            case "h6" -> "h5";
-            default -> "h6";
-        };
-    }
-
-    @NotNull
-    @SuppressWarnings({"java:S5852", "java:S5857"}) //need by design
-    private String adjustImageAlignmentForPDF(@NotNull String html) {
-        String startImgPattern = "<img [^>]*style=\"([^>]*)\".*?>";
-        IRegexEngine regexEngine = RegexMatcher.get(startImgPattern).createEngine(html);
-        StringBuilder sb = new StringBuilder();
-
-        while (true) {
-            String group;
-            CSSStyle css;
-            CSSStyle.Rule displayRule;
-            do {
-                do {
-                    if (!regexEngine.find()) {
-                        regexEngine.appendTail(sb);
-                        return sb.toString();
-                    }
-
-                    group = regexEngine.group();
-                    String style = regexEngine.group(1);
-                    css = CSSStyle.parse(style);
-                    displayRule = css.getRule("display");
-                } while (displayRule == null);
-            } while (!"block".equals(displayRule.getValue()));
-
-            final String align;
-            CSSStyle.Rule marginRule = css.getRule("margin");
-            if (marginRule != null && "auto 0px auto auto".equals(marginRule.getValue())) {
-                align = "right";
-            } else {
-                align = "center";
+    void adjustColumnWidthInReports(@NotNull Document document) {
+        Elements reportTables = document.select("table.polarion-rp-column-layout");
+        for (Element reportTable : reportTables) {
+            CSSStyleDeclaration cssStyle = getCssStyle(reportTable);
+            String width = getCssValue(cssStyle, CssProp.WIDTH);
+            if ("1000px".equals(width)) {
+                cssStyle.setProperty(CssProp.WIDTH, "100%", null);
+                reportTable.attr(HtmlTagAttr.STYLE, cssStyle.getCssText());
             }
+        }
+    }
 
-            group = "<div style=\"text-align: " + align + "\">" + group + DIV_END_TAG;
-            regexEngine.appendReplacement(sb, group);
+    @VisibleForTesting
+    void removeFloatLeftFromReports(@NotNull Document document) {
+        Elements tables = document.select("table");
+        for (Element table : tables) {
+            CSSStyleDeclaration cssStyle = getCssStyle(table);
+            String cssFloat = getCssValue(cssStyle, CssProp.FLOAT);
+            if (CssProp.FLOAT_LEFT_VALUE.equals(cssFloat)) {
+                cssStyle.removeProperty(CssProp.FLOAT);
+                if (cssStyle.getLength() == 0) {
+                    table.removeAttr(HtmlTagAttr.STYLE);
+                } else {
+                    table.attr(HtmlTagAttr.STYLE, cssStyle.getCssText());
+                }
+            }
         }
     }
 
@@ -695,4 +1082,65 @@ public class HtmlProcessor {
         return html.contains(PAGE_BREAK_MARK);
     }
 
+    private String getCssValue(@NotNull Element element, @NotNull String cssProperty) {
+        CSSStyleDeclaration cssStyle = getCssStyle(element);
+        return getCssValue(cssStyle, cssProperty);
+    }
+
+    private String getCssValue(@NotNull CSSStyleDeclaration cssStyle, @NotNull String cssProperty) {
+        return Optional.ofNullable(cssStyle.getPropertyValue(cssProperty)).orElse("").trim();
+    }
+
+    private CSSStyleDeclaration getCssStyle(@NotNull Element element) {
+        String style = "";
+        if (element.hasAttr(HtmlTagAttr.STYLE)) {
+            style = element.attr(HtmlTagAttr.STYLE);
+        }
+        return parseCss(style);
+    }
+
+    private CSSStyleDeclaration parseCss(@NotNull String style) {
+        return CssUtils.parseCss(parser, style);
+    }
+
+    private DocumentTOCGenerator getTocGenerator(DocumentType documentType) {
+        return switch (documentType) {
+            case LIVE_DOC, WIKI_PAGE -> new LiveDocTOCGenerator();
+            case LIVE_REPORT, TEST_RUN -> new LiveReportTOCGenerator();
+            default -> throw new IllegalArgumentException(UNSUPPORTED_DOCUMENT_TYPE.formatted(documentType));
+        };
+    }
+
+    /**
+     * Internal record to hold chapter information during processing.
+     */
+    private record ChapterInfo(@NotNull Element heading, boolean shouldKeep) {
+    }
+
+    private record LinkedWorkitemNodes(@NotNull String role, @NotNull Element roleElement, @NotNull TextNode colonNode,
+                                       @NotNull Element linkedWorkItemElement, @Nullable Element brElement) {
+        Element getNextSibling() {
+            return brElement != null ? brElement.nextElementSibling() : linkedWorkItemElement.nextElementSibling();
+        }
+
+        void removeAll() {
+            roleElement.remove();
+            colonNode.remove();
+            linkedWorkItemElement.remove();
+            if (brElement != null) {
+                brElement.remove();
+            }
+        }
+
+        void removeBr() {
+            if (brElement != null) {
+                brElement.remove();
+            }
+        }
+
+        void appendComma() {
+            linkedWorkItemElement.after(",");
+        }
+
+    }
 }

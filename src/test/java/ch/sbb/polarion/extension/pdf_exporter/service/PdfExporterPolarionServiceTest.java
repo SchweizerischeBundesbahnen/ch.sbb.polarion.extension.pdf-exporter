@@ -5,35 +5,31 @@ import ch.sbb.polarion.extension.generic.settings.SettingId;
 import ch.sbb.polarion.extension.generic.settings.SettingName;
 import ch.sbb.polarion.extension.generic.util.ScopeUtils;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.attachments.TestRunAttachment;
-import ch.sbb.polarion.extension.pdf_exporter.rest.model.collections.DocumentCollectionEntry;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.stylepackage.DocIdentifier;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.stylepackage.StylePackageModel;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.stylepackage.StylePackageWeightInfo;
 import ch.sbb.polarion.extension.pdf_exporter.settings.StylePackageSettings;
 import com.polarion.alm.projects.IProjectService;
-import com.polarion.alm.shared.api.model.baselinecollection.BaselineCollection;
-import com.polarion.alm.shared.api.model.baselinecollection.BaselineCollectionReference;
-import com.polarion.alm.shared.api.transaction.ReadOnlyTransaction;
 import com.polarion.alm.tracker.ITestManagementService;
 import com.polarion.alm.tracker.ITrackerService;
 import com.polarion.alm.tracker.model.IModule;
+import com.polarion.alm.tracker.model.IRichPage;
 import com.polarion.alm.tracker.model.ITestRecord;
 import com.polarion.alm.tracker.model.ITestRun;
 import com.polarion.alm.tracker.model.ITestRunAttachment;
 import com.polarion.alm.tracker.model.ITestStepResult;
 import com.polarion.alm.tracker.model.ITrackerProject;
 import com.polarion.alm.tracker.model.IWorkItem;
-import com.polarion.alm.tracker.model.baselinecollection.IBaselineCollection;
-import com.polarion.alm.tracker.model.baselinecollection.IBaselineCollectionElement;
 import com.polarion.platform.IPlatformService;
+import com.polarion.platform.persistence.IDataService;
+import com.polarion.platform.persistence.model.IPObjectList;
 import com.polarion.platform.persistence.spi.PObjectList;
 import com.polarion.platform.security.ISecurityService;
 import com.polarion.platform.service.repository.IRepositoryService;
+import com.polarion.subterra.base.location.ILocation;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.MockedConstruction;
 import org.mockito.MockedStatic;
-import org.mockito.Mockito;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -47,6 +43,7 @@ class PdfExporterPolarionServiceTest {
     private final ITrackerService trackerService = mock(ITrackerService.class);
     private final ITestManagementService testManagementService = mock(ITestManagementService.class);
     private StylePackageSettings stylePackageSettings;
+
     private final PdfExporterPolarionService service = new PdfExporterPolarionService(
             trackerService,
             mock(IProjectService.class),
@@ -190,6 +187,75 @@ class PdfExporterPolarionServiceTest {
         assertNotNull(result);
         assertEquals(2, result.size());
         assertEquals(List.of("default2", "default1"), result.stream().map(SettingName::getName).toList());
+    }
+
+    @Test
+    @SuppressWarnings("rawtypes")
+    void testGetMostSuitableStylePackageModel() {
+        IDataService dataService = mock(IDataService.class);
+        when(trackerService.getDataService()).thenReturn(dataService);
+
+        IModule module = mock(IModule.class);
+        when(module.getProjectId()).thenReturn("someProjectId");
+        ILocation location = mock(ILocation.class);
+        when(module.getModuleLocation()).thenReturn(location);
+        when(location.getLocationPath()).thenReturn("someSpaceId/documentName");
+        IPObjectList matchingDocuments = new PObjectList(dataService, List.of(module));
+        when(dataService.searchInstances(IModule.PROTO, "matching", "name")).thenReturn(matchingDocuments);
+        IPObjectList notMatchingDocuments = new PObjectList(dataService, List.of());
+        when(dataService.searchInstances(IModule.PROTO, "not_matching", "name")).thenReturn(notMatchingDocuments);
+
+        IRichPage page = mock(IRichPage.class);
+        when(page.getProjectId()).thenReturn("someProjectId");
+        when(page.getPageNameWithSpace()).thenReturn("someSpaceId/pageName");
+        IPObjectList matchingPages = new PObjectList(dataService, List.of(page));
+        when(dataService.searchInstances(IRichPage.PROTO, "matching", "name")).thenReturn(matchingPages);
+        IPObjectList notMatchingPages = new PObjectList(dataService, List.of());
+        when(dataService.searchInstances(IRichPage.PROTO, "not_matching", "name")).thenReturn(notMatchingPages);
+
+        String projectId = "someProjectId";
+        String spaceId = "someSpaceId";
+        String documentName = "documentName";
+        Collection<SettingName> defaultSettingNames = List.of(
+                SettingName.builder().id("d1").name("default1").scope("").build(),
+                SettingName.builder().id("d2").name("default2").scope("").build()
+        );
+        StylePackageModel defaultMockModel1 = mock(StylePackageModel.class);
+        when(defaultMockModel1.getWeight()).thenReturn(10f);
+        StylePackageModel defaultMockModel2 = mock(StylePackageModel.class);
+        when(defaultMockModel2.getWeight()).thenReturn(16f);
+        Collection<SettingName> settingNames = List.of(
+                SettingName.builder().id("id1").name("name1").scope("project/someProjectId/").build(),
+                SettingName.builder().id("id4").name("name4").scope("project/someProjectId/").build(),
+                SettingName.builder().id("id2").name("name2").scope("project/someProjectId/").build(),
+                SettingName.builder().id("id5").name("name5").scope("project/someProjectId/").build(),
+                SettingName.builder().id("id3").name("name3").scope("project/someProjectId/").build()
+        );
+        StylePackageModel model1 = StylePackageModel.builder().weight(0.5f).matchingQuery("not_matching").build();
+        StylePackageModel model2 = StylePackageModel.builder().weight(50.1f).matchingQuery("not_matching").build();
+        StylePackageModel model3 = StylePackageModel.builder().weight(55.0f).matchingQuery("matching").build();
+        StylePackageModel model4 = StylePackageModel.builder().weight(60.0f).matchingQuery("matching").build();
+        StylePackageModel model5 = StylePackageModel.builder().weight(50.0f).build();
+        StylePackageModel model1Page = StylePackageModel.builder().weight(88f).matchingQuery("matching").build();
+
+        when(stylePackageSettings.readNames("")).thenReturn(defaultSettingNames);
+        when(stylePackageSettings.readNames(ScopeUtils.getScopeFromProject(projectId))).thenReturn(settingNames);
+        when(stylePackageSettings.read(eq(""), eq(SettingId.fromName("default1")), isNull())).thenReturn(defaultMockModel1);
+        when(stylePackageSettings.read(eq(""), eq(SettingId.fromName("default2")), isNull())).thenReturn(defaultMockModel2);
+        when(stylePackageSettings.read(eq("project/someProjectId/"), eq(SettingId.fromName("name1")), isNull())).thenReturn(model1);
+        when(stylePackageSettings.read(eq("project/someProjectId/"), eq(SettingId.fromName("name2")), isNull())).thenReturn(model2);
+        when(stylePackageSettings.read(eq("project/someProjectId/"), eq(SettingId.fromName("name3")), isNull())).thenReturn(model3);
+        when(stylePackageSettings.read(eq("project/someProjectId/"), eq(SettingId.fromName("name4")), isNull())).thenReturn(model4);
+        when(stylePackageSettings.read(eq("project/someProjectId/"), eq(SettingId.fromName("name5")), isNull())).thenReturn(model5);
+
+        StylePackageModel result = service.getMostSuitableStylePackageModel(new DocIdentifier(projectId, spaceId, documentName));
+        assertEquals(60.0f, result.getWeight());
+        assertEquals("matching", result.getMatchingQuery());
+
+        when(stylePackageSettings.read(eq("project/someProjectId/"), eq(SettingId.fromName("name1")), isNull())).thenReturn(model1Page);
+        result = service.getMostSuitableStylePackageModel(new DocIdentifier(projectId, spaceId, "pageName"));
+        assertEquals(88f, result.getWeight());
+        assertEquals("matching", result.getMatchingQuery());
     }
 
     @Test
@@ -345,88 +411,4 @@ class PdfExporterPolarionServiceTest {
 
         assertThrows(IllegalArgumentException.class, () -> service.getTestRunAttachment("testProjectId", "testTestRunId", "nonExistingAttachmentId", null));
     }
-
-    @Test
-    @SuppressWarnings("unused")
-    void testGetDocumentsFromCollection() {
-        String projectId = "testProjectId";
-        String collectionId = "testCollectionId";
-
-        IBaselineCollection mockCollection = mock(IBaselineCollection.class);
-        BaselineCollectionReference mockBaselineCollectionReference = mock(BaselineCollectionReference.class);
-
-        IModule mockModule1 = mock(IModule.class);
-        IModule mockModule2 = mock(IModule.class);
-        IModule mockModule3 = mock(IModule.class);
-
-        when(mockModule1.getProjectId()).thenReturn(projectId);
-        when(mockModule1.getModuleFolder()).thenReturn("space 1");
-        when(mockModule1.getModuleName()).thenReturn("test Module1");
-        when(mockModule1.getRevision()).thenReturn("1");
-
-        when(mockModule2.getProjectId()).thenReturn(projectId);
-        when(mockModule2.getModuleFolder()).thenReturn("_default");
-        when(mockModule2.getModuleName()).thenReturn("test Module2");
-        when(mockModule2.getRevision()).thenReturn("2");
-
-        when(mockModule3.getProjectId()).thenReturn(projectId);
-        when(mockModule3.getModuleFolder()).thenReturn("upstream_space");
-        when(mockModule3.getModuleName()).thenReturn("upstream Module");
-        when(mockModule3.getRevision()).thenReturn("3");
-
-        IBaselineCollectionElement mockElement1 = mock(IBaselineCollectionElement.class);
-        IBaselineCollectionElement mockElement2 = mock(IBaselineCollectionElement.class);
-        IBaselineCollectionElement mockUpstreamElement = mock(IBaselineCollectionElement.class);
-
-        when(mockElement1.getObjectWithRevision()).thenReturn(mockModule1);
-        when(mockElement2.getObjectWithRevision()).thenReturn(mockModule2);
-        when(mockUpstreamElement.getObjectWithRevision()).thenReturn(mockModule3);
-
-        IBaselineCollection mockUpstreamCollection = mock(IBaselineCollection.class);
-        when(mockUpstreamCollection.getElements()).thenReturn(List.of(mockUpstreamElement));
-        when(mockCollection.getElements()).thenReturn(List.of(mockElement1, mockElement2));
-        when(mockCollection.getUpstreamCollections()).thenReturn(List.of(mockUpstreamCollection));
-
-        BaselineCollection baselineCollection = mock(BaselineCollection.class);
-        when(mockBaselineCollectionReference.get(Mockito.any())).thenReturn(baselineCollection);
-        when(baselineCollection.getOldApi()).thenReturn(mockCollection);
-
-        try (MockedConstruction<BaselineCollectionReference> mockedStaticReference = mockConstruction(BaselineCollectionReference.class, (mock, context) -> {
-            when(mock.get(Mockito.any())).thenReturn(baselineCollection);
-            when(mock.getWithRevision(Mockito.anyString())).thenReturn(mock);
-        })) {
-            List<DocumentCollectionEntry> result = service.getDocumentsFromCollection(projectId, collectionId, null, mock(ReadOnlyTransaction.class));
-
-            assertNotNull(result);
-            assertEquals(3, result.size());
-            assertEquals("space 1", result.get(0).getSpaceId());
-            assertEquals("test Module1", result.get(0).getDocumentName());
-            assertEquals("1", result.get(0).getRevision());
-
-            assertEquals("_default", result.get(1).getSpaceId());
-            assertEquals("test Module2", result.get(1).getDocumentName());
-            assertEquals("2", result.get(1).getRevision());
-
-            assertEquals("upstream_space", result.get(2).getSpaceId());
-            assertEquals("upstream Module", result.get(2).getDocumentName());
-            assertEquals("3", result.get(2).getRevision());
-
-            List<DocumentCollectionEntry> resultWithRevision = service.getDocumentsFromCollection(projectId, collectionId, "1234", mock(ReadOnlyTransaction.class));
-
-            assertNotNull(resultWithRevision);
-            assertEquals(3, resultWithRevision.size());
-            assertEquals("space 1", resultWithRevision.get(0).getSpaceId());
-            assertEquals("test Module1", resultWithRevision.get(0).getDocumentName());
-            assertEquals("1", resultWithRevision.get(0).getRevision());
-
-            assertEquals("_default", resultWithRevision.get(1).getSpaceId());
-            assertEquals("test Module2", resultWithRevision.get(1).getDocumentName());
-            assertEquals("2", resultWithRevision.get(1).getRevision());
-
-            assertEquals("upstream_space", resultWithRevision.get(2).getSpaceId());
-            assertEquals("upstream Module", resultWithRevision.get(2).getDocumentName());
-            assertEquals("3", resultWithRevision.get(2).getRevision());
-        }
-    }
-
 }

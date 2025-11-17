@@ -40,6 +40,7 @@ dependency-reduced-pom.xml
 
 src/main/resources/webapp/*-admin/html/about.html
 src/main/resources/webapp/*-admin/html/user-guide.html
+src/main/resources/webapp/*-admin/html/disclaimer.html
 README.html
 
 node/

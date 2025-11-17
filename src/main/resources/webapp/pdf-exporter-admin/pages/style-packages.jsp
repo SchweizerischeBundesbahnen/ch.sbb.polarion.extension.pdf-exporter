@@ -179,6 +179,10 @@
                     <label for="pdf-variant-select" id='pdf-variant-label'>PDF Variant:</label>
                     <div id="pdf-variant-select"></div>
                 </div>
+                <div class='input-group'>
+                    <label for="image-density-select" id='image-density-label'>Image density:</label>
+                    <div id="image-density-select"></div>
+                </div>
             </div>
         </div>
 
@@ -198,10 +202,14 @@
                 </div>
                 <div class='checkbox input-group'>
                     <label for='render-comments' id='render-comments-label'>
-                        <input id="render-comments" onchange='document.getElementById("render-comments-select").style.visibility = this.checked ? "visible" : "hidden"' type='checkbox' />
+                        <input id="render-comments" onchange='document.getElementById("render-comments-select").style.visibility = this.checked ? "visible" : "hidden";document.getElementById("render-native-comments-container").style.visibility = this.checked ? "visible" : "hidden"' type='checkbox' />
                         Comments rendering
                     </label>
-                    <div id="render-comments-select" style="visibility: hidden; margin-left: 10px; width: 200px"></div>
+                    <div id="render-comments-select" style="visibility: hidden; width: 60px"></div>
+                    <label for='render-native-comments' id='render-native-comments-container' style="display: inline-block">
+                        <input id="render-native-comments" type='checkbox' />
+                        as sticky notes
+                    </label>
                 </div>
                 <div class='checkbox input-group'>
                     <label for='watermark'>

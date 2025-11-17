@@ -175,6 +175,20 @@ const PdfVariants = {
     }
 }
 
+const ImageDensity = {
+    imageDensitySelect: new CustomSelect({
+        selectContainer: ctx.getElementById("image-density-select"),
+        label: ctx.getElementById("image-density-label")
+    }),
+
+    init: function () {
+        this.imageDensitySelect.addOption('DPI_96', '96 dpi');
+        this.imageDensitySelect.addOption('DPI_192', '192 dpi');
+        this.imageDensitySelect.addOption('DPI_300', '300 dpi');
+        this.imageDensitySelect.addOption('DPI_600', '600 dpi');
+    }
+}
+
 const RenderComments = {
     renderCommentsSelect: new CustomSelect({
         selectContainer: ctx.getElementById("render-comments-select"),
@@ -219,8 +233,10 @@ function saveStylePackage() {
             'paperSize': PaperSizes.paperSizeSelect.getSelectedValue(),
             'orientation': Orientations.orientationSelect.getSelectedValue(),
             'pdfVariant': PdfVariants.pdfVariantSelect.getSelectedValue(),
+            'imageDensity': ImageDensity.imageDensitySelect.getSelectedValue(),
             'fitToPage': ctx.getCheckboxValueById('fit-to-page'),
             'renderComments': ctx.getCheckboxValueById('render-comments') ? RenderComments.renderCommentsSelect.getSelectedValue() : null,
+            'renderNativeComments': ctx.getCheckboxValueById('render-native-comments'),
             'watermark': ctx.getCheckboxValueById('watermark'),
             'markReferencedWorkitems': ctx.getCheckboxValueById('mark-referenced-workitems'),
             'cutEmptyChapters': ctx.getCheckboxValueById('cut-empty-chapters'),
@@ -286,12 +302,16 @@ function setStylePackage(content) {
     PaperSizes.paperSizeSelect.selectValue(stylePackage.paperSize || 'A4');
     Orientations.orientationSelect.selectValue(stylePackage.orientation || 'PORTRAIT');
     PdfVariants.pdfVariantSelect.selectValue(stylePackage.pdfVariant || 'PDF_A_2B');
+    ImageDensity.imageDensitySelect.selectValue(stylePackage.imageDensity || 'DPI_96');
 
     ctx.setCheckboxValueById('fit-to-page', stylePackage.fitToPage);
 
     ctx.setCheckboxValueById('render-comments', !!stylePackage.renderComments);
     ctx.getElementById('render-comments').dispatchEvent(new Event('change'));
     RenderComments.renderCommentsSelect.selectValue(stylePackage.renderComments || 'OPEN');
+
+    ctx.visibleIf("render-native-comments-container", !!stylePackage.renderComments)
+    ctx.setCheckbox("render-native-comments", !!stylePackage.renderNativeComments);
 
     ctx.setCheckboxValueById('watermark', stylePackage.watermark);
     ctx.setCheckboxValueById('mark-referenced-workitems', stylePackage.markReferencedWorkitems);
@@ -341,6 +361,7 @@ PaperSizes.init();
 Orientations.init();
 PdfVariants.init();
 RenderComments.init();
+ImageDensity.init();
 Languages.init();
 Promise.all([
     LinkRoles.load(),

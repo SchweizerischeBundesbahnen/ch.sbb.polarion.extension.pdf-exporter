@@ -29,7 +29,7 @@ public class HtmlToPdfConverter {
     public HtmlToPdfConverter() {
         this.pdfTemplateProcessor = new PdfTemplateProcessor();
         PdfExporterFileResourceProvider fileResourceProvider = new PdfExporterFileResourceProvider();
-        this.htmlProcessor = new HtmlProcessor(fileResourceProvider, new LocalizationSettings(), new HtmlLinksHelper(fileResourceProvider), null);
+        this.htmlProcessor = new HtmlProcessor(fileResourceProvider, new LocalizationSettings(), new HtmlLinksHelper(fileResourceProvider));
         this.weasyPrintServiceConnector = new WeasyPrintServiceConnector();
     }
 
@@ -50,7 +50,7 @@ public class HtmlToPdfConverter {
         WeasyPrintOptions weasyPrintOptions = WeasyPrintOptions.builder()
                 .followHTMLPresentationalHints(conversionParams.isFollowHTMLPresentationalHints())
                 .pdfVariant(conversionParams.getPdfVariant())
-                .scaleFactor(conversionParams.getScaleFactor())
+                .imageDensity(conversionParams.getImageDensity())
                 .build();
         return weasyPrintServiceConnector.convertToPdf(html, weasyPrintOptions);
     }

@@ -5,7 +5,6 @@ import ch.sbb.polarion.extension.pdf_exporter.converter.PdfConverter;
 import ch.sbb.polarion.extension.pdf_exporter.converter.PdfConverterJobsService;
 import ch.sbb.polarion.extension.pdf_exporter.converter.PdfConverterJobsService.JobState;
 import ch.sbb.polarion.extension.pdf_exporter.converter.PropertiesUtility;
-import ch.sbb.polarion.extension.pdf_exporter.rest.model.NestedListsCheck;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.WidthValidationResult;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ConversionParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.DocumentType;
@@ -13,15 +12,11 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.Orientation;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PaperSize;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PdfVariant;
-import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.DocumentData;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.jobs.ConverterJobDetails;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.jobs.ConverterJobStatus;
-import ch.sbb.polarion.extension.pdf_exporter.util.DocumentDataFactory;
 import ch.sbb.polarion.extension.pdf_exporter.util.DocumentFileNameHelper;
 import ch.sbb.polarion.extension.pdf_exporter.util.ExportContext;
-import ch.sbb.polarion.extension.pdf_exporter.util.NumberedListsSanitizer;
 import ch.sbb.polarion.extension.pdf_exporter.util.PdfValidationService;
-import com.polarion.alm.tracker.model.IModule;
 import com.polarion.core.util.StringUtils;
 import com.polarion.platform.core.PlatformContext;
 import com.polarion.platform.security.ISecurityService;
@@ -34,7 +29,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
 import org.springframework.http.HttpStatus;
@@ -56,7 +50,6 @@ import javax.ws.rs.core.UriInfo;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -390,35 +383,6 @@ public class ConverterInternalController {
             @Parameter(description = "Limit of 'invalid' pages in response", required = true) @QueryParam("max-results") int maxResults) {
         validateExportParameters(exportParams);
         return pdfValidationService.validateWidth(exportParams, maxResults);
-    }
-
-    @POST
-    @Path("/checknestedlists")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
-    @Operation(
-            summary = "Checks whether document contains nested lists",
-            requestBody = @RequestBody(
-                    description = "Export parameters used to locate and check the document for nested lists",
-                    required = true,
-                    content = @Content(schema = @Schema(implementation = ExportParams.class)
-                    )
-            ),
-            responses = {
-                    @ApiResponse(
-                            responseCode = "200",
-                            description = "Check completed successfully, returning whether nested lists are present",
-                            content = @Content(mediaType = "application/json", schema = @Schema(implementation = NestedListsCheck.class))
-                    )
-            }
-    )
-    @SuppressWarnings("java:S1166")
-    public NestedListsCheck checkNestedLists(ExportParams exportParams) {
-        DocumentData<IModule> documentData = DocumentDataFactory.getDocumentData(exportParams, true);
-        @NotNull String content = Objects.requireNonNull(documentData.getContent());
-        boolean containsNestedLists = new NumberedListsSanitizer().containsNestedNumberedLists(content);
-
-        return NestedListsCheck.builder().containsNestedLists(containsNestedLists).build();
     }
 
     private void validateExportParameters(ExportParams exportParams) {

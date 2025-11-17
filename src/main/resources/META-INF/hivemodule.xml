@@ -27,6 +27,17 @@
                   projectGroupScope="false"
                   repositoryScope="true"/>
 
+        <extender id="disclaimer"
+                  name="Usage Disclaimer"
+                  parentNodeId="pdf-export"
+                  parentNodeName="PDF Export"
+                  parentNodeIconUrl="/polarion/pdf-exporter-admin/ui/images/menu/30x30/_parent.svg"
+                  iconUrl="/polarion/pdf-exporter-admin/ui/images/menu/16x16/about.svg"
+                  pageUrl="/polarion/pdf-exporter-admin/pages/disclaimer.jsp?scope=$scope$"
+                  projectScope="true"
+                  projectGroupScope="false"
+                  repositoryScope="true"/>
+
         <extender id="user-guide"
                   name="User Guide"
                   parentNodeId="pdf-export"

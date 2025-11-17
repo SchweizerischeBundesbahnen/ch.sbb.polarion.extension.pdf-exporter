@@ -30,7 +30,7 @@ class ConverterApiControllerTest {
     private ConverterApiController converterApiController;
 
     @BeforeEach
-    public void setup() {
+    void setup() {
         RequestContextHolder.setRequestAttributes(requestAttributes);
     }
 

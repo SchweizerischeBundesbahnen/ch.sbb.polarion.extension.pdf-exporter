@@ -68,11 +68,15 @@ export default class ExportPanel {
         this.ctx.setValue("headers-color", stylePackage.headersColor);
         this.ctx.setValue("orientation-selector", stylePackage.orientation || 'PORTRAIT');
         this.ctx.setValue("pdf-variant-selector", stylePackage.pdfVariant || 'PDF_A_2B');
+        this.ctx.setValue("image-density-selector", stylePackage.imageDensity || 'DPI_96');
         this.ctx.setCheckbox("fit-to-page", stylePackage.fitToPage);
 
         this.ctx.setCheckbox("render-comments", !!stylePackage.renderComments);
         this.ctx.setValue("render-comments-selector", stylePackage.renderComments  || 'OPEN');
         this.ctx.displayIf("render-comments-selector", !!stylePackage.renderComments)
+
+        this.ctx.displayIf("render-native-comments-container", !!stylePackage.renderComments)
+        this.ctx.setCheckbox("render-native-comments", !!stylePackage.renderNativeComments);
 
         this.ctx.setCheckbox("watermark", stylePackage.watermark);
         this.ctx.setCheckbox("mark-referenced-workitems", stylePackage.markReferencedWorkitems);
@@ -179,6 +183,7 @@ export default class ExportPanel {
             .setPdfVariant(this.ctx.getElementById("pdf-variant-selector").value)
             .setFitToPage((live_doc || test_run) && this.ctx.getElementById('fit-to-page').checked)
             .setRenderComments(this.ctx.getElementById('render-comments').checked ? this.ctx.getElementById("render-comments-selector").value : null)
+            .setRenderNativeComments(this.ctx.getElementById('render-native-comments').checked)
             .setWatermark(this.ctx.getElementById("watermark").checked)
             .setMarkReferencedWorkitems(live_doc && this.ctx.getElementById("mark-referenced-workitems").checked)
             .setCutEmptyChapters(live_doc && this.ctx.getElementById("cut-empty-chapters").checked)
@@ -190,7 +195,7 @@ export default class ExportPanel {
             .setMetadataFields(live_doc && this.ctx.getElementById('metadata-fields').checked ? selectedMetadataFields : null)
             .setLanguage(live_doc && this.ctx.getElementById('localization').checked ? this.ctx.getElementById("language").value : null)
             .setLinkedWorkitemRoles(selectedRoles)
-            .setScaleFactor(this.ctx.getElementById("scale-factor-selector").value)
+            .setImageDensity(this.ctx.getElementById("image-density-selector").value)
             .setFileName(fileName)
             .setUrlQueryParameters(Object.fromEntries([...urlSearchParams]))
             .build()
@@ -256,23 +261,6 @@ export default class ExportPanel {
         }
 
         this.actionInProgress(true);
-
-        this.ctx.callAsync({
-            method: "POST",
-            url: "/polarion/pdf-exporter/rest/internal/checknestedlists",
-            contentType: "application/json",
-            responseType: "json",
-            body: request,
-            onOk: (responseText, request) => {
-                if (request.response.containsNestedLists) {
-                    this.ctx.getJQueryElement("#export-warning").append("Document contains nested numbered lists which structures were not valid. " +
-                        "We did our best to fix it, but be aware of it.");
-                }
-            },
-            onError: (status, errorMessage, request) => {
-                this.ctx.getJQueryElement("#export-error").append("Error occurred validating nested lists" + (request.response.message ? ":<br>" + request.response.message : ""));
-            }
-        });
 
         this.ctx.asyncConvertPdf(request, result => {
             if (result.warning) {

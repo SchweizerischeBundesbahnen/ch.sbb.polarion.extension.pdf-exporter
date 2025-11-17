@@ -7,28 +7,23 @@ import ch.sbb.polarion.extension.generic.settings.SettingId;
 import ch.sbb.polarion.extension.generic.settings.SettingName;
 import ch.sbb.polarion.extension.generic.util.ScopeUtils;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.attachments.TestRunAttachment;
-import ch.sbb.polarion.extension.pdf_exporter.rest.model.collections.DocumentCollectionEntry;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.stylepackage.DocIdentifier;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.stylepackage.StylePackageModel;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.stylepackage.StylePackageWeightInfo;
 import ch.sbb.polarion.extension.pdf_exporter.settings.StylePackageSettings;
 import ch.sbb.polarion.extension.pdf_exporter.util.WildcardUtils;
 import com.polarion.alm.projects.IProjectService;
-import com.polarion.alm.shared.api.model.baselinecollection.BaselineCollection;
-import com.polarion.alm.shared.api.model.baselinecollection.BaselineCollectionReference;
-import com.polarion.alm.shared.api.transaction.ReadOnlyTransaction;
+import com.polarion.alm.projects.model.IUniqueObject;
 import com.polarion.alm.tracker.ITestManagementService;
 import com.polarion.alm.tracker.ITrackerService;
 import com.polarion.alm.tracker.model.IModule;
+import com.polarion.alm.tracker.model.IRichPage;
 import com.polarion.alm.tracker.model.ITestRun;
 import com.polarion.alm.tracker.model.ITestRunAttachment;
 import com.polarion.alm.tracker.model.ITrackerProject;
-import com.polarion.alm.tracker.model.baselinecollection.IBaselineCollection;
-import com.polarion.alm.tracker.model.baselinecollection.IBaselineCollectionElement;
 import com.polarion.core.util.StringUtils;
 import com.polarion.platform.IPlatformService;
 import com.polarion.platform.persistence.IDataService;
-import com.polarion.platform.persistence.model.IPObjectList;
 import com.polarion.platform.security.ISecurityService;
 import com.polarion.platform.service.repository.IRepositoryService;
 import com.polarion.portal.internal.server.navigation.TestManagementServiceAccessor;
@@ -121,6 +116,23 @@ public class PdfExporterPolarionService extends PolarionService {
         }).toList();
     }
 
+    public @NotNull StylePackageModel getMostSuitableStylePackageModel(@NotNull DocIdentifier docIdentifier) {
+        StylePackageSettings stylePackageSettings = (StylePackageSettings) NamedSettingsRegistry.INSTANCE.getByFeatureName(StylePackageSettings.FEATURE_NAME);
+        // if user mixes items from different projects then we can use only 'default'-level style packages
+        String stylePackageScope = ScopeUtils.getScopeFromProject(docIdentifier.getProjectId());
+        Collection<SettingName> stylePackageNames = stylePackageSettings.readNames(stylePackageScope);
+        List<SettingName> names = stylePackageNames.stream().filter(stylePackageName ->
+                isStylePackageSuitable(docIdentifier.getProjectId(), docIdentifier.getSpaceId(), docIdentifier.getDocumentName(), stylePackageSettings, stylePackageScope, stylePackageName)).toList();
+        Map<SettingName, Float> weightsMap = new HashMap<>();
+        names.forEach(name -> weightsMap.put(name, stylePackageSettings.read(name.getScope(), SettingId.fromName(name.getName()), null).getWeight()));
+        SettingName mostSuitableName = names.stream().min((o1, o2) -> {
+            int compareResult = weightsMap.get(o2).compareTo(weightsMap.get(o1));
+            return compareResult == 0 ? o1.getName().compareToIgnoreCase(o2.getName()) : compareResult;
+        }).orElse(null);
+
+        return mostSuitableName != null ? stylePackageSettings.read(stylePackageScope, SettingId.fromName(mostSuitableName.getName()), null) : stylePackageSettings.defaultValues();
+    }
+
     @SuppressWarnings("unchecked")
     private boolean isStylePackageSuitable(@Nullable String projectId, @NotNull String spaceId, @NotNull String documentName,
                                            @NotNull StylePackageSettings stylePackageSettings, @NotNull String stylePackageScope, @NotNull SettingName stylePackageName) {
@@ -130,22 +142,24 @@ public class PdfExporterPolarionService extends PolarionService {
             return true;
         } else {
             IDataService dataService = getTrackerService().getDataService();
-            IPObjectList<IModule> suitableDocuments = dataService.searchInstances(IModule.PROTO, model.getMatchingQuery(), "name");
-            for (IModule suitableDocument : suitableDocuments) {
-                if (sameDocument(projectId, spaceId, documentName, suitableDocument)) {
-                    return true;
-                }
-            }
-            return false;
+            return Stream.of(IModule.PROTO, IRichPage.PROTO)
+                    .map(proto -> dataService.searchInstances(proto, model.getMatchingQuery(), "name"))
+                    .flatMap(Collection::stream)
+                    .anyMatch(suitableDocument -> sameDocument(projectId, spaceId, documentName, (IUniqueObject) suitableDocument));
         }
     }
 
-    private boolean sameDocument(@Nullable String projectId, @NotNull String spaceId, @NotNull String documentName, @NotNull IModule document) {
-        if (projectId == null) {
-            return document.getProjectId() == null && String.format("%s/%s", spaceId, documentName).equals(document.getModuleLocation().getLocationPath());
+    private boolean sameDocument(@Nullable String projectId, @NotNull String spaceId, @NotNull String documentName, @NotNull IUniqueObject document) {
+        String path;
+        if (document instanceof IModule module) {
+            path = module.getModuleLocation().getLocationPath();
+        } else if (document instanceof IRichPage page) {
+            path = page.getPageNameWithSpace();
         } else {
-            return projectId.equals(document.getProjectId()) && String.format("%s/%s", spaceId, documentName).equals(document.getModuleLocation().getLocationPath());
+            return false;
         }
+        String expectedPath = String.format("%s/%s", spaceId, documentName);
+        return expectedPath.equals(path) && Objects.equals(projectId, document.getProjectId());
     }
 
     public @NotNull ITestRun getTestRun(@NotNull String projectId, @NotNull String testRunId, @Nullable String revision) {
@@ -197,40 +211,4 @@ public class PdfExporterPolarionService extends PolarionService {
         }
         return testRunAttachment;
     }
-
-    public @NotNull List<DocumentCollectionEntry> getDocumentsFromCollection(@NotNull String projectId, @NotNull String collectionId, @Nullable String revision, @NotNull ReadOnlyTransaction transaction) {
-        List<DocumentCollectionEntry> result = new ArrayList<>();
-
-        BaselineCollectionReference baselineCollectionReference = new BaselineCollectionReference(projectId, collectionId);
-        if (revision != null) {
-            baselineCollectionReference = baselineCollectionReference.getWithRevision(revision);
-        }
-
-        BaselineCollection baselineCollection = baselineCollectionReference.get(transaction);
-        IBaselineCollection collection = baselineCollection.getOldApi();
-
-        List<IModule> modules =
-                Stream.concat(
-                                collection.getElements().stream(),
-                                collection.getUpstreamCollections().stream()
-                                        .flatMap(upstream -> upstream.getElements().stream())
-                        )
-                        .map(IBaselineCollectionElement::getObjectWithRevision)
-                        .filter(IModule.class::isInstance)
-                        .map(IModule.class::cast)
-                        .toList();
-
-        for (IModule module : modules) {
-            DocumentCollectionEntry documentCollectionEntry = new DocumentCollectionEntry(
-                    module.getProjectId(),
-                    module.getModuleFolder(),
-                    module.getModuleName(),
-                    module.getRevision()
-            );
-            result.add(documentCollectionEntry);
-        }
-
-        return result;
-    }
-
 }

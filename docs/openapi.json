@@ -5,38 +5,6 @@
     "version": "v1"
   },
   "paths": {
-    "/api/checknestedlists": {
-      "post": {
-        "operationId": "checkNestedLists",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ExportParams"
-              }
-            }
-          },
-          "description": "Export parameters used to locate and check the document for nested lists",
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/NestedListsCheck"
-                }
-              }
-            },
-            "description": "Check completed successfully, returning whether nested lists are present"
-          }
-        },
-        "summary": "Checks whether document contains nested lists",
-        "tags": [
-          "PDF Processing"
-        ]
-      }
-    },
     "/api/configuration/cors-config": {
       "get": {
         "description": "Retrieves the status of the CORS configuration.",
@@ -1705,6 +1673,21 @@
             "description": "The name of the document",
             "type": "string"
           },
+          "documentType": {
+            "description": "Type of the document",
+            "enum": [
+              "BASELINE_COLLECTION",
+              "LIVE_DOC",
+              "LIVE_REPORT",
+              "TEST_RUN",
+              "WIKI_PAGE"
+            ],
+            "type": "string"
+          },
+          "fileName": {
+            "description": "Target file name of exported document",
+            "type": "string"
+          },
           "projectId": {
             "description": "The unique identifier for the project",
             "example": "elibrary",
@@ -1726,6 +1709,10 @@
           "attachmentsFilter": {
             "description": "Filter for attachments to be downloaded, example: '*.pdf'",
             "type": "string"
+          },
+          "autoSelectStylePackage": {
+            "description": "Indicator that most parameters from this object should be ignored, best suitable style package should be found and properties from it should be taken instead",
+            "type": "boolean"
           },
           "baselineRevision": {
             "description": "The specific revision of the provided baseline",
@@ -1796,6 +1783,16 @@
           },
           "headersColor": {
             "description": "Color to be used for headers in the document. By default dark blue color (Polarion's default)",
+            "type": "string"
+          },
+          "imageDensity": {
+            "description": "Quality of PNG images converted from SVG",
+            "enum": [
+              "DPI_96",
+              "DPI_192",
+              "DPI_300",
+              "DPI_600"
+            ],
             "type": "string"
           },
           "internalContent": {
@@ -1898,18 +1895,12 @@
             ],
             "type": "string"
           },
+          "renderNativeComments": {
+            "description": "Render native comments",
+            "type": "boolean"
+          },
           "revision": {
             "description": "The specific revision of the document",
-            "type": "string"
-          },
-          "scaleFactor": {
-            "description": "Quality of PNG images converted from SVG",
-            "enum": [
-              "DPI_96",
-              "DPI_192",
-              "DPI_300",
-              "DPI_600"
-            ],
             "type": "string"
           },
           "testcaseFieldId": {
@@ -2110,16 +2101,6 @@
           },
           "providers": {
             "type": "object"
-          }
-        },
-        "type": "object"
-      },
-      "NestedListsCheck": {
-        "description": "Check result indicating whether nested lists are present",
-        "properties": {
-          "containsNestedLists": {
-            "description": "Indicates whether the content contains nested lists",
-            "type": "boolean"
           }
         },
         "type": "object"

@@ -1,5 +1,6 @@
 package ch.sbb.polarion.extension.pdf_exporter;
 
+import ch.sbb.polarion.extension.generic.service.PolarionBaselineExecutor;
 import ch.sbb.polarion.extension.generic.settings.NamedSettings;
 import ch.sbb.polarion.extension.generic.settings.NamedSettingsRegistry;
 import ch.sbb.polarion.extension.generic.settings.SettingId;
@@ -12,7 +13,6 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.localization.L
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.stylepackage.DocIdentifier;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.stylepackage.StylePackageModel;
 import ch.sbb.polarion.extension.pdf_exporter.service.PdfExporterPolarionService;
-import ch.sbb.polarion.extension.pdf_exporter.service.PolarionBaselineExecutor;
 import ch.sbb.polarion.extension.pdf_exporter.settings.CoverPageSettings;
 import ch.sbb.polarion.extension.pdf_exporter.settings.CssSettings;
 import ch.sbb.polarion.extension.pdf_exporter.settings.HeaderFooterSettings;
@@ -34,6 +34,7 @@ import com.polarion.platform.persistence.IEnumOption;
 import com.polarion.platform.persistence.model.IPObject;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.VisibleForTesting;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -91,6 +92,7 @@ public class PdfExporterFormExtension implements IFormExtension {
             form = adjustPaperSize(form, selectedStylePackage);
             form = adjustOrientation(form, selectedStylePackage);
             form = adjustPdfVariant(form, selectedStylePackage);
+            form = adjustImageDensity(form, selectedStylePackage);
             form = adjustFitToPage(form, selectedStylePackage);
             form = adjustRenderComments(form, selectedStylePackage);
             form = adjustWatermark(form, selectedStylePackage);
@@ -215,15 +217,25 @@ public class PdfExporterFormExtension implements IFormExtension {
         return form.replace(String.format(OPTION_VALUE, stylePackage.getPdfVariant()), String.format(OPTION_SELECTED, stylePackage.getPdfVariant()));
     }
 
+    private String adjustImageDensity(String form, StylePackageModel stylePackage) {
+        return form.replace(String.format(OPTION_VALUE, stylePackage.getImageDensity()), String.format(OPTION_SELECTED, stylePackage.getImageDensity()));
+    }
+
     private String adjustFitToPage(String form, StylePackageModel stylePackage) {
         return stylePackage.isFitToPage() ? form.replace("<input id='fit-to-page'", "<input id='fit-to-page' checked") : form;
     }
 
-    private String adjustRenderComments(String form, StylePackageModel stylePackage) {
+    @VisibleForTesting
+    String adjustRenderComments(String form, StylePackageModel stylePackage) {
         if (stylePackage.getRenderComments() != null) {
             form = form.replace("<input id='render-comments'", "<input id='render-comments' checked");
-            form = form.replace("id='render-comments' style='display: none'", "id='render-comments'");
+            form = form.replace("id='render-comments-selector' style='display: none'", "id='render-comments-selector'");
             form = form.replace(String.format(OPTION_VALUE, stylePackage.getRenderComments()), String.format(OPTION_SELECTED, stylePackage.getRenderComments()));
+
+            form = form.replace("id='render-native-comments-container' style='display: none'", "id='render-native-comments-container'");
+            if (stylePackage.isRenderNativeComments()) {
+                form = form.replace("<input id='render-native-comments'", "<input id='render-native-comments' checked");
+            }
         }
         return form;
     }

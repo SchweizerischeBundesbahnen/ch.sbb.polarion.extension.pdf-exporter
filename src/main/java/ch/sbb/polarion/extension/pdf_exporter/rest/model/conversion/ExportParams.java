@@ -1,5 +1,6 @@
 package ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion;
 
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.stylepackage.StylePackageModel;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -9,6 +10,7 @@ import lombok.experimental.SuperBuilder;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -53,6 +55,9 @@ public class ExportParams extends ConversionParams {
 
     @Schema(description = "Which comments should be rendered in the exported document")
     private CommentsRenderType renderComments;
+
+    @Schema(description = "Render native comments")
+    private boolean renderNativeComments;
 
     @Schema(description = "Watermark content to be applied to the document")
     private boolean watermark;
@@ -99,10 +104,43 @@ public class ExportParams extends ConversionParams {
     @Schema(description = "If attachments should be embedded into PDF")
     private boolean embedAttachments;
 
+    @Schema(description = "Indicator that most parameters from this object should be ignored, best suitable style package should be found and properties from it should be taken instead")
+    private boolean autoSelectStylePackage;
+
     public @NotNull DocumentType getDocumentType() {
         if (documentType == null) {
             documentType = DocumentType.LIVE_DOC;
         }
         return documentType;
+    }
+
+    public void overwriteByStylePackage(@NotNull StylePackageModel stylePackageModel) {
+        coverPage = stylePackageModel.getCoverPage();
+        headerFooter = stylePackageModel.getHeaderFooter();
+        css = stylePackageModel.getCss();
+        localization = stylePackageModel.getLocalization();
+        webhooks = stylePackageModel.getWebhooks();
+        headersColor = stylePackageModel.getHeadersColor();
+        paperSize = PaperSize.fromString(stylePackageModel.getPaperSize());
+        orientation = Orientation.fromString(stylePackageModel.getOrientation());
+        setPdfVariant(PdfVariant.fromString(stylePackageModel.getPdfVariant()));
+        imageDensity = ImageDensity.fromString(stylePackageModel.getImageDensity());
+        fitToPage = stylePackageModel.isFitToPage();
+        renderComments = stylePackageModel.getRenderComments();
+        renderNativeComments = stylePackageModel.isRenderNativeComments();
+        watermark = stylePackageModel.isWatermark();
+        markReferencedWorkitems = stylePackageModel.isMarkReferencedWorkitems();
+        setCutEmptyWIAttributes(stylePackageModel.isCutEmptyWorkitemAttributes());
+        cutLocalUrls = stylePackageModel.isCutLocalURLs();
+        cutEmptyChapters = stylePackageModel.isCutEmptyChapters();
+        followHTMLPresentationalHints = stylePackageModel.isFollowHTMLPresentationalHints();
+        metadataFields = stylePackageModel.getMetadataFields() != null ? Arrays.stream(stylePackageModel.getMetadataFields().split(",")).toList() : null;
+        numberedListStyles = stylePackageModel.getCustomNumberedListStyles();
+        chapters = stylePackageModel.getSpecificChapters() != null ? Arrays.stream(stylePackageModel.getSpecificChapters().split(",")).toList() : null;
+        language = stylePackageModel.getLanguage();
+        linkedWorkitemRoles = stylePackageModel.getLinkedWorkitemRoles();
+        attachmentsFilter = stylePackageModel.getAttachmentsFilter();
+        testcaseFieldId = stylePackageModel.getTestcaseFieldId();
+        embedAttachments = stylePackageModel.isEmbedAttachments();
     }
 }

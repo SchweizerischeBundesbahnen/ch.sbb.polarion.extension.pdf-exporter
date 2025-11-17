@@ -45,6 +45,17 @@ export default class ExportPopup {
                 this.exportToPdf()
             });
 
+        this.ctx.displayIf("popup-auto-select-style-package-container", this.autoSelectStylePackageAvailable());
+        this.ctx.onChange('popup-auto-select-style-package', (event) => {
+            this.ctx.displayIf("popup-style-package", !event.target.checked);
+            if (event.target.checked) {
+                this.ctx.displayIf("popup-style-package-content", false);
+            } else {
+                this.ctx.getElementById("popup-style-package-select").dispatchEvent(new Event('change'));
+            }
+        });
+        this.ctx.displayIf("popup-style-package", !this.autoSelectStylePackageAvailable());
+
         this.openPopup();
     }
 
@@ -312,11 +323,15 @@ export default class ExportPopup {
         this.ctx.setValue("popup-paper-size-selector", stylePackage.paperSize || ExportParams.PaperSize.A4);
         this.ctx.setValue("popup-orientation-selector", stylePackage.orientation || ExportParams.Orientation.PORTRAIT);
         this.ctx.setValue("popup-pdf-variant-selector", stylePackage.pdfVariant || ExportParams.PdfVariant.PDF_A_2B);
+        this.ctx.setValue("popup-image-density-selector", stylePackage.imageDensity || ExportParams.ImageDensity.DPI_96);
         this.ctx.setCheckbox("popup-fit-to-page", stylePackage.fitToPage);
 
         this.ctx.setCheckbox("popup-render-comments", !!stylePackage.renderComments);
         this.ctx.setValue("popup-render-comments-selector", stylePackage.renderComments || 'OPEN');
         this.ctx.visibleIf("popup-render-comments-selector", !!stylePackage.renderComments);
+
+        this.ctx.displayIf("popup-render-native-comments-container", !!stylePackage.renderComments)
+        this.ctx.setCheckbox("popup-render-native-comments", !!stylePackage.renderNativeComments);
 
         this.ctx.setCheckbox("popup-watermark", stylePackage.watermark);
         this.ctx.setCheckbox("popup-mark-referenced-workitems", stylePackage.markReferencedWorkitems);
@@ -364,7 +379,8 @@ export default class ExportPopup {
         }
         this.ctx.displayIf("popup-roles-selector", this.ctx.getExportType() !== ExportParams.ExportType.BULK && rolesProvided, "inline-block");
 
-        this.ctx.displayIf("popup-style-package-content", stylePackage.exposeSettings);
+        this.ctx.displayIf("popup-style-package-content",
+            (!this.autoSelectStylePackageAvailable() || !this.ctx.getCheckboxValueById("popup-auto-select-style-package")) && stylePackage.exposeSettings);
         this.ctx.displayIf("popup-page-width-validation", this.ctx.getExportType() !== ExportParams.ExportType.BULK && stylePackage.exposePageWidthValidation);
 
         let attachmentFieldsVisible = stylePackage.attachmentsFilter || stylePackage.testcaseFieldId;
@@ -481,9 +497,6 @@ export default class ExportPopup {
         this.actionInProgress({inProgress: true, message: "Generating PDF"})
 
         const requestBody = exportParams.toJSON();
-        if (this.ctx.getDocumentType() !== ExportParams.DocumentType.LIVE_REPORT && this.ctx.getDocumentType() !== ExportParams.DocumentType.TEST_RUN) {
-            this.checkNestedListsAsync(requestBody);
-        }
 
         this.ctx.asyncConvertPdf(requestBody, result => {
             if (result.warning) {
@@ -501,21 +514,6 @@ export default class ExportPopup {
             });
             this.actionInProgress({inProgress: false});
         });
-    }
-
-    checkNestedListsAsync(requestBody) {
-        this.callAsync({
-            method: "POST",
-            url: "/polarion/pdf-exporter/rest/internal/checknestedlists",
-            body: requestBody,
-            responseType: "json"
-        }).then(({response}) => {
-            if (response?.containsNestedLists) {
-                this.showNotification({alertType: "warning", message: "Document contains nested numbered lists which structures were not valid. We tried to fix this, but be aware of it."});
-            }
-        }).catch((error) => {
-            this.showNotification({alertType: "error", message: "Error occurred validating nested lists" + (error?.response.message ? ": " + error.response.message : "")});
-        })
     }
 
     getExportParams(fileName) {
@@ -570,7 +568,9 @@ export default class ExportPopup {
     buildExportParams(selectedChapters, selectedMetadataFields, numberedListStyles, selectedRoles, fileName, attachmentsFilter, testcaseFieldId) {
         const live_doc = this.ctx.getDocumentType() === ExportParams.DocumentType.LIVE_DOC;
         const test_run = this.ctx.getDocumentType() === ExportParams.DocumentType.TEST_RUN;
+        const collection = this.ctx.getDocumentType() === ExportParams.DocumentType.BASELINE_COLLECTION;
         return new ExportParams.Builder(this.ctx.getDocumentType())
+            .setAutoSelectStylePackage(this.autoSelectStylePackageAvailable() && this.ctx.getCheckboxValueById("popup-auto-select-style-package"))
             .setProjectId(this.ctx.getProjectId())
             .setLocationPath(this.ctx.getLocationPath())
             .setBaselineRevision(this.ctx.getBaselineRevision())
@@ -585,7 +585,8 @@ export default class ExportPopup {
             .setOrientation(this.ctx.getElementById("popup-orientation-selector").value)
             .setPdfVariant(this.ctx.getElementById("popup-pdf-variant-selector").value)
             .setFitToPage((live_doc || test_run) && this.ctx.getElementById('popup-fit-to-page').checked)
-            .setRenderComments(live_doc && this.ctx.getElementById('popup-render-comments').checked ? this.ctx.getElementById("popup-render-comments-selector").value : null)
+            .setRenderComments((live_doc || collection) && this.ctx.getElementById('popup-render-comments').checked ? this.ctx.getElementById("popup-render-comments-selector").value : null)
+            .setRenderNativeComments(this.ctx.getElementById("popup-render-native-comments").checked)
             .setWatermark(this.ctx.getElementById("popup-watermark").checked)
             .setMarkReferencedWorkitems(live_doc && this.ctx.getElementById("popup-mark-referenced-workitems").checked)
             .setCutEmptyChapters(live_doc && this.ctx.getElementById("popup-cut-empty-chapters").checked)
@@ -602,7 +603,7 @@ export default class ExportPopup {
             .setAttachmentsFilter(test_run && this.ctx.getElementById("popup-download-attachments").checked ? attachmentsFilter ?? '' : null)
             .setTestcaseFieldId(test_run && this.ctx.getElementById("popup-download-attachments").checked && testcaseFieldId ? testcaseFieldId : null)
             .setEmbedAttachments(test_run && this.ctx.getElementById("popup-download-attachments").checked && this.ctx.getElementById("popup-embed-attachments").checked)
-            .setScaleFactor(this.ctx.getElementById("popup-scale-factor-selector").value)
+            .setImageDensity(this.ctx.getElementById("popup-image-density-selector").value)
             .build();
     }
 
@@ -707,6 +708,11 @@ export default class ExportPopup {
                 }
             });
         });
+    }
+
+    autoSelectStylePackageAvailable() {
+        return this.ctx.getExportType() === ExportParams.ExportType.BULK
+            && (this.ctx.getDocumentType() === ExportParams.DocumentType.LIVE_DOC || this.ctx.getDocumentType() === ExportParams.DocumentType.BASELINE_COLLECTION);
     }
 }
 

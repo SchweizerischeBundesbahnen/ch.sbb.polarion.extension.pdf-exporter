@@ -1,5 +1,6 @@
 package ch.sbb.polarion.extension.pdf_exporter.weasyprint;
 
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PdfVariant;
 import ch.sbb.polarion.extension.pdf_exporter.util.MediaUtils;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.base.BaseWeasyPrintTest;
 import lombok.SneakyThrows;
@@ -20,8 +21,8 @@ class CoverPageTest extends BaseWeasyPrintTest {
 
         String testName = getCurrentMethodName();
 
-        byte[] titleBytes = exportToPdf("<div>HEADER</div>", new WeasyPrintOptions());
-        byte[] contentBytes = exportToPdf("<div style='break-after:page'>page to be removed</div><div>TEST</div>", new WeasyPrintOptions());
+        byte[] titleBytes = exportToPdf("<div>HEADER</div>", WeasyPrintOptions.builder().build());
+        byte[] contentBytes = exportToPdf("<div style='break-after:page'>page to be removed</div><div>TEST</div>", WeasyPrintOptions.builder().build());
 
         BufferedImage titleImage;
         BufferedImage contentImage;
@@ -34,7 +35,7 @@ class CoverPageTest extends BaseWeasyPrintTest {
         writeReportPdf(testName, "title", titleBytes);
         writeReportPdf(testName, "content", contentBytes);
 
-        byte[] resultBytes = MediaUtils.overwriteFirstPageWithTitle(contentBytes, titleBytes);
+        byte[] resultBytes = MediaUtils.overwriteFirstPageWithTitle(contentBytes, titleBytes, PdfVariant.PDF_A_2B);
         writeReportPdf(testName, "correct", resultBytes);
         try (PDDocument resultDoc = Loader.loadPDF(resultBytes)) {
             assertTrue(MediaUtils.sameImages(titleImage, MediaUtils.pdfPageToImage(resultDoc, 0))); //now the title remains the same
@@ -48,8 +49,8 @@ class CoverPageTest extends BaseWeasyPrintTest {
 
         String testName = getCurrentMethodName();
 
-        byte[] titleBytes = exportToPdf("<div style='break-after:page'>HEADER 1</div><div style='break-after:page'>HEADER 2</div><div style='break-after:page'>HEADER 3</div>", new WeasyPrintOptions());
-        byte[] contentBytes = exportToPdf("<div style='break-after:page'>page to be removed</div><div>TEST</div>", new WeasyPrintOptions());
+        byte[] titleBytes = exportToPdf("<div style='break-after:page'>HEADER 1</div><div style='break-after:page'>HEADER 2</div><div style='break-after:page'>HEADER 3</div>", WeasyPrintOptions.builder().build());
+        byte[] contentBytes = exportToPdf("<div style='break-after:page'>page to be removed</div><div>TEST</div>", WeasyPrintOptions.builder().build());
 
         BufferedImage titleImage;
         BufferedImage contentImage;
@@ -64,7 +65,7 @@ class CoverPageTest extends BaseWeasyPrintTest {
         writeReportPdf(testName, "title", titleBytes);
         writeReportPdf(testName, "content", contentBytes);
 
-        byte[] resultBytes = MediaUtils.overwriteFirstPageWithTitle(contentBytes, titleBytes);
+        byte[] resultBytes = MediaUtils.overwriteFirstPageWithTitle(contentBytes, titleBytes, PdfVariant.PDF_A_2B);
         writeReportPdf(testName, "merged", resultBytes);
         try (PDDocument resultDoc = Loader.loadPDF(resultBytes)) {
             assertEquals(2, resultDoc.getNumberOfPages());

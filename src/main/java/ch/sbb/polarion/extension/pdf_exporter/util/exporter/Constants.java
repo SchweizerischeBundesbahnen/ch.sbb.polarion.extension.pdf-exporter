@@ -7,6 +7,10 @@ public final class Constants {
      */
     public static final int H_TAG_MIN_PRIORITY = 6;
 
+    public static final String PAGE_BREAK = "PAGE_BREAK";
+    public static final String PORTRAIT_ABOVE = "PORTRAIT_ABOVE";
+    public static final String LANDSCAPE_ABOVE = "LANDSCAPE_ABOVE";
+
     public static final String PAGE_BREAK_MARK = "<!--PAGE_BREAK-->";
     public static final String PORTRAIT_ABOVE_MARK = "<!--PORTRAIT_ABOVE-->";
     public static final String LANDSCAPE_ABOVE_MARK = "<!--LANDSCAPE_ABOVE-->";

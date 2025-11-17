@@ -40,6 +40,11 @@ body {
     box-sizing: border-box;
 }
 
+/* required for PDF generation with images to be conform to PDF/A */
+html {
+    image-rendering: crisp-edges;
+}
+
 @media print {
     body.watermark::before {
         content: "Confidential";

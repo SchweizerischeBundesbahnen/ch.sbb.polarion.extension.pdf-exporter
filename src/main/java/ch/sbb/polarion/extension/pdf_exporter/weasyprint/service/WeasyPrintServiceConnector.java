@@ -1,7 +1,10 @@
 package ch.sbb.polarion.extension.pdf_exporter.weasyprint.service;
 
 import ch.sbb.polarion.extension.pdf_exporter.properties.PdfExporterExtensionConfiguration;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PdfVariant;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.DocumentData;
+import ch.sbb.polarion.extension.pdf_exporter.util.PdfA1bProcessor;
+import ch.sbb.polarion.extension.pdf_exporter.util.PdfA4Processor;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.WeasyPrintConverter;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.WeasyPrintOptions;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.service.model.WeasyPrintInfo;
@@ -26,7 +29,6 @@ import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
@@ -66,20 +68,61 @@ public class WeasyPrintServiceConnector implements WeasyPrintConverter {
         try {
             client = ClientBuilder.newClient();
             WebTarget webTarget = client.target(getWeasyPrintServiceBaseUrl() + getConvertingUrl(documentData))
-                    .queryParam("presentational_hints", weasyPrintOptions.followHTMLPresentationalHints())
-                    .queryParam("pdf_variant", weasyPrintOptions.pdfVariant().toWeasyPrintParameter())
-                    .queryParam("custom_metadata", weasyPrintOptions.customMetadata())
-                    .queryParam("scale_factor", weasyPrintOptions.scaleFactor().getScale());
+                    .queryParam("presentational_hints", weasyPrintOptions.isFollowHTMLPresentationalHints())
+                    .queryParam("pdf_variant", weasyPrintOptions.getPdfVariant().toWeasyPrintParameter())
+                    .queryParam("custom_metadata", weasyPrintOptions.isCustomMetadata())
+                    .queryParam("scale_factor", weasyPrintOptions.getImageDensity().getScale());
 
+            byte[] pdfBytes;
             if (documentData != null && documentData.getAttachmentFiles() != null) {
-                return sendMultiPartRequest(webTarget, htmlPage, documentData.getAttachmentFiles());
+                pdfBytes = sendMultiPartRequest(webTarget, htmlPage, documentData.getAttachmentFiles());
             } else {
-                return sendConvertingRequest(webTarget, Entity.entity(htmlPage, MediaType.TEXT_HTML));
+                pdfBytes = sendConvertingRequest(webTarget, Entity.entity(htmlPage, MediaType.TEXT_HTML));
             }
+
+            // Post-process PDF/A-1b documents to ensure compliance with ISO 19005-1:2005
+            if (isPdfA1bVariant(weasyPrintOptions.getPdfVariant())) {
+                pdfBytes = postProcessPdfA1b(pdfBytes);
+            }
+
+            // Post-process PDF/A-4 documents to ensure compliance with ISO 19005-4:2020
+            if (isPdfA4Variant(weasyPrintOptions.getPdfVariant())) {
+                pdfBytes = postProcessPdfA4(pdfBytes);
+            }
+
+            return pdfBytes;
         } finally {
             if (client != null) {
                 client.close();
             }
+        }
+    }
+
+    private boolean isPdfA1bVariant(@NotNull PdfVariant pdfVariant) {
+        return pdfVariant == PdfVariant.PDF_A_1B;
+    }
+
+    private byte[] postProcessPdfA1b(byte[] pdfBytes) {
+        try {
+            return PdfA1bProcessor.processPdfA1b(pdfBytes);
+        } catch (IOException e) {
+            logger.error("Failed to post-process PDF/A-1b document for compliance", e);
+            // Return original PDF if post-processing fails
+            return pdfBytes;
+        }
+    }
+
+    private boolean isPdfA4Variant(@NotNull PdfVariant pdfVariant) {
+        return pdfVariant == PdfVariant.PDF_A_4B || pdfVariant == PdfVariant.PDF_A_4U;
+    }
+
+    private byte[] postProcessPdfA4(byte[] pdfBytes) {
+        try {
+            return PdfA4Processor.processPdfA4(pdfBytes);
+        } catch (IOException e) {
+            logger.error("Failed to post-process PDF/A-4 document for compliance", e);
+            // Return original PDF if post-processing fails
+            return pdfBytes;
         }
     }
 

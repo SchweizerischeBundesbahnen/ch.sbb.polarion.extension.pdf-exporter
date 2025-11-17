@@ -14,28 +14,23 @@ public abstract class AbstractTOCGenerator implements DocumentTOCGenerator {
     protected static final int MAX_DEFAULT_NODE_NESTING = 6;
 
     @Override
-    public @NotNull String addTableOfContent(@NotNull String html) {
-        // fix HTML adding close tag for <pd4ml:toc> -- jsoup wants it
-        String fixedHtml = html.replaceAll("(<pd4ml:toc[^>]*)(>)", "$1></pd4ml:toc>");
-
-        Document doc = Jsoup.parse(fixedHtml);
-
+    public void addTableOfContent(@NotNull Document document) {
         // find <pd4ml:toc> and replace
-        Element tocPlaceholder = doc.getElementsByTag("pd4ml:toc").first();
+        Element tocPlaceholder = document.getElementsByTag("pd4ml:toc").first();
         if (tocPlaceholder != null) {
             int startLevel = tocPlaceholder.hasAttr("tocInit") ? Integer.parseInt(tocPlaceholder.attr("tocInit")) : START_DEFAULT_NODE_NESTING;
             int maxLevel = tocPlaceholder.hasAttr("tocMax") ? Integer.parseInt(tocPlaceholder.attr("tocMax")) : MAX_DEFAULT_NODE_NESTING;
-            String tocHtml = generateTableOfContent(doc, startLevel, maxLevel); // support h1-h6
-            return html.replaceAll("(<pd4ml:toc[^>]*)(>)", tocHtml);
-        }
+            Element tocElement = generateTableOfContent(document, startLevel, maxLevel); // support h1-h6
 
-        return html;
+            tocPlaceholder.before(tocElement);
+            tocPlaceholder.remove();
+        }
     }
 
     @NotNull
-    private String generateTableOfContent(@NotNull Document document, int startLevel, int maxLevel) {
-        TocLeaf root = new TocLeaf(null, 0, null, null, null);
-        AtomicReference<TocLeaf> current = new AtomicReference<>(root);
+    private Element generateTableOfContent(@NotNull Document document, int startLevel, int maxLevel) {
+        TocLeaf rootLeaf = new TocLeaf(null, 0, null, null, null);
+        AtomicReference<TocLeaf> current = new AtomicReference<>(rootLeaf);
 
         // build selector for headings (h1-h6)
         String selector = getHeadingSelector(startLevel, maxLevel);
@@ -62,7 +57,7 @@ public abstract class AbstractTOCGenerator implements DocumentTOCGenerator {
             current.set(newLeaf);
         }
 
-        return root.asString(startLevel, maxLevel);
+        return rootLeaf.asTableOfContent(startLevel, maxLevel);
     }
 
     protected int getLevel(@NotNull Element heading) {

@@ -11,6 +11,7 @@ import com.polarion.alm.shared.api.model.rp.parameter.ParameterFactory;
 import com.polarion.alm.shared.api.model.rp.parameter.RichPageParameter;
 import com.polarion.alm.shared.api.model.rp.parameter.SortingParameter;
 import com.polarion.alm.shared.api.model.rp.widget.RichPageWidgetContext;
+import com.polarion.alm.shared.api.model.rp.widget.RichPageWidgetDependenciesContext;
 import com.polarion.alm.shared.api.model.rp.widget.RichPageWidgetRenderingContext;
 import com.polarion.alm.shared.api.utils.SharedLocalization;
 import com.polarion.alm.shared.api.utils.collections.ImmutableStrictList;
@@ -29,6 +30,7 @@ public class BulkPdfExportWidget extends TableWidget {
     }
 
     @NotNull
+    @Override
     public Iterable<String> getTags(@NotNull SharedContext context) {
         return new ImmutableStrictList<>(Constants.PDF_EXPORT_TAG);
     }
@@ -48,12 +50,13 @@ public class BulkPdfExportWidget extends TableWidget {
     @NotNull
     @Override
     public ReadOnlyStrictMap<String, RichPageParameter> getParametersDefinition(@NotNull ParameterFactory parameterFactory) {
-        StrictMap<String, RichPageParameter> parameters = new StrictMapImpl();
+        StrictMap<String, RichPageParameter> parameters = new StrictMapImpl<>();
         SharedLocalization localization = parameterFactory.context().localization();
         FieldsParameter columns = parameterFactory.fields(localization.getString("richpages.widget.table.columns")).build();
         SortingParameter sortBy = parameterFactory.sorting(localization.getString("richpages.widget.table.sortBy")).build();
         DataSetParameter dataSet = parameterFactory.dataSet(localization.getString("richpages.widget.table.dataSet"))
                 .allowedPrototypes(PrototypeEnum.Document, PrototypeEnum.TestRun, PrototypeEnum.RichPage, PrototypeEnum.BaselineCollection)
+                .add("exportPages", parameterFactory.bool("Export Pages").dependencyTarget(true).value(true).build())
                 .add("columns", columns)
                 .add("sortBy", sortBy)
                 .dependencySource(true)
@@ -76,6 +79,13 @@ public class BulkPdfExportWidget extends TableWidget {
     @NotNull
     @Override
     public String renderHtml(@NotNull RichPageWidgetRenderingContext renderingContext) {
-        return (new BulkPdfExportWidgetRenderer(renderingContext)).render();
+        return new BulkPdfExportWidgetRenderer(renderingContext).render();
+    }
+
+    @Override
+    public void processParameterDependencies(@NotNull RichPageWidgetDependenciesContext context) {
+        super.processParameterDependencies(context);
+        DataSetParameter dataSet = context.parameter("dataSet");
+        dataSet.get("exportPages").visuals().setVisible(dataSet.prototype() == PrototypeEnum.BaselineCollection);
     }
 }
