@@ -82,7 +82,7 @@ public class HtmlToPdfConverter {
         }
 
         if (conversionParams.isFitToPage()) {
-            document = htmlProcessor.adjustContentToFitPage(document, conversionParams);
+            htmlProcessor.adjustContentToFitPage(document, conversionParams);
         }
 
         String processedHtml = htmlProcessor.replaceResourcesAsBase64Encoded(document.html());
