@@ -74,7 +74,7 @@ public class PdfAttachmentsTest extends BaseWeasyPrintTest {
             assertNotNull(embeddedFiles);
 
             Map<String, PDComplexFileSpecification> embeddedFilesMap = embeddedFiles.getNames();
-            assertNotNull(embeddedFiles);
+            assertNotNull(embeddedFilesMap);
             assertEquals(1, embeddedFilesMap.size());
 
             String embeddedFileName = embeddedFilesMap.keySet().iterator().next();
