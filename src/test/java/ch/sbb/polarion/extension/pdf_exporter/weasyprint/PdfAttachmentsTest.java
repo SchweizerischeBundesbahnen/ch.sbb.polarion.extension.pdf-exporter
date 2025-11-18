@@ -53,7 +53,6 @@ class PdfAttachmentsTest extends BaseWeasyPrintTest {
         DocumentData<IModule> documentData = DocumentData.creator(DocumentType.LIVE_DOC, module)
                 .id(LiveDocId.from("testProjectId", "_default", "testDocumentId"))
                 .title("testDocument")
-                .content("test document content")
                 .lastRevision("12345")
                 .revisionPlaceholder("12345")
                 .attachmentFiles(attachments)
