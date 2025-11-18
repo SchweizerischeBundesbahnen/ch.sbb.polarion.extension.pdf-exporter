@@ -51,6 +51,10 @@ class PdfAttachmentsTest extends BaseWeasyPrintTest {
         attachments.add(file.toPath());
 
         DocumentData<IModule> documentData = DocumentData.creator(DocumentType.LIVE_DOC, module)
+                .id(LiveDocId.from("testProjectId", "_default", "testDocumentId"))
+                .title("testDocument")
+                .lastRevision("12345")
+                .revisionPlaceholder("12345")
                 .attachmentFiles(attachments)
                 .build();
 
