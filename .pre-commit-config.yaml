@@ -40,7 +40,7 @@ repos:
         language: pygrep
         types: [text]
   - repo: https://github.com/zricethezav/gitleaks
-    rev: v8.29.0
+    rev: v8.29.1
     hooks:
       - id: gitleaks
   - repo: https://github.com/grigoriev/pre-commit-check-git-user
