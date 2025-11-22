@@ -38,7 +38,7 @@ jobs:
           persist-credentials: false  # Security: don't persist credentials (was true)
       - name: Run Claude Code Review
         id: claude-review
-        uses: anthropics/claude-code-action@6902c227aaa9536481b99d56f3014bbbad6c6da8  # v1.0.18
+        uses: anthropics/claude-code-action@f9b2917716eb547b52148c7805dffe3a57864094  # v1.0.19
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           prompt: |
