@@ -17,6 +17,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
 
+import javax.ws.rs.core.MediaType;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -24,7 +25,6 @@ import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
@@ -39,10 +39,6 @@ import static ch.sbb.polarion.extension.pdf_exporter.util.exporter.Constants.MIM
 public class PdfExporterFileResourceProvider implements FileResourceProvider {
 
     private static final Logger logger = Logger.getLogger(PdfExporterFileResourceProvider.class);
-
-    private static final Pattern loginPattern = Pattern.compile("<title[^>]*>\\s*login\\s*</title>", Pattern.CASE_INSENSITIVE);
-
-    private static final int MAX_LOGIN_PAGE_CHECK_LENGTH = 10_000;
 
     private final List<IUrlResolver> resolvers;
 
@@ -96,7 +92,7 @@ public class PdfExporterFileResourceProvider implements FileResourceProvider {
                 if (stream != null) {
                     byte[] result = StreamUtils.suckStreamThenClose(stream);
                     if (result.length > 0 && WorkItemAttachmentUrlResolver.isWorkItemAttachmentUrl(resource) &&
-                            (!WorkItemAttachmentUrlResolver.isSvg(resource) && isRedirectToLoginPage(resource, result))) {
+                            (!WorkItemAttachmentUrlResolver.isSvg(resource) && isMediaTypeMismatch(resource, result))) {
                         ExportContext.addWorkItemIDsWithMissingAttachment(getWorkItemIdsWithUnavailableAttachments(resource));
                         return getDefaultContent(resource);
                     }
@@ -111,17 +107,18 @@ public class PdfExporterFileResourceProvider implements FileResourceProvider {
     }
 
     @VisibleForTesting
-    boolean isRedirectToLoginPage(String resource, byte[] content) {
+    boolean isMediaTypeMismatch(String resource, byte[] content) {
         String detectedMimeType = MediaUtils.getMimeTypeUsingTikaByContent(resource, content);
+        String expectedMimeType = MediaUtils.getMimeTypeUsingTikaByResourceName(resource, null);
 
-        if (!"application/xhtml+xml".equals(detectedMimeType) &&
-                !"text/html".equals(detectedMimeType)) {
+        if (detectedMimeType == null || expectedMimeType == null) {
             return false;
         }
 
-        int lengthToCheck = Math.min(content.length, MAX_LOGIN_PAGE_CHECK_LENGTH);
-        String contentAsString = new String(content, 0, lengthToCheck, StandardCharsets.UTF_8);
-        return loginPattern.matcher(contentAsString).find();
+        if (detectedMimeType.equals(MediaType.APPLICATION_XHTML_XML)) {
+            return !expectedMimeType.equals(detectedMimeType);
+        }
+        return false;
     }
 
     @VisibleForTesting

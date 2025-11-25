@@ -7,7 +7,6 @@ import com.polarion.alm.tracker.internal.url.IAttachmentUrlResolver;
 import com.polarion.alm.tracker.internal.url.IUrlResolver;
 import com.polarion.alm.tracker.internal.url.ParentUrlResolver;
 import com.polarion.alm.tracker.internal.url.PolarionUrlResolver;
-import com.polarion.alm.tracker.internal.url.WorkItemAttachmentUrlResolver;
 import com.polarion.core.util.StreamUtils;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.BeforeEach;
@@ -17,6 +16,7 @@ import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import javax.ws.rs.core.MediaType;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.lang.reflect.Field;
@@ -123,123 +123,130 @@ class PdfExporterFileResourceProviderTest {
     }
 
     @Test
-    void isRedirectToLoginPageNonHtmlContent() {
+    void isMediaTypeMismatchWithNullDetectedMimeType() {
+        String resource = "file.txt";
+        byte[] content = "content".getBytes();
+
+        try (MockedStatic<MediaUtils> mockedMediaUtils = mockStatic(MediaUtils.class)) {
+            mockedMediaUtils.when(() -> MediaUtils.getMimeTypeUsingTikaByContent(resource, content))
+                    .thenReturn(null);
+            mockedMediaUtils.when(() -> MediaUtils.getMimeTypeUsingTikaByResourceName(resource, null))
+                    .thenReturn("text/plain");
+
+            boolean result = resourceProvider.isMediaTypeMismatch(resource, content);
+            assertFalse(result);
+        }
+    }
+
+    @Test
+    void isMediaTypeMismatchWithNullExpectedMimeType() {
+        String resource = "file.txt";
+        byte[] content = "content".getBytes();
+
+        try (MockedStatic<MediaUtils> mockedMediaUtils = mockStatic(MediaUtils.class)) {
+            mockedMediaUtils.when(() -> MediaUtils.getMimeTypeUsingTikaByContent(resource, content))
+                    .thenReturn("text/plain");
+            mockedMediaUtils.when(() -> MediaUtils.getMimeTypeUsingTikaByResourceName(resource, null))
+                    .thenReturn(null);
+
+            boolean result = resourceProvider.isMediaTypeMismatch(resource, content);
+            assertFalse(result);
+        }
+    }
+
+    @Test
+    void isMediaTypeMismatchWithBothMimeTypesNull() {
+        String resource = "file.txt";
+        byte[] content = "content".getBytes();
+
+        try (MockedStatic<MediaUtils> mockedMediaUtils = mockStatic(MediaUtils.class)) {
+            mockedMediaUtils.when(() -> MediaUtils.getMimeTypeUsingTikaByContent(resource, content))
+                    .thenReturn(null);
+            mockedMediaUtils.when(() -> MediaUtils.getMimeTypeUsingTikaByResourceName(resource, null))
+                    .thenReturn(null);
+
+            boolean result = resourceProvider.isMediaTypeMismatch(resource, content);
+            assertFalse(result);
+        }
+    }
+
+    @Test
+    void isMediaTypeMismatchWithXhtmlMatchingTypes() {
+        String resource = "file.xhtml";
+        byte[] content = "<html xmlns=\"http://www.w3.org/1999/xhtml\"></html>".getBytes(StandardCharsets.UTF_8);
+
+        try (MockedStatic<MediaUtils> mockedMediaUtils = mockStatic(MediaUtils.class)) {
+            mockedMediaUtils.when(() -> MediaUtils.getMimeTypeUsingTikaByContent(resource, content))
+                    .thenReturn(MediaType.APPLICATION_XHTML_XML);
+            mockedMediaUtils.when(() -> MediaUtils.getMimeTypeUsingTikaByResourceName(resource, null))
+                    .thenReturn(MediaType.APPLICATION_XHTML_XML);
+
+            boolean result = resourceProvider.isMediaTypeMismatch(resource, content);
+            assertFalse(result);
+        }
+    }
+
+    @Test
+    void isMediaTypeMismatchWithXhtmlMismatchingTypes() {
+        String resource = "file.html";
+        byte[] content = "<html xmlns=\"http://www.w3.org/1999/xhtml\"></html>".getBytes(StandardCharsets.UTF_8);
+
+        try (MockedStatic<MediaUtils> mockedMediaUtils = mockStatic(MediaUtils.class)) {
+            mockedMediaUtils.when(() -> MediaUtils.getMimeTypeUsingTikaByContent(resource, content))
+                    .thenReturn(MediaType.APPLICATION_XHTML_XML);
+            mockedMediaUtils.when(() -> MediaUtils.getMimeTypeUsingTikaByResourceName(resource, null))
+                    .thenReturn("text/html");
+
+            boolean result = resourceProvider.isMediaTypeMismatch(resource, content);
+            assertTrue(result);
+        }
+    }
+
+    @Test
+    void isMediaTypeMismatchWithNonXhtmlTypes() {
         String resource = "image.png";
-        byte[] content = new byte[0];
+        byte[] content = new byte[]{0x00, 0x01, 0x02};
 
         try (MockedStatic<MediaUtils> mockedMediaUtils = mockStatic(MediaUtils.class)) {
             mockedMediaUtils.when(() -> MediaUtils.getMimeTypeUsingTikaByContent(resource, content))
                     .thenReturn("image/png");
+            mockedMediaUtils.when(() -> MediaUtils.getMimeTypeUsingTikaByResourceName(resource, null))
+                    .thenReturn("text/plain");
 
-            boolean result = resourceProvider.isRedirectToLoginPage(resource, content);
+            boolean result = resourceProvider.isMediaTypeMismatch(resource, content);
             assertFalse(result);
         }
     }
 
     @Test
-    void isRedirectToLoginPageWithXhtmlLoginPage() {
-        String resource = "attachment.html";
-        byte[] content = "<html><head><title>Login</title></head></html>".getBytes(StandardCharsets.UTF_8);
+    void isMediaTypeMismatchWithMatchingNonXhtmlTypes() {
+        String resource = "image.png";
+        byte[] content = new byte[]{0x00, 0x01, 0x02};
 
         try (MockedStatic<MediaUtils> mockedMediaUtils = mockStatic(MediaUtils.class)) {
             mockedMediaUtils.when(() -> MediaUtils.getMimeTypeUsingTikaByContent(resource, content))
-                    .thenReturn("application/xhtml+xml");
+                    .thenReturn("image/png");
+            mockedMediaUtils.when(() -> MediaUtils.getMimeTypeUsingTikaByResourceName(resource, null))
+                    .thenReturn("image/png");
 
-            boolean result = resourceProvider.isRedirectToLoginPage(resource, content);
-            assertTrue(result);
-        }
-    }
-
-    @Test
-    void isRedirectToLoginPageWithHtmlLoginPage() {
-        String resource = "page.html";
-        byte[] content = "<html><head><title>  Login  </title></head></html>".getBytes(StandardCharsets.UTF_8);
-
-        try (MockedStatic<MediaUtils> mockedMediaUtils = mockStatic(MediaUtils.class)) {
-            mockedMediaUtils.when(() -> MediaUtils.getMimeTypeUsingTikaByContent(resource, content))
-                    .thenReturn("text/html");
-
-            boolean result = resourceProvider.isRedirectToLoginPage(resource, content);
-            assertTrue(result);
-        }
-    }
-
-    @Test
-    void isRedirectToLoginPageWithXhtmlButNotLoginPage() {
-        String resource = "attachment.html";
-        byte[] content = "<html><head><title>Regular Page</title></head></html>".getBytes(StandardCharsets.UTF_8);
-
-        try (MockedStatic<MediaUtils> mockedMediaUtils = mockStatic(MediaUtils.class)) {
-            mockedMediaUtils.when(() -> MediaUtils.getMimeTypeUsingTikaByContent(resource, content))
-                    .thenReturn("application/xhtml+xml");
-
-            boolean result = resourceProvider.isRedirectToLoginPage(resource, content);
+            boolean result = resourceProvider.isMediaTypeMismatch(resource, content);
             assertFalse(result);
         }
     }
 
     @Test
-    void isRedirectToLoginPageCaseInsensitive() {
-        String resource = "page.html";
-        byte[] content = "<html><head><title>LoGiN</title></head></html>".getBytes(StandardCharsets.UTF_8);
-
-        try (MockedStatic<MediaUtils> mockedMediaUtils = mockStatic(MediaUtils.class)) {
-            mockedMediaUtils.when(() -> MediaUtils.getMimeTypeUsingTikaByContent(resource, content))
-                    .thenReturn("text/html");
-
-            boolean result = resourceProvider.isRedirectToLoginPage(resource, content);
-            assertTrue(result);
-        }
-    }
-
-    @Test
-    void isRedirectToLoginPageEmptyContent() {
-        String resource = "page.html";
+    void isMediaTypeMismatchWithEmptyContent() {
+        String resource = "file.txt";
         byte[] content = new byte[0];
 
         try (MockedStatic<MediaUtils> mockedMediaUtils = mockStatic(MediaUtils.class)) {
             mockedMediaUtils.when(() -> MediaUtils.getMimeTypeUsingTikaByContent(resource, content))
-                    .thenReturn("text/html");
+                    .thenReturn("application/octet-stream");
+            mockedMediaUtils.when(() -> MediaUtils.getMimeTypeUsingTikaByResourceName(resource, null))
+                    .thenReturn("text/plain");
 
-            boolean result = resourceProvider.isRedirectToLoginPage(resource, content);
+            boolean result = resourceProvider.isMediaTypeMismatch(resource, content);
             assertFalse(result);
-        }
-    }
-
-    @Test
-    @SneakyThrows
-    void getResourceAsBytesImplWithLoginPageRedirect() {
-        try (MockedStatic<StreamUtils> streamUtilsMockedStatic = mockStatic(StreamUtils.class);
-             MockedStatic<WorkItemAttachmentUrlResolver> workItemAttachmentUrlResolverMockedStatic = mockStatic(WorkItemAttachmentUrlResolver.class);
-             MockedStatic<MediaUtils> mockedMediaUtils = mockStatic(MediaUtils.class);
-             MockedStatic<ExportContext> exportContextMockedStatic = mockStatic(ExportContext.class)) {
-
-            String resource = "/polarion/wi-attachment/project/WI-123/attachment.png";
-            byte[] resolvedBytes = "<html><head><title>Login</title></head></html>".getBytes(StandardCharsets.UTF_8);
-            byte[] defaultBytes = "default".getBytes();
-
-            streamUtilsMockedStatic.when(() -> StreamUtils.suckStreamThenClose(any(InputStream.class)))
-                    .thenReturn(resolvedBytes);
-            workItemAttachmentUrlResolverMockedStatic.when(() -> WorkItemAttachmentUrlResolver.isWorkItemAttachmentUrl(resource))
-                    .thenReturn(true);
-            workItemAttachmentUrlResolverMockedStatic.when(() -> WorkItemAttachmentUrlResolver.isSvg(resource))
-                    .thenReturn(false);
-
-            mockedMediaUtils.when(() -> MediaUtils.getMimeTypeUsingTikaByContent(resource, resolvedBytes))
-                    .thenReturn("text/html");
-
-            IUrlResolver resolver = mock(IUrlResolver.class);
-            when(resolver.canResolve(resource)).thenReturn(true);
-            when(resolver.resolve(resource)).thenReturn(new ByteArrayInputStream(resolvedBytes));
-
-            PdfExporterFileResourceProvider fileResourceProvider = spy(new PdfExporterFileResourceProvider(List.of(resolver)));
-            doReturn(defaultBytes).when(fileResourceProvider).getDefaultContent(resource);
-            doReturn("WI-123").when(fileResourceProvider).getWorkItemIdsWithUnavailableAttachments(resource);
-
-            byte[] result = fileResourceProvider.getResourceAsBytesImpl(resource);
-
-            assertArrayEquals(defaultBytes, result);
-            exportContextMockedStatic.verify(() -> ExportContext.addWorkItemIDsWithMissingAttachment("WI-123"));
         }
     }
 
