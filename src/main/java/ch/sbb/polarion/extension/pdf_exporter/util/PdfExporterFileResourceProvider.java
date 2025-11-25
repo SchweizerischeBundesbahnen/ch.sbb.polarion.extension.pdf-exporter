@@ -40,6 +40,8 @@ public class PdfExporterFileResourceProvider implements FileResourceProvider {
 
     private static final Logger logger = Logger.getLogger(PdfExporterFileResourceProvider.class);
 
+    private static final Pattern loginPattern = Pattern.compile("<title[^>]*>\\s*login\\s*</title>", Pattern.CASE_INSENSITIVE);
+
     private final List<IUrlResolver> resolvers;
 
     public PdfExporterFileResourceProvider() {
@@ -108,6 +110,7 @@ public class PdfExporterFileResourceProvider implements FileResourceProvider {
 
     @VisibleForTesting
     boolean isRedirectToLoginPage(String resource, byte[] content) {
+        final int MAX_LOGIN_PAGE_CHECK_LENGTH = 10_000;
         String detectedMimeType = MediaUtils.getMimeTypeUsingTikaByContent(resource, content);
 
         if (!"application/xhtml+xml".equals(detectedMimeType) &&
@@ -115,9 +118,8 @@ public class PdfExporterFileResourceProvider implements FileResourceProvider {
             return false;
         }
 
-        int lengthToCheck = Math.min(content.length, 10_000);
+        int lengthToCheck = Math.min(content.length, MAX_LOGIN_PAGE_CHECK_LENGTH);
         String contentAsString = new String(content, 0, lengthToCheck, StandardCharsets.UTF_8);
-        Pattern loginPattern = Pattern.compile("<title[^>]*>\\s*login\\s*</title>", Pattern.CASE_INSENSITIVE);
         return loginPattern.matcher(contentAsString).find();
     }
 
