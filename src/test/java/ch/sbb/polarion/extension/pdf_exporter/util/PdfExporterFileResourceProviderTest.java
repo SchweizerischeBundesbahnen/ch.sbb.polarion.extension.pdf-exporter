@@ -12,6 +12,9 @@ import lombok.SneakyThrows;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -24,6 +27,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -122,52 +126,29 @@ class PdfExporterFileResourceProviderTest {
         }
     }
 
-    @Test
-    void isMediaTypeMismatchWithNullDetectedMimeType() {
+    @ParameterizedTest
+    @MethodSource("nullMimeTypeScenarios")
+    void isMediaTypeMismatchWithNullMimeTypes(String detectedMimeType, String expectedMimeType) {
         String resource = "file.txt";
         byte[] content = "content".getBytes();
 
         try (MockedStatic<MediaUtils> mockedMediaUtils = mockStatic(MediaUtils.class)) {
             mockedMediaUtils.when(() -> MediaUtils.getMimeTypeUsingTikaByContent(resource, content))
-                    .thenReturn(null);
+                    .thenReturn(detectedMimeType);
             mockedMediaUtils.when(() -> MediaUtils.getMimeTypeUsingTikaByResourceName(resource, null))
-                    .thenReturn("text/plain");
+                    .thenReturn(expectedMimeType);
 
             boolean result = resourceProvider.isMediaTypeMismatch(resource, content);
             assertFalse(result);
         }
     }
 
-    @Test
-    void isMediaTypeMismatchWithNullExpectedMimeType() {
-        String resource = "file.txt";
-        byte[] content = "content".getBytes();
-
-        try (MockedStatic<MediaUtils> mockedMediaUtils = mockStatic(MediaUtils.class)) {
-            mockedMediaUtils.when(() -> MediaUtils.getMimeTypeUsingTikaByContent(resource, content))
-                    .thenReturn("text/plain");
-            mockedMediaUtils.when(() -> MediaUtils.getMimeTypeUsingTikaByResourceName(resource, null))
-                    .thenReturn(null);
-
-            boolean result = resourceProvider.isMediaTypeMismatch(resource, content);
-            assertFalse(result);
-        }
-    }
-
-    @Test
-    void isMediaTypeMismatchWithBothMimeTypesNull() {
-        String resource = "file.txt";
-        byte[] content = "content".getBytes();
-
-        try (MockedStatic<MediaUtils> mockedMediaUtils = mockStatic(MediaUtils.class)) {
-            mockedMediaUtils.when(() -> MediaUtils.getMimeTypeUsingTikaByContent(resource, content))
-                    .thenReturn(null);
-            mockedMediaUtils.when(() -> MediaUtils.getMimeTypeUsingTikaByResourceName(resource, null))
-                    .thenReturn(null);
-
-            boolean result = resourceProvider.isMediaTypeMismatch(resource, content);
-            assertFalse(result);
-        }
+    private static Stream<Arguments> nullMimeTypeScenarios() {
+        return Stream.of(
+                Arguments.of(null, "text/plain"),           // detected null
+                Arguments.of("text/plain", null),           // expected null
+                Arguments.of(null, null)                    // both null
+        );
     }
 
     @Test
