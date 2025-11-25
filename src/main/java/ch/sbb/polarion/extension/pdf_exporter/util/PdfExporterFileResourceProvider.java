@@ -42,6 +42,8 @@ public class PdfExporterFileResourceProvider implements FileResourceProvider {
 
     private static final Pattern loginPattern = Pattern.compile("<title[^>]*>\\s*login\\s*</title>", Pattern.CASE_INSENSITIVE);
 
+    private static final int MAX_LOGIN_PAGE_CHECK_LENGTH = 10_000;
+
     private final List<IUrlResolver> resolvers;
 
     public PdfExporterFileResourceProvider() {
@@ -110,7 +112,6 @@ public class PdfExporterFileResourceProvider implements FileResourceProvider {
 
     @VisibleForTesting
     boolean isRedirectToLoginPage(String resource, byte[] content) {
-        final int MAX_LOGIN_PAGE_CHECK_LENGTH = 10_000;
         String detectedMimeType = MediaUtils.getMimeTypeUsingTikaByContent(resource, content);
 
         if (!"application/xhtml+xml".equals(detectedMimeType) &&
