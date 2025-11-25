@@ -109,15 +109,16 @@ public class PdfExporterFileResourceProvider implements FileResourceProvider {
     @VisibleForTesting
     boolean isRedirectToLoginPage(String resource, byte[] content) {
         String detectedMimeType = MediaUtils.getMimeTypeUsingTikaByContent(resource, content);
-        String expectedMimeType = MediaUtils.getMimeTypeUsingTikaByResourceName(resource, null);
 
-        if (expectedMimeType != null && !expectedMimeType.equals(detectedMimeType)) {
-            if ("application/xhtml+xml".equals(detectedMimeType)) {
-                String contentAsString = new String(content, StandardCharsets.UTF_8);
-                return contentAsString.contains("<title>Login</title>"); // Simple check for login page
-            }
+        if (!"application/xhtml+xml".equals(detectedMimeType) &&
+                !"text/html".equals(detectedMimeType)) {
+            return false;
         }
-        return false;
+
+        int lengthToCheck = Math.min(content.length, 10_000);
+        String contentAsString = new String(content, 0, lengthToCheck, StandardCharsets.UTF_8);
+        Pattern loginPattern = Pattern.compile("<title[^>]*>\\s*login\\s*</title>", Pattern.CASE_INSENSITIVE);
+        return loginPattern.matcher(contentAsString).find();
     }
 
     @VisibleForTesting

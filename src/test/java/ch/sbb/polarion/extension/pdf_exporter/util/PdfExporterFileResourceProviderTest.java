@@ -123,14 +123,12 @@ class PdfExporterFileResourceProviderTest {
     }
 
     @Test
-    void isRedirectToLoginPageMatchingMimeTypes() {
+    void isRedirectToLoginPageNonHtmlContent() {
         String resource = "image.png";
         byte[] content = new byte[0];
 
         try (MockedStatic<MediaUtils> mockedMediaUtils = mockStatic(MediaUtils.class)) {
             mockedMediaUtils.when(() -> MediaUtils.getMimeTypeUsingTikaByContent(resource, content))
-                    .thenReturn("image/png");
-            mockedMediaUtils.when(() -> MediaUtils.getMimeTypeUsingTikaByResourceName(resource, null))
                     .thenReturn("image/png");
 
             boolean result = resourceProvider.isRedirectToLoginPage(resource, content);
@@ -146,7 +144,19 @@ class PdfExporterFileResourceProviderTest {
         try (MockedStatic<MediaUtils> mockedMediaUtils = mockStatic(MediaUtils.class)) {
             mockedMediaUtils.when(() -> MediaUtils.getMimeTypeUsingTikaByContent(resource, content))
                     .thenReturn("application/xhtml+xml");
-            mockedMediaUtils.when(() -> MediaUtils.getMimeTypeUsingTikaByResourceName(resource, null))
+
+            boolean result = resourceProvider.isRedirectToLoginPage(resource, content);
+            assertTrue(result);
+        }
+    }
+
+    @Test
+    void isRedirectToLoginPageWithHtmlLoginPage() {
+        String resource = "page.html";
+        byte[] content = "<html><head><title>  Login  </title></head></html>".getBytes(StandardCharsets.UTF_8);
+
+        try (MockedStatic<MediaUtils> mockedMediaUtils = mockStatic(MediaUtils.class)) {
+            mockedMediaUtils.when(() -> MediaUtils.getMimeTypeUsingTikaByContent(resource, content))
                     .thenReturn("text/html");
 
             boolean result = resourceProvider.isRedirectToLoginPage(resource, content);
@@ -162,8 +172,6 @@ class PdfExporterFileResourceProviderTest {
         try (MockedStatic<MediaUtils> mockedMediaUtils = mockStatic(MediaUtils.class)) {
             mockedMediaUtils.when(() -> MediaUtils.getMimeTypeUsingTikaByContent(resource, content))
                     .thenReturn("application/xhtml+xml");
-            mockedMediaUtils.when(() -> MediaUtils.getMimeTypeUsingTikaByResourceName(resource, null))
-                    .thenReturn("text/html");
 
             boolean result = resourceProvider.isRedirectToLoginPage(resource, content);
             assertFalse(result);
@@ -171,15 +179,27 @@ class PdfExporterFileResourceProviderTest {
     }
 
     @Test
-    void isRedirectToLoginPageWithMimeTypeMismatchButNotXhtml() {
-        String resource = "image.png";
-        byte[] content = "some content".getBytes();
+    void isRedirectToLoginPageCaseInsensitive() {
+        String resource = "page.html";
+        byte[] content = "<html><head><title>LoGiN</title></head></html>".getBytes(StandardCharsets.UTF_8);
 
         try (MockedStatic<MediaUtils> mockedMediaUtils = mockStatic(MediaUtils.class)) {
             mockedMediaUtils.when(() -> MediaUtils.getMimeTypeUsingTikaByContent(resource, content))
-                    .thenReturn("text/plain");
-            mockedMediaUtils.when(() -> MediaUtils.getMimeTypeUsingTikaByResourceName(resource, null))
-                    .thenReturn("image/png");
+                    .thenReturn("text/html");
+
+            boolean result = resourceProvider.isRedirectToLoginPage(resource, content);
+            assertTrue(result);
+        }
+    }
+
+    @Test
+    void isRedirectToLoginPageEmptyContent() {
+        String resource = "page.html";
+        byte[] content = new byte[0];
+
+        try (MockedStatic<MediaUtils> mockedMediaUtils = mockStatic(MediaUtils.class)) {
+            mockedMediaUtils.when(() -> MediaUtils.getMimeTypeUsingTikaByContent(resource, content))
+                    .thenReturn("text/html");
 
             boolean result = resourceProvider.isRedirectToLoginPage(resource, content);
             assertFalse(result);
@@ -188,22 +208,24 @@ class PdfExporterFileResourceProviderTest {
 
     @Test
     @SneakyThrows
-    void getResourceAsBytesImplWithMediaTypeMismatch() {
+    void getResourceAsBytesImplWithLoginPageRedirect() {
         try (MockedStatic<StreamUtils> streamUtilsMockedStatic = mockStatic(StreamUtils.class);
              MockedStatic<WorkItemAttachmentUrlResolver> workItemAttachmentUrlResolverMockedStatic = mockStatic(WorkItemAttachmentUrlResolver.class);
-             MockedStatic<MediaUtils> mockedMediaUtils = mockStatic(MediaUtils.class)) {
+             MockedStatic<MediaUtils> mockedMediaUtils = mockStatic(MediaUtils.class);
+             MockedStatic<ExportContext> exportContextMockedStatic = mockStatic(ExportContext.class)) {
 
-            String resource = "/polarion/wi-attachment/";
+            String resource = "/polarion/wi-attachment/project/WI-123/attachment.png";
             byte[] resolvedBytes = "<html><head><title>Login</title></head></html>".getBytes(StandardCharsets.UTF_8);
             byte[] defaultBytes = "default".getBytes();
 
-            streamUtilsMockedStatic.when(() -> StreamUtils.suckStreamThenClose(any(InputStream.class))).thenReturn(resolvedBytes);
-            workItemAttachmentUrlResolverMockedStatic.when(() -> WorkItemAttachmentUrlResolver.isWorkItemAttachmentUrl(resource)).thenReturn(true);
-            workItemAttachmentUrlResolverMockedStatic.when(() -> WorkItemAttachmentUrlResolver.isSvg(resource)).thenReturn(false);
+            streamUtilsMockedStatic.when(() -> StreamUtils.suckStreamThenClose(any(InputStream.class)))
+                    .thenReturn(resolvedBytes);
+            workItemAttachmentUrlResolverMockedStatic.when(() -> WorkItemAttachmentUrlResolver.isWorkItemAttachmentUrl(resource))
+                    .thenReturn(true);
+            workItemAttachmentUrlResolverMockedStatic.when(() -> WorkItemAttachmentUrlResolver.isSvg(resource))
+                    .thenReturn(false);
 
             mockedMediaUtils.when(() -> MediaUtils.getMimeTypeUsingTikaByContent(resource, resolvedBytes))
-                    .thenReturn("application/xhtml+xml");
-            mockedMediaUtils.when(() -> MediaUtils.getMimeTypeUsingTikaByResourceName(resource, null))
                     .thenReturn("text/html");
 
             IUrlResolver resolver = mock(IUrlResolver.class);
@@ -212,10 +234,12 @@ class PdfExporterFileResourceProviderTest {
 
             PdfExporterFileResourceProvider fileResourceProvider = spy(new PdfExporterFileResourceProvider(List.of(resolver)));
             doReturn(defaultBytes).when(fileResourceProvider).getDefaultContent(resource);
+            doReturn("WI-123").when(fileResourceProvider).getWorkItemIdsWithUnavailableAttachments(resource);
 
             byte[] result = fileResourceProvider.getResourceAsBytesImpl(resource);
 
             assertArrayEquals(defaultBytes, result);
+            exportContextMockedStatic.verify(() -> ExportContext.addWorkItemIDsWithMissingAttachment("WI-123"));
         }
     }
 
