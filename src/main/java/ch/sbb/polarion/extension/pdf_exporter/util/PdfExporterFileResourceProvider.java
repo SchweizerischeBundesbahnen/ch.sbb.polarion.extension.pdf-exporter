@@ -24,6 +24,7 @@ import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
@@ -91,7 +92,7 @@ public class PdfExporterFileResourceProvider implements FileResourceProvider {
                 if (stream != null) {
                     byte[] result = StreamUtils.suckStreamThenClose(stream);
                     if (result.length > 0 && WorkItemAttachmentUrlResolver.isWorkItemAttachmentUrl(resource) &&
-                            (!WorkItemAttachmentUrlResolver.isSvg(resource) && isMediaTypeMismatch(resource, result))) {
+                            (!WorkItemAttachmentUrlResolver.isSvg(resource) && isRedirectToLoginPage(resource, result))) {
                         ExportContext.addWorkItemIDsWithMissingAttachment(getWorkItemIdsWithUnavailableAttachments(resource));
                         return getDefaultContent(resource);
                     }
@@ -106,10 +107,17 @@ public class PdfExporterFileResourceProvider implements FileResourceProvider {
     }
 
     @VisibleForTesting
-    boolean isMediaTypeMismatch(String resource, byte[] content) {
+    boolean isRedirectToLoginPage(String resource, byte[] content) {
         String detectedMimeType = MediaUtils.getMimeTypeUsingTikaByContent(resource, content);
         String expectedMimeType = MediaUtils.getMimeTypeUsingTikaByResourceName(resource, null);
-        return expectedMimeType != null && !expectedMimeType.equals(detectedMimeType);
+
+        if (expectedMimeType != null && !expectedMimeType.equals(detectedMimeType)) {
+            if ("application/xhtml+xml".equals(detectedMimeType)) {
+                String contentAsString = new String(content, StandardCharsets.UTF_8);
+                return contentAsString.contains("<title>Login</title>"); // Simple check for login page
+            }
+        }
+        return false;
     }
 
     @VisibleForTesting
