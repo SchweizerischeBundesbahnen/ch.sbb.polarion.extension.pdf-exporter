@@ -91,8 +91,10 @@ public class PdfExporterFileResourceProvider implements FileResourceProvider {
                 InputStream stream = resolver.resolve(resource);
                 if (stream != null) {
                     byte[] result = StreamUtils.suckStreamThenClose(stream);
-                    if (result.length > 0 && WorkItemAttachmentUrlResolver.isWorkItemAttachmentUrl(resource) &&
-                            (!WorkItemAttachmentUrlResolver.isSvg(resource) && isMediaTypeMismatch(resource, result))) {
+                    if (result.length > 0
+                            && WorkItemAttachmentUrlResolver.isWorkItemAttachmentUrl(resource)
+                            && !WorkItemAttachmentUrlResolver.isSvg(resource)
+                            && isMediaTypeMismatch(resource, result)) {
                         ExportContext.addWorkItemIDsWithMissingAttachment(getWorkItemIdsWithUnavailableAttachments(resource));
                         return getDefaultContent(resource);
                     }
