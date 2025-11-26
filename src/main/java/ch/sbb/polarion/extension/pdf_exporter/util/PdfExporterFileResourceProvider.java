@@ -121,7 +121,7 @@ public class PdfExporterFileResourceProvider implements FileResourceProvider {
             return !expectedMimeType.equals(detectedMimeType);
         }
 
-        // in all other cases we just make the decision that everything is ok
+        // in all other cases we are just assuming that everything is ok
         return false;
     }
 
