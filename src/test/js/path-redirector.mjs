@@ -15,7 +15,6 @@ const pathMappings = {
 
 export async function resolve(specifier, context, nextResolve) {
     if (pathMappings[specifier]) {
-        console.log(`🔄 Redirecting: ${specifier}`);
         return {
             url: pathToFileURL(pathMappings[specifier]).href,
             shortCircuit: true
