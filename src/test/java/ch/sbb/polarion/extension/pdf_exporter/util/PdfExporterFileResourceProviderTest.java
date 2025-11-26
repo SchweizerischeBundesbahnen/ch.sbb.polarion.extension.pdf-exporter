@@ -7,6 +7,7 @@ import com.polarion.alm.tracker.internal.url.IAttachmentUrlResolver;
 import com.polarion.alm.tracker.internal.url.IUrlResolver;
 import com.polarion.alm.tracker.internal.url.ParentUrlResolver;
 import com.polarion.alm.tracker.internal.url.PolarionUrlResolver;
+import com.polarion.alm.tracker.internal.url.WorkItemAttachmentUrlResolver;
 import com.polarion.core.util.StreamUtils;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.BeforeEach;
@@ -24,7 +25,6 @@ import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.stream.Stream;
@@ -114,15 +114,182 @@ class PdfExporterFileResourceProviderTest {
             when(resolver.canResolve(resource)).thenReturn(true);
             when(resolver.resolve(resource)).thenReturn(new ByteArrayInputStream(expectedBytes));
 
-            List<IUrlResolver> resolvers = List.of(resolver);
-            List<String> unavailableWorkItemAttachments = new ArrayList<>();
-
-            PdfExporterFileResourceProvider fileResourceProvider = new PdfExporterFileResourceProvider(resolvers);
+            PdfExporterFileResourceProvider fileResourceProvider = new PdfExporterFileResourceProvider(List.of(resolver));
 
             byte[] result = fileResourceProvider.getResourceAsBytesImpl(resource);
 
             assertArrayEquals(expectedBytes, result);
-            assertTrue(unavailableWorkItemAttachments.isEmpty());
+        }
+    }
+
+    @Test
+    @SneakyThrows
+    void getResourceAsBytesImplEmptyResult() {
+        try (MockedStatic<StreamUtils> streamUtilsMockedStatic = mockStatic(StreamUtils.class)) {
+            String resource = "valid/resource/url";
+            streamUtilsMockedStatic.when(() -> StreamUtils.suckStreamThenClose(any(InputStream.class))).thenReturn(new byte[0]);
+
+            IUrlResolver resolver = mock(IUrlResolver.class);
+            when(resolver.canResolve(resource)).thenReturn(true);
+            when(resolver.resolve(resource)).thenReturn(new ByteArrayInputStream(new byte[0]));
+
+            PdfExporterFileResourceProvider fileResourceProvider = new PdfExporterFileResourceProvider(List.of(resolver));
+
+            byte[] result = fileResourceProvider.getResourceAsBytesImpl(resource);
+
+            assertArrayEquals(new byte[0], result);
+        }
+    }
+
+    @Test
+    @SneakyThrows
+    void getResourceAsBytesImplWorkItemAttachmentWithMismatch() {
+        String resource = "/polarion/wi-attachment/project/WI-123/image.png";
+        byte[] htmlContent = "<html xmlns=\"http://www.w3.org/1999/xhtml\"><body>Login</body></html>".getBytes(StandardCharsets.UTF_8);
+
+        try (MockedStatic<StreamUtils> streamUtilsMockedStatic = mockStatic(StreamUtils.class);
+             MockedStatic<WorkItemAttachmentUrlResolver> workItemMockedStatic = mockStatic(WorkItemAttachmentUrlResolver.class);
+             MockedStatic<MediaUtils> mediaUtilsMockedStatic = mockStatic(MediaUtils.class)) {
+
+            streamUtilsMockedStatic.when(() -> StreamUtils.suckStreamThenClose(any(InputStream.class))).thenReturn(htmlContent);
+            workItemMockedStatic.when(() -> WorkItemAttachmentUrlResolver.isWorkItemAttachmentUrl(resource)).thenReturn(true);
+            workItemMockedStatic.when(() -> WorkItemAttachmentUrlResolver.isSvg(resource)).thenReturn(false);
+
+            mediaUtilsMockedStatic.when(() -> MediaUtils.getMimeTypeUsingTikaByContent(resource, htmlContent))
+                    .thenReturn(MediaType.APPLICATION_XHTML_XML);
+            mediaUtilsMockedStatic.when(() -> MediaUtils.getMimeTypeUsingTikaByResourceName(resource, null))
+                    .thenReturn("image/png");
+            mediaUtilsMockedStatic.when(() -> MediaUtils.getImageFormat(resource)).thenReturn("");
+
+            IUrlResolver resolver = mock(IUrlResolver.class);
+            when(resolver.canResolve(resource)).thenReturn(true);
+            when(resolver.resolve(resource)).thenReturn(new ByteArrayInputStream(htmlContent));
+
+            ExportContext.clear();
+            PdfExporterFileResourceProvider fileResourceProvider = new PdfExporterFileResourceProvider(List.of(resolver));
+
+            byte[] result = fileResourceProvider.getResourceAsBytesImpl(resource);
+
+            assertArrayEquals(new byte[0], result);
+            assertTrue(ExportContext.getWorkItemIDsWithMissingAttachment().contains("WI-123"));
+            ExportContext.clear();
+        }
+    }
+
+    @Test
+    @SneakyThrows
+    void getResourceAsBytesImplWorkItemAttachmentSvgSkipsMismatchCheck() {
+        String resource = "/polarion/wi-attachment/project/WI-123/image.svg";
+        byte[] svgContent = "<svg></svg>".getBytes(StandardCharsets.UTF_8);
+
+        try (MockedStatic<StreamUtils> streamUtilsMockedStatic = mockStatic(StreamUtils.class);
+             MockedStatic<WorkItemAttachmentUrlResolver> workItemMockedStatic = mockStatic(WorkItemAttachmentUrlResolver.class)) {
+
+            streamUtilsMockedStatic.when(() -> StreamUtils.suckStreamThenClose(any(InputStream.class))).thenReturn(svgContent);
+            workItemMockedStatic.when(() -> WorkItemAttachmentUrlResolver.isWorkItemAttachmentUrl(resource)).thenReturn(true);
+            workItemMockedStatic.when(() -> WorkItemAttachmentUrlResolver.isSvg(resource)).thenReturn(true);
+
+            IUrlResolver resolver = mock(IUrlResolver.class);
+            when(resolver.canResolve(resource)).thenReturn(true);
+            when(resolver.resolve(resource)).thenReturn(new ByteArrayInputStream(svgContent));
+
+            ExportContext.clear();
+            PdfExporterFileResourceProvider fileResourceProvider = new PdfExporterFileResourceProvider(List.of(resolver));
+
+            byte[] result = fileResourceProvider.getResourceAsBytesImpl(resource);
+
+            assertArrayEquals(svgContent, result);
+            assertTrue(ExportContext.getWorkItemIDsWithMissingAttachment().isEmpty());
+            ExportContext.clear();
+        }
+    }
+
+    @Test
+    @SneakyThrows
+    void getResourceAsBytesImplWorkItemAttachmentMatchingTypes() {
+        String resource = "/polarion/wi-attachment/project/WI-123/image.png";
+        byte[] pngContent = new byte[]{(byte) 0x89, 0x50, 0x4E, 0x47};
+
+        try (MockedStatic<StreamUtils> streamUtilsMockedStatic = mockStatic(StreamUtils.class);
+             MockedStatic<WorkItemAttachmentUrlResolver> workItemMockedStatic = mockStatic(WorkItemAttachmentUrlResolver.class);
+             MockedStatic<MediaUtils> mediaUtilsMockedStatic = mockStatic(MediaUtils.class)) {
+
+            streamUtilsMockedStatic.when(() -> StreamUtils.suckStreamThenClose(any(InputStream.class))).thenReturn(pngContent);
+            workItemMockedStatic.when(() -> WorkItemAttachmentUrlResolver.isWorkItemAttachmentUrl(resource)).thenReturn(true);
+            workItemMockedStatic.when(() -> WorkItemAttachmentUrlResolver.isSvg(resource)).thenReturn(false);
+
+            mediaUtilsMockedStatic.when(() -> MediaUtils.getMimeTypeUsingTikaByContent(resource, pngContent))
+                    .thenReturn("image/png");
+            mediaUtilsMockedStatic.when(() -> MediaUtils.getMimeTypeUsingTikaByResourceName(resource, null))
+                    .thenReturn("image/png");
+
+            IUrlResolver resolver = mock(IUrlResolver.class);
+            when(resolver.canResolve(resource)).thenReturn(true);
+            when(resolver.resolve(resource)).thenReturn(new ByteArrayInputStream(pngContent));
+
+            ExportContext.clear();
+            PdfExporterFileResourceProvider fileResourceProvider = new PdfExporterFileResourceProvider(List.of(resolver));
+
+            byte[] result = fileResourceProvider.getResourceAsBytesImpl(resource);
+
+            assertArrayEquals(pngContent, result);
+            assertTrue(ExportContext.getWorkItemIDsWithMissingAttachment().isEmpty());
+            ExportContext.clear();
+        }
+    }
+
+    @Test
+    @SneakyThrows
+    void getResourceAsBytesImplNotWorkItemAttachment() {
+        String resource = "/polarion/some/other/resource.png";
+        byte[] pngContent = new byte[]{(byte) 0x89, 0x50, 0x4E, 0x47};
+
+        try (MockedStatic<StreamUtils> streamUtilsMockedStatic = mockStatic(StreamUtils.class);
+             MockedStatic<WorkItemAttachmentUrlResolver> workItemMockedStatic = mockStatic(WorkItemAttachmentUrlResolver.class)) {
+
+            streamUtilsMockedStatic.when(() -> StreamUtils.suckStreamThenClose(any(InputStream.class))).thenReturn(pngContent);
+            workItemMockedStatic.when(() -> WorkItemAttachmentUrlResolver.isWorkItemAttachmentUrl(resource)).thenReturn(false);
+
+            IUrlResolver resolver = mock(IUrlResolver.class);
+            when(resolver.canResolve(resource)).thenReturn(true);
+            when(resolver.resolve(resource)).thenReturn(new ByteArrayInputStream(pngContent));
+
+            ExportContext.clear();
+            PdfExporterFileResourceProvider fileResourceProvider = new PdfExporterFileResourceProvider(List.of(resolver));
+
+            byte[] result = fileResourceProvider.getResourceAsBytesImpl(resource);
+
+            assertArrayEquals(pngContent, result);
+            assertTrue(ExportContext.getWorkItemIDsWithMissingAttachment().isEmpty());
+            ExportContext.clear();
+        }
+    }
+
+    @Test
+    @SneakyThrows
+    void getResourceAsBytesImplMultipleResolversFirstReturnsEmpty() {
+        String resource = "test/resource.png";
+        byte[] expectedContent = new byte[]{(byte) 0x89, 0x50, 0x4E, 0x47};
+
+        IUrlResolver firstResolver = mock(IUrlResolver.class);
+        IUrlResolver secondResolver = mock(IUrlResolver.class);
+
+        when(firstResolver.canResolve(resource)).thenReturn(true);
+        when(firstResolver.resolve(resource)).thenReturn(new ByteArrayInputStream(new byte[0]));
+
+        when(secondResolver.canResolve(resource)).thenReturn(true);
+        when(secondResolver.resolve(resource)).thenReturn(new ByteArrayInputStream(expectedContent));
+
+        try (MockedStatic<StreamUtils> streamUtilsMockedStatic = mockStatic(StreamUtils.class)) {
+            streamUtilsMockedStatic.when(() -> StreamUtils.suckStreamThenClose(any(InputStream.class)))
+                    .thenReturn(new byte[0])
+                    .thenReturn(expectedContent);
+
+            PdfExporterFileResourceProvider fileResourceProvider = new PdfExporterFileResourceProvider(List.of(firstResolver, secondResolver));
+
+            byte[] result = fileResourceProvider.getResourceAsBytesImpl(resource);
+
+            assertArrayEquals(expectedContent, result);
         }
     }
 
