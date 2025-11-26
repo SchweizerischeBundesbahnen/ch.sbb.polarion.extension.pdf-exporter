@@ -94,7 +94,7 @@ public class PdfExporterFileResourceProvider implements FileResourceProvider {
                     if (result.length > 0
                             && WorkItemAttachmentUrlResolver.isWorkItemAttachmentUrl(resource)
                             && !WorkItemAttachmentUrlResolver.isSvg(resource)
-                            && isMediaTypeMismatch(resource, result)) {
+                            && isUnexpectedlyResolvedAsHtml(resource, result)) {
                         ExportContext.addWorkItemIDsWithMissingAttachment(getWorkItemIdsWithUnavailableAttachments(resource));
                         return getDefaultContent(resource);
                     }
@@ -109,7 +109,7 @@ public class PdfExporterFileResourceProvider implements FileResourceProvider {
     }
 
     @VisibleForTesting
-    boolean isMediaTypeMismatch(String resource, byte[] content) {
+    boolean isUnexpectedlyResolvedAsHtml(String resource, byte[] content) {
         String detectedMimeType = MediaUtils.getMimeTypeUsingTikaByContent(resource, content);
         String expectedMimeType = MediaUtils.getMimeTypeUsingTikaByResourceName(resource, null);
 

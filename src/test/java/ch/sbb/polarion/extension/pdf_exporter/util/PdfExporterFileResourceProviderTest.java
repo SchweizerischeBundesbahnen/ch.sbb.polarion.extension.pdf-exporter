@@ -128,7 +128,7 @@ class PdfExporterFileResourceProviderTest {
 
     @ParameterizedTest
     @MethodSource("nullMimeTypeScenarios")
-    void isMediaTypeMismatchWithNullMimeTypes(String detectedMimeType, String expectedMimeType) {
+    void isUnexpectedlyResolvedAsHtmlWithNullMimeTypes(String detectedMimeType, String expectedMimeType) {
         String resource = "file.txt";
         byte[] content = "content".getBytes();
 
@@ -138,7 +138,7 @@ class PdfExporterFileResourceProviderTest {
             mockedMediaUtils.when(() -> MediaUtils.getMimeTypeUsingTikaByResourceName(resource, null))
                     .thenReturn(expectedMimeType);
 
-            boolean result = resourceProvider.isMediaTypeMismatch(resource, content);
+            boolean result = resourceProvider.isUnexpectedlyResolvedAsHtml(resource, content);
             assertFalse(result);
         }
     }
@@ -152,7 +152,7 @@ class PdfExporterFileResourceProviderTest {
     }
 
     @Test
-    void isMediaTypeMismatchWithXhtmlMatchingTypes() {
+    void isUnexpectedlyResolvedAsHtmlWithXhtmlMatchingTypes() {
         String resource = "file.xhtml";
         byte[] content = "<html xmlns=\"http://www.w3.org/1999/xhtml\"></html>".getBytes(StandardCharsets.UTF_8);
 
@@ -162,13 +162,13 @@ class PdfExporterFileResourceProviderTest {
             mockedMediaUtils.when(() -> MediaUtils.getMimeTypeUsingTikaByResourceName(resource, null))
                     .thenReturn(MediaType.APPLICATION_XHTML_XML);
 
-            boolean result = resourceProvider.isMediaTypeMismatch(resource, content);
+            boolean result = resourceProvider.isUnexpectedlyResolvedAsHtml(resource, content);
             assertFalse(result);
         }
     }
 
     @Test
-    void isMediaTypeMismatchWithXhtmlMismatchingTypes() {
+    void isUnexpectedlyResolvedAsHtmlWithXhtmlMismatchingTypes() {
         String resource = "file.html";
         byte[] content = "<html xmlns=\"http://www.w3.org/1999/xhtml\"></html>".getBytes(StandardCharsets.UTF_8);
 
@@ -178,13 +178,13 @@ class PdfExporterFileResourceProviderTest {
             mockedMediaUtils.when(() -> MediaUtils.getMimeTypeUsingTikaByResourceName(resource, null))
                     .thenReturn("text/html");
 
-            boolean result = resourceProvider.isMediaTypeMismatch(resource, content);
+            boolean result = resourceProvider.isUnexpectedlyResolvedAsHtml(resource, content);
             assertTrue(result);
         }
     }
 
     @Test
-    void isMediaTypeMismatchWithNonXhtmlTypes() {
+    void isUnexpectedlyResolvedAsHtmlWithNonXhtmlTypes() {
         String resource = "image.png";
         byte[] content = new byte[]{0x00, 0x01, 0x02};
 
@@ -194,13 +194,13 @@ class PdfExporterFileResourceProviderTest {
             mockedMediaUtils.when(() -> MediaUtils.getMimeTypeUsingTikaByResourceName(resource, null))
                     .thenReturn("text/plain");
 
-            boolean result = resourceProvider.isMediaTypeMismatch(resource, content);
+            boolean result = resourceProvider.isUnexpectedlyResolvedAsHtml(resource, content);
             assertFalse(result);
         }
     }
 
     @Test
-    void isMediaTypeMismatchWithMatchingNonXhtmlTypes() {
+    void isUnexpectedlyResolvedAsHtmlWithMatchingNonXhtmlTypes() {
         String resource = "image.png";
         byte[] content = new byte[]{0x00, 0x01, 0x02};
 
@@ -210,13 +210,13 @@ class PdfExporterFileResourceProviderTest {
             mockedMediaUtils.when(() -> MediaUtils.getMimeTypeUsingTikaByResourceName(resource, null))
                     .thenReturn("image/png");
 
-            boolean result = resourceProvider.isMediaTypeMismatch(resource, content);
+            boolean result = resourceProvider.isUnexpectedlyResolvedAsHtml(resource, content);
             assertFalse(result);
         }
     }
 
     @Test
-    void isMediaTypeMismatchWithEmptyContent() {
+    void isUnexpectedlyResolvedAsHtmlWithEmptyContent() {
         String resource = "file.txt";
         byte[] content = new byte[0];
 
@@ -226,7 +226,7 @@ class PdfExporterFileResourceProviderTest {
             mockedMediaUtils.when(() -> MediaUtils.getMimeTypeUsingTikaByResourceName(resource, null))
                     .thenReturn("text/plain");
 
-            boolean result = resourceProvider.isMediaTypeMismatch(resource, content);
+            boolean result = resourceProvider.isUnexpectedlyResolvedAsHtml(resource, content);
             assertFalse(result);
         }
     }
