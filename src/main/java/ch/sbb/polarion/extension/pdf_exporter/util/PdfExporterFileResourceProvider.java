@@ -115,9 +115,13 @@ public class PdfExporterFileResourceProvider implements FileResourceProvider {
             return false;
         }
 
+        // if application/xhtml+xml response received, we should check whether this is what we expected
+        // because it can be a redirect to Login Page in case of missing resource!
         if (detectedMimeType.equals(MediaType.APPLICATION_XHTML_XML)) {
             return !expectedMimeType.equals(detectedMimeType);
         }
+
+        // in all other cases we just make the decision that everything is ok
         return false;
     }
 
