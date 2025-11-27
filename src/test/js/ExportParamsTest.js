@@ -2,7 +2,7 @@ import { expect } from 'chai';
 import TestUtils from "./TestUtils.js";
 
 /** @type {typeof ExportParams} */
-const ExportParams = await TestUtils.importUsingGeneric('ExportParams.js');
+const ExportParams = await TestUtils.loadModule('ExportParams.js');
 
 describe('ExportParams', function () {
     it('should throw an error if documentType is not provided', function () {

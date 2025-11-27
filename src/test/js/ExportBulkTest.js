@@ -3,7 +3,7 @@ import { JSDOM } from 'jsdom';
 import TestUtils from "./TestUtils.js";
 
 /** @type {typeof ExportParams} */
-const ExportBulk = await TestUtils.importUsingGeneric('ExportBulk.js');
+const ExportBulk = await TestUtils.loadModule('ExportBulk.js');
 
 describe('ExportBulk', function () {
 
