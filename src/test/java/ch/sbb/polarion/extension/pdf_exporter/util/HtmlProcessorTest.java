@@ -568,6 +568,23 @@ class HtmlProcessorTest {
 
     @Test
     @SneakyThrows
+    void replaceTableOfTablesAndTableOfFiguresTest() {
+        try (InputStream isInvalidHtml = this.getClass().getResourceAsStream("/tableOfTablesAndTableOfFiguresBeforeProcessing.html");
+             InputStream isValidHtml = this.getClass().getResourceAsStream("/tableOfTablesAndTableOfFiguresAfterProcessing.html")) {
+
+            Document document = JSoupUtils.parseHtml(new String(isInvalidHtml.readAllBytes(), StandardCharsets.UTF_8));
+
+            processor.addTableOfFigures(document);
+            String fixedHtml = document.body().html();
+            String validHtml = new String(isValidHtml.readAllBytes(), StandardCharsets.UTF_8);
+
+            // Spaces and new lines are removed to exclude difference in space characters
+            assertEquals(TestStringUtils.removeNonsensicalSymbols(validHtml), TestStringUtils.removeNonsensicalSymbols(fixedHtml));
+        }
+    }
+
+    @Test
+    @SneakyThrows
     void adjustReportedByTest() {
         String initialHtml = """
                     <div>
