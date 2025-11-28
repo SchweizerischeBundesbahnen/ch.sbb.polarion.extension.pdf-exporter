@@ -10,7 +10,11 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.headerfooter.H
 import ch.sbb.polarion.extension.pdf_exporter.util.DocumentDataFactory;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.base.BasePdfConverterTest;
 import com.polarion.alm.tracker.model.IModule;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
@@ -38,30 +42,17 @@ class TableOfFiguresTest extends BasePdfConverterTest {
                 .build());
     }
 
-    @Test
-    void testTableOfFiguresWithoutAnchors() {
-        ExportParams params = ExportParams.builder()
-                .projectId("test")
-                .locationPath("testLocation")
-                .orientation(Orientation.PORTRAIT)
-                .paperSize(PaperSize.A4)
-                .build();
-
-        DocumentData<IModule> liveDoc = DocumentData.creator(DocumentType.LIVE_DOC, module)
-                .id(LiveDocId.from("testProjectId", "_default", "testDocumentId"))
-                .title("Table of Figures Test")
-                .content(readHtmlResource("tableOfFigures"))
-                .lastRevision("1")
-                .revisionPlaceholder("1")
-                .build();
-        documentDataFactoryMockedStatic.when(() -> DocumentDataFactory.getDocumentData(eq(params), anyBoolean())).thenReturn(liveDoc);
-
-        boolean hasDiff = compareContentUsingReferenceImages(getCurrentMethodName(), converter.convertToPdf(params, null));
-        assertFalse(hasDiff);
+    private static Stream<Arguments> provideTableOfFiguresTestCases() {
+        return Stream.of(
+                Arguments.of("tableOfFigures", "Table of Figures Test"),
+                Arguments.of("tableOfTables", "Table of Tables Test"),
+                Arguments.of("tableOfFiguresAndTables", "Combined ToF and ToT Test")
+        );
     }
 
-    @Test
-    void testTableOfTablesWithoutAnchors() {
+    @ParameterizedTest(name = "{1}")
+    @MethodSource("provideTableOfFiguresTestCases")
+    void testTableOfFiguresGeneration(String htmlResource, String title) {
         ExportParams params = ExportParams.builder()
                 .projectId("test")
                 .locationPath("testLocation")
@@ -71,36 +62,14 @@ class TableOfFiguresTest extends BasePdfConverterTest {
 
         DocumentData<IModule> liveDoc = DocumentData.creator(DocumentType.LIVE_DOC, module)
                 .id(LiveDocId.from("testProjectId", "_default", "testDocumentId"))
-                .title("Table of Tables Test")
-                .content(readHtmlResource("tableOfTables"))
+                .title(title)
+                .content(readHtmlResource(htmlResource))
                 .lastRevision("1")
                 .revisionPlaceholder("1")
                 .build();
         documentDataFactoryMockedStatic.when(() -> DocumentDataFactory.getDocumentData(eq(params), anyBoolean())).thenReturn(liveDoc);
 
-        boolean hasDiff = compareContentUsingReferenceImages(getCurrentMethodName(), converter.convertToPdf(params, null));
-        assertFalse(hasDiff);
-    }
-
-    @Test
-    void testCombinedTableOfFiguresAndTables() {
-        ExportParams params = ExportParams.builder()
-                .projectId("test")
-                .locationPath("testLocation")
-                .orientation(Orientation.PORTRAIT)
-                .paperSize(PaperSize.A4)
-                .build();
-
-        DocumentData<IModule> liveDoc = DocumentData.creator(DocumentType.LIVE_DOC, module)
-                .id(LiveDocId.from("testProjectId", "_default", "testDocumentId"))
-                .title("Combined ToF and ToT Test")
-                .content(readHtmlResource("tableOfFiguresAndTables"))
-                .lastRevision("1")
-                .revisionPlaceholder("1")
-                .build();
-        documentDataFactoryMockedStatic.when(() -> DocumentDataFactory.getDocumentData(eq(params), anyBoolean())).thenReturn(liveDoc);
-
-        boolean hasDiff = compareContentUsingReferenceImages(getCurrentMethodName(), converter.convertToPdf(params, null));
+        boolean hasDiff = compareContentUsingReferenceImages(htmlResource, converter.convertToPdf(params, null));
         assertFalse(hasDiff);
     }
 }
