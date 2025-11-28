@@ -96,7 +96,9 @@ public class HtmlProcessor {
         html = html.replace("style=\"clear:both;\"", "style=\"clear:both;display:none;\"");
 
         // fix HTML adding closing tag for <pd4ml:toc> - JSoup requires it
-        html = html.replaceAll("(<pd4ml:toc[^>]*)(>)", "$1></pd4ml:toc>");
+        // Only add closing tag if it's a self-closing tag (e.g., <pd4ml:toc/> or <pd4ml:toc attr="val"/>)
+        // Don't add if it already has a closing tag (e.g., <pd4ml:toc></pd4ml:toc>)
+        html = html.replaceAll("(<pd4ml:toc[^>/]*)/?>(?!</pd4ml:toc>)", "$1></pd4ml:toc>");
 
         if (exportParams.getRenderComments() != null) {
             html = processComments(html);

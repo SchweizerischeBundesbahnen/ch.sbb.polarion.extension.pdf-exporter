@@ -1,0 +1,104 @@
+@font-face {
+  font-family: Custom Font;
+  src: url(data:application/font-woff;base64,{FONT_BASE64}) format('woff');
+}
+* {
+  font-family: Custom Font !important;
+  font-size: 11pt;
+}
+
+/* Table of Content styles */
+ul.toc {
+    padding: 0;
+    line-height: 1.4em;
+}
+
+ul.toc, ul.toc ul {
+    list-style-type: none;
+}
+
+ul.toc ul {
+    padding-left: .6em;
+    margin-top: .2em;
+    margin-bottom: .2em;
+}
+
+ul.toc li {
+    border-bottom: 1px dotted black;
+    display: table;
+    width: 100%;
+    position: relative;
+}
+
+ul.toc li > a {
+    display: table-cell;
+    padding-right: 5em;
+    text-decoration: none;
+    color: inherit;
+}
+
+a.toc-item {
+    display: grid;
+    grid-template-columns: auto 1fr;
+}
+
+ul.toc li a .number {
+    margin-right: .4em;
+}
+
+ul.toc li > a.page-number {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    padding-right: 0;
+}
+
+ul.toc li > a.page-number::after {
+    content: target-counter(attr(href), page);
+}
+
+/* Document title style */
+.content .title, .title {
+    font-size: 2em;
+    font-weight: 600;
+    padding-bottom: 0.5em;
+    border-bottom: 1px solid #ccc;
+}
+
+/* Link color */
+a {
+    text-decoration: none;
+    color: #197FA2;
+}
+
+/* Heading styles */
+h1, h2, h3, h4, h5, h6 {
+    color: #003366;
+    border-bottom: 1px solid #ccc;
+    padding-bottom: 0.3em;
+    margin-top: 1.5em;
+}
+
+/* Page break styles */
+.sbb_page_break {
+    page-break-before: always;
+}
+
+/* Page size definitions for WeasyPrint */
+@page portA4 {
+    size: A4 portrait;
+    margin: 2cm;
+}
+
+@page landA4 {
+    size: A4 landscape;
+    margin: 2cm;
+}
+
+.portA4 {
+    page: portA4;
+}
+
+.landA4 {
+    page: landA4;
+}

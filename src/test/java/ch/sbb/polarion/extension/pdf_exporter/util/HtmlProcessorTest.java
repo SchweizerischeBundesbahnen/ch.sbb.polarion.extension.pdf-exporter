@@ -443,6 +443,33 @@ class HtmlProcessorTest {
         );
     }
 
+    /**
+     * Tests that pd4ml:toc closing tag regex works correctly.
+     * The regex should add closing tag only when needed (self-closing or unclosed tags),
+     * but NOT add duplicate closing tag when tag is already properly closed.
+     */
+    @ParameterizedTest
+    @MethodSource("providePd4mlTocTestCases")
+    void pd4mlTocClosingTagRegexTest(String input, String expected) {
+        // This is the regex from HtmlProcessor.processHtmlForPDF
+        String result = input.replaceAll("(<pd4ml:toc[^>/]*)/?>(?!</pd4ml:toc>)", "$1></pd4ml:toc>");
+        assertEquals(expected, result);
+    }
+
+    private static Stream<Arguments> providePd4mlTocTestCases() {
+        return Stream.of(
+                // Self-closing tags should get proper closing tag
+                Arguments.of("<pd4ml:toc/>", "<pd4ml:toc></pd4ml:toc>"),
+                Arguments.of("<pd4ml:toc numlen=\"4\"/>", "<pd4ml:toc numlen=\"4\"></pd4ml:toc>"),
+                // Unclosed tags should get closing tag
+                Arguments.of("<pd4ml:toc>", "<pd4ml:toc></pd4ml:toc>"),
+                Arguments.of("<pd4ml:toc numlen=\"4\">", "<pd4ml:toc numlen=\"4\"></pd4ml:toc>"),
+                // Already closed tags should NOT get duplicate closing tag
+                Arguments.of("<pd4ml:toc></pd4ml:toc>", "<pd4ml:toc></pd4ml:toc>"),
+                Arguments.of("<pd4ml:toc numlen=\"4\"></pd4ml:toc>", "<pd4ml:toc numlen=\"4\"></pd4ml:toc>")
+        );
+    }
+
     @ParameterizedTest
     @MethodSource("provideHtmlTestCases")
     void processHtmlForPDFTest(String inputHtml, String expectedResult) {
