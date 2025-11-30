@@ -44,7 +44,7 @@ repos:
     hooks:
       - id: gitleaks
   - repo: https://github.com/grigoriev/pre-commit-check-git-user
-    rev: v0.9.0
+    rev: v0.9.3
     hooks:
       - id: check-git-config-user-email
         args: [--templates, ^\S+\.\S+@sbb\.ch$]
