@@ -59,6 +59,8 @@ public class HtmlProcessor {
     private static final String TABLE_OF_FIGURES_ANCHOR_ID_PREFIX = "dlecaption_";
 
     private static final String UNSUPPORTED_DOCUMENT_TYPE = "Unsupported document type: %s";
+    private static final String PD4ML_TOC_TAG_PATTERN = "(<pd4ml:toc[^>/]*)/?>(?!</pd4ml:toc>)";
+    private static final String PD4ML_TOC_CLOSE_TAG_REPLACEMENT = "$1></pd4ml:toc>";
 
     private final FileResourceProvider fileResourceProvider;
     private final LocalizationSettings localizationSettings;
@@ -96,7 +98,7 @@ public class HtmlProcessor {
         html = html.replace("style=\"clear:both;\"", "style=\"clear:both;display:none;\"");
 
         // fix HTML adding closing tag for <pd4ml:toc> - JSoup requires it
-        html = html.replaceAll("(<pd4ml:toc[^>]*)(>)", "$1></pd4ml:toc>");
+        html = sanitizeHtmlForToc(html);
 
         if (exportParams.getRenderComments() != null) {
             html = processComments(html);
@@ -207,6 +209,12 @@ public class HtmlProcessor {
         // Do not change this entry order, '&nbsp;' can be used in the logic above, so we must cut them off as the last step
         html = cutExtraNbsp(html);
         return html;
+    }
+
+    public static @NotNull String sanitizeHtmlForToc(@NotNull String html) {
+        // Add a closing tag for both self-closing tags (e.g., <pd4ml:toc/>, <pd4ml:toc attr="val"/>) and unclosed tags (e.g., <pd4ml:toc>).
+        // Do not add a closing tag if one already exists (e.g., <pd4ml:toc></pd4ml:toc>).
+        return html.replaceAll(PD4ML_TOC_TAG_PATTERN, PD4ML_TOC_CLOSE_TAG_REPLACEMENT);
     }
 
     @NotNull
@@ -961,16 +969,31 @@ public class HtmlProcessor {
 
     private Element generateTableOfFigures(@NotNull Document document, @NotNull String label) {
         Element tof = new Element(HtmlTag.DIV);
-        for (Element captionAnchor : document.select(String.format("p.polarion-rte-caption-paragraph span.polarion-rte-caption[data-sequence=%s] a[name^=%s]",
-                escapeCssSelectorValue(label), TABLE_OF_FIGURES_ANCHOR_ID_PREFIX))) {
-            // CSS selector above guarantees that parent below won't be null
-            Element captionNumber = Objects.requireNonNull(captionAnchor.parent());
+        int generatedAnchorIndex = 0;
 
-            // CSS selector above guarantees that 'name' attribute of anchor below won't be null and will have length at least of TABLE_OF_FIGURES_ANCHOR_ID_PREFIX constant length
-            String anchorId = captionAnchor.attr("name").substring(TABLE_OF_FIGURES_ANCHOR_ID_PREFIX.length());
-            Node numberNode = captionNumber.childNodes().stream().filter(TextNode.class::isInstance).findFirst().orElse(null);
+        // Find all caption spans with the specified data-sequence, regardless of whether they have anchors
+        for (Element captionSpan : document.select(String.format("p.polarion-rte-caption-paragraph span.polarion-rte-caption[data-sequence=%s]",
+                escapeCssSelectorValue(label)))) {
+
+            // Check if anchor already exists inside the span
+            Element existingAnchor = captionSpan.selectFirst(String.format("a[name^=%s]", TABLE_OF_FIGURES_ANCHOR_ID_PREFIX));
+            String anchorId;
+
+            if (existingAnchor != null) {
+                // Use existing anchor id
+                anchorId = existingAnchor.attr("name").substring(TABLE_OF_FIGURES_ANCHOR_ID_PREFIX.length());
+            } else {
+                // Generate new anchor and insert it into the span
+                // Include label in anchor id to avoid conflicts between different sequences (Figure, Table, etc.)
+                anchorId = label.toLowerCase() + "_generated_" + generatedAnchorIndex++;
+                Element newAnchor = new Element(HtmlTag.A);
+                newAnchor.attr("name", TABLE_OF_FIGURES_ANCHOR_ID_PREFIX + anchorId);
+                captionSpan.appendChild(newAnchor);
+            }
+
+            Node numberNode = captionSpan.childNodes().stream().filter(TextNode.class::isInstance).findFirst().orElse(null);
             String number = numberNode instanceof TextNode numberTextNode ? numberTextNode.text() : null;
-            Node captionNode = captionNumber.nextSibling();
+            Node captionNode = captionSpan.nextSibling();
             String caption = captionNode instanceof TextNode captionTextNode ? captionTextNode.text() : null;
 
             if (StringUtils.isEmpty(anchorId) || number == null || caption == null) {
@@ -986,7 +1009,7 @@ public class HtmlProcessor {
             }
 
             Element tofItem = new Element(HtmlTag.A);
-            tofItem.attr(HtmlTagAttr.HREF, String.format("#dlecaption_%s", anchorId));
+            tofItem.attr(HtmlTagAttr.HREF, String.format("#%s%s", TABLE_OF_FIGURES_ANCHOR_ID_PREFIX, anchorId));
             tofItem.text(String.format("%s %s. %s", label, number, caption.trim()));
 
             tof.appendChild(tofItem);

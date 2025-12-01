@@ -443,6 +443,32 @@ class HtmlProcessorTest {
         );
     }
 
+    /**
+     * Tests that pd4ml:toc closing tag regex works correctly.
+     * The regex should add closing tag only when needed (self-closing or unclosed tags),
+     * but NOT add duplicate closing tag when tag is already properly closed.
+     */
+    @ParameterizedTest
+    @MethodSource("providePd4mlTocTestCases")
+    void pd4mlTocClosingTagRegexTest(String input, String expected) {
+        String result = HtmlProcessor.sanitizeHtmlForToc(input);
+        assertEquals(expected, result);
+    }
+
+    private static Stream<Arguments> providePd4mlTocTestCases() {
+        return Stream.of(
+                // Self-closing tags should get proper closing tag
+                Arguments.of("<pd4ml:toc/>", "<pd4ml:toc></pd4ml:toc>"),
+                Arguments.of("<pd4ml:toc numlen=\"4\"/>", "<pd4ml:toc numlen=\"4\"></pd4ml:toc>"),
+                // Unclosed tags should get closing tag
+                Arguments.of("<pd4ml:toc>", "<pd4ml:toc></pd4ml:toc>"),
+                Arguments.of("<pd4ml:toc numlen=\"4\">", "<pd4ml:toc numlen=\"4\"></pd4ml:toc>"),
+                // Already closed tags should NOT get duplicate closing tag
+                Arguments.of("<pd4ml:toc></pd4ml:toc>", "<pd4ml:toc></pd4ml:toc>"),
+                Arguments.of("<pd4ml:toc numlen=\"4\"></pd4ml:toc>", "<pd4ml:toc numlen=\"4\"></pd4ml:toc>")
+        );
+    }
+
     @ParameterizedTest
     @MethodSource("provideHtmlTestCases")
     void processHtmlForPDFTest(String inputHtml, String expectedResult) {
@@ -554,6 +580,23 @@ class HtmlProcessorTest {
     void tableOfFiguresTest() {
         try (InputStream isInvalidHtml = this.getClass().getResourceAsStream("/tableOfFiguresBeforeProcessing.html");
              InputStream isValidHtml = this.getClass().getResourceAsStream("/tableOfFiguresAfterProcessing.html")) {
+
+            Document document = JSoupUtils.parseHtml(new String(isInvalidHtml.readAllBytes(), StandardCharsets.UTF_8));
+
+            processor.addTableOfFigures(document);
+            String fixedHtml = document.body().html();
+            String validHtml = new String(isValidHtml.readAllBytes(), StandardCharsets.UTF_8);
+
+            // Spaces and new lines are removed to exclude difference in space characters
+            assertEquals(TestStringUtils.removeNonsensicalSymbols(validHtml), TestStringUtils.removeNonsensicalSymbols(fixedHtml));
+        }
+    }
+
+    @Test
+    @SneakyThrows
+    void replaceTableOfTablesAndTableOfFiguresTest() {
+        try (InputStream isInvalidHtml = this.getClass().getResourceAsStream("/tableOfTablesAndTableOfFiguresBeforeProcessing.html");
+             InputStream isValidHtml = this.getClass().getResourceAsStream("/tableOfTablesAndTableOfFiguresAfterProcessing.html")) {
 
             Document document = JSoupUtils.parseHtml(new String(isInvalidHtml.readAllBytes(), StandardCharsets.UTF_8));
 
