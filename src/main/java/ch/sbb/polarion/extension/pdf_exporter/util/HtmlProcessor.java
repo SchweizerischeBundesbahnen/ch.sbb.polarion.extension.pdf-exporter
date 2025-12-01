@@ -59,8 +59,8 @@ public class HtmlProcessor {
     private static final String TABLE_OF_FIGURES_ANCHOR_ID_PREFIX = "dlecaption_";
 
     private static final String UNSUPPORTED_DOCUMENT_TYPE = "Unsupported document type: %s";
-    public static final String TOC_TAG_PATTERN = "(<pd4ml:toc[^>/]*)/?>(?!</pd4ml:toc>)";
-    public static final String TOC_CLOSE_TAG_REPLACEMENT = "$1></pd4ml:toc>";
+    public static final String PD4ML_TOC_TAG_PATTERN = "(<pd4ml:toc[^>/]*)/?>(?!</pd4ml:toc>)";
+    public static final String PD4ML_TOC_CLOSE_TAG_REPLACEMENT = "$1></pd4ml:toc>";
 
     private final FileResourceProvider fileResourceProvider;
     private final LocalizationSettings localizationSettings;
@@ -212,9 +212,9 @@ public class HtmlProcessor {
     }
 
     public static @NotNull String sanitizeHtmlForToc(@NotNull String html) {
-        // Only add closing tag if it's a self-closing tag (e.g., <pd4ml:toc/> or <pd4ml:toc attr="val"/>)
-        // Don't add if it already has a closing tag (e.g., <pd4ml:toc></pd4ml:toc>)
-        return html.replaceAll(TOC_TAG_PATTERN, TOC_CLOSE_TAG_REPLACEMENT);
+        // Add a closing tag for both self-closing tags (e.g., <pd4ml:toc/>, <pd4ml:toc attr="val"/>) and unclosed tags (e.g., <pd4ml:toc>).
+        // Do not add a closing tag if one already exists (e.g., <pd4ml:toc></pd4ml:toc>).
+        return html.replaceAll(PD4ML_TOC_TAG_PATTERN, PD4ML_TOC_CLOSE_TAG_REPLACEMENT);
     }
 
     @NotNull
