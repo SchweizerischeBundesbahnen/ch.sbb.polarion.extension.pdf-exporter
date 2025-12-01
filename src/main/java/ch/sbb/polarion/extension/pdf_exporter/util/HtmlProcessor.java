@@ -59,6 +59,8 @@ public class HtmlProcessor {
     private static final String TABLE_OF_FIGURES_ANCHOR_ID_PREFIX = "dlecaption_";
 
     private static final String UNSUPPORTED_DOCUMENT_TYPE = "Unsupported document type: %s";
+    public static final String TOC_TAG_PATTERN = "(<pd4ml:toc[^>/]*)/?>(?!</pd4ml:toc>)";
+    public static final String TOC_CLOSE_TAG_REPLACEMENT = "$1></pd4ml:toc>";
 
     private final FileResourceProvider fileResourceProvider;
     private final LocalizationSettings localizationSettings;
@@ -96,9 +98,7 @@ public class HtmlProcessor {
         html = html.replace("style=\"clear:both;\"", "style=\"clear:both;display:none;\"");
 
         // fix HTML adding closing tag for <pd4ml:toc> - JSoup requires it
-        // Only add closing tag if it's a self-closing tag (e.g., <pd4ml:toc/> or <pd4ml:toc attr="val"/>)
-        // Don't add if it already has a closing tag (e.g., <pd4ml:toc></pd4ml:toc>)
-        html = html.replaceAll("(<pd4ml:toc[^>/]*)/?>(?!</pd4ml:toc>)", "$1></pd4ml:toc>");
+        html = sanitizeHtmlForToc(html);
 
         if (exportParams.getRenderComments() != null) {
             html = processComments(html);
@@ -209,6 +209,12 @@ public class HtmlProcessor {
         // Do not change this entry order, '&nbsp;' can be used in the logic above, so we must cut them off as the last step
         html = cutExtraNbsp(html);
         return html;
+    }
+
+    public static @NotNull String sanitizeHtmlForToc(@NotNull String html) {
+        // Only add closing tag if it's a self-closing tag (e.g., <pd4ml:toc/> or <pd4ml:toc attr="val"/>)
+        // Don't add if it already has a closing tag (e.g., <pd4ml:toc></pd4ml:toc>)
+        return html.replaceAll(TOC_TAG_PATTERN, TOC_CLOSE_TAG_REPLACEMENT);
     }
 
     @NotNull
@@ -978,7 +984,8 @@ public class HtmlProcessor {
                 anchorId = existingAnchor.attr("name").substring(TABLE_OF_FIGURES_ANCHOR_ID_PREFIX.length());
             } else {
                 // Generate new anchor and insert it into the span
-                anchorId = "generated_" + generatedAnchorIndex++;
+                // Include label in anchor id to avoid conflicts between different sequences (Figure, Table, etc.)
+                anchorId = label.toLowerCase() + "_generated_" + generatedAnchorIndex++;
                 Element newAnchor = new Element(HtmlTag.A);
                 newAnchor.attr("name", TABLE_OF_FIGURES_ANCHOR_ID_PREFIX + anchorId);
                 captionSpan.appendChild(newAnchor);

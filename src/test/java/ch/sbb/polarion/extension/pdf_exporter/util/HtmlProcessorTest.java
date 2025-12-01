@@ -451,8 +451,7 @@ class HtmlProcessorTest {
     @ParameterizedTest
     @MethodSource("providePd4mlTocTestCases")
     void pd4mlTocClosingTagRegexTest(String input, String expected) {
-        // This is the regex from HtmlProcessor.processHtmlForPDF
-        String result = input.replaceAll("(<pd4ml:toc[^>/]*)/?>(?!</pd4ml:toc>)", "$1></pd4ml:toc>");
+        String result = HtmlProcessor.sanitizeHtmlForToc(input);
         assertEquals(expected, result);
     }
 
