@@ -59,8 +59,8 @@ public class HtmlProcessor {
     private static final String TABLE_OF_FIGURES_ANCHOR_ID_PREFIX = "dlecaption_";
 
     private static final String UNSUPPORTED_DOCUMENT_TYPE = "Unsupported document type: %s";
-    public static final String PD4ML_TOC_TAG_PATTERN = "(<pd4ml:toc[^>/]*)/?>(?!</pd4ml:toc>)";
-    public static final String PD4ML_TOC_CLOSE_TAG_REPLACEMENT = "$1></pd4ml:toc>";
+    private static final String PD4ML_TOC_TAG_PATTERN = "(<pd4ml:toc[^>/]*)/?>(?!</pd4ml:toc>)";
+    private static final String PD4ML_TOC_CLOSE_TAG_REPLACEMENT = "$1></pd4ml:toc>";
 
     private final FileResourceProvider fileResourceProvider;
     private final LocalizationSettings localizationSettings;
