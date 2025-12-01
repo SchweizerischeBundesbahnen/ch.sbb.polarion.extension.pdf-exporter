@@ -1,12 +1,13 @@
 {
   "name": "maven-js-project",
   "scripts": {
-    "test": "NODE_OPTIONS=\"--experimental-loader=./src/test/js/path-redirector.mjs\" npx mocha src/test/js/**/*.js"
+    "test": "cross-env NODE_OPTIONS=\"--experimental-loader=./src/test/js/path-redirector.mjs\" npx mocha src/test/js/**/*.js"
   },
   "type": "module",
   "version": "1.0.0",
   "devDependencies": {
     "chai": "6.2.1",
+    "cross-env": "^10.1.0",
     "jsdom": "27.2.0",
     "mocha": "11.7.5"
   }
