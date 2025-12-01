@@ -51,10 +51,6 @@
 
         <slf4j.version>1.7.36</slf4j.version>
         <testcontainers.version>2.0.2</testcontainers.version>
-        <javax.transaction-api.version>1.3</javax.transaction-api.version>
-        <jackson.version>3.0.2</jackson.version>
-        <!-- jackson-annotations has been released without patch version, so we need to use this workaround. should be changed in future releases -->
-        <jackson-annotations.version>2.20</jackson-annotations.version>
 
         <awaitility.version>4.3.0</awaitility.version>
         <tika.version>1.28.5</tika.version>
@@ -230,30 +226,6 @@
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>testcontainers</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>tools.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-            <version>${jackson.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>tools.jackson.core</groupId>
-            <artifactId>jackson-core</artifactId>
-            <version>${jackson.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-annotations</artifactId>
-            <version>${jackson-annotations.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>javax.transaction</groupId>
-            <artifactId>javax.transaction-api</artifactId>
-            <version>${javax.transaction-api.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
