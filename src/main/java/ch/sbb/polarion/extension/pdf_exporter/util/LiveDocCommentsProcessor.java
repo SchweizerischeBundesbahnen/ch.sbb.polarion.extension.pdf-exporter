@@ -97,6 +97,8 @@ public class LiveDocCommentsProcessor {
         final Map<String, LiveDocComment> liveDocComments = commentsRenderType == null ? Map.of() : getCommentsFromDocument(document, commentsRenderType.equals(CommentsRenderType.OPEN));
 
         Document doc = Jsoup.parseBodyFragment(html);
+        // Use XML syntax to preserve self-closing tags (e.g., <img />, <br />) which are required
+        // for proper PDF rendering. HTML syntax would output them without the closing slash.
         doc.outputSettings()
                 .syntax(Document.OutputSettings.Syntax.xml)
                 .prettyPrint(false);
