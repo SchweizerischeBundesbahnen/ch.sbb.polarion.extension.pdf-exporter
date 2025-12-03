@@ -1,6 +1,5 @@
 package ch.sbb.polarion.extension.pdf_exporter.util;
 
-import ch.sbb.polarion.extension.generic.regex.RegexMatcher;
 import ch.sbb.polarion.extension.pdf_exporter.model.LiveDocComment;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.CommentsRenderType;
 import com.polarion.alm.server.api.model.document.ProxyDocument;
@@ -22,16 +21,23 @@ import lombok.Data;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Optional;
 
 @SuppressWarnings("java:S1200")
 public class LiveDocCommentsProcessor {
+
+    private static final String POLARION_COMMENT_ID_PREFIX = "polarion-comment:";
+    private static final String POLARION_DLE_COMMENT_ICON_CLASS = "polarion-dle-comment-icon";
+    private static final String POLARION_DLE_COMMENT_RESOLVED_ICON_CLASS = "polarion-dle-comment-resolved-icon";
 
     private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm");
     private final SimpleDateFormat isoDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
@@ -88,13 +94,44 @@ public class LiveDocCommentsProcessor {
     public String addLiveDocComments(ProxyDocument document, @NotNull String html, @Nullable CommentsRenderType commentsRenderType, boolean renderNativeComments) {
         //Polarion document keeps comments position in span/img marked with id 'polarion-comment:commentId'.
         //<span id="polarion-comment:1"></span> or <img id="polarion-comment:1" class="polarion-dle-comment-icon"/> (for comments inside workitem description)
-        //Following expression retrieves such entries.
         final Map<String, LiveDocComment> liveDocComments = commentsRenderType == null ? Map.of() : getCommentsFromDocument(document, commentsRenderType.equals(CommentsRenderType.OPEN));
-        return RegexMatcher.get("(?s)((<img id=\"polarion-comment:(?<imgCommentId>\\d+)\"[^>]*class=\"polarion-dle-comment-icon\"/>)|(<span id=\"polarion-comment:(?<spanCommentId>\\d+)\"></span>))")
-                .replace(html, regexEngine -> {
-                    String commentId = Optional.ofNullable(regexEngine.group("imgCommentId")).orElse(regexEngine.group("spanCommentId"));
-                    return renderComments(liveDocComments.get(commentId), renderNativeComments);
-                });
+
+        Document doc = Jsoup.parseBodyFragment(html);
+        doc.outputSettings()
+                .syntax(Document.OutputSettings.Syntax.xml)
+                .prettyPrint(false);
+
+        // Find span elements with id starting with 'polarion-comment:'
+        Elements spanComments = doc.select("span[id^=" + POLARION_COMMENT_ID_PREFIX + "]");
+        for (Element span : spanComments) {
+            String commentId = extractCommentId(span.id());
+            if (commentId != null) {
+                span.before(renderComments(liveDocComments.get(commentId), renderNativeComments));
+                span.remove();
+            }
+        }
+
+        // Find img elements with class 'polarion-dle-comment-icon' or 'polarion-dle-comment-resolved-icon' and id starting with 'polarion-comment:'
+        String imgSelector = "img." + POLARION_DLE_COMMENT_ICON_CLASS + "[id^=" + POLARION_COMMENT_ID_PREFIX + "], " +
+                "img." + POLARION_DLE_COMMENT_RESOLVED_ICON_CLASS + "[id^=" + POLARION_COMMENT_ID_PREFIX + "]";
+        Elements imgComments = doc.select(imgSelector);
+        for (Element img : imgComments) {
+            String commentId = extractCommentId(img.id());
+            if (commentId != null) {
+                img.before(renderComments(liveDocComments.get(commentId), renderNativeComments));
+                img.remove();
+            }
+        }
+
+        return doc.body().html();
+    }
+
+    @Nullable
+    private String extractCommentId(@Nullable String id) {
+        if (id != null && id.startsWith(POLARION_COMMENT_ID_PREFIX)) {
+            return id.substring(POLARION_COMMENT_ID_PREFIX.length());
+        }
+        return null;
     }
 
     private String renderComments(LiveDocComment liveDocComment, boolean renderNativeComments) {
