@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -273,5 +273,114 @@ class LiveDocCommentsProcessorTest {
             idx += sub.length();
         }
         return count;
+    }
+
+    /**
+     * Simulating real-world LiveDoc comment processing flow:
+     * 1. First pass: process comments in raw document content (span markers)
+     * 2. Document renderer produces workitem HTML with img comment markers
+     * 3. Second pass: process comments in rendered content (img markers with various classes)
+     *
+     * Tests all three renderComments modes: null (remove), OPEN (only open), ALL (all comments)
+     */
+    @Test
+    @SuppressWarnings("unchecked")
+    void twoPassCommentProcessingIntegrationTest() {
+        ProxyDocument document = mock(ProxyDocument.class, RETURNS_DEEP_STUBS);
+        UpdatableDocumentFields fields = mock(UpdatableDocumentFields.class);
+        CommentBasesTreeField<CommentBase> comments = mock(CommentBasesTreeField.class);
+        doCallRealMethod().when(comments).forEach(any(Consumer.class));
+        when(fields.comments()).thenReturn(comments);
+        when(document.fields()).thenReturn(fields);
+
+        // Comments in document: 5 = open, 6 = resolved
+        // Comments in workitems: 1 = open (in EL-5118), 3 = resolved (in EL-5119)
+        List<CommentBase> commentBases = List.of(
+                mockComment("1", "OPEN in WI", "author1", false, true, false),
+                mockComment("3", "RESOLVED in WI", "author3", true, true, false),
+                mockComment("5", "open comment inside document", "author5", false, true, false),
+                mockComment("6", "resolved comment inside document", "author6", true, true, false)
+        );
+
+        // Raw document content (before workitem rendering) - contains span markers for document comments
+        String rawDocumentContent = """
+                <h1 id="polarion_wiki macro name=module-workitem;params=id=EL-5120"></h1>\
+                <div id="polarion_wiki macro name=module-workitem;params=id=EL-5118"></div>\
+                <div id="polarion_wiki macro name=module-workitem;params=id=EL-5119"></div>\
+                <p id="polarion_1">open<span id="polarion-comment:5"></span> comment inside document</p>\
+                <p id="polarion_2">resolved<span id="polarion-comment:6"></span> comment inside document</p>""";
+
+        // Simulated rendered content (after documentRenderer.render()) - workitems are expanded with img comment markers
+        String simulatedRenderedContentTemplate = """
+                <div class="polarion-dle-pdf"><h1 id="polarion_wiki macro name=module-workitem;params=id=EL-5120" title="Heading: EL-5120">Comments</h1>\
+                <div id="polarion_wiki macro name=module-workitem;params=id=EL-5118" class="polarion-dle-workitem-basic-0" title="Requirement: EL-5118">\
+                <span>EL-5118</span> - with open<img id="polarion-comment:1" title="OPEN in WI" src="http://localhost/polarion/ria/images/control/comment.png" class="polarion-dle-comment-icon"/> comment inside workitem</div>\
+                <div id="polarion_wiki macro name=module-workitem;params=id=EL-5119" class="polarion-dle-workitem-basic-0" title="Requirement: EL-5119">\
+                <span>EL-5119</span> - with resolved<img id="polarion-comment:3" title="RESOLVED in WI" src="http://localhost/polarion/ria/images/control/comment_resolved.png" class="polarion-dle-comment-resolved-icon"/> comment inside workitem</div>\
+                %s</div>""";
+
+        LiveDocCommentsProcessor processor = new LiveDocCommentsProcessor();
+
+        // === Test 1: renderComments = null (remove all comments) ===
+        when(comments.iterator()).thenReturn(commentBases.iterator());
+
+        // First pass: process document comments (spans)
+        String afterFirstPass = processor.addLiveDocComments(document, rawDocumentContent, null, false);
+        // Document comments (spans) should be removed
+        assertFalse(afterFirstPass.contains("polarion-comment:5"), "Open document comment span should be removed");
+        assertFalse(afterFirstPass.contains("polarion-comment:6"), "Resolved document comment span should be removed");
+
+        // Simulate renderer output with processed document content
+        String documentParagraphs = "<p id=\"polarion_1\">open comment inside document</p><p id=\"polarion_2\">resolved comment inside document</p>";
+        String renderedContent = simulatedRenderedContentTemplate.formatted(documentParagraphs);
+
+        when(comments.iterator()).thenReturn(commentBases.iterator());
+
+        // Second pass: process workitem comments (imgs)
+        String finalResult = processor.addLiveDocComments(document, renderedContent, null, false);
+
+        // All comment markers should be removed
+        assertFalse(finalResult.contains("polarion-comment:"), "All comment markers should be removed when renderComments=null");
+        assertFalse(finalResult.contains("polarion-dle-comment-icon"), "Open comment icon should be removed");
+        assertFalse(finalResult.contains("polarion-dle-comment-resolved-icon"), "Resolved comment icon should be removed");
+        assertTrue(finalResult.contains("with open comment inside workitem"), "Workitem content should remain");
+        assertTrue(finalResult.contains("with resolved comment inside workitem"), "Workitem content should remain");
+
+        // === Test 2: renderComments = OPEN (only open comments) ===
+        when(comments.iterator()).thenReturn(commentBases.iterator());
+
+        // First pass: process document comments
+        afterFirstPass = processor.addLiveDocComments(document, rawDocumentContent, CommentsRenderType.OPEN, false);
+        // Open comment should be rendered, resolved should be removed
+        assertTrue(afterFirstPass.contains("[span class=comment level-0]"), "Open comment should be rendered");
+
+        // Simulate renderer output
+        String openCommentRendered = "[span class=comment level-0][span class=meta][span class=date]";
+        documentParagraphs = "<p id=\"polarion_1\">open" + openCommentRendered + "</p><p id=\"polarion_2\">resolved comment inside document</p>";
+        // Note: simplified - in reality would have full comment markup
+
+        when(comments.iterator()).thenReturn(commentBases.iterator());
+
+        // Second pass with fresh rendered content
+        renderedContent = simulatedRenderedContentTemplate.formatted(
+                "<p id=\"polarion_1\">open comment inside document</p><p id=\"polarion_2\">resolved comment inside document</p>");
+        finalResult = processor.addLiveDocComments(document, renderedContent, CommentsRenderType.OPEN, false);
+
+        // Open comment in workitem should be rendered
+        assertTrue(finalResult.contains("[span class=comment level-0]"), "Open comment in workitem should be rendered");
+        // Resolved comment in workitem should be removed
+        assertFalse(finalResult.contains("polarion-comment:3"), "Resolved comment marker should be removed");
+        assertFalse(finalResult.contains("polarion-dle-comment-resolved-icon"), "Resolved comment icon should be removed");
+
+        // === Test 3: renderComments = ALL (all comments including resolved) ===
+        when(comments.iterator()).thenReturn(commentBases.iterator());
+
+        finalResult = processor.addLiveDocComments(document, renderedContent, CommentsRenderType.ALL, false);
+
+        // Both comments should be rendered
+        assertEquals(2, countOccurrences(finalResult, "[span class=comment level-0]"), "Both workitem comments should be rendered");
+        // No raw comment markers should remain
+        assertFalse(finalResult.contains("polarion-dle-comment-icon"), "Comment icon class should be replaced with rendered comment");
+        assertFalse(finalResult.contains("polarion-dle-comment-resolved-icon"), "Resolved comment icon class should be replaced");
     }
 }
