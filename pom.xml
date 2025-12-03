@@ -57,6 +57,7 @@
         <cssparser.version>0.9.30</cssparser.version>
         <commons-text.version>1.14.0</commons-text.version>
         <verapdf.version>1.28.2</verapdf.version>
+        <commons-lang3.version>3.20.0</commons-lang3.version>
 
         <exec-maven-plugin.version>3.3.0</exec-maven-plugin.version>
 
@@ -232,6 +233,12 @@
             <groupId>org.awaitility</groupId>
             <artifactId>awaitility</artifactId>
             <version>${awaitility.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+            <version>${commons-lang3.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>

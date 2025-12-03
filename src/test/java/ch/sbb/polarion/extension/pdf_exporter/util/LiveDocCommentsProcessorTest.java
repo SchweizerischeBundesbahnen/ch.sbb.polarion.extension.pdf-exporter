@@ -11,6 +11,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import org.apache.commons.lang3.StringUtils;
+
 import java.text.SimpleDateFormat;
 import java.util.Collections;
 import java.util.List;
@@ -262,17 +264,7 @@ class LiveDocCommentsProcessorTest {
         // Test with CommentsRenderType.ALL - all comments should be rendered regardless of img format
         String result = new LiveDocCommentsProcessor().addLiveDocComments(document, html, CommentsRenderType.ALL, false);
         // Verify all comments are rendered (contain the comment text markers)
-        assertEquals(7, countOccurrences(result, "[span class=comment level-0]"));
-    }
-
-    private int countOccurrences(String str, String sub) {
-        int count = 0;
-        int idx = 0;
-        while ((idx = str.indexOf(sub, idx)) != -1) {
-            count++;
-            idx += sub.length();
-        }
-        return count;
+        assertEquals(7, StringUtils.countMatches(result, "[span class=comment level-0]"));
     }
 
     /**
@@ -378,7 +370,7 @@ class LiveDocCommentsProcessorTest {
         finalResult = processor.addLiveDocComments(document, renderedContent, CommentsRenderType.ALL, false);
 
         // Both comments should be rendered
-        assertEquals(2, countOccurrences(finalResult, "[span class=comment level-0]"), "Both workitem comments should be rendered");
+        assertEquals(2, StringUtils.countMatches(finalResult, "[span class=comment level-0]"), "Both workitem comments should be rendered");
         // No raw comment markers should remain
         assertFalse(finalResult.contains("polarion-dle-comment-icon"), "Comment icon class should be replaced with rendered comment");
         assertFalse(finalResult.contains("polarion-dle-comment-resolved-icon"), "Resolved comment icon class should be replaced");
