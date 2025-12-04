@@ -632,7 +632,7 @@ class HtmlProcessorTest {
         String expectedHtml = """
                     <div>
                       <div>
-                        <div style="color: grey; text-align: right; position: absolute; top: 0; right: 10px; font-size: 8px">Reported by
+                        <div style="color: grey; text-align: right; position: absolute; top: 0; right: 10px; font-size: 8px;">Reported by
                             <span class="polarion-no-style-cleanup">System Administrator</span>
                             <br/>
                             January 12, 2024 at 4:19:27 PM UTC
@@ -797,7 +797,7 @@ class HtmlProcessorTest {
         String processedHtml = document.body().html();
 
         String expectedHtml = """
-                    <table class="polarion-rp-column-layout" style="width: 100%">
+                    <table class="polarion-rp-column-layout" style="width: 100%;">
                       <tbody>
                         <tr>
                           <td class="polarion-rp-column-layout-cell" style="width: 100%">

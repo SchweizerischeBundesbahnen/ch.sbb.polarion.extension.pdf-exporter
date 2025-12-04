@@ -4,8 +4,11 @@ import ch.sbb.polarion.extension.pdf_exporter.constants.CssProp;
 import ch.sbb.polarion.extension.pdf_exporter.constants.HtmlTag;
 import ch.sbb.polarion.extension.pdf_exporter.constants.HtmlTagAttr;
 import ch.sbb.polarion.extension.pdf_exporter.constants.Measure;
+import ch.sbb.polarion.extension.pdf_exporter.util.CssUtils;
 import ch.sbb.polarion.extension.pdf_exporter.util.PaperSizeUtils;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ConversionParams;
+import com.helger.css.decl.CSSDeclarationList;
+import com.helger.css.reader.CSSReaderDeclarationList;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.VisibleForTesting;
 import org.jsoup.nodes.Document;
@@ -55,10 +58,9 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
 
     private float extractWidth(Element img, String property) {
         String style = img.attr(HtmlTagAttr.STYLE);
-        CSSStyleDeclaration cssStyle = parseCss(style);
+        CSSDeclarationList cssStyles = Optional.ofNullable(CSSReaderDeclarationList.readFromString(style)).orElse(new CSSDeclarationList());
 
-        String value = Optional.ofNullable(cssStyle.getPropertyValue(property)).orElse("").trim();
-
+        String value = CssUtils.getPropertyValue(cssStyles, property);
         if (value.isEmpty()) {
             return 0;
         }
@@ -103,15 +105,15 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
         img.removeAttr(CssProp.HEIGHT);
 
         String style = img.attr(HtmlTagAttr.STYLE);
-        CSSStyleDeclaration cssStyle = parseCss(style);
+        CSSDeclarationList cssStyles = Optional.ofNullable(CSSReaderDeclarationList.readFromString(style)).orElse(new CSSDeclarationList());
 
-        cssStyle.removeProperty(CssProp.HEIGHT); //remove height completely in order to keep image ratio
+        CssUtils.removeProperty(cssStyles, CssProp.HEIGHT); //remove height completely in order to keep image ratio
 
-        cssStyle.setProperty(CssProp.WIDTH, ((int) maxWidth) + Measure.PX, "");
+        CssUtils.setPropertyValue(cssStyles, CssProp.WIDTH, ((int) maxWidth) + Measure.PX);
         // For svg-images in tables width attribute is not enough, WeasyPrint needs max-width as well
-        cssStyle.setProperty(CssProp.MAX_WIDTH, ((int) maxWidth) + Measure.PX, "");
+        CssUtils.setPropertyValue(cssStyles, CssProp.MAX_WIDTH, ((int) maxWidth) + Measure.PX);
 
-        img.attr(HtmlTagAttr.STYLE, cssStyle.getCssText());
+        img.attr(HtmlTagAttr.STYLE, cssStyles.getAsCSSString());
     }
 
     private int getImageColumn(Element img) {

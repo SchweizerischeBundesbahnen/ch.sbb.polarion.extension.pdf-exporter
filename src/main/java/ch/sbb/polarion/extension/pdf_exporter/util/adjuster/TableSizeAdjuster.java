@@ -4,12 +4,16 @@ import ch.sbb.polarion.extension.pdf_exporter.constants.CssProp;
 import ch.sbb.polarion.extension.pdf_exporter.constants.HtmlTagAttr;
 import ch.sbb.polarion.extension.pdf_exporter.constants.Measure;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ConversionParams;
+import ch.sbb.polarion.extension.pdf_exporter.util.CssUtils;
 import ch.sbb.polarion.extension.pdf_exporter.util.PaperSizeUtils;
+import com.helger.css.decl.CSSDeclarationList;
+import com.helger.css.reader.CSSReaderDeclarationList;
 import org.jetbrains.annotations.NotNull;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
-import org.w3c.dom.css.CSSStyleDeclaration;
+
+import java.util.Optional;
 
 public class TableSizeAdjuster extends AbstractAdjuster {
 
@@ -23,15 +27,15 @@ public class TableSizeAdjuster extends AbstractAdjuster {
 
         Elements tables = document.select("table[style]");
         for (Element table : tables) {
-            CSSStyleDeclaration cssStyle = parseCss(table.attr(HtmlTagAttr.STYLE));
+            CSSDeclarationList cssStyles = Optional.ofNullable(CSSReaderDeclarationList.readFromString(table.attr(HtmlTagAttr.STYLE))).orElse(new CSSDeclarationList());
 
-            float width = extractDimension(cssStyle.getPropertyValue(CssProp.WIDTH));
+            float width = extractDimension(CssUtils.getPropertyValue(cssStyles, CssProp.WIDTH));
 
             if (width > maxWidth) {
-                cssStyle.setProperty(CssProp.WIDTH, "100%", "");
+                CssUtils.setPropertyValue(cssStyles, CssProp.WIDTH, "100%");
             }
 
-            table.attr(HtmlTagAttr.STYLE, cssStyle.getCssText());
+            table.attr(HtmlTagAttr.STYLE, cssStyles.getAsCSSString());
         }
     }
 

@@ -1,23 +1,43 @@
 package ch.sbb.polarion.extension.pdf_exporter.util;
 
-import com.steadystate.css.parser.CSSOMParser;
+import ch.sbb.polarion.extension.pdf_exporter.constants.CssProp;
+import com.helger.css.decl.CSSDeclarationList;
+import com.helger.css.reader.CSSReaderDeclarationList;
 import org.junit.jupiter.api.Test;
-import org.mockito.MockedConstruction;
-import org.mockito.Mockito;
 
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.*;
 
 class CssUtilsTest {
 
     @Test
-    void dataUrlTest() {
-        try (MockedConstruction<InputStreamReader> mockedReader = Mockito.mockConstruction(InputStreamReader.class,(mock, context) -> {
-            throw new IOException();
-        })) {
-            assertDoesNotThrow(() -> CssUtils.parseCss(new CSSOMParser(), "some CSS"));
-        }
+    void doesntFailOnGettingNotExistingValueTest() {
+        CSSDeclarationList cssStyles = new CSSDeclarationList();
+        assertDoesNotThrow(() -> {
+            String width = CssUtils.getPropertyValue(cssStyles, CssProp.WIDTH);
+            assertEquals("", width);
+        });
+    }
+
+    @Test
+    void getPropertyValueTest() {
+        CSSDeclarationList cssStyles = Optional.ofNullable(CSSReaderDeclarationList.readFromString("width: 100px")).orElse(new CSSDeclarationList());
+        String width = CssUtils.getPropertyValue(cssStyles, CssProp.WIDTH);
+        assertEquals("100px", width);
+    }
+
+    @Test
+    void setPropertyValueTest() {
+        CSSDeclarationList cssStyles = new CSSDeclarationList();
+        CssUtils.setPropertyValue(cssStyles, CssProp.WIDTH, "auto");
+        assertEquals("auto", CssUtils.getPropertyValue(cssStyles, CssProp.WIDTH));
+    }
+
+    @Test
+    void overwritePropertyValueTest() {
+        CSSDeclarationList cssStyles = Optional.ofNullable(CSSReaderDeclarationList.readFromString("width: auto")).orElse(new CSSDeclarationList());
+        CssUtils.setPropertyValue(cssStyles, CssProp.WIDTH, "100px");
+        assertEquals("100px", CssUtils.getPropertyValue(cssStyles, CssProp.WIDTH));
     }
 }

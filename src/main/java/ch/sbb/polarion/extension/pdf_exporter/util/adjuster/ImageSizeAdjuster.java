@@ -3,13 +3,15 @@ package ch.sbb.polarion.extension.pdf_exporter.util.adjuster;
 import ch.sbb.polarion.extension.pdf_exporter.constants.CssProp;
 import ch.sbb.polarion.extension.pdf_exporter.constants.HtmlTagAttr;
 import ch.sbb.polarion.extension.pdf_exporter.constants.Measure;
+import ch.sbb.polarion.extension.pdf_exporter.util.CssUtils;
 import ch.sbb.polarion.extension.pdf_exporter.util.PaperSizeUtils;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ConversionParams;
+import com.helger.css.decl.CSSDeclarationList;
+import com.helger.css.reader.CSSReaderDeclarationList;
 import org.jetbrains.annotations.NotNull;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
-import org.w3c.dom.css.CSSStyleDeclaration;
 
 import java.util.Optional;
 
@@ -33,15 +35,15 @@ public class ImageSizeAdjuster extends AbstractAdjuster {
 
     private void adjustImageSize(@NotNull Element img, float maxWidth, float maxHeight) {
         String style = img.attr(HtmlTagAttr.STYLE);
-        CSSStyleDeclaration cssStyle = parseCss(style);
+        CSSDeclarationList cssStyles = Optional.ofNullable(CSSReaderDeclarationList.readFromString(style)).orElse(new CSSDeclarationList());
 
         // As a fallback we always restrict max height for the cases when image doesn't have any explicit width/height attributes
-        cssStyle.setProperty(CssProp.MAX_HEIGHT, (int) maxHeight + Measure.PX, "");
-        img.attr(HtmlTagAttr.STYLE, cssStyle.getCssText());
+        CssUtils.setPropertyValue(cssStyles, CssProp.MAX_HEIGHT, (int) maxHeight + Measure.PX);
+        img.attr(HtmlTagAttr.STYLE, cssStyles.getAsCSSString());
 
-        float cssWidth = extractDimension(cssStyle, CssProp.WIDTH);
-        float cssMaxWidth = extractDimension(cssStyle, CssProp.MAX_WIDTH);
-        float cssHeight = extractDimension(cssStyle, CssProp.HEIGHT);
+        float cssWidth = extractDimension(cssStyles, CssProp.WIDTH);
+        float cssMaxWidth = extractDimension(cssStyles, CssProp.MAX_WIDTH);
+        float cssHeight = extractDimension(cssStyles, CssProp.HEIGHT);
 
         float widthExceedingRatio = cssWidth / maxWidth;
         float maxWidthExceedingRatio = cssMaxWidth / maxWidth;
@@ -68,20 +70,20 @@ public class ImageSizeAdjuster extends AbstractAdjuster {
         }
 
         if (adjustedWidth > 0) {
-            cssStyle.setProperty(CssProp.WIDTH, (int) adjustedWidth + Measure.PX, "");
+            CssUtils.setPropertyValue(cssStyles, CssProp.WIDTH, (int) adjustedWidth + Measure.PX);
         }
         if (adjustedMaxWidth > 0) {
-            cssStyle.setProperty(CssProp.MAX_WIDTH, (int) adjustedMaxWidth + Measure.PX, "");
+            CssUtils.setPropertyValue(cssStyles, CssProp.MAX_WIDTH, (int) adjustedMaxWidth + Measure.PX);
         }
         if (adjustedHeight > 0) {
-            cssStyle.setProperty(CssProp.HEIGHT, (int) adjustedHeight + Measure.PX, "");
+            CssUtils.setPropertyValue(cssStyles, CssProp.HEIGHT, (int) adjustedHeight + Measure.PX);
         }
 
-        img.attr(HtmlTagAttr.STYLE, cssStyle.getCssText());
+        img.attr(HtmlTagAttr.STYLE, cssStyles.getAsCSSString());
     }
 
-    private float extractDimension(CSSStyleDeclaration cssStyle, String property) {
-        String value = Optional.ofNullable(cssStyle.getPropertyValue(property)).orElse("").trim();
+    private float extractDimension(CSSDeclarationList cssStyles, String property) {
+        String value = CssUtils.getPropertyValue(cssStyles, property);
 
         if (value.isEmpty()) {
             return 0;

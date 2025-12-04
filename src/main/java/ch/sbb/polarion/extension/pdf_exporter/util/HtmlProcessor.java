@@ -15,8 +15,11 @@ import ch.sbb.polarion.extension.pdf_exporter.settings.LocalizationSettings;
 import ch.sbb.polarion.extension.pdf_exporter.util.adjuster.PageWidthAdjuster;
 import ch.sbb.polarion.extension.pdf_exporter.util.exporter.CustomPageBreakPart;
 import ch.sbb.polarion.extension.pdf_exporter.util.html.HtmlLinksHelper;
+import com.helger.css.decl.CSSDeclaration;
+import com.helger.css.decl.CSSDeclarationList;
+import com.helger.css.decl.CSSExpression;
+import com.helger.css.reader.CSSReaderDeclarationList;
 import com.polarion.alm.shared.util.StringUtils;
-import com.steadystate.css.parser.CSSOMParser;
 import lombok.SneakyThrows;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -27,7 +30,6 @@ import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
 import org.jsoup.nodes.TextNode;
 import org.jsoup.select.Elements;
-import org.w3c.dom.css.CSSStyleDeclaration;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -65,8 +67,6 @@ public class HtmlProcessor {
     private final FileResourceProvider fileResourceProvider;
     private final LocalizationSettings localizationSettings;
     private final HtmlLinksHelper httpLinksHelper;
-
-    private final @NotNull CSSOMParser parser = new CSSOMParser();
 
     public HtmlProcessor(FileResourceProvider fileResourceProvider, LocalizationSettings localizationSettings, HtmlLinksHelper httpLinksHelper) {
         this.fileResourceProvider = fileResourceProvider;
@@ -488,16 +488,15 @@ public class HtmlProcessor {
         for (Element image : images) {
             if (image.hasAttr(HtmlTagAttr.STYLE)) {
                 String style = image.attr(HtmlTagAttr.STYLE);
-                CSSStyleDeclaration cssStyle = parseCss(style);
+                CSSDeclarationList cssStyles = parseCss(style);
 
-                String displayValue = getCssValue(cssStyle, CssProp.DISPLAY);
+                String displayValue = CssUtils.getPropertyValue(cssStyles, CssProp.DISPLAY);
                 if (!CssProp.DISPLAY_BLOCK_VALUE.equals(displayValue)) {
                     continue;
                 }
 
                 Element wrapper = new Element(HtmlTag.DIV);
-
-                String marginValue = Optional.ofNullable(cssStyle.getPropertyValue(CssProp.MARGIN)).orElse("").trim();
+                String marginValue = CssUtils.getPropertyValue(cssStyles, CssProp.MARGIN);
                 if (RIGHT_ALIGNMENT_MARGIN.equals(marginValue)) {
                     wrapper.attr(HtmlTagAttr.STYLE, String.format("%s: %s;", CssProp.TEXT_ALIGN, CssProp.TEXT_ALIGN_RIGHT_VALUE));
                 } else {
@@ -546,12 +545,12 @@ public class HtmlProcessor {
         for (Element cell : cells) {
             if (cell.hasAttr(HtmlTagAttr.STYLE)) {
                 String style = cell.attr(HtmlTagAttr.STYLE);
-                CSSStyleDeclaration cssStyle = parseCss(style);
+                CSSDeclarationList cssStyles = parseCss(style);
 
-                String widthValue = getCssValue(cssStyle, CssProp.WIDTH);
+                String widthValue = CssUtils.getPropertyValue(cssStyles, CssProp.WIDTH);
                 if (!widthValue.isEmpty() && !widthValue.contains("%")) {
-                    cssStyle.setProperty(CssProp.WIDTH, CssProp.WIDTH_AUTO_VALUE, null);
-                    cell.attr(HtmlTagAttr.STYLE, cssStyle.getCssText());
+                    CssUtils.setPropertyValue(cssStyles, CssProp.WIDTH, CssProp.WIDTH_AUTO_VALUE);
+                    cell.attr(HtmlTagAttr.STYLE, cssStyles.getAsCSSString());
                 }
             }
         }
@@ -1036,10 +1035,10 @@ public class HtmlProcessor {
     void adjustReportedBy(@NotNull Document document) {
         Element reportedByDiv = document.select("div:contains(Reported by):not(:has(div))").first();
         if (reportedByDiv != null) {
-            CSSStyleDeclaration cssStyle = getCssStyle(reportedByDiv);
-            cssStyle.setProperty(CssProp.TOP, "0", null);
-            cssStyle.setProperty(CssProp.FONT_SIZE, "8px", null);
-            reportedByDiv.attr(HtmlTagAttr.STYLE, cssStyle.getCssText());
+            CSSDeclarationList cssStyles = getCssStyles(reportedByDiv);
+            CssUtils.setPropertyValue(cssStyles, CssProp.TOP, "0");
+            CssUtils.setPropertyValue(cssStyles, CssProp.FONT_SIZE, "8px");
+            reportedByDiv.attr(HtmlTagAttr.STYLE, cssStyles.getAsCSSString());
         }
     }
 
@@ -1057,11 +1056,11 @@ public class HtmlProcessor {
     void adjustColumnWidthInReports(@NotNull Document document) {
         Elements reportTables = document.select("table.polarion-rp-column-layout");
         for (Element reportTable : reportTables) {
-            CSSStyleDeclaration cssStyle = getCssStyle(reportTable);
-            String width = getCssValue(cssStyle, CssProp.WIDTH);
+            CSSDeclarationList cssStyles = getCssStyles(reportTable);
+            String width = CssUtils.getPropertyValue(cssStyles, CssProp.WIDTH);
             if ("1000px".equals(width)) {
-                cssStyle.setProperty(CssProp.WIDTH, "100%", null);
-                reportTable.attr(HtmlTagAttr.STYLE, cssStyle.getCssText());
+                CssUtils.setPropertyValue(cssStyles, CssProp.WIDTH, "100%");
+                reportTable.attr(HtmlTagAttr.STYLE, cssStyles.getAsCSSString());
             }
         }
     }
@@ -1070,14 +1069,14 @@ public class HtmlProcessor {
     void removeFloatLeftFromReports(@NotNull Document document) {
         Elements tables = document.select("table");
         for (Element table : tables) {
-            CSSStyleDeclaration cssStyle = getCssStyle(table);
-            String cssFloat = getCssValue(cssStyle, CssProp.FLOAT);
+            CSSDeclarationList cssStyles = getCssStyles(table);
+            String cssFloat = CssUtils.getPropertyValue(cssStyles, CssProp.FLOAT);
             if (CssProp.FLOAT_LEFT_VALUE.equals(cssFloat)) {
-                cssStyle.removeProperty(CssProp.FLOAT);
-                if (cssStyle.getLength() == 0) {
+                CssUtils.removeProperty(cssStyles, CssProp.FLOAT);
+                if (cssStyles.isEmpty()) {
                     table.removeAttr(HtmlTagAttr.STYLE);
                 } else {
-                    table.attr(HtmlTagAttr.STYLE, cssStyle.getCssText());
+                    table.attr(HtmlTagAttr.STYLE, cssStyles.getAsCSSString());
                 }
             }
         }
@@ -1098,15 +1097,11 @@ public class HtmlProcessor {
     }
 
     private String getCssValue(@NotNull Element element, @NotNull String cssProperty) {
-        CSSStyleDeclaration cssStyle = getCssStyle(element);
-        return getCssValue(cssStyle, cssProperty);
+        CSSDeclarationList cssStyles = getCssStyles(element);
+        return CssUtils.getPropertyValue(cssStyles, cssProperty);
     }
 
-    private String getCssValue(@NotNull CSSStyleDeclaration cssStyle, @NotNull String cssProperty) {
-        return Optional.ofNullable(cssStyle.getPropertyValue(cssProperty)).orElse("").trim();
-    }
-
-    private CSSStyleDeclaration getCssStyle(@NotNull Element element) {
+    private CSSDeclarationList getCssStyles(@NotNull Element element) {
         String style = "";
         if (element.hasAttr(HtmlTagAttr.STYLE)) {
             style = element.attr(HtmlTagAttr.STYLE);
@@ -1114,8 +1109,8 @@ public class HtmlProcessor {
         return parseCss(style);
     }
 
-    private CSSStyleDeclaration parseCss(@NotNull String style) {
-        return CssUtils.parseCss(parser, style);
+    private CSSDeclarationList parseCss(@NotNull String styleAttributeValue) {
+        return Optional.ofNullable(CSSReaderDeclarationList.readFromString(styleAttributeValue)).orElse(new CSSDeclarationList());
     }
 
     private DocumentTOCGenerator getTocGenerator(DocumentType documentType) {
