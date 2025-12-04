@@ -118,10 +118,12 @@ public class UtilityResourcesInternalController {
     @Tag(name = "Utility resources")
     @Operation(summary = "Gets webhooks status - if they are enabled or not",
             responses = {
-                    @ApiResponse(responseCode = "200", description = "Webhooks status")
+                    @ApiResponse(responseCode = "200", description = "Webhooks status",
+                            content = @Content(schema = @Schema(implementation = WebhooksStatus.class)))
             }
     )
     public WebhooksStatus getWebhooksStatus() {
-        return WebhooksStatus.builder().enabled(PdfExporterExtensionConfiguration.getInstance().getWebhooksEnabled()).build();
+        Boolean webhooksEnabled = PdfExporterExtensionConfiguration.getInstance().getWebhooksEnabled();
+        return WebhooksStatus.builder().enabled(webhooksEnabled).build();
     }
 }

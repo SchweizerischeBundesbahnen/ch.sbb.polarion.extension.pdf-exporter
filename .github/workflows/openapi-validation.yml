@@ -2,20 +2,23 @@
 name: openapi-validate
 on:
   push:
+  pull_request:
   workflow_dispatch:
 jobs:
-  check-openapi-definition:
+  validate-openapi:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-    name: Swagger Editor Validator Remote
+    name: Validate OpenAPI Definition
     steps:
       - name: 📄 Checkout the repository
-        uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3  # v6.0.0
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6.0.1
         with:
           fetch-depth: 1
-          persist-credentials: false  # Do not persist credentials for security
-      - name: 🧪 Validate OpenAPI definition
-        uses: swaggerexpert/swagger-editor-validate@264fd875d3c6e1bf65da1f0a63e095cbe41ffef3  # v1.5.1
+          persist-credentials: false
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f  # v6.1.0
         with:
-          definition-file: docs/openapi.json
+          node-version: '24'
+      - name: 🧪 Validate OpenAPI definition
+        run: npx @redocly/cli@latest lint docs/openapi.json --format=github-actions
