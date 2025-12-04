@@ -6,17 +6,16 @@ import ch.sbb.polarion.extension.pdf_exporter.constants.Measure;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ConversionParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.Orientation;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PaperSize;
-import com.steadystate.css.dom.CSSStyleDeclarationImpl;
-import com.steadystate.css.parser.CSSOMParser;
+import ch.sbb.polarion.extension.pdf_exporter.util.CssUtils;
+import com.helger.css.decl.CSSDeclarationList;
+import com.helger.css.reader.CSSReaderDeclarationList;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.junit.jupiter.api.Test;
-import org.w3c.css.sac.InputSource;
-import org.w3c.dom.css.CSSStyleDeclaration;
 
-import java.io.StringReader;
 import java.util.Collections;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -73,8 +72,8 @@ class ImageSizeInTablesAdjusterTest {
         assertNotNull(testImg);
 
         String style = testImg.attr(HtmlTagAttr.STYLE);
-        CSSStyleDeclaration cssStyle = parseCss(style);
-        String maxWidthStr = cssStyle.getPropertyValue(CssProp.MAX_WIDTH);
+        CSSDeclarationList cssStyles = parseCss(style);
+        String maxWidthStr = CssUtils.getPropertyValue(cssStyles, CssProp.MAX_WIDTH);
         assertNotNull(maxWidthStr);
         float maxWidth = Float.parseFloat(maxWidthStr.replace(Measure.PX, ""));
         assertTrue(maxWidth > 400 && maxWidth < 450);
@@ -106,8 +105,8 @@ class ImageSizeInTablesAdjusterTest {
             assertNotNull(testImg);
 
             String style = testImg.attr(HtmlTagAttr.STYLE);
-            CSSStyleDeclaration cssStyle = parseCss(style);
-            String maxWidthStr = cssStyle.getPropertyValue(CssProp.MAX_WIDTH);
+            CSSDeclarationList cssStyles = parseCss(style);
+            String maxWidthStr = CssUtils.getPropertyValue(cssStyles, CssProp.MAX_WIDTH);
             assertNotNull(maxWidthStr, "max-width should be set even when TableAnalyzer returns empty map");
 
             float maxWidth = Float.parseFloat(maxWidthStr.replace(Measure.PX, ""));
@@ -116,11 +115,7 @@ class ImageSizeInTablesAdjusterTest {
         }
     }
 
-    protected CSSStyleDeclaration parseCss(String style) {
-        try {
-            return new CSSOMParser().parseStyleDeclaration(new InputSource(new StringReader(style)));
-        } catch (Exception e) {
-            return new CSSStyleDeclarationImpl();
-        }
+    protected CSSDeclarationList parseCss(String style) {
+        return Optional.ofNullable(CSSReaderDeclarationList.readFromString(style)).orElse(new CSSDeclarationList());
     }
 }

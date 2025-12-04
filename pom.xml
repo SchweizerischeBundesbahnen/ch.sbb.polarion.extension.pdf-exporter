@@ -54,7 +54,7 @@
 
         <awaitility.version>4.3.0</awaitility.version>
         <tika.version>1.28.5</tika.version>
-        <cssparser.version>0.9.30</cssparser.version>
+        <ph-css.version>8.1.0</ph-css.version>
         <commons-text.version>1.14.0</commons-text.version>
         <verapdf.version>1.28.2</verapdf.version>
 
@@ -194,9 +194,9 @@
             <version>${byte-buddy.version}</version>
         </dependency>
         <dependency>
-            <groupId>net.sourceforge.cssparser</groupId>
-            <artifactId>cssparser</artifactId>
-            <version>${cssparser.version}</version>
+            <groupId>com.helger</groupId>
+            <artifactId>ph-css</artifactId>
+            <version>${ph-css.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
