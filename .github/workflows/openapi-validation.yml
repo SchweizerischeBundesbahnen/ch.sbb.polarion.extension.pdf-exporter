@@ -19,4 +19,3 @@ jobs:
         uses: swaggerexpert/swagger-editor-validate@264fd875d3c6e1bf65da1f0a63e095cbe41ffef3  # v1.5.1
         with:
           definition-file: docs/openapi.json
-          default-timeout: 60000
