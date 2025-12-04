@@ -43,12 +43,15 @@ class LiveDocCommentsProcessorTest {
                 <div>some content3</div>
                 <img id="polarion-comment:3" class="polarion-dle-comment-icon"/>
                 <div>some content4</div>
+                <img id="polarion-comment:4" class="polarion-dle-comment-resolved-icon"/>
+                <div>some content5</div>
                 """;
 
         List<CommentBase> commentBases = List.of(
                 mockComment("1", "text1", "author1", false, true, true),
                 mockComment("2", "text2", "author2", true, true, true),
-                mockComment("3", "text3", "author3", false, true, false)
+                mockComment("3", "text3", "author3", false, true, false),
+                mockComment("4", "text4", "author4", true, true, false)
         );
 
         when(comments.iterator()).thenReturn(commentBases.iterator());
@@ -62,6 +65,8 @@ class LiveDocCommentsProcessorTest {
                 <div>some content3</div>
                 [span class=comment level-0][span class=meta][span class=date]2025-03-13 16:23[/span][span class=details][span class=author]author3[/span][/span][/span][span class=text]text3[/span][/span]
                 <div>some content4</div>
+
+                <div>some content5</div>
                 """, new LiveDocCommentsProcessor().addLiveDocComments(document, html, CommentsRenderType.OPEN, false));
 
         when(comments.iterator()).thenReturn(commentBases.iterator());
@@ -75,6 +80,8 @@ class LiveDocCommentsProcessorTest {
                 <div>some content3</div>
                 [span class=comment level-0][span class=meta][span class=date]2025-03-13 16:23[/span][span class=details][span class=author]author3[/span][/span][/span][span class=text]text3[/span][/span]
                 <div>some content4</div>
+                [span class=comment level-0][span class=meta][span class=date]2025-03-13 16:24[/span][span class=details][span class=status-resolved]Resolved[/span][span class=author]author4[/span][/span][/span][span class=text]text4[/span][/span]
+                <div>some content5</div>
                 """, new LiveDocCommentsProcessor().addLiveDocComments(document, html, CommentsRenderType.ALL, false));
 
         // null commentsRenderType means remove comments
@@ -86,6 +93,8 @@ class LiveDocCommentsProcessorTest {
                 <div>some content3</div>
 
                 <div>some content4</div>
+
+                <div>some content5</div>
                 """, new LiveDocCommentsProcessor().addLiveDocComments(document, html, null, false));
     }
 
@@ -109,12 +118,15 @@ class LiveDocCommentsProcessorTest {
                 <div>some content3</div>
                 <img id="polarion-comment:3" class="polarion-dle-comment-icon"/>
                 <div>some content4</div>
+                <img id="polarion-comment:4" class="polarion-dle-comment-resolved-icon"/>
+                <div>some content5</div>
                 """;
 
         List<CommentBase> commentBases = List.of(
                 mockComment("1", "text1", "author1", false, true, true),
                 mockComment("2", "text2", "author2", true, true, true),
-                mockComment("3", "text3", "author3", false, true, false)
+                mockComment("3", "text3", "author3", false, true, false),
+                mockComment("4", "text4", "author4", true, true, false)
         );
 
         when(comments.iterator()).thenReturn(commentBases.iterator());
@@ -134,6 +146,8 @@ class LiveDocCommentsProcessorTest {
                 <div>some content3</div>
                 [span class=sticky-note][span class=sticky-note-time]2025-03-13T16:23:00.000[/span][span class=sticky-note-username]author3[/span][span class=sticky-note-text]text3[/span][/span]
                 <div>some content4</div>
+
+                <div>some content5</div>
                 """, liveDocCommentsProcessor.addLiveDocComments(document, html, CommentsRenderType.OPEN, true));
 
         when(comments.iterator()).thenReturn(commentBases.iterator());
@@ -147,6 +161,8 @@ class LiveDocCommentsProcessorTest {
                 <div>some content3</div>
                 [span class=sticky-note][span class=sticky-note-time]2025-03-13T16:23:00.000[/span][span class=sticky-note-username]author3[/span][span class=sticky-note-text]text3[/span][/span]
                 <div>some content4</div>
+                [span class=sticky-note][span class=sticky-note-time]2025-03-13T16:24:00.000[/span][span class=sticky-note-username]author4[/span][span class=sticky-note-text]text4[/span][/span]
+                <div>some content5</div>
                 """, liveDocCommentsProcessor.addLiveDocComments(document, html, CommentsRenderType.ALL, true));
 
         // null commentsRenderType means remove comments
@@ -158,6 +174,8 @@ class LiveDocCommentsProcessorTest {
                 <div>some content3</div>
 
                 <div>some content4</div>
+
+                <div>some content5</div>
                 """, liveDocCommentsProcessor.addLiveDocComments(document, html, null, true));
     }
 
