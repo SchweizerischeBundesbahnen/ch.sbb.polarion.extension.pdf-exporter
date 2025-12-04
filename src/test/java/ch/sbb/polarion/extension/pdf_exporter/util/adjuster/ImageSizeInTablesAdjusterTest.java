@@ -115,7 +115,7 @@ class ImageSizeInTablesAdjusterTest {
         }
     }
 
-    protected CSSDeclarationList parseCss(String style) {
+    private CSSDeclarationList parseCss(String style) {
         return Optional.ofNullable(CSSReaderDeclarationList.readFromString(style)).orElse(new CSSDeclarationList());
     }
 }
