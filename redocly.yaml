@@ -4,10 +4,14 @@
 extends: [recommended]
 rules:
   # API works relative to Polarion base URL, no explicit servers needed
-  no-empty-servers: false
+  no-empty-servers:
+    severity: 'off'
   # Authentication handled by Polarion, not described in OpenAPI spec
-  security-defined: false
+  security-defined:
+    severity: 'off'
   # License is in separate file LICENSES/SBB.txt
-  info-license: false
+  info-license:
+    severity: 'off'
   # Not all error responses are explicitly documented
-  operation-4xx-response: false
+  operation-4xx-response:
+    severity: 'off'
