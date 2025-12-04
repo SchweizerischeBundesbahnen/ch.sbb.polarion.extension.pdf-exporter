@@ -346,11 +346,6 @@ class LiveDocCommentsProcessorTest {
         // Open comment should be rendered, resolved should be removed
         assertTrue(afterFirstPass.contains("[span class=comment level-0]"), "Open comment should be rendered");
 
-        // Simulate renderer output
-        String openCommentRendered = "[span class=comment level-0][span class=meta][span class=date]";
-        documentParagraphs = "<p id=\"polarion_1\">open" + openCommentRendered + "</p><p id=\"polarion_2\">resolved comment inside document</p>";
-        // Note: simplified - in reality would have full comment markup
-
         when(comments.iterator()).thenReturn(commentBases.iterator());
 
         // Second pass with fresh rendered content
