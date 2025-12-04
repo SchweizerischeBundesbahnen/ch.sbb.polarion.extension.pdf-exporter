@@ -1,0 +1,13 @@
+---
+# Redocly CLI configuration for OpenAPI validation
+# See: https://redocly.com/docs/cli/configuration
+extends: [recommended]
+rules:
+  # API works relative to Polarion base URL, no explicit servers needed
+  no-empty-servers: false
+  # Authentication handled by Polarion, not described in OpenAPI spec
+  security-defined: false
+  # License is in separate file LICENSES/SBB.txt
+  info-license: false
+  # Not all error responses are explicitly documented
+  operation-4xx-response: false
