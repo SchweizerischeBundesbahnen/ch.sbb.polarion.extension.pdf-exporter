@@ -5,9 +5,6 @@ import com.helger.css.decl.CSSDeclarationList;
 import com.helger.css.decl.CSSExpression;
 import lombok.experimental.UtilityClass;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-
-import java.util.Optional;
 
 @UtilityClass
 public class CssUtils {
@@ -16,27 +13,10 @@ public class CssUtils {
     public String getPropertyValue(@NotNull CSSDeclarationList cssStyles, @NotNull String propertyName) {
         for (CSSDeclaration decl : cssStyles.getAllDeclarations()) {
             if (decl.getProperty().equalsIgnoreCase(propertyName)) {
-                return Optional.ofNullable(stripQuotes(decl.getExpressionAsCSSString())).orElse("");
+                return decl.getExpressionAsCSSString();
             }
         }
         return "";
-    }
-
-    @Nullable
-    private String stripQuotes(@Nullable String value) {
-        if (value == null) {
-            return null;
-        }
-
-        String trimmed = value.trim();
-
-        // Remove surrounding quotes (single or double)
-        if (trimmed.length() > 1 && ((trimmed.startsWith("\"") && trimmed.endsWith("\"")) ||
-                (trimmed.startsWith("'") && trimmed.endsWith("'")))) {
-            return trimmed.substring(1, trimmed.length() - 1);
-        } else {
-            return trimmed;
-        }
     }
 
     public void setPropertyValue(@NotNull CSSDeclarationList cssStyles, @NotNull String propertyName, @NotNull String propertyValue) {
