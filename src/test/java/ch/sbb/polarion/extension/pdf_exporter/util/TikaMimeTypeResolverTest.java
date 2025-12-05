@@ -2,12 +2,15 @@ package ch.sbb.polarion.extension.pdf_exporter.util;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @SuppressWarnings("unchecked")
 class TikaMimeTypeResolverTest {
@@ -19,81 +22,25 @@ class TikaMimeTypeResolverTest {
         resolver = new TikaMimeTypeResolver();
     }
 
-    @Test
-    void testRunWithPdfFileName() {
-        Map<String, Object> input = Map.of(TikaMimeTypeResolver.PARAM_VALUE, "document.pdf");
+    @ParameterizedTest
+    @CsvSource({
+            "document.pdf, application/pdf",
+            "image.png, image/png",
+            "photo.jpg, image/jpeg",
+            "page.html, text/html",
+            "readme.txt, text/plain",
+            "config.xml, application/xml",
+            "data.json, application/json",
+            "styles.css, text/css"
+    })
+    void testRunWithFileName(String fileName, String expectedMimeType) {
+        Map<String, Object> input = Map.of(TikaMimeTypeResolver.PARAM_VALUE, fileName);
         Map<String, Object> result = resolver.run(input);
 
         assertThat(result).containsKey(TikaMimeTypeResolver.PARAM_RESULT);
         Optional<String> mimeType = (Optional<String>) result.get(TikaMimeTypeResolver.PARAM_RESULT);
         assertThat(mimeType).isPresent();
-        assertThat(mimeType.get()).isEqualTo("application/pdf");
-    }
-
-    @Test
-    void testRunWithImageFileName() {
-        Map<String, Object> input = Map.of(TikaMimeTypeResolver.PARAM_VALUE, "image.png");
-        Map<String, Object> result = resolver.run(input);
-
-        assertThat(result).containsKey(TikaMimeTypeResolver.PARAM_RESULT);
-        Optional<String> mimeType = (Optional<String>) result.get(TikaMimeTypeResolver.PARAM_RESULT);
-        assertThat(mimeType).isPresent();
-        assertThat(mimeType.get()).isEqualTo("image/png");
-    }
-
-    @Test
-    void testRunWithJpegFileName() {
-        Map<String, Object> input = Map.of(TikaMimeTypeResolver.PARAM_VALUE, "photo.jpg");
-        Map<String, Object> result = resolver.run(input);
-
-        assertThat(result).containsKey(TikaMimeTypeResolver.PARAM_RESULT);
-        Optional<String> mimeType = (Optional<String>) result.get(TikaMimeTypeResolver.PARAM_RESULT);
-        assertThat(mimeType).isPresent();
-        assertThat(mimeType.get()).isEqualTo("image/jpeg");
-    }
-
-    @Test
-    void testRunWithHtmlFileName() {
-        Map<String, Object> input = Map.of(TikaMimeTypeResolver.PARAM_VALUE, "page.html");
-        Map<String, Object> result = resolver.run(input);
-
-        assertThat(result).containsKey(TikaMimeTypeResolver.PARAM_RESULT);
-        Optional<String> mimeType = (Optional<String>) result.get(TikaMimeTypeResolver.PARAM_RESULT);
-        assertThat(mimeType).isPresent();
-        assertThat(mimeType.get()).isEqualTo("text/html");
-    }
-
-    @Test
-    void testRunWithTextFileName() {
-        Map<String, Object> input = Map.of(TikaMimeTypeResolver.PARAM_VALUE, "readme.txt");
-        Map<String, Object> result = resolver.run(input);
-
-        assertThat(result).containsKey(TikaMimeTypeResolver.PARAM_RESULT);
-        Optional<String> mimeType = (Optional<String>) result.get(TikaMimeTypeResolver.PARAM_RESULT);
-        assertThat(mimeType).isPresent();
-        assertThat(mimeType.get()).isEqualTo("text/plain");
-    }
-
-    @Test
-    void testRunWithXmlFileName() {
-        Map<String, Object> input = Map.of(TikaMimeTypeResolver.PARAM_VALUE, "config.xml");
-        Map<String, Object> result = resolver.run(input);
-
-        assertThat(result).containsKey(TikaMimeTypeResolver.PARAM_RESULT);
-        Optional<String> mimeType = (Optional<String>) result.get(TikaMimeTypeResolver.PARAM_RESULT);
-        assertThat(mimeType).isPresent();
-        assertThat(mimeType.get()).isEqualTo("application/xml");
-    }
-
-    @Test
-    void testRunWithJsonFileName() {
-        Map<String, Object> input = Map.of(TikaMimeTypeResolver.PARAM_VALUE, "data.json");
-        Map<String, Object> result = resolver.run(input);
-
-        assertThat(result).containsKey(TikaMimeTypeResolver.PARAM_RESULT);
-        Optional<String> mimeType = (Optional<String>) result.get(TikaMimeTypeResolver.PARAM_RESULT);
-        assertThat(mimeType).isPresent();
-        assertThat(mimeType.get()).isEqualTo("application/json");
+        assertEquals(expectedMimeType, mimeType.get());
     }
 
     @Test
@@ -105,7 +52,7 @@ class TikaMimeTypeResolverTest {
         assertThat(result).containsKey(TikaMimeTypeResolver.PARAM_RESULT);
         Optional<String> mimeType = (Optional<String>) result.get(TikaMimeTypeResolver.PARAM_RESULT);
         assertThat(mimeType).isPresent();
-        assertThat(mimeType.get()).isEqualTo("application/pdf");
+        assertEquals("application/pdf", mimeType.get());
     }
 
     @Test
@@ -119,7 +66,7 @@ class TikaMimeTypeResolverTest {
         assertThat(result).containsKey(TikaMimeTypeResolver.PARAM_RESULT);
         Optional<String> mimeType = (Optional<String>) result.get(TikaMimeTypeResolver.PARAM_RESULT);
         assertThat(mimeType).isPresent();
-        assertThat(mimeType.get()).isEqualTo("image/png");
+        assertEquals("image/png", mimeType.get());
     }
 
     @Test
@@ -133,7 +80,7 @@ class TikaMimeTypeResolverTest {
         assertThat(result).containsKey(TikaMimeTypeResolver.PARAM_RESULT);
         Optional<String> mimeType = (Optional<String>) result.get(TikaMimeTypeResolver.PARAM_RESULT);
         assertThat(mimeType).isPresent();
-        assertThat(mimeType.get()).isEqualTo("image/jpeg");
+        assertEquals("image/jpeg", mimeType.get());
     }
 
     @Test
@@ -147,7 +94,7 @@ class TikaMimeTypeResolverTest {
         assertThat(result).containsKey(TikaMimeTypeResolver.PARAM_RESULT);
         Optional<String> mimeType = (Optional<String>) result.get(TikaMimeTypeResolver.PARAM_RESULT);
         assertThat(mimeType).isPresent();
-        assertThat(mimeType.get()).isEqualTo("application/zip");
+        assertEquals("application/zip", mimeType.get());
     }
 
     @Test
@@ -182,16 +129,6 @@ class TikaMimeTypeResolverTest {
         assertThat(mimeType).isEmpty();
     }
 
-    @Test
-    void testRunWithCssFileName() {
-        Map<String, Object> input = Map.of(TikaMimeTypeResolver.PARAM_VALUE, "styles.css");
-        Map<String, Object> result = resolver.run(input);
-
-        assertThat(result).containsKey(TikaMimeTypeResolver.PARAM_RESULT);
-        Optional<String> mimeType = (Optional<String>) result.get(TikaMimeTypeResolver.PARAM_RESULT);
-        assertThat(mimeType).isPresent();
-        assertThat(mimeType.get()).isEqualTo("text/css");
-    }
 
     @Test
     void testRunWithJavaScriptFileName() {
