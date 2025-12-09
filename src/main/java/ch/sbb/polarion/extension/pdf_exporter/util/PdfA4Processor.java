@@ -48,7 +48,13 @@ import java.util.UUID;
  *     <li>Removes non-compliant entries from document information dictionary (keeping only ModDate)</li>
  *     <li>Removes the Info key from trailer dictionary when no PieceInfo exists in document catalog</li>
  *     <li>Fixes XMP metadata to use correct pdfaid:rev format (four-digit year instead of revision number)</li>
- *     <li>Removes pdfaid:conformance from XMP metadata (not allowed for PDF/A-4b and PDF/A-4u)</li>
+ *     <li>Handles pdfaid:conformance based on conformance level:
+ *         <ul>
+ *             <li>Sets pdfaid:conformance="E" for PDF/A-4e (engineering)</li>
+ *             <li>Sets pdfaid:conformance="F" for PDF/A-4f (embedded files)</li>
+ *             <li>Removes pdfaid:conformance for PDF/A-4u (not allowed)</li>
+ *         </ul>
+ *     </li>
  * </ul>
  * <p>
  * Note: This processor creates a new PDF document with version 2.0 and copies all content from the original,
@@ -72,6 +78,21 @@ public class PdfA4Processor {
      * @throws IOException if an error occurs during PDF processing
      */
     public byte[] processPdfA4(byte[] pdfBytes) throws IOException {
+        return processPdfA4(pdfBytes, null);
+    }
+
+    /**
+     * Processes a PDF/A-4 document to fix compliance issues according to ISO 19005-4:2020.
+     * <p>
+     * This method creates a new PDF document with version 2.0 and copies all content from the original,
+     * as PDFBox does not reliably update the PDF version in the file header when using save().
+     *
+     * @param pdfBytes    the original PDF content
+     * @param conformance the conformance level: "E" for engineering, "F" for embedded files, or null for basic (4u)
+     * @return the processed PDF content with compliance fixes applied
+     * @throws IOException if an error occurs during PDF processing
+     */
+    public byte[] processPdfA4(byte[] pdfBytes, @Nullable String conformance) throws IOException {
         try (PDDocument originalDoc = Loader.loadPDF(pdfBytes);
              PDDocument newDoc = new PDDocument();
              ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
@@ -91,7 +112,7 @@ public class PdfA4Processor {
             fixDocumentInformation(newDoc);
 
             // Fix XMP metadata
-            fixXmpMetadata(newDoc);
+            fixXmpMetadata(newDoc, conformance);
 
             // IMPORTANT: Set PDF version to 2.0 AFTER all content has been copied
             // This must be done last to prevent PDFBox from auto-downgrading the version
@@ -170,7 +191,7 @@ public class PdfA4Processor {
 
     /**
      * Copies document catalog properties from source to destination document.
-     * This includes metadata, OutputIntents, and other catalog-level properties.
+     * This includes metadata, OutputIntents, Names (for embedded files), and other catalog-level properties.
      *
      * @param source      the source PDF document
      * @param destination the destination PDF document
@@ -181,6 +202,7 @@ public class PdfA4Processor {
         copyXmpMetadata(source, destination);
         copyOutputIntents(source, destination);
         copyDocumentInformation(source, destination);
+        copyEmbeddedFiles(source, destination);
         logger.debug("Copied document catalog from source to destination");
     }
 
@@ -238,6 +260,24 @@ public class PdfA4Processor {
             }
             destination.setDocumentInformation(destInfo);
             logger.debug("Copied document information from source to destination");
+        }
+    }
+
+    /**
+     * Copies embedded files (Names dictionary) from source to destination document.
+     * This is required for PDF/A-4f compliance which mandates the EmbeddedFiles key.
+     *
+     * @param source      the source PDF document
+     * @param destination the destination PDF document
+     */
+    @VisibleForTesting
+    void copyEmbeddedFiles(@NotNull PDDocument source, @NotNull PDDocument destination) {
+        COSDictionary sourceCatalog = source.getDocumentCatalog().getCOSObject();
+        COSDictionary destCatalog = destination.getDocumentCatalog().getCOSObject();
+
+        if (sourceCatalog.containsKey(COSName.NAMES)) {
+            destCatalog.setItem(COSName.NAMES, sourceCatalog.getItem(COSName.NAMES));
+            logger.debug("Copied Names dictionary (including EmbeddedFiles) from source to destination");
         }
     }
 
@@ -332,10 +372,11 @@ public class PdfA4Processor {
      *     <li>Test 3: Files not conforming to PDF/A-4e or PDF/A-4f shall not provide "pdfaid:conformance"</li>
      * </ul>
      *
-     * @param document the PDF document to process
+     * @param document    the PDF document to process
+     * @param conformance the conformance level: "E" for engineering, "F" for embedded files, or null for basic (4u)
      */
     @VisibleForTesting
-    void fixXmpMetadata(@NotNull PDDocument document) throws IOException {
+    void fixXmpMetadata(@NotNull PDDocument document, @Nullable String conformance) throws IOException {
         PDMetadata metadata = document.getDocumentCatalog().getMetadata();
         if (metadata == null) {
             logger.warn("No XMP metadata found in document");
@@ -347,7 +388,7 @@ public class PdfA4Processor {
             String metadataString = new String(metadata.toByteArray(), StandardCharsets.UTF_8);
 
             // Parse and fix XMP metadata using XML DOM
-            String fixedMetadata = fixXmpMetadataXml(metadataString);
+            String fixedMetadata = fixXmpMetadataXml(metadataString, conformance);
 
             if (!fixedMetadata.equals(metadataString)) {
                 // Update metadata with fixed version
@@ -367,6 +408,7 @@ public class PdfA4Processor {
      * Uses XML DOM parsing for reliable and maintainable metadata manipulation.
      *
      * @param xmpMetadata the original XMP metadata as XML string
+     * @param conformance the conformance level: "E" for engineering, "F" for embedded files, or null for basic (4u)
      * @return the fixed XMP metadata as XML string
      * @throws TransformerException if XML parsing or transformation fails
      * @throws ParserConfigurationException if XML parsing fails
@@ -374,7 +416,7 @@ public class PdfA4Processor {
      * @throws SAXException if XML parsing fails
      */
     @VisibleForTesting
-    String fixXmpMetadataXml(@NotNull String xmpMetadata) throws TransformerException, ParserConfigurationException, IOException, SAXException {
+    String fixXmpMetadataXml(@NotNull String xmpMetadata, @Nullable String conformance) throws TransformerException, ParserConfigurationException, IOException, SAXException {
         // Parse XML
         DocumentBuilderFactory documentBuilderFactory = createSecureDocumentBuilderFactory();
         DocumentBuilder documentBuilder = documentBuilderFactory.newDocumentBuilder();
@@ -396,7 +438,7 @@ public class PdfA4Processor {
 
             if ("4".equals(pdfaidPart)) {
                 // This is PDF/A-4 identification - fix it
-                metadataModified |= fixPdfA4Identification(description);
+                metadataModified |= fixPdfA4Identification(description, conformance);
             }
         }
 
@@ -456,6 +498,9 @@ public class PdfA4Processor {
     /**
      * Wraps RDF content with XMP packet processing instructions.
      * Generates a unique packet ID using UUID.
+     * <p>
+     * According to XMP Specification (ISO 16684-1), the xpacket begin attribute must contain
+     * the Unicode BOM (U+FEFF) to indicate UTF-8 encoding for PDF/A compliance.
      *
      * @param rdfContent the RDF content to wrap
      * @return the complete XMP metadata with xpacket tags
@@ -464,55 +509,77 @@ public class PdfA4Processor {
     @NotNull String wrapWithXPacket(@NotNull String rdfContent) {
         // Generate unique packet ID (remove hyphens from UUID to match XMP packet ID format)
         String packetId = UUID.randomUUID().toString().replace("-", "");
-        return "<?xpacket begin=\"\" id=\"" + packetId + "\"?>\n" +
+        // UTF-8 BOM (U+FEFF) is required in the begin attribute for PDF/A compliance
+        return "<?xpacket begin=\"\uFEFF\" id=\"" + packetId + "\"?>\n" +
                rdfContent + "\n" +
                "<?xpacket end=\"r\"?>";
     }
 
     /**
      * Fixes PDF/A-4 identification in an rdf:Description element.
+     * <p>
+     * According to ISO 19005-4:2020:
+     * <ul>
+     *     <li>pdfaid:conformance is required for PDF/A-4e and PDF/A-4f</li>
+     *     <li>pdfaid:conformance shall not be present for PDF/A-4 (basic) and PDF/A-4u</li>
+     * </ul>
      *
      * @param description the rdf:Description element to fix
+     * @param conformance the conformance level: "E" for engineering, "F" for embedded files, or null for basic (4u)
      * @return true if any changes were made
      */
     @VisibleForTesting
-    boolean fixPdfA4Identification(@NotNull Element description) {
+    boolean fixPdfA4Identification(@NotNull Element description, @Nullable String conformance) {
         boolean modified = false;
 
         // Fix 1: Add or update pdfaid:rev to "2020"
         String currentRev = getAttributeValue(description, PDFAID_REV);
         if (currentRev == null || currentRev.isEmpty()) {
             // Add pdfaid:rev="2020"
-            description.setAttribute(PDFAID_REV, PDF_A_4_REV_YEAR);
+            setPropertyValue(description, PDFAID_REV, PDF_A_4_REV_YEAR);
             logger.debug("Added pdfaid:rev=\"" + PDF_A_4_REV_YEAR + "\" to XMP metadata");
             modified = true;
         } else if (!PDF_A_4_REV_YEAR.equals(currentRev)) {
             // Update incorrect rev value
-            description.setAttribute(PDFAID_REV, PDF_A_4_REV_YEAR);
+            setPropertyValue(description, PDFAID_REV, PDF_A_4_REV_YEAR);
             logger.debug("Updated pdfaid:rev from \"" + currentRev + "\" to \"" + PDF_A_4_REV_YEAR + "\"");
             modified = true;
         }
 
-        // Fix 2: Remove pdfaid:conformance (not allowed for PDF/A-4b and PDF/A-4u)
-        if (description.hasAttribute("pdfaid:conformance")) {
-            description.removeAttribute("pdfaid:conformance");
-            logger.debug("Removed pdfaid:conformance from XMP metadata");
-            modified = true;
+        // Fix 2: Handle pdfaid:conformance based on conformance level
+        String currentConformance = getAttributeValue(description, "pdfaid:conformance");
+        if (conformance != null) {
+            // PDF/A-4e and PDF/A-4f require conformance attribute
+            if (!conformance.equals(currentConformance)) {
+                setPropertyValue(description, "pdfaid:conformance", conformance);
+                logger.debug("Set pdfaid:conformance=\"" + conformance + "\" in XMP metadata");
+                modified = true;
+            }
+        } else {
+            // PDF/A-4 (basic) and PDF/A-4u shall not have conformance property
+            if (hasProperty(description, "pdfaid:conformance")) {
+                removeProperty(description, "pdfaid:conformance");
+                logger.debug("Removed pdfaid:conformance from XMP metadata");
+                modified = true;
+            }
         }
 
         return modified;
     }
 
     /**
-     * Gets attribute value from element, handling namespace prefixes.
+     * Gets attribute or child element value from element, handling namespace prefixes.
+     * <p>
+     * In XMP/RDF, property values can be expressed either as attributes or as child elements.
+     * This method checks both forms.
      *
      * @param element       the XML element
-     * @param attributeName the attribute name (may include namespace prefix like "pdfaid:part")
-     * @return the attribute value, or null if not found
+     * @param attributeName the attribute/element name (may include namespace prefix like "pdfaid:part")
+     * @return the attribute/element value, or null if not found
      */
     @VisibleForTesting
     @Nullable String getAttributeValue(@NotNull Element element, @NotNull String attributeName) {
-        // Try with namespace prefix
+        // Try as attribute with namespace prefix
         if (element.hasAttribute(attributeName)) {
             return element.getAttribute(attributeName);
         }
@@ -521,12 +588,105 @@ public class PdfA4Processor {
         String[] parts = attributeName.split(":");
         if (parts.length == 2) {
             String namespaceURI = getNamespaceUriForPrefix(parts[0]);
-            if (namespaceURI != null && element.hasAttributeNS(namespaceURI, parts[1])) {
-                return element.getAttributeNS(namespaceURI, parts[1]);
+            if (namespaceURI != null) {
+                if (element.hasAttributeNS(namespaceURI, parts[1])) {
+                    return element.getAttributeNS(namespaceURI, parts[1]);
+                }
+
+                // Try as child element (XMP/RDF allows property values as child elements)
+                NodeList children = element.getElementsByTagNameNS(namespaceURI, parts[1]);
+                if (children.getLength() > 0) {
+                    return children.item(0).getTextContent();
+                }
+
+                // Also try without namespace for child elements
+                children = element.getElementsByTagName(attributeName);
+                if (children.getLength() > 0) {
+                    return children.item(0).getTextContent();
+                }
             }
         }
 
         return null;
+    }
+
+    /**
+     * Sets a property value on an element, handling both attribute and child element forms.
+     * <p>
+     * If the property exists as a child element, it will be updated. Otherwise, it will be set as an attribute.
+     *
+     * @param element       the XML element
+     * @param attributeName the attribute/element name (may include namespace prefix like "pdfaid:rev")
+     * @param value         the value to set
+     */
+    @VisibleForTesting
+    void setPropertyValue(@NotNull Element element, @NotNull String attributeName, @NotNull String value) {
+        String[] parts = attributeName.split(":");
+        if (parts.length == 2) {
+            String namespaceURI = getNamespaceUriForPrefix(parts[0]);
+            if (namespaceURI != null) {
+                // Check if child element exists
+                NodeList children = element.getElementsByTagNameNS(namespaceURI, parts[1]);
+                if (children.getLength() > 0) {
+                    // Update existing child element
+                    children.item(0).setTextContent(value);
+                    return;
+                }
+
+                // Also check without namespace
+                children = element.getElementsByTagName(attributeName);
+                if (children.getLength() > 0) {
+                    children.item(0).setTextContent(value);
+                    return;
+                }
+            }
+        }
+
+        // Set as attribute (default behavior)
+        element.setAttribute(attributeName, value);
+    }
+
+    /**
+     * Removes a property from an element, handling both attribute and child element forms.
+     *
+     * @param element       the XML element
+     * @param attributeName the attribute/element name (may include namespace prefix like "pdfaid:conformance")
+     */
+    @VisibleForTesting
+    void removeProperty(@NotNull Element element, @NotNull String attributeName) {
+        // Remove attribute
+        if (element.hasAttribute(attributeName)) {
+            element.removeAttribute(attributeName);
+        }
+
+        // Remove child elements
+        String[] parts = attributeName.split(":");
+        if (parts.length == 2) {
+            String namespaceURI = getNamespaceUriForPrefix(parts[0]);
+            if (namespaceURI != null) {
+                NodeList children = element.getElementsByTagNameNS(namespaceURI, parts[1]);
+                while (children.getLength() > 0) {
+                    element.removeChild(children.item(0));
+                }
+
+                children = element.getElementsByTagName(attributeName);
+                while (children.getLength() > 0) {
+                    element.removeChild(children.item(0));
+                }
+            }
+        }
+    }
+
+    /**
+     * Checks if a property exists on an element, either as attribute or child element.
+     *
+     * @param element       the XML element
+     * @param attributeName the attribute/element name (may include namespace prefix)
+     * @return true if the property exists
+     */
+    @VisibleForTesting
+    boolean hasProperty(@NotNull Element element, @NotNull String attributeName) {
+        return getAttributeValue(element, attributeName) != null;
     }
 
     /**

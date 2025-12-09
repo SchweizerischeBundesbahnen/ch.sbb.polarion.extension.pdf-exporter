@@ -4,6 +4,8 @@
 
 Start WeasyPrint as a REST service within a Docker container, as described [here](https://github.com/SchweizerischeBundesbahnen/weasyprint-service).
 
+> **Note:** Recommended version is weasyprint-service 67.0.0 or later.
+
 ## Deploy PDF Exporter to Polarion
 
 Take file `ch.sbb.polarion.extension.pdf-exporter-<version>.jar` from page of [releases](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/releases)

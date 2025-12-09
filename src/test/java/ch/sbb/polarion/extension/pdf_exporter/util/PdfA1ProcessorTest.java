@@ -19,15 +19,15 @@ import java.io.IOException;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class PdfA1bProcessorTest {
+class PdfA1ProcessorTest {
 
     @Test
-    void testProcessPdfA1b_WithTransparentImages() throws IOException {
+    void testProcessPdfA1_WithTransparentImages() throws IOException {
         // Create a PDF with images that have transparency masks
         byte[] pdfBytes = createPdfWithTransparencyMasks();
 
         // Process the PDF
-        byte[] processedPdf = PdfA1bProcessor.processPdfA1b(pdfBytes);
+        byte[] processedPdf = PdfA1Processor.processPdfA1(pdfBytes);
 
         // Verify the result
         assertNotNull(processedPdf);
@@ -50,12 +50,28 @@ class PdfA1bProcessorTest {
     }
 
     @Test
-    void testProcessPdfA1b_WithoutTransparency() throws IOException {
+    void testProcessPdfA1_WithConformance() throws IOException {
+        // Create a simple PDF
+        byte[] pdfBytes = createSimplePdf();
+
+        // Process with conformance A
+        byte[] processedPdfA = PdfA1Processor.processPdfA1(pdfBytes, "A");
+        assertNotNull(processedPdfA);
+        assertTrue(processedPdfA.length > 0);
+
+        // Process with conformance B
+        byte[] processedPdfB = PdfA1Processor.processPdfA1(pdfBytes, "B");
+        assertNotNull(processedPdfB);
+        assertTrue(processedPdfB.length > 0);
+    }
+
+    @Test
+    void testProcessPdfA1_WithoutTransparency() throws IOException {
         // Create a simple PDF without transparency
         byte[] pdfBytes = createSimplePdf();
 
         // Process the PDF
-        byte[] processedPdf = PdfA1bProcessor.processPdfA1b(pdfBytes);
+        byte[] processedPdf = PdfA1Processor.processPdfA1(pdfBytes);
 
         // Verify the result
         assertNotNull(processedPdf);
@@ -63,7 +79,7 @@ class PdfA1bProcessorTest {
     }
 
     @Test
-    void testProcessPdfA1b_EmptyDocument() throws IOException {
+    void testProcessPdfA1_EmptyDocument() throws IOException {
         // Create an empty PDF
         byte[] pdfBytes;
         try (PDDocument doc = new PDDocument();
@@ -74,7 +90,7 @@ class PdfA1bProcessorTest {
         }
 
         // Process the PDF
-        byte[] processedPdf = PdfA1bProcessor.processPdfA1b(pdfBytes);
+        byte[] processedPdf = PdfA1Processor.processPdfA1(pdfBytes);
 
         // Verify the result
         assertNotNull(processedPdf);
@@ -100,7 +116,7 @@ class PdfA1bProcessorTest {
             page.setResources(resources);
 
             // Process the document
-            PdfA1bProcessor.removeImageTransparency(doc);
+            PdfA1Processor.removeImageTransparency(doc);
 
             // Verify masks are removed
             assertFalse(imageDict.containsKey(COSName.SMASK));
@@ -124,7 +140,7 @@ class PdfA1bProcessorTest {
             page.setResources(resources);
 
             // Process the document (should not throw any exceptions)
-            PdfA1bProcessor.removeImageTransparency(doc);
+            PdfA1Processor.removeImageTransparency(doc);
 
             // Verify no masks are present
             COSDictionary imageDict = image.getCOSObject();
@@ -141,7 +157,7 @@ class PdfA1bProcessorTest {
             doc.addPage(page);
 
             // Verify that processing a page with null resources does not throw an exception
-            assertDoesNotThrow(() -> PdfA1bProcessor.removeImageTransparency(doc));
+            assertDoesNotThrow(() -> PdfA1Processor.removeImageTransparency(doc));
         }
     }
 
@@ -164,7 +180,7 @@ class PdfA1bProcessorTest {
             resources.put(COSName.getPDFName("Im2"), image2);
 
             // Process resources
-            int masksRemoved = PdfA1bProcessor.removeTransparencyMasks(resources);
+            int masksRemoved = PdfA1Processor.removeTransparencyMasks(resources);
 
             // Verify both masks were removed
             assertEquals(2, masksRemoved);
@@ -178,7 +194,7 @@ class PdfA1bProcessorTest {
         PDResources resources = new PDResources();
 
         // Process empty resources
-        int masksRemoved = PdfA1bProcessor.removeTransparencyMasks(resources);
+        int masksRemoved = PdfA1Processor.removeTransparencyMasks(resources);
 
         // Verify no masks were removed
         assertEquals(0, masksRemoved);
@@ -193,7 +209,7 @@ class PdfA1bProcessorTest {
             imageDict.setItem(COSName.SMASK, COSName.A);
 
             // Remove masks
-            int removed = PdfA1bProcessor.removeMasksFromImage(image);
+            int removed = PdfA1Processor.removeMasksFromImage(image);
 
             // Verify
             assertEquals(1, removed);
@@ -210,7 +226,7 @@ class PdfA1bProcessorTest {
             imageDict.setItem(COSName.MASK, COSName.A);
 
             // Remove masks
-            int removed = PdfA1bProcessor.removeMasksFromImage(image);
+            int removed = PdfA1Processor.removeMasksFromImage(image);
 
             // Verify
             assertEquals(1, removed);
@@ -228,7 +244,7 @@ class PdfA1bProcessorTest {
             imageDict.setItem(COSName.MASK, COSName.A);
 
             // Remove masks
-            int removed = PdfA1bProcessor.removeMasksFromImage(image);
+            int removed = PdfA1Processor.removeMasksFromImage(image);
 
             // Verify
             assertEquals(2, removed);
@@ -244,7 +260,7 @@ class PdfA1bProcessorTest {
             PDImageXObject image = PDImageXObject.createFromByteArray(doc, toByteArray(bufferedImage), "test");
 
             // Remove masks
-            int removed = PdfA1bProcessor.removeMasksFromImage(image);
+            int removed = PdfA1Processor.removeMasksFromImage(image);
 
             // Verify
             assertEquals(0, removed);
@@ -276,7 +292,7 @@ class PdfA1bProcessorTest {
         }
 
         // Process the PDF
-        byte[] processedPdf = PdfA1bProcessor.processPdfA1b(pdfBytes);
+        byte[] processedPdf = PdfA1Processor.processPdfA1(pdfBytes);
 
         // Verify all masks are removed from all pages
         try (PDDocument doc = Loader.loadPDF(processedPdf)) {

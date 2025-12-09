@@ -96,23 +96,35 @@ And then you can specify custom orientation for this page break:
 
 This configuration property allows selecting a PDF variant to be used for PDF generation. The following variants are supported:
 
-| Variant      | Description                                                      |
-|--------------|------------------------------------------------------------------|
-| **pdf/a-1a** | Accessible PDF/A-1 (tagged, Unicode)                             |
-| **pdf/a-1b** | Basic visual preservation (older PDF standard)                   |
-| **pdf/a-2a** | Accessible PDF/A-2 (tagged, Unicode, modern features)            |
-| **pdf/a-2b** | Basic visual preservation with modern features like transparency |
-| **pdf/a-2u** | Visual preservation + searchable text (Unicode)                  |
-| **pdf/a-3a** | Accessible PDF/A-3 (tagged, Unicode, file attachments)           |
-| **pdf/a-3b** | Visual preservation with file attachments                        |
-| **pdf/a-3u** | Visual preservation + searchable text with file attachments      |
-| **pdf/a-4e** | PDF/A-4 for engineering documents (allows 3D, RichMedia)         |
-| **pdf/a-4f** | PDF/A-4 with embedded files                                      |
-| **pdf/a-4u** | Searchable text + PDF 2.0 features                               |
-| **pdf/ua-1** | Accessible PDF for assistive technologies (ISO 14289-1)          |
-| **pdf/ua-2** | Accessible PDF for assistive technologies (ISO 14289-2)          |
+| Variant      | Description                                                      | Notes |
+|--------------|------------------------------------------------------------------|-------|
+| **pdf/a-1a** | Accessible PDF/A-1 (tagged, Unicode)                             | |
+| **pdf/a-1b** | Basic visual preservation (older PDF standard)                   | |
+| **pdf/a-2a** | Accessible PDF/A-2 (tagged, Unicode, modern features)            | |
+| **pdf/a-2b** | Basic visual preservation with modern features like transparency | Default |
+| **pdf/a-2u** | Visual preservation + searchable text (Unicode)                  | |
+| **pdf/a-3a** | Accessible PDF/A-3 (tagged, Unicode, file attachments)           | |
+| **pdf/a-3b** | Visual preservation with file attachments                        | |
+| **pdf/a-3u** | Visual preservation + searchable text with file attachments      | |
+| **pdf/a-4e** | PDF/A-4 for engineering documents (allows 3D, RichMedia)         | |
+| **pdf/a-4f** | PDF/A-4 with embedded files                                      | Requires attachments |
+| **pdf/a-4u** | Searchable text + PDF 2.0 features                               | |
+| **pdf/ua-1** | Accessible PDF for assistive technologies (ISO 14289-1)          | Recommended for accessibility |
+| **pdf/ua-2** | Accessible PDF for assistive technologies (ISO 14289-2:2024)     | Partial support, see below |
 
 The default value is `pdf/a-2b`.
+
+**Important notes:**
+
+- **pdf/a-4f** requires documents to have attachments (embedded files) per ISO 19005-4:2020. Use the "Embed attachments into resulted PDF" option or ensure your document has attachments.
+
+- **pdf/ua-2** has incomplete support in WeasyPrint 67.0. Known issues include:
+  - Structure destinations required for internal links
+  - PDF 2.0 namespace required for Document element
+  - Document-Span structure restriction
+  - ListNumbering attribute for lists
+
+  If full PDF/UA compliance is required, use **pdf/ua-1** instead.
 
 ### Image density
 
