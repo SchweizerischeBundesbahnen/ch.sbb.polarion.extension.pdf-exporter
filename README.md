@@ -285,6 +285,26 @@ All good so far.
 
 ## Upgrade
 
+### Upgrade to weasyprint-service 67.0.0
+
+WeasyPrint 67.0 introduced breaking changes in PDF variant support:
+
+**Removed variant:**
+- `pdf/a-4b` - no longer supported by WeasyPrint 67.0
+
+**New variants added:**
+- `pdf/a-1a` - Accessible PDF/A-1 (tagged, Unicode)
+- `pdf/a-2a` - Accessible PDF/A-2 (tagged, Unicode, modern features)
+- `pdf/a-3a` - Accessible PDF/A-3 (tagged, Unicode, file attachments)
+- `pdf/a-4e` - PDF/A-4 for engineering documents (allows 3D, RichMedia)
+- `pdf/a-4f` - PDF/A-4 with embedded files
+- `pdf/ua-2` - Accessible PDF for assistive technologies (ISO 14289-2)
+
+**Migration steps:**
+1. If you were using `pdf/a-4b` variant, switch to `pdf/a-4f` or `pdf/a-4e` instead
+2. Update any style packages that reference `PDF_A_4B` to use `PDF_A_4F` or `PDF_A_4E`
+3. Update weasyprint-service Docker image to version 67.0.0 or later
+
 ### Upgrade from version 9.0.0 to 9.x.x
 
 Due to a conflict of HTML elements' IDs in default cover page templates, their HTML/CSS were modified
