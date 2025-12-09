@@ -205,7 +205,7 @@ public class MediaUtils {
     private byte[] applyPdfAPostProcessing(byte[] mergedPdf, @NotNull PdfVariant pdfVariant) {
         return switch (pdfVariant) {
             case PDF_A_1B -> PdfA1bProcessor.processPdfA1b(mergedPdf);
-            case PDF_A_4B, PDF_A_4U -> PdfA4Processor.processPdfA4(mergedPdf);
+            case PDF_A_4E, PDF_A_4F, PDF_A_4U -> PdfA4Processor.processPdfA4(mergedPdf);
             default -> mergedPdf;
         };
     }

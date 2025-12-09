@@ -645,7 +645,7 @@ class PdfA4ProcessorTest {
         }
 
         sb.append(" />");
-        sb.append("<rdf:Description rdf:about=\"\" pdf:Producer=\"WeasyPrint 66.0\" />");
+        sb.append("<rdf:Description rdf:about=\"\" pdf:Producer=\"WeasyPrint 67.0\" />");
         sb.append("</rdf:RDF>\n");
         sb.append("<?xpacket end=\"r\"?>");
         return sb.toString();

@@ -32,14 +32,19 @@ class PdfVariantTest {
 
     @Test
     void testToWeasyPrintParameter() {
+        assertEquals("pdf/a-1a", PdfVariant.PDF_A_1A.toWeasyPrintParameter());
         assertEquals("pdf/a-1b", PdfVariant.PDF_A_1B.toWeasyPrintParameter());
+        assertEquals("pdf/a-2a", PdfVariant.PDF_A_2A.toWeasyPrintParameter());
         assertEquals("pdf/a-2b", PdfVariant.PDF_A_2B.toWeasyPrintParameter());
-        assertEquals("pdf/a-3b", PdfVariant.PDF_A_3B.toWeasyPrintParameter());
-        assertEquals("pdf/a-4b", PdfVariant.PDF_A_4B.toWeasyPrintParameter());
         assertEquals("pdf/a-2u", PdfVariant.PDF_A_2U.toWeasyPrintParameter());
+        assertEquals("pdf/a-3a", PdfVariant.PDF_A_3A.toWeasyPrintParameter());
+        assertEquals("pdf/a-3b", PdfVariant.PDF_A_3B.toWeasyPrintParameter());
         assertEquals("pdf/a-3u", PdfVariant.PDF_A_3U.toWeasyPrintParameter());
+        assertEquals("pdf/a-4e", PdfVariant.PDF_A_4E.toWeasyPrintParameter());
+        assertEquals("pdf/a-4f", PdfVariant.PDF_A_4F.toWeasyPrintParameter());
         assertEquals("pdf/a-4u", PdfVariant.PDF_A_4U.toWeasyPrintParameter());
         assertEquals("pdf/ua-1", PdfVariant.PDF_UA_1.toWeasyPrintParameter());
+        assertEquals("pdf/ua-2", PdfVariant.PDF_UA_2.toWeasyPrintParameter());
     }
 
 }

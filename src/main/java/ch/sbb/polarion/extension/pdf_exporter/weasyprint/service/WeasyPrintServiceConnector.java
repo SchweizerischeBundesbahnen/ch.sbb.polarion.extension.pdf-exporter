@@ -113,7 +113,7 @@ public class WeasyPrintServiceConnector implements WeasyPrintConverter {
     }
 
     private boolean isPdfA4Variant(@NotNull PdfVariant pdfVariant) {
-        return pdfVariant == PdfVariant.PDF_A_4B || pdfVariant == PdfVariant.PDF_A_4U;
+        return pdfVariant == PdfVariant.PDF_A_4E || pdfVariant == PdfVariant.PDF_A_4F || pdfVariant == PdfVariant.PDF_A_4U;
     }
 
     private byte[] postProcessPdfA4(byte[] pdfBytes) {

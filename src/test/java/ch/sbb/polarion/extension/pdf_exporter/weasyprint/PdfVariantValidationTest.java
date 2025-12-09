@@ -129,13 +129,19 @@ class PdfVariantValidationTest extends BaseWeasyPrintTest {
 
     private @NotNull PDFAFlavour mapPdfVariantToVeraPDFFlavour(@NotNull PdfVariant pdfVariant) {
         return switch (pdfVariant) {
+            case PDF_A_1A -> PDFAFlavour.PDFA_1_A;
             case PDF_A_1B -> PDFAFlavour.PDFA_1_B;
+            case PDF_A_2A -> PDFAFlavour.PDFA_2_A;
             case PDF_A_2B -> PDFAFlavour.PDFA_2_B;
-            case PDF_A_3B -> PDFAFlavour.PDFA_3_B;
-            case PDF_A_4B, PDF_A_4U -> PDFAFlavour.PDFA_4;
             case PDF_A_2U -> PDFAFlavour.PDFA_2_U;
+            case PDF_A_3A -> PDFAFlavour.PDFA_3_A;
+            case PDF_A_3B -> PDFAFlavour.PDFA_3_B;
             case PDF_A_3U -> PDFAFlavour.PDFA_3_U;
+            case PDF_A_4E -> PDFAFlavour.PDFA_4_E;
+            case PDF_A_4F -> PDFAFlavour.PDFA_4_F;
+            case PDF_A_4U -> PDFAFlavour.PDFA_4;
             case PDF_UA_1 -> PDFAFlavour.PDFUA_1;
+            case PDF_UA_2 -> PDFAFlavour.PDFUA_2;
         };
     }
 
