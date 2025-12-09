@@ -37,6 +37,11 @@ public class PdfA1Processor {
     private static final Logger logger = Logger.getLogger(PdfA1Processor.class);
 
     /**
+     * Standard PDF 1.4 structure type for table elements.
+     */
+    private static final String STRUCTURE_TYPE_TABLE = "Table";
+
+    /**
      * Non-standard structure types used by WeasyPrint for HTML5 table elements
      * mapped to their nearest standard PDF 1.4 equivalents.
      * <p>
@@ -45,9 +50,9 @@ public class PdfA1Processor {
      * For PDF/A-1 (based on PDF 1.4), we map these to Table as the nearest equivalent.
      */
     private static final Map<String, String> NON_STANDARD_ROLE_MAPPINGS = Map.of(
-            "TBody", "Table",
-            "THead", "Table",
-            "TFoot", "Table"
+            "TBody", STRUCTURE_TYPE_TABLE,
+            "THead", STRUCTURE_TYPE_TABLE,
+            "TFoot", STRUCTURE_TYPE_TABLE
     );
 
     /**

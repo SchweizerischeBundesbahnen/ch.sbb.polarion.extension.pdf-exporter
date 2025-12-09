@@ -466,7 +466,7 @@ class PdfA4ProcessorTest {
                 <?xpacket end="r"?>
                 """;
 
-        String result = PdfA4Processor.extractRdfContent(xmpMetadata);
+        String result = XmpMetadataUtils.extractRdfContent(xmpMetadata);
 
         assertThat(result).isEqualTo("<rdf:RDF xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\">content</rdf:RDF>");
     }
@@ -476,7 +476,7 @@ class PdfA4ProcessorTest {
     void testExtractRdfContent_noXpacket() {
         String xmpMetadata = "<rdf:RDF xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\">content</rdf:RDF>";
 
-        String result = PdfA4Processor.extractRdfContent(xmpMetadata);
+        String result = XmpMetadataUtils.extractRdfContent(xmpMetadata);
 
         assertThat(result).isEqualTo("<rdf:RDF xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\">content</rdf:RDF>");
     }
@@ -487,7 +487,7 @@ class PdfA4ProcessorTest {
         String xmpMetadata = "<?xpacket begin=\"\" id=\"W5M0MpCehiHzreSzNTczkc9d\"?>" +
                 "<rdf:RDF xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\">content</rdf:RDF>";
 
-        String result = PdfA4Processor.extractRdfContent(xmpMetadata);
+        String result = XmpMetadataUtils.extractRdfContent(xmpMetadata);
 
         assertThat(result).isEqualTo("<rdf:RDF xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\">content</rdf:RDF>");
     }
@@ -496,7 +496,7 @@ class PdfA4ProcessorTest {
     void testWrapWithXPacket() {
         String rdfContent = "<rdf:RDF>content</rdf:RDF>";
 
-        String result = PdfA4Processor.wrapWithXPacket(rdfContent);
+        String result = XmpMetadataUtils.wrapWithXPacket(rdfContent);
 
         // UTF-8 BOM (U+FEFF) is required in the begin attribute for PDF/A compliance
         assertThat(result)
@@ -510,8 +510,8 @@ class PdfA4ProcessorTest {
         String rdfContent = "<rdf:RDF>content</rdf:RDF>";
 
         // Generate multiple XMP packets
-        String result1 = PdfA4Processor.wrapWithXPacket(rdfContent);
-        String result2 = PdfA4Processor.wrapWithXPacket(rdfContent);
+        String result1 = XmpMetadataUtils.wrapWithXPacket(rdfContent);
+        String result2 = XmpMetadataUtils.wrapWithXPacket(rdfContent);
 
         // Extract IDs from both results (after "id=\"" and before "\"?>")
         int id1Start = result1.indexOf("id=\"") + 4;
@@ -627,7 +627,7 @@ class PdfA4ProcessorTest {
     void testGetAttributeValue_withAttribute() {
         Element element = createPdfA4DescriptionElement(false, false);
 
-        String value = PdfA4Processor.getAttributeValue(element, "pdfaid:part");
+        String value = XmpMetadataUtils.getAttributeValue(element, "pdfaid:part");
 
         assertThat(value).isEqualTo("4");
     }
@@ -637,44 +637,44 @@ class PdfA4ProcessorTest {
     void testGetAttributeValue_withoutAttribute() {
         Element element = createPdfA4DescriptionElement(false, false);
 
-        String value = PdfA4Processor.getAttributeValue(element, "pdfaid:nonexistent");
+        String value = XmpMetadataUtils.getAttributeValue(element, "pdfaid:nonexistent");
 
         assertThat(value).isNull();
     }
 
     @Test
     void testGetNamespaceUriForPrefix_pdfaid() {
-        String uri = PdfA4Processor.getNamespaceUriForPrefix("pdfaid");
+        String uri = XmpMetadataUtils.getNamespaceUriForPrefix("pdfaid");
         assertThat(uri).isEqualTo("http://www.aiim.org/pdfa/ns/id/");
     }
 
     @Test
     void testGetNamespaceUriForPrefix_pdf() {
-        String uri = PdfA4Processor.getNamespaceUriForPrefix("pdf");
+        String uri = XmpMetadataUtils.getNamespaceUriForPrefix("pdf");
         assertThat(uri).isEqualTo("http://ns.adobe.com/pdf/1.3/");
     }
 
     @Test
     void testGetNamespaceUriForPrefix_rdf() {
-        String uri = PdfA4Processor.getNamespaceUriForPrefix("rdf");
+        String uri = XmpMetadataUtils.getNamespaceUriForPrefix("rdf");
         assertThat(uri).isEqualTo("http://www.w3.org/1999/02/22-rdf-syntax-ns#");
     }
 
     @Test
     void testGetNamespaceUriForPrefix_dc() {
-        String uri = PdfA4Processor.getNamespaceUriForPrefix("dc");
+        String uri = XmpMetadataUtils.getNamespaceUriForPrefix("dc");
         assertThat(uri).isEqualTo("http://purl.org/dc/elements/1.1/");
     }
 
     @Test
     void testGetNamespaceUriForPrefix_xmp() {
-        String uri = PdfA4Processor.getNamespaceUriForPrefix("xmp");
+        String uri = XmpMetadataUtils.getNamespaceUriForPrefix("xmp");
         assertThat(uri).isEqualTo("http://ns.adobe.com/xap/1.0/");
     }
 
     @Test
     void testGetNamespaceUriForPrefix_unknown() {
-        String uri = PdfA4Processor.getNamespaceUriForPrefix("unknown");
+        String uri = XmpMetadataUtils.getNamespaceUriForPrefix("unknown");
         assertThat(uri).isNull();
     }
 
@@ -685,7 +685,7 @@ class PdfA4ProcessorTest {
         DocumentBuilder builder = factory.newDocumentBuilder();
         Document doc = builder.parse(new InputSource(new StringReader("<root><child>text</child></root>")));
 
-        String result = PdfA4Processor.documentToString(doc);
+        String result = XmpMetadataUtils.documentToString(doc);
 
         assertThat(result)
                 .contains("<root>")

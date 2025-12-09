@@ -15,26 +15,15 @@ import org.jetbrains.annotations.VisibleForTesting;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
-import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
-import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.transform.OutputKeys;
-import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerException;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.dom.DOMSource;
-import javax.xml.transform.stream.StreamResult;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.StringReader;
-import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.Calendar;
-import java.util.UUID;
 
 /**
  * Utility class for processing PDF/A-4 documents to ensure compliance with ISO 19005-4:2020 specification.
@@ -66,6 +55,7 @@ public class PdfA4Processor {
     private static final Logger logger = Logger.getLogger(PdfA4Processor.class);
     private static final String PDF_A_4_REV_YEAR = "2020";
     private static final String PDFAID_REV = "pdfaid:rev";
+    private static final String PDFAID_CONFORMANCE = "pdfaid:conformance";
 
     /**
      * Processes a PDF/A-4 document to fix compliance issues according to ISO 19005-4:2020.
@@ -417,16 +407,14 @@ public class PdfA4Processor {
      */
     @VisibleForTesting
     String fixXmpMetadataXml(@NotNull String xmpMetadata, @Nullable String conformance) throws TransformerException, ParserConfigurationException, IOException, SAXException {
-        // Parse XML
-        DocumentBuilderFactory documentBuilderFactory = createSecureDocumentBuilderFactory();
-        DocumentBuilder documentBuilder = documentBuilderFactory.newDocumentBuilder();
-
         // Extract the RDF content (between <?xpacket...?> tags)
-        String rdfContent = extractRdfContent(xmpMetadata);
-        Document document = documentBuilder.parse(new InputSource(new StringReader(rdfContent)));
+        String rdfContent = XmpMetadataUtils.extractRdfContent(xmpMetadata);
+
+        // Parse XML
+        Document document = XmpMetadataUtils.parseXml(rdfContent);
 
         // Find all rdf:Description elements
-        NodeList descriptions = document.getElementsByTagNameNS("http://www.w3.org/1999/02/22-rdf-syntax-ns#", "Description");
+        NodeList descriptions = XmpMetadataUtils.getRdfDescriptions(document);
 
         boolean metadataModified = false;
 
@@ -434,7 +422,7 @@ public class PdfA4Processor {
             Element description = (Element) descriptions.item(i);
 
             // Check if this is a PDF/A identification element (has pdfaid:part attribute)
-            String pdfaidPart = getAttributeValue(description, "pdfaid:part");
+            String pdfaidPart = XmpMetadataUtils.getAttributeValue(description, "pdfaid:part");
 
             if ("4".equals(pdfaidPart)) {
                 // This is PDF/A-4 identification - fix it
@@ -448,71 +436,8 @@ public class PdfA4Processor {
         }
 
         // Convert back to string with proper XMP packaging
-        String fixedRdf = documentToString(document);
-        return wrapWithXPacket(fixedRdf);
-    }
-
-    /**
-     * Extracts RDF content from XMP metadata (removes xpacket processing instructions).
-     * <p>
-     * XMP metadata format:
-     * <pre>
-     * {@code
-     * <?xpacket begin="..." id="..."?>
-     * <rdf:RDF>...</rdf:RDF>
-     * <?xpacket end="..."?>
-     * }
-     * </pre>
-     * <p>
-     * Uses XML DOM parsing to properly handle XML structure and remove processing instructions.
-     *
-     * @param xmpMetadata the full XMP metadata with xpacket tags
-     * @return the RDF content without xpacket tags
-     * @throws ParserConfigurationException if XML parser cannot be configured
-     * @throws IOException if XML parsing fails
-     * @throws SAXException if XML is malformed
-     * @throws TransformerException if XML transformation fails
-     */
-    @VisibleForTesting
-    String extractRdfContent(@NotNull String xmpMetadata) throws ParserConfigurationException, IOException, SAXException, TransformerException {
-        // Parse the complete XMP metadata (including processing instructions)
-        DocumentBuilderFactory secureDocumentBuilderFactory = createSecureDocumentBuilderFactory();
-        DocumentBuilder documentBuilder = secureDocumentBuilderFactory.newDocumentBuilder();
-
-        // Parse the XMP metadata as XML
-        Document document = documentBuilder.parse(new InputSource(new StringReader(xmpMetadata)));
-
-        // Serialize just the document element (RDF) without processing instructions
-        TransformerFactory transformerFactory = createSecureTransformerFactory();
-        Transformer transformer = transformerFactory.newTransformer();
-        transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
-        transformer.setOutputProperty(OutputKeys.INDENT, "no");
-
-        StringWriter writer = new StringWriter();
-        // Transform only the document element (this excludes processing instructions)
-        transformer.transform(new DOMSource(document.getDocumentElement()), new StreamResult(writer));
-
-        return writer.toString().trim();
-    }
-
-    /**
-     * Wraps RDF content with XMP packet processing instructions.
-     * Generates a unique packet ID using UUID.
-     * <p>
-     * According to XMP Specification (ISO 16684-1), the xpacket begin attribute must contain
-     * the Unicode BOM (U+FEFF) to indicate UTF-8 encoding for PDF/A compliance.
-     *
-     * @param rdfContent the RDF content to wrap
-     * @return the complete XMP metadata with xpacket tags
-     */
-    @VisibleForTesting
-    @NotNull String wrapWithXPacket(@NotNull String rdfContent) {
-        // Generate unique packet ID (remove hyphens from UUID to match XMP packet ID format)
-        String packetId = UUID.randomUUID().toString().replace("-", "");
-        // UTF-8 BOM (U+FEFF) is required in the begin attribute for PDF/A compliance
-        return "<?xpacket begin=\"\uFEFF\" id=\"" + packetId + "\"?>\n" +
-               rdfContent + "\n" +
-               "<?xpacket end=\"r\"?>";
+        String fixedRdf = XmpMetadataUtils.documentToString(document);
+        return XmpMetadataUtils.wrapWithXPacket(fixedRdf);
     }
 
     /**
@@ -533,237 +458,37 @@ public class PdfA4Processor {
         boolean modified = false;
 
         // Fix 1: Add or update pdfaid:rev to "2020"
-        String currentRev = getAttributeValue(description, PDFAID_REV);
+        String currentRev = XmpMetadataUtils.getAttributeValue(description, PDFAID_REV);
         if (currentRev == null || currentRev.isEmpty()) {
             // Add pdfaid:rev="2020"
-            setPropertyValue(description, PDFAID_REV, PDF_A_4_REV_YEAR);
+            XmpMetadataUtils.setPropertyValue(description, PDFAID_REV, PDF_A_4_REV_YEAR);
             logger.debug("Added pdfaid:rev=\"" + PDF_A_4_REV_YEAR + "\" to XMP metadata");
             modified = true;
         } else if (!PDF_A_4_REV_YEAR.equals(currentRev)) {
             // Update incorrect rev value
-            setPropertyValue(description, PDFAID_REV, PDF_A_4_REV_YEAR);
+            XmpMetadataUtils.setPropertyValue(description, PDFAID_REV, PDF_A_4_REV_YEAR);
             logger.debug("Updated pdfaid:rev from \"" + currentRev + "\" to \"" + PDF_A_4_REV_YEAR + "\"");
             modified = true;
         }
 
         // Fix 2: Handle pdfaid:conformance based on conformance level
-        String currentConformance = getAttributeValue(description, "pdfaid:conformance");
+        String currentConformance = XmpMetadataUtils.getAttributeValue(description, PDFAID_CONFORMANCE);
         if (conformance != null) {
             // PDF/A-4e and PDF/A-4f require conformance attribute
             if (!conformance.equals(currentConformance)) {
-                setPropertyValue(description, "pdfaid:conformance", conformance);
+                XmpMetadataUtils.setPropertyValue(description, PDFAID_CONFORMANCE, conformance);
                 logger.debug("Set pdfaid:conformance=\"" + conformance + "\" in XMP metadata");
                 modified = true;
             }
         } else {
             // PDF/A-4 (basic) and PDF/A-4u shall not have conformance property
-            if (hasProperty(description, "pdfaid:conformance")) {
-                removeProperty(description, "pdfaid:conformance");
+            if (XmpMetadataUtils.hasProperty(description, PDFAID_CONFORMANCE)) {
+                XmpMetadataUtils.removeProperty(description, PDFAID_CONFORMANCE);
                 logger.debug("Removed pdfaid:conformance from XMP metadata");
                 modified = true;
             }
         }
 
         return modified;
-    }
-
-    /**
-     * Gets attribute or child element value from element, handling namespace prefixes.
-     * <p>
-     * In XMP/RDF, property values can be expressed either as attributes or as child elements.
-     * This method checks both forms.
-     *
-     * @param element       the XML element
-     * @param attributeName the attribute/element name (may include namespace prefix like "pdfaid:part")
-     * @return the attribute/element value, or null if not found
-     */
-    @VisibleForTesting
-    @Nullable String getAttributeValue(@NotNull Element element, @NotNull String attributeName) {
-        // Try as attribute with namespace prefix
-        if (element.hasAttribute(attributeName)) {
-            return element.getAttribute(attributeName);
-        }
-
-        // Try without prefix (in case of namespace URI)
-        String[] parts = attributeName.split(":");
-        if (parts.length == 2) {
-            String namespaceURI = getNamespaceUriForPrefix(parts[0]);
-            if (namespaceURI != null) {
-                if (element.hasAttributeNS(namespaceURI, parts[1])) {
-                    return element.getAttributeNS(namespaceURI, parts[1]);
-                }
-
-                // Try as child element (XMP/RDF allows property values as child elements)
-                NodeList children = element.getElementsByTagNameNS(namespaceURI, parts[1]);
-                if (children.getLength() > 0) {
-                    return children.item(0).getTextContent();
-                }
-
-                // Also try without namespace for child elements
-                children = element.getElementsByTagName(attributeName);
-                if (children.getLength() > 0) {
-                    return children.item(0).getTextContent();
-                }
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * Sets a property value on an element, handling both attribute and child element forms.
-     * <p>
-     * If the property exists as a child element, it will be updated. Otherwise, it will be set as an attribute.
-     *
-     * @param element       the XML element
-     * @param attributeName the attribute/element name (may include namespace prefix like "pdfaid:rev")
-     * @param value         the value to set
-     */
-    @VisibleForTesting
-    void setPropertyValue(@NotNull Element element, @NotNull String attributeName, @NotNull String value) {
-        String[] parts = attributeName.split(":");
-        if (parts.length == 2) {
-            String namespaceURI = getNamespaceUriForPrefix(parts[0]);
-            if (namespaceURI != null) {
-                // Check if child element exists
-                NodeList children = element.getElementsByTagNameNS(namespaceURI, parts[1]);
-                if (children.getLength() > 0) {
-                    // Update existing child element
-                    children.item(0).setTextContent(value);
-                    return;
-                }
-
-                // Also check without namespace
-                children = element.getElementsByTagName(attributeName);
-                if (children.getLength() > 0) {
-                    children.item(0).setTextContent(value);
-                    return;
-                }
-            }
-        }
-
-        // Set as attribute (default behavior)
-        element.setAttribute(attributeName, value);
-    }
-
-    /**
-     * Removes a property from an element, handling both attribute and child element forms.
-     *
-     * @param element       the XML element
-     * @param attributeName the attribute/element name (may include namespace prefix like "pdfaid:conformance")
-     */
-    @VisibleForTesting
-    void removeProperty(@NotNull Element element, @NotNull String attributeName) {
-        // Remove attribute
-        if (element.hasAttribute(attributeName)) {
-            element.removeAttribute(attributeName);
-        }
-
-        // Remove child elements
-        String[] parts = attributeName.split(":");
-        if (parts.length == 2) {
-            String namespaceURI = getNamespaceUriForPrefix(parts[0]);
-            if (namespaceURI != null) {
-                NodeList children = element.getElementsByTagNameNS(namespaceURI, parts[1]);
-                while (children.getLength() > 0) {
-                    element.removeChild(children.item(0));
-                }
-
-                children = element.getElementsByTagName(attributeName);
-                while (children.getLength() > 0) {
-                    element.removeChild(children.item(0));
-                }
-            }
-        }
-    }
-
-    /**
-     * Checks if a property exists on an element, either as attribute or child element.
-     *
-     * @param element       the XML element
-     * @param attributeName the attribute/element name (may include namespace prefix)
-     * @return true if the property exists
-     */
-    @VisibleForTesting
-    boolean hasProperty(@NotNull Element element, @NotNull String attributeName) {
-        return getAttributeValue(element, attributeName) != null;
-    }
-
-    /**
-     * Returns namespace URI for common XMP prefixes.
-     *
-     * @param prefix the namespace prefix (e.g., "pdfaid", "pdf", "rdf")
-     * @return the namespace URI, or null if unknown prefix
-     */
-    @VisibleForTesting
-    String getNamespaceUriForPrefix(@NotNull String prefix) {
-        return switch (prefix) {
-            case "pdfaid" -> "http://www.aiim.org/pdfa/ns/id/";
-            case "pdf" -> "http://ns.adobe.com/pdf/1.3/";
-            case "rdf" -> "http://www.w3.org/1999/02/22-rdf-syntax-ns#";
-            case "dc" -> "http://purl.org/dc/elements/1.1/";
-            case "xmp" -> "http://ns.adobe.com/xap/1.0/";
-            default -> null;
-        };
-    }
-
-    /**
-     * Converts XML Document to string.
-     *
-     * @param doc the XML document
-     * @return the XML as string
-     * @throws TransformerException if transformation fails
-     */
-    @VisibleForTesting
-    String documentToString(@NotNull Document doc) throws TransformerException {
-        TransformerFactory transformerFactory = createSecureTransformerFactory();
-        Transformer transformer = transformerFactory.newTransformer();
-        transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
-        transformer.setOutputProperty(OutputKeys.INDENT, "no");
-
-        StringWriter writer = new StringWriter();
-        transformer.transform(new DOMSource(doc), new StreamResult(writer));
-        return writer.toString();
-    }
-
-    /**
-     * Creates a secure DocumentBuilderFactory with XXE protection enabled.
-     * Disables external entity processing to prevent XXE (XML External Entity) attacks.
-     *
-     * @return a secure DocumentBuilderFactory instance
-     * @throws ParserConfigurationException if configuration fails
-     */
-    private static DocumentBuilderFactory createSecureDocumentBuilderFactory() throws ParserConfigurationException {
-        DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
-        documentBuilderFactory.setNamespaceAware(true);
-
-        // Disable external entity processing to prevent XXE attacks
-        documentBuilderFactory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
-        documentBuilderFactory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
-        documentBuilderFactory.setFeature("http://xml.org/sax/features/external-general-entities", false);
-        documentBuilderFactory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
-        documentBuilderFactory.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
-        documentBuilderFactory.setXIncludeAware(false);
-        documentBuilderFactory.setExpandEntityReferences(false);
-
-        return documentBuilderFactory;
-    }
-
-    /**
-     * Creates a secure TransformerFactory with XXE protection enabled.
-     * Disables external entity processing to prevent XXE (XML External Entity) attacks.
-     *
-     * @return a secure TransformerFactory instance
-     * @throws TransformerException if configuration fails
-     */
-    private static TransformerFactory createSecureTransformerFactory() throws TransformerException {
-        TransformerFactory transformerFactory = TransformerFactory.newInstance();
-
-        // Disable external entity processing to prevent XXE attacks
-        transformerFactory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
-        transformerFactory.setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, "");
-        transformerFactory.setAttribute(XMLConstants.ACCESS_EXTERNAL_STYLESHEET, "");
-
-        return transformerFactory;
     }
 }
