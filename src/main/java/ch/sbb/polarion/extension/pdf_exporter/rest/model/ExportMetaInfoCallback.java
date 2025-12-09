@@ -13,4 +13,3 @@ public class ExportMetaInfoCallback {
             implementation = WorkItemRefData.class)
     private List<WorkItemRefData> linkedWorkItems;
 }
-
