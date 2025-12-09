@@ -17,7 +17,7 @@ The extension uses [WeasyPrint](https://weasyprint.org/) as a PDF engine and req
 
 > [!IMPORTANT]
 > Starting from version 8.0.0 only latest version of Polarion is supported.
-> Right now it is Polarion 2506.
+> Right now it is Polarion 2512.
 
 > [!IMPORTANT]
 > Please, read our [disclaimer](DISCLAIMER.md) before using this extension.
@@ -294,7 +294,7 @@ if you always used either default template(-s) or/and custom templates not inher
 
 ### Upgrade from version 8.x.x to 9.0.0
 
-In version 9.0.0 support for Polarion 2410 and older has been dropped. This extension supports only Polarion 2506.
+In version 9.0.0 support for Polarion 2410 and older has been dropped. This extension supports only Polarion 2512.
 
 PDF variant configuration has been moved to style package instead of using configuration properties.
 
