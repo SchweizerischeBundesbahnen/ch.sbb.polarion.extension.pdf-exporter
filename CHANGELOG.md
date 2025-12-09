@@ -1,5 +1,18 @@
 # Changelog
 
+## [10.1.2](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v10.1.1...v10.1.2) (2025-12-08)
+
+
+### Bug Fixes
+
+* **ci:** replace flaky Swagger Editor Validator with Redocly CLI ([#641](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/641)) ([9c184c8](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/9c184c80b44b0186e5af9f046a1698545d8b53a0)), closes [#640](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/640)
+* **deps:** update dependency net.bytebuddy:byte-buddy to v1.18.2 ([4e0d20f](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/4e0d20f8dbcaca24b3e9ae95706dbf4dd99e88bd))
+* **deps:** update dependency org.apache.commons:commons-text to v1.15.0 ([4dd15c5](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/4dd15c546e39260a7e1a7c52ebf8e9df2f3e4537))
+* **deps:** update dependency org.apache.tika:tika-core to v3.2.3 ([b839890](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/b83989020e7fde6b871dbc111130b56b745e228b))
+* generation of table of figures and tables ([#631](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/631)) ([05e4bcd](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/05e4bcdbfa147e9fe7400df3929b4794e5c3986f)), closes [#630](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/630)
+* resolved LiveDoc comments being displayed inside workitems ([#642](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/642)) ([a773bd7](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/a773bd761ebe7c5aee0d35c8693f905caf787120)), closes [#638](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/638)
+* use actual Apache Tika library version ([#646](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/646)) ([87de7a6](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/87de7a6b0487426940a55456935d2996ed3edba0)), closes [#645](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/645)
+
 ## [10.1.1](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v10.1.0...v10.1.1) (2025-11-26)
 
 
