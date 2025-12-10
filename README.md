@@ -281,6 +281,19 @@ jobs.timeout.in-progress.minutes=60
 
 ## Known issues
 
+### PDF/A-*A variants with icon fonts (FontAwesome)
+
+PDF/A "A" (accessible) variants require that characters from Unicode Private Use Area (PUA) have `ActualText` entries for accessibility.
+Icon fonts like FontAwesome use PUA codepoints, which causes validation failures with VeraPDF for:
+- `pdf/a-1a`
+- `pdf/a-2a`
+- `pdf/a-3a`
+
+**Workaround:** If your documents contain icon fonts (e.g., FontAwesome icons from Polarion), use "B" or "U" variants instead:
+- `pdf/a-1b` instead of `pdf/a-1a`
+- `pdf/a-2b` or `pdf/a-2u` instead of `pdf/a-2a`
+- `pdf/a-3b` or `pdf/a-3u` instead of `pdf/a-3a`
+
 ### PDF/UA-2 incomplete support
 
 WeasyPrint 67.0 has incomplete support for PDF/UA-2 (ISO 14289-2:2024). The following issues are known:

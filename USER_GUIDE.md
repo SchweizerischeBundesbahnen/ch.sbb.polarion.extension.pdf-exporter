@@ -98,12 +98,12 @@ This configuration property allows selecting a PDF variant to be used for PDF ge
 
 | Variant      | Description                                                      | Notes |
 |--------------|------------------------------------------------------------------|-------|
-| **pdf/a-1a** | Accessible PDF/A-1 (tagged, Unicode)                             | |
+| **pdf/a-1a** | Accessible PDF/A-1 (tagged, Unicode)                             | Icon fonts issue* |
 | **pdf/a-1b** | Basic visual preservation (older PDF standard)                   | |
-| **pdf/a-2a** | Accessible PDF/A-2 (tagged, Unicode, modern features)            | |
+| **pdf/a-2a** | Accessible PDF/A-2 (tagged, Unicode, modern features)            | Icon fonts issue* |
 | **pdf/a-2b** | Basic visual preservation with modern features like transparency | Default |
 | **pdf/a-2u** | Visual preservation + searchable text (Unicode)                  | |
-| **pdf/a-3a** | Accessible PDF/A-3 (tagged, Unicode, file attachments)           | |
+| **pdf/a-3a** | Accessible PDF/A-3 (tagged, Unicode, file attachments)           | Icon fonts issue* |
 | **pdf/a-3b** | Visual preservation with file attachments                        | |
 | **pdf/a-3u** | Visual preservation + searchable text with file attachments      | |
 | **pdf/a-4e** | PDF/A-4 for engineering documents (allows 3D, RichMedia)         | |
@@ -115,6 +115,8 @@ This configuration property allows selecting a PDF variant to be used for PDF ge
 The default value is `pdf/a-2b`.
 
 **Important notes:**
+
+- **\*Icon fonts issue:** PDF/A "A" (accessible) variants (`pdf/a-1a`, `pdf/a-2a`, `pdf/a-3a`) require ActualText for Unicode Private Use Area (PUA) characters. Icon fonts like FontAwesome (used by Polarion) use PUA codepoints, causing validation failures. Use "B" or "U" variants instead if your documents contain icons.
 
 - **pdf/a-4f** requires documents to have attachments (embedded files) per ISO 19005-4:2020. Use the "Embed attachments into resulted PDF" option or ensure your document has attachments.
 
