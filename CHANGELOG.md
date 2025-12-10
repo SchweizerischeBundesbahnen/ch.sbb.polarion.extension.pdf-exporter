@@ -1,5 +1,21 @@
 # Changelog
 
+## [11.0.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v10.1.2...v11.0.0) (2025-12-10)
+
+
+### ⚠ BREAKING CHANGES
+
+* add support for additional PDF/A and PDF/UA variants and update to WeasyPrint 67.0 ([#652](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/652))
+
+### Features
+
+* add support for additional PDF/A and PDF/UA variants and update to WeasyPrint 67.0 ([#652](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/652)) ([5aa6727](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/5aa6727154be09e328df864d499857448293fb58)), closes [#650](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/650)
+
+
+### Documentation
+
+* add workaround for icon fonts issue in PDF/A accessible variants and update related documentation ([#654](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/654)) ([8a74e77](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/8a74e771ab42c376e8899b0529f85a9824299d17)), closes [#650](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/650)
+
 ## [10.1.2](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v10.1.1...v10.1.2) (2025-12-08)
 
 
