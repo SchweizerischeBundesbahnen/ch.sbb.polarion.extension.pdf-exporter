@@ -322,7 +322,7 @@ class PdfA4ProcessorTest {
         // Create PDF without metadata
         try (PDDocument doc = new PDDocument()) {
             // Process - should not throw exception
-            PdfA4Processor.fixXmpMetadata(doc);
+            PdfA4Processor.fixXmpMetadata(doc, null);
 
             // Verify still no metadata
             assertThat(doc.getDocumentCatalog().getMetadata()).isNull();
@@ -340,7 +340,7 @@ class PdfA4ProcessorTest {
             doc.getDocumentCatalog().setMetadata(metadata);
 
             // Process
-            PdfA4Processor.fixXmpMetadata(doc);
+            PdfA4Processor.fixXmpMetadata(doc, null);
 
             // Verify metadata was fixed
             String result = new String(doc.getDocumentCatalog().getMetadata().toByteArray(), StandardCharsets.UTF_8);
@@ -363,7 +363,7 @@ class PdfA4ProcessorTest {
             doc.getDocumentCatalog().setMetadata(metadata);
 
             // Process - should throw IOException
-            assertThatThrownBy(() -> PdfA4Processor.fixXmpMetadata(doc))
+            assertThatThrownBy(() -> PdfA4Processor.fixXmpMetadata(doc, null))
                     .isInstanceOf(IOException.class)
                     .hasMessageContaining("Failed to process XMP metadata");
         }
@@ -374,7 +374,7 @@ class PdfA4ProcessorTest {
     void testFixXmpMetadataXml_addMissingRev() {
         String xmpMetadata = createPdfA4Metadata(false, false);
 
-        String result = PdfA4Processor.fixXmpMetadataXml(xmpMetadata);
+        String result = PdfA4Processor.fixXmpMetadataXml(xmpMetadata, null);
 
         assertThat(result).contains("pdfaid:rev=\"2020\"");
     }
@@ -384,7 +384,7 @@ class PdfA4ProcessorTest {
     void testFixXmpMetadataXml_updateIncorrectRev() {
         String xmpMetadata = createPdfA4Metadata(true, false);
 
-        String result = PdfA4Processor.fixXmpMetadataXml(xmpMetadata);
+        String result = PdfA4Processor.fixXmpMetadataXml(xmpMetadata, null);
 
         assertThat(result)
                 .contains("pdfaid:rev=\"2020\"")
@@ -393,13 +393,50 @@ class PdfA4ProcessorTest {
 
     @Test
     @SneakyThrows
-    void testFixXmpMetadataXml_removeConformance() {
+    void testFixXmpMetadataXml_removeConformanceForPdfA4u() {
         String xmpMetadata = createPdfA4Metadata(false, true);
 
-        String result = PdfA4Processor.fixXmpMetadataXml(xmpMetadata);
+        String result = PdfA4Processor.fixXmpMetadataXml(xmpMetadata, null);
 
         assertThat(result)
                 .doesNotContain("pdfaid:conformance")
+                .contains("pdfaid:rev=\"2020\"");
+    }
+
+    @Test
+    @SneakyThrows
+    void testFixXmpMetadataXml_setConformanceE() {
+        String xmpMetadata = createPdfA4Metadata(false, false);
+
+        String result = PdfA4Processor.fixXmpMetadataXml(xmpMetadata, "E");
+
+        assertThat(result)
+                .contains("pdfaid:conformance=\"E\"")
+                .contains("pdfaid:rev=\"2020\"");
+    }
+
+    @Test
+    @SneakyThrows
+    void testFixXmpMetadataXml_setConformanceF() {
+        String xmpMetadata = createPdfA4Metadata(false, false);
+
+        String result = PdfA4Processor.fixXmpMetadataXml(xmpMetadata, "F");
+
+        assertThat(result)
+                .contains("pdfaid:conformance=\"F\"")
+                .contains("pdfaid:rev=\"2020\"");
+    }
+
+    @Test
+    @SneakyThrows
+    void testFixXmpMetadataXml_updateConformanceBToE() {
+        String xmpMetadata = createPdfA4Metadata(false, true); // has conformance="B"
+
+        String result = PdfA4Processor.fixXmpMetadataXml(xmpMetadata, "E");
+
+        assertThat(result)
+                .contains("pdfaid:conformance=\"E\"")
+                .doesNotContain("pdfaid:conformance=\"B\"")
                 .contains("pdfaid:rev=\"2020\"");
     }
 
@@ -414,7 +451,7 @@ class PdfA4ProcessorTest {
                 <?xpacket end="r"?>
                 """;
 
-        String result = PdfA4Processor.fixXmpMetadataXml(xmpMetadata);
+        String result = PdfA4Processor.fixXmpMetadataXml(xmpMetadata, null);
 
         // Should return unchanged
         assertThat(result).isEqualTo(xmpMetadata);
@@ -429,7 +466,7 @@ class PdfA4ProcessorTest {
                 <?xpacket end="r"?>
                 """;
 
-        String result = PdfA4Processor.extractRdfContent(xmpMetadata);
+        String result = XmpMetadataUtils.extractRdfContent(xmpMetadata);
 
         assertThat(result).isEqualTo("<rdf:RDF xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\">content</rdf:RDF>");
     }
@@ -439,7 +476,7 @@ class PdfA4ProcessorTest {
     void testExtractRdfContent_noXpacket() {
         String xmpMetadata = "<rdf:RDF xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\">content</rdf:RDF>";
 
-        String result = PdfA4Processor.extractRdfContent(xmpMetadata);
+        String result = XmpMetadataUtils.extractRdfContent(xmpMetadata);
 
         assertThat(result).isEqualTo("<rdf:RDF xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\">content</rdf:RDF>");
     }
@@ -450,7 +487,7 @@ class PdfA4ProcessorTest {
         String xmpMetadata = "<?xpacket begin=\"\" id=\"W5M0MpCehiHzreSzNTczkc9d\"?>" +
                 "<rdf:RDF xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\">content</rdf:RDF>";
 
-        String result = PdfA4Processor.extractRdfContent(xmpMetadata);
+        String result = XmpMetadataUtils.extractRdfContent(xmpMetadata);
 
         assertThat(result).isEqualTo("<rdf:RDF xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\">content</rdf:RDF>");
     }
@@ -459,10 +496,11 @@ class PdfA4ProcessorTest {
     void testWrapWithXPacket() {
         String rdfContent = "<rdf:RDF>content</rdf:RDF>";
 
-        String result = PdfA4Processor.wrapWithXPacket(rdfContent);
+        String result = XmpMetadataUtils.wrapWithXPacket(rdfContent);
 
+        // UTF-8 BOM (U+FEFF) is required in the begin attribute for PDF/A compliance
         assertThat(result)
-                .startsWith("<?xpacket begin=\"\"")
+                .startsWith("<?xpacket begin=\"\uFEFF\"")
                 .contains(rdfContent)
                 .endsWith("<?xpacket end=\"r\"?>");
     }
@@ -472,12 +510,17 @@ class PdfA4ProcessorTest {
         String rdfContent = "<rdf:RDF>content</rdf:RDF>";
 
         // Generate multiple XMP packets
-        String result1 = PdfA4Processor.wrapWithXPacket(rdfContent);
-        String result2 = PdfA4Processor.wrapWithXPacket(rdfContent);
+        String result1 = XmpMetadataUtils.wrapWithXPacket(rdfContent);
+        String result2 = XmpMetadataUtils.wrapWithXPacket(rdfContent);
 
-        // Extract IDs from both results
-        String id1 = result1.substring(result1.indexOf("id=\"") + 4, result1.indexOf("\"?>"));
-        String id2 = result2.substring(result2.indexOf("id=\"") + 4, result2.indexOf("\"?>"));
+        // Extract IDs from both results (after "id=\"" and before "\"?>")
+        int id1Start = result1.indexOf("id=\"") + 4;
+        int id1End = result1.indexOf("\"?>", id1Start);
+        String id1 = result1.substring(id1Start, id1End);
+
+        int id2Start = result2.indexOf("id=\"") + 4;
+        int id2End = result2.indexOf("\"?>", id2Start);
+        String id2 = result2.substring(id2Start, id2End);
 
         // Verify IDs are different (unique)
         // Verify ID format (UUID without hyphens = 32 hex chars)
@@ -495,7 +538,7 @@ class PdfA4ProcessorTest {
     void testFixPdfA4Identification_addRev() {
         Element element = createPdfA4DescriptionElement(false, false);
 
-        boolean modified = PdfA4Processor.fixPdfA4Identification(element);
+        boolean modified = PdfA4Processor.fixPdfA4Identification(element, null);
 
         assertThat(modified).isTrue();
         assertThat(element.getAttribute("pdfaid:rev")).isEqualTo("2020");
@@ -506,7 +549,7 @@ class PdfA4ProcessorTest {
     void testFixPdfA4Identification_updateRev() {
         Element element = createPdfA4DescriptionElement(true, false);
 
-        boolean modified = PdfA4Processor.fixPdfA4Identification(element);
+        boolean modified = PdfA4Processor.fixPdfA4Identification(element, null);
 
         assertThat(modified).isTrue();
         assertThat(element.getAttribute("pdfaid:rev")).isEqualTo("2020");
@@ -514,13 +557,46 @@ class PdfA4ProcessorTest {
 
     @Test
     @SneakyThrows
-    void testFixPdfA4Identification_removeConformance() {
+    void testFixPdfA4Identification_removeConformanceForPdfA4u() {
         Element element = createPdfA4DescriptionElement(false, true);
 
-        boolean modified = PdfA4Processor.fixPdfA4Identification(element);
+        boolean modified = PdfA4Processor.fixPdfA4Identification(element, null);
 
         assertThat(modified).isTrue();
         assertThat(element.hasAttribute("pdfaid:conformance")).isFalse();
+    }
+
+    @Test
+    @SneakyThrows
+    void testFixPdfA4Identification_setConformanceE() {
+        Element element = createPdfA4DescriptionElement(false, false);
+
+        boolean modified = PdfA4Processor.fixPdfA4Identification(element, "E");
+
+        assertThat(modified).isTrue();
+        assertThat(element.getAttribute("pdfaid:conformance")).isEqualTo("E");
+    }
+
+    @Test
+    @SneakyThrows
+    void testFixPdfA4Identification_setConformanceF() {
+        Element element = createPdfA4DescriptionElement(false, false);
+
+        boolean modified = PdfA4Processor.fixPdfA4Identification(element, "F");
+
+        assertThat(modified).isTrue();
+        assertThat(element.getAttribute("pdfaid:conformance")).isEqualTo("F");
+    }
+
+    @Test
+    @SneakyThrows
+    void testFixPdfA4Identification_updateConformanceBToE() {
+        Element element = createPdfA4DescriptionElement(false, true); // has conformance="B"
+
+        boolean modified = PdfA4Processor.fixPdfA4Identification(element, "E");
+
+        assertThat(modified).isTrue();
+        assertThat(element.getAttribute("pdfaid:conformance")).isEqualTo("E");
     }
 
     @Test
@@ -529,7 +605,19 @@ class PdfA4ProcessorTest {
         Element element = createPdfA4DescriptionElement(false, false);
         element.setAttribute("pdfaid:rev", "2020");
 
-        boolean modified = PdfA4Processor.fixPdfA4Identification(element);
+        boolean modified = PdfA4Processor.fixPdfA4Identification(element, null);
+
+        assertThat(modified).isFalse();
+    }
+
+    @Test
+    @SneakyThrows
+    void testFixPdfA4Identification_alreadyCorrectWithConformanceE() {
+        Element element = createPdfA4DescriptionElement(false, false);
+        element.setAttribute("pdfaid:rev", "2020");
+        element.setAttribute("pdfaid:conformance", "E");
+
+        boolean modified = PdfA4Processor.fixPdfA4Identification(element, "E");
 
         assertThat(modified).isFalse();
     }
@@ -539,7 +627,7 @@ class PdfA4ProcessorTest {
     void testGetAttributeValue_withAttribute() {
         Element element = createPdfA4DescriptionElement(false, false);
 
-        String value = PdfA4Processor.getAttributeValue(element, "pdfaid:part");
+        String value = XmpMetadataUtils.getAttributeValue(element, "pdfaid:part");
 
         assertThat(value).isEqualTo("4");
     }
@@ -549,44 +637,44 @@ class PdfA4ProcessorTest {
     void testGetAttributeValue_withoutAttribute() {
         Element element = createPdfA4DescriptionElement(false, false);
 
-        String value = PdfA4Processor.getAttributeValue(element, "pdfaid:nonexistent");
+        String value = XmpMetadataUtils.getAttributeValue(element, "pdfaid:nonexistent");
 
         assertThat(value).isNull();
     }
 
     @Test
     void testGetNamespaceUriForPrefix_pdfaid() {
-        String uri = PdfA4Processor.getNamespaceUriForPrefix("pdfaid");
+        String uri = XmpMetadataUtils.getNamespaceUriForPrefix("pdfaid");
         assertThat(uri).isEqualTo("http://www.aiim.org/pdfa/ns/id/");
     }
 
     @Test
     void testGetNamespaceUriForPrefix_pdf() {
-        String uri = PdfA4Processor.getNamespaceUriForPrefix("pdf");
+        String uri = XmpMetadataUtils.getNamespaceUriForPrefix("pdf");
         assertThat(uri).isEqualTo("http://ns.adobe.com/pdf/1.3/");
     }
 
     @Test
     void testGetNamespaceUriForPrefix_rdf() {
-        String uri = PdfA4Processor.getNamespaceUriForPrefix("rdf");
+        String uri = XmpMetadataUtils.getNamespaceUriForPrefix("rdf");
         assertThat(uri).isEqualTo("http://www.w3.org/1999/02/22-rdf-syntax-ns#");
     }
 
     @Test
     void testGetNamespaceUriForPrefix_dc() {
-        String uri = PdfA4Processor.getNamespaceUriForPrefix("dc");
+        String uri = XmpMetadataUtils.getNamespaceUriForPrefix("dc");
         assertThat(uri).isEqualTo("http://purl.org/dc/elements/1.1/");
     }
 
     @Test
     void testGetNamespaceUriForPrefix_xmp() {
-        String uri = PdfA4Processor.getNamespaceUriForPrefix("xmp");
+        String uri = XmpMetadataUtils.getNamespaceUriForPrefix("xmp");
         assertThat(uri).isEqualTo("http://ns.adobe.com/xap/1.0/");
     }
 
     @Test
     void testGetNamespaceUriForPrefix_unknown() {
-        String uri = PdfA4Processor.getNamespaceUriForPrefix("unknown");
+        String uri = XmpMetadataUtils.getNamespaceUriForPrefix("unknown");
         assertThat(uri).isNull();
     }
 
@@ -597,7 +685,7 @@ class PdfA4ProcessorTest {
         DocumentBuilder builder = factory.newDocumentBuilder();
         Document doc = builder.parse(new InputSource(new StringReader("<root><child>text</child></root>")));
 
-        String result = PdfA4Processor.documentToString(doc);
+        String result = XmpMetadataUtils.documentToString(doc);
 
         assertThat(result)
                 .contains("<root>")
@@ -645,7 +733,7 @@ class PdfA4ProcessorTest {
         }
 
         sb.append(" />");
-        sb.append("<rdf:Description rdf:about=\"\" pdf:Producer=\"WeasyPrint 66.0\" />");
+        sb.append("<rdf:Description rdf:about=\"\" pdf:Producer=\"WeasyPrint 67.0\" />");
         sb.append("</rdf:RDF>\n");
         sb.append("<?xpacket end=\"r\"?>");
         return sb.toString();

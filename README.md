@@ -281,9 +281,53 @@ jobs.timeout.in-progress.minutes=60
 
 ## Known issues
 
-All good so far.
+### PDF/UA-2 incomplete support
+
+WeasyPrint 67.0 has incomplete support for PDF/UA-2 (ISO 14289-2:2024). The following issues are known:
+
+| Issue | Description | Status |
+|-------|-------------|--------|
+| Structure destinations | Internal links must use structure destinations instead of page destinations (clause 8.8) | Requires WeasyPrint fix |
+| PDF 2.0 namespace | Document element requires PDF 2.0 namespace (clause 8.2.5.2) | Requires WeasyPrint fix |
+| Document-Span restriction | Document shall not contain Span directly (ISO 32005:2023) | Requires WeasyPrint fix |
+| ListNumbering attribute | Lists with Lbl elements require ListNumbering attribute (clause 8.2.5.25) | Requires WeasyPrint fix |
+
+The `pdfuaid:rev` metadata issue (four-digit year requirement) is fixed automatically via post-processing.
+
+**Workaround:** Use `pdf/ua-1` instead of `pdf/ua-2` if full PDF/UA compliance is required.
 
 ## Upgrade
+
+### Upgrade to weasyprint-service 67.0.0
+
+WeasyPrint 67.0 introduced breaking changes in PDF variant support:
+
+**Removed variant:**
+- `pdf/a-4b` - no longer supported by WeasyPrint 67.0
+
+**New variants added:**
+- `pdf/a-1a` - Accessible PDF/A-1 (tagged, Unicode)
+- `pdf/a-2a` - Accessible PDF/A-2 (tagged, Unicode, modern features)
+- `pdf/a-3a` - Accessible PDF/A-3 (tagged, Unicode, file attachments)
+- `pdf/a-4e` - PDF/A-4 for engineering documents (allows 3D, RichMedia)
+- `pdf/a-4f` - PDF/A-4 with embedded files (requires attachments in document)
+- `pdf/ua-2` - Accessible PDF for assistive technologies (ISO 14289-2:2024) - **partial support, see Known issues**
+
+**Post-processing applied automatically:**
+
+The extension applies post-processing to ensure PDF/A and PDF/UA compliance:
+
+| PDF Variant | Post-processing |
+|-------------|-----------------|
+| PDF/A-1a, PDF/A-1b | Removes transparency masks (SMask, Mask) from images; adds RoleMap for TBody, THead, TFoot structure types; conformance level passed to processor |
+| PDF/A-4e, PDF/A-4f, PDF/A-4u | Sets PDF version to 2.0; fixes `pdfaid:rev` to "2020"; ensures OutputIntent; handles conformance level |
+| PDF/UA-2 | Fixes `pdfuaid:rev` to "2024" |
+
+**Migration steps:**
+1. If you were using `pdf/a-4b` variant, switch to `pdf/a-4f` or `pdf/a-4e` instead
+2. Update any style packages that reference `PDF_A_4B` to use `PDF_A_4F` or `PDF_A_4E`
+3. Update weasyprint-service Docker image to version 67.0.0 or later
+4. Note: `pdf/a-4f` requires documents to have attachments (embedded files) per ISO 19005-4:2020 clause 6.9
 
 ### Upgrade from version 9.0.0 to 9.x.x
 
