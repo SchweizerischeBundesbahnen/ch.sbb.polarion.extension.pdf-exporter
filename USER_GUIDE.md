@@ -118,6 +118,8 @@ The default value is `pdf/a-2b`.
 
 - **\*Icon fonts issue:** PDF/A "A" (accessible) variants (`pdf/a-1a`, `pdf/a-2a`, `pdf/a-3a`) require ActualText for Unicode Private Use Area (PUA) characters. Icon fonts like FontAwesome (used by Polarion) use PUA codepoints, causing validation failures. Use "B" or "U" variants instead if your documents contain icons.
 
+- **Sticky notes (native PDF annotations) are not compatible with PDF/A.** If you need PDF/A-compliant documents with comments, use inline comment rendering instead of "as sticky notes" option.
+
 - **pdf/a-4f** requires documents to have attachments (embedded files) per ISO 19005-4:2020. Use the "Embed attachments into resulted PDF" option or ensure your document has attachments.
 
 - **pdf/ua-2** has incomplete support in WeasyPrint 67.0. Known issues include:
@@ -171,6 +173,8 @@ Also there is an option to render comments as native PDF annotations (sticky not
 
 In this case, comments will be accessed as native PDF viewer's tools (appearance may vary on different PDF viewers):
 ![Comments in PDF viewer](docs/user_guide/img/comments_pdf_viewer.png)
+
+> ⚠️ **PDF/A Compatibility Warning:** Native PDF annotations (sticky notes) are **not compatible with PDF/A standards**. When exporting with the "as sticky notes" option enabled, the resulting PDF will fail PDF/A validation (e.g., veraPDF reports errors 6.2.10-2, 6.1.3-1, 6.2.4.3-2, 6.3.2-1, 6.6.2.1-1 for PDF/A-2b). This is because PDF/A requires all annotations to have complete appearance streams, which WeasyPrint-generated sticky notes do not provide. If you need PDF/A-compliant documents with comments, use the default inline rendering (without "as sticky notes" option).
 
 ### Watermark
 If you select this checkbox, all pages of the resulting PDF document will include a "Confidential" watermark:

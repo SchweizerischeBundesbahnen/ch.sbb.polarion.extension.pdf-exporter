@@ -294,6 +294,21 @@ Icon fonts like FontAwesome use PUA codepoints, which causes validation failures
 - `pdf/a-2b` or `pdf/a-2u` instead of `pdf/a-2a`
 - `pdf/a-3b` or `pdf/a-3u` instead of `pdf/a-3a`
 
+### Native PDF annotations (sticky notes) incompatible with PDF/A
+
+When exporting documents with comments rendered as native PDF annotations (sticky notes), the resulting PDF will fail PDF/A validation. This affects all PDF/A variants (`pdf/a-1*`, `pdf/a-2*`, `pdf/a-3*`, `pdf/a-4*`).
+
+VeraPDF reports the following errors for PDF/A-2b:
+- `6.2.10-2` - Annotation appearance stream missing
+- `6.1.3-1` - Info dictionary issues
+- `6.2.4.3-2` - OutputIntent issues
+- `6.3.2-1` - Font embedding issues
+- `6.6.2.1-1` - Annotation flags issues
+
+This happens because PDF/A standards require all annotations to have complete appearance streams (AP entry with N key), which WeasyPrint-generated sticky notes do not provide.
+
+**Workaround:** If you need PDF/A-compliant documents with comments, use inline comment rendering (disable "as sticky notes" option). Inline comments are rendered as regular HTML content and do not affect PDF/A compliance.
+
 ### PDF/UA-2 incomplete support
 
 WeasyPrint 67.0 has incomplete support for PDF/UA-2 (ISO 14289-2:2024). The following issues are known:
