@@ -71,8 +71,8 @@ class PlaceholderValuesTest {
                 Arguments.of("testCurrency", new Currency(BigDecimal.TEN), "10.00"),
                 Arguments.of("testEnum", new StatusOpt(new EnumOption("status", "open", "Open", 1, false)), "Open"),
                 Arguments.of("testDateOnly", DateOnly.parse("2023-10-20"), "October 20, 2023"),
-                Arguments.of("testTimeOnly", TimeOnly.parse("12:01:02.000 +0000"), "1:01:02 PM CET"),
-                Arguments.of("testDate", new SimpleDateFormat("yyyy-MM-dd hh:mm:ss.SSS Z").parse("2018-09-09 12:13:14.000 +0000"), "September 9, 2018 at 2:13:14 AM CEST"),
+                Arguments.of("testTimeOnly", TimeOnly.parse("12:01:02.000 +0000"), "1:01:02\u202FPM CET"),
+                Arguments.of("testDate", new SimpleDateFormat("yyyy-MM-dd hh:mm:ss.SSS Z").parse("2018-09-09 12:13:14.000 +0000"), "September 9, 2018, 2:13:14\u202FAM CEST"),
                 Arguments.of("testStringList", stringList, "testValue1, testValue2"),
                 Arguments.of("nonCustomFieldStatus", new StatusOpt(new EnumOption("status", "active", "Active", 2, false)), "Active"),
                 Arguments.of("nonCustomFieldAuthor", user, "System Administrator")

@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
 env:
   SETTINGS_XML: ${{ github.workspace }}/.mvn/settings.xml
-  JAVA_VERSION: 17
+  JAVA_VERSION: 21
   JAVA_DISTRIBUTION: temurin
   SONAR_SCANNER_OPTS: -Xmx1024m
 jobs:
