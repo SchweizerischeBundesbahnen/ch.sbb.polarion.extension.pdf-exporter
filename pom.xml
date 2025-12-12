@@ -54,7 +54,7 @@
 
         <awaitility.version>4.3.0</awaitility.version>
         <tika.version>3.2.3</tika.version>
-        <ph-css.version>8.1.0</ph-css.version>
+        <ph-css.version>8.1.1</ph-css.version>
         <commons-text.version>1.15.0</commons-text.version>
         <verapdf.version>1.28.2</verapdf.version>
 
