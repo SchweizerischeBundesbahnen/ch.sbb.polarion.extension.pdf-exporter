@@ -1,5 +1,17 @@
 # Changelog
 
+## [11.0.1](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v11.0.0...v11.0.1) (2025-12-12)
+
+
+### Bug Fixes
+
+* **deps:** update dependency com.helger:ph-css to v8.1.1 ([86d3be0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/86d3be04b4045c2250af10ff421192c5846b4cea))
+
+
+### Documentation
+
+* clarify PDF/A incompatibility with sticky notes and suggest workaround ([#657](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/657)) ([c386012](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/c386012d10713dd8d707c00673b14e357b9d7491)), closes [#650](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/650)
+
 ## [11.0.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v10.1.2...v11.0.0) (2025-12-10)
 
 
