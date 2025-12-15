@@ -287,12 +287,13 @@ public class MediaUtils {
     public String guessMimeType(@NotNull String resource, byte[] resourceBytes) {
 
         // there are several ways to recognize mime type, so we're going to try them all until positive result
+        // Order matters: fast methods first, expensive Tika methods last (Tika uses BundleJarsPrioritizingRunnable which creates new classloader each time)
         List<BiFunction<String, byte[], String>> mimeSources = Arrays.asList(
                 MediaUtils::getMimeTypeUsingCustomRegex,
-                MediaUtils::getMimeTypeUsingTikaByResourceName,
-                MediaUtils::getMimeTypeUsingTikaByContent,
                 MediaUtils::getMimeTypeUsingFilesProbe,
-                MediaUtils::getMimeTypeUsingURLConnection
+                MediaUtils::getMimeTypeUsingURLConnection,
+                MediaUtils::getMimeTypeUsingTikaByResourceName,
+                MediaUtils::getMimeTypeUsingTikaByContent
         );
 
         for (BiFunction<String, byte[], String> source : mimeSources) {
