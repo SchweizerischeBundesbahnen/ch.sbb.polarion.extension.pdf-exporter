@@ -24,6 +24,7 @@ import ch.sbb.polarion.extension.pdf_exporter.settings.WebhooksSettings;
 import ch.sbb.polarion.extension.pdf_exporter.util.DocumentDataFactory;
 import ch.sbb.polarion.extension.pdf_exporter.util.EnumValuesProvider;
 import ch.sbb.polarion.extension.pdf_exporter.util.HtmlLogger;
+import ch.sbb.polarion.extension.pdf_exporter.util.MediaUtils;
 import ch.sbb.polarion.extension.pdf_exporter.util.HtmlProcessor;
 import ch.sbb.polarion.extension.pdf_exporter.util.PdfExporterFileResourceProvider;
 import ch.sbb.polarion.extension.pdf_exporter.util.PdfExporterListStyleProvider;
@@ -97,38 +98,73 @@ public class PdfConverter {
     }
 
     public byte[] convertToPdf(@NotNull ExportParams exportParams, @Nullable ExportMetaInfoCallback metaInfoCallback) {
-        long startTime = System.currentTimeMillis();
-
         PdfGenerationLog generationLog = new PdfGenerationLog();
-        generationLog.log("Starting html generation");
+        generationLog.log("Starting PDF generation");
 
-        if (exportParams.isAutoSelectStylePackage()) {
-            StylePackageModel mostSuitableStylePackageModel = pdfExporterPolarionService.getMostSuitableStylePackageModel(DocIdentifier.of(exportParams));
-            exportParams.overwriteByStylePackage(mostSuitableStylePackageModel);
+        try {
+            // Auto-select style package if needed
+            if (exportParams.isAutoSelectStylePackage()) {
+                generationLog.timed("Auto-select style package", () -> {
+                    StylePackageModel mostSuitableStylePackageModel = pdfExporterPolarionService.getMostSuitableStylePackageModel(DocIdentifier.of(exportParams));
+                    exportParams.overwriteByStylePackage(mostSuitableStylePackageModel);
+                });
+            }
+
+            // Get tracker project and document data
+            ITrackerProject project = generationLog.timed("Get tracker project", () -> getTrackerProject(exportParams));
+            DocumentData<? extends IUniqueObject> documentData = generationLog.timed("Get document data", () -> DocumentDataFactory.getDocumentData(exportParams, true));
+
+            // Prepare HTML content
+            String htmlContent = generationLog.timed("Prepare HTML content",
+                    () -> prepareHtmlContent(exportParams, project, documentData, metaInfoCallback, generationLog),
+                    html -> String.format("html_size=%d bytes", html.length()));
+
+            // Set HTML size metric
+            generationLog.setHtmlSize(htmlContent.length());
+
+            generationLog.log("HTML is ready, starting PDF generation");
+
+            // Generate PDF
+            byte[] bytes = generatePdf(documentData, exportParams, metaInfoCallback, htmlContent, generationLog);
+
+            // Set PDF metrics
+            setPdfMetrics(generationLog, bytes, exportParams);
+
+            // Finalize timing
+            generationLog.finish();
+
+            // Log debug information if enabled
+            if (exportParams.getInternalContent() == null) { //do not log time for internal parts processing
+                String finalMessage = "PDF document '" + documentData.getTitle() + "' has been generated within " + generationLog.getTotalDurationMs() + " milliseconds";
+                logger.info(finalMessage);
+                generationLog.log(finalMessage);
+
+                if (PdfExporterExtensionConfiguration.getInstance().isDebug()) {
+                    String timingReport = generationLog.generateTimingReport(documentData.getTitle());
+                    // Save to file system
+                    new HtmlLogger().log(documentData.getContent(), htmlContent, timingReport);
+                    // Also save to storage for REST API access
+                    saveDebugDataToStorage(documentData.getContent(), htmlContent, timingReport, documentData.getTitle());
+                }
+            }
+
+            return bytes;
+        } catch (Exception e) {
+            generationLog.finish();
+            generationLog.log("PDF generation failed: " + e.getMessage());
+            if (PdfExporterExtensionConfiguration.getInstance().isDebug()) {
+                String timingReport = generationLog.generateTimingReport("FAILED");
+                new HtmlLogger().log("", "", timingReport);
+                saveDebugDataToStorage("", "", timingReport, "FAILED");
+            }
+            throw e;
         }
-
-        @Nullable ITrackerProject project = getTrackerProject(exportParams);
-        @NotNull final DocumentData<? extends IUniqueObject> documentData = DocumentDataFactory.getDocumentData(exportParams, true);
-        @NotNull String htmlContent = prepareHtmlContent(exportParams, project, documentData, metaInfoCallback);
-
-        generationLog.log("Html is ready, starting pdf generation");
-        if (PdfExporterExtensionConfiguration.getInstance().isDebug()) {
-            new HtmlLogger().log(documentData.getContent(), htmlContent, generationLog.getLog());
-        }
-        byte[] bytes = generatePdf(documentData, exportParams, metaInfoCallback, htmlContent, generationLog);
-
-        if (exportParams.getInternalContent() == null) { //do not log time for internal parts processing
-            String finalMessage = "PDF document '" + documentData.getTitle() + "' has been generated within " + (System.currentTimeMillis() - startTime) + " milliseconds";
-            logger.info(finalMessage);
-            generationLog.log(finalMessage);
-        }
-        return bytes;
     }
 
     public @NotNull String prepareHtmlContent(@NotNull ExportParams exportParams, @Nullable ExportMetaInfoCallback metaInfoCallback) {
         @Nullable ITrackerProject project = getTrackerProject(exportParams);
         @NotNull final DocumentData<? extends IUniqueObject> documentData = DocumentDataFactory.getDocumentData(exportParams, true);
-        return prepareHtmlContent(exportParams, project, documentData, metaInfoCallback);
+        return prepareHtmlContent(exportParams, project, documentData, metaInfoCallback, null);
     }
 
     private @Nullable ITrackerProject getTrackerProject(@NotNull ExportParams exportParams) {
@@ -139,21 +175,44 @@ public class PdfConverter {
         return project;
     }
 
-    private @NotNull String prepareHtmlContent(@NotNull ExportParams exportParams, @Nullable ITrackerProject project, @NotNull DocumentData<? extends IUniqueObject> documentData, @Nullable ExportMetaInfoCallback metaInfoCallback) {
-        String cssContent = getCssContent(documentData, exportParams);
-        String preparedDocumentContent = postProcessDocumentContent(exportParams, project, documentData.getContent());
-        String headerFooterContent = getHeaderFooterContent(documentData, exportParams);
+    private @NotNull String prepareHtmlContent(@NotNull ExportParams exportParams, @Nullable ITrackerProject project, @NotNull DocumentData<? extends IUniqueObject> documentData, @Nullable ExportMetaInfoCallback metaInfoCallback, @Nullable PdfGenerationLog generationLog) {
+        String cssContent = timedIfNotNull(generationLog, "Get CSS content", () -> getCssContent(documentData, exportParams));
+        String preparedDocumentContent = postProcessDocumentContent(exportParams, project, documentData.getContent(), generationLog);
+        String headerFooterContent = timedIfNotNull(generationLog, "Get header/footer content", () -> getHeaderFooterContent(documentData, exportParams));
+
         HtmlData htmlData = new HtmlData(cssContent, preparedDocumentContent, headerFooterContent);
-        String metaTags = buildMetaTags(documentData, exportParams);
-        String htmlContent = composeHtml(documentData.getTitle(), htmlData, exportParams, metaTags);
+
+        String metaTags = timedIfNotNull(generationLog, "Build meta tags", () -> buildMetaTags(documentData, exportParams));
+        String composedHtml = timedIfNotNull(generationLog, "Compose HTML", () -> composeHtml(documentData.getTitle(), htmlData, exportParams, metaTags));
+
         if (metaInfoCallback != null) {
-            metaInfoCallback.setLinkedWorkItems(WorkItemRefData.extractListFromHtml(htmlContent, exportParams.getProjectId()));
+            metaInfoCallback.setLinkedWorkItems(WorkItemRefData.extractListFromHtml(composedHtml, exportParams.getProjectId()));
         }
-        htmlContent = htmlProcessor.internalizeLinks(htmlContent);
-        htmlContent = applyWebhooks(exportParams, htmlContent);
+
+        String internalizedHtml = timedIfNotNull(generationLog, "Internalize links", () -> htmlProcessor.internalizeLinks(composedHtml));
+        String htmlContent = timedIfNotNull(generationLog, "Apply webhooks", () -> applyWebhooks(exportParams, internalizedHtml));
 
         // Add a fake page which later will be replaced with cover page. This should be done post-webhooks not to break this approach.
         return (exportParams.getCoverPage() != null ? "<div style='break-after:page'>page to be removed</div>" : "") + htmlContent;
+    }
+
+    private <T> T timedIfNotNull(@Nullable PdfGenerationLog generationLog, String stageName, java.util.function.Supplier<T> supplier) {
+        if (generationLog != null) {
+            return generationLog.timed(stageName, supplier);
+        }
+        return supplier.get();
+    }
+
+    @SuppressWarnings("java:S1166") // Exception intentionally ignored
+    private void setPdfMetrics(PdfGenerationLog generationLog, byte[] pdfBytes, ExportParams exportParams) {
+        try {
+            int pageCount = (int) MediaUtils.getNumberOfPages(pdfBytes);
+            String variant = exportParams.getPdfVariant() != null ? exportParams.getPdfVariant().name() : "PDF_A_2B";
+            generationLog.setPdfMetrics(pdfBytes.length, pageCount, variant);
+        } catch (Exception e) {
+            // Ignore errors in metrics collection
+            generationLog.setPdfMetrics(pdfBytes.length, 0, null);
+        }
     }
 
     private @NotNull String applyWebhooks(@NotNull ExportParams exportParams, @NotNull String htmlContent) {
@@ -255,15 +314,19 @@ public class PdfConverter {
         if (metaInfoCallback == null && exportParams.getInternalContent() == null && exportParams.getCoverPage() != null) {
             return coverPageProcessor.generatePdfWithTitle(documentData, exportParams, htmlPage, weasyPrintOptions, generationLog);
         } else {
-            return weasyPrintServiceConnector.convertToPdf(htmlPage, weasyPrintOptions, documentData);
+            return weasyPrintServiceConnector.convertToPdf(htmlPage, weasyPrintOptions, documentData, generationLog);
         }
     }
 
     @VisibleForTesting
     String postProcessDocumentContent(@NotNull ExportParams exportParams, @Nullable ITrackerProject project, @Nullable String documentContent) {
+        return postProcessDocumentContent(exportParams, project, documentContent, null);
+    }
+
+    String postProcessDocumentContent(@NotNull ExportParams exportParams, @Nullable ITrackerProject project, @Nullable String documentContent, @Nullable PdfGenerationLog generationLog) {
         if (documentContent != null) {
             List<String> selectedRoleEnumValues = project == null ? Collections.emptyList() : EnumValuesProvider.getBidirectionalLinkRoleNames(project, exportParams.getLinkedWorkitemRoles());
-            return htmlProcessor.processHtmlForPDF(documentContent, exportParams, selectedRoleEnumValues);
+            return htmlProcessor.processHtmlForPDF(documentContent, exportParams, selectedRoleEnumValues, generationLog);
         } else {
             return "";
         }
@@ -367,6 +430,33 @@ public class PdfConverter {
             return "<!--" + CUSTOM_METADATA_TAG + "-->" + result + "<!--/" + CUSTOM_METADATA_TAG + "-->";
         }
         return "";
+    }
+
+    /**
+     * Saves debug data to the storage for REST API access.
+     * Data is only stored if there's a current job ID (async job execution).
+     *
+     * @param originalHtml  the original HTML from Polarion
+     * @param processedHtml the processed HTML ready for conversion
+     * @param timingReport  the timing report
+     * @param documentTitle the document title
+     */
+    private void saveDebugDataToStorage(@Nullable String originalHtml,
+                                        @Nullable String processedHtml,
+                                        @Nullable String timingReport,
+                                        @Nullable String documentTitle) {
+        String jobId = DebugDataStorage.getCurrentJobId();
+        if (jobId == null) {
+            // Not running as async job, skip storage
+            return;
+        }
+
+        String currentUser = pdfExporterPolarionService.getSecurityService().getCurrentUser();
+        if (currentUser == null) {
+            currentUser = "unknown";
+        }
+
+        DebugDataStorage.storeForCurrentJob(originalHtml, processedHtml, timingReport, currentUser, documentTitle);
     }
 
     record HtmlData(String cssContent, String documentContent, String headerFooterContent) {

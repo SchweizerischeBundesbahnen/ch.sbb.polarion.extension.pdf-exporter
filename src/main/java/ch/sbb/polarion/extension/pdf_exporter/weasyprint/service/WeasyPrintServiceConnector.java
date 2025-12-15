@@ -5,6 +5,7 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PdfVariant;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.DocumentData;
 import ch.sbb.polarion.extension.pdf_exporter.util.PdfA1Processor;
 import ch.sbb.polarion.extension.pdf_exporter.util.PdfA4Processor;
+import ch.sbb.polarion.extension.pdf_exporter.util.PdfGenerationLog;
 import ch.sbb.polarion.extension.pdf_exporter.util.PdfUa2Processor;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.WeasyPrintConverter;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.WeasyPrintOptions;
@@ -60,11 +61,16 @@ public class WeasyPrintServiceConnector implements WeasyPrintConverter {
 
     @Override
     public byte[] convertToPdf(@NotNull String htmlPage, @NotNull WeasyPrintOptions weasyPrintOptions) {
-        return convertToPdf(htmlPage, weasyPrintOptions, null);
+        return convertToPdf(htmlPage, weasyPrintOptions, null, null);
     }
 
     @Override
     public byte[] convertToPdf(@NotNull String htmlPage, @NotNull WeasyPrintOptions weasyPrintOptions, @Nullable DocumentData<? extends IUniqueObject> documentData) {
+        return convertToPdf(htmlPage, weasyPrintOptions, documentData, null);
+    }
+
+    @Override
+    public byte[] convertToPdf(@NotNull String htmlPage, @NotNull WeasyPrintOptions weasyPrintOptions, @Nullable DocumentData<? extends IUniqueObject> documentData, @Nullable PdfGenerationLog generationLog) {
         Client client = null;
         try {
             client = ClientBuilder.newClient();
@@ -75,25 +81,43 @@ public class WeasyPrintServiceConnector implements WeasyPrintConverter {
                     .queryParam("scale_factor", weasyPrintOptions.getImageDensity().getScale());
 
             byte[] pdfBytes;
+            long startTime = System.currentTimeMillis();
+
             if (documentData != null && documentData.getAttachmentFiles() != null) {
                 pdfBytes = sendMultiPartRequest(webTarget, htmlPage, documentData.getAttachmentFiles());
+                recordTiming(generationLog, "WeasyPrint conversion (with attachments)", System.currentTimeMillis() - startTime,
+                        String.format("variant=%s, attachments=%d", weasyPrintOptions.getPdfVariant(), documentData.getAttachmentFiles().size()));
             } else {
                 pdfBytes = sendConvertingRequest(webTarget, Entity.entity(htmlPage, MediaType.TEXT_HTML));
+                recordTiming(generationLog, "WeasyPrint conversion", System.currentTimeMillis() - startTime,
+                        String.format("variant=%s, html_size=%d bytes", weasyPrintOptions.getPdfVariant(), htmlPage.length()));
             }
 
             // Post-process PDF/A-1 documents to ensure compliance with ISO 19005-1:2005
             if (isPdfA1Variant(weasyPrintOptions.getPdfVariant())) {
+                startTime = System.currentTimeMillis();
+                int originalSize = pdfBytes.length;
                 pdfBytes = postProcessPdfA1(pdfBytes, weasyPrintOptions.getPdfVariant());
+                recordTiming(generationLog, "PDF/A-1 post-processing", System.currentTimeMillis() - startTime,
+                        String.format("variant=%s, pdf_size=%d->%d bytes", weasyPrintOptions.getPdfVariant(), originalSize, pdfBytes.length));
             }
 
             // Post-process PDF/A-4 documents to ensure compliance with ISO 19005-4:2020
             if (isPdfA4Variant(weasyPrintOptions.getPdfVariant())) {
+                startTime = System.currentTimeMillis();
+                int originalSize = pdfBytes.length;
                 pdfBytes = postProcessPdfA4(pdfBytes, weasyPrintOptions.getPdfVariant());
+                recordTiming(generationLog, "PDF/A-4 post-processing", System.currentTimeMillis() - startTime,
+                        String.format("variant=%s, pdf_size=%d->%d bytes", weasyPrintOptions.getPdfVariant(), originalSize, pdfBytes.length));
             }
 
             // Post-process PDF/UA-2 documents to ensure compliance with ISO 14289-2:2024
             if (weasyPrintOptions.getPdfVariant() == PdfVariant.PDF_UA_2) {
+                startTime = System.currentTimeMillis();
+                int originalSize = pdfBytes.length;
                 pdfBytes = postProcessPdfUa2(pdfBytes);
+                recordTiming(generationLog, "PDF/UA-2 post-processing", System.currentTimeMillis() - startTime,
+                        String.format("pdf_size=%d->%d bytes", originalSize, pdfBytes.length));
             }
 
             return pdfBytes;
@@ -101,6 +125,12 @@ public class WeasyPrintServiceConnector implements WeasyPrintConverter {
             if (client != null) {
                 client.close();
             }
+        }
+    }
+
+    private void recordTiming(@Nullable PdfGenerationLog generationLog, String stageName, long durationMs, String details) {
+        if (generationLog != null) {
+            generationLog.recordTiming(stageName, durationMs, details);
         }
     }
 

@@ -57,23 +57,34 @@ public class CoverPageProcessor {
                                        @NotNull String contentHtml,
                                        @NotNull WeasyPrintOptions weasyPrintOptions,
                                        @NotNull PdfGenerationLog generationLog) {
-        generationLog.log("Starting generation for document content...");
-        byte[] pdfContent = weasyPrintServiceConnector.convertToPdf(contentHtml, weasyPrintOptions, documentData);
-        generationLog.log("Document content has been completed");
+        generationLog.log("Starting PDF generation with cover page");
 
-        generationLog.log("Starting generation for cover page ...");
-        long numberOfPages = MediaUtils.getNumberOfPages(pdfContent);
-        PlaceholderValues overridenPlaceholderValues = PlaceholderValues.builder()
+        int htmlSize = contentHtml.length();
+        byte[] pdfContent = generationLog.timed("Generate main document PDF",
+                () -> weasyPrintServiceConnector.convertToPdf(contentHtml, weasyPrintOptions, documentData, generationLog),
+                pdf -> String.format("html_size=%d bytes, pdf_size=%d bytes", htmlSize, pdf.length));
+
+        long numberOfPages = generationLog.timed("Count PDF pages",
+                () -> MediaUtils.getNumberOfPages(pdfContent),
+                pages -> String.format("pages=%d", pages));
+
+        PlaceholderValues overriddenPlaceholderValues = PlaceholderValues.builder()
                 .pageNumber("1")
                 .pagesTotalCount(String.valueOf(numberOfPages))
                 .build();
-        String titleHtml = composeTitleHtml(documentData, exportParams, overridenPlaceholderValues);
-        byte[] pdfCoverPage = weasyPrintServiceConnector.convertToPdf(titleHtml, weasyPrintOptions);
-        generationLog.log("Cover page generation has been completed");
+        String titleHtml = generationLog.timed("Compose cover page HTML",
+                () -> composeTitleHtml(documentData, exportParams, overriddenPlaceholderValues));
 
-        generationLog.log("Both generations are completed, starting pages merge...");
-        byte[] resultBytes = MediaUtils.overwriteFirstPageWithTitle(pdfContent, pdfCoverPage, weasyPrintOptions.getPdfVariant());
-        generationLog.log("Pages merge done");
+        int titleHtmlSize = titleHtml.length();
+        byte[] pdfCoverPage = generationLog.timed("Generate cover page PDF",
+                () -> weasyPrintServiceConnector.convertToPdf(titleHtml, weasyPrintOptions, null, generationLog),
+                pdf -> String.format("html_size=%d bytes, pdf_size=%d bytes", titleHtmlSize, pdf.length));
+
+        byte[] resultBytes = generationLog.timed("Merge PDFs (cover page + document)",
+                () -> MediaUtils.overwriteFirstPageWithTitle(pdfContent, pdfCoverPage, weasyPrintOptions.getPdfVariant()),
+                result -> String.format("result_size=%d bytes", result.length));
+
+        generationLog.log("PDF generation with cover page completed");
         return resultBytes;
     }
 

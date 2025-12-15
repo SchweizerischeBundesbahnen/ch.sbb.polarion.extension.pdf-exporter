@@ -445,6 +445,134 @@
         ]
       }
     },
+    "/api/convert/jobs/{id}/debug": {
+      "get": {
+        "description": "Debug data is only available when debug mode is enabled. Only the user who created the job can access the debug data.",
+        "operationId": "getDebugDataInfo",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DebugDataResponse"
+                }
+              }
+            },
+            "description": "Debug data info"
+          },
+          "404": {
+            "description": "Job not found or debug data not available"
+          }
+        },
+        "summary": "Returns debug data info for a conversion job",
+        "tags": [
+          "PDF Processing"
+        ]
+      }
+    },
+    "/api/convert/jobs/{id}/debug/original-html": {
+      "get": {
+        "description": "Only available when debug mode is enabled. Only the job owner can access this data.",
+        "operationId": "getDebugOriginalHtml",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "text/html": {}
+            },
+            "description": "Original HTML content"
+          },
+          "404": {
+            "description": "Job not found or original HTML not available"
+          }
+        },
+        "summary": "Returns the original HTML from Polarion for a conversion job",
+        "tags": [
+          "PDF Processing"
+        ]
+      }
+    },
+    "/api/convert/jobs/{id}/debug/processed-html": {
+      "get": {
+        "description": "Only available when debug mode is enabled. Only the job owner can access this data.",
+        "operationId": "getDebugProcessedHtml",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "text/html": {}
+            },
+            "description": "Processed HTML content"
+          },
+          "404": {
+            "description": "Job not found or processed HTML not available"
+          }
+        },
+        "summary": "Returns the processed HTML ready for WeasyPrint conversion",
+        "tags": [
+          "PDF Processing"
+        ]
+      }
+    },
+    "/api/convert/jobs/{id}/debug/timing-report": {
+      "get": {
+        "description": "Only available when debug mode is enabled. Only the job owner can access this data.",
+        "operationId": "getDebugTimingReport",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "text/plain": {}
+            },
+            "description": "Timing report"
+          },
+          "404": {
+            "description": "Job not found or timing report not available"
+          }
+        },
+        "summary": "Returns the timing report showing duration of each conversion stage",
+        "tags": [
+          "PDF Processing"
+        ]
+      }
+    },
     "/api/convert/jobs/{id}/result": {
       "get": {
         "operationId": "getPdfConverterJobResult",
@@ -1703,6 +1831,40 @@
               "CANCELLED"
             ],
             "example": "IN_PROGRESS",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "DebugDataResponse": {
+        "description": "Debug data for a conversion job",
+        "properties": {
+          "available": {
+            "description": "Whether debug data is available for this job",
+            "type": "boolean"
+          },
+          "createdAt": {
+            "description": "Timestamp when the debug data was created (ISO-8601)",
+            "type": "string"
+          },
+          "documentTitle": {
+            "description": "Document title",
+            "type": "string"
+          },
+          "hasOriginalHtml": {
+            "description": "Whether original HTML is available",
+            "type": "boolean"
+          },
+          "hasProcessedHtml": {
+            "description": "Whether processed HTML is available",
+            "type": "boolean"
+          },
+          "hasTimingReport": {
+            "description": "Whether timing report is available",
+            "type": "boolean"
+          },
+          "message": {
+            "description": "Message when debug data is not available",
             "type": "string"
           }
         },

@@ -52,8 +52,8 @@ class HtmlLoggerTest {
         });
 
         await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> {
-            List<Path> logFiles = findFilesInPdfExporterDirs("gen-log-", ".log");
-            assertFalse(logFiles.isEmpty(), "Generation log file should be created");
+            List<Path> logFiles = findFilesInPdfExporterDirs("timing-report-", ".txt");
+            assertFalse(logFiles.isEmpty(), "Timing report file should be created");
 
             Path logFile = logFiles.get(0);
             String content = Files.readString(logFile);
@@ -73,12 +73,12 @@ class HtmlLoggerTest {
             assertFalse(htmlFiles.isEmpty(), "HTML files should be created");
         });
 
-        // Wait and ensure no log files were created in any pdf-exporter directory
+        // Wait and ensure no timing report files were created in any pdf-exporter directory
         await().pollDelay(1, TimeUnit.SECONDS)
                 .atMost(2, TimeUnit.SECONDS)
                 .untilAsserted(() -> {
-                    List<Path> logFiles = findFilesInPdfExporterDirs("gen-log-", ".log");
-                    assertTrue(logFiles.isEmpty(), "No generation log file should be created");
+                    List<Path> logFiles = findFilesInPdfExporterDirs("timing-report-", ".txt");
+                    assertTrue(logFiles.isEmpty(), "No timing report file should be created");
                 });
     }
 

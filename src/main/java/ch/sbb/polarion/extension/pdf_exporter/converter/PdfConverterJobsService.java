@@ -52,6 +52,8 @@ public class PdfConverterJobsService {
 
         CompletableFuture<byte[]> asyncConversionJob = CompletableFuture.supplyAsync(() -> {
             try {
+                // Set current job ID for debug data storage
+                DebugDataStorage.setCurrentJobId(jobId);
                 return securityService.doAsUser(userSubject, (PrivilegedAction<byte[]>) () -> pdfConverter.convertToPdf(exportParams, null));
             } catch (Exception e) {
                 String errorMessage = String.format("PDF conversion job '%s' is failed with error: %s", jobId, e.getMessage());
@@ -59,6 +61,8 @@ public class PdfConverterJobsService {
                 failedJobsReasons.put(jobId, e.getMessage());
                 throw e;
             } finally {
+                // Clear current job ID
+                DebugDataStorage.clearCurrentJobId();
                 jobContext.workItemIDsWithMissingAttachment.addAll(ExportContext.getWorkItemIDsWithMissingAttachment());
                 ExportContext.clear();
                 if ((userSubject != null) && isJobLogoutRequired) {
@@ -137,11 +141,15 @@ public class PdfConverterJobsService {
                         && entry.getValue().startingTime.plus(timeout, ChronoUnit.MINUTES).isBefore(currentTime))
                 .map(Map.Entry::getKey)
                 .forEach(PdfConverterJobsService::removeKeyFromJobMaps);
+
+        // Also cleanup expired debug data
+        DebugDataStorage.cleanupExpired(timeout);
     }
 
     private static void removeKeyFromJobMaps(String id) {
         jobs.remove(id);
         failedJobsReasons.remove(id);
+        DebugDataStorage.remove(id);
     }
 
     @VisibleForTesting
