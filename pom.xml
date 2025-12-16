@@ -5,7 +5,7 @@
     <parent>
         <groupId>ch.sbb.polarion.extensions</groupId>
         <artifactId>ch.sbb.polarion.extension.generic</artifactId>
-        <version>12.0.0</version>
+        <version>12.1.0</version>
     </parent>
 
     <artifactId>ch.sbb.polarion.extension.pdf-exporter</artifactId>
@@ -403,6 +403,10 @@
                         <package>ch.sbb.polarion.extension.pdf_exporter.rest.model</package>
                     </resourcePackages>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>io.github.grigoriev</groupId>
+                <artifactId>pre-commit-run-maven-plugin</artifactId>
             </plugin>
 
             <plugin>
