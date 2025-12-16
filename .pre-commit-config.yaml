@@ -20,7 +20,12 @@ repos:
       - id: mixed-line-ending
       - id: end-of-file-fixer
       - id: pretty-format-json
+        alias: pretty-format-openapi-json
         args: [--autofix, --no-ensure-ascii, '--top-keys=openapi,info,servers,paths,components']
+        files: docs/openapi.json
+      - id: mixed-line-ending
+        alias: mixed-line-ending-openapi-json
+        args: [--fix=lf]
         files: docs/openapi.json
   - repo: local
     hooks:
