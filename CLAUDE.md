@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a Polarion ALM extension that converts Polarion Documents to PDF files using WeasyPrint as a PDF engine. The project is a Maven-based Java application with JavaScript components, targeting Java 17 and supporting only the latest version of Polarion (currently 2506).
+This is a Polarion ALM extension that converts Polarion Documents to PDF files using WeasyPrint as a PDF engine. The project is a Maven-based Java application with JavaScript components, targeting Java 17 and supporting only the latest version of Polarion (currently 2512).
 
 ## Build Commands
 
@@ -101,7 +101,7 @@ Always run this after implementation. The project uses extensive pre-commit hook
 ## Dependencies
 
 ### Java Dependencies
-- **Polarion Version**: 2506 (configured via profile in pom.xml)
+- **Polarion Version**: 2512 (configured via profile in pom.xml)
 - **Parent POM**: `ch.sbb.polarion.extension.generic:11.1.0`
 - **Key Libraries**:
   - Apache PDFBox 3.0.5 (PDF manipulation)

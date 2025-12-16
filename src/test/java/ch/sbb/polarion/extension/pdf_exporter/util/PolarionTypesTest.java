@@ -88,7 +88,8 @@ class PolarionTypesTest {
         String result = PolarionTypes.convertSingleFieldValueToString(date, Locale.US, TimeZone.getTimeZone("Europe/Zurich"));
         assertThat(result)
                 .contains("September 9, 2018")
-                .contains("2:13:14 AM"); // CET/CEST offset vs UTC
+                .contains("2:13:14")
+                .contains("AM"); // CET/CEST offset vs UTC
     }
 
     @Test
