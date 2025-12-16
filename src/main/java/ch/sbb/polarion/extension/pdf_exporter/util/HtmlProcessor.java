@@ -607,7 +607,7 @@ public class HtmlProcessor {
         String workItemId = substringAfter(afterProject, URL_WORK_ITEM_ID_PREFIX);
         if (workItemId != null) {
             return workItemId;
-        } else  {
+        } else {
             String wikiPath = substringAfter(afterProject, WIKI_PATH_PREFIX);
             return substringAfter(wikiPath, WORK_ITEM_ID_IN_WIKI_PATH_PREFIX);
         }
