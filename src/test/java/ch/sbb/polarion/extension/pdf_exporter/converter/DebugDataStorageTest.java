@@ -149,7 +149,7 @@ class DebugDataStorageTest {
     }
 
     @Test
-    void shouldCleanupExpiredData() throws InterruptedException {
+    void shouldCleanupExpiredData() {
         DebugData debugData = DebugData.builder()
                 .user(TEST_USER)
                 .createdAt(Instant.now().minusSeconds(120))

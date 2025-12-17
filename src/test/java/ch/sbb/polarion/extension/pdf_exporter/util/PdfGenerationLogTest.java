@@ -22,8 +22,9 @@ class PdfGenerationLogTest {
         log.log("Test message 2");
 
         String logContent = log.getLog();
-        assertThat(logContent).contains("Test message 1");
-        assertThat(logContent).contains("Test message 2");
+        assertThat(logContent)
+                .contains("Test message 1")
+                .contains("Test message 2");
     }
 
     @Test
@@ -59,7 +60,7 @@ class PdfGenerationLogTest {
 
         PdfGenerationLog.TimingEntry outerEntry = entries.get(1);
         assertThat(outerEntry.stageName()).isEqualTo("Outer");
-        assertThat(outerEntry.depth()).isEqualTo(0);
+        assertThat(outerEntry.depth()).isZero();
         assertThat(outerEntry.parentStage()).isNull();
     }
 
@@ -69,8 +70,9 @@ class PdfGenerationLogTest {
         log.finish();
 
         String report = log.generateTimingReport("Test Doc");
-        assertThat(report).contains("HTML Size:");
-        assertThat(report).contains("1.0 KB");
+        assertThat(report)
+                .contains("HTML Size:")
+                .contains("1.0 KB");
     }
 
     @Test
@@ -79,14 +81,16 @@ class PdfGenerationLogTest {
         log.finish();
 
         String report = log.generateTimingReport("Test Doc");
-        assertThat(report).contains("PDF Size:");
-        assertThat(report).contains("2.0 KB");
-        assertThat(report).contains("Page Count:");
-        assertThat(report).contains("5");
-        assertThat(report).contains("PDF Variant:");
-        assertThat(report).contains("PDF/A-2b");
+        assertThat(report)
+                .contains("PDF Size:")
+                .contains("2.0 KB")
+                .contains("Page Count:")
+                .contains("5")
+                .contains("PDF Variant:")
+                .contains("PDF/A-2b");
     }
 
+    @SuppressWarnings("java:S2925") // Thread.sleep is needed for timing test
     @Test
     void shouldCalculateTotalDuration() throws InterruptedException {
         Thread.sleep(10);
@@ -106,14 +110,15 @@ class PdfGenerationLogTest {
 
         String report = log.generateTimingReport("Test Document");
 
-        assertThat(report).contains("PDF GENERATION TIMING REPORT");
-        assertThat(report).contains("Document: Test Document");
-        assertThat(report).contains("SUMMARY STATISTICS:");
-        assertThat(report).contains("TIMING BREAKDOWN:");
-        assertThat(report).contains("TIME BY CATEGORY:");
-        assertThat(report).contains("SLOWEST STAGES");
-        assertThat(report).contains("EXECUTION TIMELINE:");
-        assertThat(report).contains("DETAILED LOG:");
+        assertThat(report)
+                .contains("PDF GENERATION TIMING REPORT")
+                .contains("Document: Test Document")
+                .contains("SUMMARY STATISTICS:")
+                .contains("TIMING BREAKDOWN:")
+                .contains("TIME BY CATEGORY:")
+                .contains("SLOWEST STAGES")
+                .contains("EXECUTION TIMELINE:")
+                .contains("DETAILED LOG:");
     }
 
     @Test
@@ -126,10 +131,11 @@ class PdfGenerationLogTest {
 
         String report = log.generateTimingReport("Test");
 
-        assertThat(report).contains("HTML Processing");
-        assertThat(report).contains("WeasyPrint Conversion");
-        assertThat(report).contains("PDF Post-processing");
-        assertThat(report).contains("Cover Page");
+        assertThat(report)
+                .contains("HTML Processing")
+                .contains("WeasyPrint Conversion")
+                .contains("PDF Post-processing")
+                .contains("Cover Page");
     }
 
     @Test
@@ -149,8 +155,9 @@ class PdfGenerationLogTest {
 
         String report = log.generateTimingReport("Empty Test");
 
-        assertThat(report).contains("PDF GENERATION TIMING REPORT");
-        assertThat(report).contains("Document: Empty Test");
+        assertThat(report)
+                .contains("PDF GENERATION TIMING REPORT")
+                .contains("Document: Empty Test");
     }
 
     @Test
@@ -172,6 +179,7 @@ class PdfGenerationLogTest {
         assertThat(log.getTimingEntries()).hasSize(1);
     }
 
+    @SuppressWarnings("java:S2925") // Thread.sleep is needed for timing test
     @Test
     void timerShouldRecordDurationOnClose() throws InterruptedException {
         try (PdfGenerationLog.Timer timer = log.startTimer("Test Stage")) {
@@ -195,6 +203,7 @@ class PdfGenerationLogTest {
         assertThat(entries.get(0).details()).isEqualTo("extra info");
     }
 
+    @SuppressWarnings("java:S2925") // Thread.sleep is needed for timing test
     @Test
     void shouldCalculateAveragePerPage() throws InterruptedException {
         log.setPdfMetrics(1024, 4, "PDF/A-2b");
@@ -205,6 +214,7 @@ class PdfGenerationLogTest {
         assertThat(report).contains("Avg per Page:");
     }
 
+    @SuppressWarnings("java:S2925") // Thread.sleep is needed for timing test
     @Test
     void shouldCalculateThroughput() throws InterruptedException {
         log.setHtmlSize(102400); // 100 KB
@@ -213,8 +223,9 @@ class PdfGenerationLogTest {
         log.finish();
 
         String report = log.generateTimingReport("Test");
-        assertThat(report).contains("Throughput:");
-        assertThat(report).contains("KB/s");
+        assertThat(report)
+                .contains("Throughput:")
+                .contains("KB/s");
     }
 
     @Test
@@ -243,7 +254,7 @@ class PdfGenerationLogTest {
         StringBuilder sb = new StringBuilder();
         log.timed("Test operation", () -> sb.append("executed"));
 
-        assertThat(sb.toString()).isEqualTo("executed");
+        assertThat(sb).hasToString("executed");
         List<PdfGenerationLog.TimingEntry> entries = log.getTimingEntries();
         assertThat(entries).hasSize(1);
         assertThat(entries.get(0).stageName()).isEqualTo("Test operation");
