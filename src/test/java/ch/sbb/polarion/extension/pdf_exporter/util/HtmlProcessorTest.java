@@ -34,7 +34,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -1040,6 +1040,43 @@ class HtmlProcessorTest {
         // Should move only available rows (2 rows) even though rowspan is 5
         assertEquals(3, document.select("thead tr").size()); // 1 original + 2 moved
         assertEquals(0, document.select("tbody tr").size()); // all rows moved
+    }
+
+    @Test
+    void processHtmlForPdfWithGenerationLogShouldRecordTimings() {
+        when(localizationSettings.load(any(), any(SettingId.class)))
+                .thenReturn(new LocalizationModel(Collections.emptyMap(), Collections.emptyMap(), Collections.emptyMap()));
+
+        String html = "<html><body><h2>Test</h2><p>Content</p></body></html>";
+        ExportParams exportParams = getExportParams();
+        PdfGenerationLog generationLog = new PdfGenerationLog();
+
+        processor.processHtmlForPDF(html, exportParams, Collections.emptyList(), generationLog);
+
+        // Verify that timings were recorded
+        List<PdfGenerationLog.TimingEntry> entries = generationLog.getTimingEntries();
+        assertFalse(entries.isEmpty(), "Timing entries should be recorded when generationLog is provided");
+
+        // Check that expected stages are recorded
+        List<String> stageNames = entries.stream()
+                .map(PdfGenerationLog.TimingEntry::stageName)
+                .toList();
+        assertTrue(stageNames.contains("Parse HTML with JSoup"), "Should record JSoup parsing");
+        assertTrue(stageNames.contains("Adjust document headings"), "Should record heading adjustment");
+    }
+
+    @Test
+    void processHtmlForPdfWithoutGenerationLogShouldWork() {
+        when(localizationSettings.load(any(), any(SettingId.class)))
+                .thenReturn(new LocalizationModel(Collections.emptyMap(), Collections.emptyMap(), Collections.emptyMap()));
+
+        String html = "<html><body><h2>Test</h2><p>Content</p></body></html>";
+        ExportParams exportParams = getExportParams();
+
+        // Should work without throwing when generationLog is null
+        String result = processor.processHtmlForPDF(html, exportParams, Collections.emptyList(), null);
+        assertNotNull(result);
+        assertFalse(result.isEmpty());
     }
 
     private ExportParams getExportParams() {

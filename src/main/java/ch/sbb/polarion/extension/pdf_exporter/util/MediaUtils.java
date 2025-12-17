@@ -320,12 +320,12 @@ public class MediaUtils {
 
     @SuppressWarnings("unchecked")
     public String getMimeTypeUsingTikaByResourceName(@NotNull String resource, byte[] resourceBytes) {
-        return ((Optional<String>) BundleJarsPrioritizingRunnable.execute(TikaMimeTypeResolver.class, Map.of(PARAM_VALUE, resource), true).get(PARAM_RESULT)).orElse(null);
+        return ((Optional<String>) BundleJarsPrioritizingRunnable.executeCached(TikaMimeTypeResolver.class, Map.of(PARAM_VALUE, resource)).get(PARAM_RESULT)).orElse(null);
     }
 
     @SuppressWarnings("unchecked")
     public String getMimeTypeUsingTikaByContent(@NotNull String resource, byte[] resourceBytes) {
-        return ((Optional<String>) BundleJarsPrioritizingRunnable.execute(TikaMimeTypeResolver.class, Map.of(PARAM_VALUE, resourceBytes), true).get(PARAM_RESULT)).orElse(null);
+        return ((Optional<String>) BundleJarsPrioritizingRunnable.executeCached(TikaMimeTypeResolver.class, Map.of(PARAM_VALUE, resourceBytes)).get(PARAM_RESULT)).orElse(null);
     }
 
     @SneakyThrows

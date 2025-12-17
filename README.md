@@ -170,9 +170,21 @@ If HTML logging is switched on, then in standard polarion log file there will be
 ```text
 2023-09-20 08:42:13,911 [ForkJoinPool.commonPool-worker-2] INFO  util.ch.sbb.polarion.extension.pdf_exporter.util.HtmlLogger - Original HTML fragment provided by Polarion was stored in file /tmp/pdf-exporter10000032892830031969/original-4734772539141140796.html
 2023-09-20 08:42:13,914 [ForkJoinPool.commonPool-worker-2] INFO  util.ch.sbb.polarion.extension.pdf_exporter.util.HtmlLogger - Final HTML page obtained as a result of PDF exporter processing was stored in file /tmp/pdf-exporter10000032892830031969/processed-5773281490308773124.html
+2023-09-20 08:42:14,015 [ForkJoinPool.commonPool-worker-2] INFO  util.ch.sbb.polarion.extension.pdf_exporter.util.HtmlLogger - Timing report was stored in file /tmp/pdf-exporter10000032892830031969/timing-report-1234567890.txt
 ```
 
-Here you can find out in which files HTML was stored.
+Here you can find out in which files HTML and timing report were stored.
+
+#### Timing report
+
+When debug mode is enabled, a detailed timing report is generated showing the duration of each PDF generation stage.
+This helps identify performance bottlenecks. The report includes:
+
+- Summary statistics (HTML size, PDF size, page count, throughput)
+- Timing breakdown with visual progress bars
+- Time by category (HTML Processing, WeasyPrint Conversion, PDF Post-processing, Cover Page)
+- Slowest stages with performance indicators
+- Execution timeline
 
 ### Workflow function configuration
 It is possible to configure the workflow function which exports a PDF file and attaches it to a newly created or already existing work item.
