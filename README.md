@@ -186,32 +186,6 @@ This helps identify performance bottlenecks. The report includes:
 - Slowest stages with performance indicators
 - Execution timeline
 
-#### REST API for debug data
-
-When using asynchronous conversion jobs with debug mode enabled, debug data can be retrieved via REST API.
-Only the user who started the conversion job can access its debug data.
-
-Available endpoints (relative to job URL):
-
-| Endpoint | Description |
-|----------|-------------|
-| `GET /convert/jobs/{id}/debug` | Returns debug data availability info |
-| `GET /convert/jobs/{id}/debug/original-html` | Returns original HTML from Polarion |
-| `GET /convert/jobs/{id}/debug/processed-html` | Returns processed HTML ready for WeasyPrint |
-| `GET /convert/jobs/{id}/debug/timing-report` | Returns detailed timing report |
-
-Example response for `/convert/jobs/{id}/debug`:
-```json
-{
-  "available": true,
-  "documentTitle": "My Document",
-  "createdAt": "2023-09-20T08:42:13.911Z",
-  "hasOriginalHtml": true,
-  "hasProcessedHtml": true,
-  "hasTimingReport": true
-}
-```
-
 ### Workflow function configuration
 It is possible to configure the workflow function which exports a PDF file and attaches it to a newly created or already existing work item.
 
