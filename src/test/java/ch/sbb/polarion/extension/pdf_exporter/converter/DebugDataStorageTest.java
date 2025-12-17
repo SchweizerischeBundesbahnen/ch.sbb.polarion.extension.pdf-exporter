@@ -1,5 +1,7 @@
 package ch.sbb.polarion.extension.pdf_exporter.converter;
 
+import ch.sbb.polarion.extension.pdf_exporter.model.DebugData;
+import ch.sbb.polarion.extension.pdf_exporter.util.DebugDataStorage;
 import com.polarion.platform.security.ISecurityService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;

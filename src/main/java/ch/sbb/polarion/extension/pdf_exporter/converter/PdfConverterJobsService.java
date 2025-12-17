@@ -2,6 +2,7 @@ package ch.sbb.polarion.extension.pdf_exporter.converter;
 
 import ch.sbb.polarion.extension.generic.rest.filter.LogoutFilter;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
+import ch.sbb.polarion.extension.pdf_exporter.util.DebugDataStorage;
 import ch.sbb.polarion.extension.pdf_exporter.util.ExportContext;
 import com.polarion.core.util.logging.Logger;
 import com.polarion.platform.security.ISecurityService;

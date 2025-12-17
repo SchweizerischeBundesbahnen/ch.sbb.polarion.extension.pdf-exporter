@@ -2,8 +2,8 @@ package ch.sbb.polarion.extension.pdf_exporter.rest.controller;
 
 import ch.sbb.polarion.extension.generic.test_extensions.CustomExtensionMock;
 import ch.sbb.polarion.extension.generic.test_extensions.PlatformContextMockExtension;
-import ch.sbb.polarion.extension.pdf_exporter.converter.DebugData;
-import ch.sbb.polarion.extension.pdf_exporter.converter.DebugDataStorage;
+import ch.sbb.polarion.extension.pdf_exporter.model.DebugData;
+import ch.sbb.polarion.extension.pdf_exporter.util.DebugDataStorage;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.jobs.DebugDataResponse;
 import com.polarion.platform.security.ISecurityService;
 import org.junit.jupiter.api.AfterEach;

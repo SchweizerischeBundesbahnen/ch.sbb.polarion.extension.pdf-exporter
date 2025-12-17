@@ -21,6 +21,7 @@ import ch.sbb.polarion.extension.pdf_exporter.settings.CssSettings;
 import ch.sbb.polarion.extension.pdf_exporter.settings.HeaderFooterSettings;
 import ch.sbb.polarion.extension.pdf_exporter.settings.LocalizationSettings;
 import ch.sbb.polarion.extension.pdf_exporter.settings.WebhooksSettings;
+import ch.sbb.polarion.extension.pdf_exporter.util.DebugDataStorage;
 import ch.sbb.polarion.extension.pdf_exporter.util.DocumentDataFactory;
 import ch.sbb.polarion.extension.pdf_exporter.util.EnumValuesProvider;
 import ch.sbb.polarion.extension.pdf_exporter.util.HtmlLogger;

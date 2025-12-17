@@ -1,4 +1,4 @@
-package ch.sbb.polarion.extension.pdf_exporter.converter;
+package ch.sbb.polarion.extension.pdf_exporter.model;
 
 import lombok.Builder;
 import org.jetbrains.annotations.Nullable;

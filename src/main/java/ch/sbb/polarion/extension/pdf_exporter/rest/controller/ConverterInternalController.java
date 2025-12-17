@@ -1,7 +1,7 @@
 package ch.sbb.polarion.extension.pdf_exporter.rest.controller;
 
-import ch.sbb.polarion.extension.pdf_exporter.converter.DebugData;
-import ch.sbb.polarion.extension.pdf_exporter.converter.DebugDataStorage;
+import ch.sbb.polarion.extension.pdf_exporter.model.DebugData;
+import ch.sbb.polarion.extension.pdf_exporter.util.DebugDataStorage;
 import ch.sbb.polarion.extension.pdf_exporter.converter.HtmlToPdfConverter;
 import ch.sbb.polarion.extension.pdf_exporter.converter.PdfConverter;
 import ch.sbb.polarion.extension.pdf_exporter.converter.PdfConverterJobsService;

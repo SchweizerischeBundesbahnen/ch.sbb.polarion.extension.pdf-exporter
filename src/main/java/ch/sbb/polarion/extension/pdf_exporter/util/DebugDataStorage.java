@@ -1,5 +1,6 @@
-package ch.sbb.polarion.extension.pdf_exporter.converter;
+package ch.sbb.polarion.extension.pdf_exporter.util;
 
+import ch.sbb.polarion.extension.pdf_exporter.model.DebugData;
 import com.polarion.core.util.logging.Logger;
 import com.polarion.platform.security.ISecurityService;
 import lombok.experimental.UtilityClass;
