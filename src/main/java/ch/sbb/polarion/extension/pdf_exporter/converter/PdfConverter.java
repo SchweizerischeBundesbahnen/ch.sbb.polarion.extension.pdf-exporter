@@ -112,11 +112,11 @@ public class PdfConverter {
             }
 
             // Get tracker project and document data
-            ITrackerProject project = generationLog.timed("Get tracker project", () -> getTrackerProject(exportParams));
-            DocumentData<? extends IUniqueObject> documentData = generationLog.timed("Get document data", () -> DocumentDataFactory.getDocumentData(exportParams, true));
+            @Nullable ITrackerProject project = getTrackerProject(exportParams);
+            @NotNull final DocumentData<? extends IUniqueObject> documentData = DocumentDataFactory.getDocumentData(exportParams, true);
 
             // Prepare HTML content
-            String htmlContent = generationLog.timed("Prepare HTML content",
+            @NotNull String htmlContent = generationLog.timed("Prepare HTML content",
                     () -> prepareHtmlContent(exportParams, project, documentData, metaInfoCallback, generationLog),
                     html -> String.format("html_size=%d bytes", html.length()));
 
@@ -433,15 +433,6 @@ public class PdfConverter {
         return "";
     }
 
-    /**
-     * Saves debug data to the storage for REST API access.
-     * Data is only stored if there's a current job ID (async job execution).
-     *
-     * @param originalHtml  the original HTML from Polarion
-     * @param processedHtml the processed HTML ready for conversion
-     * @param timingReport  the timing report
-     * @param documentTitle the document title
-     */
     private void saveDebugDataToStorage(@Nullable String originalHtml,
                                         @Nullable String processedHtml,
                                         @Nullable String timingReport,
