@@ -119,6 +119,12 @@ class HtmlProcessorTest {
         processor.rewritePolarionUrls(document);
         assertEquals(expected, document.body().html());
 
+        String wikiLink = "<a href=\"http://localhost/polarion/#/project/testProject/wiki/Specification/LinkedWorkItems?selection=12345\">Work Item 12345</a>";
+        String htmlWithWikiAnchor = anchor + wikiLink;
+        document = JSoupUtils.parseHtml(htmlWithWikiAnchor);
+        processor.rewritePolarionUrls(document);
+        assertEquals(expected, document.body().html());
+
         document = JSoupUtils.parseHtml(link);
         processor.rewritePolarionUrls(document);
         assertEquals(link, document.body().html());
