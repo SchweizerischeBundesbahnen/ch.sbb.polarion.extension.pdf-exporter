@@ -80,26 +80,6 @@ public class ConverterApiController extends ConverterInternalController {
         return polarionService.callPrivileged(() -> super.validatePdfWidth(exportParams, maxResults));
     }
 
-    @Override
-    public Response getDebugDataInfo(String jobId) {
-        return polarionService.callPrivileged(() -> super.getDebugDataInfo(jobId));
-    }
-
-    @Override
-    public Response getDebugOriginalHtml(String jobId) {
-        return polarionService.callPrivileged(() -> super.getDebugOriginalHtml(jobId));
-    }
-
-    @Override
-    public Response getDebugProcessedHtml(String jobId) {
-        return polarionService.callPrivileged(() -> super.getDebugProcessedHtml(jobId));
-    }
-
-    @Override
-    public Response getDebugTimingReport(String jobId) {
-        return polarionService.callPrivileged(() -> super.getDebugTimingReport(jobId));
-    }
-
     private void deactivateLogoutFilter() {
         RequestAttributes requestAttributes = RequestContextHolder.getRequestAttributes();
         if (requestAttributes != null) {

@@ -1,7 +1,5 @@
 package ch.sbb.polarion.extension.pdf_exporter.rest.controller;
 
-import ch.sbb.polarion.extension.pdf_exporter.model.DebugData;
-import ch.sbb.polarion.extension.pdf_exporter.util.DebugDataStorage;
 import ch.sbb.polarion.extension.pdf_exporter.converter.HtmlToPdfConverter;
 import ch.sbb.polarion.extension.pdf_exporter.converter.PdfConverter;
 import ch.sbb.polarion.extension.pdf_exporter.converter.PdfConverterJobsService;
@@ -16,7 +14,6 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PaperSize;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PdfVariant;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.jobs.ConverterJobDetails;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.jobs.ConverterJobStatus;
-import ch.sbb.polarion.extension.pdf_exporter.rest.model.jobs.DebugDataResponse;
 import ch.sbb.polarion.extension.pdf_exporter.util.DocumentFileNameHelper;
 import ch.sbb.polarion.extension.pdf_exporter.util.ExportContext;
 import ch.sbb.polarion.extension.pdf_exporter.util.PdfValidationService;
@@ -53,7 +50,6 @@ import javax.ws.rs.core.UriInfo;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -387,139 +383,6 @@ public class ConverterInternalController {
             @Parameter(description = "Limit of 'invalid' pages in response", required = true) @QueryParam("max-results") int maxResults) {
         validateExportParameters(exportParams);
         return pdfValidationService.validateWidth(exportParams, maxResults);
-    }
-
-    @GET
-    @Path("/convert/jobs/{id}/debug")
-    @Produces(MediaType.APPLICATION_JSON)
-    @Operation(summary = "Returns debug data info for a conversion job",
-            description = "Debug data is only available when debug mode is enabled. " +
-                    "Only the user who created the job can access the debug data.",
-            responses = {
-                    @ApiResponse(responseCode = "200",
-                            description = "Debug data info",
-                            content = {@Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = DebugDataResponse.class))}
-                    ),
-                    @ApiResponse(responseCode = "404",
-                            description = "Job not found or debug data not available"
-                    )
-            })
-    public Response getDebugDataInfo(@PathParam("id") String jobId) {
-        ISecurityService securityService = PlatformContext.getPlatform().lookupService(ISecurityService.class);
-        try {
-            DebugData debugData = DebugDataStorage.get(jobId, securityService);
-            DebugDataResponse response = DebugDataResponse.builder()
-                    .available(true)
-                    .documentTitle(debugData.documentTitle())
-                    .createdAt(debugData.createdAt().toString())
-                    .hasOriginalHtml(debugData.originalHtml() != null && !debugData.originalHtml().isEmpty())
-                    .hasProcessedHtml(debugData.processedHtml() != null && !debugData.processedHtml().isEmpty())
-                    .hasTimingReport(debugData.timingReport() != null && !debugData.timingReport().isEmpty())
-                    .build();
-            return Response.ok(response).build();
-        } catch (NoSuchElementException e) {
-            return Response.status(HttpStatus.NOT_FOUND.value())
-                    .entity(DebugDataResponse.notAvailable("Debug data not found. Either the job does not exist, " +
-                            "debug mode was not enabled during conversion, or you don't have access to this job."))
-                    .build();
-        }
-    }
-
-    @GET
-    @Path("/convert/jobs/{id}/debug/original-html")
-    @Produces(MediaType.TEXT_HTML)
-    @Operation(summary = "Returns the original HTML from Polarion for a conversion job",
-            description = "Only available when debug mode is enabled. Only the job owner can access this data.",
-            responses = {
-                    @ApiResponse(responseCode = "200",
-                            description = "Original HTML content",
-                            content = {@Content(mediaType = MediaType.TEXT_HTML)}
-                    ),
-                    @ApiResponse(responseCode = "404",
-                            description = "Job not found or original HTML not available"
-                    )
-            })
-    public Response getDebugOriginalHtml(@PathParam("id") String jobId) {
-        ISecurityService securityService = PlatformContext.getPlatform().lookupService(ISecurityService.class);
-        try {
-            DebugData debugData = DebugDataStorage.get(jobId, securityService);
-            if (debugData.originalHtml() == null || debugData.originalHtml().isEmpty()) {
-                return Response.status(HttpStatus.NOT_FOUND.value())
-                        .entity("Original HTML is not available for this job")
-                        .type(MediaType.TEXT_PLAIN)
-                        .build();
-            }
-            return Response.ok(debugData.originalHtml()).build();
-        } catch (NoSuchElementException e) {
-            return Response.status(HttpStatus.NOT_FOUND.value())
-                    .entity("Debug data not found")
-                    .type(MediaType.TEXT_PLAIN)
-                    .build();
-        }
-    }
-
-    @GET
-    @Path("/convert/jobs/{id}/debug/processed-html")
-    @Produces(MediaType.TEXT_HTML)
-    @Operation(summary = "Returns the processed HTML ready for WeasyPrint conversion",
-            description = "Only available when debug mode is enabled. Only the job owner can access this data.",
-            responses = {
-                    @ApiResponse(responseCode = "200",
-                            description = "Processed HTML content",
-                            content = {@Content(mediaType = MediaType.TEXT_HTML)}
-                    ),
-                    @ApiResponse(responseCode = "404",
-                            description = "Job not found or processed HTML not available"
-                    )
-            })
-    public Response getDebugProcessedHtml(@PathParam("id") String jobId) {
-        ISecurityService securityService = PlatformContext.getPlatform().lookupService(ISecurityService.class);
-        try {
-            DebugData debugData = DebugDataStorage.get(jobId, securityService);
-            if (debugData.processedHtml() == null || debugData.processedHtml().isEmpty()) {
-                return Response.status(HttpStatus.NOT_FOUND.value())
-                        .entity("Processed HTML is not available for this job")
-                        .type(MediaType.TEXT_PLAIN)
-                        .build();
-            }
-            return Response.ok(debugData.processedHtml()).build();
-        } catch (NoSuchElementException e) {
-            return Response.status(HttpStatus.NOT_FOUND.value())
-                    .entity("Debug data not found")
-                    .type(MediaType.TEXT_PLAIN)
-                    .build();
-        }
-    }
-
-    @GET
-    @Path("/convert/jobs/{id}/debug/timing-report")
-    @Produces(MediaType.TEXT_PLAIN)
-    @Operation(summary = "Returns the timing report showing duration of each conversion stage",
-            description = "Only available when debug mode is enabled. Only the job owner can access this data.",
-            responses = {
-                    @ApiResponse(responseCode = "200",
-                            description = "Timing report",
-                            content = {@Content(mediaType = MediaType.TEXT_PLAIN)}
-                    ),
-                    @ApiResponse(responseCode = "404",
-                            description = "Job not found or timing report not available"
-                    )
-            })
-    public Response getDebugTimingReport(@PathParam("id") String jobId) {
-        ISecurityService securityService = PlatformContext.getPlatform().lookupService(ISecurityService.class);
-        try {
-            DebugData debugData = DebugDataStorage.get(jobId, securityService);
-            if (debugData.timingReport() == null || debugData.timingReport().isEmpty()) {
-                return Response.status(HttpStatus.NOT_FOUND.value())
-                        .entity("Timing report is not available for this job")
-                        .build();
-            }
-            return Response.ok(debugData.timingReport()).build();
-        } catch (NoSuchElementException e) {
-            return Response.status(HttpStatus.NOT_FOUND.value())
-                    .entity("Debug data not found")
-                    .build();
-        }
     }
 
     private void validateExportParameters(ExportParams exportParams) {
