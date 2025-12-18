@@ -14,7 +14,7 @@ env:
   SONAR_SCANNER_OPTS: -Xmx1024m
 jobs:
   build:
-    runs-on: polarion-ubuntu-latest-16GB
+    runs-on: ubuntu-latest-8-cores
     permissions:
       contents: read
       packages: read
