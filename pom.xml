@@ -50,7 +50,7 @@
         <flying-saucer.version>9.13.3</flying-saucer.version>
 
         <slf4j.version>1.7.36</slf4j.version>
-        <testcontainers.version>2.0.2</testcontainers.version>
+        <testcontainers.version>2.0.3</testcontainers.version>
 
         <awaitility.version>4.3.0</awaitility.version>
         <tika.version>3.2.3</tika.version>
