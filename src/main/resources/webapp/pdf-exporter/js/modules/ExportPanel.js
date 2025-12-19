@@ -101,7 +101,8 @@ export default class ExportPanel {
         this.ctx.setValue("language", (stylePackage.exposeSettings && stylePackage.language && documentLanguage) ? documentLanguage : stylePackage.language);
         this.ctx.displayIf("language", stylePackage.language);
 
-        this.ctx.setCheckbox("selected-roles", stylePackage.linkedWorkitemRoles);
+        const rolesProvided = stylePackage.linkedWorkitemRoles && stylePackage.linkedWorkitemRoles.length && stylePackage.linkedWorkitemRoles.length > 0;
+        this.ctx.setCheckbox("selected-roles", rolesProvided);
         this.ctx.querySelectorAll(`#roles-selector option`).forEach(roleOption => {
             roleOption.selected = false;
         });
@@ -112,7 +113,7 @@ export default class ExportPanel {
                 });
             }
         }
-        this.ctx.displayIf("roles-wrapper", stylePackage.linkedWorkitemRoles);
+        this.ctx.displayIf("roles-wrapper", rolesProvided);
 
         this.ctx.displayIf("style-package-content", stylePackage.exposeSettings);
         this.ctx.displayIf("page-width-validation", stylePackage.exposePageWidthValidation);
