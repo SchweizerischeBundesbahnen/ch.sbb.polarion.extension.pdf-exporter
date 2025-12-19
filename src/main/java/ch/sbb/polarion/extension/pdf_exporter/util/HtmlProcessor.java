@@ -13,7 +13,6 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.Orientation;
 import ch.sbb.polarion.extension.pdf_exporter.settings.LocalizationSettings;
 import ch.sbb.polarion.extension.pdf_exporter.util.adjuster.PageWidthAdjuster;
-import ch.sbb.polarion.extension.pdf_exporter.util.exporter.CustomPageBreakPart;
 import ch.sbb.polarion.extension.pdf_exporter.util.html.HtmlLinksHelper;
 import com.helger.css.decl.CSSDeclarationList;
 import com.helger.css.reader.CSSReaderDeclarationList;
@@ -44,6 +43,7 @@ import static ch.sbb.polarion.extension.pdf_exporter.util.exporter.Constants.*;
 
 public class HtmlProcessor {
 
+    private static final String DIV_START_TAG = "<div>";
     private static final String DIV_END_TAG = "</div>";
     private static final String SPAN_END_TAG = "</span>";
     private static final String COMMENT_START = "[span";
@@ -344,7 +344,7 @@ public class HtmlProcessor {
 
     /**
      * Recursively collects top PAGE_BREAK related comments from an element and its descendants,
-     * but only first 2 of them: <!--PAGE_BREAK--> and then either <!--PORTRAIT_ABOVE--> or <!--LANDSCAPE_ABOVE-->,
+     * but only first 2 of them: <!--PAGE_BREAK--> and next to it like <!--PORTRAIT_ABOVE--> (see {@link ch.sbb.polarion.extension.pdf_exporter.util.exporter.Constants}) for the full list,
      * the rest won't be relevant as they belong to removed content.
      */
     private void collectPageBreakComments(@NotNull Node node, @NotNull List<Comment> topPageBreakComments) {
@@ -359,9 +359,15 @@ public class HtmlProcessor {
         }
     }
 
-    private boolean isPageBreakComment(@NotNull Comment comment) {
+    @VisibleForTesting
+    boolean isPageBreakComment(@NotNull Comment comment) {
         String commentData = comment.getData();
-        return commentData.equals(PAGE_BREAK) || commentData.equals(LANDSCAPE_ABOVE) || commentData.equals(PORTRAIT_ABOVE);
+        return commentData.equals(PAGE_BREAK)
+                || commentData.equals(LANDSCAPE_ABOVE)
+                || commentData.equals(PORTRAIT_ABOVE)
+                || commentData.equals(ROTATE_BELOW)
+                || commentData.equals(RESET_BELOW)
+                || commentData.equals(BREAK_BELOW);
     }
 
     @Nullable
@@ -633,54 +639,68 @@ public class HtmlProcessor {
     }
 
     /**
-     * {@link CustomPageBreakPart} inserts specific 'marks' into positions where we must place page breaks.
+     * {@link ch.sbb.polarion.extension.pdf_exporter.util.exporter.CustomPageBreakPart} and {@link ch.sbb.polarion.extension.pdf_exporter.util.exporter.CustomWikiBlockPart} insert specific
+     * 'marks' into positions where we must place page breaks.
      * The solution below replaces marks with proper html tags and does additional processing.
      */
     @NotNull
     @VisibleForTesting
     @SuppressWarnings("java:S3776")
     String processPageBrakes(@NotNull String html, ExportParams exportParams) {
-        //remove repeated page breaks, leave just the first one
-        html = RegexMatcher.get(String.format("(%s|%s){2,}", PAGE_BREAK_PORTRAIT_ABOVE, PAGE_BREAK_LANDSCAPE_ABOVE)).replace(html, regexEngine -> {
-            String sequence = regexEngine.group();
-            return sequence.startsWith(PAGE_BREAK_PORTRAIT_ABOVE) ? PAGE_BREAK_PORTRAIT_ABOVE : PAGE_BREAK_LANDSCAPE_ABOVE;
-        });
-
         StringBuilder resultBuf = new StringBuilder();
-        LinkedList<String> areas = new LinkedList<>(Arrays.asList(html.split(PAGE_BREAK_MARK))); //use linked list for processing list in backward order
-        boolean landscape = exportParams.getOrientation() == Orientation.LANDSCAPE; //in the last block we use global orientation setting
+        LinkedList<String> areas = new LinkedList<>(Arrays.asList(html.split(PAGE_BREAK_MARK)));
+        boolean landscape = exportParams.getOrientation() == Orientation.LANDSCAPE; //we start by using global orientation setting
+        boolean defaultLandscape = landscape;
+        boolean skipEmptyAreas = exportParams.isCutEmptyChapters() || exportParams.getChapters() != null && !exportParams.getChapters().isEmpty(); //avoid having empty pages in some cases
+        boolean firstArea = true;
 
         //the idea here is to wrap areas with different orientation into divs with correspondent class
         while (!areas.isEmpty()) {
-            String area = areas.pollLast();
-            String orientationClass = (landscape ? "land" : "port") + exportParams.getPaperSize();
-            String mark = null;
-            if (area.startsWith(LANDSCAPE_ABOVE_MARK)) {
-                mark = LANDSCAPE_ABOVE_MARK;
-            } else if (area.startsWith(PORTRAIT_ABOVE_MARK)) {
-                mark = PORTRAIT_ABOVE_MARK;
-            }
-            boolean firstArea = mark == null;
-            area = firstArea ? area : area.substring(mark.length());
+            String area = areas.pollFirst();
+            String nextArea = areas.isEmpty() ? null : areas.getFirst();
 
-            if (!firstArea) { //see below why we don't wrap first area
-                resultBuf.insert(0, DIV_END_TAG);
-            }
-
-            //here we can make additional areas processing
-            if (exportParams.isFitToPage()) {
-                area = adjustContentToFitPage(area, exportParams);
-            }
-
-            resultBuf.insert(0, area);
-            if (firstArea) {
-                //instead of wrapping  the first area into div we place on the body specific orientation (IMPORTANT: here we must use page identifiers but luckily in our case they are the same as the class names)
-                //this will prevent weasyprint from creating leading empty page
-                resultBuf.insert(0, String.format("<style>body {page: %s;}</style>", orientationClass));
+            if (nextArea != null && nextArea.startsWith(LANDSCAPE_ABOVE_MARK)) {
+                landscape = true;
+            } else if (nextArea != null && nextArea.startsWith(PORTRAIT_ABOVE_MARK)) {
+                landscape = false;
             } else {
-                resultBuf.insert(0, String.format("<div class=\"sbb_page_break %s\">", orientationClass));
+                if (area.startsWith(LANDSCAPE_ABOVE_MARK) || area.startsWith(PORTRAIT_ABOVE_MARK) || area.startsWith(RESET_BELOW_MARK)) {
+                    landscape = defaultLandscape;
+                } else if (area.startsWith(ROTATE_BELOW_MARK)) {
+                    landscape = !defaultLandscape;
+                }
             }
-            landscape = Objects.equals(LANDSCAPE_ABOVE_MARK, mark); //calculate orientation for the next/previous area
+
+            if (!(skipEmptyAreas && com.polarion.alm.shared.util.HtmlUtils.isHtmlEmpty(area, true))) {
+                boolean startsWithWikiBlock = area.startsWith(ROTATE_BELOW_MARK) || area.startsWith(RESET_BELOW_MARK) || area.startsWith(BREAK_BELOW_MARK);
+                boolean endsWithWikiBlock = nextArea != null && (nextArea.startsWith(ROTATE_BELOW_MARK) || nextArea.startsWith(RESET_BELOW_MARK) || nextArea.startsWith(BREAK_BELOW_MARK));
+
+                // remove leading comment/mark
+                area = firstArea ? area : area.substring(area.indexOf(">") + 1);
+
+                // current mark is from wiki block - emulate wiki block opening, otherwise the whole layout will be broken
+                if (startsWithWikiBlock) {
+                    area = DIV_START_TAG + DIV_START_TAG + area;
+                }
+                // next mark is from wiki block - now we emulate wiki block closing
+                if (endsWithWikiBlock) {
+                    area = area + DIV_END_TAG + DIV_END_TAG;
+                }
+
+                if (exportParams.isFitToPage()) { //here we can make additional areas processing if needed
+                    area = adjustContentToFitPage(area, exportParams);
+                }
+
+                String orientationClass = (landscape ? "land" : "port") + exportParams.getPaperSize();
+                if (firstArea) {
+                    //instead of wrapping  the first area into div we place on the body specific orientation (IMPORTANT: here we must use page identifiers but luckily in our case they are the same as the class names)
+                    //this will prevent weasyprint from creating leading empty page
+                    resultBuf.append(String.format("<style>body {page: %s;}</style>%s", orientationClass, area));
+                } else {
+                    resultBuf.append(String.format("<div class=\"sbb_page_break %s\">%s</div>", orientationClass, area));
+                }
+            }
+            firstArea = false;
         }
         return resultBuf.toString();
     }
