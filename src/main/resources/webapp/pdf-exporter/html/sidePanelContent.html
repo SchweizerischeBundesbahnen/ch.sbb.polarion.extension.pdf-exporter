@@ -129,7 +129,13 @@
                 <option value='ALL'>All</option>
             </select>
             <label for='render-native-comments' id='render-native-comments-container' style='display: none'>
-                <input id='render-native-comments' type='checkbox'/>
+                <input id='render-native-comments' type='checkbox' onchange='
+                    const warningPane = document.getElementById("export-warning");
+                    if (warningPane) {
+                        warningPane.textContent = this.checked ? "Be aware that comments rendered in PDF as sticky notes are not compliant with any of PDF/A variants" : "";
+                        warningPane.style.display = this.checked ? "block" : "none";
+                    }
+                ' />
                 as sticky notes
             </label>
         </div>

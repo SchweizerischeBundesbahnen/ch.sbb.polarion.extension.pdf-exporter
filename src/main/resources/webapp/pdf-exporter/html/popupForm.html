@@ -148,7 +148,13 @@
                         <option value='ALL'>All</option>
                     </select>
                     <label for='popup-render-native-comments' id='popup-render-native-comments-container'>
-                        <input id='popup-render-native-comments' type='checkbox'/>
+                        <input id='popup-render-native-comments' type='checkbox' onchange='
+                            const warningPane = document.querySelector(".modal__content .notifications .alert.alert-warning");
+                            if (warningPane) {
+                                warningPane.textContent = this.checked ? "Be aware that comments rendered in PDF as sticky notes are not compliant with any of PDF/A variants" : "";
+                                warningPane.style.display = this.checked ? "block" : "none";
+                            }
+                        ' />
                         as sticky notes
                     </label>
                 </div>
