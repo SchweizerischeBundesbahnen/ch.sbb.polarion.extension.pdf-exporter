@@ -43,6 +43,7 @@ import static ch.sbb.polarion.extension.pdf_exporter.util.exporter.Constants.*;
 
 public class HtmlProcessor {
 
+    private static final String DIV_START_TAG = "<div>";
     private static final String DIV_END_TAG = "</div>";
     private static final String SPAN_END_TAG = "</span>";
     private static final String COMMENT_START = "[span";
@@ -671,15 +672,19 @@ public class HtmlProcessor {
             }
 
             if (!(skipEmptyAreas && com.polarion.alm.shared.util.HtmlUtils.isHtmlEmpty(area, true))) {
-                area = firstArea ? area : area.substring(area.indexOf(">") + 1); // remove leading comment/mark
+                boolean startsWithWikiBlock = area.startsWith(ROTATE_BELOW_MARK) || area.startsWith(RESET_BELOW_MARK) || area.startsWith(BREAK_BELOW_MARK);
+                boolean endsWithWikiBlock = nextArea != null && (nextArea.startsWith(ROTATE_BELOW_MARK) || nextArea.startsWith(RESET_BELOW_MARK) || nextArea.startsWith(BREAK_BELOW_MARK));
+
+                // remove leading comment/mark
+                area = firstArea ? area : area.substring(area.indexOf(">") + 1);
 
                 // current mark is from wiki block - emulate wiki block opening, otherwise the whole layout will be broken
-                if (area.startsWith(ROTATE_BELOW_MARK) || area.startsWith(RESET_BELOW_MARK) || area.startsWith(BREAK_BELOW_MARK)) {
-                    area = "<div><div>" + area;
+                if (startsWithWikiBlock) {
+                    area = DIV_START_TAG + DIV_START_TAG + area;
                 }
                 // next mark is from wiki block - now we emulate wiki block closing
-                if (nextArea != null && (nextArea.startsWith(ROTATE_BELOW_MARK) || nextArea.startsWith(RESET_BELOW_MARK) || nextArea.startsWith(BREAK_BELOW_MARK))) {
-                    area = area + "</div></div>";
+                if (endsWithWikiBlock) {
+                    area = area + DIV_END_TAG + DIV_END_TAG;
                 }
 
                 if (exportParams.isFitToPage()) { //here we can make additional areas processing if needed

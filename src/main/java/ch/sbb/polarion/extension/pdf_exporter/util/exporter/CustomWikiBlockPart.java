@@ -15,6 +15,7 @@ public class CustomWikiBlockPart extends WikiBlockPart {
         super(object.getElement(), new PartIdGeneratorImpl());
     }
 
+    @Override
     public void setRenderedContentHtml(@NotNull String renderedContentHtml) {
         super.setRenderedContentHtml(convertPd4mlPageBreakTags(renderedContentHtml));
     }

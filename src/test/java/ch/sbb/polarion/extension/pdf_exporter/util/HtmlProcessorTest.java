@@ -141,6 +141,8 @@ class HtmlProcessorTest {
     private static Stream<Arguments> providePageBreakTestCases() {
 
         ExportParams landscapeExportParams = new ExportParams();
+        landscapeExportParams.setFitToPage(true);
+        landscapeExportParams.setChapters(List.of());
         landscapeExportParams.setOrientation(Orientation.LANDSCAPE);
 
         ExportParams specificChaptersExportParams = new ExportParams();
@@ -209,10 +211,13 @@ class HtmlProcessorTest {
 
     @Test
     void pageBreakCommentsTest() {
-        Comment properComment = new Comment("PAGE_BREAK");
-        Comment badComment = new Comment("pre PAGE_BREAK");
-        assertTrue(processor.isPageBreakComment(properComment));
-        assertFalse(processor.isPageBreakComment(badComment));
+        assertTrue(processor.isPageBreakComment(new Comment("PAGE_BREAK")));
+        assertTrue(processor.isPageBreakComment(new Comment("LANDSCAPE_ABOVE")));
+        assertTrue(processor.isPageBreakComment(new Comment("PORTRAIT_ABOVE")));
+        assertTrue(processor.isPageBreakComment(new Comment("ROTATE_BELOW")));
+        assertTrue(processor.isPageBreakComment(new Comment("RESET_BELOW")));
+        assertTrue(processor.isPageBreakComment(new Comment("BREAK_BELOW")));
+        assertFalse(processor.isPageBreakComment(new Comment("pre PAGE_BREAK")));
     }
 
     @Test

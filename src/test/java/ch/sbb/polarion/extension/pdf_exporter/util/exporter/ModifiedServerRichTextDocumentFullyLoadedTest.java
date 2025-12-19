@@ -1,6 +1,7 @@
 package ch.sbb.polarion.extension.pdf_exporter.util.exporter;
 
 import com.polarion.alm.shared.api.utils.collections.StrictListImpl;
+import com.polarion.alm.shared.rt.parts.impl.PrePart;
 import com.polarion.alm.shared.rt.parts.impl.readonly.PageBreakPart;
 import com.polarion.alm.shared.rt.parts.impl.readonly.WikiBlockPart;
 import lombok.SneakyThrows;
@@ -26,6 +27,8 @@ class ModifiedServerRichTextDocumentFullyLoadedTest {
         assertDoesNotThrow(() -> doc.addPart(pageBreakPart));
         WikiBlockPart wikiBlockPart = mock(WikiBlockPart.class);
         assertDoesNotThrow(() -> doc.addPart(wikiBlockPart));
+        PrePart prePart = mock(PrePart.class);
+        assertDoesNotThrow(() -> doc.addPart(prePart));
     }
 
 }
