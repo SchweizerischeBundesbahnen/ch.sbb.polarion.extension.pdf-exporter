@@ -225,6 +225,17 @@ export default class ExportContext extends ExtensionContext {
                         let attachment = request.getResponseHeader("WorkItem-IDs-With-Missing-Attachment")
                         warningMessage = `${count} image(s) in WI(s) ${attachment} were not exported. They were replaced with an image containing 'This image is not accessible'.`;
                     }
+                    let pdfVariantCompliant = request.getResponseHeader("PDF-Variant-Compliant");
+                    if (pdfVariantCompliant) {
+                        if (pdfVariantCompliant !== "true") {
+                            warningMessage = warningMessage ? warningMessage + "<br><br>" : "";
+                            warningMessage += "Be aware that resulted PDF isn't compliant with the selected PDF variant.";
+                        }
+                    } else {
+                        warningMessage = warningMessage ? warningMessage + "<br><br>" : "";
+                        warningMessage += "Resulted PDF couldn't be validated if it's compliant with the selected PDF variant.";
+                    }
+
                     successCallback({
                         response: request.response,
                         warning: warningMessage
