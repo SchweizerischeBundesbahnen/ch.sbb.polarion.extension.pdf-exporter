@@ -229,11 +229,11 @@ export default class ExportContext extends ExtensionContext {
                     if (pdfVariantCompliant) {
                         if (pdfVariantCompliant !== "true") {
                             warningMessage = warningMessage ? warningMessage + "<br><br>" : "";
-                            warningMessage += "Be aware that resulted PDF isn't compliant with the selected PDF variant.";
+                            warningMessage += "Be aware that resulting PDF isn't compliant with the selected PDF variant.";
                         }
                     } else {
                         warningMessage = warningMessage ? warningMessage + "<br><br>" : "";
-                        warningMessage += "Resulted PDF couldn't be validated if it's compliant with the selected PDF variant.";
+                        warningMessage += "Resulting PDF couldn't be validated if it's compliant with the selected PDF variant.";
                     }
 
                     successCallback({

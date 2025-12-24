@@ -120,8 +120,8 @@ public class ConverterInternalController {
                                             schema = @Schema(implementation = String.class)
                                     ),
                                     @Header(name = PDF_VARIANT_COMPLIANT,
-                                            description = "Work items contained unavailable attachments",
-                                            schema = @Schema(implementation = ValidationResult.class)
+                                            description = "Boolean value if resulting PDF is compliant to selected PDF variant",
+                                            schema = @Schema(implementation = Boolean.class)
                                     ),
                                     @Header(name = MISSING_WORKITEM_ATTACHMENTS_COUNT,
                                             description = "Unavailable work item attachments count",
@@ -257,8 +257,8 @@ public class ConverterInternalController {
                                             schema = @Schema(implementation = String.class)
                                     ),
                                     @Header(name = PDF_VARIANT_COMPLIANT,
-                                            description = "Work items contained unavailable attachments",
-                                            schema = @Schema(implementation = ValidationResult.class)
+                                            description = "Boolean value if resulting PDF is compliant to selected PDF variant",
+                                            schema = @Schema(implementation = Boolean.class)
                                     ),
                                     @Header(name = MISSING_WORKITEM_ATTACHMENTS_COUNT,
                                             description = "Unavailable work item attachments count",

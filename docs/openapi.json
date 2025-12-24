@@ -220,9 +220,9 @@
                 "style": "simple"
               },
               "PDF-Variant-Compliant": {
-                "description": "Work items contained unavailable attachments",
+                "description": "Boolean value if resulting PDF is compliant to selected PDF variant",
                 "schema": {
-                  "$ref": "#/components/schemas/ValidationResult"
+                  "type": "boolean"
                 },
                 "style": "simple"
               },
@@ -497,9 +497,9 @@
                 "style": "simple"
               },
               "PDF-Variant-Compliant": {
-                "description": "Work items contained unavailable attachments",
+                "description": "Boolean value if resulting PDF is compliant to selected PDF variant",
                 "schema": {
-                  "$ref": "#/components/schemas/ValidationResult"
+                  "type": "boolean"
                 },
                 "style": "simple"
               },
@@ -1781,34 +1781,6 @@
         },
         "type": "object"
       },
-      "ErrorArgument": {
-        "properties": {
-          "argument": {
-            "type": "string"
-          },
-          "argumentValue": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
-          }
-        },
-        "type": "object"
-      },
-      "ErrorDetails": {
-        "properties": {
-          "arguments": {
-            "items": {
-              "$ref": "#/components/schemas/ErrorArgument"
-            },
-            "type": "array"
-          },
-          "message": {
-            "type": "string"
-          }
-        },
-        "type": "object"
-      },
       "ExportParams": {
         "properties": {
           "attachmentsFilter": {
@@ -2145,17 +2117,6 @@
         },
         "type": "object"
       },
-      "Location": {
-        "properties": {
-          "context": {
-            "type": "string"
-          },
-          "level": {
-            "type": "string"
-          }
-        },
-        "type": "object"
-      },
       "MessageBodyWorkers": {
         "type": "object"
       },
@@ -2255,35 +2216,6 @@
         },
         "type": "object"
       },
-      "ProfileDetails": {
-        "properties": {
-          "creator": {
-            "type": "string"
-          },
-          "dateCreated": {
-            "format": "date-time",
-            "type": "string"
-          },
-          "description": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
-          }
-        },
-        "type": "object"
-      },
-      "Reference": {
-        "properties": {
-          "clause": {
-            "type": "string"
-          },
-          "specification": {
-            "type": "string"
-          }
-        },
-        "type": "object"
-      },
       "Revision": {
         "description": "Revision details",
         "properties": {
@@ -2306,73 +2238,6 @@
           "name": {
             "description": "The name of the revision",
             "type": "string"
-          }
-        },
-        "type": "object"
-      },
-      "Rule": {
-        "properties": {
-          "deferred": {
-            "type": "boolean"
-          },
-          "description": {
-            "type": "string"
-          },
-          "error": {
-            "$ref": "#/components/schemas/ErrorDetails"
-          },
-          "object": {
-            "type": "string"
-          },
-          "references": {
-            "items": {
-              "$ref": "#/components/schemas/Reference"
-            },
-            "type": "array"
-          },
-          "ruleId": {
-            "$ref": "#/components/schemas/RuleId"
-          },
-          "tags": {
-            "type": "string"
-          },
-          "tagsSet": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "uniqueItems": true
-          },
-          "test": {
-            "type": "string"
-          }
-        },
-        "type": "object"
-      },
-      "RuleId": {
-        "properties": {
-          "clause": {
-            "type": "string"
-          },
-          "specification": {
-            "enum": [
-              "ISO 0-0:",
-              "ISO 14289-1:2014",
-              "ISO 14289-2:2024",
-              "WTPDF1.0",
-              "ISO 19005-1:2005",
-              "ISO 19005-2:2011",
-              "ISO 19005-3:2012",
-              "ISO 19005-4:2020",
-              "ISO 32005:2023",
-              "WCAG2.1",
-              "WCAG2.2"
-            ],
-            "type": "string"
-          },
-          "testNumber": {
-            "format": "int32",
-            "type": "integer"
           }
         },
         "type": "object"
@@ -2418,44 +2283,6 @@
         },
         "type": "object"
       },
-      "TestAssertion": {
-        "properties": {
-          "errorArguments": {
-            "items": {
-              "$ref": "#/components/schemas/ErrorArgument"
-            },
-            "type": "array"
-          },
-          "errorMessage": {
-            "type": "string"
-          },
-          "location": {
-            "$ref": "#/components/schemas/Location"
-          },
-          "locationContext": {
-            "type": "string"
-          },
-          "message": {
-            "type": "string"
-          },
-          "ordinal": {
-            "format": "int32",
-            "type": "integer"
-          },
-          "ruleId": {
-            "$ref": "#/components/schemas/RuleId"
-          },
-          "status": {
-            "enum": [
-              "passed",
-              "failed",
-              "unknown"
-            ],
-            "type": "string"
-          }
-        },
-        "type": "object"
-      },
       "TestRunAttachment": {
         "properties": {
           "fileName": {
@@ -2465,140 +2292,6 @@
             "type": "string"
           },
           "revision": {
-            "type": "string"
-          }
-        },
-        "type": "object"
-      },
-      "ValidationProfile": {
-        "properties": {
-          "details": {
-            "$ref": "#/components/schemas/ProfileDetails"
-          },
-          "hexSha1Digest": {
-            "type": "string"
-          },
-          "pdfaflavour": {
-            "enum": [
-              "0",
-              "1a",
-              "1b",
-              "2a",
-              "2b",
-              "2u",
-              "3a",
-              "3b",
-              "3u",
-              "4",
-              "4f",
-              "4e",
-              "ua1",
-              "ua2",
-              "wt1r",
-              "wt1a",
-              "wcag2",
-              "wcag2"
-            ],
-            "type": "string"
-          },
-          "rules": {
-            "items": {
-              "$ref": "#/components/schemas/Rule"
-            },
-            "type": "array",
-            "uniqueItems": true
-          },
-          "tags": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "uniqueItems": true
-          },
-          "variables": {
-            "items": {
-              "$ref": "#/components/schemas/Variable"
-            },
-            "type": "array",
-            "uniqueItems": true
-          }
-        },
-        "type": "object"
-      },
-      "ValidationResult": {
-        "properties": {
-          "compliant": {
-            "type": "boolean"
-          },
-          "failedChecks": {
-            "additionalProperties": {
-              "format": "int32",
-              "type": "integer"
-            },
-            "type": "object"
-          },
-          "jobEndStatus": {
-            "enum": [
-              "normal",
-              "timeout",
-              "cancelled"
-            ],
-            "type": "string"
-          },
-          "pdfaflavour": {
-            "enum": [
-              "0",
-              "1a",
-              "1b",
-              "2a",
-              "2b",
-              "2u",
-              "3a",
-              "3b",
-              "3u",
-              "4",
-              "4f",
-              "4e",
-              "ua1",
-              "ua2",
-              "wt1r",
-              "wt1a",
-              "wcag2",
-              "wcag2"
-            ],
-            "type": "string"
-          },
-          "profileDetails": {
-            "$ref": "#/components/schemas/ProfileDetails"
-          },
-          "testAssertions": {
-            "items": {
-              "$ref": "#/components/schemas/TestAssertion"
-            },
-            "type": "array"
-          },
-          "totalAssertions": {
-            "format": "int32",
-            "type": "integer"
-          },
-          "validationProfile": {
-            "$ref": "#/components/schemas/ValidationProfile"
-          }
-        },
-        "type": "object"
-      },
-      "Variable": {
-        "properties": {
-          "defaultValue": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
-          },
-          "object": {
-            "type": "string"
-          },
-          "value": {
             "type": "string"
           }
         },
