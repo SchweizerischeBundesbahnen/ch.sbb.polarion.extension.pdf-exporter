@@ -222,17 +222,14 @@
               "PDF-Variant-Compliant": {
                 "description": "Boolean value if resulting PDF is compliant to selected PDF variant",
                 "schema": {
-                  "type": "boolean"
+                  "type": "string"
                 },
                 "style": "simple"
               },
               "WorkItem-IDs-With-Missing-Attachment": {
                 "description": "Work items contained unavailable attachments",
                 "schema": {
-                  "items": {
-                    "type": "object"
-                  },
-                  "type": "array"
+                  "type": "string"
                 },
                 "style": "simple"
               }
@@ -499,7 +496,7 @@
               "PDF-Variant-Compliant": {
                 "description": "Boolean value if resulting PDF is compliant to selected PDF variant",
                 "schema": {
-                  "type": "boolean"
+                  "type": "string"
                 },
                 "style": "simple"
               },
