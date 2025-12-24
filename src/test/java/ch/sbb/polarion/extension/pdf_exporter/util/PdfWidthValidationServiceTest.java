@@ -18,14 +18,14 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 
 @ExtendWith(MockitoExtension.class)
-class PdfValidationServiceTest {
+class PdfWidthValidationServiceTest {
 
     @Test
     @SneakyThrows
     void extraWidthTest() {
         try (InputStream is = this.getClass().getResourceAsStream("/test_extra_width_content.pdf")) {
             assertNotNull(is);
-            PdfValidationService service = new PdfValidationService(mock(PdfConverter.class));
+            PdfWidthValidationService service = new PdfWidthValidationService(mock(PdfConverter.class));
             List<WidthValidationResult.PageInfo> invalidPages = service.findInvalidPages(IOUtils.toByteArray(is), 5);
             assertEquals(3, invalidPages.size());
             assertTrue(invalidPages.stream().map(WidthValidationResult.PageInfo::getNumber).collect(Collectors.toSet()).containsAll(Arrays.asList(0, 1, 2)));
@@ -37,7 +37,7 @@ class PdfValidationServiceTest {
     void extraWidthMaxResultsTest() {
         try (InputStream is = this.getClass().getResourceAsStream("/test_extra_width_content.pdf")) {
             assertNotNull(is);
-            PdfValidationService service = new PdfValidationService(mock(PdfConverter.class));
+            PdfWidthValidationService service = new PdfWidthValidationService(mock(PdfConverter.class));
             List<WidthValidationResult.PageInfo> invalidPages = service.findInvalidPages(IOUtils.toByteArray(is), 2);
             assertEquals(2, invalidPages.size());
         }

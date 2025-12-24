@@ -17,17 +17,17 @@ import java.util.Base64;
 import java.util.Collections;
 import java.util.List;
 
-public class PdfValidationService {
+public class PdfWidthValidationService {
 
     public static final String TEST_WI_MASK = "{TEST_WI:%s}";
 
     private final PdfConverter pdfConverter;
 
-    public PdfValidationService() {
+    public PdfWidthValidationService() {
         this.pdfConverter = new PdfConverter();
     }
 
-    public PdfValidationService(PdfConverter pdfConverter) {
+    public PdfWidthValidationService(PdfConverter pdfConverter) {
         this.pdfConverter = pdfConverter;
     }
 
