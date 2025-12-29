@@ -3,6 +3,7 @@ package ch.sbb.polarion.extension.pdf_exporter.util;
 import ch.sbb.polarion.extension.pdf_exporter.converter.PdfConverter;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.WidthValidationResult;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.WorkItemRefData;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
 import lombok.SneakyThrows;
 import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.Test;
@@ -15,10 +16,32 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class PdfWidthValidationServiceTest {
+
+    @Test
+    @SneakyThrows
+    void validateWidthTest() {
+        try (InputStream is = this.getClass().getResourceAsStream("/test_extra_width_content.pdf")) {
+            assertNotNull(is);
+
+            byte[] pdfBytes = IOUtils.toByteArray(is);
+
+            ExportParams exportParams = new ExportParams();
+            PdfConverter pdfConverterMock = mock(PdfConverter.class);
+            when(pdfConverterMock.convertToPdf(eq(exportParams), notNull())).thenReturn(pdfBytes);
+            when(pdfConverterMock.convertToPdf(eq(exportParams), isNull())).thenReturn(pdfBytes);
+
+            PdfWidthValidationService service = new PdfWidthValidationService(pdfConverterMock);
+            WidthValidationResult widthValidationResult = service.validateWidth(exportParams, 5);
+            assertEquals(3, widthValidationResult.getInvalidPages().size());
+            assertTrue(widthValidationResult.getInvalidPages().stream().map(WidthValidationResult.PageInfo::getNumber).collect(Collectors.toSet()).containsAll(Arrays.asList(0, 1, 2)));
+        }
+    }
 
     @Test
     @SneakyThrows

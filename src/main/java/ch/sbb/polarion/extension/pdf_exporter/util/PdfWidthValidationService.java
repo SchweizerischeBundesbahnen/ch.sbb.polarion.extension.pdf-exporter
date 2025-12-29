@@ -83,10 +83,12 @@ public class PdfWidthValidationService {
      */
     private String generateValidationPreparedContent(List<WorkItemRefData> items) {
         StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < items.size(); i++) {
-            sb.append(String.format(TEST_WI_MASK, i))
-                    .append(items.get(i).toInternalContent())
-                    .append(String.format("<div contentEditable=\"false\" data-is-landscape=\"false\" id=\"polarion_wiki macro name=page_break;params=uid=%s\"></div>", i + 1));
+        if (items != null) {
+            for (int i = 0; i < items.size(); i++) {
+                sb.append(String.format(TEST_WI_MASK, i))
+                        .append(items.get(i).toInternalContent())
+                        .append(String.format("<div contentEditable=\"false\" data-is-landscape=\"false\" id=\"polarion_wiki macro name=page_break;params=uid=%s\"></div>", i + 1));
+            }
         }
         return sb.toString();
     }
