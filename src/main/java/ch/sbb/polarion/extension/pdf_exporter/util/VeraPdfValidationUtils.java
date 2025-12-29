@@ -4,6 +4,9 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ConversionPa
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PdfVariant;
 import lombok.experimental.UtilityClass;
 import org.jetbrains.annotations.NotNull;
+import org.verapdf.core.EncryptedPdfException;
+import org.verapdf.core.ModelParsingException;
+import org.verapdf.core.ValidationException;
 import org.verapdf.gf.foundry.VeraGreenfieldFoundryProvider;
 import org.verapdf.pdfa.Foundries;
 import org.verapdf.pdfa.PDFAParser;
@@ -13,6 +16,7 @@ import org.verapdf.pdfa.flavours.PDFAFlavour;
 import org.verapdf.pdfa.results.ValidationResult;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 
 @UtilityClass
 public class VeraPdfValidationUtils {
@@ -29,7 +33,7 @@ public class VeraPdfValidationUtils {
         }
     }
 
-    public ValidationResult validatePdf(byte[] pdfBytes, PDFAFlavour flavour) throws Exception {
+    public ValidationResult validatePdf(byte[] pdfBytes, PDFAFlavour flavour) throws ModelParsingException, IOException, EncryptedPdfException, ValidationException {
         try (VeraPDFFoundry veraPDFFoundry = Foundries.defaultInstance();
              PDFAParser parser = veraPDFFoundry.createParser(new ByteArrayInputStream(pdfBytes), flavour);
              PDFAValidator validator = veraPDFFoundry.createValidator(flavour, false)) {
