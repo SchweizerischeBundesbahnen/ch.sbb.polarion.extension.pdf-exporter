@@ -7,6 +7,7 @@ import org.jetbrains.annotations.NotNull;
 import org.verapdf.gf.foundry.VeraGreenfieldFoundryProvider;
 import org.verapdf.pdfa.Foundries;
 import org.verapdf.pdfa.PDFAParser;
+import org.verapdf.pdfa.PDFAValidator;
 import org.verapdf.pdfa.VeraPDFFoundry;
 import org.verapdf.pdfa.flavours.PDFAFlavour;
 import org.verapdf.pdfa.results.ValidationResult;
@@ -30,12 +31,10 @@ public class VeraPdfValidationUtils {
 
     public ValidationResult validatePdf(byte[] pdfBytes, PDFAFlavour flavour) throws Exception {
         try (VeraPDFFoundry veraPDFFoundry = Foundries.defaultInstance();
-             PDFAParser parser = veraPDFFoundry
-                     .createParser(new ByteArrayInputStream(pdfBytes), flavour)) {
+             PDFAParser parser = veraPDFFoundry.createParser(new ByteArrayInputStream(pdfBytes), flavour);
+             PDFAValidator validator = veraPDFFoundry.createValidator(flavour, false)) {
 
-            return veraPDFFoundry
-                    .createValidator(flavour, false)
-                    .validate(parser);
+            return validator.validate(parser);
         }
     }
 
