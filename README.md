@@ -378,7 +378,7 @@ if you always used either default template(-s) or/and custom templates not inher
 
 ### Upgrade from version 8.x.x to 9.0.0
 
-In version 9.0.0 support for Polarion 2410 and older has been dropped. This extension supports only Polarion 2512.
+In version 9.0.0 support for Polarion 2410 and older has been dropped. This extension supports only Polarion 2506.
 
 PDF variant configuration has been moved to style package instead of using configuration properties.
 
