@@ -226,9 +226,11 @@ export default class ExportContext extends ExtensionContext {
                         warningMessage = `${count} image(s) in WI(s) ${attachment} were not exported. They were replaced with an image containing 'This image is not accessible'.`;
                     }
                     successCallback({
-                        response: request.response,
-                        warning: warningMessage
-                    });
+                            response: request.response,
+                            warning: warningMessage
+                        },
+                        request.getResponseHeader("Export-Filename")
+                    );
                 }
             },
             onError: (status, errorMessage, request) => {
