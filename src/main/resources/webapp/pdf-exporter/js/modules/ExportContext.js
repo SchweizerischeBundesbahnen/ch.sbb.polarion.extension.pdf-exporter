@@ -238,7 +238,8 @@ export default class ExportContext extends ExtensionContext {
 
                     successCallback({
                         response: request.response,
-                        warning: warningMessage
+                        warning: warningMessage,
+                        fileName: request.getResponseHeader("Export-Filename")
                     });
                 }
             },
@@ -312,7 +313,7 @@ export default class ExportContext extends ExtensionContext {
 
                     this.asyncConvertPdf(
                         exportParams.toJSON(),
-                        (result, fileName) => {
+                        result => {
                             const downloadFileName = collectionDocument.fileName || `${collectionDocument.projectId}_${collectionDocument.spaceId}_${collectionDocument.documentName}.pdf`;
                             this.downloadBlob(result.response, downloadFileName);
 
