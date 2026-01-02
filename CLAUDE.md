@@ -102,7 +102,7 @@ Always run this after implementation. The project uses extensive pre-commit hook
 
 ### Java Dependencies
 - **Polarion Version**: 2512 (configured via profile in pom.xml)
-- **Parent POM**: `ch.sbb.polarion.extension.generic:11.1.0`
+- **Parent POM**: `ch.sbb.polarion.extension.generic:13.0.0`
 - **Key Libraries**:
   - Apache PDFBox 3.0.5 (PDF manipulation)
   - Apache Velocity (templating)
