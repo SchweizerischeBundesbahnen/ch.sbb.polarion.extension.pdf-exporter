@@ -278,13 +278,13 @@ export default class ExportBulk {
             }
 
             if (documentType !== ExportParams.DocumentType.BASELINE_COLLECTION) {
-                this.ctx.asyncConvertPdf(this.exportParams.toJSON(), (result, fileName) => {
+                this.ctx.asyncConvertPdf(this.exportParams.toJSON(), result => {
                     currentItem.classList.remove("in-progress");
                     currentItem.classList.add("finished");
 
                     this.finishedCount += 1;
                     this.updateState(BULK_EXPORT_IN_PROGRESS);
-                    const downloadFileName = fileName || `${currentItem.dataset["space"] ? currentItem.dataset["space"] + "_" : ""}${documentId}.pdf`; // Fallback if file name wasn't received in response
+                    const downloadFileName = result.fileName || `${currentItem.dataset["space"] ? currentItem.dataset["space"] + "_" : ""}${documentId}.pdf`; // Fallback if file name wasn't received in response
                     this.ctx.downloadBlob(result.response, downloadFileName);
                     this.startNextItemExport();
                 }, errorResponse => {
