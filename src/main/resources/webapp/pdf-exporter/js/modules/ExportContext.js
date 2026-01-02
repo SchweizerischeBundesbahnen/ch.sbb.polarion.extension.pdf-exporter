@@ -226,11 +226,10 @@ export default class ExportContext extends ExtensionContext {
                         warningMessage = `${count} image(s) in WI(s) ${attachment} were not exported. They were replaced with an image containing 'This image is not accessible'.`;
                     }
                     successCallback({
-                            response: request.response,
-                            warning: warningMessage
-                        },
-                        request.getResponseHeader("Export-Filename")
-                    );
+                        response: request.response,
+                        warning: warningMessage,
+                        fileName: request.getResponseHeader("Export-Filename")
+                    });
                 }
             },
             onError: (status, errorMessage, request) => {
@@ -303,7 +302,7 @@ export default class ExportContext extends ExtensionContext {
 
                     this.asyncConvertPdf(
                         exportParams.toJSON(),
-                        (result, fileName) => {
+                        result => {
                             const downloadFileName = collectionDocument.fileName || `${collectionDocument.projectId}_${collectionDocument.spaceId}_${collectionDocument.documentName}.pdf`;
                             this.downloadBlob(result.response, downloadFileName);
 
