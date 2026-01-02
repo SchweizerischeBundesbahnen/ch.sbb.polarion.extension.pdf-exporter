@@ -2,7 +2,7 @@
 default_install_hook_types: [pre-commit, commit-msg]
 repos:
   - repo: https://github.com/lyz-code/yamlfix
-    rev: 1.19.0
+    rev: 1.19.1
     hooks:
       - id: yamlfix
         args: [-c, .yamlfix.toml]
@@ -20,7 +20,12 @@ repos:
       - id: mixed-line-ending
       - id: end-of-file-fixer
       - id: pretty-format-json
+        alias: pretty-format-openapi-json
         args: [--autofix, --no-ensure-ascii, '--top-keys=openapi,info,servers,paths,components']
+        files: docs/openapi.json
+      - id: mixed-line-ending
+        alias: mixed-line-ending-openapi-json
+        args: [--fix=lf]
         files: docs/openapi.json
   - repo: local
     hooks:
@@ -49,11 +54,11 @@ repos:
       - id: check-git-config-user-email
         args: [--templates, ^\S+\.\S+@sbb\.ch$]
   - repo: https://github.com/commitizen-tools/commitizen
-    rev: v4.10.0
+    rev: v4.11.0
     hooks:
       - id: commitizen
   - repo: https://github.com/woodruffw/zizmor-pre-commit
-    rev: v1.18.0
+    rev: v1.19.0
     hooks:
       - id: zizmor
   - repo: https://github.com/rhysd/actionlint

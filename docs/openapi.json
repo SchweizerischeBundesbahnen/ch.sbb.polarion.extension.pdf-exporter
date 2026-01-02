@@ -280,14 +280,19 @@
             "schema": {
               "description": "PDF variants",
               "enum": [
+                "PDF_A_1A",
                 "PDF_A_1B",
+                "PDF_A_2A",
                 "PDF_A_2B",
-                "PDF_A_3B",
-                "PDF_A_4B",
                 "PDF_A_2U",
+                "PDF_A_3A",
+                "PDF_A_3B",
                 "PDF_A_3U",
+                "PDF_A_4E",
+                "PDF_A_4F",
                 "PDF_A_4U",
-                "PDF_UA_1"
+                "PDF_UA_1",
+                "PDF_UA_2"
               ],
               "type": "string"
             }
@@ -1926,14 +1931,19 @@
             "default": "PDF_A_2B",
             "description": "PDF variants",
             "enum": [
+              "PDF_A_1A",
               "PDF_A_1B",
+              "PDF_A_2A",
               "PDF_A_2B",
-              "PDF_A_3B",
-              "PDF_A_4B",
               "PDF_A_2U",
+              "PDF_A_3A",
+              "PDF_A_3B",
               "PDF_A_3U",
+              "PDF_A_4E",
+              "PDF_A_4F",
               "PDF_A_4U",
-              "PDF_UA_1"
+              "PDF_UA_1",
+              "PDF_UA_2"
             ],
             "type": "string"
           },

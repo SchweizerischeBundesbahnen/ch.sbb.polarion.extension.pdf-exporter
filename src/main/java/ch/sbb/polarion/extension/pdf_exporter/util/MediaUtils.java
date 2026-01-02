@@ -204,8 +204,12 @@ public class MediaUtils {
     @SneakyThrows
     private byte[] applyPdfAPostProcessing(byte[] mergedPdf, @NotNull PdfVariant pdfVariant) {
         return switch (pdfVariant) {
-            case PDF_A_1B -> PdfA1bProcessor.processPdfA1b(mergedPdf);
-            case PDF_A_4B, PDF_A_4U -> PdfA4Processor.processPdfA4(mergedPdf);
+            case PDF_A_1A -> PdfA1Processor.processPdfA1(mergedPdf, "A");
+            case PDF_A_1B -> PdfA1Processor.processPdfA1(mergedPdf, "B");
+            case PDF_A_4E -> PdfA4Processor.processPdfA4(mergedPdf, "E");
+            case PDF_A_4F -> PdfA4Processor.processPdfA4(mergedPdf, "F");
+            case PDF_A_4U -> PdfA4Processor.processPdfA4(mergedPdf, null);
+            case PDF_UA_2 -> PdfUa2Processor.processPdfUa2(mergedPdf);
             default -> mergedPdf;
         };
     }
@@ -316,12 +320,12 @@ public class MediaUtils {
 
     @SuppressWarnings("unchecked")
     public String getMimeTypeUsingTikaByResourceName(@NotNull String resource, byte[] resourceBytes) {
-        return ((Optional<String>) BundleJarsPrioritizingRunnable.execute(TikaMimeTypeResolver.class, Map.of(PARAM_VALUE, resource), true).get(PARAM_RESULT)).orElse(null);
+        return ((Optional<String>) BundleJarsPrioritizingRunnable.executeCached(TikaMimeTypeResolver.class, Map.of(PARAM_VALUE, resource)).get(PARAM_RESULT)).orElse(null);
     }
 
     @SuppressWarnings("unchecked")
     public String getMimeTypeUsingTikaByContent(@NotNull String resource, byte[] resourceBytes) {
-        return ((Optional<String>) BundleJarsPrioritizingRunnable.execute(TikaMimeTypeResolver.class, Map.of(PARAM_VALUE, resourceBytes), true).get(PARAM_RESULT)).orElse(null);
+        return ((Optional<String>) BundleJarsPrioritizingRunnable.executeCached(TikaMimeTypeResolver.class, Map.of(PARAM_VALUE, resourceBytes)).get(PARAM_RESULT)).orElse(null);
     }
 
     @SneakyThrows

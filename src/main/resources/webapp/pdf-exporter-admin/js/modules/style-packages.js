@@ -164,14 +164,19 @@ const PdfVariants = {
     }),
 
     init: function () {
+        this.pdfVariantSelect.addOption('PDF_A_1A', 'pdf/a-1a');
         this.pdfVariantSelect.addOption('PDF_A_1B', 'pdf/a-1b');
+        this.pdfVariantSelect.addOption('PDF_A_2A', 'pdf/a-2a');
         this.pdfVariantSelect.addOption('PDF_A_2B', 'pdf/a-2b');
-        this.pdfVariantSelect.addOption('PDF_A_3B', 'pdf/a-3b');
-        this.pdfVariantSelect.addOption('PDF_A_4B', 'pdf/a-4b');
         this.pdfVariantSelect.addOption('PDF_A_2U', 'pdf/a-2u');
+        this.pdfVariantSelect.addOption('PDF_A_3A', 'pdf/a-3a');
+        this.pdfVariantSelect.addOption('PDF_A_3B', 'pdf/a-3b');
         this.pdfVariantSelect.addOption('PDF_A_3U', 'pdf/a-3u');
+        this.pdfVariantSelect.addOption('PDF_A_4E', 'pdf/a-4e');
+        this.pdfVariantSelect.addOption('PDF_A_4F', 'pdf/a-4f');
         this.pdfVariantSelect.addOption('PDF_A_4U', 'pdf/a-4u');
         this.pdfVariantSelect.addOption('PDF_UA_1', 'pdf/ua-1');
+        this.pdfVariantSelect.addOption('PDF_UA_2', 'pdf/ua-2');
     }
 }
 

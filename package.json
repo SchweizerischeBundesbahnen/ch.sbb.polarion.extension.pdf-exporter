@@ -6,9 +6,9 @@
   "type": "module",
   "version": "1.0.0",
   "devDependencies": {
-    "chai": "6.2.1",
+    "chai": "6.2.2",
     "cross-env": "^10.1.0",
-    "jsdom": "27.2.0",
+    "jsdom": "27.4.0",
     "mocha": "11.7.5"
   }
 }

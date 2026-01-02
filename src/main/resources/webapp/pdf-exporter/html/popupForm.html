@@ -97,14 +97,19 @@
                 <div class='property-wrapper'>
                     <label for='popup-pdf-variant-selector' class="fixed-width w-1">PDF variant:</label>
                     <select id='popup-pdf-variant-selector'>
+                        <option value='PDF_A_1A'>pdf/a-1a</option>
                         <option value='PDF_A_1B'>pdf/a-1b</option>
+                        <option value='PDF_A_2A'>pdf/a-2a</option>
                         <option value='PDF_A_2B'>pdf/a-2b</option>
-                        <option value='PDF_A_3B'>pdf/a-3b</option>
-                        <option value='PDF_A_4B'>pdf/a-4b</option>
                         <option value='PDF_A_2U'>pdf/a-2u</option>
+                        <option value='PDF_A_3A'>pdf/a-3a</option>
+                        <option value='PDF_A_3B'>pdf/a-3b</option>
                         <option value='PDF_A_3U'>pdf/a-3u</option>
+                        <option value='PDF_A_4E'>pdf/a-4e</option>
+                        <option value='PDF_A_4F'>pdf/a-4f</option>
                         <option value='PDF_A_4U'>pdf/a-4u</option>
                         <option value='PDF_UA_1'>pdf/ua-1</option>
+                        <option value='PDF_UA_2'>pdf/ua-2</option>
                     </select>
                 </div>
                 <div class='property-wrapper'>
@@ -143,7 +148,13 @@
                         <option value='ALL'>All</option>
                     </select>
                     <label for='popup-render-native-comments' id='popup-render-native-comments-container'>
-                        <input id='popup-render-native-comments' type='checkbox'/>
+                        <input id='popup-render-native-comments' type='checkbox' onchange='
+                            const warningPane = document.querySelector(".modal__content .notifications .alert.alert-warning");
+                            if (warningPane) {
+                                warningPane.textContent = this.checked ? "Be aware that comments rendered in PDF as sticky notes are not compliant with any of PDF/A variants" : "";
+                                warningPane.style.display = this.checked ? "block" : "none";
+                            }
+                        ' />
                         as sticky notes
                     </label>
                 </div>

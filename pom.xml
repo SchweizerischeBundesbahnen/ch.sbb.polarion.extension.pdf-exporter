@@ -9,7 +9,7 @@
     </parent>
 
     <artifactId>ch.sbb.polarion.extension.pdf-exporter</artifactId>
-    <version>10.1.3-SNAPSHOT</version>
+    <version>11.1.1</version>
     <packaging>jar</packaging>
 
     <name>Polarion ALM extension to convert Documents to PDF files</name>
@@ -46,15 +46,15 @@
     <properties>
         <pdfbox.version>3.0.6</pdfbox.version>
         <okapi.xliff.version>1.47.0</okapi.xliff.version>
-        <byte-buddy.version>1.18.2</byte-buddy.version>
+        <byte-buddy.version>1.18.3</byte-buddy.version>
         <flying-saucer.version>9.13.3</flying-saucer.version>
 
         <slf4j.version>1.7.36</slf4j.version>
-        <testcontainers.version>2.0.2</testcontainers.version>
+        <testcontainers.version>2.0.3</testcontainers.version>
 
         <awaitility.version>4.3.0</awaitility.version>
         <tika.version>3.2.3</tika.version>
-        <ph-css.version>8.1.0</ph-css.version>
+        <ph-css.version>8.1.1</ph-css.version>
         <commons-text.version>1.15.0</commons-text.version>
         <verapdf.version>1.28.2</verapdf.version>
 
@@ -77,7 +77,7 @@
         <markdown2html-maven-plugin.disclaimer.outputFile>${markdown2html-maven-plugin.extensionContextAdminHtml}/${markdown2html-maven-plugin.disclaimer.outputFileName}</markdown2html-maven-plugin.disclaimer.outputFile>
         <swagger-maven-plugin.version>2.2.22</swagger-maven-plugin.version>
 
-        <frontend-maven-plugin.version>1.15.4</frontend-maven-plugin.version>
+        <frontend-maven-plugin.version>2.0.0</frontend-maven-plugin.version>
         <frontend-maven-plugin.nodeVersion>v24.11.0</frontend-maven-plugin.nodeVersion>
         <frontend-maven-plugin.npmVersion>11.6.1</frontend-maven-plugin.npmVersion>
 
@@ -409,6 +409,10 @@
                         <package>ch.sbb.polarion.extension.pdf_exporter.rest.model</package>
                     </resourcePackages>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>io.github.grigoriev</groupId>
+                <artifactId>pre-commit-run-maven-plugin</artifactId>
             </plugin>
 
             <plugin>

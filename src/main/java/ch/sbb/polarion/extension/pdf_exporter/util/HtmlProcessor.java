@@ -13,11 +13,8 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.Orientation;
 import ch.sbb.polarion.extension.pdf_exporter.settings.LocalizationSettings;
 import ch.sbb.polarion.extension.pdf_exporter.util.adjuster.PageWidthAdjuster;
-import ch.sbb.polarion.extension.pdf_exporter.util.exporter.CustomPageBreakPart;
 import ch.sbb.polarion.extension.pdf_exporter.util.html.HtmlLinksHelper;
-import com.helger.css.decl.CSSDeclaration;
 import com.helger.css.decl.CSSDeclarationList;
-import com.helger.css.decl.CSSExpression;
 import com.helger.css.reader.CSSReaderDeclarationList;
 import com.polarion.alm.shared.util.StringUtils;
 import lombok.SneakyThrows;
@@ -46,6 +43,7 @@ import static ch.sbb.polarion.extension.pdf_exporter.util.exporter.Constants.*;
 
 public class HtmlProcessor {
 
+    private static final String DIV_START_TAG = "<div>";
     private static final String DIV_END_TAG = "</div>";
     private static final String SPAN_END_TAG = "</span>";
     private static final String COMMENT_START = "[span";
@@ -57,6 +55,8 @@ public class HtmlProcessor {
     private static final String EMPTY_FIELD_TITLE = "This field is empty";
     private static final String URL_PROJECT_ID_PREFIX = "/polarion/#/project/";
     private static final String URL_WORK_ITEM_ID_PREFIX = "workitem?id=";
+    private static final String WIKI_PATH_PREFIX = "wiki/";
+    private static final String WORK_ITEM_ID_IN_WIKI_PATH_PREFIX = "?selection=";
     private static final String POLARION_URL_MARKER = "/polarion/#";
     private static final String TABLE_OF_FIGURES_ANCHOR_ID_PREFIX = "dlecaption_";
 
@@ -75,6 +75,10 @@ public class HtmlProcessor {
     }
 
     public String processHtmlForPDF(@NotNull String html, @NotNull ExportParams exportParams, @NotNull List<String> selectedRoleEnumValues) {
+        return processHtmlForPDF(html, exportParams, selectedRoleEnumValues, null);
+    }
+
+    public String processHtmlForPDF(@NotNull String html, @NotNull ExportParams exportParams, @NotNull List<String> selectedRoleEnumValues, @Nullable PdfGenerationLog generationLog) {
         if (exportParams.getDocumentType() == BASELINE_COLLECTION) {
             // Unsupported document type
             throw new IllegalArgumentException(UNSUPPORTED_DOCUMENT_TYPE.formatted(exportParams.getDocumentType()));
@@ -107,88 +111,89 @@ public class HtmlProcessor {
         // II. SECOND SECTION - manipulate HTML as a JSoup document. These changes are vice versa fulfilled easier with JSoup.
         // ----------------
 
-        Document document = JSoupUtils.parseHtml(html);
+        String htmlForParsing = html;
+        Document document = timedIfNotNull(generationLog, "Parse HTML with JSoup", () -> JSoupUtils.parseHtml(htmlForParsing));
 
         // From Polarion perspective h1 - is a document title, h2 are h1 heading etc. We are making such headings' uplifting here
-        adjustDocumentHeadings(document);
+        timedIfNotNull(generationLog, "Adjust document headings", () -> adjustDocumentHeadings(document));
 
         if (exportParams.isCutEmptyChapters()) {
             // Cut empty chapters if explicitly requested by user
-            cutEmptyChapters(document);
+            timedIfNotNull(generationLog, "Cut empty chapters", () -> cutEmptyChapters(document));
         }
         if (exportParams.getChapters() != null) {
             // Leave only chapters explicitly selected by user
-            cutNotNeededChapters(document, exportParams.getChapters());
+            timedIfNotNull(generationLog, "Cut not needed chapters", () -> cutNotNeededChapters(document, exportParams.getChapters()));
         }
 
         if (exportParams.getDocumentType() == LIVE_DOC || exportParams.getDocumentType() == WIKI_PAGE) {
             // Moves WorkItem content out of table wrapping it
-            removePageBreakAvoids(document);
+            timedIfNotNull(generationLog, "Remove page break avoids", () -> removePageBreakAvoids(document));
 
             // Fixes nested HTML lists structure
-            fixNestedLists(document);
+            timedIfNotNull(generationLog, "Fix nested lists", () -> fixNestedLists(document));
 
             // Localize enumeration values
-            localizeEnums(document, exportParams);
+            timedIfNotNull(generationLog, "Localize enums", () -> localizeEnums(document, exportParams));
 
-            addTableOfFigures(document);
+            timedIfNotNull(generationLog, "Add table of figures", () -> addTableOfFigures(document));
         }
 
         if (exportParams.getDocumentType() == LIVE_REPORT || exportParams.getDocumentType() == TEST_RUN) {
             // Searches for div containing 'Reported by' text and adjusts its styles
-            adjustReportedBy(document);
+            timedIfNotNull(generationLog, "Adjust reported by", () -> adjustReportedBy(document));
 
             // Cuts "Export To PDF" button from report's content
-            cutExportToPdfButton(document);
+            timedIfNotNull(generationLog, "Cut export to PDF button", () -> cutExportToPdfButton(document));
 
             // Remove "float: left;" style definition from tables
-            removeFloatLeftFromReports(document);
+            timedIfNotNull(generationLog, "Remove float left from reports", () -> removeFloatLeftFromReports(document));
 
             // Replaces fixed width value of report tables by relative one
-            adjustColumnWidthInReports(document);
+            timedIfNotNull(generationLog, "Adjust column width in reports", () -> adjustColumnWidthInReports(document));
         }
 
         // Polarion doesn't place table rows with th-tags into thead, placing them in table's tbody, which is wrong as table header won't
         // repeat on each next page if table is split across multiple pages. We are fixing this moving such rows into thead.
-        fixTableHeads(document);
+        timedIfNotNull(generationLog, "Fix table heads", () -> fixTableHeads(document));
 
         // If on next step we placed into thead rows which contain rowspan > 1 and this "covers" rows which are still in tbody, we are fixing
         // this here, moving such rows also in thead
-        fixTableHeadRowspan(document);
+        timedIfNotNull(generationLog, "Fix table head rowspan", () -> fixTableHeadRowspan(document));
 
         // Images with styles and "display: block" are searched here. For such images we do following: wrap them into div with text-align style
         // and value "right" if image margin is "auto 0px auto auto" or "center" otherwise.
-        adjustImageAlignment(document);
+        timedIfNotNull(generationLog, "Adjust image alignment", () -> adjustImageAlignment(document));
 
         // Adjusts WorkItem attributes tables to stretch to full page width for better usage of page space and better readability.
         // Also changes absolute widths of normal table cells from absolute values to "auto" if "Fit tables and images to page" is on
-        adjustCellWidth(document, exportParams);
+        timedIfNotNull(generationLog, "Adjust cell width", () -> adjustCellWidth(document, exportParams));
 
         // ----
         // This sequence is important! We need first filter out Linked WorkItems and only then cut empty attributes,
         // cause after filtering Linked WorkItems can become empty. Also cutting local URLs should happen afterwards
         // as filtering workitems relies among other on anchors.
         if (!selectedRoleEnumValues.isEmpty()) {
-            filterTabularLinkedWorkItems(document, selectedRoleEnumValues);
-            filterNonTabularLinkedWorkItems(document, selectedRoleEnumValues);
+            timedIfNotNull(generationLog, "Filter tabular linked work items", () -> filterTabularLinkedWorkItems(document, selectedRoleEnumValues));
+            timedIfNotNull(generationLog, "Filter non-tabular linked work items", () -> filterNonTabularLinkedWorkItems(document, selectedRoleEnumValues));
         }
         if (exportParams.isCutEmptyWIAttributes()) {
-            cutEmptyWIAttributes(document);
+            timedIfNotNull(generationLog, "Cut empty WI attributes", () -> cutEmptyWIAttributes(document));
         }
         // Rewrites Polarion Work Item hyperlinks so that they become intra-document anchor links.
-        rewritePolarionUrls(document);
+        timedIfNotNull(generationLog, "Rewrite Polarion URLs", () -> rewritePolarionUrls(document));
         if (exportParams.isCutLocalUrls()) {
-            cutLocalUrls(document);
+            timedIfNotNull(generationLog, "Cut local URLs", () -> cutLocalUrls(document));
         }
         // ----
 
-        getTocGenerator(exportParams.getDocumentType()).addTableOfContent(document);
+        timedIfNotNull(generationLog, "Generate table of content", () -> getTocGenerator(exportParams.getDocumentType()).addTableOfContent(document));
 
         if (exportParams.isFitToPage() && !hasCustomPageBreaks(html)) {
             // ---- BOOKMARK 1
             // In case of custom page breaks adjustContentToFitPage() will be called separately for each HTML block between
             // page breaks separately (see BOOKMARK 2 below), as paper orientation can be changed by page break
-            adjustContentToFitPage(document, exportParams);
+            timedIfNotNull(generationLog, "Adjust content to fit page", () -> adjustContentToFitPage(document, exportParams));
             // ----
         }
 
@@ -197,12 +202,14 @@ public class HtmlProcessor {
         // Jsoup may convert &dollar; back to $ in some cases, so we need to replace it again
         html = encodeDollarSigns(html);
 
-        html = replaceResourcesAsBase64Encoded(html);
+        String htmlBeforeBase64 = html;
+        html = timedIfNotNull(generationLog, "Encode resources as Base64", () -> replaceResourcesAsBase64Encoded(htmlBeforeBase64));
 
         if (hasCustomPageBreaks(html)) {
             // ---- BOOKMARK 2
             // processPageBrakes() contains its own adjustContentToFitPage() calls, see BOOKMARK 1 for same logic without custom page breaks
-            html = processPageBrakes(html, exportParams);
+            String htmlBeforePageBreaks = html;
+            html = timedIfNotNull(generationLog, "Process page breaks", () -> processPageBrakes(htmlBeforePageBreaks, exportParams));
             // ----
         }
 
@@ -337,7 +344,7 @@ public class HtmlProcessor {
 
     /**
      * Recursively collects top PAGE_BREAK related comments from an element and its descendants,
-     * but only first 2 of them: <!--PAGE_BREAK--> and then either <!--PORTRAIT_ABOVE--> or <!--LANDSCAPE_ABOVE-->,
+     * but only first 2 of them: <!--PAGE_BREAK--> and next to it like <!--PORTRAIT_ABOVE--> (see {@link ch.sbb.polarion.extension.pdf_exporter.util.exporter.Constants}) for the full list,
      * the rest won't be relevant as they belong to removed content.
      */
     private void collectPageBreakComments(@NotNull Node node, @NotNull List<Comment> topPageBreakComments) {
@@ -352,9 +359,15 @@ public class HtmlProcessor {
         }
     }
 
-    private boolean isPageBreakComment(@NotNull Comment comment) {
+    @VisibleForTesting
+    boolean isPageBreakComment(@NotNull Comment comment) {
         String commentData = comment.getData();
-        return commentData.equals(PAGE_BREAK) || commentData.equals(LANDSCAPE_ABOVE) || commentData.equals(PORTRAIT_ABOVE);
+        return commentData.equals(PAGE_BREAK)
+                || commentData.equals(LANDSCAPE_ABOVE)
+                || commentData.equals(PORTRAIT_ABOVE)
+                || commentData.equals(ROTATE_BELOW)
+                || commentData.equals(RESET_BELOW)
+                || commentData.equals(BREAK_BELOW);
     }
 
     @Nullable
@@ -584,7 +597,7 @@ public class HtmlProcessor {
 
             String afterProject = substringAfter(href, URL_PROJECT_ID_PREFIX);
             String projectId = substringBefore(afterProject, "/", false);
-            String workItemId = substringAfter(afterProject, URL_WORK_ITEM_ID_PREFIX);
+            String workItemId = extractWorkItemId(afterProject);
 
             if (afterProject == null || projectId == null || workItemId == null) {
                 continue;
@@ -598,6 +611,16 @@ public class HtmlProcessor {
                     link.attr(HtmlTagAttr.HREF, "#" + expectedAnchorId);
                 }
             }
+        }
+    }
+
+    private String extractWorkItemId(@Nullable String afterProject) {
+        String workItemId = substringAfter(afterProject, URL_WORK_ITEM_ID_PREFIX);
+        if (workItemId != null) {
+            return workItemId;
+        } else {
+            String wikiPath = substringAfter(afterProject, WIKI_PATH_PREFIX);
+            return substringAfter(wikiPath, WORK_ITEM_ID_IN_WIKI_PATH_PREFIX);
         }
     }
 
@@ -616,54 +639,68 @@ public class HtmlProcessor {
     }
 
     /**
-     * {@link CustomPageBreakPart} inserts specific 'marks' into positions where we must place page breaks.
+     * {@link ch.sbb.polarion.extension.pdf_exporter.util.exporter.CustomPageBreakPart} and {@link ch.sbb.polarion.extension.pdf_exporter.util.exporter.CustomWikiBlockPart} insert specific
+     * 'marks' into positions where we must place page breaks.
      * The solution below replaces marks with proper html tags and does additional processing.
      */
     @NotNull
     @VisibleForTesting
     @SuppressWarnings("java:S3776")
     String processPageBrakes(@NotNull String html, ExportParams exportParams) {
-        //remove repeated page breaks, leave just the first one
-        html = RegexMatcher.get(String.format("(%s|%s){2,}", PAGE_BREAK_PORTRAIT_ABOVE, PAGE_BREAK_LANDSCAPE_ABOVE)).replace(html, regexEngine -> {
-            String sequence = regexEngine.group();
-            return sequence.startsWith(PAGE_BREAK_PORTRAIT_ABOVE) ? PAGE_BREAK_PORTRAIT_ABOVE : PAGE_BREAK_LANDSCAPE_ABOVE;
-        });
-
         StringBuilder resultBuf = new StringBuilder();
-        LinkedList<String> areas = new LinkedList<>(Arrays.asList(html.split(PAGE_BREAK_MARK))); //use linked list for processing list in backward order
-        boolean landscape = exportParams.getOrientation() == Orientation.LANDSCAPE; //in the last block we use global orientation setting
+        LinkedList<String> areas = new LinkedList<>(Arrays.asList(html.split(PAGE_BREAK_MARK)));
+        boolean landscape = exportParams.getOrientation() == Orientation.LANDSCAPE; //we start by using global orientation setting
+        boolean defaultLandscape = landscape;
+        boolean skipEmptyAreas = exportParams.isCutEmptyChapters() || exportParams.getChapters() != null && !exportParams.getChapters().isEmpty(); //avoid having empty pages in some cases
+        boolean firstArea = true;
 
         //the idea here is to wrap areas with different orientation into divs with correspondent class
         while (!areas.isEmpty()) {
-            String area = areas.pollLast();
-            String orientationClass = (landscape ? "land" : "port") + exportParams.getPaperSize();
-            String mark = null;
-            if (area.startsWith(LANDSCAPE_ABOVE_MARK)) {
-                mark = LANDSCAPE_ABOVE_MARK;
-            } else if (area.startsWith(PORTRAIT_ABOVE_MARK)) {
-                mark = PORTRAIT_ABOVE_MARK;
-            }
-            boolean firstArea = mark == null;
-            area = firstArea ? area : area.substring(mark.length());
+            String area = areas.pollFirst();
+            String nextArea = areas.isEmpty() ? null : areas.getFirst();
 
-            if (!firstArea) { //see below why we don't wrap first area
-                resultBuf.insert(0, DIV_END_TAG);
-            }
-
-            //here we can make additional areas processing
-            if (exportParams.isFitToPage()) {
-                area = adjustContentToFitPage(area, exportParams);
-            }
-
-            resultBuf.insert(0, area);
-            if (firstArea) {
-                //instead of wrapping  the first area into div we place on the body specific orientation (IMPORTANT: here we must use page identifiers but luckily in our case they are the same as the class names)
-                //this will prevent weasyprint from creating leading empty page
-                resultBuf.insert(0, String.format("<style>body {page: %s;}</style>", orientationClass));
+            if (nextArea != null && nextArea.startsWith(LANDSCAPE_ABOVE_MARK)) {
+                landscape = true;
+            } else if (nextArea != null && nextArea.startsWith(PORTRAIT_ABOVE_MARK)) {
+                landscape = false;
             } else {
-                resultBuf.insert(0, String.format("<div class=\"sbb_page_break %s\">", orientationClass));
+                if (area.startsWith(LANDSCAPE_ABOVE_MARK) || area.startsWith(PORTRAIT_ABOVE_MARK) || area.startsWith(RESET_BELOW_MARK)) {
+                    landscape = defaultLandscape;
+                } else if (area.startsWith(ROTATE_BELOW_MARK)) {
+                    landscape = !defaultLandscape;
+                }
             }
-            landscape = Objects.equals(LANDSCAPE_ABOVE_MARK, mark); //calculate orientation for the next/previous area
+
+            if (!(skipEmptyAreas && com.polarion.alm.shared.util.HtmlUtils.isHtmlEmpty(area, true))) {
+                boolean startsWithWikiBlock = area.startsWith(ROTATE_BELOW_MARK) || area.startsWith(RESET_BELOW_MARK) || area.startsWith(BREAK_BELOW_MARK);
+                boolean endsWithWikiBlock = nextArea != null && (nextArea.startsWith(ROTATE_BELOW_MARK) || nextArea.startsWith(RESET_BELOW_MARK) || nextArea.startsWith(BREAK_BELOW_MARK));
+
+                // remove leading comment/mark
+                area = firstArea ? area : area.substring(area.indexOf(">") + 1);
+
+                // current mark is from wiki block - emulate wiki block opening, otherwise the whole layout will be broken
+                if (startsWithWikiBlock) {
+                    area = DIV_START_TAG + DIV_START_TAG + area;
+                }
+                // next mark is from wiki block - now we emulate wiki block closing
+                if (endsWithWikiBlock) {
+                    area = area + DIV_END_TAG + DIV_END_TAG;
+                }
+
+                if (exportParams.isFitToPage()) { //here we can make additional areas processing if needed
+                    area = adjustContentToFitPage(area, exportParams);
+                }
+
+                String orientationClass = (landscape ? "land" : "port") + exportParams.getPaperSize();
+                if (firstArea) {
+                    //instead of wrapping  the first area into div we place on the body specific orientation (IMPORTANT: here we must use page identifiers but luckily in our case they are the same as the class names)
+                    //this will prevent weasyprint from creating leading empty page
+                    resultBuf.append(String.format("<style>body {page: %s;}</style>%s", orientationClass, area));
+                } else {
+                    resultBuf.append(String.format("<div class=\"sbb_page_break %s\">%s</div>", orientationClass, area));
+                }
+            }
+            firstArea = false;
         }
         return resultBuf.toString();
     }
@@ -1119,6 +1156,21 @@ public class HtmlProcessor {
             case LIVE_REPORT, TEST_RUN -> new LiveReportTOCGenerator();
             default -> throw new IllegalArgumentException(UNSUPPORTED_DOCUMENT_TYPE.formatted(documentType));
         };
+    }
+
+    private <T> T timedIfNotNull(@Nullable PdfGenerationLog generationLog, @NotNull String stageName, @NotNull java.util.function.Supplier<T> supplier) {
+        if (generationLog != null) {
+            return generationLog.timed(stageName, supplier);
+        }
+        return supplier.get();
+    }
+
+    private void timedIfNotNull(@Nullable PdfGenerationLog generationLog, @NotNull String stageName, @NotNull Runnable runnable) {
+        if (generationLog != null) {
+            generationLog.timed(stageName, runnable);
+        } else {
+            runnable.run();
+        }
     }
 
     /**

@@ -5,6 +5,7 @@ import com.polarion.alm.shared.dle.parts.DlePart;
 import com.polarion.alm.shared.html.HtmlNode;
 import com.polarion.alm.shared.rt.document.ServerRichTextDocumentFullyLoaded;
 import com.polarion.alm.shared.rt.parts.impl.readonly.PageBreakPart;
+import com.polarion.alm.shared.rt.parts.impl.readonly.WikiBlockPart;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -22,6 +23,8 @@ public class ModifiedServerRichTextDocumentFullyLoaded extends ServerRichTextDoc
     protected void addPart(@NotNull DlePart part) {
         if (part instanceof PageBreakPart pageBreakPart) {
             part = new CustomPageBreakPart(pageBreakPart);
+        } else if (part instanceof WikiBlockPart wikiBlockPart) {
+            part = new CustomWikiBlockPart(wikiBlockPart);
         }
         super.addPart(part);
     }

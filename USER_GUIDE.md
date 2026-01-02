@@ -96,18 +96,39 @@ And then you can specify custom orientation for this page break:
 
 This configuration property allows selecting a PDF variant to be used for PDF generation. The following variants are supported:
 
-| Variant      | Description                                                      |
-|--------------|------------------------------------------------------------------|
-| **pdf/a-1b** | Basic visual preservation (older PDF standard)                   |
-| **pdf/a-2b** | Basic visual preservation with modern features like transparency |
-| **pdf/a-3b** | Visual preservation with file attachments                        |
-| **pdf/a-4b** | Visual preservation using PDF 2.0 standard                       |
-| **pdf/a-2u** | Visual preservation + searchable text (Unicode)                  |
-| **pdf/a-3u** | Visual preservation + searchable text with file attachments      |
-| **pdf/a-4u** | Searchable text + PDF 2.0 features                               |
-| **pdf/ua-1** | Accessible PDF for assistive technologies                        |
+| Variant      | Description                                                      | Notes |
+|--------------|------------------------------------------------------------------|-------|
+| **pdf/a-1a** | Accessible PDF/A-1 (tagged, Unicode)                             | Icon fonts issue* |
+| **pdf/a-1b** | Basic visual preservation (older PDF standard)                   | |
+| **pdf/a-2a** | Accessible PDF/A-2 (tagged, Unicode, modern features)            | Icon fonts issue* |
+| **pdf/a-2b** | Basic visual preservation with modern features like transparency | Default |
+| **pdf/a-2u** | Visual preservation + searchable text (Unicode)                  | |
+| **pdf/a-3a** | Accessible PDF/A-3 (tagged, Unicode, file attachments)           | Icon fonts issue* |
+| **pdf/a-3b** | Visual preservation with file attachments                        | |
+| **pdf/a-3u** | Visual preservation + searchable text with file attachments      | |
+| **pdf/a-4e** | PDF/A-4 for engineering documents (allows 3D, RichMedia)         | |
+| **pdf/a-4f** | PDF/A-4 with embedded files                                      | Requires attachments |
+| **pdf/a-4u** | Searchable text + PDF 2.0 features                               | |
+| **pdf/ua-1** | Accessible PDF for assistive technologies (ISO 14289-1)          | Recommended for accessibility |
+| **pdf/ua-2** | Accessible PDF for assistive technologies (ISO 14289-2:2024)     | Partial support, see below |
 
 The default value is `pdf/a-2b`.
+
+**Important notes:**
+
+- **\*Icon fonts issue:** PDF/A "A" (accessible) variants (`pdf/a-1a`, `pdf/a-2a`, `pdf/a-3a`) require ActualText for Unicode Private Use Area (PUA) characters. Icon fonts like FontAwesome (used by Polarion) use PUA codepoints, causing validation failures. Use "B" or "U" variants instead if your documents contain icons.
+
+- **Sticky notes (native PDF annotations) are not compatible with PDF/A.** If you need PDF/A-compliant documents with comments, use inline comment rendering instead of "as sticky notes" option.
+
+- **pdf/a-4f** requires documents to have attachments (embedded files) per ISO 19005-4:2020. Use the "Embed attachments into resulted PDF" option or ensure your document has attachments.
+
+- **pdf/ua-2** has incomplete support in WeasyPrint 67.0. Known issues include:
+  - Structure destinations required for internal links
+  - PDF 2.0 namespace required for Document element
+  - Document-Span structure restriction
+  - ListNumbering attribute for lists
+
+  If full PDF/UA compliance is required, use **pdf/ua-1** instead.
 
 ### Image density
 
@@ -152,6 +173,8 @@ Also there is an option to render comments as native PDF annotations (sticky not
 
 In this case, comments will be accessed as native PDF viewer's tools (appearance may vary on different PDF viewers):
 ![Comments in PDF viewer](docs/user_guide/img/comments_pdf_viewer.png)
+
+> ⚠️ **PDF/A Compatibility Warning:** Native PDF annotations (sticky notes) are **not compatible with PDF/A standards**. When exporting with the "as sticky notes" option enabled, the resulting PDF will fail PDF/A validation (e.g., veraPDF reports errors 6.2.10-2, 6.1.3-1, 6.2.4.3-2, 6.3.2-1, 6.6.2.1-1 for PDF/A-2b). This is because PDF/A requires all annotations to have complete appearance streams, which WeasyPrint-generated sticky notes do not provide. If you need PDF/A-compliant documents with comments, use the default inline rendering (without "as sticky notes" option).
 
 ### Watermark
 If you select this checkbox, all pages of the resulting PDF document will include a "Confidential" watermark:
