@@ -73,7 +73,7 @@ class HeaderFooterModelTest {
                                 "-----BEGIN HEADER CENTER-----%1$s" +
                                 "%1$s" +
                                 "%1$s-----END HEADER CENTER-----%1$s",
-                        System.lineSeparator()), null, null, System.lineSeparator(), null, null, null, null)
+                        System.lineSeparator()), null, null, "", null, null, null, null)
         );
     }
 
