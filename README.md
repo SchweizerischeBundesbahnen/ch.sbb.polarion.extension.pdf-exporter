@@ -369,6 +369,52 @@ The extension applies post-processing to ensure PDF/A and PDF/UA compliance:
 3. Update weasyprint-service Docker image to version 67.0.0 or later
 4. Note: `pdf/a-4f` requires documents to have attachments (embedded files) per ISO 19005-4:2020 clause 6.9
 
+### Upgrade from version 11.x.x to 12.0.0
+
+In version 12.0.0 Font Awesome has been upgraded from version 4.0.3 to version 6.2.0 to support Polarion 2512.
+
+**What changed:**
+- Default CSS now includes Font Awesome 6 font definitions instead of Font Awesome 4
+- PDF template now loads `/polarion/ria/fontawesome-6.2.0/css/all.min.css` instead of `/polarion/ria/font-awesome-4.0.3/css/font-awesome.css`
+- Cover page templates (English/German) have been updated with Font Awesome 6 font definitions
+
+**Action required:**
+If you have custom CSS settings that include Font Awesome 4 `@font-face` definitions, you need to update them to Font Awesome 6:
+
+```css
+/* Old Font Awesome 4 (remove this) */
+@font-face {
+    font-family: 'FontAwesome';
+    src: url('/polarion/ria/font-awesome-4.0.3/fonts/fontawesome-webfont.woff') format('woff'),
+    url('/polarion/ria/font-awesome-4.0.3/fonts/fontawesome-webfont.ttf') format('truetype');
+}
+
+/* New Font Awesome 6 (add this) */
+@font-face {
+    font-family: 'Font Awesome 6 Free';
+    font-style: normal;
+    font-weight: 900;
+    src: url('/polarion/ria/fontawesome-6.2.0/webfonts/fa-solid-900.woff2') format('woff2'),
+    url('/polarion/ria/fontawesome-6.2.0/webfonts/fa-solid-900.ttf') format('truetype');
+}
+
+@font-face {
+    font-family: 'Font Awesome 6 Free';
+    font-style: normal;
+    font-weight: 400;
+    src: url('/polarion/ria/fontawesome-6.2.0/webfonts/fa-regular-400.woff2') format('woff2'),
+    url('/polarion/ria/fontawesome-6.2.0/webfonts/fa-regular-400.ttf') format('truetype');
+}
+
+@font-face {
+    font-family: 'Font Awesome 6 Brands';
+    font-style: normal;
+    font-weight: 400;
+    src: url('/polarion/ria/fontawesome-6.2.0/webfonts/fa-brands-400.woff2') format('woff2'),
+    url('/polarion/ria/fontawesome-6.2.0/webfonts/fa-brands-400.ttf') format('truetype');
+}
+```
+
 ### Upgrade from version 9.0.0 to 9.x.x
 
 Due to a conflict of HTML elements' IDs in default cover page templates, their HTML/CSS were modified
