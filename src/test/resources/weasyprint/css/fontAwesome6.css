@@ -1,0 +1,43 @@
+@font-face {
+  font-family: Custom Font;
+  src: url(data:application/font-woff;base64,{FONT_BASE64}) format('woff');
+}
+
+@font-face {
+  font-family: 'Font Awesome 6 Free';
+  font-style: normal;
+  font-weight: 900;
+  font-display: block;
+  src: url(data:font/truetype;base64,{FA6_FONT_BASE64}) format('truetype');
+}
+
+* {
+  font-family: Custom Font !important;
+  font-size: 11pt;
+}
+
+/* Font Awesome 6 Solid style */
+.fa-solid, .fas {
+  font-family: 'Font Awesome 6 Free' !important;
+  font-weight: 900;
+  font-style: normal;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Icon definitions - using Unicode code points for FA6 icons */
+.fa-chart-column:before { content: "\f080"; }
+.fa-check:before { content: "\f00c"; }
+.fa-xmark:before { content: "\f00d"; }
+.fa-circle-info:before { content: "\f05a"; }
+.fa-triangle-exclamation:before { content: "\f071"; }
+.fa-file-pdf:before { content: "\f1c1"; }
+.fa-folder:before { content: "\f07b"; }
+.fa-user:before { content: "\f007"; }
+
+/* Polarion-specific styling */
+.polarion-font-icon-relative {
+  font-size: 1.230769em;
+  vertical-align: -0.115384em;
+  padding-right: 0.3em;
+}
