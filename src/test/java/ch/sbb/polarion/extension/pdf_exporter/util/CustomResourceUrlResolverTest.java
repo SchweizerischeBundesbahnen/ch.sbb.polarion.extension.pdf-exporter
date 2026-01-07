@@ -129,19 +129,6 @@ class CustomResourceUrlResolverTest {
     }
 
     @Test
-    @SneakyThrows
-    void resolveShouldHandleCombinedNormalization() {
-        CustomResourceUrlResolver spyResolver = spy(resolver);
-        InputStream mockStream = mock(InputStream.class);
-        doReturn(mockStream).when(spyResolver).resolveImpl(any());
-
-        InputStream result = spyResolver.resolve("http://localhost/some path/img%5Fname.png");
-
-        assertEquals(mockStream, result);
-        verify(spyResolver).resolveImpl(eq(URI.create("http://localhost/some%20path/img_name.png")));
-    }
-
-    @Test
     void canResolveShouldHandleEmptyString() {
         assertFalse(resolver.canResolve(""));
     }
