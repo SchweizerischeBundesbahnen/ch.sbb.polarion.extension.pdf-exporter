@@ -139,4 +139,14 @@ class CustomResourceUrlResolverTest {
         InputStream result = resolver.resolve("http://[invalid");
         assertNull(result);
     }
+
+    @Test
+    void resolveImplShouldConvertUriToUrlAndOpenConnection() {
+        // This test exercises the uri.toURL() code path in resolveImpl
+        // Connection will fail but the URI to URL conversion is executed
+        URI uri = URI.create("http://localhost:59999/nonexistent");
+
+        // The connection will fail (connection refused), @SneakyThrows propagates the exception
+        assertThrows(Exception.class, () -> resolver.resolveImpl(uri));
+    }
 }
