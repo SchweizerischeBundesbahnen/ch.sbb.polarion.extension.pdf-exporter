@@ -489,7 +489,7 @@ public class HtmlProcessor {
                 heading.addClass("title");
             } else {
                 int level = heading.tagName().charAt(1) - '0';
-                int newLevel = Math.max(1, Math.min(6, level - 1));
+                int newLevel = Math.clamp(level - 1, 1, 6);
                 heading.tagName("h" + newLevel);
             }
         }

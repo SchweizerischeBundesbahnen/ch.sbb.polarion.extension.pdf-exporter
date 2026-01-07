@@ -29,17 +29,13 @@ public class UniqueObjectConverter {
     private @Nullable ExportParams exportParams;
 
     public UniqueObjectConverter(@NotNull IUniqueObject uniqueObject) {
-        if (uniqueObject instanceof IModule module) {
-            uniqueObjectAdapter = new LiveDocAdapter(module);
-        } else if (uniqueObject instanceof IRichPage richPage) {
-            uniqueObjectAdapter = new LiveReportAdapter(richPage);
-        } else if (uniqueObject instanceof IWikiPage wikiPage) {
-            uniqueObjectAdapter = new WikiPageAdapter(wikiPage);
-        } else if (uniqueObject instanceof ITestRun testRun) {
-            uniqueObjectAdapter = new TestRunAdapter(testRun);
-        } else {
-            throw new IllegalArgumentException("Unsupported unique object type: " + uniqueObject.getClass());
-        }
+        uniqueObjectAdapter = switch (uniqueObject) {
+            case IModule module -> new LiveDocAdapter(module);
+            case IRichPage richPage -> new LiveReportAdapter(richPage);
+            case IWikiPage wikiPage -> new WikiPageAdapter(wikiPage);
+            case ITestRun testRun -> new TestRunAdapter(testRun);
+            default -> throw new IllegalArgumentException("Unsupported unique object type: " + uniqueObject.getClass());
+        };
     }
 
     public UniqueObjectConverter(@NotNull ModelObject modelObject) {

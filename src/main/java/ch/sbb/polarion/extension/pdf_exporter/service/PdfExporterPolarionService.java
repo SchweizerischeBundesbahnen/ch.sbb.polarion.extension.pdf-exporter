@@ -150,12 +150,12 @@ public class PdfExporterPolarionService extends PolarionService {
     }
 
     private boolean sameDocument(@Nullable String projectId, @NotNull String spaceId, @NotNull String documentName, @NotNull IUniqueObject document) {
-        String path;
-        if (document instanceof IModule module) {
-            path = module.getModuleLocation().getLocationPath();
-        } else if (document instanceof IRichPage page) {
-            path = page.getPageNameWithSpace();
-        } else {
+        String path = switch (document) {
+            case IModule module -> module.getModuleLocation().getLocationPath();
+            case IRichPage page -> page.getPageNameWithSpace();
+            default -> null;
+        };
+        if (path == null) {
             return false;
         }
         String expectedPath = String.format("%s/%s", spaceId, documentName);

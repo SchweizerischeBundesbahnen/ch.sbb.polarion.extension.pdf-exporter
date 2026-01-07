@@ -1,6 +1,7 @@
 package ch.sbb.polarion.extension.pdf_exporter.util.velocity;
 
 import ch.sbb.polarion.extension.generic.util.ObjectUtils;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.DocumentType;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.DocumentData;
 import com.polarion.alm.projects.model.IUniqueObject;
 import com.polarion.alm.server.ServerUiContext;
@@ -42,32 +43,13 @@ public class VelocityEvaluator {
 
     private void updateVelocityContext(@NotNull VelocityContext velocityContext, @NotNull DocumentData<? extends IUniqueObject> documentData) {
 
-        switch (documentData.getType()) {
-            case LIVE_DOC -> {
-                if (documentData.getDocumentObject() instanceof IModule) {
-                    velocityContext.put("document", documentData.getDocumentObject());
-                }
-            }
-            case LIVE_REPORT -> {
-                if (documentData.getDocumentObject() instanceof IRichPage) {
-                    velocityContext.put("page", documentData.getDocumentObject());
-                }
-            }
-            case TEST_RUN -> {
-                if (documentData.getDocumentObject() instanceof ITestRun) {
-                    velocityContext.put("testrun", documentData.getDocumentObject());
-                }
-            }
-            case WIKI_PAGE -> {
-                if (documentData.getDocumentObject() instanceof IWikiPage) {
-                    velocityContext.put("page", documentData.getDocumentObject());
-                }
-            }
-            case BASELINE_COLLECTION -> {
-                if (documentData.getDocumentObject() instanceof IBaselineCollection) {
-                    velocityContext.put("collection", documentData.getDocumentObject());
-                }
-            }
+        switch (documentData.getDocumentObject()) {
+            case IModule module when documentData.getType() == DocumentType.LIVE_DOC -> velocityContext.put("document", module);
+            case IRichPage richPage when documentData.getType() == DocumentType.LIVE_REPORT -> velocityContext.put("page", richPage);
+            case ITestRun testRun when documentData.getType() == DocumentType.TEST_RUN -> velocityContext.put("testrun", testRun);
+            case IWikiPage wikiPage when documentData.getType() == DocumentType.WIKI_PAGE -> velocityContext.put("page", wikiPage);
+            case IBaselineCollection collection when documentData.getType() == DocumentType.BASELINE_COLLECTION -> velocityContext.put("collection", collection);
+            default -> { }
         }
 
         velocityContext.put("projectName", documentData.getId().getDocumentProject() != null ? documentData.getId().getDocumentProject().getName() : "");
