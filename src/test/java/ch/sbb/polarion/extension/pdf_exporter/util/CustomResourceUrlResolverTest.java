@@ -24,7 +24,7 @@ class CustomResourceUrlResolverTest {
         when(resolver.resolve(any())).thenCallRealMethod();
         when(resolver.resolveImpl(any())).thenReturn(is);
         try (InputStream is1 = resolver.resolve("http://localhost/some path/img%5Fname.png")) {
-            try (InputStream is2 = verify(resolver, times(1)).resolveImpl(URI.create("http://localhost/some%20path/img_name.png").toURL())){
+            try (InputStream is2 = verify(resolver, times(1)).resolveImpl(URI.create("http://localhost/some%20path/img_name.png"))){
                 assertEquals(is, is1);
                 assertNull(is2);
             }

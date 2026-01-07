@@ -10,6 +10,7 @@ public final class PdfConverterJobsCleaner {
     private PdfConverterJobsCleaner() {
     }
 
+    @SuppressWarnings("java:S2095") // Executor is lifecycle-managed and properly shutdown in stopCleaningJob()
     public static synchronized void startCleaningJob() {
         if (executorService != null) {
             return;

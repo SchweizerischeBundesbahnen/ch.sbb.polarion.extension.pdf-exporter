@@ -10,7 +10,6 @@ import org.jetbrains.annotations.VisibleForTesting;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URI;
-import java.net.URL;
 import java.util.stream.Stream;
 
 import static java.net.HttpURLConnection.*;
@@ -30,7 +29,7 @@ public class CustomResourceUrlResolver implements IUrlResolver {
     public InputStream resolve(@NotNull String urlStr) {
         try {
             URI uri = URI.create(normalizeUrl(ensureAbsoluteUrl(urlStr)));
-            return resolveImpl(uri.toURL());
+            return resolveImpl(uri);
         } catch (Exception e) {
             Logger.getLogger(this).warn("Failed to load resource: " + urlStr, e);
         }
@@ -39,8 +38,8 @@ public class CustomResourceUrlResolver implements IUrlResolver {
 
     @SneakyThrows
     @VisibleForTesting
-    public InputStream resolveImpl(@NotNull URL url) {
-        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+    public InputStream resolveImpl(@NotNull URI uri) {
+        HttpURLConnection connection = (HttpURLConnection) uri.toURL().openConnection();
         connection.setConnectTimeout(CONNECTION_TIMEOUT_MS);
         connection.setReadTimeout(READ_TIMEOUT_MS);
         connection.connect();

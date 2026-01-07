@@ -10,7 +10,6 @@ import lombok.SneakyThrows;
 import org.jetbrains.annotations.NotNull;
 
 import java.net.URI;
-import java.net.URL;
 
 /**
  * Renders wiki page using internal polarion XWiki renderer.
@@ -21,9 +20,9 @@ public class WikiRenderer {
     public String render(@NotNull String projectId, @NotNull String locationPath, String revision) {
         XWikiContext context = new XWikiContext();
 
-        URL url = URI.create(System.getProperty("base.url")).toURL(); //is there any better way to get polarion url?
-        context.setURL(url);
-        context.setURLFactory(new XWikiServletURLFactory(url, null, null));
+        URI baseUri = URI.create(System.getProperty("base.url")); //is there any better way to get polarion url?
+        context.setURL(baseUri.toURL());
+        context.setURLFactory(new XWikiServletURLFactory(baseUri.toURL(), null, null));
 
         //it would be great to find a less hacky solution
         XWiki xwiki = new XWiki(new XWikiConfig(XWiki.class.getProtectionDomain().getCodeSource().getLocation().getPath()
