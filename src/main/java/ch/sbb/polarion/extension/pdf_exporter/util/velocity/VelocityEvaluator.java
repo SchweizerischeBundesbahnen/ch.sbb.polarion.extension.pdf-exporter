@@ -49,7 +49,7 @@ public class VelocityEvaluator {
             case ITestRun testRun when documentData.getType() == DocumentType.TEST_RUN -> velocityContext.put("testrun", testRun);
             case IWikiPage wikiPage when documentData.getType() == DocumentType.WIKI_PAGE -> velocityContext.put("page", wikiPage);
             case IBaselineCollection collection when documentData.getType() == DocumentType.BASELINE_COLLECTION -> velocityContext.put("collection", collection);
-            default -> { }
+            default -> { /* Other document types don't require specific context variables */ }
         }
 
         velocityContext.put("projectName", documentData.getId().getDocumentProject() != null ? documentData.getId().getDocumentProject().getName() : "");
