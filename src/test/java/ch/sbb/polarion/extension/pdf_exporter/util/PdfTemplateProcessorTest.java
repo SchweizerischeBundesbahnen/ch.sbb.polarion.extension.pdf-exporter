@@ -90,7 +90,7 @@ class PdfTemplateProcessorTest {
                             <title>testDocumentName</title>
                             <meta content='text/html; charset=UTF-8' http-equiv='Content-Type'/>
                             <base href='http://testClusterNodeHostName' />
-                            <link crossorigin='anonymous' href='/polarion/ria/font-awesome-4.0.3/css/font-awesome.css' referrerpolicy='no-referrer' rel='stylesheet'/>
+                            <link crossorigin='anonymous' href='/polarion/ria/fontawesome-6.2.0/css/all.min.css' referrerpolicy='no-referrer' rel='stylesheet'/>
                             <style>
                                 test css content
                                 img {
@@ -111,7 +111,7 @@ class PdfTemplateProcessorTest {
                             <title>testDocumentName</title>
                             <meta content='text/html; charset=UTF-8' http-equiv='Content-Type'/>
                             <base href='http://custom base url' />
-                            <link crossorigin='anonymous' href='/polarion/ria/font-awesome-4.0.3/css/font-awesome.css' referrerpolicy='no-referrer' rel='stylesheet'/>
+                            <link crossorigin='anonymous' href='/polarion/ria/fontawesome-6.2.0/css/all.min.css' referrerpolicy='no-referrer' rel='stylesheet'/>
                             <style>
                                 test css content
                                 @page {size: A4 landscape;}
