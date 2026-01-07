@@ -16,7 +16,8 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.jobs.ConverterJobDetail
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.jobs.ConverterJobStatus;
 import ch.sbb.polarion.extension.pdf_exporter.util.DocumentFileNameHelper;
 import ch.sbb.polarion.extension.pdf_exporter.util.ExportContext;
-import ch.sbb.polarion.extension.pdf_exporter.util.PdfValidationService;
+import ch.sbb.polarion.extension.pdf_exporter.util.PdfWidthValidationService;
+import ch.sbb.polarion.extension.pdf_exporter.util.VeraPdfValidationUtils;
 import com.polarion.core.util.StringUtils;
 import com.polarion.platform.core.PlatformContext;
 import com.polarion.platform.security.ISecurityService;
@@ -32,6 +33,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
 import org.springframework.http.HttpStatus;
+import org.verapdf.pdfa.results.ValidationResult;
 
 import javax.ws.rs.BadRequestException;
 import javax.ws.rs.Consumes;
@@ -63,9 +65,10 @@ public class ConverterInternalController {
 
     private static final String MISSING_WORKITEM_ATTACHMENTS_COUNT = "Missing-WorkItem-Attachments-Count";
     private static final String WORKITEM_IDS_WITH_MISSING_ATTACHMENT = "WorkItem-IDs-With-Missing-Attachment";
+    private static final String PDF_VARIANT_COMPLIANT = "PDF-Variant-Compliant";
 
     private final PdfConverter pdfConverter;
-    private final PdfValidationService pdfValidationService;
+    private final PdfWidthValidationService pdfWidthValidationService;
     private final PdfConverterJobsService pdfConverterJobService;
     private final PropertiesUtility propertiesUtility;
     private final HtmlToPdfConverter htmlToPdfConverter;
@@ -75,7 +78,7 @@ public class ConverterInternalController {
 
     public ConverterInternalController() {
         this.pdfConverter = new PdfConverter();
-        this.pdfValidationService = new PdfValidationService(pdfConverter);
+        this.pdfWidthValidationService = new PdfWidthValidationService(pdfConverter);
         ISecurityService securityService = PlatformContext.getPlatform().lookupService(ISecurityService.class);
         this.pdfConverterJobService = new PdfConverterJobsService(pdfConverter, securityService);
         this.propertiesUtility = new PropertiesUtility();
@@ -83,9 +86,9 @@ public class ConverterInternalController {
     }
 
     @VisibleForTesting
-    ConverterInternalController(PdfConverter pdfConverter, PdfValidationService pdfValidationService, PdfConverterJobsService pdfConverterJobService, UriInfo uriInfo, HtmlToPdfConverter htmlToPdfConverter) {
+    ConverterInternalController(PdfConverter pdfConverter, PdfWidthValidationService pdfWidthValidationService, PdfConverterJobsService pdfConverterJobService, UriInfo uriInfo, HtmlToPdfConverter htmlToPdfConverter) {
         this.pdfConverter = pdfConverter;
-        this.pdfValidationService = pdfValidationService;
+        this.pdfWidthValidationService = pdfWidthValidationService;
         this.pdfConverterJobService = pdfConverterJobService;
         this.uriInfo = uriInfo;
         this.propertiesUtility = new PropertiesUtility();
@@ -116,6 +119,10 @@ public class ConverterInternalController {
                                             description = "File name for converted PDF document",
                                             schema = @Schema(implementation = String.class)
                                     ),
+                                    @Header(name = PDF_VARIANT_COMPLIANT,
+                                            description = "Boolean value if resulting PDF is compliant to selected PDF variant",
+                                            schema = @Schema(implementation = String.class)
+                                    ),
                                     @Header(name = MISSING_WORKITEM_ATTACHMENTS_COUNT,
                                             description = "Unavailable work item attachments count",
                                             schema = @Schema(implementation = String.class)
@@ -131,12 +138,17 @@ public class ConverterInternalController {
         validateExportParameters(exportParams);
         String fileName = getFileName(exportParams);
         byte[] pdfBytes = pdfConverter.convertToPdf(exportParams, null);
-        return Response.ok(pdfBytes)
+        ValidationResult validationResult = VeraPdfValidationUtils.validatePdf(pdfBytes, exportParams);
+
+        Response.ResponseBuilder responseBuilder = Response.ok(pdfBytes)
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
                 .header(EXPORT_FILENAME_HEADER, fileName)
                 .header(MISSING_WORKITEM_ATTACHMENTS_COUNT, ExportContext.getWorkItemIDsWithMissingAttachment().size())
-                .header(WORKITEM_IDS_WITH_MISSING_ATTACHMENT, ExportContext.getWorkItemIDsWithMissingAttachment())
-                .build();
+                .header(WORKITEM_IDS_WITH_MISSING_ATTACHMENT, ExportContext.getWorkItemIDsWithMissingAttachment());
+        if (validationResult != null) {
+            responseBuilder.header(PDF_VARIANT_COMPLIANT, validationResult.isCompliant());
+        }
+        return responseBuilder.build();
     }
 
     @POST
@@ -244,6 +256,10 @@ public class ConverterInternalController {
                                             description = "File name for converted PDF document",
                                             schema = @Schema(implementation = String.class)
                                     ),
+                                    @Header(name = PDF_VARIANT_COMPLIANT,
+                                            description = "Boolean value if resulting PDF is compliant to selected PDF variant",
+                                            schema = @Schema(implementation = String.class)
+                                    ),
                                     @Header(name = MISSING_WORKITEM_ATTACHMENTS_COUNT,
                                             description = "Unavailable work item attachments count",
                                             schema = @Schema(implementation = String.class)
@@ -273,10 +289,16 @@ public class ConverterInternalController {
         ExportParams exportParams = pdfConverterJobService.getJobParams(jobId);
         List<String> workItemIDsWithMissingAttachment = pdfConverterJobService.getJobContext(jobId).workItemIDsWithMissingAttachment();
         String fileName = getFileName(exportParams);
+        byte[] pdfBytes =  pdfContent.get();
+        ValidationResult validationResult = VeraPdfValidationUtils.validatePdf(pdfBytes, exportParams);
 
         Response.ResponseBuilder responseBuilder = Response.ok(pdfContent.get())
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
                 .header(EXPORT_FILENAME_HEADER, fileName);
+
+        if (validationResult != null) {
+            responseBuilder.header(PDF_VARIANT_COMPLIANT, validationResult.isCompliant());
+        }
 
         if (!workItemIDsWithMissingAttachment.isEmpty()) {
             responseBuilder.header(
@@ -382,7 +404,7 @@ public class ConverterInternalController {
             ExportParams exportParams,
             @Parameter(description = "Limit of 'invalid' pages in response", required = true) @QueryParam("max-results") int maxResults) {
         validateExportParameters(exportParams);
-        return pdfValidationService.validateWidth(exportParams, maxResults);
+        return pdfWidthValidationService.validateWidth(exportParams, maxResults);
     }
 
     private void validateExportParameters(ExportParams exportParams) {

@@ -252,31 +252,21 @@
             <groupId>org.verapdf</groupId>
             <artifactId>core</artifactId>
             <version>${verapdf.version}</version>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.verapdf</groupId>
             <artifactId>validation-model</artifactId>
             <version>${verapdf.version}</version>
-            <scope>test</scope>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.fasterxml.jackson.core</groupId>
-                    <artifactId>jackson-databind</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.verapdf</groupId>
             <artifactId>parser</artifactId>
             <version>${verapdf.version}</version>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.verapdf.apps</groupId>
             <artifactId>greenfield-apps</artifactId>
             <version>${verapdf.version}</version>
-            <scope>test</scope>
         </dependency>
     </dependencies>
 
