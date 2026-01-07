@@ -9,10 +9,10 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.DocumentData;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.id.LiveDocId;
 import ch.sbb.polarion.extension.pdf_exporter.settings.CssSettings;
 import ch.sbb.polarion.extension.pdf_exporter.util.MediaUtils;
+import ch.sbb.polarion.extension.pdf_exporter.util.VeraPdfValidationUtils;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.base.BaseWeasyPrintTest;
 import com.polarion.alm.tracker.model.IModule;
 import lombok.SneakyThrows;
-import org.jetbrains.annotations.NotNull;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -23,13 +23,9 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.verapdf.gf.foundry.VeraGreenfieldFoundryProvider;
-import org.verapdf.pdfa.Foundries;
-import org.verapdf.pdfa.PDFAParser;
-import org.verapdf.pdfa.VeraPDFFoundry;
 import org.verapdf.pdfa.flavours.PDFAFlavour;
 import org.verapdf.pdfa.results.ValidationResult;
 
-import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.net.URL;
 import java.nio.file.Path;
@@ -88,8 +84,8 @@ class PdfVariantValidationTest extends BaseWeasyPrintTest {
         writeReportPdf(testName, pdfVariant.name(), pdfBytes);
 
         // Validate PDF using veraPDF
-        PDFAFlavour flavour = mapPdfVariantToVeraPDFFlavour(pdfVariant);
-        ValidationResult result = validatePdf(pdfBytes, flavour);
+        PDFAFlavour flavour = VeraPdfValidationUtils.mapPdfVariantToVeraPDFFlavour(pdfVariant);
+        ValidationResult result = VeraPdfValidationUtils.validatePdf(pdfBytes, flavour);
 
         assertTrue(result.isCompliant(), String.format("PDF must be compliant with %s (VeraPDF flavour: %s). Failed rules: %s", pdfVariant, flavour, result.getTestAssertions()));
     }
@@ -133,39 +129,10 @@ class PdfVariantValidationTest extends BaseWeasyPrintTest {
         writeReportPdf(testName, pdfVariant.name() + "_with_cover", pdfBytesWithCoverPage);
 
         // Validate PDF using veraPDF
-        PDFAFlavour flavour = mapPdfVariantToVeraPDFFlavour(pdfVariant);
-        ValidationResult result = validatePdf(pdfBytesWithCoverPage, flavour);
+        PDFAFlavour flavour = VeraPdfValidationUtils.mapPdfVariantToVeraPDFFlavour(pdfVariant);
+        ValidationResult result = VeraPdfValidationUtils.validatePdf(pdfBytesWithCoverPage, flavour);
 
         assertTrue(result.isCompliant(), String.format("PDF with cover page must be compliant with %s (VeraPDF flavour: %s). Failed rules: %s", pdfVariant, flavour, result.getTestAssertions()));
-    }
-
-    private ValidationResult validatePdf(byte[] pdfBytes, PDFAFlavour flavour) throws Exception {
-        try (VeraPDFFoundry veraPDFFoundry = Foundries.defaultInstance();
-             PDFAParser parser = veraPDFFoundry
-                     .createParser(new ByteArrayInputStream(pdfBytes), flavour)) {
-
-            return veraPDFFoundry
-                    .createValidator(flavour, false)
-                    .validate(parser);
-        }
-    }
-
-    private @NotNull PDFAFlavour mapPdfVariantToVeraPDFFlavour(@NotNull PdfVariant pdfVariant) {
-        return switch (pdfVariant) {
-            case PDF_A_1A -> PDFAFlavour.PDFA_1_A;
-            case PDF_A_1B -> PDFAFlavour.PDFA_1_B;
-            case PDF_A_2A -> PDFAFlavour.PDFA_2_A;
-            case PDF_A_2B -> PDFAFlavour.PDFA_2_B;
-            case PDF_A_2U -> PDFAFlavour.PDFA_2_U;
-            case PDF_A_3A -> PDFAFlavour.PDFA_3_A;
-            case PDF_A_3B -> PDFAFlavour.PDFA_3_B;
-            case PDF_A_3U -> PDFAFlavour.PDFA_3_U;
-            case PDF_A_4E -> PDFAFlavour.PDFA_4_E;
-            case PDF_A_4F -> PDFAFlavour.PDFA_4_F;
-            case PDF_A_4U -> PDFAFlavour.PDFA_4;
-            case PDF_UA_1 -> PDFAFlavour.PDFUA_1;
-            case PDF_UA_2 -> PDFAFlavour.PDFUA_2;
-        };
     }
 
     private String injectDefaultCss(String html) {
@@ -226,7 +193,7 @@ class PdfVariantValidationTest extends BaseWeasyPrintTest {
 
         // Validate PDF using veraPDF
         PDFAFlavour flavour = PDFAFlavour.PDFUA_2;
-        ValidationResult result = validatePdf(pdfBytes, flavour);
+        ValidationResult result = VeraPdfValidationUtils.validatePdf(pdfBytes, flavour);
 
         // Note: Full PDF/UA-2 compliance requires WeasyPrint updates for:
         // - Structure destinations for internal links (clause 8.8)
@@ -287,7 +254,7 @@ class PdfVariantValidationTest extends BaseWeasyPrintTest {
 
         // Validate PDF using veraPDF
         PDFAFlavour flavour = PDFAFlavour.PDFA_4_F;
-        ValidationResult result = validatePdf(pdfBytes, flavour);
+        ValidationResult result = VeraPdfValidationUtils.validatePdf(pdfBytes, flavour);
 
         assertTrue(result.isCompliant(), String.format(
                 "PDF/A-4f with embedded files must be compliant (VeraPDF flavour: %s). Failed rules: %s",
@@ -352,7 +319,7 @@ class PdfVariantValidationTest extends BaseWeasyPrintTest {
 
         // Validate PDF using veraPDF
         PDFAFlavour flavour = PDFAFlavour.PDFA_4_F;
-        ValidationResult result = validatePdf(pdfBytesWithCoverPage, flavour);
+        ValidationResult result = VeraPdfValidationUtils.validatePdf(pdfBytesWithCoverPage, flavour);
 
         assertTrue(result.isCompliant(), String.format(
                 "PDF/A-4f with cover page and embedded files must be compliant (VeraPDF flavour: %s). Failed rules: %s",

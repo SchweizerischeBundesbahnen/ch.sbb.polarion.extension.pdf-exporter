@@ -17,17 +17,17 @@ import java.util.Base64;
 import java.util.Collections;
 import java.util.List;
 
-public class PdfValidationService {
+public class PdfWidthValidationService {
 
     public static final String TEST_WI_MASK = "{TEST_WI:%s}";
 
     private final PdfConverter pdfConverter;
 
-    public PdfValidationService() {
+    public PdfWidthValidationService() {
         this.pdfConverter = new PdfConverter();
     }
 
-    public PdfValidationService(PdfConverter pdfConverter) {
+    public PdfWidthValidationService(PdfConverter pdfConverter) {
         this.pdfConverter = pdfConverter;
     }
 
@@ -83,10 +83,12 @@ public class PdfValidationService {
      */
     private String generateValidationPreparedContent(List<WorkItemRefData> items) {
         StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < items.size(); i++) {
-            sb.append(String.format(TEST_WI_MASK, i))
-                    .append(items.get(i).toInternalContent())
-                    .append(String.format("<div contentEditable=\"false\" data-is-landscape=\"false\" id=\"polarion_wiki macro name=page_break;params=uid=%s\"></div>", i + 1));
+        if (items != null) {
+            for (int i = 0; i < items.size(); i++) {
+                sb.append(String.format(TEST_WI_MASK, i))
+                        .append(items.get(i).toInternalContent())
+                        .append(String.format("<div contentEditable=\"false\" data-is-landscape=\"false\" id=\"polarion_wiki macro name=page_break;params=uid=%s\"></div>", i + 1));
+            }
         }
         return sb.toString();
     }
