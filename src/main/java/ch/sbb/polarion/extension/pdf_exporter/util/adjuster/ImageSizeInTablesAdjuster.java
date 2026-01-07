@@ -14,7 +14,6 @@ import org.jetbrains.annotations.VisibleForTesting;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
-import org.w3c.dom.css.CSSStyleDeclaration;
 
 import java.util.Map;
 import java.util.Optional;

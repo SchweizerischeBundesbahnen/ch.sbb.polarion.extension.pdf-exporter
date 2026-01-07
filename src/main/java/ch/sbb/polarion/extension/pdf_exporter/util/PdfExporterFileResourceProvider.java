@@ -170,6 +170,7 @@ public class PdfExporterFileResourceProvider implements FileResourceProvider {
      */
     @VisibleForTesting
     @SneakyThrows
+    @SuppressWarnings("java:S3011") // Reflective access needed to filter Polarion's internal resolvers
     IAttachmentUrlResolver getPolarionUrlResolverWithoutGenericUrlChildResolver() {
         IAttachmentUrlResolver attachmentUrlResolver = PolarionUrlResolver.getInstance();
 
