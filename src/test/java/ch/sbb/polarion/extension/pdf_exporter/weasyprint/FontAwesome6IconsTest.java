@@ -40,10 +40,8 @@ class FontAwesome6IconsTest extends BaseWeasyPrintTest {
 
         // Verify placeholders are replaced
         assertThat(html)
-                .as("FA6 font placeholder should be replaced")
-                .doesNotContain(FA6_FONT_BASE64_PLACEHOLDER);
-        assertThat(html)
-                .as("Regular font placeholder should be replaced")
+                .as("Font placeholders should be replaced")
+                .doesNotContain(FA6_FONT_BASE64_PLACEHOLDER)
                 .doesNotContain(FONT_BASE64_REPLACE_PARAM);
 
         List<BufferedImage> pages = exportAndGetAsImages(testName, html);

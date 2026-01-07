@@ -11,6 +11,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -79,7 +80,7 @@ class PdfConverterJobsCleanerTest {
     @Test
     void stopCleaningJobShouldDoNothingWhenNotStarted() {
         // Should not throw any exception when called without starting
-        PdfConverterJobsCleaner.stopCleaningJob();
+        assertDoesNotThrow(PdfConverterJobsCleaner::stopCleaningJob);
     }
 
     @Test

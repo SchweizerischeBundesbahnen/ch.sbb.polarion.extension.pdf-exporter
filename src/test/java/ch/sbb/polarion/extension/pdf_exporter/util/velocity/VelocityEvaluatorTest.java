@@ -215,19 +215,19 @@ class VelocityEvaluatorTest {
 
     @SuppressWarnings("unchecked")
     private <T extends IUniqueObject> DocumentData<T> createDocumentData(T documentObject, DocumentType type, String projectName) {
-        DocumentId documentId = mock(DocumentId.class);
+        DocumentId mockDocId = mock(DocumentId.class);
         if (projectName != null) {
             DocumentProject documentProject = mock(DocumentProject.class);
             when(documentProject.getName()).thenReturn(projectName);
-            when(documentId.getDocumentProject()).thenReturn(documentProject);
+            when(mockDocId.getDocumentProject()).thenReturn(documentProject);
         } else {
-            when(documentId.getDocumentProject()).thenReturn(null);
+            when(mockDocId.getDocumentProject()).thenReturn(null);
         }
 
         DocumentData<T> data = mock(DocumentData.class);
         when(data.getDocumentObject()).thenReturn(documentObject);
         when(data.getType()).thenReturn(type);
-        when(data.getId()).thenReturn(documentId);
+        when(data.getId()).thenReturn(mockDocId);
 
         return data;
     }
