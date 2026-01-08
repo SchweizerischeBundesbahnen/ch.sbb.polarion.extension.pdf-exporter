@@ -1,5 +1,19 @@
 # Changelog
 
+## [12.0.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v11.1.1...v12.0.0) (2026-01-08)
+
+
+### ⚠ BREAKING CHANGES
+
+* update CSS and fix codesmells after migration to Polarion 2512 ([#682](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/682))
+* polarion 2512 support ([#651](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/651))
+
+### Features
+
+* polarion 2512 support ([#651](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/651)) ([8bd7eb4](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/8bd7eb4faeb891ba992888a43665443ddae7d22c))
+* update CSS and fix codesmells after migration to Polarion 2512 ([#682](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/682)) ([4eaa66e](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/4eaa66e43f668247531fbbb43632c54b89c29161)), closes [#649](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/649)
+* warn user if resulted PDF document isn't compliant with selected PDF variant ([#674](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/674)) ([67d9964](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/67d996408ceb7c79f999994e05e36eff9aa87bcc))
+
 ## [11.1.1](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v11.1.0...v11.1.1) (2026-01-02)
 
 
