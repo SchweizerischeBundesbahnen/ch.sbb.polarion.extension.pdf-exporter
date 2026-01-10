@@ -17,6 +17,7 @@ import com.polarion.alm.shared.dle.document.DocumentRendererParameters;
 import com.polarion.alm.tracker.model.IModule;
 import com.polarion.core.util.StringUtils;
 import org.jetbrains.annotations.NotNull;
+import org.jspecify.annotations.NonNull;
 
 import java.util.Map;
 import java.util.Optional;
@@ -24,6 +25,7 @@ import java.util.Optional;
 public class LiveDocAdapter extends CommonUniqueObjectAdapter {
     public static final String DOC_REVISION_CUSTOM_FIELD = "docRevision";
     public static final String URL_QUERY_PARAM_LANGUAGE = "language";
+    public static final String URL_QUERY_PARAM_QUERY = "query";
 
     private final @NotNull IModule module;
 
@@ -66,9 +68,7 @@ public class LiveDocAdapter extends CommonUniqueObjectAdapter {
     public @NotNull String getContent(@NotNull ExportParams exportParams, @NotNull ReadOnlyTransaction transaction) {
         return PolarionBaselineExecutor.executeInBaseline(exportParams.getBaselineRevision(), transaction, () -> {
             ProxyDocument document = new ProxyDocument(module, (InternalReadOnlyTransaction) transaction);
-            Map<String, String> documentParameters = exportParams.getUrlQueryParameters() == null ? Map.of() : exportParams.getUrlQueryParameters();
-            DocumentRendererParameters parameters = new DocumentRendererParameters(null, documentParameters.get(URL_QUERY_PARAM_LANGUAGE));
-            ModifiedDocumentRenderer documentRenderer = new ModifiedDocumentRenderer((InternalReadOnlyTransaction) transaction, document, RichTextRenderTarget.PDF_EXPORT, parameters);
+            ModifiedDocumentRenderer documentRenderer = getDocumentRenderer(exportParams, (InternalReadOnlyTransaction) transaction, document);
 
             String internalContent = StringUtils.getEmptyIfNull(Optional.ofNullable(exportParams.getInternalContent()).orElseGet(document::getHomePageContentHtml));
             // Process comments in document itself (workitem descriptions aren't rendered yet)
@@ -77,6 +77,12 @@ public class LiveDocAdapter extends CommonUniqueObjectAdapter {
             // Now process comments again to catch comments in workitem descriptions
             return processComments(exportParams, document, renderedContent);
         });
+    }
+
+    static @NonNull ModifiedDocumentRenderer getDocumentRenderer(@NonNull ExportParams exportParams, InternalReadOnlyTransaction transaction, ProxyDocument document) {
+        Map<String, String> documentParameters = exportParams.getUrlQueryParameters() == null ? Map.of() : exportParams.getUrlQueryParameters();
+        DocumentRendererParameters parameters = new DocumentRendererParameters(documentParameters.get(URL_QUERY_PARAM_QUERY), documentParameters.get(URL_QUERY_PARAM_LANGUAGE));
+        return new ModifiedDocumentRenderer(transaction, document, RichTextRenderTarget.PDF_EXPORT, parameters);
     }
 
     private String processComments(@NotNull ExportParams exportParams, @NotNull ProxyDocument document, @NotNull String content) {

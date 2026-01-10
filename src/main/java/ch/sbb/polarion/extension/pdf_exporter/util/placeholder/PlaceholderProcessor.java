@@ -3,6 +3,7 @@ package ch.sbb.polarion.extension.pdf_exporter.util.placeholder;
 import ch.sbb.polarion.extension.generic.regex.RegexMatcher;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.DocumentData;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.adapters.LiveDocAdapter;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.headerfooter.Placeholder;
 import ch.sbb.polarion.extension.pdf_exporter.service.PdfExporterPolarionService;
 import com.polarion.alm.projects.model.IUniqueObject;
@@ -46,6 +47,7 @@ public class PlaceholderProcessor {
     public @NotNull PlaceholderValues getPlaceholderValues(@NotNull DocumentData<? extends IUniqueObject> documentData, @NotNull ExportParams exportParams, @NotNull List<String> templates) {
         String revision = exportParams.getRevision() != null ? exportParams.getRevision() : documentData.getLastRevision();
         String baselineName = documentData.getBaseline() != null ? documentData.getBaseline().asPlaceholder() : "";
+        String documentFilter = exportParams.getUrlQueryParameters() != null ? exportParams.getUrlQueryParameters().get(LiveDocAdapter.URL_QUERY_PARAM_QUERY) : null;
 
         PlaceholderValues placeholderValues = PlaceholderValues.builder()
                 .productName(pdfExporterPolarionService.getPolarionProductName())
@@ -57,6 +59,7 @@ public class PlaceholderProcessor {
                 .documentId(documentData.getId().getDocumentId())
                 .documentTitle(documentData.getTitle())
                 .documentRevision(documentData.getRevisionPlaceholder())
+                .documentFilter(documentFilter != null ? documentFilter : "")
                 .build();
 
         if (documentData.getDocumentObject() instanceof IModule module) {

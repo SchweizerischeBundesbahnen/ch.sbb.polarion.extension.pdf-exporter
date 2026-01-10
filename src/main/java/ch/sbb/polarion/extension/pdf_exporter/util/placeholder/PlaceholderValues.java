@@ -29,6 +29,7 @@ public class PlaceholderValues {
     private String documentId;
     private String documentTitle;
     private String documentRevision;
+    private String documentFilter;
     private String revision;
     private String revisionAndBaseLineName;
     private String baseLineName;
@@ -52,6 +53,7 @@ public class PlaceholderValues {
         variables.put(Placeholder.DOCUMENT_ID.name(), documentId);
         variables.put(Placeholder.DOCUMENT_TITLE.name(), documentTitle);
         variables.put(Placeholder.DOCUMENT_REVISION.name(), documentRevision);
+        variables.put(Placeholder.DOCUMENT_FILTER.name(), documentFilter);
         variables.put(Placeholder.REVISION.name(), revision);
         variables.put(Placeholder.REVISION_AND_BASELINE_NAME.name(), revisionAndBaseLineName);
         variables.put(Placeholder.BASELINE_NAME.name(), baseLineName);
