@@ -1,5 +1,12 @@
 # Changelog
 
+## [12.1.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v12.0.0...v12.1.0) (2026-01-10)
+
+
+### Features
+
+* export pdf documents with filter ([#692](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/692)) ([0c79c46](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/0c79c46848c158ff0f867beab245910a3e70156a)), closes [#687](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/687)
+
 ## [12.0.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v11.1.1...v12.0.0) (2026-01-08)
 
 
