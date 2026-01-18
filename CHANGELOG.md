@@ -1,5 +1,17 @@
 # Changelog
 
+## [12.1.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v12.0.0...v12.1.0) (2026-01-18)
+
+
+### Features
+
+* export pdf documents with filter ([#692](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/692)) ([0c79c46](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/0c79c46848c158ff0f867beab245910a3e70156a)), closes [#687](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/687)
+
+
+### Bug Fixes
+
+* 'fit to page width' does not work for test records table ([#696](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/696)) ([9359c50](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/9359c50d8d638e0a6402203961a86cb8aee2634e)), closes [#694](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/694)
+
 ## [12.0.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v11.1.1...v12.0.0) (2026-01-08)
 
 
