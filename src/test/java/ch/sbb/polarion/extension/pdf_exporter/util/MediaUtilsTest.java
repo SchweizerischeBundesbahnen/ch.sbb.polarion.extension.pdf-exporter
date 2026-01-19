@@ -5,6 +5,8 @@ import lombok.SneakyThrows;
 import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.awt.*;
@@ -124,6 +126,23 @@ class MediaUtilsTest {
         List<Point> differences = MediaUtils.diffImages(image1, image2);
         assertEquals(1, differences.size());
         assertEquals(new Point(50, 50), differences.get(0));
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "'http://localhost/polarion/module-attachment/elibrary/Specification/Administration%20Specification/sample_diagram.vsdx?revision=2&thumbnail=true', 'http://localhost/polarion/module-attachment/elibrary/Specification/Administration%20Specification/sample_diagram.vsdx?revision=2'",
+            "'http://localhost/polarion/attachment.vsdx?thumbnail=true&revision=2', 'http://localhost/polarion/attachment.vsdx?revision=2'",
+            "'http://localhost/polarion/attachment.vsdx?revision=2&view=true', 'http://localhost/polarion/attachment.vsdx?revision=2&view=true'",
+            "'http://localhost/polarion/attachment.vsdx?thumbnail=true', 'http://localhost/polarion/attachment.vsdx'",
+            "'http://localhost/polarion/attachment.vsdx?name=test%20file&thumbnail=true&revision=2', 'http://localhost/polarion/attachment.vsdx?name=test%20file&revision=2'",
+            "'http://localhost/polarion/attachment.vsdx?revision=2&thumbnail=true&view=true', 'http://localhost/polarion/attachment.vsdx?revision=2&view=true'",
+            "'http://localhost/polarion/attachment.vsdx?thumbnail=false&revision=2', 'http://localhost/polarion/attachment.vsdx?revision=2'",
+            ", ",
+            "'', ''",
+            "'not-a-valid-url?thumbnail=true', 'not-a-valid-url'"
+    })
+    void removeThumbnailParameter(String input, String expected) {
+        assertEquals(expected, MediaUtils.removeThumbnailParameter(input));
     }
 
     private void fillImageWithColor(BufferedImage image, Color color) {
