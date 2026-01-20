@@ -47,7 +47,17 @@ public class WeasyPrintStatusProvider extends ConfigurationStatusProvider {
         try {
             WeasyPrintInfo weasyPrintInfo = weasyPrintServiceConnector.getWeasyPrintInfo();
             String expectedApiVersionStr = VersionUtils.getValueFromProperties(VERSION_FILE, "weasyprint-service.api-version");
-            Integer expectedApiVersion = expectedApiVersionStr != null ? Integer.valueOf(expectedApiVersionStr) : null;
+            Integer expectedApiVersion = null;
+            if (expectedApiVersionStr != null) {
+                try {
+                    expectedApiVersion = Integer.valueOf(expectedApiVersionStr);
+                } catch (NumberFormatException nfe) {
+                    throw new IllegalArgumentException(
+                            "Invalid configuration for 'weasyprint-service.api-version': '" + expectedApiVersionStr + "' is not a valid integer.",
+                            nfe
+                    );
+                }
+            }
             return List.of(
                     createWeasyPrintVersionStatus(
                             WEASY_PRINT_SERVICE_INFO.get(WeasyPrintServiceInfo.VERSION),
