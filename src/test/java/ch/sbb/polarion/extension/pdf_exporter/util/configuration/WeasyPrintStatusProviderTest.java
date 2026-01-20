@@ -30,6 +30,7 @@ class WeasyPrintStatusProviderTest {
     void testHappyPath() {
         String timestamp = ZonedDateTime.now(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS).format(DateTimeFormatter.ISO_INSTANT);
         WeasyPrintInfo weasyPrintInfo = WeasyPrintInfo.builder()
+                .apiVersion(1)
                 .chromium("129.0.6668.58")
                 .python("3.12.5")
                 .timestamp(timestamp)
@@ -42,13 +43,13 @@ class WeasyPrintStatusProviderTest {
         WeasyPrintStatusProvider weasyPrintStatusProvider = new WeasyPrintStatusProvider(weasyPrintServiceConnector);
 
         try (MockedStatic<VersionUtils> versionsUtilsMockedStatic = mockStatic(VersionUtils.class)) {
-            versionsUtilsMockedStatic.when(() -> VersionUtils.getValueFromProperties(VERSION_FILE, "weasyprint-service.version")).thenReturn("62.4.6");
+            versionsUtilsMockedStatic.when(() -> VersionUtils.getValueFromProperties(VERSION_FILE, "weasyprint-service.api-version")).thenReturn("1");
 
             List<ConfigurationStatus> configurationStatuses = weasyPrintStatusProvider.getStatuses(ConfigurationStatusProvider.Context.builder().build());
 
             assertEquals(4, configurationStatuses.size());
             assertThat(configurationStatuses).containsExactlyInAnyOrder(
-                    new ConfigurationStatus("WeasyPrint Service", Status.OK, "62.4.6"),
+                    new ConfigurationStatus("WeasyPrint Service", Status.OK, "62.4.6 (" + timestamp + ")"),
                     new ConfigurationStatus("WeasyPrint Service: Chromium", Status.OK, "129.0.6668.58"),
                     new ConfigurationStatus("WeasyPrint Service: Python", Status.OK, "3.12.5"),
                     new ConfigurationStatus("WeasyPrint Service: WeasyPrint", Status.OK, "62.3")
@@ -71,9 +72,10 @@ class WeasyPrintStatusProviderTest {
     }
 
     @Test
-    void testUpdateWeasyPrintRequired() {
+    void testIncompatibleApiVersion() {
         String timestamp = ZonedDateTime.now(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS).format(DateTimeFormatter.ISO_INSTANT);
         WeasyPrintInfo weasyPrintInfo = WeasyPrintInfo.builder()
+                .apiVersion(2)
                 .chromium("129.0.6668.58")
                 .python("3.12.5")
                 .timestamp(timestamp)
@@ -86,13 +88,13 @@ class WeasyPrintStatusProviderTest {
         WeasyPrintStatusProvider weasyPrintStatusProvider = new WeasyPrintStatusProvider(weasyPrintServiceConnector);
 
         try (MockedStatic<VersionUtils> versionsUtilsMockedStatic = mockStatic(VersionUtils.class)) {
-            versionsUtilsMockedStatic.when(() -> VersionUtils.getValueFromProperties(VERSION_FILE, "weasyprint-service.version")).thenReturn("62.4.6");
+            versionsUtilsMockedStatic.when(() -> VersionUtils.getValueFromProperties(VERSION_FILE, "weasyprint-service.api-version")).thenReturn("1");
 
             List<ConfigurationStatus> configurationStatuses = weasyPrintStatusProvider.getStatuses(ConfigurationStatusProvider.Context.builder().build());
 
             assertEquals(4, configurationStatuses.size());
             assertThat(configurationStatuses).containsExactlyInAnyOrder(
-                    new ConfigurationStatus("WeasyPrint Service", Status.WARNING, "62.4.5 (" + timestamp + "): <span style='color: red;'>use latest compatible</span> <a href='https://github.com/SchweizerischeBundesbahnen/weasyprint-service/releases/tag/v62.4.6' target='_blank'>62.4.6</a>"),
+                    new ConfigurationStatus("WeasyPrint Service", Status.WARNING, "62.4.5 (" + timestamp + "): <span style='color: red;'>incompatible API version 2, expected 1</span>"),
                     new ConfigurationStatus("WeasyPrint Service: Chromium", Status.OK, "129.0.6668.58"),
                     new ConfigurationStatus("WeasyPrint Service: Python", Status.OK, "3.12.5"),
                     new ConfigurationStatus("WeasyPrint Service: WeasyPrint", Status.OK, "62.3")
@@ -101,14 +103,15 @@ class WeasyPrintStatusProviderTest {
     }
 
     @Test
-    void testUnknownWeasyPrintServiceVersion() {
+    void testUnknownApiVersion() {
         String timestamp = ZonedDateTime.now(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS).format(DateTimeFormatter.ISO_INSTANT);
         WeasyPrintInfo weasyPrintInfo = WeasyPrintInfo.builder()
+                .apiVersion(null)
                 .chromium("129.0.6668.58")
                 .python("3.12.5")
                 .timestamp(timestamp)
                 .weasyprint("62.3")
-                .weasyprintService(null)
+                .weasyprintService("62.4.5")
                 .build();
 
         WeasyPrintServiceConnector weasyPrintServiceConnector = mock(WeasyPrintServiceConnector.class);
@@ -116,13 +119,13 @@ class WeasyPrintStatusProviderTest {
         WeasyPrintStatusProvider weasyPrintStatusProvider = new WeasyPrintStatusProvider(weasyPrintServiceConnector);
 
         try (MockedStatic<VersionUtils> versionsUtilsMockedStatic = mockStatic(VersionUtils.class)) {
-            versionsUtilsMockedStatic.when(() -> VersionUtils.getValueFromProperties(VERSION_FILE, "weasyprint-service.version")).thenReturn("62.4.6");
+            versionsUtilsMockedStatic.when(() -> VersionUtils.getValueFromProperties(VERSION_FILE, "weasyprint-service.api-version")).thenReturn("1");
 
             List<ConfigurationStatus> configurationStatuses = weasyPrintStatusProvider.getStatuses(ConfigurationStatusProvider.Context.builder().build());
 
             assertEquals(4, configurationStatuses.size());
             assertThat(configurationStatuses).containsExactlyInAnyOrder(
-                    new ConfigurationStatus("WeasyPrint Service", Status.ERROR, "Unknown (" + timestamp + "): <span style='color: red;'>use latest compatible</span> <a href='https://github.com/SchweizerischeBundesbahnen/weasyprint-service/releases/tag/v62.4.6' target='_blank'>62.4.6</a>"),
+                    new ConfigurationStatus("WeasyPrint Service", Status.ERROR, "62.4.5 (" + timestamp + "): <span style='color: red;'>API version unknown, please upgrade weasyprint-service</span>"),
                     new ConfigurationStatus("WeasyPrint Service: Chromium", Status.OK, "129.0.6668.58"),
                     new ConfigurationStatus("WeasyPrint Service: Python", Status.OK, "3.12.5"),
                     new ConfigurationStatus("WeasyPrint Service: WeasyPrint", Status.OK, "62.3")
@@ -131,8 +134,9 @@ class WeasyPrintStatusProviderTest {
     }
 
     @Test
-    void testUnknownWeasyPrintServiceVersionNoTimestamp() {
+    void testUnknownApiVersionNoTimestamp() {
         WeasyPrintInfo weasyPrintInfo = WeasyPrintInfo.builder()
+                .apiVersion(null)
                 .chromium("129.0.6668.58")
                 .python("3.12.5")
                 .timestamp(null)
@@ -145,13 +149,13 @@ class WeasyPrintStatusProviderTest {
         WeasyPrintStatusProvider weasyPrintStatusProvider = new WeasyPrintStatusProvider(weasyPrintServiceConnector);
 
         try (MockedStatic<VersionUtils> versionsUtilsMockedStatic = mockStatic(VersionUtils.class)) {
-            versionsUtilsMockedStatic.when(() -> VersionUtils.getValueFromProperties(VERSION_FILE, "weasyprint-service.version")).thenReturn("62.4.6");
+            versionsUtilsMockedStatic.when(() -> VersionUtils.getValueFromProperties(VERSION_FILE, "weasyprint-service.api-version")).thenReturn("1");
 
             List<ConfigurationStatus> configurationStatuses = weasyPrintStatusProvider.getStatuses(ConfigurationStatusProvider.Context.builder().build());
 
             assertEquals(4, configurationStatuses.size());
             assertThat(configurationStatuses).containsExactlyInAnyOrder(
-                    new ConfigurationStatus("WeasyPrint Service", Status.ERROR, "Unknown: <span style='color: red;'>use latest compatible</span> <a href='https://github.com/SchweizerischeBundesbahnen/weasyprint-service/releases/tag/v62.4.6' target='_blank'>62.4.6</a>"),
+                    new ConfigurationStatus("WeasyPrint Service", Status.ERROR, "Unknown: <span style='color: red;'>API version unknown, please upgrade weasyprint-service</span>"),
                     new ConfigurationStatus("WeasyPrint Service: Chromium", Status.OK, "129.0.6668.58"),
                     new ConfigurationStatus("WeasyPrint Service: Python", Status.OK, "3.12.5"),
                     new ConfigurationStatus("WeasyPrint Service: WeasyPrint", Status.OK, "62.3")
@@ -162,6 +166,7 @@ class WeasyPrintStatusProviderTest {
     @Test
     void testNoTimestamp() {
         WeasyPrintInfo weasyPrintInfo = WeasyPrintInfo.builder()
+                .apiVersion(1)
                 .chromium("129.0.6668.58")
                 .python("3.12.5")
                 .timestamp("")
@@ -174,13 +179,13 @@ class WeasyPrintStatusProviderTest {
         WeasyPrintStatusProvider weasyPrintStatusProvider = new WeasyPrintStatusProvider(weasyPrintServiceConnector);
 
         try (MockedStatic<VersionUtils> versionsUtilsMockedStatic = mockStatic(VersionUtils.class)) {
-            versionsUtilsMockedStatic.when(() -> VersionUtils.getValueFromProperties(VERSION_FILE, "weasyprint-service.version")).thenReturn("62.4.6");
+            versionsUtilsMockedStatic.when(() -> VersionUtils.getValueFromProperties(VERSION_FILE, "weasyprint-service.api-version")).thenReturn("1");
 
             List<ConfigurationStatus> configurationStatuses = weasyPrintStatusProvider.getStatuses(ConfigurationStatusProvider.Context.builder().build());
 
             assertEquals(4, configurationStatuses.size());
             assertThat(configurationStatuses).containsExactlyInAnyOrder(
-                    new ConfigurationStatus("WeasyPrint Service", Status.WARNING, "62.4.5: <span style='color: red;'>use latest compatible</span> <a href='https://github.com/SchweizerischeBundesbahnen/weasyprint-service/releases/tag/v62.4.6' target='_blank'>62.4.6</a>"),
+                    new ConfigurationStatus("WeasyPrint Service", Status.OK, "62.4.5"),
                     new ConfigurationStatus("WeasyPrint Service: Chromium", Status.OK, "129.0.6668.58"),
                     new ConfigurationStatus("WeasyPrint Service: Python", Status.OK, "3.12.5"),
                     new ConfigurationStatus("WeasyPrint Service: WeasyPrint", Status.OK, "62.3")
@@ -192,6 +197,7 @@ class WeasyPrintStatusProviderTest {
     void testNoChromiumVersion() {
         String timestamp = ZonedDateTime.now(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS).format(DateTimeFormatter.ISO_INSTANT);
         WeasyPrintInfo weasyPrintInfo = WeasyPrintInfo.builder()
+                .apiVersion(1)
                 .chromium("")
                 .python("3.12.5")
                 .timestamp(timestamp)
@@ -204,13 +210,13 @@ class WeasyPrintStatusProviderTest {
         WeasyPrintStatusProvider weasyPrintStatusProvider = new WeasyPrintStatusProvider(weasyPrintServiceConnector);
 
         try (MockedStatic<VersionUtils> versionsUtilsMockedStatic = mockStatic(VersionUtils.class)) {
-            versionsUtilsMockedStatic.when(() -> VersionUtils.getValueFromProperties(VERSION_FILE, "weasyprint-service.version")).thenReturn("62.4.6");
+            versionsUtilsMockedStatic.when(() -> VersionUtils.getValueFromProperties(VERSION_FILE, "weasyprint-service.api-version")).thenReturn("1");
 
             List<ConfigurationStatus> configurationStatuses = weasyPrintStatusProvider.getStatuses(ConfigurationStatusProvider.Context.builder().build());
 
             assertEquals(4, configurationStatuses.size());
             assertThat(configurationStatuses).containsExactlyInAnyOrder(
-                    new ConfigurationStatus("WeasyPrint Service", Status.OK, "62.4.6"),
+                    new ConfigurationStatus("WeasyPrint Service", Status.OK, "62.4.6 (" + timestamp + ")"),
                     new ConfigurationStatus("WeasyPrint Service: Chromium", Status.ERROR, "Unknown"),
                     new ConfigurationStatus("WeasyPrint Service: Python", Status.OK, "3.12.5"),
                     new ConfigurationStatus("WeasyPrint Service: WeasyPrint", Status.OK, "62.3")
@@ -219,14 +225,16 @@ class WeasyPrintStatusProviderTest {
     }
 
     @Test
-    void testWeasyPrintVersionIsHigherThanRequired() {
+    void testDifferentServiceVersionSameApiVersion() {
+        // This test verifies that different service versions with the same API version are OK
         String timestamp = ZonedDateTime.now(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS).format(DateTimeFormatter.ISO_INSTANT);
         WeasyPrintInfo weasyPrintInfo = WeasyPrintInfo.builder()
+                .apiVersion(1)
                 .chromium("129.0.6668.58")
                 .python("3.12.5")
                 .timestamp(timestamp)
-                .weasyprint("62.3")
-                .weasyprintService("62.4.7")
+                .weasyprint("68.0")
+                .weasyprintService("68.0.0")
                 .build();
 
         WeasyPrintServiceConnector weasyPrintServiceConnector = mock(WeasyPrintServiceConnector.class);
@@ -234,13 +242,44 @@ class WeasyPrintStatusProviderTest {
         WeasyPrintStatusProvider weasyPrintStatusProvider = new WeasyPrintStatusProvider(weasyPrintServiceConnector);
 
         try (MockedStatic<VersionUtils> versionsUtilsMockedStatic = mockStatic(VersionUtils.class)) {
-            versionsUtilsMockedStatic.when(() -> VersionUtils.getValueFromProperties(VERSION_FILE, "weasyprint-service.version")).thenReturn("62.4.6");
+            versionsUtilsMockedStatic.when(() -> VersionUtils.getValueFromProperties(VERSION_FILE, "weasyprint-service.api-version")).thenReturn("1");
 
             List<ConfigurationStatus> configurationStatuses = weasyPrintStatusProvider.getStatuses(ConfigurationStatusProvider.Context.builder().build());
 
             assertEquals(4, configurationStatuses.size());
             assertThat(configurationStatuses).containsExactlyInAnyOrder(
-                    new ConfigurationStatus("WeasyPrint Service", Status.WARNING, "62.4.7 (" + timestamp + "): <span style='color: red;'>use latest compatible</span> <a href='https://github.com/SchweizerischeBundesbahnen/weasyprint-service/releases/tag/v62.4.6' target='_blank'>62.4.6</a>"),
+                    new ConfigurationStatus("WeasyPrint Service", Status.OK, "68.0.0 (" + timestamp + ")"),
+                    new ConfigurationStatus("WeasyPrint Service: Chromium", Status.OK, "129.0.6668.58"),
+                    new ConfigurationStatus("WeasyPrint Service: Python", Status.OK, "3.12.5"),
+                    new ConfigurationStatus("WeasyPrint Service: WeasyPrint", Status.OK, "68.0")
+            );
+        }
+    }
+
+    @Test
+    void testExpectedApiVersionNotConfigured() {
+        String timestamp = ZonedDateTime.now(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS).format(DateTimeFormatter.ISO_INSTANT);
+        WeasyPrintInfo weasyPrintInfo = WeasyPrintInfo.builder()
+                .apiVersion(1)
+                .chromium("129.0.6668.58")
+                .python("3.12.5")
+                .timestamp(timestamp)
+                .weasyprint("62.3")
+                .weasyprintService("62.4.6")
+                .build();
+
+        WeasyPrintServiceConnector weasyPrintServiceConnector = mock(WeasyPrintServiceConnector.class);
+        when(weasyPrintServiceConnector.getWeasyPrintInfo()).thenReturn(weasyPrintInfo);
+        WeasyPrintStatusProvider weasyPrintStatusProvider = new WeasyPrintStatusProvider(weasyPrintServiceConnector);
+
+        try (MockedStatic<VersionUtils> versionsUtilsMockedStatic = mockStatic(VersionUtils.class)) {
+            versionsUtilsMockedStatic.when(() -> VersionUtils.getValueFromProperties(VERSION_FILE, "weasyprint-service.api-version")).thenReturn(null);
+
+            List<ConfigurationStatus> configurationStatuses = weasyPrintStatusProvider.getStatuses(ConfigurationStatusProvider.Context.builder().build());
+
+            assertEquals(4, configurationStatuses.size());
+            assertThat(configurationStatuses).containsExactlyInAnyOrder(
+                    new ConfigurationStatus("WeasyPrint Service", Status.WARNING, "62.4.6 (" + timestamp + "): <span style='color: orange;'>expected API version not configured</span>"),
                     new ConfigurationStatus("WeasyPrint Service: Chromium", Status.OK, "129.0.6668.58"),
                     new ConfigurationStatus("WeasyPrint Service: Python", Status.OK, "3.12.5"),
                     new ConfigurationStatus("WeasyPrint Service: WeasyPrint", Status.OK, "62.3")
