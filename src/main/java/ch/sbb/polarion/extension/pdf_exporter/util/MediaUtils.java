@@ -265,7 +265,7 @@ public class MediaUtils {
     public String inlineBase64Resources(String content, FileResourceProvider fileResourceProvider) {
         RegexMatcher.IReplacementCalculator dataReplacement = engine -> {
             String url = engine.group("url");
-            String base64String = MediaUtils.isDataUrl(url) ? url : fileResourceProvider.getResourceAsBase64String(url);
+            String base64String = MediaUtils.isDataUrl(url) ? url : fileResourceProvider.getResourceAsBase64String(removeThumbnailParameter(url));
             return base64String == null ? null : engine.group().replace(url, base64String);
         };
 
