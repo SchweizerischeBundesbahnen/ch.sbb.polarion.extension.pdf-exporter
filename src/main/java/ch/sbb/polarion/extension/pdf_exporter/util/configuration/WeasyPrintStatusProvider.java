@@ -47,17 +47,7 @@ public class WeasyPrintStatusProvider extends ConfigurationStatusProvider {
         try {
             WeasyPrintInfo weasyPrintInfo = weasyPrintServiceConnector.getWeasyPrintInfo();
             String expectedApiVersionStr = VersionUtils.getValueFromProperties(VERSION_FILE, "weasyprint-service.api-version");
-            Integer expectedApiVersion = null;
-            if (expectedApiVersionStr != null) {
-                try {
-                    expectedApiVersion = Integer.valueOf(expectedApiVersionStr);
-                } catch (NumberFormatException nfe) {
-                    throw new IllegalArgumentException(
-                            "Invalid configuration for 'weasyprint-service.api-version': '" + expectedApiVersionStr + "' is not a valid integer.",
-                            nfe
-                    );
-                }
-            }
+            Integer expectedApiVersion = parseExpectedApiVersion(expectedApiVersionStr);
             return List.of(
                     createWeasyPrintVersionStatus(
                             WEASY_PRINT_SERVICE_INFO.get(WeasyPrintServiceInfo.VERSION),
@@ -71,6 +61,20 @@ public class WeasyPrintStatusProvider extends ConfigurationStatusProvider {
             );
         } catch (Exception e) {
             return List.of(new ConfigurationStatus(WEASY_PRINT_SERVICE_INFO.get(WeasyPrintServiceInfo.VERSION), Status.ERROR, e.getMessage()));
+        }
+    }
+
+    private static @Nullable Integer parseExpectedApiVersion(@Nullable String expectedApiVersionStr) {
+        if (expectedApiVersionStr == null) {
+            return null;
+        }
+        try {
+            return Integer.valueOf(expectedApiVersionStr);
+        } catch (NumberFormatException nfe) {
+            throw new IllegalArgumentException(
+                    "Invalid configuration for 'weasyprint-service.api-version': '" + expectedApiVersionStr + "' is not a valid integer.",
+                    nfe
+            );
         }
     }
 
