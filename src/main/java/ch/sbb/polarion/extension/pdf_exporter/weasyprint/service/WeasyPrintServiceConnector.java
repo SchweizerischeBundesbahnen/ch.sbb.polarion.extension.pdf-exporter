@@ -78,7 +78,8 @@ public class WeasyPrintServiceConnector implements WeasyPrintConverter {
                     .queryParam("presentational_hints", weasyPrintOptions.isFollowHTMLPresentationalHints())
                     .queryParam("pdf_variant", weasyPrintOptions.getPdfVariant().toWeasyPrintParameter())
                     .queryParam("custom_metadata", weasyPrintOptions.isCustomMetadata())
-                    .queryParam("scale_factor", weasyPrintOptions.getImageDensity().getScale());
+                    .queryParam("scale_factor", weasyPrintOptions.getImageDensity().getScale())
+                    .queryParam("full_fonts", weasyPrintOptions.isFullFonts());
 
             byte[] pdfBytes;
             long startTime = System.currentTimeMillis();
