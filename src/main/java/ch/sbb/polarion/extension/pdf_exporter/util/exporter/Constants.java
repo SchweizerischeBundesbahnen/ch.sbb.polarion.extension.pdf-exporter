@@ -10,12 +10,16 @@ public final class Constants {
     public static final String PAGE_BREAK = "PAGE_BREAK";
     public static final String PORTRAIT_ABOVE = "PORTRAIT_ABOVE";
     public static final String LANDSCAPE_ABOVE = "LANDSCAPE_ABOVE";
+    public static final String ROTATE_BELOW = "ROTATE_BELOW";
+    public static final String RESET_BELOW = "RESET_BELOW";
+    public static final String BREAK_BELOW = "BREAK_BELOW";
 
     public static final String PAGE_BREAK_MARK = "<!--PAGE_BREAK-->";
     public static final String PORTRAIT_ABOVE_MARK = "<!--PORTRAIT_ABOVE-->";
     public static final String LANDSCAPE_ABOVE_MARK = "<!--LANDSCAPE_ABOVE-->";
-    public static final String PAGE_BREAK_PORTRAIT_ABOVE = PAGE_BREAK_MARK + PORTRAIT_ABOVE_MARK;
-    public static final String PAGE_BREAK_LANDSCAPE_ABOVE = PAGE_BREAK_MARK + LANDSCAPE_ABOVE_MARK;
+    public static final String ROTATE_BELOW_MARK = "<!--ROTATE_BELOW-->";
+    public static final String RESET_BELOW_MARK = "<!--RESET_BELOW-->";
+    public static final String BREAK_BELOW_MARK = "<!--BREAK_BELOW-->";
     public static final String MIME_TYPE_SVG = "image/svg+xml";
 
     public static final String VERSION_FILE = "versions.properties";

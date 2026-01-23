@@ -7,13 +7,13 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ConversionPa
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.DocumentType;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.Orientation;
-import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PaperSize;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.localization.Language;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.localization.LocalizationModel;
 import ch.sbb.polarion.extension.pdf_exporter.settings.LocalizationSettings;
 import ch.sbb.polarion.extension.pdf_exporter.util.html.HtmlLinksHelper;
 import lombok.SneakyThrows;
 import org.jsoup.Jsoup;
+import org.jsoup.nodes.Comment;
 import org.jsoup.nodes.Document;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -138,20 +138,38 @@ class HtmlProcessorTest {
         assertEquals(link, document.body().html());
     }
 
-    @Test
-    @SneakyThrows
-    void processPageBrakesTest() {
-        try (InputStream isInvalidHtml = this.getClass().getResourceAsStream("/pageBreaksBeforeProcessing.html");
-             InputStream isValidHtml = this.getClass().getResourceAsStream("/pageBreaksAfterProcessing.html")) {
+    private static Stream<Arguments> providePageBreakTestCases() {
 
-            ExportParams context = new ExportParams();
-            context.setOrientation(Orientation.LANDSCAPE);
-            context.setPaperSize(PaperSize.A4);
+        ExportParams landscapeExportParams = new ExportParams();
+        landscapeExportParams.setFitToPage(true);
+        landscapeExportParams.setChapters(List.of());
+        landscapeExportParams.setOrientation(Orientation.LANDSCAPE);
+
+        ExportParams specificChaptersExportParams = new ExportParams();
+        specificChaptersExportParams.setChapters(List.of("1", "2", "3"));
+
+        ExportParams cutEmptyExportParams = new ExportParams();
+        cutEmptyExportParams.setCutEmptyChapters(true);
+
+        return Stream.of(
+                Arguments.of("/pageBreaksAfterProcessing.html", new ExportParams()),
+                Arguments.of("/pageBreaksLandscapeAfterProcessing.html", landscapeExportParams),
+                Arguments.of("/pageBreaksSpecificChaptersAfterProcessing.html", specificChaptersExportParams),
+                Arguments.of("/pageBreaksCutEmptyAfterProcessing.html", cutEmptyExportParams)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("providePageBreakTestCases")
+    @SneakyThrows
+    void processPageBreaksTest(String expectedHtmlFilePath, ExportParams exportParams) {
+        try (InputStream isInvalidHtml = this.getClass().getResourceAsStream("/pageBreaksBeforeProcessing.html");
+             InputStream isValidHtml = this.getClass().getResourceAsStream(expectedHtmlFilePath)) {
 
             String invalidHtml = new String(isInvalidHtml.readAllBytes(), StandardCharsets.UTF_8);
 
             // Spaces and new lines are removed to exclude difference in space characters
-            String fixedHtml = processor.processPageBrakes(invalidHtml, context);
+            String fixedHtml = processor.processPageBrakes(invalidHtml, exportParams);
             String validHtml = new String(isValidHtml.readAllBytes(), StandardCharsets.UTF_8);
             assertEquals(TestStringUtils.removeNonsensicalSymbols(validHtml), TestStringUtils.removeNonsensicalSymbols(fixedHtml));
         }
@@ -189,6 +207,17 @@ class HtmlProcessorTest {
             // Spaces and new lines are removed to exclude difference in space characters
             assertEquals(TestStringUtils.removeNonsensicalSymbols(validHtml), TestStringUtils.removeNonsensicalSymbols(fixedHtml));
         }
+    }
+
+    @Test
+    void pageBreakCommentsTest() {
+        assertTrue(processor.isPageBreakComment(new Comment("PAGE_BREAK")));
+        assertTrue(processor.isPageBreakComment(new Comment("LANDSCAPE_ABOVE")));
+        assertTrue(processor.isPageBreakComment(new Comment("PORTRAIT_ABOVE")));
+        assertTrue(processor.isPageBreakComment(new Comment("ROTATE_BELOW")));
+        assertTrue(processor.isPageBreakComment(new Comment("RESET_BELOW")));
+        assertTrue(processor.isPageBreakComment(new Comment("BREAK_BELOW")));
+        assertFalse(processor.isPageBreakComment(new Comment("pre PAGE_BREAK")));
     }
 
     @Test

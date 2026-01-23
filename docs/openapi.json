@@ -219,6 +219,13 @@
                 },
                 "style": "simple"
               },
+              "PDF-Variant-Compliant": {
+                "description": "Boolean value if resulting PDF is compliant to selected PDF variant",
+                "schema": {
+                  "type": "string"
+                },
+                "style": "simple"
+              },
               "WorkItem-IDs-With-Missing-Attachment": {
                 "description": "Work items contained unavailable attachments",
                 "schema": {
@@ -481,6 +488,13 @@
               },
               "Missing-WorkItem-Attachments-Count": {
                 "description": "Unavailable work item attachments count",
+                "schema": {
+                  "type": "string"
+                },
+                "style": "simple"
+              },
+              "PDF-Variant-Compliant": {
+                "description": "Boolean value if resulting PDF is compliant to selected PDF variant",
                 "schema": {
                   "type": "string"
                 },

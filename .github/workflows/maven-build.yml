@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
 env:
   SETTINGS_XML: ${{ github.workspace }}/.mvn/settings.xml
-  JAVA_VERSION: 17
+  JAVA_VERSION: 21
   JAVA_DISTRIBUTION: temurin
   SONAR_SCANNER_OPTS: -Xmx1024m
 jobs:
@@ -28,7 +28,7 @@ jobs:
       GITHUB_TOKEN: ${{ github.token }}  # providing this prevent from reaching GitHub requests limit
     steps:
       - name: 📄 Checkout the repository
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6.0.1
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
           fetch-depth: 0  # Sonar needs full history
           persist-credentials: false
@@ -53,7 +53,7 @@ jobs:
             echo "is_release=${IS_RELEASE}"
           } >> "$GITHUB_OUTPUT"
       - name: 🔍 Cache SonarQube packages
-        uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb  # v5.0.1
+        uses: actions/cache@8b402f58fbc84540c8b491a91e594a4576fec3d7  # v5.0.2
         with:
           path: ~/.sonar/cache
           key: ${{ runner.os }}-sonar
@@ -103,7 +103,7 @@ jobs:
       GITHUB_TOKEN: ${{ github.token }}  # providing this prevent from reaching GitHub requests limit
     steps:
       - name: 📄 Checkout the repository
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6.0.1
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
           fetch-depth: 1
           persist-credentials: false
@@ -139,7 +139,7 @@ jobs:
       PROJECT_VERSION: ${{ needs.build.outputs.project_version }}
     steps:
       - name: 📄 Checkout the repository
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6.0.1
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
           fetch-depth: 1
           persist-credentials: false

@@ -16,7 +16,7 @@ This document provides comprehensive development guidelines for contributing to 
 
 ### Prerequisites
 
-- Java JDK 17
+- Java JDK 21
 - Maven 3.9
 - IDE of your choice (IntelliJ IDEA, Eclipse, VS Code with Java extensions)
 - Git

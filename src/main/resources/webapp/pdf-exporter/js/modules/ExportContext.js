@@ -225,9 +225,21 @@ export default class ExportContext extends ExtensionContext {
                         let attachment = request.getResponseHeader("WorkItem-IDs-With-Missing-Attachment")
                         warningMessage = `${count} image(s) in WI(s) ${attachment} were not exported. They were replaced with an image containing 'This image is not accessible'.`;
                     }
+                    let pdfVariantCompliant = request.getResponseHeader("PDF-Variant-Compliant");
+                    if (pdfVariantCompliant) {
+                        if (pdfVariantCompliant !== "true") {
+                            warningMessage = warningMessage ? warningMessage + "<br><br>" : "";
+                            warningMessage += "Be aware that resulting PDF isn't compliant with the selected PDF variant.";
+                        }
+                    } else {
+                        warningMessage = warningMessage ? warningMessage + "<br><br>" : "";
+                        warningMessage += "Resulting PDF couldn't be validated if it's compliant with the selected PDF variant.";
+                    }
+
                     successCallback({
                         response: request.response,
-                        warning: warningMessage
+                        warning: warningMessage,
+                        fileName: request.getResponseHeader("Export-Filename")
                     });
                 }
             },
@@ -301,7 +313,7 @@ export default class ExportContext extends ExtensionContext {
 
                     this.asyncConvertPdf(
                         exportParams.toJSON(),
-                        (result, fileName) => {
+                        result => {
                             const downloadFileName = collectionDocument.fileName || `${collectionDocument.projectId}_${collectionDocument.spaceId}_${collectionDocument.documentName}.pdf`;
                             this.downloadBlob(result.response, downloadFileName);
 

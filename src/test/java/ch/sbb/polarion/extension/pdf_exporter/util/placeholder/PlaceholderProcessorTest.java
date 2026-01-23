@@ -40,6 +40,7 @@ class PlaceholderProcessorTest {
         placeholderValues = PlaceholderValues.builder()
                 .documentId("testDocId")
                 .documentTitle("testDocTitle")
+                .documentFilter("type:requirement")
                 .revision("testRevision")
                 .pageNumber("testPageNumber")
                 .pagesTotalCount("testPagesTotal")
@@ -104,6 +105,13 @@ class PlaceholderProcessorTest {
     void testEmptySource(String source) {
         final String result = placeholderProcessor.processPlaceholders(source, placeholderValues);
         assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void testDocumentFilterReplaced() {
+        final String text = "Filter: {{ DOCUMENT_FILTER }}";
+        final String result = placeholderProcessor.processPlaceholders(text, placeholderValues);
+        assertEquals("Filter: type:requirement", result);
     }
 
 }

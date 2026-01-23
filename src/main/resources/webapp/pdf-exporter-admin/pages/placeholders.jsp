@@ -29,6 +29,14 @@
         </td>
     </tr>
     <tr>
+        <td><span class="monospace">{{ DOCUMENT_FILTER }}</span></td>
+        <td>
+            Filter (query) applied to the document during export.
+            This is the value of the <span class="monospace">query</span> URL parameter.
+            Empty string if no filter is applied.
+        </td>
+    </tr>
+    <tr>
         <td><span class="monospace">{{ REVISION }}</span></td>
         <td>Document revision</td>
     </tr>

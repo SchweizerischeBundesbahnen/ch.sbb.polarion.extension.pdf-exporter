@@ -28,6 +28,7 @@ public class DocumentCollectionHelper {
         this.documentFileNameHelper = documentFileNameHelper;
     }
 
+    @SuppressWarnings("java:S3252") // False positive: ExportParams.builder() is correct with Lombok's @SuperBuilder
     public @NotNull List<DocumentCollectionEntry> getDocumentsFromCollection(
             @NotNull String projectId,
             @NotNull String collectionId,
