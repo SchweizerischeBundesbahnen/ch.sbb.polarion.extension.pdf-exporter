@@ -45,7 +45,7 @@
 
     <properties>
         <pdfbox.version>3.0.6</pdfbox.version>
-        <okapi.xliff.version>1.47.0</okapi.xliff.version>
+        <okapi.xliff.version>1.48.0</okapi.xliff.version>
         <byte-buddy.version>1.18.4</byte-buddy.version>
         <flying-saucer.version>9.13.3</flying-saucer.version>
 
