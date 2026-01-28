@@ -69,6 +69,7 @@ export default class ExportPanel {
         this.ctx.setValue("orientation-selector", stylePackage.orientation || 'PORTRAIT');
         this.ctx.setValue("pdf-variant-selector", stylePackage.pdfVariant || 'PDF_A_2B');
         this.ctx.setValue("image-density-selector", stylePackage.imageDensity || 'DPI_96');
+        this.ctx.setCheckbox("full-fonts", stylePackage.fullFonts);
         this.ctx.setCheckbox("fit-to-page", stylePackage.fitToPage);
 
         this.ctx.setCheckbox("render-comments", !!stylePackage.renderComments);
@@ -197,6 +198,7 @@ export default class ExportPanel {
             .setLanguage(live_doc && this.ctx.getElementById('localization').checked ? this.ctx.getElementById("language").value : null)
             .setLinkedWorkitemRoles(selectedRoles)
             .setImageDensity(this.ctx.getElementById("image-density-selector").value)
+            .setFullFonts(this.ctx.getElementById("full-fonts").checked)
             .setFileName(fileName)
             .setUrlQueryParameters(Object.fromEntries([...urlSearchParams]))
             .build()

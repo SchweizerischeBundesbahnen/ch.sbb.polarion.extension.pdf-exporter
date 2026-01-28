@@ -257,6 +257,7 @@ function saveStylePackage() {
             'attachmentsFilter': ctx.getCheckboxValueById('download-attachments') ? ctx.getValueById('attachments-filter') : null,
             'testcaseFieldId': ctx.getCheckboxValueById('download-attachments') ? ctx.getValueById('testcase-field-id') : null,
             'embedAttachments': ctx.getCheckboxValueById('download-attachments') && ctx.getCheckboxValueById('embed-attachments'),
+            'fullFonts': ctx.getCheckboxValueById('full-fonts'),
         }),
         onOk: () => {
             ctx.showSaveSuccessAlert();
@@ -308,6 +309,7 @@ function setStylePackage(content) {
     Orientations.orientationSelect.selectValue(stylePackage.orientation || 'PORTRAIT');
     PdfVariants.pdfVariantSelect.selectValue(stylePackage.pdfVariant || 'PDF_A_2B');
     ImageDensity.imageDensitySelect.selectValue(stylePackage.imageDensity || 'DPI_96');
+    ctx.setCheckboxValueById('full-fonts', stylePackage.fullFonts);
 
     ctx.setCheckboxValueById('fit-to-page', stylePackage.fitToPage);
 

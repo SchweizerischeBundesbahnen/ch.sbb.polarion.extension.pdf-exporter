@@ -58,6 +58,7 @@ public class StylePackageModel extends SettingsModel {
     private static final String ATTACHMENTS_FILTER = "ATTACHMENTS_FILTER";
     private static final String EMBED_ATTACHMENTS = "EMBED ATTACHMENTS";
     private static final String IMAGE_DENSITY_ENTRY_NAME = "IMAGE DENSITY";
+    private static final String FULL_FONTS_ENTRY_NAME = "FULL FONTS";
 
     private String matchingQuery;
     private Float weight;
@@ -90,6 +91,7 @@ public class StylePackageModel extends SettingsModel {
     private String testcaseFieldId;
     private boolean embedAttachments;
     private String imageDensity;
+    private boolean fullFonts;
 
     @Override
     protected String serializeModelData() {
@@ -123,7 +125,8 @@ public class StylePackageModel extends SettingsModel {
                 serializeEntry(ATTACHMENTS_FILTER, attachmentsFilter) +
                 serializeEntry(TESTCASE_FIELD_ID_ENTRY_NAME, testcaseFieldId) +
                 serializeEntry(EMBED_ATTACHMENTS, embedAttachments) +
-                serializeEntry(IMAGE_DENSITY_ENTRY_NAME, imageDensity);
+                serializeEntry(IMAGE_DENSITY_ENTRY_NAME, imageDensity) +
+                serializeEntry(FULL_FONTS_ENTRY_NAME, fullFonts);
     }
 
     @Override
@@ -160,6 +163,7 @@ public class StylePackageModel extends SettingsModel {
         testcaseFieldId = deserializeEntry(TESTCASE_FIELD_ID_ENTRY_NAME, serializedString);
         embedAttachments = Boolean.parseBoolean(deserializeEntry(EMBED_ATTACHMENTS, serializedString));
         imageDensity = deserializeEntry(IMAGE_DENSITY_ENTRY_NAME, serializedString);
+        fullFonts = Boolean.parseBoolean(deserializeEntry(FULL_FONTS_ENTRY_NAME, serializedString));
     }
 
     /**
