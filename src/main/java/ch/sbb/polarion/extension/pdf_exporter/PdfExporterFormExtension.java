@@ -93,6 +93,7 @@ public class PdfExporterFormExtension implements IFormExtension {
             form = adjustOrientation(form, selectedStylePackage);
             form = adjustPdfVariant(form, selectedStylePackage);
             form = adjustImageDensity(form, selectedStylePackage);
+            form = adjustFullFonts(form, selectedStylePackage);
             form = adjustFitToPage(form, selectedStylePackage);
             form = adjustRenderComments(form, selectedStylePackage);
             form = adjustWatermark(form, selectedStylePackage);
@@ -219,6 +220,10 @@ public class PdfExporterFormExtension implements IFormExtension {
 
     private String adjustImageDensity(String form, StylePackageModel stylePackage) {
         return form.replace(String.format(OPTION_VALUE, stylePackage.getImageDensity()), String.format(OPTION_SELECTED, stylePackage.getImageDensity()));
+    }
+
+    private String adjustFullFonts(String form, StylePackageModel stylePackage) {
+        return stylePackage.isFullFonts() ? form.replace("<input id='full-fonts'", "<input id='full-fonts' checked") : form;
     }
 
     private String adjustFitToPage(String form, StylePackageModel stylePackage) {

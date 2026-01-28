@@ -39,4 +39,9 @@ public class ConversionParams {
     @Schema(description = "Quality of PNG images converted from SVG, by default 96 dpi")
     @Builder.Default
     protected ImageDensity imageDensity = ImageDensity.DPI_96;
+
+    @Schema(description = "Embed full fonts instead of subsetting. When true, fonts are embedded completely " +
+            "without optimization. This can help avoid font subsetting errors but results in larger PDF files.", defaultValue = "false")
+    @Builder.Default
+    protected boolean fullFonts = false;
 }
