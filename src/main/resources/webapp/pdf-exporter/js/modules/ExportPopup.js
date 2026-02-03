@@ -324,6 +324,7 @@ export default class ExportPopup {
         this.ctx.setValue("popup-orientation-selector", stylePackage.orientation || ExportParams.Orientation.PORTRAIT);
         this.ctx.setValue("popup-pdf-variant-selector", stylePackage.pdfVariant || ExportParams.PdfVariant.PDF_A_2B);
         this.ctx.setValue("popup-image-density-selector", stylePackage.imageDensity || ExportParams.ImageDensity.DPI_96);
+        this.ctx.setCheckbox("popup-full-fonts", stylePackage.fullFonts);
         this.ctx.setCheckbox("popup-fit-to-page", stylePackage.fitToPage);
 
         this.ctx.setCheckbox("popup-render-comments", !!stylePackage.renderComments);
@@ -604,6 +605,7 @@ export default class ExportPopup {
             .setTestcaseFieldId(test_run && this.ctx.getElementById("popup-download-attachments").checked && testcaseFieldId ? testcaseFieldId : null)
             .setEmbedAttachments(test_run && this.ctx.getElementById("popup-download-attachments").checked && this.ctx.getElementById("popup-embed-attachments").checked)
             .setImageDensity(this.ctx.getElementById("popup-image-density-selector").value)
+            .setFullFonts(this.ctx.getElementById("popup-full-fonts").checked)
             .build();
     }
 

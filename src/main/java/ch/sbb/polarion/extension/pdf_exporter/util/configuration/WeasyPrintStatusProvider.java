@@ -46,15 +46,35 @@ public class WeasyPrintStatusProvider extends ConfigurationStatusProvider {
     public @NotNull List<ConfigurationStatus> getStatuses(@NotNull Context context) {
         try {
             WeasyPrintInfo weasyPrintInfo = weasyPrintServiceConnector.getWeasyPrintInfo();
+            String expectedApiVersionStr = VersionUtils.getValueFromProperties(VERSION_FILE, "weasyprint-service.api-version");
+            Integer expectedApiVersion = parseExpectedApiVersion(expectedApiVersionStr);
             return List.of(
-                    createWeasyPrintStatus(WEASY_PRINT_SERVICE_INFO.get(WeasyPrintServiceInfo.VERSION), weasyPrintInfo.getWeasyprintService(), weasyPrintInfo.getTimestamp(),
-                            VersionUtils.getValueFromProperties(VERSION_FILE, "weasyprint-service.version")),
+                    createWeasyPrintVersionStatus(
+                            WEASY_PRINT_SERVICE_INFO.get(WeasyPrintServiceInfo.VERSION),
+                            weasyPrintInfo.getWeasyprintService(),
+                            weasyPrintInfo.getTimestamp(),
+                            weasyPrintInfo.getApiVersion(),
+                            expectedApiVersion),
                     createWeasyPrintStatus(WEASY_PRINT_SERVICE_INFO.get(WeasyPrintServiceInfo.PYTHON), weasyPrintInfo.getPython()),
                     createWeasyPrintStatus(WEASY_PRINT_SERVICE_INFO.get(WeasyPrintServiceInfo.WEASYPRINT), weasyPrintInfo.getWeasyprint()),
                     createWeasyPrintStatus(WEASY_PRINT_SERVICE_INFO.get(WeasyPrintServiceInfo.CHROMIUM), weasyPrintInfo.getChromium())
             );
         } catch (Exception e) {
             return List.of(new ConfigurationStatus(WEASY_PRINT_SERVICE_INFO.get(WeasyPrintServiceInfo.VERSION), Status.ERROR, e.getMessage()));
+        }
+    }
+
+    private static @Nullable Integer parseExpectedApiVersion(@Nullable String expectedApiVersionStr) {
+        if (expectedApiVersionStr == null) {
+            return null;
+        }
+        try {
+            return Integer.valueOf(expectedApiVersionStr);
+        } catch (NumberFormatException nfe) {
+            throw new IllegalArgumentException(
+                    "Invalid configuration for 'weasyprint-service.api-version': '" + expectedApiVersionStr + "' is not a valid integer.",
+                    nfe
+            );
         }
     }
 
@@ -66,24 +86,34 @@ public class WeasyPrintStatusProvider extends ConfigurationStatusProvider {
         }
     }
 
-    private static @NotNull ConfigurationStatus createWeasyPrintStatus(@NotNull String name, @Nullable String version, @Nullable String timestamp, @Nullable String latestCompatibleVersion) {
-        if (version == null || version.isBlank()) {
-            return new ConfigurationStatus(name, Status.ERROR, createUseLatestCompatibleWeasyPrintMessage("Unknown", timestamp, latestCompatibleVersion));
-        } else if (!version.equals(latestCompatibleVersion)) {
-            return new ConfigurationStatus(name, Status.WARNING, createUseLatestCompatibleWeasyPrintMessage(version, timestamp, latestCompatibleVersion));
+    private static @NotNull ConfigurationStatus createWeasyPrintVersionStatus(
+            @NotNull String name,
+            @Nullable String serviceVersion,
+            @Nullable String timestamp,
+            @Nullable Integer apiVersion,
+            @Nullable Integer expectedApiVersion) {
+
+        String displayVersion = formatVersionWithTimestamp(serviceVersion, timestamp);
+
+        if (apiVersion == null) {
+            return new ConfigurationStatus(name, Status.ERROR,
+                    displayVersion + ": <span style='color: red;'>API version unknown, please upgrade weasyprint-service</span>");
+        } else if (expectedApiVersion == null) {
+            return new ConfigurationStatus(name, Status.WARNING,
+                    displayVersion + ": <span style='color: orange;'>expected API version not configured</span>");
+        } else if (!apiVersion.equals(expectedApiVersion)) {
+            return new ConfigurationStatus(name, Status.WARNING,
+                    displayVersion + ": <span style='color: red;'>incompatible API version " + apiVersion + ", expected " + expectedApiVersion + "</span>");
         } else {
-            return new ConfigurationStatus(name, Status.OK, version);
+            return new ConfigurationStatus(name, Status.OK, displayVersion);
         }
     }
 
-    private static @NotNull String createUseLatestCompatibleWeasyPrintMessage(@NotNull String version, @Nullable String timestamp, @Nullable String latestCompatibleVersion) {
+    private static @NotNull String formatVersionWithTimestamp(@Nullable String version, @Nullable String timestamp) {
         StringBuilder message = new StringBuilder();
-        message.append(version);
+        message.append(version != null && !version.isBlank() ? version : "Unknown");
         if (timestamp != null && !timestamp.isBlank()) {
             message.append(" (").append(timestamp).append(")");
-        }
-        if (latestCompatibleVersion != null && !latestCompatibleVersion.isBlank()) {
-            message.append(": <span style='color: red;'>use latest compatible</span> <a href='https://github.com/SchweizerischeBundesbahnen/weasyprint-service/releases/tag/v").append(latestCompatibleVersion).append("' target='_blank'>").append(latestCompatibleVersion).append("</a>");
         }
         return message.toString();
     }

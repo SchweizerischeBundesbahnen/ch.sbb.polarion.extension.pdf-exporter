@@ -142,5 +142,6 @@ public class ExportParams extends ConversionParams {
         attachmentsFilter = stylePackageModel.getAttachmentsFilter();
         testcaseFieldId = stylePackageModel.getTestcaseFieldId();
         embedAttachments = stylePackageModel.isEmbedAttachments();
+        setFullFonts(stylePackageModel.isFullFonts());
     }
 }

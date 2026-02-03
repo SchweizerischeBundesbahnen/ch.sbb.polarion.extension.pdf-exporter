@@ -1851,6 +1851,11 @@
             "description": "HTML presentational hints should be followed",
             "type": "boolean"
           },
+          "fullFonts": {
+            "default": false,
+            "description": "Embed full fonts instead of subsetting. When true, fonts are embedded completely without optimization. This can help avoid font subsetting errors but results in larger PDF files.",
+            "type": "boolean"
+          },
           "headerFooter": {
             "description": "Header/Footer settings name",
             "type": "string"

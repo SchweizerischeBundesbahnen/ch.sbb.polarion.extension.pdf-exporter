@@ -1,5 +1,21 @@
 # Changelog
 
+## [12.1.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v12.0.0...v12.1.0) (2026-01-28)
+
+
+### Features
+
+* add API versioning support for WeasyPrint service ([#700](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/700)) ([e9094b7](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/e9094b7ac3414f41030ecef77c00f85ad51a0637)), closes [#698](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/698)
+* add fullFonts parameter to disable font subsetting ([#702](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/702)) ([9b2adcb](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/9b2adcb16f1b575490d87f5743e6ad65fd33f55f)), closes [#704](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/704)
+* export pdf documents with filter ([#692](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/692)) ([0c79c46](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/0c79c46848c158ff0f867beab245910a3e70156a)), closes [#687](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/687)
+
+
+### Bug Fixes
+
+* 'fit to page width' does not work for test records table ([#696](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/696)) ([9359c50](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/9359c50d8d638e0a6402203961a86cb8aee2634e)), closes [#694](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/694)
+* **deps:** update dependency net.bytebuddy:byte-buddy to v1.18.4 ([013f10a](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/013f10ac4fd7d44fa2693f38e2cfce60f287897e))
+* **deps:** update dependency net.sf.okapi.lib:okapi-lib-xliff2 to v1.48.0 ([44172bf](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/44172bf646e40b9173adc00ee2b62411d6a3bb68))
+
 ## [12.0.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v11.1.1...v12.0.0) (2026-01-08)
 
 
