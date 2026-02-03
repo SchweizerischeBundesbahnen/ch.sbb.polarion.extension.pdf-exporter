@@ -22,9 +22,8 @@ public class ExtensionBundleActivator extends GenericBundleActivator {
     private final Logger logger = Logger.getLogger(ExtensionBundleActivator.class);
 
     @Override
-    public void start(BundleContext context) {
+    protected void onStart(BundleContext context) {
         initializeFeatures();
-        super.start(context);
     }
 
     @Override
