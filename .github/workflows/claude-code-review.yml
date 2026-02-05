@@ -45,13 +45,23 @@ jobs:
             REPO: ${{ github.repository }}
             PR NUMBER: ${{ github.event.pull_request.number }}
             Review the PR diff. Report ONLY actual problems in changed lines.
-            Focus on:
+            FOCUS ON:
             - Bugs or logic errors
             - Security vulnerabilities (SQL injection, XSS, auth bypass, secrets exposure)
             - Breaking changes not mentioned in PR description
             - Missing tests for new functionality
             - Critical performance issues introduced by changes
-            Format (be TERSE):
+            DO NOT:
+            - Review unchanged code, style/formatting, optional improvements, or provide praise
+            - Run build tools (Maven, npm, gradle, etc.)
+            - Check external dependency versions
+            GUIDELINES:
+            - Use Read/Grep/Glob to search the codebase for context
+            - If you need to understand parent classes or dependencies, search for usage patterns
+            - The PR branch is already checked out in the current working directory
+            - Post your review using `gh pr comment` as a top-level PR comment
+            - Only post GitHub comments - don't submit review text as messages
+            FORMAT (be TERSE):
             ## Issues Found
 
             ### 🔴 Critical
@@ -60,10 +70,6 @@ jobs:
             ### 🟡 Important
             - `file:line` - Issue description - Suggestion: specific fix
             If NO issues found: "✅ No issues found."
-            DO NOT review: unchanged code, style/formatting, optional improvements, or provide praise.
-            Note: The PR branch is already checked out in the current working directory.
-            Use `gh pr comment` to post your review as a top-level PR comment.
-            Only post GitHub comments - don't submit review text as messages.
 
           # Official recommendation: Enable GitHub commenting tools for posting PR comments
           claude_args: |-
