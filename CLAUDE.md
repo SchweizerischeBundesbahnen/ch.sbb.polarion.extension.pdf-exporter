@@ -83,9 +83,10 @@ Always run this after implementation. The project uses extensive pre-commit hook
 
 ### Key Architectural Patterns
 
-1. **Settings Inheritance**: Extension uses generic settings framework from parent project `ch.sbb.polarion.extension.generic` (version 11.1.0)
+1. **Settings Inheritance**: Extension uses generic settings framework from parent project `ch.sbb.polarion.extension.generic`
 
 2. **Document Type Support**: Handles multiple document types through `DocumentType` enum:
+   - Baseline Collections
    - Live Documents
    - Live Reports
    - Test Runs
@@ -102,21 +103,19 @@ Always run this after implementation. The project uses extensive pre-commit hook
 
 ### Java Dependencies
 - **Polarion Version**: 2512 (configured via profile in pom.xml)
-- **Parent POM**: `ch.sbb.polarion.extension.generic:13.0.0`
-- **Key Libraries**:
-  - Apache PDFBox 3.0.5 (PDF manipulation)
+- **Parent POM**: `ch.sbb.polarion.extension.generic` (see pom.xml for current version)
+- **Key Libraries** (see pom.xml for current versions):
+  - Apache PDFBox (PDF manipulation)
   - Apache Velocity (templating)
-  - JSoup 1.15.2 (HTML parsing, provided by Polarion)
-  - Okapi XLIFF 1.47.0 (localization)
-  - Byte Buddy 1.17.7 (bytecode manipulation)
-  - CSS Parser 0.9.30
-  - Testcontainers 1.21.3 (testing)
+  - JSoup (HTML parsing, provided by Polarion)
+  - Okapi XLIFF (localization)
+  - Byte Buddy (bytecode manipulation)
+  - Testcontainers (testing)
 
 ### JavaScript Dependencies
 - Mocha (testing framework)
 - Chai (assertions)
 - JSDOM (DOM simulation)
-- TestDouble (mocking)
 
 ### External Services
 - **WeasyPrint Service**: Required Docker service for PDF generation (default: http://localhost:9080)
@@ -178,18 +177,16 @@ Key properties in `polarion.properties`:
 
 **The following are already checked by automated tools - DO NOT comment on them:**
 
-**Code Formatting & Style** (handled by Maven plugins + pre-commit hooks):
-- Java code formatting (Spotless/google-java-format)
+**Code Formatting & Style** (handled by parent POM plugins + pre-commit hooks):
+- Java code formatting
 - Import organization
 - Indentation and whitespace
 - Line length
 - Code style consistency
 
-**Static Analysis** (handled by Maven plugins):
+**Static Analysis** (handled by parent POM plugins):
 - SonarCloud integration for code quality
-- SpotBugs for bug detection
-- Checkstyle for style violations
-- PMD for code quality issues
+- Static analysis tools configured in parent POM
 
 **Testing** (handled by Maven + Surefire/Failsafe):
 - Test execution and coverage
