@@ -1,5 +1,15 @@
 # Changelog
 
+## [12.1.1](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v12.1.0...v12.1.1) (2026-02-08)
+
+
+### Bug Fixes
+
+* **ci:** prevent Claude Code Review from attempting Maven commands ([#709](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/709)) ([c287ac6](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/c287ac6ea29b750e01b7b6ddf1590884622072c9))
+* **deps:** update dependency ch.sbb.polarion.extensions:ch.sbb.polarion.extension.generic to v13.2.0 ([e1f1d4b](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/e1f1d4bc7e481286bb5baa175db6db6dfb58516e))
+* **deps:** update dependency ch.sbb.polarion.extensions:ch.sbb.polarion.extension.generic to v13.2.1 ([871e543](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/871e543f34743d7c4912b1a51a0878a5e8f8b4ff))
+* no settings found by featureName: style-package ([#697](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/697)) ([481b448](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/481b44825d9fe7b3901fd52d1113d2559a8282bf)), closes [#690](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/690)
+
 ## [12.1.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v12.0.0...v12.1.0) (2026-01-28)
 
 
