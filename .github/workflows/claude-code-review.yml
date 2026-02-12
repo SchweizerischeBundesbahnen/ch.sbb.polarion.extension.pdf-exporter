@@ -73,5 +73,5 @@ jobs:
 
           # Official recommendation: Enable GitHub commenting tools for posting PR comments
           claude_args: |-
-            --max-turns 15
-            --allowed-tools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Read,Grep,Glob"
+            --max-turns 20
+            --allowed-tools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh api:*),Bash(mvn help\\:evaluate:*),WebSearch,Read,Grep,Glob"
