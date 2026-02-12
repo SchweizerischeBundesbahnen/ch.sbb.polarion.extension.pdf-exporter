@@ -155,6 +155,14 @@ jobs:
           distribution: ${{ env.JAVA_DISTRIBUTION }}
           java-version: ${{ env.JAVA_VERSION }}
           cache: maven
+      - name: 🗑️ Delete existing SNAPSHOT version from GitHub Packages
+        if: ${{ needs.build.outputs.is_release == 'false' }}
+        run: |
+          API_URL="/orgs/${GITHUB_REPOSITORY_OWNER}/packages/maven/ch.sbb.polarion.extensions.ch.sbb.polarion.extension.pdf-exporter/versions"
+          VERSION_ID=$(gh api "${API_URL}" --jq ".[] | select(.name == \"${PROJECT_VERSION}\") | .id" || true)
+          if [ -n "${VERSION_ID}" ]; then
+            gh api --method DELETE "${API_URL}/${VERSION_ID}"
+          fi
       - name: 📦 Deploy to GitHub Packages
         # Releases should be only deployed to GitHub packages when the repo is private
         # only snapshots must be always deployed here
