@@ -259,6 +259,65 @@ class PdfExporterPolarionServiceTest {
     }
 
     @Test
+    @SuppressWarnings("rawtypes")
+    void testStylePackageSuitabilityWithUnresolvableDocuments() {
+        IDataService dataService = mock(IDataService.class);
+        when(trackerService.getDataService()).thenReturn(dataService);
+
+        // Create an unresolvable module that would throw on location access
+        IModule unresolvableModule = mock(IModule.class);
+        when(unresolvableModule.isUnresolvable()).thenReturn(true);
+        when(unresolvableModule.getModuleLocation()).thenThrow(new IllegalStateException("Cannot access location of unresolvable object"));
+
+        // Create a resolvable module that matches the document
+        IModule resolvableModule = mock(IModule.class);
+        when(resolvableModule.isUnresolvable()).thenReturn(false);
+        when(resolvableModule.getProjectId()).thenReturn("someProjectId");
+        ILocation location = mock(ILocation.class);
+        when(resolvableModule.getModuleLocation()).thenReturn(location);
+        when(location.getLocationPath()).thenReturn("someSpaceId/documentName");
+
+        // Search returns both unresolvable and resolvable documents
+        IPObjectList mixedDocuments = new PObjectList(dataService, List.of(unresolvableModule, resolvableModule));
+        when(dataService.searchInstances(IModule.PROTO, "mixed_query", "name")).thenReturn(mixedDocuments);
+        when(dataService.searchInstances(IRichPage.PROTO, "mixed_query", "name")).thenReturn(new PObjectList(dataService, List.of()));
+
+        // Search returns only unresolvable documents
+        IPObjectList unresolvableOnly = new PObjectList(dataService, List.of(unresolvableModule));
+        when(dataService.searchInstances(IModule.PROTO, "unresolvable_only", "name")).thenReturn(unresolvableOnly);
+        when(dataService.searchInstances(IRichPage.PROTO, "unresolvable_only", "name")).thenReturn(new PObjectList(dataService, List.of()));
+
+        String projectId = "someProjectId";
+        String spaceId = "someSpaceId";
+        String documentName = "documentName";
+
+        Collection<SettingName> settingNames = List.of(
+                SettingName.builder().id("id1").name("mixedPackage").scope("project/someProjectId/").build(),
+                SettingName.builder().id("id2").name("unresolvablePackage").scope("project/someProjectId/").build()
+        );
+
+        // Package with query returning mixed (unresolvable + resolvable) documents - should be suitable
+        StylePackageModel mixedModel = StylePackageModel.builder().weight(10f).matchingQuery("mixed_query").build();
+        // Package with query returning only unresolvable documents - should NOT be suitable
+        StylePackageModel unresolvableModel = StylePackageModel.builder().weight(20f).matchingQuery("unresolvable_only").build();
+
+        when(stylePackageSettings.readNames("")).thenReturn(List.of());
+        when(stylePackageSettings.readNames(ScopeUtils.getScopeFromProject(projectId))).thenReturn(settingNames);
+        when(stylePackageSettings.read(eq("project/someProjectId/"), eq(SettingId.fromName("mixedPackage")), isNull())).thenReturn(mixedModel);
+        when(stylePackageSettings.read(eq("project/someProjectId/"), eq(SettingId.fromName("unresolvablePackage")), isNull())).thenReturn(unresolvableModel);
+        when(stylePackageSettings.defaultValues()).thenReturn(StylePackageModel.builder().weight(0f).build());
+
+        // When only unresolvable documents match, the package with higher weight should be skipped,
+        // and the one with resolvable matches should be selected
+        StylePackageModel result = service.getMostSuitableStylePackageModel(new DocIdentifier(projectId, spaceId, documentName));
+
+        // mixedPackage should be selected (weight 10) because unresolvablePackage (weight 20)
+        // has no resolvable matching documents
+        assertEquals(10f, result.getWeight());
+        assertEquals("mixed_query", result.getMatchingQuery());
+    }
+
+    @Test
     void testGetTestRun() {
         when(testManagementService.getTestRun("testProjectId", "testTestRunId", null)).thenReturn(mock(ITestRun.class));
         when(testManagementService.getTestRun("testProjectId", "testTestRunId", "1234")).thenReturn(mock(ITestRun.class));
