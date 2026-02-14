@@ -13,6 +13,7 @@ import com.polarion.subterra.base.location.ILocation;
 import com.polarion.subterra.base.location.Location;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
+import org.apache.commons.text.StringEscapeUtils;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.io.RandomAccessReadBuffer;
 import org.apache.pdfbox.multipdf.PDFMergerUtility;
@@ -283,7 +284,8 @@ public class MediaUtils {
             return url;
         }
 
-        return UriComponentsBuilder.fromUriString(url)
+        String unescapedUrl = StringEscapeUtils.unescapeHtml4(url);
+        return UriComponentsBuilder.fromUriString(unescapedUrl)
                 .replaceQueryParam(THUMBNAIL_PARAMETER)
                 .build(true)
                 .toUriString();
