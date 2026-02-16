@@ -75,9 +75,6 @@ public class ConverterInternalController {
     private final PropertiesUtility propertiesUtility;
     private final HtmlToPdfConverter htmlToPdfConverter;
 
-    @Context
-    private UriInfo uriInfo;
-
     public ConverterInternalController() {
         this.pdfConverter = new PdfConverter();
         this.pdfWidthValidationService = new PdfWidthValidationService(pdfConverter);
@@ -88,11 +85,10 @@ public class ConverterInternalController {
     }
 
     @VisibleForTesting
-    ConverterInternalController(PdfConverter pdfConverter, PdfWidthValidationService pdfWidthValidationService, PdfConverterJobsService pdfConverterJobService, UriInfo uriInfo, HtmlToPdfConverter htmlToPdfConverter) {
+    ConverterInternalController(PdfConverter pdfConverter, PdfWidthValidationService pdfWidthValidationService, PdfConverterJobsService pdfConverterJobService, HtmlToPdfConverter htmlToPdfConverter) {
         this.pdfConverter = pdfConverter;
         this.pdfWidthValidationService = pdfWidthValidationService;
         this.pdfConverterJobService = pdfConverterJobService;
-        this.uriInfo = uriInfo;
         this.propertiesUtility = new PropertiesUtility();
         this.htmlToPdfConverter = htmlToPdfConverter;
     }
@@ -191,7 +187,7 @@ public class ConverterInternalController {
                             description = "Conversion process is started, job URI is returned in Location header"
                     )
             })
-    public Response startPdfConverterJob(ExportParams exportParams) {
+    public Response startPdfConverterJob(ExportParams exportParams, @Context UriInfo uriInfo) {
         validateExportParameters(exportParams);
 
         String jobId = pdfConverterJobService.startJob(exportParams, propertiesUtility.getInProgressJobTimeout());
@@ -221,7 +217,7 @@ public class ConverterInternalController {
                             description = "Conversion job id is unknown"
                     )
             })
-    public Response getPdfConverterJobStatus(@PathParam("id") String jobId) {
+    public Response getPdfConverterJobStatus(@PathParam("id") String jobId, @Context UriInfo uriInfo) {
         JobState jobState = pdfConverterJobService.getJobState(jobId);
 
         ConverterJobStatus converterJobStatus = convertToJobStatus(jobState);

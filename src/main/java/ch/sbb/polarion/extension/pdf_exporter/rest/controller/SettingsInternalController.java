@@ -51,7 +51,7 @@ import java.util.UUID;
 public class SettingsInternalController {
 
     private final PdfExporterPolarionService pdfExporterPolarionService = new PdfExporterPolarionService();
-    private Set<String> predefinedCoverPageTemplates;
+    private final Set<String> predefinedCoverPageTemplates = new CoverPageSettings().getPredefinedTemplates();
 
     @GET
     @Path("/settings/localization/names/{name}/download")
@@ -106,9 +106,6 @@ public class SettingsInternalController {
             }
     )
     public Collection<String> getCoverPageTemplateNames() {
-        if (predefinedCoverPageTemplates == null) {
-            predefinedCoverPageTemplates = new CoverPageSettings().getPredefinedTemplates();
-        }
         return predefinedCoverPageTemplates;
     }
 
