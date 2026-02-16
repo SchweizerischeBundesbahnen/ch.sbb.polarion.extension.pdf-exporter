@@ -35,6 +35,7 @@ import org.jetbrains.annotations.VisibleForTesting;
 import org.springframework.http.HttpStatus;
 import org.verapdf.pdfa.results.ValidationResult;
 
+import javax.inject.Singleton;
 import javax.ws.rs.BadRequestException;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
@@ -55,6 +56,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+@Singleton
 @Hidden
 @Path("/internal")
 @Tag(name = "PDF Processing")

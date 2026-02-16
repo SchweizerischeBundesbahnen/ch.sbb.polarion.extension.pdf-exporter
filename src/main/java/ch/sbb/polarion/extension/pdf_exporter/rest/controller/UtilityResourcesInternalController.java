@@ -19,6 +19,7 @@ import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
+import javax.inject.Singleton;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -32,6 +33,7 @@ import java.util.List;
 
 import static ch.sbb.polarion.extension.pdf_exporter.util.placeholder.PlaceholderValues.DOC_LANGUAGE_FIELD;
 
+@Singleton
 @Hidden
 @Path("/internal")
 @Tag(name = "Utility resources")

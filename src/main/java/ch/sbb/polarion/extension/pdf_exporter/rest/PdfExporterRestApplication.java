@@ -24,19 +24,19 @@ import java.util.Set;
 public class PdfExporterRestApplication extends GenericRestApplication {
 
     @Override
-    protected @NotNull Set<Object> getExtensionControllerSingletons() {
+    protected @NotNull Set<Class<?>> getExtensionControllerClasses() {
         return Set.of(
-                new ConverterApiController(),
-                new ConverterInternalController(),
-                new SettingsApiController(),
-                new SettingsInternalController(),
-                new TestRunAttachmentsApiController(),
-                new TestRunAttachmentsInternalController(),
-                new CollectionApiController(),
-                new CollectionInternalController(),
-                new UtilityResourcesApiController(),
-                new UtilityResourcesInternalController(),
-                new ConfigurationApiController()
+                ConverterApiController.class,
+                ConverterInternalController.class,
+                SettingsApiController.class,
+                SettingsInternalController.class,
+                TestRunAttachmentsApiController.class,
+                TestRunAttachmentsInternalController.class,
+                CollectionApiController.class,
+                CollectionInternalController.class,
+                UtilityResourcesApiController.class,
+                UtilityResourcesInternalController.class,
+                ConfigurationApiController.class
         );
     }
 

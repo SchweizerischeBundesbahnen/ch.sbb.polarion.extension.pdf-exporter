@@ -16,10 +16,12 @@ import org.jetbrains.annotations.VisibleForTesting;
 import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
 
+import javax.inject.Singleton;
 import javax.ws.rs.Path;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
+@Singleton
 @Secured
 @Path("/api")
 public class ConverterApiController extends ConverterInternalController {
