@@ -310,6 +310,7 @@ public class PdfConverter {
                 .pdfVariant(exportParams.getPdfVariant())
                 .customMetadata(metaTagsPresent(htmlPage))
                 .imageDensity(exportParams.getImageDensity())
+                .fullFonts(exportParams.isFullFonts())
                 .build();
 
         if (metaInfoCallback == null && exportParams.getInternalContent() == null && exportParams.getCoverPage() != null) {

@@ -145,6 +145,7 @@ public class PdfExporterPolarionService extends PolarionService {
             return Stream.of(IModule.PROTO, IRichPage.PROTO)
                     .map(proto -> dataService.searchInstances(proto, model.getMatchingQuery(), "name"))
                     .flatMap(Collection::stream)
+                    .filter(document -> !((IUniqueObject) document).isUnresolvable())
                     .anyMatch(suitableDocument -> sameDocument(projectId, spaceId, documentName, (IUniqueObject) suitableDocument));
         }
     }

@@ -89,6 +89,7 @@ export default class ExportParams {
         this.embedAttachments = builder.embedAttachments;
         this.internalContent = builder.internalContent;
         this.imageDensity = builder.imageDensity;
+        this.fullFonts = builder.fullFonts;
         this.autoSelectStylePackage = builder.autoSelectStylePackage;
     }
 
@@ -146,6 +147,7 @@ export default class ExportParams {
                 this.embedAttachments = undefined;
                 this.internalContent = undefined;
                 this.imageDensity = undefined;
+                this.fullFonts = undefined;
                 this.autoSelectStylePackage = undefined;
             }
 
@@ -316,6 +318,11 @@ export default class ExportParams {
 
             setImageDensity(imageDensity) {
                 this.imageDensity = imageDensity;
+                return this;
+            }
+
+            setFullFonts(fullFonts) {
+                this.fullFonts = fullFonts;
                 return this;
             }
 

@@ -290,6 +290,13 @@
     vertical-align: middle;
 }
 
+.property-wrapper .more-info {
+    background: url(/polarion/ria/images/msginfo.png) no-repeat;
+    width: 16px;
+    height: 16px;
+    cursor: help;
+}
+
 .property-wrapper select, .property-wrapper input {
     font-weight: 600;
     font-family: "Segoe UI", "Selawik", "Open Sans", Arial, sans-serif;

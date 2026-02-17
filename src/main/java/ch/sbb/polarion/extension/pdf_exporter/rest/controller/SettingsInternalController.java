@@ -22,6 +22,7 @@ import net.sf.okapi.lib.xliff2.reader.XLIFFReader;
 import org.glassfish.jersey.media.multipart.FormDataBodyPart;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 
+import javax.inject.Singleton;
 import javax.ws.rs.BadRequestException;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
@@ -43,6 +44,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
+@Singleton
 @Hidden
 @Path("/internal")
 @Tag(name = "Settings", description = "Operations related to PDF-exporter settings management")

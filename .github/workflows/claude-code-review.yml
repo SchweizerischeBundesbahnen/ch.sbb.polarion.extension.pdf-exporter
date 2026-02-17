@@ -32,26 +32,36 @@ jobs:
       id-token: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6.0.1
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
           fetch-depth: 0  # Required: full history to compare PR against base branch
           persist-credentials: false  # Security: don't persist credentials (was true)
       - name: Run Claude Code Review
         id: claude-review
-        uses: anthropics/claude-code-action@1b8ee3b94104046d71fde52ec3557651ad8c0d71  # v1.0.29
+        uses: anthropics/claude-code-action@2f8ba26a219c06cfb0f468eef8d97055fa814f97  # v1.0.53
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           prompt: |
             REPO: ${{ github.repository }}
             PR NUMBER: ${{ github.event.pull_request.number }}
             Review the PR diff. Report ONLY actual problems in changed lines.
-            Focus on:
+            FOCUS ON:
             - Bugs or logic errors
             - Security vulnerabilities (SQL injection, XSS, auth bypass, secrets exposure)
             - Breaking changes not mentioned in PR description
             - Missing tests for new functionality
             - Critical performance issues introduced by changes
-            Format (be TERSE):
+            DO NOT:
+            - Review unchanged code, style/formatting, optional improvements, or provide praise
+            - Run build tools (Maven, npm, gradle, etc.)
+            - Check external dependency versions
+            GUIDELINES:
+            - Use Read/Grep/Glob to search the codebase for context
+            - If you need to understand parent classes or dependencies, search for usage patterns
+            - The PR branch is already checked out in the current working directory
+            - Post your review using `gh pr comment` as a top-level PR comment
+            - Only post GitHub comments - don't submit review text as messages
+            FORMAT (be TERSE):
             ## Issues Found
 
             ### 🔴 Critical
@@ -60,12 +70,8 @@ jobs:
             ### 🟡 Important
             - `file:line` - Issue description - Suggestion: specific fix
             If NO issues found: "✅ No issues found."
-            DO NOT review: unchanged code, style/formatting, optional improvements, or provide praise.
-            Note: The PR branch is already checked out in the current working directory.
-            Use `gh pr comment` to post your review as a top-level PR comment.
-            Only post GitHub comments - don't submit review text as messages.
 
           # Official recommendation: Enable GitHub commenting tools for posting PR comments
           claude_args: |-
-            --max-turns 10
-            --allowed-tools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Read,Grep,Glob"
+            --max-turns 20
+            --allowed-tools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh api:*),Bash(mvn help\\:evaluate:*),WebSearch,Read,Grep,Glob"

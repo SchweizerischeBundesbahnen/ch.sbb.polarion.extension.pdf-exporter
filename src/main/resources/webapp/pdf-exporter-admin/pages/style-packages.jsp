@@ -183,6 +183,13 @@
                     <label for="image-density-select" id='image-density-label'>Image density:</label>
                     <div id="image-density-select"></div>
                 </div>
+                <div class='checkbox input-group'>
+                    <label for='full-fonts'>
+                        <input id='full-fonts' type='checkbox'/>
+                        Embed full fonts (no subsetting)
+                    </label>
+                    <div class='more-info' title="When enabled, fonts are embedded in their entirety without subsetting. This helps avoid font-related errors but increases PDF file size."></div>
+                </div>
             </div>
         </div>
 
