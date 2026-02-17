@@ -5,9 +5,11 @@ import ch.sbb.polarion.extension.generic.rest.filter.Secured;
 import ch.sbb.polarion.extension.generic.service.PolarionService;
 import org.jetbrains.annotations.NotNull;
 
+import javax.inject.Singleton;
 import javax.ws.rs.Path;
 import java.util.List;
 
+@Singleton
 @Secured
 @Path("/api")
 public class ConfigurationApiController extends ConfigurationInternalController {

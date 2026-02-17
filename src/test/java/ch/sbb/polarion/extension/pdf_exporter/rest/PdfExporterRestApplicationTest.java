@@ -20,7 +20,7 @@ class PdfExporterRestApplicationTest {
     void testInitialization() {
         try (MockedConstruction<PdfExporterFileResourceProvider> resourceProviderMock = mockConstruction(PdfExporterFileResourceProvider.class)) {
             PdfExporterRestApplication application = new PdfExporterRestApplication();
-            assertDoesNotThrow(application::getExtensionControllerSingletons);
+            assertDoesNotThrow(application::getExtensionControllerClasses);
             assertDoesNotThrow(application::getExtensionExceptionMapperSingletons);
             assertDoesNotThrow(application::getExtensionFilterSingletons);
         }
