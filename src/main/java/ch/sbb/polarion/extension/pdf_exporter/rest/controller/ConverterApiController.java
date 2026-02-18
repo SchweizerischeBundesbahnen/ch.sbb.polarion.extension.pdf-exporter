@@ -18,7 +18,6 @@ import org.springframework.web.context.request.RequestContextHolder;
 
 import javax.inject.Singleton;
 import javax.ws.rs.Path;
-import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
@@ -35,8 +34,8 @@ public class ConverterApiController extends ConverterInternalController {
 
     @VisibleForTesting
     @SuppressWarnings("squid:S5803")
-    ConverterApiController(PdfExporterPolarionService pdfExporterPolarionService, PdfConverter pdfConverter, PdfWidthValidationService pdfWidthValidationService, PdfConverterJobsService pdfConverterJobService, HtmlToPdfConverter htmlToPdfConverter) {
-        super(pdfConverter, pdfWidthValidationService, pdfConverterJobService, htmlToPdfConverter);
+    ConverterApiController(PdfExporterPolarionService pdfExporterPolarionService, PdfConverter pdfConverter, PdfWidthValidationService pdfWidthValidationService, PdfConverterJobsService pdfConverterJobService, UriInfo uriInfo, HtmlToPdfConverter htmlToPdfConverter) {
+        super(pdfConverter, pdfWidthValidationService, pdfConverterJobService, uriInfo, htmlToPdfConverter);
         this.polarionService = pdfExporterPolarionService;
     }
 
@@ -51,16 +50,16 @@ public class ConverterApiController extends ConverterInternalController {
     }
 
     @Override
-    public Response startPdfConverterJob(ExportParams exportParams, @Context UriInfo uriInfo) {
+    public Response startPdfConverterJob(ExportParams exportParams) {
         // In async case logout inside the filter must be deactivated. Async Job itself will care about logout after finishing
         deactivateLogoutFilter();
 
-        return polarionService.callPrivileged(() -> super.startPdfConverterJob(exportParams, uriInfo));
+        return polarionService.callPrivileged(() -> super.startPdfConverterJob(exportParams));
     }
 
     @Override
-    public Response getPdfConverterJobStatus(String jobId, @Context UriInfo uriInfo) {
-        return polarionService.callPrivileged(() -> super.getPdfConverterJobStatus(jobId, uriInfo));
+    public Response getPdfConverterJobStatus(String jobId) {
+        return polarionService.callPrivileged(() -> super.getPdfConverterJobStatus(jobId));
     }
 
     @Override
