@@ -13,7 +13,6 @@ import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
-import javax.ws.rs.core.UriInfo;
 import java.util.concurrent.Callable;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -27,9 +26,6 @@ class ConverterApiControllerTest {
     @Mock
     private ServletRequestAttributes requestAttributes;
 
-    @Mock
-    private UriInfo uriInfo;
-
     @InjectMocks
     private ConverterApiController converterApiController;
 
@@ -41,7 +37,7 @@ class ConverterApiControllerTest {
     @Test
     @SuppressWarnings("unchecked")
     void shouldSetLogoutSkipProperty() {
-        converterApiController.startPdfConverterJob(ExportParams.builder().build(), uriInfo);
+        converterApiController.startPdfConverterJob(ExportParams.builder().build());
         verify(requestAttributes).setAttribute(LogoutFilter.ASYNC_SKIP_LOGOUT, Boolean.TRUE, RequestAttributes.SCOPE_REQUEST);
         verify(polarionService).callPrivileged(any(Callable.class));
     }
