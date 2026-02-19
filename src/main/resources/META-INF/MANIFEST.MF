@@ -1,25 +1,5 @@
-Support-Email: polarion-opensource@sbb.ch
 Bundle-Activator: ch.sbb.polarion.extension.pdf_exporter.ExtensionBundleActivator
-Bundle-ActivationPolicy: lazy
 Bundle-Name: PDF Exporter Extension for Polarion ALM
-Require-Bundle: com.polarion.portal.tomcat,
- com.polarion.alm.ui,
- com.polarion.platform.guice,
- com.polarion.alm.tracker,
- org.glassfish.jersey,
- com.fasterxml.jackson.core,
- com.fasterxml.jackson.databind,
- com.fasterxml.jackson.annotations,
- com.fasterxml.jackson.module.jaxb.annotations,
- org.apache.commons.logging,
- slf4j.api,
- org.springframework.spring-core,
- org.springframework.spring-web,
- com.polarion.alm.wiki,
- org.jsoup,
- org.apache.tika.patched;resolution:=optional,
- org.apache.tika;resolution:=optional
-Import-Package: org.osgi.framework
 Export-Package: ch.sbb.polarion.extension.pdf_exporter,
  ch.sbb.polarion.extension.pdf_exporter.converter,
  ch.sbb.polarion.extension.pdf_exporter.rest.model,
