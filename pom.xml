@@ -5,7 +5,7 @@
     <parent>
         <groupId>ch.sbb.polarion.extensions</groupId>
         <artifactId>ch.sbb.polarion.extension.generic</artifactId>
-        <version>14.0.0</version>
+        <version>14.1.0</version>
     </parent>
 
     <artifactId>ch.sbb.polarion.extension.pdf-exporter</artifactId>
@@ -65,6 +65,15 @@
         <maven-jar-plugin.Discover-Base-Package>ch.sbb.polarion.extension.pdf_exporter</maven-jar-plugin.Discover-Base-Package>
         <maven-jar-plugin.Configuration-Properties-Prefix>ch.sbb.polarion.extension.pdf-exporter.</maven-jar-plugin.Configuration-Properties-Prefix>
         <web.app.name>${maven-jar-plugin.Extension-Context}</web.app.name>
+
+        <!-- Extension-specific Require-Bundle (in addition to common ones from parent POM):
+            com.polarion.alm.wiki
+            org.jsoup
+            org.apache.tika.patched;resolution:=optional
+            org.apache.tika;resolution:=optional
+        -->
+        <maven-jar-plugin.Require-Bundle.extension>com.polarion.alm.wiki,org.jsoup,org.apache.tika.patched;resolution:=optional,org.apache.tika;resolution:=optional</maven-jar-plugin.Require-Bundle.extension>
+        <maven-jar-plugin.Require-Bundle>${maven-jar-plugin.Require-Bundle.common},${maven-jar-plugin.Require-Bundle.extension}</maven-jar-plugin.Require-Bundle>
 
         <!--suppress UnresolvedMavenProperty -->
         <markdown2html-maven-plugin.version>1.6.0</markdown2html-maven-plugin.version>
