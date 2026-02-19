@@ -142,7 +142,7 @@ Key properties in `polarion.properties`:
 
 5. **Pre-commit Hooks**: Includes sensitive data leak detection (URLs, UE numbers, DEV ticket numbers) specific to SBB
 
-6. **License**: SBB License v1.0 (see LICENSES/SBB.txt)
+6. **License**: Apache License 2.0 (see LICENSE and NOTICE)
 
 ## Testing Strategy
 

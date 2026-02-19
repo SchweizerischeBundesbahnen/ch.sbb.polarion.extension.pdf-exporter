@@ -9,7 +9,7 @@ rules:
   # Authentication handled by Polarion, not described in OpenAPI spec
   security-defined:
     severity: 'off'
-  # License is in separate file LICENSES/SBB.txt
+  # License info not embedded in OpenAPI spec, see root LICENSE file
   info-license:
     severity: 'off'
   # Not all error responses are explicitly documented
