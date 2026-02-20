@@ -17,6 +17,7 @@ import com.polarion.alm.shared.dle.document.DocumentRendererParameters;
 import com.polarion.alm.tracker.model.IModule;
 import com.polarion.core.util.StringUtils;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.VisibleForTesting;
 import org.jspecify.annotations.NonNull;
 
 import java.util.Map;
@@ -24,8 +25,6 @@ import java.util.Optional;
 
 public class LiveDocAdapter extends CommonUniqueObjectAdapter {
     public static final String DOC_REVISION_CUSTOM_FIELD = "docRevision";
-    public static final String URL_QUERY_PARAM_LANGUAGE = "language";
-    public static final String URL_QUERY_PARAM_QUERY = "query";
 
     private final @NotNull IModule module;
 
@@ -79,9 +78,10 @@ public class LiveDocAdapter extends CommonUniqueObjectAdapter {
         });
     }
 
+    @VisibleForTesting
     static @NonNull ModifiedDocumentRenderer getDocumentRenderer(@NonNull ExportParams exportParams, InternalReadOnlyTransaction transaction, ProxyDocument document) {
         Map<String, String> documentParameters = exportParams.getUrlQueryParameters() == null ? Map.of() : exportParams.getUrlQueryParameters();
-        DocumentRendererParameters parameters = new DocumentRendererParameters(documentParameters.get(URL_QUERY_PARAM_QUERY), documentParameters.get(URL_QUERY_PARAM_LANGUAGE));
+        DocumentRendererParameters parameters = new DocumentRendererParameters(documentParameters.get(ExportParams.URL_QUERY_PARAM_QUERY), documentParameters.get(ExportParams.URL_QUERY_PARAM_LANGUAGE));
         return new ModifiedDocumentRenderer(transaction, document, RichTextRenderTarget.PDF_EXPORT, parameters);
     }
 
