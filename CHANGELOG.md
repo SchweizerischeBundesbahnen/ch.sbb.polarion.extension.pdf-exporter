@@ -1,5 +1,21 @@
 # Changelog
 
+## [12.1.1](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v12.1.0...v12.1.1) (2026-02-20)
+
+
+### Bug Fixes
+
+* allow additional tools and increase max turns for claude code review ([2a76d03](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/2a76d03febbd8e8aae6f57d067f8aded293ef5c5))
+* **ci:** prevent Claude Code Review from attempting Maven commands ([#709](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/709)) ([c287ac6](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/c287ac6ea29b750e01b7b6ddf1590884622072c9))
+* correct stream operation in isStylePackageSuitable method ([#715](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/715)) ([b65cabc](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/b65cabc9893bf9ee8988f9350972dcfda399e87a)), closes [#714](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/714)
+* delete existing SNAPSHOT version before deploying new one ([#713](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/713)) ([9adeefc](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/9adeefc386809be4e54d7f76412c5ce29122b82a)), closes [#712](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/712)
+* **deps:** update dependency ch.sbb.polarion.extensions:ch.sbb.polarion.extension.generic to v13.2.0 ([e1f1d4b](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/e1f1d4bc7e481286bb5baa175db6db6dfb58516e))
+* **deps:** update dependency ch.sbb.polarion.extensions:ch.sbb.polarion.extension.generic to v13.2.1 ([871e543](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/871e543f34743d7c4912b1a51a0878a5e8f8b4ff))
+* **deps:** update dependency ch.sbb.polarion.extensions:ch.sbb.polarion.extension.generic to v14.1.0 ([#719](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/719)) ([4238bbd](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/4238bbd48c8b0e68a52429a17ae9e92eec1a7763))
+* **deps:** update dependency net.bytebuddy:byte-buddy to v1.18.5 ([c4a7f34](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/c4a7f34b10e0c33cdf11d00f616b5cbdaae21fab))
+* no settings found by featureName: style-package ([#697](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/697)) ([481b448](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/481b44825d9fe7b3901fd52d1113d2559a8282bf)), closes [#690](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/690)
+* removing thumbnail parameter from resource URL ([#718](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/718)) ([e6064fe](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/e6064fe1d63e8b6fedf7026ae9b514e4490f2cf9))
+
 ## [12.1.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v12.0.0...v12.1.0) (2026-01-28)
 
 
