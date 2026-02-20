@@ -13,6 +13,7 @@ import com.polarion.subterra.base.location.ILocation;
 import com.polarion.subterra.base.location.Location;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
+import org.apache.commons.text.StringEscapeUtils;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.io.RandomAccessReadBuffer;
 import org.apache.pdfbox.multipdf.PDFMergerUtility;
@@ -20,6 +21,7 @@ import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.rendering.PDFRenderer;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
@@ -48,6 +50,7 @@ public class MediaUtils {
     public static final String URL_REGEX = "url\\(\\s*([\"'])?(?<url>.*?)\\1?\\s*\\)";
     public static final String RESOURCE_EXTENSION_REGEX = "^.*\\.(?<extension>[a-zA-Z\\d]{3,4})(?:[?&#]|$)";
     public static final String DATA_URL_PREFIX = "data:";
+    private static final String THUMBNAIL_PARAMETER = "thumbnail";
     private static final Logger logger = Logger.getLogger(MediaUtils.class);
     private static final int RIGHT_WHITE_AREA_PX = 30;
     private static final int PDF_TO_PNG_DPI = 300;
@@ -263,7 +266,7 @@ public class MediaUtils {
     public String inlineBase64Resources(String content, FileResourceProvider fileResourceProvider) {
         RegexMatcher.IReplacementCalculator dataReplacement = engine -> {
             String url = engine.group("url");
-            String base64String = MediaUtils.isDataUrl(url) ? url : fileResourceProvider.getResourceAsBase64String(url);
+            String base64String = MediaUtils.isDataUrl(url) ? url : fileResourceProvider.getResourceAsBase64String(removeThumbnailParameter(url));
             return base64String == null ? null : engine.group().replace(url, base64String);
         };
 
@@ -271,6 +274,21 @@ public class MediaUtils {
         String intermediateResult = RegexMatcher.get(IMG_SRC_REGEX).replace(content, dataReplacement);
         // replace CSS parameters like background: src('/polarion/...
         return RegexMatcher.get(URL_REGEX).useJavaUtil().replace(intermediateResult, dataReplacement);
+    }
+
+    /**
+     * Removes thumbnail parameter from URL to ensure full-size resource is fetched.
+     */
+    public String removeThumbnailParameter(String url) {
+        if (url == null || url.isEmpty()) {
+            return url;
+        }
+
+        String unescapedUrl = StringEscapeUtils.unescapeHtml4(url);
+        return UriComponentsBuilder.fromUriString(unescapedUrl)
+                .replaceQueryParam(THUMBNAIL_PARAMETER)
+                .build(true)
+                .toUriString();
     }
 
     /**
