@@ -4,16 +4,25 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Locale;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 class PdfGenerationLogTest {
 
     private PdfGenerationLog log;
+    private Locale originalLocale;
 
     @BeforeEach
     void setUp() {
+        originalLocale = Locale.getDefault();
+        Locale.setDefault(Locale.US); // Set deterministic locale for tests
         log = new PdfGenerationLog();
+    }
+
+    @org.junit.jupiter.api.AfterEach
+    void tearDown() {
+        Locale.setDefault(originalLocale); // Restore original locale
     }
 
     @Test
