@@ -20,7 +20,7 @@ jobs:
       packages: read
     services:
       weasyprint:
-        image: ghcr.io/schweizerischebundesbahnen/weasyprint-service:latest  # zizmor: ignore[unpinned-images]
+        image: ghcr.io/schweizerischebundesbahnen/weasyprint-service:latest@sha256:92ce08cdc680f7647e521aca8178d7a8465850a5173708f0c32a2fd0cfd027d7  # zizmor: ignore[unpinned-images]
         ports: [9080:9080]
     outputs:
       project_version: ${{ steps.project_metadata.outputs.version }}
