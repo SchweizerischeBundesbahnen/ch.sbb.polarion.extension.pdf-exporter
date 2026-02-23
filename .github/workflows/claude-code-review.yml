@@ -19,10 +19,11 @@ on:
     #   - "*.md"
 jobs:
   claude-review:
-    # Skip Claude review for Renovate and Dependabot PRs
+    # Skip Claude review for Renovate, Dependabot PRs, and fork PRs
     if: |
       github.event.pull_request.user.login != 'renovate[bot]' &&
-      github.event.pull_request.user.login != 'dependabot[bot]'
+      github.event.pull_request.user.login != 'dependabot[bot]' &&
+      github.event.pull_request.head.repo.fork == false
     runs-on: ubuntu-latest
     permissions:
       contents: read  # Security: read-only sufficient for reviews (changed from write)
