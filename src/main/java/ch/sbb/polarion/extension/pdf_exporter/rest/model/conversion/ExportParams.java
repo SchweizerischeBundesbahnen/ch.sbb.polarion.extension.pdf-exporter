@@ -20,6 +20,9 @@ import java.util.Map;
 @AllArgsConstructor
 @EqualsAndHashCode(callSuper = true)
 public class ExportParams extends ConversionParams {
+    public static final String URL_QUERY_PARAM_QUERY = "query";
+    public static final String URL_QUERY_PARAM_LANGUAGE = "language";
+
     @Schema(description = "The unique identifier for the project", example = "elibrary")
     private @Nullable String projectId;
 

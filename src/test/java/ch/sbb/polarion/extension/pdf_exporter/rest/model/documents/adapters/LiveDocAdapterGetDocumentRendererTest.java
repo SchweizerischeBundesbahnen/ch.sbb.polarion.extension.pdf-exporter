@@ -38,8 +38,8 @@ class LiveDocAdapterGetDocumentRendererTest {
 
             ExportParams exportParams = ExportParams.builder()
                     .urlQueryParameters(Map.of(
-                            LiveDocAdapter.URL_QUERY_PARAM_QUERY, "type:requirement",
-                            LiveDocAdapter.URL_QUERY_PARAM_LANGUAGE, "de"
+                            ExportParams.URL_QUERY_PARAM_QUERY, "type:requirement",
+                            ExportParams.URL_QUERY_PARAM_LANGUAGE, "de"
                     ))
                     .build();
 
@@ -80,7 +80,7 @@ class LiveDocAdapterGetDocumentRendererTest {
                 (mock, context) -> capturedParameters.add((DocumentRendererParameters) context.arguments().get(3)))) {
 
             ExportParams exportParams = ExportParams.builder()
-                    .urlQueryParameters(Map.of(LiveDocAdapter.URL_QUERY_PARAM_QUERY, "status:approved"))
+                    .urlQueryParameters(Map.of(ExportParams.URL_QUERY_PARAM_QUERY, "status:approved"))
                     .build();
 
             LiveDocAdapter.getDocumentRenderer(exportParams, transaction, document);
@@ -100,7 +100,7 @@ class LiveDocAdapterGetDocumentRendererTest {
                 (mock, context) -> capturedParameters.add((DocumentRendererParameters) context.arguments().get(3)))) {
 
             ExportParams exportParams = ExportParams.builder()
-                    .urlQueryParameters(Map.of(LiveDocAdapter.URL_QUERY_PARAM_LANGUAGE, "fr"))
+                    .urlQueryParameters(Map.of(ExportParams.URL_QUERY_PARAM_LANGUAGE, "fr"))
                     .build();
 
             LiveDocAdapter.getDocumentRenderer(exportParams, transaction, document);

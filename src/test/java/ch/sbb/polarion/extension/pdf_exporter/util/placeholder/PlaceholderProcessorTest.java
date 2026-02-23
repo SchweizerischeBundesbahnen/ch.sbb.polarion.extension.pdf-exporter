@@ -114,4 +114,14 @@ class PlaceholderProcessorTest {
         assertEquals("Filter: type:requirement", result);
     }
 
+    @Test
+    void testPlaceholderValueWithSpecialRegexCharacters() {
+        PlaceholderValues valuesWithSpecialChars = PlaceholderValues.builder()
+                .documentFilter("$100 cost\\item")
+                .build();
+        final String text = "Filter: {{ DOCUMENT_FILTER }}";
+        final String result = placeholderProcessor.processPlaceholders(text, valuesWithSpecialChars);
+        assertEquals("Filter: $100 cost\\item", result);
+    }
+
 }

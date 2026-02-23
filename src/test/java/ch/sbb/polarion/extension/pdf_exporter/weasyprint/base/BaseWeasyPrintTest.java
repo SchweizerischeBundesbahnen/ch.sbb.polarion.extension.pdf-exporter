@@ -88,6 +88,11 @@ public abstract class BaseWeasyPrintTest {
     }
 
     public static @NotNull WeasyPrintServiceConnector getWeasyPrintServiceConnector() {
+        String externalUrl = System.getProperty("weasyprint.service.url");
+        if (externalUrl != null && !externalUrl.isBlank()) {
+            return new WeasyPrintServiceConnector(externalUrl);
+        }
+
         GenericContainer<?> weasyPrintService = SharedWeasyPrintContainer.getInstance();
         assertTrue(weasyPrintService.isRunning(), "WeasyPrint container should be running");
 
