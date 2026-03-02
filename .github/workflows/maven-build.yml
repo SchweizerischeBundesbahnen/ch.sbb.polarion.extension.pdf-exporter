@@ -22,7 +22,6 @@ jobs:
       weasyprint:
         image: ghcr.io/schweizerischebundesbahnen/weasyprint-service:latest@sha256:3b5113e120e5f079b17eeb24ed89072e0ae1f123c726ebb6c6590ec07eb3ad9f  # zizmor: ignore[unpinned-images]
         ports: [9080:9080]
-        options: --health-cmd "curl -f http://localhost:9080/info || exit 1" --health-interval 5s --health-timeout 3s --health-retries 10
     outputs:
       project_version: ${{ steps.project_metadata.outputs.version }}
       is_release: ${{ steps.project_metadata.outputs.is_release }}
