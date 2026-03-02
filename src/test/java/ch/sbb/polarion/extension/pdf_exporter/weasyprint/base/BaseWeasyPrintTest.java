@@ -90,7 +90,7 @@ public abstract class BaseWeasyPrintTest {
 
     /**
      * Returns the WeasyPrintServiceConnector using either an externally configured WeasyPrint service
-     * (via {@code weasyprint.service.url} system property, e.g. {@code http://localhost:9080})
+     * (via {@value #WEASYPRINT_SERVICE_URL_PROPERTY} system property, e.g. {@code http://localhost:9080})
      * or the shared Testcontainers instance as a fallback.
      */
     public static @NotNull WeasyPrintServiceConnector getWeasyPrintServiceConnector() {
