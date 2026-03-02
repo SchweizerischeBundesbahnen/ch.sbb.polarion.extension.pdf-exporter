@@ -57,7 +57,16 @@ jobs:
             echo "version=${VERSION}"
             echo "is_release=${IS_RELEASE}"
           } >> "$GITHUB_OUTPUT"
+      - name: 🔑 Check SonarCloud availability
+        id: sonar_check
+        run: |
+          if [ -n "${SONAR_TOKEN}" ]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+          fi
       - name: 🔍 Cache SonarQube packages
+        if: steps.sonar_check.outputs.available == 'true'
         uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306  # v5.0.3
         with:
           path: ~/.sonar/cache
@@ -73,14 +82,27 @@ jobs:
           else
             mvn --batch-mode -s "${SETTINGS_XML}" clean verify -P tests-with-weasyprint-docker -Dweasyprint.service.url="${WEASYPRINT_SERVICE_URL}" sonar:sonar
           fi
-      - name: 📦 Build with Maven for PRs
-        if: github.event_name == 'pull_request'
+      - name: 📦 Build with Maven for PRs (with SonarCloud)
+        if: github.event_name == 'pull_request' && steps.sonar_check.outputs.available == 'true'
         env:
           GITHUB_HEAD_REF: ${{ github.head_ref }}
           GITHUB_BASE_REF: ${{ github.base_ref }}
           GITHUB_PR_NUMBER_REF: ${{ github.event.pull_request.number }}
         run: mvn --batch-mode -s "${SETTINGS_XML}" clean verify -P tests-with-weasyprint-docker -Dweasyprint.service.url="${WEASYPRINT_SERVICE_URL}" sonar:sonar -Dsonar.pullrequest.base="${GITHUB_BASE_REF}"
           -Dsonar.pullrequest.branch="${GITHUB_HEAD_REF}" -Dsonar.pullrequest.key="${GITHUB_PR_NUMBER_REF}"
+      - name: 📦 Build with Maven for PRs (without SonarCloud)
+        if: github.event_name == 'pull_request' && steps.sonar_check.outputs.available != 'true'
+        run: mvn --batch-mode -s "${SETTINGS_XML}" clean verify -P tests-with-weasyprint-docker -Dweasyprint.service.url="${WEASYPRINT_SERVICE_URL}"
+      - name: 🔍 Check new code coverage
+        if: github.event_name == 'pull_request' && steps.sonar_check.outputs.available != 'true'
+        env:
+          GITHUB_BASE_REF: ${{ github.base_ref }}
+        run: |
+          pip install diff-cover
+          diff-cover target/site/jacoco/jacoco.xml \
+            --compare-branch="origin/${GITHUB_BASE_REF}" \
+            --diff-range-notation='..' \
+            --fail-under=80
       - name: 📋 Analyze dependencies
         run: mvn --batch-mode -s "${SETTINGS_XML}" dependency:analyze
         continue-on-error: false
