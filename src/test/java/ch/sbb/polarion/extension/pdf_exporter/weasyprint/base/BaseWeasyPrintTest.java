@@ -95,9 +95,11 @@ public abstract class BaseWeasyPrintTest {
      */
     public static @NotNull WeasyPrintServiceConnector getWeasyPrintServiceConnector() {
         String externalUrl = System.getProperty(WEASYPRINT_SERVICE_URL_PROPERTY);
-        if (externalUrl != null && !externalUrl.isBlank()) {
+        if (externalUrl != null) {
             externalUrl = externalUrl.trim().replaceAll("/+$", "");
-            return new WeasyPrintServiceConnector(externalUrl);
+            if (!externalUrl.isBlank()) {
+                return new WeasyPrintServiceConnector(externalUrl);
+            }
         }
 
         GenericContainer<?> weasyPrintService = SharedWeasyPrintContainer.getInstance();
