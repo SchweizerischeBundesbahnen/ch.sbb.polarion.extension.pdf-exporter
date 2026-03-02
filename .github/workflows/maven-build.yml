@@ -22,6 +22,7 @@ jobs:
       weasyprint:
         image: ghcr.io/schweizerischebundesbahnen/weasyprint-service:latest@sha256:3b5113e120e5f079b17eeb24ed89072e0ae1f123c726ebb6c6590ec07eb3ad9f  # zizmor: ignore[unpinned-images]
         ports: [9080:9080]
+        options: --health-cmd "curl -f http://localhost:9080/info || exit 1" --health-interval 5s --health-timeout 3s --health-retries 10
     outputs:
       project_version: ${{ steps.project_metadata.outputs.version }}
       is_release: ${{ steps.project_metadata.outputs.is_release }}
@@ -30,6 +31,7 @@ jobs:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
       MARKDOWN2HTML_MAVEN_PLUGIN_FAIL_ON_ERROR: true
       GITHUB_TOKEN: ${{ github.token }}  # providing this prevent from reaching GitHub requests limit
+      WEASYPRINT_SERVICE_URL: http://localhost:9080
     steps:
       - name: 📄 Checkout the repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
@@ -68,9 +70,9 @@ jobs:
           GITHUB_HEAD_REF: ${{ github.head_ref }}
         run: |
           if [ -n "${GITHUB_HEAD_REF}" ]; then
-            mvn --batch-mode -s "${SETTINGS_XML}" clean verify -P tests-with-weasyprint-docker -Dweasyprint.service.url=http://localhost:9080 sonar:sonar -Dsonar.branch.name="${GITHUB_HEAD_REF}"
+            mvn --batch-mode -s "${SETTINGS_XML}" clean verify -P tests-with-weasyprint-docker -Dweasyprint.service.url="${WEASYPRINT_SERVICE_URL}" sonar:sonar -Dsonar.branch.name="${GITHUB_HEAD_REF}"
           else
-            mvn --batch-mode -s "${SETTINGS_XML}" clean verify -P tests-with-weasyprint-docker -Dweasyprint.service.url=http://localhost:9080 sonar:sonar
+            mvn --batch-mode -s "${SETTINGS_XML}" clean verify -P tests-with-weasyprint-docker -Dweasyprint.service.url="${WEASYPRINT_SERVICE_URL}" sonar:sonar
           fi
       - name: 📦 Build with Maven for PRs
         if: github.event_name == 'pull_request'
@@ -78,7 +80,7 @@ jobs:
           GITHUB_HEAD_REF: ${{ github.head_ref }}
           GITHUB_BASE_REF: ${{ github.base_ref }}
           GITHUB_PR_NUMBER_REF: ${{ github.event.pull_request.number }}
-        run: mvn --batch-mode -s "${SETTINGS_XML}" clean verify -P tests-with-weasyprint-docker -Dweasyprint.service.url=http://localhost:9080 sonar:sonar -Dsonar.pullrequest.base="${GITHUB_BASE_REF}"
+        run: mvn --batch-mode -s "${SETTINGS_XML}" clean verify -P tests-with-weasyprint-docker -Dweasyprint.service.url="${WEASYPRINT_SERVICE_URL}" sonar:sonar -Dsonar.pullrequest.base="${GITHUB_BASE_REF}"
           -Dsonar.pullrequest.branch="${GITHUB_HEAD_REF}" -Dsonar.pullrequest.key="${GITHUB_PR_NUMBER_REF}"
       - name: 📋 Analyze dependencies
         run: mvn --batch-mode -s "${SETTINGS_XML}" dependency:analyze

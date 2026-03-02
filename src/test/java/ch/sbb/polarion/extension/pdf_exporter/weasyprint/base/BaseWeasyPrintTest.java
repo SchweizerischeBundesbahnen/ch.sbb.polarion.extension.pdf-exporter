@@ -31,6 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public abstract class BaseWeasyPrintTest {
 
     public static final String IMPL_NAME_PARAM = "wpExporterImpl";
+    public static final String WEASYPRINT_SERVICE_URL_PROPERTY = "weasyprint.service.url";
     public static final String PAGE_SUFFIX = "_page_";
     public static final String WEASYPRINT_TEST_RESOURCES_FOLDER = "/weasyprint/html/";
     public static final String WEASYPRINT_TEST_PNG_RESOURCES_FOLDER = "/weasyprint/png/";
@@ -87,9 +88,15 @@ public abstract class BaseWeasyPrintTest {
         return weasyPrintServiceConnector.convertToPdf(html, weasyPrintOptions, documentData);
     }
 
+    /**
+     * Returns the WeasyPrintServiceConnector using either an externally configured WeasyPrint service
+     * (via {@code weasyprint.service.url} system property, e.g. {@code http://localhost:9080})
+     * or the shared Testcontainers instance as a fallback.
+     */
     public static @NotNull WeasyPrintServiceConnector getWeasyPrintServiceConnector() {
-        String externalUrl = System.getProperty("weasyprint.service.url");
+        String externalUrl = System.getProperty(WEASYPRINT_SERVICE_URL_PROPERTY);
         if (externalUrl != null && !externalUrl.isBlank()) {
+            externalUrl = externalUrl.trim().replaceAll("/+$", "");
             return new WeasyPrintServiceConnector(externalUrl);
         }
 
