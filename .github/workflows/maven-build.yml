@@ -72,8 +72,8 @@ jobs:
           path: ~/.sonar/cache
           key: ${{ runner.os }}-sonar
           restore-keys: ${{ runner.os }}-sonar
-      - name: 📦 Build with Maven for Pushes (with SonarCloud)
-        if: github.event_name == 'push' && steps.sonar_check.outputs.available == 'true'
+      - name: 📦 Build with Maven for Pushes
+        if: github.event_name == 'push'
         env:
           GITHUB_HEAD_REF: ${{ github.head_ref }}
         run: |
@@ -82,9 +82,6 @@ jobs:
           else
             mvn --batch-mode -s "${SETTINGS_XML}" clean verify -P tests-with-weasyprint-docker -Dweasyprint.service.url="${WEASYPRINT_SERVICE_URL}" sonar:sonar
           fi
-      - name: 📦 Build with Maven for Pushes (without SonarCloud)
-        if: github.event_name == 'push' && steps.sonar_check.outputs.available != 'true'
-        run: mvn --batch-mode -s "${SETTINGS_XML}" clean verify -P tests-with-weasyprint-docker -Dweasyprint.service.url="${WEASYPRINT_SERVICE_URL}"
       - name: 📦 Build with Maven for PRs (with SonarCloud)
         if: github.event_name == 'pull_request' && steps.sonar_check.outputs.available == 'true'
         env:
@@ -96,17 +93,12 @@ jobs:
       - name: 📦 Build with Maven for PRs (without SonarCloud)
         if: github.event_name == 'pull_request' && steps.sonar_check.outputs.available != 'true'
         run: mvn --batch-mode -s "${SETTINGS_XML}" clean verify -P tests-with-weasyprint-docker -Dweasyprint.service.url="${WEASYPRINT_SERVICE_URL}"
-      - name: 🐍 Set up Python
-        if: github.event_name == 'pull_request' && steps.sonar_check.outputs.available != 'true'
-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
-        with:
-          python-version: '3.14'
       - name: 🔍 Check new code coverage
         if: github.event_name == 'pull_request' && steps.sonar_check.outputs.available != 'true'
         env:
           GITHUB_BASE_REF: ${{ github.base_ref }}
         run: |
-          pip install diff-cover==10.2.0
+          pip install diff-cover
           diff-cover target/site/jacoco/jacoco.xml \
             --compare-branch="origin/${GITHUB_BASE_REF}" \
             --diff-range-notation='..' \
