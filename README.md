@@ -303,13 +303,7 @@ The weasyprint-service container requires a minimum of **2 GB** of memory. Actua
 | Large without images | ~2000 | none | 2.6 GB | 4.3 MB |
 | Large with images | ~2000 | 1 SVG per WI (1920×1080 px) | 2.8 GB | 18 MB |
 
-**Capacity planning formula:**
-
-```
-Total RAM ≈ 1.7 GB (baseline) + N × (WI_count × 0.5 MB + image_overhead)
-```
-
-Where `N` is the number of concurrent conversions and `image_overhead` depends on image count and resolution (typically 200–300 MB for large images). For example, 3 concurrent conversions of large documents with images: `1.7 + 3 × 1.2 ≈ 5.3 GB`.
+Each concurrent conversion requires additional memory proportional to the values above. For example, 3 concurrent conversions of large documents with images: approximately `1.7 + 3 × 1.2 ≈ 5.3 GB`.
 
 After a conversion completes, container memory (RSS) may not decrease — this is normal Python/glibc behavior, not a leak. To reclaim memory after traffic spikes, enable `RECLAIM_MEMORY_AFTER_CONVERSION=true` in weasyprint-service (runs `gc.collect` + `malloc_trim` after each conversion). See [weasyprint-service README](https://github.com/SchweizerischeBundesbahnen/weasyprint-service#post-conversion-memory-reclamation) for details.
 
