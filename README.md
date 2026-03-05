@@ -291,6 +291,22 @@ jobs.timeout.finished.minutes=30
 jobs.timeout.in-progress.minutes=60
 ```
 
+## Performance and Resource Planning
+
+The weasyprint-service container requires a minimum of **2 GB** of memory. Actual consumption depends on document size, images, and concurrency.
+
+**Benchmarks** (generated Polarion documents):
+
+| Document | Work Items | Images | Peak RAM | PDF Size |
+|----------|-----------|--------|----------|----------|
+| Small with images | 500 | 0–2 random SVG per WI (100–300 px) | 1.8 GB | 1.0 MB |
+| Large without images | ~2000 | none | 2.6 GB | 4.3 MB |
+| Large with images | ~2000 | 1 SVG per WI (1920×1080 px) | 2.8 GB | 18 MB |
+
+Each concurrent conversion requires additional memory proportional to the values above. For example, 3 concurrent conversions of large documents with images: approximately `1.7 + 3 × 1.2 ≈ 5.3 GB`.
+
+After a conversion completes, container memory (RSS) may not decrease — this is normal Python/glibc behavior, not a leak. To reclaim memory after traffic spikes, enable `RECLAIM_MEMORY_AFTER_CONVERSION=true` in weasyprint-service (runs `gc.collect` + `malloc_trim` after each conversion). See [weasyprint-service README](https://github.com/SchweizerischeBundesbahnen/weasyprint-service#post-conversion-memory-reclamation) for details.
+
 ## Known issues
 
 ### PDF/A-*A variants with icon fonts (FontAwesome)
