@@ -1,0 +1,6 @@
+---
+rules:
+  # Secrets are protected by GitHub's fork PR approval requirement,
+  # which prevents untrusted workflows from accessing secrets without explicit approval.
+  secrets-outside-env:
+    ignore: [claude-code-review.yml, maven-build.yml]
