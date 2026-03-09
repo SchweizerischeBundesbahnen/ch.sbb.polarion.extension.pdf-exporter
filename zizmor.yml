@@ -1,6 +1,7 @@
 ---
 rules:
-  # Secrets are protected by GitHub's fork PR approval requirement,
-  # which prevents untrusted workflows from accessing secrets without explicit approval.
+  # These secrets are passed as required step inputs (with:) to third-party actions
+  # (claude-code-action, actions/setup-java) and cannot be moved to env: blocks.
+  # Fork-PR workflows are additionally protected by GitHub's approval requirement.
   secrets-outside-env:
     ignore: [claude-code-review.yml, maven-build.yml]
