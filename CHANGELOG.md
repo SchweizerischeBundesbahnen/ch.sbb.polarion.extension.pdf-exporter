@@ -1,5 +1,26 @@
 # Changelog
 
+## [12.2.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v12.1.1...v12.2.0) (2026-03-09)
+
+
+### Features
+
+* add support for LTS bugfix releases ([#745](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/745)) ([05667f7](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/05667f74d7a8373fd019edfa3803baf16cc68042)), closes [#744](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/744)
+
+
+### Bug Fixes
+
+* [#722](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/722) fixed Locale dependent PdfGenerationLogTest ([#723](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/723)) ([f49bc8e](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/f49bc8e246f5ce45ea6ab2f33536b978e3947f2f))
+* **deps:** update dependency net.bytebuddy:byte-buddy to v1.18.6-jdk6-jdk5 ([330d158](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/330d158c96d7a7e9bb9359f17aba01d4e89762d9))
+* **deps:** update dependency net.bytebuddy:byte-buddy to v1.18.7-jdk5 ([58c21a0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/58c21a091af5026b7b16a88d663515e5562262e1))
+* **deps:** update dependency org.apache.pdfbox:pdfbox to v3.0.7 ([93498e7](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/93498e76c315070bc525db15a6b6c7ed2963184d))
+* fix removed indent ([#743](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/743)) ([a325322](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/a3253224f1be65000c93eb6eee103f5d2a7e27bc)), closes [#737](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/737)
+
+
+### Documentation
+
+* add performance benchmarks and resource planning guidelines for WeasyPrint service ([#742](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/742)) ([b94a4cf](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/b94a4cfa905cafd1d30ed2fdd0b73dcdc54a9e6a)), closes [#741](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/741)
+
 ## [12.1.1](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v12.1.0...v12.1.1) (2026-02-23)
 
 
