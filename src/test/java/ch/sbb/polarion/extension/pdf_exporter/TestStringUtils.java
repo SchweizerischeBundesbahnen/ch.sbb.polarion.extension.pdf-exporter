@@ -11,7 +11,7 @@ public class TestStringUtils {
     }
 
     public static @NotNull String removeSpaces(@NotNull String input) {
-        return input.replaceAll(" ", "");
+        return input.replaceAll("&thinsp;| ", "");
     }
 
     public static @NotNull String removeNonsensicalSymbols(@NotNull String input) {

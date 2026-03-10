@@ -987,10 +987,10 @@ public class HtmlProcessor {
     @NotNull
     @VisibleForTesting
     public String cutExtraNbsp(@NotNull String html) {
-        //Polarion editfield inserts a lot of extra nbsp. Also, user can copy&paste html from different sources
-        //which may contain a lot of nbsp too. This may occasionally result in exceeding page width lines.
-        //Seems that there is no better solution than basically remove them completely.
-        return html.replaceAll("&nbsp;|\u00A0", " ");
+        // Polarion editfield inserts a lot of extra nbsp. Also, user can copy&paste html from different sources
+        // which may contain a lot of nbsp too. This may occasionally result in exceeding page width lines.
+        // Replace them with thin spaces to prevent overflow while maintaining some visual spacing.
+        return html.replaceAll("&nbsp;|\u00A0", "&thinsp;");
     }
 
     @VisibleForTesting
