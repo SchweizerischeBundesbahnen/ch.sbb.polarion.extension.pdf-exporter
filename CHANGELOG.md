@@ -1,5 +1,17 @@
 # Changelog
 
+## [11.2.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v11.1.1...v11.2.0) (2026-03-11)
+
+
+### Features
+
+* add support for LTS bugfix releases ([#745](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/745)) ([ff2e459](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/ff2e459481db6ad140aecca21284a9c9164bfbd6)), closes [#744](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/744)
+
+
+### Bug Fixes
+
+* fix removed indent ([#747](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/747)) ([#748](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/748)) ([2c44f0d](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/2c44f0d3cfb42cd453c081bcf7e42be040c4fc82))
+
 ## [11.1.1](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v11.1.0...v11.1.1) (2026-01-02)
 
 
