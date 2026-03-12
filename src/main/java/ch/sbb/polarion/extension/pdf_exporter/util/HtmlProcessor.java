@@ -775,20 +775,22 @@ public class HtmlProcessor {
         // There will be no br-tag after last linked WorkItem, so not obligatory
         Element brElement = extractBrElement(linkedWorkItemElement.nextElementSibling());
 
-        Node revisionNode = null;
+        Node revisionNode;
         if (brElement != null) {
-            Node previousNode = brElement.previousSibling();
-            if (previousNode instanceof TextNode textNode && textNode.text().matches("^ *: *\\d+$")) {
-                revisionNode = previousNode;
-            }
+            revisionNode = extractRevisionNode(brElement.previousSibling());
         } else {
-            Node nextSibling = linkedWorkItemElement.nextSibling();
-            if (nextSibling instanceof TextNode textNode && textNode.text().matches("^ *: *\\d+$")) {
-                revisionNode = nextSibling;
-            }
+            revisionNode = extractRevisionNode(linkedWorkItemElement.nextSibling());
         }
 
         return new LinkedWorkitemNodes(role, roleElement, colonNode, linkedWorkItemElement, revisionNode, brElement);
+    }
+
+    private TextNode extractRevisionNode(Node node) {
+        if (node instanceof TextNode textNode && textNode.text().matches("^ *: *\\d+$")) {
+            return textNode;
+        } else {
+            return null;
+        }
     }
 
     private TextNode extractColonNode(@Nullable Node node) {
