@@ -781,6 +781,11 @@ public class HtmlProcessor {
             if (previousNode instanceof TextNode textNode && textNode.text().matches("^ *: *\\d+$")) {
                 revisionNode = previousNode;
             }
+        } else {
+            Node nextSibling = linkedWorkItemElement.nextSibling();
+            if (nextSibling instanceof TextNode textNode && textNode.text().matches("^ *: *\\d+$")) {
+                revisionNode = nextSibling;
+            }
         }
 
         return new LinkedWorkitemNodes(role, roleElement, colonNode, linkedWorkItemElement, revisionNode, brElement);
@@ -1213,7 +1218,11 @@ public class HtmlProcessor {
         }
 
         void appendComma() {
-            linkedWorkItemElement.after(",");
+            if (revisionNode != null) {
+                revisionNode.after(",");
+            } else {
+                linkedWorkItemElement.after(",");
+            }
         }
 
     }
