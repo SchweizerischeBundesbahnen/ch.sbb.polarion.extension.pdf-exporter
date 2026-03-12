@@ -8,11 +8,9 @@ concurrency:
   cancel-in-progress: true
 jobs:
   claude-review:
-    # Skip Claude review for Renovate, Dependabot PRs, and fork PRs
+    # Skip Claude review for bot PRs and fork PRs
     if: |
-      github.event.pull_request.user.login != 'renovate[bot]' &&
-      github.event.pull_request.user.login != 'dependabot[bot]' &&
-      github.event.pull_request.user.login != 'release-please[bot]' &&
+      !contains(github.event.pull_request.user.login, '[bot]') &&
       github.event.pull_request.head.repo.fork == false
     runs-on: ubuntu-latest
     permissions:
@@ -84,9 +82,12 @@ jobs:
             GUIDELINES:
             - Use Read/Grep/Glob to search the codebase for context
             - The PR branch is already checked out
-            STEP 3: Resolve outdated comments.
-            For any previously flagged issue (from step 2b) that has been FIXED in
-            the current diff, resolve the review thread AND minimize the comment:
+            STEP 3: MANDATORY — Resolve outdated comments.
+            You MUST process ALL unresolved review threads from step 2b authored by
+            claude[bot]. For each unresolved thread, check the CURRENT file content
+            (not just the diff) to determine if the flagged issue still exists.
+            If the issue has been FIXED or the code no longer exists, resolve the
+            thread AND minimize the comment:
             ```
             gh api graphql -f query='mutation { resolveReviewThread(input: {threadId: "THREAD_ID"}) { thread { isResolved } } }'
             gh api graphql -f query='mutation { minimizeComment(input: {subjectId: "COMMENT_NODE_ID", classifier: OUTDATED}) { minimizedComment { isMinimized } } }'
@@ -94,6 +95,7 @@ jobs:
             Use the thread `id` from the reviewThreads query and the `node_id` from
             the comments REST API response fetched in step 2b.
             Skip threads that are already resolved.
+            Do NOT skip this step even if you find no new issues.
             STEP 4: Submit your review as INLINE COMMENTS on the specific lines where
             issues are found, using the GitHub Pull Request Review API.
             To submit, pipe JSON via stdin to `gh api --input -`:
