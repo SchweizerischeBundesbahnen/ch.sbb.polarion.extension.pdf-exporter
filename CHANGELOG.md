@@ -1,5 +1,13 @@
 # Changelog
 
+## [12.2.1](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v12.2.0...v12.2.1) (2026-03-13)
+
+
+### Bug Fixes
+
+* dependabot security findings ([#755](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/755)) ([7e0a02d](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/7e0a02d39cb90889a292db8dc1f8fc00a0b89336))
+* filtering Links with revision ([#754](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/754)) ([918e0a0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/918e0a0dc44726ab6c10009f97b87e184c5b4bbe))
+
 ## [12.2.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v12.1.1...v12.2.0) (2026-03-09)
 
 
