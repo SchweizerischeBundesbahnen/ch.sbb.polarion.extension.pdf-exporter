@@ -13,6 +13,7 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.util.List;
 
+import static ch.sbb.polarion.extension.pdf_exporter.util.MediaUtils.THUMBNAIL_PARAMETER;
 import static org.junit.jupiter.api.Assertions.*;
 
 @ExtendWith({MockitoExtension.class, BundleJarsPrioritizingRunnableMockExtension.class})
@@ -140,10 +141,12 @@ class MediaUtilsTest {
             "'http://localhost/polarion/attachment.vsdx?revision=4&amp;thumbnail=true', 'http://localhost/polarion/attachment.vsdx?revision=4'",
             ", ",
             "'', ''",
-            "'not-a-valid-url?thumbnail=true', 'not-a-valid-url'"
+            "'not-a-valid-url?thumbnail=true', 'not-a-valid-url'",
+            "'/polarion/icons/project/elibrary/star_16x16 .png', '/polarion/icons/project/elibrary/star_16x16 .png'",
+            "'/polarion/icons/project/elibrary/star_16x16 .png?thumbnail=true', '/polarion/icons/project/elibrary/star_16x16 .png'"
     })
-    void removeThumbnailParameterTest(String input, String expected) {
-        assertEquals(expected, MediaUtils.removeThumbnailParameter(input));
+    void removeQueryParameterTest(String input, String expected) {
+        assertEquals(expected, MediaUtils.removeQueryParameter(input, THUMBNAIL_PARAMETER));
     }
 
     private void fillImageWithColor(BufferedImage image, Color color) {

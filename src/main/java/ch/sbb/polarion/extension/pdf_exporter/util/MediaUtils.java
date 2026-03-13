@@ -21,7 +21,6 @@ import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.rendering.PDFRenderer;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.springframework.web.util.UriComponentsBuilder;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
@@ -50,7 +49,7 @@ public class MediaUtils {
     public static final String URL_REGEX = "url\\(\\s*([\"'])?(?<url>.*?)\\1?\\s*\\)";
     public static final String RESOURCE_EXTENSION_REGEX = "^.*\\.(?<extension>[a-zA-Z\\d]{3,4})(?:[?&#]|$)";
     public static final String DATA_URL_PREFIX = "data:";
-    private static final String THUMBNAIL_PARAMETER = "thumbnail";
+    public static final String THUMBNAIL_PARAMETER = "thumbnail";
     private static final Logger logger = Logger.getLogger(MediaUtils.class);
     private static final int RIGHT_WHITE_AREA_PX = 30;
     private static final int PDF_TO_PNG_DPI = 300;
@@ -266,7 +265,7 @@ public class MediaUtils {
     public String inlineBase64Resources(String content, FileResourceProvider fileResourceProvider) {
         RegexMatcher.IReplacementCalculator dataReplacement = engine -> {
             String url = engine.group("url");
-            String base64String = MediaUtils.isDataUrl(url) ? url : fileResourceProvider.getResourceAsBase64String(removeThumbnailParameter(url));
+            String base64String = MediaUtils.isDataUrl(url) ? url : fileResourceProvider.getResourceAsBase64String(removeQueryParameter(url, THUMBNAIL_PARAMETER));
             return base64String == null ? null : engine.group().replace(url, base64String);
         };
 
@@ -277,18 +276,42 @@ public class MediaUtils {
     }
 
     /**
-     * Removes thumbnail parameter from URL to ensure full-size resource is fetched.
+     * Removes query-parameter from URL (e.g. 'thumbnail' to ensure full-size resource is fetched).
      */
-    public String removeThumbnailParameter(String url) {
+    public static String removeQueryParameter(String url, String param) {
         if (url == null || url.isEmpty()) {
             return url;
         }
 
-        String unescapedUrl = StringEscapeUtils.unescapeHtml4(url);
-        return UriComponentsBuilder.fromUriString(unescapedUrl)
-                .replaceQueryParam(THUMBNAIL_PARAMETER)
-                .build(true)
-                .toUriString();
+        String decoded = StringEscapeUtils.unescapeHtml4(url);
+
+        int hashIdx = decoded.indexOf('#');
+        String fragment = hashIdx >= 0 ? decoded.substring(hashIdx) : "";
+        String withoutFragment = hashIdx >= 0 ? decoded.substring(0, hashIdx) : decoded;
+
+        int questionMark = withoutFragment.indexOf('?');
+        if (questionMark < 0) {
+            return withoutFragment + fragment;
+        }
+
+        String base = withoutFragment.substring(0, questionMark);
+        String query = withoutFragment.substring(questionMark + 1);
+
+        StringBuilder newQuery = new StringBuilder();
+
+        for (String pair : query.split("&")) {
+            int eq = pair.indexOf('=');
+            String key = eq >= 0 ? pair.substring(0, eq) : pair;
+
+            if (!key.equals(param)) {
+                if (!newQuery.isEmpty()) {
+                    newQuery.append('&');
+                }
+                newQuery.append(pair);
+            }
+        }
+
+        return (newQuery.isEmpty() ? base : base + "?" + newQuery) + fragment;
     }
 
     /**
