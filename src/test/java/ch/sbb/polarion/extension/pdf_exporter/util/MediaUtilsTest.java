@@ -145,7 +145,7 @@ class MediaUtilsTest {
             "'/polarion/icons/project/elibrary/star_16x16 .png', '/polarion/icons/project/elibrary/star_16x16 .png'",
             "'/polarion/icons/project/elibrary/star_16x16 .png?thumbnail=true', '/polarion/icons/project/elibrary/star_16x16 .png'"
     })
-    void removeThumbnailParameterTest(String input, String expected) {
+    void removeQueryParameterTest(String input, String expected) {
         assertEquals(expected, MediaUtils.removeQueryParameter(input, THUMBNAIL_PARAMETER));
     }
 
