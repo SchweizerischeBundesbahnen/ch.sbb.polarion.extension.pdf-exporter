@@ -285,13 +285,17 @@ public class MediaUtils {
 
         String decoded = StringEscapeUtils.unescapeHtml4(url);
 
-        int questionMark = decoded.indexOf('?');
+        int hashIdx = decoded.indexOf('#');
+        String fragment = hashIdx >= 0 ? decoded.substring(hashIdx) : "";
+        String withoutFragment = hashIdx >= 0 ? decoded.substring(0, hashIdx) : decoded;
+
+        int questionMark = withoutFragment.indexOf('?');
         if (questionMark < 0) {
-            return decoded;
+            return withoutFragment + fragment;
         }
 
-        String base = decoded.substring(0, questionMark);
-        String query = decoded.substring(questionMark + 1);
+        String base = withoutFragment.substring(0, questionMark);
+        String query = withoutFragment.substring(questionMark + 1);
 
         StringBuilder newQuery = new StringBuilder();
 
@@ -307,7 +311,7 @@ public class MediaUtils {
             }
         }
 
-        return newQuery.isEmpty() ? base : base + "?" + newQuery;
+        return (newQuery.isEmpty() ? base : base + "?" + newQuery) + fragment;
     }
 
     /**
