@@ -10,5 +10,8 @@
     "cross-env": "10.1.0",
     "jsdom": "28.1.0",
     "mocha": "11.7.5"
+  },
+  "overrides": {
+    "serialize-javascript": "^7.0.3"
   }
 }
