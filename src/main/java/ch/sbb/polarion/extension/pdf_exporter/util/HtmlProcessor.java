@@ -705,7 +705,8 @@ public class HtmlProcessor {
         return resultBuf.toString();
     }
 
-    private void filterTabularLinkedWorkItems(@NotNull Document document, @NotNull List<String> selectedRoleEnumValues) {
+    @VisibleForTesting
+    void filterTabularLinkedWorkItems(@NotNull Document document, @NotNull List<String> selectedRoleEnumValues) {
         Elements linkedWorkItemsCells = document.select("td[id='polarion_editor_field=linkedWorkItems']");
         for (Element linkedWorkItemsCell : linkedWorkItemsCells) {
             filterByRoles(linkedWorkItemsCell, selectedRoleEnumValues);
@@ -774,7 +775,22 @@ public class HtmlProcessor {
         // There will be no br-tag after last linked WorkItem, so not obligatory
         Element brElement = extractBrElement(linkedWorkItemElement.nextElementSibling());
 
-        return new LinkedWorkitemNodes(role, roleElement, colonNode, linkedWorkItemElement, brElement);
+        Node revisionNode;
+        if (brElement != null) {
+            revisionNode = extractRevisionNode(brElement.previousSibling());
+        } else {
+            revisionNode = extractRevisionNode(linkedWorkItemElement.nextSibling());
+        }
+
+        return new LinkedWorkitemNodes(role, roleElement, colonNode, linkedWorkItemElement, revisionNode, brElement);
+    }
+
+    private TextNode extractRevisionNode(Node node) {
+        if (node instanceof TextNode textNode && textNode.text().matches("^ *: *\\d+$")) {
+            return textNode;
+        } else {
+            return null;
+        }
     }
 
     private TextNode extractColonNode(@Nullable Node node) {
@@ -1180,7 +1196,7 @@ public class HtmlProcessor {
     }
 
     private record LinkedWorkitemNodes(@NotNull String role, @NotNull Element roleElement, @NotNull TextNode colonNode,
-                                       @NotNull Element linkedWorkItemElement, @Nullable Element brElement) {
+                                       @NotNull Element linkedWorkItemElement, @Nullable Node revisionNode, @Nullable Element brElement) {
         Element getNextSibling() {
             return brElement != null ? brElement.nextElementSibling() : linkedWorkItemElement.nextElementSibling();
         }
@@ -1189,6 +1205,9 @@ public class HtmlProcessor {
             roleElement.remove();
             colonNode.remove();
             linkedWorkItemElement.remove();
+            if (revisionNode != null) {
+                revisionNode.remove();
+            }
             if (brElement != null) {
                 brElement.remove();
             }
@@ -1201,7 +1220,11 @@ public class HtmlProcessor {
         }
 
         void appendComma() {
-            linkedWorkItemElement.after(",");
+            if (revisionNode != null) {
+                revisionNode.after(",");
+            } else {
+                linkedWorkItemElement.after(",");
+            }
         }
 
     }
