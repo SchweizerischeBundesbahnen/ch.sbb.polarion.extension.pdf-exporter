@@ -285,7 +285,7 @@ public class MediaUtils {
         }
 
         String unescapedUrl = StringEscapeUtils.unescapeHtml4(url);
-        return UriComponentsBuilder.fromUriString(unescapedUrl)
+        return UriComponentsBuilder.fromUriString(unescapedUrl.replace(" ", "%20"))
                 .replaceQueryParam(THUMBNAIL_PARAMETER)
                 .build(true)
                 .toUriString();

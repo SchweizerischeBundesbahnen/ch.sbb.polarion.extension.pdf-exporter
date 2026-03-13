@@ -140,7 +140,9 @@ class MediaUtilsTest {
             "'http://localhost/polarion/attachment.vsdx?revision=4&amp;thumbnail=true', 'http://localhost/polarion/attachment.vsdx?revision=4'",
             ", ",
             "'', ''",
-            "'not-a-valid-url?thumbnail=true', 'not-a-valid-url'"
+            "'not-a-valid-url?thumbnail=true', 'not-a-valid-url'",
+            "'/polarion/icons/project/elibrary/star_16x16 .png', '/polarion/icons/project/elibrary/star_16x16%20.png'",
+            "'/polarion/icons/project/elibrary/star_16x16 .png?thumbnail=true', '/polarion/icons/project/elibrary/star_16x16%20.png'"
     })
     void removeThumbnailParameterTest(String input, String expected) {
         assertEquals(expected, MediaUtils.removeThumbnailParameter(input));
