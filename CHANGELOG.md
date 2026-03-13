@@ -1,5 +1,12 @@
 # Changelog
 
+## [12.2.2](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v12.2.1...v12.2.2) (2026-03-13)
+
+
+### Bug Fixes
+
+* better logic of removing certain query parameter ([#758](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/758)) ([03ca69e](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/03ca69eb64e34c1be7830220fea42735a425d030))
+
 ## [12.2.1](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v12.2.0...v12.2.1) (2026-03-13)
 
 
