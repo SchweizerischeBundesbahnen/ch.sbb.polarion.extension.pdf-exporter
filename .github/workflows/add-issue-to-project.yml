@@ -6,16 +6,9 @@ on:
 permissions: {}
 jobs:
   add-to-project:
-    runs-on: ubuntu-latest
-    environment: github-project
-    steps:
-      - uses: actions/create-github-app-token@f8d387b68d61c58ab83c6c016672934102569859  # v3.0.0
-        id: app-token
-        with:
-          app-id: ${{ secrets.POLARION_GITHUB_APP_ID }}
-          private-key: ${{ secrets.POLARION_GITHUB_APP_PRIVATE_KEY }}
-          owner: ${{ github.repository_owner }}
-      - uses: actions/add-to-project@244f685bbc3b7adfa8466e08b698b5577571133e  # v1.0.2
-        with:
-          project-url: https://github.com/orgs/SchweizerischeBundesbahnen/projects/${{ vars.POLARION_GITHUB_PROJECT_NUMBER }}
-          github-token: ${{ steps.app-token.outputs.token }}
+    uses: SchweizerischeBundesbahnen/github-workflows-polarion/.github/workflows/reusable-add-issue-to-project.yml@main
+    secrets:
+      POLARION_GITHUB_APP_ID: ${{ secrets.POLARION_GITHUB_APP_ID }}
+      POLARION_GITHUB_APP_PRIVATE_KEY: ${{ secrets.POLARION_GITHUB_APP_PRIVATE_KEY }}
+    with:
+      project-number: ${{ vars.POLARION_GITHUB_PROJECT_NUMBER }}

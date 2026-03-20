@@ -5,3 +5,9 @@ rules:
   # Fork-PR workflows are additionally protected by GitHub's approval requirement.
   secrets-outside-env:
     ignore: [claude-code-review.yml, maven-build.yml]
+  # Reusable workflows from our own org — tracking @main intentionally.
+  unpinned-uses:
+    config:
+      policies:
+        '*': hash-pin
+        SchweizerischeBundesbahnen/*: any
