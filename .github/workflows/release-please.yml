@@ -1,20 +1,22 @@
 ---
+# Release Please Workflow
+# Supports both main branch and LTS (Long-Term Support) branches.
+# LTS branches must follow the naming pattern: release-v{major} (e.g., release-v6)
+# See RELEASE.md for full documentation on LTS releases.
 name: release-please
 on:
   push:
-    branches: [main, release-v*]
+    branches:
+      - main
+      - release-v*  # LTS branches
   workflow_dispatch:
+permissions: {}
 jobs:
   release-please:
-    runs-on: ubuntu-latest
+    uses: SchweizerischeBundesbahnen/github-workflows-polarion/.github/workflows/reusable-release-please.yml@main
     permissions:
       contents: write
       pull-requests: write
-      issues: write
-    steps:
-      - name: 🚀 release-please
-        id: release
-        uses: googleapis/release-please-action@16a9c90856f42705d54a6fda1823352bdc62cf38  # v4.4.0
-        with:
-          release-type: maven
-          target-branch: ${{ github.ref_name }}
+    with:
+      release-type: maven
+      target-branch: ${{ github.ref_name }}

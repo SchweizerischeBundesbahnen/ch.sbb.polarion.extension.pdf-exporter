@@ -1,24 +1,15 @@
 ---
-name: openapi-validate
+name: OpenAPI Validation
 on:
   push:
   pull_request:
   workflow_dispatch:
+permissions: {}
 jobs:
   validate-openapi:
-    runs-on: ubuntu-latest
+    uses: SchweizerischeBundesbahnen/github-workflows-polarion/.github/workflows/reusable-openapi-validation.yml@main
     permissions:
       contents: read
-    name: Validate OpenAPI Definition
-    steps:
-      - name: 📄 Checkout the repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
-        with:
-          fetch-depth: 1
-          persist-credentials: false
-      - name: 📦 Setup Node.js
-        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f  # v6.3.0
-        with:
-          node-version: '24'
-      - name: 🧪 Validate OpenAPI definition
-        run: npx @redocly/cli@latest lint docs/openapi.json --format=github-actions
+    with:
+      spec-path: docs/openapi.json
+      redocly-args: --extends=minimal
