@@ -27,11 +27,16 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Handler;
+import java.util.logging.Level;
+import java.util.logging.LogRecord;
+import java.util.logging.Logger;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -400,7 +405,6 @@ class HtmlProcessorTest {
 
     @Test
     void removePageBreakAvoidsDoesNotFailOnSpecialCssCharacters() {
-        // Regression test for https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/760
         // CSSReaderDeclarationList with default ThrowingCSSParseErrorHandler throws IllegalStateException
         // on certain CSS values containing '%' character
         String html = "<table style=\"page-break-inside:avoid; width:50%\"><tr><td>Content</td></tr></table>"
@@ -1119,6 +1123,60 @@ class HtmlProcessorTest {
         String result = processor.processHtmlForPDF(html, exportParams, Collections.emptyList(), null);
         assertNotNull(result);
         assertFalse(result.isEmpty());
+    }
+
+    @Test
+    void processHtmlForPDFWithInvalidCssGeneratesResultAndLogsWarnings() {
+        // Regression test for https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/760
+        // Document with invalid CSS (e.g. '%' in unexpected context) should still be processed successfully,
+        // with warnings logged for unparseable CSS declarations
+        when(localizationSettings.load(any(), any(SettingId.class)))
+                .thenReturn(new LocalizationModel(Collections.emptyMap(), Collections.emptyMap(), Collections.emptyMap()));
+
+        String html = """
+                <html><body>
+                <h2>Chapter</h2>
+                <table style="page-break-inside:avoid; width:50%%invalid">
+                    <tr><td><p>Work item content</p></td></tr>
+                </table>
+                <table style="background: url('data:image/svg+xml,%%3Csvg%%3E'); page-break-inside:avoid">
+                    <tr><td><p>Another work item</p></td></tr>
+                </table>
+                <p>Normal paragraph</p>
+                </body></html>""";
+
+        Logger cssUtilsLogger = Logger.getLogger(CssUtils.class.getName());
+        List<LogRecord> logRecords = new ArrayList<>();
+        Handler testHandler = new Handler() {
+            @Override
+            public void publish(LogRecord record) {
+                logRecords.add(record);
+            }
+
+            @Override
+            public void flush() {
+            }
+
+            @Override
+            public void close() {
+            }
+        };
+
+        cssUtilsLogger.addHandler(testHandler);
+        try {
+            String result = processor.processHtmlForPDF(html, getExportParams(), Collections.emptyList());
+
+            assertNotNull(result);
+            assertFalse(result.isEmpty());
+            assertTrue(result.contains("Work item content"));
+            assertTrue(result.contains("Another work item"));
+            assertTrue(result.contains("Normal paragraph"));
+
+            assertFalse(logRecords.isEmpty(), "Expected CSS parse warning logs for invalid CSS");
+            assertTrue(logRecords.stream().allMatch(r -> r.getLevel() == Level.WARNING));
+        } finally {
+            cssUtilsLogger.removeHandler(testHandler);
+        }
     }
 
     private ExportParams getExportParams() {
