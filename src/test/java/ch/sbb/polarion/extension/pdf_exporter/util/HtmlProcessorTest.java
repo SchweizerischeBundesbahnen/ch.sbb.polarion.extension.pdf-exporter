@@ -399,6 +399,19 @@ class HtmlProcessorTest {
     }
 
     @Test
+    void removePageBreakAvoidsDoesNotFailOnSpecialCssCharacters() {
+        // Regression test for https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/760
+        // CSSReaderDeclarationList with default ThrowingCSSParseErrorHandler throws IllegalStateException
+        // on certain CSS values containing '%' character
+        String html = "<table style=\"page-break-inside:avoid; width:50%\"><tr><td>Content</td></tr></table>"
+                + "<table style=\"page-break-inside:avoid; background: url('data:image/svg+xml,%3Csvg%3E')\"><tr><td>Content</td></tr></table>"
+                + "<table style=\"width: 100%\"><tr><td>Normal table</td></tr></table>";
+        Document document = JSoupUtils.parseHtml(html);
+
+        assertDoesNotThrow(() -> processor.removePageBreakAvoids(document));
+    }
+
+    @Test
     @SneakyThrows
     void fixNumberedListsTest() {
         try (InputStream isInvalidHtml = this.getClass().getResourceAsStream("/invalidNumberedLists.html");

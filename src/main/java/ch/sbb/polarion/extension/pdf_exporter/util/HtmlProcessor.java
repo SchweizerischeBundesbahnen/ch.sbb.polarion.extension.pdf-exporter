@@ -15,7 +15,6 @@ import ch.sbb.polarion.extension.pdf_exporter.settings.LocalizationSettings;
 import ch.sbb.polarion.extension.pdf_exporter.util.adjuster.PageWidthAdjuster;
 import ch.sbb.polarion.extension.pdf_exporter.util.html.HtmlLinksHelper;
 import com.helger.css.decl.CSSDeclarationList;
-import com.helger.css.reader.CSSReaderDeclarationList;
 import com.polarion.alm.shared.util.StringUtils;
 import lombok.SneakyThrows;
 import org.jetbrains.annotations.NotNull;
@@ -35,7 +34,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 
 import static ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.DocumentType.*;
@@ -1163,7 +1161,7 @@ public class HtmlProcessor {
     }
 
     private CSSDeclarationList parseCss(@NotNull String styleAttributeValue) {
-        return Optional.ofNullable(CSSReaderDeclarationList.readFromString(styleAttributeValue)).orElse(new CSSDeclarationList());
+        return CssUtils.parseDeclarations(styleAttributeValue);
     }
 
     private DocumentTOCGenerator getTocGenerator(DocumentType documentType) {
