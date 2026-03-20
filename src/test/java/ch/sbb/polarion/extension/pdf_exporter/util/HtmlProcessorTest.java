@@ -27,20 +27,16 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Handler;
-import java.util.logging.Level;
-import java.util.logging.LogRecord;
-import java.util.logging.Logger;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.*;
 
 @ExtendWith({MockitoExtension.class, BundleJarsPrioritizingRunnableMockExtension.class})
@@ -1127,7 +1123,6 @@ class HtmlProcessorTest {
 
     @Test
     void processHtmlForPDFWithInvalidCssGeneratesResultAndLogsWarnings() {
-        // Regression test for https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/760
         // Document with invalid CSS (e.g. '%' in unexpected context) should still be processed successfully,
         // with warnings logged for unparseable CSS declarations
         when(localizationSettings.load(any(), any(SettingId.class)))
@@ -1145,24 +1140,8 @@ class HtmlProcessorTest {
                 <p>Normal paragraph</p>
                 </body></html>""";
 
-        Logger cssUtilsLogger = Logger.getLogger(CssUtils.class.getName());
-        List<LogRecord> logRecords = new ArrayList<>();
-        Handler testHandler = new Handler() {
-            @Override
-            public void publish(LogRecord record) {
-                logRecords.add(record);
-            }
-
-            @Override
-            public void flush() {
-            }
-
-            @Override
-            public void close() {
-            }
-        };
-
-        cssUtilsLogger.addHandler(testHandler);
+        com.polarion.core.util.logging.Logger mockLogger = mock(com.polarion.core.util.logging.Logger.class);
+        CssUtils.setLogger(mockLogger);
         try {
             String result = processor.processHtmlForPDF(html, getExportParams(), Collections.emptyList());
 
@@ -1172,10 +1151,9 @@ class HtmlProcessorTest {
             assertTrue(result.contains("Another work item"));
             assertTrue(result.contains("Normal paragraph"));
 
-            assertFalse(logRecords.isEmpty(), "Expected CSS parse warning logs for invalid CSS");
-            assertTrue(logRecords.stream().allMatch(r -> r.getLevel() == Level.WARNING));
+            verify(mockLogger, atLeastOnce()).warn(argThat((String msg) -> msg.contains("Failed to parse CSS")));
         } finally {
-            cssUtilsLogger.removeHandler(testHandler);
+            CssUtils.setLogger(com.polarion.core.util.logging.Logger.getLogger(CssUtils.class));
         }
     }
 

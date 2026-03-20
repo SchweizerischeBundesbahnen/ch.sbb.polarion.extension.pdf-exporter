@@ -7,15 +7,21 @@ import com.helger.css.reader.CSSReaderDeclarationList;
 import com.helger.css.reader.CSSReaderSettings;
 import com.helger.css.reader.errorhandler.CSSParseError;
 import com.helger.css.reader.errorhandler.CollectingCSSParseErrorHandler;
+import com.polarion.core.util.logging.Logger;
 import lombok.experimental.UtilityClass;
 import org.jetbrains.annotations.NotNull;
-
-import java.util.logging.Logger;
 
 @UtilityClass
 public class CssUtils {
 
-    private final Logger logger = Logger.getLogger(CssUtils.class.getName());
+    private static final int MAX_STYLE_LOG_LENGTH = 200;
+
+    private static Logger logger = Logger.getLogger(CssUtils.class);
+
+    @org.jetbrains.annotations.VisibleForTesting
+    public static void setLogger(Logger testLogger) {
+        logger = testLogger;
+    }
 
     @NotNull
     public CSSDeclarationList parseDeclarations(@NotNull String styleAttributeValue) {
@@ -23,11 +29,19 @@ public class CssUtils {
         CSSReaderSettings settings = new CSSReaderSettings().setCustomErrorHandler(errorHandler);
         CSSDeclarationList result = CSSReaderDeclarationList.readFromString(styleAttributeValue, settings);
         if (errorHandler.hasParseErrors()) {
+            String stylePreview = truncateForLog(styleAttributeValue);
             for (CSSParseError error : errorHandler.getAllParseErrors()) {
-                logger.warning("Failed to parse CSS '" + styleAttributeValue + "': " + error.getErrorMessage());
+                logger.warn("Failed to parse CSS '" + stylePreview + "': " + error.getErrorMessage());
             }
         }
         return result != null ? result : new CSSDeclarationList();
+    }
+
+    private String truncateForLog(@NotNull String value) {
+        if (value.length() > MAX_STYLE_LOG_LENGTH) {
+            return value.substring(0, MAX_STYLE_LOG_LENGTH) + "... (truncated, total length=" + value.length() + ")";
+        }
+        return value;
     }
 
     @NotNull

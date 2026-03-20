@@ -2,20 +2,34 @@ package ch.sbb.polarion.extension.pdf_exporter.util;
 
 import ch.sbb.polarion.extension.pdf_exporter.constants.CssProp;
 import com.helger.css.decl.CSSDeclarationList;
+import com.polarion.core.util.logging.Logger;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-
-import java.util.logging.Handler;
-import java.util.logging.Level;
-import java.util.logging.LogRecord;
-import java.util.logging.Logger;
-import java.util.ArrayList;
-import java.util.List;
+import org.mockito.Mockito;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.*;
 
 class CssUtilsTest {
+
+    private Logger originalLogger;
+    private Logger mockLogger;
+
+    @BeforeEach
+    void setUp() {
+        originalLogger = Logger.getLogger(CssUtils.class);
+        mockLogger = mock(Logger.class);
+        CssUtils.setLogger(mockLogger);
+    }
+
+    @AfterEach
+    void tearDown() {
+        CssUtils.setLogger(originalLogger);
+    }
 
     @Test
     void doesntFailOnGettingNotExistingValueTest() {
@@ -92,61 +106,26 @@ class CssUtilsTest {
 
     @Test
     void parseDeclarationsLogsWarningOnInvalidCss() {
-        Logger cssUtilsLogger = Logger.getLogger(CssUtils.class.getName());
-        List<LogRecord> logRecords = new ArrayList<>();
-        Handler testHandler = new Handler() {
-            @Override
-            public void publish(LogRecord record) {
-                logRecords.add(record);
-            }
+        CssUtils.parseDeclarations("%%%");
 
-            @Override
-            public void flush() {
-            }
-
-            @Override
-            public void close() {
-            }
-        };
-
-        cssUtilsLogger.addHandler(testHandler);
-        try {
-            CssUtils.parseDeclarations("%%%");
-
-            assertFalse(logRecords.isEmpty(), "Expected warning log records for invalid CSS");
-            assertTrue(logRecords.stream().allMatch(r -> r.getLevel() == Level.WARNING));
-            assertTrue(logRecords.stream().anyMatch(r -> r.getMessage().contains("%%%")));
-        } finally {
-            cssUtilsLogger.removeHandler(testHandler);
-        }
+        verify(mockLogger, atLeastOnce()).warn(argThat((String msg) ->
+                msg.contains("Failed to parse CSS") && msg.contains("%%%")));
     }
 
     @Test
     void parseDeclarationsDoesNotLogWarningForValidCss() {
-        Logger cssUtilsLogger = Logger.getLogger(CssUtils.class.getName());
-        List<LogRecord> logRecords = new ArrayList<>();
-        Handler testHandler = new Handler() {
-            @Override
-            public void publish(LogRecord record) {
-                logRecords.add(record);
-            }
+        CssUtils.parseDeclarations("width: 50%; page-break-inside: avoid");
 
-            @Override
-            public void flush() {
-            }
+        verify(mockLogger, never()).warn(Mockito.any(Object.class));
+    }
 
-            @Override
-            public void close() {
-            }
-        };
+    @Test
+    void parseDeclarationsTruncatesLongStyleInLog() {
+        String longStyle = "x".repeat(300) + "%%%";
 
-        cssUtilsLogger.addHandler(testHandler);
-        try {
-            CssUtils.parseDeclarations("width: 50%; page-break-inside: avoid");
+        CssUtils.parseDeclarations(longStyle);
 
-            assertTrue(logRecords.isEmpty(), "No warnings expected for valid CSS");
-        } finally {
-            cssUtilsLogger.removeHandler(testHandler);
-        }
+        verify(mockLogger, atLeastOnce()).warn(argThat((String msg) ->
+                msg.contains("truncated") && msg.contains("total length=" + longStyle.length())));
     }
 }

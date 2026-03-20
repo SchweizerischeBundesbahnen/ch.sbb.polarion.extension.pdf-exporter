@@ -10,18 +10,14 @@ import ch.sbb.polarion.extension.pdf_exporter.util.CssUtils;
 import ch.sbb.polarion.extension.pdf_exporter.util.DocumentDataFactory;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.base.BasePdfConverterTest;
 import com.polarion.alm.tracker.model.IModule;
+import com.polarion.core.util.logging.Logger;
 import org.junit.jupiter.api.Test;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.logging.Handler;
-import java.util.logging.Level;
-import java.util.logging.LogRecord;
-import java.util.logging.Logger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.*;
 
 /**
  * Verifies that documents with invalid CSS (e.g. '%' in unexpected context) are still exported to PDF successfully,
@@ -53,35 +49,16 @@ class InvalidCssTest extends BasePdfConverterTest {
                 .build();
         documentDataFactoryMockedStatic.when(() -> DocumentDataFactory.getDocumentData(eq(params), anyBoolean())).thenReturn(liveDoc);
 
-        Logger cssUtilsLogger = Logger.getLogger(CssUtils.class.getName());
-        List<LogRecord> logRecords = new ArrayList<>();
-        Handler testHandler = new Handler() {
-            @Override
-            public void publish(LogRecord record) {
-                logRecords.add(record);
-            }
-
-            @Override
-            public void flush() {
-            }
-
-            @Override
-            public void close() {
-            }
-        };
-
-        cssUtilsLogger.addHandler(testHandler);
+        Logger mockLogger = mock(Logger.class);
+        CssUtils.setLogger(mockLogger);
         try {
             byte[] pdfBytes = converter.convertToPdf(params, null);
 
             assertThat(pdfBytes).isNotNull().isNotEmpty();
 
-            assertThat(logRecords)
-                    .isNotEmpty()
-                    .allMatch(r -> r.getLevel() == Level.WARNING)
-                    .anyMatch(r -> r.getMessage().contains("Failed to parse CSS"));
+            verify(mockLogger, atLeastOnce()).warn(argThat((String msg) -> msg.contains("Failed to parse CSS")));
         } finally {
-            cssUtilsLogger.removeHandler(testHandler);
+            CssUtils.setLogger(Logger.getLogger(CssUtils.class));
         }
     }
 }
