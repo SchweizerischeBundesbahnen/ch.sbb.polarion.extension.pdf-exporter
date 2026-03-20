@@ -7,13 +7,11 @@ import ch.sbb.polarion.extension.pdf_exporter.util.CssUtils;
 import ch.sbb.polarion.extension.pdf_exporter.util.PaperSizeUtils;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ConversionParams;
 import com.helger.css.decl.CSSDeclarationList;
-import com.helger.css.reader.CSSReaderDeclarationList;
+
 import org.jetbrains.annotations.NotNull;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
-
-import java.util.Optional;
 
 public class ImageSizeAdjuster extends AbstractAdjuster {
 
@@ -35,7 +33,7 @@ public class ImageSizeAdjuster extends AbstractAdjuster {
 
     private void adjustImageSize(@NotNull Element img, float maxWidth, float maxHeight) {
         String style = img.attr(HtmlTagAttr.STYLE);
-        CSSDeclarationList cssStyles = Optional.ofNullable(CSSReaderDeclarationList.readFromString(style)).orElse(new CSSDeclarationList());
+        CSSDeclarationList cssStyles = CssUtils.parseDeclarations(style);
 
         // As a fallback we always restrict max height for the cases when image doesn't have any explicit width/height attributes
         CssUtils.setPropertyValue(cssStyles, CssProp.MAX_HEIGHT, (int) maxHeight + Measure.PX);

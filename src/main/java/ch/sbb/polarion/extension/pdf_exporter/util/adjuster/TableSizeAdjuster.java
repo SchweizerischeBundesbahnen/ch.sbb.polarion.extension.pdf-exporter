@@ -7,13 +7,11 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ConversionPa
 import ch.sbb.polarion.extension.pdf_exporter.util.CssUtils;
 import ch.sbb.polarion.extension.pdf_exporter.util.PaperSizeUtils;
 import com.helger.css.decl.CSSDeclarationList;
-import com.helger.css.reader.CSSReaderDeclarationList;
+
 import org.jetbrains.annotations.NotNull;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
-
-import java.util.Optional;
 
 public class TableSizeAdjuster extends AbstractAdjuster {
 
@@ -27,7 +25,7 @@ public class TableSizeAdjuster extends AbstractAdjuster {
 
         Elements tables = document.select("table[style]");
         for (Element table : tables) {
-            CSSDeclarationList cssStyles = Optional.ofNullable(CSSReaderDeclarationList.readFromString(table.attr(HtmlTagAttr.STYLE))).orElse(new CSSDeclarationList());
+            CSSDeclarationList cssStyles = CssUtils.parseDeclarations(table.attr(HtmlTagAttr.STYLE));
 
             float width = extractDimension(CssUtils.getPropertyValue(cssStyles, CssProp.WIDTH));
 

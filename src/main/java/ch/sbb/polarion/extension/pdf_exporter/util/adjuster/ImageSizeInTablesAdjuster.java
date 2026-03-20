@@ -8,7 +8,7 @@ import ch.sbb.polarion.extension.pdf_exporter.util.CssUtils;
 import ch.sbb.polarion.extension.pdf_exporter.util.PaperSizeUtils;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ConversionParams;
 import com.helger.css.decl.CSSDeclarationList;
-import com.helger.css.reader.CSSReaderDeclarationList;
+
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.VisibleForTesting;
 import org.jsoup.nodes.Document;
@@ -16,8 +16,6 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 import java.util.Map;
-import java.util.Optional;
-
 public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
 
     private static final String TD_TH_SELECTOR = String.format("%s, %s", HtmlTag.TD, HtmlTag.TH);
@@ -57,7 +55,7 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
 
     private float extractWidth(Element img, String property) {
         String style = img.attr(HtmlTagAttr.STYLE);
-        CSSDeclarationList cssStyles = Optional.ofNullable(CSSReaderDeclarationList.readFromString(style)).orElse(new CSSDeclarationList());
+        CSSDeclarationList cssStyles = CssUtils.parseDeclarations(style);
 
         String value = CssUtils.getPropertyValue(cssStyles, property);
         if (value.isEmpty()) {
@@ -104,7 +102,7 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
         img.removeAttr(CssProp.HEIGHT);
 
         String style = img.attr(HtmlTagAttr.STYLE);
-        CSSDeclarationList cssStyles = Optional.ofNullable(CSSReaderDeclarationList.readFromString(style)).orElse(new CSSDeclarationList());
+        CSSDeclarationList cssStyles = CssUtils.parseDeclarations(style);
 
         CssUtils.removeProperty(cssStyles, CssProp.HEIGHT); //remove height completely in order to keep image ratio
 

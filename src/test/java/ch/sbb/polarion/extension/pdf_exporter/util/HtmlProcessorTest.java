@@ -36,6 +36,7 @@ import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.*;
 
 @ExtendWith({MockitoExtension.class, BundleJarsPrioritizingRunnableMockExtension.class})
@@ -396,6 +397,18 @@ class HtmlProcessorTest {
             // Spaces and new lines are removed to exclude difference in space characters
             assertEquals(TestStringUtils.removeNonsensicalSymbols(validHtml), TestStringUtils.removeNonsensicalSymbols(fixedHtml));
         }
+    }
+
+    @Test
+    void removePageBreakAvoidsDoesNotFailOnSpecialCssCharacters() {
+        // CSSReaderDeclarationList with default ThrowingCSSParseErrorHandler throws IllegalStateException
+        // on certain CSS values containing '%' character
+        String html = "<table style=\"page-break-inside:avoid; width:50%\"><tr><td>Content</td></tr></table>"
+                + "<table style=\"page-break-inside:avoid; background: url('data:image/svg+xml,%3Csvg%3E')\"><tr><td>Content</td></tr></table>"
+                + "<table style=\"width: 100%\"><tr><td>Normal table</td></tr></table>";
+        Document document = JSoupUtils.parseHtml(html);
+
+        assertDoesNotThrow(() -> processor.removePageBreakAvoids(document));
     }
 
     @Test
@@ -1106,6 +1119,42 @@ class HtmlProcessorTest {
         String result = processor.processHtmlForPDF(html, exportParams, Collections.emptyList(), null);
         assertNotNull(result);
         assertFalse(result.isEmpty());
+    }
+
+    @Test
+    void processHtmlForPDFWithInvalidCssGeneratesResultAndLogsWarnings() {
+        // Document with invalid CSS (e.g. '%' in unexpected context) should still be processed successfully,
+        // with warnings logged for unparseable CSS declarations
+        when(localizationSettings.load(any(), any(SettingId.class)))
+                .thenReturn(new LocalizationModel(Collections.emptyMap(), Collections.emptyMap(), Collections.emptyMap()));
+
+        String html = """
+                <html><body>
+                <h2>Chapter</h2>
+                <table style="page-break-inside:avoid; width:50%%invalid">
+                    <tr><td><p>Work item content</p></td></tr>
+                </table>
+                <table style="background: url('data:image/svg+xml,%%3Csvg%%3E'); page-break-inside:avoid">
+                    <tr><td><p>Another work item</p></td></tr>
+                </table>
+                <p>Normal paragraph</p>
+                </body></html>""";
+
+        com.polarion.core.util.logging.Logger mockLogger = mock(com.polarion.core.util.logging.Logger.class);
+        CssUtils.setLogger(mockLogger);
+        try {
+            String result = processor.processHtmlForPDF(html, getExportParams(), Collections.emptyList());
+
+            assertNotNull(result);
+            assertFalse(result.isEmpty());
+            assertTrue(result.contains("Work item content"));
+            assertTrue(result.contains("Another work item"));
+            assertTrue(result.contains("Normal paragraph"));
+
+            verify(mockLogger, atLeastOnce()).warn(argThat((String msg) -> msg.contains("Failed to parse CSS")));
+        } finally {
+            CssUtils.setLogger(com.polarion.core.util.logging.Logger.getLogger(CssUtils.class));
+        }
     }
 
     private ExportParams getExportParams() {
