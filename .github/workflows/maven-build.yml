@@ -29,7 +29,7 @@ jobs:
       IO_JFROG_SBB_POLARION_TOKEN: ${{ secrets.IO_JFROG_SBB_POLARION_TOKEN }}
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
       MARKDOWN2HTML_MAVEN_PLUGIN_FAIL_ON_ERROR: true
-      GITHUB_TOKEN: ${{ github.token }}  # providing this prevent from reaching GitHub requests limit
+      GITHUB_TOKEN: ${{ github.token }}  # Providing this prevents reaching the GitHub request limits
       WEASYPRINT_SERVICE_URL: http://localhost:9080
     steps:
       - name: 📄 Checkout the repository
@@ -67,12 +67,17 @@ jobs:
         if: github.event_name == 'push'
         env:
           GITHUB_HEAD_REF: ${{ github.head_ref }}
+          IS_PUBLIC: ${{ github.event.repository.visibility == 'public' }}
+          IS_TEMPLATE: ${{ github.event.repository.is_template }}
         run: |
-          if [ -n "${GITHUB_HEAD_REF}" ]; then
-            mvn --batch-mode -s "${SETTINGS_XML}" clean verify -P tests-with-weasyprint-docker -Dweasyprint.service.url="${WEASYPRINT_SERVICE_URL}" sonar:sonar -Dsonar.branch.name="${GITHUB_HEAD_REF}"
-          else
-            mvn --batch-mode -s "${SETTINGS_XML}" clean verify -P tests-with-weasyprint-docker -Dweasyprint.service.url="${WEASYPRINT_SERVICE_URL}" sonar:sonar
+          SONAR_ARGS=()
+          if [ "${IS_PUBLIC}" = "true" ] && [ "${IS_TEMPLATE}" != "true" ]; then
+            SONAR_ARGS+=(sonar:sonar "-Dsonar.exclusions=.github/**")
+            if [ -n "${GITHUB_HEAD_REF}" ]; then
+              SONAR_ARGS+=("-Dsonar.branch.name=${GITHUB_HEAD_REF}")
+            fi
           fi
+          mvn --batch-mode -s "${SETTINGS_XML}" clean verify -P tests-with-weasyprint-docker -Dweasyprint.service.url="${WEASYPRINT_SERVICE_URL}" "${SONAR_ARGS[@]}"
       - name: 📦 Build with Maven for PRs
         if: github.event_name == 'pull_request'
         env:
@@ -85,7 +90,7 @@ jobs:
         run: mvn --batch-mode -s "${SETTINGS_XML}" dependency:analyze
         continue-on-error: false
       - name: 📦 Upload build artifacts
-        # needed for uploads to Github Releases
+        # needed for uploads to GitHub Releases
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7.0.0
         with:
           name: maven-artifacts
@@ -94,6 +99,8 @@ jobs:
             target/*.pom
           retention-days: 1
           if-no-files-found: error
+  # Deploy releases to Maven Central from main and LTS branches (release-v*)
+  # See RELEASE.md for LTS branch documentation
   deploy-maven-central:
     needs: build
     if: ${{ needs.build.outputs.is_release == 'true' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release-v')) }}
@@ -105,7 +112,7 @@ jobs:
       COM_SONATYPE_CENTRAL_POLARION_OPENSOURCE_USERNAME: ${{ secrets.COM_SONATYPE_CENTRAL_POLARION_OPENSOURCE_USERNAME }}
       COM_SONATYPE_CENTRAL_POLARION_OPENSOURCE_TOKEN: ${{ secrets.COM_SONATYPE_CENTRAL_POLARION_OPENSOURCE_TOKEN }}
       COM_SONATYPE_CENTRAL_POLARION_OPENSOURCE_GPG_PASSPHRASE: ${{ secrets.COM_SONATYPE_CENTRAL_POLARION_OPENSOURCE_GPG_PASSPHRASE }}
-      GITHUB_TOKEN: ${{ github.token }}  # providing this prevent from reaching GitHub requests limit
+      GITHUB_TOKEN: ${{ github.token }}  # Providing this prevents reaching the GitHub request limits
     steps:
       - name: 📄 Checkout the repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
@@ -130,10 +137,13 @@ jobs:
             -P central-publishing \
             -Dcentral.timeout=3600 \
             -Dmaven.wagon.http.connectionTimeout=3600000 \
-            -Dmaven.wagon.http.readTimeout=3600000
+            -Dmaven.wagon.http.readTimeout=3600000 \
+            -Dcentral-publishing-maven-plugin.autoPublish=${{ github.event.repository.visibility == 'public' }}
+  # Deploy to GitHub Packages (snapshots from main only) and upload release assets to GitHub Release
+  # LTS branches (release-v*) only upload release assets, no snapshot deployment
   deploy-github-packages:
     needs: build
-    if: ${{ github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release-v') }}
+    if: ${{ github.ref == 'refs/heads/main' || (needs.build.outputs.is_release == 'true' && startsWith(github.ref, 'refs/heads/release-v')) }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -149,7 +159,7 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
       - name: 📥 Download build artifacts
-        # needed for uploads to GitHub Releases
+        # The artifacts are generated in the 'build' step
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
         with:
           name: maven-artifacts
@@ -161,17 +171,24 @@ jobs:
           java-version: ${{ env.JAVA_VERSION }}
           cache: maven
       - name: 🗑️ Delete existing SNAPSHOT version from GitHub Packages
+        # May fail if the SNAPSHOT is the only version in the package,
+        # as GitHub API does not allow deleting the last version.
+        # Safe to ignore — no accumulation problem with a single version.
         if: ${{ needs.build.outputs.is_release == 'false' }}
+        continue-on-error: true
         run: |
-          API_URL="/orgs/${GITHUB_REPOSITORY_OWNER}/packages/maven/ch.sbb.polarion.extensions.ch.sbb.polarion.extension.pdf-exporter/versions"
-          VERSION_ID=$(gh api "${API_URL}" --jq ".[] | select(.name == \"${PROJECT_VERSION}\") | .id" || true)
+          GROUP_ID=$(mvn -s "${SETTINGS_XML}" help:evaluate -Dexpression=project.groupId -q -DforceStdout)
+          ARTIFACT_ID=$(mvn -s "${SETTINGS_XML}" help:evaluate -Dexpression=project.artifactId -q -DforceStdout)
+          PACKAGE_NAME="${GROUP_ID}.${ARTIFACT_ID}"
+          API_URL="/orgs/${GITHUB_REPOSITORY_OWNER}/packages/maven/${PACKAGE_NAME}/versions"
+          VERSION_ID=$(gh api --paginate "${API_URL}" --jq ".[] | select(.name == \"${PROJECT_VERSION}\") | .id" || true)
           if [ -n "${VERSION_ID}" ]; then
             gh api --method DELETE "${API_URL}/${VERSION_ID}"
           fi
       - name: 📦 Deploy to GitHub Packages
-        # Releases should be only deployed to GitHub packages when the repo is private
-        # only snapshots must be always deployed here
-        if: ${{ needs.build.outputs.is_release == 'false' }}
+        # Releases should only be deployed to GitHub Packages when the repo is private
+        # Snapshots are always deployed to GitHub Packages
+        if: ${{ needs.build.outputs.is_release == 'false' || github.event.repository.visibility == 'private' }}
         run: |
           mvn --batch-mode -s "${SETTINGS_XML}" deploy \
             -Dmaven.test.skip=true \
