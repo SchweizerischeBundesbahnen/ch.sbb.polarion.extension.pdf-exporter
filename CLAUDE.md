@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-## Landmines
+## Gotchas
 
 - **`ch.sbb.polarion.extension.generic`** is the parent project providing reusable infrastructure for all Polarion plugins in this org (settings framework, REST base classes, OSGi helpers, etc.). Before implementing anything cross-cutting, check if it already exists there.
 
