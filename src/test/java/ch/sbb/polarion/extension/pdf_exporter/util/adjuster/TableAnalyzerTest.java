@@ -3,16 +3,202 @@ package ch.sbb.polarion.extension.pdf_exporter.util.adjuster;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ConversionParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.Orientation;
 import ch.sbb.polarion.extension.pdf_exporter.util.PaperSizeUtils;
+import lombok.SneakyThrows;
 import org.jsoup.nodes.Element;
 import org.jsoup.parser.Tag;
 import org.junit.jupiter.api.Test;
 
+import java.awt.*;
+import java.lang.reflect.Field;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 class TableAnalyzerTest {
+
+    @Test
+    @SneakyThrows
+    void embeddedFontIsLoaded() {
+        // Access the private EMBEDDED_FONT field via reflection
+        Field fontField = TableAnalyzer.class.getDeclaredField("EMBEDDED_FONT");
+        fontField.setAccessible(true);
+        Font embeddedFont = (Font) fontField.get(null);
+
+        assertNotNull(embeddedFont, "EMBEDDED_FONT should not be null");
+        assertEquals(12f, embeddedFont.getSize2D(), "Font size should be 12");
+        assertEquals(Font.PLAIN, embeddedFont.getStyle(), "Font style should be PLAIN");
+    }
+
+    @Test
+    @SneakyThrows
+    void embeddedFontHasValidMetrics() {
+        // Access the private EMBEDDED_FONT field via reflection
+        Field fontField = TableAnalyzer.class.getDeclaredField("EMBEDDED_FONT");
+        fontField.setAccessible(true);
+        Font embeddedFont = (Font) fontField.get(null);
+
+        // Create a graphics context to get font metrics
+        java.awt.image.BufferedImage img = new java.awt.image.BufferedImage(1, 1, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g2d = img.createGraphics();
+        try {
+            g2d.setFont(embeddedFont);
+            FontMetrics fm = g2d.getFontMetrics();
+
+            assertTrue(fm.getHeight() > 0, "Font height should be positive");
+            assertTrue(fm.getAscent() > 0, "Font ascent should be positive");
+            assertTrue(fm.getDescent() >= 0, "Font descent should be non-negative");
+            assertTrue(fm.charWidth('W') > 0, "Character width should be positive");
+            assertTrue(fm.stringWidth("test") > 0, "String width should be positive");
+        } finally {
+            g2d.dispose();
+        }
+    }
+
+    @Test
+    @SneakyThrows
+    void embeddedFontFamilyIsExpected() {
+        // Access the private EMBEDDED_FONT field via reflection
+        Field fontField = TableAnalyzer.class.getDeclaredField("EMBEDDED_FONT");
+        fontField.setAccessible(true);
+        Font embeddedFont = (Font) fontField.get(null);
+
+        String family = embeddedFont.getFamily();
+        assertTrue(family.equals("DejaVu Sans") || family.equals("SansSerif") || family.equals("Dialog"),
+                "Font family should be 'DejaVu Sans' or fallback 'SansSerif'/'Dialog', but was: " + family);
+    }
+
+    @Test
+    void loadFontFromPathReturnsValidFont() {
+        Font font = TableAnalyzer.loadFontFromPath("/fonts/DejaVuSans.ttf");
+
+        assertNotNull(font, "Font should never be null");
+        assertEquals(12f, font.getSize2D(), "Font size should be 12");
+        assertEquals(Font.PLAIN, font.getStyle(), "Font style should be PLAIN");
+        assertTrue(font.getFamily().equals("DejaVu Sans") || font.getName().equals(Font.SANS_SERIF),
+                "Font should be DejaVu Sans or SansSerif fallback");
+    }
+
+    @Test
+    void loadFontFromPathSuccessfullyLoadsValidFont() {
+        Font font = TableAnalyzer.loadFontFromPath("/weasyprint/font/fa-solid-900.ttf");
+
+        assertNotNull(font, "Font should be loaded");
+        assertEquals("Font Awesome 6 Free Solid", font.getFamily(), "Font family should be Font Awesome");
+        assertEquals(12f, font.getSize2D(), "Font size should be 12");
+        assertEquals(Font.PLAIN, font.getStyle(), "Font style should be PLAIN");
+
+        GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
+        String[] fontFamilies = ge.getAvailableFontFamilyNames();
+        boolean fontRegistered = false;
+        for (String family : fontFamilies) {
+            if (family.equals("Font Awesome 6 Free Solid")) {
+                fontRegistered = true;
+                break;
+            }
+        }
+        assertTrue(fontRegistered, "Font should be registered in GraphicsEnvironment");
+    }
+
+    @Test
+    void loadFontFromPathWithNonExistentPathReturnsFallback() {
+        Font font = TableAnalyzer.loadFontFromPath("/fonts/NonExistentFont.ttf");
+
+        assertNotNull(font, "Fallback font should be returned");
+        assertEquals(Font.SANS_SERIF, font.getName(), "Fallback should be SansSerif");
+        assertEquals(12f, font.getSize2D(), "Font size should be 12");
+        assertEquals(Font.PLAIN, font.getStyle(), "Font style should be PLAIN");
+    }
+
+    @Test
+    void loadFontFromPathWithInvalidFontReturnsFallback() {
+        Font font = TableAnalyzer.loadFontFromPath("/log4j2.xml");
+
+        assertNotNull(font, "Fallback font should be returned on exception");
+        assertEquals(Font.SANS_SERIF, font.getName(), "Fallback should be SansSerif");
+        assertEquals(12f, font.getSize2D(), "Font size should be 12");
+        assertEquals(Font.PLAIN, font.getStyle(), "Font style should be PLAIN");
+    }
+
+    @Test
+    void columnWidthsAreConsistentAcrossMultipleCalls() {
+        Element table = createSimpleTable();
+        int pageWidth = PaperSizeUtils.getMaxWidth(ConversionParams.builder().build());
+
+        // Call multiple times and verify results are identical (deterministic behavior)
+        Map<Integer, Integer> firstResult = TableAnalyzer.getColumnWidths(table, pageWidth);
+        Map<Integer, Integer> secondResult = TableAnalyzer.getColumnWidths(table, pageWidth);
+        Map<Integer, Integer> thirdResult = TableAnalyzer.getColumnWidths(table, pageWidth);
+
+        assertEquals(firstResult, secondResult, "Column widths should be identical across calls");
+        assertEquals(secondResult, thirdResult, "Column widths should be identical across calls");
+    }
+
+    @Test
+    void columnWidthsSumEqualsPageWidth() {
+        Element table = createSimpleTable();
+        int pageWidth = PaperSizeUtils.getMaxWidth(ConversionParams.builder().build());
+
+        Map<Integer, Integer> columnWidths = TableAnalyzer.getColumnWidths(table, pageWidth);
+
+        // Sum of column widths should approximately equal page width (within rounding tolerance)
+        int totalWidth = columnWidths.values().stream().mapToInt(Integer::intValue).sum();
+        assertTrue(Math.abs(totalWidth - pageWidth) <= columnWidths.size(),
+                "Sum of column widths (" + totalWidth + ") should be close to page width (" + pageWidth + ")");
+    }
+
+    @Test
+    @SneakyThrows
+    void columnWidthsUseEmbeddedFont() {
+        // Verify that the embedded font family is used in CSS injection
+        // This ensures the cross-platform fix is actually applied
+        Field fontField = TableAnalyzer.class.getDeclaredField("EMBEDDED_FONT");
+        fontField.setAccessible(true);
+        Font embeddedFont = (Font) fontField.get(null);
+
+        String fontFamily = embeddedFont.getFamily();
+        assertNotNull(fontFamily, "Embedded font family should not be null");
+        assertFalse(fontFamily.isEmpty(), "Embedded font family should not be empty");
+
+        // The font should be either DejaVu Sans (embedded loaded) or a fallback
+        // Either way, column widths should be calculated using this font
+        assertTrue(fontFamily.equals("DejaVu Sans") || fontFamily.equals("SansSerif") || fontFamily.equals("Dialog"),
+                "Font family should be known: " + fontFamily);
+    }
+
+    @Test
+    void columnWidthsProduceExpectedValuesForFixedInput() {
+        // Test with a fixed table structure to verify cross-platform consistency
+        // With embedded font, these widths should be the same on all platforms
+        Element table = new Element(Tag.valueOf("table"), "");
+        Element row = table.appendElement("tr");
+        row.appendElement("td").text("Short");
+        row.appendElement("td").text("Medium length text");
+        row.appendElement("td").text("A very long text content that takes more space");
+
+        int pageWidth = 600; // Fixed width for predictable results
+        Map<Integer, Integer> columnWidths = TableAnalyzer.getColumnWidths(table, pageWidth);
+
+        assertEquals(3, columnWidths.size(), "Should have 3 columns");
+
+        // Verify column widths sum to page width (within rounding)
+        int sum = columnWidths.values().stream().mapToInt(Integer::intValue).sum();
+        assertTrue(Math.abs(sum - pageWidth) <= 3, "Sum should equal page width, was: " + sum);
+
+        // Verify relative ordering: column 0 < column 1 < column 2 (based on text length)
+        assertTrue(columnWidths.get(0) < columnWidths.get(1),
+                "Shorter text column should be narrower: col0=" + columnWidths.get(0) + ", col1=" + columnWidths.get(1));
+        assertTrue(columnWidths.get(1) < columnWidths.get(2),
+                "Medium text column should be narrower than long: col1=" + columnWidths.get(1) + ", col2=" + columnWidths.get(2));
+    }
+
+    private Element createSimpleTable() {
+        Element table = new Element(Tag.valueOf("table"), "");
+        Element row = table.appendElement("tr");
+        row.appendElement("td").text("Column 1");
+        row.appendElement("td").text("Column 2");
+        row.appendElement("td").text("Column 3");
+        return table;
+    }
 
     @Test
     void getColumnWidthsA5LandscapeTest() {

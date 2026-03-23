@@ -1,5 +1,6 @@
 package ch.sbb.polarion.extension.pdf_exporter.util.adjuster;
 
+import com.polarion.core.util.logging.Logger;
 import lombok.experimental.UtilityClass;
 import org.jetbrains.annotations.NotNull;
 import org.jsoup.helper.W3CDom;
@@ -12,16 +13,20 @@ import org.xhtmlrenderer.simple.Graphics2DRenderer;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
 @UtilityClass
 public class TableAnalyzer {
+    private static final Logger logger = Logger.getLogger(TableAnalyzer.class);
+
     private static final String TABLE = "table";
     private static final String TBODY = "tbody";
     private static final String TR = "tr";
@@ -30,6 +35,26 @@ public class TableAnalyzer {
 
     // Doesn't really matter, our concern here are widths
     private static final int PAGE_HEIGHT = 1000;
+    private static final String EMBEDDED_FONT_PATH = "/fonts/DejaVuSans.ttf";
+    private static final Font EMBEDDED_FONT = loadEmbeddedFont();
+
+    private static Font loadEmbeddedFont() {
+        return loadFontFromPath(EMBEDDED_FONT_PATH);
+    }
+
+    static Font loadFontFromPath(String fontPath) {
+        try (InputStream fontStream = TableAnalyzer.class.getResourceAsStream(fontPath)) {
+            if (fontStream != null) {
+                Font font = Font.createFont(Font.TRUETYPE_FONT, fontStream).deriveFont(Font.PLAIN, 12f);
+                GraphicsEnvironment.getLocalGraphicsEnvironment().registerFont(font);
+                logger.info("Loaded embedded font: " + font.getFontName());
+                return font;
+            }
+        } catch (Exception e) {
+            logger.warn("Failed to load embedded font from " + fontPath + ": " + e);
+        }
+        return new Font(Font.SANS_SERIF, Font.PLAIN, 12);
+    }
 
     public Map<Integer, Integer> getColumnWidths(@NotNull Element tableElement, int pageWidth) {
         Map<Integer, Integer> columnWidths = new HashMap<>();
@@ -43,6 +68,9 @@ public class TableAnalyzer {
 
     private Document toSelfDocument(@NotNull Element tableElement) {
         org.jsoup.nodes.Document tempDoc = org.jsoup.nodes.Document.createShell("");
+        // Inject CSS to force the embedded font for consistent column width calculation across platforms
+        String fontFamily = EMBEDDED_FONT.getFamily(Locale.ROOT);
+        tempDoc.head().appendElement("style").text("* { font-family: '" + fontFamily + "', sans-serif !important; }");
         tempDoc.body().appendChild(tableElement.clone());
         return new W3CDom().fromJsoup(tempDoc);
     }
@@ -53,6 +81,8 @@ public class TableAnalyzer {
         BufferedImage image = new BufferedImage(pageWidth, PAGE_HEIGHT, BufferedImage.TYPE_BYTE_GRAY);
         Graphics2D g2d = image.createGraphics();
         try {
+            g2d.setFont(EMBEDDED_FONT);
+
             Dimension dim = new Dimension(pageWidth, PAGE_HEIGHT);
             renderer.layout(g2d, dim);
             return renderer.getPanel().getRootBox();
@@ -88,7 +118,7 @@ public class TableAnalyzer {
 
     private void gatherColumnWidths(@NotNull Box tableBox, @NotNull Map<Integer, Integer> columnWidths) {
         List<Box> tbody = findChildrenByTag(tableBox, TBODY);
-        List<Box> rows = findChildrenByTag(!tbody.isEmpty() ? tbody.get(0) : tableBox, TR);
+        List<Box> rows = findChildrenByTag(!tbody.isEmpty() ? tbody.getFirst() : tableBox, TR);
 
         // Analyze all rows to properly handle colspan
         for (Box row : rows) {
