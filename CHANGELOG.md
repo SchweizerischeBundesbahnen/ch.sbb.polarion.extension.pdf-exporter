@@ -1,5 +1,16 @@
 # Changelog
 
+## [12.2.2](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v12.2.1...v12.2.2) (2026-03-23)
+
+
+### Bug Fixes
+
+* better logic of removing certain query parameter ([#758](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/758)) ([03ca69e](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/03ca69eb64e34c1be7830220fea42735a425d030))
+* **deps:** update dependency org.apache.tika:tika-core to v3.3.0 ([001dcb7](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/001dcb7a93a2bcd96269e6235e49a7ad82471846))
+* **deps:** update dependency org.testcontainers:testcontainers-bom to v2.0.4 ([27572b2](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/27572b27fd61731fbc0a32c129d861c428cc6c2c))
+* found illegal character 0x0025 ([#762](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/762)) ([7a49075](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/7a49075cb8642228e52c56b5de12dca44a4f4b5b)), closes [#760](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/760)
+* use embedded font for consistent table column widths across plat… ([#768](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/768)) ([5dbf709](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/5dbf7095d13e8daaa7d359c530ecf91063a6a384)), closes [#766](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/766)
+
 ## [12.2.1](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v12.2.0...v12.2.1) (2026-03-13)
 
 
