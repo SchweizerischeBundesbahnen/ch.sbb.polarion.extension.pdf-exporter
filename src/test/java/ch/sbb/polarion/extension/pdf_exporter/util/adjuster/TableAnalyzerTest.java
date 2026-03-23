@@ -3,6 +3,7 @@ package ch.sbb.polarion.extension.pdf_exporter.util.adjuster;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ConversionParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.Orientation;
 import ch.sbb.polarion.extension.pdf_exporter.util.PaperSizeUtils;
+import lombok.SneakyThrows;
 import org.jsoup.nodes.Element;
 import org.jsoup.parser.Tag;
 import org.junit.jupiter.api.Test;
@@ -16,7 +17,8 @@ import static org.junit.jupiter.api.Assertions.*;
 class TableAnalyzerTest {
 
     @Test
-    void embeddedFontIsLoaded() throws Exception {
+    @SneakyThrows
+    void embeddedFontIsLoaded() {
         // Access the private EMBEDDED_FONT field via reflection
         Field fontField = TableAnalyzer.class.getDeclaredField("EMBEDDED_FONT");
         fontField.setAccessible(true);
@@ -28,7 +30,8 @@ class TableAnalyzerTest {
     }
 
     @Test
-    void embeddedFontHasValidMetrics() throws Exception {
+    @SneakyThrows
+    void embeddedFontHasValidMetrics() {
         // Access the private EMBEDDED_FONT field via reflection
         Field fontField = TableAnalyzer.class.getDeclaredField("EMBEDDED_FONT");
         fontField.setAccessible(true);
@@ -52,14 +55,14 @@ class TableAnalyzerTest {
     }
 
     @Test
-    void embeddedFontFamilyIsExpected() throws Exception {
+    @SneakyThrows
+    void embeddedFontFamilyIsExpected() {
         // Access the private EMBEDDED_FONT field via reflection
         Field fontField = TableAnalyzer.class.getDeclaredField("EMBEDDED_FONT");
         fontField.setAccessible(true);
         Font embeddedFont = (Font) fontField.get(null);
 
         String family = embeddedFont.getFamily();
-        // Should be either DejaVu Sans (embedded) or SansSerif (fallback)
         assertTrue(family.equals("DejaVu Sans") || family.equals("SansSerif") || family.equals("Dialog"),
                 "Font family should be 'DejaVu Sans' or fallback 'SansSerif'/'Dialog', but was: " + family);
     }
