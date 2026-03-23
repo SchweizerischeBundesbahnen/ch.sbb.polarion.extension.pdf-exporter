@@ -65,6 +65,37 @@ class TableAnalyzerTest {
     }
 
     @Test
+    void loadFontFromPathReturnsValidFont() {
+        Font font = TableAnalyzer.loadFontFromPath("/fonts/DejaVuSans.ttf");
+
+        assertNotNull(font, "Font should never be null");
+        assertEquals(12f, font.getSize2D(), "Font size should be 12");
+        assertEquals(Font.PLAIN, font.getStyle(), "Font style should be PLAIN");
+        assertTrue(font.getFamily().equals("DejaVu Sans") || font.getName().equals(Font.SANS_SERIF),
+                "Font should be DejaVu Sans or SansSerif fallback");
+    }
+
+    @Test
+    void loadFontFromPathWithNonExistentPathReturnsFallback() {
+        Font font = TableAnalyzer.loadFontFromPath("/fonts/NonExistentFont.ttf");
+
+        assertNotNull(font, "Fallback font should be returned");
+        assertEquals(Font.SANS_SERIF, font.getName(), "Fallback should be SansSerif");
+        assertEquals(12f, font.getSize2D(), "Font size should be 12");
+        assertEquals(Font.PLAIN, font.getStyle(), "Font style should be PLAIN");
+    }
+
+    @Test
+    void loadFontFromPathWithInvalidFontReturnsFallback() {
+        Font font = TableAnalyzer.loadFontFromPath("/log4j2.xml");
+
+        assertNotNull(font, "Fallback font should be returned on exception");
+        assertEquals(Font.SANS_SERIF, font.getName(), "Fallback should be SansSerif");
+        assertEquals(12f, font.getSize2D(), "Font size should be 12");
+        assertEquals(Font.PLAIN, font.getStyle(), "Font style should be PLAIN");
+    }
+
+    @Test
     void columnWidthsAreConsistentAcrossMultipleCalls() {
         Element table = createSimpleTable();
         int pageWidth = PaperSizeUtils.getMaxWidth(ConversionParams.builder().build());

@@ -38,7 +38,11 @@ public class TableAnalyzer {
     private static final Font EMBEDDED_FONT = loadEmbeddedFont();
 
     private static Font loadEmbeddedFont() {
-        try (InputStream fontStream = TableAnalyzer.class.getResourceAsStream(EMBEDDED_FONT_PATH)) {
+        return loadFontFromPath(EMBEDDED_FONT_PATH);
+    }
+
+    static Font loadFontFromPath(String fontPath) {
+        try (InputStream fontStream = TableAnalyzer.class.getResourceAsStream(fontPath)) {
             if (fontStream != null) {
                 Font font = Font.createFont(Font.TRUETYPE_FONT, fontStream).deriveFont(Font.PLAIN, 12f);
                 GraphicsEnvironment.getLocalGraphicsEnvironment().registerFont(font);
@@ -46,7 +50,7 @@ public class TableAnalyzer {
                 return font;
             }
         } catch (Exception e) {
-            logger.warn("Failed to load embedded font from " + EMBEDDED_FONT_PATH + ": " + e.getMessage());
+            logger.warn("Failed to load embedded font from " + fontPath + ": " + e.getMessage());
         }
         logger.info("Using fallback sans-serif font");
         return new Font(Font.SANS_SERIF, Font.PLAIN, 12);
