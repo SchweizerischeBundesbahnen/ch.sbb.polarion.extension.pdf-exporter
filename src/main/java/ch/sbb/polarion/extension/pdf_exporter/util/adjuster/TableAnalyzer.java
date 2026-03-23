@@ -19,6 +19,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -68,7 +69,7 @@ public class TableAnalyzer {
     private Document toSelfDocument(@NotNull Element tableElement) {
         org.jsoup.nodes.Document tempDoc = org.jsoup.nodes.Document.createShell("");
         // Inject CSS to force the embedded font for consistent column width calculation across platforms
-        String fontFamily = EMBEDDED_FONT.getFamily();
+        String fontFamily = EMBEDDED_FONT.getFamily(Locale.ROOT);
         tempDoc.head().appendElement("style").text("* { font-family: '" + fontFamily + "', sans-serif !important; }");
         tempDoc.body().appendChild(tableElement.clone());
         return new W3CDom().fromJsoup(tempDoc);
