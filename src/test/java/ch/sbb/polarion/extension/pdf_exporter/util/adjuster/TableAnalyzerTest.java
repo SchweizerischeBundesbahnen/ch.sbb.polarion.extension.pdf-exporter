@@ -9,10 +9,45 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 class TableAnalyzerTest {
+
+    @Test
+    void columnWidthsAreConsistentAcrossMultipleCalls() {
+        Element table = createSimpleTable();
+        int pageWidth = PaperSizeUtils.getMaxWidth(ConversionParams.builder().build());
+
+        // Call multiple times and verify results are identical (deterministic behavior)
+        Map<Integer, Integer> firstResult = TableAnalyzer.getColumnWidths(table, pageWidth);
+        Map<Integer, Integer> secondResult = TableAnalyzer.getColumnWidths(table, pageWidth);
+        Map<Integer, Integer> thirdResult = TableAnalyzer.getColumnWidths(table, pageWidth);
+
+        assertEquals(firstResult, secondResult, "Column widths should be identical across calls");
+        assertEquals(secondResult, thirdResult, "Column widths should be identical across calls");
+    }
+
+    @Test
+    void columnWidthsSumEqualsPageWidth() {
+        Element table = createSimpleTable();
+        int pageWidth = PaperSizeUtils.getMaxWidth(ConversionParams.builder().build());
+
+        Map<Integer, Integer> columnWidths = TableAnalyzer.getColumnWidths(table, pageWidth);
+
+        // Sum of column widths should approximately equal page width (within rounding tolerance)
+        int totalWidth = columnWidths.values().stream().mapToInt(Integer::intValue).sum();
+        assertTrue(Math.abs(totalWidth - pageWidth) <= columnWidths.size(),
+                "Sum of column widths (" + totalWidth + ") should be close to page width (" + pageWidth + ")");
+    }
+
+    private Element createSimpleTable() {
+        Element table = new Element(Tag.valueOf("table"), "");
+        Element row = table.appendElement("tr");
+        row.appendElement("td").text("Column 1");
+        row.appendElement("td").text("Column 2");
+        row.appendElement("td").text("Column 3");
+        return table;
+    }
 
     @Test
     void getColumnWidthsA5LandscapeTest() {

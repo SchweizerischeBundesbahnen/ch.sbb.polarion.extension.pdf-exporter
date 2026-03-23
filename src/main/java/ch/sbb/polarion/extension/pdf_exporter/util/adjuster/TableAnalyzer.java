@@ -78,7 +78,6 @@ public class TableAnalyzer {
         Graphics2D g2d = image.createGraphics();
         try {
             g2d.setFont(EMBEDDED_FONT);
-            logRenderingHints(g2d);
 
             Dimension dim = new Dimension(pageWidth, PAGE_HEIGHT);
             renderer.layout(g2d, dim);
@@ -88,20 +87,6 @@ public class TableAnalyzer {
             g2d.dispose();
             image.flush();
         }
-    }
-
-    private void logRenderingHints(@NotNull Graphics2D g2d) {
-        logger.info("TableAnalyzer environment info:");
-        logger.info("  Java: " + System.getProperty("java.version") + " (" + System.getProperty("java.vendor") + ")");
-        logger.info("  OS: " + System.getProperty("os.name") + " " + System.getProperty("os.version") + " (" + System.getProperty("os.arch") + ")");
-
-        Font font = g2d.getFont();
-        FontMetrics fm = g2d.getFontMetrics();
-        logger.info("  Font: " + font);
-        logger.info("  Font family: " + font.getFamily() + ", name: " + font.getFontName());
-        logger.info("  Font metrics - ascent: " + fm.getAscent() + ", descent: " + fm.getDescent() + ", height: " + fm.getHeight());
-        logger.info("  Font metrics - charWidth('W'): " + fm.charWidth('W') + ", charWidth('i'): " + fm.charWidth('i'));
-        logger.info("  Font metrics - stringWidth(\"test\"): " + fm.stringWidth("test"));
     }
 
     private void findTableAndAnalyze(Box box, Map<Integer, Integer> columnWidths) {
