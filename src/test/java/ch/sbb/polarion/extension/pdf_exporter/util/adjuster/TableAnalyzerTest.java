@@ -7,11 +7,62 @@ import org.jsoup.nodes.Element;
 import org.jsoup.parser.Tag;
 import org.junit.jupiter.api.Test;
 
+import java.awt.*;
+import java.lang.reflect.Field;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class TableAnalyzerTest {
+
+    @Test
+    void embeddedFontIsLoaded() throws Exception {
+        // Access the private EMBEDDED_FONT field via reflection
+        Field fontField = TableAnalyzer.class.getDeclaredField("EMBEDDED_FONT");
+        fontField.setAccessible(true);
+        Font embeddedFont = (Font) fontField.get(null);
+
+        assertNotNull(embeddedFont, "EMBEDDED_FONT should not be null");
+        assertEquals(12f, embeddedFont.getSize2D(), "Font size should be 12");
+        assertEquals(Font.PLAIN, embeddedFont.getStyle(), "Font style should be PLAIN");
+    }
+
+    @Test
+    void embeddedFontHasValidMetrics() throws Exception {
+        // Access the private EMBEDDED_FONT field via reflection
+        Field fontField = TableAnalyzer.class.getDeclaredField("EMBEDDED_FONT");
+        fontField.setAccessible(true);
+        Font embeddedFont = (Font) fontField.get(null);
+
+        // Create a graphics context to get font metrics
+        java.awt.image.BufferedImage img = new java.awt.image.BufferedImage(1, 1, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g2d = img.createGraphics();
+        try {
+            g2d.setFont(embeddedFont);
+            FontMetrics fm = g2d.getFontMetrics();
+
+            assertTrue(fm.getHeight() > 0, "Font height should be positive");
+            assertTrue(fm.getAscent() > 0, "Font ascent should be positive");
+            assertTrue(fm.getDescent() >= 0, "Font descent should be non-negative");
+            assertTrue(fm.charWidth('W') > 0, "Character width should be positive");
+            assertTrue(fm.stringWidth("test") > 0, "String width should be positive");
+        } finally {
+            g2d.dispose();
+        }
+    }
+
+    @Test
+    void embeddedFontFamilyIsExpected() throws Exception {
+        // Access the private EMBEDDED_FONT field via reflection
+        Field fontField = TableAnalyzer.class.getDeclaredField("EMBEDDED_FONT");
+        fontField.setAccessible(true);
+        Font embeddedFont = (Font) fontField.get(null);
+
+        String family = embeddedFont.getFamily();
+        // Should be either DejaVu Sans (embedded) or SansSerif (fallback)
+        assertTrue(family.equals("DejaVu Sans") || family.equals("SansSerif") || family.equals("Dialog"),
+                "Font family should be 'DejaVu Sans' or fallback 'SansSerif'/'Dialog', but was: " + family);
+    }
 
     @Test
     void columnWidthsAreConsistentAcrossMultipleCalls() {
