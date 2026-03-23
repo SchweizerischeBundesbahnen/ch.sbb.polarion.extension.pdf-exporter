@@ -17,7 +17,7 @@ public class ParamSetCondition implements ExecutionCondition {
 
     @Override
     public ConditionEvaluationResult evaluateExecutionCondition(ExtensionContext extensionContext) {
-        String implValue = System.getProperty(BaseWeasyPrintTest.IMPL_NAME_PARAM);
+        String implValue = "docker";//System.getProperty(BaseWeasyPrintTest.IMPL_NAME_PARAM);
         if (DOCKER.equalsIgnoreCase(implValue)) {
             return ConditionEvaluationResult.enabled("ok");
         } else {
