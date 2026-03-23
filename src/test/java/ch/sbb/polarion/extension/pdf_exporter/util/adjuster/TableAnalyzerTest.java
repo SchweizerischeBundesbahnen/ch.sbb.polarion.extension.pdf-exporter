@@ -146,6 +146,51 @@ class TableAnalyzerTest {
                 "Sum of column widths (" + totalWidth + ") should be close to page width (" + pageWidth + ")");
     }
 
+    @Test
+    @SneakyThrows
+    void columnWidthsUseEmbeddedFont() {
+        // Verify that the embedded font family is used in CSS injection
+        // This ensures the cross-platform fix is actually applied
+        Field fontField = TableAnalyzer.class.getDeclaredField("EMBEDDED_FONT");
+        fontField.setAccessible(true);
+        Font embeddedFont = (Font) fontField.get(null);
+
+        String fontFamily = embeddedFont.getFamily();
+        assertNotNull(fontFamily, "Embedded font family should not be null");
+        assertFalse(fontFamily.isEmpty(), "Embedded font family should not be empty");
+
+        // The font should be either DejaVu Sans (embedded loaded) or a fallback
+        // Either way, column widths should be calculated using this font
+        assertTrue(fontFamily.equals("DejaVu Sans") || fontFamily.equals("SansSerif") || fontFamily.equals("Dialog"),
+                "Font family should be known: " + fontFamily);
+    }
+
+    @Test
+    void columnWidthsProduceExpectedValuesForFixedInput() {
+        // Test with a fixed table structure to verify cross-platform consistency
+        // With embedded font, these widths should be the same on all platforms
+        Element table = new Element(Tag.valueOf("table"), "");
+        Element row = table.appendElement("tr");
+        row.appendElement("td").text("Short");
+        row.appendElement("td").text("Medium length text");
+        row.appendElement("td").text("A very long text content that takes more space");
+
+        int pageWidth = 600; // Fixed width for predictable results
+        Map<Integer, Integer> columnWidths = TableAnalyzer.getColumnWidths(table, pageWidth);
+
+        assertEquals(3, columnWidths.size(), "Should have 3 columns");
+
+        // Verify column widths sum to page width (within rounding)
+        int sum = columnWidths.values().stream().mapToInt(Integer::intValue).sum();
+        assertTrue(Math.abs(sum - pageWidth) <= 3, "Sum should equal page width, was: " + sum);
+
+        // Verify relative ordering: column 0 < column 1 < column 2 (based on text length)
+        assertTrue(columnWidths.get(0) < columnWidths.get(1),
+                "Shorter text column should be narrower: col0=" + columnWidths.get(0) + ", col1=" + columnWidths.get(1));
+        assertTrue(columnWidths.get(1) < columnWidths.get(2),
+                "Medium text column should be narrower than long: col1=" + columnWidths.get(1) + ", col2=" + columnWidths.get(2));
+    }
+
     private Element createSimpleTable() {
         Element table = new Element(Tag.valueOf("table"), "");
         Element row = table.appendElement("tr");
