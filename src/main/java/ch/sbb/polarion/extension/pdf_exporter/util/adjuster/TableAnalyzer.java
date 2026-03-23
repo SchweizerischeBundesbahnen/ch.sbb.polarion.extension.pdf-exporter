@@ -50,9 +50,8 @@ public class TableAnalyzer {
                 return font;
             }
         } catch (Exception e) {
-            logger.warn("Failed to load embedded font from " + fontPath + ": " + e.getMessage());
+            logger.warn("Failed to load embedded font from " + fontPath + ": " + e);
         }
-        logger.info("Using fallback sans-serif font");
         return new Font(Font.SANS_SERIF, Font.PLAIN, 12);
     }
 

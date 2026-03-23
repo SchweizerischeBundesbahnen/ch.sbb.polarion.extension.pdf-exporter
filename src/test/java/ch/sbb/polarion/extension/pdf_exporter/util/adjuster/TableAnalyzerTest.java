@@ -76,6 +76,27 @@ class TableAnalyzerTest {
     }
 
     @Test
+    void loadFontFromPathSuccessfullyLoadsValidFont() {
+        Font font = TableAnalyzer.loadFontFromPath("/weasyprint/font/fa-solid-900.ttf");
+
+        assertNotNull(font, "Font should be loaded");
+        assertEquals("Font Awesome 6 Free Solid", font.getFamily(), "Font family should be Font Awesome");
+        assertEquals(12f, font.getSize2D(), "Font size should be 12");
+        assertEquals(Font.PLAIN, font.getStyle(), "Font style should be PLAIN");
+
+        GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
+        String[] fontFamilies = ge.getAvailableFontFamilyNames();
+        boolean fontRegistered = false;
+        for (String family : fontFamilies) {
+            if (family.equals("Font Awesome 6 Free Solid")) {
+                fontRegistered = true;
+                break;
+            }
+        }
+        assertTrue(fontRegistered, "Font should be registered in GraphicsEnvironment");
+    }
+
+    @Test
     void loadFontFromPathWithNonExistentPathReturnsFallback() {
         Font font = TableAnalyzer.loadFontFromPath("/fonts/NonExistentFont.ttf");
 
