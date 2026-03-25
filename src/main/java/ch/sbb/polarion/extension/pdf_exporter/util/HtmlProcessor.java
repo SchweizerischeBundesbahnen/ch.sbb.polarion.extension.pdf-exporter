@@ -491,6 +491,25 @@ public class HtmlProcessor {
                 heading.tagName("h" + newLevel);
             }
         }
+
+        // Polarion uses <div class="heading-N"> for heading levels beyond h6 (levels 7-29).
+        // Convert these to proper h6 tags so they are treated as headings in the export.
+        convertDivHeadingsToHtmlHeadings(document);
+    }
+
+    private void convertDivHeadingsToHtmlHeadings(@NotNull Document document) {
+        StringBuilder selector = new StringBuilder();
+        for (int i = H_TAG_MIN_PRIORITY + 1; i <= H_TAG_MAX_LEVEL; i++) {
+            if (!selector.isEmpty()) {
+                selector.append(", ");
+            }
+            selector.append("div.heading-").append(i);
+        }
+        Elements divHeadings = document.select(selector.toString());
+
+        for (Element divHeading : divHeadings) {
+            divHeading.tagName("h" + H_TAG_MIN_PRIORITY);
+        }
     }
 
     @VisibleForTesting
