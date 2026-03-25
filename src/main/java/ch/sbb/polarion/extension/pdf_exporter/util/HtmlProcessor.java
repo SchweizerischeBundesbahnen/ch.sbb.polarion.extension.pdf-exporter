@@ -492,7 +492,7 @@ public class HtmlProcessor {
             }
         }
 
-        // Polarion uses <div class="heading-N"> for heading levels beyond h6 (levels 7-29).
+        // Polarion uses <div class="heading-N"> for heading levels beyond h6 (levels 7-30).
         // Convert these to proper h6 tags so they are treated as headings in the export.
         convertDivHeadingsToHtmlHeadings(document);
     }

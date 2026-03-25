@@ -489,6 +489,7 @@ class HtmlProcessorTest {
                 Arguments.of("<h2>First level heading</h2>", "<h1>First level heading</h1>"),
                 Arguments.of("<div class=\"heading-7\">Heading level 7</div>", "<h6 class=\"heading-7\">Heading level 7</h6>"),
                 Arguments.of("<div class=\"heading-15\">Heading level 15</div>", "<h6 class=\"heading-15\">Heading level 15</h6>"),
+                Arguments.of("<div class=\"heading-30\">Heading level 30</div>", "<h6 class=\"heading-30\">Heading level 30</h6>"),
                 Arguments.of("<div>100$</div>", """
                         <div>100&dollar;</div>""")
         );
