@@ -1,5 +1,13 @@
 # Changelog
 
+## [12.2.3](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v12.2.2...v12.2.3) (2026-03-30)
+
+
+### Bug Fixes
+
+* convert Polarion `<div class="heading-N">` tags to `<h6>` for export compatibility ([#771](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/771)) ([749b48e](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/749b48ec498c72c0a86cd2273d4f6353a723f9a6)), closes [#770](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/770)
+* **deps:** update dependency ch.sbb.polarion.extensions:ch.sbb.polarion.extension.generic to v14.1.1 ([fe3ea60](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/fe3ea6073b25fc202d43fa5cf6a18f5628b4cc17))
+
 ## [12.2.2](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v12.2.1...v12.2.2) (2026-03-23)
 
 
