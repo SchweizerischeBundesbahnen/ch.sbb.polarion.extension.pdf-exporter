@@ -151,16 +151,14 @@ public class PdfExporterPolarionService extends PolarionService {
     }
 
     private boolean sameDocument(@Nullable String projectId, @NotNull String spaceId, @NotNull String documentName, @NotNull IUniqueObject document) {
-        String path = switch (document) {
-            case IModule module -> module.getModuleLocation().getLocationPath();
-            case IRichPage page -> page.getPageNameWithSpace();
-            default -> null;
-        };
-        if (path == null) {
+        if (!Objects.equals(projectId, document.getProjectId())) {
             return false;
         }
-        String expectedPath = String.format("%s/%s", spaceId, documentName);
-        return expectedPath.equals(path) && Objects.equals(projectId, document.getProjectId());
+        return switch (document) {
+            case IModule module -> (spaceId + "/" + documentName).equals(module.getModuleLocation().getLocationPath());
+            case IRichPage page -> spaceId.equals(page.getSpaceId()) && documentName.equals(page.getPageName());
+            default -> false;
+        };
     }
 
     public @NotNull ITestRun getTestRun(@NotNull String projectId, @NotNull String testRunId, @Nullable String revision) {

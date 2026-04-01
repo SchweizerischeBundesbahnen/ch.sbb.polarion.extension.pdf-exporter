@@ -207,7 +207,8 @@ class PdfExporterPolarionServiceTest {
 
         IRichPage page = mock(IRichPage.class);
         when(page.getProjectId()).thenReturn("someProjectId");
-        when(page.getPageNameWithSpace()).thenReturn("someSpaceId/pageName");
+        when(page.getSpaceId()).thenReturn("someSpaceId");
+        when(page.getPageName()).thenReturn("pageName");
         IPObjectList matchingPages = new PObjectList(dataService, List.of(page));
         when(dataService.searchInstances(IRichPage.PROTO, "matching", "name")).thenReturn(matchingPages);
         IPObjectList notMatchingPages = new PObjectList(dataService, List.of());
