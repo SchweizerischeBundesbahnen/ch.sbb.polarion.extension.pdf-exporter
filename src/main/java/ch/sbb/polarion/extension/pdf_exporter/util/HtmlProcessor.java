@@ -924,6 +924,9 @@ public class HtmlProcessor {
         // Propagate page-break avoidance to rows of inner tables
         for (Element innerTable : td.select(HtmlTag.TABLE)) {
             propagateBreakInsideAvoidToRows(innerTable);
+            if (CssProp.PAGE_BREAK_INSIDE_AVOID_VALUE.equals(getCssValue(innerTable, CssProp.PAGE_BREAK_INSIDE))) {
+                removePageBreakInsideAvoid(innerTable);
+            }
         }
 
         // Move td's children to replace the table
@@ -935,7 +938,8 @@ public class HtmlProcessor {
     }
 
     private void propagateBreakInsideAvoidToRows(Element table) {
-        for (Element row : table.select(HtmlTag.TR)) {
+        // Use direct-child selectors to avoid processing rows of nested tables
+        for (Element row : table.select("> tr, > thead > tr, > tbody > tr, > tfoot > tr")) {
             CSSDeclarationList rowStyles = getCssStyles(row);
             CssUtils.setPropertyValue(rowStyles, CssProp.BREAK_INSIDE, CssProp.PAGE_BREAK_INSIDE_AVOID_VALUE);
             row.attr(HtmlTagAttr.STYLE, rowStyles.getAsCSSString());
