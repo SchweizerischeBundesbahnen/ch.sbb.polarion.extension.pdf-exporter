@@ -1,0 +1,126 @@
+<style>
+    td, th {
+        vertical-align: top;
+    }
+</style>
+<table style="page-break-inside:avoid;">
+    <tr>
+        <td>
+            <h2>Requirements Specification</h2>
+            <table>
+                <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Requirement</th>
+                    <th>Status</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr>
+                    <td>REQ-001</td>
+                    <td>
+                        The system shall provide a mechanism for exporting documents to PDF format.
+                        The export process must preserve the original document structure including headings,
+                        paragraphs, tables, and images. All formatting attributes such as font styles,
+                        colors, and alignment must be retained in the exported PDF.
+                        The system shall support both portrait and landscape orientations.
+                        Page headers and footers must be configurable per document template.
+                        The exported PDF must comply with PDF/A-2b standard for long-term archival.
+                        Additionally, the export mechanism shall support batch processing of multiple
+                        documents in a single operation. Progress indicators must be provided during
+                        the export process. Error handling shall ensure that partial exports are
+                        clearly marked and reported to the user.
+                    </td>
+                    <td>Approved</td>
+                </tr>
+                <tr>
+                    <td>REQ-002</td>
+                    <td>
+                        The system shall support configurable page breaks within the exported document.
+                        Users must be able to specify page break positions manually through the document editor.
+                        Automatic page breaks shall be inserted to prevent orphaned headings at the bottom of pages.
+                        Table rows shall not be split across page boundaries when the row height permits.
+                        The system shall respect the "No Page Break" property configured in Polarion
+                        work item presentation settings. When this property is enabled, the content
+                        of the work item shall remain on a single page whenever possible.
+                        Furthermore, page break behavior shall be consistent across all supported
+                        paper sizes including A4, A3, Letter, and Legal formats. The system must
+                        handle edge cases where content exactly fills a page without introducing
+                        unnecessary blank pages in the output.
+                    </td>
+                    <td>In Review</td>
+                </tr>
+                <tr>
+                    <td>REQ-003</td>
+                    <td>
+                        The PDF export engine shall handle tables with complex structures including
+                        merged cells, nested tables, and multi-line content within individual cells.
+                        Table headers must be repeated on each page when a table spans multiple pages.
+                        Column widths shall be calculated automatically based on content unless
+                        explicitly specified by the user. The rendering engine must gracefully handle
+                        tables wider than the available page width by applying proportional scaling.
+                        Border styles including solid, dashed, and dotted lines must be supported.
+                        Cell padding and spacing must be preserved according to the source document
+                        styling. Background colors for alternating rows shall be supported through
+                        CSS configuration. The engine must correctly render right-to-left text
+                        within table cells for internationalization support.
+                    </td>
+                    <td>Approved</td>
+                </tr>
+                <tr>
+                    <td>REQ-004</td>
+                    <td>
+                        The system shall provide a cover page generation feature for exported PDF documents.
+                        Cover pages must support customizable templates with placeholders for document
+                        metadata fields such as title, author, revision, date, and project name.
+                        Custom fields defined in the Polarion work item schema must also be available
+                        as cover page placeholders. The cover page template shall support both HTML
+                        and CSS for layout and styling. Images referenced in cover page templates
+                        must be embedded inline to ensure the PDF is self-contained.
+                        The cover page shall always appear as the first page of the exported document.
+                        Page numbering shall be configurable to start from the cover page or from
+                        the first content page. Multiple cover page templates must be supported
+                        per project with the ability to select a template at export time.
+                    </td>
+                    <td>Draft</td>
+                </tr>
+                <tr>
+                    <td>REQ-005</td>
+                    <td>
+                        The system shall support watermark functionality for exported PDF documents.
+                        Watermarks can be either text-based or image-based and must be rendered as
+                        a semi-transparent overlay on each page of the document. Text watermarks
+                        shall support configurable font, size, color, opacity, and rotation angle.
+                        Image watermarks shall support PNG and SVG formats with configurable
+                        positioning and scaling. The watermark configuration shall be stored as
+                        part of the export template settings. Users with appropriate permissions
+                        must be able to create, modify, and delete watermark configurations.
+                        The watermark must not interfere with the readability of the underlying
+                        document content. Watermarks shall be applied consistently across all
+                        pages including the cover page when enabled.
+                    </td>
+                    <td>Approved</td>
+                </tr>
+                <tr>
+                    <td>REQ-006</td>
+                    <td>
+                        The system shall generate a table of contents automatically based on the
+                        heading structure of the exported document. The table of contents must
+                        include clickable hyperlinks to the corresponding sections within the PDF.
+                        Heading levels from H1 through H6 shall be supported with appropriate
+                        indentation in the table of contents. Page numbers must be accurately
+                        displayed next to each entry. The table of contents generation shall
+                        handle documents with deeply nested heading structures without layout
+                        issues. Users must be able to configure the maximum heading depth
+                        included in the table of contents. The table of contents shall be
+                        placed after the cover page and before the main document content.
+                        Leader dots between entry text and page numbers shall be rendered
+                        for improved readability of the table of contents.
+                    </td>
+                    <td>In Review</td>
+                </tr>
+                </tbody>
+            </table>
+        </td>
+    </tr>
+</table>

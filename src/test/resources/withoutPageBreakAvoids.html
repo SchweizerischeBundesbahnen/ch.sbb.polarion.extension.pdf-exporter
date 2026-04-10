@@ -15,22 +15,22 @@
                 </span>Title</h2>
 <table>
     <thead>
-    <tr>
+    <tr style="break-inside:avoid;">
         <th>Header 1</th>
         <th>Header 2</th>
     </tr>
     </thead>
     <tbody>
-    <tr>
+    <tr style="break-inside:avoid;">
         <td>Cell 1</td>
         <td>Cell 2</td>
     </tr>
-    <tr>
+    <tr style="break-inside:avoid;">
         <td>Cell 3</td>
         <td>
             <table>
                 <tbody>
-                <tr>
+                <tr style="break-inside:avoid;">
                     <td>Inlined table</td>
                 </tr>
                 </tbody>
@@ -39,9 +39,31 @@
     </tr>
     </tbody>
 </table>
-<table style="page-break-inside:avoid;"></table>
-<table style="page-break-inside:avoid;">
+<table style=""></table>
+<table style="">
     <tbody>
-    <tr></tr>
+    <tr style="break-inside:avoid;"></tr>
+    </tbody>
+</table>
+<table style="width:100%;">
+    <tbody>
+    <tr style="break-inside:avoid;">
+        <td>Row 1 Col 1</td>
+        <td>Row 1 Col 2</td>
+    </tr>
+    <tr style="color:red;break-inside:avoid;">
+        <td>Row 2 Col 1</td>
+        <td>Row 2 Col 2</td>
+    </tr>
+    </tbody>
+</table>
+<table style="border:1px solid black;">
+    <tbody>
+    <tr style="break-inside:avoid;">
+        <td>Nested inner cell 1</td>
+    </tr>
+    <tr style="break-inside:avoid;">
+        <td>Nested inner cell 2</td>
+    </tr>
     </tbody>
 </table>

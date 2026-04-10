@@ -886,32 +886,70 @@ public class HtmlProcessor {
         //
         // Taking into account that work item content can also contain tables this task should be done with cautious.
         // Removing "page-break-inside:avoid;" from table's styling doesn't help, tables are still broken. So, solution
-        // is to remove that table wrapping at all. As a result above example should become just:
+        // is to remove that table wrapping at all. However, to preserve the user's intent of avoiding page breaks,
+        // "break-inside: avoid" is propagated to rows of any inner content tables. As a result above example becomes:
         //
-        // <CONTENT>
+        // <CONTENT> (with "break-inside: avoid" on inner table rows)
         //
 
-        Elements tables = document.select("table");
+        Elements tables = document.select(HtmlTag.TABLE);
         for (Element table : tables) {
             String pageBreakInsideValue = getCssValue(table, CssProp.PAGE_BREAK_INSIDE);
-            if (!pageBreakInsideValue.equals(CssProp.PAGE_BREAK_INSIDE_AVOID_VALUE)) {
-                continue;
-            }
-
-            Element tbody = JSoupUtils.getSingleChildByTag(table, HtmlTag.TBODY);
-
-            Element tr = JSoupUtils.getSingleChildByTag(tbody != null ? tbody : table, HtmlTag.TR);
-            if (tr != null) {
-                Element td = JSoupUtils.getSingleChildByTag(tr, HtmlTag.TD);
-                if (td != null) {
-                    // Move td's children to replace the table
-                    for (Node contentNodes : td.childNodes()) {
-                        table.before(contentNodes.clone());
-                    }
-                    table.remove();
-                }
+            if (pageBreakInsideValue.equals(CssProp.PAGE_BREAK_INSIDE_AVOID_VALUE)) {
+                processPageBreakAvoidTable(table);
             }
         }
+    }
+
+    private void processPageBreakAvoidTable(Element table) {
+        Element tbody = JSoupUtils.getSingleChildByTag(table, HtmlTag.TBODY);
+        Element tr = JSoupUtils.getSingleChildByTag(tbody != null ? tbody : table, HtmlTag.TR);
+        if (tr != null && unwrapWrapperTable(table, tr)) {
+            return;
+        }
+
+        // Content table with page-break-inside:avoid: replace table-level constraint with
+        // row-level break-inside:avoid so individual rows stay intact across page boundaries
+        // while the table itself is allowed to span multiple pages
+        propagateBreakInsideAvoidToRows(table);
+        removePageBreakInsideAvoid(table);
+    }
+
+    private boolean unwrapWrapperTable(Element table, Element tr) {
+        Element td = JSoupUtils.getSingleChildByTag(tr, HtmlTag.TD);
+        if (td == null) {
+            return false;
+        }
+
+        // Propagate page-break avoidance to rows of inner tables
+        for (Element innerTable : td.select(HtmlTag.TABLE)) {
+            propagateBreakInsideAvoidToRows(innerTable);
+            if (CssProp.PAGE_BREAK_INSIDE_AVOID_VALUE.equals(getCssValue(innerTable, CssProp.PAGE_BREAK_INSIDE))) {
+                removePageBreakInsideAvoid(innerTable);
+            }
+        }
+
+        // Move td's children to replace the table
+        for (Node contentNodes : td.childNodes()) {
+            table.before(contentNodes.clone());
+        }
+        table.remove();
+        return true;
+    }
+
+    private void propagateBreakInsideAvoidToRows(Element table) {
+        // Use direct-child selectors to avoid processing rows of nested tables
+        for (Element row : table.select("> tr, > thead > tr, > tbody > tr, > tfoot > tr")) {
+            CSSDeclarationList rowStyles = getCssStyles(row);
+            CssUtils.setPropertyValue(rowStyles, CssProp.BREAK_INSIDE, CssProp.PAGE_BREAK_INSIDE_AVOID_VALUE);
+            row.attr(HtmlTagAttr.STYLE, rowStyles.getAsCSSString());
+        }
+    }
+
+    private void removePageBreakInsideAvoid(Element table) {
+        CSSDeclarationList tableStyles = getCssStyles(table);
+        CssUtils.removeProperty(tableStyles, CssProp.PAGE_BREAK_INSIDE);
+        table.attr(HtmlTagAttr.STYLE, tableStyles.getAsCSSString());
     }
 
     public void fixNestedLists(Document doc) {
