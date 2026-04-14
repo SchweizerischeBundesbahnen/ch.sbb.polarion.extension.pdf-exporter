@@ -211,6 +211,27 @@ class StylePackageSettingsTest {
     }
 
     @Test
+    void testLoadByNameDelegatesToLoad() {
+        try (MockedStatic<ScopeUtils> mockScopeUtils = mockStatic(ScopeUtils.class)) {
+            SettingsService mockedSettingsService = mock(SettingsService.class);
+            mockScopeUtils.when(() -> ScopeUtils.getFileContent(any())).thenCallRealMethod();
+
+            StylePackageSettings stylePackageSettings = spy(new StylePackageSettings(mockedSettingsService));
+
+            String projectId = "test_project";
+            String settingName = "my_style";
+            StylePackageModel expectedModel = StylePackageModel.builder().css("testCss").build();
+
+            doReturn(expectedModel).when(stylePackageSettings).load(eq(projectId), any(SettingId.class));
+
+            StylePackageModel result = stylePackageSettings.loadByName(projectId, settingName);
+
+            assertSame(expectedModel, result);
+            verify(stylePackageSettings).load(eq(projectId), eq(SettingId.fromName(settingName)));
+        }
+    }
+
+    @Test
     void testValidateMatchingQuery() {
         try (MockedStatic<ScopeUtils> mockScopeUtils = mockStatic(ScopeUtils.class)) {
             SettingsService mockedSettingsService = mock(SettingsService.class);

@@ -3,4 +3,6 @@ Bundle-Name: PDF Exporter Extension for Polarion ALM
 Export-Package: ch.sbb.polarion.extension.pdf_exporter,
  ch.sbb.polarion.extension.pdf_exporter.converter,
  ch.sbb.polarion.extension.pdf_exporter.rest.model,
- ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion
+ ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion,
+ ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.stylepackage,
+ ch.sbb.polarion.extension.pdf_exporter.settings
