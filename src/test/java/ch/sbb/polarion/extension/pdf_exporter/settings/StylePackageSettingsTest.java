@@ -227,7 +227,7 @@ class StylePackageSettingsTest {
             StylePackageModel result = stylePackageSettings.loadByName(projectId, settingName);
 
             assertSame(expectedModel, result);
-            verify(stylePackageSettings).load(eq(projectId), eq(SettingId.fromName(settingName)));
+            verify(stylePackageSettings).load(projectId, SettingId.fromName(settingName));
         }
     }
 
