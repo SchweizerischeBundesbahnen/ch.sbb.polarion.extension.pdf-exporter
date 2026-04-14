@@ -1,6 +1,7 @@
 package ch.sbb.polarion.extension.pdf_exporter.settings;
 
 import ch.sbb.polarion.extension.generic.settings.GenericNamedSettings;
+import ch.sbb.polarion.extension.generic.settings.SettingId;
 import ch.sbb.polarion.extension.generic.settings.SettingsService;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.CommentsRenderType;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.Orientation;
@@ -10,6 +11,7 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ImageDensity
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.stylepackage.StylePackageModel;
 import com.polarion.core.util.StringUtils;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
 
 public class StylePackageSettings extends GenericNamedSettings<StylePackageModel> {
@@ -28,6 +30,14 @@ public class StylePackageSettings extends GenericNamedSettings<StylePackageModel
     public void beforeSave(@NotNull StylePackageModel what) {
         adjustAndValidateWeight(what);
         validateMatchingQuery(what);
+    }
+
+    /**
+     * Loads a style package by name. In OSGi, other bundles may use a different SettingId class
+     * instance due to classloader boundaries, so using the name avoids ClassCastException.
+     */
+    public @NotNull StylePackageModel loadByName(@Nullable String projectId, @NotNull String name) {
+        return load(projectId, SettingId.fromName(name));
     }
 
     @Override

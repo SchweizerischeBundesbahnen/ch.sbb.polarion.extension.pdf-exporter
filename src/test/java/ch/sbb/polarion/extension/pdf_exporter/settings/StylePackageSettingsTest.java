@@ -211,6 +211,47 @@ class StylePackageSettingsTest {
     }
 
     @Test
+    void testLoadByNameDelegatesToLoad() {
+        try (MockedStatic<ScopeUtils> mockScopeUtils = mockStatic(ScopeUtils.class)) {
+            SettingsService mockedSettingsService = mock(SettingsService.class);
+            mockScopeUtils.when(() -> ScopeUtils.getFileContent(any())).thenCallRealMethod();
+
+            StylePackageSettings stylePackageSettings = spy(new StylePackageSettings(mockedSettingsService));
+
+            String projectId = "test_project";
+            String settingName = "my_style";
+            StylePackageModel expectedModel = StylePackageModel.builder().css("testCss").build();
+
+            doReturn(expectedModel).when(stylePackageSettings).load(eq(projectId), any(SettingId.class));
+
+            StylePackageModel result = stylePackageSettings.loadByName(projectId, settingName);
+
+            assertSame(expectedModel, result);
+            verify(stylePackageSettings).load(projectId, SettingId.fromName(settingName));
+        }
+    }
+
+    @Test
+    void testLoadByNameWithNullProjectId() {
+        try (MockedStatic<ScopeUtils> mockScopeUtils = mockStatic(ScopeUtils.class)) {
+            SettingsService mockedSettingsService = mock(SettingsService.class);
+            mockScopeUtils.when(() -> ScopeUtils.getFileContent(any())).thenCallRealMethod();
+
+            StylePackageSettings stylePackageSettings = spy(new StylePackageSettings(mockedSettingsService));
+
+            String settingName = "my_style";
+            StylePackageModel expectedModel = StylePackageModel.builder().css("testCss").build();
+
+            doReturn(expectedModel).when(stylePackageSettings).load(isNull(), any(SettingId.class));
+
+            StylePackageModel result = stylePackageSettings.loadByName(null, settingName);
+
+            assertSame(expectedModel, result);
+            verify(stylePackageSettings).load(isNull(), eq(SettingId.fromName(settingName)));
+        }
+    }
+
+    @Test
     void testValidateMatchingQuery() {
         try (MockedStatic<ScopeUtils> mockScopeUtils = mockStatic(ScopeUtils.class)) {
             SettingsService mockedSettingsService = mock(SettingsService.class);
