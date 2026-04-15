@@ -1,5 +1,23 @@
 # Changelog
 
+## [12.3.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v12.2.2...v12.3.0) (2026-04-15)
+
+
+### Features
+
+* ability to load style package settings by external bundles ([#781](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/781)) ([2306877](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/23068777c9e6ed608b569f4fcf4b542ca2d6eb0b)), closes [#780](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/780)
+
+
+### Bug Fixes
+
+* convert Polarion `<div class="heading-N">` tags to `<h6>` for export compatibility ([#771](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/771)) ([749b48e](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/749b48ec498c72c0a86cd2273d4f6353a723f9a6)), closes [#770](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/770)
+* correct IRichPage path comparison ([#775](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/775)) ([0fa915f](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/0fa915f8454c9a8d1defcedf25c6f6a22584989d)), closes [#773](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/773)
+* **deps:** update dependency ch.sbb.polarion.extensions:ch.sbb.polarion.extension.generic to v14.1.1 ([fe3ea60](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/fe3ea6073b25fc202d43fa5cf6a18f5628b4cc17))
+* **deps:** update dependency ch.sbb.polarion.extensions:ch.sbb.polarion.extension.generic to v14.1.2 ([eeda3c6](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/eeda3c6538140e132e15ef56075efa078f5ba5e7))
+* **deps:** update dependency net.bytebuddy:byte-buddy to v1.18.8-jdk5 ([126c7dc](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/126c7dc4bdff55fd246b694dcaaca9ff9156cc4c))
+* long words and links overflow wiki macro table boundaries ([#783](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/783)) ([4215463](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/4215463ea52988abf6c0d85900e7e7ac2775b838)), closes [#782](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/782)
+* table rows are not broken/split between different pages ([#778](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/778)) ([6a9d5d0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/6a9d5d037b09d21407e2617b6afe4a4397268bbd)), closes [#777](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/777)
+
 ## [12.2.2](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v12.2.1...v12.2.2) (2026-03-23)
 
 
