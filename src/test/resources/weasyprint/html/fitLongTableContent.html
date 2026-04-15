@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title></title>
+</head>
+<body>
+
+<div>Table 1 - special symbols combination</div>
+<table style="width: 100%">
+    <tbody>
+    <tr>
+        <td>/-123 /-123 /-123 /-123 /-123 /-123 /-123 /-123 /-123 /-123 /-123 /-123 /-123 /-123</td>
+        <td>/-123 /-123 /-123 /-123 /-123 /-123 /-123 /-123 /-123 /-123 /-123 /-123 /-123 /-123</td>
+        <td>/-123 /-123 /-123 /-123 /-123 /-123 /-123 /-123 /-123 /-123 /-123 /-123 /-123 /-123</td>
+    </tr>
+    </tbody>
+</table>
+
+<div>Some text between 1 & 2</div>
+
+<div>Table 2 - contains long link captions</div>
+<table style="border-collapse: collapse; width: 100%;">
+    <tbody>
+    <tr>
+        <td>1</td>
+        <td>Item A</td>
+        <td><a href="#">SuperLongUnbreakableWordThatWillNotWrapInsideTheTableCellSuperLongUnbreakableWordThatWillNotWrapInsideTheTableCell</a></td>
+        <td>Active</td>
+    </tr>
+    <tr>
+        <td>2</td>
+        <td>Item B</td>
+        <td><a href="#">AnotherExtremelyLongHyperlinkTextWithoutAnySpacesOrBreakPointsAnotherExtremelyLongHyperlinkTextWithoutAnySpacesOrBreakPoints</a></td>
+        <td>Pending</td>
+    </tr>
+    <tr>
+        <td>3</td>
+        <td>Item C</td>
+        <td><a href="#">https://example.com/very/deep/nested/path/to/some/resource/that/keeps/going/nested/path/to/some/resource/that/keeps/going/nested/path/to/some/resource/that/keeps/going</a></td>
+        <td>Active</td>
+    </tr>
+    <tr>
+        <td>4</td>
+        <td>Item D</td>
+        <td><a href="#">ThisIsAReallyLongConfigurationParameterNameThatSomebodyUsedAsLinkTextThisIsAReallyLongConfigurationParameterNameThatSomebodyUsedAsLinkText</a></td>
+        <td>Inactive</td>
+    </tr>
+    <tr>
+        <td>5</td>
+        <td>Short</td>
+        <td><a href="#">Normal link</a></td>
+        <td>Active</td>
+    </tr>
+    </tbody>
+</table>
+
+<div>Some text between 2 & 3</div>
+
+<div>Table 3 - special symbols combination but now wrapped in wiki block</div>
+<div class="polarion-dle-wiki-block">
+    <table style="width: 100%">
+        <tbody>
+        <tr>
+            <td>/-123 /-123 /-123 /-123 /-123 /-123 /-123 /-123 /-123 /-123 /-123 /-123 /-123 /-123</td>
+            <td>/-123 /-123 /-123 /-123 /-123 /-123 /-123 /-123 /-123 /-123 /-123 /-123 /-123 /-123</td>
+            <td>/-123 /-123 /-123 /-123 /-123 /-123 /-123 /-123 /-123 /-123 /-123 /-123 /-123 /-123</td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+
+<div>Some text between 3 & 4</div>
+
+<div>Table 4 - contains long link captions but now wrapped in wiki block</div>
+<div class="polarion-dle-wiki-block">
+    <table style="border-collapse: collapse; width: 100%;">
+        <tbody>
+        <tr>
+            <td>1</td>
+            <td>Item A</td>
+            <td><a href="#">SuperLongUnbreakableWordThatWillNotWrapInsideTheTableCellSuperLongUnbreakableWordThatWillNotWrapInsideTheTableCell</a></td>
+            <td>Active</td>
+        </tr>
+        <tr>
+            <td>2</td>
+            <td>Item B</td>
+            <td><a href="#">AnotherExtremelyLongHyperlinkTextWithoutAnySpacesOrBreakPointsAnotherExtremelyLongHyperlinkTextWithoutAnySpacesOrBreakPoints</a></td>
+            <td>Pending</td>
+        </tr>
+        <tr>
+            <td>3</td>
+            <td>Item C</td>
+            <td><a href="#">https://example.com/very/deep/nested/path/to/some/resource/that/keeps/going/nested/path/to/some/resource/that/keeps/going/nested/path/to/some/resource/that/keeps/going</a></td>
+            <td>Active</td>
+        </tr>
+        <tr>
+            <td>4</td>
+            <td>Item D</td>
+            <td><a href="#">ThisIsAReallyLongConfigurationParameterNameThatSomebodyUsedAsLinkTextThisIsAReallyLongConfigurationParameterNameThatSomebodyUsedAsLinkText</a></td>
+            <td>Inactive</td>
+        </tr>
+        <tr>
+            <td>5</td>
+            <td>Short</td>
+            <td><a href="#">Normal link</a></td>
+            <td>Active</td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+
+<div style="page-break-before: always;"></div>
+
+<h1>Table Overflow with <code>/-123</code> Pattern Cause</h1>
+
+<p>WeasyPrint delegates line breaking to Pango, which follows the Unicode Line Breaking Algorithm (UAX #14). Four rules combine to eliminate all break opportunities at spaces when followed by <code>/</code>, <code>-</code>, and digits:</p>
+
+<table border="1" cellpadding="6">
+    <tr>
+        <th>Rule</th>
+        <th>Char</th>
+        <th>Class</th>
+        <th>Effect</th>
+    </tr>
+    <tr>
+        <td>LB7: &times; SP</td>
+        <td><code> </code> (space)</td>
+        <td>SP</td>
+        <td>No break <b>before</b> a space</td>
+    </tr>
+    <tr>
+        <td>LB13: &times; SY</td>
+        <td><code>/</code></td>
+        <td>SY (Symbol)</td>
+        <td>No break <b>before</b> <code>/</code></td>
+    </tr>
+    <tr>
+        <td>LB21: &times; HY</td>
+        <td><code>-</code></td>
+        <td>HY (Hyphen)</td>
+        <td>No break <b>before</b> <code>-</code></td>
+    </tr>
+    <tr>
+        <td>LB25: HY &times; NU</td>
+        <td><code>-</code> + digit</td>
+        <td>HY, NU</td>
+        <td>No break between <code>-</code> and digits</td>
+    </tr>
+</table>
+
+<h2>How the space gets trapped</h2>
+
+<p>At the boundary between two <code>/-123</code> groups:</p>
+
+<pre>
+...3 /-1...
+
+  3 &rarr; (space) : LB7 blocks  -- no break before space
+  (space) &rarr; /  : LB13 blocks -- no break before /
+  / &rarr; -        : LB21 blocks -- no break before -
+  - &rarr; 1        : LB25 blocks -- no break between hyphen and digit
+</pre>
+
+<p>Every position around the space is blocked by a different rule. The entire text <code>"/-123 /-123 /-123..."</code> becomes one unbreakable unit.</p>
+
+<p><b>Note:</b> CSS Text Level 3 (section 6.2) mandates that collapsible spaces always provide soft wrap opportunities. Pango follows strict UAX #14 without this CSS override.</p>
+
+<h2>Consequence</h2>
+
+<p>The min-content width of each table cell becomes the width of the entire text (all 14 tokens) instead of just one <code>/-123</code>. Three such cells exceed the page width, and the table layout algorithm forces the table wider than the page.</p>
+
+</body>
+</html>

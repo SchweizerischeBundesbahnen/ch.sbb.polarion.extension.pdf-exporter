@@ -139,6 +139,29 @@ class PdfConverterWeasyPrintTest extends BasePdfConverterTest {
     }
 
     @Test
+    void testFitLongTableContent() {
+        ExportParams params = ExportParams.builder()
+                .projectId("test")
+                .locationPath("testLocation")
+                .orientation(Orientation.PORTRAIT)
+                .paperSize(PaperSize.A4)
+                .fitToPage(true)
+                .build();
+
+        DocumentData<IModule> liveDoc3 = DocumentData.creator(DocumentType.LIVE_DOC, module)
+                .id(LiveDocId.from("testProjectId", "_default", "testDocumentId"))
+                .title("specialSymbolsTitle")
+                .lastRevision("12345")
+                .revisionPlaceholder("12345")
+                .content(readHtmlResource("fitLongTableContent"))
+                .build();
+        documentDataFactoryMockedStatic.when(() -> DocumentDataFactory.getDocumentData(eq(params), anyBoolean())).thenReturn(liveDoc3);
+
+        boolean hasDiff = compareContentUsingReferenceImages(getCurrentMethodName(), converter.convertToPdf(params, null));
+        assertFalse(hasDiff);
+    }
+
+    @Test
     void testConverterImageWidthsInColumns() {
         ExportParams params = ExportParams.builder()
                 .projectId("test")
