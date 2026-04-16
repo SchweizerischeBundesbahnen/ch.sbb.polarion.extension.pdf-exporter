@@ -1882,6 +1882,15 @@
             "description": "Language in the exported document",
             "type": "string"
           },
+          "linkRoleDirection": {
+            "description": "Direction of linked workitem roles resolution",
+            "enum": [
+              "BOTH",
+              "DIRECT",
+              "REVERSE"
+            ],
+            "type": "string"
+          },
           "linkedWorkitemRoles": {
             "description": "Specific Workitem roles",
             "example": [

@@ -92,6 +92,9 @@ public class ExportParams extends ConversionParams {
     @Schema(description = "Specific Workitem roles", example = "[\"has parent\", \"depends on\"]")
     private List<String> linkedWorkitemRoles;
 
+    @Schema(description = "Direction of linked workitem roles resolution")
+    private LinkRoleDirection linkRoleDirection;
+
     @Schema(description = "Map of attributes extracted from the URL")
     private Map<String, String> urlQueryParameters;
 
@@ -142,6 +145,7 @@ public class ExportParams extends ConversionParams {
         chapters = stylePackageModel.getSpecificChapters() != null ? Arrays.stream(stylePackageModel.getSpecificChapters().split(",")).toList() : null;
         language = stylePackageModel.getLanguage();
         linkedWorkitemRoles = stylePackageModel.getLinkedWorkitemRoles();
+        linkRoleDirection = LinkRoleDirection.fromString(stylePackageModel.getLinkRoleDirection());
         attachmentsFilter = stylePackageModel.getAttachmentsFilter();
         testcaseFieldId = stylePackageModel.getTestcaseFieldId();
         embedAttachments = stylePackageModel.isEmbedAttachments();

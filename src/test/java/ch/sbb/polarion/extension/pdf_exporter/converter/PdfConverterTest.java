@@ -6,6 +6,7 @@ import ch.sbb.polarion.extension.pdf_exporter.configuration.PdfExporterExtension
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.ExportMetaInfoCallback;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.DocumentType;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.LinkRoleDirection;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.DocumentData;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.id.LiveDocId;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.css.CssModel;
@@ -272,6 +273,76 @@ class PdfConverterTest {
         ArgumentCaptor<List<String>> rolesCaptor = ArgumentCaptor.forClass(List.class);
         verify(htmlProcessor).processHtmlForPDF(eq("test content"), eq(exportParams), rolesCaptor.capture(), isNull());
         assertThat(rolesCaptor.getValue()).containsExactly("role1", "testRole1OppositeName", "role2", "testRole2OppositeName");
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void shouldPostProcessDocumentContentWithDirectRolesOnly() {
+        // Arrange
+        ExportParams exportParams = ExportParams.builder()
+                .linkedWorkitemRoles(List.of("role1", "role2"))
+                .linkRoleDirection(LinkRoleDirection.DIRECT)
+                .build();
+        ITrackerProject project = mock(ITrackerProject.class);
+        IEnumeration<ILinkRoleOpt> roleEnum = mock(IEnumeration.class);
+        Properties props1 = new Properties();
+        props1.put("oppositeName", "testRole1OppositeName");
+        ILinkRoleOpt option1 = new LinkRoleOpt(new EnumOption("roleLink", "role1", "role1", 1, false, props1));
+        Properties props2 = new Properties();
+        props2.put("oppositeName", "testRole2OppositeName");
+        ILinkRoleOpt option2 = new LinkRoleOpt(new EnumOption("roleLink", "role2", "role2", 1, false, props2));
+        when(roleEnum.getAvailableOptions("wiType")).thenReturn(List.of(option1, option2));
+        IEnumeration<ITypeOpt> typeEnum = mock(IEnumeration.class);
+        TypeOpt typeOption = new TypeOpt(new EnumOption("wiType", "wiType", "WIType", 1, false));
+        when(typeEnum.getAllOptions()).thenReturn(List.of(typeOption));
+        when(project.getWorkItemTypeEnum()).thenReturn(typeEnum);
+        when(project.getWorkItemLinkRoleEnum()).thenReturn(roleEnum);
+        when(htmlProcessor.processHtmlForPDF(anyString(), eq(exportParams), any(List.class), any())).thenReturn("result string");
+
+        // Act
+        PdfConverter pdfConverter = new PdfConverter(null, null, null, null, null, null, null, htmlProcessor, null);
+        String resultContent = pdfConverter.postProcessDocumentContent(exportParams, project, "test content");
+
+        // Assert
+        assertThat(resultContent).isEqualTo("result string");
+        ArgumentCaptor<List<String>> rolesCaptor = ArgumentCaptor.forClass(List.class);
+        verify(htmlProcessor).processHtmlForPDF(eq("test content"), eq(exportParams), rolesCaptor.capture(), isNull());
+        assertThat(rolesCaptor.getValue()).containsExactly("role1", "role2");
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void shouldPostProcessDocumentContentWithReverseRolesOnly() {
+        // Arrange
+        ExportParams exportParams = ExportParams.builder()
+                .linkedWorkitemRoles(List.of("role1", "role2"))
+                .linkRoleDirection(LinkRoleDirection.REVERSE)
+                .build();
+        ITrackerProject project = mock(ITrackerProject.class);
+        IEnumeration<ILinkRoleOpt> roleEnum = mock(IEnumeration.class);
+        Properties props1 = new Properties();
+        props1.put("oppositeName", "testRole1OppositeName");
+        ILinkRoleOpt option1 = new LinkRoleOpt(new EnumOption("roleLink", "role1", "role1", 1, false, props1));
+        Properties props2 = new Properties();
+        props2.put("oppositeName", "testRole2OppositeName");
+        ILinkRoleOpt option2 = new LinkRoleOpt(new EnumOption("roleLink", "role2", "role2", 1, false, props2));
+        when(roleEnum.getAvailableOptions("wiType")).thenReturn(List.of(option1, option2));
+        IEnumeration<ITypeOpt> typeEnum = mock(IEnumeration.class);
+        TypeOpt typeOption = new TypeOpt(new EnumOption("wiType", "wiType", "WIType", 1, false));
+        when(typeEnum.getAllOptions()).thenReturn(List.of(typeOption));
+        when(project.getWorkItemTypeEnum()).thenReturn(typeEnum);
+        when(project.getWorkItemLinkRoleEnum()).thenReturn(roleEnum);
+        when(htmlProcessor.processHtmlForPDF(anyString(), eq(exportParams), any(List.class), any())).thenReturn("result string");
+
+        // Act
+        PdfConverter pdfConverter = new PdfConverter(null, null, null, null, null, null, null, htmlProcessor, null);
+        String resultContent = pdfConverter.postProcessDocumentContent(exportParams, project, "test content");
+
+        // Assert
+        assertThat(resultContent).isEqualTo("result string");
+        ArgumentCaptor<List<String>> rolesCaptor = ArgumentCaptor.forClass(List.class);
+        verify(htmlProcessor).processHtmlForPDF(eq("test content"), eq(exportParams), rolesCaptor.capture(), isNull());
+        assertThat(rolesCaptor.getValue()).containsExactly("testRole1OppositeName", "testRole2OppositeName");
     }
 
     @ParameterizedTest

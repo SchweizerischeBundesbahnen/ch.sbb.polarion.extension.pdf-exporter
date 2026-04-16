@@ -378,7 +378,9 @@ export default class ExportPopup {
                 });
             }
         }
-        this.ctx.displayIf("popup-roles-selector", this.ctx.getExportType() !== ExportParams.ExportType.BULK && rolesProvided, "inline-block");
+        this.ctx.displayIf("popup-roles-selector", this.ctx.getExportType() !== ExportParams.ExportType.BULK && rolesProvided, "block");
+        this.ctx.setValue("popup-roles-direction-selector", stylePackage.linkRoleDirection || ExportParams.LinkRoleDirection.BOTH);
+        this.ctx.displayIf("popup-roles-direction-selector", this.ctx.getExportType() !== ExportParams.ExportType.BULK && rolesProvided, "block");
 
         this.ctx.displayIf("popup-style-package-content",
             (!this.autoSelectStylePackageAvailable() || !this.ctx.getCheckboxValueById("popup-auto-select-style-package")) && stylePackage.exposeSettings);
@@ -599,6 +601,7 @@ export default class ExportPopup {
             .setMetadataFields(live_doc && this.ctx.getElementById('popup-metadata-fields').checked ? selectedMetadataFields : null)
             .setLanguage(live_doc && this.ctx.getElementById('popup-localization').checked ? this.ctx.getElementById("popup-language").value : null)
             .setLinkedWorkitemRoles(selectedRoles)
+            .setLinkRoleDirection(selectedRoles.length > 0 ? this.ctx.getElementById("popup-roles-direction-selector").value : null)
             .setFileName(fileName)
             .setUrlQueryParameters(this.ctx.getUrlQueryParameters())
             .setAttachmentsFilter(test_run && this.ctx.getElementById("popup-download-attachments").checked ? attachmentsFilter ?? '' : null)

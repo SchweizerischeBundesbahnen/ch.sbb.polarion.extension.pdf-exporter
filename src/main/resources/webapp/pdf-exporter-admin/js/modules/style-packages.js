@@ -218,6 +218,18 @@ const Languages = {
     }
 }
 
+const LinkRoleDirections = {
+    linkRoleDirectionSelect: new CustomSelect({
+        selectContainer: ctx.getElementById("roles-direction-select")
+    }),
+
+    init: function () {
+        this.linkRoleDirectionSelect.addOption('BOTH', 'Both directions');
+        this.linkRoleDirectionSelect.addOption('DIRECT', 'Direct only');
+        this.linkRoleDirectionSelect.addOption('REVERSE', 'Reverse only');
+    }
+}
+
 function saveStylePackage() {
     ctx.hideActionAlerts();
 
@@ -253,6 +265,7 @@ function saveStylePackage() {
             'customNumberedListStyles': ctx.getCheckboxValueById('custom-list-styles') ? ctx.getValueById('numbered-list-styles') : null,
             'language': ctx.getCheckboxValueById('localization') ? Languages.languageSelect.getSelectedValue() : null,
             'linkedWorkitemRoles': ctx.getCheckboxValueById('selected-roles') ? LinkRoles.rolesSelect.getSelectedValue() : null,
+            'linkRoleDirection': ctx.getCheckboxValueById('selected-roles') ? LinkRoleDirections.linkRoleDirectionSelect.getSelectedValue() : null,
             'exposePageWidthValidation': ctx.getCheckboxValueById('expose-page-width-validation'),
             'attachmentsFilter': ctx.getCheckboxValueById('download-attachments') ? ctx.getValueById('attachments-filter') : null,
             'testcaseFieldId': ctx.getCheckboxValueById('download-attachments') ? ctx.getValueById('testcase-field-id') : null,
@@ -348,6 +361,7 @@ function setStylePackage(content) {
     ctx.setCheckboxValueById('selected-roles', rolesProvided);
     ctx.getElementById('selected-roles').dispatchEvent(new Event('change'));
     LinkRoles.rolesSelect.selectMultipleValues(stylePackage.linkedWorkitemRoles);
+    LinkRoleDirections.linkRoleDirectionSelect.selectValue(stylePackage.linkRoleDirection || 'BOTH');
 
     ctx.setCheckboxValueById('download-attachments', !!stylePackage.attachmentsFilter || !!stylePackage.testcaseFieldId);
     ctx.getElementById('download-attachments').dispatchEvent(new Event('change'));
@@ -370,6 +384,7 @@ PdfVariants.init();
 RenderComments.init();
 ImageDensity.init();
 Languages.init();
+LinkRoleDirections.init();
 Promise.all([
     LinkRoles.load(),
     ChildConfigurations.load()
