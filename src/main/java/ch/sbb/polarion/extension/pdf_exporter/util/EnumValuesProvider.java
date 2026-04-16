@@ -1,5 +1,6 @@
 package ch.sbb.polarion.extension.pdf_exporter.util;
 
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.LinkRoleDirection;
 import com.polarion.alm.tracker.model.ILinkRoleOpt;
 import com.polarion.alm.tracker.model.ITrackerProject;
 import com.polarion.alm.tracker.model.ITypeOpt;
@@ -29,13 +30,23 @@ public final class EnumValuesProvider {
     }
 
     @NotNull
-    public static List<String> getBidirectionalLinkRoleNames(@NotNull ITrackerProject trackerProject, @Nullable List<String> directRoleNames) {
+    public static List<String> getLinkRoleNames(@NotNull ITrackerProject trackerProject, @Nullable List<String> directRoleNames) {
+        return getLinkRoleNames(trackerProject, directRoleNames, LinkRoleDirection.BOTH);
+    }
+
+    @NotNull
+    public static List<String> getLinkRoleNames(@NotNull ITrackerProject trackerProject, @Nullable List<String> directRoleNames, @Nullable LinkRoleDirection direction) {
         if (directRoleNames != null && !directRoleNames.isEmpty()) {
+            LinkRoleDirection effectiveDirection = (direction != null) ? direction : LinkRoleDirection.BOTH;
             List<ITypeOpt> wiTypes = trackerProject.getWorkItemTypeEnum().getAllOptions();
             final List<ILinkRoleOpt> linkRoles = getLinkRoles(trackerProject, wiTypes);
             return linkRoles.stream()
                     .filter(linkRole -> directRoleNames.contains(linkRole.getName()))
-                    .flatMap(linkRole -> Stream.of(linkRole.getName(), linkRole.getOppositeName()))
+                    .flatMap(linkRole -> switch (effectiveDirection) {
+                        case DIRECT -> Stream.of(linkRole.getName());
+                        case REVERSE -> Stream.of(linkRole.getOppositeName());
+                        case BOTH -> Stream.of(linkRole.getName(), linkRole.getOppositeName());
+                    })
                     .toList();
         } else {
             return Collections.emptyList();

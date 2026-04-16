@@ -327,7 +327,7 @@ public class PdfConverter {
 
     String postProcessDocumentContent(@NotNull ExportParams exportParams, @Nullable ITrackerProject project, @Nullable String documentContent, @Nullable PdfGenerationLog generationLog) {
         if (documentContent != null) {
-            List<String> selectedRoleEnumValues = project == null ? Collections.emptyList() : EnumValuesProvider.getBidirectionalLinkRoleNames(project, exportParams.getLinkedWorkitemRoles());
+            List<String> selectedRoleEnumValues = project == null ? Collections.emptyList() : EnumValuesProvider.getLinkRoleNames(project, exportParams.getLinkedWorkitemRoles(), exportParams.getLinkRoleDirection());
             return htmlProcessor.processHtmlForPDF(documentContent, exportParams, selectedRoleEnumValues, generationLog);
         } else {
             return "";

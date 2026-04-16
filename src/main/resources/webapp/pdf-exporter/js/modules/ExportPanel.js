@@ -114,7 +114,8 @@ export default class ExportPanel {
                 });
             }
         }
-        this.ctx.displayIf("roles-wrapper", rolesProvided);
+        this.ctx.displayIf("roles-wrapper", rolesProvided, "flex");
+        this.ctx.setValue("roles-direction-selector", stylePackage.linkRoleDirection || 'BOTH');
 
         this.ctx.displayIf("style-package-content", stylePackage.exposeSettings);
         this.ctx.displayIf("page-width-validation", stylePackage.exposePageWidthValidation);
@@ -197,6 +198,7 @@ export default class ExportPanel {
             .setMetadataFields(live_doc && this.ctx.getElementById('metadata-fields').checked ? selectedMetadataFields : null)
             .setLanguage(live_doc && this.ctx.getElementById('localization').checked ? this.ctx.getElementById("language").value : null)
             .setLinkedWorkitemRoles(selectedRoles)
+            .setLinkRoleDirection(selectedRoles.length > 0 ? this.ctx.getElementById("roles-direction-selector").value : null)
             .setImageDensity(this.ctx.getElementById("image-density-selector").value)
             .setFullFonts(this.ctx.getElementById("full-fonts").checked)
             .setFileName(fileName)

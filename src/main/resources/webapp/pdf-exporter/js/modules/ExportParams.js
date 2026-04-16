@@ -48,6 +48,12 @@ export default class ExportParams {
         DPI_600: 'DPI_600',
     };
 
+    static LinkRoleDirection = {
+        BOTH: 'BOTH',
+        DIRECT: 'DIRECT',
+        REVERSE: 'REVERSE',
+    };
+
     static ExportType = {
         SINGLE: 'SINGLE',
         BULK: 'BULK',
@@ -82,6 +88,7 @@ export default class ExportParams {
         this.metadataFields = builder.metadataFields;
         this.language = builder.language;
         this.linkedWorkitemRoles = builder.linkedWorkitemRoles;
+        this.linkRoleDirection = builder.linkRoleDirection;
         this.fileName = builder.fileName;
         this.urlQueryParameters = builder.urlQueryParameters;
         this.attachmentsFilter = builder.attachmentsFilter;
@@ -288,6 +295,11 @@ export default class ExportParams {
 
             setLinkedWorkitemRoles(linkedWorkitemRoles) {
                 this.linkedWorkitemRoles = linkedWorkitemRoles;
+                return this;
+            }
+
+            setLinkRoleDirection(linkRoleDirection) {
+                this.linkRoleDirection = linkRoleDirection;
                 return this;
             }
 

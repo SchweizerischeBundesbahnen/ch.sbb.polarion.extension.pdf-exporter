@@ -57,6 +57,7 @@ class ExportParamsTest {
                 .specificChapters("3,4")
                 .language("language2")
                 .linkedWorkitemRoles(List.of("role3", "role4"))
+                .linkRoleDirection("DIRECT")
                 .attachmentsFilter("attachmentFilter2")
                 .testcaseFieldId("testcaseFieldId2")
                 .build();
@@ -86,6 +87,7 @@ class ExportParamsTest {
         assertEquals(List.of("3", "4"), params.getChapters());
         assertEquals("language2", params.getLanguage());
         assertEquals(List.of("role3", "role4"), params.getLinkedWorkitemRoles());
+        assertEquals(LinkRoleDirection.DIRECT, params.getLinkRoleDirection());
         assertEquals("attachmentFilter2", params.getAttachmentsFilter());
         assertEquals("testcaseFieldId2", params.getTestcaseFieldId());
         assertFalse(params.isEmbedAttachments());

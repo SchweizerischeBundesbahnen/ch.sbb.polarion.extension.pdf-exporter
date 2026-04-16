@@ -284,12 +284,13 @@
                     </label>
                     <div id="language-select" style="visibility: hidden; margin-left: 10px; width: 200px"></div>
                 </div>
-                <div class='checkbox input-group'>
+                <div class='checkbox input-group' style="display: flex; flex-direction: column; align-items: flex-start;">
                     <label for='selected-roles' style="margin-top: 5px">
-                        <input id="selected-roles" onchange='document.getElementById("roles-select").style.display = this.checked ? "inline-block" : "none"' type='checkbox'/>
+                        <input id="selected-roles" onchange='document.getElementById("roles-select").style.display = this.checked ? "inline-block" : "none";document.getElementById("roles-direction-select").style.display = this.checked ? "inline-block" : "none"' type='checkbox'/>
                         Specific Workitem roles
                     </label>
-                    <div id="roles-select" style="display: none; margin-left: 10px; width: 152px"></div>
+                    <div id="roles-select" style="display: none; width: 152px; margin-left: 24px"></div>
+                    <div id="roles-direction-select" style="display: none; width: 152px; margin-left: 24px; margin-top: 8px"></div>
                 </div>
             </div>
         </div>
