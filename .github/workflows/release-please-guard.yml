@@ -1,0 +1,11 @@
+---
+name: release-please-guard
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+permissions: {}
+jobs:
+  release-please-guard:
+    uses: SchweizerischeBundesbahnen/github-workflows-polarion/.github/workflows/reusable-release-please-guard.yml@main
+    permissions:
+      contents: read

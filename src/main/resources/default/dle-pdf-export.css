@@ -433,11 +433,7 @@ ul.toc li > a.page-number::after {
     page-break-before: always;
 }
 
-.polarion-WorkItemsMacro-table td {
-    word-break: break-all;
-}
-
-.polarion-Document-table td, .polarion-TestRecordsTable tr, .polarion-TestRecordsTable th {
+table tr th, table tr td {
     overflow-wrap: anywhere;
     white-space: normal;
 }
