@@ -289,7 +289,7 @@ If you check this checkbox and select only certain roles of Workitem relations:
 
 ![Specific Workitem roles before 1](docs/user_guide/img/specific_wi_roles_before_1.png)
 
-...will be taken only those which correspond to the selected roles (both direct and reverse directions):
+...will be taken only those which correspond to the selected roles (either both directions, or only direct ones, or only reverse ones, depending on selection in second dropdown):
 
 ![Specific Workitem roles before 2](docs/user_guide/img/specific_wi_roles_before_2.png)
 
