@@ -379,7 +379,7 @@ export default class ExportPopup {
             }
         }
         this.ctx.displayIf("popup-roles-selector", this.ctx.getExportType() !== ExportParams.ExportType.BULK && rolesProvided, "block");
-        this.ctx.setValue("popup-roles-direction-selector", stylePackage.linkRoleDirection || 'BOTH');
+        this.ctx.setValue("popup-roles-direction-selector", stylePackage.linkRoleDirection || ExportParams.LinkRoleDirection.BOTH);
         this.ctx.displayIf("popup-roles-direction-selector", this.ctx.getExportType() !== ExportParams.ExportType.BULK && rolesProvided, "block");
 
         this.ctx.displayIf("popup-style-package-content",

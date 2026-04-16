@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
+import java.util.Locale;
 
 @Schema(description = "Direction of linked workitem roles resolution")
 public enum LinkRoleDirection {
@@ -20,7 +21,7 @@ public enum LinkRoleDirection {
     @JsonCreator
     public static LinkRoleDirection fromString(String name) {
         try {
-            return (name != null) ? valueOf(name.toUpperCase()) : null;
+            return (name != null) ? valueOf(name.toUpperCase(Locale.ROOT)) : null;
         } catch (IllegalArgumentException e) {
             throw new WebApplicationException(Response
                     .status(Response.Status.BAD_REQUEST)
