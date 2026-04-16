@@ -107,15 +107,22 @@ class PdfExporterFormExtensionTest {
     @Test
     void testAdjustRenderComments() {
         PdfExporterFormExtension extension = new PdfExporterFormExtension();
-        String form = "<input id='render-comments'/>\"<input id='render-native-comments-container' style='display: none'\"/><input id='render-native-comments'/>";
+        String form = "<input id='render-comments'/><div id='render-comments-options' style='display: none'>"
+                + "<input id='include-unreferenced-comments'/><input id='render-native-comments'/></div>";
         StylePackageModel packageModel = new StylePackageModel();
         assertEquals(form, extension.adjustRenderComments(form, packageModel));
 
         packageModel.setRenderComments(CommentsRenderType.OPEN);
-        assertEquals("<input id='render-comments' checked/>\"<input id='render-native-comments-container'\"/><input id='render-native-comments'/>", extension.adjustRenderComments(form, packageModel));
+        assertEquals("<input id='render-comments' checked/><div id='render-comments-options' style='display: flex'>"
+                + "<input id='include-unreferenced-comments'/><input id='render-native-comments'/></div>", extension.adjustRenderComments(form, packageModel));
 
         packageModel.setRenderNativeComments(true);
-        assertEquals("<input id='render-comments' checked/>\"<input id='render-native-comments-container'\"/><input id='render-native-comments' checked/>", extension.adjustRenderComments(form, packageModel));
+        assertEquals("<input id='render-comments' checked/><div id='render-comments-options' style='display: flex'>"
+                + "<input id='include-unreferenced-comments'/><input id='render-native-comments' checked/></div>", extension.adjustRenderComments(form, packageModel));
+
+        packageModel.setIncludeUnreferencedComments(true);
+        assertEquals("<input id='render-comments' checked/><div id='render-comments-options' style='display: flex'>"
+                + "<input id='include-unreferenced-comments' checked/><input id='render-native-comments' checked/></div>", extension.adjustRenderComments(form, packageModel));
     }
 
 }

@@ -20,8 +20,10 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.VisibleForTesting;
 import org.jspecify.annotations.NonNull;
 
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 public class LiveDocAdapter extends CommonUniqueObjectAdapter {
     public static final String DOC_REVISION_CUSTOM_FIELD = "docRevision";
@@ -70,11 +72,17 @@ public class LiveDocAdapter extends CommonUniqueObjectAdapter {
             ModifiedDocumentRenderer documentRenderer = getDocumentRenderer(exportParams, (InternalReadOnlyTransaction) transaction, document);
 
             String internalContent = StringUtils.getEmptyIfNull(Optional.ofNullable(exportParams.getInternalContent()).orElseGet(document::getHomePageContentHtml));
+            Set<String> usedCommentIds = new HashSet<>();
             // Process comments in document itself (workitem descriptions aren't rendered yet)
-            internalContent = processComments(exportParams, document, internalContent);
+            internalContent = processComments(exportParams, document, internalContent, usedCommentIds);
             String renderedContent = documentRenderer.render(internalContent);
             // Now process comments again to catch comments in workitem descriptions
-            return processComments(exportParams, document, renderedContent);
+            renderedContent = processComments(exportParams, document, renderedContent, usedCommentIds);
+            if (exportParams.isIncludeUnreferencedComments()) {
+                // And the last: render unreferenced comments if needed
+                renderedContent = processUnreferencedComments(exportParams, document, renderedContent, usedCommentIds);
+            }
+            return renderedContent;
         });
     }
 
@@ -85,8 +93,12 @@ public class LiveDocAdapter extends CommonUniqueObjectAdapter {
         return new ModifiedDocumentRenderer(transaction, document, RichTextRenderTarget.PDF_EXPORT, parameters);
     }
 
-    private String processComments(@NotNull ExportParams exportParams, @NotNull ProxyDocument document, @NotNull String content) {
-        return new LiveDocCommentsProcessor().addLiveDocComments(document, content, exportParams.getRenderComments(), exportParams.isRenderNativeComments());
+    private String processComments(@NotNull ExportParams exportParams, @NotNull ProxyDocument document, @NotNull String content, @NotNull Set<String> usedCommentIds) {
+        return new LiveDocCommentsProcessor().addLiveDocComments(document, content, exportParams.getRenderComments(), exportParams.isRenderNativeComments(), usedCommentIds);
+    }
+
+    private String processUnreferencedComments(@NotNull ExportParams exportParams, @NotNull ProxyDocument document, @NotNull String content, @NotNull Set<String> usedCommentIds) {
+        return new LiveDocCommentsProcessor().addUnreferencedComments(document, content, exportParams.getRenderComments(), exportParams.isRenderNativeComments(), usedCommentIds);
     }
 
 }

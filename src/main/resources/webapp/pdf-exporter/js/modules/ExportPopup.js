@@ -331,7 +331,8 @@ export default class ExportPopup {
         this.ctx.setValue("popup-render-comments-selector", stylePackage.renderComments || 'OPEN');
         this.ctx.visibleIf("popup-render-comments-selector", !!stylePackage.renderComments);
 
-        this.ctx.displayIf("popup-render-native-comments-container", !!stylePackage.renderComments)
+        this.ctx.displayIf("popup-render-comments-options", !!stylePackage.renderComments)
+        this.ctx.setCheckbox("popup-include-unreferenced-comments", !!stylePackage.includeUnreferencedComments);
         this.ctx.setCheckbox("popup-render-native-comments", !!stylePackage.renderNativeComments);
 
         this.ctx.setCheckbox("popup-watermark", stylePackage.watermark);
@@ -590,6 +591,7 @@ export default class ExportPopup {
             .setFitToPage((live_doc || test_run) && this.ctx.getElementById('popup-fit-to-page').checked)
             .setRenderComments((live_doc || collection) && this.ctx.getElementById('popup-render-comments').checked ? this.ctx.getElementById("popup-render-comments-selector").value : null)
             .setRenderNativeComments(this.ctx.getElementById("popup-render-native-comments").checked)
+            .setIncludeUnreferencedComments(this.ctx.getElementById("popup-include-unreferenced-comments").checked)
             .setWatermark(this.ctx.getElementById("popup-watermark").checked)
             .setMarkReferencedWorkitems(live_doc && this.ctx.getElementById("popup-mark-referenced-workitems").checked)
             .setCutEmptyChapters(live_doc && this.ctx.getElementById("popup-cut-empty-chapters").checked)

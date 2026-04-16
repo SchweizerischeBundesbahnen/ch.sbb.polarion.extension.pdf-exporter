@@ -978,6 +978,15 @@ li span {
 .comment.level-10 {
     margin-left: 210px;
 }
+
+.unreferenced-comments-delimiter {
+    display: block;
+    width: 100%;
+    height: 3px;
+    margin: 10px 0 10px 0;
+    background-color: gray;
+}
+
 .polarion-rp-column-layout-cell {
     font-size: 12px;
 }

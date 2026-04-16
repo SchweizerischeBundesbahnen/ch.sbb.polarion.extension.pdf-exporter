@@ -237,7 +237,10 @@ public class PdfExporterFormExtension implements IFormExtension {
             form = form.replace("id='render-comments-selector' style='display: none'", "id='render-comments-selector'");
             form = form.replace(String.format(OPTION_VALUE, stylePackage.getRenderComments()), String.format(OPTION_SELECTED, stylePackage.getRenderComments()));
 
-            form = form.replace("id='render-native-comments-container' style='display: none'", "id='render-native-comments-container'");
+            form = form.replace("id='render-comments-options' style='display: none", "id='render-comments-options' style='display: flex");
+            if (stylePackage.isIncludeUnreferencedComments()) {
+                form = form.replace("<input id='include-unreferenced-comments'", "<input id='include-unreferenced-comments' checked");
+            }
             if (stylePackage.isRenderNativeComments()) {
                 form = form.replace("<input id='render-native-comments'", "<input id='render-native-comments' checked");
             }
