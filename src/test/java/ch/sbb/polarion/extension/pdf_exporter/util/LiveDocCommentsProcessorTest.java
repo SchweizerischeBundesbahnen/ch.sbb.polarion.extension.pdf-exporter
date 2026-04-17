@@ -1,5 +1,6 @@
 package ch.sbb.polarion.extension.pdf_exporter.util;
 
+import ch.sbb.polarion.extension.pdf_exporter.model.LiveDocComment;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.CommentsRenderType;
 import com.polarion.alm.server.api.model.document.ProxyDocument;
 import com.polarion.alm.shared.api.model.comment.CommentBase;
@@ -14,6 +15,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.text.SimpleDateFormat;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.HashSet;
 import java.util.Set;
@@ -60,6 +62,8 @@ class LiveDocCommentsProcessorTest {
         when(comments.iterator()).thenReturn(commentBases.iterator());
 
         // resolved comment isn't rendered
+        LiveDocCommentsProcessor openProcessor = new LiveDocCommentsProcessor();
+        Map<String, LiveDocComment> openComments = openProcessor.getLiveDocComments(document, CommentsRenderType.OPEN);
         assertEquals("""
                 <div>some content1</div>
                 [span class=comment level-0][span class=meta][span class=date]2025-03-13 16:21[/span][span class=details][span class=author]author1[/span][/span][/span][span class=text]text1[/span][/span][span class=comment level-1][span class=meta][span class=date]2025-03-13 16:21[/span][span class=details][span class=author]author1[/span][/span][/span][span class=text]Reply to text1[/span][/span]
@@ -70,11 +74,13 @@ class LiveDocCommentsProcessorTest {
                 <div>some content4</div>
 
                 <div>some content5</div>
-                """, new LiveDocCommentsProcessor().addLiveDocComments(document, html, CommentsRenderType.OPEN, false, new HashSet<>()));
+                """, openProcessor.addLiveDocComments(html, openComments, false, new HashSet<>()));
 
         when(comments.iterator()).thenReturn(commentBases.iterator());
 
         // now resolved comment is here
+        LiveDocCommentsProcessor allProcessor = new LiveDocCommentsProcessor();
+        Map<String, LiveDocComment> allComments = allProcessor.getLiveDocComments(document, CommentsRenderType.ALL);
         assertEquals("""
                 <div>some content1</div>
                 [span class=comment level-0][span class=meta][span class=date]2025-03-13 16:21[/span][span class=details][span class=author]author1[/span][/span][/span][span class=text]text1[/span][/span][span class=comment level-1][span class=meta][span class=date]2025-03-13 16:21[/span][span class=details][span class=author]author1[/span][/span][/span][span class=text]Reply to text1[/span][/span]
@@ -85,9 +91,11 @@ class LiveDocCommentsProcessorTest {
                 <div>some content4</div>
                 [span class=comment level-0][span class=meta][span class=date]2025-03-13 16:24[/span][span class=details][span class=status-resolved]Resolved[/span][span class=author]author4[/span][/span][/span][span class=text]text4[/span][/span]
                 <div>some content5</div>
-                """, new LiveDocCommentsProcessor().addLiveDocComments(document, html, CommentsRenderType.ALL, false, new HashSet<>()));
+                """, allProcessor.addLiveDocComments(html, allComments, false, new HashSet<>()));
 
         // null commentsRenderType means remove comments
+        LiveDocCommentsProcessor nullProcessor = new LiveDocCommentsProcessor();
+        Map<String, LiveDocComment> noComments = nullProcessor.getLiveDocComments(document, null);
         assertEquals("""
                 <div>some content1</div>
 
@@ -98,7 +106,7 @@ class LiveDocCommentsProcessorTest {
                 <div>some content4</div>
 
                 <div>some content5</div>
-                """, new LiveDocCommentsProcessor().addLiveDocComments(document, html, null, false, new HashSet<>()));
+                """, nullProcessor.addLiveDocComments(html, noComments, false, new HashSet<>()));
     }
 
     @Test
@@ -141,6 +149,7 @@ class LiveDocCommentsProcessorTest {
         doAnswer(invocationOnMock -> new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS").format(invocationOnMock.getArguments()[0]))
                 .when(liveDocCommentsProcessor).formatIsoDate(any());
 
+        Map<String, LiveDocComment> openComments = liveDocCommentsProcessor.getLiveDocComments(document, CommentsRenderType.OPEN);
         assertEquals("""
                 <div>some content1</div>
                 [span class=sticky-note][span class=sticky-note-time]2025-03-13T16:21:00.000[/span][span class=sticky-note-username]author1[/span][span class=sticky-note-text]text1[/span][span class=sticky-note][span class=sticky-note-time]2025-03-13T16:21:00.000[/span][span class=sticky-note-username]author1[/span][span class=sticky-note-text]Reply to text1[/span][/span][/span]
@@ -151,11 +160,12 @@ class LiveDocCommentsProcessorTest {
                 <div>some content4</div>
 
                 <div>some content5</div>
-                """, liveDocCommentsProcessor.addLiveDocComments(document, html, CommentsRenderType.OPEN, true, new HashSet<>()));
+                """, liveDocCommentsProcessor.addLiveDocComments(html, openComments, true, new HashSet<>()));
 
         when(comments.iterator()).thenReturn(commentBases.iterator());
 
         // now resolved comment is here
+        Map<String, LiveDocComment> allComments = liveDocCommentsProcessor.getLiveDocComments(document, CommentsRenderType.ALL);
         assertEquals("""
                 <div>some content1</div>
                 [span class=sticky-note][span class=sticky-note-time]2025-03-13T16:21:00.000[/span][span class=sticky-note-username]author1[/span][span class=sticky-note-text]text1[/span][span class=sticky-note][span class=sticky-note-time]2025-03-13T16:21:00.000[/span][span class=sticky-note-username]author1[/span][span class=sticky-note-text]Reply to text1[/span][/span][/span]
@@ -166,9 +176,10 @@ class LiveDocCommentsProcessorTest {
                 <div>some content4</div>
                 [span class=sticky-note][span class=sticky-note-time]2025-03-13T16:24:00.000[/span][span class=sticky-note-username]author4[/span][span class=sticky-note-text]text4[/span][/span]
                 <div>some content5</div>
-                """, liveDocCommentsProcessor.addLiveDocComments(document, html, CommentsRenderType.ALL, true, new HashSet<>()));
+                """, liveDocCommentsProcessor.addLiveDocComments(html, allComments, true, new HashSet<>()));
 
         // null commentsRenderType means remove comments
+        Map<String, LiveDocComment> noComments = liveDocCommentsProcessor.getLiveDocComments(document, null);
         assertEquals("""
                 <div>some content1</div>
 
@@ -179,7 +190,7 @@ class LiveDocCommentsProcessorTest {
                 <div>some content4</div>
 
                 <div>some content5</div>
-                """, liveDocCommentsProcessor.addLiveDocComments(document, html, null, true, new HashSet<>()));
+                """, liveDocCommentsProcessor.addLiveDocComments(html, noComments, true, new HashSet<>()));
     }
 
     @Test
@@ -206,10 +217,12 @@ class LiveDocCommentsProcessorTest {
         );
         when(comments.iterator()).thenReturn(commentBases.iterator());
 
-        Set<String> usedCommentIds = new HashSet<>();
-        new LiveDocCommentsProcessor().addLiveDocComments(document, html, CommentsRenderType.OPEN, false, usedCommentIds);
+        Set<String> renderedCommentIds = new HashSet<>();
+        LiveDocCommentsProcessor processor = new LiveDocCommentsProcessor();
+        Map<String, LiveDocComment> liveDocComments = processor.getLiveDocComments(document, CommentsRenderType.OPEN);
+        processor.addLiveDocComments(html, liveDocComments, false, renderedCommentIds);
 
-        assertEquals(Set.of("1", "3"), usedCommentIds);
+        assertEquals(Set.of("1", "3"), renderedCommentIds);
     }
 
     @Test
@@ -231,10 +244,12 @@ class LiveDocCommentsProcessorTest {
         );
         when(comments.iterator()).thenReturn(commentBases.iterator());
 
-        Set<String> usedCommentIds = new HashSet<>(Set.of("1"));
+        Set<String> renderedCommentIds = new HashSet<>(Set.of("1"));
         String html = "<div>content</div>";
 
-        String result = new LiveDocCommentsProcessor().addUnreferencedComments(document, html, CommentsRenderType.OPEN, false, usedCommentIds);
+        LiveDocCommentsProcessor processor = new LiveDocCommentsProcessor();
+        Map<String, LiveDocComment> liveDocComments = processor.getLiveDocComments(document, CommentsRenderType.OPEN);
+        String result = processor.addUnreferencedComments(html, liveDocComments, false, renderedCommentIds);
 
         assertTrue(result.startsWith("<div>content</div>"));
         assertTrue(result.contains("[span class=unreferenced-comments-delimiter][/span]"));
@@ -259,14 +274,15 @@ class LiveDocCommentsProcessorTest {
         );
         when(comments.iterator()).thenReturn(commentBases.iterator());
 
-        Set<String> usedCommentIds = new HashSet<>(Set.of("1"));
+        Set<String> renderedCommentIds = new HashSet<>(Set.of("1"));
         String html = "<div>content</div>";
 
         LiveDocCommentsProcessor processor = spy(new LiveDocCommentsProcessor());
         doAnswer(invocationOnMock -> new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS").format(invocationOnMock.getArguments()[0]))
                 .when(processor).formatIsoDate(any());
 
-        String result = processor.addUnreferencedComments(document, html, CommentsRenderType.OPEN, true, usedCommentIds);
+        Map<String, LiveDocComment> liveDocComments = processor.getLiveDocComments(document, CommentsRenderType.OPEN);
+        String result = processor.addUnreferencedComments(html, liveDocComments, true, renderedCommentIds);
 
         assertTrue(result.contains("[span class=unreferenced-comments-delimiter][/span]"));
         assertTrue(result.contains("[span class=sticky-note]"));
@@ -289,10 +305,12 @@ class LiveDocCommentsProcessorTest {
         );
         when(comments.iterator()).thenReturn(commentBases.iterator());
 
-        Set<String> usedCommentIds = new HashSet<>(Set.of("1"));
+        Set<String> renderedCommentIds = new HashSet<>(Set.of("1"));
         String html = "<div>content</div>";
 
-        String result = new LiveDocCommentsProcessor().addUnreferencedComments(document, html, CommentsRenderType.OPEN, false, usedCommentIds);
+        LiveDocCommentsProcessor processor = new LiveDocCommentsProcessor();
+        Map<String, LiveDocComment> liveDocComments = processor.getLiveDocComments(document, CommentsRenderType.OPEN);
+        String result = processor.addUnreferencedComments(html, liveDocComments, false, renderedCommentIds);
 
         assertEquals(html, result);
     }
@@ -301,10 +319,12 @@ class LiveDocCommentsProcessorTest {
     void addUnreferencedCommentsReturnsOriginalWhenNullRenderType() {
         ProxyDocument document = mock(ProxyDocument.class, RETURNS_DEEP_STUBS);
 
-        Set<String> usedCommentIds = new HashSet<>();
+        Set<String> renderedCommentIds = new HashSet<>();
         String html = "<div>content</div>";
 
-        String result = new LiveDocCommentsProcessor().addUnreferencedComments(document, html, null, false, usedCommentIds);
+        LiveDocCommentsProcessor processor = new LiveDocCommentsProcessor();
+        Map<String, LiveDocComment> liveDocComments = processor.getLiveDocComments(document, null);
+        String result = processor.addUnreferencedComments(html, liveDocComments, false, renderedCommentIds);
 
         assertEquals(html, result);
     }

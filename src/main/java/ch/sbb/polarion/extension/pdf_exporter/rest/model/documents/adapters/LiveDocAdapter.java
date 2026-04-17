@@ -6,6 +6,7 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.id.DocumentId;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.id.DocumentProject;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.id.LiveDocId;
+import ch.sbb.polarion.extension.pdf_exporter.model.LiveDocComment;
 import ch.sbb.polarion.extension.pdf_exporter.util.LiveDocCommentsProcessor;
 import ch.sbb.polarion.extension.pdf_exporter.util.exporter.ModifiedDocumentRenderer;
 import com.polarion.alm.projects.model.IUniqueObject;
@@ -20,7 +21,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.VisibleForTesting;
 import org.jspecify.annotations.NonNull;
 
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -72,15 +73,18 @@ public class LiveDocAdapter extends CommonUniqueObjectAdapter {
             ModifiedDocumentRenderer documentRenderer = getDocumentRenderer(exportParams, (InternalReadOnlyTransaction) transaction, document);
 
             String internalContent = StringUtils.getEmptyIfNull(Optional.ofNullable(exportParams.getInternalContent()).orElseGet(document::getHomePageContentHtml));
-            Set<String> usedCommentIds = new HashSet<>();
+            Set<String> renderedCommentIds = new LinkedHashSet<>();
+            LiveDocCommentsProcessor commentsProcessor = new LiveDocCommentsProcessor();
+            Map<String, LiveDocComment> liveDocComments = commentsProcessor.getLiveDocComments(document, exportParams.getRenderComments());
+            boolean renderNative = exportParams.isRenderNativeComments();
             // Process comments in document itself (workitem descriptions aren't rendered yet)
-            internalContent = processComments(exportParams, document, internalContent, usedCommentIds);
+            internalContent = commentsProcessor.addLiveDocComments(internalContent, liveDocComments, renderNative, renderedCommentIds);
             String renderedContent = documentRenderer.render(internalContent);
             // Now process comments again to catch comments in workitem descriptions
-            renderedContent = processComments(exportParams, document, renderedContent, usedCommentIds);
+            renderedContent = commentsProcessor.addLiveDocComments(renderedContent, liveDocComments, renderNative, renderedCommentIds);
             if (exportParams.isIncludeUnreferencedComments()) {
                 // And the last: render unreferenced comments if needed
-                renderedContent = processUnreferencedComments(exportParams, document, renderedContent, usedCommentIds);
+                renderedContent = commentsProcessor.addUnreferencedComments(renderedContent, liveDocComments, renderNative, renderedCommentIds);
             }
             return renderedContent;
         });
@@ -91,14 +95,6 @@ public class LiveDocAdapter extends CommonUniqueObjectAdapter {
         Map<String, String> documentParameters = exportParams.getUrlQueryParameters() == null ? Map.of() : exportParams.getUrlQueryParameters();
         DocumentRendererParameters parameters = new DocumentRendererParameters(documentParameters.get(ExportParams.URL_QUERY_PARAM_QUERY), documentParameters.get(ExportParams.URL_QUERY_PARAM_LANGUAGE));
         return new ModifiedDocumentRenderer(transaction, document, RichTextRenderTarget.PDF_EXPORT, parameters);
-    }
-
-    private String processComments(@NotNull ExportParams exportParams, @NotNull ProxyDocument document, @NotNull String content, @NotNull Set<String> usedCommentIds) {
-        return new LiveDocCommentsProcessor().addLiveDocComments(document, content, exportParams.getRenderComments(), exportParams.isRenderNativeComments(), usedCommentIds);
-    }
-
-    private String processUnreferencedComments(@NotNull ExportParams exportParams, @NotNull ProxyDocument document, @NotNull String content, @NotNull Set<String> usedCommentIds) {
-        return new LiveDocCommentsProcessor().addUnreferencedComments(document, content, exportParams.getRenderComments(), exportParams.isRenderNativeComments(), usedCommentIds);
     }
 
 }

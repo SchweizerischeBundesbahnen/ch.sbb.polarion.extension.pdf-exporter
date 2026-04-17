@@ -7,13 +7,13 @@ export default class ExportPanel {
         this.ctx = new ExportContext({rootComponentSelector: rootComponentSelector});
 
         this.ctx.onChange('style-package-select', () => {
-            this.stylePackageChanged()
+            this.stylePackageChanged();
         });
         this.ctx.onClick('export-pdf', () => {
-            this.loadPdf()
+            this.loadPdf();
         });
         this.ctx.onClick('validate-pdf', () => {
-            this.validatePdf()
+            this.validatePdf();
         });
     }
 
@@ -54,7 +54,7 @@ export default class ExportPanel {
         this.ctx.setCheckbox("cover-page-checkbox", stylePackage.coverPage);
 
         this.ctx.setSelector("cover-page-selector", stylePackage.coverPage);
-        this.ctx.displayIf("cover-page-selector", stylePackage.coverPage, "inline-block")
+        this.ctx.displayIf("cover-page-selector", stylePackage.coverPage, "inline-block");
 
         this.ctx.setSelector("css-selector", stylePackage.css);
         this.ctx.setSelector("header-footer-selector", stylePackage.headerFooter);
@@ -62,7 +62,7 @@ export default class ExportPanel {
 
         this.ctx.setCheckbox("webhooks-checkbox", !!stylePackage.webhooks);
         this.ctx.setSelector("webhooks-selector", stylePackage.webhooks);
-        this.ctx.displayIf("webhooks-selector", !!stylePackage.webhooks, "inline-block")
+        this.ctx.displayIf("webhooks-selector", !!stylePackage.webhooks, "inline-block");
 
         this.ctx.setValue("paper-size-selector", stylePackage.paperSize || 'A4');
         this.ctx.setValue("headers-color", stylePackage.headersColor);
@@ -74,9 +74,9 @@ export default class ExportPanel {
 
         this.ctx.setCheckbox("render-comments", !!stylePackage.renderComments);
         this.ctx.setValue("render-comments-selector", stylePackage.renderComments  || 'OPEN');
-        this.ctx.displayIf("render-comments-selector", !!stylePackage.renderComments)
+        this.ctx.displayIf("render-comments-selector", !!stylePackage.renderComments);
 
-        this.ctx.displayIf("render-comments-options", !!stylePackage.renderComments)
+        this.ctx.displayIf("render-comments-options", !!stylePackage.renderComments, "flex");
         this.ctx.setCheckbox("include-unreferenced-comments", !!stylePackage.includeUnreferencedComments);
         this.ctx.setCheckbox("render-native-comments", !!stylePackage.renderNativeComments);
 
