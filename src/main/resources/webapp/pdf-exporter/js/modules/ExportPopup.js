@@ -35,14 +35,14 @@ export default class ExportPopup {
         this.ctx.querySelector(".modal__footer .action-button").style.display = "inline-block";
 
         this.ctx.onChange('popup-style-package-select', () => {
-            this.onStylePackageChanged()
+            this.onStylePackageChanged();
         });
         this.ctx.onClick(
             'popup-validate-pdf', () => {
-                this.validatePdf()
+                this.validatePdf();
             },
             'popup-export-pdf', () => {
-                this.exportToPdf()
+                this.exportToPdf();
             });
 
         this.ctx.displayIf("popup-auto-select-style-package-container", this.autoSelectStylePackageAvailable());
@@ -212,7 +212,7 @@ export default class ExportPopup {
             }).then(({responseText}) => {
                 this.ctx.getElementById("popup-filename").value = responseText;
                 this.ctx.getElementById("popup-filename").dataset.default = responseText;
-                resolve()
+                resolve();
             }).catch((error) => reject(error));
         });
     }
@@ -225,7 +225,7 @@ export default class ExportPopup {
                 responseType: "json",
             }).then(({response}) => {
                 this.ctx.getElementById("webhooks-container").style.display = response.enabled ? "flex" : "none";
-                resolve()
+                resolve();
             }).catch((error) => reject(error));
         });
     }
@@ -309,7 +309,7 @@ export default class ExportPopup {
         this.ctx.setCheckbox("popup-cover-page-checkbox", stylePackage.coverPage);
 
         this.ctx.setSelector("popup-cover-page-selector", stylePackage.coverPage);
-        this.ctx.visibleIf("popup-cover-page-selector", stylePackage.coverPage)
+        this.ctx.visibleIf("popup-cover-page-selector", stylePackage.coverPage);
 
         this.ctx.setSelector("popup-css-selector", stylePackage.css);
         this.ctx.setSelector("popup-header-footer-selector", stylePackage.headerFooter);
@@ -317,7 +317,7 @@ export default class ExportPopup {
 
         this.ctx.setCheckbox("popup-webhooks-checkbox", !!stylePackage.webhooks);
         this.ctx.setSelector("popup-webhooks-selector", stylePackage.webhooks);
-        this.ctx.visibleIf("popup-webhooks-selector", !!stylePackage.webhooks)
+        this.ctx.visibleIf("popup-webhooks-selector", !!stylePackage.webhooks);
 
         this.ctx.setValue("popup-headers-color", stylePackage.headersColor);
         this.ctx.setValue("popup-paper-size-selector", stylePackage.paperSize || ExportParams.PaperSize.A4);
@@ -331,7 +331,8 @@ export default class ExportPopup {
         this.ctx.setValue("popup-render-comments-selector", stylePackage.renderComments || 'OPEN');
         this.ctx.visibleIf("popup-render-comments-selector", !!stylePackage.renderComments);
 
-        this.ctx.displayIf("popup-render-native-comments-container", !!stylePackage.renderComments)
+        this.ctx.displayIf("popup-render-comments-options", !!stylePackage.renderComments, "flex");
+        this.ctx.setCheckbox("popup-include-unreferenced-comments", !!stylePackage.includeUnreferencedComments);
         this.ctx.setCheckbox("popup-render-native-comments", !!stylePackage.renderNativeComments);
 
         this.ctx.setCheckbox("popup-watermark", stylePackage.watermark);
@@ -404,7 +405,7 @@ export default class ExportPopup {
         if (exportParams === undefined) {
             return;
         }
-        this.actionInProgress({inProgress: true, message: "Performing PDF validation"})
+        this.actionInProgress({inProgress: true, message: "Performing PDF validation"});
 
         this.callAsync({
             method: "POST",
@@ -493,11 +494,11 @@ export default class ExportPopup {
         }
 
         if (this.ctx.getDocumentType() === ExportParams.DocumentType.TEST_RUN && exportParams.attachmentsFilter !== null && !exportParams.embedAttachments) {
-            const testRunId = new URLSearchParams(this.ctx.getUrlQueryParameters()).get("id")
+            const testRunId = new URLSearchParams(this.ctx.getUrlQueryParameters()).get("id");
             this.ctx.downloadTestRunAttachments(exportParams.projectId, testRunId, exportParams.revision, exportParams.attachmentsFilter, exportParams.testcaseFieldId);
         }
 
-        this.actionInProgress({inProgress: true, message: "Generating PDF"})
+        this.actionInProgress({inProgress: true, message: "Generating PDF"});
 
         const requestBody = exportParams.toJSON();
 
@@ -590,6 +591,7 @@ export default class ExportPopup {
             .setFitToPage((live_doc || test_run) && this.ctx.getElementById('popup-fit-to-page').checked)
             .setRenderComments((live_doc || collection) && this.ctx.getElementById('popup-render-comments').checked ? this.ctx.getElementById("popup-render-comments-selector").value : null)
             .setRenderNativeComments(this.ctx.getElementById("popup-render-native-comments").checked)
+            .setIncludeUnreferencedComments(this.ctx.getElementById("popup-include-unreferenced-comments").checked)
             .setWatermark(this.ctx.getElementById("popup-watermark").checked)
             .setMarkReferencedWorkitems(live_doc && this.ctx.getElementById("popup-mark-referenced-workitems").checked)
             .setCutEmptyChapters(live_doc && this.ctx.getElementById("popup-cut-empty-chapters").checked)

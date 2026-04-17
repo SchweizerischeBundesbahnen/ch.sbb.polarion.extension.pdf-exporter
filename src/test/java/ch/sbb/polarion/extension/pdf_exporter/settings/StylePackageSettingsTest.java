@@ -96,6 +96,15 @@ class StylePackageSettingsTest {
             customProjectModel.setRenderComments(CommentsRenderType.OPEN);
             when(mockedSettingsService.read(eq(mockProjectLocation), any())).thenReturn(customProjectModel.serialize().replace("OPEN", "true"));
             assertEquals(CommentsRenderType.OPEN, stylePackageSettings.load(projectName, SettingId.fromName("Any setting name")).getRenderComments());
+
+            // check includeUnreferencedComments round-trip
+            customProjectModel.setIncludeUnreferencedComments(true);
+            when(mockedSettingsService.read(eq(mockProjectLocation), any())).thenReturn(customProjectModel.serialize());
+            assertTrue(stylePackageSettings.load(projectName, SettingId.fromName("Any setting name")).isIncludeUnreferencedComments());
+
+            customProjectModel.setIncludeUnreferencedComments(false);
+            when(mockedSettingsService.read(eq(mockProjectLocation), any())).thenReturn(customProjectModel.serialize());
+            assertFalse(stylePackageSettings.load(projectName, SettingId.fromName("Any setting name")).isIncludeUnreferencedComments());
         }
     }
 

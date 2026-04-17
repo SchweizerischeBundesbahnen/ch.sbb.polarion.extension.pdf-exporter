@@ -254,6 +254,7 @@ function saveStylePackage() {
             'fitToPage': ctx.getCheckboxValueById('fit-to-page'),
             'renderComments': ctx.getCheckboxValueById('render-comments') ? RenderComments.renderCommentsSelect.getSelectedValue() : null,
             'renderNativeComments': ctx.getCheckboxValueById('render-native-comments'),
+            'includeUnreferencedComments': ctx.getCheckboxValueById('include-unreferenced-comments'),
             'watermark': ctx.getCheckboxValueById('watermark'),
             'markReferencedWorkitems': ctx.getCheckboxValueById('mark-referenced-workitems'),
             'cutEmptyChapters': ctx.getCheckboxValueById('cut-empty-chapters'),
@@ -330,7 +331,7 @@ function setStylePackage(content) {
     ctx.getElementById('render-comments').dispatchEvent(new Event('change'));
     RenderComments.renderCommentsSelect.selectValue(stylePackage.renderComments || 'OPEN');
 
-    ctx.visibleIf("render-native-comments-container", !!stylePackage.renderComments)
+    ctx.setCheckbox("include-unreferenced-comments", !!stylePackage.includeUnreferencedComments);
     ctx.setCheckbox("render-native-comments", !!stylePackage.renderNativeComments);
 
     ctx.setCheckboxValueById('watermark', stylePackage.watermark);

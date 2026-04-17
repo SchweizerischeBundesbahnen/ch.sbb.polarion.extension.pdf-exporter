@@ -59,6 +59,9 @@ public class ExportParams extends ConversionParams {
     @Schema(description = "Which comments should be rendered in the exported document")
     private CommentsRenderType renderComments;
 
+    @Schema(description = "Include unreferenced comments")
+    private boolean includeUnreferencedComments;
+
     @Schema(description = "Render native comments")
     private boolean renderNativeComments;
 
@@ -134,6 +137,7 @@ public class ExportParams extends ConversionParams {
         fitToPage = stylePackageModel.isFitToPage();
         renderComments = stylePackageModel.getRenderComments();
         renderNativeComments = stylePackageModel.isRenderNativeComments();
+        includeUnreferencedComments = stylePackageModel.isIncludeUnreferencedComments();
         watermark = stylePackageModel.isWatermark();
         markReferencedWorkitems = stylePackageModel.isMarkReferencedWorkitems();
         setCutEmptyWIAttributes(stylePackageModel.isCutEmptyWorkitemAttributes());

@@ -42,6 +42,7 @@ public class StylePackageModel extends SettingsModel {
     private static final String FIT_TO_PAGE_ENTRY_NAME = "FIT TO PAGE";
     private static final String RENDER_COMMENTS_ENTRY_NAME = "RENDER COMMENTS";
     private static final String RENDER_NATIVE_COMMENTS_ENTRY_NAME = "RENDER NATIVE COMMENTS";
+    private static final String INCLUDE_UNREFERENCED_COMMENTS_ENTRY_NAME = "INCLUDE UNREFERENCED COMMENTS";
     private static final String WATERMARK_ENTRY_NAME = "WATERMARK";
     private static final String MARK_REFERENCED_WORKITEMS_ENTRY_NAME = "MARK REFERENCED WORKITEMS";
     private static final String CUT_EMPTY_CHAPTERS_ENTRY_NAME = "CUT EMPTY CHAPTERS";
@@ -76,6 +77,7 @@ public class StylePackageModel extends SettingsModel {
     private boolean fitToPage;
     private CommentsRenderType renderComments;
     private boolean renderNativeComments;
+    private boolean includeUnreferencedComments;
     private boolean watermark;
     private boolean markReferencedWorkitems;
     private boolean cutEmptyChapters;
@@ -112,6 +114,7 @@ public class StylePackageModel extends SettingsModel {
                 serializeEntry(FIT_TO_PAGE_ENTRY_NAME, fitToPage) +
                 serializeEntry(RENDER_COMMENTS_ENTRY_NAME, renderComments == null ? null : renderComments.name()) +
                 serializeEntry(RENDER_NATIVE_COMMENTS_ENTRY_NAME, renderNativeComments) +
+                serializeEntry(INCLUDE_UNREFERENCED_COMMENTS_ENTRY_NAME, includeUnreferencedComments) +
                 serializeEntry(WATERMARK_ENTRY_NAME, watermark) +
                 serializeEntry(MARK_REFERENCED_WORKITEMS_ENTRY_NAME, markReferencedWorkitems) +
                 serializeEntry(CUT_EMPTY_CHAPTERS_ENTRY_NAME, cutEmptyChapters) +
@@ -150,6 +153,7 @@ public class StylePackageModel extends SettingsModel {
         fitToPage = Boolean.parseBoolean(deserializeEntry(FIT_TO_PAGE_ENTRY_NAME, serializedString));
         renderComments = parseRenderComments(deserializeEntry(RENDER_COMMENTS_ENTRY_NAME, serializedString));
         renderNativeComments = Boolean.parseBoolean(deserializeEntry(RENDER_NATIVE_COMMENTS_ENTRY_NAME, serializedString));
+        includeUnreferencedComments = Boolean.parseBoolean(deserializeEntry(INCLUDE_UNREFERENCED_COMMENTS_ENTRY_NAME, serializedString));
         watermark = Boolean.parseBoolean(deserializeEntry(WATERMARK_ENTRY_NAME, serializedString));
         markReferencedWorkitems = Boolean.parseBoolean(deserializeEntry(MARK_REFERENCED_WORKITEMS_ENTRY_NAME, serializedString));
         cutEmptyChapters = Boolean.parseBoolean(deserializeEntry(CUT_EMPTY_CHAPTERS_ENTRY_NAME, serializedString));

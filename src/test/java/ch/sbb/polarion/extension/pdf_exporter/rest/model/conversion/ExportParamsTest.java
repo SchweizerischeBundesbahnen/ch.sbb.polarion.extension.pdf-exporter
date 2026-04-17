@@ -25,6 +25,7 @@ class ExportParamsTest {
                 .imageDensity(ImageDensity.DPI_96)
                 .fitToPage(true)
                 .renderComments(CommentsRenderType.ALL)
+                .includeUnreferencedComments(true)
                 .watermark(true)
                 .markReferencedWorkitems(true)
                 .cutEmptyChapters(true)
@@ -75,6 +76,7 @@ class ExportParamsTest {
         assertEquals(PdfVariant.PDF_A_3B, params.getPdfVariant());
         assertEquals(ImageDensity.DPI_300, params.getImageDensity());
         assertNull(params.getRenderComments());
+        assertFalse(params.isIncludeUnreferencedComments());
         assertFalse(params.isFitToPage());
         assertFalse(params.isWatermark());
         assertFalse(params.isMarkReferencedWorkitems());

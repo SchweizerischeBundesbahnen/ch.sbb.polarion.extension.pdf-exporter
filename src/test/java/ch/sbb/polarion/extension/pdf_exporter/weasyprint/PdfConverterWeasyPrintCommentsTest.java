@@ -65,6 +65,63 @@ class PdfConverterWeasyPrintCommentsTest extends BasePdfConverterTest {
     }
 
     @Test
+    void testConverterWithUnreferencedComments() {
+        // Arrange
+        ExportParams params = ExportParams.builder()
+                .projectId("test")
+                .locationPath("testLocation")
+                .orientation(Orientation.PORTRAIT)
+                .paperSize(PaperSize.A4)
+                .renderComments(CommentsRenderType.ALL)
+                .includeUnreferencedComments(true)
+                .build();
+
+        DocumentData<IModule> liveDoc = DocumentData.creator(DocumentType.LIVE_DOC, module)
+                .id(LiveDocId.from("testProjectId", "_default", "testDocumentId"))
+                .title("Test Document")
+                .content("""
+                        <p>This document has a referenced comment here:
+                            [span class=comment level-0]
+                                [span class=meta]
+                                    [span class=date]2025-03-24 09:36[/span]
+                                    [span class=details]
+                                        [span class=author]Test User 1[/span]
+                                    [/span]
+                                [/span]
+                                [span class=text]Referenced Comment[/span]
+                            [/span]
+                        </p>
+                        [span class=unreferenced-comments-delimiter][/span]
+                        [span class=comment level-0]
+                            [span class=meta]
+                                [span class=date]2025-04-02 10:15[/span]
+                                [span class=details]
+                                    [span class=author]Test User 2[/span]
+                                [/span]
+                            [/span]
+                            [span class=text]Unreferenced Comment A[/span]
+                        [/span]
+                        [span class=comment level-0]
+                            [span class=meta]
+                                [span class=date]2025-04-03 11:22[/span]
+                                [span class=details]
+                                    [span class=author]Test User 3[/span]
+                                [/span]
+                            [/span]
+                            [span class=text]Unreferenced Comment B[/span]
+                        [/span]""")
+                .lastRevision("42")
+                .revisionPlaceholder("42")
+                .build();
+
+        documentDataFactoryMockedStatic.when(() -> DocumentDataFactory.getDocumentData(eq(params), anyBoolean())).thenReturn(liveDoc);
+
+        // Act & Assert
+        boolean hasDiff = compareContentUsingReferenceImages(getCurrentMethodName(), converter.convertToPdf(params, null));
+        assertFalse(hasDiff);
+    }
+
+    @Test
     void testConverterWithNativeComments() {
         // Arrange
         ExportParams params = ExportParams.builder()

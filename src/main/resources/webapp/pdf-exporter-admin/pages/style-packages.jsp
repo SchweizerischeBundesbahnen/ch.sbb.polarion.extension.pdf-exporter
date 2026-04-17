@@ -209,11 +209,17 @@
                 </div>
                 <div class='checkbox input-group'>
                     <label for='render-comments' id='render-comments-label'>
-                        <input id="render-comments" onchange='document.getElementById("render-comments-select").style.visibility = this.checked ? "visible" : "hidden";document.getElementById("render-native-comments-container").style.visibility = this.checked ? "visible" : "hidden"' type='checkbox' />
+                        <input id="render-comments" onchange='document.getElementById("render-comments-select").style.visibility = this.checked ? "visible" : "hidden";document.getElementById("render-comments-options").style.display = this.checked ? "block" : "none"' type='checkbox' />
                         Comments rendering
                     </label>
                     <div id="render-comments-select" style="visibility: hidden; width: 60px"></div>
-                    <label for='render-native-comments' id='render-native-comments-container' style="display: inline-block">
+                </div>
+                <div class='checkbox input-group' id='render-comments-options' style="display: none; padding-left: 20px">
+                    <label for='include-unreferenced-comments' id='include-unreferenced-comments-container' style="display: inline-block" title="Unreferenced comments will be rendered at the end of the document">
+                        <input id="include-unreferenced-comments" type='checkbox' />
+                        include unreferenced
+                    </label>
+                    <label for='render-native-comments' id='render-native-comments-container' style="display: inline-block" title="Comments will be transformed into native PDF sticky notes/bubbles">
                         <input id="render-native-comments" type='checkbox' />
                         as sticky notes
                     </label>
