@@ -1,5 +1,18 @@
 # Changelog
 
+## [12.4.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v12.3.0...v12.4.0) (2026-04-20)
+
+
+### Features
+
+* add possibility to choose link role direction when link role filter is used during export ([#786](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/786)) ([2a52b46](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/2a52b4659968fd9d03c20df6549c068462650ec6))
+* export unreferenced document comments ([#788](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/788)) ([4c76b97](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/4c76b97fe9ab7ec372988ddb3184f44f729db27e)), closes [#736](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/736)
+
+
+### Bug Fixes
+
+* fix adding specification of direction of links ([#789](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/789)) ([64528dc](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/64528dce1426786d2876906d9e4f8e3b9368eb44)), closes [#779](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/779)
+
 ## [12.3.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v12.2.2...v12.3.0) (2026-04-15)
 
 
