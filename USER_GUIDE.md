@@ -168,10 +168,13 @@ You can control which comments will be included in the generated PDF document - 
 
 ![Comments rendering type](docs/user_guide/img/comments_rendering_type.png)
 
+It is possible to include all unreferenced comments (they will be added to the end of the generated PDF document):
+![Unreferenced comments](docs/user_guide/img/comments_include_unreferenced.png)
+
 Also there is an option to render comments as native PDF annotations (sticky notes) instead of inlined text:
 ![Comments as sticky notes](docs/user_guide/img/comments_as_sticky_notes.png)
 
-In this case, comments will be accessed as native PDF viewer's tools (appearance may vary on different PDF viewers):
+In this case, comments will be accessed as native PDF viewer's sticky notes/bubbles (appearance may vary on different PDF viewers):
 ![Comments in PDF viewer](docs/user_guide/img/comments_pdf_viewer.png)
 
 > ⚠️ **PDF/A Compatibility Warning:** Native PDF annotations (sticky notes) are **not compatible with PDF/A standards**. When exporting with the "as sticky notes" option enabled, the resulting PDF will fail PDF/A validation (e.g., veraPDF reports errors 6.2.10-2, 6.1.3-1, 6.2.4.3-2, 6.3.2-1, 6.6.2.1-1 for PDF/A-2b). This is because PDF/A requires all annotations to have complete appearance streams, which WeasyPrint-generated sticky notes do not provide. If you need PDF/A-compliant documents with comments, use the default inline rendering (without "as sticky notes" option).

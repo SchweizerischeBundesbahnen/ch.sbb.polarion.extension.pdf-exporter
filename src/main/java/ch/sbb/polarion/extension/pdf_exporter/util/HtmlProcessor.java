@@ -1052,6 +1052,8 @@ public class HtmlProcessor {
         html = html.replace("[span class=sticky-note-time]", "<span class='sticky-note-time'>");
         html = html.replace("[span class=sticky-note-username]", "<span class='sticky-note-username'>");
         html = html.replace("[span class=sticky-note-text]", "<span class='sticky-note-text'>");
+
+        html = html.replace("[span class=unreferenced-comments-delimiter]", "<span class='unreferenced-comments-delimiter'>");
         return html;
     }
 

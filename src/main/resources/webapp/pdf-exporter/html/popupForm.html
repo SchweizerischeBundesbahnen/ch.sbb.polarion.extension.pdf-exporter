@@ -147,14 +147,20 @@
                 </div>
                 <div class='property-wrapper hidden visible-for-LIVE_DOC visible-for-BASELINE_COLLECTION'>
                     <label for='popup-render-comments'>
-                        <input id='popup-render-comments' onchange='document.getElementById("popup-render-comments-selector").style.visibility = this.checked ? "visible" : "hidden";document.querySelector("#popup-render-native-comments-container").style.display = this.checked ? "flex" : "none"' type='checkbox'/>
+                        <input id='popup-render-comments' onchange='document.getElementById("popup-render-comments-selector").style.visibility = this.checked ? "visible" : "hidden";document.getElementById("popup-render-comments-options").style.display = this.checked ? "flex" : "none"' type='checkbox'/>
                         Comments rendering
                     </label>
                     <select id='popup-render-comments-selector' style='width: 60px'>
                         <option value='OPEN'>Open</option>
                         <option value='ALL'>All</option>
                     </select>
-                    <label for='popup-render-native-comments' id='popup-render-native-comments-container'>
+                </div>
+                <div class='property-wrapper hidden visible-for-LIVE_DOC visible-for-BASELINE_COLLECTION' id='popup-render-comments-options' style='display: none; padding-left: 20px'>
+                    <label for='popup-include-unreferenced-comments' id='popup-include-unreferenced-comments-container' title="Unreferenced comments will be rendered at the end of the document">
+                        <input id='popup-include-unreferenced-comments' type='checkbox' />
+                        include unreferenced
+                    </label>
+                    <label for='popup-render-native-comments' id='popup-render-native-comments-container' title="Comments will be transformed into native PDF sticky notes/bubbles">
                         <input id='popup-render-native-comments' type='checkbox' onchange='
                             const warningPane = document.querySelector(".modal__content .notifications .alert.alert-warning");
                             if (warningPane) {
