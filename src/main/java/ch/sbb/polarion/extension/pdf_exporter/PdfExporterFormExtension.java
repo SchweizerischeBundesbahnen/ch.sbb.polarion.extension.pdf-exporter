@@ -9,6 +9,7 @@ import ch.sbb.polarion.extension.generic.util.ScopeUtils;
 import ch.sbb.polarion.extension.pdf_exporter.properties.PdfExporterExtensionConfiguration;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.DocumentType;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.LinkRoleDirection;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.localization.Language;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.stylepackage.DocIdentifier;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.stylepackage.StylePackageModel;
@@ -320,8 +321,11 @@ public class PdfExporterFormExtension implements IFormExtension {
         if (!roleEnumValues.isEmpty()) {
             if (!CollectionUtils.isEmpty(stylePackage.getLinkedWorkitemRoles())) {
                 form = form.replace("<input id='selected-roles'", "<input id='selected-roles' checked");
-                form = form.replace("id='roles-wrapper' style='display: none'", "id='roles-wrapper'");
+                form = form.replace("id='roles-wrapper' style='display: none;", "id='roles-wrapper' style='display: flex;");
             }
+
+            String linkRoleDirectionToPreselect = stylePackage.getLinkRoleDirection() != null ? stylePackage.getLinkRoleDirection() : LinkRoleDirection.BOTH.toString();
+            form = form.replace(String.format(OPTION_VALUE, linkRoleDirectionToPreselect), String.format(OPTION_SELECTED, linkRoleDirectionToPreselect));
 
             String rolesOptions = roleEnumValues.stream()
                     .map(roleEnumValue -> String.format(OPTION_TEMPLATE,
