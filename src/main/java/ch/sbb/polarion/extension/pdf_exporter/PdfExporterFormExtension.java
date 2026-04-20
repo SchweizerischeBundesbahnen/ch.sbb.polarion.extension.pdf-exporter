@@ -320,14 +320,15 @@ public class PdfExporterFormExtension implements IFormExtension {
         return form.replace("{DOCUMENT_LANGUAGE}", documentLanguage);
     }
 
-    private String adjustLinkRoles(@NotNull String form, @NotNull List<String> roleEnumValues, @NotNull StylePackageModel stylePackage) {
+    @VisibleForTesting
+    String adjustLinkRoles(@NotNull String form, @NotNull List<String> roleEnumValues, @NotNull StylePackageModel stylePackage) {
         if (!roleEnumValues.isEmpty()) {
             if (!CollectionUtils.isEmpty(stylePackage.getLinkedWorkitemRoles())) {
                 form = form.replace("<input id='selected-roles'", "<input id='selected-roles' checked");
                 form = form.replace("id='roles-wrapper' style='display: none;", "id='roles-wrapper' style='display: flex;");
             }
 
-            String linkRoleDirectionToPreselect = stylePackage.getLinkRoleDirection() != null ? stylePackage.getLinkRoleDirection() : LinkRoleDirection.BOTH.toString();
+            String linkRoleDirectionToPreselect = StringUtils.isEmpty(stylePackage.getLinkRoleDirection()) ? LinkRoleDirection.BOTH.toString() : stylePackage.getLinkRoleDirection();
             form = form.replace(String.format(OPTION_VALUE, linkRoleDirectionToPreselect), String.format(OPTION_SELECTED, linkRoleDirectionToPreselect));
 
             String rolesOptions = roleEnumValues.stream()
