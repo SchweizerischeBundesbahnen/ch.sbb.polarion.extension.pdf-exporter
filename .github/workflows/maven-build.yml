@@ -66,15 +66,15 @@ jobs:
       - name: 📦 Build with Maven for Pushes
         if: github.event_name == 'push'
         env:
-          GITHUB_HEAD_REF: ${{ github.head_ref }}
+          BRANCH_NAME: ${{ github.ref_name }}
           IS_PUBLIC: ${{ github.event.repository.visibility == 'public' }}
           IS_TEMPLATE: ${{ github.event.repository.is_template }}
         run: |
           SONAR_ARGS=()
           if [ "${IS_PUBLIC}" = "true" ] && [ "${IS_TEMPLATE}" != "true" ]; then
             SONAR_ARGS+=(sonar:sonar "-Dsonar.exclusions=.github/**")
-            if [ -n "${GITHUB_HEAD_REF}" ]; then
-              SONAR_ARGS+=("-Dsonar.branch.name=${GITHUB_HEAD_REF}")
+            if [ -n "${BRANCH_NAME}" ]; then
+              SONAR_ARGS+=("-Dsonar.branch.name=${BRANCH_NAME}")
             fi
           fi
           mvn --batch-mode -s "${SETTINGS_XML}" clean verify -P tests-with-weasyprint-docker -Dweasyprint.service.url="${WEASYPRINT_SERVICE_URL}" "${SONAR_ARGS[@]}"
@@ -84,8 +84,14 @@ jobs:
           GITHUB_HEAD_REF: ${{ github.head_ref }}
           GITHUB_BASE_REF: ${{ github.base_ref }}
           GITHUB_PR_NUMBER_REF: ${{ github.event.pull_request.number }}
-        run: mvn --batch-mode -s "${SETTINGS_XML}" clean verify -P tests-with-weasyprint-docker -Dweasyprint.service.url="${WEASYPRINT_SERVICE_URL}" sonar:sonar -Dsonar.pullrequest.base="${GITHUB_BASE_REF}"
-          -Dsonar.pullrequest.branch="${GITHUB_HEAD_REF}" -Dsonar.pullrequest.key="${GITHUB_PR_NUMBER_REF}"
+          IS_PUBLIC: ${{ github.event.repository.visibility == 'public' }}
+          IS_TEMPLATE: ${{ github.event.repository.is_template }}
+        run: |
+          SONAR_ARGS=()
+          if [ "${IS_PUBLIC}" = "true" ] && [ "${IS_TEMPLATE}" != "true" ]; then
+            SONAR_ARGS+=(sonar:sonar "-Dsonar.pullrequest.base=${GITHUB_BASE_REF}" "-Dsonar.pullrequest.branch=${GITHUB_HEAD_REF}" "-Dsonar.pullrequest.key=${GITHUB_PR_NUMBER_REF}" "-Dsonar.exclusions=.github/**")
+          fi
+          mvn --batch-mode -s "${SETTINGS_XML}" clean verify -P tests-with-weasyprint-docker -Dweasyprint.service.url="${WEASYPRINT_SERVICE_URL}" "${SONAR_ARGS[@]}"
       - name: 📋 Analyze dependencies
         run: mvn --batch-mode -s "${SETTINGS_XML}" dependency:analyze
         continue-on-error: false
