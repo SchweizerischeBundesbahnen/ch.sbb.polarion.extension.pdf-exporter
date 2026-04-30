@@ -410,11 +410,11 @@ ul.toc li > a.page-number::after {
         break-inside: avoid;
     }
 
-    tr:first-child {
+    tr:first-child:not(:last-child) {
         break-after: avoid;
     }
 
-    tr:last-child {
+    tr:last-child:not(:first-child) {
         break-before: avoid;
     }
 
