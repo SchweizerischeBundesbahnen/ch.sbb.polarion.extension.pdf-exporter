@@ -12,6 +12,8 @@ export default class ExportBulk {
     finishedCount = 0;
     state = null;
     errors = false;
+    mergeIntoSinglePdf = false;
+    mergeFileName = null;
 
     constructor(rootComponentSelector, exportPages) {
         this.ctx = new ExportContext({rootComponentSelector: rootComponentSelector, exportPages: exportPages});
@@ -79,7 +81,7 @@ export default class ExportBulk {
         return docIdentifiers;
     }
 
-    openPopup(exportParams) {
+    openPopup(exportParams, mergeIntoSinglePdf = false, mergeFileName = null) {
         this.removePopupIfExists();
         const popup = document.createElement('div');
         popup.classList.add("modal");
@@ -91,10 +93,20 @@ export default class ExportBulk {
 
         this.popupCtx = new ExportContext({rootComponentSelector: "#" + BULK_POPUP_ID});
         this.exportParams = exportParams;
+        this.mergeIntoSinglePdf = mergeIntoSinglePdf;
+        this.mergeFileName = mergeFileName || "merged-document.pdf";
         this.itemsCount = 0;
         this.finishedCount = 0;
         this.errors = false;
         this.updateState(BULK_EXPORT_IN_PROGRESS);
+
+        if (this.mergeIntoSinglePdf) {
+            const titleSpan = this.popupCtx.querySelector(".modal__title span");
+            if (titleSpan) {
+                titleSpan.innerText = "Bulk export to PDF (merging into single file)";
+            }
+        }
+
         this.renderBulkExportItems();
 
         MicroModal.show(BULK_POPUP_ID, {
@@ -108,7 +120,11 @@ export default class ExportBulk {
             this.stopBulkExport();
         });
 
-        this.startNextItemExport();
+        if (this.mergeIntoSinglePdf) {
+            this.startMergeExport();
+        } else {
+            this.startNextItemExport();
+        }
     }
 
     removePopupIfExists() {
@@ -306,6 +322,74 @@ export default class ExportBulk {
         } else if (this.state !== BULK_EXPORT_INTERRUPTED) {
             this.updateState(BULK_EXPORT_FINISHED);
         }
+    }
+
+    startMergeExport() {
+        // Build document list from selected checkboxes
+        const documents = [];
+        this.popupCtx.querySelectorAll(".export-item.paused").forEach(item => {
+            const documentType = this.getDocumentType(item.dataset["type"]);
+            const documentId = item.dataset["id"];
+
+            const docParams = JSON.parse(this.exportParams.toJSON());
+            docParams["projectId"] = item.dataset["project"];
+            docParams["documentType"] = documentType;
+
+            if (documentType === ExportParams.DocumentType.TEST_RUN) {
+                docParams["urlQueryParameters"] = {id: documentId};
+            } else {
+                docParams["locationPath"] = `${item.dataset["space"]}/${documentId}`;
+            }
+            documents.push(docParams);
+        });
+
+        const pdfVariant = this.exportParams.pdfVariant;
+        const bulkMergeRequest = {
+            documents: documents,
+            mergeSessionParams: {
+                encoding: "utf-8",
+                mediaType: "print",
+                presentationalHints: this.exportParams.followHTMLPresentationalHints || false,
+                baseUrl: null,
+                scaleFactor: null,
+                fileName: this.mergeFileName,
+                pdfVariant: pdfVariant ? ExportParams.PdfVariant.toWeasyPrintParameter(pdfVariant) : null,
+                customMetadata: false,
+                fullFonts: this.exportParams.fullFonts || false
+            }
+        };
+
+        // Mark all items as in-progress
+        this.popupCtx.querySelectorAll(".export-item.paused").forEach(item => {
+            item.classList.remove("paused");
+            item.classList.add("in-progress");
+        });
+
+        // Submit merge job and poll for result using existing async job mechanism
+        this.ctx.asyncConvertMergePdf(JSON.stringify(bulkMergeRequest), result => {
+            this.popupCtx.querySelectorAll(".export-item.in-progress").forEach(item => {
+                item.classList.remove("in-progress");
+                item.classList.add("finished");
+            });
+            this.finishedCount = this.itemsCount;
+            this.ctx.downloadBlob(result.response, this.mergeFileName);
+            this.updateState(BULK_EXPORT_FINISHED);
+        }, errorResponse => {
+            this.errors = true;
+            this.popupCtx.querySelectorAll(".export-item.in-progress").forEach(item => {
+                item.classList.remove("in-progress");
+                item.classList.add("error");
+            });
+            errorResponse.text().then(errorJson => {
+                const error = errorJson && JSON.parse(errorJson);
+                const errorMessage = error && (error.message ? error.message : error.errorMessage);
+                const resultSpan = this.popupCtx.querySelector(".modal__footer .result");
+                if (resultSpan && errorMessage) {
+                    resultSpan.innerText = "Merge export failed: " + errorMessage;
+                }
+            });
+            this.updateState(BULK_EXPORT_FINISHED);
+        });
     }
 
     getDocumentType(itemType) {

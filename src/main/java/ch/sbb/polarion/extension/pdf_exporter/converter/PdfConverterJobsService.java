@@ -1,9 +1,12 @@
 package ch.sbb.polarion.extension.pdf_exporter.converter;
 
 import ch.sbb.polarion.extension.generic.rest.filter.LogoutFilter;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.BulkMergeExportParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.MergeSessionStartParams;
 import ch.sbb.polarion.extension.pdf_exporter.util.DebugDataStorage;
 import ch.sbb.polarion.extension.pdf_exporter.util.ExportContext;
+import ch.sbb.polarion.extension.pdf_exporter.weasyprint.service.WeasyPrintServiceConnector;
 import com.polarion.core.util.logging.Logger;
 import com.polarion.platform.security.ISecurityService;
 import lombok.Builder;
@@ -87,6 +90,72 @@ public class PdfConverterJobsService {
                 .future(asyncConversionJob)
                 .user(securityService.getCurrentUser())
                 .exportParams(exportParams)
+                .startingTime(Instant.now())
+                .jobContext(jobContext).build();
+        jobs.put(jobId, jobDetails);
+        return jobId;
+    }
+
+    public String startMergeJob(BulkMergeExportParams bulkParams, int timeoutInMinutes) {
+        String jobId = UUID.randomUUID().toString();
+        Subject userSubject = securityService.getCurrentSubject();
+        boolean isJobLogoutRequired = isJobLogoutRequired();
+        final JobContext jobContext = JobContext.builder().workItemIDsWithMissingAttachment(new ArrayList<>()).build();
+
+        // Use first document's params as representative for job metadata
+        ExportParams representativeParams = bulkParams.getDocuments().isEmpty() ? null : bulkParams.getDocuments().get(0);
+
+        CompletableFuture<byte[]> asyncMergeJob = CompletableFuture.supplyAsync(() -> {
+            try {
+                DebugDataStorage.setCurrentJobId(jobId);
+                return securityService.doAsUser(userSubject, (PrivilegedAction<byte[]>) () -> {
+                    WeasyPrintServiceConnector connector = new WeasyPrintServiceConnector();
+                    MergeSessionStartParams sessionParams = bulkParams.getMergeSessionParams();
+                    if (sessionParams == null) {
+                        sessionParams = MergeSessionStartParams.builder().build();
+                    }
+
+                    String sessionId = connector.startMergeSession(sessionParams);
+
+                    for (ExportParams exportParams : bulkParams.getDocuments()) {
+                        String htmlContent = pdfConverter.prepareHtmlContent(exportParams, null);
+                        connector.addDocumentToSession(sessionId, htmlContent);
+                    }
+
+                    return connector.finishMergeSession(sessionId);
+                });
+            } catch (Exception e) {
+                String errorMessage = String.format("Merge export job '%s' failed with error: %s", jobId, e.getMessage());
+                logger.error(errorMessage, e);
+                failedJobsReasons.put(jobId, e.getMessage());
+                throw e;
+            } finally {
+                DebugDataStorage.clearCurrentJobId();
+                jobContext.workItemIDsWithMissingAttachment.addAll(ExportContext.getWorkItemIDsWithMissingAttachment());
+                ExportContext.clear();
+                if ((userSubject != null) && isJobLogoutRequired) {
+                    securityService.logout(userSubject);
+                }
+            }
+        }, Executors.newSingleThreadExecutor());
+
+        asyncMergeJob
+                .orTimeout(timeoutInMinutes, TimeUnit.MINUTES)
+                .exceptionally(e -> {
+                    String failedReason = e.getMessage();
+                    if (e instanceof TimeoutException) {
+                        failedReason = String.format("Timeout after %d min", timeoutInMinutes);
+                    }
+                    failedJobsReasons.put(jobId, failedReason);
+                    logger.error(String.format("Merge export job '%s' failed with error: %s", jobId, failedReason), e);
+                    asyncMergeJob.completeExceptionally(e);
+                    return null;
+                });
+
+        JobDetails jobDetails = JobDetails.builder()
+                .future(asyncMergeJob)
+                .user(securityService.getCurrentUser())
+                .exportParams(representativeParams)
                 .startingTime(Instant.now())
                 .jobContext(jobContext).build();
         jobs.put(jobId, jobDetails);

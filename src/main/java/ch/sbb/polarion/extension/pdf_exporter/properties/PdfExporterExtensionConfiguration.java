@@ -21,6 +21,10 @@ public class PdfExporterExtensionConfiguration extends ExtensionConfiguration {
     public static final String WEASYPRINT_SERVICE_DESCRIPTION = "The URL of the <a href='#weasyprint-configuration'>WeasyPrint service</a>";
     public static final String WEASYPRINT_SERVICE_DEFAULT_VALUE = "http://localhost:9080";
 
+    public static final String BULK_EXPORT_SERVICE = "bulk.export.service";
+    public static final String BULK_EXPORT_SERVICE_DESCRIPTION = "The URL of the bulk export service used for merging multiple documents into a single PDF";
+    public static final String BULK_EXPORT_SERVICE_DEFAULT_VALUE = "http://localhost:9070";
+
     public static final String WEBHOOKS_ENABLED = "webhooks.enabled";
     public static final String WEBHOOKS_ENABLED_DESCRIPTION = "Enable <a href='#enabling-webhooks'>webhooks</a>";
     public static final Boolean WEBHOOKS_ENABLED_DEFAULT_VALUE = false;
@@ -47,6 +51,23 @@ public class PdfExporterExtensionConfiguration extends ExtensionConfiguration {
         return WEASYPRINT_SERVICE_DEFAULT_VALUE;
     }
 
+    @PropertyMapping(BULK_EXPORT_SERVICE)
+    public String getBulkExportService() {
+        return SystemValueReader.getInstance().readString(getPropertyPrefix() + BULK_EXPORT_SERVICE, BULK_EXPORT_SERVICE_DEFAULT_VALUE);
+    }
+
+    @SuppressWarnings("unused")
+    @PropertyMappingDescription(BULK_EXPORT_SERVICE)
+    public String getBulkExportServiceDescription() {
+        return BULK_EXPORT_SERVICE_DESCRIPTION;
+    }
+
+    @SuppressWarnings("unused")
+    @PropertyMappingDefaultValue(BULK_EXPORT_SERVICE)
+    public String getBulkExportServiceDefaultValue() {
+        return BULK_EXPORT_SERVICE_DEFAULT_VALUE;
+    }
+
     @NotNull
     @PropertyMapping(WEBHOOKS_ENABLED)
     public Boolean getWebhooksEnabled() {
@@ -69,6 +90,7 @@ public class PdfExporterExtensionConfiguration extends ExtensionConfiguration {
     public @NotNull List<String> getSupportedProperties() {
         List<String> supportedProperties = new ArrayList<>(super.getSupportedProperties());
         supportedProperties.add(WEASYPRINT_SERVICE);
+        supportedProperties.add(BULK_EXPORT_SERVICE);
         supportedProperties.add(WEBHOOKS_ENABLED);
         return supportedProperties;
     }

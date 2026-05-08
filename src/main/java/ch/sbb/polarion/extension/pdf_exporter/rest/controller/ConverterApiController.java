@@ -6,6 +6,7 @@ import ch.sbb.polarion.extension.pdf_exporter.converter.HtmlToPdfConverter;
 import ch.sbb.polarion.extension.pdf_exporter.converter.PdfConverter;
 import ch.sbb.polarion.extension.pdf_exporter.converter.PdfConverterJobsService;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.WidthValidationResult;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.BulkMergeExportParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.Orientation;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PaperSize;
@@ -80,6 +81,12 @@ public class ConverterApiController extends ConverterInternalController {
     @Override
     public WidthValidationResult validatePdfWidth(ExportParams exportParams, int maxResults) {
         return polarionService.callPrivileged(() -> super.validatePdfWidth(exportParams, maxResults));
+    }
+
+    @Override
+    public Response startMergeExportJob(BulkMergeExportParams bulkMergeExportParams) {
+        deactivateLogoutFilter();
+        return polarionService.callPrivileged(() -> super.startMergeExportJob(bulkMergeExportParams));
     }
 
     private void deactivateLogoutFilter() {

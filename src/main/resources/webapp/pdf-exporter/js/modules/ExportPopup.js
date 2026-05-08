@@ -488,8 +488,17 @@ export default class ExportPopup {
         }
 
         if (this.bulkCallback && this.ctx.getExportType() === ExportParams.ExportType.BULK) {
+            const mergeCheckbox = this.ctx.getElementById("popup-merge-into-single-pdf");
+            const mergeIntoSinglePdf = mergeCheckbox && mergeCheckbox.checked;
+            let mergeFileName = null;
+            if (mergeIntoSinglePdf) {
+                mergeFileName = this.ctx.getElementById("popup-merge-filename").value || "merged-document.pdf";
+                if (!mergeFileName.endsWith(".pdf")) {
+                    mergeFileName += ".pdf";
+                }
+            }
             this.closePopup();
-            this.bulkCallback.openPopup(exportParams);
+            this.bulkCallback.openPopup(exportParams, mergeIntoSinglePdf, mergeFileName);
             return;
         }
 

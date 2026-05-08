@@ -525,6 +525,31 @@
         ]
       }
     },
+    "/api/convert/merge/jobs": {
+      "post": {
+        "operationId": "startMergeExportJob",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkMergeExportParams"
+              }
+            }
+          },
+          "description": "Bulk merge export parameters",
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Merge export job started, job URI is returned in Location header"
+          }
+        },
+        "summary": "Starts asynchronous merge export job combining multiple documents into a single PDF",
+        "tags": [
+          "PDF Processing"
+        ]
+      }
+    },
     "/api/document-language": {
       "get": {
         "operationId": "getDocumentLanguage",
@@ -1627,6 +1652,22 @@
         },
         "type": "object"
       },
+      "BulkMergeExportParams": {
+        "description": "Parameters for bulk merge export: multiple documents merged into a single PDF",
+        "properties": {
+          "documents": {
+            "description": "List of export parameters, one per document to be merged",
+            "items": {
+              "$ref": "#/components/schemas/ExportParams"
+            },
+            "type": "array"
+          },
+          "mergeSessionParams": {
+            "$ref": "#/components/schemas/MergeSessionStartParams"
+          }
+        },
+        "type": "object"
+      },
       "ConfigurationStatus": {
         "properties": {
           "details": {
@@ -2127,6 +2168,54 @@
             "type": "integer"
           },
           "type": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "MergeSessionStartParams": {
+        "description": "Parameters for starting a merge PDF conversion session",
+        "properties": {
+          "baseUrl": {
+            "description": "Base URL for resolving relative URLs in the HTML documents",
+            "type": "string"
+          },
+          "customMetadata": {
+            "default": false,
+            "description": "Whether to include custom metadata in the PDF",
+            "type": "boolean"
+          },
+          "encoding": {
+            "default": "utf-8",
+            "description": "Character encoding for the HTML documents",
+            "type": "string"
+          },
+          "fileName": {
+            "default": "merged-document.pdf",
+            "description": "Output file name for the merged PDF",
+            "type": "string"
+          },
+          "fullFonts": {
+            "default": false,
+            "description": "Embed full fonts instead of subsetting",
+            "type": "boolean"
+          },
+          "mediaType": {
+            "default": "print",
+            "description": "CSS media type to use during rendering",
+            "type": "string"
+          },
+          "pdfVariant": {
+            "description": "PDF variant to be used for conversion (e.g. pdf/a-2b)",
+            "type": "string"
+          },
+          "presentationalHints": {
+            "default": false,
+            "description": "Whether to follow HTML presentational hints",
+            "type": "boolean"
+          },
+          "scaleFactor": {
+            "description": "Scale factor for images",
             "type": "string"
           }
         },

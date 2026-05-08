@@ -9,6 +9,7 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.WidthValidationResult;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ConversionParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.DocumentType;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.BulkMergeExportParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.Orientation;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PaperSize;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PdfVariant;
@@ -407,6 +408,32 @@ public class ConverterInternalController {
             @Parameter(description = "Limit of 'invalid' pages in response", required = true) @QueryParam("max-results") int maxResults) {
         validateExportParameters(exportParams);
         return pdfWidthValidationService.validateWidth(exportParams, maxResults);
+    }
+
+    @POST
+    @Path("/convert/merge/jobs")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Operation(summary = "Starts asynchronous merge export job combining multiple documents into a single PDF",
+            requestBody = @RequestBody(description = "Bulk merge export parameters",
+                    required = true,
+                    content = @Content(schema = @Schema(implementation = BulkMergeExportParams.class),
+                            mediaType = MediaType.APPLICATION_JSON
+                    )
+            ),
+            responses = {
+                    @ApiResponse(responseCode = "202",
+                            description = "Merge export job started, job URI is returned in Location header"
+                    )
+            })
+    public Response startMergeExportJob(BulkMergeExportParams bulkMergeExportParams) {
+        if (bulkMergeExportParams == null || bulkMergeExportParams.getDocuments() == null || bulkMergeExportParams.getDocuments().isEmpty()) {
+            throw new BadRequestException("At least one document must be provided for merge export");
+        }
+
+        String jobId = pdfConverterJobService.startMergeJob(bulkMergeExportParams, propertiesUtility.getInProgressJobTimeout());
+
+        URI jobUri = UriBuilder.fromUri(uriInfo.getRequestUri().resolve("../jobs/" + jobId)).build();
+        return Response.accepted().location(jobUri).build();
     }
 
     private void validateExportParameters(ExportParams exportParams) {

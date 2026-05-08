@@ -1,6 +1,7 @@
 package ch.sbb.polarion.extension.pdf_exporter.weasyprint.service;
 
 import ch.sbb.polarion.extension.pdf_exporter.properties.PdfExporterExtensionConfiguration;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.MergeSessionStartParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PdfVariant;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.DocumentData;
 import ch.sbb.polarion.extension.pdf_exporter.util.PdfA1Processor;
@@ -57,6 +58,10 @@ public class WeasyPrintServiceConnector implements WeasyPrintConverter {
 
     public WeasyPrintServiceConnector(@NotNull String weasyPrintServiceBaseUrl) {
         this.weasyPrintServiceBaseUrl = weasyPrintServiceBaseUrl;
+    }
+
+    private @NotNull String getBulkExportServiceBaseUrl() {
+        return PdfExporterExtensionConfiguration.getInstance().getBulkExportService();
     }
 
     @Override
@@ -237,6 +242,93 @@ public class WeasyPrintServiceConnector implements WeasyPrintConverter {
                     }
                 } else {
                     throw new IllegalStateException("Could not get proper response from WeasyPrint Service");
+                }
+            }
+        } finally {
+            if (client != null) {
+                client.close();
+            }
+        }
+    }
+
+    @Override
+    public @NotNull String startMergeSession(@NotNull MergeSessionStartParams params) {
+        Client client = null;
+        try {
+            client = ClientBuilder.newClient();
+            WebTarget webTarget = client.target(getBulkExportServiceBaseUrl() + "/api/convert/start");
+
+            String jsonBody;
+            try {
+                jsonBody = new ObjectMapper().writeValueAsString(params);
+            } catch (JsonProcessingException e) {
+                throw new IllegalStateException("Could not serialize merge session start params", e);
+            }
+
+            try (Response response = webTarget.request(MediaType.APPLICATION_JSON)
+                    .post(Entity.entity(jsonBody, MediaType.APPLICATION_JSON))) {
+                if (response.getStatus() == Response.Status.OK.getStatusCode()
+                        || response.getStatus() == Response.Status.CREATED.getStatusCode()) {
+                    return response.readEntity(String.class).trim().replace("\"", "");
+                } else {
+                    String errorMessage = response.readEntity(String.class);
+                    throw new IllegalStateException(String.format(
+                            "Failed to start merge session. Status: %s, Message: [%s]",
+                            response.getStatus(), errorMessage));
+                }
+            }
+        } finally {
+            if (client != null) {
+                client.close();
+            }
+        }
+    }
+
+    @Override
+    public void addDocumentToSession(@NotNull String sessionId, @NotNull String htmlContent) {
+        Client client = null;
+        try {
+            client = ClientBuilder.newClient();
+            WebTarget webTarget = client.target(getBulkExportServiceBaseUrl() + "/api/convert/" + sessionId + "/add");
+
+            try (Response response = webTarget.request(MediaType.APPLICATION_JSON)
+                    .post(Entity.entity(htmlContent, MediaType.TEXT_HTML))) {
+                if (response.getStatus() != Response.Status.OK.getStatusCode()
+                        && response.getStatus() != Response.Status.ACCEPTED.getStatusCode()) {
+                    String errorMessage = response.readEntity(String.class);
+                    throw new IllegalStateException(String.format(
+                            "Failed to add document to merge session '%s'. Status: %s, Message: [%s]",
+                            sessionId, response.getStatus(), errorMessage));
+                }
+            }
+        } finally {
+            if (client != null) {
+                client.close();
+            }
+        }
+    }
+
+    @Override
+    public byte[] finishMergeSession(@NotNull String sessionId) {
+        Client client = null;
+        try {
+            client = ClientBuilder.newClient();
+            WebTarget webTarget = client.target(getBulkExportServiceBaseUrl() + "/api/convert/" + sessionId + "/stop");
+
+            try (Response response = webTarget.request("application/pdf")
+                    .post(Entity.entity("", MediaType.TEXT_PLAIN))) {
+                if (response.getStatus() == Response.Status.OK.getStatusCode()) {
+                    InputStream inputStream = response.readEntity(InputStream.class);
+                    try {
+                        return inputStream.readAllBytes();
+                    } catch (IOException e) {
+                        throw new IllegalStateException("Could not read merged PDF response stream", e);
+                    }
+                } else {
+                    String errorMessage = response.readEntity(String.class);
+                    throw new IllegalStateException(String.format(
+                            "Failed to finish merge session '%s'. Status: %s, Message: [%s]",
+                            sessionId, response.getStatus(), errorMessage));
                 }
             }
         } finally {
