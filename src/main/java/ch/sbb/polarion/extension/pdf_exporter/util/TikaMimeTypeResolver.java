@@ -33,7 +33,7 @@ public class TikaMimeTypeResolver implements BundleJarsPrioritizingRunnable {
                 detectedMimeType = Optional.ofNullable(detected);
             }
         } catch (Exception e) {
-            logger.error("Tika failed to detect mime type", e);
+            logger.warn("Tika failed to detect mime type", e);
         }
         return Map.of(PARAM_RESULT, detectedMimeType);
     }
