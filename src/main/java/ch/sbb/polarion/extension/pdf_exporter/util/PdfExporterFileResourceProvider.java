@@ -61,9 +61,17 @@ public class PdfExporterFileResourceProvider implements FileResourceProvider {
         byte[] resourceBytes = getResourceAsBytes(resource);
         if (resourceBytes != null && resourceBytes.length != 0) { // Don't make any manipulations if resource wasn't resolved
             String mimeType = MediaUtils.guessMimeType(resource, resourceBytes);
+            if (mimeType == null) {
+                // No detector recognized the content; skip inlining so the original URL stays in the HTML
+                // instead of producing a broken `data:null;base64,...` URL. guessMimeType has already logged the cause.
+                return null;
+            }
             if (MIME_TYPE_SVG.equals(mimeType)) {
                 // Additional check to verify that the content is indeed an SVG
-                mimeType = MediaUtils.getMimeTypeUsingTikaByContent(resource, resourceBytes);
+                String refinedMimeType = MediaUtils.getMimeTypeUsingTikaByContent(resource, resourceBytes);
+                if (refinedMimeType != null) {
+                    mimeType = refinedMimeType;
+                }
             }
             return String.format("data:%s;base64,%s", mimeType, Base64.getEncoder().encodeToString(resourceBytes));
         }

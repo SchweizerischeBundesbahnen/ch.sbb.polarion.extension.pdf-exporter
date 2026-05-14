@@ -68,6 +68,43 @@ class PdfExporterFileResourceProviderTest {
     }
 
     @Test
+    void getResourceAsBase64StringReturnsNullWhenMimeTypeUnknown() {
+        // Defense-in-depth (consistency with docx-exporter fix for #207, #219): if no detector recognizes the
+        // content, skip inlining instead of producing a broken `data:null;base64,...` URL. Returning null leaves
+        // the original <img src="..."> in the HTML.
+        PdfExporterFileResourceProvider providerSpy = mock(PdfExporterFileResourceProvider.class);
+        byte[] content = new byte[]{1, 2, 3};
+        when(providerSpy.getResourceAsBytes("unknown.bin")).thenReturn(content);
+        when(providerSpy.getResourceAsBase64String(any())).thenCallRealMethod();
+
+        try (MockedStatic<MediaUtils> mockedMediaUtils = mockStatic(MediaUtils.class)) {
+            mockedMediaUtils.when(() -> MediaUtils.isDataUrl("unknown.bin")).thenReturn(false);
+            mockedMediaUtils.when(() -> MediaUtils.guessMimeType("unknown.bin", content)).thenReturn(null);
+
+            assertNull(providerSpy.getResourceAsBase64String("unknown.bin"));
+        }
+    }
+
+    @Test
+    void getResourceAsBase64StringKeepsSvgMimeWhenTikaRefinementReturnsNull() {
+        // If guessMimeType says SVG but the refinement Tika call returns null (executor failure / Tika threw),
+        // we must keep the original SVG mime instead of overwriting it with null and producing `data:null;...`.
+        PdfExporterFileResourceProvider providerSpy = mock(PdfExporterFileResourceProvider.class);
+        byte[] svgContent = "<svg></svg>".getBytes(StandardCharsets.UTF_8);
+        when(providerSpy.getResourceAsBytes("img.svg")).thenReturn(svgContent);
+        when(providerSpy.getResourceAsBase64String(any())).thenCallRealMethod();
+
+        try (MockedStatic<MediaUtils> mockedMediaUtils = mockStatic(MediaUtils.class)) {
+            mockedMediaUtils.when(() -> MediaUtils.isDataUrl("img.svg")).thenReturn(false);
+            mockedMediaUtils.when(() -> MediaUtils.guessMimeType("img.svg", svgContent)).thenReturn("image/svg+xml");
+            mockedMediaUtils.when(() -> MediaUtils.getMimeTypeUsingTikaByContent("img.svg", svgContent)).thenReturn(null);
+
+            String result = providerSpy.getResourceAsBase64String("img.svg");
+            assertEquals("data:image/svg+xml;base64," + Base64.getEncoder().encodeToString(svgContent), result);
+        }
+    }
+
+    @Test
     @SneakyThrows
     void getResourceAsBytesSuccess() {
         when(resolverMock.canResolve(TEST_RESOURCE)).thenReturn(true);

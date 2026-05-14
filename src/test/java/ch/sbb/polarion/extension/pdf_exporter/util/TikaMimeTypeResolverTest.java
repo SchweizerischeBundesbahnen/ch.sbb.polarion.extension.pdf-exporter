@@ -131,6 +131,28 @@ class TikaMimeTypeResolverTest {
 
 
     @Test
+    void testRunSwallowsExceptionsAndReturnsEmptyOptional() {
+        // Passing an unsupported type (neither String nor byte[]) makes the byte[] cast throw ClassCastException inside run().
+        // That exception must be caught so the returned map always contains PARAM_RESULT and downstream callers never NPE.
+        Map<String, Object> input = Map.of(TikaMimeTypeResolver.PARAM_VALUE, 42);
+        Map<String, Object> result = resolver.run(input);
+
+        assertThat(result).containsKey(TikaMimeTypeResolver.PARAM_RESULT);
+        Optional<String> mimeType = (Optional<String>) result.get(TikaMimeTypeResolver.PARAM_RESULT);
+        assertThat(mimeType).isEmpty();
+    }
+
+    @Test
+    void testRunWithMissingValueReturnsEmptyOptional() {
+        // No PARAM_VALUE at all — internal null dereference must also be caught.
+        Map<String, Object> result = resolver.run(Map.of());
+
+        assertThat(result).containsKey(TikaMimeTypeResolver.PARAM_RESULT);
+        Optional<String> mimeType = (Optional<String>) result.get(TikaMimeTypeResolver.PARAM_RESULT);
+        assertThat(mimeType).isEmpty();
+    }
+
+    @Test
     void testRunWithJavaScriptFileName() {
         Map<String, Object> input = Map.of(TikaMimeTypeResolver.PARAM_VALUE, "script.js");
         Map<String, Object> result = resolver.run(input);
