@@ -359,14 +359,21 @@ public class MediaUtils {
         return Files.probeContentType(Paths.get(resource));
     }
 
-    @SuppressWarnings("unchecked")
     public String getMimeTypeUsingTikaByResourceName(@NotNull String resource, byte[] resourceBytes) {
-        return ((Optional<String>) BundleJarsPrioritizingRunnable.executeCached(TikaMimeTypeResolver.class, Map.of(PARAM_VALUE, resource)).get(PARAM_RESULT)).orElse(null);
+        return detectMimeTypeWithTika(Map.of(PARAM_VALUE, resource));
     }
 
-    @SuppressWarnings("unchecked")
     public String getMimeTypeUsingTikaByContent(@NotNull String resource, byte[] resourceBytes) {
-        return ((Optional<String>) BundleJarsPrioritizingRunnable.executeCached(TikaMimeTypeResolver.class, Map.of(PARAM_VALUE, resourceBytes)).get(PARAM_RESULT)).orElse(null);
+        return detectMimeTypeWithTika(Map.of(PARAM_VALUE, resourceBytes));
+    }
+
+    // BundleJarsPrioritizingRunnable.executeCached returns a map without PARAM_RESULT when the runnable itself couldn't
+    // be executed (classloader/reflection/serialization failure — see BundleJarsPrioritizingRunnable.ERROR_KEY). Guard
+    // against that so a diagnostic fallback returns null instead of triggering a NullPointerException.
+    @Nullable
+    private String detectMimeTypeWithTika(@NotNull Map<String, Object> params) {
+        Object result = BundleJarsPrioritizingRunnable.executeCached(TikaMimeTypeResolver.class, params).get(PARAM_RESULT);
+        return result instanceof Optional<?> optional ? (String) optional.orElse(null) : null;
     }
 
     @SneakyThrows
