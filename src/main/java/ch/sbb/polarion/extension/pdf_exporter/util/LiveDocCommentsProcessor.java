@@ -163,7 +163,7 @@ public class LiveDocCommentsProcessor {
 
     private CommentData getCommentData(LiveDocComment liveDocComment) {
         User user = liveDocComment.getAuthor().get();
-        String authorName = user != null ? user.fields().name().get() : null;
+        String authorName = user != null ? (user.isUnresolvable() ? user.label() : user.fields().name().get()) : null;
         String commentText = liveDocComment.getText().persistedHtml();
         boolean resolved = liveDocComment.getResolved().get();
         return CommentData.builder()
