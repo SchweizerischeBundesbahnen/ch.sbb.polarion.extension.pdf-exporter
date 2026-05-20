@@ -329,6 +329,47 @@ class LiveDocCommentsProcessorTest {
         assertEquals(html, result);
     }
 
+    @Test
+    @SuppressWarnings("unchecked")
+    void addLiveDocCommentsUsesUserLabelWhenAuthorIsUnresolvable() {
+        ProxyDocument document = mock(ProxyDocument.class, RETURNS_DEEP_STUBS);
+
+        UpdatableDocumentFields fields = mock(UpdatableDocumentFields.class);
+        CommentBasesTreeField<CommentBase> comments = mock(CommentBasesTreeField.class);
+        doCallRealMethod().when(comments).forEach(any(Consumer.class));
+        when(fields.comments()).thenReturn(comments);
+        when(document.fields()).thenReturn(fields);
+
+        String html = """
+                <span id="polarion-comment:1"></span>
+                """;
+
+        CommentBase unresolvableAuthorComment = mockCommentWithUnresolvableAuthor("1", "text1", "deleted-user-label");
+        when(comments.iterator()).thenReturn(List.of(unresolvableAuthorComment).iterator());
+
+        LiveDocCommentsProcessor processor = new LiveDocCommentsProcessor();
+        Map<String, LiveDocComment> liveDocComments = processor.getLiveDocComments(document, CommentsRenderType.OPEN);
+        String result = processor.addLiveDocComments(html, liveDocComments, false, new HashSet<>());
+
+        assertTrue(result.contains("[span class=author]deleted-user-label[/span]"));
+    }
+
+    @SneakyThrows
+    private CommentBase mockCommentWithUnresolvableAuthor(String id, String text, String userLabel) {
+        CommentBase comment = mock(CommentBase.class, RETURNS_DEEP_STUBS);
+        CommentBasesField<CommentBase> emptyChildComments = mockEmptyChildComment();
+        lenient().when(comment.fields().parentComment().get()).thenReturn(null);
+        lenient().when(comment.fields().id().get()).thenReturn(id);
+        lenient().when(comment.fields().created().get()).thenReturn(new SimpleDateFormat("yyyy-MM-dd HH:mm").parse("2025-03-13 16:21"));
+        lenient().when(comment.fields().text().persistedHtml()).thenReturn(text);
+        com.polarion.alm.shared.api.model.user.User user = Objects.requireNonNull(comment.fields().author().get());
+        lenient().when(user.isUnresolvable()).thenReturn(true);
+        lenient().when(user.label()).thenReturn(userLabel);
+        lenient().when(comment.fields().childComments()).thenReturn(emptyChildComments);
+        lenient().when(comment.fields().resolved().get()).thenReturn(false);
+        return comment;
+    }
+
     @SneakyThrows
     private CommentBase mockComment(String id, String text, String author, boolean resolved, boolean rootComment, boolean addChildComment) {
         CommentBase comment = mock(CommentBase.class, RETURNS_DEEP_STUBS);
