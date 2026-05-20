@@ -38,6 +38,7 @@ import org.jetbrains.annotations.VisibleForTesting;
 import java.io.ByteArrayInputStream;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 public class PdfExportFunction implements IFunction<IModule> {
@@ -135,6 +136,9 @@ public class PdfExportFunction implements IFunction<IModule> {
                 .linkedWorkitemRoles(stylePackage.getLinkedWorkitemRoles())
                 .attachmentsFilter(stylePackage.getAttachmentsFilter())
                 .testcaseFieldId(stylePackage.getTestcaseFieldId())
+                .urlQueryParameters(stylePackage.getWorkItemsQuery() == null || stylePackage.getWorkItemsQuery().isEmpty()
+                        ? null
+                        : Map.of(ExportParams.URL_QUERY_PARAM_QUERY, stylePackage.getWorkItemsQuery()))
                 .build();
     }
 

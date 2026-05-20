@@ -272,6 +272,7 @@ function saveStylePackage() {
             'testcaseFieldId': ctx.getCheckboxValueById('download-attachments') ? ctx.getValueById('testcase-field-id') : null,
             'embedAttachments': ctx.getCheckboxValueById('download-attachments') && ctx.getCheckboxValueById('embed-attachments'),
             'fullFonts': ctx.getCheckboxValueById('full-fonts'),
+            'workItemsQuery': ctx.getCheckboxValueById('work-items-query-checkbox') ? ctx.getValueById('work-items-query') : null,
         }),
         onOk: () => {
             ctx.showSaveSuccessAlert();
@@ -349,6 +350,10 @@ function setStylePackage(content) {
     ctx.setCheckboxValueById('metadata-fields', !!stylePackage.metadataFields);
     ctx.getElementById('metadata-fields').dispatchEvent(new Event('change'));
     ctx.setValueById('metadata-fields-input', stylePackage.metadataFields || "");
+
+    ctx.setCheckboxValueById('work-items-query-checkbox', !!stylePackage.workItemsQuery);
+    ctx.getElementById('work-items-query-checkbox').dispatchEvent(new Event('change'));
+    ctx.setValueById('work-items-query', stylePackage.workItemsQuery || "");
 
     ctx.setCheckboxValueById('custom-list-styles', !!stylePackage.customNumberedListStyles);
     ctx.getElementById('custom-list-styles').dispatchEvent(new Event('change'));

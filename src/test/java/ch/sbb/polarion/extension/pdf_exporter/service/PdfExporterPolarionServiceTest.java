@@ -457,6 +457,36 @@ class PdfExporterPolarionServiceTest {
     }
 
     @Test
+    void validateWorkItemsQueryAcceptsNullAndEmpty() {
+        assertDoesNotThrow(() -> service.validateWorkItemsQuery(null));
+        assertDoesNotThrow(() -> service.validateWorkItemsQuery(""));
+        verifyNoInteractions(trackerService);
+    }
+
+    @Test
+    void validateWorkItemsQueryDelegatesToDataService() {
+        IDataService dataService = mock(IDataService.class);
+        when(trackerService.getDataService()).thenReturn(dataService);
+
+        service.validateWorkItemsQuery("type:requirement");
+
+        verify(dataService).searchInstances(IWorkItem.PROTO, "type:requirement", null);
+    }
+
+    @Test
+    void validateWorkItemsQueryWrapsParserException() {
+        IDataService dataService = mock(IDataService.class);
+        when(trackerService.getDataService()).thenReturn(dataService);
+        when(dataService.searchInstances(IWorkItem.PROTO, "broken syntax !@#", null))
+                .thenThrow(new RuntimeException("Syntax error at position 5"));
+
+        IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class,
+                () -> service.validateWorkItemsQuery("broken syntax !@#"));
+        assertTrue(thrown.getMessage().contains("Invalid work items query"));
+        assertTrue(thrown.getMessage().contains("Syntax error"));
+    }
+
+    @Test
     void testGetTestRunAttachment() {
         ITestRun testRun = mock(ITestRun.class);
         when(testRun.isUnresolvable()).thenReturn(false);

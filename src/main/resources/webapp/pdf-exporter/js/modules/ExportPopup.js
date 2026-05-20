@@ -354,6 +354,10 @@ export default class ExportPopup {
         this.ctx.setValue("popup-metadata-fields-input", stylePackage.metadataFields || "");
         this.ctx.visibleIf("popup-metadata-fields-input", stylePackage.metadataFields);
 
+        this.ctx.setCheckbox("popup-work-items-query", !!stylePackage.workItemsQuery);
+        this.ctx.setValue("popup-work-items-query-input", stylePackage.workItemsQuery || "");
+        this.ctx.visibleIf("popup-work-items-query-input", stylePackage.workItemsQuery);
+
         this.ctx.setCheckbox("popup-localization", stylePackage.language);
         let languageValue;
         if (stylePackage.exposeSettings && stylePackage.language && this.documentLanguage) {
@@ -605,13 +609,23 @@ export default class ExportPopup {
             .setLinkedWorkitemRoles(selectedRoles)
             .setLinkRoleDirection(selectedRoles.length > 0 ? this.ctx.getElementById("popup-roles-direction-selector").value : null)
             .setFileName(fileName)
-            .setUrlQueryParameters(this.ctx.getUrlQueryParameters())
+            .setUrlQueryParameters(this.buildUrlQueryParameters(live_doc, collection))
             .setAttachmentsFilter(test_run && this.ctx.getElementById("popup-download-attachments").checked ? attachmentsFilter ?? '' : null)
             .setTestcaseFieldId(test_run && this.ctx.getElementById("popup-download-attachments").checked && testcaseFieldId ? testcaseFieldId : null)
             .setEmbedAttachments(test_run && this.ctx.getElementById("popup-download-attachments").checked && this.ctx.getElementById("popup-embed-attachments").checked)
             .setImageDensity(this.ctx.getElementById("popup-image-density-selector").value)
             .setFullFonts(this.ctx.getElementById("popup-full-fonts").checked)
             .build();
+    }
+
+    buildUrlQueryParameters(liveDoc, collection) {
+        const urlQueryParams = { ...this.ctx.getUrlQueryParameters() };
+        if ((liveDoc || collection) && this.ctx.getElementById("popup-work-items-query").checked) {
+            urlQueryParams.query = this.ctx.getElementById("popup-work-items-query-input").value || "";
+        } else {
+            delete urlQueryParams.query;
+        }
+        return urlQueryParams;
     }
 
     getSelectedChapters() {
