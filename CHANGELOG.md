@@ -1,5 +1,15 @@
 # Changelog
 
+## [12.4.2](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v12.4.1...v12.4.2) (2026-05-20)
+
+
+### Bug Fixes
+
+* **deps:** update dependency ch.sbb.polarion.extensions:ch.sbb.polarion.extension.generic to v14.1.4 ([#805](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/805)) ([103da4e](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/103da4ea47d36b5674678ab59cd19444e51535f8))
+* **deps:** update dependency com.helger:ph-css to v8.2.1 ([#806](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/806)) ([e7b0375](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/e7b03754dba93272fdf6fac14e8c6ea679065667))
+* improve mime type detection and error handling in MediaUtils ([#801](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/801)) ([3eca83f](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/3eca83f159e5224e785ababcbdd8684bbd9a8bc4)), closes [#800](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/800)
+* when author of a comment was deleted as a user in polarion, generation of pdf shouldn't fail ([#804](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/804)) ([03b38fe](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/03b38fee1c0234db076d4fbc51a27fe62133ed7b))
+
 ## [12.4.1](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v12.4.0...v12.4.1) (2026-05-04)
 
 
