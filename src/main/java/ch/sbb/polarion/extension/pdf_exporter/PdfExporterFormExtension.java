@@ -106,6 +106,7 @@ public class PdfExporterFormExtension implements IFormExtension {
             form = adjustCustomNumberedListsStyles(form, selectedStylePackage);
             form = adjustChapters(form, selectedStylePackage);
             form = adjustMetadataFields(form, selectedStylePackage);
+            form = adjustWorkItemsQuery(form, selectedStylePackage);
             form = adjustLocalizeEnums(form, selectedStylePackage, module.getCustomField(DOC_LANGUAGE_FIELD));
             form = adjustLinkRoles(form, EnumValuesProvider.getAllLinkRoleNames(module.getProject()), selectedStylePackage);
             form = adjustFilename(form, module);
@@ -295,6 +296,13 @@ public class PdfExporterFormExtension implements IFormExtension {
             form = form.replace("<input id='metadata-fields-input' style='display: none;", String.format("<input id='metadata-fields-input' value='%s' style='", stylePackage.getMetadataFields()));
         }
         return form;
+    }
+
+    private String adjustWorkItemsQuery(String form, StylePackageModel stylePackage) {
+        String workItemsQuery = StringUtils.isEmpty(stylePackage.getWorkItemsQuery()) ? "" : stylePackage.getWorkItemsQuery();
+        form = form.replace("{WORK_ITEMS_QUERY_VALUE}", workItemsQuery.replace("'", "&#39;"));
+        form = form.replace("{WORK_ITEMS_QUERY_SELECTED}", workItemsQuery.isEmpty() ? "" : "checked");
+        return form.replace("{WORK_ITEMS_QUERY_DISPLAY}", workItemsQuery.isEmpty() ? "none" : "inline-block");
     }
 
     private String adjustLocalizeEnums(String form, StylePackageModel stylePackage, Object documentLanguageField) {

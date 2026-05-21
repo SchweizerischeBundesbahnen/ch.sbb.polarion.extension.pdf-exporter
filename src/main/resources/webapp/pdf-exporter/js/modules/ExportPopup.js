@@ -354,9 +354,14 @@ export default class ExportPopup {
         this.ctx.setValue("popup-metadata-fields-input", stylePackage.metadataFields || "");
         this.ctx.visibleIf("popup-metadata-fields-input", stylePackage.metadataFields);
 
-        this.ctx.setCheckbox("popup-work-items-query", !!stylePackage.workItemsQuery);
-        this.ctx.setValue("popup-work-items-query-input", stylePackage.workItemsQuery || "");
-        this.ctx.visibleIf("popup-work-items-query-input", stylePackage.workItemsQuery);
+        // URL `?query=` (e.g. the document opened with a filter) takes priority
+        // over the style-package default — the user is already viewing a filtered
+        // document and the export should match it by default.
+        const urlQuery = this.ctx.getUrlQueryParameters()?.query;
+        const initialWorkItemsQuery = urlQuery || stylePackage.workItemsQuery || "";
+        this.ctx.setCheckbox("popup-work-items-query", !!initialWorkItemsQuery);
+        this.ctx.setValue("popup-work-items-query-input", initialWorkItemsQuery);
+        this.ctx.visibleIf("popup-work-items-query-input", initialWorkItemsQuery);
 
         this.ctx.setCheckbox("popup-localization", stylePackage.language);
         let languageValue;

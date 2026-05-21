@@ -6,6 +6,15 @@ export default class ExportPanel {
     constructor(rootComponentSelector) {
         this.ctx = new ExportContext({rootComponentSelector: rootComponentSelector});
 
+        // URL `?query=` (e.g. the document is currently viewed with a filter) takes
+        // priority over the server-side default that was rendered from the StylePackage.
+        const urlQuery = this.ctx.getUrlQueryParameters()?.query;
+        if (urlQuery) {
+            this.ctx.setCheckbox("work-items-query", true);
+            this.ctx.setValue("work-items-query-input", urlQuery);
+            this.ctx.displayIf("work-items-query-input", true);
+        }
+
         this.ctx.onChange('style-package-select', () => {
             this.stylePackageChanged();
         });
@@ -99,9 +108,13 @@ export default class ExportPanel {
         this.ctx.setValue("metadata-fields-input", stylePackage.metadataFields || "");
         this.ctx.displayIf("metadata-fields-input", stylePackage.metadataFields);
 
-        this.ctx.setCheckbox("work-items-query", !!stylePackage.workItemsQuery);
-        this.ctx.setValue("work-items-query-input", stylePackage.workItemsQuery || "");
-        this.ctx.displayIf("work-items-query-input", stylePackage.workItemsQuery);
+        // URL `?query=` (e.g. the document opened with a filter) takes priority
+        // over the style-package default.
+        const urlQuery = this.ctx.getUrlQueryParameters()?.query;
+        const initialWorkItemsQuery = urlQuery || stylePackage.workItemsQuery || "";
+        this.ctx.setCheckbox("work-items-query", !!initialWorkItemsQuery);
+        this.ctx.setValue("work-items-query-input", initialWorkItemsQuery);
+        this.ctx.displayIf("work-items-query-input", initialWorkItemsQuery);
 
         this.ctx.setCheckbox("localization", stylePackage.language);
         this.ctx.setValue("language", (stylePackage.exposeSettings && stylePackage.language && documentLanguage) ? documentLanguage : stylePackage.language);

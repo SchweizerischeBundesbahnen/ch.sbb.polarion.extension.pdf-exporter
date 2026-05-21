@@ -23,6 +23,7 @@
     * [Custom styles of numbered lists](#custom-styles-of-numbered-lists)
     * [Localize enums](#localize-enums)
     * [Specific Workitem roles](#specific-workitem-roles)
+    * [Work items query](#work-items-query)
     * [Metadata fields](#metadata-fields)
     * [File name](#file-name)
     * [Download attachments](#download-attachments)
@@ -299,6 +300,17 @@ If you check this checkbox and select only certain roles of Workitem relations:
 And here is the resulting PDF document:
 
 ![Specific Workitem roles after](docs/user_guide/img/specific_wi_roles_after.png)
+
+### Work items query
+If you check this checkbox and enter a Lucene query in the appearing input field, only Workitems matching the query will be included in the exported document. Headings stay in the document regardless of the query as they are treated as structural elements:
+
+![Work items query](docs/user_guide/img/work_items_query.png)
+
+For example, the query `type:requirement` keeps only requirement Workitems and filters out the rest. The query syntax is the same as in the Polarion document URL filter (`?query=...`).
+
+The default value for this filter can be defined per style package on the Style Packages administration page, so that the filter is applied automatically whenever that style package is selected. If both a default value and an explicit value in the export popup are provided, the explicit value wins.
+
+The filter is available for Live Documents and Baseline Collections. In Baseline Collection bulk export the same query is applied to each Live Document in the collection; Rich Pages inside a collection ignore the work items query.
 
 ### File name
 Here you can specify the resulting file name:
