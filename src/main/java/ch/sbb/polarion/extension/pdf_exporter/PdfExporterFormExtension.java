@@ -51,6 +51,9 @@ public class PdfExporterFormExtension implements IFormExtension {
     private static final String OPTION_VALUE = "<option value='%s'";
     private static final String OPTION_SELECTED = "<option value='%s' selected";
     private static final String SELECTED = "selected";
+    private static final String CHECKED = "checked";
+    private static final String DISPLAY_NONE = "none";
+    private static final String DISPLAY_INLINE_BLOCK = "inline-block";
 
     private final PdfExporterPolarionService polarionService = new PdfExporterPolarionService();
 
@@ -137,8 +140,8 @@ public class PdfExporterFormExtension implements IFormExtension {
         boolean noCoverPage = StringUtils.isEmpty(stylePackage.getCoverPage());
         String coverPageOptions = generateSelectOptions(options, noCoverPage ? NamedSettings.DEFAULT_NAME : stylePackage.getCoverPage());
         form = form.replace("{COVER_PAGE_OPTIONS}", coverPageOptions);
-        form = form.replace("{COVER_PAGE_DISPLAY}", noCoverPage ? "none" : "inline-block");
-        return form.replace("{COVER_PAGE_SELECTED}", noCoverPage ? "" : "checked");
+        form = form.replace("{COVER_PAGE_DISPLAY}", noCoverPage ? DISPLAY_NONE : DISPLAY_INLINE_BLOCK);
+        return form.replace("{COVER_PAGE_SELECTED}", noCoverPage ? "" : CHECKED);
     }
 
     private String adjustHeaderFooter(String scope, String form, StylePackageModel stylePackage) {
@@ -165,8 +168,8 @@ public class PdfExporterFormExtension implements IFormExtension {
         String webhooksOptions = generateSelectOptions(webhooksNames, noHooks ? NamedSettings.DEFAULT_NAME : stylePackage.getWebhooks());
         form = form.replace("{WEBHOOKS_DISPLAY}", PdfExporterExtensionConfiguration.getInstance().getWebhooksEnabled() ? "" : "hidden");
         form = form.replace("{WEBHOOKS_OPTIONS}", webhooksOptions);
-        form = form.replace("{WEBHOOKS_SELECTOR_DISPLAY}", noHooks ? "none" : "inline-block");
-        return form.replace("{WEBHOOKS_SELECTED}", noHooks ? "" : "checked");
+        form = form.replace("{WEBHOOKS_SELECTOR_DISPLAY}", noHooks ? DISPLAY_NONE : DISPLAY_INLINE_BLOCK);
+        return form.replace("{WEBHOOKS_SELECTED}", noHooks ? "" : CHECKED);
     }
 
     private Collection<SettingName> getSuitableStylePackages(@NotNull IModule module) {
@@ -301,8 +304,8 @@ public class PdfExporterFormExtension implements IFormExtension {
     private String adjustWorkItemsQuery(String form, StylePackageModel stylePackage) {
         String workItemsQuery = StringUtils.isEmpty(stylePackage.getWorkItemsQuery()) ? "" : stylePackage.getWorkItemsQuery();
         form = form.replace("{WORK_ITEMS_QUERY_VALUE}", workItemsQuery.replace("'", "&#39;"));
-        form = form.replace("{WORK_ITEMS_QUERY_SELECTED}", workItemsQuery.isEmpty() ? "" : "checked");
-        return form.replace("{WORK_ITEMS_QUERY_DISPLAY}", workItemsQuery.isEmpty() ? "none" : "inline-block");
+        form = form.replace("{WORK_ITEMS_QUERY_SELECTED}", workItemsQuery.isEmpty() ? "" : CHECKED);
+        return form.replace("{WORK_ITEMS_QUERY_DISPLAY}", workItemsQuery.isEmpty() ? DISPLAY_NONE : DISPLAY_INLINE_BLOCK);
     }
 
     private String adjustLocalizeEnums(String form, StylePackageModel stylePackage, Object documentLanguageField) {
