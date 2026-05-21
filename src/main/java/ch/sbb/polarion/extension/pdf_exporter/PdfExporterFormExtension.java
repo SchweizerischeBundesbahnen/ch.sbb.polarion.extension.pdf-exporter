@@ -301,7 +301,8 @@ public class PdfExporterFormExtension implements IFormExtension {
         return form;
     }
 
-    private String adjustWorkItemsQuery(String form, StylePackageModel stylePackage) {
+    @VisibleForTesting
+    String adjustWorkItemsQuery(String form, StylePackageModel stylePackage) {
         String workItemsQuery = StringUtils.isEmpty(stylePackage.getWorkItemsQuery()) ? "" : stylePackage.getWorkItemsQuery();
         form = form.replace("{WORK_ITEMS_QUERY_VALUE}", workItemsQuery.replace("'", "&#39;"));
         form = form.replace("{WORK_ITEMS_QUERY_SELECTED}", workItemsQuery.isEmpty() ? "" : CHECKED);

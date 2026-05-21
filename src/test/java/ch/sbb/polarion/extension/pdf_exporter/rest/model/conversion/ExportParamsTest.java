@@ -135,4 +135,14 @@ class ExportParamsTest {
 
         assertNull(params.getUrlQueryParameters());
     }
+
+    @Test
+    void overwriteByStylePackageWithEmptyWorkItemsQueryLeavesUrlQueryParametersUntouched() {
+        ExportParams params = ExportParams.builder().build();
+        StylePackageModel stylePackageModel = StylePackageModel.builder().workItemsQuery("").build();
+
+        params.overwriteByStylePackage(stylePackageModel);
+
+        assertNull(params.getUrlQueryParameters());
+    }
 }
