@@ -6,6 +6,7 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.DocumentType
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.jobs.ConverterJobDetails;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.jobs.ConverterJobStatus;
+import ch.sbb.polarion.extension.pdf_exporter.service.PdfExporterPolarionService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -30,6 +31,7 @@ import java.util.stream.Stream;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -38,6 +40,8 @@ class ConverterInternalControllerTest {
     private PdfConverterJobsService pdfConverterJobService;
     @Mock
     private UriInfo uriInfo;
+    @Mock
+    private PdfExporterPolarionService pdfExporterPolarionService;
 
     @InjectMocks
     private ConverterInternalController internalController;
@@ -72,6 +76,22 @@ class ConverterInternalControllerTest {
                 Arguments.of(ExportParams.builder().documentType(DocumentType.LIVE_REPORT).build(), "locationPath"),
                 Arguments.of(ExportParams.builder().documentType(DocumentType.WIKI_PAGE).build(), "locationPath")
         );
+    }
+
+    @Test
+    void startPdfConverterJob_invalidWorkItemsQueryGivesBadRequest() {
+        ExportParams params = ExportParams.builder()
+                .documentType(DocumentType.LIVE_DOC)
+                .projectId("test")
+                .locationPath("space/doc")
+                .urlQueryParameters(java.util.Map.of(ExportParams.URL_QUERY_PARAM_QUERY, "broken !@#"))
+                .build();
+        doThrow(new IllegalArgumentException("Invalid work items query: syntax error"))
+                .when(pdfExporterPolarionService).validateWorkItemsQuery("broken !@#");
+
+        assertThatThrownBy(() -> internalController.startPdfConverterJob(params))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessageContaining("Invalid work items query");
     }
 
     @ParameterizedTest

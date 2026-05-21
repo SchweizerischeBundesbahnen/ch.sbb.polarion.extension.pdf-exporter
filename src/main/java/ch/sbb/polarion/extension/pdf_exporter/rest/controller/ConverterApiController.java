@@ -35,7 +35,7 @@ public class ConverterApiController extends ConverterInternalController {
     @VisibleForTesting
     @SuppressWarnings("squid:S5803")
     ConverterApiController(PdfExporterPolarionService pdfExporterPolarionService, PdfConverter pdfConverter, PdfWidthValidationService pdfWidthValidationService, PdfConverterJobsService pdfConverterJobService, UriInfo uriInfo, HtmlToPdfConverter htmlToPdfConverter) {
-        super(pdfConverter, pdfWidthValidationService, pdfConverterJobService, uriInfo, htmlToPdfConverter);
+        super(pdfConverter, pdfWidthValidationService, pdfConverterJobService, uriInfo, htmlToPdfConverter, pdfExporterPolarionService);
         this.polarionService = pdfExporterPolarionService;
     }
 

@@ -5,6 +5,7 @@ import ch.sbb.polarion.extension.generic.settings.NamedSettingsRegistry;
 import ch.sbb.polarion.extension.generic.settings.SettingsService;
 import ch.sbb.polarion.extension.pdf_exporter.converter.PdfConverter;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.stylepackage.StylePackageModel;
 import ch.sbb.polarion.extension.pdf_exporter.service.PdfExporterPolarionService;
 import ch.sbb.polarion.extension.pdf_exporter.settings.StylePackageSettings;
 import com.polarion.alm.projects.model.IFolder;
@@ -86,6 +87,35 @@ class PdfExportFunctionTest {
         NamedSettingsRegistry.INSTANCE.register(List.of(new StylePackageSettings(settingsService)));
 
         assertEquals("Default", pdfExportFunction.getExportParams(module, args).getCss());
+    }
+
+    @Test
+    void testWorkItemsQueryFromStylePackageIsPropagatedAsMutableMap() {
+        IArguments args = new Arguments(Map.of());
+        StylePackageSettings stylePackageSettings = spy(new StylePackageSettings(settingsService));
+        StylePackageModel withQuery = stylePackageSettings.defaultValues();
+        withQuery.setWorkItemsQuery("type:requirement");
+        doReturn(withQuery).when(stylePackageSettings).read(any(), any(), any());
+        NamedSettingsRegistry.INSTANCE.register(List.of(stylePackageSettings));
+
+        ExportParams exportParams = pdfExportFunction.getExportParams(module, args);
+        assertNotNull(exportParams.getUrlQueryParameters());
+        assertEquals("type:requirement", exportParams.getUrlQueryParameters().get(ExportParams.URL_QUERY_PARAM_QUERY));
+        // Must be mutable: applyDefaultWorkItemsQuery would put-if-absent on it later.
+        assertDoesNotThrow(() -> exportParams.getUrlQueryParameters().put("k", "v"));
+    }
+
+    @Test
+    void testEmptyWorkItemsQueryYieldsNullUrlQueryParameters() {
+        IArguments args = new Arguments(Map.of());
+        StylePackageSettings stylePackageSettings = spy(new StylePackageSettings(settingsService));
+        StylePackageModel withEmptyQuery = stylePackageSettings.defaultValues();
+        withEmptyQuery.setWorkItemsQuery("");
+        doReturn(withEmptyQuery).when(stylePackageSettings).read(any(), any(), any());
+        NamedSettingsRegistry.INSTANCE.register(List.of(stylePackageSettings));
+
+        ExportParams exportParams = pdfExportFunction.getExportParams(module, args);
+        assertNull(exportParams.getUrlQueryParameters());
     }
 
     @Test

@@ -257,6 +257,16 @@
             </div>
         </div>
 
+        <div class="flex-container hidden visible-for-LIVE_DOC visible-for-BASELINE_COLLECTION" style='border-top: 1px solid #eee; margin-top: 15px; padding-top: 5px;'>
+            <div class='property-wrapper' style="display: flex; align-items: center; width: 100%; gap: 8px;">
+                <label for='popup-work-items-query' style="white-space: nowrap;">
+                    <input id='popup-work-items-query' onchange='document.getElementById("popup-work-items-query-input").style.visibility = this.checked ? "visible" : "hidden"' type='checkbox'/>
+                    Work items query
+                </label>
+                <input id='popup-work-items-query-input' title="Lucene query applied to filter work items within the document, e.g. 'type:requirement'." placeholder='e.g. type:requirement' style='flex: 1; box-sizing: border-box; visibility: hidden;' type='text'/>
+            </div>
+        </div>
+
         <div class="flex-container" style='border-top: 1px solid #eee; margin-top: 15px; padding-top: 5px;'>
             <div class="flex-column">
                 <div class='property-wrapper hidden visible-for-TEST_RUN' style="flex-wrap: wrap;">

@@ -221,6 +221,47 @@ class PdfExporterFormExtensionTest {
     }
 
     @Test
+    void testAdjustWorkItemsQueryWithValue() {
+        PdfExporterFormExtension extension = new PdfExporterFormExtension();
+        String form = "<input id='work-items-query' type='checkbox' {WORK_ITEMS_QUERY_SELECTED}/>"
+                + "<input id='work-items-query-input' value='{WORK_ITEMS_QUERY_VALUE}' style='display: {WORK_ITEMS_QUERY_DISPLAY};'/>";
+        StylePackageModel packageModel = StylePackageModel.builder()
+                .workItemsQuery("type:requirement")
+                .build();
+
+        String result = extension.adjustWorkItemsQuery(form, packageModel);
+        assertTrue(result.contains("type='checkbox' checked/>"));
+        assertTrue(result.contains("value='type:requirement'"));
+        assertTrue(result.contains("display: inline-block;"));
+    }
+
+    @Test
+    void testAdjustWorkItemsQueryWithEmptyValue() {
+        PdfExporterFormExtension extension = new PdfExporterFormExtension();
+        String form = "<input id='work-items-query' type='checkbox' {WORK_ITEMS_QUERY_SELECTED}/>"
+                + "<input id='work-items-query-input' value='{WORK_ITEMS_QUERY_VALUE}' style='display: {WORK_ITEMS_QUERY_DISPLAY};'/>";
+
+        String result = extension.adjustWorkItemsQuery(form, StylePackageModel.builder().build());
+        assertTrue(result.contains("type='checkbox' />"));
+        assertTrue(result.contains("value=''"));
+        assertTrue(result.contains("display: none;"));
+    }
+
+    @Test
+    void testAdjustWorkItemsQueryEscapesApostrophes() {
+        PdfExporterFormExtension extension = new PdfExporterFormExtension();
+        String form = "<input id='work-items-query-input' value='{WORK_ITEMS_QUERY_VALUE}'/>";
+        StylePackageModel packageModel = StylePackageModel.builder()
+                .workItemsQuery("title:O'Reilly")
+                .build();
+
+        String result = extension.adjustWorkItemsQuery(form, packageModel);
+        // Apostrophe must be escaped so it does not close the value='...' attribute.
+        assertTrue(result.contains("value='title:O&#39;Reilly'"));
+        assertFalse(result.contains("value='title:O'Reilly'"));
+    }
+
+    @Test
     void testAdjustLinkRolesWithReverseDirection() {
         PdfExporterFormExtension extension = new PdfExporterFormExtension();
         String form = "<div class='roles-fields'><input id='selected-roles'/>"

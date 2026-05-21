@@ -196,6 +196,13 @@
             </label>
             <input id='metadata-fields-input' style='display: none; width: 280px' placeholder='e.g. docOwner, docLanguage, customField*' type='text'/>
         </div>
+        <div class='property-wrapper' style="display: flex; align-items: center; gap: 8px;">
+            <label for='work-items-query' style='white-space: nowrap;'>
+                <input id='work-items-query' onchange='document.querySelector("#pdf-exporter-panel #work-items-query-input").style.display = this.checked ? "inline-block" : "none"' type='checkbox' {WORK_ITEMS_QUERY_SELECTED}/>
+                Work items query
+            </label>
+            <input id='work-items-query-input' value='{WORK_ITEMS_QUERY_VALUE}' style='display: {WORK_ITEMS_QUERY_DISPLAY}; flex: 1; box-sizing: border-box;' title="Lucene query applied to filter work items within the document, e.g. 'type:requirement'." placeholder='e.g. type:requirement' type='text'/>
+        </div>
         <div class='property-wrapper'>
             <label for='custom-list-styles' style='width: 210px'>
                 <input id='custom-list-styles' onchange='document.querySelector("#pdf-exporter-panel #numbered-list-styles").style.display = this.checked ? "block" : "none"' type='checkbox'/>

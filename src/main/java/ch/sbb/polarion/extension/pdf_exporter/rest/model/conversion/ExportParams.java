@@ -11,6 +11,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -154,5 +155,16 @@ public class ExportParams extends ConversionParams {
         testcaseFieldId = stylePackageModel.getTestcaseFieldId();
         embedAttachments = stylePackageModel.isEmbedAttachments();
         setFullFonts(stylePackageModel.isFullFonts());
+        applyDefaultWorkItemsQuery(stylePackageModel.getWorkItemsQuery());
+    }
+
+    private void applyDefaultWorkItemsQuery(@Nullable String defaultQuery) {
+        if (defaultQuery == null || defaultQuery.isEmpty()) {
+            return;
+        }
+        if (urlQueryParameters == null) {
+            urlQueryParameters = new HashMap<>();
+        }
+        urlQueryParameters.putIfAbsent(URL_QUERY_PARAM_QUERY, defaultQuery);
     }
 }

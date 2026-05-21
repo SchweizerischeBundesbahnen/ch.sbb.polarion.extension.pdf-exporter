@@ -3,7 +3,9 @@ package ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.stylepackage.StylePackageModel;
 import org.junit.jupiter.api.Test;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -93,5 +95,54 @@ class ExportParamsTest {
         assertEquals("attachmentFilter2", params.getAttachmentsFilter());
         assertEquals("testcaseFieldId2", params.getTestcaseFieldId());
         assertFalse(params.isEmbedAttachments());
+    }
+
+    @Test
+    void overwriteByStylePackageAppliesWorkItemsQueryWhenAbsent() {
+        ExportParams params = ExportParams.builder().build();
+        StylePackageModel stylePackageModel = StylePackageModel.builder()
+                .workItemsQuery("type:requirement")
+                .build();
+
+        params.overwriteByStylePackage(stylePackageModel);
+
+        assertNotNull(params.getUrlQueryParameters());
+        assertEquals("type:requirement", params.getUrlQueryParameters().get(ExportParams.URL_QUERY_PARAM_QUERY));
+    }
+
+    @Test
+    void overwriteByStylePackageKeepsExplicitQueryOverStylePackageDefault() {
+        Map<String, String> existing = new HashMap<>();
+        existing.put(ExportParams.URL_QUERY_PARAM_QUERY, "type:testcase");
+        ExportParams params = ExportParams.builder()
+                .urlQueryParameters(existing)
+                .build();
+        StylePackageModel stylePackageModel = StylePackageModel.builder()
+                .workItemsQuery("type:requirement")
+                .build();
+
+        params.overwriteByStylePackage(stylePackageModel);
+
+        assertEquals("type:testcase", params.getUrlQueryParameters().get(ExportParams.URL_QUERY_PARAM_QUERY));
+    }
+
+    @Test
+    void overwriteByStylePackageWithoutWorkItemsQueryLeavesUrlQueryParametersUntouched() {
+        ExportParams params = ExportParams.builder().build();
+        StylePackageModel stylePackageModel = StylePackageModel.builder().build();
+
+        params.overwriteByStylePackage(stylePackageModel);
+
+        assertNull(params.getUrlQueryParameters());
+    }
+
+    @Test
+    void overwriteByStylePackageWithEmptyWorkItemsQueryLeavesUrlQueryParametersUntouched() {
+        ExportParams params = ExportParams.builder().build();
+        StylePackageModel stylePackageModel = StylePackageModel.builder().workItemsQuery("").build();
+
+        params.overwriteByStylePackage(stylePackageModel);
+
+        assertNull(params.getUrlQueryParameters());
     }
 }

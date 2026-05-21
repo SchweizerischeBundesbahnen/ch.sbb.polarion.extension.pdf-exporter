@@ -301,6 +301,18 @@
             </div>
         </div>
         <div class="flex-container" style="border-top: 1px solid #ccc; margin-top: 20px; padding-top: 15px;">
+            <div class="flex-grow">
+                <div class='input-group' style="display: flex; align-items: center; gap: 8px;">
+                    <label for='work-items-query-checkbox' style="white-space: nowrap;">
+                        <input id='work-items-query-checkbox' onchange='document.getElementById("work-items-query").style.visibility = this.checked ? "visible" : "hidden"' type='checkbox'/>
+                        Work items query
+                    </label>
+                    <div class='more-info' style="flex-shrink: 0;" title="Lucene query applied to filter work items within the document, e.g. 'type:requirement'. Leave empty to include all work items."></div>
+                    <input id='work-items-query' class="flex-grow" placeholder='e.g. type:requirement' type='text' style='visibility: hidden; flex: 1; box-sizing: border-box;'/>
+                </div>
+            </div>
+        </div>
+        <div class="flex-container" style="border-top: 1px solid #ccc; margin-top: 20px; padding-top: 15px;">
             <div class="flex-column">
                 <div class='checkbox input-group'>
                     <label for='download-attachments' style="margin-top: 5px">
