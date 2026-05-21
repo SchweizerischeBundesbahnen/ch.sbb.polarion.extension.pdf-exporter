@@ -167,7 +167,9 @@ public class PdfExporterPolarionService extends PolarionService {
             return;
         }
         try {
-            getTrackerService().getDataService().searchInstances(IWorkItem.PROTO, query, null);
+            // limit=1: forces query parsing (Lucene syntax validation) without loading
+            // potentially thousands of matching work items just to verify the syntax.
+            getTrackerService().getDataService().searchInstances(IWorkItem.PROTO, query, null, 1);
         } catch (Exception e) {
             throw new IllegalArgumentException("Invalid work items query: " + e.getMessage(), e);
         }
