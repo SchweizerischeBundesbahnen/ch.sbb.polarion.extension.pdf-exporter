@@ -322,7 +322,7 @@ export default class ExportPopup {
         this.ctx.setValue("popup-headers-color", stylePackage.headersColor);
         this.ctx.setValue("popup-paper-size-selector", stylePackage.paperSize || ExportParams.PaperSize.A4);
         this.ctx.setValue("popup-orientation-selector", stylePackage.orientation || ExportParams.Orientation.PORTRAIT);
-        this.ctx.setValue("popup-pdf-variant-selector", stylePackage.pdfVariant || ExportParams.PdfVariant.PDF_A_2B);
+        this.ctx.setValue("popup-pdf-variant-selector", stylePackage.pdfVariant || 'PDF_A_2B');
         this.ctx.setValue("popup-image-density-selector", stylePackage.imageDensity || ExportParams.ImageDensity.DPI_96);
         this.ctx.setCheckbox("popup-full-fonts", stylePackage.fullFonts);
         this.ctx.setCheckbox("popup-fit-to-page", stylePackage.fitToPage);
