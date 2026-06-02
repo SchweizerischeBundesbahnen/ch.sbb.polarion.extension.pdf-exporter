@@ -47,7 +47,7 @@
         <pdfbox.version>3.0.7</pdfbox.version>
         <okapi.xliff.version>1.48.0</okapi.xliff.version>
         <byte-buddy.version>1.18.8-jdk5</byte-buddy.version>
-        <flying-saucer.version>9.13.3</flying-saucer.version>
+        <flying-saucer.version>10.2.2</flying-saucer.version>
 
         <slf4j.version>2.0.18</slf4j.version>
         <testcontainers.version>2.0.5</testcontainers.version>
