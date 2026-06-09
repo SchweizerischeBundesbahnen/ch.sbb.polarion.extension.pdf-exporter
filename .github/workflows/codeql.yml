@@ -1,0 +1,22 @@
+---
+name: CodeQL
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review]
+  schedule:
+    # Weekly, off-peak Sunday — matches the cadence default setup uses.
+    - cron: 17 5 * * 0
+permissions: {}
+jobs:
+  analyze:
+    uses: SchweizerischeBundesbahnen/github-workflows-polarion/.github/workflows/reusable-codeql-java.yml@main
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+      packages: read
+    secrets:
+      IO_JFROG_SBB_POLARION_TOKEN: ${{ secrets.IO_JFROG_SBB_POLARION_TOKEN }}
