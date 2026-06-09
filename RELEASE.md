@@ -15,6 +15,10 @@ Releases within our project are exclusively overseen by designated code owners, 
 4. Subsequent to each release, the process iterates to update the version to X.Y.Z-SNAPSHOT, thereby preparing a new pull request for the forthcoming X.Y.Z version release.
 
 
+### Branch Protection
+
+The [`release-please-guard`](/.github/workflows/release-please-guard.yml) workflow prevents PRs from merging while a release-please snapshot PR is pending. This ensures the snapshot version bump lands immediately after the release, avoiding misordered commits on the target branch. To enforce this, add `release-please-guard` as a required status check in your branch protection rules for `main` and any `release-v*` branches, and enable "Require branches to be up to date before merging". This ensures PRs that previously passed the guard are rechecked when a release-please PR is opened.
+
 For comprehensive information, please consult the [Release Please documentation](https://github.com/googleapis/release-please).
 
 ## LTS (Long-Term Support) Releases
@@ -35,6 +39,8 @@ git checkout -b release-v11
 git push origin release-v11
 ```
 
+The `release-v*` pattern in the workflow automatically recognizes new LTS branches.
+
 ### Releasing from LTS Branches
 
 1. Cherry-pick or commit fixes to the LTS branch
@@ -53,4 +59,8 @@ git push origin release-v11
 | `release-v*` | SNAPSHOT | - | - | - |
 | `release-v*` | Release | ✓ | - | ✓ |
 
-Each LTS branch operates independently with its own release PR.
+### Notes
+
+- SNAPSHOT versions from LTS branches are NOT deployed to GitHub Packages
+- Only release versions from LTS branches are deployed to Maven Central
+- Each LTS branch operates independently with its own release PR
