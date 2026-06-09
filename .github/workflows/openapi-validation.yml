@@ -12,4 +12,3 @@ jobs:
       contents: read
     with:
       spec-path: docs/openapi.json
-      redocly-args: --extends=minimal
