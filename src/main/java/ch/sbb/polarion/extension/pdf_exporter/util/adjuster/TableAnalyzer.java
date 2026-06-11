@@ -218,7 +218,7 @@ public class TableAnalyzer {
      * element here so that buggy path is never reached. Everything else (healthy images, form controls, ...)
      * is delegated to the default factory so it still contributes its real intrinsic width to the measurement.
      */
-    private static class SourceAwareReplacedElementFactory implements ReplacedElementFactory {
+    static class SourceAwareReplacedElementFactory implements ReplacedElementFactory {
         private final ReplacedElementFactory delegate;
 
         SourceAwareReplacedElementFactory(ReplacedElementFactory delegate) {
@@ -230,7 +230,7 @@ public class TableAnalyzer {
             org.w3c.dom.Element element = box.getElement();
             if (element != null && c.getNamespaceHandler().isImageElement(element)) {
                 String src = c.getNamespaceHandler().getImageSourceURI(element);
-                if (src == null || src.isEmpty()) {
+                if (src == null || src.isBlank()) {
                     // No usable source in this measurement-only pass: avoid the -1x-1 placeholder attempt.
                     return new EmptyReplacedElement(Math.max(cssWidth, 0), Math.max(cssHeight, 0));
                 }
