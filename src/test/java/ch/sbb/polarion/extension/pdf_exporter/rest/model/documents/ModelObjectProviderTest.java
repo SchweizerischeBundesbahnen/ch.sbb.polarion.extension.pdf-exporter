@@ -80,11 +80,11 @@ class ModelObjectProviderTest {
     void testModelObjectProviderGetDocument(@NotNull ExportParams exportParams, ExtensionContext extensionContext) {
         InternalDocuments internalDocumentsMock = mock(InternalDocuments.class);
         DocumentSelector documentSelectorMock = mock(DocumentSelector.class);
-        when(documentSelectorMock.revision(any())).thenReturn(documentSelectorMock);
         Document documentMock = mock(Document.class);
-        when(documentSelectorMock.spaceReferenceAndName(any(), any())).thenReturn(documentMock);
+        // Polarion 2606: object references resolve via transaction.byEnum(prototype).getBy().reference(ref)
+        when(documentSelectorMock.reference(any())).thenReturn(documentMock);
         when(internalDocumentsMock.getBy()).thenReturn(documentSelectorMock);
-        when(internalReadOnlyTransactionMock.documents()).thenReturn(internalDocumentsMock);
+        doReturn(internalDocumentsMock).when(internalReadOnlyTransactionMock).byEnum(any());
 
         ModelObjectProvider modelObjectProvider = new ModelObjectProvider(exportParams, pdfExporterPolarionService);
         ModelObject modelObject = TransactionalExecutor.executeSafelyInReadOnlyTransaction(modelObjectProvider::getModelObject);
@@ -116,11 +116,11 @@ class ModelObjectProviderTest {
     void testModelObjectProviderGetRichPage(@NotNull ExportParams exportParams, ExtensionContext extensionContext) {
         InternalRichPages richPagesMock = mock(InternalRichPages.class);
         RichPageSelector richPagesSelectorMock = mock(RichPageSelector.class);
-        when(richPagesSelectorMock.revision(any())).thenReturn(richPagesSelectorMock);
         RichPage richPageMock = mock(RichPage.class);
-        when(richPagesSelectorMock.spaceReferenceAndName(any(), any())).thenReturn(richPageMock);
+        // Polarion 2606: object references resolve via transaction.byEnum(prototype).getBy().reference(ref)
+        when(richPagesSelectorMock.reference(any())).thenReturn(richPageMock);
         when(richPagesMock.getBy()).thenReturn(richPagesSelectorMock);
-        when(internalReadOnlyTransactionMock.richPages()).thenReturn(richPagesMock);
+        doReturn(richPagesMock).when(internalReadOnlyTransactionMock).byEnum(any());
 
         ModelObjectProvider modelObjectProvider = new ModelObjectProvider(exportParams, pdfExporterPolarionService);
         ModelObject modelObject = TransactionalExecutor.executeSafelyInReadOnlyTransaction(modelObjectProvider::getModelObject);
@@ -149,11 +149,11 @@ class ModelObjectProviderTest {
     void testModelObjectProviderGetTestRun(@NotNull ExportParams exportParams, ExtensionContext extensionContext) {
         InternalTestRuns testRunsMock = mock(InternalTestRuns.class);
         TestRunSelector testRunsSelectorMock = mock(TestRunSelector.class);
-        when(testRunsSelectorMock.revision(any())).thenReturn(testRunsSelectorMock);
         TestRun testRunMock = mock(TestRun.class);
-        when(testRunsSelectorMock.ids(any(), any())).thenReturn(testRunMock);
+        // Polarion 2606: object references resolve via transaction.byEnum(prototype).getBy().reference(ref)
+        when(testRunsSelectorMock.reference(any())).thenReturn(testRunMock);
         when(testRunsMock.getBy()).thenReturn(testRunsSelectorMock);
-        when(internalReadOnlyTransactionMock.testRuns()).thenReturn(testRunsMock);
+        doReturn(testRunsMock).when(internalReadOnlyTransactionMock).byEnum(any());
 
         ModelObjectProvider modelObjectProvider = new ModelObjectProvider(exportParams, pdfExporterPolarionService);
         ModelObject modelObject = TransactionalExecutor.executeSafelyInReadOnlyTransaction(modelObjectProvider::getModelObject);
@@ -186,11 +186,11 @@ class ModelObjectProviderTest {
     void testModelObjectProviderGetWikiPage(@NotNull ExportParams exportParams, ExtensionContext extensionContext) {
         WikiPages wikiPagesMock = mock(WikiPages.class);
         WikiPageSelector wikiPagesSelectorMock = mock(WikiPageSelector.class);
-        when(wikiPagesSelectorMock.revision(any())).thenReturn(wikiPagesSelectorMock);
         WikiPage wikiPageMock = mock(WikiPage.class);
-        when(wikiPagesSelectorMock.spaceReferenceAndName(any(), any())).thenReturn(wikiPageMock);
+        // Polarion 2606: object references resolve via transaction.byEnum(prototype).getBy().reference(ref)
+        when(wikiPagesSelectorMock.reference(any())).thenReturn(wikiPageMock);
         when(wikiPagesMock.getBy()).thenReturn(wikiPagesSelectorMock);
-        when(internalReadOnlyTransactionMock.wikiPages()).thenReturn(wikiPagesMock);
+        doReturn(wikiPagesMock).when(internalReadOnlyTransactionMock).byEnum(any());
 
         ModelObjectProvider modelObjectProvider = new ModelObjectProvider(exportParams, pdfExporterPolarionService);
         ModelObject modelObject = TransactionalExecutor.executeSafelyInReadOnlyTransaction(modelObjectProvider::getModelObject);

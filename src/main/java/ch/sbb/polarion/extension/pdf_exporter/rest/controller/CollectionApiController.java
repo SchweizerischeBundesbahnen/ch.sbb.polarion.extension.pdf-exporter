@@ -4,8 +4,8 @@ import ch.sbb.polarion.extension.generic.rest.filter.Secured;
 import ch.sbb.polarion.extension.generic.service.PolarionService;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.collections.DocumentCollectionEntry;
 
-import javax.inject.Singleton;
-import javax.ws.rs.Path;
+import jakarta.inject.Singleton;
+import jakarta.ws.rs.Path;
 import java.util.List;
 
 @Singleton

@@ -7,9 +7,9 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.stylepackage.D
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.stylepackage.StylePackageWeightInfo;
 import org.glassfish.jersey.media.multipart.FormDataBodyPart;
 
-import javax.inject.Singleton;
-import javax.ws.rs.Path;
-import javax.ws.rs.core.Response;
+import jakarta.inject.Singleton;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.core.Response;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;

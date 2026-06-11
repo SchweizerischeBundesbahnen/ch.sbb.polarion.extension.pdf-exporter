@@ -22,7 +22,10 @@ public abstract class AbstractTOCGenerator implements DocumentTOCGenerator {
             Element tocElement = generateTableOfContent(document, startLevel, maxLevel); // support h1-h6
 
             tocPlaceholder.before(tocElement);
-            tocPlaceholder.remove();
+            // unwrap() instead of remove(): jsoup 1.21.2+ treats self-closing unknown elements
+            // (like <pd4ml:toc/>) as opening tags, nesting subsequent content as children.
+            // unwrap() removes the tag but keeps its children in place.
+            tocPlaceholder.unwrap();
         }
     }
 

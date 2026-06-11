@@ -2,7 +2,7 @@ package ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion;
 
 import org.junit.jupiter.api.Test;
 
-import javax.ws.rs.WebApplicationException;
+import jakarta.ws.rs.WebApplicationException;
 
 import static org.junit.jupiter.api.Assertions.*;
 

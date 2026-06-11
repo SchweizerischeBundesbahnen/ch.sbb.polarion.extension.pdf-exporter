@@ -5,7 +5,7 @@
     <parent>
         <groupId>ch.sbb.polarion.extensions</groupId>
         <artifactId>ch.sbb.polarion.extension.generic</artifactId>
-        <version>14.1.6</version>
+        <version>15.0.1</version>
     </parent>
 
     <artifactId>ch.sbb.polarion.extension.pdf-exporter</artifactId>
@@ -72,8 +72,11 @@
             org.jsoup
             org.apache.tika.patched;resolution:=optional
             org.apache.tika;resolution:=optional
+            net.bytebuddy.byte-buddy (provided by Polarion 2606 as net.bytebuddy.byte-buddy_1.18.3;
+              we do NOT bundle byte-buddy because every variant ships @javax.annotation.Nonnull
+              JSR-305 annotations that trip Polarion 2606's JakartaCompatibilityChecker)
         -->
-        <maven-jar-plugin.Require-Bundle.extension>com.polarion.alm.wiki,org.jsoup,org.apache.tika.patched;resolution:=optional,org.apache.tika;resolution:=optional</maven-jar-plugin.Require-Bundle.extension>
+        <maven-jar-plugin.Require-Bundle.extension>com.polarion.alm.wiki,org.jsoup,org.apache.tika.patched;resolution:=optional,org.apache.tika;resolution:=optional,net.bytebuddy.byte-buddy</maven-jar-plugin.Require-Bundle.extension>
         <maven-jar-plugin.Require-Bundle>${maven-jar-plugin.Require-Bundle.common},${maven-jar-plugin.Require-Bundle.extension}</maven-jar-plugin.Require-Bundle>
 
         <!--suppress UnresolvedMavenProperty -->
@@ -98,12 +101,13 @@
 
     <profiles>
         <profile>
-            <id>polarion2512</id>
+            <id>polarion2606</id>
             <activation>
                 <activeByDefault>true</activeByDefault>
             </activation>
             <properties>
                 <velocity-engine-core.artifactId>org.apache.velocity.engine-core_2.3.0</velocity-engine-core.artifactId>
+                <org.jsoup.artifactId>org.jsoup_1.21.2</org.jsoup.artifactId>
             </properties>
         </profile>
 
@@ -158,6 +162,39 @@
                 <artifactId>rhino</artifactId>
                 <version>${rhino.version}</version>
             </dependency>
+
+            <!-- Exclude javax.* transitive dependencies from verapdf that trip
+                 Polarion 2606's JakartaCompatibilityChecker -->
+            <dependency>
+                <groupId>javax.xml.bind</groupId>
+                <artifactId>jaxb-api</artifactId>
+                <version>2.4.0-b180830.0359</version>
+                <scope>provided</scope>
+            </dependency>
+            <dependency>
+                <groupId>com.sun.xml.bind</groupId>
+                <artifactId>jaxb-impl</artifactId>
+                <version>2.3.2</version>
+                <scope>provided</scope>
+            </dependency>
+            <dependency>
+                <groupId>com.sun.xml.bind</groupId>
+                <artifactId>jaxb-core</artifactId>
+                <version>2.3.0.1</version>
+                <scope>provided</scope>
+            </dependency>
+            <dependency>
+                <groupId>javax.activation</groupId>
+                <artifactId>javax.activation-api</artifactId>
+                <version>1.2.0</version>
+                <scope>provided</scope>
+            </dependency>
+            <dependency>
+                <groupId>commons-logging</groupId>
+                <artifactId>commons-logging</artifactId>
+                <version>1.3.5</version>
+                <scope>provided</scope>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -184,7 +221,7 @@
 
         <dependency>
             <groupId>com.polarion.thirdparty</groupId>
-            <artifactId>org.jsoup_1.15.2</artifactId>
+            <artifactId>${org.jsoup.artifactId}</artifactId>
             <version>${polarion.version}</version>
             <scope>provided</scope>
         </dependency>
@@ -206,10 +243,15 @@
             <artifactId>okapi-lib-xliff2</artifactId>
             <version>${okapi.xliff.version}</version>
         </dependency>
+        <!-- Provided at runtime by Polarion 2606's net.bytebuddy.byte-buddy_1.18.3
+             OSGi bundle (resolved via Require-Bundle above). NOT bundled because
+             every published byte-buddy variant carries @javax.annotation.Nonnull
+             (JSR-305) annotations that JakartaCompatibilityChecker rejects. -->
         <dependency>
             <groupId>net.bytebuddy</groupId>
             <artifactId>byte-buddy</artifactId>
             <version>${byte-buddy.version}</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>com.helger</groupId>
@@ -266,31 +308,26 @@
             <scope>test</scope>
         </dependency>
         <!-- Required for mocking HtmlFragmentParser -->
-        <dependency>
-            <groupId>com.polarion.thirdparty</groupId>
-            <artifactId>nu.xom_1.3.7.osgi</artifactId>
-            <version>${polarion.version}</version>
-            <scope>test</scope>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>com.polarion.thirdparty</groupId>-->
+<!--            <artifactId>nu.xom_1.3.7.osgi</artifactId>-->
+<!--            <version>${polarion.version}</version>-->
+<!--            <scope>test</scope>-->
+<!--        </dependency>-->
 
         <dependency>
             <groupId>org.verapdf</groupId>
-            <artifactId>core</artifactId>
+            <artifactId>core-jakarta</artifactId>
             <version>${verapdf.version}</version>
         </dependency>
         <dependency>
             <groupId>org.verapdf</groupId>
-            <artifactId>validation-model</artifactId>
+            <artifactId>validation-model-jakarta</artifactId>
             <version>${verapdf.version}</version>
         </dependency>
         <dependency>
             <groupId>org.verapdf</groupId>
             <artifactId>parser</artifactId>
-            <version>${verapdf.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.verapdf.apps</groupId>
-            <artifactId>greenfield-apps</artifactId>
             <version>${verapdf.version}</version>
         </dependency>
     </dependencies>
@@ -413,7 +450,7 @@
 
             <plugin>
                 <groupId>io.swagger.core.v3</groupId>
-                <artifactId>swagger-maven-plugin</artifactId>
+                <artifactId>swagger-maven-plugin-jakarta</artifactId>
                 <configuration>
                     <outputFormat>JSON</outputFormat>
                     <resourcePackages>

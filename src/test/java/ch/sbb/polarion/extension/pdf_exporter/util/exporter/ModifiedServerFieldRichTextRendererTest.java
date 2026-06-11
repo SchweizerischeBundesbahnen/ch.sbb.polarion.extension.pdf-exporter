@@ -4,6 +4,7 @@ import com.polarion.alm.server.rt.parts.Renderer;
 import com.polarion.alm.shared.api.model.wi.WorkItemReference;
 import com.polarion.alm.shared.api.transaction.ReadOnlyTransaction;
 import com.polarion.alm.shared.api.utils.html.HtmlContentBuilder;
+import com.polarion.alm.shared.api.utils.html.RichTextRenderTarget;
 import com.polarion.alm.shared.rt.RichTextRenderingContext;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.junit.jupiter.api.Test;
@@ -32,6 +33,8 @@ class ModifiedServerFieldRichTextRendererTest {
     void testRenderDescription() {
         ModifiedServerFieldRichTextRenderer renderer = spy(new ModifiedServerFieldRichTextRenderer(mock(ReadOnlyTransaction.class, RETURNS_DEEP_STUBS)));
         RichTextRenderingContext context = mock(RichTextRenderingContext.class, RETURNS_DEEP_STUBS);
+        // RichTextRenderTarget is a sealed abstract enum in Polarion 2606 — doReturn avoids deep stub trying to mock it.
+        doReturn(RichTextRenderTarget.PREVIEW).when(context).getRenderTarget();
         renderer.setRichTextRenderingContext(context);
         WorkItemReference workItemReference = mock(WorkItemReference.class, RETURNS_DEEP_STUBS);
         try (MockedConstruction<Renderer> rendererConstructionMock = mockConstruction(Renderer.class);
