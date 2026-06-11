@@ -12,6 +12,7 @@ import ch.sbb.polarion.extension.pdf_exporter.settings.LocalizationSettings;
 import ch.sbb.polarion.extension.pdf_exporter.util.LocalizationHelper;
 import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -87,7 +88,7 @@ public class SettingsInternalController {
             }
     )
     public Map<String, String> uploadTranslations(
-            @FormDataParam("file") FormDataBodyPart file,
+            @Parameter(description = "XLIFF localization file (.xlf)", required = true, schema = @Schema(type = "string", format = "binary")) @FormDataParam("file") FormDataBodyPart file,
             @QueryParam("language") String language,
             @QueryParam("scope") String scope
     ) {
