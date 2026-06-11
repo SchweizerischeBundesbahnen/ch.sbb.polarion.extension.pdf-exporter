@@ -9,9 +9,21 @@
 		<!-- InMemoryAppender -->
 		<InMemoryAppender name="InMemoryAppender"/>
 
+		<!-- Dedicated file for flying-saucer (org.xhtmlrenderer) logs, so tests can assert on what it logged
+		     without hijacking System.out. Truncated on every test JVM start (append=false). -->
+		<File name="FlyingSaucerFile" fileName="target/flying-saucer.log" append="false">
+			<PatternLayout pattern="%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"/>
+		</File>
+
 	</Appenders>
 
 	<Loggers>
+		<!-- flying-saucer logs (routed here via SLF4J -> Log4j2 bridge) go only to their own file, keeping
+		     the console and the InMemoryAppender free of rendering noise. -->
+		<Logger name="org.xhtmlrenderer" level="warn" additivity="false">
+			<AppenderRef ref="FlyingSaucerFile"/>
+		</Logger>
+
 		<Root level="DEBUG">
 			<AppenderRef ref="Console"/>
 			<AppenderRef ref="InMemoryAppender"/>

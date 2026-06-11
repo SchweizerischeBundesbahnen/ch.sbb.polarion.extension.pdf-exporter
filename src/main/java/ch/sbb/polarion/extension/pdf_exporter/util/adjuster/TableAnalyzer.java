@@ -6,10 +6,17 @@ import org.jetbrains.annotations.NotNull;
 import org.jsoup.helper.W3CDom;
 import org.jsoup.nodes.Element;
 import org.w3c.dom.Document;
+import org.xhtmlrenderer.extend.ReplacedElement;
+import org.xhtmlrenderer.extend.ReplacedElementFactory;
+import org.xhtmlrenderer.extend.UserAgentCallback;
+import org.xhtmlrenderer.layout.LayoutContext;
 import org.xhtmlrenderer.newtable.TableSectionBox;
+import org.xhtmlrenderer.render.BlockBox;
 import org.xhtmlrenderer.render.Box;
 import org.xhtmlrenderer.render.LineBox;
 import org.xhtmlrenderer.simple.Graphics2DRenderer;
+import org.xhtmlrenderer.simple.extend.FormSubmissionListener;
+import org.xhtmlrenderer.swing.EmptyReplacedElement;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
@@ -77,6 +84,15 @@ public class TableAnalyzer {
 
     private Box render(@NotNull Document doc, int pageWidth) {
         Graphics2DRenderer renderer = new Graphics2DRenderer(doc, "");
+
+        // This is a throwaway measurement-only layout over an isolated shell document with an empty base URL,
+        // so image sources are not resolvable here anyway. Source-less images would otherwise drive
+        // flying-saucer into building a -1x-1 placeholder image, which throws internally and gets logged at
+        // ERROR (see SwingReplacedElementFactory#newIrreplaceableImageElement). Short-circuit those images to
+        // an empty element while delegating healthy images to the default factory so they still contribute
+        // their intrinsic width to the measurement. Must be set before layout().
+        ReplacedElementFactory defaultFactory = renderer.getSharedContext().getReplacedElementFactory();
+        renderer.getSharedContext().setReplacedElementFactory(new SourceAwareReplacedElementFactory(defaultFactory));
 
         BufferedImage image = new BufferedImage(pageWidth, PAGE_HEIGHT, BufferedImage.TYPE_BYTE_GRAY);
         Graphics2D g2d = image.createGraphics();
@@ -190,5 +206,51 @@ public class TableAnalyzer {
             }
         }
         return adjustedWidths;
+    }
+
+    /**
+     * A {@link ReplacedElementFactory} for the measurement-only pre-render that neutralises source-less images.
+     * <p>
+     * flying-saucer's default factory tries to build a "missing image" placeholder for an {@code <img>} whose
+     * source is absent/empty. When the element additionally has no explicit width/height both CSS dimensions
+     * resolve to {@code -1}, and the placeholder construction throws {@code IllegalArgumentException} internally,
+     * which is swallowed but logged at ERROR with a full stacktrace. Such images are returned as an empty
+     * element here so that buggy path is never reached. Everything else (healthy images, form controls, ...)
+     * is delegated to the default factory so it still contributes its real intrinsic width to the measurement.
+     */
+    private static class SourceAwareReplacedElementFactory implements ReplacedElementFactory {
+        private final ReplacedElementFactory delegate;
+
+        SourceAwareReplacedElementFactory(ReplacedElementFactory delegate) {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public ReplacedElement createReplacedElement(LayoutContext c, BlockBox box, UserAgentCallback uac, int cssWidth, int cssHeight) {
+            org.w3c.dom.Element element = box.getElement();
+            if (element != null && c.getNamespaceHandler().isImageElement(element)) {
+                String src = c.getNamespaceHandler().getImageSourceURI(element);
+                if (src == null || src.isEmpty()) {
+                    // No usable source in this measurement-only pass: avoid the -1x-1 placeholder attempt.
+                    return new EmptyReplacedElement(Math.max(cssWidth, 0), Math.max(cssHeight, 0));
+                }
+            }
+            return delegate.createReplacedElement(c, box, uac, cssWidth, cssHeight);
+        }
+
+        @Override
+        public void reset() {
+            delegate.reset();
+        }
+
+        @Override
+        public void remove(org.w3c.dom.Element e) {
+            delegate.remove(e);
+        }
+
+        @Override
+        public void setFormSubmissionListener(FormSubmissionListener listener) {
+            delegate.setFormSubmissionListener(listener);
+        }
     }
 }
