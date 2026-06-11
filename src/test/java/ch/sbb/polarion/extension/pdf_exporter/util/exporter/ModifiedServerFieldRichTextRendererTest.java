@@ -33,7 +33,6 @@ class ModifiedServerFieldRichTextRendererTest {
     void testRenderDescription() {
         ModifiedServerFieldRichTextRenderer renderer = spy(new ModifiedServerFieldRichTextRenderer(mock(ReadOnlyTransaction.class, RETURNS_DEEP_STUBS)));
         RichTextRenderingContext context = mock(RichTextRenderingContext.class, RETURNS_DEEP_STUBS);
-        // RichTextRenderTarget is a sealed abstract enum in Polarion 2606 — doReturn avoids deep stub trying to mock it.
         doReturn(RichTextRenderTarget.PREVIEW).when(context).getRenderTarget();
         renderer.setRichTextRenderingContext(context);
         WorkItemReference workItemReference = mock(WorkItemReference.class, RETURNS_DEEP_STUBS);

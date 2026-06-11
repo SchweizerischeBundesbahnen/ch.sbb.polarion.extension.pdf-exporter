@@ -29,7 +29,6 @@ class ModifiedDocumentRendererTest {
     @Mock(answer = Answers.RETURNS_DEEP_STUBS)
     private InternalDocument internalDocument;
 
-    // RichTextRenderTarget is a sealed abstract enum in Polarion 2606 and cannot be mocked.
     private final RichTextRenderTarget textRenderTarget = RichTextRenderTarget.PDF_EXPORT;
 
     @Mock(answer = Answers.RETURNS_DEEP_STUBS)

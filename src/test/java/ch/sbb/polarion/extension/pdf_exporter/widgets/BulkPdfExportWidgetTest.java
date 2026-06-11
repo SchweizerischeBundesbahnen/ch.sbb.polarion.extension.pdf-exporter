@@ -152,15 +152,13 @@ class BulkPdfExportWidgetTest {
         when(renderingContext.transaction()).thenReturn(transaction);
         when(renderingContext.parameter("dataSet")).thenReturn(dataSetParameter);
         when(renderingContext.parameter("advanced")).thenReturn(compositeParameter);
-        // PrototypeEnum is a sealed abstract enum in Polarion 2606 — doReturn avoids deep stub trying to mock it.
+
         doReturn(PrototypeEnum.Document).when(dataSetParameter).prototype();
         when(dataSetParameter.get("columns")).thenReturn(columnsParameter);
         when(dataSetParameter.get("sortBy")).thenReturn(sortByParameter);
         when(dataSetParameter.get("exportPages")).thenReturn(exportPagesParameter);
         when(compositeParameter.get("top")).thenReturn(topParameter);
 
-        // BottomQueryLinksBuilder internally accesses RichTextRenderTarget (sealed in Polarion 2606)
-        // via deep stub chain — mock its construction to prevent the sealed enum mock attempt.
         try (MockedConstruction<BottomQueryLinksBuilder> ignored = mockConstruction(BottomQueryLinksBuilder.class)) {
             String html = widget.renderHtml(renderingContext);
             assertNotNull(html);
@@ -178,7 +176,7 @@ class BulkPdfExportWidgetTest {
 
         when(context.parameter("dataSet")).thenReturn(dataSetParameter);
         when(context.parameter("propertiesSidebarFields")).thenReturn(propertiesSidebarFields);
-        // PrototypeEnum is a sealed abstract enum in Polarion 2606 — doReturn avoids deep stub trying to mock it.
+
         doReturn(PrototypeEnum.BaselineCollection).when(dataSetParameter).prototype();
         when(dataSetParameter.get("exportPages")).thenReturn(exportPagesParameter);
         when(exportPagesParameter.visuals()).thenReturn(visuals);
@@ -199,7 +197,7 @@ class BulkPdfExportWidgetTest {
 
         when(context.parameter("dataSet")).thenReturn(dataSetParameter);
         when(context.parameter("propertiesSidebarFields")).thenReturn(propertiesSidebarFields);
-        // PrototypeEnum is a sealed abstract enum in Polarion 2606 — doReturn avoids deep stub trying to mock it.
+
         doReturn(PrototypeEnum.Document).when(dataSetParameter).prototype();
         when(dataSetParameter.get("exportPages")).thenReturn(exportPagesParameter);
         when(exportPagesParameter.visuals()).thenReturn(visuals);
@@ -220,7 +218,7 @@ class BulkPdfExportWidgetTest {
 
         when(context.parameter("dataSet")).thenReturn(dataSetParameter);
         when(context.parameter("propertiesSidebarFields")).thenReturn(propertiesSidebarFields);
-        // PrototypeEnum is a sealed abstract enum in Polarion 2606 — doReturn avoids deep stub trying to mock it.
+
         doReturn(PrototypeEnum.TestRun).when(dataSetParameter).prototype();
         when(dataSetParameter.get("exportPages")).thenReturn(exportPagesParameter);
         when(exportPagesParameter.visuals()).thenReturn(visuals);
@@ -241,7 +239,7 @@ class BulkPdfExportWidgetTest {
 
         when(context.parameter("dataSet")).thenReturn(dataSetParameter);
         when(context.parameter("propertiesSidebarFields")).thenReturn(propertiesSidebarFields);
-        // PrototypeEnum is a sealed abstract enum in Polarion 2606 — doReturn avoids deep stub trying to mock it.
+
         doReturn(PrototypeEnum.RichPage).when(dataSetParameter).prototype();
         when(dataSetParameter.get("exportPages")).thenReturn(exportPagesParameter);
         when(exportPagesParameter.visuals()).thenReturn(visuals);

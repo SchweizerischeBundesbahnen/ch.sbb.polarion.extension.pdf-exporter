@@ -37,8 +37,7 @@ class CustomPageBreakPartTest {
         HtmlBuilder builder = mock(HtmlBuilder.class, RETURNS_DEEP_STUBS);
 
         RichTextRenderingContext context = mock(RichTextRenderingContext.class, RETURNS_DEEP_STUBS);
-        // RichTextRenderTarget is a sealed abstract enum in Polarion 2606 and cannot be mocked;
-        // use doReturn to avoid deep stub eagerly trying to mock the sealed return type.
+
         doReturn(RichTextRenderTarget.PDF_EXPORT).when(context).getRenderTarget();
 
         try (MockedConstruction<PartIdGeneratorImpl> ignored = mockConstruction(PartIdGeneratorImpl.class)) {
@@ -61,7 +60,7 @@ class CustomPageBreakPartTest {
 
         HtmlBuilder builder = mock(HtmlBuilder.class, RETURNS_DEEP_STUBS);
         RichTextRenderingContext context = mock(RichTextRenderingContext.class, RETURNS_DEEP_STUBS);
-        // RichTextRenderTarget is sealed in Polarion 2606 — use a real literal.
+
         doReturn(RichTextRenderTarget.PREVIEW).when(context).getRenderTarget();
 
         try (MockedConstruction<PartIdGeneratorImpl> ignored = mockConstruction(PartIdGeneratorImpl.class)) {

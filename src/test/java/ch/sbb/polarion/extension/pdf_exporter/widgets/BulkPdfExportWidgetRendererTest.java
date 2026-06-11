@@ -204,7 +204,6 @@ class BulkPdfExportWidgetRendererTest {
         when(dataSetParameter.get("columns")).thenReturn(mock(FieldsParameter.class, RETURNS_DEEP_STUBS));
         when(dataSetParameter.get("sortBy")).thenReturn(mock(SortingParameter.class, RETURNS_DEEP_STUBS));
         when(dataSetParameter.get("exportPages")).thenReturn(mock(BooleanParameter.class, RETURNS_DEEP_STUBS));
-        // PrototypeEnum is a sealed abstract enum in Polarion 2606 — doReturn avoids deep stub trying to mock it.
         doReturn(PrototypeEnum.Document).when(dataSetParameter).prototype();
 
         CompositeParameter advanced = mock(CompositeParameter.class);
@@ -214,8 +213,6 @@ class BulkPdfExportWidgetRendererTest {
         BulkPdfExportWidgetRenderer renderer = new BulkPdfExportWidgetRenderer(context);
         HtmlFragmentBuilderImpl<HtmlBuilderConsumer> builder = new HtmlFragmentBuilderImpl<>(mock(HtmlBuilderConsumer.class, RETURNS_DEEP_STUBS), mock(HtmlBuilderFactory.class, RETURNS_DEEP_STUBS));
 
-        // BottomQueryLinksBuilder internally accesses RichTextRenderTarget (sealed in Polarion 2606)
-        // via deep stub chain — mock its construction to prevent the sealed enum mock attempt.
         try (MockedConstruction<BottomQueryLinksBuilder> ignored = mockConstruction(BottomQueryLinksBuilder.class)) {
             assertDoesNotThrow(() -> renderer.render(builder));
         }
@@ -255,7 +252,6 @@ class BulkPdfExportWidgetRendererTest {
         IntegerParameter top = mock(IntegerParameter.class);
 
         when(context.parameter(anyString())).thenReturn(dataSetParameter);
-        // PrototypeEnum is a sealed abstract enum in Polarion 2606 — doReturn avoids deep stub trying to mock it.
         doReturn(PrototypeEnum.BaselineCollection).when(dataSetParameter).prototype();
         when(dataSetParameter.get("columns")).thenReturn(columnsParameter);
         when(dataSetParameter.get("sortBy")).thenReturn(sortingParameter);
