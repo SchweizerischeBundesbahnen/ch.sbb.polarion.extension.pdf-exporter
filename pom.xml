@@ -46,7 +46,6 @@
     <properties>
         <pdfbox.version>3.0.7</pdfbox.version>
         <okapi.xliff.version>1.48.0</okapi.xliff.version>
-        <byte-buddy.version>1.18.10-jdk5</byte-buddy.version>
         <flying-saucer.version>10.2.2</flying-saucer.version>
 
         <slf4j.version>2.0.18</slf4j.version>
@@ -70,10 +69,11 @@
         <!-- Extension-specific Require-Bundle (in addition to common ones from parent POM):
             com.polarion.alm.wiki
             org.jsoup
+            net.bytebuddy.byte-buddy
             org.apache.tika.patched;resolution:=optional
             org.apache.tika;resolution:=optional
         -->
-        <maven-jar-plugin.Require-Bundle.extension>com.polarion.alm.wiki,org.jsoup,org.apache.tika.patched;resolution:=optional,org.apache.tika;resolution:=optional,net.bytebuddy.byte-buddy</maven-jar-plugin.Require-Bundle.extension>
+        <maven-jar-plugin.Require-Bundle.extension>com.polarion.alm.wiki,org.jsoup,net.bytebuddy.byte-buddy,org.apache.tika.patched;resolution:=optional,org.apache.tika;resolution:=optional</maven-jar-plugin.Require-Bundle.extension>
         <maven-jar-plugin.Require-Bundle>${maven-jar-plugin.Require-Bundle.common},${maven-jar-plugin.Require-Bundle.extension}</maven-jar-plugin.Require-Bundle>
 
         <!--suppress UnresolvedMavenProperty -->
@@ -189,6 +189,13 @@
             <scope>provided</scope>
         </dependency>
 
+        <dependency>
+            <groupId>com.polarion.thirdparty</groupId>
+            <artifactId>net.bytebuddy.byte-buddy_1.18.3</artifactId>
+            <version>${polarion.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
         <!--  3rd-party libraries to be packaged into resulting jar  -->
         <dependency>
             <groupId>org.apache.pdfbox</groupId>
@@ -205,12 +212,6 @@
             <groupId>net.sf.okapi.lib</groupId>
             <artifactId>okapi-lib-xliff2</artifactId>
             <version>${okapi.xliff.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.polarion.thirdparty</groupId>
-            <artifactId>net.bytebuddy.byte-buddy_1.18.3</artifactId>
-            <version>${polarion.version}</version>
-            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>com.helger</groupId>
@@ -233,6 +234,12 @@
             <groupId>org.apache.tika</groupId>
             <artifactId>tika-core</artifactId>
             <version>${tika.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.verapdf</groupId>
+            <artifactId>validation-model-jakarta</artifactId>
+            <version>${verapdf.version}</version>
         </dependency>
 
         <!--  Test dependencies  -->
@@ -266,11 +273,6 @@
             <version>${project.parent.version}</version>
             <type>test-jar</type>
             <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.verapdf</groupId>
-            <artifactId>validation-model-jakarta</artifactId>
-            <version>${verapdf.version}</version>
         </dependency>
     </dependencies>
 
