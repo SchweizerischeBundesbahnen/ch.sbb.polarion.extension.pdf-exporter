@@ -242,10 +242,11 @@
             <version>${slf4j.version}</version>
             <scope>test</scope>
         </dependency>
+        <!-- Route SLF4J (used by flying-saucer) to Log4j2 so its logs can be captured by InMemoryAppender in tests -->
         <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-simple</artifactId>
-            <version>${slf4j.version}</version>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-slf4j2-impl</artifactId>
+            <version>${log4j.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
