@@ -29,8 +29,7 @@ class ModifiedDocumentRendererTest {
     @Mock(answer = Answers.RETURNS_DEEP_STUBS)
     private InternalDocument internalDocument;
 
-    @Mock(answer = Answers.RETURNS_DEEP_STUBS)
-    private RichTextRenderTarget textRenderTarget;
+    private final RichTextRenderTarget textRenderTarget = RichTextRenderTarget.PDF_EXPORT;
 
     @Mock(answer = Answers.RETURNS_DEEP_STUBS)
     private DocumentRendererParameters parameters;

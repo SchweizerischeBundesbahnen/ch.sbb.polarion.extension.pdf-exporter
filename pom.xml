@@ -5,7 +5,7 @@
     <parent>
         <groupId>ch.sbb.polarion.extensions</groupId>
         <artifactId>ch.sbb.polarion.extension.generic</artifactId>
-        <version>14.1.6</version>
+        <version>15.0.1</version>
     </parent>
 
     <artifactId>ch.sbb.polarion.extension.pdf-exporter</artifactId>
@@ -46,7 +46,6 @@
     <properties>
         <pdfbox.version>3.0.7</pdfbox.version>
         <okapi.xliff.version>1.48.0</okapi.xliff.version>
-        <byte-buddy.version>1.18.10-jdk5</byte-buddy.version>
         <flying-saucer.version>10.2.2</flying-saucer.version>
 
         <slf4j.version>2.0.18</slf4j.version>
@@ -56,7 +55,7 @@
         <tika.version>3.3.1</tika.version>
         <ph-css.version>8.2.1</ph-css.version>
         <commons-text.version>1.15.0</commons-text.version>
-        <verapdf.version>1.28.2</verapdf.version>
+        <verapdf.version>1.30.2</verapdf.version>
         <rhino.version>1.9.1</rhino.version>
 
         <exec-maven-plugin.version>3.3.0</exec-maven-plugin.version>
@@ -70,10 +69,11 @@
         <!-- Extension-specific Require-Bundle (in addition to common ones from parent POM):
             com.polarion.alm.wiki
             org.jsoup
+            net.bytebuddy.byte-buddy
             org.apache.tika.patched;resolution:=optional
             org.apache.tika;resolution:=optional
         -->
-        <maven-jar-plugin.Require-Bundle.extension>com.polarion.alm.wiki,org.jsoup,org.apache.tika.patched;resolution:=optional,org.apache.tika;resolution:=optional</maven-jar-plugin.Require-Bundle.extension>
+        <maven-jar-plugin.Require-Bundle.extension>com.polarion.alm.wiki,org.jsoup,net.bytebuddy.byte-buddy,org.apache.tika.patched;resolution:=optional,org.apache.tika;resolution:=optional</maven-jar-plugin.Require-Bundle.extension>
         <maven-jar-plugin.Require-Bundle>${maven-jar-plugin.Require-Bundle.common},${maven-jar-plugin.Require-Bundle.extension}</maven-jar-plugin.Require-Bundle>
 
         <!--suppress UnresolvedMavenProperty -->
@@ -98,7 +98,7 @@
 
     <profiles>
         <profile>
-            <id>polarion2512</id>
+            <id>polarion2606</id>
             <activation>
                 <activeByDefault>true</activeByDefault>
             </activation>
@@ -184,7 +184,14 @@
 
         <dependency>
             <groupId>com.polarion.thirdparty</groupId>
-            <artifactId>org.jsoup_1.15.2</artifactId>
+            <artifactId>org.jsoup_1.21.2</artifactId>
+            <version>${polarion.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.polarion.thirdparty</groupId>
+            <artifactId>net.bytebuddy.byte-buddy_1.18.3</artifactId>
             <version>${polarion.version}</version>
             <scope>provided</scope>
         </dependency>
@@ -194,22 +201,11 @@
             <groupId>org.apache.pdfbox</groupId>
             <artifactId>pdfbox</artifactId>
             <version>${pdfbox.version}</version>
-            <exclusions> <!-- pdfbox 3.0.0 has scope test for junit, pdfbox 3.0.1 has no such scope, that's why this exclusion has been added -->
-                <exclusion>
-                    <groupId>org.junit.jupiter</groupId>
-                    <artifactId>junit-jupiter</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
         <dependency>
             <groupId>net.sf.okapi.lib</groupId>
             <artifactId>okapi-lib-xliff2</artifactId>
             <version>${okapi.xliff.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>net.bytebuddy</groupId>
-            <artifactId>byte-buddy</artifactId>
-            <version>${byte-buddy.version}</version>
         </dependency>
         <dependency>
             <groupId>com.helger</groupId>
@@ -232,6 +228,12 @@
             <groupId>org.apache.tika</groupId>
             <artifactId>tika-core</artifactId>
             <version>${tika.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.verapdf</groupId>
+            <artifactId>validation-model-jakarta</artifactId>
+            <version>${verapdf.version}</version>
         </dependency>
 
         <!--  Test dependencies  -->
@@ -265,34 +267,6 @@
             <version>${project.parent.version}</version>
             <type>test-jar</type>
             <scope>test</scope>
-        </dependency>
-        <!-- Required for mocking HtmlFragmentParser -->
-        <dependency>
-            <groupId>com.polarion.thirdparty</groupId>
-            <artifactId>nu.xom_1.3.7.osgi</artifactId>
-            <version>${polarion.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.verapdf</groupId>
-            <artifactId>core</artifactId>
-            <version>${verapdf.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.verapdf</groupId>
-            <artifactId>validation-model</artifactId>
-            <version>${verapdf.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.verapdf</groupId>
-            <artifactId>parser</artifactId>
-            <version>${verapdf.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.verapdf.apps</groupId>
-            <artifactId>greenfield-apps</artifactId>
-            <version>${verapdf.version}</version>
         </dependency>
     </dependencies>
 
@@ -414,7 +388,7 @@
 
             <plugin>
                 <groupId>io.swagger.core.v3</groupId>
-                <artifactId>swagger-maven-plugin</artifactId>
+                <artifactId>swagger-maven-plugin-jakarta</artifactId>
                 <configuration>
                     <outputFormat>JSON</outputFormat>
                     <resourcePackages>

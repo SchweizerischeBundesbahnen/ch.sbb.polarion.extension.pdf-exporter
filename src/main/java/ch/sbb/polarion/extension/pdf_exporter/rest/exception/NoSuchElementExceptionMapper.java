@@ -3,9 +3,9 @@ package ch.sbb.polarion.extension.pdf_exporter.rest.exception;
 import ch.sbb.polarion.extension.generic.rest.model.ErrorEntity;
 import com.polarion.core.util.logging.Logger;
 
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.ext.ExceptionMapper;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.ext.ExceptionMapper;
 import java.util.NoSuchElementException;
 
 public class NoSuchElementExceptionMapper implements ExceptionMapper<NoSuchElementException> {

@@ -1075,9 +1075,14 @@
               "schema": {
                 "properties": {
                   "file": {
-                    "$ref": "#/components/schemas/FormDataBodyPart"
+                    "description": "XLIFF localization file (.xlf)",
+                    "format": "binary",
+                    "type": "string"
                   }
                 },
+                "required": [
+                  "file"
+                ],
                 "type": "object"
               }
             }
@@ -1566,67 +1571,6 @@
   },
   "components": {
     "schemas": {
-      "BodyPart": {
-        "properties": {
-          "contentDisposition": {
-            "$ref": "#/components/schemas/ContentDisposition"
-          },
-          "entity": {
-            "type": "object"
-          },
-          "headers": {
-            "additionalProperties": {
-              "items": {
-                "type": "string"
-              },
-              "type": "array"
-            },
-            "type": "object"
-          },
-          "mediaType": {
-            "properties": {
-              "parameters": {
-                "additionalProperties": {
-                  "type": "string"
-                },
-                "type": "object"
-              },
-              "subtype": {
-                "type": "string"
-              },
-              "type": {
-                "type": "string"
-              },
-              "wildcardSubtype": {
-                "type": "boolean"
-              },
-              "wildcardType": {
-                "type": "boolean"
-              }
-            },
-            "type": "object"
-          },
-          "messageBodyWorkers": {
-            "$ref": "#/components/schemas/MessageBodyWorkers"
-          },
-          "parameterizedHeaders": {
-            "additionalProperties": {
-              "items": {
-                "$ref": "#/components/schemas/ParameterizedHeader"
-              },
-              "type": "array"
-            },
-            "type": "object"
-          },
-          "parent": {
-            "$ref": "#/components/schemas/MultiPart"
-          },
-          "providers": {
-            "type": "object"
-          }
-        },
-        "type": "object"
-      },
       "ConfigurationStatus": {
         "properties": {
           "details": {
@@ -1641,39 +1585,6 @@
               "WARNING",
               "ERROR"
             ],
-            "type": "string"
-          }
-        },
-        "type": "object"
-      },
-      "ContentDisposition": {
-        "properties": {
-          "creationDate": {
-            "format": "date-time",
-            "type": "string"
-          },
-          "fileName": {
-            "type": "string"
-          },
-          "modificationDate": {
-            "format": "date-time",
-            "type": "string"
-          },
-          "parameters": {
-            "additionalProperties": {
-              "type": "string"
-            },
-            "type": "object"
-          },
-          "readDate": {
-            "format": "date-time",
-            "type": "string"
-          },
-          "size": {
-            "format": "int64",
-            "type": "integer"
-          },
-          "type": {
             "type": "string"
           }
         },
@@ -2023,185 +1934,6 @@
         },
         "type": "object"
       },
-      "FormDataBodyPart": {
-        "properties": {
-          "contentDisposition": {
-            "$ref": "#/components/schemas/ContentDisposition"
-          },
-          "entity": {
-            "type": "object"
-          },
-          "formDataContentDisposition": {
-            "$ref": "#/components/schemas/FormDataContentDisposition"
-          },
-          "headers": {
-            "additionalProperties": {
-              "items": {
-                "type": "string"
-              },
-              "type": "array"
-            },
-            "type": "object"
-          },
-          "mediaType": {
-            "properties": {
-              "parameters": {
-                "additionalProperties": {
-                  "type": "string"
-                },
-                "type": "object"
-              },
-              "subtype": {
-                "type": "string"
-              },
-              "type": {
-                "type": "string"
-              },
-              "wildcardSubtype": {
-                "type": "boolean"
-              },
-              "wildcardType": {
-                "type": "boolean"
-              }
-            },
-            "type": "object"
-          },
-          "messageBodyWorkers": {
-            "$ref": "#/components/schemas/MessageBodyWorkers"
-          },
-          "name": {
-            "type": "string"
-          },
-          "parameterizedHeaders": {
-            "additionalProperties": {
-              "items": {
-                "$ref": "#/components/schemas/ParameterizedHeader"
-              },
-              "type": "array"
-            },
-            "type": "object"
-          },
-          "parent": {
-            "$ref": "#/components/schemas/MultiPart"
-          },
-          "providers": {
-            "type": "object"
-          },
-          "simple": {
-            "type": "boolean"
-          },
-          "value": {
-            "type": "string"
-          }
-        },
-        "type": "object"
-      },
-      "FormDataContentDisposition": {
-        "properties": {
-          "creationDate": {
-            "format": "date-time",
-            "type": "string"
-          },
-          "fileName": {
-            "type": "string"
-          },
-          "modificationDate": {
-            "format": "date-time",
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
-          },
-          "parameters": {
-            "additionalProperties": {
-              "type": "string"
-            },
-            "type": "object"
-          },
-          "readDate": {
-            "format": "date-time",
-            "type": "string"
-          },
-          "size": {
-            "format": "int64",
-            "type": "integer"
-          },
-          "type": {
-            "type": "string"
-          }
-        },
-        "type": "object"
-      },
-      "MessageBodyWorkers": {
-        "type": "object"
-      },
-      "MultiPart": {
-        "properties": {
-          "bodyParts": {
-            "items": {
-              "$ref": "#/components/schemas/BodyPart"
-            },
-            "type": "array"
-          },
-          "contentDisposition": {
-            "$ref": "#/components/schemas/ContentDisposition"
-          },
-          "entity": {
-            "type": "object"
-          },
-          "headers": {
-            "additionalProperties": {
-              "items": {
-                "type": "string"
-              },
-              "type": "array"
-            },
-            "type": "object"
-          },
-          "mediaType": {
-            "properties": {
-              "parameters": {
-                "additionalProperties": {
-                  "type": "string"
-                },
-                "type": "object"
-              },
-              "subtype": {
-                "type": "string"
-              },
-              "type": {
-                "type": "string"
-              },
-              "wildcardSubtype": {
-                "type": "boolean"
-              },
-              "wildcardType": {
-                "type": "boolean"
-              }
-            },
-            "type": "object"
-          },
-          "messageBodyWorkers": {
-            "$ref": "#/components/schemas/MessageBodyWorkers"
-          },
-          "parameterizedHeaders": {
-            "additionalProperties": {
-              "items": {
-                "$ref": "#/components/schemas/ParameterizedHeader"
-              },
-              "type": "array"
-            },
-            "type": "object"
-          },
-          "parent": {
-            "$ref": "#/components/schemas/MultiPart"
-          },
-          "providers": {
-            "type": "object"
-          }
-        },
-        "type": "object"
-      },
       "PageInfo": {
         "description": "Information about a specific page that failed validation, including its number and content.",
         "properties": {
@@ -2213,20 +1945,6 @@
             "description": "The number of the page that failed validation",
             "format": "int32",
             "type": "integer"
-          }
-        },
-        "type": "object"
-      },
-      "ParameterizedHeader": {
-        "properties": {
-          "parameters": {
-            "additionalProperties": {
-              "type": "string"
-            },
-            "type": "object"
-          },
-          "value": {
-            "type": "string"
           }
         },
         "type": "object"

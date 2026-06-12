@@ -5,9 +5,9 @@ import com.polarion.core.util.logging.Logger;
 import com.polarion.platform.persistence.UnresolvableObjectException;
 import com.polarion.platform.persistence.WrapperException;
 
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.ext.ExceptionMapper;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.ext.ExceptionMapper;
 
 public class WrapperExceptionMapper implements ExceptionMapper<WrapperException> {
     private final Logger logger = Logger.getLogger(WrapperExceptionMapper.class);

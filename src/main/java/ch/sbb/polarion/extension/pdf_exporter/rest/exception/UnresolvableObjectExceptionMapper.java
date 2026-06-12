@@ -4,9 +4,9 @@ import ch.sbb.polarion.extension.generic.rest.model.ErrorEntity;
 import com.polarion.core.util.logging.Logger;
 import com.polarion.platform.persistence.UnresolvableObjectException;
 
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.ext.ExceptionMapper;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.ext.ExceptionMapper;
 
 public class UnresolvableObjectExceptionMapper implements ExceptionMapper<UnresolvableObjectException> {
     private final Logger logger = Logger.getLogger(UnresolvableObjectExceptionMapper.class);
