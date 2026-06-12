@@ -201,12 +201,6 @@
             <groupId>org.apache.pdfbox</groupId>
             <artifactId>pdfbox</artifactId>
             <version>${pdfbox.version}</version>
-            <exclusions> <!-- pdfbox 3.0.0 has scope test for junit, pdfbox 3.0.1 has no such scope, that's why this exclusion has been added -->
-                <exclusion>
-                    <groupId>org.junit.jupiter</groupId>
-                    <artifactId>junit-jupiter</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
         <dependency>
             <groupId>net.sf.okapi.lib</groupId>
