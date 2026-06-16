@@ -1,5 +1,21 @@
 # Changelog
 
+## [13.0.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v12.5.0...v13.0.0) (2026-06-16)
+
+
+### ⚠ BREAKING CHANGES
+
+* Polarion 2606 support ([#828](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/828))
+
+### Features
+
+* Polarion 2606 support ([#828](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/828)) ([13195c0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/13195c00e77a0d94ce3123c4bb6c1396a0526cba)), closes [#824](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/824)
+
+
+### Bug Fixes
+
+* **deps:** update flying-saucer.version to v10.3.0 ([#834](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/834)) ([4a645ae](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/4a645aee1f9f43108ceb917e11ebcd36a9db2e7f))
+
 ## [12.5.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v12.4.2...v12.5.0) (2026-06-11)
 
 
