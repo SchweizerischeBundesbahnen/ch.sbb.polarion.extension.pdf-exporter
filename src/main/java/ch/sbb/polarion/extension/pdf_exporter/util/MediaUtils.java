@@ -59,12 +59,14 @@ public class MediaUtils {
     private static final String ALLOWED_FOLDER_FOR_BINARY_FILES = "/default/";
 
     /**
-     * File extensions for resources that Polarion can render as images.
-     * Includes native image formats and convertible diagram formats (e.g. vsdx).
-     * For these, the 'thumbnail' parameter is stripped to fetch the full-size image.
+     * File extensions for attachments that cannot be rendered as images (e.g. spreadsheets, documents).
+     * For these, the 'thumbnail' query parameter is kept so Polarion returns an icon preview.
+     * All other extensions (images, diagrams, unknown formats) have 'thumbnail' stripped to fetch full content.
      */
-    private static final Set<String> RENDERABLE_EXTENSIONS = Set.of(
-            "png", "jpg", "jpeg", "gif", "bmp", "svg", "webp", "tiff", "tif", "ico", "cur", "vsdx"
+    private static final Set<String> NON_RENDERABLE_EXTENSIONS = Set.of(
+            "xlsx", "xls", "docx", "doc", "pptx", "ppt", "pdf", "zip", "rar", "7z",
+            "csv", "xml", "json", "yaml", "yml",
+            "jar", "war", "ear", "tar", "gz"
     );
 
     private static final Map<String, String> CUSTOM_MIME_TYPES_MAP = Map.of(
@@ -279,9 +281,9 @@ public class MediaUtils {
             if (MediaUtils.isDataUrl(url)) {
                 return null;
             }
-            // For renderable resources (images, diagrams like .vsdx), strip 'thumbnail' to get full-size content.
             // For non-renderable attachments (e.g. .xlsx, .docx), keep 'thumbnail' so Polarion returns an icon preview.
-            String resourceUrl = isRenderableResourceUrl(url) ? removeQueryParameter(url, THUMBNAIL_PARAMETER) : url;
+            // For everything else (images, diagrams, unknown formats), strip 'thumbnail' to get full-size content.
+            String resourceUrl = isNonRenderableResourceUrl(url) ? url : removeQueryParameter(url, THUMBNAIL_PARAMETER);
             String base64String = fileResourceProvider.getResourceAsBase64String(resourceUrl);
             return base64String == null ? null : engine.group().replace(url, base64String);
         };
@@ -293,17 +295,17 @@ public class MediaUtils {
     }
 
     /**
-     * Checks whether the URL points to a resource that Polarion can render as an image,
-     * based on its file extension.
+     * Checks whether the URL points to a non-renderable attachment (e.g. spreadsheet, document)
+     * that cannot be displayed as an image, based on its file extension.
      */
     @VisibleForTesting
-    static boolean isRenderableResourceUrl(@Nullable String url) {
+    static boolean isNonRenderableResourceUrl(@Nullable String url) {
         if (url == null || url.isEmpty()) {
             return false;
         }
         return RegexMatcher.get(RESOURCE_EXTENSION_REGEX)
                 .findFirst(url, engine -> engine.group("extension"))
-                .map(ext -> RENDERABLE_EXTENSIONS.contains(ext.toLowerCase()))
+                .map(ext -> NON_RENDERABLE_EXTENSIONS.contains(ext.toLowerCase()))
                 .orElse(false);
     }
 

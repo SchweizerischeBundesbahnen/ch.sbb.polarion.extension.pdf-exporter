@@ -150,21 +150,23 @@ class MediaUtilsTest {
     }
 
     @Test
-    void isRenderableResourceUrlTest() {
-        // Image formats
-        assertTrue(MediaUtils.isRenderableResourceUrl("http://localhost/polarion/wi-attachment/project/WI-1/photo.png"));
-        assertTrue(MediaUtils.isRenderableResourceUrl("http://localhost/polarion/wi-attachment/project/WI-1/photo.jpg?revision=1"));
-        assertTrue(MediaUtils.isRenderableResourceUrl("http://localhost/polarion/wi-attachment/project/WI-1/tw.svg?revision=123&view=true"));
-        assertTrue(MediaUtils.isRenderableResourceUrl("/polarion/icons/default/enums/req_status_draft.gif?buildId=123"));
-        // Convertible diagram formats
-        assertTrue(MediaUtils.isRenderableResourceUrl("http://localhost/polarion/wi-attachment/project/WI-1/diagram.vsdx?revision=2&thumbnail=true"));
+    void isNonRenderableResourceUrlTest() {
         // Non-renderable attachments
-        assertFalse(MediaUtils.isRenderableResourceUrl("http://localhost/polarion/wi-attachment/project/WI-1/Book1.xlsx?thumbnail=true"));
-        assertFalse(MediaUtils.isRenderableResourceUrl("http://localhost/polarion/wi-attachment/project/WI-1/doc.docx?thumbnail=true"));
-        assertFalse(MediaUtils.isRenderableResourceUrl("http://localhost/polarion/wi-attachment/project/WI-1/file.pdf?thumbnail=true"));
+        assertTrue(MediaUtils.isNonRenderableResourceUrl("http://localhost/polarion/wi-attachment/project/WI-1/Book1.xlsx?thumbnail=true"));
+        assertTrue(MediaUtils.isNonRenderableResourceUrl("http://localhost/polarion/wi-attachment/project/WI-1/doc.docx?thumbnail=true"));
+        assertTrue(MediaUtils.isNonRenderableResourceUrl("http://localhost/polarion/wi-attachment/project/WI-1/file.pdf?thumbnail=true"));
+        assertTrue(MediaUtils.isNonRenderableResourceUrl("http://localhost/polarion/wi-attachment/project/WI-1/archive.zip?thumbnail=true"));
+        // Image formats — renderable
+        assertFalse(MediaUtils.isNonRenderableResourceUrl("http://localhost/polarion/wi-attachment/project/WI-1/photo.png"));
+        assertFalse(MediaUtils.isNonRenderableResourceUrl("http://localhost/polarion/wi-attachment/project/WI-1/tw.svg?revision=123&view=true"));
+        assertFalse(MediaUtils.isNonRenderableResourceUrl("/polarion/icons/default/enums/req_status_draft.gif?buildId=123"));
+        // Convertible diagram formats — renderable
+        assertFalse(MediaUtils.isNonRenderableResourceUrl("http://localhost/polarion/wi-attachment/project/WI-1/diagram.vsdx?revision=2&thumbnail=true"));
+        // Unknown formats default to renderable (thumbnail stripped) to avoid breaking new image formats
+        assertFalse(MediaUtils.isNonRenderableResourceUrl("http://localhost/polarion/wi-attachment/project/WI-1/photo.avif"));
         // Edge cases
-        assertFalse(MediaUtils.isRenderableResourceUrl(null));
-        assertFalse(MediaUtils.isRenderableResourceUrl(""));
+        assertFalse(MediaUtils.isNonRenderableResourceUrl(null));
+        assertFalse(MediaUtils.isNonRenderableResourceUrl(""));
     }
 
     private void fillImageWithColor(BufferedImage image, Color color) {
