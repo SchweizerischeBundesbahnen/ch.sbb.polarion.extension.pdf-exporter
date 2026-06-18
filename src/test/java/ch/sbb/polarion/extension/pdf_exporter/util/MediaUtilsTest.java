@@ -149,6 +149,24 @@ class MediaUtilsTest {
         assertEquals(expected, MediaUtils.removeQueryParameter(input, THUMBNAIL_PARAMETER));
     }
 
+    @Test
+    void isRenderableResourceUrlTest() {
+        // Image formats
+        assertTrue(MediaUtils.isRenderableResourceUrl("http://localhost/polarion/wi-attachment/project/WI-1/photo.png"));
+        assertTrue(MediaUtils.isRenderableResourceUrl("http://localhost/polarion/wi-attachment/project/WI-1/photo.jpg?revision=1"));
+        assertTrue(MediaUtils.isRenderableResourceUrl("http://localhost/polarion/wi-attachment/project/WI-1/tw.svg?revision=123&view=true"));
+        assertTrue(MediaUtils.isRenderableResourceUrl("/polarion/icons/default/enums/req_status_draft.gif?buildId=123"));
+        // Convertible diagram formats
+        assertTrue(MediaUtils.isRenderableResourceUrl("http://localhost/polarion/wi-attachment/project/WI-1/diagram.vsdx?revision=2&thumbnail=true"));
+        // Non-renderable attachments
+        assertFalse(MediaUtils.isRenderableResourceUrl("http://localhost/polarion/wi-attachment/project/WI-1/Book1.xlsx?thumbnail=true"));
+        assertFalse(MediaUtils.isRenderableResourceUrl("http://localhost/polarion/wi-attachment/project/WI-1/doc.docx?thumbnail=true"));
+        assertFalse(MediaUtils.isRenderableResourceUrl("http://localhost/polarion/wi-attachment/project/WI-1/file.pdf?thumbnail=true"));
+        // Edge cases
+        assertFalse(MediaUtils.isRenderableResourceUrl(null));
+        assertFalse(MediaUtils.isRenderableResourceUrl(""));
+    }
+
     private void fillImageWithColor(BufferedImage image, Color color) {
         Graphics2D g2d = image.createGraphics();
         g2d.setColor(color);
