@@ -13,6 +13,7 @@ import com.polarion.subterra.base.location.ILocation;
 import com.polarion.subterra.base.location.Location;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.text.StringEscapeUtils;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.io.RandomAccessReadBuffer;
@@ -37,6 +38,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -49,7 +51,6 @@ import static ch.sbb.polarion.extension.pdf_exporter.util.TikaMimeTypeResolver.P
 public class MediaUtils {
     public static final String IMG_SRC_REGEX = "<img[^<>]*src=(\"|')(?<url>[^(\"|')]*)(\"|')";
     public static final String URL_REGEX = "url\\(\\s*([\"'])?(?<url>.*?)\\1?\\s*\\)";
-    public static final String RESOURCE_EXTENSION_REGEX = "^.*\\.(?<extension>[a-zA-Z\\d]{3,4})(?:[?&#]|$)";
     public static final String DATA_URL_PREFIX = "data:";
     public static final String THUMBNAIL_PARAMETER = "thumbnail";
     private static final Logger logger = Logger.getLogger(MediaUtils.class);
@@ -59,14 +60,15 @@ public class MediaUtils {
     private static final String ALLOWED_FOLDER_FOR_BINARY_FILES = "/default/";
 
     /**
-     * File extensions for attachments that cannot be rendered as images (e.g. spreadsheets, documents).
-     * For these, the 'thumbnail' query parameter is kept so Polarion returns an icon preview.
-     * All other extensions (images, diagrams, unknown formats) have 'thumbnail' stripped to fetch full content.
+     * File extensions the exporter can embed as a full-size image: raster formats, SVG and
+     * convertible diagram formats (e.g. Visio). For these the 'thumbnail' query parameter is
+     * stripped so Polarion returns the full-size resource instead of an icon.
+     * Everything else (spreadsheets, documents, archives, unknown formats, ...) keeps 'thumbnail'
+     * so Polarion returns a small icon preview that can be shown inside an &lt;img&gt; tag.
      */
-    private static final Set<String> NON_RENDERABLE_EXTENSIONS = Set.of(
-            "xlsx", "xls", "docx", "doc", "pptx", "ppt", "pdf", "zip", "rar", "7z",
-            "csv", "xml", "json", "yaml", "yml",
-            "jar", "war", "ear", "tar", "gz"
+    private static final Set<String> RENDERABLE_IMAGE_EXTENSIONS = Set.of(
+            "png", "jpg", "jpeg", "gif", "bmp", "svg", "webp", "avif", "ico", "cur", "tif", "tiff",
+            "vsdx"
     );
 
     private static final Map<String, String> CUSTOM_MIME_TYPES_MAP = Map.of(
@@ -281,9 +283,9 @@ public class MediaUtils {
             if (MediaUtils.isDataUrl(url)) {
                 return null;
             }
-            // For non-renderable attachments (e.g. .xlsx, .docx), keep 'thumbnail' so Polarion returns an icon preview.
-            // For everything else (images, diagrams, unknown formats), strip 'thumbnail' to get full-size content.
-            String resourceUrl = isNonRenderableResourceUrl(url) ? url : removeQueryParameter(url, THUMBNAIL_PARAMETER);
+            // For renderable images (e.g. .png, .svg) strip 'thumbnail' to fetch full-size content.
+            // For everything else (spreadsheets, documents, unknown formats) keep 'thumbnail' so Polarion returns an icon preview.
+            String resourceUrl = isRenderableImageUrl(url) ? removeQueryParameter(url, THUMBNAIL_PARAMETER) : url;
             String base64String = fileResourceProvider.getResourceAsBase64String(resourceUrl);
             return base64String == null ? null : engine.group().replace(url, base64String);
         };
@@ -295,18 +297,26 @@ public class MediaUtils {
     }
 
     /**
-     * Checks whether the URL points to a non-renderable attachment (e.g. spreadsheet, document)
-     * that cannot be displayed as an image, based on its file extension.
+     * Checks whether the URL points to a resource the exporter can embed as a full-size image
+     * (raster image, SVG or convertible diagram), based on its file extension.
      */
     @VisibleForTesting
-    static boolean isNonRenderableResourceUrl(@Nullable String url) {
-        if (url == null || url.isEmpty()) {
-            return false;
+    static boolean isRenderableImageUrl(@Nullable String url) {
+        return RENDERABLE_IMAGE_EXTENSIONS.contains(getResourceExtension(url));
+    }
+
+    /**
+     * Extracts the lowercase file extension from a URL, ignoring any query string or fragment.
+     * Returns an empty string when the URL has no extension.
+     */
+    @VisibleForTesting
+    static String getResourceExtension(@Nullable String url) {
+        if (url == null) {
+            return "";
         }
-        return RegexMatcher.get(RESOURCE_EXTENSION_REGEX)
-                .findFirst(url, engine -> engine.group("extension"))
-                .map(ext -> NON_RENDERABLE_EXTENSIONS.contains(ext.toLowerCase()))
-                .orElse(false);
+        // strip the query string and fragment, then let Commons IO extract the extension
+        String path = url.split("[?#]", 2)[0];
+        return FilenameUtils.getExtension(path).toLowerCase(Locale.ROOT);
     }
 
     /**
@@ -363,7 +373,7 @@ public class MediaUtils {
 
         // there are several ways to recognize mime type, so we're going to try them all until positive result
         List<BiFunction<String, byte[], String>> mimeSources = Arrays.asList(
-                MediaUtils::getMimeTypeUsingCustomRegex,
+                MediaUtils::getMimeTypeUsingCustomMap,
                 MediaUtils::getMimeTypeUsingTikaByResourceName,
                 MediaUtils::getMimeTypeUsingTikaByContent,
                 MediaUtils::getMimeTypeUsingFilesProbe,
@@ -384,8 +394,8 @@ public class MediaUtils {
         return null;
     }
 
-    private String getMimeTypeUsingCustomRegex(@NotNull String resource, byte[] resourceBytes) {
-        return CUSTOM_MIME_TYPES_MAP.get(RegexMatcher.get(RESOURCE_EXTENSION_REGEX).findFirst(resource, engine -> engine.group("extension")).map(String::toLowerCase).orElse(""));
+    private String getMimeTypeUsingCustomMap(@NotNull String resource, byte[] resourceBytes) {
+        return CUSTOM_MIME_TYPES_MAP.get(getResourceExtension(resource));
     }
 
     @SneakyThrows
