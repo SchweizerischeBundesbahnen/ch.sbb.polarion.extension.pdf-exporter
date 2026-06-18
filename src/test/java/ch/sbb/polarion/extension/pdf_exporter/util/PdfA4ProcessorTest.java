@@ -58,6 +58,62 @@ class PdfA4ProcessorTest {
 
     @Test
     @SneakyThrows
+    void testProcessPdfA4_preservesPageResourcesAndOutputIntent() {
+        // Regression test for the in-place fix: the previous implementation rebuilt the document via
+        // new PDDocument()/addPage(), which corrupted page resource dictionaries and dropped the OutputIntent,
+        // making veraPDF reject the result under ISO 19005-4:2020 clause 6.2.2. In-place processing must keep both.
+        byte[] pdfBytes;
+        try (PDDocument doc = new PDDocument();
+             ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+
+            // A page whose /Resources enumerates named resources (the kind the old transplant lost).
+            org.apache.pdfbox.pdmodel.PDPage page = new org.apache.pdfbox.pdmodel.PDPage();
+            COSDictionary resources = new COSDictionary();
+            COSDictionary extGStates = new COSDictionary();
+            extGStates.setItem(COSName.getPDFName("a1"), new COSDictionary());
+            resources.setItem(COSName.getPDFName("ExtGState"), extGStates);
+            COSDictionary fonts = new COSDictionary();
+            fonts.setItem(COSName.getPDFName("F0"), new COSDictionary());
+            resources.setItem(COSName.getPDFName("Font"), fonts);
+            page.getCOSObject().setItem(COSName.RESOURCES, resources);
+            doc.addPage(page);
+
+            // A PDF/A OutputIntent that must survive processing.
+            COSDictionary catalog = doc.getDocumentCatalog().getCOSObject();
+            COSDictionary outputIntent = new COSDictionary();
+            outputIntent.setItem(COSName.S, COSName.getPDFName("GTS_PDFA1"));
+            outputIntent.setString(COSName.OUTPUT_CONDITION_IDENTIFIER, "sRGB");
+            COSArray outputIntents = new COSArray();
+            outputIntents.add(outputIntent);
+            catalog.setItem(COSName.OUTPUT_INTENTS, outputIntents);
+
+            PDMetadata metadata = new PDMetadata(doc);
+            metadata.importXMPMetadata(createPdfA4Metadata(false, false).getBytes(StandardCharsets.UTF_8));
+            doc.getDocumentCatalog().setMetadata(metadata);
+
+            doc.save(baos);
+            pdfBytes = baos.toByteArray();
+        }
+
+        byte[] result = PdfA4Processor.processPdfA4(pdfBytes, null);
+
+        try (PDDocument doc = Loader.loadPDF(result)) {
+            // OutputIntent preserved
+            assertThat(doc.getDocumentCatalog().getCOSObject().containsKey(COSName.OUTPUT_INTENTS)).isTrue();
+
+            // Page resource dictionary and its named entries preserved
+            COSDictionary resources = doc.getPage(0).getResources().getCOSObject();
+            COSDictionary extGStates = (COSDictionary) resources.getDictionaryObject(COSName.getPDFName("ExtGState"));
+            assertThat(extGStates).isNotNull();
+            assertThat(extGStates.containsKey(COSName.getPDFName("a1"))).isTrue();
+            COSDictionary fonts = (COSDictionary) resources.getDictionaryObject(COSName.getPDFName("Font"));
+            assertThat(fonts).isNotNull();
+            assertThat(fonts.containsKey(COSName.getPDFName("F0"))).isTrue();
+        }
+    }
+
+    @Test
+    @SneakyThrows
     void testFixDocumentInformation_noPieceInfo() {
         // Create PDF without PieceInfo
         try (PDDocument doc = new PDDocument()) {

@@ -66,8 +66,8 @@ public class PdfA4Processor {
     /**
      * Processes a PDF/A-4 document to fix compliance issues according to ISO 19005-4:2020.
      * <p>
-     * This method creates a new PDF document with version 2.0 and copies all content from the original,
-     * as PDFBox does not reliably update the PDF version in the file header when using save().
+     * This method edits the loaded document in place (see the class-level documentation) and patches the PDF 2.0
+     * file header via {@link #fixPdfHeader(byte[])}, as PDFBox 3.x does not reliably write it when using save().
      *
      * @param pdfBytes the original PDF content
      * @return the processed PDF content with compliance fixes applied
@@ -80,8 +80,8 @@ public class PdfA4Processor {
     /**
      * Processes a PDF/A-4 document to fix compliance issues according to ISO 19005-4:2020.
      * <p>
-     * This method creates a new PDF document with version 2.0 and copies all content from the original,
-     * as PDFBox does not reliably update the PDF version in the file header when using save().
+     * This method edits the loaded document in place (see the class-level documentation) and patches the PDF 2.0
+     * file header via {@link #fixPdfHeader(byte[])}, as PDFBox 3.x does not reliably write it when using save().
      *
      * @param pdfBytes    the original PDF content
      * @param conformance the conformance level: "E" for engineering, "F" for embedded files, or null for basic (4u)
