@@ -21,6 +21,7 @@ import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.rendering.PDFRenderer;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.VisibleForTesting;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
@@ -38,6 +39,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.BiFunction;
 
 import static ch.sbb.polarion.extension.pdf_exporter.util.TikaMimeTypeResolver.PARAM_RESULT;
@@ -55,6 +57,17 @@ public class MediaUtils {
     private static final int PDF_TO_PNG_DPI = 300;
     private static final String IMG_FORMAT_PNG = "png";
     private static final String ALLOWED_FOLDER_FOR_BINARY_FILES = "/default/";
+
+    /**
+     * File extensions for attachments that cannot be rendered as images (e.g. spreadsheets, documents).
+     * For these, the 'thumbnail' query parameter is kept so Polarion returns an icon preview.
+     * All other extensions (images, diagrams, unknown formats) have 'thumbnail' stripped to fetch full content.
+     */
+    private static final Set<String> NON_RENDERABLE_EXTENSIONS = Set.of(
+            "xlsx", "xls", "docx", "doc", "pptx", "ppt", "pdf", "zip", "rar", "7z",
+            "csv", "xml", "json", "yaml", "yml",
+            "jar", "war", "ear", "tar", "gz"
+    );
 
     private static final Map<String, String> CUSTOM_MIME_TYPES_MAP = Map.of(
             "cur", "image/x-icon",
@@ -265,7 +278,13 @@ public class MediaUtils {
     public String inlineBase64Resources(String content, FileResourceProvider fileResourceProvider) {
         RegexMatcher.IReplacementCalculator dataReplacement = engine -> {
             String url = engine.group("url");
-            String base64String = MediaUtils.isDataUrl(url) ? url : fileResourceProvider.getResourceAsBase64String(removeQueryParameter(url, THUMBNAIL_PARAMETER));
+            if (MediaUtils.isDataUrl(url)) {
+                return null;
+            }
+            // For non-renderable attachments (e.g. .xlsx, .docx), keep 'thumbnail' so Polarion returns an icon preview.
+            // For everything else (images, diagrams, unknown formats), strip 'thumbnail' to get full-size content.
+            String resourceUrl = isNonRenderableResourceUrl(url) ? url : removeQueryParameter(url, THUMBNAIL_PARAMETER);
+            String base64String = fileResourceProvider.getResourceAsBase64String(resourceUrl);
             return base64String == null ? null : engine.group().replace(url, base64String);
         };
 
@@ -273,6 +292,21 @@ public class MediaUtils {
         String intermediateResult = RegexMatcher.get(IMG_SRC_REGEX).replace(content, dataReplacement);
         // replace CSS parameters like background: src('/polarion/...
         return RegexMatcher.get(URL_REGEX).useJavaUtil().replace(intermediateResult, dataReplacement);
+    }
+
+    /**
+     * Checks whether the URL points to a non-renderable attachment (e.g. spreadsheet, document)
+     * that cannot be displayed as an image, based on its file extension.
+     */
+    @VisibleForTesting
+    static boolean isNonRenderableResourceUrl(@Nullable String url) {
+        if (url == null || url.isEmpty()) {
+            return false;
+        }
+        return RegexMatcher.get(RESOURCE_EXTENSION_REGEX)
+                .findFirst(url, engine -> engine.group("extension"))
+                .map(ext -> NON_RENDERABLE_EXTENSIONS.contains(ext.toLowerCase()))
+                .orElse(false);
     }
 
     /**
