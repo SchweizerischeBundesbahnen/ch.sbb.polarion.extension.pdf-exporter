@@ -513,6 +513,7 @@ public class HtmlProcessor {
     }
 
     @VisibleForTesting
+    @SuppressWarnings("java:S135") //multiple continues for early-exit guard clauses
     void adjustImageAlignment(@NotNull Document document) {
         Elements images = document.select(HtmlTag.IMG);
         for (Element image : images) {
