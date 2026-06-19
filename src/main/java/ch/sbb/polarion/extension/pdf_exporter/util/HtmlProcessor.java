@@ -531,25 +531,26 @@ public class HtmlProcessor {
                     continue;
                 }
 
-                Element wrapper = new Element(HtmlTag.DIV);
-                String marginValue = CssUtils.getPropertyValue(cssStyles, CssProp.MARGIN);
-                if (RIGHT_ALIGNMENT_MARGIN.equals(marginValue)) {
-                    wrapper.attr(HtmlTagAttr.STYLE, String.format("%s: %s;", CssProp.TEXT_ALIGN, CssProp.TEXT_ALIGN_RIGHT_VALUE));
-                } else {
-                    wrapper.attr(HtmlTagAttr.STYLE, String.format("%s: %s;", CssProp.TEXT_ALIGN, CssProp.TEXT_ALIGN_CENTER_VALUE));
-                }
-
-                Element previousSibling = image.previousElementSibling();
-                if (previousSibling != null) {
-                    previousSibling.after(wrapper);
-                } else {
-                    Element parent = image.parent();
-                    Objects.requireNonNullElse(parent, document.body()).prependChild(wrapper);
-                }
-                image.remove();
-                wrapper.appendChild(image);
+                wrapImageWithAlignment(document, image, cssStyles);
             }
         }
+    }
+
+    private void wrapImageWithAlignment(@NotNull Document document, @NotNull Element image, @NotNull CSSDeclarationList cssStyles) {
+        String marginValue = CssUtils.getPropertyValue(cssStyles, CssProp.MARGIN);
+        String alignment = RIGHT_ALIGNMENT_MARGIN.equals(marginValue) ? CssProp.TEXT_ALIGN_RIGHT_VALUE : CssProp.TEXT_ALIGN_CENTER_VALUE;
+
+        Element wrapper = new Element(HtmlTag.DIV);
+        wrapper.attr(HtmlTagAttr.STYLE, String.format("%s: %s;", CssProp.TEXT_ALIGN, alignment));
+
+        Element previousSibling = image.previousElementSibling();
+        if (previousSibling != null) {
+            previousSibling.after(wrapper);
+        } else {
+            Objects.requireNonNullElse(image.parent(), document.body()).prependChild(wrapper);
+        }
+        image.remove();
+        wrapper.appendChild(image);
     }
 
     @VisibleForTesting
