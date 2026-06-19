@@ -1,6 +1,8 @@
 package ch.sbb.polarion.extension.pdf_exporter.util;
 
 import ch.sbb.polarion.extension.generic.test_extensions.BundleJarsPrioritizingRunnableMockExtension;
+import ch.sbb.polarion.extension.pdf_exporter.configuration.PdfExporterExtensionConfigurationExtension;
+import ch.sbb.polarion.extension.pdf_exporter.properties.PdfExporterExtensionConfiguration;
 import lombok.SneakyThrows;
 import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.Test;
@@ -12,11 +14,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.util.List;
+import java.util.Set;
 
 import static ch.sbb.polarion.extension.pdf_exporter.util.MediaUtils.THUMBNAIL_PARAMETER;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.when;
 
-@ExtendWith({MockitoExtension.class, BundleJarsPrioritizingRunnableMockExtension.class})
+@ExtendWith({MockitoExtension.class, BundleJarsPrioritizingRunnableMockExtension.class, PdfExporterExtensionConfigurationExtension.class})
 class MediaUtilsTest {
 
     @Test
@@ -151,6 +155,8 @@ class MediaUtilsTest {
 
     @Test
     void isRenderableImageUrlTest() {
+        when(PdfExporterExtensionConfiguration.getInstance().getRenderableImageExtensions())
+                .thenReturn(Set.of("png", "jpg", "jpeg", "gif", "bmp", "svg", "webp", "avif", "ico", "cur", "tif", "tiff", "vsdx"));
         // Image formats — renderable (thumbnail stripped)
         assertTrue(MediaUtils.isRenderableImageUrl("http://localhost/polarion/wi-attachment/project/WI-1/photo.png"));
         assertTrue(MediaUtils.isRenderableImageUrl("http://localhost/polarion/wi-attachment/project/WI-1/tw.svg?revision=123&view=true"));
