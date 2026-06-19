@@ -525,6 +525,12 @@ public class HtmlProcessor {
                     continue;
                 }
 
+                // Formula images already have correct block/centering styles from Polarion,
+                // wrapping them in an extra <div> disrupts the text flow around them
+                if (image.hasClass("polarion-rte-formula")) {
+                    continue;
+                }
+
                 Element wrapper = new Element(HtmlTag.DIV);
                 String marginValue = CssUtils.getPropertyValue(cssStyles, CssProp.MARGIN);
                 if (RIGHT_ALIGNMENT_MARGIN.equals(marginValue)) {
