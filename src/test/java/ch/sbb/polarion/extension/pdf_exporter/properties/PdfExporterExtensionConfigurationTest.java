@@ -6,10 +6,14 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Set;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -83,31 +87,20 @@ class PdfExporterExtensionConfigurationTest {
         assertEquals(PdfExporterExtensionConfiguration.RENDERABLE_IMAGE_EXTENSIONS_DEFAULT_VALUE, extensions);
     }
 
-    @Test
-    void getRenderableImageExtensionsReturnsCustomSet() {
-        when(systemValueReader.readString(anyString(), anyString())).thenReturn("png, svg, webp");
-
-        Set<String> extensions = configuration.getRenderableImageExtensions();
-
-        assertEquals(Set.of("png", "svg", "webp"), extensions);
+    static Stream<Arguments> renderableImageExtensionsParsingProvider() {
+        return Stream.of(
+                Arguments.of("png, svg, webp", Set.of("png", "svg", "webp")),
+                Arguments.of("  PNG ,  SVG  , JpEg ", Set.of("png", "svg", "jpeg")),
+                Arguments.of("png,,svg, ,jpg", Set.of("png", "svg", "jpg"))
+        );
     }
 
-    @Test
-    void getRenderableImageExtensionsTrimsAndLowercases() {
-        when(systemValueReader.readString(anyString(), anyString())).thenReturn("  PNG ,  SVG  , JpEg ");
+    @ParameterizedTest
+    @MethodSource("renderableImageExtensionsParsingProvider")
+    void getRenderableImageExtensionsParsesInput(String input, Set<String> expected) {
+        when(systemValueReader.readString(anyString(), anyString())).thenReturn(input);
 
-        Set<String> extensions = configuration.getRenderableImageExtensions();
-
-        assertEquals(Set.of("png", "svg", "jpeg"), extensions);
-    }
-
-    @Test
-    void getRenderableImageExtensionsIgnoresEmptyEntries() {
-        when(systemValueReader.readString(anyString(), anyString())).thenReturn("png,,svg, ,jpg");
-
-        Set<String> extensions = configuration.getRenderableImageExtensions();
-
-        assertEquals(Set.of("png", "svg", "jpg"), extensions);
+        assertEquals(expected, configuration.getRenderableImageExtensions());
     }
 
     @Test

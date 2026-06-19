@@ -32,7 +32,7 @@ public class PdfExporterExtensionConfiguration extends ExtensionConfiguration {
 
     public static final String RENDERABLE_IMAGE_EXTENSIONS = "renderable.image.extensions";
     public static final String RENDERABLE_IMAGE_EXTENSIONS_DESCRIPTION = "Comma-separated <a href='#renderable-image-extensions'>list of file extensions the exporter can embed as a full-size image</a>";
-    public static final Set<String> RENDERABLE_IMAGE_EXTENSIONS_DEFAULT_VALUE = new LinkedHashSet<>(List.of(
+    protected static final Set<String> RENDERABLE_IMAGE_EXTENSIONS_DEFAULT_VALUE = new LinkedHashSet<>(List.of(
             "png", "jpg", "jpeg", "gif", "bmp", "svg", "webp", "avif", "ico", "cur", "tif", "tiff", "vsdx"
     ));
 
