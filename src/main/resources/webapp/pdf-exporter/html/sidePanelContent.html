@@ -1,5 +1,6 @@
 <!-- If we put javascript code just in inline 'script' block it won't be initialized,
   but the attribute 'onload' below allows to import our module.  -->
+<link href='/polarion/pdf-exporter/ui/generic/css/checkboxes.css' rel='stylesheet'>
 <link href='/polarion/pdf-exporter/ui/css/pdf-exporter.css' rel='stylesheet'
       onload='import("/polarion/pdf-exporter/ui/js/modules/ExportPanel.js")
                 .then(module => new module.default("#pdf-exporter-panel"))

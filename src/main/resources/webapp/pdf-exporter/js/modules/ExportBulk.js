@@ -99,6 +99,9 @@ export default class ExportBulk {
 
         MicroModal.show(BULK_POPUP_ID, {
             onClose: () => {
+                // move focus out of the modal before micromodal sets aria-hidden, otherwise the
+                // browser blocks aria-hidden on the still-focused overlay (accessibility warning)
+                if (document.activeElement) document.activeElement.blur();
                 // remove popup after usage otherwise it leads to extra UI artifacts creation after page edit
                 this.removePopupIfExists();
             }
