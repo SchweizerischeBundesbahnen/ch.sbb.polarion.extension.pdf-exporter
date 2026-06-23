@@ -3,6 +3,7 @@ package ch.sbb.polarion.extension.pdf_exporter.util;
 import ch.sbb.polarion.extension.generic.regex.RegexMatcher;
 import ch.sbb.polarion.extension.generic.util.BundleJarsPrioritizingRunnable;
 import ch.sbb.polarion.extension.generic.util.ScopeUtils;
+import ch.sbb.polarion.extension.pdf_exporter.properties.PdfExporterExtensionConfiguration;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PdfVariant;
 import ch.sbb.polarion.extension.pdf_exporter.service.PdfExporterPolarionService;
 import com.polarion.alm.shared.api.transaction.TransactionalExecutor;
@@ -41,7 +42,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.BiFunction;
 
 import static ch.sbb.polarion.extension.pdf_exporter.util.TikaMimeTypeResolver.PARAM_RESULT;
@@ -58,18 +58,6 @@ public class MediaUtils {
     private static final int PDF_TO_PNG_DPI = 300;
     private static final String IMG_FORMAT_PNG = "png";
     private static final String ALLOWED_FOLDER_FOR_BINARY_FILES = "/default/";
-
-    /**
-     * File extensions the exporter can embed as a full-size image: raster formats, SVG and
-     * convertible diagram formats (e.g. Visio). For these the 'thumbnail' query parameter is
-     * stripped so Polarion returns the full-size resource instead of an icon.
-     * Everything else (spreadsheets, documents, archives, unknown formats, ...) keeps 'thumbnail'
-     * so Polarion returns a small icon preview that can be shown inside an &lt;img&gt; tag.
-     */
-    private static final Set<String> RENDERABLE_IMAGE_EXTENSIONS = Set.of(
-            "png", "jpg", "jpeg", "gif", "bmp", "svg", "webp", "avif", "ico", "cur", "tif", "tiff",
-            "vsdx"
-    );
 
     private static final Map<String, String> CUSTOM_MIME_TYPES_MAP = Map.of(
             "cur", "image/x-icon",
@@ -302,7 +290,7 @@ public class MediaUtils {
      */
     @VisibleForTesting
     static boolean isRenderableImageUrl(@Nullable String url) {
-        return RENDERABLE_IMAGE_EXTENSIONS.contains(getResourceExtension(url));
+        return PdfExporterExtensionConfiguration.getInstance().getRenderableImageExtensions().contains(getResourceExtension(url));
     }
 
     /**
