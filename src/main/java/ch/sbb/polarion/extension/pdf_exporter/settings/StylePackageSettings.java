@@ -16,7 +16,7 @@ import org.jetbrains.annotations.VisibleForTesting;
 
 public class StylePackageSettings extends GenericNamedSettings<StylePackageModel> {
     public static final String FEATURE_NAME = "style-package";
-    public static final String DEFAULT_HEADERS_COLOR = "#004d73";
+    public static final String DEFAULT_HEADERS_COLOR = "#000028";
 
     public StylePackageSettings() {
         super(FEATURE_NAME);

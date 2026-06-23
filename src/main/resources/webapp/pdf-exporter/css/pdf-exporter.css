@@ -76,7 +76,7 @@
 .modal__container.pdf-exporter .modal__header {
     justify-content: start;
     height: 48px;
-    background-color: #005F87;
+    background-color: #23233C;
     padding: 0 16px;
     border-radius: 4px 4px 0 0;
     font-size: 18px;
@@ -167,8 +167,8 @@
     box-shadow: none;
     cursor: auto;
     color: #eee;
-    background-color: #81a1af;
-    border-color: #527889;
+    background-color: #80b4bc;
+    border-color: #5e949b;
 }
 
 .modal__container.pdf-exporter .flex-container {
@@ -504,7 +504,7 @@
     height: 100%;
     padding: 0 10px;
     border-radius: 4px;
-    background-color: #0d6efd;
+    background-color: #007993;
     overflow: hidden;
     line-height: 1.6em;
     text-align: center;

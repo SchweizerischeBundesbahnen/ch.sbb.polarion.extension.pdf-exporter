@@ -121,7 +121,7 @@ public class BulkPdfExportWidgetRenderer extends AbstractWidgetRenderer {
                         .then(module => new module.default('#%s', '%s' === 'true'))
                         .catch(console.error);""".formatted(panelId, exportPages.value()));
 
-            wrap.append().tag().style().append().html(ScopeUtils.getFileContent("/webapp/pdf-exporter/css/micromodal.css"));
+            wrap.append().tag().style().append().html(ScopeUtils.getFileContent("/css/micromodal.css"));
             wrap.append().tag().style().append().html(ScopeUtils.getFileContent("/webapp/pdf-exporter/css/pdf-exporter.css"));
 
             HtmlContentBuilder contentBuilder = mainTable.append();

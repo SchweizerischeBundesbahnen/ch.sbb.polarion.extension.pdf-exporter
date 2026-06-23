@@ -19,7 +19,7 @@ p {
 }
 
 a,a:link,a:visited {
-    color: #0277BB;
+    color: #007993;
     text-decoration: none !important;
 }
 
@@ -207,8 +207,8 @@ div.regiondescription {
 }
 
 .regiontitle {
-    border-bottom: 4px solid #E1F0FF;
-    color: #0E4A90;
+    border-bottom: 4px solid #F3F3F0;
+    color: #000028;
     font-family: Arial, helvetica, sans-serif;
     font-size: 23px;
     font-weight: bold;
@@ -471,7 +471,7 @@ html {
 .polarion-dle-document .polarion-PlanLabelMacro-anchor:link,
 .polarion-dle-document .polarion-PlanLabelMacro-anchor:visited, a.polarion-dle-toc-link:visited, a.polarion-dle-toc-link:link, a.descriptionLink, .polarion-cross-reference-label,
 .polarion-rte-link[data-type="polarion"] .polarion-cross-reference-link-external, .polarion-rte-link a:visited, .polarion-TestRecordsTable a:visited, .polarion-rte-link a, .polarion-TestRecordsTable a, .polarion-rpe-content a, .polarion-ShowMoreLinkedWorkItems-Header-Link, .polarion-SearchResults-WorkItemLink a {
-    color: #197FA2;
+    color: #007993;
     cursor: pointer;
     text-decoration: none;
 }
@@ -953,7 +953,7 @@ a:hover .polarion-cross-reference-label,
 }
 
 .polarion-PlanLabelMacro-mainLabel a, .polarion-TestRunLabelWidget-container a {
-    color: #004D73;
+    color: #000028;
 }
 
 .polarion-PlanLabelMacro-mainLabel a:hover, .polarion-TestRunLabelWidget-container a:hover {
@@ -1788,7 +1788,7 @@ a:hover .polarion-cross-reference-label,
 }
 
 .polarion-dle-document h6, .polarion-dle-document h5, .polarion-dle-document h4, .polarion-dle-document h3, .polarion-dle-document h2, .polarion-dle-document h1 {
-    color: #004D73;
+    color: #000028;
     font-weight: bold;
     line-height: 1.2;
     font-family: "Segoe UI", "Selawik", "Open Sans", Arial, sans-serif;
@@ -1824,7 +1824,7 @@ a:hover .polarion-cross-reference-label,
 }
 
 .polarion-rpe-content h6, .polarion-rpe-content h5, .polarion-rpe-content h4, .polarion-rpe-content h3, .polarion-rpe-content h2, .polarion-rpe-content h1 {
-    color: #004D73;
+    color: #000028;
     font-weight: bold;
     font-family: "Segoe UI", "Selawik", "Open Sans", Arial, sans-serif;
     margin: 20px 0 10px 0;
@@ -1871,7 +1871,7 @@ a:hover .polarion-cross-reference-label,
 .heading-31, .heading-30, .heading-29, .heading-28, .heading-27, .heading-26, .heading-25, .heading-24, .heading-23, .heading-22, .heading-21, .heading-20, .heading-19, .heading-18, .heading-17, .heading-16, .heading-15, .heading-14, .heading-13, .heading-12, .heading-11, .heading-10, .heading-9, .heading-8, .heading-7 {
     font-size: 10pt;
     line-height: 1.5;
-    color: #004D73;
+    color: #000028;
     font-family: Arial, Helvetica, sans-serif !important;
 }
 
@@ -2765,7 +2765,7 @@ img.inline-icon {
 
 .polarion-shared-administration-table a {
     cursor: pointer !important;
-    color: #197FA2 !important;
+    color: #007993 !important;
     text-decoration: none !important;
 }
 
@@ -2830,7 +2830,7 @@ img.inline-icon {
 }
 
 .polarion-shared-administration-content H5, .polarion-shared-administration-content H2, .polarion-shared-administration-content H1 {
-    color: #004D73;
+    color: #000028;
     margin: 0px;
     padding: 0px;
     padding-left: 4px;
@@ -2839,7 +2839,7 @@ img.inline-icon {
 }
 
 .polarion-shared-administration-content H1 {
-    color: #004D73;
+    color: #000028;
     font-weight: bold;
     font-size: 30px;
     line-height: 38px;
@@ -2848,7 +2848,7 @@ img.inline-icon {
 }
 
 .polarion-shared-administration-content H2 {
-    color: #004D73;
+    color: #000028;
     font-weight: bold;
     font-size: 23px;
     line-height: 31px;
@@ -2863,7 +2863,7 @@ img.inline-icon {
 }
 
 .polarion-administration-header {
-    color: #004D73;
+    color: #000028;
     font-weight: bold;
     font-size: 30px;
     line-height: 38px;

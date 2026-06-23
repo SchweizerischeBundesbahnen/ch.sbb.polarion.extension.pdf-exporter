@@ -91,8 +91,9 @@ Alternatively you can configure PDF Exporter such a way that additional toolbar 
    ```properties
    scriptInjection.dleEditorHead=<script src="/polarion/pdf-exporter/js/starter.js"></script><script>PdfExporterStarter.injectToolbar();</script>
    ```
-   There's an alternate approach adding PDF Exporter button into native Polarion's toolbar, which has a drawback at the moment -
-   button disappears in some cases (for example when document is saved), so using this approach is not advisable:
+   There's an alternate approach adding the PDF Exporter button into Polarion's native document toolbar. Previously this
+   approach had a drawback — the button could disappear in some cases (for example when the document was saved); this has now
+   been fixed: the button is re-injected automatically when Polarion re-renders the toolbar, so it stays in place:
    ```properties
    scriptInjection.dleEditorHead=<script src="/polarion/pdf-exporter/js/starter.js"></script><script>PdfExporterStarter.injectToolbar({alternate: true});</script>
    ```

@@ -96,7 +96,11 @@ export default class ExportPopup {
         toggleOptionalPropertyBlocks(this.ctx.getDocumentType(), Action.SHOW, this.ctx);
         toggleOptionalPropertyBlocks(this.ctx.getExportType(), Action.SHOW, this.ctx);
 
-        MicroModal.show(POPUP_ID);
+        MicroModal.show(POPUP_ID, {
+            // Move focus out of the modal before micromodal sets aria-hidden on close, otherwise
+            // the browser blocks aria-hidden on the still-focused overlay (accessibility warning).
+            onClose: () => document.activeElement && document.activeElement.blur()
+        });
     }
 
     closePopup() {
