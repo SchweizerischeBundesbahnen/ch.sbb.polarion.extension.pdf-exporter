@@ -27,28 +27,29 @@ LTS branches allow releasing bug fixes and security patches for older major vers
 
 ### Branch Naming Convention
 
-LTS branches follow the pattern: `release-v{major}` (e.g., `release-v6`, `release-v7`)
+LTS branches must follow the pattern `release-v{major}`, for example:
+- `release-v6` - LTS branch for v6.x releases
+- `release-v7` - LTS branch for v7.x releases
 
 ### Creating an LTS Branch
 
 Create the branch from the last tag of the major version:
-
 ```bash
-git checkout v11.1.1          # Last tag of the major version
-git checkout -b release-v11
-git push origin release-v11
+git checkout v6.4.2
+git checkout -b release-v6
+git push origin release-v6
 ```
 
 The `release-v*` pattern in the workflow automatically recognizes new LTS branches.
 
-### Releasing from LTS Branches
+### LTS Release Workflow
 
-1. Cherry-pick or commit fixes to the LTS branch
-2. Push changes (Release Please automatically creates a release PR)
-3. Merge the release PR to trigger:
-    - Tag creation (e.g., `v11.1.2`)
-    - GitHub Release with artifacts
-    - Maven Central deployment
+1. Cherry-pick or commit fixes to the LTS branch (e.g., `release-v6`)
+2. Push changes - Release Please automatically creates a release PR
+3. Merge the release PR - this triggers:
+   - Tag creation (e.g., `v6.4.3`)
+   - GitHub Release with artifacts
+   - Maven Central deployment
 
 ### Deployment Matrix
 
