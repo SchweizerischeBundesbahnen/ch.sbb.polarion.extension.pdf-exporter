@@ -126,7 +126,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      packages: read
     env:
       COM_SONATYPE_CENTRAL_POLARION_OPENSOURCE_USERNAME: ${{ secrets.COM_SONATYPE_CENTRAL_POLARION_OPENSOURCE_USERNAME }}
       COM_SONATYPE_CENTRAL_POLARION_OPENSOURCE_TOKEN: ${{ secrets.COM_SONATYPE_CENTRAL_POLARION_OPENSOURCE_TOKEN }}
