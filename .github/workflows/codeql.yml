@@ -17,5 +17,6 @@ jobs:
       contents: read
       security-events: write
       actions: read
+      packages: read
     secrets:
       IO_JFROG_SBB_POLARION_TOKEN: ${{ secrets.IO_JFROG_SBB_POLARION_TOKEN }}
