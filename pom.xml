@@ -144,14 +144,6 @@
                 <scope>import</scope>
             </dependency>
 
-            <!-- Override vulnerable transitive jackson-databind from verapdf (provided by Polarion at runtime) -->
-            <dependency>
-                <groupId>com.fasterxml.jackson.core</groupId>
-                <artifactId>jackson-databind</artifactId>
-                <version>2.19.0</version>
-                <scope>provided</scope>
-            </dependency>
-
             <!-- Override vulnerable transitive rhino from verapdf -->
             <dependency>
                 <groupId>org.mozilla</groupId>
@@ -234,6 +226,15 @@
             <groupId>org.verapdf</groupId>
             <artifactId>validation-model-jakarta</artifactId>
             <version>${verapdf.version}</version>
+            <!-- Jackson is provided by Polarion's OSGi container (2.19.0) at runtime and by the
+                 parent POM's provided bundles at compile time. Exclude verapdf's transitive copy
+                 so it isn't bundled and can't collide with Polarion's version. -->
+            <exclusions>
+                <exclusion>
+                    <groupId>com.fasterxml.jackson.core</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <!--  Test dependencies  -->
