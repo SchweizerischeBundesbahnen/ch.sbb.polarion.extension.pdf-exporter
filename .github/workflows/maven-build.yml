@@ -159,18 +159,16 @@ jobs:
             -Dmaven.wagon.http.connectionTimeout=3600000 \
             -Dmaven.wagon.http.readTimeout=3600000 \
             -Dcentral-publishing-maven-plugin.autoPublish=${{ github.event.repository.visibility == 'public' }}
-  # Deploy releases to GitHub Packages (private repos only) and upload release assets to GitHub Release.
-  # SNAPSHOTs are published to JFrog Artifactory from the build job instead.
-  deploy-github-packages:
+  # Upload release assets (the built JAR) to the GitHub Release. Nothing is published to
+  # GitHub Packages: releases go to Maven Central, SNAPSHOTs to JFrog Artifactory.
+  upload-release-assets:
     needs: build
     if: ${{ needs.build.outputs.is_release == 'true' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release-v')) }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      packages: write
     env:
       GITHUB_TOKEN: ${{ github.token }}
-      GITHUB_REPO_NAME: ${{ github.repository }}
       PROJECT_VERSION: ${{ needs.build.outputs.project_version }}
     steps:
       - name: 📄 Checkout the repository
@@ -184,23 +182,6 @@ jobs:
         with:
           name: maven-artifacts
           path: target/
-      - name: 🧱 Set up JDK and Maven
-        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654  # v5.2.0
-        with:
-          distribution: ${{ env.JAVA_DISTRIBUTION }}
-          java-version: ${{ env.JAVA_VERSION }}
-          cache: maven
-      - name: 📦 Deploy to GitHub Packages
-        # Releases should only be deployed to GitHub Packages when the repo is private
-        # SNAPSHOTs go to JFrog Artifactory (published from the build job).
-        if: ${{ github.event.repository.visibility == 'private' }}
-        run: |
-          mvn --batch-mode -s "${SETTINGS_XML}" deploy \
-            -Dmaven.test.skip=true \
-            -Dmaven.javadoc.skip=true \
-            -Dmaven.source.skip=true \
-            -P deploy-github-packages
       - name: 📦 Upload assets to GitHub Release
-        if: ${{ needs.build.outputs.is_release == 'true' }}
         run: |-
           gh release upload "v${PROJECT_VERSION}" "target/*-${PROJECT_VERSION}.jar" --clobber
