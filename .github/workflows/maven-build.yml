@@ -107,8 +107,8 @@ jobs:
           if-no-files-found: error
       - name: 📦 Deploy snapshot to JFrog Artifactory
         # Reuse the artifact just built above (no rebuild); SNAPSHOTs from main only.
-        # Main JAR + POM only; sources/javadoc are intentionally not published for
-        # snapshots, matching the previous GitHub Packages deployment.
+        # Main JAR + POM only — sources/javadoc are intentionally not attached to
+        # snapshots; they are produced and published only for Maven Central releases.
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.project_metadata.outputs.is_release == 'false' }}
         env:
           PROJECT_VERSION: ${{ steps.project_metadata.outputs.version }}
