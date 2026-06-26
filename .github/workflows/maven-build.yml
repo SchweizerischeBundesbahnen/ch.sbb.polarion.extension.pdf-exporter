@@ -162,7 +162,7 @@ jobs:
   # GitHub Packages: releases go to Maven Central, SNAPSHOTs to JFrog Artifactory.
   upload-release-assets:
     needs: build
-    if: ${{ needs.build.outputs.is_release == 'true' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release-v')) }}
+    if: ${{ github.ref == 'refs/heads/main' || (needs.build.outputs.is_release == 'true' && startsWith(github.ref, 'refs/heads/release-v')) }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -182,5 +182,6 @@ jobs:
           name: maven-artifacts
           path: target/
       - name: 📦 Upload assets to GitHub Release
+        if: ${{ needs.build.outputs.is_release == 'true' }}
         run: |-
           gh release upload "v${PROJECT_VERSION}" "target/*-${PROJECT_VERSION}.jar" --clobber
