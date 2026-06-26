@@ -105,6 +105,20 @@ jobs:
             target/*.pom
           retention-days: 1
           if-no-files-found: error
+      - name: 📦 Deploy snapshot to JFrog Artifactory
+        # Reuse the artifact just built above (no rebuild); SNAPSHOTs from main only.
+        # Main JAR + POM only; sources/javadoc are intentionally not published for
+        # snapshots, matching the previous GitHub Packages deployment.
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.project_metadata.outputs.is_release == 'false' }}
+        env:
+          PROJECT_VERSION: ${{ steps.project_metadata.outputs.version }}
+        run: |
+          jar=(target/*-"${PROJECT_VERSION}".jar)
+          mvn --batch-mode -s "${SETTINGS_XML}" deploy:deploy-file \
+            -DrepositoryId=jfrog_io \
+            -Durl=https://sbb.jfrog.io/artifactory/polarion-mvn \
+            -DpomFile=pom.xml \
+            -Dfile="${jar[0]}"
   # Deploy releases to Maven Central from main and LTS branches (release-v*)
   # See RELEASE.md for LTS branch documentation
   deploy-maven-central:
@@ -145,11 +159,11 @@ jobs:
             -Dmaven.wagon.http.connectionTimeout=3600000 \
             -Dmaven.wagon.http.readTimeout=3600000 \
             -Dcentral-publishing-maven-plugin.autoPublish=${{ github.event.repository.visibility == 'public' }}
-  # Deploy to GitHub Packages (snapshots from main only) and upload release assets to GitHub Release
-  # LTS branches (release-v*) only upload release assets, no snapshot deployment
+  # Deploy releases to GitHub Packages (private repos only) and upload release assets to GitHub Release.
+  # SNAPSHOTs are published to JFrog Artifactory from the build job instead.
   deploy-github-packages:
     needs: build
-    if: ${{ github.ref == 'refs/heads/main' || (needs.build.outputs.is_release == 'true' && startsWith(github.ref, 'refs/heads/release-v')) }}
+    if: ${{ needs.build.outputs.is_release == 'true' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release-v')) }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -178,8 +192,8 @@ jobs:
           cache: maven
       - name: 📦 Deploy to GitHub Packages
         # Releases should only be deployed to GitHub Packages when the repo is private
-        # Snapshots are always deployed to GitHub Packages
-        if: ${{ needs.build.outputs.is_release == 'false' || github.event.repository.visibility == 'private' }}
+        # SNAPSHOTs go to JFrog Artifactory (published from the build job).
+        if: ${{ github.event.repository.visibility == 'private' }}
         run: |
           mvn --batch-mode -s "${SETTINGS_XML}" deploy \
             -Dmaven.test.skip=true \
