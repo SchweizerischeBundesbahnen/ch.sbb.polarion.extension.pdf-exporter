@@ -104,20 +104,6 @@ jobs:
             target/*.pom
           retention-days: 1
           if-no-files-found: error
-      - name: 📦 Deploy snapshot to JFrog Artifactory
-        # Reuse the artifact just built above (no rebuild); SNAPSHOTs from main only.
-        # Main JAR + POM only — sources/javadoc are intentionally not attached to
-        # snapshots; they are produced and published only for Maven Central releases.
-        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.project_metadata.outputs.is_release == 'false' }}
-        env:
-          PROJECT_VERSION: ${{ steps.project_metadata.outputs.version }}
-        run: |
-          jar=(target/*-"${PROJECT_VERSION}".jar)
-          mvn --batch-mode -s "${SETTINGS_XML}" deploy:deploy-file \
-            -DrepositoryId=jfrog_io \
-            -Durl=https://sbb.jfrog.io/artifactory/polarion-mvn \
-            -DpomFile=pom.xml \
-            -Dfile="${jar[0]}"
   # Deploy releases to Maven Central from main and LTS branches (release-v*)
   # See RELEASE.md for LTS branch documentation
   deploy-maven-central:
@@ -157,11 +143,54 @@ jobs:
             -Dmaven.wagon.http.connectionTimeout=3600000 \
             -Dmaven.wagon.http.readTimeout=3600000 \
             -Dcentral-publishing-maven-plugin.autoPublish=${{ github.event.repository.visibility == 'public' }}
-  # Upload release assets (the built JAR) to the GitHub Release. Nothing is published to
-  # GitHub Packages: releases go to Maven Central, SNAPSHOTs to JFrog Artifactory.
-  upload-release-assets:
+  # Publish to JFrog Artifactory (sbb.jfrog.io/artifactory/polarion-mvn).
+  # SNAPSHOTs from main always; releases only when the repo is private (public
+  # releases go to Maven Central, see deploy-maven-central). Reuses the artifact
+  # built by the build job via deploy:deploy-file (no rebuild).
+  deploy-jfrog-io:
     needs: build
     if: ${{ github.ref == 'refs/heads/main' || (needs.build.outputs.is_release == 'true' && startsWith(github.ref, 'refs/heads/release-v')) }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      IO_JFROG_SBB_POLARION_TOKEN: ${{ secrets.IO_JFROG_SBB_POLARION_TOKEN }}
+      PROJECT_VERSION: ${{ needs.build.outputs.project_version }}
+    steps:
+      - name: 📄 Checkout the repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+      - name: 📥 Download build artifacts
+        # The artifacts are generated in the 'build' job
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
+        with:
+          name: maven-artifacts
+          path: target/
+      - name: 🧱 Set up JDK and Maven
+        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654  # v5.2.0
+        with:
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: maven
+      - name: 📦 Deploy to JFrog Artifactory
+        # SNAPSHOTs always; releases only when the repo is private (public releases
+        # go to Maven Central). Main JAR + POM only — sources/javadoc are produced
+        # only for Maven Central releases.
+        if: ${{ needs.build.outputs.is_release == 'false' || github.event.repository.visibility == 'private' }}
+        run: |
+          jar=(target/*-"${PROJECT_VERSION}".jar)
+          mvn --batch-mode -s "${SETTINGS_XML}" deploy:deploy-file \
+            -DrepositoryId=jfrog_io \
+            -Durl=https://sbb.jfrog.io/artifactory/polarion-mvn \
+            -DpomFile=pom.xml \
+            -Dfile="${jar[0]}"
+  # Attach the built JAR to the GitHub Release page. Releases are published to Maven
+  # Central (public repos) or JFrog Artifactory (private repos); SNAPSHOTs go to JFrog.
+  upload-release-assets:
+    needs: build
+    if: ${{ needs.build.outputs.is_release == 'true' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release-v')) }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -181,6 +210,5 @@ jobs:
           name: maven-artifacts
           path: target/
       - name: 📦 Upload assets to GitHub Release
-        if: ${{ needs.build.outputs.is_release == 'true' }}
         run: |-
           gh release upload "v${PROJECT_VERSION}" "target/*-${PROJECT_VERSION}.jar" --clobber
