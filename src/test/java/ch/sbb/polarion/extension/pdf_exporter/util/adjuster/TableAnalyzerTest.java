@@ -225,6 +225,24 @@ class TableAnalyzerTest {
         assertEquals(2, columnWidths.size(), "Both columns should still be measured");
     }
 
+    @Test
+    @SneakyThrows
+    void antiAliasRenderingHintResolvesToRealConstant() {
+        // Force TableAnalyzer's static initializer to run, pinning xr.text.aa-rendering-hint before
+        // flying-saucer's Configuration singleton is first read.
+        Class.forName(TableAnalyzer.class.getName());
+
+        // flying-saucer's own default ("RenderingHints.VALUE_TEXT_ANTIALIAS_HGRB") is unresolvable, so without
+        // the fix this returns the sentinel and Java2DTextRenderer falls back to the AWT desktop hints - null on
+        // a headless server - which throws an NPE logged at WARN for every renderer (one per table). Verify the
+        // hint instead resolves to a real constant so that path is never taken.
+        Object sentinel = new Object();
+        Object hint = org.xhtmlrenderer.util.Configuration.valueFromClassConstant("xr.text.aa-rendering-hint", sentinel);
+
+        assertNotSame(sentinel, hint, "aa-rendering-hint must resolve to a real RenderingHints constant, not the fallback");
+        assertSame(RenderingHints.VALUE_TEXT_ANTIALIAS_ON, hint, "aa-rendering-hint should resolve to VALUE_TEXT_ANTIALIAS_ON");
+    }
+
     @SneakyThrows
     private static String readFlyingSaucerLog() {
         return Files.exists(FLYING_SAUCER_LOG) ? Files.readString(FLYING_SAUCER_LOG, StandardCharsets.UTF_8) : "";

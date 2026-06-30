@@ -34,6 +34,18 @@ import java.util.Set;
 public class TableAnalyzer {
     private static final Logger logger = Logger.getLogger(TableAnalyzer.class);
 
+    static {
+        // flying-saucer ships a broken default for "xr.text.aa-rendering-hint"
+        // ("RenderingHints.VALUE_TEXT_ANTIALIAS_HGRB" - unqualified class name, non-existent constant), so
+        // Java2DTextRenderer can never resolve it and instead queries the AWT desktop font hints. On a headless
+        // server those are null, the subsequent map lookup throws an NPE which flying-saucer swallows but logs at
+        // WARN with a full stack trace - once per renderer, i.e. once per table we measure. Pin a valid,
+        // fully-qualified constant before flying-saucer's Configuration singleton is first read (it absorbs xr.*
+        // system properties at init, and TableAnalyzer is this project's only flying-saucer entry point) so the
+        // desktop-hints path - and its noise - is never reached, keeping anti-aliasing deterministic too.
+        System.setProperty("xr.text.aa-rendering-hint", "java.awt.RenderingHints.VALUE_TEXT_ANTIALIAS_ON");
+    }
+
     private static final String TABLE = "table";
     private static final String TBODY = "tbody";
     private static final String TR = "tr";
