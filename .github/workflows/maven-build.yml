@@ -19,7 +19,7 @@ jobs:
       contents: read
     services:
       weasyprint:
-        image: ghcr.io/schweizerischebundesbahnen/weasyprint-service:latest@sha256:3b5113e120e5f079b17eeb24ed89072e0ae1f123c726ebb6c6590ec07eb3ad9f  # zizmor: ignore[unpinned-images]
+        image: ghcr.io/schweizerischebundesbahnen/weasyprint-service:latest@sha256:ef7a97d2ceb3e30a18e7d7d35492f3932a37e5ceddd9404d051b829195caaf6b  # zizmor: ignore[unpinned-images]
         ports: [9080:9080]
     outputs:
       project_version: ${{ steps.project_metadata.outputs.version }}
@@ -37,7 +37,7 @@ jobs:
           fetch-depth: 0  # Sonar needs full history
           persist-credentials: false
       - name: 🧱 Set up JDK and Maven
-        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654  # v5.2.0
+        uses: actions/setup-java@1bcf9fb12cf4aa7d266a90ae39939e61372fe520  # v5.4.0
         with:
           distribution: ${{ env.JAVA_DISTRIBUTION }}
           java-version: ${{ env.JAVA_VERSION }}
@@ -57,7 +57,7 @@ jobs:
             echo "is_release=${IS_RELEASE}"
           } >> "$GITHUB_OUTPUT"
       - name: 🔍 Cache SonarQube packages
-        uses: actions/cache@2c8a9bd7457de244a408f35966fab2fb45fda9c8  # v6.0.0
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
         with:
           path: ~/.sonar/cache
           key: ${{ runner.os }}-sonar
@@ -124,7 +124,7 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
       - name: 🧱 Set up JDK and Maven with cache
-        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654  # v5.2.0
+        uses: actions/setup-java@1bcf9fb12cf4aa7d266a90ae39939e61372fe520  # v5.4.0
         with:
           distribution: ${{ env.JAVA_DISTRIBUTION }}
           java-version: ${{ env.JAVA_VERSION }}
@@ -169,7 +169,7 @@ jobs:
           name: maven-artifacts
           path: target/
       - name: 🧱 Set up JDK and Maven
-        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654  # v5.2.0
+        uses: actions/setup-java@1bcf9fb12cf4aa7d266a90ae39939e61372fe520  # v5.4.0
         with:
           distribution: ${{ env.JAVA_DISTRIBUTION }}
           java-version: ${{ env.JAVA_VERSION }}
