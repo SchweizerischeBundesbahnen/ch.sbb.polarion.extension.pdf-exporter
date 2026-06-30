@@ -109,7 +109,7 @@ public abstract class BaseWeasyPrintTest {
         return new WeasyPrintServiceConnector(weasyPrintServiceBaseUrl);
     }
 
-    private static @NotNull String stripTrailingSlashes(@NotNull String value) {
+    static @NotNull String stripTrailingSlashes(@NotNull String value) {
         int end = value.length();
         while (end > 0 && value.charAt(end - 1) == '/') {
             end--;
