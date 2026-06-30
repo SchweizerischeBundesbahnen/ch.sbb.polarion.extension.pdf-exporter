@@ -141,7 +141,7 @@ export default class ExportBulk {
             fontAwesomeIcon.className = "fa";
             iconSpan.appendChild(fontAwesomeIcon);
             const inProgressIcon = document.createElement("img");
-            inProgressIcon.src = '/polarion/ria/images/progress.gif';
+            inProgressIcon.src = '/polarion/ria/images/progressWheel48.svg';
             iconSpan.appendChild(inProgressIcon);
             div.appendChild(iconSpan);
 
