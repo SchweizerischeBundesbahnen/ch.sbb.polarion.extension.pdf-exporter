@@ -23,7 +23,8 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
 
-import java.text.SimpleDateFormat;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -35,8 +36,8 @@ import java.util.Set;
 @SuppressWarnings("java:S1200")
 public class LiveDocCommentsProcessor {
 
-    private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm");
-    private final SimpleDateFormat isoDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
+    private final DateTimeFormatter dateFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm").withZone(ZoneId.systemDefault());
+    private final DateTimeFormatter isoDateFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSXXX").withZone(ZoneId.systemDefault());
 
     @NotNull
     public Map<String, LiveDocComment> getLiveDocComments(@NotNull ProxyDocument document, @Nullable CommentsRenderType commentsRenderType) {
@@ -167,7 +168,7 @@ public class LiveDocCommentsProcessor {
         String commentText = liveDocComment.getText().persistedHtml();
         boolean resolved = liveDocComment.getResolved().get();
         return CommentData.builder()
-                .date(dateFormat.format(liveDocComment.getCreated().get()))
+                .date(dateFormat.format(liveDocComment.getCreated().get().toInstant()))
                 .isoDate(formatIsoDate(liveDocComment.getCreated().get()))
                 .author(authorName)
                 .text(commentText)
@@ -181,7 +182,7 @@ public class LiveDocCommentsProcessor {
 
     @VisibleForTesting
     String formatIsoDate(Date date) {
-        return isoDateFormat.format(date);
+        return isoDateFormat.format(date.toInstant());
     }
 
     @Data
