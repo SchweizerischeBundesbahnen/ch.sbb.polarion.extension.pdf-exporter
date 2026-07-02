@@ -1,6 +1,6 @@
 import ExtensionContext from '../../ui/generic/js/modules/ExtensionContext.js';
 import ConfigurationsPane from '../../ui/generic/js/modules/ConfigurationsPane.js';
-import CustomSelect from '../../ui/generic/js/modules/CustomSelect.js';
+import SearchableDropdown from '../../ui/generic/js/modules/SearchableDropdown.js';
 
 const ctx = new ExtensionContext({
     extension: 'pdf-exporter',
@@ -26,7 +26,7 @@ const conf = new ConfigurationsPane({
 let defaultSettings = null;
 
 const Templates = {
-    templatesSelect: new CustomSelect({
+    templatesSelect: new SearchableDropdown({
         selectContainer: document.getElementById("templates-select"),
         label: document.getElementById("templates-label")
     }),

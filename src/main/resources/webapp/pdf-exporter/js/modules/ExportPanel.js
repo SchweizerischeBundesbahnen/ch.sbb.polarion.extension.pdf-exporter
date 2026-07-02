@@ -1,5 +1,6 @@
 import ExportParams from "./ExportParams.js";
 import ExportContext from "./ExportContext.js";
+import { initSearchableDropdowns } from "./dropdown-utils.js";
 
 export default class ExportPanel {
 
@@ -24,6 +25,21 @@ export default class ExportPanel {
         this.ctx.onClick('validate-pdf', () => {
             this.validatePdf();
         });
+
+        this._initDropdowns();
+    }
+
+    // Upgrade the panel's single-value <select>s to the shared Polarion-styled SearchableDropdown.
+    // Programmatic value/visibility changes stay in sync via ExtensionContext (setSelector/setValue/displayIf).
+    // 'roles-selector' is intentionally excluded — it is a multi-select.
+    _initDropdowns() {
+        initSearchableDropdowns(this.ctx, [
+            'style-package-select', 'cover-page-selector', 'css-selector',
+            'header-footer-selector', 'localization-selector', 'webhooks-selector',
+            'paper-size-selector', 'orientation-selector', 'pdf-variant-selector',
+            'image-density-selector', 'render-comments-selector', 'language',
+            'roles-direction-selector'
+        ], 'roles-selector');
     }
 
     stylePackageChanged() {

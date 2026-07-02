@@ -334,11 +334,43 @@
     padding: 2px 2rem 2px 2px;
 }
 
+/* Uniform control sizing in the export panel & popup so every combo-like control matches the
+   admin comboboxes (130 x 23). The searchable-dropdown wraps a native <select>; its container
+   may inherit an inline width from the original element, so !important pins it to 130px. */
+.property-wrapper .searchable-dropdown {
+    width: 130px !important;
+}
+
+/* Workitem-roles multiselect + its direction dropdown are stacked under the label. The visible
+   .searchable-dropdown container is inserted next to the hidden <select> and does NOT inherit its
+   margins, so indent + vertical gap are pinned on the container itself — uniformly in the side
+   panel and the popup (admin sets the same values inline on its build-mode containers). */
+#roles-selector + .searchable-dropdown,
+#popup-roles-selector + .searchable-dropdown,
+#roles-direction-selector + .searchable-dropdown,
+#popup-roles-direction-selector + .searchable-dropdown {
+    margin-left: 20px;
+    margin-top: 4px;
+}
+
+/* Ensure the dropdown popup is combobox-width + 35px here too (high specificity so a Polarion
+   .options rule in the editor / modal context can't flatten it back to the trigger width). */
+.property-wrapper .searchable-dropdown .options {
+    min-width: calc(100% + 35px);
+}
+
+.property-wrapper input[type="color"] {
+    width: 130px;
+    height: 23px;
+    box-sizing: border-box;
+}
+
 .buttons-wrapper {
     margin: 10px 0;
 }
 
 .buttons-wrapper button {
+    vertical-align: middle;
     background-color: transparent;
     border: 1px solid #DEDEDE;
     color: #555;
