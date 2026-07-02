@@ -69,6 +69,8 @@
         generic.injectStyles("pdf-exporter-styles", `/polarion/pdf-exporter/css/pdf-exporter.css${timestampParam}`);
         generic.injectStyles("pdf-micromodal-styles", `/polarion/pdf-exporter/ui/generic/css/micromodal.css${timestampParam}`);
         generic.injectStyles("generic-checkbox-styles", `/polarion/pdf-exporter/ui/generic/css/checkboxes.css${timestampParam}`);
+        generic.injectStyles("generic-searchable-dropdown-styles", `/polarion/pdf-exporter/ui/generic/css/searchable-dropdown.css${timestampParam}`);
+        generic.injectStyles("generic-inputs-styles", `/polarion/pdf-exporter/ui/generic/css/inputs.css`);
         generic.injectScript("pdf-micromodal-script", `/polarion/pdf-exporter/js/micromodal.min.js${timestampParam}`);
         starter = generic.create({
             markerId: 'pdf-exporter-toolbar-injected',
