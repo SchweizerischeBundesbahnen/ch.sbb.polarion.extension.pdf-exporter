@@ -1,5 +1,19 @@
 # Changelog
 
+## [13.2.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v13.1.0...v13.2.0) (2026-07-02)
+
+
+### Features
+
+* adopt shared SearchableDropdown UI components ([#877](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/877)) ([accc9dd](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/accc9ddb4b813ec85b3323372669c4ea9f9a8d58)), closes [#873](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/873)
+
+
+### Bug Fixes
+
+* avoid regex backtracking when trimming trailing slashes ([#866](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/866)) ([205abd6](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/205abd604e7b5a34fac201f49b00a6940a517a63)), closes [#865](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/865)
+* trim trailing slashes without regex ([#870](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/870)) ([1673148](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/1673148bcf4a15fd319e56c5015349bc0ba1a0c5)), closes [#865](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/865)
+* use Polarion 2606 spinner (progressWheel) ([#869](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/869)) ([cae5d73](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/cae5d7342dab04bdaad80916a2bce7c7897280f4)), closes [#868](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/868)
+
 ## [13.1.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v13.0.0...v13.1.0) (2026-06-30)
 
 
