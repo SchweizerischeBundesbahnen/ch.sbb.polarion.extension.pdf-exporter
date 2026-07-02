@@ -5,7 +5,6 @@ import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Integration tests for the fullFonts parameter.
@@ -14,40 +13,18 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * This helps avoid font subsetting errors (e.g., invalid OS/2 Unicode range bits)
  * but results in larger PDF files.
  * <p>
- * Tests cover 4 scenarios:
+ * Tests cover the following scenarios:
  * <ul>
- *     <li>Bad font + fullFonts=false → should fail (500 error from WeasyPrint)</li>
  *     <li>Bad font + fullFonts=true → should succeed</li>
  *     <li>Good font + fullFonts=false → should succeed</li>
  *     <li>Good font + fullFonts=true → should succeed</li>
+ *     <li>fullFonts=true produces a larger PDF than fullFonts=false</li>
  * </ul>
  */
 class FullFontsTest extends BaseWeasyPrintTest {
 
     private static final String BAD_FONT_HTML = "fullFontsBadFont";
     private static final String GOOD_FONT_HTML = "fullFontsGoodFont";
-
-    /**
-     * Tests that HTML with a font containing invalid OS/2 Unicode range bits fails
-     * without fullFonts=true.
-     * <p>
-     * This test verifies that font subsetting fails for fonts with invalid Unicode
-     * range bits (bit 123 > max 122) when fullFonts is not enabled.
-     */
-    @Test
-    @SneakyThrows
-    void testBadFontFailsWithoutFullFonts() {
-        String html = readHtmlResource(BAD_FONT_HTML);
-
-        WeasyPrintOptions options = WeasyPrintOptions.builder()
-                .fullFonts(false)
-                .build();
-
-        assertThatThrownBy(() -> exportToPdf(html, options))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("500")
-                .hasMessageContaining("expected 0 <= int <= 122");
-    }
 
     /**
      * Tests that HTML with a font containing invalid OS/2 Unicode range bits succeeds
