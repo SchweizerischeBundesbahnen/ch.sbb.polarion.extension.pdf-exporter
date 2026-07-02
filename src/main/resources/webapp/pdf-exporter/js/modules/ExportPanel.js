@@ -1,6 +1,6 @@
 import ExportParams from "./ExportParams.js";
 import ExportContext from "./ExportContext.js";
-import SearchableDropdown from "/polarion/pdf-exporter/ui/generic/js/modules/SearchableDropdown.js";
+import { initSearchableDropdowns } from "./dropdown-utils.js";
 
 export default class ExportPanel {
 
@@ -33,24 +33,13 @@ export default class ExportPanel {
     // Programmatic value/visibility changes stay in sync via ExtensionContext (setSelector/setValue/displayIf).
     // 'roles-selector' is intentionally excluded — it is a multi-select.
     _initDropdowns() {
-        const ids = [
+        initSearchableDropdowns(this.ctx, [
             'style-package-select', 'cover-page-selector', 'css-selector',
             'header-footer-selector', 'localization-selector', 'webhooks-selector',
             'paper-size-selector', 'orientation-selector', 'pdf-variant-selector',
             'image-density-selector', 'render-comments-selector', 'language',
             'roles-direction-selector'
-        ];
-        ids.forEach(id => {
-            const element = this.ctx.getElementById(id);
-            if (element) {
-                new SearchableDropdown({element: element, placeholder: '', rememberSelection: false});
-            }
-        });
-        // Workitem roles is a <select multiple> — wrap it as a multi-select dropdown (same component).
-        const rolesElement = this.ctx.getElementById('roles-selector');
-        if (rolesElement) {
-            new SearchableDropdown({element: rolesElement, placeholder: '', rememberSelection: false, multiselect: true});
-        }
+        ], 'roles-selector');
     }
 
     stylePackageChanged() {

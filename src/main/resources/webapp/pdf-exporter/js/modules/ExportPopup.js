@@ -1,6 +1,6 @@
 import ExportParams from "./ExportParams.js";
 import ExportContext from "./ExportContext.js";
-import SearchableDropdown from "/polarion/pdf-exporter/ui/generic/js/modules/SearchableDropdown.js";
+import { initSearchableDropdowns } from "./dropdown-utils.js";
 
 export default class ExportPopup {
 
@@ -65,24 +65,13 @@ export default class ExportPopup {
     // Options are populated asynchronously — the component observes option/visibility changes and
     // keeps itself in sync. 'popup-roles-selector' is intentionally excluded (multi-select).
     _initDropdowns() {
-        const ids = [
+        initSearchableDropdowns(this.ctx, [
             'popup-style-package-select', 'popup-cover-page-selector', 'popup-css-selector',
             'popup-header-footer-selector', 'popup-localization-selector', 'popup-webhooks-selector',
             'popup-paper-size-selector', 'popup-orientation-selector', 'popup-pdf-variant-selector',
             'popup-image-density-selector', 'popup-render-comments-selector', 'popup-language',
             'popup-roles-direction-selector'
-        ];
-        ids.forEach(id => {
-            const element = this.ctx.getElementById(id);
-            if (element) {
-                new SearchableDropdown({element: element, placeholder: '', rememberSelection: false});
-            }
-        });
-        // Workitem roles is a <select multiple> — wrap it as a multi-select dropdown (same component).
-        const rolesElement = this.ctx.getElementById('popup-roles-selector');
-        if (rolesElement) {
-            new SearchableDropdown({element: rolesElement, placeholder: '', rememberSelection: false, multiselect: true});
-        }
+        ], 'popup-roles-selector');
     }
 
     openPopup() {
