@@ -1418,6 +1418,34 @@ class HtmlProcessorTest {
         assertTrue(wrapper.hasClass("portA4"), wrapper.className());
     }
 
+    @Test
+    void processHtmlForPDFAppliesPageBreakWidgetForLiveReport() {
+        // Drives the full pipeline so the page-break step wired into the LIVE_REPORT branch of processHtmlForPDF runs
+        String html = """
+                <div class="content"><div class="polarion-rpe-view polarion-rpe-pdf polarion-rpe-content">
+                  <table class="polarion-rp-column-layout"><tbody><tr><td class="polarion-rp-column-layout-cell">
+                    <p>intro</p>
+                    <div class="pdf-exporter-page-break pdf-exporter-page-break-landscape"></div>
+                    <p>SOME CONTENT</p>
+                  </td></tr></tbody></table>
+                </div></div>
+                """;
+
+        ExportParams exportParams = ExportParams.builder()
+                .projectId("test_project")
+                .documentType(DocumentType.LIVE_REPORT)
+                .language(Language.DE.name())
+                .build();
+
+        String result = processor.processHtmlForPDF(html, exportParams, List.of());
+
+        // The marker is consumed and the following content ends up in a body-level landscape section
+        assertFalse(result.contains("pdf-exporter-page-break"), result);
+        assertTrue(result.contains("sbb_page_break"), result);
+        assertTrue(result.contains("landA4"), result);
+        assertTrue(result.contains("SOME CONTENT"), result);
+    }
+
     private ExportParams getExportParams() {
         return ExportParams.builder()
                 .projectId("test_project")

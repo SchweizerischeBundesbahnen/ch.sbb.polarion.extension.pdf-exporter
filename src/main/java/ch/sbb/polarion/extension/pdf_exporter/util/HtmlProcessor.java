@@ -1236,26 +1236,33 @@ public class HtmlProcessor {
             // Markers are non-visual controls, they must never reach the PDF
             marker.remove();
 
-            if (sectionNodes.isEmpty()) {
-                continue; // nothing between this break and the next one (or the end of the report)
+            // An empty list means nothing sits between this break and the next one (or the end of the report)
+            if (!sectionNodes.isEmpty()) {
+                // Keep document order: sections from the same containing block chain after the previous one
+                Element anchor = (previousWrapper != null && containingBlock == previousBlock) ? previousWrapper : containingBlock;
+                Element wrapper = buildPageBreakSection(landscape, paperSize, anchor, sectionNodes);
+                createdWrappers.add(wrapper);
+                previousBlock = containingBlock;
+                previousWrapper = wrapper;
             }
-
-            Element wrapper = new Element(HtmlTag.DIV);
-            wrapper.addClass("sbb_page_break");
-            wrapper.addClass((landscape ? "land" : "port") + paperSize);
-
-            // Keep document order: sections from the same containing block chain after the previous one
-            Element anchor = (previousWrapper != null && containingBlock == previousBlock) ? previousWrapper : containingBlock;
-            anchor.after(wrapper);
-            for (Node node : sectionNodes) {
-                node.remove();
-                wrapper.appendChild(node);
-            }
-
-            createdWrappers.add(wrapper);
-            previousBlock = containingBlock;
-            previousWrapper = wrapper;
         }
+    }
+
+    /**
+     * Creates the body-level {@code <div class="sbb_page_break {port|land}{paperSize}">} section, inserts it right after
+     * {@code anchor} and moves the collected section nodes into it.
+     */
+    @NotNull
+    private Element buildPageBreakSection(boolean landscape, @NotNull PaperSize paperSize, @NotNull Element anchor, @NotNull List<Node> sectionNodes) {
+        Element wrapper = new Element(HtmlTag.DIV);
+        wrapper.addClass("sbb_page_break");
+        wrapper.addClass((landscape ? "land" : "port") + paperSize);
+        anchor.after(wrapper);
+        for (Node node : sectionNodes) {
+            node.remove();
+            wrapper.appendChild(node);
+        }
+        return wrapper;
     }
 
     /**
@@ -1268,8 +1275,10 @@ public class HtmlProcessor {
     private List<Node> collectPageBreakSectionNodes(@NotNull Element marker, @Nullable Element nextMarker, @NotNull Element container, @NotNull Element containingBlock, @NotNull Set<Element> createdWrappers) {
         List<Node> nodes = new ArrayList<>();
 
-        // 1. Content following the marker within the same parent (inline placement inside a rich-text cell)
-        for (Node node = marker.nextSibling(); node != null; ) {
+        // 1. Content following the marker within the same parent (inline placement inside a rich-text cell). The next
+        //    sibling is captured before adding the current node, so moving nodes out later cannot break the walk.
+        Node node = marker.nextSibling();
+        while (node != null) {
             if (node == nextMarker) {
                 return nodes; // the next section starts here, in the same parent
             }
@@ -1281,7 +1290,8 @@ public class HtmlProcessor {
         // 2. Parent exhausted: continue with the following report blocks (standalone/block placement), up to the block
         //    that holds the next marker. Skip sections already lifted out by earlier markers in the same block.
         Element nextBlock = (nextMarker != null) ? getDirectChildAncestor(nextMarker, container) : null;
-        for (Element sibling = containingBlock.nextElementSibling(); sibling != null && sibling != nextBlock; ) {
+        Element sibling = containingBlock.nextElementSibling();
+        while (sibling != null && sibling != nextBlock) {
             Element following = sibling.nextElementSibling();
             if (!createdWrappers.contains(sibling)) {
                 nodes.add(sibling);

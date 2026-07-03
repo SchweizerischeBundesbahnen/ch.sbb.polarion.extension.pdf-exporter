@@ -1,13 +1,11 @@
 package ch.sbb.polarion.extension.pdf_exporter.widgets;
 
-import com.polarion.alm.server.api.model.rp.widget.GenericButtonWidget;
 import com.polarion.alm.shared.api.SharedContext;
 import com.polarion.alm.shared.api.model.rp.parameter.BooleanParameter;
 import com.polarion.alm.shared.api.model.rp.parameter.ParameterFactory;
 import com.polarion.alm.shared.api.model.rp.parameter.RichPageParameter;
 import com.polarion.alm.shared.api.model.rp.widget.RichPageWidgetContext;
 import com.polarion.alm.shared.api.model.rp.widget.RichPageWidgetRenderingContext;
-import com.polarion.alm.shared.api.utils.collections.ImmutableStrictList;
 import com.polarion.alm.shared.api.utils.collections.ReadOnlyStrictMap;
 import com.polarion.alm.shared.api.utils.collections.StrictMap;
 import com.polarion.alm.shared.api.utils.collections.StrictMapImpl;
@@ -27,22 +25,10 @@ import static ch.sbb.polarion.extension.pdf_exporter.util.exporter.Constants.PAG
  * the marker (by {@link ch.sbb.polarion.extension.pdf_exporter.util.exporter.Constants#PAGE_BREAK_WIDGET_CLASS}) and lifts the content following it out of the cell into a
  * body-level landscape/portrait section. In other renderers only the page break applies, which is the best achievable.
  */
-public class PageBreakWidget extends GenericButtonWidget {
+public class PageBreakWidget extends AbstractPdfExporterButtonWidget {
 
     private static final String PARAM_LANDSCAPE = "landscape";
     private static final String LABEL_CLASS = "pdf-exporter-page-break-label";
-
-    @NotNull
-    @Override
-    public String getIcon(@NotNull RichPageWidgetContext widgetContext) {
-        return "/polarion/pdf-exporter-admin/ui/images/app-icon.svg";
-    }
-
-    @NotNull
-    @Override
-    public Iterable<String> getTags(@NotNull SharedContext context) {
-        return new ImmutableStrictList<>(Constants.PDF_EXPORT_TAG);
-    }
 
     @NotNull
     @Override
