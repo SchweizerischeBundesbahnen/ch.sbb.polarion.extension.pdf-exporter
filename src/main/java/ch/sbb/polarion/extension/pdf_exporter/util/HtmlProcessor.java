@@ -11,6 +11,7 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ConversionPa
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.DocumentType;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.Orientation;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PaperSize;
 import ch.sbb.polarion.extension.pdf_exporter.settings.LocalizationSettings;
 import ch.sbb.polarion.extension.pdf_exporter.util.adjuster.PageWidthAdjuster;
 import ch.sbb.polarion.extension.pdf_exporter.util.html.HtmlLinksHelper;
@@ -149,6 +150,10 @@ public class HtmlProcessor {
 
             // Replaces fixed width value of report tables by relative one
             timedIfNotNull(generationLog, "Adjust column width in reports", () -> adjustColumnWidthInReports(document));
+
+            // Turns PageBreakWidget markers into body-level orientation sections (orientation can't be set from inside
+            // the widget's table cell, so the content following a marker is lifted out to report-content level)
+            timedIfNotNull(generationLog, "Process page break widgets", () -> processPageBreakWidgets(document, exportParams));
         }
 
         // Polarion doesn't place table rows with th-tags into thead, placing them in table's tbody, which is wrong as table header won't
@@ -1181,6 +1186,126 @@ public class HtmlProcessor {
                 reportTable.attr(HtmlTagAttr.STYLE, cssStyles.getAsCSSString());
             }
         }
+    }
+
+    /**
+     * Handles markers emitted by the {@code PageBreakWidget} report widget (see
+     * {@link ch.sbb.polarion.extension.pdf_exporter.util.exporter.Constants#PAGE_BREAK_WIDGET_CLASS}).
+     * <p>
+     * The widget output sits inside its {@code polarion-rp-column-layout} table cell, where a CSS {@code page} property
+     * cannot switch the page orientation (it does not propagate out of a table cell). This step lifts the content that
+     * follows each marker out of the cell into a body-level {@code <div class="sbb_page_break {port|land}{paperSize}">}
+     * section placed at report-content level, where the named page applies. A marker carrying the landscape modifier
+     * ({@link ch.sbb.polarion.extension.pdf_exporter.util.exporter.Constants#PAGE_BREAK_WIDGET_LANDSCAPE_CLASS}) switches
+     * its section to landscape; otherwise it is a plain portrait page break. Each section runs until the next marker (or
+     * the end of the report), so several widgets segment the report into alternating orientations.
+     */
+    @VisibleForTesting
+    void processPageBreakWidgets(@NotNull Document document, @NotNull ExportParams exportParams) {
+        Elements markers = document.select("div." + PAGE_BREAK_WIDGET_CLASS);
+        if (markers.isEmpty()) {
+            return;
+        }
+
+        Element container = document.selectFirst("div.polarion-rpe-content");
+        if (container == null) {
+            container = document.body();
+        }
+
+        PaperSize paperSize = exportParams.getPaperSize() != null ? exportParams.getPaperSize() : PaperSize.A4;
+
+        Element previousBlock = null;
+        Element previousWrapper = null;
+        Set<Element> createdWrappers = new HashSet<>();
+
+        for (int i = 0; i < markers.size(); i++) {
+            Element marker = markers.get(i);
+            Element nextMarker = (i + 1 < markers.size()) ? markers.get(i + 1) : null;
+
+            // Report-content-level block (direct child of the container) that holds the marker; the lifted section is
+            // placed right after it, where a named page can take effect.
+            Element containingBlock = getDirectChildAncestor(marker, container);
+            if (containingBlock == null) {
+                marker.remove(); // stray marker outside the report content, just drop the control
+                continue;
+            }
+
+            boolean landscape = marker.hasClass(PAGE_BREAK_WIDGET_LANDSCAPE_CLASS);
+            List<Node> sectionNodes = collectPageBreakSectionNodes(marker, nextMarker, container, containingBlock, createdWrappers);
+
+            // Markers are non-visual controls, they must never reach the PDF
+            marker.remove();
+
+            if (sectionNodes.isEmpty()) {
+                continue; // nothing between this break and the next one (or the end of the report)
+            }
+
+            Element wrapper = new Element(HtmlTag.DIV);
+            wrapper.addClass("sbb_page_break");
+            wrapper.addClass((landscape ? "land" : "port") + paperSize);
+
+            // Keep document order: sections from the same containing block chain after the previous one
+            Element anchor = (previousWrapper != null && containingBlock == previousBlock) ? previousWrapper : containingBlock;
+            anchor.after(wrapper);
+            for (Node node : sectionNodes) {
+                node.remove();
+                wrapper.appendChild(node);
+            }
+
+            createdWrappers.add(wrapper);
+            previousBlock = containingBlock;
+            previousWrapper = wrapper;
+        }
+    }
+
+    /**
+     * Collects the nodes that belong to a page-break section: the marker's following siblings within its own parent
+     * (the rich-text cell content placed after an inline widget), and - once the parent is exhausted - the containing
+     * block's following report blocks. Collection stops at the next marker (or the block holding it), or the end of the
+     * report content.
+     */
+    @NotNull
+    private List<Node> collectPageBreakSectionNodes(@NotNull Element marker, @Nullable Element nextMarker, @NotNull Element container, @NotNull Element containingBlock, @NotNull Set<Element> createdWrappers) {
+        List<Node> nodes = new ArrayList<>();
+
+        // 1. Content following the marker within the same parent (inline placement inside a rich-text cell)
+        for (Node node = marker.nextSibling(); node != null; ) {
+            if (node == nextMarker) {
+                return nodes; // the next section starts here, in the same parent
+            }
+            Node following = node.nextSibling();
+            nodes.add(node);
+            node = following;
+        }
+
+        // 2. Parent exhausted: continue with the following report blocks (standalone/block placement), up to the block
+        //    that holds the next marker. Skip sections already lifted out by earlier markers in the same block.
+        Element nextBlock = (nextMarker != null) ? getDirectChildAncestor(nextMarker, container) : null;
+        for (Element sibling = containingBlock.nextElementSibling(); sibling != null && sibling != nextBlock; ) {
+            Element following = sibling.nextElementSibling();
+            if (!createdWrappers.contains(sibling)) {
+                nodes.add(sibling);
+            }
+            sibling = following;
+        }
+        return nodes;
+    }
+
+    /**
+     * Walks up from {@code element} and returns the ancestor that is a direct child of {@code container},
+     * or {@code null} if {@code element} is not contained in {@code container}.
+     */
+    @Nullable
+    private Element getDirectChildAncestor(@NotNull Element element, @NotNull Element container) {
+        Element current = element;
+        while (current != null) {
+            Element parent = current.parent();
+            if (parent == container) {
+                return current;
+            }
+            current = parent;
+        }
+        return null;
     }
 
     @VisibleForTesting

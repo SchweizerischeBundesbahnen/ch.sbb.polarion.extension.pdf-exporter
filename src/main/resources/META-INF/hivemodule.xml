@@ -135,5 +135,8 @@
     <contribution configuration-id="com.polarion.alm.richpages.widgets">
         <widget id="ch.sbb.polarion.extension.pdf.exporter.widgets.bulkPdfExportWidget" instance="instance:ch.sbb.polarion.extension.pdf_exporter.widgets.BulkPdfExportWidget" />
     </contribution>
+    <contribution configuration-id="com.polarion.alm.richpages.widgets">
+        <widget id="ch.sbb.polarion.extension.pdf.exporter.widgets.pageBreak" instance="instance:ch.sbb.polarion.extension.pdf_exporter.widgets.PageBreakWidget"/>
+    </contribution>
 
 </module>
