@@ -1,31 +1,12 @@
 package ch.sbb.polarion.extension.pdf_exporter.widgets;
 
-import com.polarion.alm.shared.api.SharedContext;
-import com.polarion.alm.shared.api.model.rp.parameter.ParameterFactory;
-import com.polarion.alm.shared.api.model.rp.parameter.RichPageParameter;
-import com.polarion.alm.shared.api.model.rp.widget.RichPageWidgetContext;
 import com.polarion.alm.shared.api.model.rp.widget.RichPageWidgetRenderingContext;
-import com.polarion.alm.shared.api.utils.collections.ReadOnlyStrictMap;
-import com.polarion.alm.shared.api.utils.collections.StrictMapImpl;
 import org.jetbrains.annotations.NotNull;
 
 public class ExportToPdfButton extends AbstractPdfExporterButtonWidget {
-    @NotNull
-    @Override
-    public String getLabel(@NotNull SharedContext sharedContext) {
-        return "Export to PDF Button";
-    }
 
-    @NotNull
-    @Override
-    public String getDetailsHtml(@NotNull RichPageWidgetContext widgetContext) {
-        return "Renders a button which opens a popup of exporting the report to PDF";
-    }
-
-    @NotNull
-    @Override
-    public ReadOnlyStrictMap<String, RichPageParameter> getParametersDefinition(@NotNull ParameterFactory parameterFactory) {
-        return new StrictMapImpl<>();
+    public ExportToPdfButton() {
+        super("Export to PDF Button", "Renders a button which opens a popup of exporting the report to PDF");
     }
 
     @NotNull

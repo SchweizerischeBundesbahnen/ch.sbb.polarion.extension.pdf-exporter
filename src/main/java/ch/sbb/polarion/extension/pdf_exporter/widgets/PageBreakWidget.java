@@ -1,10 +1,8 @@
 package ch.sbb.polarion.extension.pdf_exporter.widgets;
 
-import com.polarion.alm.shared.api.SharedContext;
 import com.polarion.alm.shared.api.model.rp.parameter.BooleanParameter;
 import com.polarion.alm.shared.api.model.rp.parameter.ParameterFactory;
 import com.polarion.alm.shared.api.model.rp.parameter.RichPageParameter;
-import com.polarion.alm.shared.api.model.rp.widget.RichPageWidgetContext;
 import com.polarion.alm.shared.api.model.rp.widget.RichPageWidgetRenderingContext;
 import com.polarion.alm.shared.api.utils.collections.ReadOnlyStrictMap;
 import com.polarion.alm.shared.api.utils.collections.StrictMap;
@@ -30,16 +28,8 @@ public class PageBreakWidget extends AbstractPdfExporterButtonWidget {
     private static final String PARAM_LANDSCAPE = "landscape";
     private static final String LABEL_CLASS = "pdf-exporter-page-break-label";
 
-    @NotNull
-    @Override
-    public String getLabel(@NotNull SharedContext sharedContext) {
-        return "Page Break";
-    }
-
-    @NotNull
-    @Override
-    public String getDetailsHtml(@NotNull RichPageWidgetContext widgetContext) {
-        return "Breaks the page; optionally switches the following content to landscape orientation";
+    public PageBreakWidget() {
+        super("Page Break", "Breaks the page; optionally switches the following content to landscape orientation");
     }
 
     @NotNull
@@ -65,7 +55,7 @@ public class PageBreakWidget extends AbstractPdfExporterButtonWidget {
 
         // The label is an authoring hint that must never reach a printout. Polarion's built-in "Export to PDF"/"Print"
         // render the widget with a pdf/print target using a renderer that ignores @media print, so for those targets we
-        // omit the label entirely. For the on-screen report view we keep it (so authors see where the break is), plus an
+        // omit the label entirely. For the on-screen report view we keep it (so authors see where the break is), plus a
         // @media print rule so a browser print of that screen HTML also drops it.
         RichTextRenderTarget target = renderingContext.target();
         if (target.isPdf() || target.isPrint()) {
