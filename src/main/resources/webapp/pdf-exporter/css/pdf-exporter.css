@@ -341,6 +341,21 @@
     width: 130px !important;
 }
 
+/* Higher-specificity guard (panel + popup ids): the wrapped <select> toggles display:none↔block,
+   and a display:block container would otherwise shrink-wrap the trigger <input>'s intrinsic width.
+   Pin the standard 130px and keep the inner trigger from stretching. */
+#pdf-exporter-panel .searchable-dropdown,
+.modal__container.pdf-exporter .searchable-dropdown {
+    width: 130px !important;
+    display: inline-block;
+}
+#pdf-exporter-panel .searchable-dropdown > .sd-trigger,
+.modal__container.pdf-exporter .searchable-dropdown > .sd-trigger {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+}
+
 /* Workitem-roles multiselect + its direction dropdown are stacked under the label. The visible
    .searchable-dropdown container is inserted next to the hidden <select> and does NOT inherit its
    margins, so indent + vertical gap are pinned on the container itself — uniformly in the side
