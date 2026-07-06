@@ -1,7 +1,7 @@
 import ExportParams from "./ExportParams.js";
 import ExportContext from "./ExportContext.js";
 import ExportPopup from "./ExportPopup.js";
-import('./../micromodal.min.js');
+import('/polarion/pdf-exporter/ui/generic/js/micromodal.min.js');
 
 export default class ExportBulk {
     ctx = null;

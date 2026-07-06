@@ -11,7 +11,8 @@ const pathMappings = {
     '/polarion/pdf-exporter/ui/generic/js/modules/ConfigurationsPane.js': pathResolve(__dirname, '../../../target/generic-jar-content/js/modules/ConfigurationsPane.js'),
     '/polarion/pdf-exporter/ui/generic/js/modules/CustomSelect.js': pathResolve(__dirname, '../../../target/generic-jar-content/js/modules/CustomSelect.js'),
     '/polarion/pdf-exporter/ui/generic/js/modules/ExtensionContext.js': pathResolve(__dirname, '../../../target/generic-jar-content/js/modules/ExtensionContext.js'),
-    '/polarion/pdf-exporter/ui/generic/js/modules/SearchableDropdown.js': pathResolve(__dirname, '../../../target/generic-jar-content/js/modules/SearchableDropdown.js')
+    '/polarion/pdf-exporter/ui/generic/js/modules/SearchableDropdown.js': pathResolve(__dirname, '../../../target/generic-jar-content/js/modules/SearchableDropdown.js'),
+    '/polarion/pdf-exporter/ui/generic/js/micromodal.min.js': pathResolve(__dirname, '../../../target/generic-jar-content/js/micromodal.min.js')
 };
 
 export async function resolve(specifier, context, nextResolve) {
