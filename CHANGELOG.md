@@ -1,5 +1,13 @@
 # Changelog
 
+## [12.5.1](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v12.5.0...v12.5.1) (2026-07-07)
+
+
+### Bug Fixes
+
+* ensure resolvable location paths for reports in non-default spaces ([#851](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/851)) ([#852](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/852)) ([48421a2](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/48421a2eb32c3933f23c9ef671f8a37feb7fcb0c))
+* ensure resolvable location paths for reports in non-default spaces ([#851](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/851)) ([#891](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/891)) ([48421a2](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/48421a2eb32c3933f23c9ef671f8a37feb7fcb0c))
+
 ## [12.5.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v12.4.2...v12.5.0) (2026-06-11)
 
 
