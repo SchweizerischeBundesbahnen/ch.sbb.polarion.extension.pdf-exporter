@@ -12,7 +12,7 @@
 
     // Extension web-context base, derived from this script's own URL (…/polarion/<ext>/js/starter.js)
     // so nothing below hardcodes the /polarion/<ext>/ segment.
-    const EXT_BASE = (document.currentScript && document.currentScript.src || '').replace(/js\/starter\.js.*$/, '');
+    const EXT_BASE = (document.currentScript && document.currentScript.src || '').replace(/js\/starter\.js.*$/, '') || '/polarion/pdf-exporter/';
 
     const TOOLBAR_HTML = `
         <table class="dleToolBarTable">
