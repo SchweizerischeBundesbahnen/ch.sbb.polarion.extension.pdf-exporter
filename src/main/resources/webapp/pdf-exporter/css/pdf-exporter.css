@@ -202,8 +202,9 @@
     vertical-align: middle;
 }
 
-.modal__container.pdf-exporter .export-item .icon img {
+.modal__container.pdf-exporter .export-item .icon .sbb-spinner {
     width: 18px;
+    height: 18px;
 }
 
 .modal__container.pdf-exporter .export-item.paused {
@@ -234,7 +235,7 @@
     content: "\f05e"; /* Check/Ticker icon from FontAwesome */
 }
 
-.modal__container.pdf-exporter .export-item:not(.in-progress) .icon img {
+.modal__container.pdf-exporter .export-item:not(.in-progress) .icon .sbb-spinner {
     display: none;
 }
 
@@ -424,6 +425,7 @@
 #export-pdf-progress, #validate-pdf-progress {
     display: none;
     width: 20px;
+    height: 20px;
     vertical-align: middle;
 }
 

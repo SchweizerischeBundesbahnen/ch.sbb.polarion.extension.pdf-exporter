@@ -1,6 +1,6 @@
 import ExportParams from "./ExportParams.js";
 import ExportContext from "./ExportContext.js";
-import { initSearchableDropdowns } from "./dropdown-utils.js";
+import { initSearchableDropdowns } from "../../generic/js/modules/searchableSelect.js";
 
 export default class ExportPopup {
 

@@ -1,7 +1,7 @@
 import ExportParams from "./ExportParams.js";
 import ExportContext from "./ExportContext.js";
 import ExportPopup from "./ExportPopup.js";
-import('/polarion/pdf-exporter/ui/generic/js/micromodal.min.js');
+import('../../generic/js/micromodal.min.js');
 
 export default class ExportBulk {
     ctx = null;
@@ -140,8 +140,10 @@ export default class ExportBulk {
             const fontAwesomeIcon = document.createElement("i");
             fontAwesomeIcon.className = "fa";
             iconSpan.appendChild(fontAwesomeIcon);
-            const inProgressIcon = document.createElement("img");
-            inProgressIcon.src = '/polarion/ria/images/progressWheel48.svg';
+            const inProgressIcon = document.createElement("span");
+            inProgressIcon.className = "sbb-spinner";
+            inProgressIcon.setAttribute("role", "img");
+            inProgressIcon.setAttribute("aria-label", "In progress");
             iconSpan.appendChild(inProgressIcon);
             div.appendChild(iconSpan);
 
