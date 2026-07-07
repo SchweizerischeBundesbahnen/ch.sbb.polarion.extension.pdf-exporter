@@ -75,15 +75,16 @@ public class DocumentCollectionHelper {
         }
 
         for (IRichPage page : collection.getRichPages()) {
+            String spaceId = page.getFolder().getName();
             ExportParams exportParams = ExportParams.builder()
                     .projectId(page.getProjectId())
                     .documentType(DocumentType.LIVE_REPORT)
-                    .locationPath(page.getPageNameWithSpace())
+                    .locationPath(spaceId + "/" + page.getPageName())
                     .revision(page.getRevision())
                     .build();
             DocumentCollectionEntry documentCollectionEntry = new DocumentCollectionEntry(
                     page.getProjectId(),
-                    page.getFolder().getName(),
+                    spaceId,
                     page.getPageName(),
                     DocumentType.LIVE_REPORT,
                     page.getRevision(),
