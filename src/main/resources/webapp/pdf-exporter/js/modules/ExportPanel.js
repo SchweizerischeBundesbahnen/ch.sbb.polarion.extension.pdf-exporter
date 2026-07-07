@@ -1,6 +1,6 @@
 import ExportParams from "./ExportParams.js";
 import ExportContext from "./ExportContext.js";
-import { initSearchableDropdowns } from "./dropdown-utils.js";
+import { initSearchableDropdowns } from "../../generic/js/modules/searchableSelect.js";
 
 export default class ExportPanel {
 
@@ -330,12 +330,12 @@ export default class ExportPanel {
             //disable components
             this.ctx.getJQueryElement(":input").attr("disabled", true);
             //show loading icon
-            this.ctx.getJQueryElement("#export-pdf-progress").show();
+            this.ctx.getJQueryElement("#export-pdf-progress").css("display", "inline-block");
         } else {
             //enable components
             this.ctx.getJQueryElement(":input").attr("disabled", false);
             //hide loading icon
-            this.ctx.getJQueryElement("#export-pdf-progress").hide();
+            this.ctx.getJQueryElement("#export-pdf-progress").css("display", "none");
         }
     }
 
@@ -357,13 +357,13 @@ export default class ExportPanel {
         //disable components
         this.ctx.getJQueryElement(":input").attr("disabled", true);
         //show loading icon
-        this.ctx.getJQueryElement("#validate-pdf-progress").show();
+        this.ctx.getJQueryElement("#validate-pdf-progress").css("display", "inline-block");
 
         const stopProgress = () => {
             //enable components
             this.ctx.getJQueryElement(":input").attr("disabled", false);
             //hide loading icon
-            this.ctx.getJQueryElement("#validate-pdf-progress").hide();
+            this.ctx.getJQueryElement("#validate-pdf-progress").css("display", "none");
             this.ctx.getElementById('validate-error').replaceChildren(); //remove div content
         };
 

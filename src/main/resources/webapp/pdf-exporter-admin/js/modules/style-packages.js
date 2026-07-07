@@ -196,8 +196,7 @@ const ImageDensity = {
 
 const RenderComments = {
     renderCommentsSelect: new SearchableDropdown({
-        selectContainer: ctx.getElementById("render-comments-select"),
-        label: ctx.getElementById("render-comments-label")
+        selectContainer: ctx.getElementById("render-comments-select")
     }),
 
     init: function () {
