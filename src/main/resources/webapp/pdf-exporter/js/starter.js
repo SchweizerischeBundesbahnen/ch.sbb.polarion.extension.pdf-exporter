@@ -10,12 +10,16 @@
 (function () {
     const timestampParam = `?timestamp=${Date.now()}`;
 
+    // Extension web-context base, derived from this script's own URL (…/polarion/<ext>/js/starter.js)
+    // so nothing below hardcodes the /polarion/<ext>/ segment.
+    const EXT_BASE = (document.currentScript && document.currentScript.src || '').replace(/js\/starter\.js.*$/, '') || '/polarion/pdf-exporter/';
+
     const TOOLBAR_HTML = `
         <table class="dleToolBarTable">
             <tr class="dleToolBarRow">
                 <td class="dleToolBarTableCell" title="Export to PDF">
                     <div class="dleToolBarSingleButton dleToolBarButton"
-                    onclick="import('/polarion/pdf-exporter/ui/js/modules/ExportPopup.js')
+                    onclick="import('${EXT_BASE}ui/js/modules/ExportPopup.js')
                                 .then(module => new module.default())
                                 .catch(console.error);">
                         <img class="polarion-MenuButton-Icon" src="/polarion/ria/images/dle/operations/actionPdfExport16.svg${timestampParam}" style="margin: 0">
@@ -33,7 +37,7 @@
                 <td ><div class="gwt-Label polarion-dle-toolbar-Padding"></div></td>
                 <td class="dleToolBarTableCell" title="Export to PDF">
                     <div class="dleToolBarSingleButton dleToolBarButton"
-                    onclick="import('/polarion/pdf-exporter/ui/js/modules/ExportPopup.js')
+                    onclick="import('${EXT_BASE}ui/js/modules/ExportPopup.js')
                                 .then(module => new module.default())
                                 .catch(console.error);">
                         <img class="polarion-MenuButton-Icon" src="/polarion/ria/images/dle/operations/actionPdfExport16.svg${timestampParam}" style="margin: 0">
@@ -58,7 +62,7 @@
     };
 
     const engine = document.createElement('script');
-    engine.src = `/polarion/pdf-exporter/ui/generic/js/dle-toolbar-starter.js${timestampParam}`;
+    engine.src = `${EXT_BASE}ui/generic/js/dle-toolbar-starter.js${timestampParam}`;
     engine.onload = function () {
         const generic = window.GenericDleToolbarStarter;
         if (!generic) {
@@ -66,12 +70,13 @@
             pending.length = 0;
             return;
         }
-        generic.injectStyles("pdf-exporter-styles", `/polarion/pdf-exporter/css/pdf-exporter.css${timestampParam}`);
-        generic.injectStyles("pdf-micromodal-styles", `/polarion/pdf-exporter/ui/generic/css/micromodal.css${timestampParam}`);
-        generic.injectStyles("generic-checkbox-styles", `/polarion/pdf-exporter/ui/generic/css/checkboxes.css${timestampParam}`);
-        generic.injectStyles("generic-searchable-dropdown-styles", `/polarion/pdf-exporter/ui/generic/css/searchable-dropdown.css${timestampParam}`);
-        generic.injectStyles("generic-inputs-styles", `/polarion/pdf-exporter/ui/generic/css/inputs.css${timestampParam}`);
-        generic.injectScript("pdf-micromodal-script", `/polarion/pdf-exporter/js/micromodal.min.js${timestampParam}`);
+        generic.injectStyles("pdf-exporter-styles", `${EXT_BASE}css/pdf-exporter.css${timestampParam}`);
+        generic.injectStyles("pdf-micromodal-styles", `${EXT_BASE}ui/generic/css/micromodal.css${timestampParam}`);
+        generic.injectStyles("generic-control-tokens", `${EXT_BASE}ui/generic/css/control-tokens.css${timestampParam}`);
+        generic.injectStyles("generic-checkbox-styles", `${EXT_BASE}ui/generic/css/checkboxes.css${timestampParam}`);
+        generic.injectStyles("generic-searchable-dropdown-styles", `${EXT_BASE}ui/generic/css/searchable-dropdown.css${timestampParam}`);
+        generic.injectStyles("generic-inputs-styles", `${EXT_BASE}ui/generic/css/inputs.css${timestampParam}`);
+        generic.injectScript("pdf-micromodal-script", `${EXT_BASE}ui/generic/js/micromodal.min.js${timestampParam}`);
         starter = generic.create({
             markerId: 'pdf-exporter-toolbar-injected',
             alternateHtml: ALTERNATE_TOOLBAR_HTML,

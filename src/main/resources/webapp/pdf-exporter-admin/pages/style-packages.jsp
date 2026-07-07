@@ -12,7 +12,6 @@
     <link rel="stylesheet" href="../ui/generic/css/code-input.min.css?bundle=<%= bundleTimestamp %>">
     <script type="text/javascript" src="../ui/generic/js/code-input.min.js?bundle=<%= bundleTimestamp %>"></script>
     <link rel="stylesheet" href="../ui/generic/css/common.css?bundle=<%= bundleTimestamp %>">
-    <link rel="stylesheet" href="../ui/generic/css/custom-select.css?bundle=<%= bundleTimestamp %>">
     <link rel="stylesheet" href="../ui/generic/css/configurations.css?bundle=<%= bundleTimestamp %>">
     <script type="module" src="../js/modules/style-packages.js?bundle=<%= bundleTimestamp %>"></script>
     <style type="text/css">
@@ -346,7 +345,7 @@
             </div>
             <div class="flex-column">
                 <div class='checkbox input-group'>
-                    <label for='embed-attachments' id='embed-attachments-label' style="margin-top: 12px;">
+                    <label for='embed-attachments' id='embed-attachments-label' style="margin-top: 5px;">
                         <input id='embed-attachments' type='checkbox'/>
                         Embed attachments into resulted PDF
                     </label>

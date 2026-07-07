@@ -1,6 +1,6 @@
 import ExportParams from "./ExportParams.js";
 import ExportContext from "./ExportContext.js";
-import { initSearchableDropdowns } from "./dropdown-utils.js";
+import { initSearchableDropdowns } from "../../generic/js/modules/searchableSelect.js";
 
 export default class ExportPopup {
 
@@ -15,6 +15,12 @@ export default class ExportPopup {
     }
 
     initPopup() {
+        // The shared generic micromodal caches one Modal instance per id and reuses it on show();
+        // since we rebuild the popup element below, drop that cached instance so show() re-binds to
+        // the new node — otherwise a 2nd+ open targets the detached old node and nothing appears.
+        if (typeof MicroModal !== "undefined") {
+            MicroModal.removeModal?.(POPUP_ID);
+        }
         document.getElementById(POPUP_ID)?.remove();
         const popup = document.createElement('div');
         popup.classList.add("modal");

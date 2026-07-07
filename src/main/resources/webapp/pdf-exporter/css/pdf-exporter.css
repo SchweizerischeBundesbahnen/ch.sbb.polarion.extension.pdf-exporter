@@ -202,8 +202,9 @@
     vertical-align: middle;
 }
 
-.modal__container.pdf-exporter .export-item .icon img {
+.modal__container.pdf-exporter .export-item .icon .sbb-spinner {
     width: 18px;
+    height: 18px;
 }
 
 .modal__container.pdf-exporter .export-item.paused {
@@ -234,7 +235,7 @@
     content: "\f05e"; /* Check/Ticker icon from FontAwesome */
 }
 
-.modal__container.pdf-exporter .export-item:not(.in-progress) .icon img {
+.modal__container.pdf-exporter .export-item:not(.in-progress) .icon .sbb-spinner {
     display: none;
 }
 
@@ -341,6 +342,21 @@
     width: 130px !important;
 }
 
+/* Higher-specificity guard (panel + popup ids): the wrapped <select> toggles display:none↔block,
+   and a display:block container would otherwise shrink-wrap the trigger <input>'s intrinsic width.
+   Pin the standard 130px and keep the inner trigger from stretching. */
+#pdf-exporter-panel .searchable-dropdown,
+.modal__container.pdf-exporter .searchable-dropdown {
+    width: 130px !important;
+    display: inline-block;
+}
+#pdf-exporter-panel .searchable-dropdown > .sd-trigger,
+.modal__container.pdf-exporter .searchable-dropdown > .sd-trigger {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+}
+
 /* Workitem-roles multiselect + its direction dropdown are stacked under the label. The visible
    .searchable-dropdown container is inserted next to the hidden <select> and does NOT inherit its
    margins, so indent + vertical gap are pinned on the container itself — uniformly in the side
@@ -409,6 +425,7 @@
 #export-pdf-progress, #validate-pdf-progress {
     display: none;
     width: 20px;
+    height: 20px;
     vertical-align: middle;
 }
 
