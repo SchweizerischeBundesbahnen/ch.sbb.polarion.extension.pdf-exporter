@@ -350,7 +350,7 @@ export default class ExportPopup {
         this.ctx.setValue("popup-render-comments-selector", stylePackage.renderComments || 'OPEN');
         this.ctx.visibleIf("popup-render-comments-selector", !!stylePackage.renderComments);
 
-        this.ctx.displayIf("popup-render-comments-options", !!stylePackage.renderComments, "flex");
+        this.ctx.visibleIf("popup-render-comments-options", !!stylePackage.renderComments);
         this.ctx.setCheckbox("popup-include-unreferenced-comments", !!stylePackage.includeUnreferencedComments);
         this.ctx.setCheckbox("popup-render-native-comments", !!stylePackage.renderNativeComments);
 
