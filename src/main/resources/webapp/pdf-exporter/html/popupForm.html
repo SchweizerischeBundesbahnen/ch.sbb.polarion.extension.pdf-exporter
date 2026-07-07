@@ -155,21 +155,23 @@
                         <option value='ALL'>All</option>
                     </select>
                 </div>
-                <div class='property-wrapper hidden visible-for-LIVE_DOC visible-for-BASELINE_COLLECTION' id='popup-render-comments-options' style='display: none; padding-left: 20px'>
-                    <label for='popup-include-unreferenced-comments' id='popup-include-unreferenced-comments-container' title="Unreferenced comments will be rendered at the end of the document">
-                        <input id='popup-include-unreferenced-comments' type='checkbox' />
-                        include unreferenced
-                    </label>
-                    <label for='popup-render-native-comments' id='popup-render-native-comments-container' title="Comments will be transformed into native PDF sticky notes/bubbles">
-                        <input id='popup-render-native-comments' type='checkbox' onchange='
+                <div class='property-wrapper hidden visible-for-LIVE_DOC visible-for-BASELINE_COLLECTION' id='popup-render-comments-options-container' style='display: none'>
+                    <div id='popup-render-comments-options' style='display: none; padding-left: 20px;column-gap: 5px;'>
+                        <label for='popup-include-unreferenced-comments' id='popup-include-unreferenced-comments-container' title="Unreferenced comments will be rendered at the end of the document">
+                            <input id='popup-include-unreferenced-comments' type='checkbox'/>
+                            include unreferenced
+                        </label>
+                        <label for='popup-render-native-comments' id='popup-render-native-comments-container' title="Comments will be transformed into native PDF sticky notes/bubbles">
+                            <input id='popup-render-native-comments' type='checkbox' onchange='
                             const warningPane = document.querySelector(".modal__content .notifications .alert.alert-warning");
                             if (warningPane) {
                                 warningPane.textContent = this.checked ? "Be aware that comments rendered in PDF as sticky notes are not compliant with any of PDF/A variants" : "";
                                 warningPane.style.display = this.checked ? "block" : "none";
                             }
                         ' />
-                        as sticky notes
-                    </label>
+                            as sticky notes
+                        </label>
+                    </div>
                 </div>
                 <div class='property-wrapper'>
                     <label for='popup-watermark'>
