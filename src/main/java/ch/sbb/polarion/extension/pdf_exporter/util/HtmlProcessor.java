@@ -1026,8 +1026,31 @@ public class HtmlProcessor {
         for (Element enumElement : enums) {
             String replacementString = localizationMap.get(enumElement.text());
             if (!StringUtils.isEmptyTrimmed(replacementString)) {
-                enumElement.text(replacementString);
+                replaceEnumLabel(enumElement, replacementString);
             }
+        }
+    }
+
+    /**
+     * Replaces the label text of an enum option while preserving child elements such as the
+     * leading enum icon {@code <img>}. Using {@link Element#text(String)} directly would drop
+     * the icon, since it removes all child nodes.
+     */
+    private void replaceEnumLabel(@NotNull Element enumElement, @NotNull String replacement) {
+        boolean applied = false;
+        for (TextNode textNode : enumElement.textNodes()) {
+            if (textNode.isBlank()) {
+                continue;
+            }
+            if (!applied) {
+                textNode.text(replacement);
+                applied = true;
+            } else {
+                textNode.text("");
+            }
+        }
+        if (!applied) {
+            enumElement.text(replacement);
         }
     }
 
