@@ -694,6 +694,80 @@ class HtmlProcessorTest {
     }
 
     @Test
+    void renumberCaptionsRestoresDomOrderTest() {
+        // Reproduces the Polarion numbering bug: a work item owns a table (rendered second, so numbered "2")
+        // followed by a macro that re-renders the same rich text (rendered first during the wiki phase, so
+        // numbered "1"). In DOM order the work item's own caption comes first but carries the higher number.
+        String html = """
+                <p class="polarion-rte-caption-paragraph">Table <span data-sequence="Table" class="polarion-rte-caption">2<a name="dlecaption_5"></a></span> Own table</p>
+                <p class="polarion-rte-caption-paragraph">Table <span data-sequence="Table" class="polarion-rte-caption">1<a name="dlecaption_6"></a></span> Macro copy</p>
+                """;
+        Document document = JSoupUtils.parseHtml(html);
+
+        processor.renumberCaptions(document);
+
+        Elements captions = document.select("span.polarion-rte-caption[data-sequence]");
+        assertEquals("1", captions.get(0).childNodes().stream().filter(org.jsoup.nodes.TextNode.class::isInstance).findFirst().map(n -> ((org.jsoup.nodes.TextNode) n).text()).orElse(null));
+        assertEquals("2", captions.get(1).childNodes().stream().filter(org.jsoup.nodes.TextNode.class::isInstance).findFirst().map(n -> ((org.jsoup.nodes.TextNode) n).text()).orElse(null));
+    }
+
+    @Test
+    void renumberCaptionsKeepsSequencesIndependentTest() {
+        // Each sequence (Table, Figure, ...) is numbered independently, following DOM order within the sequence.
+        String html = """
+                <p class="polarion-rte-caption-paragraph">Figure <span data-sequence="Figure" class="polarion-rte-caption">3</span> Fig A</p>
+                <p class="polarion-rte-caption-paragraph">Table <span data-sequence="Table" class="polarion-rte-caption">2</span> Tab A</p>
+                <p class="polarion-rte-caption-paragraph">Figure <span data-sequence="Figure" class="polarion-rte-caption">9</span> Fig B</p>
+                <p class="polarion-rte-caption-paragraph">Table <span data-sequence="Table" class="polarion-rte-caption">7</span> Tab B</p>
+                """;
+        Document document = JSoupUtils.parseHtml(html);
+
+        processor.renumberCaptions(document);
+
+        Elements captions = document.select("span.polarion-rte-caption[data-sequence]");
+        assertEquals("1", captions.get(0).text()); // Figure 1
+        assertEquals("1", captions.get(1).text()); // Table 1
+        assertEquals("2", captions.get(2).text()); // Figure 2
+        assertEquals("2", captions.get(3).text()); // Table 2
+    }
+
+    @Test
+    void renumberCaptionsLeavesNonNumericSpansUntouchedTest() {
+        // Captions without a resolved number (e.g. an editor placeholder) must not be rewritten.
+        String html = """
+                <p class="polarion-rte-caption-paragraph">Table <span data-sequence="Table" class="polarion-rte-caption">#</span> Placeholder</p>
+                <p class="polarion-rte-caption-paragraph">Table <span data-sequence="Table" class="polarion-rte-caption">5</span> Real</p>
+                """;
+        Document document = JSoupUtils.parseHtml(html);
+
+        processor.renumberCaptions(document);
+
+        Elements captions = document.select("span.polarion-rte-caption[data-sequence]");
+        assertEquals("#", captions.get(0).text());
+        assertEquals("1", captions.get(1).text());
+    }
+
+    @Test
+    void renumberCaptionsHandlesEdgeCasesTest() {
+        // - empty data-sequence: skipped, left untouched
+        // - caption without a text node (only an anchor): skipped, no exception
+        // - caption already carrying the correct number: left untouched (no needless rewrite)
+        String html = """
+                <p class="polarion-rte-caption-paragraph">Table <span data-sequence="" class="polarion-rte-caption">4</span> Empty sequence</p>
+                <p class="polarion-rte-caption-paragraph">Table <span data-sequence="Table" class="polarion-rte-caption"><a name="dlecaption_1"></a></span> No number</p>
+                <p class="polarion-rte-caption-paragraph">Table <span data-sequence="Table" class="polarion-rte-caption">1</span> Already correct</p>
+                """;
+        Document document = JSoupUtils.parseHtml(html);
+
+        processor.renumberCaptions(document);
+
+        Elements captions = document.select("span.polarion-rte-caption[data-sequence]");
+        assertEquals("4", captions.get(0).text());       // empty sequence untouched
+        assertEquals("", captions.get(1).text().trim()); // no text node, still no number
+        assertEquals("1", captions.get(2).text());       // first real "Table" caption, already 1
+    }
+
+    @Test
     @SneakyThrows
     void adjustReportedByTest() {
         String initialHtml = """
