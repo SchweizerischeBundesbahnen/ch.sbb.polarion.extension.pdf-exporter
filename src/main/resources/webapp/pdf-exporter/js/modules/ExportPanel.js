@@ -372,7 +372,7 @@ export default class ExportPanel {
 
         this.ctx.callAsync({
             method: "POST",
-            url: "/polarion/pdf-exporter/rest/internal/validate?max-results=6",
+            url: `/polarion/pdf-exporter/rest/internal/validate?max-results=${MAX_PAGE_PREVIEWS + 1}`,
             contentType: "application/json",
             responseType: "json",
             body: request,
@@ -382,13 +382,18 @@ export default class ExportPanel {
                 let result = request.response;
                 let pages = result.invalidPages.length;
                 if (pages === 0) {
-                    this.ctx.getJQueryElement("#validate-ok").append("OK");
+                    this.ctx.getJQueryElement("#validate-ok").append("All pages are valid");
                     return;
                 }
-                let message = (pages > 5 ? 'More than 5' : pages) + ' invalid page' + (pages === 1 ? '' : 's') + ' found:';
+                const pagesWord = 'page' + (pages === 1 ? '' : 's');
+                let message = pages > MAX_PAGE_PREVIEWS
+                    ? `Invalid pages found. First ${MAX_PAGE_PREVIEWS} of them:`
+                    : `${pages} invalid ${pagesWord} found:`;
                 container.appendChild(document.createTextNode(message));
                 container.appendChild(document.createElement("br"));
-                for (const page of result.invalidPages) {
+                const pagesQuantity = Math.min(MAX_PAGE_PREVIEWS, result.invalidPages.length);
+                for (let i = 0; i < pagesQuantity; i++) {
+                    const page = result.invalidPages[i];
                     let img = document.createElement("img");
                     img.className = 'validate-result-img';
                     img.src = 'data:image/png;base64,' + page.content;
@@ -422,3 +427,5 @@ export default class ExportPanel {
         });
     }
 }
+
+const MAX_PAGE_PREVIEWS = 4;

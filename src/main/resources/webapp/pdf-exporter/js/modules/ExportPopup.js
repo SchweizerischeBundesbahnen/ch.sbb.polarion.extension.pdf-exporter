@@ -458,7 +458,7 @@ export default class ExportPopup {
 
         this.callAsync({
             method: "POST",
-            url: "/polarion/pdf-exporter/rest/internal/validate?max-results=5",
+            url: `/polarion/pdf-exporter/rest/internal/validate?max-results=${MAX_PAGE_PREVIEWS + 1}`,
             body: exportParams.toJSON(),
             responseType: "json"
         }).then(({response}) => {
