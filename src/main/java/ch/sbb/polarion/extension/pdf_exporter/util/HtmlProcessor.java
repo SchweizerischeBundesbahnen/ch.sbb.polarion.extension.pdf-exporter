@@ -1103,9 +1103,11 @@ public class HtmlProcessor {
      * (the editor numbers captions with CSS counters, i.e. in DOM order). We restore DOM-order numbering here.
      */
     @VisibleForTesting
+    @SuppressWarnings("java:S135") // several continue used to keep logic simple
     void renumberCaptions(@NotNull Document document) {
         Map<String, Integer> sequenceCounters = new HashMap<>();
-        for (Element captionSpan : document.select("span.polarion-rte-caption[data-sequence]")) {
+        // Scope must match generateTableOfFigures so the numbers stay consistent with the generated list.
+        for (Element captionSpan : document.select("p.polarion-rte-caption-paragraph span.polarion-rte-caption[data-sequence]")) {
             String sequence = captionSpan.dataset().get("sequence");
             if (StringUtils.isEmpty(sequence)) {
                 continue;

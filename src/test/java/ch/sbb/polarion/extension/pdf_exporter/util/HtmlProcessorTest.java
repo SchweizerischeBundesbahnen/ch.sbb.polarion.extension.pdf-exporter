@@ -720,6 +720,26 @@ class HtmlProcessorTest {
     }
 
     @Test
+    void renumberCaptionsHandlesEdgeCasesTest() {
+        // - empty data-sequence: skipped, left untouched
+        // - caption without a text node (only an anchor): skipped, no exception
+        // - caption already carrying the correct number: left untouched (no needless rewrite)
+        String html = """
+                <p class="polarion-rte-caption-paragraph">Table <span data-sequence="" class="polarion-rte-caption">4</span> Empty sequence</p>
+                <p class="polarion-rte-caption-paragraph">Table <span data-sequence="Table" class="polarion-rte-caption"><a name="dlecaption_1"></a></span> No number</p>
+                <p class="polarion-rte-caption-paragraph">Table <span data-sequence="Table" class="polarion-rte-caption">1</span> Already correct</p>
+                """;
+        Document document = JSoupUtils.parseHtml(html);
+
+        processor.renumberCaptions(document);
+
+        Elements captions = document.select("span.polarion-rte-caption[data-sequence]");
+        assertEquals("4", captions.get(0).text());       // empty sequence untouched
+        assertEquals("", captions.get(1).text().trim()); // no text node, still no number
+        assertEquals("1", captions.get(2).text());       // first real "Table" caption, already 1
+    }
+
+    @Test
     @SneakyThrows
     void adjustReportedByTest() {
         String initialHtml = """
