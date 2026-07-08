@@ -1037,21 +1037,8 @@ public class HtmlProcessor {
      * the icon, since it removes all child nodes.
      */
     private void replaceEnumLabel(@NotNull Element enumElement, @NotNull String replacement) {
-        boolean applied = false;
-        for (TextNode textNode : enumElement.textNodes()) {
-            if (textNode.isBlank()) {
-                continue;
-            }
-            if (!applied) {
-                textNode.text(replacement);
-                applied = true;
-            } else {
-                textNode.text("");
-            }
-        }
-        if (!applied) {
-            enumElement.text(replacement);
-        }
+        enumElement.textNodes().forEach(Node::remove);
+        enumElement.appendText(replacement);
     }
 
     public void adjustContentToFitPage(@NotNull Document document, @NotNull ConversionParams conversionParams) {
