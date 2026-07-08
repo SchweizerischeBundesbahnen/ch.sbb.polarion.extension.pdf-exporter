@@ -34,6 +34,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -325,6 +326,33 @@ class HtmlProcessorTest {
             // Spaces and new lines are removed to exclude difference in space characters
             assertEquals(TestStringUtils.removeNonsensicalSymbols(validHtml), TestStringUtils.removeNonsensicalSymbols(fixedHtml));
         }
+    }
+
+    @Test
+    void localizeEnumsPreservesIconForUncommonTextNodeShapesTest() {
+        Map<String, String> deTranslations = new HashMap<>();
+        deTranslations.put("draft", "Entwurf");
+        deTranslations.put("", "Empty"); // matches an enum option that has no visible label
+        when(localizationSettings.load(anyString(), any(SettingId.class)))
+                .thenReturn(new LocalizationModel(deTranslations, Map.of(), Map.of()));
+
+        // Label split into several text nodes around the icon: the localized value replaces the
+        // first non-blank node and the trailing label node is removed, while the icon is kept.
+        Document splitLabel = JSoupUtils.parseHtml("<span class=\"polarion-JSEnumOption\">dr<img src=\"/icon.gif\"/>aft</span>");
+        processor.localizeEnums(splitLabel, getExportParams());
+        Element splitSpan = splitLabel.selectFirst("span.polarion-JSEnumOption");
+        assertEquals(1, splitSpan.select("img").size());
+        assertEquals("Entwurf", splitSpan.text());
+        assertEquals(1, splitSpan.textNodes().size());
+
+        // Enum option that only carries an icon (no visible label): the localized value is
+        // appended after the icon instead of being dropped.
+        Document iconOnly = JSoupUtils.parseHtml("<span class=\"polarion-JSEnumOption\"><img src=\"/icon.gif\"/></span>");
+        processor.localizeEnums(iconOnly, getExportParams());
+        Element iconSpan = iconOnly.selectFirst("span.polarion-JSEnumOption");
+        assertEquals(1, iconSpan.select("img").size());
+        assertEquals("Empty", iconSpan.text());
+        assertEquals("img", iconSpan.child(0).nodeName());
     }
 
     @Test
