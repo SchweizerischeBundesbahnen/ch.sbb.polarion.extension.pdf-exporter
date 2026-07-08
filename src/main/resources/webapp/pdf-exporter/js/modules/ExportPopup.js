@@ -197,10 +197,16 @@ export default class ExportPopup {
         });
     }
 
+    // Roles can only be selected for regular document exports. Reports, test runs and bulk exports
+    // skip loading role options, so the roles selector has no data and must stay hidden.
+    rolesSelectable() {
+        return this.ctx.getDocumentType() !== ExportParams.DocumentType.LIVE_REPORT
+            && this.ctx.getDocumentType() !== ExportParams.DocumentType.TEST_RUN
+            && this.ctx.getExportType() !== ExportParams.ExportType.BULK;
+    }
+
     loadLinkRoles() {
-        if (this.ctx.getDocumentType() === ExportParams.DocumentType.LIVE_REPORT
-            || this.ctx.getDocumentType() === ExportParams.DocumentType.TEST_RUN
-            || this.ctx.getExportType() === ExportParams.ExportType.BULK) {
+        if (!this.rolesSelectable()) {
             return Promise.resolve(); // Skip loading link roles for reports, test runs and bulk export
         }
 
@@ -415,15 +421,16 @@ export default class ExportPopup {
             }
         }
         // Roles were selected via raw option.selected; sync the multiselect widget so its chips
-        // reflect them — but only when the selector is actually shown. Bulk (and report/test-run)
-        // exports skip loadLinkRoles, so syncing there would read stale/empty options into a
-        // hidden widget. The widget otherwise auto-syncs only on option add/remove.
-        if (this.ctx.getExportType() !== ExportParams.ExportType.BULK && rolesProvided) {
+        // reflect them — but only when the selector is actually shown. Reports, test runs and bulk
+        // exports skip loadLinkRoles, so the options aren't loaded and the selector stays hidden;
+        // syncing there would read stale/empty options into a hidden widget.
+        const showRoles = this.rolesSelectable() && rolesProvided;
+        if (showRoles) {
             this.ctx.getElementById("popup-roles-selector")?._searchableDropdown?.syncFromElement();
         }
-        this.ctx.displayIf("popup-roles-selector", this.ctx.getExportType() !== ExportParams.ExportType.BULK && rolesProvided, "block");
+        this.ctx.displayIf("popup-roles-selector", showRoles, "block");
         this.ctx.setValue("popup-roles-direction-selector", stylePackage.linkRoleDirection || ExportParams.LinkRoleDirection.BOTH);
-        this.ctx.displayIf("popup-roles-direction-selector", this.ctx.getExportType() !== ExportParams.ExportType.BULK && rolesProvided, "block");
+        this.ctx.displayIf("popup-roles-direction-selector", showRoles, "block");
 
         this.ctx.displayIf("popup-style-package-content",
             (!this.autoSelectStylePackageAvailable() || !this.ctx.getCheckboxValueById("popup-auto-select-style-package")) && stylePackage.exposeSettings);
