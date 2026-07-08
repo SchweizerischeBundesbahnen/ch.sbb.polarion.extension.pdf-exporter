@@ -291,6 +291,30 @@
     vertical-align: middle;
 }
 
+/* The bulk export widget renders on a Polarion page, not inside a .form-wrapper / .modal__container,
+   so the shared 2606 checkbox styling (generic checkboxes.css) does not reach it. Re-apply it scoped
+   to the widget's own root — same tokens and images — rather than tagging the widget with the broad
+   .form-wrapper class, which would also opt it into unrelated form-field scopes. */
+.polarion-PdfExporter-BulkExportWidget input[type="checkbox"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: var(--sbb-toggle-size, 15px);
+    height: var(--sbb-toggle-size, 15px);
+    margin: 0 4px 0 0;
+    vertical-align: middle;
+    cursor: pointer;
+    background: var(--sbb-checkbox-unchecked, url(/polarion/ria/images/checkbox/unchecked.png)) no-repeat center;
+    background-size: var(--sbb-toggle-size, 15px) var(--sbb-toggle-size, 15px);
+}
+
+.polarion-PdfExporter-BulkExportWidget input[type="checkbox"]:checked {
+    background-image: var(--sbb-checkbox-checked, url(/polarion/ria/images/checkbox/checked.png));
+}
+
+.polarion-PdfExporter-BulkExportWidget input[type="checkbox"]:indeterminate {
+    background-image: var(--sbb-checkbox-indeterminate, url(/polarion/ria/images/checkbox/grayed.png));
+}
+
 .property-wrapper .more-info {
     background: url(/polarion/ria/images/msginfo.png) no-repeat;
     width: 16px;
