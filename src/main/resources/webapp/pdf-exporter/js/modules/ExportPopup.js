@@ -415,8 +415,12 @@ export default class ExportPopup {
             }
         }
         // Roles were selected via raw option.selected; sync the multiselect widget so its chips
-        // reflect them (the widget only auto-syncs on option add/remove or a 'change' event).
-        this.ctx.getElementById("popup-roles-selector")?._searchableDropdown?.syncFromElement();
+        // reflect them — but only when the selector is actually shown. Bulk (and report/test-run)
+        // exports skip loadLinkRoles, so syncing there would read stale/empty options into a
+        // hidden widget. The widget otherwise auto-syncs only on option add/remove.
+        if (this.ctx.getExportType() !== ExportParams.ExportType.BULK && rolesProvided) {
+            this.ctx.getElementById("popup-roles-selector")?._searchableDropdown?.syncFromElement();
+        }
         this.ctx.displayIf("popup-roles-selector", this.ctx.getExportType() !== ExportParams.ExportType.BULK && rolesProvided, "block");
         this.ctx.setValue("popup-roles-direction-selector", stylePackage.linkRoleDirection || ExportParams.LinkRoleDirection.BOTH);
         this.ctx.displayIf("popup-roles-direction-selector", this.ctx.getExportType() !== ExportParams.ExportType.BULK && rolesProvided, "block");
