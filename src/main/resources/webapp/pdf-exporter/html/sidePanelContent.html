@@ -130,7 +130,7 @@
             </label>
         </div>
         <div class='property-wrapper'>
-            <label for='render-comments'>
+            <label>
                 <input id='render-comments' onchange='document.querySelector("#pdf-exporter-panel #render-comments-selector").style.display = this.checked ? "block" : "none";document.querySelector("#pdf-exporter-panel #render-comments-options").style.display = this.checked ? "flex" : "none"' type='checkbox'/>
                 Comments rendering
             </label>
@@ -140,7 +140,7 @@
             </select>
         </div>
         <div class='property-wrapper' id='render-comments-options' style='display: none; padding-left: 20px'>
-            <label for='include-unreferenced-comments' id='include-unreferenced-comments-container' title="Unreferenced comments will be rendered at the end of the document">
+            <label id='include-unreferenced-comments-container' title="Unreferenced comments will be rendered at the end of the document">
                 <input id='include-unreferenced-comments' type='checkbox' />
                 include unreferenced
             </label>
