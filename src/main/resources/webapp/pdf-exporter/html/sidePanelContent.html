@@ -22,7 +22,7 @@
     <div id='style-package-content' style='border-top: 1px solid #eee; padding-top: 10px;'>
         <p>Selected style package exposes its settings, so you can redefine them.</p>
         <div class='property-wrapper'>
-            <label for='cover-page-selector'>
+            <label for='cover-page-checkbox'>
                 <input id='cover-page-checkbox' onchange='document.querySelector("#pdf-exporter-panel #cover-page-selector").style.display = this.checked ? "inline-block" : "none"' type='checkbox' {COVER_PAGE_SELECTED}/>
                 Cover page:
             </label>
@@ -49,7 +49,7 @@
             </select>
         </div>
         <div class='property-wrapper {WEBHOOKS_DISPLAY}' style='border-top: 1px solid #eee; padding-top: 10px;'>
-            <label for='webhooks-selector'>
+            <label for='webhooks-checkbox'>
                 <input id='webhooks-checkbox' onchange='document.querySelector("#pdf-exporter-panel #webhooks-selector").style.display = this.checked ? "inline-block" : "none"' type='checkbox' {WEBHOOKS_SELECTED}/>
                 Webhooks:
             </label>
