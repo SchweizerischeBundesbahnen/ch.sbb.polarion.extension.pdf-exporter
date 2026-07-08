@@ -94,7 +94,7 @@ public class BulkPdfExportWidgetRenderer extends AbstractWidgetRenderer {
         } else {
             String panelId = "bulk-%s".formatted(UUID.randomUUID().toString());
             HtmlTagBuilder wrap = builder.tag().div();
-            wrap.attributes().className("polarion-PdfExporter-BulkExportWidget").id(panelId);
+            wrap.attributes().className("polarion-PdfExporter-BulkExportWidget form-wrapper").id(panelId);
 
             HtmlTagBuilder header = wrap.append().tag().div();
             header.attributes().className("header");
@@ -122,6 +122,7 @@ public class BulkPdfExportWidgetRenderer extends AbstractWidgetRenderer {
                         .catch(console.error);""".formatted(panelId, exportPages.value()));
 
             wrap.append().tag().style().append().html(ScopeUtils.getFileContent("/css/micromodal.css"));
+            wrap.append().tag().style().append().html(ScopeUtils.getFileContent("/css/checkboxes.css"));
             wrap.append().tag().style().append().html(ScopeUtils.getFileContent("/webapp/pdf-exporter/css/pdf-exporter.css"));
 
             HtmlContentBuilder contentBuilder = mainTable.append();
