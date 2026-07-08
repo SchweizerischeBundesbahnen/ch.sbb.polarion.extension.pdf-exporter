@@ -78,7 +78,9 @@ public class PolarionTypes {
         return formatForTimeZone(fieldValue, DateTimeFormatter.ofLocalizedDateTime(FormatStyle.LONG).withLocale(locale), timeZone);
     }
 
-    public @NotNull String formatForTimeZone(@NotNull Date fieldValue, @NotNull DateTimeFormatter format, @NotNull TimeZone timeZone) {
+    // Internal helper only (callers use convertToTime / convertToDateTime). Kept private so the
+    // formatter-type parameter is not part of the public API surface.
+    private @NotNull String formatForTimeZone(@NotNull Date fieldValue, @NotNull DateTimeFormatter format, @NotNull TimeZone timeZone) {
         return format.withZone(timeZone.toZoneId()).format(fieldValue.toInstant());
     }
 
