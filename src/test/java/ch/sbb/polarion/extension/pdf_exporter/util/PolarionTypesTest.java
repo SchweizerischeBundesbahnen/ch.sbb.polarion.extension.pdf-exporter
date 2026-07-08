@@ -17,6 +17,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
+import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
@@ -90,6 +91,38 @@ class PolarionTypesTest {
                 .contains("September 9, 2018")
                 .contains("2:13:14")
                 .contains("AM"); // CET/CEST offset vs UTC
+    }
+
+    @Test
+    void localizedFieldFormattingMatchesLegacyJavaTextOutput() throws Exception {
+        // Regression guard for the java.text -> java.time refactor: the localized LONG date, time
+        // and date-time formats must render identically to the previous DateFormat output for every
+        // supported locale, so exported field values do not change. The legacy DateFormat is used
+        // as the oracle so this stays valid across JDK/CLDR data updates (both engines move
+        // together) and only fails on a genuine divergence between them.
+        TimeZone tz = TimeZone.getTimeZone("Europe/Zurich");
+        TimeZone.setDefault(tz); // the DateOnly branch formats in the system default zone
+        Date value = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS Z").parse("2026-01-09 13:05:07.123 +0000");
+        DateOnly dateOnly = DateOnly.parse("2026-01-09");
+
+        for (Locale locale : List.of(Locale.GERMAN, Locale.FRENCH, Locale.ITALIAN, Locale.ENGLISH, Locale.forLanguageTag("de-CH"))) {
+            DateFormat legacyDateTime = DateFormat.getDateTimeInstance(DateFormat.LONG, DateFormat.LONG, locale);
+            legacyDateTime.setTimeZone(tz);
+            assertThat(PolarionTypes.convertToDateTime(value, locale, tz))
+                    .as("date-time for %s", locale)
+                    .isEqualTo(legacyDateTime.format(value));
+
+            DateFormat legacyTime = DateFormat.getTimeInstance(DateFormat.LONG, locale);
+            legacyTime.setTimeZone(tz);
+            assertThat(PolarionTypes.convertToTime(value, locale, tz))
+                    .as("time for %s", locale)
+                    .isEqualTo(legacyTime.format(value));
+
+            DateFormat legacyDate = DateFormat.getDateInstance(DateFormat.LONG, locale);
+            assertThat(PolarionTypes.convertSingleFieldValueToString(dateOnly, locale, tz))
+                    .as("date for %s", locale)
+                    .isEqualTo(legacyDate.format(dateOnly.getDate()));
+        }
     }
 
     @Test
