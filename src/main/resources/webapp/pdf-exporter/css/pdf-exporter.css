@@ -311,8 +311,12 @@
     background-image: var(--sbb-checkbox-checked, url(/polarion/ria/images/checkbox/checked.png));
 }
 
+/* Generic hosts the indeterminate checkbox image. This stylesheet is inlined into the bulk widget
+   (so a relative url() has no reliable base) and this widget already references /polarion/pdf-exporter/
+   paths, so point at the served generic image absolutely rather than via the relative
+   --sbb-checkbox-indeterminate token. */
 .polarion-PdfExporter-BulkExportWidget input[type="checkbox"]:indeterminate {
-    background-image: var(--sbb-checkbox-indeterminate, url(/polarion/ria/images/checkbox/grayed.png));
+    background-image: url(/polarion/pdf-exporter/ui/generic/images/checkbox-indeterminate.png);
 }
 
 .property-wrapper .more-info {
