@@ -22,7 +22,7 @@
     <div id='style-package-content' style='border-top: 1px solid #eee; padding-top: 10px;'>
         <p>Selected style package exposes its settings, so you can redefine them.</p>
         <div class='property-wrapper'>
-            <label for='cover-page-selector'>
+            <label for='cover-page-checkbox'>
                 <input id='cover-page-checkbox' onchange='document.querySelector("#pdf-exporter-panel #cover-page-selector").style.display = this.checked ? "inline-block" : "none"' type='checkbox' {COVER_PAGE_SELECTED}/>
                 Cover page:
             </label>
@@ -49,7 +49,7 @@
             </select>
         </div>
         <div class='property-wrapper {WEBHOOKS_DISPLAY}' style='border-top: 1px solid #eee; padding-top: 10px;'>
-            <label for='webhooks-selector'>
+            <label for='webhooks-checkbox'>
                 <input id='webhooks-checkbox' onchange='document.querySelector("#pdf-exporter-panel #webhooks-selector").style.display = this.checked ? "inline-block" : "none"' type='checkbox' {WEBHOOKS_SELECTED}/>
                 Webhooks:
             </label>
@@ -130,7 +130,7 @@
             </label>
         </div>
         <div class='property-wrapper'>
-            <label for='render-comments'>
+            <label>
                 <input id='render-comments' onchange='document.querySelector("#pdf-exporter-panel #render-comments-selector").style.display = this.checked ? "block" : "none";document.querySelector("#pdf-exporter-panel #render-comments-options").style.display = this.checked ? "flex" : "none"' type='checkbox'/>
                 Comments rendering
             </label>
@@ -140,7 +140,7 @@
             </select>
         </div>
         <div class='property-wrapper' id='render-comments-options' style='display: none; padding-left: 20px'>
-            <label for='include-unreferenced-comments' id='include-unreferenced-comments-container' title="Unreferenced comments will be rendered at the end of the document">
+            <label id='include-unreferenced-comments-container' title="Unreferenced comments will be rendered at the end of the document">
                 <input id='include-unreferenced-comments' type='checkbox' />
                 include unreferenced
             </label>
