@@ -30,6 +30,7 @@ import org.jsoup.select.Elements;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -134,6 +135,8 @@ public class HtmlProcessor {
 
             // Localize enumeration values
             timedIfNotNull(generationLog, "Localize enums", () -> localizeEnums(document, exportParams));
+
+            timedIfNotNull(generationLog, "Renumber captions", () -> renumberCaptions(document));
 
             timedIfNotNull(generationLog, "Add table of figures", () -> addTableOfFigures(document));
         }
@@ -1087,6 +1090,35 @@ public class HtmlProcessor {
         // which may contain a lot of nbsp too. This may occasionally result in exceeding page width lines.
         // Replace them with thin spaces to prevent overflow while maintaining some visual spacing.
         return html.replaceAll("&nbsp;|\u00A0", "&thinsp;");
+    }
+
+    /**
+     * Reassigns caption numbers ("Table 1", "Figure 2", ...) following the visual (DOM) order of the captions.
+     * <p>
+     * Polarion generates caption numbers server-side via a single stateful counter that increments in render
+     * order (see {@code RichTextCaption.render} / {@code CaptionIdGenerator}). For PDF export Polarion renders
+     * all wiki/macro blocks first (see {@code ServerRichTextDocumentBase.renderImpl}) and only then the document's
+     * own parts. When a macro re-renders a work item's rich text that already contains a numbered caption, the
+     * macro copy grabs the lower number, so the numbering ends up reversed relative to what the editor shows
+     * (the editor numbers captions with CSS counters, i.e. in DOM order). We restore DOM-order numbering here.
+     */
+    @VisibleForTesting
+    void renumberCaptions(@NotNull Document document) {
+        Map<String, Integer> sequenceCounters = new HashMap<>();
+        for (Element captionSpan : document.select("span.polarion-rte-caption[data-sequence]")) {
+            String sequence = captionSpan.dataset().get("sequence");
+            if (StringUtils.isEmpty(sequence)) {
+                continue;
+            }
+            Node numberNode = captionSpan.childNodes().stream().filter(TextNode.class::isInstance).findFirst().orElse(null);
+            if (!(numberNode instanceof TextNode numberTextNode) || !numberTextNode.text().trim().matches("\\d+")) {
+                continue;
+            }
+            int nextNumber = sequenceCounters.merge(sequence, 1, Integer::sum);
+            if (!numberTextNode.text().trim().equals(String.valueOf(nextNumber))) {
+                numberTextNode.text(String.valueOf(nextNumber));
+            }
+        }
     }
 
     @VisibleForTesting
