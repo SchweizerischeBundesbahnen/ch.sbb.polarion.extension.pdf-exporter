@@ -197,17 +197,18 @@ export default class ExportPopup {
         });
     }
 
-    // Roles can only be selected for regular document exports. Reports, test runs and bulk exports
-    // skip loading role options, so the roles selector has no data and must stay hidden.
+    // Work-item link roles apply only to documents and baseline collections (single or bulk alike;
+    // bulk just runs the per-document conversion for each selected item). This mirrors the roles
+    // row's visible-for-LIVE_DOC / visible-for-BASELINE_COLLECTION markup — reports, test runs and
+    // wiki pages carry no link roles, so their selector has no data and stays hidden.
     rolesSelectable() {
-        return this.ctx.getDocumentType() !== ExportParams.DocumentType.LIVE_REPORT
-            && this.ctx.getDocumentType() !== ExportParams.DocumentType.TEST_RUN
-            && this.ctx.getExportType() !== ExportParams.ExportType.BULK;
+        return this.ctx.getDocumentType() === ExportParams.DocumentType.LIVE_DOC
+            || this.ctx.getDocumentType() === ExportParams.DocumentType.BASELINE_COLLECTION;
     }
 
     loadLinkRoles() {
         if (!this.rolesSelectable()) {
-            return Promise.resolve(); // Skip loading link roles for reports, test runs and bulk export
+            return Promise.resolve(); // Skip loading link roles where they don't apply (reports, test runs, wiki pages)
         }
 
         return new Promise((resolve, reject) => {
@@ -421,9 +422,9 @@ export default class ExportPopup {
             }
         }
         // Roles were selected via raw option.selected; sync the multiselect widget so its chips
-        // reflect them — but only when the selector is actually shown. Reports, test runs and bulk
-        // exports skip loadLinkRoles, so the options aren't loaded and the selector stays hidden;
-        // syncing there would read stale/empty options into a hidden widget.
+        // reflect them — but only when the selector is actually shown. Types without link roles
+        // (reports, test runs, wiki pages) skip loadLinkRoles, so their options aren't loaded and
+        // the selector stays hidden; syncing there would read stale/empty options into a hidden widget.
         const showRoles = this.rolesSelectable() && rolesProvided;
         if (showRoles) {
             this.ctx.getElementById("popup-roles-selector")?._searchableDropdown?.syncFromElement();
@@ -603,9 +604,9 @@ export default class ExportPopup {
         }
 
         const selectedRoles = [];
-        // Only collect roles for export types that actually load them; the popup element is reused,
-        // so a report/test-run/bulk export must not serialize stale role options left checked and
-        // selected by a previous regular document export.
+        // Only serialize roles where they apply. The popup element is reused, so an export type
+        // without link roles must not send stale role options left checked and selected by a
+        // previous document export.
         if (this.rolesSelectable() && this.ctx.getElementById("popup-selected-roles").checked) {
             const selectedOptions = Array.from(this.ctx.getElementById("popup-roles-selector").options).filter(opt => opt.selected);
             selectedRoles.push(...selectedOptions.map(opt => opt.value));
