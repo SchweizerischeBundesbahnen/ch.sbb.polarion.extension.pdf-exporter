@@ -369,7 +369,7 @@ export default class ExportPanel {
 
         this.ctx.callAsync({
             method: "POST",
-            url: "/polarion/pdf-exporter/rest/internal/validate?max-results=5",
+            url: `/polarion/pdf-exporter/rest/internal/validate?max-results=${MAX_PAGE_PREVIEWS + 1}`,
             contentType: "application/json",
             responseType: "json",
             body: request,
