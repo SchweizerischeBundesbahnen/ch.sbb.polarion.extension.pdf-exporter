@@ -603,7 +603,10 @@ export default class ExportPopup {
         }
 
         const selectedRoles = [];
-        if (this.ctx.getElementById("popup-selected-roles").checked) {
+        // Only collect roles for export types that actually load them; the popup element is reused,
+        // so a report/test-run/bulk export must not serialize stale role options left checked and
+        // selected by a previous regular document export.
+        if (this.rolesSelectable() && this.ctx.getElementById("popup-selected-roles").checked) {
             const selectedOptions = Array.from(this.ctx.getElementById("popup-roles-selector").options).filter(opt => opt.selected);
             selectedRoles.push(...selectedOptions.map(opt => opt.value));
         }
