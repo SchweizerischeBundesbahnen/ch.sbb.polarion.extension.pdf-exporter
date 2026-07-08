@@ -1034,18 +1034,25 @@ public class HtmlProcessor {
     /**
      * Replaces the label text of an enum option in place while preserving child elements such as
      * the leading enum icon {@code <img>}. Using {@link Element#text(String)} directly would drop
-     * the icon, since it removes all child nodes. The localized text keeps the original label's
-     * position: the first text node is updated and any remaining text nodes are removed.
+     * the icon, since it removes all child nodes. The localized text replaces the first non-blank
+     * text node (the visible label) in its original position, so it stays after the icon even when
+     * the markup contains formatting whitespace; remaining non-blank text nodes are removed.
      */
     private void replaceEnumLabel(@NotNull Element enumElement, @NotNull String replacement) {
-        List<TextNode> textNodes = enumElement.textNodes();
-        if (textNodes.isEmpty()) {
-            enumElement.appendText(replacement);
-            return;
+        boolean replaced = false;
+        for (TextNode textNode : enumElement.textNodes()) {
+            if (textNode.isBlank()) {
+                continue;
+            }
+            if (replaced) {
+                textNode.remove();
+            } else {
+                textNode.text(replacement);
+                replaced = true;
+            }
         }
-        textNodes.get(0).text(replacement);
-        for (int i = 1; i < textNodes.size(); i++) {
-            textNodes.get(i).remove();
+        if (!replaced) {
+            enumElement.appendText(replacement);
         }
     }
 
