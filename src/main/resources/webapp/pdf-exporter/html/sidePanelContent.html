@@ -1,6 +1,8 @@
 <!-- If we put javascript code just in inline 'script' block it won't be initialized,
   but the attribute 'onload' below allows to import our module.  -->
 <link href='/polarion/pdf-exporter/ui/generic/css/checkboxes.css' rel='stylesheet'>
+<link href='/polarion/pdf-exporter/ui/generic/css/searchable-dropdown.css' rel='stylesheet'>
+<link href='/polarion/pdf-exporter/ui/generic/css/inputs.css' rel='stylesheet'>
 <link href='/polarion/pdf-exporter/ui/css/pdf-exporter.css' rel='stylesheet'
       onload='import("/polarion/pdf-exporter/ui/js/modules/ExportPanel.js")
                 .then(module => new module.default("#pdf-exporter-panel"))
@@ -20,7 +22,7 @@
     <div id='style-package-content' style='border-top: 1px solid #eee; padding-top: 10px;'>
         <p>Selected style package exposes its settings, so you can redefine them.</p>
         <div class='property-wrapper'>
-            <label for='cover-page-selector'>
+            <label for='cover-page-checkbox'>
                 <input id='cover-page-checkbox' onchange='document.querySelector("#pdf-exporter-panel #cover-page-selector").style.display = this.checked ? "inline-block" : "none"' type='checkbox' {COVER_PAGE_SELECTED}/>
                 Cover page:
             </label>
@@ -47,7 +49,7 @@
             </select>
         </div>
         <div class='property-wrapper {WEBHOOKS_DISPLAY}' style='border-top: 1px solid #eee; padding-top: 10px;'>
-            <label for='webhooks-selector'>
+            <label for='webhooks-checkbox'>
                 <input id='webhooks-checkbox' onchange='document.querySelector("#pdf-exporter-panel #webhooks-selector").style.display = this.checked ? "inline-block" : "none"' type='checkbox' {WEBHOOKS_SELECTED}/>
                 Webhooks:
             </label>
@@ -128,7 +130,7 @@
             </label>
         </div>
         <div class='property-wrapper'>
-            <label for='render-comments'>
+            <label>
                 <input id='render-comments' onchange='document.querySelector("#pdf-exporter-panel #render-comments-selector").style.display = this.checked ? "block" : "none";document.querySelector("#pdf-exporter-panel #render-comments-options").style.display = this.checked ? "flex" : "none"' type='checkbox'/>
                 Comments rendering
             </label>
@@ -138,7 +140,7 @@
             </select>
         </div>
         <div class='property-wrapper' id='render-comments-options' style='display: none; padding-left: 20px'>
-            <label for='include-unreferenced-comments' id='include-unreferenced-comments-container' title="Unreferenced comments will be rendered at the end of the document">
+            <label id='include-unreferenced-comments-container' title="Unreferenced comments will be rendered at the end of the document">
                 <input id='include-unreferenced-comments' type='checkbox' />
                 include unreferenced
             </label>
@@ -188,14 +190,14 @@
                 <input id='specific-chapters' onchange='document.querySelector("#pdf-exporter-panel #chapters").style.display = this.checked ? "block" : "none"' type='checkbox'/>
                 Specific higher level chapters
             </label>
-            <input id='chapters' style='display: none; width: 200px' placeholder='eg. 1,2,4 etc.' type='text'/>
+            <input id='chapters' style='display: none; flex: 1; box-sizing: border-box; min-width: 0' placeholder='eg. 1,2,4 etc.' type='text'/>
         </div>
         <div class='property-wrapper'>
             <label for='metadata-fields' style='width: 115px'>
                 <input id='metadata-fields' onchange='document.querySelector("#pdf-exporter-panel #metadata-fields-input").style.display = this.checked ? "block" : "none"' type='checkbox'/>
                 Metadata fields
             </label>
-            <input id='metadata-fields-input' style='display: none; width: 280px' placeholder='e.g. docOwner, docLanguage, customField*' type='text'/>
+            <input id='metadata-fields-input' style='display: none; flex: 1; box-sizing: border-box; min-width: 0' placeholder='e.g. docOwner, docLanguage, customField*' type='text'/>
         </div>
         <div class='property-wrapper' style="display: flex; align-items: center; gap: 8px;">
             <label for='work-items-query' style='white-space: nowrap;'>
@@ -209,7 +211,7 @@
                 <input id='custom-list-styles' onchange='document.querySelector("#pdf-exporter-panel #numbered-list-styles").style.display = this.checked ? "block" : "none"' type='checkbox'/>
                 Custom styles of numbered lists
             </label>
-            <input id='numbered-list-styles' style='display: none; width: 80px' placeholder='eg. 1ai' type='text'/>
+            <input id='numbered-list-styles' style='display: none; flex: 1; box-sizing: border-box; min-width: 0' placeholder='eg. 1ai' type='text'/>
         </div>
         <div class='property-wrapper'>
             <label for='localization'>
@@ -230,11 +232,11 @@
                     Specific Workitem roles
                 </label>
             </div>
-            <div class='property-wrapper' id='roles-wrapper' style='display: none; flex-direction: column; align-items: flex-start; padding-left: 24px'>
+            <div class='property-wrapper' id='roles-wrapper' style='display: none; flex-direction: column; align-items: flex-start'>
                 <select id='roles-selector' multiple style="width: 142px">
                     {ROLES_OPTIONS}
                 </select>
-                <select id='roles-direction-selector' style="width: 142px; margin-top: 8px">
+                <select id='roles-direction-selector' style="width: 142px">
                     <option value='BOTH'>Both directions</option>
                     <option value='DIRECT'>Direct only</option>
                     <option value='REVERSE'>Reverse only</option>
@@ -252,7 +254,7 @@
         <button type='button' id='export-pdf'>
             <img class='append-build-number' src='/polarion/ria/images/dle/operations/actionPdfExport16.svg' alt=''/>Export to PDF
         </button>
-        <img id='export-pdf-progress' src='/polarion/ria/images/progressWheel48.svg' alt=''/>
+        <span id='export-pdf-progress' class='sbb-spinner' role='img' aria-label='Loading'></span>
         <div id='export-error'></div>
         <div id='export-warning'></div>
     </div>
@@ -261,7 +263,7 @@
             <img class='append-build-number' src='/polarion/ria/images/dle/align_center.png' alt=''/>Validate pages width
         </button>
         <div id='validate-ok'></div>
-        <img id='validate-pdf-progress' src='/polarion/ria/images/progressWheel48.svg' alt=''/>
+        <span id='validate-pdf-progress' class='sbb-spinner' role='img' aria-label='Loading'></span>
         <br>
         <div id='validate-error'></div>
     </div>

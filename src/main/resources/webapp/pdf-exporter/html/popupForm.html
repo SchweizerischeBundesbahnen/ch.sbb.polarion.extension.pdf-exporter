@@ -1,5 +1,5 @@
 <div class="form-wrapper">
-    <div class="in-progress-overlay"><img src='/polarion/ria/images/progressWheel48.svg' alt=""/><span id="in-progress-message"></span></div>
+    <div class="in-progress-overlay"><span class="sbb-spinner" role="img" aria-label="Loading" style="width:48px;height:48px;"></span><span id="in-progress-message"></span></div>
 
     <div class="notifications">
         <div class="alert alert-warning" style="display: none"></div>
@@ -150,26 +150,28 @@
                         <input id='popup-render-comments' onchange='document.getElementById("popup-render-comments-selector").style.visibility = this.checked ? "visible" : "hidden";document.getElementById("popup-render-comments-options").style.display = this.checked ? "flex" : "none"' type='checkbox'/>
                         Comments rendering
                     </label>
-                    <select id='popup-render-comments-selector' style='width: 60px'>
+                    <select id='popup-render-comments-selector'>
                         <option value='OPEN'>Open</option>
                         <option value='ALL'>All</option>
                     </select>
                 </div>
-                <div class='property-wrapper hidden visible-for-LIVE_DOC visible-for-BASELINE_COLLECTION' id='popup-render-comments-options' style='display: none; padding-left: 20px'>
-                    <label for='popup-include-unreferenced-comments' id='popup-include-unreferenced-comments-container' title="Unreferenced comments will be rendered at the end of the document">
-                        <input id='popup-include-unreferenced-comments' type='checkbox' />
-                        include unreferenced
-                    </label>
-                    <label for='popup-render-native-comments' id='popup-render-native-comments-container' title="Comments will be transformed into native PDF sticky notes/bubbles">
-                        <input id='popup-render-native-comments' type='checkbox' onchange='
+                <div class='property-wrapper hidden visible-for-LIVE_DOC visible-for-BASELINE_COLLECTION' id='popup-render-comments-options-container' style='display: none'>
+                    <div id='popup-render-comments-options' style='display: none; padding-left: 20px;column-gap: 5px;'>
+                        <label for='popup-include-unreferenced-comments' id='popup-include-unreferenced-comments-container' title="Unreferenced comments will be rendered at the end of the document">
+                            <input id='popup-include-unreferenced-comments' type='checkbox'/>
+                            include unreferenced
+                        </label>
+                        <label for='popup-render-native-comments' id='popup-render-native-comments-container' title="Comments will be transformed into native PDF sticky notes/bubbles">
+                            <input id='popup-render-native-comments' type='checkbox' onchange='
                             const warningPane = document.querySelector(".modal__content .notifications .alert.alert-warning");
                             if (warningPane) {
                                 warningPane.textContent = this.checked ? "Be aware that comments rendered in PDF as sticky notes are not compliant with any of PDF/A variants" : "";
                                 warningPane.style.display = this.checked ? "block" : "none";
                             }
                         ' />
-                        as sticky notes
-                    </label>
+                            as sticky notes
+                        </label>
+                    </div>
                 </div>
                 <div class='property-wrapper'>
                     <label for='popup-watermark'>
@@ -213,21 +215,21 @@
                         <input id='popup-custom-list-styles' onchange='document.getElementById("popup-numbered-list-styles").style.visibility = this.checked ? "visible" : "hidden"' type='checkbox'/>
                         Custom styles of numbered lists
                     </label>
-                    <input id='popup-numbered-list-styles' placeholder='eg. 1ai' style='width: 84px' type='text'/>
+                    <input id='popup-numbered-list-styles' placeholder='eg. 1ai' style='flex: 1; box-sizing: border-box; min-width: 0' type='text'/>
                 </div>
                 <div class='property-wrapper hidden visible-for-LIVE_DOC visible-for-BASELINE_COLLECTION'>
                     <label for='popup-specific-chapters'>
                         <input id='popup-specific-chapters' onchange='document.getElementById("popup-chapters").style.visibility = this.checked ? "visible" : "hidden"' type='checkbox'/>
                         Specific higher level chapters
                     </label>
-                    <input id='popup-chapters' placeholder='eg. 1,2,4 etc.' style='width: 122px' type='text'/>
+                    <input id='popup-chapters' placeholder='eg. 1,2,4 etc.' style='flex: 1; box-sizing: border-box; min-width: 0' type='text'/>
                 </div>
                 <div class='property-wrapper hidden visible-for-LIVE_DOC'>
                     <label for='popup-metadata-fields'>
                         <input id='popup-metadata-fields' onchange='document.getElementById("popup-metadata-fields-input").style.visibility = this.checked ? "visible" : "hidden"' type='checkbox'/>
                         Metadata fields
                     </label>
-                    <input id='popup-metadata-fields-input' placeholder='e.g. docOwner, docLanguage, customField*' style='width: 200px' type='text'/>
+                    <input id='popup-metadata-fields-input' placeholder='e.g. docOwner, docLanguage, customField*' style='flex: 1; box-sizing: border-box; min-width: 0' type='text'/>
                 </div>
             </div>
             <div class="flex-column">
@@ -247,8 +249,8 @@
                         <input id='popup-selected-roles' onchange='document.getElementById("popup-roles-selector").style.display = this.checked ? "block" : "none";document.getElementById("popup-roles-direction-selector").style.display = this.checked ? "block" : "none"' type='checkbox'/>
                         Specific Workitem roles
                     </label>
-                    <select id='popup-roles-selector' multiple style="display: none; width: 152px; margin-left: 24px"></select>
-                    <select id='popup-roles-direction-selector' style="display: none; width: 152px; margin-left: 24px; margin-top: 8px">
+                    <select id='popup-roles-selector' multiple style="display: none; width: 152px"></select>
+                    <select id='popup-roles-direction-selector' style="display: none; width: 152px">
                         <option value='BOTH'>Both directions</option>
                         <option value='DIRECT'>Direct only</option>
                         <option value='REVERSE'>Reverse only</option>

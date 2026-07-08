@@ -1,5 +1,6 @@
 import ExportParams from "./ExportParams.js";
 import ExportContext from "./ExportContext.js";
+import { initSearchableDropdowns } from "../../generic/js/modules/searchableSelect.js";
 
 export default class ExportPanel {
 
@@ -24,6 +25,21 @@ export default class ExportPanel {
         this.ctx.onClick('validate-pdf', () => {
             this.validatePdf();
         });
+
+        this._initDropdowns();
+    }
+
+    // Upgrade the panel's single-value <select>s to the shared Polarion-styled SearchableDropdown.
+    // Programmatic value/visibility changes stay in sync via ExtensionContext (setSelector/setValue/displayIf).
+    // 'roles-selector' is intentionally excluded — it is a multi-select.
+    _initDropdowns() {
+        initSearchableDropdowns(this.ctx, [
+            'style-package-select', 'cover-page-selector', 'css-selector',
+            'header-footer-selector', 'localization-selector', 'webhooks-selector',
+            'paper-size-selector', 'orientation-selector', 'pdf-variant-selector',
+            'image-density-selector', 'render-comments-selector', 'language',
+            'roles-direction-selector'
+        ], 'roles-selector');
     }
 
     stylePackageChanged() {
@@ -131,6 +147,9 @@ export default class ExportPanel {
                     roleOption.selected = true;
                 });
             }
+        }
+        if (rolesProvided) {
+            this.ctx.getElementById("roles-selector")?._searchableDropdown?.syncFromElement();
         }
         this.ctx.displayIf("roles-wrapper", rolesProvided, "flex");
         this.ctx.setValue("roles-direction-selector", stylePackage.linkRoleDirection || 'BOTH');
@@ -314,12 +333,12 @@ export default class ExportPanel {
             //disable components
             this.ctx.getJQueryElement(":input").attr("disabled", true);
             //show loading icon
-            this.ctx.getJQueryElement("#export-pdf-progress").show();
+            this.ctx.getJQueryElement("#export-pdf-progress").css("display", "inline-block");
         } else {
             //enable components
             this.ctx.getJQueryElement(":input").attr("disabled", false);
             //hide loading icon
-            this.ctx.getJQueryElement("#export-pdf-progress").hide();
+            this.ctx.getJQueryElement("#export-pdf-progress").css("display", "none");
         }
     }
 
@@ -341,19 +360,19 @@ export default class ExportPanel {
         //disable components
         this.ctx.getJQueryElement(":input").attr("disabled", true);
         //show loading icon
-        this.ctx.getJQueryElement("#validate-pdf-progress").show();
+        this.ctx.getJQueryElement("#validate-pdf-progress").css("display", "inline-block");
 
         const stopProgress = () => {
             //enable components
             this.ctx.getJQueryElement(":input").attr("disabled", false);
             //hide loading icon
-            this.ctx.getJQueryElement("#validate-pdf-progress").hide();
+            this.ctx.getJQueryElement("#validate-pdf-progress").css("display", "none");
             this.ctx.getElementById('validate-error').replaceChildren(); //remove div content
         };
 
         this.ctx.callAsync({
             method: "POST",
-            url: "/polarion/pdf-exporter/rest/internal/validate?max-results=6",
+            url: `/polarion/pdf-exporter/rest/internal/validate?max-results=${MAX_PAGE_PREVIEWS + 1}`,
             contentType: "application/json",
             responseType: "json",
             body: request,
@@ -363,13 +382,18 @@ export default class ExportPanel {
                 let result = request.response;
                 let pages = result.invalidPages.length;
                 if (pages === 0) {
-                    this.ctx.getJQueryElement("#validate-ok").append("OK");
+                    this.ctx.getJQueryElement("#validate-ok").append("All pages are valid");
                     return;
                 }
-                let message = (pages > 5 ? 'More than 5' : pages) + ' invalid page' + (pages === 1 ? '' : 's') + ' found:';
+                const pagesWord = 'page' + (pages === 1 ? '' : 's');
+                let message = pages > MAX_PAGE_PREVIEWS
+                    ? `Invalid pages found. First ${MAX_PAGE_PREVIEWS} of them:`
+                    : `${pages} invalid ${pagesWord} found:`;
                 container.appendChild(document.createTextNode(message));
                 container.appendChild(document.createElement("br"));
-                for (const page of result.invalidPages) {
+                const pagesQuantity = Math.min(MAX_PAGE_PREVIEWS, result.invalidPages.length);
+                for (let i = 0; i < pagesQuantity; i++) {
+                    const page = result.invalidPages[i];
                     let img = document.createElement("img");
                     img.className = 'validate-result-img';
                     img.src = 'data:image/png;base64,' + page.content;
@@ -403,3 +427,5 @@ export default class ExportPanel {
         });
     }
 }
+
+const MAX_PAGE_PREVIEWS = 4;

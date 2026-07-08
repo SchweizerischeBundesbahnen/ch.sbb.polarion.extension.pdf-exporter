@@ -28,6 +28,21 @@ public final class Constants {
     public static final String BREAK_BELOW_MARK = "<!--BREAK_BELOW-->";
     public static final String MIME_TYPE_SVG = "image/svg+xml";
 
+    /**
+     * Marker class emitted by the {@code PageBreakWidget} report widget and the contract between it and
+     * {@code HtmlProcessor}. The widget output lands inside a {@code polarion-rp-column-layout} table cell, where the CSS
+     * {@code page} property cannot switch the page orientation. The widget itself only forces a renderer-independent page
+     * break; when exporting through this extension, {@code HtmlProcessor} additionally lifts the content following the
+     * marker out of the cell into a body-level orientation section.
+     */
+    public static final String PAGE_BREAK_WIDGET_CLASS = "pdf-exporter-page-break";
+
+    /**
+     * Modifier class added next to {@link #PAGE_BREAK_WIDGET_CLASS} when the widget's {@code landscape} parameter is set,
+     * telling {@code HtmlProcessor} to switch the lifted section to landscape; otherwise it is a plain portrait break.
+     */
+    public static final String PAGE_BREAK_WIDGET_LANDSCAPE_CLASS = "pdf-exporter-page-break-landscape";
+
     public static final String VERSION_FILE = "versions.properties";
 
     private Constants() {

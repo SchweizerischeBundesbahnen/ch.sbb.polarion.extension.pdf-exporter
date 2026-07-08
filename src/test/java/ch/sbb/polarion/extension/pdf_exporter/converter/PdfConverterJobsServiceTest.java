@@ -20,6 +20,7 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 
 import javax.security.auth.Subject;
 import java.security.PrivilegedAction;
+import java.util.ConcurrentModificationException;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -134,6 +135,33 @@ class PdfConverterJobsServiceTest {
         assertThatThrownBy(() -> pdfConverterJobsService.getJobResult(jobId))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("test error");
+        verify(securityService).logout(subject);
+    }
+
+    @Test
+    void shouldRecordRealReasonWhenExceptionMessageIsNull() {
+        // Regression: an exception with a null message (e.g. ConcurrentModificationException thrown deep in
+        // Polarion's ImportExportStatusKeeper) must not produce a secondary NullPointerException when the failure
+        // reason is stored into the ConcurrentHashMap (which rejects null values). The real cause must survive.
+        prepareSecurityServiceSubject(subject);
+        when(requestAttributes.getAttribute(LogoutFilter.XSRF_SKIP_LOGOUT, RequestAttributes.SCOPE_REQUEST)).thenReturn(Boolean.FALSE);
+        when(requestAttributes.getAttribute(LogoutFilter.ASYNC_SKIP_LOGOUT, RequestAttributes.SCOPE_REQUEST)).thenReturn(Boolean.TRUE);
+        ExportParams exportParams = ExportParams.builder().build();
+        when(pdfConverter.convertToPdf(exportParams, null)).thenThrow(new ConcurrentModificationException());
+
+        String jobId = pdfConverterJobsService.startJob(exportParams, 60);
+
+        assertThat(jobId).isNotBlank();
+        // Poll until the .exceptionally stage has recorded the final reason (it may run after the stored future is done).
+        await().atMost(Durations.FIVE_SECONDS).untilAsserted(() -> {
+            JobState jobState = pdfConverterJobsService.getJobState(jobId);
+            assertThat(jobState.isDone()).isTrue();
+            assertThat(jobState.isCompletedExceptionally()).isTrue();
+            assertThat(jobState.errorMessage())
+                    .isNotNull()
+                    .contains("ConcurrentModificationException")
+                    .doesNotContain("NullPointerException");
+        });
         verify(securityService).logout(subject);
     }
 

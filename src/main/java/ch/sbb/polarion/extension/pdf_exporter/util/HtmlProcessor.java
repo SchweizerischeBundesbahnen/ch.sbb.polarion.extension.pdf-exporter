@@ -11,6 +11,7 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ConversionPa
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.DocumentType;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.Orientation;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PaperSize;
 import ch.sbb.polarion.extension.pdf_exporter.settings.LocalizationSettings;
 import ch.sbb.polarion.extension.pdf_exporter.util.adjuster.PageWidthAdjuster;
 import ch.sbb.polarion.extension.pdf_exporter.util.html.HtmlLinksHelper;
@@ -29,6 +30,7 @@ import org.jsoup.select.Elements;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -134,6 +136,8 @@ public class HtmlProcessor {
             // Localize enumeration values
             timedIfNotNull(generationLog, "Localize enums", () -> localizeEnums(document, exportParams));
 
+            timedIfNotNull(generationLog, "Renumber captions", () -> renumberCaptions(document));
+
             timedIfNotNull(generationLog, "Add table of figures", () -> addTableOfFigures(document));
         }
 
@@ -149,6 +153,10 @@ public class HtmlProcessor {
 
             // Replaces fixed width value of report tables by relative one
             timedIfNotNull(generationLog, "Adjust column width in reports", () -> adjustColumnWidthInReports(document));
+
+            // Turns PageBreakWidget markers into body-level orientation sections (orientation can't be set from inside
+            // the widget's table cell, so the content following a marker is lifted out to report-content level)
+            timedIfNotNull(generationLog, "Process page break widgets", () -> processPageBreakWidgets(document, exportParams));
         }
 
         // Polarion doesn't place table rows with th-tags into thead, placing them in table's tbody, which is wrong as table header won't
@@ -1021,8 +1029,33 @@ public class HtmlProcessor {
         for (Element enumElement : enums) {
             String replacementString = localizationMap.get(enumElement.text());
             if (!StringUtils.isEmptyTrimmed(replacementString)) {
-                enumElement.text(replacementString);
+                replaceEnumLabel(enumElement, replacementString);
             }
+        }
+    }
+
+    /**
+     * Replaces the label text of an enum option in place while preserving child elements such as
+     * the leading enum icon {@code <img>}. Using {@link Element#text(String)} directly would drop
+     * the icon, since it removes all child nodes. The localized text replaces the first non-blank
+     * text node (the visible label) in its original position, so it stays after the icon even when
+     * the markup contains formatting whitespace; remaining non-blank text nodes are removed.
+     */
+    private void replaceEnumLabel(@NotNull Element enumElement, @NotNull String replacement) {
+        boolean replaced = false;
+        for (TextNode textNode : enumElement.textNodes()) {
+            if (textNode.isBlank()) {
+                continue;
+            }
+            if (replaced) {
+                textNode.remove();
+            } else {
+                textNode.text(replacement);
+                replaced = true;
+            }
+        }
+        if (!replaced) {
+            enumElement.appendText(replacement);
         }
     }
 
@@ -1072,6 +1105,37 @@ public class HtmlProcessor {
         // which may contain a lot of nbsp too. This may occasionally result in exceeding page width lines.
         // Replace them with thin spaces to prevent overflow while maintaining some visual spacing.
         return html.replaceAll("&nbsp;|\u00A0", "&thinsp;");
+    }
+
+    /**
+     * Reassigns caption numbers ("Table 1", "Figure 2", ...) following the visual (DOM) order of the captions.
+     * <p>
+     * Polarion generates caption numbers server-side via a single stateful counter that increments in render
+     * order (see {@code RichTextCaption.render} / {@code CaptionIdGenerator}). For PDF export Polarion renders
+     * all wiki/macro blocks first (see {@code ServerRichTextDocumentBase.renderImpl}) and only then the document's
+     * own parts. When a macro re-renders a work item's rich text that already contains a numbered caption, the
+     * macro copy grabs the lower number, so the numbering ends up reversed relative to what the editor shows
+     * (the editor numbers captions with CSS counters, i.e. in DOM order). We restore DOM-order numbering here.
+     */
+    @VisibleForTesting
+    @SuppressWarnings("java:S135") // several continue used to keep logic simple
+    void renumberCaptions(@NotNull Document document) {
+        Map<String, Integer> sequenceCounters = new HashMap<>();
+        // Scope must match generateTableOfFigures so the numbers stay consistent with the generated list.
+        for (Element captionSpan : document.select("p.polarion-rte-caption-paragraph span.polarion-rte-caption[data-sequence]")) {
+            String sequence = captionSpan.dataset().get("sequence");
+            if (StringUtils.isEmpty(sequence)) {
+                continue;
+            }
+            Node numberNode = captionSpan.childNodes().stream().filter(TextNode.class::isInstance).findFirst().orElse(null);
+            if (!(numberNode instanceof TextNode numberTextNode) || !numberTextNode.text().trim().matches("\\d+")) {
+                continue;
+            }
+            int nextNumber = sequenceCounters.merge(sequence, 1, Integer::sum);
+            if (!numberTextNode.text().trim().equals(String.valueOf(nextNumber))) {
+                numberTextNode.text(String.valueOf(nextNumber));
+            }
+        }
     }
 
     @VisibleForTesting
@@ -1181,6 +1245,136 @@ public class HtmlProcessor {
                 reportTable.attr(HtmlTagAttr.STYLE, cssStyles.getAsCSSString());
             }
         }
+    }
+
+    /**
+     * Handles markers emitted by the {@code PageBreakWidget} report widget (see
+     * {@link ch.sbb.polarion.extension.pdf_exporter.util.exporter.Constants#PAGE_BREAK_WIDGET_CLASS}).
+     * <p>
+     * The widget output sits inside its {@code polarion-rp-column-layout} table cell, where a CSS {@code page} property
+     * cannot switch the page orientation (it does not propagate out of a table cell). This step lifts the content that
+     * follows each marker out of the cell into a body-level {@code <div class="sbb_page_break {port|land}{paperSize}">}
+     * section placed at report-content level, where the named page applies. A marker carrying the landscape modifier
+     * ({@link ch.sbb.polarion.extension.pdf_exporter.util.exporter.Constants#PAGE_BREAK_WIDGET_LANDSCAPE_CLASS}) switches
+     * its section to landscape; otherwise it is a plain portrait page break. Each section runs until the next marker (or
+     * the end of the report), so several widgets segment the report into alternating orientations.
+     */
+    @VisibleForTesting
+    void processPageBreakWidgets(@NotNull Document document, @NotNull ExportParams exportParams) {
+        Elements markers = document.select("div." + PAGE_BREAK_WIDGET_CLASS);
+        if (markers.isEmpty()) {
+            return;
+        }
+
+        Element container = document.selectFirst("div.polarion-rpe-content");
+        if (container == null) {
+            container = document.body();
+        }
+
+        PaperSize paperSize = exportParams.getPaperSize() != null ? exportParams.getPaperSize() : PaperSize.A4;
+
+        Element previousBlock = null;
+        Element previousWrapper = null;
+        Set<Element> createdWrappers = new HashSet<>();
+
+        for (int i = 0; i < markers.size(); i++) {
+            Element marker = markers.get(i);
+            Element nextMarker = (i + 1 < markers.size()) ? markers.get(i + 1) : null;
+
+            // Report-content-level block (direct child of the container) that holds the marker; the lifted section is
+            // placed right after it, where a named page can take effect.
+            Element containingBlock = getDirectChildAncestor(marker, container);
+            if (containingBlock == null) {
+                marker.remove(); // stray marker outside the report content, just drop the control
+                continue;
+            }
+
+            boolean landscape = marker.hasClass(PAGE_BREAK_WIDGET_LANDSCAPE_CLASS);
+            List<Node> sectionNodes = collectPageBreakSectionNodes(marker, nextMarker, container, containingBlock, createdWrappers);
+
+            // Markers are non-visual controls, they must never reach the PDF
+            marker.remove();
+
+            // An empty list means nothing sits between this break and the next one (or the end of the report)
+            if (!sectionNodes.isEmpty()) {
+                // Keep document order: sections from the same containing block chain after the previous one
+                Element anchor = (previousWrapper != null && containingBlock == previousBlock) ? previousWrapper : containingBlock;
+                Element wrapper = buildPageBreakSection(landscape, paperSize, anchor, sectionNodes);
+                createdWrappers.add(wrapper);
+                previousBlock = containingBlock;
+                previousWrapper = wrapper;
+            }
+        }
+    }
+
+    /**
+     * Creates the body-level {@code <div class="sbb_page_break {port|land}{paperSize}">} section, inserts it right after
+     * {@code anchor} and moves the collected section nodes into it.
+     */
+    @NotNull
+    private Element buildPageBreakSection(boolean landscape, @NotNull PaperSize paperSize, @NotNull Element anchor, @NotNull List<Node> sectionNodes) {
+        Element wrapper = new Element(HtmlTag.DIV);
+        wrapper.addClass("sbb_page_break");
+        wrapper.addClass((landscape ? "land" : "port") + paperSize);
+        anchor.after(wrapper);
+        for (Node node : sectionNodes) {
+            node.remove();
+            wrapper.appendChild(node);
+        }
+        return wrapper;
+    }
+
+    /**
+     * Collects the nodes that belong to a page-break section: the marker's following siblings within its own parent
+     * (the rich-text cell content placed after an inline widget), and - once the parent is exhausted - the containing
+     * block's following report blocks. Collection stops at the next marker (or the block holding it), or the end of the
+     * report content.
+     */
+    @NotNull
+    private List<Node> collectPageBreakSectionNodes(@NotNull Element marker, @Nullable Element nextMarker, @NotNull Element container, @NotNull Element containingBlock, @NotNull Set<Element> createdWrappers) {
+        List<Node> nodes = new ArrayList<>();
+
+        // 1. Content following the marker within the same parent (inline placement inside a rich-text cell). The next
+        //    sibling is captured before adding the current node, so moving nodes out later cannot break the walk.
+        Node node = marker.nextSibling();
+        while (node != null) {
+            if (node == nextMarker) {
+                return nodes; // the next section starts here, in the same parent
+            }
+            Node following = node.nextSibling();
+            nodes.add(node);
+            node = following;
+        }
+
+        // 2. Parent exhausted: continue with the following report blocks (standalone/block placement), up to the block
+        //    that holds the next marker. Skip sections already lifted out by earlier markers in the same block.
+        Element nextBlock = (nextMarker != null) ? getDirectChildAncestor(nextMarker, container) : null;
+        Element sibling = containingBlock.nextElementSibling();
+        while (sibling != null && sibling != nextBlock) {
+            Element following = sibling.nextElementSibling();
+            if (!createdWrappers.contains(sibling)) {
+                nodes.add(sibling);
+            }
+            sibling = following;
+        }
+        return nodes;
+    }
+
+    /**
+     * Walks up from {@code element} and returns the ancestor that is a direct child of {@code container},
+     * or {@code null} if {@code element} is not contained in {@code container}.
+     */
+    @Nullable
+    private Element getDirectChildAncestor(@NotNull Element element, @NotNull Element container) {
+        Element current = element;
+        while (current != null) {
+            Element parent = current.parent();
+            if (parent == container) {
+                return current;
+            }
+            current = parent;
+        }
+        return null;
     }
 
     @VisibleForTesting
