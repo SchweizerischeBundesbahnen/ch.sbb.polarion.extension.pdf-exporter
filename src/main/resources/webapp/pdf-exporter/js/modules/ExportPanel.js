@@ -148,6 +148,9 @@ export default class ExportPanel {
                 });
             }
         }
+        if (rolesProvided) {
+            this.ctx.getElementById("roles-selector")?._searchableDropdown?.syncFromElement();
+        }
         this.ctx.displayIf("roles-wrapper", rolesProvided, "flex");
         this.ctx.setValue("roles-direction-selector", stylePackage.linkRoleDirection || 'BOTH');
 

@@ -197,10 +197,16 @@ export default class ExportPopup {
         });
     }
 
+    // Roles can only be selected for regular document exports. Reports, test runs and bulk exports
+    // skip loading role options, so the roles selector has no data and must stay hidden.
+    rolesSelectable() {
+        return this.ctx.getDocumentType() !== ExportParams.DocumentType.LIVE_REPORT
+            && this.ctx.getDocumentType() !== ExportParams.DocumentType.TEST_RUN
+            && this.ctx.getExportType() !== ExportParams.ExportType.BULK;
+    }
+
     loadLinkRoles() {
-        if (this.ctx.getDocumentType() === ExportParams.DocumentType.LIVE_REPORT
-            || this.ctx.getDocumentType() === ExportParams.DocumentType.TEST_RUN
-            || this.ctx.getExportType() === ExportParams.ExportType.BULK) {
+        if (!this.rolesSelectable()) {
             return Promise.resolve(); // Skip loading link roles for reports, test runs and bulk export
         }
 
@@ -414,9 +420,17 @@ export default class ExportPopup {
                 });
             }
         }
-        this.ctx.displayIf("popup-roles-selector", this.ctx.getExportType() !== ExportParams.ExportType.BULK && rolesProvided, "block");
+        // Roles were selected via raw option.selected; sync the multiselect widget so its chips
+        // reflect them — but only when the selector is actually shown. Reports, test runs and bulk
+        // exports skip loadLinkRoles, so the options aren't loaded and the selector stays hidden;
+        // syncing there would read stale/empty options into a hidden widget.
+        const showRoles = this.rolesSelectable() && rolesProvided;
+        if (showRoles) {
+            this.ctx.getElementById("popup-roles-selector")?._searchableDropdown?.syncFromElement();
+        }
+        this.ctx.displayIf("popup-roles-selector", showRoles, "block");
         this.ctx.setValue("popup-roles-direction-selector", stylePackage.linkRoleDirection || ExportParams.LinkRoleDirection.BOTH);
-        this.ctx.displayIf("popup-roles-direction-selector", this.ctx.getExportType() !== ExportParams.ExportType.BULK && rolesProvided, "block");
+        this.ctx.displayIf("popup-roles-direction-selector", showRoles, "block");
 
         this.ctx.displayIf("popup-style-package-content",
             (!this.autoSelectStylePackageAvailable() || !this.ctx.getCheckboxValueById("popup-auto-select-style-package")) && stylePackage.exposeSettings);
@@ -589,7 +603,10 @@ export default class ExportPopup {
         }
 
         const selectedRoles = [];
-        if (this.ctx.getElementById("popup-selected-roles").checked) {
+        // Only collect roles for export types that actually load them; the popup element is reused,
+        // so a report/test-run/bulk export must not serialize stale role options left checked and
+        // selected by a previous regular document export.
+        if (this.rolesSelectable() && this.ctx.getElementById("popup-selected-roles").checked) {
             const selectedOptions = Array.from(this.ctx.getElementById("popup-roles-selector").options).filter(opt => opt.selected);
             selectedRoles.push(...selectedOptions.map(opt => opt.value));
         }
