@@ -1032,13 +1032,21 @@ public class HtmlProcessor {
     }
 
     /**
-     * Replaces the label text of an enum option while preserving child elements such as the
-     * leading enum icon {@code <img>}. Using {@link Element#text(String)} directly would drop
-     * the icon, since it removes all child nodes.
+     * Replaces the label text of an enum option in place while preserving child elements such as
+     * the leading enum icon {@code <img>}. Using {@link Element#text(String)} directly would drop
+     * the icon, since it removes all child nodes. The localized text keeps the original label's
+     * position: the first text node is updated and any remaining text nodes are removed.
      */
     private void replaceEnumLabel(@NotNull Element enumElement, @NotNull String replacement) {
-        enumElement.textNodes().forEach(Node::remove);
-        enumElement.appendText(replacement);
+        List<TextNode> textNodes = enumElement.textNodes();
+        if (textNodes.isEmpty()) {
+            enumElement.appendText(replacement);
+            return;
+        }
+        textNodes.get(0).text(replacement);
+        for (int i = 1; i < textNodes.size(); i++) {
+            textNodes.get(i).remove();
+        }
     }
 
     public void adjustContentToFitPage(@NotNull Document document, @NotNull ConversionParams conversionParams) {
