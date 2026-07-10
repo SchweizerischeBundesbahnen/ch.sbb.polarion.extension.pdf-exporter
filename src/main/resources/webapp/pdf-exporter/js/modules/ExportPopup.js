@@ -108,9 +108,9 @@ export default class ExportPopup {
         }
 
         function toggleOptionalPropertyBlocks(documentType, action, ctx) {
-            ctx.querySelectorAll(`.property-wrapper.visible-for-${documentType}`)
+            ctx.querySelectorAll(`.visible-for-${documentType}`)
                 .forEach(propertyBlock => propertyBlock.style.display = action);
-            ctx.querySelectorAll(`.property-wrapper.not-visible-for-${documentType}`)
+            ctx.querySelectorAll(`.not-visible-for-${documentType}`)
                 .forEach(propertyBlock => propertyBlock.style.display = Action.getOpposite(action));
         }
 
