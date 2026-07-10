@@ -124,42 +124,17 @@
     padding: 0 0 10px;
 }
 
+/* Box padding only; alert colours (bg/border) come from generic .notifications .alert-*. */
 .modal__container.pdf-exporter .notifications .alert {
     margin-bottom: 10px;
     padding: 6px 12px;
     border-radius: 3px;
 }
 
-.modal__container.pdf-exporter .notifications .alert-error {
-    background-color: #f8d7da;
-    border: 1px solid #b3626a;
-}
-
-.modal__container.pdf-exporter .notifications .alert-warning {
-    background-color: #fff7cd;
-    border: 1px solid #ffc328;
-}
-
-.modal__container.pdf-exporter .notifications .alert-success {
-    background-color: #d1e7dd;
-    border: 1px solid #75b598;
-}
-
+/* Layout only; text colour + weight come from generic .validation-alerts .alert-*. */
 .modal__container.pdf-exporter .validation-alerts {
     display: inline-block;
     padding: 0 10px;
-}
-
-.modal__container.pdf-exporter .validation-alerts .alert {
-    font-weight: bold;
-}
-
-.modal__container.pdf-exporter .validation-alerts .alert-error {
-    color: red;
-}
-
-.modal__container.pdf-exporter .validation-alerts .alert-success {
-    color: green;
 }
 
 .modal__container.pdf-exporter .polarion-JSWizardButton-Primary.action-button:disabled,
@@ -298,29 +273,28 @@
 .polarion-PdfExporter-BulkExportWidget input[type="checkbox"] {
     -webkit-appearance: none;
     appearance: none;
-    width: var(--sbb-toggle-size, 15px);
-    height: var(--sbb-toggle-size, 15px);
+    width: var(--sbb-toggle-size);
+    height: var(--sbb-toggle-size);
     margin: 0 4px 0 0;
     vertical-align: middle;
     cursor: pointer;
-    background: var(--sbb-checkbox-unchecked, url(/polarion/ria/images/checkbox/unchecked.png)) no-repeat center;
-    background-size: var(--sbb-toggle-size, 15px) var(--sbb-toggle-size, 15px);
+    background: var(--sbb-checkbox-unchecked) no-repeat center;
+    background-size: var(--sbb-toggle-size) var(--sbb-toggle-size);
 }
 
 .polarion-PdfExporter-BulkExportWidget input[type="checkbox"]:checked {
-    background-image: var(--sbb-checkbox-checked, url(/polarion/ria/images/checkbox/checked.png));
+    background-image: var(--sbb-checkbox-checked);
 }
 
-/* Generic hosts the indeterminate checkbox image. This stylesheet is inlined into the bulk widget
-   (so a relative url() has no reliable base) and this widget already references /polarion/pdf-exporter/
-   paths, so point at the served generic image absolutely rather than via the relative
-   --sbb-checkbox-indeterminate token. */
+/* Indeterminate: the --sbb-checkbox-indeterminate token is a self-contained data-URI (inlined from
+   images/checkbox/indeterminate.svg at build, issue #528), so it resolves even where this stylesheet
+   is inlined into the widget — same single source as the checked/unchecked above. */
 .polarion-PdfExporter-BulkExportWidget input[type="checkbox"]:indeterminate {
-    background-image: url(/polarion/pdf-exporter/ui/generic/images/checkbox-indeterminate.png);
+    background-image: var(--sbb-checkbox-indeterminate);
 }
 
 .property-wrapper .more-info {
-    background: url(/polarion/ria/images/msginfo.png) no-repeat;
+    background: var(--sbb-info-icon) no-repeat;
     width: 16px;
     height: 16px;
     cursor: help;
@@ -338,8 +312,11 @@
     appearance: none !important;
     -webkit-appearance: none !important;
     -moz-appearance: none !important;
-    background: transparent url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAYAAAAGCAYAAADgzO9IAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAOUlEQVR4nGNgwAOKGRgY/qNhkBgDCwMDw0UkwasMDAysMF22DAwM/6ASjuhGLmVgYFiCzS5JKAYDACJtDIY1VpdwAAAAAElFTkSuQmCC") no-repeat;
+    /* Native-<select> dropdown arrow — the shared --sbb-combo-chevron token (single source in
+       control-tokens.css, which the side panel loads), matching the SearchableDropdown. */
+    background: transparent var(--sbb-combo-chevron) no-repeat;
     background-position: calc(100% - 1rem) 55% !important;
+    background-size: 16px 16px;
 }
 
 .property-wrapper input {
@@ -360,7 +337,9 @@
 }
 
 .property-wrapper input[type="color"] {
-    padding: 2px 2rem 2px 2px;
+    /* Fixed px (not rem) so the swatch width is identical in the side panel, the popup and the
+       admin picker — those contexts have different root font-sizes, so 2rem rendered differently. */
+    padding: 2px 24px 2px 4px;
 }
 
 /* Uniform control sizing in the export panel & popup so every combo-like control matches the
@@ -407,6 +386,30 @@
     width: 130px;
     height: 23px;
     box-sizing: border-box;
+    border-radius: 2px;
+    /* Chevron in px (not the base rule's calc(100% - 1rem)) so it sits identically in the side panel,
+       popup and admin, regardless of each context's root font-size. */
+    background-position: calc(100% - 5px) 55% !important;
+}
+
+.property-wrapper input[type="color"]::-webkit-color-swatch {
+    border: 1px solid var(--sbb-control-border);
+    border-radius: 1px;
+}
+
+/* Swatch fills the field (drop the default wrapper inset) — matches the admin style-packages
+   picker so admin / side-panel / popup colour pickers look identical. */
+.property-wrapper input[type="color"]::-webkit-color-swatch-wrapper {
+    padding: 0;
+}
+
+/* The colour input is a native <input> — its chevron sits via background-position, unlike the
+   SearchableDropdown's ::after. Higher specificity (panel/popup id) so the sibling exporters'
+   global `.property-wrapper input[type=color]` rule can't clobber it; nudge it right to line up
+   with the SearchableDropdown chevrons. */
+#pdf-exporter-panel .property-wrapper input[type="color"],
+.modal__container.pdf-exporter .property-wrapper input[type="color"] {
+    background-position: calc(100% - 5px) 55% !important;
 }
 
 .buttons-wrapper {

@@ -64,10 +64,11 @@
             flex-grow: 1;
         }
         .more-info {
-            background: url(/polarion/ria/images/msginfo.png) no-repeat;
+            background: var(--sbb-info-icon) no-repeat;
             display: inline-block;
             width: 17px;
             height: 17px;
+            vertical-align: middle;
             cursor: pointer;
         }
         /* Match the combo-styled color picker used in the export panel / popup (130 x 23,
@@ -81,9 +82,21 @@
             box-sizing: border-box;
             border: 1px solid #cccccc;
             border-radius: 2px;
-            padding: 2px 2rem 2px 2px;
-            background: transparent url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAYAAAAGCAYAAADgzO9IAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAOUlEQVR4nGNgwAOKGRgY/qNhkBgDCwMDw0UkwasMDAysMF22DAwM/6ASjuhGLmVgYFiCzS5JKAYDACJtDIY1VpdwAAAAAElFTkSuQmCC") no-repeat;
-            background-position: calc(100% - 1rem) 55%;
+            /* Fixed px (not rem) so the swatch width is identical across admin / side-panel / popup —
+               those contexts have different root font-sizes, which made 2rem render differently. */
+            padding: 2px 24px 2px 4px;
+            /* Same sharp SVG combobox chevron + full swatch as the export panel (pdf-exporter.css),
+               so the admin colour picker matches the document-properties one. */
+            background: transparent var(--sbb-combo-chevron) no-repeat;
+            background-position: calc(100% - 5px) 55%;
+            background-size: 16px 16px;
+        }
+        #headers-color::-webkit-color-swatch {
+            border: 1px solid var(--sbb-control-border);
+            border-radius: 1px;
+        }
+        #headers-color::-webkit-color-swatch-wrapper {
+            padding: 0;
         }
     </style>
 </head>
