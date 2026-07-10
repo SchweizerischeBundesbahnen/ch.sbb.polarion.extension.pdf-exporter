@@ -300,7 +300,11 @@
     cursor: help;
 }
 
-.property-wrapper select, .property-wrapper input {
+/* input[type="color"] is excluded: the colour picker's look is owned entirely by the shared control
+   system in generic inputs.css (scoped to .form-wrapper / .modal__container). Keeping the colour input
+   out of these baseline rules leaves generic in sole control, so admin, side panel and popup render
+   identically instead of the colour field being partly styled here. */
+.property-wrapper select, .property-wrapper input:not([type="color"]) {
     font-weight: 600;
     font-family: "Segoe UI", "Selawik", "Open Sans", Arial, sans-serif;
     font-size: 13px;
@@ -319,7 +323,7 @@
     background-size: 16px 16px;
 }
 
-.property-wrapper input {
+.property-wrapper input:not([type="color"]) {
     padding: 2px 4px 4px .4rem;
 }
 
