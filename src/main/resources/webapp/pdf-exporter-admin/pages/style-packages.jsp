@@ -71,33 +71,6 @@
             vertical-align: middle;
             cursor: pointer;
         }
-        /* Match the combo-styled color picker used in the export panel / popup (130 x 23,
-           bordered, with the same dropdown arrow) — admin doesn't load pdf-exporter.css. */
-        #headers-color {
-            appearance: none;
-            -webkit-appearance: none;
-            -moz-appearance: none;
-            width: 130px;
-            height: 23px;
-            box-sizing: border-box;
-            border: 1px solid #cccccc;
-            border-radius: 2px;
-            /* Fixed px (not rem) so the swatch width is identical across admin / side-panel / popup —
-               those contexts have different root font-sizes, which made 2rem render differently. */
-            padding: 2px 24px 2px 4px;
-            /* Same sharp SVG combobox chevron + full swatch as the export panel (pdf-exporter.css),
-               so the admin colour picker matches the document-properties one. */
-            background: transparent var(--sbb-combo-chevron) no-repeat;
-            background-position: calc(100% - 5px) 55%;
-            background-size: 16px 16px;
-        }
-        #headers-color::-webkit-color-swatch {
-            border: 1px solid var(--sbb-control-border);
-            border-radius: 1px;
-        }
-        #headers-color::-webkit-color-swatch-wrapper {
-            padding: 0;
-        }
     </style>
 </head>
 
