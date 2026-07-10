@@ -111,8 +111,8 @@ function addWebhook(webhookConfig) {
         const removeButton = document.createElement('button');
         removeButton.classList.add('toolbar-button', 'webhook-button');
         removeButton.setAttribute('title', 'Delete this webhook');
-        const removeButtonImage = document.createElement('img');
-        removeButtonImage.setAttribute('src', '/polarion/ria/images/control/tableMinus.png');
+        const removeButtonImage = document.createElement('span');
+        removeButtonImage.className = 'sbb-icon-table-minus';
         removeButton.appendChild(removeButtonImage);
         removeButton.addEventListener('click', function () {
             // tear down the row's auth-type dropdown so its body-level portal isn't orphaned

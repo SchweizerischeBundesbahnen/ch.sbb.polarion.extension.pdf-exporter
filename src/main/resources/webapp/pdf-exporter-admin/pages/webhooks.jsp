@@ -103,7 +103,7 @@
         <h2 class="align-left">List of webhooks</h2>
         <table id="webhooks-table"><!-- Filled by JS --></table>
         <button id="add-webhook-button" class="toolbar-button webhook-button" title="Add a webhook" style="margin-top: 10px; margin-left: 3px;">
-            <img src='/polarion/ria/images/control/tablePlus.png' alt="Plus">
+            <span class="sbb-icon-table-plus" role="img" aria-label="Add"></span>
         </button>
 
         <input id="scope" type="hidden" value="<%= request.getParameter("scope")%>"/>

@@ -113,7 +113,7 @@
 
             </div>
             <button style="display: table-cell;" id="create-empty-row" class="action" title="Add">
-                <img src="/polarion/ria/images/control/tablePlus.png" alt="">
+                <span class="sbb-icon-table-plus" role="img" aria-label="Add"></span>
             </button>
         </div>
     </div>
