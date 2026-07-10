@@ -178,8 +178,8 @@ function createActionColumn(row) {
     const td = row.insertCell();
     td.classList.add('action');
     td.setAttribute('title', 'Delete');
-    const image = document.createElement('img');
-    image.setAttribute('src', '/polarion/ria/images/control/tableMinus.png');
+    const image = document.createElement('span');
+    image.className = 'sbb-icon-table-minus';
     td.appendChild(image);
     td.addEventListener('click', function () {
         row.remove();

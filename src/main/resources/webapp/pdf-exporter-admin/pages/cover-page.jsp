@@ -155,7 +155,7 @@
         <div id="templates-select"></div>
         <div class="action-buttons">
             <button id="persist-selected-template" class="toolbar-button">
-                <img class="button-image" src="/polarion/ria/images/actions/save.gif?bundle=<%= bundleTimestamp %>" alt="">Persist
+                <span class="button-image sbb-icon-save" role="img" aria-label="Persist"></span>Persist
             </button>
         </div>
         <div class="action-alerts" style="display: inline-block">

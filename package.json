@@ -13,5 +13,10 @@
   },
   "overrides": {
     "serialize-javascript": "^7.0.3"
-  }
+  },
+  "engines": {
+    "node": ">=20.9.0",
+    "npm": ">=11"
+  },
+  "packageManager": "npm@11.18.0"
 }
