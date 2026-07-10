@@ -308,7 +308,7 @@
     border-radius: 2px;
 }
 
-.property-wrapper select, .property-wrapper input[type="color"] {
+.property-wrapper select {
     appearance: none !important;
     -webkit-appearance: none !important;
     -moz-appearance: none !important;
@@ -336,11 +336,6 @@
     width: 200px;
 }
 
-.property-wrapper input[type="color"] {
-    /* Fixed px (not rem) so the swatch width is identical in the side panel, the popup and the
-       admin picker — those contexts have different root font-sizes, so 2rem rendered differently. */
-    padding: 2px 24px 2px 4px;
-}
 
 /* Uniform control sizing in the export panel & popup so every combo-like control matches the
    admin comboboxes (130 x 23). The searchable-dropdown wraps a native <select>; its container
@@ -380,36 +375,6 @@
    .options rule in the editor / modal context can't flatten it back to the trigger width). */
 .property-wrapper .searchable-dropdown .options {
     min-width: calc(100% + 35px);
-}
-
-.property-wrapper input[type="color"] {
-    width: 130px;
-    height: 23px;
-    box-sizing: border-box;
-    border-radius: 2px;
-    /* Chevron in px (not the base rule's calc(100% - 1rem)) so it sits identically in the side panel,
-       popup and admin, regardless of each context's root font-size. */
-    background-position: calc(100% - 5px) 55% !important;
-}
-
-.property-wrapper input[type="color"]::-webkit-color-swatch {
-    border: 1px solid var(--sbb-control-border);
-    border-radius: 1px;
-}
-
-/* Swatch fills the field (drop the default wrapper inset) — matches the admin style-packages
-   picker so admin / side-panel / popup colour pickers look identical. */
-.property-wrapper input[type="color"]::-webkit-color-swatch-wrapper {
-    padding: 0;
-}
-
-/* The colour input is a native <input> — its chevron sits via background-position, unlike the
-   SearchableDropdown's ::after. Higher specificity (panel/popup id) so the sibling exporters'
-   global `.property-wrapper input[type=color]` rule can't clobber it; nudge it right to line up
-   with the SearchableDropdown chevrons. */
-#pdf-exporter-panel .property-wrapper input[type="color"],
-.modal__container.pdf-exporter .property-wrapper input[type="color"] {
-    background-position: calc(100% - 5px) 55% !important;
 }
 
 .buttons-wrapper {
