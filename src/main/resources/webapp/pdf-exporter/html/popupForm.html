@@ -269,9 +269,9 @@
             </div>
         </div>
 
-        <div class="flex-container" style='border-top: 1px solid #eee; margin-top: 15px; padding-top: 5px;'>
+        <div class="flex-container hidden visible-for-TEST_RUN" style='border-top: 1px solid #eee; margin-top: 15px; padding-top: 5px;'>
             <div class="flex-column">
-                <div class='property-wrapper hidden visible-for-TEST_RUN' style="flex-wrap: wrap;">
+                <div class='property-wrapper' style="flex-wrap: wrap;">
                     <label for='popup-download-attachments'>
                         <input id='popup-download-attachments' onchange='document.getElementById("popup-attachments-filter-container").style.display = this.checked ? "flex" : "none";document.getElementById("popup-testcase-field-id-container").style.display = this.checked ? "flex" : "none";document.getElementById("popup-embed-attachments-label").style.display = this.checked ? "block" : "none";' type='checkbox'/>
                         Download attachments
@@ -283,7 +283,7 @@
                 </div>
             </div>
             <div class="flex-column">
-                <div class='property-wrapper hidden visible-for-TEST_RUN' style="flex-wrap: wrap;">
+                <div class='property-wrapper' style="flex-wrap: wrap;">
                     <label for='popup-embed-attachments' id='popup-embed-attachments-label'>
                         <input id='popup-embed-attachments' type='checkbox'/>
                         Embed attachments into resulted PDF
