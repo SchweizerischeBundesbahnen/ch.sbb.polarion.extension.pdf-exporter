@@ -44,7 +44,7 @@
     </issueManagement>
 
     <properties>
-        <pdfbox.version>3.0.7</pdfbox.version>
+        <pdfbox.version>3.0.8</pdfbox.version>
         <okapi.xliff.version>1.48.0</okapi.xliff.version>
         <flying-saucer.version>10.3.0</flying-saucer.version>
 
