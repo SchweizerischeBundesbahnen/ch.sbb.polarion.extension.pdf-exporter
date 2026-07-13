@@ -76,6 +76,7 @@
         generic.injectStyles("generic-checkbox-styles", `${EXT_BASE}ui/generic/css/checkboxes.css${timestampParam}`);
         generic.injectStyles("generic-searchable-dropdown-styles", `${EXT_BASE}ui/generic/css/searchable-dropdown.css${timestampParam}`);
         generic.injectStyles("generic-inputs-styles", `${EXT_BASE}ui/generic/css/inputs.css${timestampParam}`);
+        generic.injectStyles("generic-alerts-styles", `${EXT_BASE}ui/generic/css/alerts.css${timestampParam}`);
         generic.injectScript("pdf-micromodal-script", `${EXT_BASE}ui/generic/js/micromodal.min.js${timestampParam}`);
         starter = generic.create({
             markerId: 'pdf-exporter-toolbar-injected',
