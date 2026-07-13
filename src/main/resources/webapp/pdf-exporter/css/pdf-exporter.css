@@ -431,16 +431,21 @@
 
 #export-error, #validate-error, #style-package-error {
     display: block;
-    margin-top: 6px;
     color: red;
     font-weight: bold;
 }
 
 #export-warning {
     display: block;
-    margin-top: 6px;
     color: orange;
     font-weight: bold;
+}
+
+/* Gap only when a message is actually present — these status divs are empty in the normal state, and
+   an unconditional margin on an empty block would permanently shift the following controls down. */
+#export-error:not(:empty), #validate-error:not(:empty), #style-package-error:not(:empty),
+#export-warning:not(:empty) {
+    margin-top: 6px;
 }
 
 /* Success message stays inline to the right of the Validate button (short text), vertically centred
@@ -448,9 +453,13 @@
 #validate-ok {
     display: inline-block;
     vertical-align: middle;
-    margin-left: 8px;
     color: green;
     font-weight: bold;
+}
+
+/* Match the pattern above: no gap after the button when the success message is empty. */
+#validate-ok:not(:empty) {
+    margin-left: 8px;
 }
 
 .validate-result-img {
