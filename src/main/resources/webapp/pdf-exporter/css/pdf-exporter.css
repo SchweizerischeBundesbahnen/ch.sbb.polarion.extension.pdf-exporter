@@ -430,19 +430,25 @@
 }
 
 #export-error, #validate-error, #style-package-error {
-    display: inline-block;
+    display: block;
+    margin-top: 6px;
     color: red;
     font-weight: bold;
 }
 
 #export-warning {
-    display: inline-block;
+    display: block;
+    margin-top: 6px;
     color: orange;
     font-weight: bold;
 }
 
+/* Success message stays inline to the right of the Validate button (short text), vertically centred
+   against it. The error message, by contrast, is a full-width block below the button (long messages). */
 #validate-ok {
     display: inline-block;
+    vertical-align: middle;
+    margin-left: 8px;
     color: green;
     font-weight: bold;
 }

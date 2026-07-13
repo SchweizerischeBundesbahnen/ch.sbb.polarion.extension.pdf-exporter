@@ -122,6 +122,12 @@ public class BulkPdfExportWidgetRenderer extends AbstractWidgetRenderer {
                         .catch(console.error);""".formatted(panelId, exportPages.value()));
 
             wrap.append().tag().style().append().html(ScopeUtils.getFileContent("/css/micromodal.css"));
+            // The widget assembles its CSS inline and does not pull generic's common.css, so the shared
+            // alert styling would be missing: control-tokens.css provides the --sbb-*-icon tokens and
+            // alerts.css the notification boxes + warning/error triangle icons. Without these the export
+            // dialog's warnings (e.g. the PDF/A sticky-notes notice) render as unstyled plain text.
+            wrap.append().tag().style().append().html(ScopeUtils.getFileContent("/css/control-tokens.css"));
+            wrap.append().tag().style().append().html(ScopeUtils.getFileContent("/css/alerts.css"));
             wrap.append().tag().style().append().html(ScopeUtils.getFileContent("/webapp/pdf-exporter/css/pdf-exporter.css"));
 
             HtmlContentBuilder contentBuilder = mainTable.append();
