@@ -267,9 +267,10 @@
 }
 
 /* The bulk export widget renders on a Polarion page, not inside a .form-wrapper / .modal__container,
-   so the shared 2606 checkbox styling (generic checkboxes.css) does not reach it. Re-apply it scoped
-   to the widget's own root — same tokens and images — rather than tagging the widget with the broad
-   .form-wrapper class, which would also opt it into unrelated form-field scopes. */
+   so the shared 2606 checkbox styling (generic checkboxes.css, scoped to those wrappers) does not
+   reach it. Re-apply it scoped to the widget's own root — same tokens and images. The widget root
+   carries .sbb-ui (see BulkPdfExportWidgetRenderer), which supplies the --sbb-* tokens these rules
+   consume without pulling in the unrelated form-field scopes. */
 .polarion-PdfExporter-BulkExportWidget input[type="checkbox"] {
     -webkit-appearance: none;
     appearance: none;
@@ -568,7 +569,7 @@
     height: 100%;
     padding: 0 10px;
     border-radius: 4px;
-    background-color: #007993;
+    background-color: var(--sbb-accent);
     overflow: hidden;
     line-height: 1.6em;
     text-align: center;
