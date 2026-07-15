@@ -45,7 +45,7 @@
     <span>The higher the number, the higher resulting item's position will be. The highest item will be pre-selected in the dropdown on the export panel.</span>
     <div class="input-container">
         <div class="input-block wide">
-            <ul id="sortable-list" class="weights-list"></ul>
+            <ul id="weights-list" class="weights-list"></ul>
         </div>
     </div>
 

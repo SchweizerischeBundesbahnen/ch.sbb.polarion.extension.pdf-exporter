@@ -6,4 +6,4 @@ const ctx = new ExtensionContext({
     scopeFieldId: 'scope'
 });
 
-new StylePackageWeights({ ctx, listId: 'sortable-list' });
+new StylePackageWeights({ ctx, listId: 'weights-list' });
