@@ -6,6 +6,7 @@
 <head>
     <title>PDF Exporter: CSS</title>
     <link rel="stylesheet" href="../ui/generic/css/common.css?bundle=<%= bundleTimestamp %>">
+    <link rel="stylesheet" href="../ui/generic/css/style-package-weights.css?bundle=<%= bundleTimestamp %>">
     <style type="text/css">
         html {
             height: 100%;
@@ -27,50 +28,12 @@
         .input-container {
             flex: 1;
             margin-top: 20px;
-            overflow-y: scroll;
+            overflow-y: auto;
         }
         .input-block {
             height: 100%;
             display: flex;
             flex-direction: column;
-        }
-        .sortable-list {
-            flex: 1;
-        }
-
-        .sortable-list {
-            list-style-type: none;
-            padding: 0;
-            margin: 0;
-            max-width: 500px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-        }
-
-        .sortable-item {
-            padding: 10px;
-            margin: 5px 0;
-            background-color: #f0f0f0;
-            border: 1px solid #ddd;
-            cursor: move;
-            text-align: center;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .sortable-item.static {
-            cursor: not-allowed;
-        }
-
-        .sortable-item.static input {
-            pointer-events:none;
-            background-color: #f1f1f1;
-        }
-
-        .weight-input {
-            width: 60px;
-            text-align: center;
         }
     </style>
     <script type="module" src="../js/modules/style-package-weights.js?bundle=<%= bundleTimestamp %>"></script>
@@ -82,7 +45,7 @@
     <span>The higher the number, the higher resulting item's position will be. The highest item will be pre-selected in the dropdown on the export panel.</span>
     <div class="input-container">
         <div class="input-block wide">
-            <ul id="sortable-list" class="sortable-list"></ul>
+            <ul id="weights-list" class="weights-list"></ul>
         </div>
     </div>
 
