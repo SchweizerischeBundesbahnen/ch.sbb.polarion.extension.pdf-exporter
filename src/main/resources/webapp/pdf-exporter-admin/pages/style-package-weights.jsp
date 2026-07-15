@@ -27,50 +27,158 @@
         .input-container {
             flex: 1;
             margin-top: 20px;
-            overflow-y: scroll;
+            overflow-y: auto;
         }
         .input-block {
             height: 100%;
             display: flex;
             flex-direction: column;
         }
-        .sortable-list {
-            flex: 1;
-        }
 
-        .sortable-list {
+        /* Sortable weights list — flat Polarion 2606 look, built on the shared --sbb-* control tokens
+           (control-tokens.css, imported by common.css) so it stays in sync with the rest of the UI. */
+        .weights-list {
             list-style-type: none;
             padding: 0;
             margin: 0;
             max-width: 500px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
+            border: 1px solid var(--sbb-control-border);
+            border-radius: 3px;
+            overflow: hidden;
         }
 
-        .sortable-item {
-            padding: 10px;
-            margin: 5px 0;
-            background-color: #f0f0f0;
-            border: 1px solid #ddd;
-            cursor: move;
-            text-align: center;
+        .weight-item {
             display: flex;
-            justify-content: space-between;
             align-items: center;
+            gap: 9px;
+            padding: 7px 10px;
+            background-color: #fff;
+            border-bottom: 1px solid #ededed;
+            cursor: grab;
+            transition: background-color 0.12s ease, box-shadow 0.08s ease;
         }
 
-        .sortable-item.static {
-            cursor: not-allowed;
+        .weight-item:last-child {
+            border-bottom: none;
         }
 
-        .sortable-item.static input {
-            pointer-events:none;
+        .weight-item:hover {
+            background-color: var(--sbb-hover-tint);
+        }
+
+        .weight-item.dragging {
+            opacity: 0.4;
+        }
+
+        /* Insertion indicator: an accent line on the edge the dragged item would land on. */
+        .weight-item.drop-above {
+            box-shadow: inset 0 3px 0 var(--sbb-accent);
+        }
+
+        .weight-item.drop-below {
+            box-shadow: inset 0 -3px 0 var(--sbb-accent);
+        }
+
+        .weight-item.static {
+            background-color: #f7f7f5;
+            color: #9a9a9a;
+            cursor: default;
+        }
+
+        .weight-item .name {
+            flex: 1;
+            min-width: 0;
+            font-weight: 600;
+        }
+
+        /* Left slot — drag handle (movable rows) or lock marker (read-only global rows). Both occupy
+           the same 14px box so names line up across all rows. */
+        .weight-item .drag-handle,
+        .weight-item .lock-marker {
+            flex: 0 0 auto;
+            width: 14px;
+            padding: 2px 0;
+            box-sizing: content-box;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 0;
+        }
+
+        .weight-item .drag-handle {
+            color: #9a9a9a;
+            cursor: grab;
+            border-radius: 3px;
+        }
+
+        .weight-item .drag-handle:hover {
+            color: #555;
+            background-color: var(--sbb-hover-tint);
+        }
+
+        .weight-item .lock-marker {
+            color: #8a8a8a;
+            cursor: help;
+        }
+
+        .weight-item .drag-handle svg,
+        .weight-item .lock-marker svg {
+            display: block;
+        }
+
+        .weights-list .sbb-number {
+            flex: 0 0 auto;
+            width: 66px;
+        }
+
+        .weight-item.static .weight-input {
             background-color: #f1f1f1;
+            color: #9a9a9a;
+            pointer-events: none;
         }
 
-        .weight-input {
-            width: 60px;
-            text-align: center;
+        /* Up / down reorder buttons — keyboard-accessible alternative to drag. */
+        .reorder-arrows {
+            flex: 0 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .reorder-arrows.placeholder {
+            width: 22px;
+        }
+
+        .reorder-arrows button {
+            width: 22px;
+            height: 13px;
+            padding: 0;
+            margin: 0;
+            border: 1px solid var(--sbb-btn-border);
+            border-radius: 2px;
+            background-color: var(--sbb-btn-control-bg);
+            color: #595959;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 0;
+        }
+
+        .reorder-arrows button:hover:not(:disabled) {
+            background-color: var(--sbb-hover-tint);
+            border-color: var(--sbb-btn-hover-border);
+        }
+
+        .reorder-arrows button:disabled {
+            opacity: 0.35;
+            cursor: default;
+        }
+
+        .reorder-arrows svg {
+            display: block;
+            width: 9px;
+            height: 6px;
         }
     </style>
     <script type="module" src="../js/modules/style-package-weights.js?bundle=<%= bundleTimestamp %>"></script>
@@ -82,7 +190,7 @@
     <span>The higher the number, the higher resulting item's position will be. The highest item will be pre-selected in the dropdown on the export panel.</span>
     <div class="input-container">
         <div class="input-block wide">
-            <ul id="sortable-list" class="sortable-list"></ul>
+            <ul id="sortable-list" class="weights-list"></ul>
         </div>
     </div>
 
