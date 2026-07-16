@@ -82,22 +82,36 @@ ch.sbb.polarion.extension.pdf-exporter.weasyprint.service=http://localhost:9080
 
 ### PDF Exporter view to open via button in toolbar
 
-Alternatively you can configure PDF Exporter such a way that additional toolbar will appear in document's editor with a button to open a popup with PDF Exporter view.
+Alternatively you can configure PDF Exporter such a way that a button to open the PDF Exporter view appears in the document editor's toolbar.
 
 1. Open "Default Repository".
 2. On the top of its navigation pane click ⚙ (Actions) ➙ 🔧 Administration. Global administration page will be opened.
 3. On the administration's navigation pane select Configuration Properties.
 4. In editor of opened page add following line:
    ```properties
-   scriptInjection.dleEditorHead=<script src="/polarion/pdf-exporter/js/starter.js"></script><script>PdfExporterStarter.injectToolbar();</script>
+   scriptInjection.dleEditorHead=<script src="/polarion/pdf-exporter/js/dle-toolbar.js"></script>
    ```
-   There's an alternate approach adding the PDF Exporter button into Polarion's native document toolbar. Previously this
-   approach had a drawback — the button could disappear in some cases (for example when the document was saved); this has now
-   been fixed: the button is re-injected automatically when Polarion re-renders the toolbar, so it stays in place:
-   ```properties
-   scriptInjection.dleEditorHead=<script src="/polarion/pdf-exporter/js/starter.js"></script><script>PdfExporterStarter.injectToolbar({alternate: true});</script>
-   ```
+   This adds the button into Polarion's native document toolbar. The button is re-injected automatically when Polarion re-renders the toolbar (for example when the document is saved), so it stays in place.
 5. Save changes by clicking 💾 Save
+
+> [!TIP]
+> **Adding more than one toolbar button.** `scriptInjection.dleEditorHead` is a single Polarion-wide property that holds exactly one value. To show several buttons in the document editor (for example the PDF, DOCX and StrictDoc exporters together, or this button alongside any other injected script), do **not** add separate `scriptInjection.dleEditorHead=` lines — the last one overrides the rest. Concatenate all the `<script>` tags into that single value instead:
+> ```properties
+> scriptInjection.dleEditorHead=<script src="/polarion/pdf-exporter/js/dle-toolbar.js"></script><script src="/polarion/docx-exporter/js/dle-toolbar.js"></script><script src="/polarion/strictdoc-exporter/js/dle-toolbar.js"></script>
+> ```
+
+#### Deprecated configuration
+
+The explicit `PdfExporterStarter.injectToolbar(...)` configuration still works but is **deprecated** in favor of the single-tag `dle-toolbar.js` form above (removal is planned for a future major version):
+
+```properties
+# Button in Polarion's native document toolbar — equivalent to the recommended dle-toolbar.js form above.
+scriptInjection.dleEditorHead=<script src="/polarion/pdf-exporter/js/starter.js"></script><script>PdfExporterStarter.injectToolbar({alternate: true});</script>
+```
+```properties
+# A separate toolbar with the button placed above the document editing area.
+scriptInjection.dleEditorHead=<script src="/polarion/pdf-exporter/js/starter.js"></script><script>PdfExporterStarter.injectToolbar();</script>
+```
 
 ### PDF Exporter view to open in Live Reports
 

@@ -17,33 +17,48 @@ import static org.mockito.Mockito.mockStatic;
 
 class DleToolbarStatusProviderTest {
 
-    public static final String CONFIG = "<script src=\"/polarion/pdf-exporter/js/starter.js\"></script><script>PdfExporterStarter.injectToolbar();</script>";
-    public static final String CONFIG_WITH_ALTERNATE = "<script src=\"/polarion/pdf-exporter/js/starter.js\"></script><script>PdfExporterStarter.injectToolbar({alternate: true});</script>";
+    // Recommended single-tag injector.
+    public static final String CONFIG_NEW = "<script src=\"/polarion/pdf-exporter/js/dle-toolbar.js\"></script>";
+    // Deprecated explicit-injectToolbar forms (still supported).
+    public static final String CONFIG_DEPRECATED = "<script src=\"/polarion/pdf-exporter/js/starter.js\"></script><script>PdfExporterStarter.injectToolbar();</script>";
+    public static final String CONFIG_DEPRECATED_WITH_ALTERNATE = "<script src=\"/polarion/pdf-exporter/js/starter.js\"></script><script>PdfExporterStarter.injectToolbar({alternate: true});</script>";
 
     public static Stream<Arguments> provideConfigurationStatus() {
-        ConfigurationStatus configurationStatusNotConfigured = ConfigurationStatus.builder()
+        ConfigurationStatus notConfigured = ConfigurationStatus.builder()
                 .name(DleToolbarStatusProvider.DLE_TOOLBAR)
                 .status(Status.WARNING)
-                .details("Not configured")
+                .details(DleToolbarStatusProvider.NOT_CONFIGURED)
                 .build();
-        ConfigurationStatus configurationStatusOk = ConfigurationStatus.builder()
+        ConfigurationStatus ok = ConfigurationStatus.builder()
                 .name(DleToolbarStatusProvider.DLE_TOOLBAR)
                 .status(Status.OK)
                 .details("")
                 .build();
+        ConfigurationStatus deprecated = ConfigurationStatus.builder()
+                .name(DleToolbarStatusProvider.DLE_TOOLBAR)
+                .status(Status.WARNING)
+                .details(DleToolbarStatusProvider.DEPRECATED_DETAILS)
+                .build();
 
         return Stream.of(
-                Arguments.of("", "", configurationStatusNotConfigured),
+                Arguments.of("", "", notConfigured),
 
-                Arguments.of(CONFIG, "", configurationStatusOk),
-                Arguments.of("", CONFIG, configurationStatusOk),
-                Arguments.of(CONFIG, CONFIG, configurationStatusOk),
+                // Recommended single-tag form → OK.
+                Arguments.of(CONFIG_NEW, "", ok),
+                Arguments.of("", CONFIG_NEW, ok),
+                Arguments.of(CONFIG_NEW, CONFIG_NEW, ok),
+                Arguments.of("<script></script> <script src=\"/polarion/pdf-exporter/js/dle-toolbar.js\"></script> <script></script>", "", ok),
 
-                Arguments.of(CONFIG_WITH_ALTERNATE, "", configurationStatusOk),
-                Arguments.of("", CONFIG_WITH_ALTERNATE, configurationStatusOk),
-                Arguments.of(CONFIG_WITH_ALTERNATE, CONFIG_WITH_ALTERNATE, configurationStatusOk),
+                // Deprecated explicit-injectToolbar forms → WARNING with deprecation hint.
+                Arguments.of(CONFIG_DEPRECATED, "", deprecated),
+                Arguments.of("", CONFIG_DEPRECATED, deprecated),
+                Arguments.of(CONFIG_DEPRECATED_WITH_ALTERNATE, "", deprecated),
+                Arguments.of("", CONFIG_DEPRECATED_WITH_ALTERNATE, deprecated),
+                Arguments.of(CONFIG_DEPRECATED, CONFIG_DEPRECATED, deprecated),
 
-                Arguments.of("<script> </script> <script src=\"/polarion/pdf-exporter/js/starter.js\"></script> <script>PdfExporterStarter.injectToolbar();</script> <script></script>", "", configurationStatusOk)
+                // The recommended form on either source wins over a deprecated form.
+                Arguments.of(CONFIG_NEW, CONFIG_DEPRECATED, ok),
+                Arguments.of(CONFIG_DEPRECATED, CONFIG_NEW, ok)
         );
     }
 

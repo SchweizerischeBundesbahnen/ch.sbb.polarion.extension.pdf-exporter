@@ -6,6 +6,10 @@
  * The dleEditorHead config is unchanged: it still loads this script and calls
  * PdfExporterStarter.injectToolbar({...}); the bootstrap below pulls the engine and queues
  * the call until it is ready.
+ *
+ * DEPRECATED: the explicit PdfExporterStarter.injectToolbar(...) config is superseded by the
+ * single-tag /polarion/pdf-exporter/js/dle-toolbar.js injector (adds the toolbar button without a
+ * second script tag). It keeps working for backward compatibility; removal is a future major bump.
  */
 (function () {
     const timestampParam = `?timestamp=${Date.now()}`;
@@ -50,6 +54,12 @@
     let starter = null, myOrder;
     const pending = [];
     window.PdfExporterStarter = {
+        /**
+         * @deprecated Use the single-tag injector instead:
+         *   <script src="/polarion/pdf-exporter/js/dle-toolbar.js"></script>
+         * Kept for backward compatibility; removal is planned for a future major version.
+         * @param {{alternate: boolean}|undefined} params
+         */
         injectToolbar: function (params) {
             if (myOrder === undefined) {
                 // Capture config-execution order (this stub runs synchronously in dleEditorHead

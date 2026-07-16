@@ -3,28 +3,46 @@ package ch.sbb.polarion.extension.pdf_exporter.util.configuration;
 import ch.sbb.polarion.extension.generic.configuration.ConfigurationStatus;
 import ch.sbb.polarion.extension.generic.configuration.ConfigurationStatusProvider;
 import ch.sbb.polarion.extension.generic.configuration.Status;
+import ch.sbb.polarion.extension.generic.regex.RegexMatcher;
 import ch.sbb.polarion.extension.generic.util.Discoverable;
 import com.polarion.alm.projects.properties.internal.ScriptInjectionPropertiesProvider;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 @Discoverable
 public class DleToolbarStatusProvider extends ConfigurationStatusProvider {
 
     public static final String DLE_TOOLBAR = "DLE Toolbar";
-    public static final String DLE_TOOLBAR_SCRIPT_REGEX = "(.*)<script src=\"/polarion/pdf-exporter/js/starter.js\"></script>(.*)<script>PdfExporterStarter.injectToolbar(.*);</script>(.*)";
+    // Recommended single-tag injector.
+    public static final String DLE_TOOLBAR_SCRIPT_REGEX = "(.*)<script src=\"/polarion/pdf-exporter/js/dle-toolbar.js[^\"]*\"></script>(.*)";
+    // Deprecated explicit-injectToolbar config (still works).
+    public static final String DEPRECATED_DLE_TOOLBAR_SCRIPT_REGEX = "(.*)<script src=\"/polarion/pdf-exporter/js/starter.js\"></script>(.*)<script>PdfExporterStarter.injectToolbar(.*);</script>(.*)";
+    public static final String NOT_CONFIGURED = "Not configured";
+    public static final String DEPRECATED_DETAILS = "Deprecated configuration. Replace it with the single tag "
+            + "<script src=\"/polarion/pdf-exporter/js/dle-toolbar.js\"></script>";
 
     @Override
     public @NotNull ConfigurationStatus getStatus(@NotNull Context context) {
-        String scriptInjectionSystemPropertiesDleEditorHead = ScriptInjectionPropertiesProvider.getScriptInjectionSystemProperties().dleEditorHead();
-        String scriptInjectionRuntimePropertiesDleEditorHead = ScriptInjectionPropertiesProvider.getScripInjectionRuntimeProperties().dleEditorHead();
+        ConfigurationStatus systemStatus = classify(ScriptInjectionPropertiesProvider.getScriptInjectionSystemProperties().dleEditorHead());
+        ConfigurationStatus runtimeStatus = classify(ScriptInjectionPropertiesProvider.getScripInjectionRuntimeProperties().dleEditorHead());
+        // Prefer the better-configured of the two property sources (system wins on a tie).
+        return rank(systemStatus) >= rank(runtimeStatus) ? systemStatus : runtimeStatus;
+    }
 
-        ConfigurationStatus configurationStatusSystemProperties = getConfigurationStatus(DLE_TOOLBAR, scriptInjectionSystemPropertiesDleEditorHead, DLE_TOOLBAR_SCRIPT_REGEX);
-        ConfigurationStatus configurationStatusRuntimeProperties = getConfigurationStatus(DLE_TOOLBAR, scriptInjectionRuntimePropertiesDleEditorHead, DLE_TOOLBAR_SCRIPT_REGEX);
-
-        if (configurationStatusSystemProperties.getStatus() == Status.OK) {
-            return configurationStatusSystemProperties;
-        } else {
-            return configurationStatusRuntimeProperties;
+    private @NotNull ConfigurationStatus classify(@Nullable String dleEditorHead) {
+        if (dleEditorHead != null && RegexMatcher.get(DLE_TOOLBAR_SCRIPT_REGEX).anyMatch(dleEditorHead)) {
+            return new ConfigurationStatus(DLE_TOOLBAR, Status.OK);
         }
+        if (dleEditorHead != null && RegexMatcher.get(DEPRECATED_DLE_TOOLBAR_SCRIPT_REGEX).anyMatch(dleEditorHead)) {
+            return new ConfigurationStatus(DLE_TOOLBAR, Status.WARNING, DEPRECATED_DETAILS);
+        }
+        return new ConfigurationStatus(DLE_TOOLBAR, Status.WARNING, NOT_CONFIGURED);
+    }
+
+    private int rank(@NotNull ConfigurationStatus status) {
+        if (status.getStatus() == Status.OK) {
+            return 2;
+        }
+        return DEPRECATED_DETAILS.equals(status.getDetails()) ? 1 : 0;
     }
 }
