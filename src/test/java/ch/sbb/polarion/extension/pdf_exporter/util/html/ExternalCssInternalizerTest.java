@@ -1,5 +1,6 @@
 package ch.sbb.polarion.extension.pdf_exporter.util.html;
 
+import ch.sbb.polarion.extension.pdf_exporter.configuration.PdfExporterExtensionConfigurationExtension;
 import ch.sbb.polarion.extension.pdf_exporter.util.FileResourceProvider;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -15,7 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.when;
 
-@ExtendWith(MockitoExtension.class)
+@ExtendWith({MockitoExtension.class, PdfExporterExtensionConfigurationExtension.class})
 class ExternalCssInternalizerTest {
     @Mock
     private FileResourceProvider fileResourceProvider;

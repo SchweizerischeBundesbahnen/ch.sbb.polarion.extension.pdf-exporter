@@ -5,11 +5,11 @@
     <parent>
         <groupId>ch.sbb.polarion.extensions</groupId>
         <artifactId>ch.sbb.polarion.extension.generic</artifactId>
-        <version>14.1.2</version>
+        <version>15.5.0</version>
     </parent>
 
     <artifactId>ch.sbb.polarion.extension.pdf-exporter</artifactId>
-    <version>12.4.2-SNAPSHOT</version>
+    <version>13.2.1-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>Polarion ALM extension to convert Documents to PDF files</name>
@@ -44,19 +44,18 @@
     </issueManagement>
 
     <properties>
-        <pdfbox.version>3.0.7</pdfbox.version>
+        <pdfbox.version>3.0.8</pdfbox.version>
         <okapi.xliff.version>1.48.0</okapi.xliff.version>
-        <byte-buddy.version>1.18.8-jdk5</byte-buddy.version>
-        <flying-saucer.version>9.13.3</flying-saucer.version>
+        <flying-saucer.version>10.3.0</flying-saucer.version>
 
-        <slf4j.version>1.7.36</slf4j.version>
+        <slf4j.version>2.0.18</slf4j.version>
         <testcontainers.version>2.0.5</testcontainers.version>
 
         <awaitility.version>4.3.0</awaitility.version>
-        <tika.version>3.3.0</tika.version>
-        <ph-css.version>8.2.0</ph-css.version>
+        <tika.version>3.3.1</tika.version>
+        <ph-css.version>8.2.1</ph-css.version>
         <commons-text.version>1.15.0</commons-text.version>
-        <verapdf.version>1.28.2</verapdf.version>
+        <verapdf.version>1.30.2</verapdf.version>
         <rhino.version>1.9.1</rhino.version>
 
         <exec-maven-plugin.version>3.3.0</exec-maven-plugin.version>
@@ -70,10 +69,11 @@
         <!-- Extension-specific Require-Bundle (in addition to common ones from parent POM):
             com.polarion.alm.wiki
             org.jsoup
+            net.bytebuddy.byte-buddy
             org.apache.tika.patched;resolution:=optional
             org.apache.tika;resolution:=optional
         -->
-        <maven-jar-plugin.Require-Bundle.extension>com.polarion.alm.wiki,org.jsoup,org.apache.tika.patched;resolution:=optional,org.apache.tika;resolution:=optional</maven-jar-plugin.Require-Bundle.extension>
+        <maven-jar-plugin.Require-Bundle.extension>com.polarion.alm.wiki,org.jsoup,net.bytebuddy.byte-buddy,org.apache.tika.patched;resolution:=optional,org.apache.tika;resolution:=optional</maven-jar-plugin.Require-Bundle.extension>
         <maven-jar-plugin.Require-Bundle>${maven-jar-plugin.Require-Bundle.common},${maven-jar-plugin.Require-Bundle.extension}</maven-jar-plugin.Require-Bundle>
 
         <!--suppress UnresolvedMavenProperty -->
@@ -87,7 +87,8 @@
         <markdown2html-maven-plugin.disclaimer.outputFile>${markdown2html-maven-plugin.extensionContextAdminHtml}/${markdown2html-maven-plugin.disclaimer.outputFileName}</markdown2html-maven-plugin.disclaimer.outputFile>
         <swagger-maven-plugin.version>2.2.22</swagger-maven-plugin.version>
 
-        <frontend-maven-plugin.version>2.0.0</frontend-maven-plugin.version>
+        <frontend-maven-plugin.version>2.0.1</frontend-maven-plugin.version>
+        <!-- When bumping nodeVersion/npmVersion, keep package.json ("engines" and "packageManager") in sync. -->
         <frontend-maven-plugin.nodeVersion>v24.11.0</frontend-maven-plugin.nodeVersion>
         <frontend-maven-plugin.npmVersion>11.6.1</frontend-maven-plugin.npmVersion>
 
@@ -98,7 +99,7 @@
 
     <profiles>
         <profile>
-            <id>polarion2512</id>
+            <id>polarion2606</id>
             <activation>
                 <activeByDefault>true</activeByDefault>
             </activation>
@@ -144,14 +145,6 @@
                 <scope>import</scope>
             </dependency>
 
-            <!-- Override vulnerable transitive jackson-databind from verapdf (provided by Polarion at runtime) -->
-            <dependency>
-                <groupId>com.fasterxml.jackson.core</groupId>
-                <artifactId>jackson-databind</artifactId>
-                <version>2.19.0</version>
-                <scope>provided</scope>
-            </dependency>
-
             <!-- Override vulnerable transitive rhino from verapdf -->
             <dependency>
                 <groupId>org.mozilla</groupId>
@@ -184,7 +177,14 @@
 
         <dependency>
             <groupId>com.polarion.thirdparty</groupId>
-            <artifactId>org.jsoup_1.15.2</artifactId>
+            <artifactId>org.jsoup_1.21.2</artifactId>
+            <version>${polarion.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.polarion.thirdparty</groupId>
+            <artifactId>net.bytebuddy.byte-buddy_1.18.3</artifactId>
             <version>${polarion.version}</version>
             <scope>provided</scope>
         </dependency>
@@ -194,22 +194,11 @@
             <groupId>org.apache.pdfbox</groupId>
             <artifactId>pdfbox</artifactId>
             <version>${pdfbox.version}</version>
-            <exclusions> <!-- pdfbox 3.0.0 has scope test for junit, pdfbox 3.0.1 has no such scope, that's why this exclusion has been added -->
-                <exclusion>
-                    <groupId>org.junit.jupiter</groupId>
-                    <artifactId>junit-jupiter</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
         <dependency>
             <groupId>net.sf.okapi.lib</groupId>
             <artifactId>okapi-lib-xliff2</artifactId>
             <version>${okapi.xliff.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>net.bytebuddy</groupId>
-            <artifactId>byte-buddy</artifactId>
-            <version>${byte-buddy.version}</version>
         </dependency>
         <dependency>
             <groupId>com.helger</groupId>
@@ -234,6 +223,21 @@
             <version>${tika.version}</version>
         </dependency>
 
+        <dependency>
+            <groupId>org.verapdf</groupId>
+            <artifactId>validation-model-jakarta</artifactId>
+            <version>${verapdf.version}</version>
+            <!-- Jackson is provided by Polarion's OSGi container (2.19.0) at runtime and by the
+                 parent POM's provided bundles at compile time. Exclude verapdf's transitive copy
+                 so it isn't bundled and can't collide with Polarion's version. -->
+            <exclusions>
+                <exclusion>
+                    <groupId>com.fasterxml.jackson.core</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
         <!--  Test dependencies  -->
         <dependency>
             <groupId>org.slf4j</groupId>
@@ -241,10 +245,11 @@
             <version>${slf4j.version}</version>
             <scope>test</scope>
         </dependency>
+        <!-- Route SLF4J (used by flying-saucer) to Log4j2 so its logs can be captured by InMemoryAppender in tests -->
         <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-simple</artifactId>
-            <version>${slf4j.version}</version>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-slf4j2-impl</artifactId>
+            <version>${log4j.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -264,34 +269,6 @@
             <version>${project.parent.version}</version>
             <type>test-jar</type>
             <scope>test</scope>
-        </dependency>
-        <!-- Required for mocking HtmlFragmentParser -->
-        <dependency>
-            <groupId>com.polarion.thirdparty</groupId>
-            <artifactId>nu.xom_1.3.7.osgi</artifactId>
-            <version>${polarion.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.verapdf</groupId>
-            <artifactId>core</artifactId>
-            <version>${verapdf.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.verapdf</groupId>
-            <artifactId>validation-model</artifactId>
-            <version>${verapdf.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.verapdf</groupId>
-            <artifactId>parser</artifactId>
-            <version>${verapdf.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.verapdf.apps</groupId>
-            <artifactId>greenfield-apps</artifactId>
-            <version>${verapdf.version}</version>
         </dependency>
     </dependencies>
 
@@ -413,7 +390,7 @@
 
             <plugin>
                 <groupId>io.swagger.core.v3</groupId>
-                <artifactId>swagger-maven-plugin</artifactId>
+                <artifactId>swagger-maven-plugin-jakarta</artifactId>
                 <configuration>
                     <outputFormat>JSON</outputFormat>
                     <resourcePackages>

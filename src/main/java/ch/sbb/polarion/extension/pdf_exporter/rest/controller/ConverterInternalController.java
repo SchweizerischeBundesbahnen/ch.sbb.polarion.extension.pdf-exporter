@@ -15,6 +15,7 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PaperSize;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PdfVariant;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.jobs.ConverterJobDetails;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.jobs.ConverterJobStatus;
+import ch.sbb.polarion.extension.pdf_exporter.service.PdfExporterPolarionService;
 import ch.sbb.polarion.extension.pdf_exporter.util.DocumentFileNameHelper;
 import ch.sbb.polarion.extension.pdf_exporter.util.ExportContext;
 import ch.sbb.polarion.extension.pdf_exporter.util.PdfWidthValidationService;
@@ -36,21 +37,21 @@ import org.jetbrains.annotations.VisibleForTesting;
 import org.springframework.http.HttpStatus;
 import org.verapdf.pdfa.results.ValidationResult;
 
-import javax.inject.Singleton;
-import javax.ws.rs.BadRequestException;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriBuilder;
-import javax.ws.rs.core.UriInfo;
+import jakarta.inject.Singleton;
+import jakarta.ws.rs.BadRequestException;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriBuilder;
+import jakarta.ws.rs.core.UriInfo;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
@@ -75,6 +76,7 @@ public class ConverterInternalController {
     private final PdfConverterJobsService pdfConverterJobService;
     private final PropertiesUtility propertiesUtility;
     private final HtmlToPdfConverter htmlToPdfConverter;
+    private final PdfExporterPolarionService pdfExporterPolarionService;
 
     @Context
     private UriInfo uriInfo;
@@ -86,16 +88,18 @@ public class ConverterInternalController {
         this.pdfConverterJobService = new PdfConverterJobsService(pdfConverter, securityService);
         this.propertiesUtility = new PropertiesUtility();
         this.htmlToPdfConverter = new HtmlToPdfConverter();
+        this.pdfExporterPolarionService = new PdfExporterPolarionService();
     }
 
     @VisibleForTesting
-    ConverterInternalController(PdfConverter pdfConverter, PdfWidthValidationService pdfWidthValidationService, PdfConverterJobsService pdfConverterJobService, UriInfo uriInfo, HtmlToPdfConverter htmlToPdfConverter) {
+    ConverterInternalController(PdfConverter pdfConverter, PdfWidthValidationService pdfWidthValidationService, PdfConverterJobsService pdfConverterJobService, UriInfo uriInfo, HtmlToPdfConverter htmlToPdfConverter, PdfExporterPolarionService pdfExporterPolarionService) {
         this.pdfConverter = pdfConverter;
         this.pdfWidthValidationService = pdfWidthValidationService;
         this.pdfConverterJobService = pdfConverterJobService;
         this.uriInfo = uriInfo;
         this.propertiesUtility = new PropertiesUtility();
         this.htmlToPdfConverter = htmlToPdfConverter;
+        this.pdfExporterPolarionService = pdfExporterPolarionService;
     }
 
     @POST
@@ -448,6 +452,14 @@ public class ConverterInternalController {
         }
         if (exportParams.getDocumentType() == DocumentType.BASELINE_COLLECTION) {
             throw new BadRequestException("Parameter 'documentType' should not be 'BASELINE_COLLECTION'");
+        }
+        if (exportParams.getUrlQueryParameters() != null) {
+            String workItemsQuery = exportParams.getUrlQueryParameters().get(ExportParams.URL_QUERY_PARAM_QUERY);
+            try {
+                pdfExporterPolarionService.validateWorkItemsQuery(workItemsQuery);
+            } catch (IllegalArgumentException e) {
+                throw new BadRequestException(e.getMessage());
+            }
         }
     }
 

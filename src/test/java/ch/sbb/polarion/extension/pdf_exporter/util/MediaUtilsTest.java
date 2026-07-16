@@ -1,6 +1,8 @@
 package ch.sbb.polarion.extension.pdf_exporter.util;
 
 import ch.sbb.polarion.extension.generic.test_extensions.BundleJarsPrioritizingRunnableMockExtension;
+import ch.sbb.polarion.extension.pdf_exporter.configuration.PdfExporterExtensionConfigurationExtension;
+import ch.sbb.polarion.extension.pdf_exporter.properties.PdfExporterExtensionConfiguration;
 import lombok.SneakyThrows;
 import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.Test;
@@ -12,11 +14,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.util.List;
+import java.util.Set;
 
 import static ch.sbb.polarion.extension.pdf_exporter.util.MediaUtils.THUMBNAIL_PARAMETER;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.when;
 
-@ExtendWith({MockitoExtension.class, BundleJarsPrioritizingRunnableMockExtension.class})
+@ExtendWith({MockitoExtension.class, BundleJarsPrioritizingRunnableMockExtension.class, PdfExporterExtensionConfigurationExtension.class})
 class MediaUtilsTest {
 
     @Test
@@ -147,6 +151,48 @@ class MediaUtilsTest {
     })
     void removeQueryParameterTest(String input, String expected) {
         assertEquals(expected, MediaUtils.removeQueryParameter(input, THUMBNAIL_PARAMETER));
+    }
+
+    @Test
+    void isRenderableImageUrlTest() {
+        when(PdfExporterExtensionConfiguration.getInstance().getRenderableImageExtensions())
+                .thenReturn(Set.of("png", "jpg", "jpeg", "gif", "bmp", "svg", "webp", "avif", "ico", "cur", "tif", "tiff", "vsdx"));
+        // Image formats — renderable (thumbnail stripped)
+        assertTrue(MediaUtils.isRenderableImageUrl("http://localhost/polarion/wi-attachment/project/WI-1/photo.png"));
+        assertTrue(MediaUtils.isRenderableImageUrl("http://localhost/polarion/wi-attachment/project/WI-1/tw.svg?revision=123&view=true"));
+        assertTrue(MediaUtils.isRenderableImageUrl("/polarion/icons/default/enums/req_status_draft.gif?buildId=123"));
+        assertTrue(MediaUtils.isRenderableImageUrl("http://localhost/polarion/wi-attachment/project/WI-1/photo.avif"));
+        // Convertible diagram formats — renderable
+        assertTrue(MediaUtils.isRenderableImageUrl("http://localhost/polarion/wi-attachment/project/WI-1/diagram.vsdx?revision=2&thumbnail=true"));
+        // Non-renderable attachments — keep thumbnail (icon preview)
+        assertFalse(MediaUtils.isRenderableImageUrl("http://localhost/polarion/wi-attachment/project/WI-1/Book1.xlsx?thumbnail=true"));
+        assertFalse(MediaUtils.isRenderableImageUrl("http://localhost/polarion/wi-attachment/project/WI-1/doc.docx?thumbnail=true"));
+        assertFalse(MediaUtils.isRenderableImageUrl("http://localhost/polarion/wi-attachment/project/WI-1/file.pdf?thumbnail=true"));
+        assertFalse(MediaUtils.isRenderableImageUrl("http://localhost/polarion/wi-attachment/project/WI-1/archive.zip?thumbnail=true"));
+        // Short (2-char) extensions are handled too — would be missed by a {3,4} regex
+        assertFalse(MediaUtils.isRenderableImageUrl("http://localhost/polarion/wi-attachment/project/WI-1/archive.7z?thumbnail=true"));
+        assertFalse(MediaUtils.isRenderableImageUrl("http://localhost/polarion/wi-attachment/project/WI-1/archive.tar.gz?thumbnail=true"));
+        // Unknown formats default to non-renderable (thumbnail kept) to avoid inlining broken binaries into <img>
+        assertFalse(MediaUtils.isRenderableImageUrl("http://localhost/polarion/wi-attachment/project/WI-1/data.bin?thumbnail=true"));
+        // Edge cases
+        assertFalse(MediaUtils.isRenderableImageUrl(null));
+        assertFalse(MediaUtils.isRenderableImageUrl(""));
+    }
+
+    @Test
+    void getResourceExtensionTest() {
+        assertEquals("png", MediaUtils.getResourceExtension("http://localhost/img.png"));
+        assertEquals("png", MediaUtils.getResourceExtension("http://localhost/img.PNG?thumbnail=true"));
+        assertEquals("svg", MediaUtils.getResourceExtension("/path/tw.svg?revision=123&view=true"));
+        assertEquals("svg", MediaUtils.getResourceExtension("/path/tw.svg#fragment"));
+        // 2-char extensions
+        assertEquals("gz", MediaUtils.getResourceExtension("/path/archive.tar.gz"));
+        assertEquals("7z", MediaUtils.getResourceExtension("/path/archive.7z?x=1"));
+        // No extension / dots only in the path, not in the file name
+        assertEquals("", MediaUtils.getResourceExtension("http://example.com/imgs/no_extension"));
+        assertEquals("", MediaUtils.getResourceExtension("/path/file."));
+        assertEquals("", MediaUtils.getResourceExtension(null));
+        assertEquals("", MediaUtils.getResourceExtension(""));
     }
 
     private void fillImageWithColor(BufferedImage image, Color color) {

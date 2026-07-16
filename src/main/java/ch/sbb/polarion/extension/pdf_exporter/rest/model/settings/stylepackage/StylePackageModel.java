@@ -56,6 +56,7 @@ public class StylePackageModel extends SettingsModel {
     private static final String LANGUAGE_ENTRY_NAME = "LANGUAGE";
     private static final String LINKED_WORKITEM_ROLES_ENTRY_NAME = "LINKED WORKITEM ROLES";
     private static final String LINK_ROLE_DIRECTION_ENTRY_NAME = "LINK ROLE DIRECTION";
+    private static final String WORK_ITEMS_QUERY_ENTRY_NAME = "WORK ITEMS QUERY";
     private static final String EXPOSE_PAGE_WIDTH_VALIDATION_ENTRY_NAME = "EXPOSE PAGE WIDTH VALIDATION";
     private static final String ATTACHMENTS_FILTER = "ATTACHMENTS_FILTER";
     private static final String EMBED_ATTACHMENTS = "EMBED ATTACHMENTS";
@@ -90,6 +91,7 @@ public class StylePackageModel extends SettingsModel {
     private String language;
     private List<String> linkedWorkitemRoles;
     private String linkRoleDirection;
+    private String workItemsQuery;
     private boolean exposePageWidthValidation;
     private String attachmentsFilter;
     private String testcaseFieldId;
@@ -127,6 +129,7 @@ public class StylePackageModel extends SettingsModel {
                 serializeEntry(LANGUAGE_ENTRY_NAME, language) +
                 serializeEntry(LINKED_WORKITEM_ROLES_ENTRY_NAME, linkedWorkitemRoles) +
                 serializeEntry(LINK_ROLE_DIRECTION_ENTRY_NAME, linkRoleDirection) +
+                serializeEntry(WORK_ITEMS_QUERY_ENTRY_NAME, workItemsQuery) +
                 serializeEntry(EXPOSE_PAGE_WIDTH_VALIDATION_ENTRY_NAME, exposePageWidthValidation) +
                 serializeEntry(ATTACHMENTS_FILTER, attachmentsFilter) +
                 serializeEntry(TESTCASE_FIELD_ID_ENTRY_NAME, testcaseFieldId) +
@@ -166,6 +169,7 @@ public class StylePackageModel extends SettingsModel {
         language = deserializeEntry(LANGUAGE_ENTRY_NAME, serializedString);
         linkedWorkitemRoles = deserializeListEntry(LINKED_WORKITEM_ROLES_ENTRY_NAME, serializedString, String.class);
         linkRoleDirection = deserializeEntry(LINK_ROLE_DIRECTION_ENTRY_NAME, serializedString);
+        workItemsQuery = deserializeEntry(WORK_ITEMS_QUERY_ENTRY_NAME, serializedString);
         exposePageWidthValidation = Boolean.parseBoolean(deserializeEntry(EXPOSE_PAGE_WIDTH_VALIDATION_ENTRY_NAME, serializedString));
         attachmentsFilter = deserializeEntry(ATTACHMENTS_FILTER, serializedString);
         testcaseFieldId = deserializeEntry(TESTCASE_FIELD_ID_ENTRY_NAME, serializedString);

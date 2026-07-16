@@ -163,7 +163,7 @@ public class LiveDocCommentsProcessor {
 
     private CommentData getCommentData(LiveDocComment liveDocComment) {
         User user = liveDocComment.getAuthor().get();
-        String authorName = user != null ? user.fields().name().get() : null;
+        String authorName = user != null ? getUserName(user) : null;
         String commentText = liveDocComment.getText().persistedHtml();
         boolean resolved = liveDocComment.getResolved().get();
         return CommentData.builder()
@@ -173,6 +173,10 @@ public class LiveDocCommentsProcessor {
                 .text(commentText)
                 .resolved(resolved)
                 .build();
+    }
+
+    private String getUserName(@NotNull User user) {
+        return user.isUnresolvable() ? user.label() : user.fields().name().get();
     }
 
     @VisibleForTesting

@@ -1,5 +1,6 @@
 import ExtensionContext from '../../ui/generic/js/modules/ExtensionContext.js';
 import ConfigurationsPane from '../../ui/generic/js/modules/ConfigurationsPane.js';
+import SearchableDropdown from '../../ui/generic/js/modules/SearchableDropdown.js';
 
 const ctx = new ExtensionContext({
     extension: 'pdf-exporter',
@@ -110,10 +111,15 @@ function addWebhook(webhookConfig) {
         const removeButton = document.createElement('button');
         removeButton.classList.add('toolbar-button', 'webhook-button');
         removeButton.setAttribute('title', 'Delete this webhook');
-        const removeButtonImage = document.createElement('img');
-        removeButtonImage.setAttribute('src', '/polarion/ria/images/control/tableMinus.png');
+        const removeButtonImage = document.createElement('span');
+        removeButtonImage.className = 'sbb-icon-table-minus';
         removeButton.appendChild(removeButtonImage);
         removeButton.addEventListener('click', function () {
+            // tear down the row's auth-type dropdown so its body-level portal isn't orphaned
+            const authSel = tableRow.querySelector('select[name="auth_type"]');
+            if (authSel && authSel._searchableDropdown) {
+                authSel._searchableDropdown.destroy();
+            }
             tableRow.remove();
         })
         cell.appendChild(removeButton);
@@ -203,6 +209,8 @@ function addWebhook(webhookConfig) {
         }
 
         cell.appendChild(authTypeCombobox);
+        // Upgrade to the shared Polarion-styled dropdown (tiny fixed list → no search).
+        new SearchableDropdown({element: authTypeCombobox, searchable: false, rememberSelection: false});
         return cell;
     }
 

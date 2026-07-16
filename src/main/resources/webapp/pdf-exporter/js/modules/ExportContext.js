@@ -1,4 +1,4 @@
-import ExtensionContext from "/polarion/pdf-exporter/ui/generic/js/modules/ExtensionContext.js";
+import ExtensionContext from "../../generic/js/modules/ExtensionContext.js";
 import ExportParams from "./ExportParams.js";
 
 export default class ExportContext extends ExtensionContext {

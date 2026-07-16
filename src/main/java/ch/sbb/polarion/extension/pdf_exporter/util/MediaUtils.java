@@ -3,6 +3,7 @@ package ch.sbb.polarion.extension.pdf_exporter.util;
 import ch.sbb.polarion.extension.generic.regex.RegexMatcher;
 import ch.sbb.polarion.extension.generic.util.BundleJarsPrioritizingRunnable;
 import ch.sbb.polarion.extension.generic.util.ScopeUtils;
+import ch.sbb.polarion.extension.pdf_exporter.properties.PdfExporterExtensionConfiguration;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PdfVariant;
 import ch.sbb.polarion.extension.pdf_exporter.service.PdfExporterPolarionService;
 import com.polarion.alm.shared.api.transaction.TransactionalExecutor;
@@ -13,6 +14,7 @@ import com.polarion.subterra.base.location.ILocation;
 import com.polarion.subterra.base.location.Location;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.text.StringEscapeUtils;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.io.RandomAccessReadBuffer;
@@ -21,6 +23,7 @@ import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.rendering.PDFRenderer;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.VisibleForTesting;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
@@ -36,6 +39,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.BiFunction;
@@ -47,7 +51,6 @@ import static ch.sbb.polarion.extension.pdf_exporter.util.TikaMimeTypeResolver.P
 public class MediaUtils {
     public static final String IMG_SRC_REGEX = "<img[^<>]*src=(\"|')(?<url>[^(\"|')]*)(\"|')";
     public static final String URL_REGEX = "url\\(\\s*([\"'])?(?<url>.*?)\\1?\\s*\\)";
-    public static final String RESOURCE_EXTENSION_REGEX = "^.*\\.(?<extension>[a-zA-Z\\d]{3,4})(?:[?&#]|$)";
     public static final String DATA_URL_PREFIX = "data:";
     public static final String THUMBNAIL_PARAMETER = "thumbnail";
     private static final Logger logger = Logger.getLogger(MediaUtils.class);
@@ -265,7 +268,13 @@ public class MediaUtils {
     public String inlineBase64Resources(String content, FileResourceProvider fileResourceProvider) {
         RegexMatcher.IReplacementCalculator dataReplacement = engine -> {
             String url = engine.group("url");
-            String base64String = MediaUtils.isDataUrl(url) ? url : fileResourceProvider.getResourceAsBase64String(removeQueryParameter(url, THUMBNAIL_PARAMETER));
+            if (MediaUtils.isDataUrl(url)) {
+                return null;
+            }
+            // For renderable images (e.g. .png, .svg) strip 'thumbnail' to fetch full-size content.
+            // For everything else (spreadsheets, documents, unknown formats) keep 'thumbnail' so Polarion returns an icon preview.
+            String resourceUrl = isRenderableImageUrl(url) ? removeQueryParameter(url, THUMBNAIL_PARAMETER) : url;
+            String base64String = fileResourceProvider.getResourceAsBase64String(resourceUrl);
             return base64String == null ? null : engine.group().replace(url, base64String);
         };
 
@@ -273,6 +282,29 @@ public class MediaUtils {
         String intermediateResult = RegexMatcher.get(IMG_SRC_REGEX).replace(content, dataReplacement);
         // replace CSS parameters like background: src('/polarion/...
         return RegexMatcher.get(URL_REGEX).useJavaUtil().replace(intermediateResult, dataReplacement);
+    }
+
+    /**
+     * Checks whether the URL points to a resource the exporter can embed as a full-size image
+     * (raster image, SVG or convertible diagram), based on its file extension.
+     */
+    @VisibleForTesting
+    static boolean isRenderableImageUrl(@Nullable String url) {
+        return PdfExporterExtensionConfiguration.getInstance().getRenderableImageExtensions().contains(getResourceExtension(url));
+    }
+
+    /**
+     * Extracts the lowercase file extension from a URL, ignoring any query string or fragment.
+     * Returns an empty string when the URL has no extension.
+     */
+    @VisibleForTesting
+    static String getResourceExtension(@Nullable String url) {
+        if (url == null) {
+            return "";
+        }
+        // strip the query string and fragment, then let Commons IO extract the extension
+        String path = url.split("[?#]", 2)[0];
+        return FilenameUtils.getExtension(path).toLowerCase(Locale.ROOT);
     }
 
     /**
@@ -329,7 +361,7 @@ public class MediaUtils {
 
         // there are several ways to recognize mime type, so we're going to try them all until positive result
         List<BiFunction<String, byte[], String>> mimeSources = Arrays.asList(
-                MediaUtils::getMimeTypeUsingCustomRegex,
+                MediaUtils::getMimeTypeUsingCustomMap,
                 MediaUtils::getMimeTypeUsingTikaByResourceName,
                 MediaUtils::getMimeTypeUsingTikaByContent,
                 MediaUtils::getMimeTypeUsingFilesProbe,
@@ -350,8 +382,8 @@ public class MediaUtils {
         return null;
     }
 
-    private String getMimeTypeUsingCustomRegex(@NotNull String resource, byte[] resourceBytes) {
-        return CUSTOM_MIME_TYPES_MAP.get(RegexMatcher.get(RESOURCE_EXTENSION_REGEX).findFirst(resource, engine -> engine.group("extension")).map(String::toLowerCase).orElse(""));
+    private String getMimeTypeUsingCustomMap(@NotNull String resource, byte[] resourceBytes) {
+        return CUSTOM_MIME_TYPES_MAP.get(getResourceExtension(resource));
     }
 
     @SneakyThrows
@@ -359,14 +391,21 @@ public class MediaUtils {
         return Files.probeContentType(Paths.get(resource));
     }
 
-    @SuppressWarnings("unchecked")
     public String getMimeTypeUsingTikaByResourceName(@NotNull String resource, byte[] resourceBytes) {
-        return ((Optional<String>) BundleJarsPrioritizingRunnable.executeCached(TikaMimeTypeResolver.class, Map.of(PARAM_VALUE, resource)).get(PARAM_RESULT)).orElse(null);
+        return detectMimeTypeWithTika(Map.of(PARAM_VALUE, resource));
     }
 
-    @SuppressWarnings("unchecked")
     public String getMimeTypeUsingTikaByContent(@NotNull String resource, byte[] resourceBytes) {
-        return ((Optional<String>) BundleJarsPrioritizingRunnable.executeCached(TikaMimeTypeResolver.class, Map.of(PARAM_VALUE, resourceBytes)).get(PARAM_RESULT)).orElse(null);
+        return detectMimeTypeWithTika(Map.of(PARAM_VALUE, resourceBytes));
+    }
+
+    // BundleJarsPrioritizingRunnable.executeCached returns a map without PARAM_RESULT when the runnable itself couldn't
+    // be executed (classloader/reflection/serialization failure — see BundleJarsPrioritizingRunnable.ERROR_KEY). Guard
+    // against that so a diagnostic fallback returns null instead of triggering a NullPointerException.
+    @Nullable
+    private String detectMimeTypeWithTika(@NotNull Map<String, Object> params) {
+        Object result = BundleJarsPrioritizingRunnable.executeCached(TikaMimeTypeResolver.class, params).get(PARAM_RESULT);
+        return result instanceof Optional<?> optional ? (String) optional.orElse(null) : null;
     }
 
     @SneakyThrows

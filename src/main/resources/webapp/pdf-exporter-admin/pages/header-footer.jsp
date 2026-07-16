@@ -10,7 +10,6 @@
     <link rel="stylesheet" href="../ui/generic/css/code-input.min.css?bundle=<%= bundleTimestamp %>">
     <script type="text/javascript" src="../ui/generic/js/code-input.min.js?bundle=<%= bundleTimestamp %>"></script>
     <link rel="stylesheet" href="../ui/generic/css/common.css?bundle=<%= bundleTimestamp %>">
-    <link rel="stylesheet" href="../ui/generic/css/custom-select.css?bundle=<%= bundleTimestamp %>">
     <link rel="stylesheet" href="../ui/generic/css/configurations.css?bundle=<%= bundleTimestamp %>">
     <link rel="stylesheet" href="../css/tabs.css?bundle=<%= bundleTimestamp %>">
     <script type="module" src="../js/modules/header-footer.js?bundle=<%= bundleTimestamp %>"></script>
@@ -94,7 +93,7 @@
     </div>
 
     <div class="tabbed">
-        <input type="radio" id="custom-templates" name="cover-page-template" checked>
+        <input type="radio" id="custom-templates" name="cover-page-template">
         <input type="radio" id="default-templates" name="cover-page-template">
 
         <ul class="tabs">

@@ -6,6 +6,7 @@ import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.cos.COSArray;
 import org.apache.pdfbox.cos.COSDictionary;
 import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.pdfwriter.compress.CompressParameters;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDDocumentInformation;
 import org.apache.pdfbox.pdmodel.common.PDMetadata;
@@ -17,7 +18,6 @@ import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
-import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.TransformerException;
 import java.io.ByteArrayOutputStream;
@@ -46,9 +46,14 @@ import java.util.Calendar;
  *     </li>
  * </ul>
  * <p>
- * Note: This processor creates a new PDF document with version 2.0 and copies all content from the original,
- * as PDFBox 3.x does not reliably update the PDF version in the file header. This approach also helps restore
- * OutputIntent that may be lost during PDF merging operations.
+ * Note: This processor edits the loaded document <strong>in place</strong> and saves it without object streams
+ * ({@link CompressParameters#NO_COMPRESSION}), mirroring {@link PdfA1Processor}. An earlier implementation rebuilt
+ * the document by creating a {@code new PDDocument()} and transplanting pages via {@code addPage()}; that cross-document
+ * page transplant corrupted page resource dictionaries so that veraPDF rejected the result with ISO 19005-4:2020
+ * clause 6.2.2 ("A content stream's named resources shall be defined by a resource dictionary"), even though the page
+ * content streams were byte-for-byte identical to the (compliant) PDF/A-1/2/3 output. In-place processing avoids that.
+ * The PDF 2.0 file header is still applied manually via {@link #fixPdfHeader(byte[])} because PDFBox 3.x does not
+ * reliably write it.
  */
 @UtilityClass
 public class PdfA4Processor {
@@ -60,8 +65,8 @@ public class PdfA4Processor {
     /**
      * Processes a PDF/A-4 document to fix compliance issues according to ISO 19005-4:2020.
      * <p>
-     * This method creates a new PDF document with version 2.0 and copies all content from the original,
-     * as PDFBox does not reliably update the PDF version in the file header when using save().
+     * This method edits the loaded document in place (see the class-level documentation) and patches the PDF 2.0
+     * file header via {@link #fixPdfHeader(byte[])}, as PDFBox 3.x does not reliably write it when using save().
      *
      * @param pdfBytes the original PDF content
      * @return the processed PDF content with compliance fixes applied
@@ -74,8 +79,8 @@ public class PdfA4Processor {
     /**
      * Processes a PDF/A-4 document to fix compliance issues according to ISO 19005-4:2020.
      * <p>
-     * This method creates a new PDF document with version 2.0 and copies all content from the original,
-     * as PDFBox does not reliably update the PDF version in the file header when using save().
+     * This method edits the loaded document in place (see the class-level documentation) and patches the PDF 2.0
+     * file header via {@link #fixPdfHeader(byte[])}, as PDFBox 3.x does not reliably write it when using save().
      *
      * @param pdfBytes    the original PDF content
      * @param conformance the conformance level: "E" for engineering, "F" for embedded files, or null for basic (4u)
@@ -83,39 +88,30 @@ public class PdfA4Processor {
      * @throws IOException if an error occurs during PDF processing
      */
     public byte[] processPdfA4(byte[] pdfBytes, @Nullable String conformance) throws IOException {
-        try (PDDocument originalDoc = Loader.loadPDF(pdfBytes);
-             PDDocument newDoc = new PDDocument();
+        try (PDDocument document = Loader.loadPDF(pdfBytes);
              ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
 
-            // Copy all pages from original to new document
-            for (int i = 0; i < originalDoc.getNumberOfPages(); i++) {
-                newDoc.addPage(originalDoc.getPage(i));
-            }
-
-            // Copy document catalog properties
-            copyDocumentCatalog(originalDoc, newDoc);
-
             // Ensure OutputIntent exists (create sRGB OutputIntent if missing)
-            ensureOutputIntent(newDoc);
+            ensureOutputIntent(document);
 
             // Fix document information dictionary
-            fixDocumentInformation(newDoc);
+            fixDocumentInformation(document);
 
             // Fix XMP metadata
-            fixXmpMetadata(newDoc, conformance);
+            fixXmpMetadata(document, conformance);
 
-            // IMPORTANT: Set PDF version to 2.0 AFTER all content has been copied
-            // This must be done last to prevent PDFBox from auto-downgrading the version
-            newDoc.setVersion(2.0f);
+            // Set PDF version to 2.0 (PDF/A-4 requires PDF 2.0 or higher)
+            document.setVersion(2.0f);
 
             // Also set version in catalog dictionary
-            COSDictionary catalog = newDoc.getDocumentCatalog().getCOSObject();
+            COSDictionary catalog = document.getDocumentCatalog().getCOSObject();
             catalog.setItem(COSName.VERSION, COSName.getPDFName("2.0"));
 
             logger.debug("Set PDF version to 2.0 for PDF/A-4 compliance");
 
-            // Save the modified document
-            newDoc.save(outputStream);
+            // Save the document in place without object streams (mirrors PdfA1Processor). Rebuilding the document
+            // via new PDDocument()/addPage() corrupted page resource dictionaries (ISO 19005-4:2020 clause 6.2.2).
+            document.save(outputStream, CompressParameters.NO_COMPRESSION);
             byte[] pdfContent = outputStream.toByteArray();
 
             // WORKAROUND: PDFBox 3.x doesn't always write PDF 2.0 in the file header
@@ -177,98 +173,6 @@ public class PdfA4Processor {
 
         logger.debug("Fixed PDF header from PDF 1.x to PDF 2.0");
         return newPdfBytes;
-    }
-
-    /**
-     * Copies document catalog properties from source to destination document.
-     * This includes metadata, OutputIntents, Names (for embedded files), and other catalog-level properties.
-     *
-     * @param source      the source PDF document
-     * @param destination the destination PDF document
-     * @throws IOException if an error occurs during copying
-     */
-    @VisibleForTesting
-    void copyDocumentCatalog(@NotNull PDDocument source, @NotNull PDDocument destination) throws IOException {
-        copyXmpMetadata(source, destination);
-        copyOutputIntents(source, destination);
-        copyDocumentInformation(source, destination);
-        copyEmbeddedFiles(source, destination);
-        logger.debug("Copied document catalog from source to destination");
-    }
-
-    /**
-     * Copies XMP metadata from source to destination document.
-     *
-     * @param source      the source PDF document
-     * @param destination the destination PDF document
-     * @throws IOException if an error occurs during copying
-     */
-    @VisibleForTesting
-    void copyXmpMetadata(@NotNull PDDocument source, @NotNull PDDocument destination) throws IOException {
-        PDMetadata sourceMetadata = source.getDocumentCatalog().getMetadata();
-        if (sourceMetadata != null) {
-            PDMetadata destMetadata = new PDMetadata(destination);
-            destMetadata.importXMPMetadata(sourceMetadata.toByteArray());
-            destination.getDocumentCatalog().setMetadata(destMetadata);
-            logger.debug("Copied XMP metadata from source to destination");
-        }
-    }
-
-    /**
-     * Copies OutputIntents from source to destination document.
-     * OutputIntents are critical for PDF/A compliance.
-     *
-     * @param source      the source PDF document
-     * @param destination the destination PDF document
-     */
-    @VisibleForTesting
-    void copyOutputIntents(@NotNull PDDocument source, @NotNull PDDocument destination) {
-        COSDictionary sourceCatalog = source.getDocumentCatalog().getCOSObject();
-        COSDictionary destCatalog = destination.getDocumentCatalog().getCOSObject();
-
-        if (sourceCatalog.containsKey(COSName.OUTPUT_INTENTS)) {
-            destCatalog.setItem(COSName.OUTPUT_INTENTS, sourceCatalog.getItem(COSName.OUTPUT_INTENTS));
-            logger.debug("Copied OutputIntents from source to destination");
-        }
-    }
-
-    /**
-     * Copies document information from source to destination document.
-     * Only ModificationDate is preserved to ensure PDF/A-4 compliance.
-     *
-     * @param source      the source PDF document
-     * @param destination the destination PDF document
-     */
-    @VisibleForTesting
-    void copyDocumentInformation(@NotNull PDDocument source, @NotNull PDDocument destination) {
-        PDDocumentInformation sourceInfo = source.getDocumentInformation();
-        if (sourceInfo != null) {
-            // Copy only the fields we want to preserve
-            PDDocumentInformation destInfo = new PDDocumentInformation();
-            if (sourceInfo.getModificationDate() != null) {
-                destInfo.setModificationDate(sourceInfo.getModificationDate());
-            }
-            destination.setDocumentInformation(destInfo);
-            logger.debug("Copied document information from source to destination");
-        }
-    }
-
-    /**
-     * Copies embedded files (Names dictionary) from source to destination document.
-     * This is required for PDF/A-4f compliance which mandates the EmbeddedFiles key.
-     *
-     * @param source      the source PDF document
-     * @param destination the destination PDF document
-     */
-    @VisibleForTesting
-    void copyEmbeddedFiles(@NotNull PDDocument source, @NotNull PDDocument destination) {
-        COSDictionary sourceCatalog = source.getDocumentCatalog().getCOSObject();
-        COSDictionary destCatalog = destination.getDocumentCatalog().getCOSObject();
-
-        if (sourceCatalog.containsKey(COSName.NAMES)) {
-            destCatalog.setItem(COSName.NAMES, sourceCatalog.getItem(COSName.NAMES));
-            logger.debug("Copied Names dictionary (including EmbeddedFiles) from source to destination");
-        }
     }
 
     /**

@@ -12,7 +12,6 @@
     <link rel="stylesheet" href="../ui/generic/css/code-input.min.css?bundle=<%= bundleTimestamp %>">
     <script type="text/javascript" src="../ui/generic/js/code-input.min.js?bundle=<%= bundleTimestamp %>"></script>
     <link rel="stylesheet" href="../ui/generic/css/common.css?bundle=<%= bundleTimestamp %>">
-    <link rel="stylesheet" href="../ui/generic/css/custom-select.css?bundle=<%= bundleTimestamp %>">
     <link rel="stylesheet" href="../ui/generic/css/configurations.css?bundle=<%= bundleTimestamp %>">
     <script type="module" src="../js/modules/style-packages.js?bundle=<%= bundleTimestamp %>"></script>
     <style type="text/css">
@@ -65,10 +64,11 @@
             flex-grow: 1;
         }
         .more-info {
-            background: url(/polarion/ria/images/msginfo.png) no-repeat;
+            background: var(--sbb-info-icon) no-repeat;
             display: inline-block;
             width: 17px;
             height: 17px;
+            vertical-align: middle;
             cursor: pointer;
         }
     </style>
@@ -163,7 +163,7 @@
             <div class="flex-column">
                 <div class='input-group'>
                     <label for='headers-color'>Headings color:</label>
-                    <input id='headers-color' type='color' value='#004d73' style="width: 30px"/>
+                    <input id='headers-color' type='color' value='#004d73'/>
                 </div>
             </div>
             <div class="flex-column">
@@ -212,7 +212,7 @@
                         <input id="render-comments" onchange='document.getElementById("render-comments-select").style.visibility = this.checked ? "visible" : "hidden";document.getElementById("render-comments-options").style.display = this.checked ? "block" : "none"' type='checkbox' />
                         Comments rendering
                     </label>
-                    <div id="render-comments-select" style="visibility: hidden; width: 60px"></div>
+                    <div id="render-comments-select" style="visibility: hidden"></div>
                 </div>
                 <div class='checkbox input-group' id='render-comments-options' style="display: none; padding-left: 20px">
                     <label for='include-unreferenced-comments' id='include-unreferenced-comments-container' style="display: inline-block" title="Unreferenced comments will be rendered at the end of the document">
@@ -260,26 +260,26 @@
         </div>
         <div class="flex-container">
             <div class="flex-column">
-                <div class='checkbox input-group'>
+                <div class='checkbox input-group' style="display: flex; align-items: center;">
                     <label for='custom-list-styles'>
                         <input id='custom-list-styles' onchange='document.getElementById("numbered-list-styles").style.visibility = this.checked ? "visible" : "hidden"' type='checkbox'/>
                         Custom styles of numbered lists
                     </label>
-                    <input id='numbered-list-styles' placeholder='eg. 1ai' type='text' style="visibility: hidden; margin-left: 10px; width: 100px"/>
+                    <input id='numbered-list-styles' placeholder='eg. 1ai' type='text' style="visibility: hidden; margin-left: 10px; flex: 1"/>
                 </div>
-                <div class='checkbox input-group'>
+                <div class='checkbox input-group' style="display: flex; align-items: center;">
                     <label for='specific-chapters'>
                         <input id='specific-chapters' onchange='document.getElementById("chapters").style.visibility = this.checked ? "visible" : "hidden"' type='checkbox'/>
                         Specific higher level chapters
                     </label>
-                    <input id='chapters' placeholder='eg. 1,2,4 etc.' type='text' style="visibility: hidden; margin-left: 10px; width: 202px"/>
+                    <input id='chapters' placeholder='eg. 1,2,4 etc.' type='text' style="visibility: hidden; margin-left: 10px; flex: 1"/>
                 </div>
-                <div class='checkbox input-group'>
+                <div class='checkbox input-group' style="display: flex; align-items: center;">
                     <label for='metadata-fields'>
                         <input id='metadata-fields' onchange='document.getElementById("metadata-fields-input").style.visibility = this.checked ? "visible" : "hidden"' type='checkbox'/>
                         Metadata fields
                     </label>
-                    <input id='metadata-fields-input' placeholder='e.g. docOwner, docLanguage, customField*' type='text' style='visibility: hidden; margin-left: 10px; width: 280px'/>
+                    <input id='metadata-fields-input' placeholder='e.g. docOwner, docLanguage, customField*' type='text' style='visibility: hidden; margin-left: 10px; flex: 1'/>
                 </div>
             </div>
             <div class="flex-column">
@@ -288,15 +288,27 @@
                         <input id="localization" onchange='document.getElementById("language-select").style.visibility = this.checked ? "visible" : "hidden"' type='checkbox'/>
                         Localize enums
                     </label>
-                    <div id="language-select" style="visibility: hidden; margin-left: 10px; width: 200px"></div>
+                    <div id="language-select" style="visibility: hidden; margin-left: 10px"></div>
                 </div>
                 <div class='checkbox input-group' style="display: flex; flex-direction: column; align-items: flex-start;">
                     <label for='selected-roles' style="margin-top: 5px">
                         <input id="selected-roles" onchange='document.getElementById("roles-select").style.display = this.checked ? "inline-block" : "none";document.getElementById("roles-direction-select").style.display = this.checked ? "inline-block" : "none"' type='checkbox'/>
                         Specific Workitem roles
                     </label>
-                    <div id="roles-select" style="display: none; width: 152px; margin-left: 24px"></div>
-                    <div id="roles-direction-select" style="display: none; width: 152px; margin-left: 24px; margin-top: 8px"></div>
+                    <div id="roles-select" style="display: none; width: 152px; margin-left: 20px; margin-top: 4px"></div>
+                    <div id="roles-direction-select" style="display: none; width: 152px; margin-left: 20px; margin-top: 4px"></div>
+                </div>
+            </div>
+        </div>
+        <div class="flex-container" style="border-top: 1px solid #ccc; margin-top: 20px; padding-top: 15px;">
+            <div class="flex-grow">
+                <div class='input-group' style="display: flex; align-items: center; gap: 8px;">
+                    <label for='work-items-query-checkbox' style="white-space: nowrap;">
+                        <input id='work-items-query-checkbox' onchange='document.getElementById("work-items-query").style.visibility = this.checked ? "visible" : "hidden"' type='checkbox'/>
+                        Work items query
+                    </label>
+                    <div class='more-info' style="flex-shrink: 0;" title="Lucene query applied to filter work items within the document, e.g. 'type:requirement'. Leave empty to include all work items."></div>
+                    <input id='work-items-query' class="flex-grow" placeholder='e.g. type:requirement' type='text' style='visibility: hidden; flex: 1; box-sizing: border-box;'/>
                 </div>
             </div>
         </div>
@@ -319,7 +331,7 @@
             </div>
             <div class="flex-column">
                 <div class='checkbox input-group'>
-                    <label for='embed-attachments' id='embed-attachments-label' style="margin-top: 12px;">
+                    <label for='embed-attachments' id='embed-attachments-label' style="margin-top: 5px;">
                         <input id='embed-attachments' type='checkbox'/>
                         Embed attachments into resulted PDF
                     </label>

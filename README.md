@@ -17,7 +17,7 @@ The extension uses [WeasyPrint](https://weasyprint.org/) as a PDF engine and req
 
 > [!IMPORTANT]
 > Starting from version 8.0.0 only latest version of Polarion is supported.
-> Right now it is Polarion 2512.
+> Right now it is Polarion 2606.
 
 > [!IMPORTANT]
 > Please, read our [disclaimer](DISCLAIMER.md) before using this extension.
@@ -82,21 +82,36 @@ ch.sbb.polarion.extension.pdf-exporter.weasyprint.service=http://localhost:9080
 
 ### PDF Exporter view to open via button in toolbar
 
-Alternatively you can configure PDF Exporter such a way that additional toolbar will appear in document's editor with a button to open a popup with PDF Exporter view.
+Alternatively you can configure PDF Exporter such a way that a button to open the PDF Exporter view appears in the document editor's toolbar.
 
 1. Open "Default Repository".
 2. On the top of its navigation pane click ⚙ (Actions) ➙ 🔧 Administration. Global administration page will be opened.
 3. On the administration's navigation pane select Configuration Properties.
 4. In editor of opened page add following line:
    ```properties
-   scriptInjection.dleEditorHead=<script src="/polarion/pdf-exporter/js/starter.js"></script><script>PdfExporterStarter.injectToolbar();</script>
+   scriptInjection.dleEditorHead=<script src="/polarion/pdf-exporter/js/dle-toolbar.js"></script>
    ```
-   There's an alternate approach adding PDF Exporter button into native Polarion's toolbar, which has a drawback at the moment -
-   button disappears in some cases (for example when document is saved), so using this approach is not advisable:
-   ```properties
-   scriptInjection.dleEditorHead=<script src="/polarion/pdf-exporter/js/starter.js"></script><script>PdfExporterStarter.injectToolbar({alternate: true});</script>
-   ```
+   This adds the button into Polarion's native document toolbar. The button is re-injected automatically when Polarion re-renders the toolbar (for example when the document is saved), so it stays in place.
 5. Save changes by clicking 💾 Save
+
+> [!TIP]
+> **Adding more than one toolbar button.** `scriptInjection.dleEditorHead` is a single Polarion-wide property that holds exactly one value. To show several buttons in the document editor (for example the PDF, DOCX and StrictDoc exporters together, or this button alongside any other injected script), do **not** add separate `scriptInjection.dleEditorHead=` lines — the last one overrides the rest. Concatenate all the `<script>` tags into that single value instead:
+> ```properties
+> scriptInjection.dleEditorHead=<script src="/polarion/pdf-exporter/js/dle-toolbar.js"></script><script src="/polarion/docx-exporter/js/dle-toolbar.js"></script><script src="/polarion/strictdoc-exporter/js/dle-toolbar.js"></script>
+> ```
+
+#### Deprecated configuration
+
+The explicit `PdfExporterStarter.injectToolbar(...)` configuration still works but is **deprecated** in favor of the single-tag `dle-toolbar.js` form above (removal is planned for a future major version):
+
+```properties
+# Button in Polarion's native document toolbar — equivalent to the recommended dle-toolbar.js form above.
+scriptInjection.dleEditorHead=<script src="/polarion/pdf-exporter/js/starter.js"></script><script>PdfExporterStarter.injectToolbar({alternate: true});</script>
+```
+```properties
+# A separate toolbar with the button placed above the document editing area.
+scriptInjection.dleEditorHead=<script src="/polarion/pdf-exporter/js/starter.js"></script><script>PdfExporterStarter.injectToolbar();</script>
+```
 
 ### PDF Exporter view to open in Live Reports
 
@@ -109,9 +124,18 @@ First of all you need to inject appropriate JavaScript code into Polarion:
 3. On the administration's navigation pane select Configuration Properties.
 4. In editor of opened page add following line:
    ```properties
-   scriptInjection.mainHead=<script src="/polarion/pdf-exporter/js/starter.js"></script>
+   scriptInjection.mainHead=<script src="/polarion/pdf-exporter/js/live-reports.js"></script>
    ```
 5. Save changes by clicking 💾 Save
+
+> [!NOTE]
+> `scriptInjection.mainHead` is a single Polarion-wide property that holds exactly one value. If you also inject other scripts through it, concatenate all the `<script>` tags into that one value rather than adding separate `scriptInjection.mainHead=` lines — the last one overrides the rest.
+
+The explicit `starter.js` form still works but is **deprecated** in favor of the single-tag `live-reports.js` form above (removal is planned for a future major version):
+
+```properties
+scriptInjection.mainHead=<script src="/polarion/pdf-exporter/js/starter.js"></script>
+```
 
 Then open a project, its Live Report you wish to export, and click "Expand Tools" on top of the page.
 As a result report's toolbar will appear. Click "Edit" button in a toolbar, as a result the report will be switched into an edit mode. Add an empty region on top of the report, place cursor there, choose "PDF Export" tag on "Widgets" sidebar on right hand side of the page, find "Export to PDF Button" widget there and click it to add to the report. Then save a report clicking 💾 in a toolbar and then return to a view mode clicking "Back" button. When you click "Export to PDF" button just added to the report, PDF Exporter view will be opened in a popup and you will be able to proceed with exporting the report to PDF. Be aware that in report's context limited set of properties are available for configuration in PDF popup, the rest of them are relevant only in Live Document context.
@@ -153,6 +177,20 @@ com.siemens.polarion.rest.cors.allowedOrigins=http://localhost:8888,https://anot
 By default, webhooks functionality is not enabled in PDF Exporter. If you want to make it available the following line should be added in `polarion.properties`:
 ```properties
 ch.sbb.polarion.extension.pdf-exporter.webhooks.enabled=true
+```
+
+### Renderable image extensions
+
+The exporter can embed certain file types as full-size images (raster formats, SVG, convertible diagrams like Visio).
+For these file extensions the `thumbnail` query parameter is stripped so Polarion returns the full-size resource instead of an icon preview.
+All other attachment types (spreadsheets, documents, archives, unknown formats) keep `thumbnail` so Polarion returns a small icon that can be shown inside an `<img>` tag.
+
+The default set of renderable image extensions is: `png, jpg, jpeg, gif, bmp, svg, webp, avif, ico, cur, tif, tiff, vsdx`.
+
+To override this list, adjust the following property in the `polarion.properties` file:
+
+```properties
+ch.sbb.polarion.extension.pdf-exporter.renderable.image.extensions=png, jpg, jpeg, gif, bmp, svg, webp, avif, ico, cur, tif, tiff, vsdx
 ```
 
 ### Debug option

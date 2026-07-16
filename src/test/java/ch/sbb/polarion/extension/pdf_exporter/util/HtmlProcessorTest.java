@@ -2,11 +2,13 @@ package ch.sbb.polarion.extension.pdf_exporter.util;
 
 import ch.sbb.polarion.extension.generic.settings.SettingId;
 import ch.sbb.polarion.extension.generic.test_extensions.BundleJarsPrioritizingRunnableMockExtension;
+import ch.sbb.polarion.extension.pdf_exporter.configuration.PdfExporterExtensionConfigurationExtension;
 import ch.sbb.polarion.extension.pdf_exporter.TestStringUtils;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ConversionParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.DocumentType;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.Orientation;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PaperSize;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.localization.Language;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.localization.LocalizationModel;
 import ch.sbb.polarion.extension.pdf_exporter.settings.LocalizationSettings;
@@ -15,6 +17,8 @@ import lombok.SneakyThrows;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Comment;
 import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -30,6 +34,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -39,7 +44,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.*;
 
-@ExtendWith({MockitoExtension.class, BundleJarsPrioritizingRunnableMockExtension.class})
+@ExtendWith({MockitoExtension.class, BundleJarsPrioritizingRunnableMockExtension.class, PdfExporterExtensionConfigurationExtension.class})
 @SuppressWarnings("ConstantConditions")
 class HtmlProcessorTest {
 
@@ -321,6 +326,33 @@ class HtmlProcessorTest {
             // Spaces and new lines are removed to exclude difference in space characters
             assertEquals(TestStringUtils.removeNonsensicalSymbols(validHtml), TestStringUtils.removeNonsensicalSymbols(fixedHtml));
         }
+    }
+
+    @Test
+    void localizeEnumsPreservesIconForUncommonTextNodeShapesTest() {
+        Map<String, String> deTranslations = new HashMap<>();
+        deTranslations.put("draft", "Entwurf");
+        deTranslations.put("", "Empty"); // matches an enum option that has no visible label
+        when(localizationSettings.load(anyString(), any(SettingId.class)))
+                .thenReturn(new LocalizationModel(deTranslations, Map.of(), Map.of()));
+
+        // Label split into several text nodes around the icon: the localized value replaces the
+        // first non-blank node and the trailing label node is removed, while the icon is kept.
+        Document splitLabel = JSoupUtils.parseHtml("<span class=\"polarion-JSEnumOption\">dr<img src=\"/icon.gif\"/>aft</span>");
+        processor.localizeEnums(splitLabel, getExportParams());
+        Element splitSpan = splitLabel.selectFirst("span.polarion-JSEnumOption");
+        assertEquals(1, splitSpan.select("img").size());
+        assertEquals("Entwurf", splitSpan.text());
+        assertEquals(1, splitSpan.textNodes().size());
+
+        // Enum option that only carries an icon (no visible label): the localized value is
+        // appended after the icon instead of being dropped.
+        Document iconOnly = JSoupUtils.parseHtml("<span class=\"polarion-JSEnumOption\"><img src=\"/icon.gif\"/></span>");
+        processor.localizeEnums(iconOnly, getExportParams());
+        Element iconSpan = iconOnly.selectFirst("span.polarion-JSEnumOption");
+        assertEquals(1, iconSpan.select("img").size());
+        assertEquals("Empty", iconSpan.text());
+        assertEquals("img", iconSpan.child(0).nodeName());
     }
 
     @Test
@@ -659,6 +691,80 @@ class HtmlProcessorTest {
             // Spaces and new lines are removed to exclude difference in space characters
             assertEquals(TestStringUtils.removeNonsensicalSymbols(validHtml), TestStringUtils.removeNonsensicalSymbols(fixedHtml));
         }
+    }
+
+    @Test
+    void renumberCaptionsRestoresDomOrderTest() {
+        // Reproduces the Polarion numbering bug: a work item owns a table (rendered second, so numbered "2")
+        // followed by a macro that re-renders the same rich text (rendered first during the wiki phase, so
+        // numbered "1"). In DOM order the work item's own caption comes first but carries the higher number.
+        String html = """
+                <p class="polarion-rte-caption-paragraph">Table <span data-sequence="Table" class="polarion-rte-caption">2<a name="dlecaption_5"></a></span> Own table</p>
+                <p class="polarion-rte-caption-paragraph">Table <span data-sequence="Table" class="polarion-rte-caption">1<a name="dlecaption_6"></a></span> Macro copy</p>
+                """;
+        Document document = JSoupUtils.parseHtml(html);
+
+        processor.renumberCaptions(document);
+
+        Elements captions = document.select("span.polarion-rte-caption[data-sequence]");
+        assertEquals("1", captions.get(0).childNodes().stream().filter(org.jsoup.nodes.TextNode.class::isInstance).findFirst().map(n -> ((org.jsoup.nodes.TextNode) n).text()).orElse(null));
+        assertEquals("2", captions.get(1).childNodes().stream().filter(org.jsoup.nodes.TextNode.class::isInstance).findFirst().map(n -> ((org.jsoup.nodes.TextNode) n).text()).orElse(null));
+    }
+
+    @Test
+    void renumberCaptionsKeepsSequencesIndependentTest() {
+        // Each sequence (Table, Figure, ...) is numbered independently, following DOM order within the sequence.
+        String html = """
+                <p class="polarion-rte-caption-paragraph">Figure <span data-sequence="Figure" class="polarion-rte-caption">3</span> Fig A</p>
+                <p class="polarion-rte-caption-paragraph">Table <span data-sequence="Table" class="polarion-rte-caption">2</span> Tab A</p>
+                <p class="polarion-rte-caption-paragraph">Figure <span data-sequence="Figure" class="polarion-rte-caption">9</span> Fig B</p>
+                <p class="polarion-rte-caption-paragraph">Table <span data-sequence="Table" class="polarion-rte-caption">7</span> Tab B</p>
+                """;
+        Document document = JSoupUtils.parseHtml(html);
+
+        processor.renumberCaptions(document);
+
+        Elements captions = document.select("span.polarion-rte-caption[data-sequence]");
+        assertEquals("1", captions.get(0).text()); // Figure 1
+        assertEquals("1", captions.get(1).text()); // Table 1
+        assertEquals("2", captions.get(2).text()); // Figure 2
+        assertEquals("2", captions.get(3).text()); // Table 2
+    }
+
+    @Test
+    void renumberCaptionsLeavesNonNumericSpansUntouchedTest() {
+        // Captions without a resolved number (e.g. an editor placeholder) must not be rewritten.
+        String html = """
+                <p class="polarion-rte-caption-paragraph">Table <span data-sequence="Table" class="polarion-rte-caption">#</span> Placeholder</p>
+                <p class="polarion-rte-caption-paragraph">Table <span data-sequence="Table" class="polarion-rte-caption">5</span> Real</p>
+                """;
+        Document document = JSoupUtils.parseHtml(html);
+
+        processor.renumberCaptions(document);
+
+        Elements captions = document.select("span.polarion-rte-caption[data-sequence]");
+        assertEquals("#", captions.get(0).text());
+        assertEquals("1", captions.get(1).text());
+    }
+
+    @Test
+    void renumberCaptionsHandlesEdgeCasesTest() {
+        // - empty data-sequence: skipped, left untouched
+        // - caption without a text node (only an anchor): skipped, no exception
+        // - caption already carrying the correct number: left untouched (no needless rewrite)
+        String html = """
+                <p class="polarion-rte-caption-paragraph">Table <span data-sequence="" class="polarion-rte-caption">4</span> Empty sequence</p>
+                <p class="polarion-rte-caption-paragraph">Table <span data-sequence="Table" class="polarion-rte-caption"><a name="dlecaption_1"></a></span> No number</p>
+                <p class="polarion-rte-caption-paragraph">Table <span data-sequence="Table" class="polarion-rte-caption">1</span> Already correct</p>
+                """;
+        Document document = JSoupUtils.parseHtml(html);
+
+        processor.renumberCaptions(document);
+
+        Elements captions = document.select("span.polarion-rte-caption[data-sequence]");
+        assertEquals("4", captions.get(0).text());       // empty sequence untouched
+        assertEquals("", captions.get(1).text().trim()); // no text node, still no number
+        assertEquals("1", captions.get(2).text());       // first real "Table" caption, already 1
     }
 
     @Test
@@ -1158,6 +1264,288 @@ class HtmlProcessorTest {
         } finally {
             CssUtils.setLogger(com.polarion.core.util.logging.Logger.getLogger(CssUtils.class));
         }
+    }
+
+    @Test
+    void processPageBreakWidgetsInlineLandscapeTest() {
+        // Inline placement: the marker and the content sit as siblings inside one rich-text cell
+        String initialHtml = """
+                <div class="content"><div class="polarion-rpe-view polarion-rpe-pdf polarion-rpe-content">
+                  <table class="polarion-rp-column-layout"><tbody><tr><td>Block A</td></tr></tbody></table>
+                  <table class="polarion-rp-column-layout"><tbody><tr><td class="polarion-rp-column-layout-cell">
+                    <p>intro</p>
+                    <div class="pdf-exporter-page-break pdf-exporter-page-break-landscape"><style>@media print{.pdf-exporter-page-break-label{display:none !important}}</style><span class="pdf-exporter-page-break-label">Page Break - Landscape</span></div>
+                    <p>SOME CONTENT</p>
+                    <p>MORE</p>
+                  </td></tr></tbody></table>
+                </div></div>
+                """;
+
+        Document document = JSoupUtils.parseHtml(initialHtml);
+        processor.processPageBreakWidgets(document, ExportParams.builder().documentType(DocumentType.LIVE_REPORT).build());
+
+        // The whole marker, including its visible label, must be gone after export processing
+        assertTrue(document.select("div.pdf-exporter-page-break").isEmpty());
+        assertTrue(document.select(".pdf-exporter-page-break-label").isEmpty());
+
+        Element container = document.selectFirst("div.polarion-rpe-content");
+        assertNotNull(container);
+
+        // The content following the marker is lifted out of the cell into a body-level landscape section after the table
+        Elements topChildren = container.children();
+        assertEquals(3, topChildren.size());
+        assertTrue(topChildren.get(0).text().contains("Block A"));
+        assertEquals("table", topChildren.get(1).tagName());
+        assertTrue(topChildren.get(1).text().contains("intro"));
+        assertFalse(topChildren.get(1).text().contains("SOME CONTENT"));
+
+        Element wrapper = topChildren.get(2);
+        assertEquals("div", wrapper.tagName());
+        assertTrue(wrapper.hasClass("sbb_page_break"));
+        assertTrue(wrapper.hasClass("landA4"));
+        assertTrue(wrapper.text().contains("SOME CONTENT"));
+        assertTrue(wrapper.text().contains("MORE"));
+        assertFalse(wrapper.text().contains("intro"));
+        // The label belonged to the marker and must not be lifted into the section
+        assertFalse(wrapper.text().contains("Page Break"), wrapper.html());
+    }
+
+    @Test
+    void processPageBreakWidgetsInlineTwoSectionsTest() {
+        // Two markers in one rich-text cell: landscape then portrait, segmenting the cell content
+        String initialHtml = """
+                <div class="content"><div class="polarion-rpe-view polarion-rpe-pdf polarion-rpe-content">
+                  <table class="polarion-rp-column-layout"><tbody><tr><td class="polarion-rp-column-layout-cell">
+                    <p>intro</p>
+                    <div class="pdf-exporter-page-break pdf-exporter-page-break-landscape"></div>
+                    <p>LAND CONTENT</p>
+                    <div class="pdf-exporter-page-break"></div>
+                    <p>PORT CONTENT</p>
+                  </td></tr></tbody></table>
+                </div></div>
+                """;
+
+        Document document = JSoupUtils.parseHtml(initialHtml);
+        processor.processPageBreakWidgets(document, ExportParams.builder().documentType(DocumentType.LIVE_REPORT).build());
+
+        assertTrue(document.select("div.pdf-exporter-page-break").isEmpty());
+
+        Element container = document.selectFirst("div.polarion-rpe-content");
+        Elements topChildren = container.children();
+        // table (intro), landscape section, portrait section - in that order
+        assertEquals(3, topChildren.size());
+        assertTrue(topChildren.get(0).text().contains("intro"));
+
+        Element landscape = topChildren.get(1);
+        assertTrue(landscape.hasClass("sbb_page_break"));
+        assertTrue(landscape.hasClass("landA4"));
+        assertTrue(landscape.text().contains("LAND CONTENT"));
+        assertFalse(landscape.text().contains("PORT CONTENT"));
+
+        Element portrait = topChildren.get(2);
+        assertTrue(portrait.hasClass("sbb_page_break"));
+        assertTrue(portrait.hasClass("portA4"));
+        assertTrue(portrait.text().contains("PORT CONTENT"));
+    }
+
+    @Test
+    void processPageBreakWidgetsBlockPlacementTest() {
+        // Standalone/block placement: the marker is alone in its own table; following report tables form the section
+        String initialHtml = """
+                <div class="content"><div class="polarion-rpe-view polarion-rpe-pdf polarion-rpe-content">
+                  <table class="polarion-rp-column-layout"><tbody><tr><td>Block A</td></tr></tbody></table>
+                  <table class="polarion-rp-column-layout"><tbody><tr><td><div class="pdf-exporter-page-break pdf-exporter-page-break-landscape"></div></td></tr></tbody></table>
+                  <table class="polarion-rp-column-layout"><tbody><tr><td>Block B</td></tr></tbody></table>
+                  <table class="polarion-rp-column-layout"><tbody><tr><td>Block C</td></tr></tbody></table>
+                </div></div>
+                """;
+
+        Document document = JSoupUtils.parseHtml(initialHtml);
+        processor.processPageBreakWidgets(document, ExportParams.builder().documentType(DocumentType.LIVE_REPORT).build());
+
+        assertTrue(document.select("div.pdf-exporter-page-break").isEmpty());
+
+        Element container = document.selectFirst("div.polarion-rpe-content");
+        // Block A table, the (now empty) marker table, then the landscape wrapper holding Block B and Block C tables
+        Element wrapper = container.selectFirst("div.sbb_page_break");
+        assertNotNull(wrapper);
+        assertTrue(wrapper.hasClass("landA4"));
+        assertTrue(wrapper.text().contains("Block B"));
+        assertTrue(wrapper.text().contains("Block C"));
+        assertEquals(2, wrapper.select("table.polarion-rp-column-layout").size());
+    }
+
+    @Test
+    void processPageBreakWidgetsNoMarkerTest() {
+        String initialHtml = """
+                <div class="content"><div class="polarion-rpe-view polarion-rpe-pdf polarion-rpe-content">
+                  <table class="polarion-rp-column-layout"><tbody><tr><td>Block A</td></tr></tbody></table>
+                </div></div>
+                """;
+
+        Document document = JSoupUtils.parseHtml(initialHtml);
+        processor.processPageBreakWidgets(document, ExportParams.builder().documentType(DocumentType.LIVE_REPORT).build());
+
+        assertTrue(document.select("div.sbb_page_break").isEmpty());
+        assertEquals(1, document.selectFirst("div.polarion-rpe-content").children().size());
+    }
+
+    @Test
+    void processPageBreakWidgetsTwoBlockSectionsTest() {
+        // Two standalone markers in separate tables, with content tables between and after -> two oriented sections
+        String initialHtml = """
+                <div class="content"><div class="polarion-rpe-view polarion-rpe-pdf polarion-rpe-content">
+                  <table class="polarion-rp-column-layout"><tbody><tr><td>Block A</td></tr></tbody></table>
+                  <table class="polarion-rp-column-layout"><tbody><tr><td><div class="pdf-exporter-page-break pdf-exporter-page-break-landscape"></div></td></tr></tbody></table>
+                  <table class="polarion-rp-column-layout"><tbody><tr><td>Block B</td></tr></tbody></table>
+                  <table class="polarion-rp-column-layout"><tbody><tr><td><div class="pdf-exporter-page-break"></div></td></tr></tbody></table>
+                  <table class="polarion-rp-column-layout"><tbody><tr><td>Block C</td></tr></tbody></table>
+                </div></div>
+                """;
+
+        Document document = JSoupUtils.parseHtml(initialHtml);
+        processor.processPageBreakWidgets(document, ExportParams.builder().documentType(DocumentType.LIVE_REPORT).build());
+
+        assertTrue(document.select("div.pdf-exporter-page-break").isEmpty());
+
+        Element container = document.selectFirst("div.polarion-rpe-content");
+        Elements wrappers = container.select("div.sbb_page_break");
+        assertEquals(2, wrappers.size());
+
+        Element landscape = wrappers.get(0);
+        assertTrue(landscape.hasClass("landA4"));
+        assertTrue(landscape.text().contains("Block B"));
+        assertFalse(landscape.text().contains("Block C"));
+
+        Element portrait = wrappers.get(1);
+        assertTrue(portrait.hasClass("portA4"));
+        assertTrue(portrait.text().contains("Block C"));
+        assertFalse(portrait.text().contains("Block B"));
+    }
+
+    @Test
+    void processPageBreakWidgetsFallsBackToBodyWhenNoReportContainerTest() {
+        // No polarion-rpe-content: the body becomes the container the section is lifted to
+        String initialHtml = """
+                <table class="polarion-rp-column-layout"><tbody><tr><td>Block A</td></tr></tbody></table>
+                <table class="polarion-rp-column-layout"><tbody><tr><td><div class="pdf-exporter-page-break pdf-exporter-page-break-landscape"></div></td></tr></tbody></table>
+                <table class="polarion-rp-column-layout"><tbody><tr><td>Block B</td></tr></tbody></table>
+                """;
+
+        Document document = JSoupUtils.parseHtml(initialHtml);
+        processor.processPageBreakWidgets(document, ExportParams.builder().documentType(DocumentType.LIVE_REPORT).build());
+
+        assertTrue(document.select("div.pdf-exporter-page-break").isEmpty());
+        Element wrapper = document.body().selectFirst("div.sbb_page_break");
+        assertNotNull(wrapper);
+        assertTrue(wrapper.hasClass("landA4"));
+        assertTrue(wrapper.text().contains("Block B"));
+    }
+
+    @Test
+    void processPageBreakWidgetsDropsStrayMarkerOutsideContainerTest() {
+        // A marker that is not inside the report content container is just dropped, no section is created
+        String initialHtml = """
+                <div class="content">
+                  <div class="polarion-rpe-view polarion-rpe-pdf polarion-rpe-content"><table class="polarion-rp-column-layout"><tbody><tr><td>Block A</td></tr></tbody></table></div>
+                  <div class="outside"><div class="pdf-exporter-page-break pdf-exporter-page-break-landscape"></div></div>
+                </div>
+                """;
+
+        Document document = JSoupUtils.parseHtml(initialHtml);
+        processor.processPageBreakWidgets(document, ExportParams.builder().documentType(DocumentType.LIVE_REPORT).build());
+
+        assertTrue(document.select("div.pdf-exporter-page-break").isEmpty());
+        assertTrue(document.select("div.sbb_page_break").isEmpty());
+    }
+
+    @Test
+    void processPageBreakWidgetsNoContentAfterMarkerProducesNoSectionTest() {
+        // A marker with nothing following it (neither in the cell nor after the block) yields no section
+        String initialHtml = """
+                <div class="content"><div class="polarion-rpe-view polarion-rpe-pdf polarion-rpe-content">
+                  <table class="polarion-rp-column-layout"><tbody><tr><td>Block A</td></tr></tbody></table>
+                  <table class="polarion-rp-column-layout"><tbody><tr><td><div class="pdf-exporter-page-break pdf-exporter-page-break-landscape"></div></td></tr></tbody></table>
+                </div></div>
+                """;
+
+        Document document = JSoupUtils.parseHtml(initialHtml);
+        processor.processPageBreakWidgets(document, ExportParams.builder().documentType(DocumentType.LIVE_REPORT).build());
+
+        assertTrue(document.select("div.pdf-exporter-page-break").isEmpty());
+        assertTrue(document.select("div.sbb_page_break").isEmpty());
+    }
+
+    @Test
+    void processPageBreakWidgetsUsesConfiguredPaperSizeTest() {
+        String initialHtml = """
+                <div class="content"><div class="polarion-rpe-view polarion-rpe-pdf polarion-rpe-content">
+                  <table class="polarion-rp-column-layout"><tbody><tr><td class="polarion-rp-column-layout-cell">
+                    <div class="pdf-exporter-page-break pdf-exporter-page-break-landscape"></div>
+                    <p>SOME CONTENT</p>
+                  </td></tr></tbody></table>
+                </div></div>
+                """;
+
+        ExportParams exportParams = mock(ExportParams.class);
+        when(exportParams.getPaperSize()).thenReturn(PaperSize.LETTER);
+
+        Document document = JSoupUtils.parseHtml(initialHtml);
+        processor.processPageBreakWidgets(document, exportParams);
+
+        Element wrapper = document.selectFirst("div.sbb_page_break");
+        assertNotNull(wrapper);
+        assertTrue(wrapper.hasClass("landLETTER"), wrapper.className());
+    }
+
+    @Test
+    void processPageBreakWidgetsDefaultsToA4WhenPaperSizeNullTest() {
+        String initialHtml = """
+                <div class="content"><div class="polarion-rpe-view polarion-rpe-pdf polarion-rpe-content">
+                  <table class="polarion-rp-column-layout"><tbody><tr><td class="polarion-rp-column-layout-cell">
+                    <div class="pdf-exporter-page-break"></div>
+                    <p>SOME CONTENT</p>
+                  </td></tr></tbody></table>
+                </div></div>
+                """;
+
+        ExportParams exportParams = mock(ExportParams.class);
+        when(exportParams.getPaperSize()).thenReturn(null);
+
+        Document document = JSoupUtils.parseHtml(initialHtml);
+        processor.processPageBreakWidgets(document, exportParams);
+
+        Element wrapper = document.selectFirst("div.sbb_page_break");
+        assertNotNull(wrapper);
+        assertTrue(wrapper.hasClass("portA4"), wrapper.className());
+    }
+
+    @Test
+    void processHtmlForPDFAppliesPageBreakWidgetForLiveReport() {
+        // Drives the full pipeline so the page-break step wired into the LIVE_REPORT branch of processHtmlForPDF runs
+        String html = """
+                <div class="content"><div class="polarion-rpe-view polarion-rpe-pdf polarion-rpe-content">
+                  <table class="polarion-rp-column-layout"><tbody><tr><td class="polarion-rp-column-layout-cell">
+                    <p>intro</p>
+                    <div class="pdf-exporter-page-break pdf-exporter-page-break-landscape"></div>
+                    <p>SOME CONTENT</p>
+                  </td></tr></tbody></table>
+                </div></div>
+                """;
+
+        ExportParams exportParams = ExportParams.builder()
+                .projectId("test_project")
+                .documentType(DocumentType.LIVE_REPORT)
+                .language(Language.DE.name())
+                .build();
+
+        String result = processor.processHtmlForPDF(html, exportParams, List.of());
+
+        // The marker is consumed and the following content ends up in a body-level landscape section
+        assertFalse(result.contains("pdf-exporter-page-break"), result);
+        assertTrue(result.contains("sbb_page_break"), result);
+        assertTrue(result.contains("landA4"), result);
+        assertTrue(result.contains("SOME CONTENT"), result);
     }
 
     private ExportParams getExportParams() {

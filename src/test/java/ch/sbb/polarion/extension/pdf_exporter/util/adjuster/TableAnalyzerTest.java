@@ -10,6 +10,9 @@ import org.junit.jupiter.api.Test;
 
 import java.awt.*;
 import java.lang.reflect.Field;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -189,6 +192,60 @@ class TableAnalyzerTest {
                 "Shorter text column should be narrower: col0=" + columnWidths.get(0) + ", col1=" + columnWidths.get(1));
         assertTrue(columnWidths.get(1) < columnWidths.get(2),
                 "Medium text column should be narrower than long: col1=" + columnWidths.get(1) + ", col2=" + columnWidths.get(2));
+    }
+
+    // Dedicated file that flying-saucer (org.xhtmlrenderer) logs into during tests; configured in
+    // src/test/resources/log4j2.xml via the SLF4J -> Log4j2 bridge.
+    private static final Path FLYING_SAUCER_LOG = Path.of("target", "flying-saucer.log");
+
+    @Test
+    @SneakyThrows
+    void getColumnWidthsWithSourcelessImageDoesNotLogErrors() {
+        // An <img> with no usable src and no explicit width/height: during the measurement-only
+        // pre-render flying-saucer resolves both CSS dimensions to -1 and (without the fix) tries to
+        // build a -1x-1 placeholder image, which throws IllegalArgumentException internally and is
+        // logged at ERROR by org.xhtmlrenderer.swing.SwingReplacedElementFactory. The export still
+        // completes, but the log noise is the bug we guard against here.
+        Element table = new Element(Tag.valueOf("table"), "");
+        Element row = table.appendElement("tr");
+        row.appendElement("td").appendElement("img"); // no src, no width/height
+        row.appendElement("td").text("Some text");
+
+        // The log file accumulates across the test run, so compare what flying-saucer logs *during* this call.
+        String logBefore = readFlyingSaucerLog();
+        Map<Integer, Integer> columnWidths = TableAnalyzer.getColumnWidths(table, 600);
+        String logged = readFlyingSaucerLog().substring(logBefore.length());
+
+        assertFalse(logged.contains("Failed to create image element"),
+                "Source-less image must not trigger flying-saucer's failed-image ERROR during measurement, but it logged:\n" + logged);
+        assertFalse(logged.contains("cannot be <= 0"),
+                "Source-less image must not trigger an IllegalArgumentException for a -1x-1 placeholder, but it logged:\n" + logged);
+
+        // Measurement must still succeed and yield both columns.
+        assertEquals(2, columnWidths.size(), "Both columns should still be measured");
+    }
+
+    @Test
+    @SneakyThrows
+    void antiAliasRenderingHintResolvesToRealConstant() {
+        // Force TableAnalyzer's static initializer to run, pinning xr.text.aa-rendering-hint before
+        // flying-saucer's Configuration singleton is first read.
+        Class.forName(TableAnalyzer.class.getName());
+
+        // flying-saucer's own default ("RenderingHints.VALUE_TEXT_ANTIALIAS_HGRB") is unresolvable, so without
+        // the fix this returns the sentinel and Java2DTextRenderer falls back to the AWT desktop hints - null on
+        // a headless server - which throws an NPE logged at WARN for every renderer (one per table). Verify the
+        // hint instead resolves to a real constant so that path is never taken.
+        Object sentinel = new Object();
+        Object hint = org.xhtmlrenderer.util.Configuration.valueFromClassConstant("xr.text.aa-rendering-hint", sentinel);
+
+        assertNotSame(sentinel, hint, "aa-rendering-hint must resolve to a real RenderingHints constant, not the fallback");
+        assertSame(RenderingHints.VALUE_TEXT_ANTIALIAS_ON, hint, "aa-rendering-hint should resolve to VALUE_TEXT_ANTIALIAS_ON");
+    }
+
+    @SneakyThrows
+    private static String readFlyingSaucerLog() {
+        return Files.exists(FLYING_SAUCER_LOG) ? Files.readString(FLYING_SAUCER_LOG, StandardCharsets.UTF_8) : "";
     }
 
     private Element createSimpleTable() {

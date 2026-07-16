@@ -94,7 +94,13 @@ public class BulkPdfExportWidgetRenderer extends AbstractWidgetRenderer {
         } else {
             String panelId = "bulk-%s".formatted(UUID.randomUUID().toString());
             HtmlTagBuilder wrap = builder.tag().div();
-            wrap.attributes().className("polarion-PdfExporter-BulkExportWidget").id(panelId);
+            // sbb-ui carries generic's --sbb-* design tokens (control-tokens.css) for this widget's
+            // subtree without opting into the form-field scopes: the token declarations live on
+            // .sbb-ui, while generic's inputs/checkboxes rules are scoped to .form-wrapper /
+            // .standard-admin-page / .modal__container. Post-#535 the tokens are gone from :root, so
+            // this wrapper is what makes the widget's checkbox tokens (below) resolve on a plain
+            // Polarion page.
+            wrap.attributes().className("polarion-PdfExporter-BulkExportWidget sbb-ui").id(panelId);
 
             HtmlTagBuilder header = wrap.append().tag().div();
             header.attributes().className("header");
@@ -121,7 +127,13 @@ public class BulkPdfExportWidgetRenderer extends AbstractWidgetRenderer {
                         .then(module => new module.default('#%s', '%s' === 'true'))
                         .catch(console.error);""".formatted(panelId, exportPages.value()));
 
-            wrap.append().tag().style().append().html(ScopeUtils.getFileContent("/webapp/pdf-exporter/css/micromodal.css"));
+            wrap.append().tag().style().append().html(ScopeUtils.getFileContent("/css/micromodal.css"));
+            // The widget assembles its CSS inline and does not pull generic's common.css, so the shared
+            // alert styling would be missing: control-tokens.css provides the --sbb-*-icon tokens and
+            // alerts.css the notification boxes + warning/error triangle icons. Without these the export
+            // dialog's warnings (e.g. the PDF/A sticky-notes notice) render as unstyled plain text.
+            wrap.append().tag().style().append().html(ScopeUtils.getFileContent("/css/control-tokens.css"));
+            wrap.append().tag().style().append().html(ScopeUtils.getFileContent("/css/alerts.css"));
             wrap.append().tag().style().append().html(ScopeUtils.getFileContent("/webapp/pdf-exporter/css/pdf-exporter.css"));
 
             HtmlContentBuilder contentBuilder = mainTable.append();

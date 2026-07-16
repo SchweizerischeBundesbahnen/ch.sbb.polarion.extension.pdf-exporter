@@ -96,7 +96,7 @@ public abstract class BaseWeasyPrintTest {
     public static @NotNull WeasyPrintServiceConnector getWeasyPrintServiceConnector() {
         String externalUrl = System.getProperty(WEASYPRINT_SERVICE_URL_PROPERTY);
         if (externalUrl != null) {
-            externalUrl = externalUrl.trim().replaceAll("/+$", "");
+            externalUrl = stripTrailingSlashes(externalUrl.trim());
             if (!externalUrl.isBlank()) {
                 return new WeasyPrintServiceConnector(externalUrl);
             }
@@ -107,6 +107,14 @@ public abstract class BaseWeasyPrintTest {
 
         String weasyPrintServiceBaseUrl = "http://" + weasyPrintService.getHost() + ":" + weasyPrintService.getFirstMappedPort();
         return new WeasyPrintServiceConnector(weasyPrintServiceBaseUrl);
+    }
+
+    static @NotNull String stripTrailingSlashes(@NotNull String value) {
+        int end = value.length();
+        while (end > 0 && value.charAt(end - 1) == '/') {
+            end--;
+        }
+        return value.substring(0, end);
     }
 
     protected List<BufferedImage> exportAndGetAsImages(String fileName) {

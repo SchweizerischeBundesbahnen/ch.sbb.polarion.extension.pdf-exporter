@@ -13,7 +13,7 @@ import com.polarion.platform.service.repository.IRepositoryReadOnlyConnection;
 import com.polarion.subterra.base.location.ILocation;
 import org.jetbrains.annotations.NotNull;
 
-import javax.ws.rs.InternalServerErrorException;
+import jakarta.ws.rs.InternalServerErrorException;
 import java.io.IOException;
 import java.security.CodeSource;
 import java.util.Arrays;

@@ -37,9 +37,8 @@ class CustomPageBreakPartTest {
         HtmlBuilder builder = mock(HtmlBuilder.class, RETURNS_DEEP_STUBS);
 
         RichTextRenderingContext context = mock(RichTextRenderingContext.class, RETURNS_DEEP_STUBS);
-        RichTextRenderTarget target = mock(RichTextRenderTarget.class);
-        when(context.getRenderTarget()).thenReturn(target);
-        when(target.isPdf()).thenReturn(true);
+
+        doReturn(RichTextRenderTarget.PDF_EXPORT).when(context).getRenderTarget();
 
         try (MockedConstruction<PartIdGeneratorImpl> ignored = mockConstruction(PartIdGeneratorImpl.class)) {
             CustomPageBreakPart customPart = new CustomPageBreakPart(originalPart);
@@ -61,9 +60,8 @@ class CustomPageBreakPartTest {
 
         HtmlBuilder builder = mock(HtmlBuilder.class, RETURNS_DEEP_STUBS);
         RichTextRenderingContext context = mock(RichTextRenderingContext.class, RETURNS_DEEP_STUBS);
-        RichTextRenderTarget target = mock(RichTextRenderTarget.class);
-        when(context.getRenderTarget()).thenReturn(target);
-        when(target.isPdf()).thenReturn(false);
+
+        doReturn(RichTextRenderTarget.PREVIEW).when(context).getRenderTarget();
 
         try (MockedConstruction<PartIdGeneratorImpl> ignored = mockConstruction(PartIdGeneratorImpl.class)) {
             CustomPageBreakPart customPart = spy(new CustomPageBreakPart(originalPart));

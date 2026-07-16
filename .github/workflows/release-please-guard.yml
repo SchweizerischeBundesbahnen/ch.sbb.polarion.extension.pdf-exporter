@@ -3,6 +3,11 @@ name: release-please-guard
 on:
   pull_request:
     types: [opened, synchronize, reopened]
+  # Runs on Renovate automerge branches so the required "release-please-guard"
+  # check exists on the commit Renovate fast-forwards onto the default branch
+  # (branch automerge pushes directly with no PR).
+  push:
+    branches: [renovate/**]
 permissions: {}
 jobs:
   release-please-guard:

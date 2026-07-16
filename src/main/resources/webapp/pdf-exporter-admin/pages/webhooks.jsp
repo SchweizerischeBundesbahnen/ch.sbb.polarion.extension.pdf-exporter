@@ -8,7 +8,6 @@
 <head>
     <title>PDF Exporter: Webhooks</title>
     <link rel="stylesheet" href="../ui/generic/css/common.css?bundle=<%= bundleTimestamp %>">
-    <link rel="stylesheet" href="../ui/generic/css/custom-select.css?bundle=<%= bundleTimestamp %>">
     <link rel="stylesheet" href="../ui/generic/css/configurations.css?bundle=<%= bundleTimestamp %>">
     <script type="module" src="../js/modules/webhooks.js?bundle=<%= bundleTimestamp %>"></script>
     <style type="text/css">
@@ -37,7 +36,7 @@
         }
 
         .webhook-row td {
-            vertical-align: top;
+            vertical-align: middle;
         }
 
         .webhook-row td:first-child {
@@ -45,24 +44,26 @@
         }
 
         .webhook-row td:nth-child(2) {
-            padding-top: 6px;
             width: 30px;
         }
 
-        .webhook-row td:nth-child(3),
+        .webhook-row td:nth-child(3) {
+            width: 400px;
+            position: relative;
+        }
+
         .webhook-row td:nth-child(3) input {
             width: 400px;
         }
 
 
         .webhook-row td:nth-child(4) {
-            padding-top: 4px;
             width: 55px;
             min-width: 55px;
         }
 
         .webhook-row td:nth-child(5) {
-            width: 100px;
+            width: 150px;
         }
 
         .webhook-row td:nth-child(6),
@@ -77,6 +78,11 @@
 
         .invalid-webhook {
             color: #ddab19;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            margin-top: 2px;
+            white-space: nowrap;
         }
 
         .invalid-webhook.hidden {
@@ -97,7 +103,7 @@
         <h2 class="align-left">List of webhooks</h2>
         <table id="webhooks-table"><!-- Filled by JS --></table>
         <button id="add-webhook-button" class="toolbar-button webhook-button" title="Add a webhook" style="margin-top: 10px; margin-left: 3px;">
-            <img src='/polarion/ria/images/control/tablePlus.png' alt="Plus">
+            <span class="sbb-icon-table-plus" role="img" aria-label="Add"></span>
         </button>
 
         <input id="scope" type="hidden" value="<%= request.getParameter("scope")%>"/>

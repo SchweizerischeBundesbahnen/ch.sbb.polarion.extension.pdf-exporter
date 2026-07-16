@@ -19,6 +19,7 @@ import com.polarion.alm.tracker.ITrackerService;
 import com.polarion.alm.tracker.model.IModule;
 import com.polarion.alm.tracker.model.IRichPage;
 import com.polarion.alm.tracker.model.ITestRun;
+import com.polarion.alm.tracker.model.IWorkItem;
 import com.polarion.alm.tracker.model.ITestRunAttachment;
 import com.polarion.alm.tracker.model.ITrackerProject;
 import com.polarion.core.util.StringUtils;
@@ -159,6 +160,19 @@ public class PdfExporterPolarionService extends PolarionService {
             case IRichPage page -> spaceId.equals(page.getSpaceId()) && documentName.equals(page.getPageName());
             default -> false;
         };
+    }
+
+    public void validateWorkItemsQuery(@Nullable String query) {
+        if (query == null || StringUtils.isEmpty(query)) {
+            return;
+        }
+        try {
+            // limit=1: forces query parsing (Lucene syntax validation) without loading
+            // potentially thousands of matching work items just to verify the syntax.
+            getTrackerService().getDataService().searchInstances(IWorkItem.PROTO, query, null, 1);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Invalid work items query: " + e.getMessage(), e);
+        }
     }
 
     public @NotNull ITestRun getTestRun(@NotNull String projectId, @NotNull String testRunId, @Nullable String revision) {

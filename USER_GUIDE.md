@@ -23,10 +23,12 @@
     * [Custom styles of numbered lists](#custom-styles-of-numbered-lists)
     * [Localize enums](#localize-enums)
     * [Specific Workitem roles](#specific-workitem-roles)
+    * [Work items query](#work-items-query)
     * [Metadata fields](#metadata-fields)
     * [File name](#file-name)
     * [Download attachments](#download-attachments)
     * [Embed attachments into resulted PDF](#embed-attachments-into-resulted-pdf)
+* [Page breaks on Live Report page](#page-breaks-on-live-report-page)
 * [Bulk PDF Export](#bulk-pdf-export)
 
 ## Export panel layout
@@ -300,6 +302,17 @@ And here is the resulting PDF document:
 
 ![Specific Workitem roles after](docs/user_guide/img/specific_wi_roles_after.png)
 
+### Work items query
+If you check this checkbox and enter a Lucene query in the appearing input field, only Workitems matching the query will be included in the exported document. Headings stay in the document regardless of the query as they are treated as structural elements:
+
+![Work items query](docs/user_guide/img/work_items_query.png)
+
+For example, the query `type:requirement` keeps only requirement Workitems and filters out the rest. The query syntax is the same as in the Polarion document URL filter (`?query=...`).
+
+The default value for this filter can be defined per style package on the Style Packages administration page, so that the filter is applied automatically whenever that style package is selected. If both a default value and an explicit value in the export popup are provided, the explicit value wins.
+
+The filter is available for Live Documents and Baseline Collections. In Baseline Collection bulk export the same query is applied to each Live Document in the collection; Rich Pages inside a collection ignore the work items query.
+
 ### File name
 Here you can specify the resulting file name:
 
@@ -322,6 +335,15 @@ By selecting this checkbox, you can:
 By selecting this checkbox, all attachments of the current document will be embedded into the resulted PDF file as embedded files. You can also specify a mask for attachment file names that will be embedded into the PDF file.
 
 ![Embed attachments](docs/user_guide/img/embed_attachments.png)
+
+## Page breaks on Live Report page
+It is possible to insert page breaks into Live Report pages using `Page Break` widget:
+
+![Page Break Widget](docs/user_guide/img/page_break_widget.png)
+
+Also, there is a configuration for the cases when landscape page more required (**Note**: this configuration will be applied for the pages exported by `Pdf-Exporter` only):
+
+![Page Break Configuration](docs/user_guide/img/page_break_configuration.png)
 
 ## Bulk PDF Export
 There is a possibility to export multiple documents in one run. This can be achieved with the help of a special widget:

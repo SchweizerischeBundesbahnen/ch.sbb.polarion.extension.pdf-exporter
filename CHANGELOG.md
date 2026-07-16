@@ -1,5 +1,104 @@
 # Changelog
 
+## [13.2.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v13.1.0...v13.2.0) (2026-07-14)
+
+
+### Features
+
+* 'Page Break' widget for Live Report pages ([#880](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/880)) ([fbab599](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/fbab599bda82019f82e0fe9595ee0bfe6069a1b1)), closes [#860](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/860)
+* adopt generic 15.4.0 ([#913](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/913)) ([e0573e6](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/e0573e612896d973c418567a7be03cd8e0b25035))
+* adopt shared SearchableDropdown UI components ([#877](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/877)) ([accc9dd](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/accc9ddb4b813ec85b3323372669c4ea9f9a8d58)), closes [#873](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/873)
+* Polarion UI 2606 restyle ([#887](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/887)) ([ac29707](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/ac29707e8838493c09b468e75ee945cae8581bda))
+
+
+### Bug Fixes
+
+* add side-panel status gap only when non-empty ([#911](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/911)) ([a938518](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/a938518b2064e595df67de965078ca2442d6f1ba)), closes [#910](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/910)
+* apply 2606 checkbox styling in bulk export widget ([#901](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/901)) ([eaf7cf0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/eaf7cf05478cf9890a3d3747864b0eac78887ac1))
+* avoid regex backtracking when trimming trailing slashes ([#866](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/866)) ([205abd6](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/205abd604e7b5a34fac201f49b00a6940a517a63)), closes [#865](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/865)
+* **deps:** update dependency ch.sbb.polarion.extensions:ch.sbb.polarion.extension.generic to v15.2.1 ([5ed5601](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/5ed5601fdcdba085a93fd5ae6e6dbc499ccb3ee5))
+* **deps:** update dependency ch.sbb.polarion.extensions:ch.sbb.polarion.extension.generic to v15.3.0 ([85e8bc7](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/85e8bc7e50421cc8928526fc74f5f6c9ef9656fc))
+* **deps:** update dependency ch.sbb.polarion.extensions:ch.sbb.polarion.extension.generic to v15.3.1 ([baaf1f0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/baaf1f0e36345276a1dbe8ec76ba71d7daf69acd))
+* **deps:** update dependency ch.sbb.polarion.extensions:ch.sbb.polarion.extension.generic to v15.4.1 ([1482771](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/14827715fcdd465127ff091614be11cc6d21b7fd))
+* **deps:** update dependency ch.sbb.polarion.extensions:ch.sbb.polarion.extension.generic to v15.4.2 ([02ff594](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/02ff5943648ed8f0af4bd0782a1bf8b8a85c3409))
+* **deps:** update dependency org.apache.pdfbox:pdfbox to v3.0.8 ([308a560](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/308a560a9984220f67f4c7a7b402f25bb45a0648))
+* export popup on live reports page contains comments-related chec… ([#885](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/885)) ([f1a2ed1](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/f1a2ed17dfb60efe7cb2885c0dcfeb60232a6f35)), closes [#884](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/884)
+* point bulk widget indeterminate checkbox at generic image ([#902](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/902)) ([a3e15c6](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/a3e15c61dfb8a3722bca6f5b77f49b803117667a))
+* preserve enum icon when localizing enum fields ([#894](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/894)) ([0f57836](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/0f57836a2ce670c25d6a711289dd64111fd9130d)), closes [#886](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/886)
+* reassign tables and figures caption numbers following the visual order ([b4b8edb](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/b4b8edb40fe77bb7f08a3baec5688b21d20c500d)), closes [#833](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/833)
+* reassign tables and figures caption numbers following the visual… ([#895](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/895)) ([b4b8edb](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/b4b8edb40fe77bb7f08a3baec5688b21d20c500d))
+* render styled warnings in pdf export dialogs ([#909](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/909)) ([a930ad3](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/a930ad39df7de448c3e216680e9f374950aef770)), closes [#908](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/908)
+* reset modal instance on popup initialization ([#888](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/888)) ([f2ee80f](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/f2ee80f2026d0c529cc756c5edd0419067658a1f))
+* reuse popup element to prevent detached node issues ([#889](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/889)) ([e4d0834](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/e4d0834f0aa0c8768d9e2eb432cd44820cbdee61))
+* support work item roles in bulk export ([#900](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/900)) ([b80c6c4](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/b80c6c4c4c4eba7583b2c3bf87a08f3e16f3b940))
+* sync roles multiselect after applying style package ([#897](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/897)) ([f9d93ea](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/f9d93ea219bb7a20313efcd9818d7dcb4b364253))
+* trim trailing slashes without regex ([#870](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/870)) ([1673148](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/1673148bcf4a15fd319e56c5015349bc0ba1a0c5)), closes [#865](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/865)
+* unify page width validation messages between popup and side panel ([#899](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/899)) ([8417ff5](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/8417ff5837461a7c877f396e8c978911529742e9)), closes [#898](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/898)
+* use Polarion 2606 spinner (progressWheel) ([#869](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/869)) ([cae5d73](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/cae5d7342dab04bdaad80916a2bce7c7897280f4)), closes [#868](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/868)
+
+## [13.1.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v13.0.0...v13.1.0) (2026-06-30)
+
+
+### Features
+
+* align UI with Polarion 2606 ([#849](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/849)) ([085ebed](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/085ebedee039396c135367dce35eb8427851d91a)), closes [#848](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/848)
+* make renderable image extensions configurable via polarion.prop… ([#845](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/845)) ([ce9555b](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/ce9555b79def6214cb9db5324462a328d9d57e8a)), closes [#832](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/832)
+* WeasyPrint Service 69.0.0 support ([#841](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/841)) ([2f82ffb](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/2f82ffbb1abf086614ce6b99053b2ae24e18d1f3)), closes [#840](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/840)
+
+
+### Bug Fixes
+
+* **deps:** update dependency ch.sbb.polarion.extensions:ch.sbb.polarion.extension.generic to v15.1.0 ([#850](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/850)) ([129084d](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/129084dfcee771b1bde91214351c0c1eef1d9510))
+* ensure resolvable location paths for reports in non-default spaces ([#851](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/851)) ([#852](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/852)) ([d4f7897](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/d4f789760e35cefcd10d2ceb3ee0c455cb7c4950))
+* keep thumbnail for non-image attachments via renderable allowlist ([#843](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/843)) ([d6b16ae](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/d6b16aefeb429585e604f527986ec4079699be5c)), closes [#832](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/832)
+* preserve thumbnail parameter for non-renderable attachment icons… ([#839](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/839)) ([5ed4ad2](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/5ed4ad2c772aeaefa15fc7869c2807057032cb95)), closes [#832](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/832)
+* silence headless anti-alias hint warning in table analyzer ([#863](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/863)) ([260b7c8](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/260b7c819e937bb88e2aacf4c4d964882604e70d)), closes [#862](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/862)
+* skip formula images in adjustImageAlignment to preserve text flow ([#844](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/844)) ([c71ded7](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/c71ded7ced9d63bdf5dac1461cc922cdad8d5869)), closes [#831](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/831)
+
+## [13.0.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v12.5.0...v13.0.0) (2026-06-16)
+
+
+### ⚠ BREAKING CHANGES
+
+* Polarion 2606 support ([#828](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/828))
+
+### Features
+
+* Polarion 2606 support ([#828](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/828)) ([13195c0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/13195c00e77a0d94ce3123c4bb6c1396a0526cba)), closes [#824](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/824)
+
+
+### Bug Fixes
+
+* **deps:** update flying-saucer.version to v10.3.0 ([#834](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/834)) ([4a645ae](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/4a645aee1f9f43108ceb917e11ebcd36a9db2e7f))
+
+## [12.5.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v12.4.2...v12.5.0) (2026-06-11)
+
+
+### Features
+
+* add work items query filter to export functionality ([#807](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/807)) ([b21e9b4](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/b21e9b4d0c59780a827d0a5cb299700824b34c1f)), closes [#790](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/790)
+
+
+### Bug Fixes
+
+* **deps:** update byte-buddy.version to v1.18.10-jdk5 ([#821](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/821)) ([67f906a](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/67f906a6d12d6c9f1aad7ab52a915852214a31b2))
+* **deps:** update dependency ch.sbb.polarion.extensions:ch.sbb.polarion.extension.generic to v14.1.5 ([#818](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/818)) ([aae0031](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/aae00317f50283c6cfde770dfd1e7224694e5009))
+* **deps:** update dependency ch.sbb.polarion.extensions:ch.sbb.polarion.extension.generic to v14.1.6 ([#823](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/823)) ([5a7cbd3](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/5a7cbd394adcae937ee9d49d6287b7dfba7c5138))
+* **deps:** update dependency org.apache.tika:tika-core to v3.3.1 ([#814](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/814)) ([7054172](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/7054172817689c6e76d3e5eef042875c6e5316ba))
+* **deps:** update flying-saucer.version to v10 ([#819](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/819)) ([6e62f1e](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/6e62f1e4f37ba8fe6eba3bc6fbccb16d66892e3f))
+* more proper handling of images with empty source (prevent logging errors) ([#827](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/827)) ([161c48c](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/161c48c54718b2af6e1e202def2470a968ef3e16))
+* use correct enum names for PDF variant fallback values ([#813](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/813)) ([42217b4](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/42217b49520801210a7343e829b145964f66fbf2)), closes [#812](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/812)
+
+## [12.4.2](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v12.4.1...v12.4.2) (2026-05-20)
+
+
+### Bug Fixes
+
+* **deps:** update dependency ch.sbb.polarion.extensions:ch.sbb.polarion.extension.generic to v14.1.4 ([#805](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/805)) ([103da4e](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/103da4ea47d36b5674678ab59cd19444e51535f8))
+* **deps:** update dependency com.helger:ph-css to v8.2.1 ([#806](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/806)) ([e7b0375](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/e7b03754dba93272fdf6fac14e8c6ea679065667))
+* improve mime type detection and error handling in MediaUtils ([#801](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/801)) ([3eca83f](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/3eca83f159e5224e785ababcbdd8684bbd9a8bc4)), closes [#800](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/800)
+* when author of a comment was deleted as a user in polarion, generation of pdf shouldn't fail ([#804](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/804)) ([03b38fe](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/03b38fee1c0234db076d4fbc51a27fe62133ed7b))
+
 ## [12.4.1](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v12.4.0...v12.4.1) (2026-05-04)
 
 

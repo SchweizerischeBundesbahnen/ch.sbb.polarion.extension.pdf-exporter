@@ -7,6 +7,7 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.MergeSession
 import ch.sbb.polarion.extension.pdf_exporter.util.DebugDataStorage;
 import ch.sbb.polarion.extension.pdf_exporter.util.ExportContext;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.service.WeasyPrintServiceConnector;
+import com.polarion.core.util.StringUtils;
 import com.polarion.core.util.logging.Logger;
 import com.polarion.platform.security.ISecurityService;
 import lombok.Builder;
@@ -62,7 +63,7 @@ public class PdfConverterJobsService {
             } catch (Exception e) {
                 String errorMessage = String.format("PDF conversion job '%s' is failed with error: %s", jobId, e.getMessage());
                 logger.error(errorMessage, e);
-                failedJobsReasons.put(jobId, e.getMessage());
+                failedJobsReasons.put(jobId, StringUtils.getEmptyIfNull(e.getMessage()));
                 throw e;
             } finally {
                 // Clear current job ID
@@ -77,7 +78,7 @@ public class PdfConverterJobsService {
         asyncConversionJob
                 .orTimeout(timeoutInMinutes, TimeUnit.MINUTES)
                 .exceptionally(e -> {
-                    String failedReason = e.getMessage();
+                    String failedReason = StringUtils.getEmptyIfNull(e.getMessage());
                     if (e instanceof TimeoutException) {
                         failedReason = String.format("Timeout after %d min", timeoutInMinutes);
                     }

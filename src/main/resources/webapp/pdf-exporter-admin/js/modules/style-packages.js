@@ -1,6 +1,6 @@
 import ExtensionContext from '../../ui/generic/js/modules/ExtensionContext.js';
 import ConfigurationsPane from '../../ui/generic/js/modules/ConfigurationsPane.js';
-import CustomSelect from '../../ui/generic/js/modules/CustomSelect.js';
+import SearchableDropdown from '../../ui/generic/js/modules/SearchableDropdown.js';
 import StylePackageUtils from './style-package-utils.js';
 
 const DEFAULT_SETTING_NAME = "Default";
@@ -30,22 +30,22 @@ ctx.onBlur(
 );
 
 const ChildConfigurations = {
-    cssSelect: new CustomSelect({
+    cssSelect: new SearchableDropdown({
         selectContainer: ctx.getElementById("css-select"),
         label: ctx.getElementById("css-select-label")
     }),
-    headerFooterSelect: new CustomSelect({
+    headerFooterSelect: new SearchableDropdown({
         selectContainer: ctx.getElementById("header-footer-select"),
         label: ctx.getElementById("header-footer-select-label")
     }),
-    localizationSelect: new CustomSelect({
+    localizationSelect: new SearchableDropdown({
         selectContainer: ctx.getElementById("localization-select"),
         label: ctx.getElementById("localization-select-label")
     }),
-    coverPageSelect: new CustomSelect({
+    coverPageSelect: new SearchableDropdown({
         selectContainer: ctx.getElementById("cover-page-select")
     }),
-    webhooksSelect: new CustomSelect({
+    webhooksSelect: new SearchableDropdown({
         selectContainer: ctx.getElementById("webhooks-select")
     }),
 
@@ -97,7 +97,7 @@ const ChildConfigurations = {
 }
 
 const LinkRoles = {
-    rolesSelect: new CustomSelect({
+    rolesSelect: new SearchableDropdown({
         selectContainer: ctx.getElementById("roles-select"),
         multiselect: true
     }),
@@ -126,7 +126,7 @@ const LinkRoles = {
 }
 
 const PaperSizes = {
-    paperSizeSelect: new CustomSelect({
+    paperSizeSelect: new SearchableDropdown({
         selectContainer: ctx.getElementById("paper-size-select"),
         label: ctx.getElementById("paper-size-label")
     }),
@@ -146,7 +146,7 @@ const PaperSizes = {
 }
 
 const Orientations = {
-    orientationSelect: new CustomSelect({
+    orientationSelect: new SearchableDropdown({
         selectContainer: ctx.getElementById("orientation-select"),
         label: ctx.getElementById("orientation-label")
     }),
@@ -158,7 +158,7 @@ const Orientations = {
 }
 
 const PdfVariants = {
-    pdfVariantSelect: new CustomSelect({
+    pdfVariantSelect: new SearchableDropdown({
         selectContainer: ctx.getElementById("pdf-variant-select"),
         label: ctx.getElementById("pdf-variant-label")
     }),
@@ -181,7 +181,7 @@ const PdfVariants = {
 }
 
 const ImageDensity = {
-    imageDensitySelect: new CustomSelect({
+    imageDensitySelect: new SearchableDropdown({
         selectContainer: ctx.getElementById("image-density-select"),
         label: ctx.getElementById("image-density-label")
     }),
@@ -195,9 +195,8 @@ const ImageDensity = {
 }
 
 const RenderComments = {
-    renderCommentsSelect: new CustomSelect({
-        selectContainer: ctx.getElementById("render-comments-select"),
-        label: ctx.getElementById("render-comments-label")
+    renderCommentsSelect: new SearchableDropdown({
+        selectContainer: ctx.getElementById("render-comments-select")
     }),
 
     init: function () {
@@ -207,7 +206,7 @@ const RenderComments = {
 }
 
 const Languages = {
-    languageSelect: new CustomSelect({
+    languageSelect: new SearchableDropdown({
         selectContainer: ctx.getElementById("language-select")
     }),
 
@@ -219,7 +218,7 @@ const Languages = {
 }
 
 const LinkRoleDirections = {
-    linkRoleDirectionSelect: new CustomSelect({
+    linkRoleDirectionSelect: new SearchableDropdown({
         selectContainer: ctx.getElementById("roles-direction-select")
     }),
 
@@ -272,6 +271,7 @@ function saveStylePackage() {
             'testcaseFieldId': ctx.getCheckboxValueById('download-attachments') ? ctx.getValueById('testcase-field-id') : null,
             'embedAttachments': ctx.getCheckboxValueById('download-attachments') && ctx.getCheckboxValueById('embed-attachments'),
             'fullFonts': ctx.getCheckboxValueById('full-fonts'),
+            'workItemsQuery': ctx.getCheckboxValueById('work-items-query-checkbox') ? ctx.getValueById('work-items-query') : null,
         }),
         onOk: () => {
             ctx.showSaveSuccessAlert();
@@ -349,6 +349,10 @@ function setStylePackage(content) {
     ctx.setCheckboxValueById('metadata-fields', !!stylePackage.metadataFields);
     ctx.getElementById('metadata-fields').dispatchEvent(new Event('change'));
     ctx.setValueById('metadata-fields-input', stylePackage.metadataFields || "");
+
+    ctx.setCheckboxValueById('work-items-query-checkbox', !!stylePackage.workItemsQuery);
+    ctx.getElementById('work-items-query-checkbox').dispatchEvent(new Event('change'));
+    ctx.setValueById('work-items-query', stylePackage.workItemsQuery || "");
 
     ctx.setCheckboxValueById('custom-list-styles', !!stylePackage.customNumberedListStyles);
     ctx.getElementById('custom-list-styles').dispatchEvent(new Event('change'));

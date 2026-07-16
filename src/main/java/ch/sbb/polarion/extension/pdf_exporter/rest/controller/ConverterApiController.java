@@ -17,10 +17,10 @@ import org.jetbrains.annotations.VisibleForTesting;
 import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
 
-import javax.inject.Singleton;
-import javax.ws.rs.Path;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
+import jakarta.inject.Singleton;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriInfo;
 
 @Singleton
 @Secured
@@ -36,7 +36,7 @@ public class ConverterApiController extends ConverterInternalController {
     @VisibleForTesting
     @SuppressWarnings("squid:S5803")
     ConverterApiController(PdfExporterPolarionService pdfExporterPolarionService, PdfConverter pdfConverter, PdfWidthValidationService pdfWidthValidationService, PdfConverterJobsService pdfConverterJobService, UriInfo uriInfo, HtmlToPdfConverter htmlToPdfConverter) {
-        super(pdfConverter, pdfWidthValidationService, pdfConverterJobService, uriInfo, htmlToPdfConverter);
+        super(pdfConverter, pdfWidthValidationService, pdfConverterJobService, uriInfo, htmlToPdfConverter, pdfExporterPolarionService);
         this.polarionService = pdfExporterPolarionService;
     }
 

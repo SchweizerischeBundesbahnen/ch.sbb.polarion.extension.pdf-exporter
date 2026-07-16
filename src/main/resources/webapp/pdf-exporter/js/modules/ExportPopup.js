@@ -1,5 +1,6 @@
 import ExportParams from "./ExportParams.js";
 import ExportContext from "./ExportContext.js";
+import { initSearchableDropdowns } from "../../generic/js/modules/searchableSelect.js";
 
 export default class ExportPopup {
 
@@ -14,16 +15,23 @@ export default class ExportPopup {
     }
 
     initPopup() {
-        document.getElementById(POPUP_ID)?.remove();
-        const popup = document.createElement('div');
-        popup.classList.add("modal");
-        popup.classList.add("micromodal-slide");
-        popup.id = POPUP_ID;
+        // Reuse the popup element across opens. The shared generic micromodal caches one Modal per
+        // id bound to the element it first saw, so rebuilding the element would leave that cache
+        // pointing at a detached node and later opens (e.g. after editing/saving the document) would
+        // silently do nothing.
+        let popup = document.getElementById(POPUP_ID);
+        if (!popup) {
+            popup = document.createElement('div');
+            popup.classList.add("modal", "micromodal-slide");
+            popup.id = POPUP_ID;
+            document.body.appendChild(popup);
+        }
         popup.setAttribute("aria-hidden", "true");
         popup.innerHTML = POPUP_HTML;
-        document.body.appendChild(popup);
 
-        fetch('/polarion/pdf-exporter/html/popupForm.html')
+        // Derive the form URL from this module's own URL so it follows the same extension base as
+        // the toolbar import instead of a hardcoded /polarion/pdf-exporter/ context.
+        fetch(new URL('../../../html/popupForm.html', import.meta.url).href)
             .then(response => response.text())
             .then(content => {
                 this.renderPanel(content);
@@ -56,7 +64,21 @@ export default class ExportPopup {
         });
         this.ctx.displayIf("popup-style-package", !this.autoSelectStylePackageAvailable());
 
+        this._initDropdowns();
         this.openPopup();
+    }
+
+    // Upgrade the popup's single-value <select>s to the shared Polarion-styled SearchableDropdown.
+    // Options are populated asynchronously — the component observes option/visibility changes and
+    // keeps itself in sync. 'popup-roles-selector' is intentionally excluded (multi-select).
+    _initDropdowns() {
+        initSearchableDropdowns(this.ctx, [
+            'popup-style-package-select', 'popup-cover-page-selector', 'popup-css-selector',
+            'popup-header-footer-selector', 'popup-localization-selector', 'popup-webhooks-selector',
+            'popup-paper-size-selector', 'popup-orientation-selector', 'popup-pdf-variant-selector',
+            'popup-image-density-selector', 'popup-render-comments-selector', 'popup-language',
+            'popup-roles-direction-selector'
+        ], 'popup-roles-selector');
     }
 
     openPopup() {
@@ -86,9 +108,9 @@ export default class ExportPopup {
         }
 
         function toggleOptionalPropertyBlocks(documentType, action, ctx) {
-            ctx.querySelectorAll(`.property-wrapper.visible-for-${documentType}`)
+            ctx.querySelectorAll(`.visible-for-${documentType}`)
                 .forEach(propertyBlock => propertyBlock.style.display = action);
-            ctx.querySelectorAll(`.property-wrapper.not-visible-for-${documentType}`)
+            ctx.querySelectorAll(`.not-visible-for-${documentType}`)
                 .forEach(propertyBlock => propertyBlock.style.display = Action.getOpposite(action));
         }
 
@@ -96,7 +118,11 @@ export default class ExportPopup {
         toggleOptionalPropertyBlocks(this.ctx.getDocumentType(), Action.SHOW, this.ctx);
         toggleOptionalPropertyBlocks(this.ctx.getExportType(), Action.SHOW, this.ctx);
 
-        MicroModal.show(POPUP_ID);
+        MicroModal.show(POPUP_ID, {
+            // Move focus out of the modal before micromodal sets aria-hidden on close, otherwise
+            // the browser blocks aria-hidden on the still-focused overlay (accessibility warning).
+            onClose: () => document.activeElement && document.activeElement.blur()
+        });
     }
 
     closePopup() {
@@ -171,11 +197,18 @@ export default class ExportPopup {
         });
     }
 
+    // Work-item link roles apply only to documents and baseline collections (single or bulk alike;
+    // bulk just runs the per-document conversion for each selected item). This mirrors the roles
+    // row's visible-for-LIVE_DOC / visible-for-BASELINE_COLLECTION markup — reports, test runs and
+    // wiki pages carry no link roles, so their selector has no data and stays hidden.
+    rolesSelectable() {
+        return this.ctx.getDocumentType() === ExportParams.DocumentType.LIVE_DOC
+            || this.ctx.getDocumentType() === ExportParams.DocumentType.BASELINE_COLLECTION;
+    }
+
     loadLinkRoles() {
-        if (this.ctx.getDocumentType() === ExportParams.DocumentType.LIVE_REPORT
-            || this.ctx.getDocumentType() === ExportParams.DocumentType.TEST_RUN
-            || this.ctx.getExportType() === ExportParams.ExportType.BULK) {
-            return Promise.resolve(); // Skip loading link roles for reports, test runs and bulk export
+        if (!this.rolesSelectable()) {
+            return Promise.resolve(); // Skip loading link roles where they don't apply (reports, test runs, wiki pages)
         }
 
         return new Promise((resolve, reject) => {
@@ -322,7 +355,7 @@ export default class ExportPopup {
         this.ctx.setValue("popup-headers-color", stylePackage.headersColor);
         this.ctx.setValue("popup-paper-size-selector", stylePackage.paperSize || ExportParams.PaperSize.A4);
         this.ctx.setValue("popup-orientation-selector", stylePackage.orientation || ExportParams.Orientation.PORTRAIT);
-        this.ctx.setValue("popup-pdf-variant-selector", stylePackage.pdfVariant || ExportParams.PdfVariant.PDF_A_2B);
+        this.ctx.setValue("popup-pdf-variant-selector", stylePackage.pdfVariant || 'PDF_A_2B');
         this.ctx.setValue("popup-image-density-selector", stylePackage.imageDensity || ExportParams.ImageDensity.DPI_96);
         this.ctx.setCheckbox("popup-full-fonts", stylePackage.fullFonts);
         this.ctx.setCheckbox("popup-fit-to-page", stylePackage.fitToPage);
@@ -354,6 +387,15 @@ export default class ExportPopup {
         this.ctx.setValue("popup-metadata-fields-input", stylePackage.metadataFields || "");
         this.ctx.visibleIf("popup-metadata-fields-input", stylePackage.metadataFields);
 
+        // URL `?query=` (e.g. the document opened with a filter) takes priority
+        // over the style-package default — the user is already viewing a filtered
+        // document and the export should match it by default.
+        const urlQuery = this.ctx.getUrlQueryParameters()?.query;
+        const initialWorkItemsQuery = urlQuery || stylePackage.workItemsQuery || "";
+        this.ctx.setCheckbox("popup-work-items-query", !!initialWorkItemsQuery);
+        this.ctx.setValue("popup-work-items-query-input", initialWorkItemsQuery);
+        this.ctx.visibleIf("popup-work-items-query-input", initialWorkItemsQuery);
+
         this.ctx.setCheckbox("popup-localization", stylePackage.language);
         let languageValue;
         if (stylePackage.exposeSettings && stylePackage.language && this.documentLanguage) {
@@ -379,9 +421,17 @@ export default class ExportPopup {
                 });
             }
         }
-        this.ctx.displayIf("popup-roles-selector", this.ctx.getExportType() !== ExportParams.ExportType.BULK && rolesProvided, "block");
+        // Roles were selected via raw option.selected; sync the multiselect widget so its chips
+        // reflect them — but only when the selector is actually shown. Types without link roles
+        // (reports, test runs, wiki pages) skip loadLinkRoles, so their options aren't loaded and
+        // the selector stays hidden; syncing there would read stale/empty options into a hidden widget.
+        const showRoles = this.rolesSelectable() && rolesProvided;
+        if (showRoles) {
+            this.ctx.getElementById("popup-roles-selector")?._searchableDropdown?.syncFromElement();
+        }
+        this.ctx.displayIf("popup-roles-selector", showRoles, "block");
         this.ctx.setValue("popup-roles-direction-selector", stylePackage.linkRoleDirection || ExportParams.LinkRoleDirection.BOTH);
-        this.ctx.displayIf("popup-roles-direction-selector", this.ctx.getExportType() !== ExportParams.ExportType.BULK && rolesProvided, "block");
+        this.ctx.displayIf("popup-roles-direction-selector", showRoles, "block");
 
         this.ctx.displayIf("popup-style-package-content",
             (!this.autoSelectStylePackageAvailable() || !this.ctx.getCheckboxValueById("popup-auto-select-style-package")) && stylePackage.exposeSettings);
@@ -409,7 +459,7 @@ export default class ExportPopup {
 
         this.callAsync({
             method: "POST",
-            url: "/polarion/pdf-exporter/rest/internal/validate?max-results=5",
+            url: `/polarion/pdf-exporter/rest/internal/validate?max-results=${MAX_PAGE_PREVIEWS + 1}`,
             body: exportParams.toJSON(),
             responseType: "json"
         }).then(({response}) => {
@@ -563,7 +613,10 @@ export default class ExportPopup {
         }
 
         const selectedRoles = [];
-        if (this.ctx.getElementById("popup-selected-roles").checked) {
+        // Only serialize roles where they apply. The popup element is reused, so an export type
+        // without link roles must not send stale role options left checked and selected by a
+        // previous document export.
+        if (this.rolesSelectable() && this.ctx.getElementById("popup-selected-roles").checked) {
             const selectedOptions = Array.from(this.ctx.getElementById("popup-roles-selector").options).filter(opt => opt.selected);
             selectedRoles.push(...selectedOptions.map(opt => opt.value));
         }
@@ -614,13 +667,23 @@ export default class ExportPopup {
             .setLinkedWorkitemRoles(selectedRoles)
             .setLinkRoleDirection(selectedRoles.length > 0 ? this.ctx.getElementById("popup-roles-direction-selector").value : null)
             .setFileName(fileName)
-            .setUrlQueryParameters(this.ctx.getUrlQueryParameters())
+            .setUrlQueryParameters(this.buildUrlQueryParameters(live_doc, collection))
             .setAttachmentsFilter(test_run && this.ctx.getElementById("popup-download-attachments").checked ? attachmentsFilter ?? '' : null)
             .setTestcaseFieldId(test_run && this.ctx.getElementById("popup-download-attachments").checked && testcaseFieldId ? testcaseFieldId : null)
             .setEmbedAttachments(test_run && this.ctx.getElementById("popup-download-attachments").checked && this.ctx.getElementById("popup-embed-attachments").checked)
             .setImageDensity(this.ctx.getElementById("popup-image-density-selector").value)
             .setFullFonts(this.ctx.getElementById("popup-full-fonts").checked)
             .build();
+    }
+
+    buildUrlQueryParameters(liveDoc, collection) {
+        const urlQueryParams = { ...this.ctx.getUrlQueryParameters() };
+        if ((liveDoc || collection) && this.ctx.getElementById("popup-work-items-query").checked) {
+            urlQueryParams.query = this.ctx.getElementById("popup-work-items-query-input").value || "";
+        } else {
+            delete urlQueryParams.query;
+        }
+        return urlQueryParams;
     }
 
     getSelectedChapters() {

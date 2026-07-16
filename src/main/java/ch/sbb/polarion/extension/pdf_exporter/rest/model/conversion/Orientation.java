@@ -3,8 +3,8 @@ package ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import io.swagger.v3.oas.annotations.media.Schema;
 
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.Response;
 
 @Schema(description = "Orientation of the output document")
 public enum Orientation {

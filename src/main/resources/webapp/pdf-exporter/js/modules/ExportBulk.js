@@ -1,7 +1,7 @@
 import ExportParams from "./ExportParams.js";
 import ExportContext from "./ExportContext.js";
 import ExportPopup from "./ExportPopup.js";
-import('./../micromodal.min.js');
+import('../../generic/js/micromodal.min.js');
 
 export default class ExportBulk {
     ctx = null;
@@ -111,6 +111,9 @@ export default class ExportBulk {
 
         MicroModal.show(BULK_POPUP_ID, {
             onClose: () => {
+                // move focus out of the modal before micromodal sets aria-hidden, otherwise the
+                // browser blocks aria-hidden on the still-focused overlay (accessibility warning)
+                if (document.activeElement) document.activeElement.blur();
                 // remove popup after usage otherwise it leads to extra UI artifacts creation after page edit
                 this.removePopupIfExists();
             }
@@ -153,8 +156,10 @@ export default class ExportBulk {
             const fontAwesomeIcon = document.createElement("i");
             fontAwesomeIcon.className = "fa";
             iconSpan.appendChild(fontAwesomeIcon);
-            const inProgressIcon = document.createElement("img");
-            inProgressIcon.src = '/polarion/ria/images/progress.gif';
+            const inProgressIcon = document.createElement("span");
+            inProgressIcon.className = "sbb-spinner";
+            inProgressIcon.setAttribute("role", "img");
+            inProgressIcon.setAttribute("aria-label", "In progress");
             iconSpan.appendChild(inProgressIcon);
             div.appendChild(iconSpan);
 
@@ -261,7 +266,7 @@ export default class ExportBulk {
             this.exportParams["documentType"] = documentType;
             const documentId = currentItem.dataset["id"];
             if (documentType === ExportParams.DocumentType.TEST_RUN) {
-                this.exportParams["urlQueryParameters"] = {id: documentId};
+                this.exportParams["urlQueryParameters"] = {...(this.exportParams["urlQueryParameters"] || {}), id: documentId};
                 if (this.exportParams.attachmentsFilter !== null && !this.exportParams.embedAttachments) {
                     this.ctx.downloadTestRunAttachments(this.exportParams.projectId, documentId, this.exportParams.revision, this.exportParams.attachmentsFilter, this.exportParams.testcaseFieldId);
                 }

@@ -15,6 +15,7 @@ import com.polarion.alm.tracker.model.baselinecollection.IBaselineCollectionElem
 import com.polarion.subterra.base.location.ILocation;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.MockedConstruction;
 import org.mockito.Mockito;
 
@@ -117,13 +118,15 @@ class DocumentCollectionHelperTest {
         IRichPage mockPage2 = mock(IRichPage.class, RETURNS_DEEP_STUBS);
 
         when(mockPage1.getProjectId()).thenReturn(projectId);
-        when(mockPage1.getPageNameWithSpace()).thenReturn("Reports/TestReport");
+        // getPageNameWithSpace() returns a human-readable "<space> / <name>" string (note the spaces around
+        // the slash) which is NOT a resolvable location path - the helper must not rely on it (see issue #851).
+        when(mockPage1.getPageNameWithSpace()).thenReturn("Reports / TestReport");
         when(mockPage1.getPageName()).thenReturn("TestReport");
         when(mockPage1.getRevision()).thenReturn("10");
         when(mockPage1.getFolder().getName()).thenReturn("Reports");
 
         when(mockPage2.getProjectId()).thenReturn(secondProjectId);
-        when(mockPage2.getPageNameWithSpace()).thenReturn("_default/LiveReport");
+        when(mockPage2.getPageNameWithSpace()).thenReturn("LiveReport");
         when(mockPage2.getPageName()).thenReturn("LiveReport");
         when(mockPage2.getRevision()).thenReturn("5");
         when(mockPage2.getFolder().getName()).thenReturn("_default");
@@ -210,6 +213,59 @@ class DocumentCollectionHelperTest {
             assertEquals("LiveReport", resultWithRevision.get(4).getDocumentName());
             assertEquals(DocumentType.LIVE_REPORT, resultWithRevision.get(4).getDocumentType());
             assertEquals("5", resultWithRevision.get(4).getRevision());
+        }
+    }
+
+    /**
+     * Regression test for issue #851: a report page located in a space other than {@code _default} must produce a
+     * resolvable location path ({@code <space>/<pageId>}). The previously used {@link IRichPage#getPageNameWithSpace()}
+     * returns a human-readable {@code "<space> / <pageName>"} string (note the spaces around the slash) which, once
+     * split on the last slash by {@code RichPageReference.fromPath}, yields an unresolvable rich page URI and breaks
+     * the whole collection export.
+     */
+    @Test
+    void testReportInNonDefaultSpaceProducesResolvableLocationPath() {
+        DocumentFileNameHelper documentFileNameHelper = mock(DocumentFileNameHelper.class);
+        when(documentFileNameHelper.getDocumentFileName(any())).thenReturn("report.pdf");
+
+        DocumentCollectionHelper helper = new DocumentCollectionHelper(documentFileNameHelper);
+
+        IRichPage reportPage = mock(IRichPage.class, RETURNS_DEEP_STUBS);
+        when(reportPage.getProjectId()).thenReturn("drivepilot");
+        // The human-readable, NON-resolvable representation - the helper must not rely on it.
+        when(reportPage.getPageNameWithSpace()).thenReturn("Reports / Items By Status");
+        when(reportPage.getPageName()).thenReturn("Items By Status");
+        when(reportPage.getFolder().getName()).thenReturn("Reports");
+        when(reportPage.getRevision()).thenReturn("42");
+
+        IBaselineCollection mockCollection = mock(IBaselineCollection.class);
+        when(mockCollection.getElements()).thenReturn(List.of());
+        when(mockCollection.getUpstreamCollections()).thenReturn(List.of());
+        when(mockCollection.getRichPages()).thenReturn(List.of(reportPage));
+
+        BaselineCollection baselineCollection = mock(BaselineCollection.class);
+        when(baselineCollection.getOldApi()).thenReturn(mockCollection);
+
+        try (MockedConstruction<BaselineCollectionReference> ignored = mockConstruction(BaselineCollectionReference.class, (mock, context) -> {
+            when(mock.get(Mockito.any())).thenReturn(baselineCollection);
+            when(mock.getWithRevision(Mockito.anyString())).thenReturn(mock);
+        })) {
+            List<DocumentCollectionEntry> result = helper.getDocumentsFromCollection("drivepilot", "1", null, mock(ReadOnlyTransaction.class));
+
+            assertNotNull(result);
+            assertEquals(1, result.size());
+            assertEquals("Reports", result.get(0).getSpaceId());
+            assertEquals("Items By Status", result.get(0).getDocumentName());
+            assertEquals(DocumentType.LIVE_REPORT, result.get(0).getDocumentType());
+
+            ArgumentCaptor<ExportParams> exportParamsCaptor = ArgumentCaptor.forClass(ExportParams.class);
+            verify(documentFileNameHelper).getDocumentFileName(exportParamsCaptor.capture());
+            ExportParams capturedParams = exportParamsCaptor.getValue();
+
+            assertEquals("Reports/Items By Status", capturedParams.getLocationPath());
+            assertEquals("drivepilot", capturedParams.getProjectId());
+            assertEquals(DocumentType.LIVE_REPORT, capturedParams.getDocumentType());
+            assertEquals("42", capturedParams.getRevision());
         }
     }
 }

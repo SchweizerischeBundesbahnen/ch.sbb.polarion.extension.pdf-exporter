@@ -10,7 +10,12 @@ import com.polarion.core.config.impl.SystemValueReader;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Discoverable
 public class PdfExporterExtensionConfiguration extends ExtensionConfiguration {
@@ -28,6 +33,12 @@ public class PdfExporterExtensionConfiguration extends ExtensionConfiguration {
     public static final String WEBHOOKS_ENABLED = "webhooks.enabled";
     public static final String WEBHOOKS_ENABLED_DESCRIPTION = "Enable <a href='#enabling-webhooks'>webhooks</a>";
     public static final Boolean WEBHOOKS_ENABLED_DEFAULT_VALUE = false;
+
+    public static final String RENDERABLE_IMAGE_EXTENSIONS = "renderable.image.extensions";
+    public static final String RENDERABLE_IMAGE_EXTENSIONS_DESCRIPTION = "Comma-separated <a href='#renderable-image-extensions'>list of file extensions the exporter can embed as a full-size image</a>";
+    protected static final Set<String> RENDERABLE_IMAGE_EXTENSIONS_DEFAULT_VALUE = new LinkedHashSet<>(List.of(
+            "png", "jpg", "jpeg", "gif", "bmp", "svg", "webp", "avif", "ico", "cur", "tif", "tiff", "vsdx"
+    ));
 
     @Override
     public String getDebugDescription() {
@@ -86,12 +97,40 @@ public class PdfExporterExtensionConfiguration extends ExtensionConfiguration {
         return String.valueOf(WEBHOOKS_ENABLED_DEFAULT_VALUE);
     }
 
+    @PropertyMapping(RENDERABLE_IMAGE_EXTENSIONS)
+    public String getRenderableImageExtensionsValue() {
+        return SystemValueReader.getInstance().readString(getPropertyPrefix() + RENDERABLE_IMAGE_EXTENSIONS, String.join(", ", RENDERABLE_IMAGE_EXTENSIONS_DEFAULT_VALUE));
+    }
+
+    @NotNull
+    public Set<String> getRenderableImageExtensions() {
+        String value = getRenderableImageExtensionsValue();
+        return Arrays.stream(value.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .map(s -> s.toLowerCase(Locale.ROOT))
+                .collect(Collectors.toUnmodifiableSet());
+    }
+
+    @SuppressWarnings("unused")
+    @PropertyMappingDescription(RENDERABLE_IMAGE_EXTENSIONS)
+    public String getRenderableImageExtensionsDescription() {
+        return RENDERABLE_IMAGE_EXTENSIONS_DESCRIPTION;
+    }
+
+    @SuppressWarnings("unused")
+    @PropertyMappingDefaultValue(RENDERABLE_IMAGE_EXTENSIONS)
+    public String getRenderableImageExtensionsDefaultValue() {
+        return String.join(", ", RENDERABLE_IMAGE_EXTENSIONS_DEFAULT_VALUE);
+    }
+
     @Override
     public @NotNull List<String> getSupportedProperties() {
         List<String> supportedProperties = new ArrayList<>(super.getSupportedProperties());
         supportedProperties.add(WEASYPRINT_SERVICE);
         supportedProperties.add(BULK_EXPORT_SERVICE);
         supportedProperties.add(WEBHOOKS_ENABLED);
+        supportedProperties.add(RENDERABLE_IMAGE_EXTENSIONS);
         return supportedProperties;
     }
 
