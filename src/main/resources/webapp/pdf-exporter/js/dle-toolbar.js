@@ -26,7 +26,13 @@
         .replace(/dle-toolbar\.js.*$/, 'starter.js') || '/polarion/pdf-exporter/js/starter.js';
     const script = document.createElement('script');
     script.src = starterSrc;
-    script.onload = injectToolbar;
+    script.onload = function () {
+        if (window.PdfExporterStarter) {
+            injectToolbar();
+        } else {
+            console.error("pdf-exporter: starter.js loaded but PdfExporterStarter is not defined — DLE toolbar button injection skipped.");
+        }
+    };
     script.onerror = function () {
         console.error("pdf-exporter: failed to load starter.js — DLE toolbar button injection skipped.");
     };

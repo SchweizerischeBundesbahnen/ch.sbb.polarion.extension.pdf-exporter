@@ -16,33 +16,42 @@ public class LiveReportMainHeadStatusProvider extends ConfigurationStatusProvide
     // Recommended single-tag Live Reports loader.
     public static final String LIVE_REPORT_BUTTON_SCRIPT_REGEX = "(.*)<script src=\"/polarion/pdf-exporter/js/live-reports.js[^\"]*\"></script>(.*)";
     // Deprecated form (loads starter.js, which also drags in the DLE toolbar engine).
-    public static final String DEPRECATED_LIVE_REPORT_BUTTON_SCRIPT_REGEX = "(.*)<script src=\"/polarion/pdf-exporter/js/starter.js\"></script>(.*)";
+    public static final String DEPRECATED_LIVE_REPORT_BUTTON_SCRIPT_REGEX = "(.*)<script src=\"/polarion/pdf-exporter/js/starter.js[^\"]*\"></script>(.*)";
     public static final String NOT_CONFIGURED = "Not configured";
     public static final String DEPRECATED_DETAILS = "Deprecated configuration. Replace it with the single tag "
             + "<script src=\"/polarion/pdf-exporter/js/live-reports.js\"></script>";
 
+    // Ordered best-to-worst; when the two property sources disagree the lower ordinal wins.
+    private enum ConfigForm {
+        RECOMMENDED, DEPRECATED, MISSING
+    }
+
     @Override
     public @NotNull ConfigurationStatus getStatus(@NotNull Context context) {
-        ConfigurationStatus systemStatus = classify(ScriptInjectionPropertiesProvider.getScriptInjectionSystemProperties().mainHead());
-        ConfigurationStatus runtimeStatus = classify(ScriptInjectionPropertiesProvider.getScripInjectionRuntimeProperties().mainHead());
-        // Prefer the better-configured of the two property sources (system wins on a tie).
-        return rank(systemStatus) >= rank(runtimeStatus) ? systemStatus : runtimeStatus;
+        ConfigForm system = evaluate(ScriptInjectionPropertiesProvider.getScriptInjectionSystemProperties().mainHead());
+        ConfigForm runtime = evaluate(ScriptInjectionPropertiesProvider.getScripInjectionRuntimeProperties().mainHead());
+        // Prefer the better-configured source (system wins on a tie).
+        return toStatus(system.ordinal() <= runtime.ordinal() ? system : runtime);
     }
 
-    private @NotNull ConfigurationStatus classify(@Nullable String mainHead) {
-        if (mainHead != null && RegexMatcher.get(LIVE_REPORT_BUTTON_SCRIPT_REGEX).anyMatch(mainHead)) {
-            return new ConfigurationStatus(LIVE_REPORT_BUTTON, Status.OK);
+    private @NotNull ConfigForm evaluate(@Nullable String mainHead) {
+        if (mainHead == null) {
+            return ConfigForm.MISSING;
         }
-        if (mainHead != null && RegexMatcher.get(DEPRECATED_LIVE_REPORT_BUTTON_SCRIPT_REGEX).anyMatch(mainHead)) {
-            return new ConfigurationStatus(LIVE_REPORT_BUTTON, Status.WARNING, DEPRECATED_DETAILS);
+        if (RegexMatcher.get(LIVE_REPORT_BUTTON_SCRIPT_REGEX).anyMatch(mainHead)) {
+            return ConfigForm.RECOMMENDED;
         }
-        return new ConfigurationStatus(LIVE_REPORT_BUTTON, Status.WARNING, NOT_CONFIGURED);
+        if (RegexMatcher.get(DEPRECATED_LIVE_REPORT_BUTTON_SCRIPT_REGEX).anyMatch(mainHead)) {
+            return ConfigForm.DEPRECATED;
+        }
+        return ConfigForm.MISSING;
     }
 
-    private int rank(@NotNull ConfigurationStatus status) {
-        if (status.getStatus() == Status.OK) {
-            return 2;
-        }
-        return DEPRECATED_DETAILS.equals(status.getDetails()) ? 1 : 0;
+    private @NotNull ConfigurationStatus toStatus(@NotNull ConfigForm form) {
+        return switch (form) {
+            case RECOMMENDED -> new ConfigurationStatus(LIVE_REPORT_BUTTON, Status.OK);
+            case DEPRECATED -> new ConfigurationStatus(LIVE_REPORT_BUTTON, Status.WARNING, DEPRECATED_DETAILS);
+            case MISSING -> new ConfigurationStatus(LIVE_REPORT_BUTTON, Status.WARNING, NOT_CONFIGURED);
+        };
     }
 }

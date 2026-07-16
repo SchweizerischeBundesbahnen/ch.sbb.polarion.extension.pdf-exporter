@@ -41,6 +41,7 @@ class LiveReportMainHeadStatusProviderTest {
 
         return Stream.of(
                 Arguments.of("", "", notConfigured),
+                Arguments.of(null, null, notConfigured),
 
                 // Recommended single-tag form → OK.
                 Arguments.of(CONFIG_NEW, "", ok),
