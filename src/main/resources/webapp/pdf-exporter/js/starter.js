@@ -7,9 +7,11 @@
  * PdfExporterStarter.injectToolbar({...}); the bootstrap below pulls the engine and queues
  * the call until it is ready.
  *
- * DEPRECATED: the explicit PdfExporterStarter.injectToolbar(...) config is superseded by the
- * single-tag /polarion/pdf-exporter/js/dle-toolbar.js injector (adds the toolbar button without a
- * second script tag). It keeps working for backward compatibility; removal is a future major bump.
+ * DEPRECATED: this script is superseded by two dedicated single-tag injectors —
+ * /polarion/pdf-exporter/js/dle-toolbar.js for the document-editor toolbar button (replaces
+ * PdfExporterStarter.injectToolbar(...)), and /polarion/pdf-exporter/js/live-reports.js for the
+ * Live Reports export button (replaces loading starter.js via scriptInjection.mainHead). It keeps
+ * working for backward compatibility; removal is a future major bump.
  */
 (function () {
     const timestampParam = `?timestamp=${Date.now()}`;

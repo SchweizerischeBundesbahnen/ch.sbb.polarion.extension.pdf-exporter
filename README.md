@@ -124,9 +124,18 @@ First of all you need to inject appropriate JavaScript code into Polarion:
 3. On the administration's navigation pane select Configuration Properties.
 4. In editor of opened page add following line:
    ```properties
-   scriptInjection.mainHead=<script src="/polarion/pdf-exporter/js/starter.js"></script>
+   scriptInjection.mainHead=<script src="/polarion/pdf-exporter/js/live-reports.js"></script>
    ```
 5. Save changes by clicking 💾 Save
+
+> [!NOTE]
+> `scriptInjection.mainHead` is a single Polarion-wide property that holds exactly one value. If you also inject other scripts through it, concatenate all the `<script>` tags into that one value rather than adding separate `scriptInjection.mainHead=` lines — the last one overrides the rest.
+
+The explicit `starter.js` form still works but is **deprecated** in favor of the single-tag `live-reports.js` form above (removal is planned for a future major version):
+
+```properties
+scriptInjection.mainHead=<script src="/polarion/pdf-exporter/js/starter.js"></script>
+```
 
 Then open a project, its Live Report you wish to export, and click "Expand Tools" on top of the page.
 As a result report's toolbar will appear. Click "Edit" button in a toolbar, as a result the report will be switched into an edit mode. Add an empty region on top of the report, place cursor there, choose "PDF Export" tag on "Widgets" sidebar on right hand side of the page, find "Export to PDF Button" widget there and click it to add to the report. Then save a report clicking 💾 in a toolbar and then return to a view mode clicking "Back" button. When you click "Export to PDF" button just added to the report, PDF Exporter view will be opened in a popup and you will be able to proceed with exporting the report to PDF. Be aware that in report's context limited set of properties are available for configuration in PDF popup, the rest of them are relevant only in Live Document context.

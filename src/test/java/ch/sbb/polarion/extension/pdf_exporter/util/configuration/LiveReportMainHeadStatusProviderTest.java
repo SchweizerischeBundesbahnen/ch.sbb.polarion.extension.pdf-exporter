@@ -17,28 +17,45 @@ import static org.mockito.Mockito.mockStatic;
 
 class LiveReportMainHeadStatusProviderTest {
 
-    public static final String CONFIG = "<script src=\"/polarion/pdf-exporter/js/starter.js\"></script>";
+    // Recommended single-tag Live Reports loader.
+    public static final String CONFIG_NEW = "<script src=\"/polarion/pdf-exporter/js/live-reports.js\"></script>";
+    // Deprecated form (loads starter.js).
+    public static final String CONFIG_DEPRECATED = "<script src=\"/polarion/pdf-exporter/js/starter.js\"></script>";
 
     public static Stream<Arguments> provideConfigurationStatus() {
-        ConfigurationStatus configurationStatusNotConfigured = ConfigurationStatus.builder()
+        ConfigurationStatus notConfigured = ConfigurationStatus.builder()
                 .name(LiveReportMainHeadStatusProvider.LIVE_REPORT_BUTTON)
                 .status(Status.WARNING)
-                .details("Not configured")
+                .details(LiveReportMainHeadStatusProvider.NOT_CONFIGURED)
                 .build();
-        ConfigurationStatus configurationStatusOk = ConfigurationStatus.builder()
+        ConfigurationStatus ok = ConfigurationStatus.builder()
                 .name(LiveReportMainHeadStatusProvider.LIVE_REPORT_BUTTON)
                 .status(Status.OK)
                 .details("")
                 .build();
+        ConfigurationStatus deprecated = ConfigurationStatus.builder()
+                .name(LiveReportMainHeadStatusProvider.LIVE_REPORT_BUTTON)
+                .status(Status.WARNING)
+                .details(LiveReportMainHeadStatusProvider.DEPRECATED_DETAILS)
+                .build();
 
         return Stream.of(
-                Arguments.of("", "", configurationStatusNotConfigured),
+                Arguments.of("", "", notConfigured),
 
-                Arguments.of(CONFIG, "", configurationStatusOk),
-                Arguments.of("", CONFIG, configurationStatusOk),
-                Arguments.of(CONFIG, CONFIG, configurationStatusOk),
+                // Recommended single-tag form → OK.
+                Arguments.of(CONFIG_NEW, "", ok),
+                Arguments.of("", CONFIG_NEW, ok),
+                Arguments.of(CONFIG_NEW, CONFIG_NEW, ok),
+                Arguments.of("<script></script> <script src=\"/polarion/pdf-exporter/js/live-reports.js\"></script> <script></script>", "", ok),
 
-                Arguments.of("<script> </script> <script src=\"/polarion/pdf-exporter/js/starter.js\"></script> <script></script>", "", configurationStatusOk)
+                // Deprecated starter.js form → WARNING with deprecation hint.
+                Arguments.of(CONFIG_DEPRECATED, "", deprecated),
+                Arguments.of("", CONFIG_DEPRECATED, deprecated),
+                Arguments.of(CONFIG_DEPRECATED, CONFIG_DEPRECATED, deprecated),
+
+                // The recommended form on either source wins over a deprecated form.
+                Arguments.of(CONFIG_NEW, CONFIG_DEPRECATED, ok),
+                Arguments.of(CONFIG_DEPRECATED, CONFIG_NEW, ok)
         );
     }
 
