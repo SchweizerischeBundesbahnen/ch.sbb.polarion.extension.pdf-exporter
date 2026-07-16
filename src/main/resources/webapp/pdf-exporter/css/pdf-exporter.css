@@ -267,9 +267,10 @@
 }
 
 /* The bulk export widget renders on a Polarion page, not inside a .form-wrapper / .modal__container,
-   so the shared 2606 checkbox styling (generic checkboxes.css) does not reach it. Re-apply it scoped
-   to the widget's own root — same tokens and images — rather than tagging the widget with the broad
-   .form-wrapper class, which would also opt it into unrelated form-field scopes. */
+   so the shared 2606 checkbox styling (generic checkboxes.css, scoped to those wrappers) does not
+   reach it. Re-apply it scoped to the widget's own root — same tokens and images. The widget root
+   carries .sbb-ui (see BulkPdfExportWidgetRenderer), which supplies the --sbb-* tokens these rules
+   consume without pulling in the unrelated form-field scopes. */
 .polarion-PdfExporter-BulkExportWidget input[type="checkbox"] {
     -webkit-appearance: none;
     appearance: none;
@@ -430,21 +431,36 @@
 }
 
 #export-error, #validate-error, #style-package-error {
-    display: inline-block;
+    display: block;
     color: red;
     font-weight: bold;
 }
 
 #export-warning {
-    display: inline-block;
+    display: block;
     color: orange;
     font-weight: bold;
 }
 
+/* Gap only when a message is actually present — these status divs are empty in the normal state, and
+   an unconditional margin on an empty block would permanently shift the following controls down. */
+#export-error:not(:empty), #validate-error:not(:empty), #style-package-error:not(:empty),
+#export-warning:not(:empty) {
+    margin-top: 6px;
+}
+
+/* Success message stays inline to the right of the Validate button (short text), vertically centred
+   against it. The error message, by contrast, is a full-width block below the button (long messages). */
 #validate-ok {
     display: inline-block;
+    vertical-align: middle;
     color: green;
     font-weight: bold;
+}
+
+/* Match the pattern above: no gap after the button when the success message is empty. */
+#validate-ok:not(:empty) {
+    margin-left: 8px;
 }
 
 .validate-result-img {
@@ -553,7 +569,7 @@
     height: 100%;
     padding: 0 10px;
     border-radius: 4px;
-    background-color: #007993;
+    background-color: var(--sbb-accent);
     overflow: hidden;
     line-height: 1.6em;
     text-align: center;

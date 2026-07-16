@@ -6,6 +6,12 @@
  * The dleEditorHead config is unchanged: it still loads this script and calls
  * PdfExporterStarter.injectToolbar({...}); the bootstrap below pulls the engine and queues
  * the call until it is ready.
+ *
+ * DEPRECATED: this script is superseded by two dedicated single-tag injectors —
+ * /polarion/pdf-exporter/js/dle-toolbar.js for the document-editor toolbar button (replaces
+ * PdfExporterStarter.injectToolbar(...)), and /polarion/pdf-exporter/js/live-reports.js for the
+ * Live Reports export button (replaces loading starter.js via scriptInjection.mainHead). It keeps
+ * working for backward compatibility; removal is a future major bump.
  */
 (function () {
     const timestampParam = `?timestamp=${Date.now()}`;
@@ -50,6 +56,12 @@
     let starter = null, myOrder;
     const pending = [];
     window.PdfExporterStarter = {
+        /**
+         * @deprecated Use the single-tag injector instead:
+         *   <script src="/polarion/pdf-exporter/js/dle-toolbar.js"></script>
+         * Kept for backward compatibility; removal is planned for a future major version.
+         * @param {{alternate: boolean}|undefined} params
+         */
         injectToolbar: function (params) {
             if (myOrder === undefined) {
                 // Capture config-execution order (this stub runs synchronously in dleEditorHead
@@ -76,6 +88,7 @@
         generic.injectStyles("generic-checkbox-styles", `${EXT_BASE}ui/generic/css/checkboxes.css${timestampParam}`);
         generic.injectStyles("generic-searchable-dropdown-styles", `${EXT_BASE}ui/generic/css/searchable-dropdown.css${timestampParam}`);
         generic.injectStyles("generic-inputs-styles", `${EXT_BASE}ui/generic/css/inputs.css${timestampParam}`);
+        generic.injectStyles("generic-alerts-styles", `${EXT_BASE}ui/generic/css/alerts.css${timestampParam}`);
         generic.injectScript("pdf-micromodal-script", `${EXT_BASE}ui/generic/js/micromodal.min.js${timestampParam}`);
         starter = generic.create({
             markerId: 'pdf-exporter-toolbar-injected',

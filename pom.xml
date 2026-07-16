@@ -5,11 +5,11 @@
     <parent>
         <groupId>ch.sbb.polarion.extensions</groupId>
         <artifactId>ch.sbb.polarion.extension.generic</artifactId>
-        <version>15.3.2</version>
+        <version>15.5.0</version>
     </parent>
 
     <artifactId>ch.sbb.polarion.extension.pdf-exporter</artifactId>
-    <version>13.1.1-SNAPSHOT</version>
+    <version>13.2.1-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>Polarion ALM extension to convert Documents to PDF files</name>
@@ -44,7 +44,7 @@
     </issueManagement>
 
     <properties>
-        <pdfbox.version>3.0.7</pdfbox.version>
+        <pdfbox.version>3.0.8</pdfbox.version>
         <okapi.xliff.version>1.48.0</okapi.xliff.version>
         <flying-saucer.version>10.3.0</flying-saucer.version>
 

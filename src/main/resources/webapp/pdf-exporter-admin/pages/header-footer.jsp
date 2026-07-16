@@ -93,7 +93,7 @@
     </div>
 
     <div class="tabbed">
-        <input type="radio" id="custom-templates" name="cover-page-template" checked>
+        <input type="radio" id="custom-templates" name="cover-page-template">
         <input type="radio" id="default-templates" name="cover-page-template">
 
         <ul class="tabs">
