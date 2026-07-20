@@ -1,9 +1,9 @@
 package ch.sbb.polarion.extension.pdf_exporter.util.exporter;
 
 import com.polarion.alm.shared.rt.parts.impl.readonly.WikiBlockPart;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -16,12 +16,8 @@ class CustomWikiBlockPartTest {
     @Mock
     private WikiBlockPart wikiBlockPart;
 
+    @InjectMocks
     private CustomWikiBlockPart customWikiBlockPart;
-
-    @BeforeEach
-    void setup() {
-        customWikiBlockPart = new CustomWikiBlockPart(wikiBlockPart);
-    }
 
     @Test
     void testCallRender() {

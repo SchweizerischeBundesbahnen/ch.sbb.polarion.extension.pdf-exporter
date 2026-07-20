@@ -15,6 +15,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -43,7 +44,7 @@ class SourceAwareReplacedElementFactoryTest {
         // -1 dimensions must be clamped to 0 to avoid flying-saucer's -1x-1 placeholder attempt
         assertEquals(0, empty.getIntrinsicWidth());
         assertEquals(0, empty.getIntrinsicHeight());
-        verify(delegate, org.mockito.Mockito.never()).createReplacedElement(context, box, uac, -1, -1);
+        verify(delegate, never()).createReplacedElement(context, box, uac, -1, -1);
     }
 
     @Test
@@ -86,7 +87,7 @@ class SourceAwareReplacedElementFactoryTest {
 
         assertSame(delegated, result);
         // For non-image elements the source must never be inspected
-        verify(namespaceHandler, org.mockito.Mockito.never()).getImageSourceURI(element);
+        verify(namespaceHandler, never()).getImageSourceURI(element);
     }
 
     @Test
