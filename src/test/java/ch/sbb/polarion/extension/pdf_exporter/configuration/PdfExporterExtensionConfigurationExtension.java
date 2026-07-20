@@ -5,8 +5,8 @@ import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.mockito.MockedStatic;
-import org.mockito.Mockito;
 
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 
 public class PdfExporterExtensionConfigurationExtension implements BeforeEachCallback, AfterEachCallback {
@@ -22,7 +22,7 @@ public class PdfExporterExtensionConfigurationExtension implements BeforeEachCal
     @Override
     public void beforeEach(ExtensionContext extensionContext) throws Exception {
         if (pdfExporterExtensionConfiguration == null) {
-            pdfExporterExtensionConfiguration = Mockito.mock(PdfExporterExtensionConfiguration.class);
+            pdfExporterExtensionConfiguration = mock(PdfExporterExtensionConfiguration.class);
         }
 
         pdfExporterExtensionConfigurationMockedStatic = mockStatic(PdfExporterExtensionConfiguration.class);
