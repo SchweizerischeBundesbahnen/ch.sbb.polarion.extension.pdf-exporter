@@ -143,13 +143,11 @@ class FullFontsTest extends BaseWeasyPrintTest {
                 .isNotNull()
                 .isNotEmpty();
 
+        // PDF with full fonts should be larger because fonts are not subsetted
         assertThat(pdfWithFullFonts)
                 .as("PDF with full fonts should be generated")
                 .isNotNull()
-                .isNotEmpty();
-
-        // PDF with full fonts should be larger because fonts are not subsetted
-        assertThat(pdfWithFullFonts)
+                .isNotEmpty()
                 .as("PDF with full fonts should be larger than PDF with font subsetting")
                 .hasSizeGreaterThan(pdfWithSubsetting.length);
     }
