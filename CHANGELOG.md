@@ -1,5 +1,14 @@
 # Changelog
 
+## [12.5.2](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v12.5.1...v12.5.2) (2026-07-21)
+
+
+### Bug Fixes
+
+* add wiki velocity tools to velocity evaluator context ([#925](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/925)) ([#930](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/930)) ([0755f8e](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/0755f8eb6ab53c5d12586ee5f9af89e2e2514ee6)), closes [#923](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/923)
+* handle suspect linked work items in HTML processing ([#928](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/928)) ([a054602](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/a05460226723347a77aad7196d8735f3a9395b97)), closes [#927](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/927)
+* handle suspect linked work items in HTML processing ([#933](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/933)) ([a054602](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/a05460226723347a77aad7196d8735f3a9395b97))
+
 ## [12.5.1](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v12.5.0...v12.5.1) (2026-07-07)
 
 
