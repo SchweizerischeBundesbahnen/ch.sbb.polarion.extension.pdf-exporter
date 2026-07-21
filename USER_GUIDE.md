@@ -145,6 +145,14 @@ This configuration property allows selecting the density (DPI) for PNG images co
 
 The default value is 96.
 
+### Embed full fonts (no subsetting)
+
+By default the fonts used in a document are subsetted: only the glyphs the document actually needs are embedded into the PDF, which keeps the file small. With this option enabled the fonts are embedded in their entirety instead.
+
+Turn it on when the exported PDF is processed further and its complete character set matters - for example when the file is edited in a layout tool afterwards, or handed over to a print shop. The price is the file size: the whole font is embedded even if the document uses a handful of its characters.
+
+This is not a robustness switch. Subsetting keeps a font whole whenever it cannot be applied, so a font that resists subsetting is exported correctly either way; skipping subsetting, on the contrary, can itself fail on a damaged font. The option is off by default.
+
 ### Fit images and tables to page width
 This option which is on by default tells PDF Exporter to fit images and tables into resulted page width even if their width in the Polarion document exceeds it. Elements exceeding Polarion document width:
 

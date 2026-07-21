@@ -116,7 +116,7 @@
                 <input id='full-fonts' type='checkbox'/>
                 Embed full fonts (no subsetting)
             </label>
-            <div class='more-info' title="When enabled, fonts are embedded in their entirety without subsetting. This helps avoid font-related errors but increases PDF file size."></div>
+            <div class='more-info' title="When enabled, fonts are embedded in their entirety without subsetting: full glyph coverage and better editability of the resulting PDF, at the cost of a larger file. This is not a robustness switch: subsetting already keeps a font whole when it cannot be applied, while skipping it can itself fail on a damaged font."></div>
         </div>
         <div class='property-wrapper'>
             <label for='fit-to-page'>
