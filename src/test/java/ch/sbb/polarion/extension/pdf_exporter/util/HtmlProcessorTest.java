@@ -18,6 +18,7 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Comment;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
+import org.jsoup.nodes.TextNode;
 import org.jsoup.select.Elements;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -390,6 +391,41 @@ class HtmlProcessorTest {
             List<String> selectedRoleEnumValues = Arrays.asList("has parent", "is parent of");
 
             // Spaces and new lines are removed to exclude difference in space characters
+            String fixedHtml = processor.processHtmlForPDF(invalidHtml, exportParams, selectedRoleEnumValues);
+            String validHtml = new String(isValidHtml.readAllBytes(), StandardCharsets.UTF_8);
+            assertEquals(TestStringUtils.removeNonsensicalSymbols(validHtml), TestStringUtils.removeNonsensicalSymbols(fixedHtml));
+        }
+    }
+
+    @Test
+    void extractSuspectElementTest() {
+        Element suspectIcon = Jsoup.parseBodyFragment("<span><img src=\"/polarion/ria/images/suspect.gif\"/></span>").body().firstElementChild();
+        Element linkedWorkItem = Jsoup.parseBodyFragment("<span><a class=\"polarion-Hyperlink\"><img src=\"type.gif\"/>EL-1</a></span>").body().firstElementChild();
+        Element withoutIcon = Jsoup.parseBodyFragment("<span>no icon here</span>").body().firstElementChild();
+
+        assertEquals(suspectIcon, processor.extractSuspectElement(suspectIcon));
+        // The linked WorkItem element also holds an image, only the absence of a hyperlink tells them apart
+        assertNull(processor.extractSuspectElement(linkedWorkItem));
+        assertNull(processor.extractSuspectElement(withoutIcon));
+        assertNull(processor.extractSuspectElement(new TextNode(" : ")));
+        assertNull(processor.extractSuspectElement(null));
+    }
+
+    @Test
+    @SneakyThrows
+    void suspectLinkedWorkItemTypesTest() {
+        try (InputStream isInvalidHtml = this.getClass().getResourceAsStream("/linkedWorkItemsWithSuspectBeforeProcessing.html");
+             InputStream isValidHtml = this.getClass().getResourceAsStream("/linkedWorkItemsWithSuspectAfterProcessing.html")) {
+
+            String invalidHtml = new String(isInvalidHtml.readAllBytes(), StandardCharsets.UTF_8);
+
+            ExportParams exportParams = getExportParams();
+            exportParams.setLinkedWorkitemRoles(List.of("has parent"));
+
+            List<String> selectedRoleEnumValues = Arrays.asList("has parent", "is parent of");
+
+            // A suspect link renders an extra icon between the colon and the linked WorkItem. It must neither stop
+            // the filtering of the remaining links nor stay behind when its own link is filtered out.
             String fixedHtml = processor.processHtmlForPDF(invalidHtml, exportParams, selectedRoleEnumValues);
             String validHtml = new String(isValidHtml.readAllBytes(), StandardCharsets.UTF_8);
             assertEquals(TestStringUtils.removeNonsensicalSymbols(validHtml), TestStringUtils.removeNonsensicalSymbols(fixedHtml));
