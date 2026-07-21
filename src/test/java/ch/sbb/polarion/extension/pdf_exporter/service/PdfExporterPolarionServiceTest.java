@@ -335,10 +335,25 @@ class PdfExporterPolarionServiceTest {
         when(testRun.isUnresolvable()).thenReturn(false);
         when(testRun.getProjectId()).thenReturn("someProjectId");
         when(testRun.getId()).thenReturn("TestRun-123");
-        IPObjectList matchingTestRuns = new PObjectList(dataService, List.of(testRun));
-        when(dataService.searchInstances(ITestRun.PROTO, "testrun_query", "name")).thenReturn(matchingTestRuns);
-        when(dataService.searchInstances(IModule.PROTO, "testrun_query", "name")).thenReturn(new PObjectList(dataService, List.of()));
-        when(dataService.searchInstances(IRichPage.PROTO, "testrun_query", "name")).thenReturn(new PObjectList(dataService, List.of()));
+
+        // Also return a module and rich page from the same query — these should NOT match
+        // when spaceId is null (covers null-safe branches in sameDocument)
+        IModule module = mock(IModule.class);
+        when(module.isUnresolvable()).thenReturn(false);
+        when(module.getProjectId()).thenReturn("someProjectId");
+        ILocation location = mock(ILocation.class);
+        when(module.getModuleLocation()).thenReturn(location);
+        when(location.getLocationPath()).thenReturn("space/SomeDoc");
+
+        IRichPage page = mock(IRichPage.class);
+        when(page.isUnresolvable()).thenReturn(false);
+        when(page.getProjectId()).thenReturn("someProjectId");
+        when(page.getSpaceId()).thenReturn("space");
+        when(page.getPageName()).thenReturn("SomePage");
+
+        when(dataService.searchInstances(ITestRun.PROTO, "testrun_query", "name")).thenReturn(new PObjectList(dataService, List.of(testRun)));
+        when(dataService.searchInstances(IModule.PROTO, "testrun_query", "name")).thenReturn(new PObjectList(dataService, List.of(module)));
+        when(dataService.searchInstances(IRichPage.PROTO, "testrun_query", "name")).thenReturn(new PObjectList(dataService, List.of(page)));
 
         String projectId = "someProjectId";
 
