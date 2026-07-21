@@ -41,6 +41,7 @@ import static com.polarion.core.util.StringUtils.isEmpty;
 public class WeasyPrintServiceConnector implements WeasyPrintConverter {
     private static final Logger logger = Logger.getLogger(WeasyPrintServiceConnector.class);
 
+    private static final String MERGE_API_PREFIX = "/api/convert/";
     private static final String PYTHON_VERSION_HEADER = "Python-Version";
     private static final String WEASYPRINT_VERSION_HEADER = "Weasyprint-Version";
     private static final String WEASYPRINT_SERVICE_VERSION_HEADER = "Weasyprint-Service-Version";
@@ -255,12 +256,18 @@ public class WeasyPrintServiceConnector implements WeasyPrintConverter {
     public byte[] convertMergedToPdf(@NotNull List<MergeDocumentData> documents, @NotNull MergeJobStartParams params) {
         params.setWeasyPrintServiceUrl(getWeasyPrintServiceBaseUrl());
         String jobId = startMergeJob(params);
-        for (MergeDocumentData doc : documents) {
-            if (doc.coverPageHtml() != null) {
-                addDocumentWithCoverPageToJob(jobId, doc.htmlContent(), doc.coverPageHtml());
-            } else {
-                addDocumentToJob(jobId, doc.htmlContent());
+        try {
+            for (MergeDocumentData doc : documents) {
+                if (doc.coverPageHtml() != null) {
+                    addDocumentWithCoverPageToJob(jobId, doc.htmlContent(), doc.coverPageHtml());
+                } else {
+                    addDocumentToJob(jobId, doc.htmlContent());
+                }
             }
+        } catch (Exception e) {
+            logger.error(String.format("Error uploading documents to merge job '%s', attempting cleanup", jobId), e);
+            cancelMergeJob(jobId);
+            throw e;
         }
         byte[] pdfBytes = finishMergeJob(jobId);
 
@@ -283,7 +290,7 @@ public class WeasyPrintServiceConnector implements WeasyPrintConverter {
         Client client = null;
         try {
             client = ClientBuilder.newClient();
-            WebTarget webTarget = client.target(getBulkProcessingServiceBaseUrl() + "/api/convert/start");
+            WebTarget webTarget = client.target(getBulkProcessingServiceBaseUrl() + MERGE_API_PREFIX + "start");
 
             String jsonBody;
             try {
@@ -315,7 +322,7 @@ public class WeasyPrintServiceConnector implements WeasyPrintConverter {
         Client client = null;
         try {
             client = ClientBuilder.newClient();
-            WebTarget webTarget = client.target(getBulkProcessingServiceBaseUrl() + "/api/convert/" + jobId + "/add");
+            WebTarget webTarget = client.target(getBulkProcessingServiceBaseUrl() + MERGE_API_PREFIX + jobId + "/add");
 
             try (Response response = webTarget.request(MediaType.APPLICATION_JSON)
                     .post(Entity.entity(htmlContent, MediaType.TEXT_HTML))) {
@@ -338,7 +345,7 @@ public class WeasyPrintServiceConnector implements WeasyPrintConverter {
         Client client = null;
         try {
             client = ClientBuilder.newClient();
-            WebTarget webTarget = client.target(getBulkProcessingServiceBaseUrl() + "/api/convert/" + jobId + "/add-with-cover");
+            WebTarget webTarget = client.target(getBulkProcessingServiceBaseUrl() + MERGE_API_PREFIX + jobId + "/add-with-cover");
 
             String jsonBody;
             try {
@@ -368,7 +375,7 @@ public class WeasyPrintServiceConnector implements WeasyPrintConverter {
         Client client = null;
         try {
             client = ClientBuilder.newClient();
-            WebTarget webTarget = client.target(getBulkProcessingServiceBaseUrl() + "/api/convert/" + jobId + "/stop");
+            WebTarget webTarget = client.target(getBulkProcessingServiceBaseUrl() + MERGE_API_PREFIX + jobId + "/stop");
 
             try (Response response = webTarget.request("application/pdf")
                     .post(Entity.entity("", MediaType.TEXT_PLAIN))) {
@@ -390,6 +397,15 @@ public class WeasyPrintServiceConnector implements WeasyPrintConverter {
             if (client != null) {
                 client.close();
             }
+        }
+    }
+
+    @SuppressWarnings("java:S1166") // Exception intentionally caught for best-effort cleanup
+    private void cancelMergeJob(@NotNull String jobId) {
+        try {
+            finishMergeJob(jobId);
+        } catch (Exception cleanup) {
+            logger.warn(String.format("Failed to clean up merge job '%s': %s", jobId, cleanup.getMessage()));
         }
     }
 

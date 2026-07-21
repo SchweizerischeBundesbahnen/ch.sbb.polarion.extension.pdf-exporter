@@ -597,7 +597,26 @@ class PdfConverterTest {
         // Verify placeholders were preserved for bulk service
         ArgumentCaptor<PlaceholderValues> placeholderCaptor = ArgumentCaptor.forClass(PlaceholderValues.class);
         verify(coverPageProcessor).composeTitleHtml(eq(documentData), eq(exportParams), placeholderCaptor.capture());
-        assertThat(placeholderCaptor.getValue().getAllVariables().get("PAGE_NUMBER")).isEqualTo("{{ PAGE_NUMBER }}");
-        assertThat(placeholderCaptor.getValue().getAllVariables().get("PAGES_TOTAL_COUNT")).isEqualTo("{{ PAGES_TOTAL_COUNT }}");
+        assertThat(placeholderCaptor.getValue().getAllVariables())
+                .containsEntry("PAGE_NUMBER", "{{ PAGE_NUMBER }}")
+                .containsEntry("PAGES_TOTAL_COUNT", "{{ PAGES_TOTAL_COUNT }}");
+    }
+
+    @Test
+    void shouldRethrowExceptionFromConvertMergedToPdf() {
+        ExportParams exportParams = ExportParams.builder()
+                .projectId("testProjectId")
+                .documentType(DocumentType.LIVE_DOC)
+                .build();
+
+        documentDataFactoryMockedStatic.when(() -> DocumentDataFactory.getDocumentData(any(ExportParams.class), anyBoolean()))
+                .thenThrow(new RuntimeException("document not found"));
+
+        MergeJobStartParams mergeJobParams = MergeJobStartParams.builder().build();
+        PdfConverter pdfConverter = new PdfConverter(pdfExporterPolarionService, headerFooterSettings, cssSettings, placeholderProcessor, velocityEvaluator, coverPageProcessor, weasyPrintServiceConnector, htmlProcessor, pdfTemplateProcessor);
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> pdfConverter.convertMergedToPdf(List.of(exportParams), mergeJobParams))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("document not found");
     }
 }

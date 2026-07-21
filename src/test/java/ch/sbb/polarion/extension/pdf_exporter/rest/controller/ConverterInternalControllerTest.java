@@ -194,7 +194,7 @@ class ConverterInternalControllerTest {
     @Test
     void startMergeExportJob_success() {
         BulkMergeExportParams params = BulkMergeExportParams.builder()
-                .documents(List.of(ExportParams.builder().projectId("proj1").build()))
+                .documents(List.of(ExportParams.builder().projectId("proj1").locationPath("space/doc").build()))
                 .build();
         when(pdfConverterJobService.startMergeJob(any(), anyInt())).thenReturn("mergeJobId");
         when(uriInfo.getRequestUri()).thenReturn(UriBuilder.fromUri("http://testHost:8090/polarion/pdf-exporter/rest/api/convert/merge/jobs").build());

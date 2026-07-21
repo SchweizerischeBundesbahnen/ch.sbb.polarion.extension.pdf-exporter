@@ -88,7 +88,6 @@ public class CoverPageProcessor {
         return resultBytes;
     }
 
-    @VisibleForTesting
     String composeTitleHtml(@NotNull DocumentData<? extends IUniqueObject> documentData, @NotNull ExportParams exportParams, @Nullable PlaceholderValues overridenPlaceholderValues) {
         CoverPageModel settings = coverPageSettings.load(exportParams.getProjectId(), SettingId.fromName(exportParams.getCoverPage()));
         if (!settings.isUseCustomValues()) {

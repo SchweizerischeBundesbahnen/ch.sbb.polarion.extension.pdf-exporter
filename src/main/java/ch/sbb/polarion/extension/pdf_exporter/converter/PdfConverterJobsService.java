@@ -28,6 +28,7 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -38,6 +39,7 @@ public class PdfConverterJobsService {
     // Static maps are necessary for per-request scoped InternalController and ApiController. In case of singletons static can be removed
     private static final Map<String, JobDetails> jobs = new ConcurrentHashMap<>();
     private static final Map<String, String> failedJobsReasons = new ConcurrentHashMap<>();
+    private static final ExecutorService jobExecutor = Executors.newCachedThreadPool();
     private static final String UNKNOWN_JOB_MESSAGE = "Converter Job is unknown: %s";
 
     private final PdfConverter pdfConverter;
@@ -73,13 +75,14 @@ public class PdfConverterJobsService {
                     securityService.logout(userSubject);
                 }
             }
-        }, Executors.newSingleThreadExecutor());
+        }, jobExecutor);
         asyncConversionJob
                 .orTimeout(timeoutInMinutes, TimeUnit.MINUTES)
                 .exceptionally(e -> {
                     String failedReason = StringUtils.getEmptyIfNull(e.getMessage());
                     if (e instanceof TimeoutException) {
                         failedReason = String.format("Timeout after %d min", timeoutInMinutes);
+                        asyncConversionJob.cancel(true);
                     }
                     failedJobsReasons.put(jobId, failedReason);
                     logger.error(String.format("PDF conversion job '%s' is failed with error: %s", jobId, failedReason), e);
@@ -130,7 +133,7 @@ public class PdfConverterJobsService {
                     securityService.logout(userSubject);
                 }
             }
-        }, Executors.newSingleThreadExecutor());
+        }, jobExecutor);
 
         asyncMergeJob
                 .orTimeout(timeoutInMinutes, TimeUnit.MINUTES)
@@ -138,6 +141,7 @@ public class PdfConverterJobsService {
                     String failedReason = StringUtils.getEmptyIfNull(e.getMessage());
                     if (e instanceof TimeoutException) {
                         failedReason = String.format("Timeout after %d min", timeoutInMinutes);
+                        asyncMergeJob.cancel(true);
                     }
                     failedJobsReasons.put(jobId, failedReason);
                     logger.error(String.format("Merge export job '%s' failed with error: %s", jobId, failedReason), e);

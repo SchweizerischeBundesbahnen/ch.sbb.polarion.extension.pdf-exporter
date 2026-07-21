@@ -434,6 +434,10 @@ public class ConverterInternalController {
             throw new BadRequestException("At least one document must be provided for merge export");
         }
 
+        for (ExportParams doc : bulkMergeExportParams.getDocuments()) {
+            validateExportParameters(doc);
+        }
+
         String jobId = pdfConverterJobService.startMergeJob(bulkMergeExportParams, propertiesUtility.getInProgressJobTimeout());
 
         URI jobUri = UriBuilder.fromUri(uriInfo.getRequestUri().resolve("../jobs/" + jobId)).build();
