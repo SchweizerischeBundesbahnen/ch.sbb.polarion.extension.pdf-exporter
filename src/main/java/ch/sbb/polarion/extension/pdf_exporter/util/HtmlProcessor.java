@@ -827,7 +827,8 @@ public class HtmlProcessor {
      * Detects the icon element which Polarion renders for a link marked as suspect. It is recognized structurally:
      * unlike the linked WorkItem element it holds an image and no hyperlink at all.
      */
-    private Element extractSuspectElement(@Nullable Node node) {
+    @VisibleForTesting
+    Element extractSuspectElement(@Nullable Node node) {
         if (node instanceof Element element && element.selectFirst("a.polarion-Hyperlink") == null && element.selectFirst("img") != null) {
             return element;
         } else {
