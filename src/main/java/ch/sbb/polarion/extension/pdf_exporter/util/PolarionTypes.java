@@ -12,7 +12,9 @@ import lombok.experimental.UtilityClass;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.text.DateFormat;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.time.format.FormatStyle;
 import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
@@ -45,7 +47,7 @@ public class PolarionTypes {
         } else if (fieldValue instanceof Text text) {
             return text.convertToHTML().getContent();
         } else if (fieldValue instanceof DateOnly dateOnly) {
-            return DateFormat.getDateInstance(DateFormat.LONG, locale).format(dateOnly.getDate());
+            return DateTimeFormatter.ofLocalizedDate(FormatStyle.LONG).withLocale(locale).withZone(ZoneId.systemDefault()).format(dateOnly.getDate().toInstant());
         } else if (fieldValue instanceof TimeOnly timeOnly) {
             return convertToTime(timeOnly.getDate(), locale, timeZone);
         } else if (fieldValue instanceof Date date) {
@@ -69,18 +71,17 @@ public class PolarionTypes {
     }
 
     public @NotNull String convertToTime(@NotNull Date fieldValue, @NotNull Locale locale, @NotNull TimeZone timeZone) {
-        DateFormat timeFormat = DateFormat.getTimeInstance(DateFormat.LONG, locale);
-        return formatForTimeZone(fieldValue, timeFormat, timeZone);
+        return formatForTimeZone(fieldValue, DateTimeFormatter.ofLocalizedTime(FormatStyle.LONG).withLocale(locale), timeZone);
     }
 
     public @NotNull String convertToDateTime(@NotNull Date fieldValue, @NotNull Locale locale, @NotNull TimeZone timeZone) {
-        DateFormat dateTimeFormat = DateFormat.getDateTimeInstance(DateFormat.LONG, DateFormat.LONG, locale);
-        return formatForTimeZone(fieldValue, dateTimeFormat, timeZone);
+        return formatForTimeZone(fieldValue, DateTimeFormatter.ofLocalizedDateTime(FormatStyle.LONG).withLocale(locale), timeZone);
     }
 
-    public @NotNull String formatForTimeZone(@NotNull Date fieldValue, @NotNull DateFormat format, @NotNull TimeZone timeZone) {
-        format.setTimeZone(timeZone);
-        return format.format(fieldValue);
+    // Internal helper only (callers use convertToTime / convertToDateTime). Kept private so the
+    // formatter-type parameter is not part of the public API surface.
+    private @NotNull String formatForTimeZone(@NotNull Date fieldValue, @NotNull DateTimeFormatter format, @NotNull TimeZone timeZone) {
+        return format.withZone(timeZone.toZoneId()).format(fieldValue.toInstant());
     }
 
 }

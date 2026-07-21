@@ -16,6 +16,9 @@ import com.polarion.alm.tracker.model.IRichPage;
 import com.polarion.alm.tracker.model.ITestRun;
 import com.polarion.alm.tracker.model.IWikiPage;
 import com.polarion.alm.tracker.model.baselinecollection.IBaselineCollection;
+import com.polarion.alm.wiki.IWikiService;
+import com.polarion.platform.core.IPlatform;
+import com.polarion.platform.core.PlatformContext;
 import org.apache.velocity.VelocityContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -28,6 +31,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.stubbing.Answer;
 
 import java.lang.reflect.Method;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -211,6 +215,59 @@ class VelocityEvaluatorTest {
         assertNull(velocityContext.get("testrun"));
         assertNull(velocityContext.get("collection"));
         assertEquals("Test Project", velocityContext.get("projectName"));
+    }
+
+    @Test
+    void addWikiRenderingContextAddsWikiTools() {
+        IWikiService wikiService = mock(IWikiService.class);
+        Object calendarTool = new Object();
+        when(wikiService.getWikiRenderingContextMap()).thenReturn(Map.of("calendarTool", calendarTool));
+
+        VelocityContext velocityContext = new VelocityContext();
+        withWikiService(wikiService, () -> velocityEvaluator.addWikiRenderingContext(velocityContext));
+
+        assertEquals(calendarTool, velocityContext.get("calendarTool"));
+    }
+
+    @Test
+    void addWikiRenderingContextKeepsExistingValues() {
+        IWikiService wikiService = mock(IWikiService.class);
+        when(wikiService.getWikiRenderingContextMap()).thenReturn(Map.of("trackerService", new Object()));
+
+        Object richPageTrackerService = new Object();
+        VelocityContext velocityContext = new VelocityContext();
+        velocityContext.put("trackerService", richPageTrackerService);
+        withWikiService(wikiService, () -> velocityEvaluator.addWikiRenderingContext(velocityContext));
+
+        assertEquals(richPageTrackerService, velocityContext.get("trackerService"));
+    }
+
+    @Test
+    void addWikiRenderingContextSkippedWhenNoWikiService() {
+        VelocityContext velocityContext = new VelocityContext();
+        withWikiService(null, () -> velocityEvaluator.addWikiRenderingContext(velocityContext));
+
+        assertNull(velocityContext.get("calendarTool"));
+    }
+
+    @Test
+    void addWikiRenderingContextDoesNotUseContainsKey() {
+        IWikiService wikiService = mock(IWikiService.class);
+        when(wikiService.getWikiRenderingContextMap()).thenReturn(Map.of("calendarTool", new Object()));
+
+        VelocityContext velocityContext = spy(new VelocityContext());
+        withWikiService(wikiService, () -> velocityEvaluator.addWikiRenderingContext(velocityContext));
+
+        verify(velocityContext, never()).containsKey(any());
+    }
+
+    private void withWikiService(IWikiService wikiService, Runnable runnable) {
+        IPlatform platform = mock(IPlatform.class);
+        when(platform.lookupService(IWikiService.class)).thenReturn(wikiService);
+        try (MockedStatic<PlatformContext> platformContextMockedStatic = mockStatic(PlatformContext.class)) {
+            platformContextMockedStatic.when(PlatformContext::getPlatform).thenReturn(platform);
+            runnable.run();
+        }
     }
 
     @SuppressWarnings("unchecked")
