@@ -18,7 +18,7 @@ import com.polarion.alm.projects.model.IUniqueObject;
 import lombok.SneakyThrows;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.jetbrains.annotations.VisibleForTesting;
+
 
 public class CoverPageProcessor {
     private final PlaceholderProcessor placeholderProcessor;

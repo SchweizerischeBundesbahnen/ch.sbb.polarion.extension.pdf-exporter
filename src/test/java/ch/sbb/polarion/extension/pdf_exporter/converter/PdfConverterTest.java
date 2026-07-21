@@ -50,6 +50,7 @@ import java.util.Properties;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.*;
 
@@ -614,8 +615,9 @@ class PdfConverterTest {
 
         MergeJobStartParams mergeJobParams = MergeJobStartParams.builder().build();
         PdfConverter pdfConverter = new PdfConverter(pdfExporterPolarionService, headerFooterSettings, cssSettings, placeholderProcessor, velocityEvaluator, coverPageProcessor, weasyPrintServiceConnector, htmlProcessor, pdfTemplateProcessor);
+        List<ExportParams> documents = List.of(exportParams);
 
-        org.assertj.core.api.Assertions.assertThatThrownBy(() -> pdfConverter.convertMergedToPdf(List.of(exportParams), mergeJobParams))
+        assertThatThrownBy(() -> pdfConverter.convertMergedToPdf(documents, mergeJobParams))
                 .isInstanceOf(RuntimeException.class)
                 .hasMessageContaining("document not found");
     }
