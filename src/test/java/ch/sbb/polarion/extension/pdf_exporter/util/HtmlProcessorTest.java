@@ -398,6 +398,27 @@ class HtmlProcessorTest {
 
     @Test
     @SneakyThrows
+    void suspectLinkedWorkItemTypesTest() {
+        try (InputStream isInvalidHtml = this.getClass().getResourceAsStream("/linkedWorkItemsWithSuspectBeforeProcessing.html");
+             InputStream isValidHtml = this.getClass().getResourceAsStream("/linkedWorkItemsWithSuspectAfterProcessing.html")) {
+
+            String invalidHtml = new String(isInvalidHtml.readAllBytes(), StandardCharsets.UTF_8);
+
+            ExportParams exportParams = getExportParams();
+            exportParams.setLinkedWorkitemRoles(List.of("has parent"));
+
+            List<String> selectedRoleEnumValues = Arrays.asList("has parent", "is parent of");
+
+            // A suspect link renders an extra icon between the colon and the linked WorkItem. It must neither stop
+            // the filtering of the remaining links nor stay behind when its own link is filtered out.
+            String fixedHtml = processor.processHtmlForPDF(invalidHtml, exportParams, selectedRoleEnumValues);
+            String validHtml = new String(isValidHtml.readAllBytes(), StandardCharsets.UTF_8);
+            assertEquals(TestStringUtils.removeNonsensicalSymbols(validHtml), TestStringUtils.removeNonsensicalSymbols(fixedHtml));
+        }
+    }
+
+    @Test
+    @SneakyThrows
     void malformedLinkedWorkItemTypesTest() {
         try (InputStream isInvalidHtml = this.getClass().getResourceAsStream("/malformedLinkedWorkItemsBeforeProcessing.html");
              InputStream isValidHtml = this.getClass().getResourceAsStream("/malformedLinkedWorkItemsAfterProcessing.html")) {
