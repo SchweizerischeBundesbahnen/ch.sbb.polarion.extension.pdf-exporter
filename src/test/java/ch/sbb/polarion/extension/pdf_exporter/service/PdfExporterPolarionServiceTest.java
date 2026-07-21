@@ -12,6 +12,7 @@ import ch.sbb.polarion.extension.pdf_exporter.settings.StylePackageSettings;
 import com.polarion.alm.projects.IProjectService;
 import com.polarion.alm.tracker.ITestManagementService;
 import com.polarion.alm.tracker.ITrackerService;
+import com.polarion.alm.projects.model.IUniqueObject;
 import com.polarion.alm.tracker.model.IModule;
 import com.polarion.alm.tracker.model.IRichPage;
 import com.polarion.alm.tracker.model.ITestRecord;
@@ -430,30 +431,63 @@ class PdfExporterPolarionServiceTest {
         IDataService dataService = mock(IDataService.class);
         when(trackerService.getDataService()).thenReturn(dataService);
 
-        // Module search works normally
-        IModule module = mock(IModule.class);
-        when(module.isUnresolvable()).thenReturn(false);
-        when(module.getProjectId()).thenReturn("proj");
-        ILocation location = mock(ILocation.class);
-        when(module.getModuleLocation()).thenReturn(location);
-        when(location.getLocationPath()).thenReturn("space/Doc");
-        when(dataService.searchInstances(IModule.PROTO, "some_query", "name")).thenReturn(new PObjectList(dataService, List.of(module)));
-        when(dataService.searchInstances(IRichPage.PROTO, "some_query", "name")).thenReturn(new PObjectList(dataService, List.of()));
+        // An unknown document type — covers the default branch in sameDocument
+        IUniqueObject unknownDoc = mock(IUniqueObject.class);
+        when(unknownDoc.isUnresolvable()).thenReturn(false);
+        when(unknownDoc.getProjectId()).thenReturn("proj");
+
+        // Module and RichPage return non-matching results, so stream must reach ITestRun
+        when(dataService.searchInstances(IModule.PROTO, "failing_query", "name")).thenReturn(new PObjectList(dataService, List.of(unknownDoc)));
+        when(dataService.searchInstances(IRichPage.PROTO, "failing_query", "name")).thenReturn(new PObjectList(dataService, List.of()));
 
         // ITestRun search throws — query not compatible with this prototype
-        when(dataService.searchInstances(ITestRun.PROTO, "some_query", "name")).thenThrow(new RuntimeException("Unsupported field for TestRun"));
+        when(dataService.searchInstances(ITestRun.PROTO, "failing_query", "name")).thenThrow(new RuntimeException("Unsupported field for TestRun"));
 
         Collection<SettingName> settingNames = List.of(
                 SettingName.builder().id("id1").name("pkg").scope("project/proj/").build()
         );
-        StylePackageModel modelWithQuery = StylePackageModel.builder().weight(10f).matchingQuery("some_query").build();
+        StylePackageModel modelWithQuery = StylePackageModel.builder().weight(10f).matchingQuery("failing_query").build();
+
+        when(stylePackageSettings.readNames("")).thenReturn(List.of());
+        when(stylePackageSettings.readNames(ScopeUtils.getScopeFromProject("proj"))).thenReturn(settingNames);
+        when(stylePackageSettings.read(eq("project/proj/"), eq(SettingId.fromName("pkg")), isNull())).thenReturn(modelWithQuery);
+        when(stylePackageSettings.defaultValues()).thenReturn(StylePackageModel.builder().weight(0f).build());
+
+        // No documents match (unknownDoc hits default->false, RichPage empty, TestRun throws)
+        // but the exception should not propagate — package simply doesn't match
+        DocIdentifier doc = new DocIdentifier("proj", "space", "Doc");
+        Collection<SettingName> result = service.getSuitableStylePackages(List.of(doc));
+        assertEquals(0, result.size());
+    }
+
+    @Test
+    @SuppressWarnings("rawtypes")
+    void testSearchInstancesSafeRecoversAndFindsMatch() {
+        IDataService dataService = mock(IDataService.class);
+        when(trackerService.getDataService()).thenReturn(dataService);
+
+        // IModule throws
+        when(dataService.searchInstances(IModule.PROTO, "mixed_fail_query", "name")).thenThrow(new RuntimeException("Bad query for Module"));
+        // IRichPage returns empty
+        when(dataService.searchInstances(IRichPage.PROTO, "mixed_fail_query", "name")).thenReturn(new PObjectList(dataService, List.of()));
+        // ITestRun returns a match
+        ITestRun testRun = mock(ITestRun.class);
+        when(testRun.isUnresolvable()).thenReturn(false);
+        when(testRun.getProjectId()).thenReturn("proj");
+        when(testRun.getId()).thenReturn("TR-1");
+        when(dataService.searchInstances(ITestRun.PROTO, "mixed_fail_query", "name")).thenReturn(new PObjectList(dataService, List.of(testRun)));
+
+        Collection<SettingName> settingNames = List.of(
+                SettingName.builder().id("id1").name("pkg").scope("project/proj/").build()
+        );
+        StylePackageModel modelWithQuery = StylePackageModel.builder().weight(10f).matchingQuery("mixed_fail_query").build();
 
         when(stylePackageSettings.readNames("")).thenReturn(List.of());
         when(stylePackageSettings.readNames(ScopeUtils.getScopeFromProject("proj"))).thenReturn(settingNames);
         when(stylePackageSettings.read(eq("project/proj/"), eq(SettingId.fromName("pkg")), isNull())).thenReturn(modelWithQuery);
 
-        // Should still find the package via Module match, despite TestRun search failing
-        DocIdentifier doc = new DocIdentifier("proj", "space", "Doc");
+        // Module search fails, but TestRun match should still be found
+        DocIdentifier doc = new DocIdentifier("proj", null, "TR-1");
         Collection<SettingName> result = service.getSuitableStylePackages(List.of(doc));
         assertEquals(1, result.size());
         assertEquals("pkg", result.iterator().next().getName());
