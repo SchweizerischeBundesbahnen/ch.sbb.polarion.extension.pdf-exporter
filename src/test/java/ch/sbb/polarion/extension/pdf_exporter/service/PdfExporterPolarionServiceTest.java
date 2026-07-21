@@ -425,6 +425,41 @@ class PdfExporterPolarionServiceTest {
     }
 
     @Test
+    @SuppressWarnings("rawtypes")
+    void testSearchInstancesSafeSwallowsExceptionForUnsupportedPrototype() {
+        IDataService dataService = mock(IDataService.class);
+        when(trackerService.getDataService()).thenReturn(dataService);
+
+        // Module search works normally
+        IModule module = mock(IModule.class);
+        when(module.isUnresolvable()).thenReturn(false);
+        when(module.getProjectId()).thenReturn("proj");
+        ILocation location = mock(ILocation.class);
+        when(module.getModuleLocation()).thenReturn(location);
+        when(location.getLocationPath()).thenReturn("space/Doc");
+        when(dataService.searchInstances(IModule.PROTO, "some_query", "name")).thenReturn(new PObjectList(dataService, List.of(module)));
+        when(dataService.searchInstances(IRichPage.PROTO, "some_query", "name")).thenReturn(new PObjectList(dataService, List.of()));
+
+        // ITestRun search throws — query not compatible with this prototype
+        when(dataService.searchInstances(ITestRun.PROTO, "some_query", "name")).thenThrow(new RuntimeException("Unsupported field for TestRun"));
+
+        Collection<SettingName> settingNames = List.of(
+                SettingName.builder().id("id1").name("pkg").scope("project/proj/").build()
+        );
+        StylePackageModel modelWithQuery = StylePackageModel.builder().weight(10f).matchingQuery("some_query").build();
+
+        when(stylePackageSettings.readNames("")).thenReturn(List.of());
+        when(stylePackageSettings.readNames(ScopeUtils.getScopeFromProject("proj"))).thenReturn(settingNames);
+        when(stylePackageSettings.read(eq("project/proj/"), eq(SettingId.fromName("pkg")), isNull())).thenReturn(modelWithQuery);
+
+        // Should still find the package via Module match, despite TestRun search failing
+        DocIdentifier doc = new DocIdentifier("proj", "space", "Doc");
+        Collection<SettingName> result = service.getSuitableStylePackages(List.of(doc));
+        assertEquals(1, result.size());
+        assertEquals("pkg", result.iterator().next().getName());
+    }
+
+    @Test
     void testGetTestRun() {
         when(testManagementService.getTestRun("testProjectId", "testTestRunId", null)).thenReturn(mock(ITestRun.class));
         when(testManagementService.getTestRun("testProjectId", "testTestRunId", "1234")).thenReturn(mock(ITestRun.class));

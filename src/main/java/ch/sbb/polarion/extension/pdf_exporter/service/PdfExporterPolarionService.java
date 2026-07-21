@@ -144,10 +144,18 @@ public class PdfExporterPolarionService extends PolarionService {
         } else {
             IDataService dataService = getTrackerService().getDataService();
             return Stream.of(IModule.PROTO, IRichPage.PROTO, ITestRun.PROTO)
-                    .map(proto -> dataService.searchInstances(proto, model.getMatchingQuery(), "name"))
-                    .flatMap(Collection::stream)
+                    .flatMap(proto -> searchInstancesSafe(dataService, proto, model.getMatchingQuery()))
                     .filter(document -> !((IUniqueObject) document).isUnresolvable())
                     .anyMatch(suitableDocument -> sameDocument(projectId, spaceId, documentName, (IUniqueObject) suitableDocument));
+        }
+    }
+
+    @SuppressWarnings({"unchecked", "java:S1166"})
+    private Stream<IUniqueObject> searchInstancesSafe(@NotNull IDataService dataService, @NotNull String proto, @NotNull String query) {
+        try {
+            return ((Collection<IUniqueObject>) dataService.searchInstances(proto, query, "name")).stream();
+        } catch (Exception e) {
+            return Stream.empty();
         }
     }
 
