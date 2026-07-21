@@ -135,7 +135,7 @@ public class PdfExporterPolarionService extends PolarionService {
     }
 
     @SuppressWarnings("unchecked")
-    private boolean isStylePackageSuitable(@Nullable String projectId, @NotNull String spaceId, @NotNull String documentName,
+    private boolean isStylePackageSuitable(@Nullable String projectId, @Nullable String spaceId, @NotNull String documentName,
                                            @NotNull StylePackageSettings stylePackageSettings, @NotNull String stylePackageScope, @NotNull SettingName stylePackageName) {
         StylePackageModel model = stylePackageSettings.read(stylePackageScope, SettingId.fromName(stylePackageName.getName()), null);
 
@@ -143,21 +143,30 @@ public class PdfExporterPolarionService extends PolarionService {
             return true;
         } else {
             IDataService dataService = getTrackerService().getDataService();
-            return Stream.of(IModule.PROTO, IRichPage.PROTO)
-                    .map(proto -> dataService.searchInstances(proto, model.getMatchingQuery(), "name"))
-                    .flatMap(Collection::stream)
-                    .filter(document -> !((IUniqueObject) document).isUnresolvable())
-                    .anyMatch(suitableDocument -> sameDocument(projectId, spaceId, documentName, (IUniqueObject) suitableDocument));
+            return Stream.of(IModule.PROTO, IRichPage.PROTO, ITestRun.PROTO)
+                    .flatMap(proto -> searchInstancesSafe(dataService, proto, model.getMatchingQuery()))
+                    .filter(document -> !document.isUnresolvable())
+                    .anyMatch(suitableDocument -> sameDocument(projectId, spaceId, documentName, suitableDocument));
         }
     }
 
-    private boolean sameDocument(@Nullable String projectId, @NotNull String spaceId, @NotNull String documentName, @NotNull IUniqueObject document) {
+    @SuppressWarnings({"unchecked", "java:S1166"})
+    private Stream<IUniqueObject> searchInstancesSafe(@NotNull IDataService dataService, @NotNull String proto, @NotNull String query) {
+        try {
+            return ((Collection<IUniqueObject>) dataService.searchInstances(proto, query, "name")).stream();
+        } catch (Exception e) {
+            return Stream.empty();
+        }
+    }
+
+    private boolean sameDocument(@Nullable String projectId, @Nullable String spaceId, @NotNull String documentName, @NotNull IUniqueObject document) {
         if (!Objects.equals(projectId, document.getProjectId())) {
             return false;
         }
         return switch (document) {
-            case IModule module -> (spaceId + "/" + documentName).equals(module.getModuleLocation().getLocationPath());
-            case IRichPage page -> spaceId.equals(page.getSpaceId()) && documentName.equals(page.getPageName());
+            case IModule module -> spaceId != null && (spaceId + "/" + documentName).equals(module.getModuleLocation().getLocationPath());
+            case IRichPage page -> spaceId != null && spaceId.equals(page.getSpaceId()) && documentName.equals(page.getPageName());
+            case ITestRun testRun -> documentName.equals(testRun.getId());
             default -> false;
         };
     }

@@ -12,6 +12,7 @@ import ch.sbb.polarion.extension.pdf_exporter.settings.StylePackageSettings;
 import com.polarion.alm.projects.IProjectService;
 import com.polarion.alm.tracker.ITestManagementService;
 import com.polarion.alm.tracker.ITrackerService;
+import com.polarion.alm.projects.model.IUniqueObject;
 import com.polarion.alm.tracker.model.IModule;
 import com.polarion.alm.tracker.model.IRichPage;
 import com.polarion.alm.tracker.model.ITestRecord;
@@ -214,6 +215,10 @@ class PdfExporterPolarionServiceTest {
         IPObjectList notMatchingPages = new PObjectList(dataService, List.of());
         when(dataService.searchInstances(IRichPage.PROTO, "not_matching", "name")).thenReturn(notMatchingPages);
 
+        IPObjectList emptyTestRuns = new PObjectList(dataService, List.of());
+        when(dataService.searchInstances(ITestRun.PROTO, "matching", "name")).thenReturn(emptyTestRuns);
+        when(dataService.searchInstances(ITestRun.PROTO, "not_matching", "name")).thenReturn(emptyTestRuns);
+
         String projectId = "someProjectId";
         String spaceId = "someSpaceId";
         String documentName = "documentName";
@@ -282,11 +287,13 @@ class PdfExporterPolarionServiceTest {
         IPObjectList mixedDocuments = new PObjectList(dataService, List.of(unresolvableModule, resolvableModule));
         when(dataService.searchInstances(IModule.PROTO, "mixed_query", "name")).thenReturn(mixedDocuments);
         when(dataService.searchInstances(IRichPage.PROTO, "mixed_query", "name")).thenReturn(new PObjectList(dataService, List.of()));
+        when(dataService.searchInstances(ITestRun.PROTO, "mixed_query", "name")).thenReturn(new PObjectList(dataService, List.of()));
 
         // Search returns only unresolvable documents
         IPObjectList unresolvableOnly = new PObjectList(dataService, List.of(unresolvableModule));
         when(dataService.searchInstances(IModule.PROTO, "unresolvable_only", "name")).thenReturn(unresolvableOnly);
         when(dataService.searchInstances(IRichPage.PROTO, "unresolvable_only", "name")).thenReturn(new PObjectList(dataService, List.of()));
+        when(dataService.searchInstances(ITestRun.PROTO, "unresolvable_only", "name")).thenReturn(new PObjectList(dataService, List.of()));
 
         String projectId = "someProjectId";
         String spaceId = "someSpaceId";
@@ -316,6 +323,174 @@ class PdfExporterPolarionServiceTest {
         // has no resolvable matching documents
         assertEquals(10f, result.getWeight());
         assertEquals("mixed_query", result.getMatchingQuery());
+    }
+
+    @Test
+    @SuppressWarnings("rawtypes")
+    void testStylePackageSuitabilityForTestRunWithNullSpaceId() {
+        IDataService dataService = mock(IDataService.class);
+        when(trackerService.getDataService()).thenReturn(dataService);
+
+        // A matching test run
+        ITestRun testRun = mock(ITestRun.class);
+        when(testRun.isUnresolvable()).thenReturn(false);
+        when(testRun.getProjectId()).thenReturn("someProjectId");
+        when(testRun.getId()).thenReturn("TestRun-123");
+
+        // Also return a module and rich page from the same query — these should NOT match
+        // when spaceId is null (covers null-safe branches in sameDocument)
+        IModule module = mock(IModule.class);
+        when(module.isUnresolvable()).thenReturn(false);
+        when(module.getProjectId()).thenReturn("someProjectId");
+        ILocation location = mock(ILocation.class);
+        when(module.getModuleLocation()).thenReturn(location);
+        when(location.getLocationPath()).thenReturn("space/SomeDoc");
+
+        IRichPage page = mock(IRichPage.class);
+        when(page.isUnresolvable()).thenReturn(false);
+        when(page.getProjectId()).thenReturn("someProjectId");
+        when(page.getSpaceId()).thenReturn("space");
+        when(page.getPageName()).thenReturn("SomePage");
+
+        when(dataService.searchInstances(ITestRun.PROTO, "testrun_query", "name")).thenReturn(new PObjectList(dataService, List.of(testRun)));
+        when(dataService.searchInstances(IModule.PROTO, "testrun_query", "name")).thenReturn(new PObjectList(dataService, List.of(module)));
+        when(dataService.searchInstances(IRichPage.PROTO, "testrun_query", "name")).thenReturn(new PObjectList(dataService, List.of(page)));
+
+        String projectId = "someProjectId";
+
+        Collection<SettingName> settingNames = List.of(
+                SettingName.builder().id("id1").name("withQuery").scope("project/someProjectId/").build(),
+                SettingName.builder().id("id2").name("noQuery").scope("project/someProjectId/").build()
+        );
+
+        StylePackageModel modelWithQuery = StylePackageModel.builder().weight(10f).matchingQuery("testrun_query").build();
+        StylePackageModel modelNoQuery = StylePackageModel.builder().weight(5f).build();
+
+        when(stylePackageSettings.readNames("")).thenReturn(List.of());
+        when(stylePackageSettings.readNames(ScopeUtils.getScopeFromProject(projectId))).thenReturn(settingNames);
+        when(stylePackageSettings.read(eq("project/someProjectId/"), eq(SettingId.fromName("withQuery")), isNull())).thenReturn(modelWithQuery);
+        when(stylePackageSettings.read(eq("project/someProjectId/"), eq(SettingId.fromName("noQuery")), isNull())).thenReturn(modelNoQuery);
+
+        // Test Run with null spaceId matching by ID — should find style package with matchingQuery
+        DocIdentifier testRunDoc = new DocIdentifier(projectId, null, "TestRun-123");
+        Collection<SettingName> result = service.getSuitableStylePackages(List.of(testRunDoc));
+        assertEquals(2, result.size());
+        assertEquals(List.of("withQuery", "noQuery"), result.stream().map(SettingName::getName).toList());
+
+        // Test Run with non-matching ID — style package with matchingQuery should be excluded
+        DocIdentifier nonMatchingTestRun = new DocIdentifier(projectId, null, "TestRun-999");
+        result = service.getSuitableStylePackages(List.of(nonMatchingTestRun));
+        assertEquals(1, result.size());
+        assertEquals("noQuery", result.iterator().next().getName());
+    }
+
+    @Test
+    @SuppressWarnings("rawtypes")
+    void testStylePackageSuitabilityMixedDocumentAndTestRun() {
+        IDataService dataService = mock(IDataService.class);
+        when(trackerService.getDataService()).thenReturn(dataService);
+
+        // Module matching query
+        IModule module = mock(IModule.class);
+        when(module.isUnresolvable()).thenReturn(false);
+        when(module.getProjectId()).thenReturn("someProjectId");
+        ILocation location = mock(ILocation.class);
+        when(module.getModuleLocation()).thenReturn(location);
+        when(location.getLocationPath()).thenReturn("space/Doc1");
+        when(dataService.searchInstances(IModule.PROTO, "doc_query", "name")).thenReturn(new PObjectList(dataService, List.of(module)));
+        when(dataService.searchInstances(IRichPage.PROTO, "doc_query", "name")).thenReturn(new PObjectList(dataService, List.of()));
+        when(dataService.searchInstances(ITestRun.PROTO, "doc_query", "name")).thenReturn(new PObjectList(dataService, List.of()));
+
+        String projectId = "someProjectId";
+        Collection<SettingName> settingNames = List.of(
+                SettingName.builder().id("id1").name("docOnly").scope("project/someProjectId/").build(),
+                SettingName.builder().id("id2").name("generic").scope("project/someProjectId/").build()
+        );
+
+        StylePackageModel docOnlyModel = StylePackageModel.builder().weight(10f).matchingQuery("doc_query").build();
+        StylePackageModel genericModel = StylePackageModel.builder().weight(5f).build();
+
+        when(stylePackageSettings.readNames("")).thenReturn(List.of());
+        when(stylePackageSettings.readNames(ScopeUtils.getScopeFromProject(projectId))).thenReturn(settingNames);
+        when(stylePackageSettings.read(eq("project/someProjectId/"), eq(SettingId.fromName("docOnly")), isNull())).thenReturn(docOnlyModel);
+        when(stylePackageSettings.read(eq("project/someProjectId/"), eq(SettingId.fromName("generic")), isNull())).thenReturn(genericModel);
+
+        // Mix: Module (matches query) + TestRun (does NOT match query, spaceId=null)
+        // allMatch requires all docs to match → "docOnly" should be excluded
+        DocIdentifier moduleDoc = new DocIdentifier(projectId, "space", "Doc1");
+        DocIdentifier testRunDoc = new DocIdentifier(projectId, null, "TestRun-456");
+        Collection<SettingName> result = service.getSuitableStylePackages(List.of(moduleDoc, testRunDoc));
+
+        assertEquals(1, result.size());
+        assertEquals("generic", result.iterator().next().getName());
+    }
+
+    @Test
+    @SuppressWarnings("rawtypes")
+    void testSearchInstancesSafeSwallowsExceptionForUnsupportedPrototype() {
+        IDataService dataService = mock(IDataService.class);
+        when(trackerService.getDataService()).thenReturn(dataService);
+
+        // An unknown document type — covers the default branch in sameDocument
+        IUniqueObject unknownDoc = mock(IUniqueObject.class);
+        when(unknownDoc.isUnresolvable()).thenReturn(false);
+        when(unknownDoc.getProjectId()).thenReturn("proj");
+
+        // Module and RichPage return non-matching results, so stream must reach ITestRun
+        when(dataService.searchInstances(IModule.PROTO, "failing_query", "name")).thenReturn(new PObjectList(dataService, List.of(unknownDoc)));
+        when(dataService.searchInstances(IRichPage.PROTO, "failing_query", "name")).thenReturn(new PObjectList(dataService, List.of()));
+
+        // ITestRun search throws — query not compatible with this prototype
+        when(dataService.searchInstances(ITestRun.PROTO, "failing_query", "name")).thenThrow(new RuntimeException("Unsupported field for TestRun"));
+
+        Collection<SettingName> settingNames = List.of(
+                SettingName.builder().id("id1").name("pkg").scope("project/proj/").build()
+        );
+        StylePackageModel modelWithQuery = StylePackageModel.builder().weight(10f).matchingQuery("failing_query").build();
+
+        when(stylePackageSettings.readNames("")).thenReturn(List.of());
+        when(stylePackageSettings.readNames(ScopeUtils.getScopeFromProject("proj"))).thenReturn(settingNames);
+        when(stylePackageSettings.read(eq("project/proj/"), eq(SettingId.fromName("pkg")), isNull())).thenReturn(modelWithQuery);
+        when(stylePackageSettings.defaultValues()).thenReturn(StylePackageModel.builder().weight(0f).build());
+
+        // No documents match (unknownDoc hits default->false, RichPage empty, TestRun throws)
+        // but the exception should not propagate — package simply doesn't match
+        DocIdentifier doc = new DocIdentifier("proj", "space", "Doc");
+        Collection<SettingName> result = service.getSuitableStylePackages(List.of(doc));
+        assertEquals(0, result.size());
+    }
+
+    @Test
+    @SuppressWarnings("rawtypes")
+    void testSearchInstancesSafeRecoversAndFindsMatch() {
+        IDataService dataService = mock(IDataService.class);
+        when(trackerService.getDataService()).thenReturn(dataService);
+
+        // IModule throws
+        when(dataService.searchInstances(IModule.PROTO, "mixed_fail_query", "name")).thenThrow(new RuntimeException("Bad query for Module"));
+        // IRichPage returns empty
+        when(dataService.searchInstances(IRichPage.PROTO, "mixed_fail_query", "name")).thenReturn(new PObjectList(dataService, List.of()));
+        // ITestRun returns a match
+        ITestRun testRun = mock(ITestRun.class);
+        when(testRun.isUnresolvable()).thenReturn(false);
+        when(testRun.getProjectId()).thenReturn("proj");
+        when(testRun.getId()).thenReturn("TR-1");
+        when(dataService.searchInstances(ITestRun.PROTO, "mixed_fail_query", "name")).thenReturn(new PObjectList(dataService, List.of(testRun)));
+
+        Collection<SettingName> settingNames = List.of(
+                SettingName.builder().id("id1").name("pkg").scope("project/proj/").build()
+        );
+        StylePackageModel modelWithQuery = StylePackageModel.builder().weight(10f).matchingQuery("mixed_fail_query").build();
+
+        when(stylePackageSettings.readNames("")).thenReturn(List.of());
+        when(stylePackageSettings.readNames(ScopeUtils.getScopeFromProject("proj"))).thenReturn(settingNames);
+        when(stylePackageSettings.read(eq("project/proj/"), eq(SettingId.fromName("pkg")), isNull())).thenReturn(modelWithQuery);
+
+        // Module search fails, but TestRun match should still be found
+        DocIdentifier doc = new DocIdentifier("proj", null, "TR-1");
+        Collection<SettingName> result = service.getSuitableStylePackages(List.of(doc));
+        assertEquals(1, result.size());
+        assertEquals("pkg", result.iterator().next().getName());
     }
 
     @Test
