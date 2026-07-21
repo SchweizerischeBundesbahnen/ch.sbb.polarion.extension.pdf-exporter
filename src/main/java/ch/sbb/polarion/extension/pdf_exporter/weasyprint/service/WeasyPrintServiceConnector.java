@@ -256,6 +256,7 @@ public class WeasyPrintServiceConnector implements WeasyPrintConverter {
     public byte[] convertMergedToPdf(@NotNull List<MergeDocumentData> documents, @NotNull MergeJobStartParams params) {
         params.setWeasyPrintServiceUrl(getWeasyPrintServiceBaseUrl());
         String jobId = startMergeJob(params);
+        byte[] pdfBytes;
         try {
             for (MergeDocumentData doc : documents) {
                 if (doc.coverPageHtml() != null) {
@@ -264,12 +265,12 @@ public class WeasyPrintServiceConnector implements WeasyPrintConverter {
                     addDocumentToJob(jobId, doc.htmlContent());
                 }
             }
+            pdfBytes = finishMergeJob(jobId);
         } catch (Exception e) {
-            logger.error(String.format("Error uploading documents to merge job '%s', attempting cleanup", jobId), e);
-            cancelMergeJob(jobId);
+            logger.error(String.format("Merge job '%s' failed, attempting cleanup", jobId), e);
+            deleteMergeJob(jobId);
             throw e;
         }
-        byte[] pdfBytes = finishMergeJob(jobId);
 
         PdfVariant pdfVariant = PdfVariant.fromWeasyPrintParameter(params.getPdfVariant());
         if (pdfVariant != null) {
@@ -401,11 +402,17 @@ public class WeasyPrintServiceConnector implements WeasyPrintConverter {
     }
 
     @SuppressWarnings("java:S1166") // Exception intentionally caught for best-effort cleanup
-    private void cancelMergeJob(@NotNull String jobId) {
+    private void deleteMergeJob(@NotNull String jobId) {
+        Client client = null;
         try {
-            finishMergeJob(jobId);
+            client = ClientBuilder.newClient();
+            client.target(getBulkProcessingServiceBaseUrl() + MERGE_API_PREFIX + jobId).request().delete().close();
         } catch (Exception cleanup) {
-            logger.warn(String.format("Failed to clean up merge job '%s': %s", jobId, cleanup.getMessage()));
+            logger.warn(String.format("Failed to delete merge job '%s': %s", jobId, cleanup.getMessage()));
+        } finally {
+            if (client != null) {
+                client.close();
+            }
         }
     }
 

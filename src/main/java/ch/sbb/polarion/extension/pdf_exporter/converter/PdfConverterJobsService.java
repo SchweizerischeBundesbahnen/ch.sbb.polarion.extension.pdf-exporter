@@ -29,6 +29,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -114,8 +115,10 @@ public class PdfConverterJobsService {
             mergeJobParams = MergeJobStartParams.builder().build();
         }
         final MergeJobStartParams finalMergeJobParams = mergeJobParams;
+        final AtomicReference<Thread> workerThread = new AtomicReference<>();
 
         CompletableFuture<byte[]> asyncMergeJob = CompletableFuture.supplyAsync(() -> {
+            workerThread.set(Thread.currentThread());
             try {
                 DebugDataStorage.setCurrentJobId(jobId);
                 return securityService.doAsUser(userSubject, (PrivilegedAction<byte[]>) () ->
@@ -126,6 +129,7 @@ public class PdfConverterJobsService {
                 failedJobsReasons.put(jobId, StringUtils.getEmptyIfNull(e.getMessage()));
                 throw e;
             } finally {
+                workerThread.set(null);
                 DebugDataStorage.clearCurrentJobId();
                 jobContext.workItemIDsWithMissingAttachment.addAll(ExportContext.getWorkItemIDsWithMissingAttachment());
                 ExportContext.clear();
@@ -141,7 +145,10 @@ public class PdfConverterJobsService {
                     String failedReason = StringUtils.getEmptyIfNull(e.getMessage());
                     if (e instanceof TimeoutException) {
                         failedReason = String.format("Timeout after %d min", timeoutInMinutes);
-                        asyncMergeJob.cancel(true);
+                        Thread thread = workerThread.getAndSet(null);
+                        if (thread != null) {
+                            thread.interrupt();
+                        }
                     }
                     failedJobsReasons.put(jobId, failedReason);
                     logger.error(String.format("Merge export job '%s' failed with error: %s", jobId, failedReason), e);
