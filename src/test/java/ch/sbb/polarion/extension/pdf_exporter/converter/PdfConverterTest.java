@@ -7,6 +7,9 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.ExportMetaInfoCallback;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.DocumentType;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.LinkRoleDirection;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.MergeJobStartParams;
+import ch.sbb.polarion.extension.pdf_exporter.util.placeholder.PlaceholderValues;
+import ch.sbb.polarion.extension.pdf_exporter.weasyprint.WeasyPrintConverter;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.DocumentData;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.id.LiveDocId;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.css.CssModel;
@@ -484,5 +487,117 @@ class PdfConverterTest {
 
         // Assert
         assertThat(metaCaptor.getValue()).isEmpty();
+    }
+
+    @Test
+    void shouldConvertMergedToPdf() {
+        // Arrange
+        ExportParams exportParams1 = ExportParams.builder()
+                .projectId("testProjectId")
+                .documentType(DocumentType.LIVE_DOC)
+                .build();
+        ExportParams exportParams2 = ExportParams.builder()
+                .projectId("testProjectId")
+                .documentType(DocumentType.LIVE_DOC)
+                .build();
+
+        ITrackerProject project = mock(ITrackerProject.class);
+        lenient().when(pdfExporterPolarionService.getTrackerProject("testProjectId")).thenReturn(project);
+
+        CssModel cssModel = CssModel.builder().css("test css").build();
+        when(cssSettings.load("testProjectId", SettingId.fromName("Default"))).thenReturn(cssModel);
+        when(cssSettings.defaultValues()).thenReturn(CssModel.builder().build());
+
+        DocumentData<IModule> documentData = DocumentData.creator(DocumentType.LIVE_DOC, module)
+                .id(LiveDocId.from("testProjectId", "_default", "testDocumentId"))
+                .title("testDocument")
+                .content("test document content")
+                .lastRevision("12345")
+                .revisionPlaceholder("12345")
+                .build();
+        documentDataFactoryMockedStatic.when(() -> DocumentDataFactory.getDocumentData(any(ExportParams.class), anyBoolean())).thenReturn(documentData);
+
+        when(headerFooterSettings.load("testProjectId", SettingId.fromName("Default"))).thenReturn(HeaderFooterModel.builder().useCustomValues(true).build());
+        when(placeholderProcessor.replacePlaceholders(eq(documentData), any(ExportParams.class), eq("test css"))).thenReturn("css content");
+        when(placeholderProcessor.replacePlaceholders(eq(documentData), any(ExportParams.class), anyList())).thenReturn(List.of("hl", "hc", "hr", "fl", "fc", "fr"));
+        when(velocityEvaluator.evaluateVelocityExpressions(eq(documentData), anyString())).thenAnswer(a -> a.getArguments()[1]);
+        when(pdfTemplateProcessor.processUsing(any(ExportParams.class), eq("testDocument"), eq("css content"), anyString(), anyString())).thenReturn("test html content");
+        when(htmlProcessor.internalizeLinks(anyString())).thenAnswer(a -> a.getArgument(0));
+        when(htmlProcessor.replaceResourcesAsBase64Encoded(anyString())).thenAnswer(a -> a.getArgument(0));
+
+        when(weasyPrintServiceConnector.convertMergedToPdf(anyList(), any(MergeJobStartParams.class))).thenReturn("merged pdf".getBytes());
+
+        MergeJobStartParams mergeJobParams = MergeJobStartParams.builder().fileName("merged.pdf").build();
+        PdfConverter pdfConverter = new PdfConverter(pdfExporterPolarionService, headerFooterSettings, cssSettings, placeholderProcessor, velocityEvaluator, coverPageProcessor, weasyPrintServiceConnector, htmlProcessor, pdfTemplateProcessor);
+
+        // Act
+        byte[] result = pdfConverter.convertMergedToPdf(List.of(exportParams1, exportParams2), mergeJobParams);
+
+        // Assert
+        assertThat(result).isEqualTo("merged pdf".getBytes());
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<WeasyPrintConverter.MergeDocumentData>> docsCaptor = ArgumentCaptor.forClass(List.class);
+        verify(weasyPrintServiceConnector).convertMergedToPdf(docsCaptor.capture(), eq(mergeJobParams));
+        assertThat(docsCaptor.getValue()).hasSize(2);
+        assertThat(docsCaptor.getValue().get(0).coverPageHtml()).isNull();
+    }
+
+    @Test
+    void shouldConvertMergedToPdfWithCoverPage() {
+        // Arrange
+        ExportParams exportParams = ExportParams.builder()
+                .projectId("testProjectId")
+                .documentType(DocumentType.LIVE_DOC)
+                .coverPage("testCoverPage")
+                .build();
+
+        ITrackerProject project = mock(ITrackerProject.class);
+        lenient().when(pdfExporterPolarionService.getTrackerProject("testProjectId")).thenReturn(project);
+
+        CssModel cssModel = CssModel.builder().css("test css").build();
+        when(cssSettings.load("testProjectId", SettingId.fromName("Default"))).thenReturn(cssModel);
+        when(cssSettings.defaultValues()).thenReturn(CssModel.builder().build());
+
+        DocumentData<IModule> documentData = DocumentData.creator(DocumentType.LIVE_DOC, module)
+                .id(LiveDocId.from("testProjectId", "_default", "testDocumentId"))
+                .title("testDocument")
+                .content("test document content")
+                .lastRevision("12345")
+                .revisionPlaceholder("12345")
+                .build();
+        documentDataFactoryMockedStatic.when(() -> DocumentDataFactory.getDocumentData(any(ExportParams.class), anyBoolean())).thenReturn(documentData);
+
+        when(headerFooterSettings.load("testProjectId", SettingId.fromName("Default"))).thenReturn(HeaderFooterModel.builder().useCustomValues(true).build());
+        when(placeholderProcessor.replacePlaceholders(eq(documentData), any(ExportParams.class), eq("test css"))).thenReturn("css content");
+        when(placeholderProcessor.replacePlaceholders(eq(documentData), any(ExportParams.class), anyList())).thenReturn(List.of("hl", "hc", "hr", "fl", "fc", "fr"));
+        when(velocityEvaluator.evaluateVelocityExpressions(eq(documentData), anyString())).thenAnswer(a -> a.getArguments()[1]);
+        when(pdfTemplateProcessor.processUsing(any(ExportParams.class), eq("testDocument"), eq("css content"), anyString(), anyString())).thenReturn("test html content");
+        when(htmlProcessor.internalizeLinks(anyString())).thenAnswer(a -> a.getArgument(0));
+        when(htmlProcessor.replaceResourcesAsBase64Encoded(anyString())).thenAnswer(a -> a.getArgument(0));
+
+        when(coverPageProcessor.composeTitleHtml(eq(documentData), eq(exportParams), any(PlaceholderValues.class))).thenReturn("<cover>title</cover>");
+        when(weasyPrintServiceConnector.convertMergedToPdf(anyList(), any(MergeJobStartParams.class))).thenReturn("merged pdf".getBytes());
+
+        MergeJobStartParams mergeJobParams = MergeJobStartParams.builder().build();
+        PdfConverter pdfConverter = new PdfConverter(pdfExporterPolarionService, headerFooterSettings, cssSettings, placeholderProcessor, velocityEvaluator, coverPageProcessor, weasyPrintServiceConnector, htmlProcessor, pdfTemplateProcessor);
+
+        // Act
+        byte[] result = pdfConverter.convertMergedToPdf(List.of(exportParams), mergeJobParams);
+
+        // Assert
+        assertThat(result).isEqualTo("merged pdf".getBytes());
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<WeasyPrintConverter.MergeDocumentData>> docsCaptor = ArgumentCaptor.forClass(List.class);
+        verify(weasyPrintServiceConnector).convertMergedToPdf(docsCaptor.capture(), eq(mergeJobParams));
+        assertThat(docsCaptor.getValue()).hasSize(1);
+        assertThat(docsCaptor.getValue().get(0).coverPageHtml()).isEqualTo("<cover>title</cover>");
+
+        // Verify placeholders were preserved for bulk service
+        ArgumentCaptor<PlaceholderValues> placeholderCaptor = ArgumentCaptor.forClass(PlaceholderValues.class);
+        verify(coverPageProcessor).composeTitleHtml(eq(documentData), eq(exportParams), placeholderCaptor.capture());
+        assertThat(placeholderCaptor.getValue().getAllVariables().get("PAGE_NUMBER")).isEqualTo("{{ PAGE_NUMBER }}");
+        assertThat(placeholderCaptor.getValue().getAllVariables().get("PAGES_TOTAL_COUNT")).isEqualTo("{{ PAGES_TOTAL_COUNT }}");
     }
 }

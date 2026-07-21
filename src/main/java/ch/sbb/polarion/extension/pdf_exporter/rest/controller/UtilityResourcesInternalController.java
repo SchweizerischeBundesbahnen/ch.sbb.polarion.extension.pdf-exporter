@@ -1,5 +1,6 @@
 package ch.sbb.polarion.extension.pdf_exporter.rest.controller;
 
+import ch.sbb.polarion.extension.pdf_exporter.model.BulkProcessingServiceStatus;
 import ch.sbb.polarion.extension.pdf_exporter.model.WebhooksStatus;
 import ch.sbb.polarion.extension.pdf_exporter.properties.PdfExporterExtensionConfiguration;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
@@ -27,7 +28,10 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.client.Client;
+import jakarta.ws.rs.client.ClientBuilder;
 import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 import java.util.Collections;
 import java.util.List;
 
@@ -127,5 +131,32 @@ public class UtilityResourcesInternalController {
     public WebhooksStatus getWebhooksStatus() {
         Boolean webhooksEnabled = PdfExporterExtensionConfiguration.getInstance().getWebhooksEnabled();
         return WebhooksStatus.builder().enabled(webhooksEnabled).build();
+    }
+
+    @GET
+    @Path("/bulk-processing/status")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Tag(name = "Utility resources")
+    @Operation(summary = "Checks if the bulk processing service is available",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Bulk processing service status",
+                            content = @Content(schema = @Schema(implementation = BulkProcessingServiceStatus.class)))
+            }
+    )
+    @SuppressWarnings("java:S2095") // Client is closed in finally block
+    public BulkProcessingServiceStatus getBulkProcessingServiceStatus() {
+        String bulkProcessingServiceUrl = PdfExporterExtensionConfiguration.getInstance().getBulkProcessingService();
+        Client client = null;
+        try {
+            client = ClientBuilder.newClient();
+            Response response = client.target(bulkProcessingServiceUrl + "/health").request(MediaType.APPLICATION_JSON).get();
+            return BulkProcessingServiceStatus.builder().available(response.getStatus() == Response.Status.OK.getStatusCode()).build();
+        } catch (Exception e) {
+            return BulkProcessingServiceStatus.builder().available(false).build();
+        } finally {
+            if (client != null) {
+                client.close();
+            }
+        }
     }
 }

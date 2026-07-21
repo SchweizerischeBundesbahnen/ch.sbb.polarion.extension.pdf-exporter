@@ -351,7 +351,7 @@ export default class ExportBulk {
         const pdfVariant = this.exportParams.pdfVariant;
         const bulkMergeRequest = {
             documents: documents,
-            mergeSessionParams: {
+            mergeJobParams: {
                 encoding: "utf-8",
                 mediaType: "print",
                 presentationalHints: this.exportParams.followHTMLPresentationalHints || false,
@@ -386,11 +386,18 @@ export default class ExportBulk {
                 item.classList.add("error");
             });
             errorResponse.text().then(errorJson => {
-                const error = errorJson && JSON.parse(errorJson);
-                const errorMessage = error && (error.message ? error.message : error.errorMessage);
-                const resultSpan = this.popupCtx.querySelector(".modal__footer .result");
-                if (resultSpan && errorMessage) {
-                    resultSpan.innerText = "Merge export failed: " + errorMessage;
+                try {
+                    const error = errorJson && JSON.parse(errorJson);
+                    const errorMessage = error && (error.message ? error.message : error.errorMessage);
+                    const resultSpan = this.popupCtx.querySelector(".modal__footer .result");
+                    if (resultSpan && errorMessage) {
+                        resultSpan.innerText = "Merge export failed: " + errorMessage;
+                    }
+                } catch (e) {
+                    const resultSpan = this.popupCtx.querySelector(".modal__footer .result");
+                    if (resultSpan) {
+                        resultSpan.innerText = "Merge export failed: " + errorJson;
+                    }
                 }
             });
             this.updateState(BULK_EXPORT_FINISHED);

@@ -3,10 +3,9 @@ package ch.sbb.polarion.extension.pdf_exporter.converter;
 import ch.sbb.polarion.extension.generic.rest.filter.LogoutFilter;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.BulkMergeExportParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
-import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.MergeSessionStartParams;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.MergeJobStartParams;
 import ch.sbb.polarion.extension.pdf_exporter.util.DebugDataStorage;
 import ch.sbb.polarion.extension.pdf_exporter.util.ExportContext;
-import ch.sbb.polarion.extension.pdf_exporter.weasyprint.service.WeasyPrintServiceConnector;
 import com.polarion.core.util.StringUtils;
 import com.polarion.core.util.logging.Logger;
 import com.polarion.platform.security.ISecurityService;
@@ -104,31 +103,24 @@ public class PdfConverterJobsService {
         final JobContext jobContext = JobContext.builder().workItemIDsWithMissingAttachment(new ArrayList<>()).build();
 
         // Use first document's params as representative for job metadata
-        ExportParams representativeParams = bulkParams.getDocuments().isEmpty() ? null : bulkParams.getDocuments().get(0);
+        ExportParams representativeParams = (bulkParams.getDocuments() == null || bulkParams.getDocuments().isEmpty())
+                ? null : bulkParams.getDocuments().get(0);
+
+        MergeJobStartParams mergeJobParams = bulkParams.getMergeJobParams();
+        if (mergeJobParams == null) {
+            mergeJobParams = MergeJobStartParams.builder().build();
+        }
+        final MergeJobStartParams finalMergeJobParams = mergeJobParams;
 
         CompletableFuture<byte[]> asyncMergeJob = CompletableFuture.supplyAsync(() -> {
             try {
                 DebugDataStorage.setCurrentJobId(jobId);
-                return securityService.doAsUser(userSubject, (PrivilegedAction<byte[]>) () -> {
-                    WeasyPrintServiceConnector connector = new WeasyPrintServiceConnector();
-                    MergeSessionStartParams sessionParams = bulkParams.getMergeSessionParams();
-                    if (sessionParams == null) {
-                        sessionParams = MergeSessionStartParams.builder().build();
-                    }
-
-                    String sessionId = connector.startMergeSession(sessionParams);
-
-                    for (ExportParams exportParams : bulkParams.getDocuments()) {
-                        String htmlContent = pdfConverter.prepareHtmlContent(exportParams, null);
-                        connector.addDocumentToSession(sessionId, htmlContent);
-                    }
-
-                    return connector.finishMergeSession(sessionId);
-                });
+                return securityService.doAsUser(userSubject, (PrivilegedAction<byte[]>) () ->
+                        pdfConverter.convertMergedToPdf(bulkParams.getDocuments(), finalMergeJobParams));
             } catch (Exception e) {
                 String errorMessage = String.format("Merge export job '%s' failed with error: %s", jobId, e.getMessage());
                 logger.error(errorMessage, e);
-                failedJobsReasons.put(jobId, e.getMessage());
+                failedJobsReasons.put(jobId, StringUtils.getEmptyIfNull(e.getMessage()));
                 throw e;
             } finally {
                 DebugDataStorage.clearCurrentJobId();
@@ -143,7 +135,7 @@ public class PdfConverterJobsService {
         asyncMergeJob
                 .orTimeout(timeoutInMinutes, TimeUnit.MINUTES)
                 .exceptionally(e -> {
-                    String failedReason = e.getMessage();
+                    String failedReason = StringUtils.getEmptyIfNull(e.getMessage());
                     if (e instanceof TimeoutException) {
                         failedReason = String.format("Timeout after %d min", timeoutInMinutes);
                     }

@@ -2,6 +2,7 @@ package ch.sbb.polarion.extension.pdf_exporter.rest.controller;
 
 import ch.sbb.polarion.extension.pdf_exporter.converter.PdfConverterJobsService;
 import ch.sbb.polarion.extension.pdf_exporter.converter.PdfConverterJobsService.JobState;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.BulkMergeExportParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.DocumentType;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.jobs.ConverterJobDetails;
@@ -23,6 +24,7 @@ import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriBuilder;
 import jakarta.ws.rs.core.UriInfo;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -30,6 +32,8 @@ import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
@@ -185,5 +189,46 @@ class ConverterInternalControllerTest {
                         "testJobId3", ConverterJobDetails.builder().status(ConverterJobStatus.FAILED).errorMessage("test error").build()
                 )
         );
+    }
+
+    @Test
+    void startMergeExportJob_success() {
+        BulkMergeExportParams params = BulkMergeExportParams.builder()
+                .documents(List.of(ExportParams.builder().projectId("proj1").build()))
+                .build();
+        when(pdfConverterJobService.startMergeJob(any(), anyInt())).thenReturn("mergeJobId");
+        when(uriInfo.getRequestUri()).thenReturn(UriBuilder.fromUri("http://testHost:8090/polarion/pdf-exporter/rest/api/convert/merge/jobs").build());
+
+        try (Response response = internalController.startMergeExportJob(params)) {
+            assertThat(response.getStatus()).isEqualTo(HttpStatus.ACCEPTED.value());
+            assertThat(response.getHeaderString(HttpHeaders.LOCATION)).contains("mergeJobId");
+        }
+    }
+
+    @Test
+    void startMergeExportJob_nullParams() {
+        assertThatThrownBy(() -> internalController.startMergeExportJob(null))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessageContaining("At least one document");
+    }
+
+    @Test
+    void startMergeExportJob_emptyDocuments() {
+        BulkMergeExportParams params = BulkMergeExportParams.builder()
+                .documents(List.of())
+                .build();
+        assertThatThrownBy(() -> internalController.startMergeExportJob(params))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessageContaining("At least one document");
+    }
+
+    @Test
+    void startMergeExportJob_nullDocuments() {
+        BulkMergeExportParams params = BulkMergeExportParams.builder()
+                .documents(null)
+                .build();
+        assertThatThrownBy(() -> internalController.startMergeExportJob(params))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessageContaining("At least one document");
     }
 }

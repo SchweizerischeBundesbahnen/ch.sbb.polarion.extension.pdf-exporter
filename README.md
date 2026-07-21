@@ -179,6 +179,28 @@ By default, webhooks functionality is not enabled in PDF Exporter. If you want t
 ch.sbb.polarion.extension.pdf-exporter.webhooks.enabled=true
 ```
 
+### Bulk export (merge into single PDF)
+
+Bulk export allows merging multiple Polarion documents into a single PDF file. This feature requires the [Bulk Processing Service](https://github.com/SchweizerischeBundesbahnen/bulk-processing-service) to be running and accessible.
+
+The "Merge all documents into a single PDF" checkbox in the bulk export popup is only visible when the Bulk Processing Service is available.
+
+To configure the Bulk Processing Service URL, add the following line to `polarion.properties`:
+```properties
+ch.sbb.polarion.extension.pdf-exporter.bulk.processing.service=http://localhost:9070
+```
+
+Default value: `http://localhost:9070`
+
+The Bulk Processing Service must be deployed in the same Docker network as Polarion and the WeasyPrint service. Example:
+```bash
+docker run --detach \
+  --name bulk-processing-service \
+  --publish 9070:9070 \
+  --env WEASYPRINT_SERVICE_URL=http://weasyprint-service:9080 \
+  ghcr.io/schweizerischebundesbahnen/bulk-processing-service:latest
+```
+
 ### Renderable image extensions
 
 The exporter can embed certain file types as full-size images (raster formats, SVG, convertible diagrams like Visio).

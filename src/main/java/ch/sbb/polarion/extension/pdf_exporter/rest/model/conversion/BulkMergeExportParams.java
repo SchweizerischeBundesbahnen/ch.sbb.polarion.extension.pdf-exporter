@@ -20,6 +20,6 @@ public class BulkMergeExportParams {
     @Schema(description = "List of export parameters, one per document to be merged")
     private List<ExportParams> documents;
 
-    @Schema(description = "Parameters for the merge session")
-    private MergeSessionStartParams mergeSessionParams;
+    @Schema(description = "Parameters for the merge job")
+    private MergeJobStartParams mergeJobParams;
 }

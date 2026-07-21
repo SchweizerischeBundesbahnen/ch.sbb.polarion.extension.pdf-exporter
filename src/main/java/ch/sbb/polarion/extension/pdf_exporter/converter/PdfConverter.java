@@ -8,6 +8,7 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.ExportMetaInfoCallback;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.WorkItemRefData;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.DocumentType;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.MergeJobStartParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.DocumentData;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.css.CssModel;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.headerfooter.HeaderFooterModel;
@@ -34,7 +35,9 @@ import ch.sbb.polarion.extension.pdf_exporter.util.PdfTemplateProcessor;
 import ch.sbb.polarion.extension.pdf_exporter.util.PolarionTypes;
 import ch.sbb.polarion.extension.pdf_exporter.util.html.HtmlLinksHelper;
 import ch.sbb.polarion.extension.pdf_exporter.util.placeholder.PlaceholderProcessor;
+import ch.sbb.polarion.extension.pdf_exporter.util.placeholder.PlaceholderValues;
 import ch.sbb.polarion.extension.pdf_exporter.util.velocity.VelocityEvaluator;
+import ch.sbb.polarion.extension.pdf_exporter.weasyprint.WeasyPrintConverter;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.WeasyPrintOptions;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.service.WeasyPrintServiceConnector;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -45,6 +48,7 @@ import com.polarion.core.util.StringUtils;
 import com.polarion.core.util.logging.Logger;
 import com.polarion.platform.internal.security.UserAccountVault;
 import lombok.AllArgsConstructor;
+import lombok.Getter;
 import org.apache.commons.text.StringEscapeUtils;
 import org.glassfish.jersey.media.multipart.FormDataBodyPart;
 import org.glassfish.jersey.media.multipart.FormDataMultiPart;
@@ -63,6 +67,7 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collections;
@@ -80,6 +85,7 @@ public class PdfConverter {
 
     private final PlaceholderProcessor placeholderProcessor;
     private final VelocityEvaluator velocityEvaluator;
+    @Getter
     private final CoverPageProcessor coverPageProcessor;
     private final WeasyPrintServiceConnector weasyPrintServiceConnector;
     private final HtmlProcessor htmlProcessor;
@@ -96,6 +102,57 @@ public class PdfConverter {
         htmlProcessor = new HtmlProcessor(fileResourceProvider, new LocalizationSettings(), new HtmlLinksHelper(fileResourceProvider));
         coverPageProcessor = new CoverPageProcessor(htmlProcessor);
         pdfTemplateProcessor = new PdfTemplateProcessor();
+    }
+
+    public byte[] convertMergedToPdf(@NotNull List<ExportParams> documentExportParams, @NotNull MergeJobStartParams mergeJobParams) {
+        PdfGenerationLog generationLog = new PdfGenerationLog();
+        generationLog.log("Starting merged PDF generation for " + documentExportParams.size() + " documents");
+
+        try {
+            List<WeasyPrintConverter.MergeDocumentData> preparedDocuments = new ArrayList<>();
+
+            for (ExportParams exportParams : documentExportParams) {
+                // Auto-select style package if needed (same as normal flow)
+                if (exportParams.isAutoSelectStylePackage()) {
+                    StylePackageModel mostSuitableStylePackageModel = pdfExporterPolarionService.getMostSuitableStylePackageModel(DocIdentifier.of(exportParams));
+                    exportParams.overwriteByStylePackage(mostSuitableStylePackageModel);
+                }
+
+                // Get tracker project and document data (same as normal flow)
+                @Nullable ITrackerProject project = getTrackerProject(exportParams);
+                @NotNull final DocumentData<? extends IUniqueObject> documentData = DocumentDataFactory.getDocumentData(exportParams, true);
+
+                // Prepare HTML content through full pipeline (same as normal flow)
+                @NotNull String htmlContent = prepareHtmlContent(exportParams, project, documentData, null, generationLog);
+
+                // Prepare cover page HTML if needed.
+                // Preserve {{ PAGE_NUMBER }} and {{ PAGES_TOTAL_COUNT }} placeholders —
+                // bulk processing service will resolve them after converting HTML to PDF and counting pages.
+                String coverPageHtml = null;
+                if (exportParams.getCoverPage() != null) {
+                    PlaceholderValues preservedPlaceholders = PlaceholderValues.builder()
+                            .pageNumber("{{ PAGE_NUMBER }}")
+                            .pagesTotalCount("{{ PAGES_TOTAL_COUNT }}")
+                            .build();
+                    coverPageHtml = coverPageProcessor.composeTitleHtml(documentData, exportParams, preservedPlaceholders);
+                }
+
+                preparedDocuments.add(new WeasyPrintConverter.MergeDocumentData(htmlContent, coverPageHtml));
+            }
+
+            generationLog.log("All documents prepared, starting merged PDF generation");
+
+            byte[] pdfBytes = weasyPrintServiceConnector.convertMergedToPdf(preparedDocuments, mergeJobParams);
+
+            generationLog.finish();
+            logger.info("Merged PDF has been generated within " + generationLog.getTotalDurationMs() + " milliseconds");
+
+            return pdfBytes;
+        } catch (Exception e) {
+            generationLog.finish();
+            generationLog.log("Merged PDF generation failed: " + e.getMessage());
+            throw e;
+        }
     }
 
     public byte[] convertToPdf(@NotNull ExportParams exportParams, @Nullable ExportMetaInfoCallback metaInfoCallback) {

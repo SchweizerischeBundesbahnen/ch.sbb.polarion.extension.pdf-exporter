@@ -159,6 +159,7 @@ export default class ExportPopup {
                 selectElement: this.ctx.getElementById("popup-webhooks-selector")
             }),
             this.adjustWebhooksVisibility(),
+            this.adjustMergeVisibility(),
             this.loadLinkRoles(),
             this.loadDocumentLanguage(),
             this.loadFileName(),
@@ -260,6 +261,27 @@ export default class ExportPopup {
                 this.ctx.getElementById("webhooks-container").style.display = response.enabled ? "flex" : "none";
                 resolve();
             }).catch((error) => reject(error));
+        });
+    }
+
+    adjustMergeVisibility() {
+        if (this.ctx.getExportType() !== ExportParams.ExportType.BULK) {
+            return Promise.resolve();
+        }
+        return new Promise((resolve) => {
+            this.callAsync({
+                method: "GET",
+                url: `/polarion/pdf-exporter/rest/internal/bulk-processing/status`,
+                responseType: "json",
+            }).then(({response}) => {
+                const mergeElements = this.ctx.querySelectorAll(".visible-for-BULK");
+                mergeElements.forEach(el => el.style.display = response.available ? "flex" : "none");
+                resolve();
+            }).catch(() => {
+                const mergeElements = this.ctx.querySelectorAll(".visible-for-BULK");
+                mergeElements.forEach(el => el.style.display = "none");
+                resolve();
+            });
         });
     }
 

@@ -1,7 +1,7 @@
 package ch.sbb.polarion.extension.pdf_exporter.weasyprint.service;
 
 import ch.sbb.polarion.extension.pdf_exporter.properties.PdfExporterExtensionConfiguration;
-import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.MergeSessionStartParams;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.MergeJobStartParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PdfVariant;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.DocumentData;
 import ch.sbb.polarion.extension.pdf_exporter.util.PdfA1Processor;
@@ -60,8 +60,8 @@ public class WeasyPrintServiceConnector implements WeasyPrintConverter {
         this.weasyPrintServiceBaseUrl = weasyPrintServiceBaseUrl;
     }
 
-    private @NotNull String getBulkExportServiceBaseUrl() {
-        return PdfExporterExtensionConfiguration.getInstance().getBulkExportService();
+    private @NotNull String getBulkProcessingServiceBaseUrl() {
+        return PdfExporterExtensionConfiguration.getInstance().getBulkProcessingService();
     }
 
     @Override
@@ -252,17 +252,44 @@ public class WeasyPrintServiceConnector implements WeasyPrintConverter {
     }
 
     @Override
-    public @NotNull String startMergeSession(@NotNull MergeSessionStartParams params) {
+    public byte[] convertMergedToPdf(@NotNull List<MergeDocumentData> documents, @NotNull MergeJobStartParams params) {
+        params.setWeasyPrintServiceUrl(getWeasyPrintServiceBaseUrl());
+        String jobId = startMergeJob(params);
+        for (MergeDocumentData doc : documents) {
+            if (doc.coverPageHtml() != null) {
+                addDocumentWithCoverPageToJob(jobId, doc.htmlContent(), doc.coverPageHtml());
+            } else {
+                addDocumentToJob(jobId, doc.htmlContent());
+            }
+        }
+        byte[] pdfBytes = finishMergeJob(jobId);
+
+        PdfVariant pdfVariant = PdfVariant.fromWeasyPrintParameter(params.getPdfVariant());
+        if (pdfVariant != null) {
+            if (isPdfA1Variant(pdfVariant)) {
+                pdfBytes = postProcessPdfA1(pdfBytes, pdfVariant);
+            }
+            if (isPdfA4Variant(pdfVariant)) {
+                pdfBytes = postProcessPdfA4(pdfBytes, pdfVariant);
+            }
+            if (pdfVariant == PdfVariant.PDF_UA_2) {
+                pdfBytes = postProcessPdfUa2(pdfBytes);
+            }
+        }
+        return pdfBytes;
+    }
+
+    private @NotNull String startMergeJob(@NotNull MergeJobStartParams params) {
         Client client = null;
         try {
             client = ClientBuilder.newClient();
-            WebTarget webTarget = client.target(getBulkExportServiceBaseUrl() + "/api/convert/start");
+            WebTarget webTarget = client.target(getBulkProcessingServiceBaseUrl() + "/api/convert/start");
 
             String jsonBody;
             try {
                 jsonBody = new ObjectMapper().writeValueAsString(params);
             } catch (JsonProcessingException e) {
-                throw new IllegalStateException("Could not serialize merge session start params", e);
+                throw new IllegalStateException("Could not serialize merge job start params", e);
             }
 
             try (Response response = webTarget.request(MediaType.APPLICATION_JSON)
@@ -273,7 +300,7 @@ public class WeasyPrintServiceConnector implements WeasyPrintConverter {
                 } else {
                     String errorMessage = response.readEntity(String.class);
                     throw new IllegalStateException(String.format(
-                            "Failed to start merge session. Status: %s, Message: [%s]",
+                            "Failed to start merge job. Status: %s, Message: [%s]",
                             response.getStatus(), errorMessage));
                 }
             }
@@ -284,12 +311,11 @@ public class WeasyPrintServiceConnector implements WeasyPrintConverter {
         }
     }
 
-    @Override
-    public void addDocumentToSession(@NotNull String sessionId, @NotNull String htmlContent) {
+    private void addDocumentToJob(@NotNull String jobId, @NotNull String htmlContent) {
         Client client = null;
         try {
             client = ClientBuilder.newClient();
-            WebTarget webTarget = client.target(getBulkExportServiceBaseUrl() + "/api/convert/" + sessionId + "/add");
+            WebTarget webTarget = client.target(getBulkProcessingServiceBaseUrl() + "/api/convert/" + jobId + "/add");
 
             try (Response response = webTarget.request(MediaType.APPLICATION_JSON)
                     .post(Entity.entity(htmlContent, MediaType.TEXT_HTML))) {
@@ -297,8 +323,8 @@ public class WeasyPrintServiceConnector implements WeasyPrintConverter {
                         && response.getStatus() != Response.Status.ACCEPTED.getStatusCode()) {
                     String errorMessage = response.readEntity(String.class);
                     throw new IllegalStateException(String.format(
-                            "Failed to add document to merge session '%s'. Status: %s, Message: [%s]",
-                            sessionId, response.getStatus(), errorMessage));
+                            "Failed to add document to merge job '%s'. Status: %s, Message: [%s]",
+                            jobId, response.getStatus(), errorMessage));
                 }
             }
         } finally {
@@ -308,12 +334,41 @@ public class WeasyPrintServiceConnector implements WeasyPrintConverter {
         }
     }
 
-    @Override
-    public byte[] finishMergeSession(@NotNull String sessionId) {
+    private void addDocumentWithCoverPageToJob(@NotNull String jobId, @NotNull String htmlContent, @NotNull String coverPageHtml) {
         Client client = null;
         try {
             client = ClientBuilder.newClient();
-            WebTarget webTarget = client.target(getBulkExportServiceBaseUrl() + "/api/convert/" + sessionId + "/stop");
+            WebTarget webTarget = client.target(getBulkProcessingServiceBaseUrl() + "/api/convert/" + jobId + "/add-with-cover");
+
+            String jsonBody;
+            try {
+                jsonBody = new ObjectMapper().writeValueAsString(java.util.Map.of("html", htmlContent, "coverPageHtml", coverPageHtml));
+            } catch (JsonProcessingException e) {
+                throw new IllegalStateException("Could not serialize add-with-cover request", e);
+            }
+
+            try (Response response = webTarget.request(MediaType.APPLICATION_JSON)
+                    .post(Entity.entity(jsonBody, MediaType.APPLICATION_JSON))) {
+                if (response.getStatus() != Response.Status.OK.getStatusCode()
+                        && response.getStatus() != Response.Status.ACCEPTED.getStatusCode()) {
+                    String errorMessage = response.readEntity(String.class);
+                    throw new IllegalStateException(String.format(
+                            "Failed to add document with cover page to merge job '%s'. Status: %s, Message: [%s]",
+                            jobId, response.getStatus(), errorMessage));
+                }
+            }
+        } finally {
+            if (client != null) {
+                client.close();
+            }
+        }
+    }
+
+    private byte[] finishMergeJob(@NotNull String jobId) {
+        Client client = null;
+        try {
+            client = ClientBuilder.newClient();
+            WebTarget webTarget = client.target(getBulkProcessingServiceBaseUrl() + "/api/convert/" + jobId + "/stop");
 
             try (Response response = webTarget.request("application/pdf")
                     .post(Entity.entity("", MediaType.TEXT_PLAIN))) {
@@ -327,8 +382,8 @@ public class WeasyPrintServiceConnector implements WeasyPrintConverter {
                 } else {
                     String errorMessage = response.readEntity(String.class);
                     throw new IllegalStateException(String.format(
-                            "Failed to finish merge session '%s'. Status: %s, Message: [%s]",
-                            sessionId, response.getStatus(), errorMessage));
+                            "Failed to finish merge job '%s'. Status: %s, Message: [%s]",
+                            jobId, response.getStatus(), errorMessage));
                 }
             }
         } finally {

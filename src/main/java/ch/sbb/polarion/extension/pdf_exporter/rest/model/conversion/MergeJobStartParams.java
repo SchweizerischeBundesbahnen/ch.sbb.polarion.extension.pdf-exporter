@@ -12,8 +12,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
-@Schema(description = "Parameters for starting a merge PDF conversion session")
-public class MergeSessionStartParams {
+@Schema(description = "Parameters for starting a merge PDF conversion job")
+public class MergeJobStartParams {
 
     @Schema(description = "Character encoding for the HTML documents", defaultValue = "utf-8")
     @Builder.Default
@@ -47,4 +47,7 @@ public class MergeSessionStartParams {
     @Schema(description = "Embed full fonts instead of subsetting", defaultValue = "false")
     @Builder.Default
     private boolean fullFonts = false;
+
+    @Schema(description = "URL of the WeasyPrint service to use for HTML-to-PDF conversion")
+    private String weasyPrintServiceUrl;
 }
