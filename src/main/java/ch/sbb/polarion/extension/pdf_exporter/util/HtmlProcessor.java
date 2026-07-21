@@ -800,7 +800,12 @@ public class HtmlProcessor {
             return null; // Not expected elements structure, stop processing
         }
 
-        Element linkedWorkItemElement = extractLinkedWorkItemElement(colonNode.nextSibling());
+        // A link marked as suspect is rendered with an extra icon element placed between the colon and the linked
+        // WorkItem, so it must be skipped over (and removed together with the rest) instead of aborting processing.
+        Element suspectElement = extractSuspectElement(colonNode.nextSibling());
+        Node nodeAfterColon = suspectElement != null ? suspectElement.nextSibling() : colonNode.nextSibling();
+
+        Element linkedWorkItemElement = extractLinkedWorkItemElement(nodeAfterColon);
         if (linkedWorkItemElement == null) {
             return null; // Not expected elements structure, stop processing
         }
@@ -815,7 +820,20 @@ public class HtmlProcessor {
             revisionNode = extractRevisionNode(linkedWorkItemElement.nextSibling());
         }
 
-        return new LinkedWorkitemNodes(role, roleElement, colonNode, linkedWorkItemElement, revisionNode, brElement);
+        return new LinkedWorkitemNodes(role, roleElement, colonNode, suspectElement, linkedWorkItemElement, revisionNode, brElement);
+    }
+
+    /**
+     * Detects the icon element which Polarion renders for a link marked as suspect. It is recognized structurally:
+     * unlike the linked WorkItem element it holds an image and no hyperlink at all.
+     */
+    @VisibleForTesting
+    Element extractSuspectElement(@Nullable Node node) {
+        if (node instanceof Element element && element.selectFirst("a.polarion-Hyperlink") == null && element.selectFirst("img") != null) {
+            return element;
+        } else {
+            return null;
+        }
     }
 
     private TextNode extractRevisionNode(Node node) {
@@ -1455,7 +1473,8 @@ public class HtmlProcessor {
     }
 
     private record LinkedWorkitemNodes(@NotNull String role, @NotNull Element roleElement, @NotNull TextNode colonNode,
-                                       @NotNull Element linkedWorkItemElement, @Nullable Node revisionNode, @Nullable Element brElement) {
+                                       @Nullable Element suspectElement, @NotNull Element linkedWorkItemElement,
+                                       @Nullable Node revisionNode, @Nullable Element brElement) {
         Element getNextSibling() {
             return brElement != null ? brElement.nextElementSibling() : linkedWorkItemElement.nextElementSibling();
         }
@@ -1463,6 +1482,9 @@ public class HtmlProcessor {
         void removeAll() {
             roleElement.remove();
             colonNode.remove();
+            if (suspectElement != null) {
+                suspectElement.remove();
+            }
             linkedWorkItemElement.remove();
             if (revisionNode != null) {
                 revisionNode.remove();
