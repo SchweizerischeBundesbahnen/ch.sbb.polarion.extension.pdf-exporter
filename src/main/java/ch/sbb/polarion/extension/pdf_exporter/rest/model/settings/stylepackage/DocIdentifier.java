@@ -28,7 +28,7 @@ public class DocIdentifier {
     private @Nullable String projectId;
 
     @Schema(description = "Space ID")
-    private @NotNull String spaceId;
+    private @Nullable String spaceId;
 
     @Schema(description = "Document name")
     private @NotNull String documentName;

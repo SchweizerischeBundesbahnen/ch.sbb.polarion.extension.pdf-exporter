@@ -9,7 +9,7 @@
     </parent>
 
     <artifactId>ch.sbb.polarion.extension.pdf-exporter</artifactId>
-    <version>13.3.1-SNAPSHOT</version>
+    <version>13.3.2-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>Polarion ALM extension to convert Documents to PDF files</name>
@@ -52,7 +52,7 @@
         <testcontainers.version>2.0.5</testcontainers.version>
 
         <awaitility.version>4.3.0</awaitility.version>
-        <tika.version>3.3.1</tika.version>
+        <tika.version>3.3.2</tika.version>
         <ph-css.version>8.2.1</ph-css.version>
         <commons-text.version>1.15.0</commons-text.version>
         <verapdf.version>1.30.2</verapdf.version>

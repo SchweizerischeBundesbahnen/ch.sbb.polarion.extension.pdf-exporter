@@ -41,7 +41,10 @@ public class ConversionParams {
     protected ImageDensity imageDensity = ImageDensity.DPI_96;
 
     @Schema(description = "Embed full fonts instead of subsetting. When true, fonts are embedded completely " +
-            "without optimization. This can help avoid font subsetting errors but results in larger PDF files.", defaultValue = "false")
+            "without optimization, which gives full glyph coverage and keeps the resulting PDF easier to edit " +
+            "downstream, at the cost of a larger file. This is not a robustness switch: subsetting already keeps " +
+            "a font whole when it cannot be applied, while skipping it can itself fail on a damaged font.",
+            defaultValue = "false")
     @Builder.Default
     protected boolean fullFonts = false;
 }
