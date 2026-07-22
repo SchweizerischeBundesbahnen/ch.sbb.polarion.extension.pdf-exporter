@@ -330,23 +330,43 @@ export default class ExportBulk {
     }
 
     startMergeExport() {
-        // Build document list from selected checkboxes, skipping collections
-        // (collections are containers, not documents — they must be expanded first
-        // which is not supported in merge mode)
+        // Build document list from selected checkboxes, expanding collections into their member documents
         const documents = [];
+        const collectionPromises = [];
+
         this.popupCtx.querySelectorAll(".export-item.paused").forEach(item => {
             const documentType = this.getDocumentType(item.dataset["type"]);
             const documentId = item.dataset["id"];
 
             if (documentType === ExportParams.DocumentType.BASELINE_COLLECTION) {
-                item.classList.remove("paused");
-                item.classList.add("error");
-                const errorDiv = document.createElement("div");
-                errorDiv.className = "error-message";
-                errorDiv.innerText = "Baseline collections are not supported in merge mode";
-                item.appendChild(errorDiv);
-                this.errors = true;
-                return; // skip this item
+                const projectId = item.dataset["project"];
+                collectionPromises.push(
+                    this.ctx.getCollectionDocuments(projectId, documentId).then(collectionDocs => {
+                        let filteredDocs = collectionDocs;
+                        if (!this.ctx.exportPages) {
+                            filteredDocs = collectionDocs.filter(doc => doc.documentType !== ExportParams.DocumentType.LIVE_REPORT);
+                        }
+                        for (const collectionDoc of filteredDocs) {
+                            const docParams = JSON.parse(this.exportParams.toJSON());
+                            docParams["projectId"] = collectionDoc.projectId;
+                            docParams["locationPath"] = collectionDoc.spaceId + "/" + collectionDoc.documentName;
+                            docParams["revision"] = collectionDoc.revision;
+                            docParams["documentType"] = collectionDoc.documentType;
+                            documents.push(docParams);
+                        }
+                        item.classList.remove("paused");
+                        item.classList.add("in-progress");
+                    }).catch(err => {
+                        item.classList.remove("paused");
+                        item.classList.add("error");
+                        const errorDiv = document.createElement("div");
+                        errorDiv.className = "error-message";
+                        errorDiv.innerText = err.message || "Failed to load collection documents";
+                        item.appendChild(errorDiv);
+                        this.errors = true;
+                    })
+                );
+                return;
             }
 
             const docParams = JSON.parse(this.exportParams.toJSON());
@@ -361,11 +381,17 @@ export default class ExportBulk {
             documents.push(docParams);
         });
 
-        if (documents.length === 0) {
-            this.updateState(BULK_EXPORT_FINISHED);
-            return;
-        }
+        // Wait for all collections to expand, then submit merge request
+        Promise.all(collectionPromises).then(() => {
+            if (documents.length === 0) {
+                this.updateState(BULK_EXPORT_FINISHED);
+                return;
+            }
+            this.submitMergeRequest(documents);
+        });
+    }
 
+    submitMergeRequest(documents) {
         const pdfVariant = this.exportParams.pdfVariant;
         const bulkMergeRequest = {
             documents: documents,
