@@ -1095,7 +1095,8 @@ public class HtmlProcessor {
     }
 
     private Element generateTableOfFigures(@NotNull Document document, @NotNull String label) {
-        Element tof = new Element(HtmlTag.DIV);
+        Element tof = new Element(HtmlTag.UL);
+        tof.addClass("tof");
         int generatedAnchorIndex = 0;
 
         // Find all caption spans with the specified data-sequence, regardless of whether they have anchors
@@ -1135,12 +1136,23 @@ public class HtmlProcessor {
                 caption = captionBuf.toString();
             }
 
-            Element tofItem = new Element(HtmlTag.A);
-            tofItem.attr(HtmlTagAttr.HREF, String.format("#%s%s", TABLE_OF_FIGURES_ANCHOR_ID_PREFIX, anchorId));
-            tofItem.text(String.format("%s %s. %s", label, number, caption.trim()));
+            String href = String.format("#%s%s", TABLE_OF_FIGURES_ANCHOR_ID_PREFIX, anchorId);
+
+            Element tofItem = new Element(HtmlTag.LI);
+
+            Element textLink = new Element(HtmlTag.A);
+            textLink.attr(HtmlTagAttr.HREF, href);
+            textLink.text(String.format("%s %s. %s", label, number, caption.trim()));
+            tofItem.appendChild(textLink);
+
+            // Empty link whose ::after content is resolved by WeasyPrint to the target's page number
+            // (target-counter), the same mechanism the table of contents uses.
+            Element pageNumberLink = new Element(HtmlTag.A);
+            pageNumberLink.attr(HtmlTagAttr.HREF, href);
+            pageNumberLink.addClass("page-number");
+            tofItem.appendChild(pageNumberLink);
 
             tof.appendChild(tofItem);
-            tof.appendChild(new Element(HtmlTag.BR));
         }
 
         return tof;

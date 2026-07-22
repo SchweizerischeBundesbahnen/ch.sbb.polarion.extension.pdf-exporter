@@ -124,7 +124,7 @@ th {
 
 ul.toc {
     padding: 0;
-    line-height: 1.4em;
+    line-height: 1.9em;
 }
 
 ul.toc, ul.toc ul {
@@ -133,41 +133,52 @@ ul.toc, ul.toc ul {
 
 ul.toc ul {
     padding-left: .6em;
-    margin-top: .2em;
-    margin-bottom: .2em;
 }
 
 ul.toc li {
-    border-bottom: 1px dotted black;
-    display: table;
-    width: 100%;
-    position: relative;
+    display: block;
 }
 
 ul.toc li > a {
-    display: table-cell;
-    padding-right: 5em;
     text-decoration: none;
-    color: inherit;
-}
-
-a.toc-item {
-    display: grid;
-    grid-template-columns: auto 1fr;
+    color: black;
 }
 
 ul.toc li a .number {
-    margin-right: .4em;
+    margin-right: .6em;
 }
 
-ul.toc li > a.page-number {
-    position: absolute;
-    right: 0;
-    bottom: 0;
-    padding-right: 0;
+/* Dot leaders that fill the space up to the right-aligned page number, matching Polarion's native export.
+   WeasyPrint resolves leader() and target-counter() during pagination. */
+ul.toc li > a.page-number::before {
+    content: leader('. ');
 }
 
 ul.toc li > a.page-number::after {
+    content: target-counter(attr(href), page);
+}
+
+ul.tof {
+    padding: 0;
+    line-height: 1.9em;
+    list-style-type: none;
+}
+
+ul.tof li {
+    display: block;
+}
+
+ul.tof li > a {
+    text-decoration: none;
+    color: black;
+}
+
+/* Same dot-leader page numbers as the table of contents above. */
+ul.tof li > a.page-number::before {
+    content: leader('. ');
+}
+
+ul.tof li > a.page-number::after {
     content: target-counter(attr(href), page);
 }
 
