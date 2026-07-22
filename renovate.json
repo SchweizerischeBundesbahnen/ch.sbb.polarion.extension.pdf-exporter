@@ -2,18 +2,5 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
     "github>SchweizerischeBundesbahnen/casc-renovate-preset-polarion-java"
-  ],
-  "customManagers": [
-    {
-      "customType": "regex",
-      "managerFilePatterns": [
-        "/versions.properties$/"
-      ],
-      "datasourceTemplate": "github-releases",
-      "depNameTemplate": "SchweizerischeBundesbahnen/weasyprint-service",
-      "matchStrings": [
-        "weasyprint-service.version=(?<currentValue>.*)"
-      ]
-    }
   ]
 }
