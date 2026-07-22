@@ -1,5 +1,12 @@
 # Changelog
 
+## [12.6.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v12.5.2...v12.6.0) (2026-07-22)
+
+
+### Features
+
+* page numbers for ToF/ToT and native ToC/ToF styling ([#947](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/947)) ([13225c5](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/13225c57e7cc877914996967e1688854d89dfe7e))
+
 ## [12.5.2](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v12.5.1...v12.5.2) (2026-07-21)
 
 
