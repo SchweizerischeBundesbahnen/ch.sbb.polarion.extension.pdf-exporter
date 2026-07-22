@@ -1,13 +1,9 @@
 package ch.sbb.polarion.extension.pdf_exporter.weasyprint.service;
 
 import ch.sbb.polarion.extension.pdf_exporter.properties.PdfExporterExtensionConfiguration;
-import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.MergeJobStartParams;
-import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PdfVariant;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.DocumentData;
-import ch.sbb.polarion.extension.pdf_exporter.util.PdfA1Processor;
-import ch.sbb.polarion.extension.pdf_exporter.util.PdfA4Processor;
 import ch.sbb.polarion.extension.pdf_exporter.util.PdfGenerationLog;
-import ch.sbb.polarion.extension.pdf_exporter.util.PdfUa2Processor;
+import ch.sbb.polarion.extension.pdf_exporter.util.PdfPostProcessor;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.WeasyPrintConverter;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.WeasyPrintOptions;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.service.model.WeasyPrintInfo;
@@ -41,7 +37,6 @@ import static com.polarion.core.util.StringUtils.isEmpty;
 public class WeasyPrintServiceConnector implements WeasyPrintConverter {
     private static final Logger logger = Logger.getLogger(WeasyPrintServiceConnector.class);
 
-    private static final String MERGE_API_PREFIX = "/api/convert/";
     private static final String PYTHON_VERSION_HEADER = "Python-Version";
     private static final String WEASYPRINT_VERSION_HEADER = "Weasyprint-Version";
     private static final String WEASYPRINT_SERVICE_VERSION_HEADER = "Weasyprint-Service-Version";
@@ -52,6 +47,7 @@ public class WeasyPrintServiceConnector implements WeasyPrintConverter {
 
     @Getter
     private final @NotNull String weasyPrintServiceBaseUrl;
+    private final PdfPostProcessor pdfPostProcessor = new PdfPostProcessor();
 
     public WeasyPrintServiceConnector() {
         this(PdfExporterExtensionConfiguration.getInstance().getWeasyPrintService());
@@ -59,10 +55,6 @@ public class WeasyPrintServiceConnector implements WeasyPrintConverter {
 
     public WeasyPrintServiceConnector(@NotNull String weasyPrintServiceBaseUrl) {
         this.weasyPrintServiceBaseUrl = weasyPrintServiceBaseUrl;
-    }
-
-    private @NotNull String getBulkProcessingServiceBaseUrl() {
-        return PdfExporterExtensionConfiguration.getInstance().getBulkProcessingService();
     }
 
     @Override
@@ -100,34 +92,7 @@ public class WeasyPrintServiceConnector implements WeasyPrintConverter {
                         String.format("variant=%s, html_size=%d bytes", weasyPrintOptions.getPdfVariant(), htmlPage.length()));
             }
 
-            // Post-process PDF/A-1 documents to ensure compliance with ISO 19005-1:2005
-            if (isPdfA1Variant(weasyPrintOptions.getPdfVariant())) {
-                startTime = System.currentTimeMillis();
-                int originalSize = pdfBytes.length;
-                pdfBytes = postProcessPdfA1(pdfBytes, weasyPrintOptions.getPdfVariant());
-                recordTiming(generationLog, "PDF/A-1 post-processing", System.currentTimeMillis() - startTime,
-                        String.format("variant=%s, pdf_size=%d->%d bytes", weasyPrintOptions.getPdfVariant(), originalSize, pdfBytes.length));
-            }
-
-            // Post-process PDF/A-4 documents to ensure compliance with ISO 19005-4:2020
-            if (isPdfA4Variant(weasyPrintOptions.getPdfVariant())) {
-                startTime = System.currentTimeMillis();
-                int originalSize = pdfBytes.length;
-                pdfBytes = postProcessPdfA4(pdfBytes, weasyPrintOptions.getPdfVariant());
-                recordTiming(generationLog, "PDF/A-4 post-processing", System.currentTimeMillis() - startTime,
-                        String.format("variant=%s, pdf_size=%d->%d bytes", weasyPrintOptions.getPdfVariant(), originalSize, pdfBytes.length));
-            }
-
-            // Post-process PDF/UA-2 documents to ensure compliance with ISO 14289-2:2024
-            if (weasyPrintOptions.getPdfVariant() == PdfVariant.PDF_UA_2) {
-                startTime = System.currentTimeMillis();
-                int originalSize = pdfBytes.length;
-                pdfBytes = postProcessPdfUa2(pdfBytes);
-                recordTiming(generationLog, "PDF/UA-2 post-processing", System.currentTimeMillis() - startTime,
-                        String.format("pdf_size=%d->%d bytes", originalSize, pdfBytes.length));
-            }
-
-            return pdfBytes;
+            return pdfPostProcessor.postProcess(pdfBytes, weasyPrintOptions.getPdfVariant(), generationLog);
         } finally {
             if (client != null) {
                 client.close();
@@ -138,54 +103,6 @@ public class WeasyPrintServiceConnector implements WeasyPrintConverter {
     private void recordTiming(@Nullable PdfGenerationLog generationLog, String stageName, long durationMs, String details) {
         if (generationLog != null) {
             generationLog.recordTiming(stageName, durationMs, details);
-        }
-    }
-
-    private boolean isPdfA1Variant(@NotNull PdfVariant pdfVariant) {
-        return pdfVariant == PdfVariant.PDF_A_1A || pdfVariant == PdfVariant.PDF_A_1B;
-    }
-
-    private byte[] postProcessPdfA1(byte[] pdfBytes, @NotNull PdfVariant pdfVariant) {
-        try {
-            String conformance = switch (pdfVariant) {
-                case PDF_A_1A -> "A";
-                case PDF_A_1B -> "B";
-                default -> null;
-            };
-            return PdfA1Processor.processPdfA1(pdfBytes, conformance);
-        } catch (IOException e) {
-            logger.error("Failed to post-process PDF/A-1 document for compliance", e);
-            // Return original PDF if post-processing fails
-            return pdfBytes;
-        }
-    }
-
-    private boolean isPdfA4Variant(@NotNull PdfVariant pdfVariant) {
-        return pdfVariant == PdfVariant.PDF_A_4E || pdfVariant == PdfVariant.PDF_A_4F || pdfVariant == PdfVariant.PDF_A_4U;
-    }
-
-    private byte[] postProcessPdfA4(byte[] pdfBytes, @NotNull PdfVariant pdfVariant) {
-        try {
-            String conformance = switch (pdfVariant) {
-                case PDF_A_4E -> "E";
-                case PDF_A_4F -> "F";
-                default -> null;
-            };
-            return PdfA4Processor.processPdfA4(pdfBytes, conformance);
-        } catch (IOException e) {
-            logger.error("Failed to post-process PDF/A-4 document for compliance", e);
-            // Return original PDF if post-processing fails
-            return pdfBytes;
-        }
-    }
-
-    private byte[] postProcessPdfUa2(byte[] pdfBytes) {
-        try {
-            return PdfUa2Processor.processPdfUa2(pdfBytes);
-        } catch (IOException e) {
-            logger.error("Failed to post-process PDF/UA-2 document for compliance", e);
-            // Return original PDF if post-processing fails
-            return pdfBytes;
         }
     }
 
@@ -245,170 +162,6 @@ public class WeasyPrintServiceConnector implements WeasyPrintConverter {
                     throw new IllegalStateException("Could not get proper response from WeasyPrint Service");
                 }
             }
-        } finally {
-            if (client != null) {
-                client.close();
-            }
-        }
-    }
-
-    @Override
-    public byte[] convertMergedToPdf(@NotNull List<MergeDocumentData> documents, @NotNull MergeJobStartParams params) {
-        params.setWeasyPrintServiceUrl(getWeasyPrintServiceBaseUrl());
-        String jobId = startMergeJob(params);
-        byte[] pdfBytes;
-        try {
-            for (MergeDocumentData doc : documents) {
-                if (doc.coverPageHtml() != null) {
-                    addDocumentWithCoverPageToJob(jobId, doc.htmlContent(), doc.coverPageHtml());
-                } else {
-                    addDocumentToJob(jobId, doc.htmlContent());
-                }
-            }
-            pdfBytes = finishMergeJob(jobId);
-        } catch (Exception e) {
-            logger.error(String.format("Merge job '%s' failed, attempting cleanup", jobId), e);
-            deleteMergeJob(jobId);
-            throw e;
-        }
-
-        PdfVariant pdfVariant = PdfVariant.fromWeasyPrintParameter(params.getPdfVariant());
-        if (pdfVariant != null) {
-            if (isPdfA1Variant(pdfVariant)) {
-                pdfBytes = postProcessPdfA1(pdfBytes, pdfVariant);
-            }
-            if (isPdfA4Variant(pdfVariant)) {
-                pdfBytes = postProcessPdfA4(pdfBytes, pdfVariant);
-            }
-            if (pdfVariant == PdfVariant.PDF_UA_2) {
-                pdfBytes = postProcessPdfUa2(pdfBytes);
-            }
-        }
-        return pdfBytes;
-    }
-
-    private @NotNull String startMergeJob(@NotNull MergeJobStartParams params) {
-        Client client = null;
-        try {
-            client = ClientBuilder.newClient();
-            WebTarget webTarget = client.target(getBulkProcessingServiceBaseUrl() + MERGE_API_PREFIX + "start");
-
-            String jsonBody;
-            try {
-                jsonBody = new ObjectMapper().writeValueAsString(params);
-            } catch (JsonProcessingException e) {
-                throw new IllegalStateException("Could not serialize merge job start params", e);
-            }
-
-            try (Response response = webTarget.request(MediaType.APPLICATION_JSON)
-                    .post(Entity.entity(jsonBody, MediaType.APPLICATION_JSON))) {
-                if (response.getStatus() == Response.Status.OK.getStatusCode()
-                        || response.getStatus() == Response.Status.CREATED.getStatusCode()) {
-                    return response.readEntity(String.class).trim().replace("\"", "");
-                } else {
-                    String errorMessage = response.readEntity(String.class);
-                    throw new IllegalStateException(String.format(
-                            "Failed to start merge job. Status: %s, Message: [%s]",
-                            response.getStatus(), errorMessage));
-                }
-            }
-        } finally {
-            if (client != null) {
-                client.close();
-            }
-        }
-    }
-
-    private void addDocumentToJob(@NotNull String jobId, @NotNull String htmlContent) {
-        Client client = null;
-        try {
-            client = ClientBuilder.newClient();
-            WebTarget webTarget = client.target(getBulkProcessingServiceBaseUrl() + MERGE_API_PREFIX + jobId + "/add");
-
-            try (Response response = webTarget.request(MediaType.APPLICATION_JSON)
-                    .post(Entity.entity(htmlContent, MediaType.TEXT_HTML))) {
-                if (response.getStatus() != Response.Status.OK.getStatusCode()
-                        && response.getStatus() != Response.Status.ACCEPTED.getStatusCode()) {
-                    String errorMessage = response.readEntity(String.class);
-                    throw new IllegalStateException(String.format(
-                            "Failed to add document to merge job '%s'. Status: %s, Message: [%s]",
-                            jobId, response.getStatus(), errorMessage));
-                }
-            }
-        } finally {
-            if (client != null) {
-                client.close();
-            }
-        }
-    }
-
-    private void addDocumentWithCoverPageToJob(@NotNull String jobId, @NotNull String htmlContent, @NotNull String coverPageHtml) {
-        Client client = null;
-        try {
-            client = ClientBuilder.newClient();
-            WebTarget webTarget = client.target(getBulkProcessingServiceBaseUrl() + MERGE_API_PREFIX + jobId + "/add-with-cover");
-
-            String jsonBody;
-            try {
-                jsonBody = new ObjectMapper().writeValueAsString(java.util.Map.of("html", htmlContent, "coverPageHtml", coverPageHtml));
-            } catch (JsonProcessingException e) {
-                throw new IllegalStateException("Could not serialize add-with-cover request", e);
-            }
-
-            try (Response response = webTarget.request(MediaType.APPLICATION_JSON)
-                    .post(Entity.entity(jsonBody, MediaType.APPLICATION_JSON))) {
-                if (response.getStatus() != Response.Status.OK.getStatusCode()
-                        && response.getStatus() != Response.Status.ACCEPTED.getStatusCode()) {
-                    String errorMessage = response.readEntity(String.class);
-                    throw new IllegalStateException(String.format(
-                            "Failed to add document with cover page to merge job '%s'. Status: %s, Message: [%s]",
-                            jobId, response.getStatus(), errorMessage));
-                }
-            }
-        } finally {
-            if (client != null) {
-                client.close();
-            }
-        }
-    }
-
-    private byte[] finishMergeJob(@NotNull String jobId) {
-        Client client = null;
-        try {
-            client = ClientBuilder.newClient();
-            WebTarget webTarget = client.target(getBulkProcessingServiceBaseUrl() + MERGE_API_PREFIX + jobId + "/stop");
-
-            try (Response response = webTarget.request("application/pdf")
-                    .post(Entity.entity("", MediaType.TEXT_PLAIN))) {
-                if (response.getStatus() == Response.Status.OK.getStatusCode()) {
-                    InputStream inputStream = response.readEntity(InputStream.class);
-                    try {
-                        return inputStream.readAllBytes();
-                    } catch (IOException e) {
-                        throw new IllegalStateException("Could not read merged PDF response stream", e);
-                    }
-                } else {
-                    String errorMessage = response.readEntity(String.class);
-                    throw new IllegalStateException(String.format(
-                            "Failed to finish merge job '%s'. Status: %s, Message: [%s]",
-                            jobId, response.getStatus(), errorMessage));
-                }
-            }
-        } finally {
-            if (client != null) {
-                client.close();
-            }
-        }
-    }
-
-    @SuppressWarnings("java:S1166") // Exception intentionally caught for best-effort cleanup
-    private void deleteMergeJob(@NotNull String jobId) {
-        Client client = null;
-        try {
-            client = ClientBuilder.newClient();
-            client.target(getBulkProcessingServiceBaseUrl() + MERGE_API_PREFIX + jobId).request().delete().close();
-        } catch (Exception cleanup) {
-            logger.warn(String.format("Failed to delete merge job '%s': %s", jobId, cleanup.getMessage()));
         } finally {
             if (client != null) {
                 client.close();

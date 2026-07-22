@@ -37,8 +37,9 @@ import ch.sbb.polarion.extension.pdf_exporter.util.html.HtmlLinksHelper;
 import ch.sbb.polarion.extension.pdf_exporter.util.placeholder.PlaceholderProcessor;
 import ch.sbb.polarion.extension.pdf_exporter.util.placeholder.PlaceholderValues;
 import ch.sbb.polarion.extension.pdf_exporter.util.velocity.VelocityEvaluator;
-import ch.sbb.polarion.extension.pdf_exporter.weasyprint.WeasyPrintConverter;
+import ch.sbb.polarion.extension.pdf_exporter.weasyprint.BulkProcessingConnector;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.WeasyPrintOptions;
+import ch.sbb.polarion.extension.pdf_exporter.weasyprint.service.BulkProcessingServiceConnector;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.service.WeasyPrintServiceConnector;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.polarion.alm.projects.model.IUniqueObject;
@@ -90,6 +91,7 @@ public class PdfConverter {
     private final WeasyPrintServiceConnector weasyPrintServiceConnector;
     private final HtmlProcessor htmlProcessor;
     private final PdfTemplateProcessor pdfTemplateProcessor;
+    private final BulkProcessingConnector bulkProcessingConnector;
 
     public PdfConverter() {
         pdfExporterPolarionService = new PdfExporterPolarionService();
@@ -102,6 +104,7 @@ public class PdfConverter {
         htmlProcessor = new HtmlProcessor(fileResourceProvider, new LocalizationSettings(), new HtmlLinksHelper(fileResourceProvider));
         coverPageProcessor = new CoverPageProcessor(htmlProcessor);
         pdfTemplateProcessor = new PdfTemplateProcessor();
+        bulkProcessingConnector = new BulkProcessingServiceConnector();
     }
 
     public byte[] convertMergedToPdf(@NotNull List<ExportParams> documentExportParams) {
@@ -109,7 +112,7 @@ public class PdfConverter {
         generationLog.log("Starting merged PDF generation for " + documentExportParams.size() + " documents");
 
         try {
-            List<WeasyPrintConverter.MergeDocumentData> preparedDocuments = new ArrayList<>();
+            List<BulkProcessingConnector.MergeDocumentData> preparedDocuments = new ArrayList<>();
 
             for (ExportParams exportParams : documentExportParams) {
                 // Full pipeline — same as convertToPdf
@@ -132,7 +135,7 @@ public class PdfConverter {
                     coverPageHtml = coverPageProcessor.composeTitleHtml(documentData, exportParams, preservedPlaceholders);
                 }
 
-                preparedDocuments.add(new WeasyPrintConverter.MergeDocumentData(htmlContent, coverPageHtml));
+                preparedDocuments.add(new BulkProcessingConnector.MergeDocumentData(htmlContent, coverPageHtml));
             }
 
             generationLog.log("All documents prepared, starting merged PDF generation");
@@ -146,7 +149,7 @@ public class PdfConverter {
                     .fileName(firstDoc.getFileName() != null ? firstDoc.getFileName() : "merged-document.pdf")
                     .build();
 
-            byte[] pdfBytes = weasyPrintServiceConnector.convertMergedToPdf(preparedDocuments, mergeParams);
+            byte[] pdfBytes = bulkProcessingConnector.convertMergedToPdf(preparedDocuments, mergeParams);
 
             generationLog.finish();
             logger.info("Merged PDF has been generated within " + generationLog.getTotalDurationMs() + " milliseconds");

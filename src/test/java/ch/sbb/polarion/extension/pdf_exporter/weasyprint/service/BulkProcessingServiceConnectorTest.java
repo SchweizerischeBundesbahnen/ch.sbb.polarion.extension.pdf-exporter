@@ -1,9 +1,7 @@
 package ch.sbb.polarion.extension.pdf_exporter.weasyprint.service;
 
-import ch.sbb.polarion.extension.pdf_exporter.configuration.PdfExporterExtensionConfigurationExtension;
-import ch.sbb.polarion.extension.pdf_exporter.properties.PdfExporterExtensionConfiguration;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.MergeJobStartParams;
-import ch.sbb.polarion.extension.pdf_exporter.weasyprint.WeasyPrintConverter.MergeDocumentData;
+import ch.sbb.polarion.extension.pdf_exporter.weasyprint.BulkProcessingConnector.MergeDocumentData;
 import jakarta.ws.rs.client.Client;
 import jakarta.ws.rs.client.ClientBuilder;
 import jakarta.ws.rs.client.Entity;
@@ -32,8 +30,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@ExtendWith({MockitoExtension.class, PdfExporterExtensionConfigurationExtension.class})
-class WeasyPrintServiceConnectorMergeTest {
+@ExtendWith(MockitoExtension.class)
+class BulkProcessingServiceConnectorTest {
 
     private static final String BULK_SERVICE_URL = "http://localhost:9070";
     private static final String WEASYPRINT_URL = "http://localhost:9080";
@@ -46,7 +44,7 @@ class WeasyPrintServiceConnectorMergeTest {
     private Invocation.Builder invocationBuilder;
 
     private MockedStatic<ClientBuilder> clientBuilderMockedStatic;
-    private WeasyPrintServiceConnector connector;
+    private BulkProcessingServiceConnector connector;
 
     @BeforeEach
     void setUp() {
@@ -57,10 +55,7 @@ class WeasyPrintServiceConnectorMergeTest {
         lenient().when(webTarget.request(any(jakarta.ws.rs.core.MediaType.class))).thenReturn(invocationBuilder);
         lenient().when(webTarget.queryParam(anyString(), any())).thenReturn(webTarget);
 
-        PdfExporterExtensionConfiguration configMock = PdfExporterExtensionConfiguration.getInstance();
-        when(configMock.getBulkProcessingService()).thenReturn(BULK_SERVICE_URL);
-
-        connector = new WeasyPrintServiceConnector(WEASYPRINT_URL);
+        connector = new BulkProcessingServiceConnector(BULK_SERVICE_URL, WEASYPRINT_URL);
     }
 
     @AfterEach

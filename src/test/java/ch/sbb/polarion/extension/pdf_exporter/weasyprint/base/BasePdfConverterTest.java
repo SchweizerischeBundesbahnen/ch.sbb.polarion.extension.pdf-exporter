@@ -227,7 +227,8 @@ public abstract class BasePdfConverterTest extends BaseWeasyPrintTest {
                 coverPageProcessor,
                 getWeasyPrintServiceConnector(),
                 htmlProcessor,
-                new PdfTemplateProcessor()
+                new PdfTemplateProcessor(),
+                null
         );
     }
 

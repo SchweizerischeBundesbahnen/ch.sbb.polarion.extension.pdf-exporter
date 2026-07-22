@@ -9,7 +9,7 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.LinkRoleDirection;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.MergeJobStartParams;
 import ch.sbb.polarion.extension.pdf_exporter.util.placeholder.PlaceholderValues;
-import ch.sbb.polarion.extension.pdf_exporter.weasyprint.WeasyPrintConverter;
+import ch.sbb.polarion.extension.pdf_exporter.weasyprint.BulkProcessingConnector;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.DocumentData;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.id.LiveDocId;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.css.CssModel;
@@ -76,6 +76,8 @@ class PdfConverterTest {
     private HtmlProcessor htmlProcessor;
     @Mock
     private PdfTemplateProcessor pdfTemplateProcessor;
+    @Mock
+    private BulkProcessingConnector bulkProcessingConnector;
 
     private MockedStatic<DocumentDataFactory> documentDataFactoryMockedStatic;
 
@@ -99,7 +101,7 @@ class PdfConverterTest {
 
         ITrackerProject project = mock(ITrackerProject.class);
         lenient().when(pdfExporterPolarionService.getTrackerProject("testProjectId")).thenReturn(project);
-        PdfConverter pdfConverter = new PdfConverter(pdfExporterPolarionService, headerFooterSettings, cssSettings, placeholderProcessor, velocityEvaluator, coverPageProcessor, weasyPrintServiceConnector, htmlProcessor, pdfTemplateProcessor);
+        PdfConverter pdfConverter = new PdfConverter(pdfExporterPolarionService, headerFooterSettings, cssSettings, placeholderProcessor, velocityEvaluator, coverPageProcessor, weasyPrintServiceConnector, htmlProcessor, pdfTemplateProcessor, bulkProcessingConnector);
         CssModel cssModel = CssModel.builder().css("test css").build();
         when(cssSettings.load("testProjectId", SettingId.fromName("Default"))).thenReturn(cssModel);
         when(cssSettings.defaultValues()).thenReturn(CssModel.builder().build());
@@ -149,7 +151,7 @@ class PdfConverterTest {
         when(cssSettings.defaultValues()).thenReturn(CssModel.builder().build());
         PlaceholderProcessor processor = new PlaceholderProcessor(pdfExporterPolarionService);
         when(velocityEvaluator.evaluateVelocityExpressions(eq(documentData), anyString())).thenAnswer(a -> a.getArguments()[1]);
-        PdfConverter pdfConverter = new PdfConverter(null, null, cssSettings, processor, velocityEvaluator, null, null, htmlProcessor, pdfTemplateProcessor);
+        PdfConverter pdfConverter = new PdfConverter(null, null, cssSettings, processor, velocityEvaluator, null, null, htmlProcessor, pdfTemplateProcessor, bulkProcessingConnector);
 
         when(pdfExporterPolarionService.getPolarionProductName()).thenReturn("testProductName");
         when(pdfExporterPolarionService.getPolarionVersion()).thenReturn("testVersion");
@@ -199,7 +201,7 @@ class PdfConverterTest {
         when(htmlProcessor.replaceResourcesAsBase64Encoded(anyString())).thenAnswer(a -> a.getArgument(0));
 
         // Act
-        PdfConverter pdfConverter = new PdfConverter(null, headerFooterSettings, null, placeholderProcessor, velocityEvaluator, null, null, htmlProcessor, null);
+        PdfConverter pdfConverter = new PdfConverter(null, headerFooterSettings, null, placeholderProcessor, velocityEvaluator, null, null, htmlProcessor, null, bulkProcessingConnector);
         String headerFooterContent = pdfConverter.getHeaderFooterContent(documentData, exportParams);
 
         // Assert
@@ -269,7 +271,7 @@ class PdfConverterTest {
         when(htmlProcessor.processHtmlForPDF(anyString(), eq(exportParams), any(List.class), any())).thenReturn("result string");
 
         // Act
-        PdfConverter pdfConverter = new PdfConverter(null, null, null, null, null, null, null, htmlProcessor, null);
+        PdfConverter pdfConverter = new PdfConverter(null, null, null, null, null, null, null, htmlProcessor, null, bulkProcessingConnector);
         String resultContent = pdfConverter.postProcessDocumentContent(exportParams, project, "test content");
 
         // Assert
@@ -304,7 +306,7 @@ class PdfConverterTest {
         when(htmlProcessor.processHtmlForPDF(anyString(), eq(exportParams), any(List.class), any())).thenReturn("result string");
 
         // Act
-        PdfConverter pdfConverter = new PdfConverter(null, null, null, null, null, null, null, htmlProcessor, null);
+        PdfConverter pdfConverter = new PdfConverter(null, null, null, null, null, null, null, htmlProcessor, null, bulkProcessingConnector);
         String resultContent = pdfConverter.postProcessDocumentContent(exportParams, project, "test content");
 
         // Assert
@@ -339,7 +341,7 @@ class PdfConverterTest {
         when(htmlProcessor.processHtmlForPDF(anyString(), eq(exportParams), any(List.class), any())).thenReturn("result string");
 
         // Act
-        PdfConverter pdfConverter = new PdfConverter(null, null, null, null, null, null, null, htmlProcessor, null);
+        PdfConverter pdfConverter = new PdfConverter(null, null, null, null, null, null, null, htmlProcessor, null, bulkProcessingConnector);
         String resultContent = pdfConverter.postProcessDocumentContent(exportParams, project, "test content");
 
         // Assert
@@ -371,7 +373,7 @@ class PdfConverterTest {
         }
 
         // Act
-        PdfConverter pdfConverter = new PdfConverter(null, null, null, null, null, coverPageProcessor, weasyPrintServiceConnector, null, null);
+        PdfConverter pdfConverter = new PdfConverter(null, null, null, null, null, coverPageProcessor, weasyPrintServiceConnector, null, null, bulkProcessingConnector);
         byte[] result = pdfConverter.generatePdf(documentData, exportParams, metaInfoCallback, "test html content", pdfGenerationLog);
 
         // Assert
@@ -433,7 +435,7 @@ class PdfConverterTest {
                 .thenReturn("test html content");
         when(weasyPrintServiceConnector.convertToPdf(eq("test html content"), any(WeasyPrintOptions.class), any(), any())).thenReturn("pdf".getBytes());
 
-        PdfConverter pdfConverter = new PdfConverter(pdfExporterPolarionService, headerFooterSettings, cssSettings, placeholderProcessor, velocityEvaluator, coverPageProcessor, weasyPrintServiceConnector, htmlProcessor, pdfTemplateProcessor);
+        PdfConverter pdfConverter = new PdfConverter(pdfExporterPolarionService, headerFooterSettings, cssSettings, placeholderProcessor, velocityEvaluator, coverPageProcessor, weasyPrintServiceConnector, htmlProcessor, pdfTemplateProcessor, bulkProcessingConnector);
 
         // Act
         pdfConverter.convertToPdf(exportParams, null);
@@ -481,7 +483,7 @@ class PdfConverterTest {
                 .thenReturn("test html content");
         when(weasyPrintServiceConnector.convertToPdf(eq("test html content"), any(WeasyPrintOptions.class), any(), any())).thenReturn("pdf".getBytes());
 
-        PdfConverter pdfConverter = new PdfConverter(pdfExporterPolarionService, headerFooterSettings, cssSettings, placeholderProcessor, velocityEvaluator, coverPageProcessor, weasyPrintServiceConnector, htmlProcessor, pdfTemplateProcessor);
+        PdfConverter pdfConverter = new PdfConverter(pdfExporterPolarionService, headerFooterSettings, cssSettings, placeholderProcessor, velocityEvaluator, coverPageProcessor, weasyPrintServiceConnector, htmlProcessor, pdfTemplateProcessor, bulkProcessingConnector);
 
         // Act
         pdfConverter.convertToPdf(exportParams, null);
@@ -526,9 +528,9 @@ class PdfConverterTest {
         when(htmlProcessor.internalizeLinks(anyString())).thenAnswer(a -> a.getArgument(0));
         when(htmlProcessor.replaceResourcesAsBase64Encoded(anyString())).thenAnswer(a -> a.getArgument(0));
 
-        when(weasyPrintServiceConnector.convertMergedToPdf(anyList(), any(MergeJobStartParams.class))).thenReturn("merged pdf".getBytes());
+        when(bulkProcessingConnector.convertMergedToPdf(anyList(), any(MergeJobStartParams.class))).thenReturn("merged pdf".getBytes());
 
-        PdfConverter pdfConverter = new PdfConverter(pdfExporterPolarionService, headerFooterSettings, cssSettings, placeholderProcessor, velocityEvaluator, coverPageProcessor, weasyPrintServiceConnector, htmlProcessor, pdfTemplateProcessor);
+        PdfConverter pdfConverter = new PdfConverter(pdfExporterPolarionService, headerFooterSettings, cssSettings, placeholderProcessor, velocityEvaluator, coverPageProcessor, weasyPrintServiceConnector, htmlProcessor, pdfTemplateProcessor, bulkProcessingConnector);
 
         // Act
         byte[] result = pdfConverter.convertMergedToPdf(List.of(exportParams1, exportParams2));
@@ -537,8 +539,8 @@ class PdfConverterTest {
         assertThat(result).isEqualTo("merged pdf".getBytes());
 
         @SuppressWarnings("unchecked")
-        ArgumentCaptor<List<WeasyPrintConverter.MergeDocumentData>> docsCaptor = ArgumentCaptor.forClass(List.class);
-        verify(weasyPrintServiceConnector).convertMergedToPdf(docsCaptor.capture(), any(MergeJobStartParams.class));
+        ArgumentCaptor<List<BulkProcessingConnector.MergeDocumentData>> docsCaptor = ArgumentCaptor.forClass(List.class);
+        verify(bulkProcessingConnector).convertMergedToPdf(docsCaptor.capture(), any(MergeJobStartParams.class));
         assertThat(docsCaptor.getValue()).hasSize(2);
         assertThat(docsCaptor.getValue().get(0).coverPageHtml()).isNull();
     }
@@ -577,9 +579,9 @@ class PdfConverterTest {
         when(htmlProcessor.replaceResourcesAsBase64Encoded(anyString())).thenAnswer(a -> a.getArgument(0));
 
         when(coverPageProcessor.composeTitleHtml(eq(documentData), eq(exportParams), any(PlaceholderValues.class))).thenReturn("<cover>title</cover>");
-        when(weasyPrintServiceConnector.convertMergedToPdf(anyList(), any(MergeJobStartParams.class))).thenReturn("merged pdf".getBytes());
+        when(bulkProcessingConnector.convertMergedToPdf(anyList(), any(MergeJobStartParams.class))).thenReturn("merged pdf".getBytes());
 
-        PdfConverter pdfConverter = new PdfConverter(pdfExporterPolarionService, headerFooterSettings, cssSettings, placeholderProcessor, velocityEvaluator, coverPageProcessor, weasyPrintServiceConnector, htmlProcessor, pdfTemplateProcessor);
+        PdfConverter pdfConverter = new PdfConverter(pdfExporterPolarionService, headerFooterSettings, cssSettings, placeholderProcessor, velocityEvaluator, coverPageProcessor, weasyPrintServiceConnector, htmlProcessor, pdfTemplateProcessor, bulkProcessingConnector);
 
         // Act
         byte[] result = pdfConverter.convertMergedToPdf(List.of(exportParams));
@@ -588,8 +590,8 @@ class PdfConverterTest {
         assertThat(result).isEqualTo("merged pdf".getBytes());
 
         @SuppressWarnings("unchecked")
-        ArgumentCaptor<List<WeasyPrintConverter.MergeDocumentData>> docsCaptor = ArgumentCaptor.forClass(List.class);
-        verify(weasyPrintServiceConnector).convertMergedToPdf(docsCaptor.capture(), any(MergeJobStartParams.class));
+        ArgumentCaptor<List<BulkProcessingConnector.MergeDocumentData>> docsCaptor = ArgumentCaptor.forClass(List.class);
+        verify(bulkProcessingConnector).convertMergedToPdf(docsCaptor.capture(), any(MergeJobStartParams.class));
         assertThat(docsCaptor.getValue()).hasSize(1);
         assertThat(docsCaptor.getValue().get(0).coverPageHtml()).isEqualTo("<cover>title</cover>");
 
@@ -611,7 +613,7 @@ class PdfConverterTest {
         documentDataFactoryMockedStatic.when(() -> DocumentDataFactory.getDocumentData(any(ExportParams.class), anyBoolean()))
                 .thenThrow(new RuntimeException("document not found"));
 
-        PdfConverter pdfConverter = new PdfConverter(pdfExporterPolarionService, headerFooterSettings, cssSettings, placeholderProcessor, velocityEvaluator, coverPageProcessor, weasyPrintServiceConnector, htmlProcessor, pdfTemplateProcessor);
+        PdfConverter pdfConverter = new PdfConverter(pdfExporterPolarionService, headerFooterSettings, cssSettings, placeholderProcessor, velocityEvaluator, coverPageProcessor, weasyPrintServiceConnector, htmlProcessor, pdfTemplateProcessor, bulkProcessingConnector);
         List<ExportParams> documents = List.of(exportParams);
 
         assertThatThrownBy(() -> pdfConverter.convertMergedToPdf(documents))
