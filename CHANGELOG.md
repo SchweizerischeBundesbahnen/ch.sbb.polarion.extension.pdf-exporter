@@ -1,5 +1,13 @@
 # Changelog
 
+## [13.4.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v13.3.1...v13.4.0) (2026-07-22)
+
+
+### Features
+
+* add page numbers to table of figures entries ([#942](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/942)) ([92d3610](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/92d361022184b89d103ac9f0871b52fe95142094)), closes [#940](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/940)
+* update line height and layout for table of contents and figures ([#945](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/945)) ([a79eb10](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/a79eb10a95a1b7f708de96765c7cbb73f014992b)), closes [#944](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/944)
+
 ## [13.3.1](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v13.3.0...v13.3.1) (2026-07-21)
 
 
