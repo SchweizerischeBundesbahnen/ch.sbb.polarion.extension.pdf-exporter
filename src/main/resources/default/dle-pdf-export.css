@@ -171,6 +171,36 @@ ul.toc li > a.page-number::after {
     content: target-counter(attr(href), page);
 }
 
+ul.tof {
+    padding: 0;
+    line-height: 1.4em;
+    list-style-type: none;
+}
+
+ul.tof li {
+    display: table;
+    width: 100%;
+    position: relative;
+}
+
+ul.tof li > a {
+    display: table-cell;
+    padding-right: 5em;
+    text-decoration: none;
+    color: black;
+}
+
+ul.tof li > a.page-number {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    padding-right: 0;
+}
+
+ul.tof li > a.page-number::after {
+    content: target-counter(attr(href), page);
+}
+
 @page {
     margin: 120px 60px 90px 80px;
     border-bottom: 1px solid #aaa;
