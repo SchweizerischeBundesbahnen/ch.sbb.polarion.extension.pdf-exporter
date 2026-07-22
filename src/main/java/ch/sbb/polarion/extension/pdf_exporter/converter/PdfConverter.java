@@ -104,7 +104,7 @@ public class PdfConverter {
         pdfTemplateProcessor = new PdfTemplateProcessor();
     }
 
-    public byte[] convertMergedToPdf(@NotNull List<ExportParams> documentExportParams, @NotNull MergeJobStartParams mergeJobParams) {
+    public byte[] convertMergedToPdf(@NotNull List<ExportParams> documentExportParams) {
         PdfGenerationLog generationLog = new PdfGenerationLog();
         generationLog.log("Starting merged PDF generation for " + documentExportParams.size() + " documents");
 
@@ -112,22 +112,17 @@ public class PdfConverter {
             List<WeasyPrintConverter.MergeDocumentData> preparedDocuments = new ArrayList<>();
 
             for (ExportParams exportParams : documentExportParams) {
-                // Auto-select style package if needed (same as normal flow)
+                // Full pipeline — same as convertToPdf
                 if (exportParams.isAutoSelectStylePackage()) {
                     StylePackageModel mostSuitableStylePackageModel = pdfExporterPolarionService.getMostSuitableStylePackageModel(DocIdentifier.of(exportParams));
                     exportParams.overwriteByStylePackage(mostSuitableStylePackageModel);
                 }
 
-                // Get tracker project and document data (same as normal flow)
                 @Nullable ITrackerProject project = getTrackerProject(exportParams);
                 @NotNull final DocumentData<? extends IUniqueObject> documentData = DocumentDataFactory.getDocumentData(exportParams, true);
-
-                // Prepare HTML content through full pipeline (same as normal flow)
                 @NotNull String htmlContent = prepareHtmlContent(exportParams, project, documentData, null, generationLog);
 
-                // Prepare cover page HTML if needed.
-                // Preserve {{ PAGE_NUMBER }} and {{ PAGES_TOTAL_COUNT }} placeholders —
-                // bulk processing service will resolve them after converting HTML to PDF and counting pages.
+                // Preserve page placeholders for bulk processing service to resolve after conversion
                 String coverPageHtml = null;
                 if (exportParams.getCoverPage() != null) {
                     PlaceholderValues preservedPlaceholders = PlaceholderValues.builder()
@@ -142,7 +137,16 @@ public class PdfConverter {
 
             generationLog.log("All documents prepared, starting merged PDF generation");
 
-            byte[] pdfBytes = weasyPrintServiceConnector.convertMergedToPdf(preparedDocuments, mergeJobParams);
+            // Build merge params from first document's export settings
+            ExportParams firstDoc = documentExportParams.get(0);
+            MergeJobStartParams mergeParams = MergeJobStartParams.builder()
+                    .presentationalHints(firstDoc.isFollowHTMLPresentationalHints())
+                    .pdfVariant(firstDoc.getPdfVariant() != null ? firstDoc.getPdfVariant().toWeasyPrintParameter() : null)
+                    .fullFonts(firstDoc.isFullFonts())
+                    .fileName(firstDoc.getFileName() != null ? firstDoc.getFileName() : "merged-document.pdf")
+                    .build();
+
+            byte[] pdfBytes = weasyPrintServiceConnector.convertMergedToPdf(preparedDocuments, mergeParams);
 
             generationLog.finish();
             logger.info("Merged PDF has been generated within " + generationLog.getTotalDurationMs() + " milliseconds");

@@ -528,18 +528,17 @@ class PdfConverterTest {
 
         when(weasyPrintServiceConnector.convertMergedToPdf(anyList(), any(MergeJobStartParams.class))).thenReturn("merged pdf".getBytes());
 
-        MergeJobStartParams mergeJobParams = MergeJobStartParams.builder().fileName("merged.pdf").build();
         PdfConverter pdfConverter = new PdfConverter(pdfExporterPolarionService, headerFooterSettings, cssSettings, placeholderProcessor, velocityEvaluator, coverPageProcessor, weasyPrintServiceConnector, htmlProcessor, pdfTemplateProcessor);
 
         // Act
-        byte[] result = pdfConverter.convertMergedToPdf(List.of(exportParams1, exportParams2), mergeJobParams);
+        byte[] result = pdfConverter.convertMergedToPdf(List.of(exportParams1, exportParams2));
 
         // Assert
         assertThat(result).isEqualTo("merged pdf".getBytes());
 
         @SuppressWarnings("unchecked")
         ArgumentCaptor<List<WeasyPrintConverter.MergeDocumentData>> docsCaptor = ArgumentCaptor.forClass(List.class);
-        verify(weasyPrintServiceConnector).convertMergedToPdf(docsCaptor.capture(), eq(mergeJobParams));
+        verify(weasyPrintServiceConnector).convertMergedToPdf(docsCaptor.capture(), any(MergeJobStartParams.class));
         assertThat(docsCaptor.getValue()).hasSize(2);
         assertThat(docsCaptor.getValue().get(0).coverPageHtml()).isNull();
     }
@@ -580,18 +579,17 @@ class PdfConverterTest {
         when(coverPageProcessor.composeTitleHtml(eq(documentData), eq(exportParams), any(PlaceholderValues.class))).thenReturn("<cover>title</cover>");
         when(weasyPrintServiceConnector.convertMergedToPdf(anyList(), any(MergeJobStartParams.class))).thenReturn("merged pdf".getBytes());
 
-        MergeJobStartParams mergeJobParams = MergeJobStartParams.builder().build();
         PdfConverter pdfConverter = new PdfConverter(pdfExporterPolarionService, headerFooterSettings, cssSettings, placeholderProcessor, velocityEvaluator, coverPageProcessor, weasyPrintServiceConnector, htmlProcessor, pdfTemplateProcessor);
 
         // Act
-        byte[] result = pdfConverter.convertMergedToPdf(List.of(exportParams), mergeJobParams);
+        byte[] result = pdfConverter.convertMergedToPdf(List.of(exportParams));
 
         // Assert
         assertThat(result).isEqualTo("merged pdf".getBytes());
 
         @SuppressWarnings("unchecked")
         ArgumentCaptor<List<WeasyPrintConverter.MergeDocumentData>> docsCaptor = ArgumentCaptor.forClass(List.class);
-        verify(weasyPrintServiceConnector).convertMergedToPdf(docsCaptor.capture(), eq(mergeJobParams));
+        verify(weasyPrintServiceConnector).convertMergedToPdf(docsCaptor.capture(), any(MergeJobStartParams.class));
         assertThat(docsCaptor.getValue()).hasSize(1);
         assertThat(docsCaptor.getValue().get(0).coverPageHtml()).isEqualTo("<cover>title</cover>");
 
@@ -613,11 +611,10 @@ class PdfConverterTest {
         documentDataFactoryMockedStatic.when(() -> DocumentDataFactory.getDocumentData(any(ExportParams.class), anyBoolean()))
                 .thenThrow(new RuntimeException("document not found"));
 
-        MergeJobStartParams mergeJobParams = MergeJobStartParams.builder().build();
         PdfConverter pdfConverter = new PdfConverter(pdfExporterPolarionService, headerFooterSettings, cssSettings, placeholderProcessor, velocityEvaluator, coverPageProcessor, weasyPrintServiceConnector, htmlProcessor, pdfTemplateProcessor);
         List<ExportParams> documents = List.of(exportParams);
 
-        assertThatThrownBy(() -> pdfConverter.convertMergedToPdf(documents, mergeJobParams))
+        assertThatThrownBy(() -> pdfConverter.convertMergedToPdf(documents))
                 .isInstanceOf(RuntimeException.class)
                 .hasMessageContaining("document not found");
     }

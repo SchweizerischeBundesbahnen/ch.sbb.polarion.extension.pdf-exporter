@@ -1,7 +1,6 @@
 package ch.sbb.polarion.extension.pdf_exporter.rest.controller;
 
 import ch.sbb.polarion.extension.generic.rest.filter.LogoutFilter;
-import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.BulkMergeExportParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
 import ch.sbb.polarion.extension.pdf_exporter.service.PdfExporterPolarionService;
 import org.junit.jupiter.api.BeforeEach;
@@ -38,7 +37,7 @@ class ConverterApiControllerTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    void shouldSetLogoutSkipProperty() {
+    void shouldSetLogoutSkipPropertyForSingleJob() {
         converterApiController.startPdfConverterJob(ExportParams.builder().build());
         verify(requestAttributes).setAttribute(LogoutFilter.ASYNC_SKIP_LOGOUT, Boolean.TRUE, RequestAttributes.SCOPE_REQUEST);
         verify(polarionService).callPrivileged(any(Callable.class));
@@ -47,10 +46,7 @@ class ConverterApiControllerTest {
     @Test
     @SuppressWarnings("unchecked")
     void shouldSetLogoutSkipPropertyForMergeJob() {
-        BulkMergeExportParams params = BulkMergeExportParams.builder()
-                .documents(List.of(ExportParams.builder().build()))
-                .build();
-        converterApiController.startMergeExportJob(params);
+        converterApiController.startMergeExportJob(List.of(ExportParams.builder().build()));
         verify(requestAttributes).setAttribute(LogoutFilter.ASYNC_SKIP_LOGOUT, Boolean.TRUE, RequestAttributes.SCOPE_REQUEST);
         verify(polarionService).callPrivileged(any(Callable.class));
     }

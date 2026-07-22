@@ -6,7 +6,6 @@ import ch.sbb.polarion.extension.pdf_exporter.converter.HtmlToPdfConverter;
 import ch.sbb.polarion.extension.pdf_exporter.converter.PdfConverter;
 import ch.sbb.polarion.extension.pdf_exporter.converter.PdfConverterJobsService;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.WidthValidationResult;
-import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.BulkMergeExportParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.Orientation;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PaperSize;
@@ -16,6 +15,8 @@ import ch.sbb.polarion.extension.pdf_exporter.util.PdfWidthValidationService;
 import org.jetbrains.annotations.VisibleForTesting;
 import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
+
+import java.util.List;
 
 import jakarta.inject.Singleton;
 import jakarta.ws.rs.Path;
@@ -52,10 +53,14 @@ public class ConverterApiController extends ConverterInternalController {
 
     @Override
     public Response startPdfConverterJob(ExportParams exportParams) {
-        // In async case logout inside the filter must be deactivated. Async Job itself will care about logout after finishing
         deactivateLogoutFilter();
-
         return polarionService.callPrivileged(() -> super.startPdfConverterJob(exportParams));
+    }
+
+    @Override
+    public Response startMergeExportJob(List<ExportParams> exportParamsList) {
+        deactivateLogoutFilter();
+        return polarionService.callPrivileged(() -> super.startMergeExportJob(exportParamsList));
     }
 
     @Override
@@ -81,12 +86,6 @@ public class ConverterApiController extends ConverterInternalController {
     @Override
     public WidthValidationResult validatePdfWidth(ExportParams exportParams, int maxResults) {
         return polarionService.callPrivileged(() -> super.validatePdfWidth(exportParams, maxResults));
-    }
-
-    @Override
-    public Response startMergeExportJob(BulkMergeExportParams bulkMergeExportParams) {
-        deactivateLogoutFilter();
-        return polarionService.callPrivileged(() -> super.startMergeExportJob(bulkMergeExportParams));
     }
 
     private void deactivateLogoutFilter() {

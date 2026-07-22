@@ -2,7 +2,6 @@ package ch.sbb.polarion.extension.pdf_exporter.rest.controller;
 
 import ch.sbb.polarion.extension.pdf_exporter.converter.PdfConverterJobsService;
 import ch.sbb.polarion.extension.pdf_exporter.converter.PdfConverterJobsService.JobState;
-import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.BulkMergeExportParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.DocumentType;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.jobs.ConverterJobDetails;
@@ -193,10 +192,8 @@ class ConverterInternalControllerTest {
 
     @Test
     void startMergeExportJob_success() {
-        BulkMergeExportParams params = BulkMergeExportParams.builder()
-                .documents(List.of(ExportParams.builder().projectId("proj1").locationPath("space/doc").build()))
-                .build();
-        when(pdfConverterJobService.startMergeJob(any(), anyInt())).thenReturn("mergeJobId");
+        List<ExportParams> params = List.of(ExportParams.builder().projectId("proj1").locationPath("space/doc").build());
+        when(pdfConverterJobService.startJob(any(List.class), anyInt())).thenReturn("mergeJobId");
         when(uriInfo.getRequestUri()).thenReturn(UriBuilder.fromUri("http://testHost:8090/polarion/pdf-exporter/rest/api/convert/merge/jobs").build());
 
         try (Response response = internalController.startMergeExportJob(params)) {
@@ -214,20 +211,7 @@ class ConverterInternalControllerTest {
 
     @Test
     void startMergeExportJob_emptyDocuments() {
-        BulkMergeExportParams params = BulkMergeExportParams.builder()
-                .documents(List.of())
-                .build();
-        assertThatThrownBy(() -> internalController.startMergeExportJob(params))
-                .isInstanceOf(BadRequestException.class)
-                .hasMessageContaining("At least one document");
-    }
-
-    @Test
-    void startMergeExportJob_nullDocuments() {
-        BulkMergeExportParams params = BulkMergeExportParams.builder()
-                .documents(null)
-                .build();
-        assertThatThrownBy(() -> internalController.startMergeExportJob(params))
+        assertThatThrownBy(() -> internalController.startMergeExportJob(List.of()))
                 .isInstanceOf(BadRequestException.class)
                 .hasMessageContaining("At least one document");
     }

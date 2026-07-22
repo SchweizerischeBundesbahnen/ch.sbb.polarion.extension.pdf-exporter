@@ -553,12 +553,13 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/BulkMergeExportParams"
+                "items": {
+                  "$ref": "#/components/schemas/ExportParams"
+                },
+                "type": "array"
               }
             }
-          },
-          "description": "Bulk merge export parameters",
-          "required": true
+          }
         },
         "responses": {
           "202": {
@@ -1617,22 +1618,6 @@
   },
   "components": {
     "schemas": {
-      "BulkMergeExportParams": {
-        "description": "Parameters for bulk merge export: multiple documents merged into a single PDF",
-        "properties": {
-          "documents": {
-            "description": "List of export parameters, one per document to be merged",
-            "items": {
-              "$ref": "#/components/schemas/ExportParams"
-            },
-            "type": "array"
-          },
-          "mergeJobParams": {
-            "$ref": "#/components/schemas/MergeJobStartParams"
-          }
-        },
-        "type": "object"
-      },
       "BulkProcessingServiceStatus": {
         "properties": {
           "available": {
@@ -1999,58 +1984,6 @@
           },
           "webhooks": {
             "description": "Webhooks settings name",
-            "type": "string"
-          }
-        },
-        "type": "object"
-      },
-      "MergeJobStartParams": {
-        "description": "Parameters for starting a merge PDF conversion job",
-        "properties": {
-          "baseUrl": {
-            "description": "Base URL for resolving relative URLs in the HTML documents",
-            "type": "string"
-          },
-          "customMetadata": {
-            "default": false,
-            "description": "Whether to include custom metadata in the PDF",
-            "type": "boolean"
-          },
-          "encoding": {
-            "default": "utf-8",
-            "description": "Character encoding for the HTML documents",
-            "type": "string"
-          },
-          "fileName": {
-            "default": "merged-document.pdf",
-            "description": "Output file name for the merged PDF",
-            "type": "string"
-          },
-          "fullFonts": {
-            "default": false,
-            "description": "Embed full fonts instead of subsetting",
-            "type": "boolean"
-          },
-          "mediaType": {
-            "default": "print",
-            "description": "CSS media type to use during rendering",
-            "type": "string"
-          },
-          "pdfVariant": {
-            "description": "PDF variant to be used for conversion (e.g. pdf/a-2b)",
-            "type": "string"
-          },
-          "presentationalHints": {
-            "default": false,
-            "description": "Whether to follow HTML presentational hints",
-            "type": "boolean"
-          },
-          "scaleFactor": {
-            "description": "Scale factor for images",
-            "type": "string"
-          },
-          "weasyPrintServiceUrl": {
-            "description": "URL of the WeasyPrint service to use for HTML-to-PDF conversion",
             "type": "string"
           }
         },

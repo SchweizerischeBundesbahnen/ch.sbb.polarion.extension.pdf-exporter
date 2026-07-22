@@ -2,9 +2,7 @@ package ch.sbb.polarion.extension.pdf_exporter.converter;
 
 import ch.sbb.polarion.extension.generic.rest.filter.LogoutFilter;
 import ch.sbb.polarion.extension.pdf_exporter.converter.PdfConverterJobsService.JobState;
-import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.BulkMergeExportParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
-import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.MergeJobStartParams;
 import com.polarion.platform.security.ISecurityService;
 import org.awaitility.Durations;
 import org.junit.jupiter.api.AfterEach;
@@ -305,15 +303,10 @@ class PdfConverterJobsServiceTest {
         List<ExportParams> documents = List.of(
                 ExportParams.builder().projectId("proj1").build(),
                 ExportParams.builder().projectId("proj2").build());
-        MergeJobStartParams mergeJobParams = MergeJobStartParams.builder().fileName("merged.pdf").build();
-        BulkMergeExportParams bulkParams = BulkMergeExportParams.builder()
-                .documents(documents)
-                .mergeJobParams(mergeJobParams)
-                .build();
 
-        when(pdfConverter.convertMergedToPdf(documents, mergeJobParams)).thenReturn("merged pdf".getBytes());
+        when(pdfConverter.convertMergedToPdf(documents)).thenReturn("merged pdf".getBytes());
 
-        String jobId = pdfConverterJobsService.startMergeJob(bulkParams, 60);
+        String jobId = pdfConverterJobsService.startJob(documents, 60);
 
         assertThat(jobId).isNotBlank();
         waitToFinishJob(jobId);
@@ -332,16 +325,13 @@ class PdfConverterJobsServiceTest {
         when(requestAttributes.getAttribute(LogoutFilter.XSRF_SKIP_LOGOUT, RequestAttributes.SCOPE_REQUEST)).thenReturn(Boolean.FALSE);
         when(requestAttributes.getAttribute(LogoutFilter.ASYNC_SKIP_LOGOUT, RequestAttributes.SCOPE_REQUEST)).thenReturn(Boolean.TRUE);
 
-        List<ExportParams> documents = List.of(ExportParams.builder().build());
-        MergeJobStartParams mergeJobParams = MergeJobStartParams.builder().build();
-        BulkMergeExportParams bulkParams = BulkMergeExportParams.builder()
-                .documents(documents)
-                .mergeJobParams(mergeJobParams)
-                .build();
+        List<ExportParams> documents = List.of(
+                ExportParams.builder().build(),
+                ExportParams.builder().build());
 
-        when(pdfConverter.convertMergedToPdf(documents, mergeJobParams)).thenThrow(new RuntimeException("merge error"));
+        when(pdfConverter.convertMergedToPdf(documents)).thenThrow(new RuntimeException("merge error"));
 
-        String jobId = pdfConverterJobsService.startMergeJob(bulkParams, 60);
+        String jobId = pdfConverterJobsService.startJob(documents, 60);
 
         assertThat(jobId).isNotBlank();
         waitToFinishJob(jobId);
@@ -352,34 +342,14 @@ class PdfConverterJobsServiceTest {
     }
 
     @Test
-    void shouldStartMergeJobWithNullMergeJobParams() {
-        prepareSecurityServiceSubject(subject);
-        List<ExportParams> documents = List.of(ExportParams.builder().build());
-        BulkMergeExportParams bulkParams = BulkMergeExportParams.builder()
-                .documents(documents)
-                .mergeJobParams(null)
-                .build();
-
-        when(pdfConverter.convertMergedToPdf(eq(documents), any(MergeJobStartParams.class))).thenReturn("pdf".getBytes());
-
-        String jobId = pdfConverterJobsService.startMergeJob(bulkParams, 60);
-        waitToFinishJob(jobId);
-        assertThat(pdfConverterJobsService.getJobState(jobId).isCompletedExceptionally()).isFalse();
-    }
-
-    @Test
     void shouldUseFirstDocumentAsRepresentativeParams() {
         prepareSecurityServiceSubject(subject);
         ExportParams firstDoc = ExportParams.builder().projectId("first").build();
         ExportParams secondDoc = ExportParams.builder().projectId("second").build();
-        BulkMergeExportParams bulkParams = BulkMergeExportParams.builder()
-                .documents(List.of(firstDoc, secondDoc))
-                .mergeJobParams(MergeJobStartParams.builder().build())
-                .build();
 
-        lenient().when(pdfConverter.convertMergedToPdf(any(), any())).thenReturn("pdf".getBytes());
+        lenient().when(pdfConverter.convertMergedToPdf(any())).thenReturn("pdf".getBytes());
 
-        String jobId = pdfConverterJobsService.startMergeJob(bulkParams, 60);
+        String jobId = pdfConverterJobsService.startJob(List.of(firstDoc, secondDoc), 60);
         waitToFinishJob(jobId);
         assertThat(pdfConverterJobsService.getJobParams(jobId)).isEqualTo(firstDoc);
     }

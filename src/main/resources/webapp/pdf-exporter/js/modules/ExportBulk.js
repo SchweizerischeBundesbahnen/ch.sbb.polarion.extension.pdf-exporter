@@ -392,30 +392,19 @@ export default class ExportBulk {
     }
 
     submitMergeRequest(documents) {
-        const pdfVariant = this.exportParams.pdfVariant;
-        const bulkMergeRequest = {
-            documents: documents,
-            mergeJobParams: {
-                encoding: "utf-8",
-                mediaType: "print",
-                presentationalHints: this.exportParams.followHTMLPresentationalHints || false,
-                baseUrl: null,
-                scaleFactor: null,
-                fileName: this.mergeFileName,
-                pdfVariant: pdfVariant ? ExportParams.PdfVariant.toWeasyPrintParameter(pdfVariant) : null,
-                customMetadata: false,
-                fullFonts: this.exportParams.fullFonts || false
-            }
-        };
+        // Set merge file name on the first document — backend derives merge params from it
+        if (documents.length > 0 && this.mergeFileName) {
+            documents[0]["fileName"] = this.mergeFileName;
+        }
 
-        // Mark all items as in-progress
+        // Mark remaining paused items as in-progress
         this.popupCtx.querySelectorAll(".export-item.paused").forEach(item => {
             item.classList.remove("paused");
             item.classList.add("in-progress");
         });
 
-        // Submit merge job and poll for result using existing async job mechanism
-        this.ctx.asyncConvertMergePdf(JSON.stringify(bulkMergeRequest), result => {
+        // Send array of ExportParams to the merge endpoint, poll for result
+        this.ctx.asyncConvertMergePdf(JSON.stringify(documents), result => {
             this.popupCtx.querySelectorAll(".export-item.in-progress").forEach(item => {
                 item.classList.remove("in-progress");
                 item.classList.add("finished");

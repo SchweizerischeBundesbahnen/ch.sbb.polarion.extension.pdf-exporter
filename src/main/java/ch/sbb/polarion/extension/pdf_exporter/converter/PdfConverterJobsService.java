@@ -1,9 +1,7 @@
 package ch.sbb.polarion.extension.pdf_exporter.converter;
 
 import ch.sbb.polarion.extension.generic.rest.filter.LogoutFilter;
-import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.BulkMergeExportParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
-import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.MergeJobStartParams;
 import ch.sbb.polarion.extension.pdf_exporter.util.DebugDataStorage;
 import ch.sbb.polarion.extension.pdf_exporter.util.ExportContext;
 import com.polarion.core.util.StringUtils;
@@ -29,7 +27,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -52,84 +49,33 @@ public class PdfConverterJobsService {
     }
 
     public String startJob(ExportParams exportParams, int timeoutInMinutes) {
-        String jobId = UUID.randomUUID().toString();
-        Subject userSubject = securityService.getCurrentSubject();
-        boolean isJobLogoutRequired = isJobLogoutRequired();
-        final JobContext jobContext = JobContext.builder().workItemIDsWithMissingAttachment(new ArrayList<>()).build();
-
-        CompletableFuture<byte[]> asyncConversionJob = CompletableFuture.supplyAsync(() -> {
-            try {
-                // Set current job ID for debug data storage
-                DebugDataStorage.setCurrentJobId(jobId);
-                return securityService.doAsUser(userSubject, (PrivilegedAction<byte[]>) () -> pdfConverter.convertToPdf(exportParams, null));
-            } catch (Exception e) {
-                String errorMessage = String.format("PDF conversion job '%s' is failed with error: %s", jobId, e.getMessage());
-                logger.error(errorMessage, e);
-                failedJobsReasons.put(jobId, StringUtils.getEmptyIfNull(e.getMessage()));
-                throw e;
-            } finally {
-                // Clear current job ID
-                DebugDataStorage.clearCurrentJobId();
-                jobContext.workItemIDsWithMissingAttachment.addAll(ExportContext.getWorkItemIDsWithMissingAttachment());
-                ExportContext.clear();
-                if ((userSubject != null) && isJobLogoutRequired) {
-                    securityService.logout(userSubject);
-                }
-            }
-        }, jobExecutor);
-        asyncConversionJob
-                .orTimeout(timeoutInMinutes, TimeUnit.MINUTES)
-                .exceptionally(e -> {
-                    String failedReason = StringUtils.getEmptyIfNull(e.getMessage());
-                    if (e instanceof TimeoutException) {
-                        failedReason = String.format("Timeout after %d min", timeoutInMinutes);
-                        asyncConversionJob.cancel(true);
-                    }
-                    failedJobsReasons.put(jobId, failedReason);
-                    logger.error(String.format("PDF conversion job '%s' is failed with error: %s", jobId, failedReason), e);
-                    asyncConversionJob.completeExceptionally(e);
-                    return null;
-                });
-        JobDetails jobDetails = JobDetails.builder()
-                .future(asyncConversionJob)
-                .user(securityService.getCurrentUser())
-                .exportParams(exportParams)
-                .startingTime(Instant.now())
-                .jobContext(jobContext).build();
-        jobs.put(jobId, jobDetails);
-        return jobId;
+        return startJob(List.of(exportParams), timeoutInMinutes);
     }
 
-    public String startMergeJob(BulkMergeExportParams bulkParams, int timeoutInMinutes) {
+    public String startJob(List<ExportParams> documentExportParams, int timeoutInMinutes) {
         String jobId = UUID.randomUUID().toString();
         Subject userSubject = securityService.getCurrentSubject();
         boolean isJobLogoutRequired = isJobLogoutRequired();
         final JobContext jobContext = JobContext.builder().workItemIDsWithMissingAttachment(new ArrayList<>()).build();
+        ExportParams representativeParams = documentExportParams.isEmpty() ? null : documentExportParams.get(0);
+        boolean isMerge = documentExportParams.size() > 1;
 
-        // Use first document's params as representative for job metadata
-        ExportParams representativeParams = (bulkParams.getDocuments() == null || bulkParams.getDocuments().isEmpty())
-                ? null : bulkParams.getDocuments().get(0);
-
-        MergeJobStartParams mergeJobParams = bulkParams.getMergeJobParams();
-        if (mergeJobParams == null) {
-            mergeJobParams = MergeJobStartParams.builder().build();
-        }
-        final MergeJobStartParams finalMergeJobParams = mergeJobParams;
-        final AtomicReference<Thread> workerThread = new AtomicReference<>();
-
-        CompletableFuture<byte[]> asyncMergeJob = CompletableFuture.supplyAsync(() -> {
-            workerThread.set(Thread.currentThread());
+        CompletableFuture<byte[]> asyncJob = CompletableFuture.supplyAsync(() -> {
             try {
                 DebugDataStorage.setCurrentJobId(jobId);
-                return securityService.doAsUser(userSubject, (PrivilegedAction<byte[]>) () ->
-                        pdfConverter.convertMergedToPdf(bulkParams.getDocuments(), finalMergeJobParams));
+                return securityService.doAsUser(userSubject, (PrivilegedAction<byte[]>) () -> {
+                    if (isMerge) {
+                        return pdfConverter.convertMergedToPdf(documentExportParams);
+                    } else {
+                        return pdfConverter.convertToPdf(representativeParams, null);
+                    }
+                });
             } catch (Exception e) {
-                String errorMessage = String.format("Merge export job '%s' failed with error: %s", jobId, e.getMessage());
+                String errorMessage = String.format("PDF conversion job '%s' failed with error: %s", jobId, e.getMessage());
                 logger.error(errorMessage, e);
                 failedJobsReasons.put(jobId, StringUtils.getEmptyIfNull(e.getMessage()));
                 throw e;
             } finally {
-                workerThread.set(null);
                 DebugDataStorage.clearCurrentJobId();
                 jobContext.workItemIDsWithMissingAttachment.addAll(ExportContext.getWorkItemIDsWithMissingAttachment());
                 ExportContext.clear();
@@ -139,25 +85,22 @@ public class PdfConverterJobsService {
             }
         }, jobExecutor);
 
-        asyncMergeJob
+        asyncJob
                 .orTimeout(timeoutInMinutes, TimeUnit.MINUTES)
                 .exceptionally(e -> {
                     String failedReason = StringUtils.getEmptyIfNull(e.getMessage());
                     if (e instanceof TimeoutException) {
                         failedReason = String.format("Timeout after %d min", timeoutInMinutes);
-                        Thread thread = workerThread.getAndSet(null);
-                        if (thread != null) {
-                            thread.interrupt();
-                        }
+                        asyncJob.cancel(true);
                     }
                     failedJobsReasons.put(jobId, failedReason);
-                    logger.error(String.format("Merge export job '%s' failed with error: %s", jobId, failedReason), e);
-                    asyncMergeJob.completeExceptionally(e);
+                    logger.error(String.format("PDF conversion job '%s' failed with error: %s", jobId, failedReason), e);
+                    asyncJob.completeExceptionally(e);
                     return null;
                 });
 
         JobDetails jobDetails = JobDetails.builder()
-                .future(asyncMergeJob)
+                .future(asyncJob)
                 .user(securityService.getCurrentUser())
                 .exportParams(representativeParams)
                 .startingTime(Instant.now())
