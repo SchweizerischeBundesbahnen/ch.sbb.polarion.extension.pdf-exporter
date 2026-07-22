@@ -17,6 +17,7 @@ import org.jsoup.nodes.Comment;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.TextNode;
+import org.jsoup.select.Elements;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -678,6 +679,44 @@ class HtmlProcessorTest {
 
             // Spaces and new lines are removed to exclude difference in space characters
             assertEquals(TestStringUtils.removeNonsensicalSymbols(validHtml), TestStringUtils.removeNonsensicalSymbols(fixedHtml));
+        }
+    }
+
+    /**
+     * Verifies that each generated table-of-figures entry carries an empty {@code a.page-number} link pointing at the
+     * same caption anchor as its text link. That empty link is what WeasyPrint fills with the target's page number
+     * (target-counter), exactly as the table of contents does. The input is real Polarion document content (the same
+     * fixture the WeasyPrint integration test renders), so the structure the caption anchors actually have is covered.
+     */
+    @Test
+    @SneakyThrows
+    void tableOfFiguresEntriesHavePageNumberLinks() {
+        try (InputStream isHtml = this.getClass().getResourceAsStream("/weasyprint/html/tableOfFiguresAndTables.html")) {
+            Document document = JSoupUtils.parseHtml(new String(isHtml.readAllBytes(), StandardCharsets.UTF_8));
+
+            processor.addTableOfFigures(document);
+
+            Elements lists = document.select("ul.tof");
+            assertEquals(2, lists.size(), "expected one list for figures and one for tables");
+
+            Elements entries = document.select("ul.tof > li");
+            assertFalse(entries.isEmpty(), "expected generated table-of-figures entries");
+            for (Element entry : entries) {
+                Elements links = entry.select("> a");
+                assertEquals(2, links.size(), "each entry must have a text link and a page-number link");
+
+                Element textLink = links.get(0);
+                Element pageNumberLink = links.get(1);
+                assertFalse(textLink.hasClass("page-number"), "first link holds the caption text");
+                assertTrue(pageNumberLink.hasClass("page-number"), "second link is the page-number placeholder");
+                assertTrue(pageNumberLink.text().isEmpty(), "page-number link must stay empty, WeasyPrint fills it");
+
+                String href = textLink.attr("href");
+                assertTrue(href.startsWith("#dlecaption_"), "text link must point at a caption anchor: " + href);
+                assertEquals(href, pageNumberLink.attr("href"), "both links must target the same caption anchor");
+                assertFalse(document.select("a[name=" + href.substring(1) + "]").isEmpty(),
+                        "the referenced caption anchor must exist: " + href);
+            }
         }
     }
 
