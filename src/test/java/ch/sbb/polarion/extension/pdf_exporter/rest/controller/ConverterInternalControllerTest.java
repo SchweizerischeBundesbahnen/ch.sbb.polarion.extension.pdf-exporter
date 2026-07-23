@@ -23,6 +23,7 @@ import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriBuilder;
 import jakarta.ws.rs.core.UriInfo;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -30,6 +31,8 @@ import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
@@ -185,5 +188,31 @@ class ConverterInternalControllerTest {
                         "testJobId3", ConverterJobDetails.builder().status(ConverterJobStatus.FAILED).errorMessage("test error").build()
                 )
         );
+    }
+
+    @Test
+    void startMergeExportJob_success() {
+        List<ExportParams> params = List.of(ExportParams.builder().projectId("proj1").locationPath("space/doc").build());
+        when(pdfConverterJobService.startJob(any(List.class), anyInt())).thenReturn("mergeJobId");
+        when(uriInfo.getRequestUri()).thenReturn(UriBuilder.fromUri("http://testHost:8090/polarion/pdf-exporter/rest/api/convert/merge/jobs").build());
+
+        try (Response response = internalController.startMergeExportJob(params)) {
+            assertThat(response.getStatus()).isEqualTo(HttpStatus.ACCEPTED.value());
+            assertThat(response.getHeaderString(HttpHeaders.LOCATION)).contains("mergeJobId");
+        }
+    }
+
+    @Test
+    void startMergeExportJob_nullParams() {
+        assertThatThrownBy(() -> internalController.startMergeExportJob(null))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessageContaining("At least one document");
+    }
+
+    @Test
+    void startMergeExportJob_emptyDocuments() {
+        assertThatThrownBy(() -> internalController.startMergeExportJob(List.of()))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessageContaining("At least one document");
     }
 }

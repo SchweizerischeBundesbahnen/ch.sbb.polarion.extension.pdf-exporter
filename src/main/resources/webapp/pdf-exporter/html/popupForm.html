@@ -297,6 +297,19 @@
         </div>
     </div>
 
+    <div class='property-wrapper hidden visible-for-BULK'>
+        <label for='popup-merge-into-single-pdf'>
+            <input id='popup-merge-into-single-pdf' type='checkbox'
+                   onchange='document.getElementById("popup-merge-filename-container").style.display = this.checked ? "flex" : "none"'/>
+            Merge all documents into a single PDF
+        </label>
+    </div>
+
+    <div class='property-wrapper hidden visible-for-BULK' id='popup-merge-filename-container' style='display: none'>
+        <label for='popup-merge-filename' class="fixed-width w-1">Merged file name:</label>
+        <input id='popup-merge-filename' type='text' value='merged-document.pdf' style="width: 300px" />
+    </div>
+
     <div class='property-wrapper not-visible-for-BULK'>
         <label for='popup-filename'>File name:</label>
         <input id='popup-filename' type='text' style="width: 594px" />

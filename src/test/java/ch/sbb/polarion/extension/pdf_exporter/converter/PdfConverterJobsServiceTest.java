@@ -21,6 +21,7 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 import javax.security.auth.Subject;
 import java.security.PrivilegedAction;
 import java.util.ConcurrentModificationException;
+import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -291,6 +292,66 @@ class PdfConverterJobsServiceTest {
         PdfConverterJobsService.cleanupExpiredJobs(0);
 
         assertThat(pdfConverterJobsService.getAllJobsStates()).isEmpty();
+    }
+
+    @Test
+    void shouldStartMergeJobAndGetResult() {
+        prepareSecurityServiceSubject(subject);
+        when(requestAttributes.getAttribute(LogoutFilter.XSRF_SKIP_LOGOUT, RequestAttributes.SCOPE_REQUEST)).thenReturn(Boolean.FALSE);
+        when(requestAttributes.getAttribute(LogoutFilter.ASYNC_SKIP_LOGOUT, RequestAttributes.SCOPE_REQUEST)).thenReturn(Boolean.TRUE);
+
+        List<ExportParams> documents = List.of(
+                ExportParams.builder().projectId("proj1").build(),
+                ExportParams.builder().projectId("proj2").build());
+
+        when(pdfConverter.convertMergedToPdf(documents)).thenReturn("merged pdf".getBytes());
+
+        String jobId = pdfConverterJobsService.startJob(documents, 60);
+
+        assertThat(jobId).isNotBlank();
+        waitToFinishJob(jobId);
+        JobState jobState = pdfConverterJobsService.getJobState(jobId);
+        assertThat(jobState.isDone()).isTrue();
+        assertThat(jobState.isCompletedExceptionally()).isFalse();
+        Optional<byte[]> jobResult = pdfConverterJobsService.getJobResult(jobId);
+        assertThat(jobResult).isNotEmpty();
+        assertThat(new String(jobResult.get())).isEqualTo("merged pdf");
+        verify(securityService).logout(subject);
+    }
+
+    @Test
+    void shouldReturnFailForMergeJobInExceptionalCase() {
+        prepareSecurityServiceSubject(subject);
+        when(requestAttributes.getAttribute(LogoutFilter.XSRF_SKIP_LOGOUT, RequestAttributes.SCOPE_REQUEST)).thenReturn(Boolean.FALSE);
+        when(requestAttributes.getAttribute(LogoutFilter.ASYNC_SKIP_LOGOUT, RequestAttributes.SCOPE_REQUEST)).thenReturn(Boolean.TRUE);
+
+        List<ExportParams> documents = List.of(
+                ExportParams.builder().build(),
+                ExportParams.builder().build());
+
+        when(pdfConverter.convertMergedToPdf(documents)).thenThrow(new RuntimeException("merge error"));
+
+        String jobId = pdfConverterJobsService.startJob(documents, 60);
+
+        assertThat(jobId).isNotBlank();
+        waitToFinishJob(jobId);
+        JobState jobState = pdfConverterJobsService.getJobState(jobId);
+        assertThat(jobState.isCompletedExceptionally()).isTrue();
+        assertThat(jobState.errorMessage()).contains("merge error");
+        verify(securityService).logout(subject);
+    }
+
+    @Test
+    void shouldUseFirstDocumentAsRepresentativeParams() {
+        prepareSecurityServiceSubject(subject);
+        ExportParams firstDoc = ExportParams.builder().projectId("first").build();
+        ExportParams secondDoc = ExportParams.builder().projectId("second").build();
+
+        lenient().when(pdfConverter.convertMergedToPdf(any())).thenReturn("pdf".getBytes());
+
+        String jobId = pdfConverterJobsService.startJob(List.of(firstDoc, secondDoc), 60);
+        waitToFinishJob(jobId);
+        assertThat(pdfConverterJobsService.getJobParams(jobId)).isEqualTo(firstDoc);
     }
 
     private void waitToFinishJob(String jobId1) {

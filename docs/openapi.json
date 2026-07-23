@@ -5,6 +5,27 @@
     "version": "v1"
   },
   "paths": {
+    "/api/bulk-processing/status": {
+      "get": {
+        "operationId": "getBulkProcessingServiceStatus",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkProcessingServiceStatus"
+                }
+              }
+            },
+            "description": "Bulk processing service status"
+          }
+        },
+        "summary": "Checks if the bulk processing service is available",
+        "tags": [
+          "Utility resources"
+        ]
+      }
+    },
     "/api/configuration/cors-config": {
       "get": {
         "description": "Retrieves the status of the CORS configuration.",
@@ -520,6 +541,32 @@
           }
         },
         "summary": "Returns PDF conversion job result",
+        "tags": [
+          "PDF Processing"
+        ]
+      }
+    },
+    "/api/convert/merge/jobs": {
+      "post": {
+        "operationId": "startMergeExportJob",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "items": {
+                  "$ref": "#/components/schemas/ExportParams"
+                },
+                "type": "array"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Merge export job started, job URI is returned in Location header"
+          }
+        },
+        "summary": "Starts asynchronous merge export job combining multiple documents into a single PDF",
         "tags": [
           "PDF Processing"
         ]
@@ -1571,6 +1618,14 @@
   },
   "components": {
     "schemas": {
+      "BulkProcessingServiceStatus": {
+        "properties": {
+          "available": {
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
       "ConfigurationStatus": {
         "properties": {
           "details": {

@@ -39,6 +39,9 @@ export default class ExportParams {
         PDF_A_4U: 'pdf/a-4u',
         PDF_UA_1: 'pdf/ua-1',
         PDF_UA_2: 'pdf/ua-2',
+        toWeasyPrintParameter(enumKey) {
+            return ExportParams.PdfVariant[enumKey] || null;
+        }
     };
 
     static ImageDensity = {

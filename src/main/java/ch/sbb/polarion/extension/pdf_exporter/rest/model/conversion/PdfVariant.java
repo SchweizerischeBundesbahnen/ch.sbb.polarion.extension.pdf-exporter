@@ -38,6 +38,18 @@ public enum PdfVariant {
         }
     }
 
+    public static PdfVariant fromWeasyPrintParameter(String param) {
+        if (param == null) {
+            return null;
+        }
+        for (PdfVariant variant : values()) {
+            if (variant.toWeasyPrintParameter().equalsIgnoreCase(param)) {
+                return variant;
+            }
+        }
+        return null;
+    }
+
     public String toWeasyPrintParameter() {
         return switch (this) {
             case PDF_A_1A -> "pdf/a-1a";

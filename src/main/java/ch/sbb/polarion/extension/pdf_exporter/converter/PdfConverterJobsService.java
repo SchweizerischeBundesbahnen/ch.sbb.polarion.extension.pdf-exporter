@@ -26,6 +26,7 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -36,6 +37,7 @@ public class PdfConverterJobsService {
     // Static maps are necessary for per-request scoped InternalController and ApiController. In case of singletons static can be removed
     private static final Map<String, JobDetails> jobs = new ConcurrentHashMap<>();
     private static final Map<String, String> failedJobsReasons = new ConcurrentHashMap<>();
+    private static final ExecutorService jobExecutor = Executors.newCachedThreadPool();
     private static final String UNKNOWN_JOB_MESSAGE = "Converter Job is unknown: %s";
 
     private final PdfConverter pdfConverter;
@@ -47,23 +49,33 @@ public class PdfConverterJobsService {
     }
 
     public String startJob(ExportParams exportParams, int timeoutInMinutes) {
+        return startJob(List.of(exportParams), timeoutInMinutes);
+    }
+
+    public String startJob(List<ExportParams> documentExportParams, int timeoutInMinutes) {
         String jobId = UUID.randomUUID().toString();
         Subject userSubject = securityService.getCurrentSubject();
         boolean isJobLogoutRequired = isJobLogoutRequired();
         final JobContext jobContext = JobContext.builder().workItemIDsWithMissingAttachment(new ArrayList<>()).build();
+        ExportParams representativeParams = documentExportParams.isEmpty() ? null : documentExportParams.get(0);
+        boolean isMerge = documentExportParams.size() > 1;
 
-        CompletableFuture<byte[]> asyncConversionJob = CompletableFuture.supplyAsync(() -> {
+        CompletableFuture<byte[]> asyncJob = CompletableFuture.supplyAsync(() -> {
             try {
-                // Set current job ID for debug data storage
                 DebugDataStorage.setCurrentJobId(jobId);
-                return securityService.doAsUser(userSubject, (PrivilegedAction<byte[]>) () -> pdfConverter.convertToPdf(exportParams, null));
+                return securityService.doAsUser(userSubject, (PrivilegedAction<byte[]>) () -> {
+                    if (isMerge) {
+                        return pdfConverter.convertMergedToPdf(documentExportParams);
+                    } else {
+                        return pdfConverter.convertToPdf(representativeParams, null);
+                    }
+                });
             } catch (Exception e) {
-                String errorMessage = String.format("PDF conversion job '%s' is failed with error: %s", jobId, e.getMessage());
+                String errorMessage = String.format("PDF conversion job '%s' failed with error: %s", jobId, e.getMessage());
                 logger.error(errorMessage, e);
                 failedJobsReasons.put(jobId, StringUtils.getEmptyIfNull(e.getMessage()));
                 throw e;
             } finally {
-                // Clear current job ID
                 DebugDataStorage.clearCurrentJobId();
                 jobContext.workItemIDsWithMissingAttachment.addAll(ExportContext.getWorkItemIDsWithMissingAttachment());
                 ExportContext.clear();
@@ -71,23 +83,26 @@ public class PdfConverterJobsService {
                     securityService.logout(userSubject);
                 }
             }
-        }, Executors.newSingleThreadExecutor());
-        asyncConversionJob
+        }, jobExecutor);
+
+        asyncJob
                 .orTimeout(timeoutInMinutes, TimeUnit.MINUTES)
                 .exceptionally(e -> {
                     String failedReason = StringUtils.getEmptyIfNull(e.getMessage());
                     if (e instanceof TimeoutException) {
                         failedReason = String.format("Timeout after %d min", timeoutInMinutes);
+                        asyncJob.cancel(true);
                     }
                     failedJobsReasons.put(jobId, failedReason);
-                    logger.error(String.format("PDF conversion job '%s' is failed with error: %s", jobId, failedReason), e);
-                    asyncConversionJob.completeExceptionally(e);
+                    logger.error(String.format("PDF conversion job '%s' failed with error: %s", jobId, failedReason), e);
+                    asyncJob.completeExceptionally(e);
                     return null;
                 });
+
         JobDetails jobDetails = JobDetails.builder()
-                .future(asyncConversionJob)
+                .future(asyncJob)
                 .user(securityService.getCurrentUser())
-                .exportParams(exportParams)
+                .exportParams(representativeParams)
                 .startingTime(Instant.now())
                 .jobContext(jobContext).build();
         jobs.put(jobId, jobDetails);

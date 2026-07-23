@@ -1,12 +1,9 @@
 package ch.sbb.polarion.extension.pdf_exporter.weasyprint.service;
 
 import ch.sbb.polarion.extension.pdf_exporter.properties.PdfExporterExtensionConfiguration;
-import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PdfVariant;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.DocumentData;
-import ch.sbb.polarion.extension.pdf_exporter.util.PdfA1Processor;
-import ch.sbb.polarion.extension.pdf_exporter.util.PdfA4Processor;
 import ch.sbb.polarion.extension.pdf_exporter.util.PdfGenerationLog;
-import ch.sbb.polarion.extension.pdf_exporter.util.PdfUa2Processor;
+import ch.sbb.polarion.extension.pdf_exporter.util.PdfPostProcessor;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.WeasyPrintConverter;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.WeasyPrintOptions;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.service.model.WeasyPrintInfo;
@@ -50,6 +47,7 @@ public class WeasyPrintServiceConnector implements WeasyPrintConverter {
 
     @Getter
     private final @NotNull String weasyPrintServiceBaseUrl;
+    private final PdfPostProcessor pdfPostProcessor = new PdfPostProcessor();
 
     public WeasyPrintServiceConnector() {
         this(PdfExporterExtensionConfiguration.getInstance().getWeasyPrintService());
@@ -94,34 +92,7 @@ public class WeasyPrintServiceConnector implements WeasyPrintConverter {
                         String.format("variant=%s, html_size=%d bytes", weasyPrintOptions.getPdfVariant(), htmlPage.length()));
             }
 
-            // Post-process PDF/A-1 documents to ensure compliance with ISO 19005-1:2005
-            if (isPdfA1Variant(weasyPrintOptions.getPdfVariant())) {
-                startTime = System.currentTimeMillis();
-                int originalSize = pdfBytes.length;
-                pdfBytes = postProcessPdfA1(pdfBytes, weasyPrintOptions.getPdfVariant());
-                recordTiming(generationLog, "PDF/A-1 post-processing", System.currentTimeMillis() - startTime,
-                        String.format("variant=%s, pdf_size=%d->%d bytes", weasyPrintOptions.getPdfVariant(), originalSize, pdfBytes.length));
-            }
-
-            // Post-process PDF/A-4 documents to ensure compliance with ISO 19005-4:2020
-            if (isPdfA4Variant(weasyPrintOptions.getPdfVariant())) {
-                startTime = System.currentTimeMillis();
-                int originalSize = pdfBytes.length;
-                pdfBytes = postProcessPdfA4(pdfBytes, weasyPrintOptions.getPdfVariant());
-                recordTiming(generationLog, "PDF/A-4 post-processing", System.currentTimeMillis() - startTime,
-                        String.format("variant=%s, pdf_size=%d->%d bytes", weasyPrintOptions.getPdfVariant(), originalSize, pdfBytes.length));
-            }
-
-            // Post-process PDF/UA-2 documents to ensure compliance with ISO 14289-2:2024
-            if (weasyPrintOptions.getPdfVariant() == PdfVariant.PDF_UA_2) {
-                startTime = System.currentTimeMillis();
-                int originalSize = pdfBytes.length;
-                pdfBytes = postProcessPdfUa2(pdfBytes);
-                recordTiming(generationLog, "PDF/UA-2 post-processing", System.currentTimeMillis() - startTime,
-                        String.format("pdf_size=%d->%d bytes", originalSize, pdfBytes.length));
-            }
-
-            return pdfBytes;
+            return pdfPostProcessor.postProcess(pdfBytes, weasyPrintOptions.getPdfVariant(), generationLog);
         } finally {
             if (client != null) {
                 client.close();
@@ -132,54 +103,6 @@ public class WeasyPrintServiceConnector implements WeasyPrintConverter {
     private void recordTiming(@Nullable PdfGenerationLog generationLog, String stageName, long durationMs, String details) {
         if (generationLog != null) {
             generationLog.recordTiming(stageName, durationMs, details);
-        }
-    }
-
-    private boolean isPdfA1Variant(@NotNull PdfVariant pdfVariant) {
-        return pdfVariant == PdfVariant.PDF_A_1A || pdfVariant == PdfVariant.PDF_A_1B;
-    }
-
-    private byte[] postProcessPdfA1(byte[] pdfBytes, @NotNull PdfVariant pdfVariant) {
-        try {
-            String conformance = switch (pdfVariant) {
-                case PDF_A_1A -> "A";
-                case PDF_A_1B -> "B";
-                default -> null;
-            };
-            return PdfA1Processor.processPdfA1(pdfBytes, conformance);
-        } catch (IOException e) {
-            logger.error("Failed to post-process PDF/A-1 document for compliance", e);
-            // Return original PDF if post-processing fails
-            return pdfBytes;
-        }
-    }
-
-    private boolean isPdfA4Variant(@NotNull PdfVariant pdfVariant) {
-        return pdfVariant == PdfVariant.PDF_A_4E || pdfVariant == PdfVariant.PDF_A_4F || pdfVariant == PdfVariant.PDF_A_4U;
-    }
-
-    private byte[] postProcessPdfA4(byte[] pdfBytes, @NotNull PdfVariant pdfVariant) {
-        try {
-            String conformance = switch (pdfVariant) {
-                case PDF_A_4E -> "E";
-                case PDF_A_4F -> "F";
-                default -> null;
-            };
-            return PdfA4Processor.processPdfA4(pdfBytes, conformance);
-        } catch (IOException e) {
-            logger.error("Failed to post-process PDF/A-4 document for compliance", e);
-            // Return original PDF if post-processing fails
-            return pdfBytes;
-        }
-    }
-
-    private byte[] postProcessPdfUa2(byte[] pdfBytes) {
-        try {
-            return PdfUa2Processor.processPdfUa2(pdfBytes);
-        } catch (IOException e) {
-            logger.error("Failed to post-process PDF/UA-2 document for compliance", e);
-            // Return original PDF if post-processing fails
-            return pdfBytes;
         }
     }
 

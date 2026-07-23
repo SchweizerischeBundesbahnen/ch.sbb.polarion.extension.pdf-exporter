@@ -204,6 +204,30 @@ public class ConverterInternalController {
         return Response.accepted().location(jobUri).build();
     }
 
+    @POST
+    @Path("/convert/merge/jobs")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Operation(summary = "Starts asynchronous merge export job combining multiple documents into a single PDF",
+            responses = {
+                    @ApiResponse(responseCode = "202",
+                            description = "Merge export job started, job URI is returned in Location header"
+                    )
+            })
+    public Response startMergeExportJob(List<ExportParams> exportParamsList) {
+        if (exportParamsList == null || exportParamsList.isEmpty()) {
+            throw new BadRequestException("At least one document must be provided for merge export");
+        }
+
+        for (ExportParams doc : exportParamsList) {
+            validateExportParameters(doc);
+        }
+
+        String jobId = pdfConverterJobService.startJob(exportParamsList, propertiesUtility.getInProgressJobTimeout());
+
+        URI jobUri = UriBuilder.fromUri(uriInfo.getRequestUri().resolve("../jobs/" + jobId)).build();
+        return Response.accepted().location(jobUri).build();
+    }
+
     @GET
     @Path("/convert/jobs/{id}")
     @Produces(MediaType.APPLICATION_JSON)

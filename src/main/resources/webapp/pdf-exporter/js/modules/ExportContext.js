@@ -287,6 +287,35 @@ export default class ExportContext extends ExtensionContext {
         });
     }
 
+    async asyncConvertMergePdf(request, successCallback, errorCallback) {
+        this.callAsync({
+            method: "POST",
+            url: "/polarion/pdf-exporter/rest/internal/convert/merge/jobs",
+            contentType: "application/json",
+            responseType: "blob",
+            body: request,
+            onOk: (responseText, request) => {
+                this.pullAndGetResultPdf(request.getResponseHeader("Location"), successCallback, errorCallback);
+            },
+            onError: (status, errorMessage, request) => {
+                errorCallback(request.response);
+            }
+        });
+    }
+
+    getCollectionDocuments(projectId, collectionId) {
+        const url = `/polarion/pdf-exporter/rest/internal/projects/${projectId}/collections/${collectionId}/documents`;
+        return new Promise((resolve, reject) => {
+            this.callAsync({
+                method: "GET",
+                url: url,
+                responseType: "json",
+                onOk: (responseText, request) => resolve(request.response || []),
+                onError: (status, errorMessage) => reject(new Error(errorMessage || `Failed to load collection ${collectionId}`))
+            });
+        });
+    }
+
     convertCollectionDocuments(exportParams, collectionId, onComplete, onError) {
         let url = `/polarion/pdf-exporter/rest/internal/projects/${exportParams.projectId}/collections/${collectionId}/documents`;
         this.callAsync({
