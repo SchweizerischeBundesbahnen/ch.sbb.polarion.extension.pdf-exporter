@@ -61,6 +61,19 @@
     margin-right: 5px;
 }
 
+/* Live Report toolbar "Export to PDF" button (injected by live-reports.js). The icon
+   dim-to-bright hover comes from Polarion's own polarion-Button-HighlightOnHover class (the same
+   one native toolbar buttons use); label color and the button frame never change — hover only adds
+   a subtle shadow (the unified hover token value, inlined because the --sbb-* tokens are scoped to
+   the .sbb-ui wrappers and do not reach Polarion's toolbar DOM). */
+.pdf-rp-toolbar-button {
+    transition: box-shadow 0.15s ease;
+}
+
+.pdf-rp-toolbar-button:hover {
+    box-shadow: 0 0 2px #e0dede;
+}
+
 .modal__overlay {
     z-index: 2;
 }
