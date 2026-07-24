@@ -35,6 +35,7 @@ import java.security.PrivilegedAction;
 @Priority(Priorities.AUTHORIZATION)
 public class RolesRestrictedFilter implements ContainerRequestFilter {
     private static final Logger logger = Logger.getLogger(RolesRestrictedFilter.class);
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     private final PdfExporterPolarionService polarionService;
     private final ISecurityService securityService;
@@ -120,7 +121,7 @@ public class RolesRestrictedFilter implements ContainerRequestFilter {
             return null;
         }
         try {
-            JsonNode node = new ObjectMapper().readTree(body);
+            JsonNode node = OBJECT_MAPPER.readTree(body);
             JsonNode value = node.get(field);
             return value != null && !value.isNull() ? value.asText() : null;
         } catch (IOException e) {
