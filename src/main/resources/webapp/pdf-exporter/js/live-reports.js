@@ -73,28 +73,43 @@
         }
     }
 
-    function injectScript(id, src, onload) {
-        const existing = top.document.getElementById(id);
-        if (!existing) {
+    function injectScript(id, src) {
+        if (!top.document.getElementById(id)) {
             const script = top.document.createElement('script');
             script.id = id;
             script.setAttribute('src', src);
             script.setAttribute('type', 'text/javascript');
-            if (onload) {
-                script.onload = onload;
-            }
             top.document.head.appendChild(script);
-        } else if (onload) {
-            // Another extension already injected this script (same id). If it has finished loading
-            // (its global is available), run onload now; otherwise it is still in flight — wait for
-            // its load event. Calling onload synchronously here would run before the engine is
-            // defined, silently dropping this extension's button (multi-extension setup).
-            if (top.GenericDleToolbarStarter || window.GenericDleToolbarStarter) {
-                onload();
-            } else {
-                existing.addEventListener('load', onload);
-            }
         }
+    }
+
+    // Load the shared engine once across all extensions and resolve when it is ready. Using a single
+    // shared promise (kept on `top`) is race-free for the multi-extension case: whichever extension's
+    // live-reports.js runs first creates the <script> and the promise; the others reuse the same
+    // promise, and `.then()` fires for every extension whether the engine is still loading or already
+    // loaded (unlike a load-event listener, which is missed if the load already happened).
+    const ENGINE_ID = 'generic-dle-toolbar-engine';
+    function loadEngine(src) {
+        if (!top.__genericDleToolbarEnginePromise) {
+            top.__genericDleToolbarEnginePromise = new Promise((resolve) => {
+                if (top.GenericDleToolbarStarter || window.GenericDleToolbarStarter) {
+                    resolve();
+                    return;
+                }
+                const existing = top.document.getElementById(ENGINE_ID);
+                if (existing) {
+                    existing.addEventListener('load', resolve);
+                    return;
+                }
+                const script = top.document.createElement('script');
+                script.id = ENGINE_ID;
+                script.setAttribute('src', src);
+                script.setAttribute('type', 'text/javascript');
+                script.onload = resolve;
+                top.document.head.appendChild(script);
+            });
+        }
+        return top.__genericDleToolbarEnginePromise;
     }
 
     injectStyle('pdf-exporter-styles', `${EXT_BASE}css/pdf-exporter.css${timestampParam}`);
@@ -107,7 +122,7 @@
     injectScript('pdf-micromodal-script', `${EXT_BASE}ui/generic/js/micromodal.min.js${timestampParam}`);
 
     // Load the shared self-healing engine and inject the report-toolbar button through it.
-    injectScript('generic-dle-toolbar-engine', `${EXT_BASE}ui/generic/js/dle-toolbar-starter.js${timestampParam}`, function () {
+    loadEngine(`${EXT_BASE}ui/generic/js/dle-toolbar-starter.js${timestampParam}`).then(function () {
         const generic = top.GenericDleToolbarStarter || window.GenericDleToolbarStarter;
         if (!generic) {
             console.error("pdf-exporter: GenericDleToolbarStarter is not available after the engine loaded — Live Report toolbar button injection skipped.");

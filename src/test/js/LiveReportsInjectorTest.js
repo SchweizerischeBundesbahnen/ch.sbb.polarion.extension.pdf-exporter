@@ -52,7 +52,10 @@ describe('live-reports.js injector', function () {
         Object.defineProperty(document, 'currentScript', { value: selfTag, configurable: true });
 
         await import(`../../main/resources/webapp/pdf-exporter/js/live-reports.js?load=${importCounter++}`);
+        await flushPromises(); // the engine promise resolves synchronously; let its .then(create) run
     }
+
+    const flushPromises = () => new Promise((resolve) => setTimeout(resolve, 0));
 
     it('injects the popup stylesheets and micromodal once', async function () {
         await loadInjector();
@@ -108,6 +111,7 @@ describe('live-reports.js injector', function () {
         selfTag.src = 'http://localhost/polarion/pdf-exporter/js/live-reports.js';
         Object.defineProperty(document, 'currentScript', { value: selfTag, configurable: true });
         await import(`../../main/resources/webapp/pdf-exporter/js/live-reports.js?load=${importCounter++}`);
+        await flushPromises();
 
         expect(createdConfigs.length).to.equal(0); // engine not loaded yet → nothing created
 
@@ -117,6 +121,7 @@ describe('live-reports.js injector', function () {
             autoExpandRichPageTools: () => autoExpandCalls++
         };
         engineTag.dispatchEvent(new window.Event('load'));
+        await flushPromises(); // the engine promise resolves on load → its .then(create) runs
 
         expect(createdConfigs.length).to.equal(1); // button registered after the engine loaded
         expect(injectToolbarCalls.length).to.equal(1);
