@@ -114,6 +114,7 @@ public class PdfExporterFormExtension implements IFormExtension {
             form = adjustLinkRoles(form, EnumValuesProvider.getAllLinkRoleNames(module.getProject()), selectedStylePackage);
             form = adjustFilename(form, module);
             form = adjustButtons(form, selectedStylePackage);
+            form = adjustExportAuthorization(form, polarionService.userAuthorizedForExport(module.getProject().getId()));
 
             builder.html(form);
         }
@@ -363,6 +364,18 @@ public class PdfExporterFormExtension implements IFormExtension {
     private String adjustButtons(@NotNull String form, @NotNull StylePackageModel stylePackage) {
         if (!stylePackage.isExposePageWidthValidation()) {
             form = form.replace("id='page-width-validation'", "id='page-width-validation' style='display: none;'");
+        }
+        return form;
+    }
+
+    @VisibleForTesting
+    String adjustExportAuthorization(@NotNull String form, boolean authorized) {
+        if (!authorized) {
+            String title = "You are not allowed to export PDF for this project";
+            form = form.replace("<button type='button' id='export-pdf'>",
+                    String.format("<button type='button' id='export-pdf' disabled title='%s'>", title));
+            form = form.replace("<button type='button' id='validate-pdf'>",
+                    String.format("<button type='button' id='validate-pdf' disabled title='%s'>", title));
         }
         return form;
     }

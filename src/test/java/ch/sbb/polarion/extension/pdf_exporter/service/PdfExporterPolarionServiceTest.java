@@ -5,9 +5,11 @@ import ch.sbb.polarion.extension.generic.settings.SettingId;
 import ch.sbb.polarion.extension.generic.settings.SettingName;
 import ch.sbb.polarion.extension.generic.util.ScopeUtils;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.attachments.TestRunAttachment;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.authorization.AuthorizationModel;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.stylepackage.DocIdentifier;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.stylepackage.StylePackageModel;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.stylepackage.StylePackageWeightInfo;
+import ch.sbb.polarion.extension.pdf_exporter.settings.AuthorizationSettings;
 import ch.sbb.polarion.extension.pdf_exporter.settings.StylePackageSettings;
 import com.polarion.alm.projects.IProjectService;
 import com.polarion.alm.tracker.ITestManagementService;
@@ -27,6 +29,7 @@ import com.polarion.platform.persistence.model.IPObjectList;
 import com.polarion.platform.persistence.spi.PObjectList;
 import com.polarion.platform.security.ISecurityService;
 import com.polarion.platform.service.repository.IRepositoryService;
+import com.polarion.subterra.base.data.identification.IContextId;
 import com.polarion.subterra.base.location.ILocation;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -675,5 +678,91 @@ class PdfExporterPolarionServiceTest {
         assertNotNull(testRunAttachmentWithRevision);
 
         assertThrows(IllegalArgumentException.class, () -> service.getTestRunAttachment("testProjectId", "testTestRunId", "nonExistingAttachmentId", null));
+    }
+
+    @Test
+    void userAuthorizedForExportWhenUnrestricted() {
+        // No roles configured => export available to everyone, no role lookup needed
+        registerAuthorizationModel(new AuthorizationModel(List.of(), List.of()));
+        assertTrue(service.userAuthorizedForExport("proj"));
+    }
+
+    @Test
+    void userAuthorizedForExportWhenUserHasAllowedGlobalRole() {
+        ISecurityService securityService = mock(ISecurityService.class);
+        PdfExporterPolarionService svc = authorizationService(securityService);
+        registerAuthorizationModel(new AuthorizationModel(List.of("admin"), List.of()));
+
+        when(securityService.getCurrentUser()).thenReturn("user1");
+        when(securityService.getRolesForUser("user1")).thenReturn(List.of("developer", "admin"));
+
+        assertTrue(svc.userAuthorizedForExport("proj"));
+    }
+
+    @Test
+    void userAuthorizedForExportWhenUserHasAllowedProjectRole() {
+        ISecurityService securityService = mock(ISecurityService.class);
+        PdfExporterPolarionService svc = authorizationService(securityService);
+        registerAuthorizationModel(new AuthorizationModel(List.of("globalOnly"), List.of("reviewer")));
+
+        ITrackerProject trackerProject = mock(ITrackerProject.class);
+        IContextId contextId = mock(IContextId.class);
+        when(trackerProject.getContextId()).thenReturn(contextId);
+        doReturn(trackerProject).when(svc).getTrackerProject("proj");
+
+        when(securityService.getCurrentUser()).thenReturn("user1");
+        when(securityService.getRolesForUser("user1")).thenReturn(List.of("developer"));
+        when(securityService.getRolesForUser("user1", contextId)).thenReturn(List.of("reviewer"));
+
+        assertTrue(svc.userAuthorizedForExport("proj"));
+    }
+
+    @Test
+    void userNotAuthorizedForExportWhenNoRoleMatches() {
+        ISecurityService securityService = mock(ISecurityService.class);
+        PdfExporterPolarionService svc = authorizationService(securityService);
+        registerAuthorizationModel(new AuthorizationModel(List.of("admin"), List.of("reviewer")));
+
+        ITrackerProject trackerProject = mock(ITrackerProject.class);
+        IContextId contextId = mock(IContextId.class);
+        when(trackerProject.getContextId()).thenReturn(contextId);
+        doReturn(trackerProject).when(svc).getTrackerProject("proj");
+
+        when(securityService.getCurrentUser()).thenReturn("user1");
+        when(securityService.getRolesForUser("user1")).thenReturn(List.of("developer"));
+        when(securityService.getRolesForUser("user1", contextId)).thenReturn(List.of("developer"));
+
+        assertFalse(svc.userAuthorizedForExport("proj"));
+    }
+
+    @Test
+    void userNotAuthorizedForExportWhenProjectIdNullAndNoGlobalRole() {
+        ISecurityService securityService = mock(ISecurityService.class);
+        PdfExporterPolarionService svc = authorizationService(securityService);
+        registerAuthorizationModel(new AuthorizationModel(List.of("admin"), List.of()));
+
+        when(securityService.getCurrentUser()).thenReturn("user1");
+        when(securityService.getRolesForUser("user1")).thenReturn(List.of("developer"));
+
+        // No project → only global roles apply; none match → denied (no project-context lookup).
+        assertFalse(svc.userAuthorizedForExport(null));
+    }
+
+    private PdfExporterPolarionService authorizationService(ISecurityService securityService) {
+        return spy(new PdfExporterPolarionService(
+                trackerService,
+                mock(IProjectService.class),
+                securityService,
+                mock(IPlatformService.class),
+                mock(IRepositoryService.class),
+                testManagementService
+        ));
+    }
+
+    private void registerAuthorizationModel(AuthorizationModel model) {
+        AuthorizationSettings authorizationSettings = mock(AuthorizationSettings.class);
+        when(authorizationSettings.getFeatureName()).thenReturn(AuthorizationSettings.FEATURE_NAME);
+        when(authorizationSettings.read(nullable(String.class), any(SettingId.class), isNull())).thenReturn(model);
+        NamedSettingsRegistry.INSTANCE.register(List.of(authorizationSettings));
     }
 }
