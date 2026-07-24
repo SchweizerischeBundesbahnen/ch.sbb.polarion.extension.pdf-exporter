@@ -1,64 +1,17 @@
-.dleToolBarContainer {
-    width: fit-content;
-    height: 45px;
-    background-color: #f5f5f5;
-    z-index: 1;
-    position: absolute;
-    right: 0;
-    border-bottom: 1px solid #DEDEDE;
-    border-right: 1px solid #DEDEDE;
-    border-left: 1px solid #DEDEDE;
-    padding-left: 8px;
-    padding-right: 3px;
-    vertical-align: middle;
-    display: flex;
+/* The shared .dleToolBar* toolbar-button rules now live in generic (css/dle-toolbar.css), injected
+   by the toolbar engine — they used to be duplicated here and in every other exporter. */
+
+/* Live Report toolbar "Export to PDF" button (injected by live-reports.js). The icon
+   dim-to-bright hover comes from Polarion's own polarion-Button-HighlightOnHover class (the same
+   one native toolbar buttons use); label color and the button frame never change — hover only adds
+   a subtle shadow (the unified hover token value, inlined because the --sbb-* tokens are scoped to
+   the .sbb-ui wrappers and do not reach Polarion's toolbar DOM). */
+.pdf-rp-toolbar-button {
+    transition: box-shadow 0.15s ease;
 }
 
-.dleToolBarTable {
-    align-self: center;
-    border-spacing: 0;
-}
-
-.dleToolBarRow {
-    display: table-row;
-    vertical-align: middle;
-}
-
-.dleToolBarTableCell {
-    padding: 0;
-}
-
-.dleToolBarButton {
-    cursor: pointer;
-    opacity: .6;
-}
-
-.dleToolBarButton:hover {
-    opacity: 1;
-}
-
-.dleToolBarSingleButton {
-    border: 1px solid #DEDEDE;
-    padding: 5px;
-    border-radius: 2px;
-    margin-right: 5px;
-}
-
-.dleToolBarLeftButton {
-    border: 1px solid #DEDEDE;
-    padding: 5px;
-    border-top-left-radius: 2px;
-    border-bottom-left-radius: 2px;
-}
-
-.dleToolBarRightButton {
-    border-width: 1px 1px 1px 0px;
-    border-style: solid;
-    border-color: #DEDEDE;
-    padding: 5px;
-    border-top-right-radius: 2px;
-    border-bottom-right-radius: 2px;
-    margin-right: 5px;
+.pdf-rp-toolbar-button:hover {
+    box-shadow: 0 0 2px #e0dede;
 }
 
 .modal__overlay {
