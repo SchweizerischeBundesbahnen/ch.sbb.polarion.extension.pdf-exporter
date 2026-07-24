@@ -57,6 +57,7 @@ class PdfExportFunctionTest {
         context = (ICallContext<? extends IWorkflowObject>) mock(ICallContext.class);
         trackerProject = mock(ITrackerProject.class);
         lenient().when(pdfExporterPolarionService.getTrackerProject(anyString())).thenReturn(trackerProject);
+        lenient().when(pdfExporterPolarionService.userAuthorizedForExport(nullable(String.class))).thenReturn(true);
         module = mock(IModule.class);
         ILocation moduleLocation = mock(ILocation.class);
         lenient().when(module.getModuleLocation()).thenReturn(moduleLocation);

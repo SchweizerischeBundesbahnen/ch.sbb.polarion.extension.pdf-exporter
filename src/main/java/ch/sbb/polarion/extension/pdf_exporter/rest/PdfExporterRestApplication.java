@@ -17,6 +17,7 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.exception.UnresolvableObjectE
 import ch.sbb.polarion.extension.pdf_exporter.rest.exception.WrapperExceptionMapper;
 import ch.sbb.polarion.extension.pdf_exporter.rest.exception.XLIFFExceptionMapper;
 import ch.sbb.polarion.extension.pdf_exporter.rest.filter.ExportContextFilter;
+import ch.sbb.polarion.extension.pdf_exporter.rest.filter.RolesRestrictedFilter;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Set;
@@ -52,6 +53,6 @@ public class PdfExporterRestApplication extends GenericRestApplication {
 
     @Override
     protected @NotNull Set<Object> getExtensionFilterSingletons() {
-        return Set.of(new ExportContextFilter());
+        return Set.of(new ExportContextFilter(), new RolesRestrictedFilter());
     }
 }

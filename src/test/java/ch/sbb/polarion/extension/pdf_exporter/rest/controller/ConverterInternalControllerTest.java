@@ -7,6 +7,7 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.jobs.ConverterJobDetails;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.jobs.ConverterJobStatus;
 import ch.sbb.polarion.extension.pdf_exporter.service.PdfExporterPolarionService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -31,7 +32,9 @@ import java.util.stream.Stream;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -46,6 +49,11 @@ class ConverterInternalControllerTest {
     @InjectMocks
     private ConverterInternalController internalController;
 
+    @BeforeEach
+    void authorizeExportByDefault() {
+        lenient().when(pdfExporterPolarionService.userAuthorizedForExport(nullable(String.class))).thenReturn(true);
+    }
+
     @Test
     void startPdfConverterJob_success() {
         ExportParams params = ExportParams.builder()
@@ -57,6 +65,14 @@ class ConverterInternalControllerTest {
         try (Response response = internalController.startPdfConverterJob(params)) {
             assertThat(response.getStatus()).isEqualTo(HttpStatus.ACCEPTED.value());
             assertThat(response.getHeaderString(HttpHeaders.LOCATION)).isEqualTo("/polarion/pdf-exporter/rest/api/convert/jobs/testJobId");
+        }
+    }
+
+    @Test
+    void getExportPermission_returnsPermittedFlag() {
+        try (Response response = internalController.getExportPermission("testProjectId")) {
+            assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
+            assertThat(((Map<?, ?>) response.getEntity()).get("permitted")).isEqualTo(true);
         }
     }
 
