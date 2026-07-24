@@ -1,5 +1,18 @@
 # Changelog
 
+## [13.5.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v13.4.0...v13.5.0) (2026-07-24)
+
+
+### Features
+
+* add export to PDF button to live report toolbar ([#955](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/955)) ([825947f](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/825947f65c9a3412d92e8f0b6c10df61f19eed64)), closes [#954](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/954)
+
+
+### Bug Fixes
+
+* **deps:** update dependency ch.sbb.polarion.extensions:ch.sbb.polarion.extension.generic to v15.6.0 ([4468c63](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/4468c635c04bea89f109932e6104c04cec478915))
+* **deps:** update dependency ch.sbb.polarion.extensions:ch.sbb.polarion.extension.generic to v15.7.0 ([fffb12e](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/fffb12eb5e33f007c69cd04df29e2bcea6daf4d9))
+
 ## [13.4.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v13.3.1...v13.4.0) (2026-07-22)
 
 
