@@ -44,7 +44,7 @@
         <table class="dleToolBarTable">
             <tr class="dleToolBarRow">
                 <td><div class="gwt-Label polarion-dle-toolbar-Padding"></div></td>
-                <td><img src="/polarion/ria/images/toolbar_splitter_gray.gif${timestampParam}" class="gwt-Image polarion-dle-ToolbarPanel-separator"></td>
+                <td><img src="/polarion/ria/images/toolbar_splitter_gray.gif" class="gwt-Image polarion-dle-ToolbarPanel-separator"></td>
                 <td><div class="gwt-Label polarion-dle-toolbar-Padding"></div></td>
                 <td style="vertical-align: middle;">
                     <table class="polarion-dle-toolbar-ButtonWithLabel polarion-Button-shared polarion-Button-HighlightOnHover pdf-rp-toolbar-button"
@@ -54,7 +54,7 @@
                                       .catch(console.error);">
                         <colgroup><col><col></colgroup>
                         <tbody><tr>
-                            <td class="polarion-Button-GridImpl-ImageCell"><img src="/polarion/ria/images/dle/operations/actionPdfExport16.svg${timestampParam}" class="gwt-Image" alt="Export to PDF"></td>
+                            <td class="polarion-Button-GridImpl-ImageCell"><img src="/polarion/ria/images/dle/operations/actionPdfExport16.svg" class="gwt-Image" alt="Export to PDF"></td>
                             <td class="polarion-Button-GridImpl-TextCell"><div class="gwt-Label">Export to PDF</div></td>
                         </tr></tbody>
                     </table>
@@ -74,7 +74,8 @@
     }
 
     function injectScript(id, src, onload) {
-        if (!top.document.getElementById(id)) {
+        const existing = top.document.getElementById(id);
+        if (!existing) {
             const script = top.document.createElement('script');
             script.id = id;
             script.setAttribute('src', src);
@@ -84,7 +85,15 @@
             }
             top.document.head.appendChild(script);
         } else if (onload) {
-            onload();
+            // Another extension already injected this script (same id). If it has finished loading
+            // (its global is available), run onload now; otherwise it is still in flight — wait for
+            // its load event. Calling onload synchronously here would run before the engine is
+            // defined, silently dropping this extension's button (multi-extension setup).
+            if (top.GenericDleToolbarStarter || window.GenericDleToolbarStarter) {
+                onload();
+            } else {
+                existing.addEventListener('load', onload);
+            }
         }
     }
 

@@ -95,4 +95,30 @@ describe('live-reports.js injector', function () {
         await loadInjector({ expandTools: true });
         expect(autoExpandCalls).to.equal(1);
     });
+
+    it('waits for an in-flight engine load instead of dropping the button (multi-extension)', async function () {
+        // Another extension already added the engine <script> (same id) but it hasn't finished
+        // loading yet — GenericDleToolbarStarter is not defined. Our onload must NOT run
+        // synchronously (that dropped the button before this fix); it must wait for the load event.
+        const engineTag = document.createElement('script');
+        engineTag.id = 'generic-dle-toolbar-engine';
+        document.head.appendChild(engineTag);
+
+        const selfTag = document.createElement('script');
+        selfTag.src = 'http://localhost/polarion/pdf-exporter/js/live-reports.js';
+        Object.defineProperty(document, 'currentScript', { value: selfTag, configurable: true });
+        await import(`../../main/resources/webapp/pdf-exporter/js/live-reports.js?load=${importCounter++}`);
+
+        expect(createdConfigs.length).to.equal(0); // engine not loaded yet → nothing created
+
+        // The engine finishes loading and defines its global, then fires load.
+        window.GenericDleToolbarStarter = {
+            create: (config) => { createdConfigs.push(config); return { injectToolbar: (p) => injectToolbarCalls.push(p) }; },
+            autoExpandRichPageTools: () => autoExpandCalls++
+        };
+        engineTag.dispatchEvent(new window.Event('load'));
+
+        expect(createdConfigs.length).to.equal(1); // button registered after the engine loaded
+        expect(injectToolbarCalls.length).to.equal(1);
+    });
 });
