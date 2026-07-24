@@ -48,6 +48,8 @@ class LiveReportMainHeadStatusProviderTest {
                 Arguments.of("", CONFIG_NEW, ok),
                 Arguments.of(CONFIG_NEW, CONFIG_NEW, ok),
                 Arguments.of("<script></script> <script src=\"/polarion/pdf-exporter/js/live-reports.js\"></script> <script></script>", "", ok),
+                // Recommended form with the data-expand-tools opt-in attribute → still OK.
+                Arguments.of("<script src=\"/polarion/pdf-exporter/js/live-reports.js\" data-expand-tools=\"true\"></script>", "", ok),
 
                 // Deprecated starter.js form → WARNING with deprecation hint.
                 Arguments.of(CONFIG_DEPRECATED, "", deprecated),

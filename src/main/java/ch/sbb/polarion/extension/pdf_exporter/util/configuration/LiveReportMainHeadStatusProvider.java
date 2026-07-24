@@ -13,8 +13,8 @@ import org.jetbrains.annotations.Nullable;
 public class LiveReportMainHeadStatusProvider extends ConfigurationStatusProvider {
 
     public static final String LIVE_REPORT_BUTTON = "LiveReport Button";
-    // Recommended single-tag Live Reports loader.
-    public static final String LIVE_REPORT_BUTTON_SCRIPT_REGEX = "(.*)<script src=\"/polarion/pdf-exporter/js/live-reports.js[^\"]*\"></script>(.*)";
+    // Recommended single-tag Live Reports loader; extra attributes (e.g. data-expand-tools) allowed.
+    public static final String LIVE_REPORT_BUTTON_SCRIPT_REGEX = "(.*)<script src=\"/polarion/pdf-exporter/js/live-reports.js[^\"]*\"[^>]*></script>(.*)";
     // Deprecated form (loads starter.js, which also drags in the DLE toolbar engine).
     public static final String DEPRECATED_LIVE_REPORT_BUTTON_SCRIPT_REGEX = "(.*)<script src=\"/polarion/pdf-exporter/js/starter.js[^\"]*\"></script>(.*)";
     public static final String NOT_CONFIGURED = "Not configured";

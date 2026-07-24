@@ -83,6 +83,33 @@ describe('ExportContext Class', function () {
         expect(exportContext.getDocumentName()).to.equal('TestLiveReport');
     });
 
+    it('URL: #/project/elibrary/home', function () {
+        const locationHash = "#/project/elibrary/home";
+        const exportContext = new ExportContext({documentType: ExportParams.DocumentType.LIVE_REPORT, polarionLocationHash: locationHash});
+
+        expect(exportContext.documentType).to.equal(ExportParams.DocumentType.LIVE_REPORT);
+        expect(exportContext.projectId).to.equal('elibrary');
+        expect(exportContext.locationPath).to.equal('_default/Home');
+        expect(exportContext.baselineRevision).to.be.undefined;
+        expect(exportContext.revision).to.be.undefined;
+        expect(exportContext.urlQueryParameters).to.be.undefined;
+
+        expect(exportContext.getSpaceId()).to.equal('_default');
+        expect(exportContext.getDocumentName()).to.equal('Home');
+    });
+
+    it('URL: #/home (repository home page)', function () {
+        const locationHash = "#/home";
+        const exportContext = new ExportContext({documentType: ExportParams.DocumentType.LIVE_REPORT, polarionLocationHash: locationHash});
+
+        expect(exportContext.documentType).to.equal(ExportParams.DocumentType.LIVE_REPORT);
+        expect(exportContext.projectId).to.be.null;
+        expect(exportContext.locationPath).to.equal('_default/Home');
+
+        expect(exportContext.getSpaceId()).to.equal('_default');
+        expect(exportContext.getDocumentName()).to.equal('Home');
+    });
+
     it('URL: #/project/elibrary/testrun?id=elibrary_20231026-163136654', function () {
         const locationHash = "#/project/elibrary/testrun?id=elibrary_20231026-163136654";
         const exportContext = new ExportContext({documentType: ExportParams.DocumentType.LIVE_REPORT, polarionLocationHash: locationHash});
