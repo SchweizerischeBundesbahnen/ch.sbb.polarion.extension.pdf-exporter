@@ -735,6 +735,19 @@ class PdfExporterPolarionServiceTest {
         assertFalse(svc.userAuthorizedForExport("proj"));
     }
 
+    @Test
+    void userNotAuthorizedForExportWhenProjectIdNullAndNoGlobalRole() {
+        ISecurityService securityService = mock(ISecurityService.class);
+        PdfExporterPolarionService svc = authorizationService(securityService);
+        registerAuthorizationModel(new AuthorizationModel(List.of("admin"), List.of()));
+
+        when(securityService.getCurrentUser()).thenReturn("user1");
+        when(securityService.getRolesForUser("user1")).thenReturn(List.of("developer"));
+
+        // No project → only global roles apply; none match → denied (no project-context lookup).
+        assertFalse(svc.userAuthorizedForExport(null));
+    }
+
     private PdfExporterPolarionService authorizationService(ISecurityService securityService) {
         return spy(new PdfExporterPolarionService(
                 trackerService,
@@ -749,7 +762,7 @@ class PdfExporterPolarionServiceTest {
     private void registerAuthorizationModel(AuthorizationModel model) {
         AuthorizationSettings authorizationSettings = mock(AuthorizationSettings.class);
         when(authorizationSettings.getFeatureName()).thenReturn(AuthorizationSettings.FEATURE_NAME);
-        when(authorizationSettings.read(anyString(), any(SettingId.class), isNull())).thenReturn(model);
+        when(authorizationSettings.read(nullable(String.class), any(SettingId.class), isNull())).thenReturn(model);
         NamedSettingsRegistry.INSTANCE.register(List.of(authorizationSettings));
     }
 }

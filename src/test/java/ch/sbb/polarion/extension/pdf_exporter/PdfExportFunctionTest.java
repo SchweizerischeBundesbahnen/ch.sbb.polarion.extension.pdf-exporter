@@ -83,6 +83,16 @@ class PdfExportFunctionTest {
     }
 
     @Test
+    void executeThrowsWhenUserNotAuthorized() {
+        when(module.getProjectId()).thenReturn("testProject");
+        when(pdfExporterPolarionService.userAuthorizedForExport("testProject")).thenReturn(false);
+        IArguments args = mock(IArguments.class);
+
+        assertThrows(SecurityException.class, () -> pdfExportFunction.execute(context, args));
+        verify(pdfConverter, never()).convertToPdf(any(), any());
+    }
+
+    @Test
     void testDefaultStylePackageUsed() {
         IArguments args = new Arguments(Map.of());
         NamedSettingsRegistry.INSTANCE.register(List.of(new StylePackageSettings(settingsService)));
