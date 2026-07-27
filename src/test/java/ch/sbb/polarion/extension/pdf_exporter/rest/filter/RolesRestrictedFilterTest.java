@@ -12,9 +12,9 @@ import jakarta.ws.rs.core.MultivaluedHashMap;
 import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.core.UriInfo;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -46,6 +46,7 @@ class RolesRestrictedFilterTest {
     @Mock
     private ContainerRequestContext requestContext;
 
+    @InjectMocks
     private RolesRestrictedFilter filter;
 
     @SuppressWarnings({"unused", "java:S1186"})
@@ -64,11 +65,6 @@ class RolesRestrictedFilterTest {
 
         public void notAnnotated() {
         }
-    }
-
-    @BeforeEach
-    void setUp() {
-        filter = new RolesRestrictedFilter(polarionService, securityService, resourceInfo);
     }
 
     @AfterEach

@@ -254,7 +254,7 @@ public class PdfExporterPolarionService extends PolarionService {
                 NamedSettingsRegistry.INSTANCE.getByFeatureName(AuthorizationSettings.FEATURE_NAME).read(
                         ScopeUtils.getScopeFromProject(projectId), SettingId.fromName(NamedSettings.DEFAULT_NAME), null);
 
-        if (authorizationModel == null || authorizationModel.isUnrestricted()) {
+        if (authorizationModel.isUnrestricted()) {
             return true;
         }
 

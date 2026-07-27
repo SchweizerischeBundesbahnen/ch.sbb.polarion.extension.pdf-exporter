@@ -72,7 +72,7 @@ class ConverterInternalControllerTest {
     void getExportPermission_returnsPermittedFlag() {
         try (Response response = internalController.getExportPermission("testProjectId")) {
             assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
-            assertThat(((Map<?, ?>) response.getEntity()).get("permitted")).isEqualTo(true);
+            assertThat((Boolean) ((Map<?, ?>) response.getEntity()).get("permitted")).isTrue();
         }
     }
 
