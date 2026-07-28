@@ -83,6 +83,10 @@ public class PdfExportFunction implements IFunction<IModule> {
             return;
         }
 
+        if (!pdfExporterPolarionService.userAuthorizedForExport(module.getProjectId())) {
+            throw new SecurityException("Current user is not allowed to export PDF for project '" + module.getProjectId() + "'");
+        }
+
         ExportParams exportParams = getExportParams(module, args);
         byte[] pdfBytes = pdfConverter.convertToPdf(exportParams, null);
         savePdfAsWorkItemAttachment(module, exportParams, context.getTargetStatusId(), args, pdfBytes);

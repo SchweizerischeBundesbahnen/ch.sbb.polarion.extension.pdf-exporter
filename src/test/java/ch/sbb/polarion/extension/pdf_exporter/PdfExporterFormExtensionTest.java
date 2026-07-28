@@ -57,6 +57,7 @@ class PdfExporterFormExtensionTest {
     void beforeEach() {
         mockedPolarionServiceConstruction = mockConstruction(PdfExporterPolarionService.class, (mock, context) -> {
             when(mock.getProject("testProject")).thenReturn(project);
+            when(mock.userAuthorizedForExport(anyString())).thenReturn(true);
         });
         mockedFileNameHelperConstruction = mockConstruction(DocumentFileNameHelper.class, (mock, context) -> {
             when(mock.getDocumentFileName(any())).thenReturn("testFileName.pdf");
@@ -106,6 +107,21 @@ class PdfExporterFormExtensionTest {
         NamedSettingsRegistry.INSTANCE.register(List.of(packageSettings, coverPageSettings, cssSettings, headerFooterSettings, localizationSettings, webhooksSettings));
 
         assertDoesNotThrow(() -> extension.render(context));
+    }
+
+    @Test
+    void testAdjustExportAuthorization() {
+        PdfExporterFormExtension extension = new PdfExporterFormExtension();
+        String form = "<button type='button' id='export-pdf'>Export</button>"
+                + "<button type='button' id='validate-pdf'>Validate</button>";
+
+        // Authorized user — markup stays unchanged
+        assertEquals(form, extension.adjustExportAuthorization(form, true));
+
+        // Unauthorized user — both action buttons become disabled
+        String disabled = extension.adjustExportAuthorization(form, false);
+        assertTrue(disabled.contains("<button type='button' id='export-pdf' disabled"));
+        assertTrue(disabled.contains("<button type='button' id='validate-pdf' disabled"));
     }
 
     @Test

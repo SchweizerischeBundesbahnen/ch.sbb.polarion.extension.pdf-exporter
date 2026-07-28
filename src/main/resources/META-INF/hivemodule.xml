@@ -127,6 +127,15 @@
                   projectScope="true"
                   projectGroupScope="false"
                   repositoryScope="true"/>
+
+        <extender id="authorization"
+                  name="Authorization"
+                  parentNodeId="pdf-export"
+                  iconUrl="/polarion/pdf-exporter-admin/ui/images/menu/16x16/authorization.svg"
+                  pageUrl="/polarion/pdf-exporter-admin/pages/authorization.jsp?scope=$scope$"
+                  projectScope="true"
+                  projectGroupScope="false"
+                  repositoryScope="true"/>
     </contribution>
 
     <contribution configuration-id="com.polarion.alm.richpages.widgets">
