@@ -8,7 +8,7 @@
   "devDependencies": {
     "chai": "6.2.2",
     "cross-env": "10.1.0",
-    "jsdom": "29.1.1",
+    "jsdom": "30.0.0",
     "mocha": "11.7.6"
   },
   "overrides": {
