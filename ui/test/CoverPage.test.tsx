@@ -94,9 +94,10 @@ describe('Cover page', () => {
     expect(document.querySelector('.predefined-templates')).toBeNull();
   });
 
-  it('deletes the images of a configuration before the configuration itself', async () => {
-    // The images are separate files in SVN found through the setting's name, so deleting the setting
-    // first would strand them there. The legacy page did this as a preDeleteCallback.
+  it('deletes a configuration with a single request', async () => {
+    // The images used to be a second, separate call from here, which left a cover page without them
+    // whenever the setting deletion failed afterwards. CoverPageSettings.delete removes both now, so
+    // the page issues one request and cannot produce that state.
     const fetchMock = open();
     await vi.waitFor(() => expect(html().value).toBe('<h1>$title</h1>'));
 
@@ -112,50 +113,10 @@ describe('Cover page', () => {
 
     await vi.waitFor(() => {
       const deletes = fetchMock.mock.calls.filter(([, init]) => init?.method === 'DELETE').map(([u]) => String(u));
-      expect(deletes.length).toBe(2);
-      expect(deletes[0]).toContain('/settings/cover-page/names/Default/images?scope=project%2Felibrary%2F');
-      expect(deletes[1]).toContain('/settings/cover-page/names/Default?scope=project%2Felibrary%2F');
+      expect(deletes).toEqual([
+        expect.stringContaining('/settings/cover-page/names/Default?scope=project%2Felibrary%2F'),
+      ]);
     });
-  });
-
-  it('keeps the configuration when its images cannot be deleted', async () => {
-    const fetchMock = open(
-      routes([{ method: 'DELETE', match: /\/settings\/cover-page\/names\/[^/]+\/images/, json: {}, status: 500 }]),
-    );
-    await vi.waitFor(() => expect(html().value).toBe('<h1>$title</h1>'));
-
-    await userEvent.click(
-      Array.from(document.querySelectorAll<HTMLElement>('.configurations-pane .sbb-btn')).find(
-        (b) => b.textContent?.trim() === 'Delete',
-      )!,
-    );
-    await vi.waitFor(() => expect(document.querySelector('.rsp-modal')).not.toBeNull());
-    Array.from(document.querySelectorAll<HTMLButtonElement>('.rsp-modal-footer .sbb-btn'))
-      .find((b) => (b.textContent ?? '').trim() === 'Delete')!
-      .click();
-
-    await vi.waitFor(() => expect(document.querySelector('.configurations-pane .alert-error')).not.toBeNull());
-    const deletes = fetchMock.mock.calls.filter(([, init]) => init?.method === 'DELETE').map(([u]) => String(u));
-    expect(deletes.every((u) => u.includes('/images'))).toBe(true);
-  });
-
-  it('says the images are gone when the configuration itself survives a failed deletion', async () => {
-    // The two are separate requests; if the second fails, the configuration is still there but its
-    // images are not, and the shared pane can only report "deletion failed".
-    open(routes([{ method: 'DELETE', match: /\/settings\/cover-page\/names\/[^/?]+\?/, json: {}, status: 500 }]));
-    await vi.waitFor(() => expect(html().value).toBe('<h1>$title</h1>'));
-
-    await userEvent.click(
-      Array.from(document.querySelectorAll<HTMLElement>('.configurations-pane .sbb-btn')).find(
-        (b) => b.textContent?.trim() === 'Delete',
-      )!,
-    );
-    await vi.waitFor(() => expect(document.querySelector('.rsp-modal')).not.toBeNull());
-    Array.from(document.querySelectorAll<HTMLButtonElement>('.rsp-modal-footer .sbb-btn'))
-      .find((b) => (b.textContent ?? '').trim() === 'Delete')!
-      .click();
-
-    await vi.waitFor(() => expect(document.body.textContent).toContain('were deleted, but the configuration itself'));
   });
 
   it('says so when the predefined templates cannot be read', async () => {

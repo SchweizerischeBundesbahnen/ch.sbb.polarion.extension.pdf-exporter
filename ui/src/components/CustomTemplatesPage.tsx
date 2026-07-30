@@ -41,12 +41,6 @@ interface CustomTemplatesPageProps {
   footer?: ReactNode;
   /** Class on the editor grid, so a page can lay its fields out (three across, two rows of three...). */
   editorsClassName?: string;
-  /**
-   * Run before a configuration is deleted, and only deleted if it resolves. The cover page needs it:
-   * its images are separate files in SVN, addressed through the setting's name, so they have to go
-   * first - once the setting is gone there is nothing left to find them by.
-   */
-  beforeDelete?: (name: string, scope: string) => Promise<void>;
 }
 
 /** The single always-present setting of a feature that has no named configurations. */
@@ -72,38 +66,11 @@ export default function CustomTemplatesPage({
   fields,
   footer,
   editorsClassName,
-  beforeDelete,
 }: Readonly<CustomTemplatesPageProps>) {
   const scope = getScope();
   const settings = useNamedSettings<TemplateSettings>(feature);
   const { confirm, confirmDialog } = useConfirm();
   const paneRef = useRef<ConfigurationsPaneHandle>(null);
-
-  // The pane deletes through the service, so the hook goes in here rather than into the library.
-  const service = useMemo(
-    () =>
-      beforeDelete
-        ? {
-            ...settings,
-            deleteConfiguration: async (name: string, deleteScope: string) => {
-              await beforeDelete(name, deleteScope);
-              try {
-                await settings.deleteConfiguration(name, deleteScope);
-              } catch (e) {
-                // The two are separate requests and cannot be made one from here: if the second
-                // fails the configuration survives with its images already gone, which looks like
-                // nothing happened. Say so - the shared pane can only report that a deletion failed.
-                toast.error(
-                  `The images of "${name}" were deleted, but the configuration itself could not be removed. ` +
-                    'It is now without them; delete it again or restore its images before using it.',
-                );
-                throw e;
-              }
-            },
-          }
-        : settings,
-    [settings, beforeDelete],
-  );
 
   /**
    * Which load is the current one. Filling the editors is a request the administrator can outrun -
@@ -251,7 +218,7 @@ export default function CustomTemplatesPage({
         <ConfigurationsPane<TemplateSettings>
           ref={paneRef}
           scope={scope}
-          service={service}
+          service={settings}
           cookieKey={`selected-configuration-${feature}`}
           onContentLoaded={applyContent}
           onSelectedChange={setSelectedConfig}

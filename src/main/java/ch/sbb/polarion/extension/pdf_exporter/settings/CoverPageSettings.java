@@ -2,6 +2,7 @@ package ch.sbb.polarion.extension.pdf_exporter.settings;
 
 import ch.sbb.polarion.extension.generic.regex.RegexMatcher;
 import ch.sbb.polarion.extension.generic.settings.GenericNamedSettings;
+import ch.sbb.polarion.extension.generic.settings.SettingId;
 import ch.sbb.polarion.extension.generic.settings.SettingName;
 import ch.sbb.polarion.extension.generic.settings.SettingsService;
 import ch.sbb.polarion.extension.generic.util.ScopeUtils;
@@ -151,14 +152,39 @@ public class CoverPageSettings extends GenericNamedSettings<CoverPageModel> {
         }
     }
 
+    /**
+     * Deletes a cover page together with the images that belong to it.
+     * <p>
+     * They are separate files in SVN, named after the setting's UUID, and the only way to find them is
+     * through the setting - so once the setting is gone they cannot be located at all. Removing them
+     * here rather than in the caller means one request either does both or does neither: the
+     * administration page used to delete the images first and the setting second, which left a cover
+     * page without its images whenever the second call failed.
+     */
+    @Override
+    public void delete(@NotNull String scope, @NotNull SettingId id) {
+        String uuid = id.isUseName() ? getIdByName(scope, true, id.getIdentifier()) : id.getIdentifier();
+        if (uuid != null) {
+            deleteImages(scope, uuid);
+        }
+        super.delete(scope, id);
+    }
+
     public void deleteCoverPageImages(String coverPageName, String scope) {
         String uuid = getIdByName(scope, true, coverPageName);
+        if (uuid != null) {
+            deleteImages(scope, uuid);
+        }
+    }
+
+    /** Removes the image files stored next to the setting, which are the ones prefixed with its UUID. */
+    private void deleteImages(String scope, @NotNull String uuid) {
         ILocation coverPageFolderLocation = ScopeUtils.getContextLocation(scope).append(getSettingsFolder());
         final IRepositoryReadOnlyConnection readOnlyConnection = pdfExporterPolarionService.getReadOnlyConnection(coverPageFolderLocation);
         List<ILocation> subLocations = readOnlyConnection.getSubLocations(coverPageFolderLocation, false);
         subLocations.forEach(location -> {
             String locationFileName = location.getLastComponent();
-            if (locationFileName.startsWith(Objects.requireNonNull(uuid)) && imageExtensions.contains(locationFileName.substring(locationFileName.lastIndexOf(".")))) {
+            if (locationFileName.startsWith(uuid) && imageExtensions.contains(locationFileName.substring(locationFileName.lastIndexOf(".")))) {
                 getSettingsService().delete(location);
             }
         });

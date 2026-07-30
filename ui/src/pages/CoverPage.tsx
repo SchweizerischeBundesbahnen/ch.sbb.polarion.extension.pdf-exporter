@@ -84,26 +84,6 @@ function PredefinedTemplates({ onPersisted }: Readonly<{ onPersisted: () => void
 export default function CoverPage() {
   // Persisting a predefined template adds a configuration, so the page has to re-read the list.
   const [reloadToken, setReloadToken] = useState(0);
-  const { sendRequest } = useRemote();
-
-  /**
-   * A cover page's images are separate, UUID-named files in SVN, found through the setting's name.
-   * Deleting the setting first would strand them there for good, so they go first - the legacy page
-   * did the same, as its ConfigurationsPane preDeleteCallback.
-   */
-  const deleteImages = useCallback(
-    async (name: string, scope: string) => {
-      const response = await sendRequest({
-        method: 'DELETE',
-        url: `/settings/${FEATURE}/names/${encodeURIComponent(name)}/images?scope=${encodeURIComponent(scope)}`,
-        contentType: 'application/json',
-      });
-      if (!response.ok) {
-        throw new Error('Error occurred while deleting the images of this cover page.');
-      }
-    },
-    [sendRequest],
-  );
 
   return (
     <CustomTemplatesPage
@@ -128,7 +108,6 @@ export default function CoverPage() {
           placeholder: 'Enter CSS part of cover page template here',
         },
       ]}
-      beforeDelete={deleteImages}
       footer={<PredefinedTemplates onPersisted={() => setReloadToken((t) => t + 1)} />}
     />
   );

@@ -231,6 +231,35 @@ class CoverPageSettingsTest {
     }
 
     @Test
+    void testDeleteRemovesImagesTogetherWithTheSetting() {
+        // The images are found through the setting, so deleting the setting first would strand them.
+        // Doing both in one call is what lets the administration page delete a cover page in one
+        // request, instead of two that can half-succeed.
+        SettingsService spiedSettingsService = spy(new SettingsService(mock(IRepositoryService.class), mock(IProjectService.class), mock(ITrackerService.class)));
+        doNothing().when(spiedSettingsService).delete(any());
+        CoverPageSettings spiedCoverPageSettings = spy(new CoverPageSettings(spiedSettingsService, mockedPdfExporterPolarionService));
+        UUID coverPageUuid = UUID.randomUUID();
+        doReturn(coverPageUuid.toString()).when(spiedCoverPageSettings).getIdByName("scope", true, "coverPageName");
+        doReturn("settingsFolder").when(spiedCoverPageSettings).getSettingsFolder();
+
+        try (MockedStatic<ScopeUtils> mockedScopeUtils = mockStatic(ScopeUtils.class)) {
+            ILocation mockedScopeLocation = mock(Location.class);
+            ILocation mockedFolderLocation = mock(Location.class);
+            IRepositoryReadOnlyConnection mockedReadOnlyConnection = mock(IRepositoryReadOnlyConnection.class);
+            when(mockedPdfExporterPolarionService.getReadOnlyConnection(mockedFolderLocation)).thenReturn(mockedReadOnlyConnection);
+            ILocation fileLocation = Location.getLocation(String.format("path/%s_background.jpg", coverPageUuid));
+            when(mockedReadOnlyConnection.getSubLocations(mockedFolderLocation, false)).thenReturn(Collections.singletonList(fileLocation));
+            when(mockedScopeLocation.append("settingsFolder")).thenReturn(mockedFolderLocation);
+            mockedScopeUtils.when(() -> ScopeUtils.getContextLocation("scope")).thenReturn(mockedScopeLocation);
+
+            spiedCoverPageSettings.delete("scope", SettingId.fromName("coverPageName"));
+
+            // The image file went with it; the setting's own removal is the base class's job.
+            verify(spiedSettingsService).delete(fileLocation);
+        }
+    }
+
+    @Test
     void testProcessImagePlaceholders() {
         try (MockedStatic<MediaUtils> mockedMediaUtils = mockStatic(MediaUtils.class)) {
             String content = "test_content";
