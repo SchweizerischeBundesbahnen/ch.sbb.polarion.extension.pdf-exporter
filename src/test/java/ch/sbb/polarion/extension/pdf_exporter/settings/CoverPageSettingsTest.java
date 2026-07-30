@@ -293,8 +293,9 @@ class CoverPageSettingsTest {
         CoverPageSettings spiedCoverPageSettings = spy(new CoverPageSettings(spiedSettingsService, mockedPdfExporterPolarionService));
         doReturn(null).when(spiedCoverPageSettings).getIdByName("scope", true, "no such cover page");
 
-        assertThrows(ObjectNotFoundException.class,
-                () -> spiedCoverPageSettings.delete("scope", SettingId.fromName("no such cover page")));
+        SettingId unknownName = SettingId.fromName("no such cover page");
+
+        assertThrows(ObjectNotFoundException.class, () -> spiedCoverPageSettings.delete("scope", unknownName));
 
         verify(mockedPdfExporterPolarionService, never()).getReadOnlyConnection(any());
     }
