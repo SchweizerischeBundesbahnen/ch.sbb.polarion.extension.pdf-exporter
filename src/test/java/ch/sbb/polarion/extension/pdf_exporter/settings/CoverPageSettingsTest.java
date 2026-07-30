@@ -17,6 +17,7 @@ import com.polarion.platform.service.repository.IRepositoryService;
 import com.polarion.subterra.base.location.ILocation;
 import com.polarion.subterra.base.location.Location;
 import org.junit.jupiter.api.Test;
+import org.mockito.InOrder;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.MockedConstruction;
@@ -249,13 +250,18 @@ class CoverPageSettingsTest {
             when(mockedPdfExporterPolarionService.getReadOnlyConnection(mockedFolderLocation)).thenReturn(mockedReadOnlyConnection);
             ILocation fileLocation = Location.getLocation(String.format("path/%s_background.jpg", coverPageUuid));
             when(mockedReadOnlyConnection.getSubLocations(mockedFolderLocation, false)).thenReturn(Collections.singletonList(fileLocation));
+            ILocation settingLocation = mock(Location.class);
+            when(mockedScopeLocation.append(anyString())).thenReturn(settingLocation);
             when(mockedScopeLocation.append("settingsFolder")).thenReturn(mockedFolderLocation);
             mockedScopeUtils.when(() -> ScopeUtils.getContextLocation("scope")).thenReturn(mockedScopeLocation);
 
             spiedCoverPageSettings.delete("scope", SettingId.fromName("coverPageName"));
 
-            // The image file went with it; the setting's own removal is the base class's job.
-            verify(spiedSettingsService).delete(fileLocation);
+            // The setting goes first and the image after it: a failure then leaves an unreferenced
+            // file behind rather than a cover page that no longer renders what it was configured to.
+            InOrder inOrder = inOrder(spiedSettingsService);
+            inOrder.verify(spiedSettingsService).delete(settingLocation);
+            inOrder.verify(spiedSettingsService).delete(fileLocation);
         }
     }
 
@@ -275,6 +281,7 @@ class CoverPageSettingsTest {
             when(mockedPdfExporterPolarionService.getReadOnlyConnection(mockedFolderLocation)).thenReturn(mockedReadOnlyConnection);
             ILocation fileLocation = Location.getLocation(String.format("path/%s_background.jpg", coverPageUuid));
             when(mockedReadOnlyConnection.getSubLocations(mockedFolderLocation, false)).thenReturn(Collections.singletonList(fileLocation));
+            when(mockedScopeLocation.append(anyString())).thenReturn(mock(Location.class));
             when(mockedScopeLocation.append("settingsFolder")).thenReturn(mockedFolderLocation);
             mockedScopeUtils.when(() -> ScopeUtils.getContextLocation("scope")).thenReturn(mockedScopeLocation);
 

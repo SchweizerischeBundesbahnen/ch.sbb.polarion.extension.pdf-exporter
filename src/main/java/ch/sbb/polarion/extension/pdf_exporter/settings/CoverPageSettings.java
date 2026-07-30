@@ -154,19 +154,33 @@ public class CoverPageSettings extends GenericNamedSettings<CoverPageModel> {
     /**
      * Deletes a cover page together with the images that belong to it.
      * <p>
-     * They are separate files in SVN, named after the setting's UUID, and the only way to find them is
-     * through the setting - so once the setting is gone they cannot be located at all. Removing them
-     * here rather than in the caller means one request either does both or does neither: the
-     * administration page used to delete the images first and the setting second, which left a cover
-     * page without its images whenever the second call failed.
+     * The images are separate files in SVN named after the setting's UUID, and there is no atomic way
+     * to remove both: two repository operations, either of which can fail. What can be chosen is which
+     * failure is possible. The UUID is resolved first, so it is in hand regardless of what happens to
+     * the setting, and the setting goes first:
+     * <ul>
+     *   <li>if deleting the setting fails, nothing has happened yet - the cover page is still whole;</li>
+     *   <li>if deleting an image fails afterwards, the cover page is gone and some of its files linger
+     *       in the repository, unreferenced. Waste, not a broken configuration.</li>
+     * </ul>
+     * The other order - images first, as the administration page used to do with two requests - has
+     * the failure that matters: a cover page that still exists, still selectable, and no longer
+     * renders what it was configured to render.
      */
     @Override
     public void delete(@NotNull String scope, @NotNull SettingId id) {
         String uuid = id.isUseName() ? getIdByName(scope, true, id.getIdentifier()) : id.getIdentifier();
-        if (uuid != null) {
-            deleteImages(scope, uuid);
-        }
         super.delete(scope, id);
+        if (uuid != null) {
+            try {
+                deleteImages(scope, uuid);
+            } catch (RuntimeException e) {
+                // The cover page itself is gone, which is what was asked for; say what was left behind
+                // rather than failing a deletion that already happened.
+                logger.error("Cover page '%s' was deleted, but its images could not be removed from %s"
+                        .formatted(id.getIdentifier(), scope), e);
+            }
+        }
     }
 
     public void deleteCoverPageImages(String coverPageName, String scope) {
