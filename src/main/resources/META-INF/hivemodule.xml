@@ -69,7 +69,7 @@
                   name="Style Package Weights"
                   parentNodeId="pdf-export"
                   iconUrl="/polarion/pdf-exporter-admin/ui/images/menu/16x16/style_package_weights.svg"
-                  pageUrl="/polarion/pdf-exporter-admin/pages/style-package-weights.jsp?scope=$scope$"
+                  pageUrl="/polarion/pdf-exporter-app/ui/app/index.html?feature=style-package-weights&amp;embedded=true&amp;scope=$scope$"
                   projectScope="true"
                   projectGroupScope="false"
                   repositoryScope="true"/>
