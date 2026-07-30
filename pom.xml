@@ -84,7 +84,6 @@
         <markdown2html-maven-plugin.disclaimer.inputFile>${project.basedir}/DISCLAIMER.md</markdown2html-maven-plugin.disclaimer.inputFile>
         <markdown2html-maven-plugin.disclaimer.outputFileName>disclaimer.html</markdown2html-maven-plugin.disclaimer.outputFileName>
         <markdown2html-maven-plugin.disclaimer.outputFile>${markdown2html-maven-plugin.extensionContextAdminHtml}/${markdown2html-maven-plugin.disclaimer.outputFileName}</markdown2html-maven-plugin.disclaimer.outputFile>
-        <swagger-maven-plugin.version>2.2.22</swagger-maven-plugin.version>
 
         <frontend-maven-plugin.version>2.0.1</frontend-maven-plugin.version>
         <!-- When bumping nodeVersion/npmVersion, keep package.json ("engines" and "packageManager") in sync. -->
