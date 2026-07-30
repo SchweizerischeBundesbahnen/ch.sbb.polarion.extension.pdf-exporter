@@ -1,5 +1,22 @@
 # Changelog
 
+## [13.5.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v13.4.0...v13.5.0) (2026-07-28)
+
+
+### Features
+
+* add export to PDF button to live report toolbar ([#955](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/955)) ([825947f](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/825947f65c9a3412d92e8f0b6c10df61f19eed64)), closes [#954](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/954)
+* restrict PDF export to configured roles ([#957](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/957)) ([7ab95c8](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/7ab95c8c20a09c8aaa02a73d28c393b3c4a131ef)), closes [#953](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/953)
+
+
+### Bug Fixes
+
+* **deps:** update dependency ch.sbb.polarion.extensions:ch.sbb.polarion.extension.generic to v15.10.0 ([e41b0c5](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/e41b0c57787b160d8974959a6bb010ee722214ff))
+* **deps:** update dependency ch.sbb.polarion.extensions:ch.sbb.polarion.extension.generic to v15.6.0 ([4468c63](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/4468c635c04bea89f109932e6104c04cec478915))
+* **deps:** update dependency ch.sbb.polarion.extensions:ch.sbb.polarion.extension.generic to v15.7.0 ([fffb12e](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/fffb12eb5e33f007c69cd04df29e2bcea6daf4d9))
+* **deps:** update dependency ch.sbb.polarion.extensions:ch.sbb.polarion.extension.generic to v15.8.1 ([d4c5b6c](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/d4c5b6c8bebcffac95d3d0886c365861e84359f6))
+* **deps:** update dependency ch.sbb.polarion.extensions:ch.sbb.polarion.extension.generic to v15.9.0 ([d09e378](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/d09e378ce738cf5b36200d7be44e45474fd64124))
+
 ## [13.4.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v13.3.1...v13.4.0) (2026-07-22)
 
 
