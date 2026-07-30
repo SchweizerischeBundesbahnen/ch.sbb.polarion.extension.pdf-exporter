@@ -61,6 +61,8 @@ describe('App router', () => {
       '?feature=cover-page',
       '?feature=header-footer',
       '?feature=filename',
+      '?feature=localization',
+      '?feature=webhooks',
       '?feature=style-package-weights',
       '?feature=authorization',
     ]);

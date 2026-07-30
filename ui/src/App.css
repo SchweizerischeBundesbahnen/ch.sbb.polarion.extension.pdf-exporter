@@ -165,3 +165,103 @@
   align-items: center;
   gap: 10px;
 }
+
+/* --- Localization ------------------------------------------------------------------------------ */
+
+.localization-page:disabled,
+.webhooks-page:disabled {
+  opacity: 0.5;
+}
+
+.translations-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 15px;
+}
+
+.translations-table th {
+  text-align: left;
+  font-weight: 600;
+  padding-bottom: 4px;
+}
+
+.translations-table td {
+  width: 24%;
+  padding: 1px 4px 1px 0;
+}
+
+.translations-table input[type='text'] {
+  width: 100%;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+}
+
+/* A cell with nothing in it is flagged rather than silently exported as an empty translation - the
+   legacy page did the same with its `red-border` class. The selector is deliberately longer than the
+   markup needs: RSP styles the admin text inputs through
+   `.standard-admin-page input[type=text]:not(.sd-trigger):not(.search-box)`, and anything shorter than
+   that loses the border-color on specificity and flags nothing. */
+.standard-admin-page .translations-table input[type='text'].empty-value {
+  border-color: #c1272d;
+}
+
+/* The delete / add column: as narrow as its button, and centered on the row. */
+.row-actions {
+  width: 1%;
+  white-space: nowrap;
+  text-align: center;
+}
+
+/* The export/import pair of one language, centered under its column (English has no files of its own). */
+.translations-table .language-files {
+  padding-top: 10px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.translations-table .language-files > * {
+  margin: 0 4px;
+}
+
+.language-files input[type='file'] {
+  /* The visible control is the label; the input itself only has to stay reachable by the keyboard. */
+  width: 0.1px;
+  height: 0.1px;
+  opacity: 0;
+  overflow: hidden;
+  position: absolute;
+  z-index: -1;
+}
+
+/* --- Webhooks ---------------------------------------------------------------------------------- */
+
+.webhooks-table {
+  border-collapse: collapse;
+}
+
+.webhooks-table td {
+  padding: 3px 6px 3px 0;
+  vertical-align: top;
+}
+
+.webhooks-table .webhook-url input {
+  width: 420px;
+}
+
+.webhooks-table .webhook-auth-type {
+  width: 160px;
+}
+
+.invalid-webhook {
+  color: #c1272d;
+  font-size: 12px;
+  padding-top: 2px;
+}
+
+.add-webhook {
+  margin-top: 10px;
+}
+
+.webhooks-disabled {
+  font-style: italic;
+  color: palevioletred;
+}
