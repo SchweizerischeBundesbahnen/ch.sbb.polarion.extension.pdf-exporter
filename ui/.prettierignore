@@ -1,0 +1,12 @@
+# Vendored third-party code (petrel code editor, highlight.js, jsonlint) - kept verbatim from the
+# legacy webapp, not reformatted.
+src/vendor
+
+# Build output, deps, coverage, visual-test artifacts.
+dist
+node
+node_modules
+coverage
+test/expected
+test/__diff__
+test/__screenshots__
