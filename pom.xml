@@ -94,19 +94,11 @@
 
         <!--suppress UnresolvedMavenProperty -->
         <skipJavaScriptTests>${skipTests}</skipJavaScriptTests>
+
+        <velocity-engine-core.artifactId>org.apache.velocity.engine-core_2.3.0</velocity-engine-core.artifactId>
     </properties>
 
-
     <profiles>
-        <profile>
-            <id>polarion2606</id>
-            <activation>
-                <activeByDefault>true</activeByDefault>
-            </activation>
-            <properties>
-                <velocity-engine-core.artifactId>org.apache.velocity.engine-core_2.3.0</velocity-engine-core.artifactId>
-            </properties>
-        </profile>
 
         <profile>
             <id>tests-with-weasyprint-docker</id>
