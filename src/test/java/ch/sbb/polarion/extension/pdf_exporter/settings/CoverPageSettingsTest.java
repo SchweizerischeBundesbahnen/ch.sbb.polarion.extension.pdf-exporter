@@ -293,6 +293,34 @@ class CoverPageSettingsTest {
     }
 
     @Test
+    void testDeleteSurvivesImagesThatCannotBeRemoved() {
+        // The cover page is already gone at this point - the deletion the caller asked for happened.
+        // Failing afterwards would report otherwise; what is left behind goes to the log instead.
+        SettingsService spiedSettingsService = spy(new SettingsService(mock(IRepositoryService.class), mock(IProjectService.class), mock(ITrackerService.class)));
+        doNothing().when(spiedSettingsService).delete(any());
+        CoverPageSettings spiedCoverPageSettings = spy(new CoverPageSettings(spiedSettingsService, mockedPdfExporterPolarionService));
+        UUID coverPageUuid = UUID.randomUUID();
+        doReturn(coverPageUuid.toString()).when(spiedCoverPageSettings).getIdByName("scope", true, "coverPageName");
+        doReturn("settingsFolder").when(spiedCoverPageSettings).getSettingsFolder();
+
+        try (MockedStatic<ScopeUtils> mockedScopeUtils = mockStatic(ScopeUtils.class)) {
+            ILocation mockedScopeLocation = mock(Location.class);
+            ILocation mockedFolderLocation = mock(Location.class);
+            when(mockedScopeLocation.append(anyString())).thenReturn(mock(Location.class));
+            when(mockedScopeLocation.append("settingsFolder")).thenReturn(mockedFolderLocation);
+            mockedScopeUtils.when(() -> ScopeUtils.getContextLocation("scope")).thenReturn(mockedScopeLocation);
+            // The repository refuses to list the folder the images live in.
+            when(mockedPdfExporterPolarionService.getReadOnlyConnection(mockedFolderLocation))
+                    .thenThrow(new IllegalStateException("repository unavailable"));
+
+            assertDoesNotThrow(() -> spiedCoverPageSettings.delete("scope", SettingId.fromName("coverPageName")));
+
+            // The setting itself was still deleted.
+            verify(spiedSettingsService).delete(any());
+        }
+    }
+
+    @Test
     void testDeleteOfAnUnknownNameTouchesNoImages() {
         // A name the scope does not know resolves to nothing; there is no folder to sweep, and the
         // base class is left to report that the setting does not exist.

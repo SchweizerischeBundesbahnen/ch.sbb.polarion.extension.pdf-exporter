@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
@@ -170,16 +171,16 @@ public class CoverPageSettings extends GenericNamedSettings<CoverPageModel> {
     @Override
     public void delete(@NotNull String scope, @NotNull SettingId id) {
         String uuid = id.isUseName() ? getIdByName(scope, true, id.getIdentifier()) : id.getIdentifier();
+        // Throws if the setting does not exist, which is also what guarantees the id resolved: past
+        // this line there is a cover page that was just deleted, so it had a UUID to be found by.
         super.delete(scope, id);
-        if (uuid != null) {
-            try {
-                deleteImages(scope, uuid);
-            } catch (RuntimeException e) {
-                // The cover page itself is gone, which is what was asked for; say what was left behind
-                // rather than failing a deletion that already happened.
-                logger.error("Cover page '%s' was deleted, but its images could not be removed from %s"
-                        .formatted(id.getIdentifier(), scope), e);
-            }
+        try {
+            deleteImages(scope, Objects.requireNonNull(uuid));
+        } catch (RuntimeException e) {
+            // The cover page itself is gone, which is what was asked for; say what was left behind
+            // rather than failing a deletion that already happened.
+            logger.error("Cover page '%s' was deleted, but its images could not be removed from %s"
+                    .formatted(id.getIdentifier(), scope), e);
         }
     }
 
