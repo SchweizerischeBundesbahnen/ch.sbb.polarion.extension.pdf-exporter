@@ -2,6 +2,7 @@ import type { ComponentType } from 'react';
 import About from './pages/About';
 import Authorization from './pages/Authorization';
 import Disclaimer from './pages/Disclaimer';
+import StylePackageWeights from './pages/StylePackageWeights';
 import UserGuide from './pages/UserGuide';
 
 /**
@@ -10,7 +11,7 @@ import UserGuide from './pages/UserGuide';
  * stay identical - a typo is a blank page in Polarion and no test catches it.
  *
  * The administration menu has more entries than the list below: the ones still served by JSP (style
- * packages and their weights, the Velocity/CSS editors, localization, webhooks) keep pointing at the
+ * packages, the Velocity/CSS editors, localization, webhooks) keep pointing at the
  * `pdf-exporter-admin` webapp until they are converted too.
  */
 export interface Feature {
@@ -38,6 +39,12 @@ export const FEATURES: Feature[] = [
     label: 'User Guide',
     description: 'How to use the extension, generated from USER_GUIDE.md.',
     component: UserGuide,
+  },
+  {
+    id: 'style-package-weights',
+    label: 'Style Package Weights',
+    description: 'Order the style packages; the top one is preselected on the export panel.',
+    component: StylePackageWeights,
   },
   {
     id: 'authorization',

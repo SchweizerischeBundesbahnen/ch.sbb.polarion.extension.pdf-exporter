@@ -37,6 +37,7 @@ describe('findFeature', () => {
     expect(findFeature('about')?.id).toBe('about');
     expect(findFeature('disclaimer')?.id).toBe('disclaimer');
     expect(findFeature('user-guide')?.id).toBe('user-guide');
+    expect(findFeature('style-package-weights')?.id).toBe('style-package-weights');
     expect(findFeature('authorization')?.id).toBe('authorization');
     expect(findFeature('nope')).toBeUndefined();
     expect(findFeature(null)).toBeUndefined();
@@ -52,7 +53,13 @@ describe('App router', () => {
     const links = Array.from(document.querySelectorAll<HTMLAnchorElement>('.feature-list a')).map((a) =>
       a.getAttribute('href'),
     );
-    expect(links).toEqual(['?feature=about', '?feature=disclaimer', '?feature=user-guide', '?feature=authorization']);
+    expect(links).toEqual([
+      '?feature=about',
+      '?feature=disclaimer',
+      '?feature=user-guide',
+      '?feature=style-package-weights',
+      '?feature=authorization',
+    ]);
   });
 
   it('pre-selects the scope from the ?scope param so feature links carry it', async () => {

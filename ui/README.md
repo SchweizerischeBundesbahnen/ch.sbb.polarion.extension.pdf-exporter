@@ -4,7 +4,7 @@ A React + Vite single-page app on [react-sbb-polarion](https://github.com/grigor
 (RSP), served from the `pdf-exporter-app` webapp.
 
 It is replacing the JSP administration UI **page by page**, so both live side by side for now: the
-administration entries listed below are React, the rest (style packages and their weights, the
+administration entries listed below are React, the rest (style packages, the
 Velocity/CSS editors, localization, webhooks) still point at `pdf-exporter-admin`. That webapp goes
 away once the last of them is converted.
 
@@ -18,6 +18,8 @@ There is one `index.html` / bundle. The page to render is chosen from the `featu
   generic serves `/readme` and `/user-guide` but has no disclaimer endpoint, so `disclaimer.html` is
   read as a static file from this app's own webapp, where markdown2html writes it during the build.
 - `/?feature=user-guide` - User Guide (RSP's shared `UserGuide`).
+- `/?feature=style-package-weights` - Style Package Weights (RSP's shared `StylePackageWeights` over
+  this extension's `settings/style-package/weights` endpoint; the list is shared with docx-exporter).
 - `/?feature=authorization` - Authorization (RSP's shared `AuthorizationSettings` over the
   `authorization` named setting). It reads generic's `/roles` endpoint, which is opt-in: the two roles
   controllers are registered in `PdfExporterRestApplication` for this page.
