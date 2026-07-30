@@ -94,6 +94,13 @@ export default function CustomTemplatesPage({
     [settings, beforeDelete],
   );
 
+  /**
+   * Which load is the current one. Filling the editors is a request the administrator can outrun -
+   * by typing, by picking another configuration, by reverting to a revision - and the slowest
+   * response would otherwise land last and win. Only the newest one writes.
+   */
+  const latestLoad = useRef(0);
+
   const [values, setValues] = useState<Record<string, string>>({});
   const [defaults, setDefaults] = useState<Record<string, string>>({});
   const [useCustomValues, setUseCustomValues] = useState(false);
@@ -102,7 +109,12 @@ export default function CustomTemplatesPage({
   const [activeTab, setActiveTab] = useState<'custom' | 'default'>('custom');
   const [showRevisions, setShowRevisions] = useState(false);
   const [revisionsToken, setRevisionsToken] = useState(0);
-  const [loadingError, setLoadingError] = useState(false);
+  // Two independent reads feed this page - the built-in values and the selected configuration - and a
+  // banner that says "could not read the data" must not be taken down by whichever of them succeeded
+  // last. Each owns its flag; the banner is their union.
+  const [defaultsError, setDefaultsError] = useState(false);
+  const [contentError, setContentError] = useState(false);
+  const loadingError = defaultsError || contentError;
 
   const toValues = useCallback(
     (content: TemplateSettings): Record<string, string> =>
@@ -112,8 +124,12 @@ export default function CustomTemplatesPage({
 
   const applyContent = useCallback(
     (content: TemplateSettings) => {
+      latestLoad.current += 1;
       setValues(toValues(content));
       setUseCustomValues(!!content.useCustomValues);
+      // A load that succeeded after an earlier failure would otherwise keep the banner up over good
+      // data, telling the administrator the page could not read what it is showing.
+      setContentError(false);
     },
     [toValues],
   );
@@ -124,10 +140,12 @@ export default function CustomTemplatesPage({
     settings
       .loadDefaultContent()
       .then((content) => {
-        if (!cancelled) setDefaults(toValues(content));
+        if (cancelled) return;
+        setDefaults(toValues(content));
+        setDefaultsError(false);
       })
       .catch(() => {
-        if (!cancelled) setLoadingError(true);
+        if (!cancelled) setDefaultsError(true);
       });
     return () => {
       cancelled = true;
@@ -144,7 +162,7 @@ export default function CustomTemplatesPage({
         if (!cancelled) applyContent(content);
       })
       .catch(() => {
-        if (!cancelled) setLoadingError(true);
+        if (!cancelled) setContentError(true);
       });
     return () => {
       cancelled = true;
@@ -172,7 +190,10 @@ export default function CustomTemplatesPage({
 
   const reload = async (revision?: string) => {
     if (!selectedConfig) return;
-    applyContent(await settings.loadContent(selectedConfig, scope, revision));
+    const seq = ++latestLoad.current;
+    const content = await settings.loadContent(selectedConfig, scope, revision);
+    if (seq !== latestLoad.current) return;
+    applyContent(content);
   };
 
   const handleCancel = async () => {
@@ -181,7 +202,7 @@ export default function CustomTemplatesPage({
     try {
       await reload();
     } catch {
-      setLoadingError(true);
+      setContentError(true);
     }
   };
 

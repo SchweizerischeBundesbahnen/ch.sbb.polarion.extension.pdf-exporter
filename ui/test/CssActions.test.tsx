@@ -101,6 +101,35 @@ describe('CSS page actions', () => {
     expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'PUT')).toBe(false);
   });
 
+  it('clears the load error once the failed read succeeds', async () => {
+    // The banner belongs to whichever read failed: Cancel retries the configuration, so it clears a
+    // configuration error - and would leave a built-in-stylesheet error standing, since nothing
+    // retried that one.
+    let fail = true;
+    installFetchMock([
+      { method: 'GET', match: /\/settings\/css\/names\?/, json: [{ name: 'Default', scope: 'project/elibrary/' }] },
+      { method: 'GET', match: /\/settings\/css\/default-content/, json: { css: 'body {}' } },
+      {
+        method: 'GET',
+        match: /\/settings\/css\/names\/[^/]+\/content/,
+        respond: () =>
+          fail
+            ? new Response(JSON.stringify({ message: 'nope' }), { status: 500 })
+            : new Response(JSON.stringify({ css: STORED, disableDefaultCss: false }), { status: 200 }),
+      },
+    ]);
+    window.history.replaceState({}, '', '?feature=css&embedded=true&scope=project/elibrary/');
+    render(<App />);
+    await vi.waitFor(() => expect(document.querySelector('.alert-error')).not.toBeNull());
+
+    fail = false;
+    await clickButton('Cancel');
+    await answerDialog('OK');
+
+    await vi.waitFor(() => expect(editor().value).toBe(STORED));
+    expect(document.querySelector('.notifications .alert-error')).toBeNull();
+  });
+
   it('creates a configuration through this extension’s endpoint', async () => {
     const fetchMock = open();
     await vi.waitFor(() => expect(editor().value).toBe(STORED));

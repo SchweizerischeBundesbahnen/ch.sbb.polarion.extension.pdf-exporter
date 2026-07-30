@@ -38,6 +38,9 @@ export default function Css() {
   const { confirm, confirmDialog } = useConfirm();
   const paneRef = useRef<ConfigurationsPaneHandle>(null);
 
+  /** Which load is the current one; only the newest writes (see CustomTemplatesPage for why). */
+  const latestLoad = useRef(0);
+
   const [css, setCss] = useState('');
   const [disableDefaultCss, setDisableDefaultCss] = useState(false);
   const [defaultCss, setDefaultCss] = useState<string | null>(null);
@@ -46,11 +49,19 @@ export default function Css() {
   const [activeTab, setActiveTab] = useState<'custom' | 'default'>('custom');
   const [showRevisions, setShowRevisions] = useState(false);
   const [revisionsToken, setRevisionsToken] = useState(0);
-  const [loadingError, setLoadingError] = useState(false);
+  // Two independent reads feed this page - the built-in values and the selected configuration - and a
+  // banner that says "could not read the data" must not be taken down by whichever of them succeeded
+  // last. Each owns its flag; the banner is their union.
+  const [defaultsError, setDefaultsError] = useState(false);
+  const [contentError, setContentError] = useState(false);
+  const loadingError = defaultsError || contentError;
 
   const applyContent = useCallback((content: CssSettings) => {
+    latestLoad.current += 1;
     setCss(content.css ?? '');
     setDisableDefaultCss(!!content.disableDefaultCss);
+    // A load that succeeded after an earlier failure would otherwise keep the banner up over good data.
+    setContentError(false);
   }, []);
 
   // The built-in stylesheet never changes; load it once, when the page opens.
@@ -59,10 +70,12 @@ export default function Css() {
     settings
       .loadDefaultContent()
       .then((content) => {
-        if (!cancelled) setDefaultCss(content.css ?? '');
+        if (cancelled) return;
+        setDefaultCss(content.css ?? '');
+        setDefaultsError(false);
       })
       .catch(() => {
-        if (!cancelled) setLoadingError(true);
+        if (!cancelled) setDefaultsError(true);
       });
     return () => {
       cancelled = true;
@@ -84,7 +97,10 @@ export default function Css() {
 
   const reload = async (revision?: string) => {
     if (!selectedConfig) return;
-    applyContent(await settings.loadContent(selectedConfig, scope, revision));
+    const seq = ++latestLoad.current;
+    const content = await settings.loadContent(selectedConfig, scope, revision);
+    if (seq !== latestLoad.current) return;
+    applyContent(content);
   };
 
   const handleCancel = async () => {
@@ -93,7 +109,7 @@ export default function Css() {
     try {
       await reload();
     } catch {
-      setLoadingError(true);
+      setContentError(true);
     }
   };
 
