@@ -260,6 +260,57 @@ class CoverPageSettingsTest {
     }
 
     @Test
+    void testDeleteByIdRemovesImagesWithoutResolvingAName() {
+        // The pane deletes by name, but the endpoint accepts an id; then there is nothing to look up.
+        SettingsService spiedSettingsService = spy(new SettingsService(mock(IRepositoryService.class), mock(IProjectService.class), mock(ITrackerService.class)));
+        doNothing().when(spiedSettingsService).delete(any());
+        CoverPageSettings spiedCoverPageSettings = spy(new CoverPageSettings(spiedSettingsService, mockedPdfExporterPolarionService));
+        UUID coverPageUuid = UUID.randomUUID();
+        doReturn("settingsFolder").when(spiedCoverPageSettings).getSettingsFolder();
+
+        try (MockedStatic<ScopeUtils> mockedScopeUtils = mockStatic(ScopeUtils.class)) {
+            ILocation mockedScopeLocation = mock(Location.class);
+            ILocation mockedFolderLocation = mock(Location.class);
+            IRepositoryReadOnlyConnection mockedReadOnlyConnection = mock(IRepositoryReadOnlyConnection.class);
+            when(mockedPdfExporterPolarionService.getReadOnlyConnection(mockedFolderLocation)).thenReturn(mockedReadOnlyConnection);
+            ILocation fileLocation = Location.getLocation(String.format("path/%s_background.jpg", coverPageUuid));
+            when(mockedReadOnlyConnection.getSubLocations(mockedFolderLocation, false)).thenReturn(Collections.singletonList(fileLocation));
+            when(mockedScopeLocation.append("settingsFolder")).thenReturn(mockedFolderLocation);
+            mockedScopeUtils.when(() -> ScopeUtils.getContextLocation("scope")).thenReturn(mockedScopeLocation);
+
+            spiedCoverPageSettings.delete("scope", SettingId.fromId(coverPageUuid.toString()));
+
+            verify(spiedSettingsService).delete(fileLocation);
+            verify(spiedCoverPageSettings, never()).getIdByName(anyString(), anyBoolean(), anyString());
+        }
+    }
+
+    @Test
+    void testDeleteOfAnUnknownNameTouchesNoImages() {
+        // A name the scope does not know resolves to nothing; there is no folder to sweep, and the
+        // base class is left to report that the setting does not exist.
+        SettingsService spiedSettingsService = spy(new SettingsService(mock(IRepositoryService.class), mock(IProjectService.class), mock(ITrackerService.class)));
+        CoverPageSettings spiedCoverPageSettings = spy(new CoverPageSettings(spiedSettingsService, mockedPdfExporterPolarionService));
+        doReturn(null).when(spiedCoverPageSettings).getIdByName("scope", true, "no such cover page");
+
+        assertThrows(ObjectNotFoundException.class,
+                () -> spiedCoverPageSettings.delete("scope", SettingId.fromName("no such cover page")));
+
+        verify(mockedPdfExporterPolarionService, never()).getReadOnlyConnection(any());
+    }
+
+    @Test
+    void testDeleteCoverPageImagesOfAnUnknownNameDoesNothing() {
+        SettingsService spiedSettingsService = spy(new SettingsService(mock(IRepositoryService.class), mock(IProjectService.class), mock(ITrackerService.class)));
+        CoverPageSettings spiedCoverPageSettings = spy(new CoverPageSettings(spiedSettingsService, mockedPdfExporterPolarionService));
+        doReturn(null).when(spiedCoverPageSettings).getIdByName("scope", true, "no such cover page");
+
+        spiedCoverPageSettings.deleteCoverPageImages("no such cover page", "scope");
+
+        verify(mockedPdfExporterPolarionService, never()).getReadOnlyConnection(any());
+    }
+
+    @Test
     void testProcessImagePlaceholders() {
         try (MockedStatic<MediaUtils> mockedMediaUtils = mockStatic(MediaUtils.class)) {
             String content = "test_content";
