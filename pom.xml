@@ -58,7 +58,6 @@
         <verapdf.version>1.30.2</verapdf.version>
         <rhino.version>1.9.1</rhino.version>
 
-        <exec-maven-plugin.version>3.3.0</exec-maven-plugin.version>
 
         <maven-jar-plugin.Extension-Context>pdf-exporter</maven-jar-plugin.Extension-Context>
         <maven-jar-plugin.Automatic-Module-Name>ch.sbb.polarion.extension.pdf_exporter</maven-jar-plugin.Automatic-Module-Name>
@@ -84,12 +83,8 @@
         <markdown2html-maven-plugin.disclaimer.inputFile>${project.basedir}/DISCLAIMER.md</markdown2html-maven-plugin.disclaimer.inputFile>
         <markdown2html-maven-plugin.disclaimer.outputFileName>disclaimer.html</markdown2html-maven-plugin.disclaimer.outputFileName>
         <markdown2html-maven-plugin.disclaimer.outputFile>${markdown2html-maven-plugin.extensionContextAdminHtml}/${markdown2html-maven-plugin.disclaimer.outputFileName}</markdown2html-maven-plugin.disclaimer.outputFile>
-        <swagger-maven-plugin.version>2.2.22</swagger-maven-plugin.version>
 
         <frontend-maven-plugin.version>2.0.1</frontend-maven-plugin.version>
-        <!-- When bumping nodeVersion/npmVersion, keep package.json ("engines" and "packageManager") in sync. -->
-        <frontend-maven-plugin.nodeVersion>v24.11.0</frontend-maven-plugin.nodeVersion>
-        <frontend-maven-plugin.npmVersion>11.6.1</frontend-maven-plugin.npmVersion>
 
         <!--suppress UnresolvedMavenProperty -->
         <skipJavaScriptTests>${skipTests}</skipJavaScriptTests>
