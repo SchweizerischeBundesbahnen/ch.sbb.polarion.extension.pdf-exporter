@@ -87,7 +87,18 @@ export default function CustomTemplatesPage({
             ...settings,
             deleteConfiguration: async (name: string, deleteScope: string) => {
               await beforeDelete(name, deleteScope);
-              await settings.deleteConfiguration(name, deleteScope);
+              try {
+                await settings.deleteConfiguration(name, deleteScope);
+              } catch (e) {
+                // The two are separate requests and cannot be made one from here: if the second
+                // fails the configuration survives with its images already gone, which looks like
+                // nothing happened. Say so - the shared pane can only report that a deletion failed.
+                toast.error(
+                  `The images of "${name}" were deleted, but the configuration itself could not be removed. ` +
+                    'It is now without them; delete it again or restore its images before using it.',
+                );
+                throw e;
+              }
             },
           }
         : settings,

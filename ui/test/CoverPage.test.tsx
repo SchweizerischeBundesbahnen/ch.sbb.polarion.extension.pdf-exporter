@@ -139,6 +139,25 @@ describe('Cover page', () => {
     expect(deletes.every((u) => u.includes('/images'))).toBe(true);
   });
 
+  it('says the images are gone when the configuration itself survives a failed deletion', async () => {
+    // The two are separate requests; if the second fails, the configuration is still there but its
+    // images are not, and the shared pane can only report "deletion failed".
+    open(routes([{ method: 'DELETE', match: /\/settings\/cover-page\/names\/[^/?]+\?/, json: {}, status: 500 }]));
+    await vi.waitFor(() => expect(html().value).toBe('<h1>$title</h1>'));
+
+    await userEvent.click(
+      Array.from(document.querySelectorAll<HTMLElement>('.configurations-pane .sbb-btn')).find(
+        (b) => b.textContent?.trim() === 'Delete',
+      )!,
+    );
+    await vi.waitFor(() => expect(document.querySelector('.rsp-modal')).not.toBeNull());
+    Array.from(document.querySelectorAll<HTMLButtonElement>('.rsp-modal-footer .sbb-btn'))
+      .find((b) => (b.textContent ?? '').trim() === 'Delete')!
+      .click();
+
+    await vi.waitFor(() => expect(document.body.textContent).toContain('were deleted, but the configuration itself'));
+  });
+
   it('says so when the predefined templates cannot be read', async () => {
     open(
       routes([{ method: 'GET', match: /\/settings\/cover-page\/templates$/, json: { message: 'nope' }, status: 500 }]),
