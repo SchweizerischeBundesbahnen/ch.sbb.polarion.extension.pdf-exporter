@@ -1,7 +1,11 @@
 import type { ComponentType } from 'react';
 import About from './pages/About';
 import Authorization from './pages/Authorization';
+import CoverPage from './pages/CoverPage';
+import Css from './pages/Css';
 import Disclaimer from './pages/Disclaimer';
+import FilenameTemplate from './pages/FilenameTemplate';
+import HeaderFooter from './pages/HeaderFooter';
 import StylePackageWeights from './pages/StylePackageWeights';
 import UserGuide from './pages/UserGuide';
 
@@ -39,6 +43,30 @@ export const FEATURES: Feature[] = [
     label: 'User Guide',
     description: 'How to use the extension, generated from USER_GUIDE.md.',
     component: UserGuide,
+  },
+  {
+    id: 'css',
+    label: 'CSS',
+    description: 'The custom stylesheet appended to the generated PDFs.',
+    component: Css,
+  },
+  {
+    id: 'cover-page',
+    label: 'Cover Page',
+    description: 'The HTML and CSS of the page printed before the document.',
+    component: CoverPage,
+  },
+  {
+    id: 'header-footer',
+    label: 'Header and Footer',
+    description: 'The six cells printed on every page of the exported PDF.',
+    component: HeaderFooter,
+  },
+  {
+    id: 'filename',
+    label: 'Filename template',
+    description: 'How exported documents, reports and test runs are named.',
+    component: FilenameTemplate,
   },
   {
     id: 'style-package-weights',

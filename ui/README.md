@@ -4,8 +4,8 @@ A React + Vite single-page app on [react-sbb-polarion](https://github.com/grigor
 (RSP), served from the `pdf-exporter-app` webapp.
 
 It is replacing the JSP administration UI **page by page**, so both live side by side for now: the
-administration entries listed below are React, the rest (style packages, the
-Velocity/CSS editors, localization, webhooks) still point at `pdf-exporter-admin`. That webapp goes
+administration entries listed below are React, the rest (style packages, localization,
+webhooks) still point at `pdf-exporter-admin`. That webapp goes
 away once the last of them is converted.
 
 ## Feature routing
@@ -18,6 +18,10 @@ There is one `index.html` / bundle. The page to render is chosen from the `featu
   generic serves `/readme` and `/user-guide` but has no disclaimer endpoint, so `disclaimer.html` is
   read as a static file from this app's own webapp, where markdown2html writes it during the build.
 - `/?feature=user-guide` - User Guide (RSP's shared `UserGuide`).
+- `/?feature=css` - CSS, `/?feature=cover-page` - Cover Page, `/?feature=header-footer` - Header and
+  Footer, `/?feature=filename` - Filename template. The four editor pages: RSP's `CodeEditor` over the
+  named settings, with the built-in values shown read-only on a second tab. The last three share
+  `components/CustomTemplatesPage.tsx`, since they differ only in their fields and their copy.
 - `/?feature=style-package-weights` - Style Package Weights (RSP's shared `StylePackageWeights` over
   this extension's `settings/style-package/weights` endpoint; the list is shared with docx-exporter).
 - `/?feature=authorization` - Authorization (RSP's shared `AuthorizationSettings` over the

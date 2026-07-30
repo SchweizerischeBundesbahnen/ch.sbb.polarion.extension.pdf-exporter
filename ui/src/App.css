@@ -104,3 +104,64 @@
 
 /* The About page (and its .markdown-body README article headings) is the shared
    @grigoriev/react-sbb-polarion component; its styles ship in the lib's bundled style.css. */
+
+/* The editor fills the page below the tab bar: the stylesheets these pages hold are long, and the
+   legacy page gave them the same full-height box. RSP's CodeEditor fills whatever it is given. */
+.css-editor {
+  height: 60vh;
+  min-height: 320px;
+}
+
+/* The panel below the tab bar. Deliberately not `.tab-content`: that class belongs to the legacy
+   radio-driven tab markup, whose CSS (vendored in RSP) hides it unless it sits inside `.tabbed` right
+   after the checked radio - outside that structure it is display:none, i.e. an invisible page. */
+.tab-panel {
+  padding-top: 12px;
+}
+
+/* A settings form is disabled while a configuration is being renamed or created (the fieldset above
+   the editor), and a disabled fieldset otherwise greys nothing - the controls inside carry their own
+   colours. Dim the whole block instead, as the legacy pages did. */
+.css-page:disabled {
+  opacity: 0.5;
+}
+
+/* The editors of a templates page. Three across on a wide screen, as the legacy pages laid them out
+   (w-32 columns); the header/footer page then reads as two rows of three, which is what it is. */
+.template-editors.three-across {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.template-editors .code-editor {
+  height: 220px;
+}
+
+.placeholders {
+  margin-top: 24px;
+}
+
+.placeholders .monospace {
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+}
+
+.templates-page:disabled {
+  opacity: 0.5;
+}
+
+.template-editors.two-across {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.predefined-templates {
+  margin-top: 24px;
+}
+
+.predefined-templates-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
