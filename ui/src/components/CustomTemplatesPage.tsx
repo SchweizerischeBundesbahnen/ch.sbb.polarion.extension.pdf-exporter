@@ -1,4 +1,4 @@
-import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
+import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   CodeEditor,
   type CodeLanguage,
@@ -41,6 +41,12 @@ interface CustomTemplatesPageProps {
   footer?: ReactNode;
   /** Class on the editor grid, so a page can lay its fields out (three across, two rows of three...). */
   editorsClassName?: string;
+  /**
+   * Run before a configuration is deleted, and only deleted if it resolves. The cover page needs it:
+   * its images are separate files in SVN, addressed through the setting's name, so they have to go
+   * first - once the setting is gone there is nothing left to find them by.
+   */
+  beforeDelete?: (name: string, scope: string) => Promise<void>;
 }
 
 /** The single always-present setting of a feature that has no named configurations. */
@@ -66,11 +72,27 @@ export default function CustomTemplatesPage({
   fields,
   footer,
   editorsClassName,
+  beforeDelete,
 }: Readonly<CustomTemplatesPageProps>) {
   const scope = getScope();
   const settings = useNamedSettings<TemplateSettings>(feature);
   const { confirm, confirmDialog } = useConfirm();
   const paneRef = useRef<ConfigurationsPaneHandle>(null);
+
+  // The pane deletes through the service, so the hook goes in here rather than into the library.
+  const service = useMemo(
+    () =>
+      beforeDelete
+        ? {
+            ...settings,
+            deleteConfiguration: async (name: string, deleteScope: string) => {
+              await beforeDelete(name, deleteScope);
+              await settings.deleteConfiguration(name, deleteScope);
+            },
+          }
+        : settings,
+    [settings, beforeDelete],
+  );
 
   const [values, setValues] = useState<Record<string, string>>({});
   const [defaults, setDefaults] = useState<Record<string, string>>({});
@@ -197,7 +219,7 @@ export default function CustomTemplatesPage({
         <ConfigurationsPane<TemplateSettings>
           ref={paneRef}
           scope={scope}
-          service={settings}
+          service={service}
           cookieKey={`selected-configuration-${feature}`}
           onContentLoaded={applyContent}
           onSelectedChange={setSelectedConfig}
