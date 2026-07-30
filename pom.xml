@@ -389,6 +389,7 @@
                     <outputFormat>JSON</outputFormat>
                     <resourcePackages>
                         <package>ch.sbb.polarion.extension.generic.rest.controller.info</package>
+                        <package>ch.sbb.polarion.extension.generic.rest.controller.roles</package>
                         <package>ch.sbb.polarion.extension.generic.rest.controller.settings</package>
                         <package>ch.sbb.polarion.extension.generic.rest.model</package>
                         <package>ch.sbb.polarion.extension.pdf_exporter.rest.controller</package>
@@ -412,6 +413,15 @@
                             <goal>install-node-and-npm</goal>
                         </goals>
                         <configuration>
+                            <!-- Spelled out per execution since the React app arrived: the parent's
+                                 vite-ui profile declares this same plugin with a plugin-level
+                                 <workingDirectory>ui</workingDirectory>, which Maven merges into this
+                                 declaration and which would otherwise move the product-JS build into
+                                 ui/ - where `npm run test` is the Vitest browser suite, not this
+                                 project's mocha one. Setting it at plugin level here is not an option
+                                 either: that would drag the parent's own vite executions back out of
+                                 ui/. -->
+                            <workingDirectory>${project.basedir}</workingDirectory>
                             <nodeVersion>${frontend-maven-plugin.nodeVersion}</nodeVersion>
                             <npmVersion>${frontend-maven-plugin.npmVersion}</npmVersion>
                             <skip>${skipJavaScriptTests}</skip>
@@ -426,6 +436,7 @@
                             <goal>npm</goal>
                         </goals>
                         <configuration>
+                            <workingDirectory>${project.basedir}</workingDirectory>
                             <arguments>install</arguments>
                             <skip>${skipJavaScriptTests}</skip>
                         </configuration>
@@ -439,6 +450,7 @@
                             <goal>npm</goal>
                         </goals>
                         <configuration>
+                            <workingDirectory>${project.basedir}</workingDirectory>
                             <arguments>run test</arguments>
                             <skip>${skipJavaScriptTests}</skip>
                         </configuration>

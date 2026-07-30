@@ -1,0 +1,106 @@
+:root {
+  --pe-muted: var(--sbb-color-text-muted, #6b6b6b);
+  --pe-accent: var(--sbb-color-accent, #0d5c9e);
+  --pe-border: var(--sbb-color-border, #d5d5d5);
+  --pe-bg-hover: var(--sbb-color-bg-hover, #f2f6fa);
+  /* Polarion admin-page look (from the generic common.css / about.css). */
+  --pe-code-border: #dfe1e6;
+  --pe-code-bg: #f4f5f7;
+}
+
+/* App root (App.tsx: <div class="app standard-admin-page">). Nothing is declared for `.app` here on
+   purpose: react-sbb-polarion's PageLayout.css owns the whole page shell — the body-margin reset, the
+   outer padding, the font family, the 13px admin base size and the text color — so every extension
+   shares one look. `standard-admin-page` (also from RSP's bundled style.css) supplies the --sbb-*
+   control tokens and the Polarion-styled checkboxes, so no per-app checkbox rules here either. */
+
+.feature-list a {
+  color: var(--pe-accent);
+  text-decoration: none;
+}
+
+.feature-list a:hover {
+  text-decoration: underline;
+}
+
+.landing-intro {
+  color: var(--pe-muted);
+  line-height: 1.5;
+}
+
+.landing-scope {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 16px 0 8px;
+}
+
+.landing-scope select,
+.landing-scope .searchable-dropdown {
+  width: 260px;
+  min-width: 260px;
+  max-width: 100%;
+}
+
+.feature-list {
+  list-style: none;
+  padding: 0;
+  margin: 16px 0 0;
+}
+
+.feature-list li {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 14px;
+  border: 1px solid var(--pe-border);
+  border-radius: 6px;
+  margin-bottom: 10px;
+}
+
+.feature-list li:hover {
+  background: var(--pe-bg-hover);
+}
+
+.feature-list a {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.feature-desc {
+  color: var(--pe-muted);
+  font-size: 13px;
+}
+
+/* Scoped to the dev Landing on purpose: a bare `code` rule also reaches the markup RSP components
+   render (it once boxed and shrank PropertiesEditor's highlight layer, knocking it out of alignment
+   with the textarea above it). */
+.landing code {
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-size: 0.9em;
+  border: 1px solid var(--pe-code-border);
+  background-color: var(--pe-code-bg);
+  padding: 0 3px;
+  border-radius: 3px;
+}
+
+.alert {
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.alert-error {
+  background: #fdeaea;
+  border: 1px solid #e6b0b0;
+  color: #a12020;
+}
+
+.alert a {
+  color: inherit;
+  font-weight: 600;
+}
+
+/* The About page (and its .markdown-body README article headings) is the shared
+   @grigoriev/react-sbb-polarion component; its styles ship in the lib's bundled style.css. */
