@@ -85,9 +85,6 @@
         <markdown2html-maven-plugin.disclaimer.outputFile>${markdown2html-maven-plugin.extensionContextAdminHtml}/${markdown2html-maven-plugin.disclaimer.outputFileName}</markdown2html-maven-plugin.disclaimer.outputFile>
 
         <frontend-maven-plugin.version>2.0.1</frontend-maven-plugin.version>
-        <!-- When bumping nodeVersion/npmVersion, keep package.json ("engines" and "packageManager") in sync. -->
-        <frontend-maven-plugin.nodeVersion>v24.11.0</frontend-maven-plugin.nodeVersion>
-        <frontend-maven-plugin.npmVersion>11.6.1</frontend-maven-plugin.npmVersion>
 
         <!--suppress UnresolvedMavenProperty -->
         <skipJavaScriptTests>${skipTests}</skipJavaScriptTests>
