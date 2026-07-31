@@ -113,6 +113,17 @@ export default function Localization() {
     [toRows],
   );
 
+  /**
+   * A new selection invalidates whatever is in flight for the old one - and it has to do so at the
+   * moment it is made, not when the new content lands: an upload that returns in between would
+   * otherwise merge into the rows of the configuration the administrator has already left, and Save
+   * would write them to the new one.
+   */
+  const handleSelectedChange = useCallback((name: string | null) => {
+    latestLoad.current += 1;
+    setSelectedConfig(name);
+  }, []);
+
   const setCell = (id: number, key: 'en' | TranslatedLanguage, value: string) =>
     setRows((current) => current.map((row) => (row.id === id ? withCell(row, key, value) : row)));
 
@@ -204,7 +215,7 @@ export default function Localization() {
     // An import belongs to the table it was started from. The administrator can select another
     // configuration - or a revision, or the defaults - while the file is still on its way, and merging
     // then would put the translations into a document they were never meant for, which the next Save
-    // would persist there. Any of those loads bumps the sequence, so the merge is dropped instead.
+    // would persist there. Selecting and loading both bump the sequence, so the merge is dropped.
     const seq = latestLoad.current;
     try {
       const imported = await files.uploadTranslations(file, language, scope);
@@ -237,7 +248,7 @@ export default function Localization() {
         service={settings}
         cookieKey={`selected-configuration-${FEATURE}`}
         onContentLoaded={applyContent}
-        onSelectedChange={setSelectedConfig}
+        onSelectedChange={handleSelectedChange}
         onEditingNameChange={setEditingName}
       />
 

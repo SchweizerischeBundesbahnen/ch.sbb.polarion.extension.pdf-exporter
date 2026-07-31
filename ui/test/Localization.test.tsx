@@ -258,6 +258,68 @@ describe('Localization page', () => {
     expect(englishTexts()).toEqual(['Open']);
   });
 
+  it('discards an import that finished after another configuration was selected', async () => {
+    // The gap the sequence guard has to cover: the selection changes first and the new configuration's
+    // content lands only afterwards. An upload returning in that window would merge into rows the
+    // administrator has already left, and Save would write them under the newly selected name - so the
+    // new configuration's content is held here too, leaving the selection as the only thing that moved.
+    let releaseUpload: (() => void) | undefined;
+    let releaseContent: (() => void) | undefined;
+    installFetchMock(
+      routesWith(
+        {
+          method: 'GET',
+          match: /\/settings\/localization\/names\?/,
+          json: [
+            { name: 'Default', scope: 'project/elibrary/' },
+            { name: 'Compact', scope: 'project/elibrary/' },
+          ],
+        },
+        {
+          method: 'POST',
+          match: /\/settings\/localization\/upload/,
+          json: { Approved: 'Freigegeben', Rejected: 'Abgelehnt' },
+        },
+      ),
+    );
+    const mocked = globalThis.fetch;
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input);
+        if (url.includes('/upload')) {
+          await new Promise<void>((resolve) => {
+            releaseUpload = resolve;
+          });
+        }
+        if (url.includes('/names/Compact/content')) {
+          await new Promise<void>((resolve) => {
+            releaseContent = resolve;
+          });
+        }
+        return (mocked as typeof globalThis.fetch)(url, init);
+      }),
+    );
+    window.history.replaceState({}, '', '?feature=localization&embedded=true&scope=project/elibrary/');
+    render(<App />);
+    await loaded();
+
+    pickFile('file-de', new File(['<xliff version="2.0"/>'], 'de.xlf', { type: 'application/xml' }));
+    const selector = document.querySelector<HTMLSelectElement>('.config-row select')!;
+    selector.value = 'Compact';
+    selector.dispatchEvent(new Event('change', { bubbles: true }));
+    // The other configuration is being read, and its content has not arrived: the table still shows
+    // the one the import was started from.
+    await vi.waitFor(() => expect(releaseContent).toBeDefined());
+    expect(englishTexts()).toEqual(['Approved', 'Draft']);
+
+    releaseUpload?.();
+
+    await vi.waitFor(() => expect(document.body.textContent).toContain('was discarded'));
+    expect(cell(0, 'de').value).toBe('Genehmigt');
+    releaseContent?.();
+  });
+
   it('reports an import the backend rejects', async () => {
     open(
       routesWith({
