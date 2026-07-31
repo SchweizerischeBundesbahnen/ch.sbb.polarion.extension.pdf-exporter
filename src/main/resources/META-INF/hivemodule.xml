@@ -96,7 +96,7 @@
                   name="Localization"
                   parentNodeId="pdf-export"
                   iconUrl="/polarion/pdf-exporter-admin/ui/images/menu/16x16/localization.svg"
-                  pageUrl="/polarion/pdf-exporter-admin/pages/localization.jsp?scope=$scope$"
+                  pageUrl="/polarion/pdf-exporter-app/ui/app/index.html?feature=localization&amp;embedded=true&amp;scope=$scope$"
                   projectScope="true"
                   projectGroupScope="false"
                   repositoryScope="true"/>
@@ -114,7 +114,7 @@
                   name="Webhooks"
                   parentNodeId="pdf-export"
                   iconUrl="/polarion/pdf-exporter-admin/ui/images/menu/16x16/webhooks.svg"
-                  pageUrl="/polarion/pdf-exporter-admin/pages/webhooks.jsp?scope=$scope$"
+                  pageUrl="/polarion/pdf-exporter-app/ui/app/index.html?feature=webhooks&amp;embedded=true&amp;scope=$scope$"
                   projectScope="true"
                   projectGroupScope="false"
                   repositoryScope="true"/>
