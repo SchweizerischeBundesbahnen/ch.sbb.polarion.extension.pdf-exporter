@@ -220,6 +220,44 @@ describe('Localization page', () => {
     expect(upload[1]!.body).toBeInstanceOf(FormData);
   });
 
+  it('discards an import that finished after other data was loaded', async () => {
+    let release: (() => void) | undefined;
+    installFetchMock(
+      routesWith({
+        method: 'POST',
+        match: /\/settings\/localization\/upload/,
+        json: { Approved: 'Freigegeben', Rejected: 'Abgelehnt' },
+      }),
+    );
+    const mocked = globalThis.fetch;
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+        if (String(input).includes('/upload')) {
+          await new Promise<void>((resolve) => {
+            release = resolve;
+          });
+        }
+        return (mocked as typeof globalThis.fetch)(input, init);
+      }),
+    );
+    window.history.replaceState({}, '', '?feature=localization&embedded=true&scope=project/elibrary/');
+    render(<App />);
+    await loaded();
+
+    pickFile('file-de', new File(['<xliff version="2.0"/>'], 'de.xlf', { type: 'application/xml' }));
+    // The administrator does not wait: the built-in translations replace the table under the upload.
+    await clickButton('Default');
+    await answerDialog('OK');
+    await vi.waitFor(() => expect(englishTexts()).toEqual(['Open']));
+
+    release?.();
+
+    await vi.waitFor(() => expect(document.body.textContent).toContain('was discarded'));
+    // The import belonged to the table it started from; it must not land in this one.
+    expect(englishTexts()).toEqual(['Open']);
+  });
+
   it('reports an import the backend rejects', async () => {
     open(
       routesWith({

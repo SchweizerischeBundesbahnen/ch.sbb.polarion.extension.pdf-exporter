@@ -74,13 +74,17 @@ describe('Webhooks page', () => {
     expect(document.querySelector('.webhooks-table')).toBeNull();
   });
 
-  it('treats an unreadable status as off rather than showing the table anyway', async () => {
+  it('says so when it cannot read whether webhooks are enabled', async () => {
     open(routesWith({ method: 'GET', match: /\/webhooks\/status/, json: {}, status: 500 }));
 
-    await vi.waitFor(() => expect(document.querySelector('.webhooks-disabled')).not.toBeNull());
+    await vi.waitFor(() => expect(document.querySelector('.notifications .alert-error')).not.toBeNull());
+    // Not "the feature is off": a failed read is not an answer, and claiming one would be a lie the
+    // page cannot back up.
+    expect(document.querySelector('.webhooks-disabled')).toBeNull();
+    expect(document.querySelector('.webhooks-table')).toBeNull();
   });
 
-  it('treats a status that is not JSON as off', async () => {
+  it('says so when the status is not JSON at all', async () => {
     open(
       routesWith({
         method: 'GET',
@@ -89,7 +93,8 @@ describe('Webhooks page', () => {
       }),
     );
 
-    await vi.waitFor(() => expect(document.querySelector('.webhooks-disabled')).not.toBeNull());
+    await vi.waitFor(() => expect(document.querySelector('.notifications .alert-error')).not.toBeNull());
+    expect(document.querySelector('.webhooks-disabled')).toBeNull();
   });
 
   it('reads a setting whose webhooks are incomplete', async () => {

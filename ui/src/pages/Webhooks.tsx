@@ -68,6 +68,7 @@ export default function Webhooks() {
   const nextRowId = useRef(0);
 
   const [enabled, setEnabled] = useState<boolean | null>(null);
+  const [statusError, setStatusError] = useState(false);
   const [rows, setRows] = useState<WebhookRow[]>([]);
   const [selectedConfig, setSelectedConfig] = useState<string | null>(null);
   const [editingName, setEditingName] = useState(false);
@@ -76,15 +77,22 @@ export default function Webhooks() {
   const [loadingError, setLoadingError] = useState(false);
 
   // Whether webhooks are enabled at all is a property of the installation, not of the configuration.
+  // A read that fails leaves `enabled` unknown and says so: answering "not enabled" to a network blip
+  // would tell the administrator the feature is off, which is not something this page can know.
   useEffect(() => {
     let cancelled = false;
     sendRequest({ method: 'GET', url: '/webhooks/status' })
-      .then((response) => (response.ok ? (response.json() as Promise<{ enabled?: boolean }>) : null))
+      .then((response) => {
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return response.json() as Promise<{ enabled?: boolean }>;
+      })
       .then((status) => {
-        if (!cancelled) setEnabled(!!status?.enabled);
+        if (cancelled) return;
+        setEnabled(!!status?.enabled);
+        setStatusError(false);
       })
       .catch(() => {
-        if (!cancelled) setEnabled(false);
+        if (!cancelled) setStatusError(true);
       });
     return () => {
       cancelled = true;
@@ -174,6 +182,11 @@ export default function Webhooks() {
   return (
     <PageLayout title="PDF Exporter: Webhooks">
       <div className="notifications">
+        {statusError && (
+          <div className="alert alert-error">
+            Error occurred reading whether webhooks are enabled. Be sure Polarion is started and accessible.
+          </div>
+        )}
         {loadingError && (
           <div className="alert alert-error">
             Error occurred loading the data. Be sure Polarion is started and accessible.
@@ -181,8 +194,8 @@ export default function Webhooks() {
         )}
       </div>
 
-      {/* Rendered once the status is known, so the pane does not load a configuration into a page that
-          turns out to be unavailable. */}
+      {/* Rendered once the status is known to be on, so the pane does not load a configuration into a
+          page that turns out to be unavailable - or one whose availability could not be read. */}
       {enabled && (
         <>
           <ConfigurationsPane<WebhooksSettings>

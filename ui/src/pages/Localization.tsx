@@ -201,8 +201,18 @@ export default function Localization() {
   const handleImport = async (language: TranslatedLanguage, file: File | undefined) => {
     if (!file) return;
     toast.dismiss();
+    // An import belongs to the table it was started from. The administrator can select another
+    // configuration - or a revision, or the defaults - while the file is still on its way, and merging
+    // then would put the translations into a document they were never meant for, which the next Save
+    // would persist there. Any of those loads bumps the sequence, so the merge is dropped instead.
+    const seq = latestLoad.current;
     try {
-      mergeImported(language, await files.uploadTranslations(file, language, scope));
+      const imported = await files.uploadTranslations(file, language, scope);
+      if (seq !== latestLoad.current) {
+        toast.error(`Translation for language ${language} was discarded: other data was loaded meanwhile.`);
+        return;
+      }
+      mergeImported(language, imported);
       toast.success(
         `Translation for language ${language} successfully uploaded. Don't forget to save the data before leaving.`,
       );
