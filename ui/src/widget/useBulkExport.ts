@@ -170,13 +170,18 @@ export default function useBulkExport(
       } catch {
         // The product's export JS is loaded at runtime and can be gone by the time the user gets here -
         // a redeployed server, an expired session. Without this the run would keep every row paused and
-        // report the failure as an interruption once the user closes the dialog.
-        setState((previous) => ({
-          ...previous,
-          status: 'finished',
-          errors: true,
-          rows: previous.rows.map((row) => ({ ...row, state: 'error', error: START_ERROR })),
-        }));
+        // report the failure as an interruption once the user closes the dialog. A user who stopped the
+        // run while the load was still pending keeps their own outcome, as at the end of the run below.
+        setState((previous) =>
+          previous.status === 'interrupted'
+            ? previous
+            : {
+                ...previous,
+                status: 'finished',
+                errors: true,
+                rows: previous.rows.map((row) => ({ ...row, state: 'error', error: START_ERROR })),
+              },
+        );
         return;
       }
 

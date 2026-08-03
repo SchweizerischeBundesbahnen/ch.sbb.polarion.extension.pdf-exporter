@@ -226,6 +226,27 @@ describe('Bulk export run', () => {
     expect(progressRows()[0].querySelector('.error-message')?.textContent).toBe('Could not start the export.');
   });
 
+  it('keeps the user interruption when the product export JS fails after Stop', async () => {
+    let failLoad: (reason: Error) => void = () => {};
+    await startExport(SAMPLE_ITEMS, [0, 1], exportParams(), {
+      createExportContext: () =>
+        new Promise<ExportContextLike>((_resolve, reject) => {
+          failLoad = reject;
+        }),
+    });
+
+    // The load is still pending, so the dialog offers Stop and the user takes it
+    await userEvent.click(document.querySelector<HTMLElement>('#bulk-stop-export-pdf')!);
+    expect(result()).toBe('Export interrupted by user');
+
+    failLoad(new Error('Failed to fetch dynamically imported module'));
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
+    // The failure arrives after the fact and must not rewrite what the user did
+    expect(result()).toBe('Export interrupted by user');
+    expect(progressRows().every((row) => row.className.includes('interrupted'))).toBe(true);
+  });
+
   it('stops the run when the user asks, leaving what was queued untouched', async () => {
     await startExport(SAMPLE_ITEMS, [0, 1, 2]);
     await vi.waitFor(() => expect(conversions.length).toBe(1));
