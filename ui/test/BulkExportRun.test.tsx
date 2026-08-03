@@ -66,12 +66,17 @@ const progressRows = () => Array.from(document.querySelectorAll('.modal__content
 const result = () => document.querySelector('.modal__footer .result')?.textContent;
 
 /** Opens the widget, selects the given rows and walks through the export dialog. */
-async function startExport(items: BulkExportItems, selection: number[], params = exportParams()) {
+async function startExport(
+  items: BulkExportItems,
+  selection: number[],
+  params = exportParams(),
+  overrides: Partial<typeof deps> = {},
+) {
   render(
     <BulkExportWidget
       shim={SAMPLE_SHIM}
       hostSelector="#host"
-      deps={{ ...deps, loadItems: () => Promise.resolve(items) }}
+      deps={{ ...deps, ...overrides, loadItems: () => Promise.resolve(items) }}
     />,
   );
   await vi.waitFor(() => expect(rows().length).toBe(items.items.length));
@@ -207,6 +212,18 @@ describe('Bulk export run', () => {
     await vi.waitFor(() => expect(result()).toBe('Export finished with errors'));
     // The failure did not cost the download of the item after it
     expect(downloads.map((download) => download.fileName)).toEqual(['second.pdf']);
+  });
+
+  it('ends the run when the product export JS cannot be loaded', async () => {
+    await startExport(SAMPLE_ITEMS, [0, 1], exportParams(), {
+      createExportContext: () => Promise.reject(new Error('Failed to fetch dynamically imported module')),
+    });
+
+    await vi.waitFor(() => expect(result()).toBe('Export finished with errors'));
+    // Nothing was ever converted, and no row is left waiting for a conversion that cannot come
+    expect(conversions.length).toBe(0);
+    expect(progressRows().every((row) => row.className.includes('error'))).toBe(true);
+    expect(progressRows()[0].querySelector('.error-message')?.textContent).toBe('Could not start the export.');
   });
 
   it('stops the run when the user asks, leaving what was queued untouched', async () => {

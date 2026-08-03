@@ -27,6 +27,8 @@ import java.util.Map;
  * A data set in a collection widget context is always SQL, a plain one is Lucene unless the page author chose
  * otherwise, so Lucene is the answer whenever the query type cannot be read.
  */
+// java:S2143 - java.util.Date is the parameter type of Polarion's persistor interface, which this implements
+@SuppressWarnings("java:S2143")
 public final class DataSetQueryTypeReader {
 
     private static final String KEY_QUERY_TYPE = "queryType";
@@ -67,32 +69,32 @@ public final class DataSetQueryTypeReader {
 
         @Override
         public void inherited(@NotNull String value) {
-            record(value);
+            capture(value);
         }
 
         @Override
         public void string(@Nullable String value) {
-            record(value);
+            capture(value);
         }
 
         @Override
         public void formattedString(@Nullable String value) {
-            record(value);
+            capture(value);
         }
 
         @Override
         public void bool(@Nullable Boolean value) {
-            record(value == null ? null : value.toString());
+            capture(value == null ? null : value.toString());
         }
 
         @Override
         public void integer(@Nullable Integer value) {
-            record(value == null ? null : value.toString());
+            capture(value == null ? null : value.toString());
         }
 
         @Override
         public void dateOnly(@Nullable Date value) {
-            record(value == null ? null : value.toString());
+            capture(value == null ? null : value.toString());
         }
 
         @Override
@@ -120,7 +122,7 @@ public final class DataSetQueryTypeReader {
             return this;
         }
 
-        private void record(@Nullable String value) {
+        private void capture(@Nullable String value) {
             if (key != null && value != null) {
                 values.putIfAbsent(key, value);
             }

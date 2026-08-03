@@ -12,6 +12,8 @@ import com.polarion.alm.shared.api.transaction.internal.InternalReadOnlyTransact
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import jakarta.ws.rs.BadRequestException;
@@ -32,8 +34,11 @@ class BulkExportWidgetInternalControllerTest {
     @CustomExtensionMock
     private InternalReadOnlyTransaction transactionMock;
 
-    private final BulkExportWidgetHelper helper = mock(BulkExportWidgetHelper.class);
-    private final BulkExportWidgetInternalController controller = new BulkExportWidgetInternalController(helper);
+    @Mock
+    private BulkExportWidgetHelper helper;
+
+    @InjectMocks
+    private BulkExportWidgetInternalController controller;
 
     @Test
     void aSignedDescriptorIsExecuted() {
@@ -58,9 +63,11 @@ class BulkExportWidgetInternalControllerTest {
     @Test
     void anUnsignedDescriptorIsRejected() {
         String encoded = WidgetDescriptorSigner.getInstance().encode(BulkExportWidgetDescriptor.builder().query("status:passed").build());
+        BulkExportItemsRequest unsigned = new BulkExportItemsRequest(encoded, null);
+        BulkExportItemsRequest wronglySigned = new BulkExportItemsRequest(encoded, "0000");
 
-        assertThrows(BadRequestException.class, () -> controller.getItems(new BulkExportItemsRequest(encoded, null)));
-        assertThrows(BadRequestException.class, () -> controller.getItems(new BulkExportItemsRequest(encoded, "0000")));
+        assertThrows(BadRequestException.class, () -> controller.getItems(unsigned));
+        assertThrows(BadRequestException.class, () -> controller.getItems(wronglySigned));
         verify(helper, never()).getItems(any(), any());
     }
 
@@ -71,15 +78,18 @@ class BulkExportWidgetInternalControllerTest {
         String forged = WidgetDescriptorSigner.getInstance().encode(
                 BulkExportWidgetDescriptor.builder().sqlQuery(true).query("SELECT * FROM WORKITEM").build());
 
-        assertThrows(BadRequestException.class,
-                () -> controller.getItems(new BulkExportItemsRequest(forged, WidgetDescriptorSigner.getInstance().sign(own))));
+        BulkExportItemsRequest request = new BulkExportItemsRequest(forged, WidgetDescriptorSigner.getInstance().sign(own));
+
+        assertThrows(BadRequestException.class, () -> controller.getItems(request));
         verify(helper, never()).getItems(any(), any());
     }
 
     @Test
     void anEmptyRequestIsRejected() {
+        BulkExportItemsRequest empty = new BulkExportItemsRequest(null, null);
+
         assertThrows(BadRequestException.class, () -> controller.getItems(null));
-        assertThrows(BadRequestException.class, () -> controller.getItems(new BulkExportItemsRequest(null, null)));
+        assertThrows(BadRequestException.class, () -> controller.getItems(empty));
         verify(helper, never()).getItems(any(), any());
     }
 

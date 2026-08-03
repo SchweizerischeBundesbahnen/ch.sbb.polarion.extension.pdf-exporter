@@ -334,8 +334,9 @@ class BulkPdfExportWidgetRendererTest {
             HtmlTagSelector<HtmlTagBuilder> tagSelector = mock(HtmlTagSelector.class);
             HtmlTagBuilder div = mock(HtmlTagBuilder.class, RETURNS_DEEP_STUBS);
             HtmlTagBuilder script = mock(HtmlTagBuilder.class);
+            HtmlTagBuilder style = mock(HtmlTagBuilder.class, RETURNS_DEEP_STUBS);
             when(fragmentBuilder.tag()).thenReturn(tagSelector);
-            when(tagSelector.style()).thenReturn(mock(HtmlTagBuilder.class, RETURNS_DEEP_STUBS));
+            when(tagSelector.style()).thenReturn(style);
             when(tagSelector.div()).thenReturn(div);
             when(div.attributes()).thenReturn(attributesBuilder);
             when(attributesBuilder.className(anyString())).thenReturn(attributesBuilder);

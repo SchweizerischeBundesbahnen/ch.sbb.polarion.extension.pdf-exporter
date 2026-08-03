@@ -86,7 +86,9 @@ class WidgetDescriptorSignerTest {
     void aDescriptorThatCannotBeSerializedFailsLoudly() {
         // Not a descriptor at all: Jackson has nothing to write for it. Loud is the point - a silently
         // empty descriptor would reach the browser and come back as a query the endpoint cannot run.
-        IllegalStateException failure = assertThrows(IllegalStateException.class, () -> signer.encode(new Object()));
+        Object notADescriptor = new Object();
+
+        IllegalStateException failure = assertThrows(IllegalStateException.class, () -> signer.encode(notADescriptor));
 
         assertTrue(failure.getMessage().contains("encode"), failure.getMessage());
     }

@@ -24,6 +24,7 @@ export interface BulkExportState {
 }
 
 const CLOSED: BulkExportState = { status: 'closed', rows: [], processed: 0, errors: false };
+const START_ERROR = 'Could not start the export.';
 
 /** The document type of a single item, which may differ from the widget's when it lists collections. */
 export function documentTypeOf(item: BulkExportItem): DocumentType | '' {
@@ -163,7 +164,21 @@ export default function useBulkExport(
         errors: false,
       });
 
-      const context = await createContext({ exportPages, rootComponentSelector: hostSelector });
+      let context: ExportContextLike;
+      try {
+        context = await createContext({ exportPages, rootComponentSelector: hostSelector });
+      } catch {
+        // The product's export JS is loaded at runtime and can be gone by the time the user gets here -
+        // a redeployed server, an expired session. Without this the run would keep every row paused and
+        // report the failure as an interruption once the user closes the dialog.
+        setState((previous) => ({
+          ...previous,
+          status: 'finished',
+          errors: true,
+          rows: previous.rows.map((row) => ({ ...row, state: 'error', error: START_ERROR })),
+        }));
+        return;
+      }
 
       for (let index = 0; index < items.length; index++) {
         if (stopped.current) {
