@@ -84,7 +84,7 @@
         <markdown2html-maven-plugin.disclaimer.outputFileName>disclaimer.html</markdown2html-maven-plugin.disclaimer.outputFileName>
         <markdown2html-maven-plugin.disclaimer.outputFile>${markdown2html-maven-plugin.extensionContextAdminHtml}/${markdown2html-maven-plugin.disclaimer.outputFileName}</markdown2html-maven-plugin.disclaimer.outputFile>
 
-        <frontend-maven-plugin.version>2.0.1</frontend-maven-plugin.version>
+        <frontend-maven-plugin.version>2.0.2</frontend-maven-plugin.version>
 
         <!--suppress UnresolvedMavenProperty -->
         <skipJavaScriptTests>${skipTests}</skipJavaScriptTests>
