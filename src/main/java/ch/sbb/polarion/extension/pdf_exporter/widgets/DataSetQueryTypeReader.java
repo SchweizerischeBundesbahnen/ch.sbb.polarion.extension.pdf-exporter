@@ -27,8 +27,6 @@ import java.util.Map;
  * A data set in a collection widget context is always SQL, a plain one is Lucene unless the page author chose
  * otherwise, so Lucene is the answer whenever the query type cannot be read.
  */
-// java:S2143 - java.util.Date is the parameter type of Polarion's persistor interface, which this implements
-@SuppressWarnings("java:S2143")
 public final class DataSetQueryTypeReader {
 
     private static final String KEY_QUERY_TYPE = "queryType";
@@ -92,6 +90,10 @@ public final class DataSetQueryTypeReader {
             capture(value == null ? null : value.toString());
         }
 
+        /**
+         * The date type is Polarion's choice: {@code RichPageParameterPersistor} declares this parameter as a
+         * {@link Date}. Sonar reports java:S2143 on the file for it, which is marked a false positive there.
+         */
         @Override
         public void dateOnly(@Nullable Date value) {
             capture(value == null ? null : value.toString());
