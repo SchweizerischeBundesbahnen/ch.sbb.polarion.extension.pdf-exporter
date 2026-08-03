@@ -265,3 +265,21 @@
   font-style: italic;
   color: palevioletred;
 }
+
+/* --- Bulk PDF Export widget preview (dev harness) ------------------------------------------------ */
+
+.preview-controls {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+/* A report page is white and unpadded around the widget, so the preview surface is too: what is
+   inside the frame below is exactly what Polarion shows. */
+.preview-surface {
+  margin-top: 16px;
+  padding: 16px;
+  border: 1px dashed #c9c9c9;
+  background: #fff;
+}

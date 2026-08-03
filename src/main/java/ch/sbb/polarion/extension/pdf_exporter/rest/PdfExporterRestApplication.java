@@ -3,6 +3,8 @@ package ch.sbb.polarion.extension.pdf_exporter.rest;
 import ch.sbb.polarion.extension.generic.rest.GenericRestApplication;
 import ch.sbb.polarion.extension.generic.rest.controller.roles.RolesApiController;
 import ch.sbb.polarion.extension.generic.rest.controller.roles.RolesInternalController;
+import ch.sbb.polarion.extension.pdf_exporter.rest.controller.BulkExportWidgetApiController;
+import ch.sbb.polarion.extension.pdf_exporter.rest.controller.BulkExportWidgetInternalController;
 import ch.sbb.polarion.extension.pdf_exporter.rest.controller.CollectionApiController;
 import ch.sbb.polarion.extension.pdf_exporter.rest.controller.CollectionInternalController;
 import ch.sbb.polarion.extension.pdf_exporter.rest.controller.ConfigurationApiController;
@@ -37,6 +39,8 @@ public class PdfExporterRestApplication extends GenericRestApplication {
                 TestRunAttachmentsInternalController.class,
                 CollectionApiController.class,
                 CollectionInternalController.class,
+                BulkExportWidgetApiController.class,
+                BulkExportWidgetInternalController.class,
                 UtilityResourcesApiController.class,
                 UtilityResourcesInternalController.class,
                 ConfigurationApiController.class,

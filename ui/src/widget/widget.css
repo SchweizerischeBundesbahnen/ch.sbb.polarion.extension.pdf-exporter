@@ -1,0 +1,279 @@
+/* The look of the Bulk PDF Export widget, injected into its shadow root.
+
+   The widget renders on a Polarion report page but inside a shadow root, so the page's own rules do not
+   reach its markup. The page's stylesheets are cloned into the root all the same (see mount.tsx),
+   because the cells arrive as the HTML Polarion rendered for each field and carry Polarion's own classes
+   for icons, enum colors and work item links - those cannot be reproduced here. This sheet is injected
+   after them and owns the widget's own frame.
+
+   Every value below is Polarion's own, read from
+   `com.polarion.alm.ui_<version>/war/gwt/polarion/rpe_content_*.css` in a 2606 installation, plus the
+   handful of overrides the widget always had in pdf-exporter.css. Where a rule differs from Polarion's,
+   it says so. The button's border, background and text colors were not in a stylesheet at all: the
+   server-rendered widget set them inline from `LinearGradientColor`, whose default #F0F0F0 button
+   computes to the three values used here.
+
+   The --sbb-* tokens are inherited from the host element, which carries .sbb-ui: custom properties cross
+   the shadow boundary, ordinary rules do not. */
+
+:host {
+  display: block;
+  /* .polarion-rpe-content: the rich page content area the widget sits in */
+  font-size: 10pt;
+  /* The typeface Polarion's own headings name. Stated rather than inherited from the report page: the
+     shadow root has to look the same in the dev harness and in the visual references, where there is no
+     Polarion page to inherit from - a missing font layer is what turns a reference serif. */
+  font-family: var(--sbb-control-font-family);
+  color: #1a1a1a;
+  /* widget override */
+  margin-bottom: 30px;
+}
+
+/* --- Header ------------------------------------------------------------------------------------- */
+
+/* .polarion-rpe-content h3, whose margin the widget overrides */
+.header h3 {
+  margin: 0 0 20px;
+  font-size: 23px;
+  font-weight: bold;
+  color: #000028;
+}
+
+/* widget rule */
+.header p {
+  color: grey;
+  margin: 8px 0 0;
+}
+
+/* --- Export button ------------------------------------------------------------------------------ */
+
+/* widget override: Polarion's own link wrapper is inline */
+.polarion-TestsExecutionButton-link {
+  display: block;
+}
+
+.polarion-TestsExecutionButton-buttons {
+  table-layout: fixed;
+  font-size: 18px;
+  font-family: Arial;
+  cursor: pointer;
+  text-align: center;
+  border: 1px solid;
+  border-radius: 6px;
+  padding-left: 2px;
+  padding-right: 2px;
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 20%);
+  white-space: normal;
+  word-wrap: break-word;
+  /* Inline on the server-rendered widget, from LinearGradientColor's default #F0F0F0: the light stop is
+     the color itself, the dark stop is 0.9 of it, the border 0.9 of that, and the text is the dark
+     variant picked for a light button. */
+  border-color: #c2c2c2;
+  background: linear-gradient(to bottom, #f0f0f0 0%, #d8d8d8 100%);
+  color: #000028;
+  /* widget override */
+  display: inline-block;
+}
+
+.polarion-TestsExecutionButton-buttons.polarion-TestsExecutionButton-buttons-defaultCursor {
+  cursor: default;
+}
+
+.polarion-TestsExecutionButton-buttons-content {
+  border-collapse: collapse;
+  padding: 0;
+  table-layout: fixed;
+  /* widget override of Polarion's 213px, which is meant for the wide execution buttons */
+  min-width: auto;
+}
+
+.polarion-TestsExecutionButton-buttons-content-labelCell {
+  vertical-align: middle;
+  line-height: 1;
+  text-align: center;
+  /* widget override of Polarion's 20px 10px 6px */
+  padding: 10px;
+}
+
+.polarion-TestsExecutionButton-labelTextNew {
+  /* widget override of Polarion's 26px */
+  font-size: 20px;
+  font-weight: bold;
+  color: #43a134;
+  font-family: Arial;
+  text-align: center;
+  text-shadow: 1px 1px 0 white;
+  padding-bottom: 1px;
+}
+
+/* widget rule: nothing selected yet, so the button does not react */
+.polarion-TestsExecutionButton-buttons-defaultCursor .polarion-TestsExecutionButton-labelTextNew {
+  color: gray;
+}
+
+/* --- Table -------------------------------------------------------------------------------------- */
+
+/* widget rule */
+.export-items {
+  display: flex;
+  margin-top: 30px;
+}
+
+.polarion-rpw-table-main {
+  width: 100%;
+}
+
+.polarion-rpw-table-content {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.polarion-rpw-table-header-row > th {
+  vertical-align: top;
+  text-align: left;
+  padding: 0 4px;
+  height: 28px;
+  color: #757575;
+  font-weight: normal;
+  border-bottom: 1px solid #d2d7da;
+}
+
+.polarion-rpw-table-content-row > td {
+  vertical-align: top;
+  padding: 9px 14px 9px 4px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.polarion-rpw-table-not-readable-cell {
+  font-style: italic;
+}
+
+/* Links inside the cells Polarion rendered. Polarion's own stylesheet colors them on a report page and
+   is cloned into this root, but it is not there in the dev harness or in the references, and an
+   unstyled browser default (blue, underlined) is the one thing that never looks like Polarion. */
+.polarion-rpw-table-content a {
+  color: #007993;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.polarion-rpw-table-content a:hover {
+  color: #005159;
+  text-decoration: underline;
+}
+
+/* --- Footer ------------------------------------------------------------------------------------- */
+
+.polarion-rpw-table-footer {
+  text-align: center;
+  font-style: italic;
+  width: 100%;
+  vertical-align: top;
+}
+
+.polarion-rpw-table-counts {
+  display: inline-block;
+  padding: 0 7px;
+  vertical-align: middle;
+}
+
+.polarion-rpw-table-counts a {
+  color: #007993;
+  text-decoration: none;
+}
+
+.polarion-rpw-table-counts a:hover {
+  color: #005159;
+  text-decoration: underline;
+}
+
+.polarion-rpw-table-open-in-table {
+  display: inline-block;
+  padding: 0 7px;
+  cursor: pointer;
+  vertical-align: middle;
+}
+
+.polarion-rpw-table-open-in-table > a > img {
+  border: 0;
+  opacity: 0.3;
+}
+
+.polarion-rpw-table-open-in-table > a > img:hover {
+  opacity: 1;
+}
+
+.polarion-rpw-table-show-query {
+  display: inline-block;
+  cursor: pointer;
+  vertical-align: middle;
+  opacity: 0.3;
+}
+
+.polarion-rpw-table-show-query:hover {
+  opacity: 1;
+}
+
+/* Departs from Polarion twice, both deliberate.
+   `display`: Polarion's rule is `display: none` and its widget toggles the element's inline style, while
+   this one renders the block only while it is shown - stating it back is what keeps the block visible on
+   a report page, where Polarion's stylesheet is cloned into this root.
+   The rest: the query is centred under the footer it belongs to and set on a light background, so that
+   it reads as one block rather than a line of text adrift at the left edge. `fit-content` keeps the
+   background around the query itself, and a long one still wraps within the table's width. */
+.polarion-rpw-table-query {
+  display: block;
+  width: fit-content;
+  max-width: 100%;
+  margin: 5px auto 0;
+  padding: 4px 10px;
+  background-color: #f5f5f5;
+  color: #717171;
+  text-align: center;
+  font-style: normal;
+  overflow-wrap: break-word;
+}
+
+/* --- Checkboxes --------------------------------------------------------------------------------- */
+
+/* The shared 2606 checkbox styling (generic checkboxes.css) is scoped to .form-wrapper /
+   .standard-admin-page / .modal__container, none of which the widget is inside, so it is re-applied
+   here from the same tokens. --sbb-checkbox-* are self-contained data URIs, so they resolve in the
+   shadow root as well. */
+input[type='checkbox'] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: var(--sbb-toggle-size);
+  height: var(--sbb-toggle-size);
+  margin: 0 4px 0 0;
+  vertical-align: middle;
+  cursor: pointer;
+  background: var(--sbb-checkbox-unchecked) no-repeat center;
+  background-size: var(--sbb-toggle-size) var(--sbb-toggle-size);
+}
+
+input[type='checkbox']:checked {
+  background-image: var(--sbb-checkbox-checked);
+}
+
+input[type='checkbox']:indeterminate {
+  background-image: var(--sbb-checkbox-indeterminate);
+}
+
+/* --- States the server-rendered predecessor had no need for, its rows being part of the page ----- */
+
+.widget-loading {
+  margin-top: 30px;
+}
+
+.widget-loading .sbb-spinner {
+  width: 24px;
+  height: 24px;
+  display: inline-block;
+}
+
+.widget-error {
+  margin-top: 30px;
+  color: #a20013;
+}

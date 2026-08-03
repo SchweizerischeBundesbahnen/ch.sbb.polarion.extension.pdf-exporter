@@ -44,6 +44,12 @@ export default defineConfig({
   test: {
     include: ['test/**/*.{test,spec}.{ts,tsx}'],
     setupFiles: ['./test/setup.ts'],
+    // Insulate the suite from a developer's `ui/.env.local`. Vite loads that file in test mode too, so a
+    // personal VITE_BEARER_TOKEN would otherwise switch useRemote to the /api base and add an
+    // Authorization header, which is not the session-auth default the tests are written against. Empty,
+    // not removed, so `vi.stubEnv('VITE_BEARER_TOKEN', ...)` still works where a test wants a token.
+    // (vite.config.js guards the shipped bundle the same way, with `define`.)
+    env: { VITE_BEARER_TOKEN: '' },
     // Run test files one at a time. Under high parallelism the Playwright browser provider
     // intermittently fails a worker with "Vitest failed to find the runner"; serializing the files
     // avoids that race. The suite is small and each file is fast, so the cost is minor.
