@@ -47,7 +47,7 @@ export const SAMPLE_PANEL_DATA: PanelData = {
   fileName: 'E-Library Cross Link Issue.pdf',
   documentLanguage: 'de',
   webhooksEnabled: false,
-  exportPermitted: true,
+  exportPermission: 'granted',
 };
 
 /** The style package of the screenshots: settings exposed, page width validation offered. */

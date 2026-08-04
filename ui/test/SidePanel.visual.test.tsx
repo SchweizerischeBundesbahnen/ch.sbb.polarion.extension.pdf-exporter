@@ -81,7 +81,7 @@ describe.skipIf(!__PIXEL_REFERENCES__)('side panel visual', () => {
   });
 
   it('a user who may not export', async () => {
-    const host = mounted({ data: { exportPermitted: false } });
+    const host = mounted({ data: { exportPermission: 'denied' } });
     await settled(host);
 
     await snapshot(host, 'panel-export-not-allowed');

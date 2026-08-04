@@ -118,7 +118,12 @@ export default function SidePanelPreview() {
     });
     return () => {
       cancelled = true;
-      root?.unmount();
+      // Deferred, not called here: the panel is a root of its own, and unmounting one synchronously from a
+      // cleanup that runs while this page is still rendering makes React warn about exactly that. By the
+      // time the microtask runs, a re-mount has already replaced the shadow root's children, so
+      // unmounting the old root is the no-op it should be.
+      const previous = root;
+      queueMicrotask(() => previous?.unmount());
     };
   }, [picked, projectId]);
 

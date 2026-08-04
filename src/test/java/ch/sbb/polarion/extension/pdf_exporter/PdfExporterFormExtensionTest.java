@@ -1,9 +1,11 @@
 package ch.sbb.polarion.extension.pdf_exporter;
 
 import ch.sbb.polarion.extension.generic.context.CurrentContextExtension;
+import ch.sbb.polarion.extension.generic.rest.model.Version;
 import ch.sbb.polarion.extension.generic.test_extensions.CustomExtensionMock;
 import ch.sbb.polarion.extension.generic.test_extensions.PlatformContextMockExtension;
 import ch.sbb.polarion.extension.generic.test_extensions.TransactionalExecutorExtension;
+import ch.sbb.polarion.extension.generic.util.VersionUtils;
 import ch.sbb.polarion.extension.pdf_exporter.configuration.PdfExporterExtensionConfigurationExtension;
 import com.polarion.alm.shared.UiContext;
 import com.polarion.alm.shared.api.SharedContext;
@@ -14,15 +16,18 @@ import com.polarion.alm.tracker.model.IWorkItem;
 import com.polarion.alm.ui.server.forms.extensions.IFormExtensionContext;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -45,7 +50,8 @@ class PdfExporterFormExtensionTest {
     @Test
     void testRenderContributesTheFragmentForADocument() {
         IFormExtensionContext context = mock(IFormExtensionContext.class, RETURNS_DEEP_STUBS);
-        when(context.object().getOldApi()).thenReturn(mock(IModule.class, RETURNS_DEEP_STUBS));
+        IModule module = mock(IModule.class, RETURNS_DEEP_STUBS);
+        when(context.object().getOldApi()).thenReturn(module);
         UiContext uiContext = mock(UiContext.class, RETURNS_DEEP_STUBS);
         when(transaction.context()).thenReturn(uiContext);
 
@@ -78,13 +84,42 @@ class PdfExporterFormExtensionTest {
     }
 
     @Test
-    void testFragmentCarriesTheBundleVersion() {
-        String fragment = extension.getSidePanelFragment();
+    void testPaneIsLabelledAndCarriesNoIcon() {
+        IModule module = mock(IModule.class, RETURNS_DEEP_STUBS);
 
-        // Substituted, whatever the version is - unresolved, the browser would cache one bundle forever.
-        assertFalse(fragment.contains("{BUNDLE_VERSION}"));
-        assertTrue(fragment.contains("side-panel.js?v="));
-        // No manifest in a unit test, so the fallback is what appears here.
-        assertEquals(1, fragment.split("\\?v=", -1).length - 1);
+        // The label names the collapsible section in the Document Properties sidebar. No icon, as before:
+        // the sibling exporters' panes carry none either, so one here would be the odd row out.
+        assertEquals("PDF Exporter", extension.getLabel(module, null));
+        assertNull(extension.getIcon(module, null));
+    }
+
+    @Test
+    void testFragmentCarriesTheBundleVersion() {
+        Version version = Version.builder().bundleVersion("13.5.1").build();
+        try (MockedStatic<VersionUtils> versionUtils = mockStatic(VersionUtils.class)) {
+            versionUtils.when(VersionUtils::getVersion).thenReturn(version);
+
+            String fragment = extension.getSidePanelFragment();
+
+            // The bundle is imported from a fixed URL, so the version is what busts the browser's cache of
+            // it when the extension is updated.
+            assertTrue(fragment.contains("side-panel.js?v=13.5.1"));
+            assertFalse(fragment.contains("{BUNDLE_VERSION}"));
+        }
+    }
+
+    @Test
+    void testFragmentFallsBackWhenThereIsNoBundleVersion() {
+        // No manifest to read it from - a unit test, or a deployment that lost its metadata. The
+        // placeholder must still be substituted: left in the URL it would be requested literally.
+        Version version = Version.builder().build();
+        try (MockedStatic<VersionUtils> versionUtils = mockStatic(VersionUtils.class)) {
+            versionUtils.when(VersionUtils::getVersion).thenReturn(version);
+
+            String fragment = extension.getSidePanelFragment();
+
+            assertTrue(fragment.contains("side-panel.js?v=0"));
+            assertFalse(fragment.contains("{BUNDLE_VERSION}"));
+        }
     }
 }

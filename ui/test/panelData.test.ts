@@ -54,7 +54,7 @@ describe('loading the panel data', () => {
     expect(data.fileName).toBe('E-Library Doc.pdf');
     expect(data.documentLanguage).toBe('de');
     expect(data.webhooksEnabled).toBe(true);
-    expect(data.exportPermitted).toBe(true);
+    expect(data.exportPermission).toBe('granted');
   });
 
   it('asks for the style packages of this document, the way the endpoint wants it', async () => {
@@ -99,20 +99,41 @@ describe('loading the panel data', () => {
     expect(data.webhooksEnabled).toBe(false);
   });
 
-  it('treats an unreadable export permission as granted, the endpoints enforcing it themselves', async () => {
-    installFetchMock(routesWith({ method: 'GET', match: /\/permissions\/export/, status: 503 }));
+  it('grants the export only on an explicit permission', async () => {
+    installFetchMock(baseRoutes());
 
-    const data = await loadPanelData(sendRequest, SAMPLE_DOCUMENT);
-
-    expect(data.exportPermitted).toBe(true);
+    await expect(loadPanelData(sendRequest, SAMPLE_DOCUMENT)).resolves.toMatchObject({
+      exportPermission: 'granted',
+    });
   });
 
-  it('reports a refused permission, so the buttons say why they are disabled', async () => {
+  it('reports a refused permission, so the buttons can say why they are disabled', async () => {
     installFetchMock(routesWith({ method: 'GET', match: /\/permissions\/export/, json: { permitted: false } }));
 
     const data = await loadPanelData(sendRequest, SAMPLE_DOCUMENT);
 
-    expect(data.exportPermitted).toBe(false);
+    expect(data.exportPermission).toBe('denied');
+  });
+
+  it('does not grant the export on a permission that could not be read', async () => {
+    // Fail closed, as generic's DLE toolbar engine does for this same endpoint. `unknown` rather than
+    // `denied`, so the panel does not tell the user they are not allowed when it does not know that.
+    installFetchMock(routesWith({ method: 'GET', match: /\/permissions\/export/, status: 503 }));
+
+    const data = await loadPanelData(sendRequest, SAMPLE_DOCUMENT);
+
+    expect(data.exportPermission).toBe('unknown');
+  });
+
+  it('does not grant the export on a body that does not say `true`', async () => {
+    // A malformed or truthy-but-not-true answer is not a grant either; generic reads it the same way.
+    for (const body of [{}, { permitted: null }, { permitted: 'yes' }, { permitted: 1 }]) {
+      installFetchMock(routesWith({ method: 'GET', match: /\/permissions\/export/, json: body }));
+
+      const data = await loadPanelData(sendRequest, SAMPLE_DOCUMENT);
+
+      expect(data.exportPermission).toBe('denied');
+    }
   });
 
   it('reads a document language only for the document it is asked about', async () => {

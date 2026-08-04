@@ -474,13 +474,26 @@ describe('exporting', () => {
   });
 
   it('disables both actions, with the reason, for a user who may not export', async () => {
-    open(sampleDependencies({ data: { exportPermitted: false } }));
+    open(sampleDependencies({ data: { exportPermission: 'denied' } }));
     await settled();
 
     const exportButton = field<HTMLButtonElement>('#export-pdf')!;
     expect(exportButton.disabled).toBe(true);
     expect(exportButton.title).toBe('You are not allowed to export PDF for this project');
     expect(field<HTMLButtonElement>('#validate-pdf')!.disabled).toBe(true);
+  });
+
+  it('disables both actions when the permission could not be read, without claiming a refusal', async () => {
+    // Fail closed, the way the DLE toolbar's button does - but the panel does not know the user is
+    // unauthorized, so it must not say so.
+    open(sampleDependencies({ data: { exportPermission: 'unknown' } }));
+    await settled();
+
+    const exportButton = field<HTMLButtonElement>('#export-pdf')!;
+    expect(exportButton.disabled).toBe(true);
+    expect(field<HTMLButtonElement>('#validate-pdf')!.disabled).toBe(true);
+    expect(exportButton.title).toBe('Could not check whether you are allowed to export. Please, reload the page.');
+    expect(exportButton.title).not.toContain('not allowed');
   });
 });
 

@@ -48,6 +48,12 @@ const LOADING_MESSAGE = 'Loading...';
 
 const NOT_AUTHORIZED = 'You are not allowed to export PDF for this project';
 
+/**
+ * Why the export buttons are off when the permission could not be read at all. Both cases keep them off -
+ * the check fails closed - but only an explicit refusal can be reported as one.
+ */
+const PERMISSION_UNKNOWN = 'Could not check whether you are allowed to export. Please, reload the page.';
+
 interface WidthValidationResult {
   invalidPages: { content: string }[];
   suspiciousWorkItems: { id: string; link: string }[];
@@ -339,8 +345,13 @@ export default function SidePanel({ deps }: Readonly<SidePanelProps>) {
       ? `Invalid pages found. First ${MAX_PAGE_PREVIEWS} of them:`
       : `${invalidPages.length} invalid ${pagesWord} found:`;
 
-  const actionsDisabled = busy || loadingPackage || !data.exportPermitted;
-  const notAuthorized = data.exportPermitted ? undefined : NOT_AUTHORIZED;
+  const actionsDisabled = busy || loadingPackage || data.exportPermission !== 'granted';
+  const permissionTitle =
+    data.exportPermission === 'denied'
+      ? NOT_AUTHORIZED
+      : data.exportPermission === 'unknown'
+        ? PERMISSION_UNKNOWN
+        : undefined;
 
   return (
     <fieldset className="panel-fieldset" disabled={busy}>
@@ -794,7 +805,7 @@ export default function SidePanel({ deps }: Readonly<SidePanelProps>) {
       </div>
 
       <div className="buttons-wrapper">
-        <button type="button" id="export-pdf" disabled={actionsDisabled} title={notAuthorized} onClick={exportToPdf}>
+        <button type="button" id="export-pdf" disabled={actionsDisabled} title={permissionTitle} onClick={exportToPdf}>
           <img src={EXPORT_ICON} alt="" />
           Export to PDF
         </button>
@@ -815,7 +826,7 @@ export default function SidePanel({ deps }: Readonly<SidePanelProps>) {
             type="button"
             id="validate-pdf"
             disabled={actionsDisabled}
-            title={notAuthorized}
+            title={permissionTitle}
             onClick={() => void validatePdf()}
           >
             <img src={validateIcon} alt="" />

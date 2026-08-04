@@ -25,8 +25,17 @@ export interface PanelData {
   /** Whether webhooks are enabled installation-wide; the webhooks row is hidden when they are not. */
   webhooksEnabled: boolean;
   /** Whether the current user may export this project at all. */
-  exportPermitted: boolean;
+  exportPermission: ExportPermission;
 }
+
+/**
+ * What `/permissions/export` said, including that it did not answer.
+ *
+ * `unknown` is not `denied`: both keep the export buttons disabled, but only `denied` is something the
+ * panel can tell the user a reason for. See {@link loadPanelData} for why the failure is not read as
+ * granted.
+ */
+export type ExportPermission = 'granted' | 'denied' | 'unknown';
 
 /** Where the document lives, in the shape the endpoints want it. */
 export interface DocumentIdentity extends DocumentContext {
@@ -119,7 +128,7 @@ export async function loadPanelData(sendRequest: SendRequest, document: Document
     readJson<string[]>(sendRequest, 'GET', `/link-role-names?scope=${scope}`).catch(() => []),
   ]);
 
-  const [fileName, documentLanguage, webhooksEnabled, exportPermitted] = await Promise.all([
+  const [fileName, documentLanguage, webhooksEnabled, exportPermission] = await Promise.all([
     readText(
       sendRequest,
       'POST',
@@ -140,11 +149,13 @@ export async function loadPanelData(sendRequest: SendRequest, document: Document
       'GET',
       `/permissions/export?projectId=${encodeURIComponent(document.projectId ?? '')}`,
     )
-      // A permission that cannot be read is treated as granted: the conversion endpoints enforce it
-      // themselves, so the worst case is an export that fails with the server's own message instead of a
-      // button that was disabled up front. Locking the panel on an unreachable endpoint would be worse.
-      .then((permission) => permission?.permitted !== false)
-      .catch(() => true),
+      // Fail closed, the way the DLE toolbar's export button already does: generic's
+      // dle-toolbar-starter.js documents `permitted !== true (or a non-OK status / error) disables the
+      // button (fail-closed)` and pdf-exporter drives it with this very endpoint. Anything but an explicit
+      // `true` - a malformed body included - is therefore not a grant, and a read that failed is `unknown`
+      // rather than `denied` so the panel does not claim a reason it does not have.
+      .then((permission): ExportPermission => (permission?.permitted === true ? 'granted' : 'denied'))
+      .catch((): ExportPermission => 'unknown'),
   ]);
 
   return {
@@ -154,7 +165,7 @@ export async function loadPanelData(sendRequest: SendRequest, document: Document
     fileName,
     documentLanguage,
     webhooksEnabled,
-    exportPermitted,
+    exportPermission,
   };
 }
 
