@@ -113,7 +113,8 @@ to the real server. The pick is remembered in a cookie, keyed by project, and pr
 That is the one thing the Vitest suites cannot cover — a real editor URL and the real endpoints behind it —
 so the page needs `VITE_BASE_URL` for the proxy and `VITE_BEARER_TOKEN` for the platform API the document
 list comes from. The panel's own states are covered offline and pixel-locked by
-`test/SidePanel.visual.test.tsx`, which owns `src/formext/sampleData.ts`.
+`test/SidePanel.visual.test.tsx`. Its fixture is `test/sidePanelSamples.ts`, which lives with the tests
+because nothing in `src/` stubs the panel any more.
 
 The legacy `js/modules/ExportPanel.js` is now unused; it is kept for one release as the revert path.
 

@@ -6,8 +6,8 @@ import {
   SAMPLE_STYLE_PACKAGE_FULL,
   SAMPLE_STYLE_PACKAGE_HIDDEN,
   sampleDependencies,
-} from '../src/formext/sampleData';
-import type { SampleOptions } from '../src/formext/sampleData';
+} from './sidePanelSamples';
+import type { SampleOptions } from './sidePanelSamples';
 
 // Docker-only snapshots of the export panel as the document editor shows it, mounted the way the
 // form-extension fragment mounts it: its own shadow root, carrying react-sbb-polarion's stylesheet, the

@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { childValue, resolveLanguage, toExportForm } from '../src/formext/exportForm';
 import { buildExportParams, toRequestBody } from '../src/formext/exportParams';
-import { SAMPLE_DOCUMENT, SAMPLE_STYLE_PACKAGE_FULL } from '../src/formext/sampleData';
 import {
   CHAPTERS_ERROR,
   parseChapters,
   parseMetadataFields,
   validateNumberedListStyles,
 } from '../src/formext/validation';
+import { SAMPLE_DOCUMENT, SAMPLE_STYLE_PACKAGE_FULL } from './sidePanelSamples';
 
 // The rules the export dialogs run on, which the legacy ExportPanel.js carried as DOM manipulation: how a
 // style package becomes a form, what the three value-carrying fields accept, and what the export request

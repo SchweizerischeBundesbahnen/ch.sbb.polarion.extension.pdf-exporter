@@ -1,9 +1,9 @@
 import type { SendRequest } from '@grigoriev/react-sbb-polarion';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { loadDocumentLanguage, loadPanelData, loadStylePackage } from '../src/formext/panelData';
-import { SAMPLE_DOCUMENT } from '../src/formext/sampleData';
 import { installFetchMock, jsonResponse } from './mockFetch';
 import type { Route } from './mockFetch';
+import { SAMPLE_DOCUMENT } from './sidePanelSamples';
 
 // What the server-rendered panel used to have substituted into its markup, now read over REST. These are
 // the endpoints the DLE toolbar popup has always used, so what is asserted here is that the panel asks

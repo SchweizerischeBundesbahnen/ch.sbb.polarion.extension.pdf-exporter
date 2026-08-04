@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { mountSidePanel } from '../src/formext/mount';
-import { sampleDependencies } from '../src/formext/sampleData';
+import { sampleDependencies } from './sidePanelSamples';
 
 // How the panel gets into the document editor: PdfExporterFormExtension emits a fragment whose <link>
 // onload imports this module and calls mountSidePanel on the host div. The pane is shared with every other

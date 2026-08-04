@@ -3,24 +3,24 @@ import { cleanup, render } from 'vitest-browser-react';
 import { userEvent } from 'vitest/browser';
 import SidePanel from '../src/formext/SidePanel';
 import type { SidePanelDependencies } from '../src/formext/SidePanel';
+import type { ConversionResult } from '../src/services/productModules';
+import type { StylePackageSettings } from '../src/services/stylePackage';
+import { installFetchMock } from './mockFetch';
+import type { Route } from './mockFetch';
 import {
   SAMPLE_PANEL_DATA,
   SAMPLE_STYLE_PACKAGE,
   SAMPLE_STYLE_PACKAGE_FULL,
   SAMPLE_STYLE_PACKAGE_HIDDEN,
   sampleDependencies,
-} from '../src/formext/sampleData';
-import type { ConversionResult } from '../src/services/productModules';
-import type { StylePackageSettings } from '../src/services/stylePackage';
-import { installFetchMock } from './mockFetch';
-import type { Route } from './mockFetch';
+} from './sidePanelSamples';
 
 // The export panel of the document editor: what the selected style package puts on screen, what the export
 // sends, and what the user is told when something is wrong. The panel is rendered directly rather than
 // through `mountSidePanel` so the assertions read the document rather than a shadow root; the mounting
 // itself is covered by SidePanelMount.test.tsx.
 //
-// The product's export JS and the REST data are replaced (see sampleData): a browser test has neither a
+// The product's export JS and the REST data are replaced (see sidePanelSamples): a browser test has neither
 // Polarion to read from nor an editor URL to be in.
 
 const open = (deps: SidePanelDependencies = sampleDependencies()) => render(<SidePanel deps={deps} />);

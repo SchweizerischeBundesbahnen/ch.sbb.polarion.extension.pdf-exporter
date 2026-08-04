@@ -1,16 +1,19 @@
 import type { SelectOption } from '@grigoriev/react-sbb-polarion';
-import type { SingleExportContextLike } from '../services/productModules';
-import type { StylePackageSettings } from '../services/stylePackage';
-import type { SidePanelDependencies } from './SidePanel';
-import type { DocumentIdentity, PanelData } from './panelData';
+import type { SidePanelDependencies } from '../src/formext/SidePanel';
+import type { DocumentIdentity, PanelData } from '../src/formext/panelData';
+import type { SingleExportContextLike } from '../src/services/productModules';
+import type { StylePackageSettings } from '../src/services/stylePackage';
 
 /**
- * A side panel filled in without a Polarion behind it.
+ * A side panel filled in without a Polarion behind it: the fixture the panel's suites share.
  *
- * The panel reads its data over REST and drives the product's export JS, neither of which `vite dev` or a
- * browser test has. This is the stand-in for both: the development harness mounts the real panel against
- * it, and the visual suite snapshots the same states from it, so what is eyeballed and what is
- * pixel-locked are the same panel.
+ * The panel reads its data over REST and drives the product's export JS, neither of which a browser test
+ * has. This stands in for both, so the behavior suites and the visual references describe the same panel.
+ *
+ * It lived in `src/formext/` while the development harness rendered stubbed states. The harness now runs the
+ * real panel against a real document (`pages/SidePanelPreview.tsx`), so nothing in `src/` uses this any
+ * more and it belongs here - out of the shipped tree and out of the coverage denominator, a fixture's
+ * coverage percentage meaning nothing.
  */
 
 const NAMES: SelectOption[] = [
