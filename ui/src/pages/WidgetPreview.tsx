@@ -109,7 +109,7 @@ export default function WidgetPreview() {
   }, [scenario]);
 
   return (
-    <PageLayout title="PDF Exporter: Bulk PDF Export widget">
+    <PageLayout title="PDF Exporter: Bulk PDF Export widget (dev harness)">
       <p>
         The widget as a report page shows it, mounted with sample data. Pick a state to work on; the export dialog needs
         a running Polarion (VITE_BASE_URL).

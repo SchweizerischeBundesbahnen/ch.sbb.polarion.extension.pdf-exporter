@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build && node scripts/check-widget-entry.mjs",
+    "build": "vite build && node scripts/check-runtime-entries.mjs",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
