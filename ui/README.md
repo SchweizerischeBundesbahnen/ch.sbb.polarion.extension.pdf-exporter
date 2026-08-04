@@ -3,10 +3,9 @@
 A React + Vite single-page app on [react-sbb-polarion](https://github.com/grigoriev/react-sbb-polarion)
 (RSP), served from the `pdf-exporter-app` webapp.
 
-It is replacing the JSP administration UI **page by page**, so both live side by side for now: the
-administration entries listed below are React, the rest (style packages, localization,
-webhooks) still point at `pdf-exporter-admin`. That webapp goes
-away once the last of them is converted.
+It replaced the JSP administration UI **page by page**, and every administration entry of the extension
+is now served from here. The `pdf-exporter-admin` webapp is gone; its menu icons moved into this
+webapp's `images/`, which is where `hivemodule.xml` and the report widgets point.
 
 ## Feature routing
 
@@ -22,6 +21,13 @@ There is one `index.html` / bundle. The page to render is chosen from the `featu
   Footer, `/?feature=filename` - Filename template. The four editor pages: RSP's `CodeEditor` over the
   named settings, with the built-in values shown read-only on a second tab. The last three share
   `components/CustomTemplatesPage.tsx`, since they differ only in their fields and their copy.
+- `/?feature=style-package` - Style Packages. The widest settings page of the extension: the ~30 export
+  switches of one named package, plus the four child settings it points at (cover page, CSS,
+  header/footer, localization) and the optional webhooks. It lists their names from
+  `settings/<child>/names` and marks the ones of a parent scope `(inherited)`, the way
+  `ConfigurationsPane` marks its own. The "Use webhooks" row is there only while `/webhooks/status`
+  reports the feature on, and the role picker needs `link-role-names`; both failures are reported
+  rather than shown as an empty dropdown.
 - `/?feature=style-package-weights` - Style Package Weights (RSP's shared `StylePackageWeights` over
   this extension's `settings/style-package/weights` endpoint; the list is shared with docx-exporter).
 - `/?feature=authorization` - Authorization (RSP's shared `AuthorizationSettings` over the
@@ -83,6 +89,10 @@ ones.
 visual regression) plus the 80% istanbul coverage gate inside the pinned Playwright Docker image,
 which is what the Maven `test` phase and the pre-commit hook execute. Docker must be running.
 
+The image's bundled npm is older than the `packageManager` pin, so the container installs the pinned
+npm through corepack before `npm ci`. That costs a few seconds and one download per run, and it is why
+`npm ci` no longer warns `EBADENGINE`.
+
 ```bash
 npm run test:coverage:docker   # the canonical run: full suite + coverage gate, in the pinned image
 npm run test:coverage          # fast local loop: behavior only + the gate, no Docker, no pixels
@@ -110,5 +120,5 @@ under `ui/`. They are check-only and never modify your files.
 `npm run build` emits both entries to `ui/dist/app` with base path
 `/polarion/pdf-exporter-app/ui/app/`. The Maven build (frontend-maven-plugin +
 maven-resources-plugin) runs this automatically and copies the bundle into
-`src/main/resources/webapp/pdf-exporter-app/app`, where `AADSynchronizerAppServlet` serves it at
+`src/main/resources/webapp/pdf-exporter-app/app`, where `PdfExporterAppServlet` serves it at
 `/polarion/pdf-exporter-app/ui/app/index.html`.

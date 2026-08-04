@@ -30,6 +30,10 @@ const args = [
   // anywhere else they skip instead of failing on the host's font metrics.
   '-e',
   'PIXEL_REFERENCES=1',
+  // Keeps corepack from announcing the npm download on stderr, which the Maven frontend plugin would
+  // then print as an [ERROR] line in an otherwise clean build.
+  '-e',
+  'COREPACK_ENABLE_DOWNLOAD_PROMPT=0',
   '-v',
   `${uiDir}:/work`,
   // Shadow node_modules so the container's Linux install does not overwrite host binaries.
@@ -40,7 +44,12 @@ const args = [
   image,
   'bash',
   '-c',
-  `npm ci && npm run ${script}`,
+  // The image's bundled npm is older than this project's `packageManager` pin, so `npm ci` used to warn
+  // EBADENGINE on every run. corepack installs the pinned npm instead, which both silences the warning
+  // and makes the container resolve the lock file with the very npm the developers use - about 4s.
+  // Tolerated rather than required: a future image without corepack falls back to the bundled npm, and
+  // says so, instead of failing the whole suite over the toolchain.
+  `corepack enable npm || echo "corepack unavailable - using the image's bundled npm"; npm ci && npm run ${script}`,
 ];
 
 console.log(`> docker ${args.join(' ')}`);

@@ -8,6 +8,7 @@ import FilenameTemplate from './pages/FilenameTemplate';
 import HeaderFooter from './pages/HeaderFooter';
 import Localization from './pages/Localization';
 import StylePackageWeights from './pages/StylePackageWeights';
+import StylePackages from './pages/StylePackages';
 import UserGuide from './pages/UserGuide';
 import Webhooks from './pages/Webhooks';
 import WidgetPreview from './pages/WidgetPreview';
@@ -17,9 +18,8 @@ import WidgetPreview from './pages/WidgetPreview';
  * also what `hivemodule.xml` points its admin extenders at, so the ids here and the extender ids must
  * stay identical - a typo is a blank page in Polarion and no test catches it.
  *
- * The administration menu has more entries than the list below: the ones still served by JSP (style
- * packages, the export templates) keep pointing at the `pdf-exporter-admin` webapp until they are
- * converted too.
+ * Every administration entry of the extension is served from here; the legacy `pdf-exporter-admin`
+ * webapp no longer exists.
  */
 export interface Feature {
   id: string;
@@ -82,6 +82,12 @@ export const FEATURES: Feature[] = [
     label: 'Webhooks',
     description: 'REST endpoints the generated HTML is passed through before it is rendered.',
     component: Webhooks,
+  },
+  {
+    id: 'style-package',
+    label: 'Style Package',
+    description: 'The named bundles of export settings offered on the export dialog.',
+    component: StylePackages,
   },
   {
     id: 'style-package-weights',
