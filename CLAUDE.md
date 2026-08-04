@@ -3,14 +3,13 @@
 ## Gotchas
 
 - **`ch.sbb.polarion.extension.generic`** is the parent project providing reusable infrastructure for all Polarion plugins in this org (settings framework, REST base classes, OSGi helpers, etc.). Before implementing anything cross-cutting, check if it already exists there.
-- **Two administration UIs at once.** The administration pages are being converted to React on
-  [react-sbb-polarion](https://github.com/grigoriev/react-sbb-polarion) one at a time, so two webapps
-  serve them side by side: `pdf-exporter-app` (the Vite bundle in `ui/`, see [`ui/README.md`](ui/README.md))
-  and the legacy `pdf-exporter-admin` (the remaining JSP pages). `hivemodule.xml` carries a `pageUrl`
-  per menu entry, which is what makes the split possible; the ids there must match `ui/src/features.tsx`.
-  Converted so far: About, Usage Disclaimer, User Guide, Authorization, Style Package Weights,
-  CSS, Cover Page, Header and Footer, Filename template, Localization, Webhooks. Left on JSP: style
-  packages. `pdf-exporter-admin` is deleted once the last JSP page is gone.
+- **All administration pages are React now.** They were converted to
+  [react-sbb-polarion](https://github.com/grigoriev/react-sbb-polarion) one at a time, and
+  `pdf-exporter-app` (the Vite bundle in `ui/`, see [`ui/README.md`](ui/README.md)) serves every one of
+  them. `hivemodule.xml` carries a `pageUrl` per menu entry; the ids there must match
+  `ui/src/features.tsx` - a mismatch is a blank page and no test catches it. The legacy
+  `pdf-exporter-admin` webapp is gone: its menu icons moved to `webapp/pdf-exporter-app/images/`, so
+  two webapps remain - `pdf-exporter` (REST + the product JS) and `pdf-exporter-app`.
 - **`pdf-exporter-app` also serves the Bulk PDF Export widget**, which is not an administration page:
   `BulkPdfExportWidgetRenderer` emits a shim on the report page and imports the app's second Vite entry,
   `assets/bulk-widget.js`, which mounts React into a shadow root of that shim. The rows come from

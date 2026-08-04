@@ -5,9 +5,10 @@ import ch.sbb.polarion.extension.generic.GenericUiServlet;
 import java.io.Serial;
 
 /**
- * Serves the React administration app (the Vite bundle under {@code webapp/pdf-exporter-app}) and the
- * build-generated help articles next to it. The pages still on JSP keep being served by
- * {@link PdfExporterAdminUiServlet} until they are converted too.
+ * Serves the React administration app (the Vite bundle under {@code webapp/pdf-exporter-app}), the
+ * build-generated help articles next to it, and the administration menu icons that
+ * {@code hivemodule.xml} and the report widgets point at. Every administration page of the extension is
+ * served from here.
  */
 public class PdfExporterAppServlet extends GenericUiServlet {
     @Serial
