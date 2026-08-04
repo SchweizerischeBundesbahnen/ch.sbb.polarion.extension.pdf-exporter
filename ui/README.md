@@ -27,11 +27,34 @@ There is one `index.html` / bundle. The page to render is chosen from the `featu
 - `/?feature=authorization` - Authorization (RSP's shared `AuthorizationSettings` over the
   `authorization` named setting). It reads generic's `/roles` endpoint, which is opt-in: the two roles
   controllers are registered in `PdfExporterRestApplication` for this page.
+- `/?feature=bulk-widget` - the development harness of the Bulk PDF Export widget (see below). It is
+  the only feature no administration page points at.
 
 Features are declared in [`src/features.tsx`](src/features.tsx). Add a page component under
 `src/pages/`, register it there, and it appears on the landing page automatically. The ids must stay
 in sync with the `pageUrl`s in `src/main/resources/META-INF/hivemodule.xml` — a mismatch shows up as a
 blank page in Polarion and no test catches it.
+
+## The Bulk PDF Export widget
+
+The widget a report page can carry is the app's second entry, `src/widget/main.tsx`, built to the
+fixed name `assets/bulk-widget.js`. `BulkPdfExportWidgetRenderer` renders a shim element carrying the
+widget's resolved data set (signed, see `WidgetDescriptorSigner`) and imports that file, appending the
+extension version to bust the browser cache — which is why the file name may not be hashed.
+
+The widget mounts into a **shadow root** of the shim: the report page around it is Polarion's, so the
+widget's own stylesheet (`src/widget/widget.css`) and RSP's tokens are injected into that root, and the
+page's own stylesheets are cloned into it so that the table and the button keep the native look. The
+rows come from `POST /widgets/bulk-export/items`, cells included: those are the HTML Polarion rendered
+for each field.
+
+Two things stay outside the shadow root, both because they are shared with the product's other export
+surfaces: the export parameters dialog (`ExportPopup.js`, imported at runtime from the `pdf-exporter`
+webapp) and the bulk progress dialog, which renders into the page body where the micromodal styling
+the widget renderer puts on the page reaches it.
+
+`/?feature=bulk-widget` mounts the very same widget against sample data, one button per state. The
+export dialog itself needs a Polarion behind `VITE_BASE_URL`.
 
 ## Local development
 
@@ -47,6 +70,12 @@ npm run dev                          # http://localhost:5173/
 REST calls are proxied to the Polarion instance in `VITE_BASE_URL`; a personal access token in
 `VITE_BEARER_TOKEN` switches `useRemote` from the session `/internal` endpoints to the token `/api`
 ones.
+
+> **Stop the dev server before running a Maven build.** The build runs `npm ci`, which starts by
+> deleting `node_modules`, and on Windows that fails with `EPERM (-4048)` while `vite` holds files
+> there — leaving `node_modules` half-deleted, so the dev server and the next build both break until
+> `npm ci` is run again. `npm ci` is not covered by `-DskipJsTests`, so this applies to every Maven
+> goal from `compile` upwards.
 
 ## Running the tests
 
@@ -78,7 +107,7 @@ under `ui/`. They are check-only and never modify your files.
 
 ## Production build
 
-`npm run build` emits the bundle to `ui/dist/app` with base path
+`npm run build` emits both entries to `ui/dist/app` with base path
 `/polarion/pdf-exporter-app/ui/app/`. The Maven build (frontend-maven-plugin +
 maven-resources-plugin) runs this automatically and copies the bundle into
 `src/main/resources/webapp/pdf-exporter-app/app`, where `AADSynchronizerAppServlet` serves it at

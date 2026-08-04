@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url';
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 
@@ -34,6 +35,12 @@ export default defineConfig(({ command, mode }) => {
             target: polarionUrl,
             changeOrigin: true,
           },
+          // The product JS the bulk export widget drives: the export parameters dialog and the
+          // conversion protocol, which are served from the extension's own webapp, not from this app.
+          '/polarion/pdf-exporter/ui': {
+            target: polarionUrl,
+            changeOrigin: true,
+          },
           '/polarion/rest': {
             target: polarionUrl,
             changeOrigin: true,
@@ -65,6 +72,30 @@ export default defineConfig(({ command, mode }) => {
     build: {
       outDir: './dist/app',
       emptyOutDir: true,
+      rollupOptions: {
+        // Keep what an entry exports. A Vite app build assumes its entries are only ever executed, so it
+        // drops their exports - which leaves the widget bundle without the `default` the renderer's
+        // `import(...).then(module => module.default(...))` calls. scripts/check-widget-entry.mjs guards
+        // this after every build, since no test sees the built file.
+        preserveEntrySignatures: 'strict',
+        // Two entries: the admin SPA (index.html) and the bulk export widget, which is imported at
+        // runtime by the widget renderer on a Polarion report page.
+        input: {
+          index: fileURLToPath(new URL('index.html', import.meta.url)),
+          'bulk-widget': fileURLToPath(new URL('src/widget/main.tsx', import.meta.url)),
+        },
+        output: {
+          // The widget's file name must stay predictable: BulkPdfExportWidgetRenderer imports it by
+          // URL and cannot know the hash Vite would append. It appends the extension version instead,
+          // which is what busts the browser cache on an update.
+          entryFileNames: (chunk) =>
+            chunk.name === 'bulk-widget' ? 'assets/bulk-widget.js' : 'assets/[name]-[hash].js',
+          // What both entries share (React above all) lands in one chunk. Rollup would name it after
+          // whichever module it happened to pick, which reads as nonsense next to bulk-widget.js on a
+          // report page.
+          chunkFileNames: 'assets/shared-[hash].js',
+        },
+      },
     },
   };
 });

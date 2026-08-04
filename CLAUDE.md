@@ -11,6 +11,12 @@
   Converted so far: About, Usage Disclaimer, User Guide, Authorization, Style Package Weights,
   CSS, Cover Page, Header and Footer, Filename template, Localization, Webhooks. Left on JSP: style
   packages. `pdf-exporter-admin` is deleted once the last JSP page is gone.
+- **`pdf-exporter-app` also serves the Bulk PDF Export widget**, which is not an administration page:
+  `BulkPdfExportWidgetRenderer` emits a shim on the report page and imports the app's second Vite entry,
+  `assets/bulk-widget.js`, which mounts React into a shadow root of that shim. The rows come from
+  `POST /widgets/bulk-export/items`, carrying the signed descriptor the renderer resolved - see
+  `WidgetDescriptorSigner` for why it is signed, and [`ui/README.md`](ui/README.md) for the layering.
+  The widget's own CSS lives in `ui/src/widget/widget.css`, not in `pdf-exporter.css`.
 - **The UI build comes from the generic parent**, activated by the presence of `ui/package.json` (its
   `vite-ui` profile): `npm ci` + `npm run build`, the bundle copied into `webapp/pdf-exporter-app/`, and
   the JS suite in the Maven `test` phase. This pom adds nothing for it. Note it also redirects

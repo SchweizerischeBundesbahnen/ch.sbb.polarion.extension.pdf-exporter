@@ -10,6 +10,7 @@ import Localization from './pages/Localization';
 import StylePackageWeights from './pages/StylePackageWeights';
 import UserGuide from './pages/UserGuide';
 import Webhooks from './pages/Webhooks';
+import WidgetPreview from './pages/WidgetPreview';
 
 /**
  * A single navigable page of the app. The `id` is what appears in the URL as `?feature=<id>` and is
@@ -93,6 +94,12 @@ export const FEATURES: Feature[] = [
     label: 'Authorization',
     description: 'Configure which global and project roles are allowed to export.',
     component: Authorization,
+  },
+  {
+    id: 'bulk-widget',
+    label: 'Bulk PDF Export widget (preview)',
+    description: 'Development harness for the report page widget. No administration page points here.',
+    component: WidgetPreview,
   },
 ];
 
