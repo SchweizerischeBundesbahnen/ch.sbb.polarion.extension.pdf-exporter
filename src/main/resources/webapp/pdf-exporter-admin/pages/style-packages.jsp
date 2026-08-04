@@ -281,6 +281,14 @@
                     </label>
                     <input id='metadata-fields-input' placeholder='e.g. docOwner, docLanguage, customField*' type='text' style='visibility: hidden; margin-left: 10px; flex: 1'/>
                 </div>
+                <div class='input-group' style="display: flex; align-items: center;">
+                    <label for='language-custom-field'>Language custom field (hyphenation)</label>
+                    <input id='language-custom-field' placeholder='docLanguage' type='text' style='margin-left: 10px; flex: 1'/>
+                </div>
+                <div class='input-group' style="display: flex; flex-direction: column; align-items: flex-start;">
+                    <label for='language-mapping'>Language value mapping (value=ISO 639-1 per line)</label>
+                    <textarea id='language-mapping' placeholder='e.g. German=de' rows='3' style='margin-top: 4px; width: 100%'></textarea>
+                </div>
             </div>
             <div class="flex-column">
                 <div class='checkbox input-group'>

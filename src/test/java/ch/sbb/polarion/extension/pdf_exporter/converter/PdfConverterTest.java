@@ -28,6 +28,7 @@ import com.polarion.alm.tracker.model.ILinkRoleOpt;
 import com.polarion.alm.tracker.model.IModule;
 import com.polarion.alm.tracker.model.ITrackerProject;
 import com.polarion.alm.tracker.model.ITypeOpt;
+import com.polarion.platform.persistence.IEnumOption;
 import com.polarion.platform.persistence.IEnumeration;
 import com.polarion.platform.persistence.spi.EnumOption;
 import org.junit.jupiter.api.AfterEach;
@@ -112,7 +113,7 @@ class PdfConverterTest {
         when(placeholderProcessor.replacePlaceholders(documentData, exportParams, "test css")).thenReturn("css content");
         when(placeholderProcessor.replacePlaceholders(eq(documentData), eq(exportParams), anyList())).thenReturn(List.of("hl", "hc", "hr", "fl", "fc", "fr"));
         when(velocityEvaluator.evaluateVelocityExpressions(eq(documentData), anyString())).thenAnswer(a -> a.getArguments()[1]);
-        when(pdfTemplateProcessor.processUsing(eq(exportParams), eq("testDocument"), eq("css content"), anyString(), anyString())).thenReturn("test html content");
+        when(pdfTemplateProcessor.processUsing(eq(exportParams), eq("testDocument"), eq("css content"), anyString(), anyString(), any())).thenReturn("test html content");
         when(weasyPrintServiceConnector.convertToPdf(eq("test html content"), any(WeasyPrintOptions.class), any(), any())).thenReturn("test document content".getBytes());
         when(htmlProcessor.internalizeLinks(anyString())).thenAnswer(a -> a.getArgument(0));
         when(htmlProcessor.replaceResourcesAsBase64Encoded(anyString())).thenAnswer(a -> a.getArgument(0));
@@ -425,7 +426,7 @@ class PdfConverterTest {
         when(module.getValue("test name")).thenReturn("Ampersand & and <tag>");
 
         ArgumentCaptor<String> metaCaptor = ArgumentCaptor.forClass(String.class);
-        when(pdfTemplateProcessor.processUsing(eq(exportParams), eq("testDocument"), eq("css content"), anyString(), metaCaptor.capture()))
+        when(pdfTemplateProcessor.processUsing(eq(exportParams), eq("testDocument"), eq("css content"), anyString(), metaCaptor.capture(), any()))
                 .thenReturn("test html content");
         when(weasyPrintServiceConnector.convertToPdf(eq("test html content"), any(WeasyPrintOptions.class), any(), any())).thenReturn("pdf".getBytes());
 
@@ -473,7 +474,7 @@ class PdfConverterTest {
         when(htmlProcessor.replaceResourcesAsBase64Encoded(anyString())).thenAnswer(a -> a.getArgument(0));
 
         ArgumentCaptor<String> metaCaptor = ArgumentCaptor.forClass(String.class);
-        when(pdfTemplateProcessor.processUsing(any(ExportParams.class), anyString(), anyString(), anyString(), metaCaptor.capture()))
+        when(pdfTemplateProcessor.processUsing(any(ExportParams.class), anyString(), anyString(), anyString(), metaCaptor.capture(), any()))
                 .thenReturn("test html content");
         when(weasyPrintServiceConnector.convertToPdf(eq("test html content"), any(WeasyPrintOptions.class), any(), any())).thenReturn("pdf".getBytes());
 
@@ -484,5 +485,51 @@ class PdfConverterTest {
 
         // Assert
         assertThat(metaCaptor.getValue()).isEmpty();
+    }
+
+    private DocumentData<IModule> languageTestDocumentData() {
+        return DocumentData.creator(DocumentType.LIVE_DOC, module)
+                .id(LiveDocId.from("testProjectId", "_default", "testDocumentId"))
+                .title("testDocument")
+                .content("test document content")
+                .lastRevision("12345")
+                .revisionPlaceholder("12345")
+                .build();
+    }
+
+    private PdfConverter newPdfConverter() {
+        return new PdfConverter(pdfExporterPolarionService, headerFooterSettings, cssSettings, placeholderProcessor, velocityEvaluator, coverPageProcessor, weasyPrintServiceConnector, htmlProcessor, pdfTemplateProcessor);
+    }
+
+    @Test
+    void shouldResolveDocumentLanguageFromDefaultDocLanguageCustomField() {
+        IEnumOption enumOption = mock(IEnumOption.class);
+        when(enumOption.getId()).thenReturn("de");
+        when(module.getCustomField("docLanguage")).thenReturn(enumOption);
+
+        assertThat(newPdfConverter().resolveDocumentLanguage(languageTestDocumentData(), ExportParams.builder().build())).isEqualTo("de");
+    }
+
+    @Test
+    void shouldResolveDocumentLanguageFromConfiguredCustomField() {
+        IEnumOption enumOption = mock(IEnumOption.class);
+        when(enumOption.getId()).thenReturn("fr");
+        when(module.getCustomField("myLanguageField")).thenReturn(enumOption);
+        ExportParams exportParams = ExportParams.builder().languageCustomField("myLanguageField").build();
+
+        assertThat(newPdfConverter().resolveDocumentLanguage(languageTestDocumentData(), exportParams)).isEqualTo("fr");
+    }
+
+    @Test
+    void shouldMapDocumentLanguageValueToIsoCode() {
+        when(module.getCustomField("docLanguage")).thenReturn("German");
+        ExportParams exportParams = ExportParams.builder().languageMapping("German=de\nEnglish=en").build();
+
+        assertThat(newPdfConverter().resolveDocumentLanguage(languageTestDocumentData(), exportParams)).isEqualTo("de");
+    }
+
+    @Test
+    void shouldReturnNullLanguageWhenDocLanguageFieldAbsent() {
+        assertThat(newPdfConverter().resolveDocumentLanguage(languageTestDocumentData(), ExportParams.builder().build())).isNull();
     }
 }

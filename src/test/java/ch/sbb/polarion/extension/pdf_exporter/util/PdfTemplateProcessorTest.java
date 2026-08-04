@@ -7,6 +7,7 @@ import com.polarion.core.boot.PolarionProperties;
 import com.polarion.core.config.Configuration;
 import com.polarion.core.config.IClusterConfiguration;
 import com.polarion.core.config.IConfiguration;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -51,6 +52,30 @@ class PdfTemplateProcessorTest {
             if (configuration != null) {
                 configuration.close();
             }
+        }
+    }
+
+    @Test
+    void shouldInjectDocumentLanguageIntoHtmlTag() {
+        ExportParams exportParams = ExportParams.builder().build();
+        System.setProperty(PolarionProperties.BASE_URL, "http://test");
+        try {
+            String result = pdfTemplateProcessor.processUsing(exportParams, "doc", "css", "content", "", "de");
+            assertThat(result).contains("<html lang='de' xml:lang='de'");
+        } finally {
+            System.clearProperty(PolarionProperties.BASE_URL);
+        }
+    }
+
+    @Test
+    void shouldFallBackToEnglishWhenLanguageMissing() {
+        ExportParams exportParams = ExportParams.builder().build();
+        System.setProperty(PolarionProperties.BASE_URL, "http://test");
+        try {
+            String result = pdfTemplateProcessor.processUsing(exportParams, "doc", "css", "content", "", null);
+            assertThat(result).contains("<html lang='en' xml:lang='en'");
+        } finally {
+            System.clearProperty(PolarionProperties.BASE_URL);
         }
     }
 

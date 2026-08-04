@@ -54,6 +54,8 @@ public class StylePackageModel extends SettingsModel {
     private static final String TESTCASE_FIELD_ID_ENTRY_NAME = "TESTCASE FILTER ATTACHMENTS FIELD ID";
     private static final String CUSTOM_NUMBERED_LIST_STYLES_ENTRY_NAME = "CUSTOM NUMBERED LIST STYLES";
     private static final String LANGUAGE_ENTRY_NAME = "LANGUAGE";
+    private static final String LANGUAGE_CUSTOM_FIELD_ENTRY_NAME = "LANGUAGE CUSTOM FIELD";
+    private static final String LANGUAGE_MAPPING_ENTRY_NAME = "LANGUAGE MAPPING";
     private static final String LINKED_WORKITEM_ROLES_ENTRY_NAME = "LINKED WORKITEM ROLES";
     private static final String LINK_ROLE_DIRECTION_ENTRY_NAME = "LINK ROLE DIRECTION";
     private static final String WORK_ITEMS_QUERY_ENTRY_NAME = "WORK ITEMS QUERY";
@@ -89,6 +91,8 @@ public class StylePackageModel extends SettingsModel {
     private String metadataFields;
     private String customNumberedListStyles;
     private String language;
+    private String languageCustomField;
+    private String languageMapping;
     private List<String> linkedWorkitemRoles;
     private String linkRoleDirection;
     private String workItemsQuery;
@@ -127,6 +131,8 @@ public class StylePackageModel extends SettingsModel {
                 serializeEntry(METADATA_FIELDS_ENTRY_NAME, metadataFields) +
                 serializeEntry(CUSTOM_NUMBERED_LIST_STYLES_ENTRY_NAME, customNumberedListStyles) +
                 serializeEntry(LANGUAGE_ENTRY_NAME, language) +
+                serializeEntry(LANGUAGE_CUSTOM_FIELD_ENTRY_NAME, languageCustomField) +
+                serializeEntry(LANGUAGE_MAPPING_ENTRY_NAME, languageMapping) +
                 serializeEntry(LINKED_WORKITEM_ROLES_ENTRY_NAME, linkedWorkitemRoles) +
                 serializeEntry(LINK_ROLE_DIRECTION_ENTRY_NAME, linkRoleDirection) +
                 serializeEntry(WORK_ITEMS_QUERY_ENTRY_NAME, workItemsQuery) +
@@ -167,6 +173,8 @@ public class StylePackageModel extends SettingsModel {
         metadataFields = deserializeEntry(METADATA_FIELDS_ENTRY_NAME, serializedString);
         customNumberedListStyles = deserializeEntry(CUSTOM_NUMBERED_LIST_STYLES_ENTRY_NAME, serializedString);
         language = deserializeEntry(LANGUAGE_ENTRY_NAME, serializedString);
+        languageCustomField = deserializeEntry(LANGUAGE_CUSTOM_FIELD_ENTRY_NAME, serializedString);
+        languageMapping = deserializeEntry(LANGUAGE_MAPPING_ENTRY_NAME, serializedString);
         linkedWorkitemRoles = deserializeListEntry(LINKED_WORKITEM_ROLES_ENTRY_NAME, serializedString, String.class);
         linkRoleDirection = deserializeEntry(LINK_ROLE_DIRECTION_ENTRY_NAME, serializedString);
         workItemsQuery = deserializeEntry(WORK_ITEMS_QUERY_ENTRY_NAME, serializedString);

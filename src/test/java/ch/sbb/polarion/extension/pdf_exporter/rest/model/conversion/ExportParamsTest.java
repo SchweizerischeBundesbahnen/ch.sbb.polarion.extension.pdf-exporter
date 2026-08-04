@@ -59,6 +59,8 @@ class ExportParamsTest {
                 .customNumberedListStyles("numberedListStyle2")
                 .specificChapters("3,4")
                 .language("language2")
+                .languageCustomField("myLanguageField")
+                .languageMapping("German=de")
                 .linkedWorkitemRoles(List.of("role3", "role4"))
                 .linkRoleDirection("DIRECT")
                 .attachmentsFilter("attachmentFilter2")
@@ -73,6 +75,8 @@ class ExportParamsTest {
         assertEquals("localization2", params.getLocalization());
         assertEquals("webhooks2", params.getWebhooks());
         assertEquals("headersColor2", params.getHeadersColor());
+        assertEquals("myLanguageField", params.getLanguageCustomField());
+        assertEquals("German=de", params.getLanguageMapping());
         assertEquals(PaperSize.A5, params.getPaperSize());
         assertEquals(Orientation.PORTRAIT, params.getOrientation());
         assertEquals(PdfVariant.PDF_A_3B, params.getPdfVariant());

@@ -34,6 +34,7 @@ import ch.sbb.polarion.extension.pdf_exporter.util.PdfTemplateProcessor;
 import ch.sbb.polarion.extension.pdf_exporter.util.PolarionTypes;
 import ch.sbb.polarion.extension.pdf_exporter.util.html.HtmlLinksHelper;
 import ch.sbb.polarion.extension.pdf_exporter.util.placeholder.PlaceholderProcessor;
+import ch.sbb.polarion.extension.pdf_exporter.util.placeholder.PlaceholderValues;
 import ch.sbb.polarion.extension.pdf_exporter.util.velocity.VelocityEvaluator;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.WeasyPrintOptions;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.service.WeasyPrintServiceConnector;
@@ -44,6 +45,7 @@ import com.polarion.alm.tracker.model.ITrackerProject;
 import com.polarion.core.util.StringUtils;
 import com.polarion.core.util.logging.Logger;
 import com.polarion.platform.internal.security.UserAccountVault;
+import com.polarion.platform.persistence.IEnumOption;
 import lombok.AllArgsConstructor;
 import org.apache.commons.text.StringEscapeUtils;
 import org.glassfish.jersey.media.multipart.FormDataBodyPart;
@@ -184,7 +186,8 @@ public class PdfConverter {
         HtmlData htmlData = new HtmlData(cssContent, preparedDocumentContent, headerFooterContent);
 
         String metaTags = timedIfNotNull(generationLog, "Build meta tags", () -> buildMetaTags(documentData, exportParams));
-        String composedHtml = timedIfNotNull(generationLog, "Compose HTML", () -> composeHtml(documentData.getTitle(), htmlData, exportParams, metaTags));
+        String documentLanguage = resolveDocumentLanguage(documentData, exportParams);
+        String composedHtml = timedIfNotNull(generationLog, "Compose HTML", () -> composeHtml(documentData.getTitle(), htmlData, exportParams, metaTags, documentLanguage));
 
         if (metaInfoCallback != null) {
             metaInfoCallback.setLinkedWorkItems(WorkItemRefData.extractListFromHtml(composedHtml, exportParams.getProjectId()));
@@ -339,10 +342,64 @@ public class PdfConverter {
     String composeHtml(@NotNull String documentName,
                        @NotNull HtmlData htmlData,
                        @NotNull ExportParams exportParams,
-                       @NotNull String metaTags) {
+                       @NotNull String metaTags,
+                       @Nullable String documentLanguage) {
         String content = htmlData.headerFooterContent
                 + "<div class='content'>" + htmlData.documentContent + "</div>";
-        return pdfTemplateProcessor.processUsing(exportParams, documentName, htmlData.cssContent, content, metaTags);
+        return pdfTemplateProcessor.processUsing(exportParams, documentName, htmlData.cssContent, content, metaTags, documentLanguage);
+    }
+
+    /**
+     * Resolves the document's language (ISO 639-1) so it can be injected as the {@code lang} attribute of the exported
+     * HTML, letting WeasyPrint hyphenate. The LiveDoc custom field to read is taken from the style package
+     * ({@code languageCustomField}, defaulting to {@code docLanguage}); its raw value is optionally translated to an
+     * ISO code via the style package's {@code languageMapping}. Returns {@code null} when no language can be resolved
+     * (e.g. non-LiveDoc exports or an empty field), in which case the template falls back to the default.
+     */
+    @Nullable
+    @VisibleForTesting
+    String resolveDocumentLanguage(@NotNull DocumentData<? extends IUniqueObject> documentData, @NotNull ExportParams exportParams) {
+        if (!(documentData.getDocumentObject() instanceof IModule module)) {
+            return null;
+        }
+        String fieldId = StringUtils.isEmpty(exportParams.getLanguageCustomField())
+                ? PlaceholderValues.DOC_LANGUAGE_FIELD
+                : exportParams.getLanguageCustomField();
+        Object fieldValue = module.getCustomField(fieldId);
+        String rawLanguage;
+        if (fieldValue instanceof IEnumOption enumOption) {
+            rawLanguage = enumOption.getId();
+        } else if (fieldValue instanceof String stringValue) {
+            rawLanguage = stringValue;
+        } else {
+            rawLanguage = null;
+        }
+        if (StringUtils.isEmpty(rawLanguage)) {
+            return null;
+        }
+        return applyLanguageMapping(rawLanguage, exportParams.getLanguageMapping());
+    }
+
+    /**
+     * Translates a raw document-language value to an ISO 639-1 code using the style package's mapping ('value=code'
+     * per line, case-insensitive). Returns the raw value unchanged when there is no mapping or no matching entry.
+     */
+    @NotNull
+    private String applyLanguageMapping(@NotNull String rawLanguage, @Nullable String languageMapping) {
+        if (StringUtils.isEmpty(languageMapping)) {
+            return rawLanguage;
+        }
+        for (String line : languageMapping.split("\\R")) {
+            int separatorIndex = line.indexOf('=');
+            if (separatorIndex > 0) {
+                String key = line.substring(0, separatorIndex).trim();
+                String value = line.substring(separatorIndex + 1).trim();
+                if (key.equalsIgnoreCase(rawLanguage)) {
+                    return value;
+                }
+            }
+        }
+        return rawLanguage;
     }
 
     @NotNull

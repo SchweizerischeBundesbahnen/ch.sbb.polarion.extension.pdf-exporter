@@ -264,6 +264,8 @@ function saveStylePackage() {
             'metadataFields': ctx.getCheckboxValueById('metadata-fields') ? ctx.getValueById('metadata-fields-input') : null,
             'customNumberedListStyles': ctx.getCheckboxValueById('custom-list-styles') ? ctx.getValueById('numbered-list-styles') : null,
             'language': ctx.getCheckboxValueById('localization') ? Languages.languageSelect.getSelectedValue() : null,
+            'languageCustomField': ctx.getValueById('language-custom-field') || null,
+            'languageMapping': ctx.getValueById('language-mapping') || null,
             'linkedWorkitemRoles': ctx.getCheckboxValueById('selected-roles') ? LinkRoles.rolesSelect.getSelectedValue() : null,
             'linkRoleDirection': ctx.getCheckboxValueById('selected-roles') ? LinkRoleDirections.linkRoleDirectionSelect.getSelectedValue() : null,
             'exposePageWidthValidation': ctx.getCheckboxValueById('expose-page-width-validation'),
@@ -361,6 +363,9 @@ function setStylePackage(content) {
     ctx.setCheckboxValueById('localization', !!stylePackage.language);
     ctx.getElementById('localization').dispatchEvent(new Event('change'));
     Languages.languageSelect.selectValue(stylePackage.language);
+
+    ctx.setValueById('language-custom-field', stylePackage.languageCustomField || "");
+    ctx.setValueById('language-mapping', stylePackage.languageMapping || "");
 
     const rolesProvided = stylePackage.linkedWorkitemRoles && stylePackage.linkedWorkitemRoles.length && stylePackage.linkedWorkitemRoles.length > 0;
     ctx.setCheckboxValueById('selected-roles', rolesProvided);
