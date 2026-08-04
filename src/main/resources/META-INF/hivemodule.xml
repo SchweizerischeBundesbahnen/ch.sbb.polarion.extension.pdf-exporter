@@ -22,7 +22,7 @@
                   parentNodeName="PDF Export"
                   parentNodeIconUrl="/polarion/pdf-exporter-admin/ui/images/menu/30x30/_parent.svg"
                   iconUrl="/polarion/pdf-exporter-admin/ui/images/menu/16x16/about.svg"
-                  pageUrl="/polarion/pdf-exporter-admin/pages/about.jsp?scope=$scope$"
+                  pageUrl="/polarion/pdf-exporter-app/ui/app/index.html?feature=about&amp;embedded=true&amp;scope=$scope$"
                   projectScope="true"
                   projectGroupScope="false"
                   repositoryScope="true"/>
@@ -33,7 +33,7 @@
                   parentNodeName="PDF Export"
                   parentNodeIconUrl="/polarion/pdf-exporter-admin/ui/images/menu/30x30/_parent.svg"
                   iconUrl="/polarion/pdf-exporter-admin/ui/images/menu/16x16/about.svg"
-                  pageUrl="/polarion/pdf-exporter-admin/pages/disclaimer.jsp?scope=$scope$"
+                  pageUrl="/polarion/pdf-exporter-app/ui/app/index.html?feature=disclaimer&amp;embedded=true&amp;scope=$scope$"
                   projectScope="true"
                   projectGroupScope="false"
                   repositoryScope="true"/>
@@ -42,7 +42,7 @@
                   name="User Guide"
                   parentNodeId="pdf-export"
                   iconUrl="/polarion/pdf-exporter-admin/ui/images/menu/16x16/user_guide.svg"
-                  pageUrl="/polarion/pdf-exporter-admin/pages/user-guide.jsp?scope=$scope$"
+                  pageUrl="/polarion/pdf-exporter-app/ui/app/index.html?feature=user-guide&amp;embedded=true&amp;scope=$scope$"
                   projectScope="true"
                   projectGroupScope="false"
                   repositoryScope="true"/>
@@ -69,7 +69,7 @@
                   name="Style Package Weights"
                   parentNodeId="pdf-export"
                   iconUrl="/polarion/pdf-exporter-admin/ui/images/menu/16x16/style_package_weights.svg"
-                  pageUrl="/polarion/pdf-exporter-admin/pages/style-package-weights.jsp?scope=$scope$"
+                  pageUrl="/polarion/pdf-exporter-app/ui/app/index.html?feature=style-package-weights&amp;embedded=true&amp;scope=$scope$"
                   projectScope="true"
                   projectGroupScope="false"
                   repositoryScope="true"/>
@@ -78,7 +78,7 @@
                   name="Cover Page"
                   parentNodeId="pdf-export"
                   iconUrl="/polarion/pdf-exporter-admin/ui/images/menu/16x16/cover_page.svg"
-                  pageUrl="/polarion/pdf-exporter-admin/pages/cover-page.jsp?scope=$scope$"
+                  pageUrl="/polarion/pdf-exporter-app/ui/app/index.html?feature=cover-page&amp;embedded=true&amp;scope=$scope$"
                   projectScope="true"
                   projectGroupScope="false"
                   repositoryScope="true"/>
@@ -87,7 +87,7 @@
                   name="Header/Footer"
                   parentNodeId="pdf-export"
                   iconUrl="/polarion/pdf-exporter-admin/ui/images/menu/16x16/header_footer.svg"
-                  pageUrl="/polarion/pdf-exporter-admin/pages/header-footer.jsp?scope=$scope$"
+                  pageUrl="/polarion/pdf-exporter-app/ui/app/index.html?feature=header-footer&amp;embedded=true&amp;scope=$scope$"
                   projectScope="true"
                   projectGroupScope="false"
                   repositoryScope="true"/>
@@ -96,7 +96,7 @@
                   name="Localization"
                   parentNodeId="pdf-export"
                   iconUrl="/polarion/pdf-exporter-admin/ui/images/menu/16x16/localization.svg"
-                  pageUrl="/polarion/pdf-exporter-admin/pages/localization.jsp?scope=$scope$"
+                  pageUrl="/polarion/pdf-exporter-app/ui/app/index.html?feature=localization&amp;embedded=true&amp;scope=$scope$"
                   projectScope="true"
                   projectGroupScope="false"
                   repositoryScope="true"/>
@@ -105,7 +105,7 @@
                   name="CSS"
                   parentNodeId="pdf-export"
                   iconUrl="/polarion/pdf-exporter-admin/ui/images/menu/16x16/css.svg"
-                  pageUrl="/polarion/pdf-exporter-admin/pages/css.jsp?scope=$scope$"
+                  pageUrl="/polarion/pdf-exporter-app/ui/app/index.html?feature=css&amp;embedded=true&amp;scope=$scope$"
                   projectScope="true"
                   projectGroupScope="false"
                   repositoryScope="true"/>
@@ -114,7 +114,7 @@
                   name="Webhooks"
                   parentNodeId="pdf-export"
                   iconUrl="/polarion/pdf-exporter-admin/ui/images/menu/16x16/webhooks.svg"
-                  pageUrl="/polarion/pdf-exporter-admin/pages/webhooks.jsp?scope=$scope$"
+                  pageUrl="/polarion/pdf-exporter-app/ui/app/index.html?feature=webhooks&amp;embedded=true&amp;scope=$scope$"
                   projectScope="true"
                   projectGroupScope="false"
                   repositoryScope="true"/>
@@ -123,7 +123,16 @@
                   name="Filename"
                   parentNodeId="pdf-export"
                   iconUrl="/polarion/pdf-exporter-admin/ui/images/menu/16x16/filename.svg"
-                  pageUrl="/polarion/pdf-exporter-admin/pages/filename-template.jsp?scope=$scope$"
+                  pageUrl="/polarion/pdf-exporter-app/ui/app/index.html?feature=filename&amp;embedded=true&amp;scope=$scope$"
+                  projectScope="true"
+                  projectGroupScope="false"
+                  repositoryScope="true"/>
+
+        <extender id="authorization"
+                  name="Authorization"
+                  parentNodeId="pdf-export"
+                  iconUrl="/polarion/pdf-exporter-admin/ui/images/menu/16x16/authorization.svg"
+                  pageUrl="/polarion/pdf-exporter-app/ui/app/index.html?feature=authorization&amp;embedded=true&amp;scope=$scope$"
                   projectScope="true"
                   projectGroupScope="false"
                   repositoryScope="true"/>

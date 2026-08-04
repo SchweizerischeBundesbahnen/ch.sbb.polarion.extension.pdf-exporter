@@ -97,11 +97,19 @@ export default class ExportContext extends ExtensionContext {
                 const pathPattern = /project\/(.+)\/(wiki\/([^?#]+)|testruns|testrun)/;
                 const pathMatch = pathPattern.exec(locationHash);
                 const extractedPath = pathMatch ? (pathMatch[3] || pathMatch[2]) : undefined;
-                return pathMatch ? addDefaultSpaceIfRequired(extractedPath) : undefined;
+                if (pathMatch) {
+                    return addDefaultSpaceIfRequired(extractedPath);
+                }
+                // The project home page is the rich page "_default/Home" (its URL has no /wiki/ part).
+                return /project\/[^/]+\/home$/.test(locationHash) ? "_default/Home" : undefined;
             } else {
                 const globalPathPattern = /wiki\/([^?#]+)/;
                 const pathMatch = globalPathPattern.exec(locationHash);
-                return pathMatch ? addDefaultSpaceIfRequired(pathMatch[1]) : undefined;
+                if (pathMatch) {
+                    return addDefaultSpaceIfRequired(pathMatch[1]);
+                }
+                // The repository home page is the global rich page "_default/Home".
+                return locationHash === "home" ? "_default/Home" : undefined;
             }
         }
 

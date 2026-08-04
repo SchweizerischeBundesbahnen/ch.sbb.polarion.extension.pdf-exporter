@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PDF Exporter</title>
+    <!-- Baseline Polarion look. Served by Polarion in production; 404s harmlessly during `vite dev`. -->
+    <link rel="stylesheet" href="/polarion/wiki/skins/sidecar/presentation.css" />
+    <!-- Control tokens + searchable-dropdown / inputs / buttons / alerts CSS ship bundled in
+         @grigoriev/react-sbb-polarion (imported in main.tsx), not linked from generic. -->
+    <!-- Markdown styling for the About page README help article (served by GenericUiServlet). -->
+    <link rel="stylesheet" href="/polarion/pdf-exporter-app/ui/generic/css/github-markdown-light.css" />
+  </head>
+  <!-- .sbb-ui scopes generic's --sbb-* design tokens (now bundled in the lib) to the app. -->
+  <body class="sbb-ui">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

@@ -5,6 +5,7 @@ import ch.sbb.polarion.extension.pdf_exporter.converter.PdfConverter;
 import ch.sbb.polarion.extension.pdf_exporter.converter.PdfConverterJobsService;
 import ch.sbb.polarion.extension.pdf_exporter.converter.PdfConverterJobsService.JobState;
 import ch.sbb.polarion.extension.pdf_exporter.converter.PropertiesUtility;
+import ch.sbb.polarion.extension.pdf_exporter.rest.filter.RolesRestricted;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.WidthValidationResult;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ConversionParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.DocumentType;
@@ -141,6 +142,7 @@ public class ConverterInternalController {
                             }
                     )
             })
+    @RolesRestricted
     public Response convertToPdf(ExportParams exportParams) {
         validateExportParameters(exportParams);
         String fileName = getFileName(exportParams);
@@ -176,6 +178,7 @@ public class ConverterInternalController {
                             content = {@Content(mediaType = MediaType.TEXT_HTML)}
                     )
             })
+    @RolesRestricted
     public String prepareHtmlContent(ExportParams exportParams) {
         validateExportParameters(exportParams);
         return pdfConverter.prepareHtmlContent(exportParams, null);
@@ -196,6 +199,7 @@ public class ConverterInternalController {
                             description = "Conversion process is started, job URI is returned in Location header"
                     )
             })
+    @RolesRestricted
     public Response startPdfConverterJob(ExportParams exportParams) {
         validateExportParameters(exportParams);
 
@@ -453,11 +457,21 @@ public class ConverterInternalController {
                             content = {@Content(mediaType = "application/json", schema = @Schema(implementation = WidthValidationResult.class))}
                     )
             })
+    @RolesRestricted
     public WidthValidationResult validatePdfWidth(
             ExportParams exportParams,
             @Parameter(description = "Limit of 'invalid' pages in response", required = true) @QueryParam("max-results") int maxResults) {
         validateExportParameters(exportParams);
         return pdfWidthValidationService.validateWidth(exportParams, maxResults);
+    }
+
+    @GET
+    @Path("/permissions/export")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Hidden
+    @Operation(summary = "Returns whether the current user is allowed to export PDF for the given project")
+    public Response getExportPermission(@QueryParam("projectId") String projectId) {
+        return Response.ok(Map.of("permitted", pdfExporterPolarionService.userAuthorizedForExport(projectId))).build();
     }
 
     private void validateExportParameters(ExportParams exportParams) {

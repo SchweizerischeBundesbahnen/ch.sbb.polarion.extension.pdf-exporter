@@ -137,8 +137,15 @@ The explicit `starter.js` form still works but is **deprecated** in favor of the
 scriptInjection.mainHead=<script src="/polarion/pdf-exporter/js/starter.js"></script>
 ```
 
-Then open a project, its Live Report you wish to export, and click "Expand Tools" on top of the page.
-As a result report's toolbar will appear. Click "Edit" button in a toolbar, as a result the report will be switched into an edit mode. Add an empty region on top of the report, place cursor there, choose "PDF Export" tag on "Widgets" sidebar on right hand side of the page, find "Export to PDF Button" widget there and click it to add to the report. Then save a report clicking 💾 in a toolbar and then return to a view mode clicking "Back" button. When you click "Export to PDF" button just added to the report, PDF Exporter view will be opened in a popup and you will be able to proceed with exporting the report to PDF. Be aware that in report's context limited set of properties are available for configuration in PDF popup, the rest of them are relevant only in Live Document context.
+With the script injected, open a project and the Live Report you wish to export, then click "Expand Tools" on top of the page. An "Export to PDF" button appears in the report's toolbar (view mode only) — click it to open the PDF Exporter view in a popup and proceed with exporting the report. Be aware that in report's context limited set of properties are available for configuration in PDF popup, the rest of them are relevant only in Live Document context.
+
+Polarion collapses the report toolbar again on every page open. To keep it always expanded (so the "Export to PDF" button is permanently visible), opt in with the `data-expand-tools` attribute:
+
+```properties
+scriptInjection.mainHead=<script src="/polarion/pdf-exporter/js/live-reports.js" data-expand-tools="true"></script>
+```
+
+Alternatively (the pre-v13.5 way, still supported), the "Export to PDF Button" widget can be embedded into the report itself: click "Edit" in the report's toolbar, add an empty region on top of the report, place the cursor there, choose "PDF Export" tag on "Widgets" sidebar on right hand side of the page, find "Export to PDF Button" widget there and click it to add to the report. Then save the report clicking 💾 in a toolbar and return to view mode clicking "Back". The widget's button opens the same popup as the toolbar button.
 
 ### Configuring logs
 

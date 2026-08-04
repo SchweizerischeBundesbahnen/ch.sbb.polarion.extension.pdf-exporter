@@ -2,6 +2,7 @@ package ch.sbb.polarion.extension.pdf_exporter.settings;
 
 import ch.sbb.polarion.extension.generic.regex.RegexMatcher;
 import ch.sbb.polarion.extension.generic.settings.GenericNamedSettings;
+import ch.sbb.polarion.extension.generic.settings.SettingId;
 import ch.sbb.polarion.extension.generic.settings.SettingName;
 import ch.sbb.polarion.extension.generic.settings.SettingsService;
 import ch.sbb.polarion.extension.generic.util.ScopeUtils;
@@ -151,14 +152,53 @@ public class CoverPageSettings extends GenericNamedSettings<CoverPageModel> {
         }
     }
 
+    /**
+     * Deletes a cover page together with the images that belong to it.
+     * <p>
+     * The images are separate files in SVN named after the setting's UUID, and there is no atomic way
+     * to remove both: two repository operations, either of which can fail. What can be chosen is which
+     * failure is possible. The UUID is resolved first, so it is in hand regardless of what happens to
+     * the setting, and the setting goes first:
+     * <ul>
+     *   <li>if deleting the setting fails, nothing has happened yet - the cover page is still whole;</li>
+     *   <li>if deleting an image fails afterwards, the cover page is gone and some of its files linger
+     *       in the repository, unreferenced. Waste, not a broken configuration.</li>
+     * </ul>
+     * The other order - images first, as the administration page used to do with two requests - has
+     * the failure that matters: a cover page that still exists, still selectable, and no longer
+     * renders what it was configured to render.
+     */
+    @Override
+    public void delete(@NotNull String scope, @NotNull SettingId id) {
+        String uuid = id.isUseName() ? getIdByName(scope, true, id.getIdentifier()) : id.getIdentifier();
+        // Throws if the setting does not exist, which is also what guarantees the id resolved: past
+        // this line there is a cover page that was just deleted, so it had a UUID to be found by.
+        super.delete(scope, id);
+        try {
+            deleteImages(scope, Objects.requireNonNull(uuid));
+        } catch (RuntimeException e) {
+            // The cover page itself is gone, which is what was asked for; say what was left behind
+            // rather than failing a deletion that already happened.
+            logger.error("Cover page '%s' was deleted, but its images could not be removed from %s"
+                    .formatted(id.getIdentifier(), scope), e);
+        }
+    }
+
     public void deleteCoverPageImages(String coverPageName, String scope) {
         String uuid = getIdByName(scope, true, coverPageName);
+        if (uuid != null) {
+            deleteImages(scope, uuid);
+        }
+    }
+
+    /** Removes the image files stored next to the setting, which are the ones prefixed with its UUID. */
+    private void deleteImages(String scope, @NotNull String uuid) {
         ILocation coverPageFolderLocation = ScopeUtils.getContextLocation(scope).append(getSettingsFolder());
         final IRepositoryReadOnlyConnection readOnlyConnection = pdfExporterPolarionService.getReadOnlyConnection(coverPageFolderLocation);
         List<ILocation> subLocations = readOnlyConnection.getSubLocations(coverPageFolderLocation, false);
         subLocations.forEach(location -> {
             String locationFileName = location.getLastComponent();
-            if (locationFileName.startsWith(Objects.requireNonNull(uuid)) && imageExtensions.contains(locationFileName.substring(locationFileName.lastIndexOf(".")))) {
+            if (locationFileName.startsWith(uuid) && imageExtensions.contains(locationFileName.substring(locationFileName.lastIndexOf(".")))) {
                 getSettingsService().delete(location);
             }
         });

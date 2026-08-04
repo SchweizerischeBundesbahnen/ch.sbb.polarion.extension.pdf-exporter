@@ -1,12 +1,14 @@
 package ch.sbb.polarion.extension.pdf_exporter.widgets;
 
 import ch.sbb.polarion.extension.generic.util.ScopeUtils;
+import ch.sbb.polarion.extension.generic.util.VersionUtils;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.DocumentType;
-import com.polarion.alm.projects.model.IUniqueObject;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.widgets.BulkExportColumn;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.widgets.BulkExportWidgetDescriptor;
+import ch.sbb.polarion.extension.pdf_exporter.util.WidgetDescriptorSigner;
 import com.polarion.alm.server.api.model.rp.widget.AbstractWidgetRenderer;
-import com.polarion.alm.server.api.model.rp.widget.BottomQueryLinksBuilder;
-import com.polarion.alm.shared.api.model.ModelObject;
 import com.polarion.alm.shared.api.model.PrototypeEnum;
+import com.polarion.alm.shared.api.model.baselinecollection.BaselineCollectionReference;
 import com.polarion.alm.shared.api.model.rp.parameter.BooleanParameter;
 import com.polarion.alm.shared.api.model.rp.parameter.CompositeParameter;
 import com.polarion.alm.shared.api.model.rp.parameter.DataSet;
@@ -15,31 +17,38 @@ import com.polarion.alm.shared.api.model.rp.parameter.Field;
 import com.polarion.alm.shared.api.model.rp.parameter.FieldsParameter;
 import com.polarion.alm.shared.api.model.rp.parameter.IntegerParameter;
 import com.polarion.alm.shared.api.model.rp.parameter.SortingParameter;
+import com.polarion.alm.shared.api.model.rp.parameter.impl.dataset.WidgetContextScope;
 import com.polarion.alm.shared.api.model.rp.widget.RichPageWidgetCommonContext;
 import com.polarion.alm.shared.api.utils.collections.IterableWithSize;
-import com.polarion.alm.shared.api.utils.html.HtmlContentBuilder;
 import com.polarion.alm.shared.api.utils.html.HtmlFragmentBuilder;
 import com.polarion.alm.shared.api.utils.html.HtmlTagBuilder;
-import com.polarion.alm.tracker.model.IModule;
-import com.polarion.alm.tracker.model.IRichPage;
-import com.polarion.alm.tracker.model.baselinecollection.IBaselineCollection;
-import com.polarion.alm.ui.shared.LinearGradientColor;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
 
-import java.util.Iterator;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+/**
+ * Renders the Bulk PDF Export widget as a shim which the React widget app mounts into.
+ * <p>
+ * The table itself is built in the browser: the shim carries the widget's resolved data set, and the React app asks
+ * {@code /widgets/bulk-export/items} for the rows. Only what the widget rendering context alone can answer is
+ * resolved here - the query, the sorting, the column labels - and it travels signed, see
+ * {@link WidgetDescriptorSigner}.
+ */
 public class BulkPdfExportWidgetRenderer extends AbstractWidgetRenderer {
 
     private static final String CSS_IMPORT_RULE = "@import";
+    private static final String WIDGET_MODULE_URL = "/polarion/pdf-exporter-app/ui/app/assets/bulk-widget.js";
 
+    private final @NotNull DataSetParameter dataSetParameter;
     private final @NotNull DataSet dataSet;
+    private final @Nullable String sort;
 
-    private final @NotNull IterableWithSize<ModelObject> items;
     @Getter
     private final int topItems;
     @Getter
@@ -49,13 +58,13 @@ public class BulkPdfExportWidgetRenderer extends AbstractWidgetRenderer {
 
     public BulkPdfExportWidgetRenderer(@NotNull RichPageWidgetCommonContext context) {
         super(context);
-        DataSetParameter dataSetParameter = context.parameter("dataSet");
+        this.dataSetParameter = context.parameter("dataSet");
         FieldsParameter columnsParameter = dataSetParameter.get("columns");
         SortingParameter sortByParameter = dataSetParameter.get("sortBy");
-        String sort = sortByParameter.asLuceneSortString();
-        this.dataSet = dataSetParameter.getFor().sort(sort).revision(null);
-        this.items = this.dataSet.items();
-        itemsPrototype = dataSetParameter.prototype();
+        String luceneSort = sortByParameter.asLuceneSortString();
+        this.sort = luceneSort;
+        this.dataSet = dataSetParameter.getFor().sort(luceneSort).revision(null);
+        this.itemsPrototype = dataSetParameter.prototype();
         this.columns = columnsParameter.fields();
         this.exportPages = dataSetParameter.get("exportPages");
 
@@ -67,7 +76,6 @@ public class BulkPdfExportWidgetRenderer extends AbstractWidgetRenderer {
         } else {
             this.topItems = 50;
         }
-
     }
 
     public @NotNull DocumentType getItemsType(@NotNull PrototypeEnum prototype) {
@@ -95,175 +103,94 @@ public class BulkPdfExportWidgetRenderer extends AbstractWidgetRenderer {
     public void render(@NotNull HtmlFragmentBuilder builder) {
         if (this.topItems < 0) {
             builder.html(this.context.renderWarning(this.localization.getString("richpages.widget.table.invalidTopValue")));
-        } else {
-            String panelId = "bulk-%s".formatted(UUID.randomUUID().toString());
-            HtmlTagBuilder wrap = builder.tag().div();
-            // sbb-ui carries generic's --sbb-* design tokens (control-tokens.css) for this widget's
-            // subtree without opting into the form-field scopes: the token declarations live on
-            // .sbb-ui, while generic's inputs/checkboxes rules are scoped to .form-wrapper /
-            // .standard-admin-page / .modal__container. Post-#535 the tokens are gone from :root, so
-            // this wrapper is what makes the widget's checkbox tokens (below) resolve on a plain
-            // Polarion page.
-            wrap.attributes().className("polarion-PdfExporter-BulkExportWidget sbb-ui").id(panelId);
-
-            HtmlTagBuilder header = wrap.append().tag().div();
-            header.attributes().className("header");
-            header.attributes().byName("document-type", getItemsType(itemsPrototype).name());
-
-            HtmlTagBuilder title = header.append().tag().h3();
-            title.append().text(getWidgetItemsType(itemsPrototype));
-
-            renderExportButton(header);
-
-            HtmlTagBuilder description = header.append().tag().div();
-            description.append().tag().p().append().text(String.format("Please select %s below which you want to export and click button above", getWidgetItemsType(itemsPrototype)));
-
-            HtmlTagBuilder exportItems = wrap.append().tag().div();
-            exportItems.attributes().className("export-items");
-
-            HtmlTagBuilder mainTable = exportItems.append().tag().table();
-
-            mainTable.attributes().className("polarion-rpw-table-main");
-
-            //language=JS
-            wrap.append().tag().script().append().javaScript("""
-                    import('/polarion/pdf-exporter/ui/js/modules/ExportBulk.js')
-                        .then(module => new module.default('#%s', '%s' === 'true'))
-                        .catch(console.error);""".formatted(panelId, exportPages.value()));
-
-            wrap.append().tag().style().append().html(inlineCss("/css/micromodal.css"));
-            // The widget assembles its CSS inline and does not pull generic's common.css, so the shared
-            // alert styling would be missing: control-tokens.css provides the --sbb-*-icon tokens and
-            // alerts.css the notification boxes + warning/error triangle icons. Without these the export
-            // dialog's warnings (e.g. the PDF/A sticky-notes notice) render as unstyled plain text.
-            wrap.append().tag().style().append().html(inlineCss("/css/control-tokens.css"));
-            wrap.append().tag().style().append().html(inlineCss("/css/alerts.css"));
-            wrap.append().tag().style().append().html(inlineCss("/webapp/pdf-exporter/css/pdf-exporter.css"));
-
-            HtmlContentBuilder contentBuilder = mainTable.append();
-            this.renderContentTable(contentBuilder.tag().tr().append().tag().td().append());
-            this.renderFooter(contentBuilder.tag().tr().append().tag().td());
-        }
-    }
-
-    private void renderExportButton(@NotNull HtmlTagBuilder header) {
-        LinearGradientColor color = new LinearGradientColor();
-        HtmlTagBuilder buttonSpan = header.append().tag().span();
-        buttonSpan.attributes().className("polarion-TestsExecutionButton-link").title("Please, select at least one item to be exported first");
-
-        HtmlTagBuilder a = buttonSpan.append().tag().a();
-        HtmlTagBuilder button = a.append().tag().div();
-        button.attributes().id("bulk-export-pdf").className("polarion-TestsExecutionButton-buttons polarion-TestsExecutionButton-buttons-defaultCursor").style(color.getStyle());
-
-        HtmlTagBuilder content = button.append().tag().table();
-        content.attributes().className("polarion-TestsExecutionButton-buttons-content");
-
-        HtmlTagBuilder labelCell = content.append().tag().tr().append().tag().td();
-        labelCell.attributes().className("polarion-TestsExecutionButton-buttons-content-labelCell");
-        HtmlTagBuilder label = labelCell.append().tag().div();
-        label.attributes().className("polarion-TestsExecutionButton-labelTextNew");
-
-        label.append().text("Export to PDF");
-    }
-
-    private void renderContentTable(@NotNull HtmlContentBuilder builder) {
-        HtmlTagBuilder table = builder.tag().table();
-        table.attributes().className("polarion-rpw-table-content");
-        this.renderContentRows(table.append());
-    }
-
-    private void renderContentRows(@NotNull HtmlContentBuilder builder) {
-        this.renderHeaderRow(builder);
-        int count = 0;
-
-        for (Iterator<ModelObject> iterator = this.items.iterator(); iterator.hasNext(); ++count) {
-            if (count >= this.topItems) {
-                break;
-            }
-
-            HtmlTagBuilder tr = builder.tag().tr();
-            tr.attributes().className("polarion-rpw-table-content-row");
-            this.renderItem(tr.append(), iterator.next());
+            return;
         }
 
+        String panelId = "bulk-%s".formatted(UUID.randomUUID().toString());
+        String descriptor = WidgetDescriptorSigner.getInstance().encode(buildDescriptor());
+
+        // Next to the shim, not inside it: the shim becomes a shadow host, and the export dialogs these
+        // stylesheets are for render in the page body, which a shadow root would not reach. Those dialogs are the
+        // product's own, shared with the document export and the DLE toolbar; the widget's own styling ships with
+        // the widget app and is injected into its shadow root (see ui/src/widget/widget.css).
+        builder.tag().style().append().html(inlineCss("/css/micromodal.css"));
+        builder.tag().style().append().html(inlineCss("/css/control-tokens.css"));
+        builder.tag().style().append().html(inlineCss("/css/alerts.css"));
+        builder.tag().style().append().html(inlineCss("/webapp/pdf-exporter/css/pdf-exporter.css"));
+
+        HtmlTagBuilder shim = builder.tag().div();
+        // sbb-ui carries generic's --sbb-* design tokens (control-tokens.css), which the widget's shadow root
+        // inherits through this element: the token declarations live on .sbb-ui, while generic's
+        // inputs/checkboxes rules are scoped to .form-wrapper / .standard-admin-page / .modal__container. Post-#535
+        // the tokens are gone from :root, so this element is what makes the widget's tokens resolve on a plain
+        // Polarion page.
+        shim.attributes().className("polarion-PdfExporter-BulkExportWidget sbb-ui").id(panelId);
+        shim.attributes()
+                .byName("data-descriptor", descriptor)
+                .byName("data-signature", WidgetDescriptorSigner.getInstance().sign(descriptor))
+                // Read by the app to render the widget's frame before the rows arrive. Never trusted server-side:
+                // everything the endpoint acts on comes out of the signed descriptor.
+                .byName("data-title", getWidgetItemsType(itemsPrototype))
+                .byName("data-document-type", getItemsType(itemsPrototype).name())
+                .byName("data-export-pages", String.valueOf(exportPages.value()));
+
+        //language=JS
+        builder.tag().script().append().javaScript("""
+                import('%s?v=%s')
+                    .then(module => module.default('#%s'))
+                    .catch(console.error);""".formatted(WIDGET_MODULE_URL, getBundleVersion(), panelId));
     }
 
-    public void renderItem(@NotNull HtmlContentBuilder builder, @NotNull ModelObject item) {
-        if (item.isUnresolvable()) {
-            this.renderNotReadableRow(builder, this.localization.getString("richpages.widget.table.unresolvableItem", item.getReferenceToCurrent().toPath()));
-        } else if (!item.can().read()) {
-            this.renderNotReadableRow(builder, this.localization.getString("security.cannotread"));
-        } else {
-            HtmlTagBuilder td = builder.tag().td();
-            HtmlTagBuilder checkbox = td.append().tag().byName("input");
-            checkbox.attributes()
-                    .byName("type", "checkbox")
-                    .byName("data-type", item.getOldApi().getPrototype().getName())
-                    .byName("data-project", getProjectId(item))
-                    .byName("data-id", getObjectId(item))
-                    .className("export-item");
+    @VisibleForTesting
+    @NotNull
+    BulkExportWidgetDescriptor buildDescriptor() {
+        BaselineCollectionReference collection = getCollectionReference();
+        return BulkExportWidgetDescriptor.builder()
+                .prototype(itemsPrototype.name())
+                .documentType(getItemsType(itemsPrototype))
+                .query(dataSet.queryToShow())
+                .sqlQuery(DataSetQueryTypeReader.isSqlQuery(dataSetParameter))
+                .sort(sort)
+                .top(topItems)
+                // A page opened in a baseline renders its widgets at that revision. The endpoint runs in a
+                // transaction of its own, which has no baseline, so the revision has to be carried explicitly.
+                .revision(context.transaction().context().baselineRevision())
+                .projectId(dataSetParameter.scope().projectId())
+                .collectionProjectId(collection == null ? null : collection.projectId())
+                .collectionId(collection == null ? null : collection.id())
+                .columns(getDescriptorColumns())
+                .build();
+    }
 
-            String spaceId = getSpaceId(item);
-            if (spaceId != null) {
-                checkbox.attributes().byName("data-space", spaceId);
-            }
-            String objectName = getObjectName(item);
-            if (objectName != null) {
-                checkbox.attributes().byName("data-name", objectName);
-            }
-
-            for (Field column : this.columns) {
-                td = builder.tag().td();
-                column.render(item.fields()).withLinks(true).htmlTo(td.append());
-            }
+    private @NotNull List<BulkExportColumn> getDescriptorColumns() {
+        List<BulkExportColumn> descriptorColumns = new ArrayList<>();
+        for (Field column : columns) {
+            // The label is resolved here on purpose: a field's label as the widget's column parameter knows it is
+            // not reachable from the field of an item, which is all the endpoint has.
+            descriptorColumns.add(new BulkExportColumn(column.id(), column.label()));
         }
+        return descriptorColumns;
     }
 
-    private @Nullable String getSpaceId(@NotNull ModelObject item) {
-        if (item.getOldApi() instanceof IModule module) {
-            return module.getModuleFolder();
+    /**
+     * The collection a page opened inside a baseline collection queries, which Polarion takes from the widget's own
+     * parameter first and from the page context second.
+     */
+    private @Nullable BaselineCollectionReference getCollectionReference() {
+        if (dataSetParameter.getWidgetContextScope() != WidgetContextScope.Collection) {
+            return null;
         }
-        if (item.getOldApi() instanceof IRichPage richPage) {
-            return richPage.getSpaceId();
-        }
-        return null;
+        BaselineCollectionReference reference = dataSetParameter.getCollectionReference();
+        return reference != null ? reference : context.transaction().context().contextCollection();
     }
 
-    private @NotNull String getProjectId(@NotNull ModelObject item) {
-        return ((IUniqueObject) item.getOldApi()).getProjectId();
-    }
-
-    private @Nullable String getObjectName(@NotNull ModelObject item) {
-        if (item.getOldApi() instanceof IBaselineCollection baselineCollection) {
-            return baselineCollection.getName();
-        }
-        return null;
-    }
-
-    private String getObjectId(@NotNull ModelObject item) {
-        return ((IUniqueObject) item.getOldApi()).getId();
-    }
-
-    private void renderNotReadableRow(@NotNull HtmlContentBuilder builder, @NotNull String message) {
-        HtmlTagBuilder td = builder.tag().td();
-        td.attributes().colspan("" + (this.columns.size() + 1)).className("polarion-rpw-table-not-readable-cell");
-        td.append().text(message);
-    }
-
-    private void renderHeaderRow(@NotNull HtmlContentBuilder builder) {
-        HtmlTagBuilder row = builder.tag().tr();
-        row.attributes().className("polarion-rpw-table-header-row");
-        HtmlTagBuilder th = row.append().tag().th();
-        HtmlTagBuilder checkbox = th.append().tag().byName("input");
-        checkbox.attributes().byName("type", "checkbox").id("export-all");
-
-        for (Field column : this.columns) {
-            row.append().tag().th().append().text(column.label());
-        }
-    }
-
-    private void renderFooter(@NotNull HtmlTagBuilder tagBuilder) {
-        (new BottomQueryLinksBuilder(this.context, this.dataSet, this.topItems)).render(tagBuilder);
+    /**
+     * Busts the browser cache of the widget app when the extension is updated: the app is loaded from a fixed URL,
+     * as the renderer cannot know the hashed file names Vite emits for the rest of the bundle.
+     */
+    private @NotNull String getBundleVersion() {
+        String version = VersionUtils.getVersion().getBundleVersion();
+        return version == null ? "0" : version;
     }
 
     /**
@@ -295,5 +222,4 @@ public class BulkPdfExportWidgetRenderer extends AbstractWidgetRenderer {
     private static boolean startsWithImportRule(@NotNull String line) {
         return line.regionMatches(true, 0, CSS_IMPORT_RULE, 0, CSS_IMPORT_RULE.length());
     }
-
 }

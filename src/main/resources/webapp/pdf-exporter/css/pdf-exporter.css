@@ -1,64 +1,17 @@
-.dleToolBarContainer {
-    width: fit-content;
-    height: 45px;
-    background-color: #f5f5f5;
-    z-index: 1;
-    position: absolute;
-    right: 0;
-    border-bottom: 1px solid #DEDEDE;
-    border-right: 1px solid #DEDEDE;
-    border-left: 1px solid #DEDEDE;
-    padding-left: 8px;
-    padding-right: 3px;
-    vertical-align: middle;
-    display: flex;
+/* The shared .dleToolBar* toolbar-button rules now live in generic (css/dle-toolbar.css), injected
+   by the toolbar engine — they used to be duplicated here and in every other exporter. */
+
+/* Live Report toolbar "Export to PDF" button (injected by live-reports.js). The icon
+   dim-to-bright hover comes from Polarion's own polarion-Button-HighlightOnHover class (the same
+   one native toolbar buttons use); label color and the button frame never change — hover only adds
+   a subtle shadow (the unified hover token value, inlined because the --sbb-* tokens are scoped to
+   the .sbb-ui wrappers and do not reach Polarion's toolbar DOM). */
+.pdf-rp-toolbar-button {
+    transition: box-shadow 0.15s ease;
 }
 
-.dleToolBarTable {
-    align-self: center;
-    border-spacing: 0;
-}
-
-.dleToolBarRow {
-    display: table-row;
-    vertical-align: middle;
-}
-
-.dleToolBarTableCell {
-    padding: 0;
-}
-
-.dleToolBarButton {
-    cursor: pointer;
-    opacity: .6;
-}
-
-.dleToolBarButton:hover {
-    opacity: 1;
-}
-
-.dleToolBarSingleButton {
-    border: 1px solid #DEDEDE;
-    padding: 5px;
-    border-radius: 2px;
-    margin-right: 5px;
-}
-
-.dleToolBarLeftButton {
-    border: 1px solid #DEDEDE;
-    padding: 5px;
-    border-top-left-radius: 2px;
-    border-bottom-left-radius: 2px;
-}
-
-.dleToolBarRightButton {
-    border-width: 1px 1px 1px 0px;
-    border-style: solid;
-    border-color: #DEDEDE;
-    padding: 5px;
-    border-top-right-radius: 2px;
-    border-bottom-right-radius: 2px;
-    margin-right: 5px;
+.pdf-rp-toolbar-button:hover {
+    box-shadow: 0 0 2px #e0dede;
 }
 
 .modal__overlay {
@@ -264,34 +217,6 @@
 
 .property-wrapper label input[type="checkbox"] {
     vertical-align: middle;
-}
-
-/* The bulk export widget renders on a Polarion page, not inside a .form-wrapper / .modal__container,
-   so the shared 2606 checkbox styling (generic checkboxes.css, scoped to those wrappers) does not
-   reach it. Re-apply it scoped to the widget's own root — same tokens and images. The widget root
-   carries .sbb-ui (see BulkPdfExportWidgetRenderer), which supplies the --sbb-* tokens these rules
-   consume without pulling in the unrelated form-field scopes. */
-.polarion-PdfExporter-BulkExportWidget input[type="checkbox"] {
-    -webkit-appearance: none;
-    appearance: none;
-    width: var(--sbb-toggle-size);
-    height: var(--sbb-toggle-size);
-    margin: 0 4px 0 0;
-    vertical-align: middle;
-    cursor: pointer;
-    background: var(--sbb-checkbox-unchecked) no-repeat center;
-    background-size: var(--sbb-toggle-size) var(--sbb-toggle-size);
-}
-
-.polarion-PdfExporter-BulkExportWidget input[type="checkbox"]:checked {
-    background-image: var(--sbb-checkbox-checked);
-}
-
-/* Indeterminate: the --sbb-checkbox-indeterminate token is a self-contained data-URI (inlined from
-   images/checkbox/indeterminate.svg at build, issue #528), so it resolves even where this stylesheet
-   is inlined into the widget — same single source as the checked/unchecked above. */
-.polarion-PdfExporter-BulkExportWidget input[type="checkbox"]:indeterminate {
-    background-image: var(--sbb-checkbox-indeterminate);
 }
 
 .property-wrapper .more-info {
@@ -514,46 +439,9 @@
     display: none;
 }
 
-.polarion-PdfExporter-BulkExportWidget {
-    margin-bottom: 30px;
-}
-
-.polarion-PdfExporter-BulkExportWidget .header h3 {
-    margin: 0 0 20px;
-}
-
-.polarion-PdfExporter-BulkExportWidget .header p {
-    color: grey;
-}
-
-.polarion-PdfExporter-BulkExportWidget .polarion-TestsExecutionButton-link {
-    display: block;
-}
-
-.polarion-PdfExporter-BulkExportWidget .polarion-TestsExecutionButton-buttons {
-    display: inline-block;
-}
-
-.polarion-PdfExporter-BulkExportWidget .polarion-TestsExecutionButton-buttons-content {
-    min-width: auto;
-}
-
-.polarion-PdfExporter-BulkExportWidget .polarion-TestsExecutionButton-buttons-content-labelCell {
-    padding: 10px;
-}
-
-.polarion-PdfExporter-BulkExportWidget .polarion-TestsExecutionButton-labelTextNew {
-    font-size: 20px;
-}
-
-.polarion-PdfExporter-BulkExportWidget .export-items {
-    display: flex;
-    margin-top: 30px;
-}
-
-.polarion-PdfExporter-BulkExportWidget .polarion-TestsExecutionButton-buttons-defaultCursor .polarion-TestsExecutionButton-labelTextNew {
-    color: gray;
-}
+/* The bulk export widget renders in a shadow root, so its own styling lives with the widget app in
+   ui/src/widget/widget.css. What stays on the page for it is what its shadow root cannot own: the
+   modal styling below, which the export dialogs use in the page body. */
 
 .progress-bar {
     height: 24px;

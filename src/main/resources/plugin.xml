@@ -16,4 +16,14 @@
                 contextRoot="webapp/pdf-exporter-admin">
         </webapp>
     </extension>
+
+    <!-- The React administration app. Serves the Vite bundle and the build-generated help articles;
+         pdf-exporter-admin stays until the last JSP page is converted. -->
+    <extension
+            point="com.polarion.portal.tomcat.webapps">
+        <webapp
+                name="polarion/pdf-exporter-app"
+                contextRoot="webapp/pdf-exporter-app">
+        </webapp>
+    </extension>
 </plugin>
