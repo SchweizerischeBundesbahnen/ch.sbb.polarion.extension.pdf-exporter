@@ -119,9 +119,20 @@
   padding-top: 12px;
 }
 
-/* A settings form is disabled while a configuration is being renamed or created (the fieldset above
-   the editor), and a disabled fieldset otherwise greys nothing - the controls inside carry their own
-   colours. Dim the whole block instead, as the legacy pages did. */
+/* Every settings page wraps its form in a <fieldset> for one reason only: `disabled` on it switches the
+   whole form off in one attribute while a configuration is being renamed or created. It is not meant to
+   look like a fieldset, so the browser's default chrome goes - the 2px groove border, the inline margin
+   and the padding. `min-inline-size` is the other UA default: it pins a fieldset to its content's width,
+   which stops the flex and grid children inside from shrinking. */
+.app fieldset {
+  min-inline-size: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+/* A disabled fieldset greys nothing by itself - the controls inside carry their own colors. Dim the
+   whole block instead, as the legacy pages did. */
 .css-page:disabled {
   opacity: 0.5;
 }
@@ -264,6 +275,151 @@
 .webhooks-disabled {
   font-style: italic;
   color: palevioletred;
+}
+
+/* --- Style Packages ---------------------------------------------------------------------------- */
+
+.style-packages-page:disabled {
+  opacity: 0.5;
+}
+
+/* The two-column arrangement of the JSP page this replaces. The left column is fixed so the right one
+   starts at the same x in every section, and a section that opens a new topic is separated by a rule. */
+.style-packages-page .flex-container {
+  display: flex;
+  column-gap: 20px;
+  flex-wrap: wrap;
+}
+
+.style-packages-page .flex-container.section {
+  border-top: 1px solid #ccc;
+  margin-top: 20px;
+  padding-top: 15px;
+}
+
+.style-packages-page .flex-column {
+  width: 440px;
+}
+
+.style-packages-page .flex-grow {
+  flex-grow: 1;
+}
+
+/* The three rules the JSP page inherited from generic's configurations.css: 120px labels are what line
+   the controls of the two columns up with each other. Not in RSP's bundled CSS, so they live here. */
+.style-packages-page .input-group {
+  margin-bottom: 10px;
+}
+
+.style-packages-page .input-group label {
+  display: inline-block;
+  width: 120px;
+}
+
+/* Deliberately per type, and skipping the dropdown parts, rather than a bare `input`: RSP sizes the
+   color swatch (130px), the checkbox and the searchable dropdown's own trigger and search box, and a
+   shorter selector here would outrank all of them and stretch them to a text field's width. */
+.style-packages-page .input-group input[type='text']:not(.sd-trigger):not(.search-box),
+.style-packages-page .input-group input[type='number'] {
+  width: 284px;
+}
+
+/* A label carrying a checkbox is as wide as its text, not a 120px column head. */
+.style-packages-page .checkbox.input-group label {
+  width: auto;
+}
+
+/* Except these two, which the JSP page held at the column width so the dropdown behind them lines up
+   with the ones below it. The selector is long enough to outrank the rule above. */
+.style-packages-page .checkbox.input-group label.cover-page-label,
+.style-packages-page .checkbox.input-group label.webhooks-label {
+  width: 120px;
+}
+
+/* A row whose label, info icon and field share one line. */
+.style-packages-page .flex-centered {
+  display: flex;
+  align-items: center;
+}
+
+.style-packages-page .flex-centered label {
+  width: auto;
+  margin-right: 4px;
+}
+
+/* Weight and matching query have labels of different lengths but their fields start at the same x, as
+   they did on the JSP page. Both offsets are measured from the end of the info icon. */
+.style-packages-page .weight-input {
+  margin-left: 59px;
+}
+
+.style-packages-page .matching-query-input {
+  margin-left: 8px;
+}
+
+.style-packages-page .more-info {
+  background: var(--sbb-info-icon) no-repeat;
+  display: inline-block;
+  width: 17px;
+  height: 17px;
+  vertical-align: middle;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+/* A field that is switched off keeps its place in the layout instead of collapsing it, so the rows
+   below do not jump as boxes are ticked. It is also disabled, so it stays out of the tab order. */
+.style-packages-page .hidden {
+  visibility: hidden;
+}
+
+/* The value next to its switch, filling the rest of the row. `flex` beats the 284px width above. */
+.style-packages-page .with-value,
+.style-packages-page .work-items-query-group {
+  display: flex;
+  align-items: center;
+}
+
+.style-packages-page .with-value .grows,
+.style-packages-page .work-items-query-group .grows {
+  flex: 1;
+  margin-left: 10px;
+  box-sizing: border-box;
+}
+
+.style-packages-page .work-items-query-group label {
+  white-space: nowrap;
+}
+
+.style-packages-page .render-comments-select,
+.style-packages-page .language-select {
+  margin-left: 10px;
+}
+
+/* The two comment sub-options are one indented row under the switch that reveals them. */
+.style-packages-page .render-comments-options {
+  padding-left: 20px;
+}
+
+.style-packages-page .render-comments-options label {
+  margin-right: 8px;
+}
+
+/* The role picker and its direction stack under their switch rather than beside it: two 152px controls
+   would not fit next to the label. */
+.style-packages-page .roles-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.style-packages-page .roles-select {
+  width: 152px;
+  margin: 4px 0 0 20px;
+}
+
+.style-packages-page .roles-select .searchable-dropdown {
+  width: 100%;
 }
 
 /* --- Bulk PDF Export widget preview (dev harness) ------------------------------------------------ */

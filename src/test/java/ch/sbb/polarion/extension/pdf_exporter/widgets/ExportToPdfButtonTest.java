@@ -27,7 +27,7 @@ class ExportToPdfButtonTest {
         SharedContext sharedContext = mock(SharedContext.class);
 
         // Icon and tags come from the shared AbstractPdfExporterButtonWidget base class
-        assertEquals("/polarion/pdf-exporter-admin/ui/images/app-icon.svg", widget.getIcon(widgetContext));
+        assertEquals("/polarion/pdf-exporter-app/ui/images/app-icon.svg", widget.getIcon(widgetContext));
         assertEquals("Export to PDF Button", widget.getLabel(sharedContext));
         assertTrue(widget.getDetailsHtml(widgetContext).toLowerCase().contains("export"));
 

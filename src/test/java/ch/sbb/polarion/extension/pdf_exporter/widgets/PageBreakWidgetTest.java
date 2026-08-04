@@ -94,7 +94,7 @@ class PageBreakWidgetTest {
         RichPageWidgetContext widgetContext = mock(RichPageWidgetContext.class);
         SharedContext sharedContext = mock(SharedContext.class);
 
-        assertEquals("/polarion/pdf-exporter-admin/ui/images/app-icon.svg", widget.getIcon(widgetContext));
+        assertEquals("/polarion/pdf-exporter-app/ui/images/app-icon.svg", widget.getIcon(widgetContext));
         assertEquals("Page Break", widget.getLabel(sharedContext));
         assertTrue(widget.getDetailsHtml(widgetContext).toLowerCase().contains("breaks the page"));
 
