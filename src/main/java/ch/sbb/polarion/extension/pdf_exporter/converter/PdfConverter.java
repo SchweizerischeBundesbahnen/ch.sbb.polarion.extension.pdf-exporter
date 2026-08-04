@@ -8,6 +8,7 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.ExportMetaInfoCallback;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.WorkItemRefData;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.DocumentType;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.DocumentConversionParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.MergeJobStartParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.DocumentData;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.css.CssModel;
@@ -107,7 +108,7 @@ public class PdfConverter {
         bulkProcessingConnector = new BulkProcessingServiceConnector();
     }
 
-    public byte[] convertMergedToPdf(@NotNull List<ExportParams> documentExportParams) {
+    public BulkProcessingConnector.MergeResult convertMergedToPdf(@NotNull List<ExportParams> documentExportParams) {
         PdfGenerationLog generationLog = new PdfGenerationLog();
         generationLog.log("Starting merged PDF generation for " + documentExportParams.size() + " documents");
 
@@ -115,6 +116,11 @@ public class PdfConverter {
             List<BulkProcessingConnector.MergeDocumentData> preparedDocuments = new ArrayList<>();
 
             for (ExportParams exportParams : documentExportParams) {
+                // Stop early if the job was cancelled (interrupted) - document preparation is the slow,
+                // Polarion-side part of the pipeline and must react to cancellation promptly
+                if (Thread.currentThread().isInterrupted()) {
+                    throw new IllegalStateException("Merge export was cancelled");
+                }
                 // Full pipeline — same as convertToPdf
                 if (exportParams.isAutoSelectStylePackage()) {
                     StylePackageModel mostSuitableStylePackageModel = pdfExporterPolarionService.getMostSuitableStylePackageModel(DocIdentifier.of(exportParams));
@@ -135,26 +141,34 @@ public class PdfConverter {
                     coverPageHtml = coverPageProcessor.composeTitleHtml(documentData, exportParams, preservedPlaceholders);
                 }
 
-                preparedDocuments.add(new BulkProcessingConnector.MergeDocumentData(htmlContent, coverPageHtml));
+                DocumentConversionParams docParams = DocumentConversionParams.builder()
+                        .presentationalHints(exportParams.isFollowHTMLPresentationalHints())
+                        .pdfVariant(exportParams.getPdfVariant() != null ? exportParams.getPdfVariant().toWeasyPrintParameter() : null)
+                        .scaleFactor(exportParams.getImageDensity() != null ? String.valueOf(exportParams.getImageDensity().getScale()) : null)
+                        .customMetadata(metaTagsPresent(htmlContent))
+                        .fullFonts(exportParams.isFullFonts())
+                        .build();
+
+                preparedDocuments.add(new BulkProcessingConnector.MergeDocumentData(htmlContent, coverPageHtml, docParams));
             }
 
             generationLog.log("All documents prepared, starting merged PDF generation");
 
-            // Build merge params from first document's export settings
             ExportParams firstDoc = documentExportParams.get(0);
             MergeJobStartParams mergeParams = MergeJobStartParams.builder()
-                    .presentationalHints(firstDoc.isFollowHTMLPresentationalHints())
                     .pdfVariant(firstDoc.getPdfVariant() != null ? firstDoc.getPdfVariant().toWeasyPrintParameter() : null)
-                    .fullFonts(firstDoc.isFullFonts())
                     .fileName(firstDoc.getFileName() != null ? firstDoc.getFileName() : "merged-document.pdf")
                     .build();
 
-            byte[] pdfBytes = bulkProcessingConnector.convertMergedToPdf(preparedDocuments, mergeParams);
+            BulkProcessingConnector.MergeResult mergeResult = bulkProcessingConnector.convertMergedToPdf(preparedDocuments, mergeParams);
 
             generationLog.finish();
             logger.info("Merged PDF has been generated within " + generationLog.getTotalDurationMs() + " milliseconds");
+            if (mergeResult.failedDocumentCount() > 0) {
+                logger.warn(String.format("%d document(s) failed to convert during merge", mergeResult.failedDocumentCount()));
+            }
 
-            return pdfBytes;
+            return mergeResult;
         } catch (Exception e) {
             generationLog.finish();
             generationLog.log("Merged PDF generation failed: " + e.getMessage());

@@ -274,12 +274,26 @@ export default class ExportPopup {
                 url: `/polarion/pdf-exporter/rest/internal/bulk-processing/status`,
                 responseType: "json",
             }).then(({response}) => {
-                const mergeElements = this.ctx.querySelectorAll(".visible-for-BULK");
-                mergeElements.forEach(el => el.style.display = response.available ? "flex" : "none");
+                const checkbox = this.ctx.querySelector(".merge-checkbox-wrapper");
+                if (checkbox) {
+                    checkbox.style.display = response.available ? "flex" : "none";
+                }
+                if (!response.available) {
+                    const filename = this.ctx.querySelector(".merge-filename-wrapper");
+                    if (filename) {
+                        filename.style.display = "none";
+                    }
+                }
                 resolve();
             }).catch(() => {
-                const mergeElements = this.ctx.querySelectorAll(".visible-for-BULK");
-                mergeElements.forEach(el => el.style.display = "none");
+                const checkbox = this.ctx.querySelector(".merge-checkbox-wrapper");
+                if (checkbox) {
+                    checkbox.style.display = "none";
+                }
+                const filename = this.ctx.querySelector(".merge-filename-wrapper");
+                if (filename) {
+                    filename.style.display = "none";
+                }
                 resolve();
             });
         });

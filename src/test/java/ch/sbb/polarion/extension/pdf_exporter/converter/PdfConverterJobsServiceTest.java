@@ -304,7 +304,8 @@ class PdfConverterJobsServiceTest {
                 ExportParams.builder().projectId("proj1").build(),
                 ExportParams.builder().projectId("proj2").build());
 
-        when(pdfConverter.convertMergedToPdf(documents)).thenReturn("merged pdf".getBytes());
+        when(pdfConverter.convertMergedToPdf(documents)).thenReturn(
+                new ch.sbb.polarion.extension.pdf_exporter.weasyprint.BulkProcessingConnector.MergeResult("merged pdf".getBytes(), 0));
 
         String jobId = pdfConverterJobsService.startJob(documents, 60);
 
@@ -347,11 +348,52 @@ class PdfConverterJobsServiceTest {
         ExportParams firstDoc = ExportParams.builder().projectId("first").build();
         ExportParams secondDoc = ExportParams.builder().projectId("second").build();
 
-        lenient().when(pdfConverter.convertMergedToPdf(any())).thenReturn("pdf".getBytes());
+        lenient().when(pdfConverter.convertMergedToPdf(any())).thenReturn(
+                new ch.sbb.polarion.extension.pdf_exporter.weasyprint.BulkProcessingConnector.MergeResult("pdf".getBytes(), 0));
 
         String jobId = pdfConverterJobsService.startJob(List.of(firstDoc, secondDoc), 60);
         waitToFinishJob(jobId);
         assertThat(pdfConverterJobsService.getJobParams(jobId)).isEqualTo(firstDoc);
+    }
+
+    @Test
+    @SuppressWarnings({"unchecked", "java:S2925"})
+    void shouldCancelRunningJob() {
+        ExportParams exportParams = ExportParams.builder().build();
+        lenient().when(securityService.doAsUser(any(), any(PrivilegedAction.class))).thenAnswer(p -> {
+            Thread.sleep(TimeUnit.MINUTES.toMillis(10));
+            return null;
+        });
+        String jobId = pdfConverterJobsService.startJob(exportParams, 60);
+
+        // Wait until the worker is actually running before cancelling
+        await().atMost(Durations.FIVE_SECONDS).untilAsserted(() ->
+                assertThat(pdfConverterJobsService.getJobState(jobId).isDone()).isFalse());
+
+        pdfConverterJobsService.cancelJob(jobId);
+
+        await().atMost(Durations.FIVE_SECONDS).untilAsserted(() -> {
+            JobState jobState = pdfConverterJobsService.getJobState(jobId);
+            assertThat(jobState.isDone()).isTrue();
+            assertThat(jobState.isCompletedExceptionally() || jobState.isCancelled()).isTrue();
+            assertThat(jobState.errorMessage()).contains("Cancelled by user");
+        });
+    }
+
+    @Test
+    void shouldIgnoreCancelForFinishedJob() {
+        prepareSecurityServiceSubject(subject);
+        ExportParams exportParams = ExportParams.builder().build();
+        when(pdfConverter.convertToPdf(exportParams, null)).thenReturn("test pdf".getBytes());
+
+        String jobId = pdfConverterJobsService.startJob(exportParams, 60);
+        waitToFinishJob(jobId);
+
+        // Cancelling a finished job is a no-op and must not affect its successful result
+        assertDoesNotThrow(() -> pdfConverterJobsService.cancelJob(jobId));
+        JobState jobState = pdfConverterJobsService.getJobState(jobId);
+        assertThat(jobState.isCompletedExceptionally()).isFalse();
+        assertThat(pdfConverterJobsService.getJobResult(jobId)).isNotEmpty();
     }
 
     private void waitToFinishJob(String jobId1) {

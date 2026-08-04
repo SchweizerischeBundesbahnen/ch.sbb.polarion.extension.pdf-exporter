@@ -1,5 +1,6 @@
 package ch.sbb.polarion.extension.pdf_exporter.weasyprint;
 
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.DocumentConversionParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.MergeJobStartParams;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -12,7 +13,9 @@ import java.util.List;
  */
 public interface BulkProcessingConnector {
 
-    byte[] convertMergedToPdf(@NotNull List<MergeDocumentData> documents, @NotNull MergeJobStartParams params);
+    MergeResult convertMergedToPdf(@NotNull List<MergeDocumentData> documents, @NotNull MergeJobStartParams params);
 
-    record MergeDocumentData(@NotNull String htmlContent, @Nullable String coverPageHtml) {}
+    record MergeDocumentData(@NotNull String htmlContent, @Nullable String coverPageHtml, @NotNull DocumentConversionParams params) {}
+
+    record MergeResult(byte[] pdfBytes, int failedDocumentCount) {}
 }

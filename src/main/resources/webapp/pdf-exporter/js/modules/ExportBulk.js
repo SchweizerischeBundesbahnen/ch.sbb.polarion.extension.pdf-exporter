@@ -14,6 +14,7 @@ export default class ExportBulk {
     errors = false;
     mergeIntoSinglePdf = false;
     mergeFileName = null;
+    mergeJobUrl = null;
 
     constructor(rootComponentSelector, exportPages) {
         this.ctx = new ExportContext({rootComponentSelector: rootComponentSelector, exportPages: exportPages});
@@ -95,6 +96,7 @@ export default class ExportBulk {
         this.exportParams = exportParams;
         this.mergeIntoSinglePdf = mergeIntoSinglePdf;
         this.mergeFileName = mergeFileName || "merged-document.pdf";
+        this.mergeJobUrl = null;
         this.itemsCount = 0;
         this.finishedCount = 0;
         this.errors = false;
@@ -202,7 +204,14 @@ export default class ExportBulk {
     }
 
     stopBulkExport() {
+        // Set the interrupted state first so the in-flight polling loop stops and won't download/finish
         this.updateState(BULK_EXPORT_INTERRUPTED);
+        // For a merge export the whole thing is a single backend job - actively cancel it so the server
+        // stops converting and cleans up the remote merge job (the job URL may still be null if the merge
+        // request hasn't returned yet; in that case asyncConvertMergePdf cancels it as soon as it starts)
+        if (this.mergeIntoSinglePdf && this.mergeJobUrl) {
+            this.ctx.cancelJob(this.mergeJobUrl);
+        }
     }
 
     updateState(state) {
@@ -223,8 +232,13 @@ export default class ExportBulk {
             progressBar.style.display = "none";
             resultSpan.style.display = "block";
             if (this.state === BULK_EXPORT_INTERRUPTED) {
-                this.popupCtx.querySelectorAll(".export-item.paused").forEach(item => {
+                // For merge export the items are already 'in-progress' (single backend job), so mark those too
+                const interruptedSelector = this.mergeIntoSinglePdf
+                    ? ".export-item.paused, .export-item.in-progress"
+                    : ".export-item.paused";
+                this.popupCtx.querySelectorAll(interruptedSelector).forEach(item => {
                     item.classList.remove("paused");
+                    item.classList.remove("in-progress");
                     item.classList.add("interrupted");
                 });
 
@@ -413,6 +427,9 @@ export default class ExportBulk {
             this.ctx.downloadBlob(result.response, this.mergeFileName);
             this.updateState(BULK_EXPORT_FINISHED);
         }, errorResponse => {
+            if (this.state === BULK_EXPORT_INTERRUPTED) {
+                return;
+            }
             this.errors = true;
             this.popupCtx.querySelectorAll(".export-item.in-progress").forEach(item => {
                 item.classList.remove("in-progress");
@@ -434,6 +451,10 @@ export default class ExportBulk {
                 }
             });
             this.updateState(BULK_EXPORT_FINISHED);
+        }, {
+            isInterrupted: () => this.state === BULK_EXPORT_INTERRUPTED,
+            // Store the job URL so a later Stop can cancel it; the pre-URL race is handled inside asyncConvertMergePdf
+            onJobStarted: jobUrl => { this.mergeJobUrl = jobUrl; }
         });
     }
 

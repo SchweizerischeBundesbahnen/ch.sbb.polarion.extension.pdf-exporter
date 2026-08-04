@@ -297,7 +297,7 @@
         </div>
     </div>
 
-    <div class='property-wrapper hidden visible-for-BULK'>
+    <div class='property-wrapper hidden visible-for-BULK merge-checkbox-wrapper'>
         <label for='popup-merge-into-single-pdf'>
             <input id='popup-merge-into-single-pdf' type='checkbox'
                    onchange='document.getElementById("popup-merge-filename-container").style.display = this.checked ? "flex" : "none"'/>
@@ -305,7 +305,7 @@
         </label>
     </div>
 
-    <div class='property-wrapper hidden visible-for-BULK' id='popup-merge-filename-container' style='display: none'>
+    <div class='property-wrapper hidden visible-for-BULK merge-filename-wrapper' id='popup-merge-filename-container' style='display: none'>
         <label for='popup-merge-filename' class="fixed-width w-1">Merged file name:</label>
         <input id='popup-merge-filename' type='text' value='merged-document.pdf' style="width: 300px" />
     </div>

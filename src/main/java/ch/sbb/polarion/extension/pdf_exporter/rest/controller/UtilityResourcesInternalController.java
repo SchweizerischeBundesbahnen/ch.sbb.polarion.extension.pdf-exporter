@@ -146,10 +146,13 @@ public class UtilityResourcesInternalController {
     @SuppressWarnings("java:S2095") // Client is closed in finally block
     public BulkProcessingServiceStatus getBulkProcessingServiceStatus() {
         String bulkProcessingServiceUrl = PdfExporterExtensionConfiguration.getInstance().getBulkProcessingService();
+        if (bulkProcessingServiceUrl == null || bulkProcessingServiceUrl.isBlank()) {
+            return BulkProcessingServiceStatus.builder().available(false).build();
+        }
         Client client = null;
         try {
             client = ClientBuilder.newClient();
-            Response response = client.target(bulkProcessingServiceUrl + "/health").request(MediaType.APPLICATION_JSON).get();
+            Response response = client.target(bulkProcessingServiceUrl + "/ready").request(MediaType.APPLICATION_JSON).get();
             return BulkProcessingServiceStatus.builder().available(response.getStatus() == Response.Status.OK.getStatusCode()).build();
         } catch (Exception e) {
             return BulkProcessingServiceStatus.builder().available(false).build();

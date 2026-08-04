@@ -69,6 +69,7 @@ public class ConverterInternalController {
     private static final String MISSING_WORKITEM_ATTACHMENTS_COUNT = "Missing-WorkItem-Attachments-Count";
     private static final String WORKITEM_IDS_WITH_MISSING_ATTACHMENT = "WorkItem-IDs-With-Missing-Attachment";
     private static final String PDF_VARIANT_COMPLIANT = "PDF-Variant-Compliant";
+    private static final String FAILED_DOCUMENT_COUNT = "X-Documents-Failed";
 
     private final PdfConverter pdfConverter;
     private final PdfWidthValidationService pdfWidthValidationService;
@@ -269,6 +270,22 @@ public class ConverterInternalController {
         return responseBuilder.entity(jobDetails).build();
     }
 
+    @POST
+    @Path("/convert/jobs/{id}/cancel")
+    @Operation(summary = "Cancels a running PDF conversion job",
+            responses = {
+                    @ApiResponse(responseCode = "204",
+                            description = "Cancellation request accepted"
+                    ),
+                    @ApiResponse(responseCode = "404",
+                            description = "Conversion job id is unknown"
+                    )
+            })
+    public Response cancelPdfConverterJob(@PathParam("id") String jobId) {
+        pdfConverterJobService.cancelJob(jobId);
+        return Response.noContent().build();
+    }
+
     @GET
     @Path("/convert/jobs/{id}/result")
     @Produces("application/pdf")
@@ -340,6 +357,12 @@ public class ConverterInternalController {
                     workItemIDsWithMissingAttachment
             );
         }
+
+        int failedDocCount = pdfConverterJobService.getJobContext(jobId).failedDocumentCount()[0];
+        if (failedDocCount > 0) {
+            responseBuilder.header(FAILED_DOCUMENT_COUNT, failedDocCount);
+        }
+
         return responseBuilder.build();
     }
 

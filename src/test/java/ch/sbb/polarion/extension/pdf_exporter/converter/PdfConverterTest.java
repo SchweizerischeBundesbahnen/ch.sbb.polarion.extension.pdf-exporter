@@ -528,15 +528,15 @@ class PdfConverterTest {
         when(htmlProcessor.internalizeLinks(anyString())).thenAnswer(a -> a.getArgument(0));
         when(htmlProcessor.replaceResourcesAsBase64Encoded(anyString())).thenAnswer(a -> a.getArgument(0));
 
-        when(bulkProcessingConnector.convertMergedToPdf(anyList(), any(MergeJobStartParams.class))).thenReturn("merged pdf".getBytes());
+        when(bulkProcessingConnector.convertMergedToPdf(anyList(), any(MergeJobStartParams.class))).thenReturn(new BulkProcessingConnector.MergeResult("merged pdf".getBytes(), 0));
 
         PdfConverter pdfConverter = new PdfConverter(pdfExporterPolarionService, headerFooterSettings, cssSettings, placeholderProcessor, velocityEvaluator, coverPageProcessor, weasyPrintServiceConnector, htmlProcessor, pdfTemplateProcessor, bulkProcessingConnector);
 
         // Act
-        byte[] result = pdfConverter.convertMergedToPdf(List.of(exportParams1, exportParams2));
+        BulkProcessingConnector.MergeResult result = pdfConverter.convertMergedToPdf(List.of(exportParams1, exportParams2));
 
         // Assert
-        assertThat(result).isEqualTo("merged pdf".getBytes());
+        assertThat(result.pdfBytes()).isEqualTo("merged pdf".getBytes());
 
         @SuppressWarnings("unchecked")
         ArgumentCaptor<List<BulkProcessingConnector.MergeDocumentData>> docsCaptor = ArgumentCaptor.forClass(List.class);
@@ -579,15 +579,15 @@ class PdfConverterTest {
         when(htmlProcessor.replaceResourcesAsBase64Encoded(anyString())).thenAnswer(a -> a.getArgument(0));
 
         when(coverPageProcessor.composeTitleHtml(eq(documentData), eq(exportParams), any(PlaceholderValues.class))).thenReturn("<cover>title</cover>");
-        when(bulkProcessingConnector.convertMergedToPdf(anyList(), any(MergeJobStartParams.class))).thenReturn("merged pdf".getBytes());
+        when(bulkProcessingConnector.convertMergedToPdf(anyList(), any(MergeJobStartParams.class))).thenReturn(new BulkProcessingConnector.MergeResult("merged pdf".getBytes(), 0));
 
         PdfConverter pdfConverter = new PdfConverter(pdfExporterPolarionService, headerFooterSettings, cssSettings, placeholderProcessor, velocityEvaluator, coverPageProcessor, weasyPrintServiceConnector, htmlProcessor, pdfTemplateProcessor, bulkProcessingConnector);
 
         // Act
-        byte[] result = pdfConverter.convertMergedToPdf(List.of(exportParams));
+        BulkProcessingConnector.MergeResult result = pdfConverter.convertMergedToPdf(List.of(exportParams));
 
         // Assert
-        assertThat(result).isEqualTo("merged pdf".getBytes());
+        assertThat(result.pdfBytes()).isEqualTo("merged pdf".getBytes());
 
         @SuppressWarnings("unchecked")
         ArgumentCaptor<List<BulkProcessingConnector.MergeDocumentData>> docsCaptor = ArgumentCaptor.forClass(List.class);

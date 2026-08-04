@@ -1,7 +1,9 @@
 package ch.sbb.polarion.extension.pdf_exporter.weasyprint.service;
 
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.DocumentConversionParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.MergeJobStartParams;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.BulkProcessingConnector.MergeDocumentData;
+import ch.sbb.polarion.extension.pdf_exporter.weasyprint.BulkProcessingConnector.MergeResult;
 import jakarta.ws.rs.client.Client;
 import jakarta.ws.rs.client.ClientBuilder;
 import jakarta.ws.rs.client.Entity;
@@ -18,10 +20,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.ByteArrayInputStream;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
@@ -35,9 +39,12 @@ class BulkProcessingServiceConnectorTest {
 
     private static final String BULK_SERVICE_URL = "http://localhost:9070";
     private static final String WEASYPRINT_URL = "http://localhost:9080";
+    private static final DocumentConversionParams DEFAULT_PARAMS = DocumentConversionParams.builder().build();
 
     @Mock
     private Client client;
+    @Mock
+    private ClientBuilder clientBuilderInstance;
     @Mock
     private WebTarget webTarget;
     @Mock
@@ -49,8 +56,15 @@ class BulkProcessingServiceConnectorTest {
     @BeforeEach
     void setUp() {
         clientBuilderMockedStatic = mockStatic(ClientBuilder.class);
+        // Mock both newClient() and newBuilder() paths
         clientBuilderMockedStatic.when(ClientBuilder::newClient).thenReturn(client);
+        clientBuilderMockedStatic.when(ClientBuilder::newBuilder).thenReturn(clientBuilderInstance);
+        lenient().when(clientBuilderInstance.connectTimeout(anyLong(), any(TimeUnit.class))).thenReturn(clientBuilderInstance);
+        lenient().when(clientBuilderInstance.readTimeout(anyLong(), any(TimeUnit.class))).thenReturn(clientBuilderInstance);
+        lenient().when(clientBuilderInstance.build()).thenReturn(client);
+
         lenient().when(client.target(anyString())).thenReturn(webTarget);
+        lenient().when(webTarget.request()).thenReturn(invocationBuilder);
         lenient().when(webTarget.request(anyString())).thenReturn(invocationBuilder);
         lenient().when(webTarget.request(any(jakarta.ws.rs.core.MediaType.class))).thenReturn(invocationBuilder);
         lenient().when(webTarget.queryParam(anyString(), any())).thenReturn(webTarget);
@@ -65,11 +79,8 @@ class BulkProcessingServiceConnectorTest {
 
     @Test
     void shouldConvertMergedToPdfWithSingleDocument() {
-        // Start job → returns job ID
-        Response startResponse = mockResponse(201, "\"test-job-id\"");
-        // Add document → accepted
+        Response startResponse = mockResponse(201, "{\"jobId\":\"test-job-id\"}");
         Response addResponse = mockResponse(202, "{\"status\":\"accepted\"}");
-        // Finish job → returns PDF bytes
         Response finishResponse = mockPdfResponse(200, "merged-pdf-content".getBytes());
 
         when(invocationBuilder.post(any(Entity.class)))
@@ -78,61 +89,51 @@ class BulkProcessingServiceConnectorTest {
                 .thenReturn(finishResponse);
 
         MergeJobStartParams params = MergeJobStartParams.builder().fileName("test.pdf").build();
-        List<MergeDocumentData> documents = List.of(new MergeDocumentData("<html>doc1</html>", null));
+        MergeResult result = connector.convertMergedToPdf(List.of(doc("<html>doc1</html>", null)), params);
 
-        byte[] result = connector.convertMergedToPdf(documents, params);
-
-        assertThat(result).isEqualTo("merged-pdf-content".getBytes());
-        assertThat(params.getWeasyPrintServiceUrl()).isEqualTo(WEASYPRINT_URL);
+        assertThat(result.pdfBytes()).isEqualTo("merged-pdf-content".getBytes());
         verify(invocationBuilder, times(3)).post(any(Entity.class));
     }
 
     @Test
     void shouldConvertMergedToPdfWithCoverPage() {
-        Response startResponse = mockResponse(201, "\"job-with-cover\"");
-        Response addWithCoverResponse = mockResponse(202, "{\"status\":\"accepted\"}");
+        Response startResponse = mockResponse(201, "{\"jobId\":\"job-with-cover\"}");
+        Response addResponse = mockResponse(202, "{\"status\":\"accepted\"}");
         Response finishResponse = mockPdfResponse(200, "pdf-with-cover".getBytes());
 
         when(invocationBuilder.post(any(Entity.class)))
                 .thenReturn(startResponse)
-                .thenReturn(addWithCoverResponse)
+                .thenReturn(addResponse)
                 .thenReturn(finishResponse);
 
         MergeJobStartParams params = MergeJobStartParams.builder().build();
-        List<MergeDocumentData> documents = List.of(
-                new MergeDocumentData("<html>content</html>", "<html>cover</html>"));
+        MergeResult result = connector.convertMergedToPdf(List.of(doc("<html>content</html>", "<html>cover</html>")), params);
 
-        byte[] result = connector.convertMergedToPdf(documents, params);
-
-        assertThat(result).isEqualTo("pdf-with-cover".getBytes());
-        verify(client, times(3)).target(anyString());
+        assertThat(result.pdfBytes()).isEqualTo("pdf-with-cover".getBytes());
     }
 
     @Test
     void shouldConvertMergedToPdfWithMultipleDocuments() {
-        Response startResponse = mockResponse(201, "\"multi-job\"");
+        Response startResponse = mockResponse(201, "{\"jobId\":\"multi-job\"}");
         Response addResponse1 = mockResponse(200, "{\"status\":\"accepted\"}");
         Response addResponse2 = mockResponse(202, "{\"status\":\"accepted\"}");
-        Response addWithCoverResponse = mockResponse(200, "{\"status\":\"accepted\"}");
+        Response addResponse3 = mockResponse(200, "{\"status\":\"accepted\"}");
         Response finishResponse = mockPdfResponse(200, "multi-pdf".getBytes());
 
         when(invocationBuilder.post(any(Entity.class)))
                 .thenReturn(startResponse)
                 .thenReturn(addResponse1)
                 .thenReturn(addResponse2)
-                .thenReturn(addWithCoverResponse)
+                .thenReturn(addResponse3)
                 .thenReturn(finishResponse);
 
         MergeJobStartParams params = MergeJobStartParams.builder().build();
-        List<MergeDocumentData> documents = List.of(
-                new MergeDocumentData("<html>doc1</html>", null),
-                new MergeDocumentData("<html>doc2</html>", null),
-                new MergeDocumentData("<html>doc3</html>", "<html>cover3</html>"));
+        MergeResult result = connector.convertMergedToPdf(List.of(
+                doc("<html>doc1</html>", null),
+                doc("<html>doc2</html>", null),
+                doc("<html>doc3</html>", "<html>cover3</html>")), params);
 
-        byte[] result = connector.convertMergedToPdf(documents, params);
-
-        assertThat(result).isEqualTo("multi-pdf".getBytes());
-        // start + 3 adds + finish = 5 posts
+        assertThat(result.pdfBytes()).isEqualTo("multi-pdf".getBytes());
         verify(invocationBuilder, times(5)).post(any(Entity.class));
     }
 
@@ -142,50 +143,36 @@ class BulkProcessingServiceConnectorTest {
         when(invocationBuilder.post(any(Entity.class))).thenReturn(errorResponse);
 
         MergeJobStartParams params = MergeJobStartParams.builder().build();
-        List<MergeDocumentData> documents = List.of(new MergeDocumentData("<html></html>", null));
 
-        assertThatThrownBy(() -> connector.convertMergedToPdf(documents, params))
+        assertThatThrownBy(() -> connector.convertMergedToPdf(List.of(doc("<html></html>", null)), params))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("Failed to start merge job");
     }
 
     @Test
-    void shouldThrowWhenAddDocumentFails() {
-        Response startResponse = mockResponse(201, "\"job-id\"");
-        Response addErrorResponse = mockResponse(500, "Conversion failed");
+    void shouldContinueOnAddFailureAndReportCount() {
+        Response startResponse = mockResponse(201, "{\"jobId\":\"job-id\"}");
+        Response addFailResponse = mockResponse(500, "Conversion failed");
+        Response addOkResponse = mockResponse(200, "{\"status\":\"accepted\"}");
+        Response finishResponse = mockPdfResponse(200, "partial-pdf".getBytes(), "1");
 
         when(invocationBuilder.post(any(Entity.class)))
                 .thenReturn(startResponse)
-                .thenReturn(addErrorResponse);
+                .thenReturn(addFailResponse)
+                .thenReturn(addOkResponse)
+                .thenReturn(finishResponse);
 
         MergeJobStartParams params = MergeJobStartParams.builder().build();
-        List<MergeDocumentData> documents = List.of(new MergeDocumentData("<html></html>", null));
+        MergeResult result = connector.convertMergedToPdf(List.of(
+                doc("<html>fail</html>", null),
+                doc("<html>ok</html>", null)), params);
 
-        assertThatThrownBy(() -> connector.convertMergedToPdf(documents, params))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("Failed to add document to merge job");
-    }
-
-    @Test
-    void shouldThrowWhenAddDocumentWithCoverFails() {
-        Response startResponse = mockResponse(201, "\"job-id\"");
-        Response addErrorResponse = mockResponse(500, "Cover conversion failed");
-
-        when(invocationBuilder.post(any(Entity.class)))
-                .thenReturn(startResponse)
-                .thenReturn(addErrorResponse);
-
-        MergeJobStartParams params = MergeJobStartParams.builder().build();
-        List<MergeDocumentData> documents = List.of(new MergeDocumentData("<html></html>", "<cover/>"));
-
-        assertThatThrownBy(() -> connector.convertMergedToPdf(documents, params))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("Failed to add document with cover page to merge job");
+        assertThat(result.failedDocumentCount()).isEqualTo(1);
     }
 
     @Test
     void shouldThrowWhenFinishMergeJobFails() {
-        Response startResponse = mockResponse(201, "\"job-id\"");
+        Response startResponse = mockResponse(201, "{\"jobId\":\"job-id\"}");
         Response addResponse = mockResponse(200, "ok");
         Response finishErrorResponse = mockResponse(500, "Merge failed");
 
@@ -194,44 +181,76 @@ class BulkProcessingServiceConnectorTest {
                 .thenReturn(addResponse)
                 .thenReturn(finishErrorResponse);
 
-        MergeJobStartParams params = MergeJobStartParams.builder().build();
-        List<MergeDocumentData> documents = List.of(new MergeDocumentData("<html></html>", null));
+        Response deleteResponse = mockResponse(204, "");
+        when(invocationBuilder.delete()).thenReturn(deleteResponse);
 
-        assertThatThrownBy(() -> connector.convertMergedToPdf(documents, params))
+        MergeJobStartParams params = MergeJobStartParams.builder().build();
+
+        assertThatThrownBy(() -> connector.convertMergedToPdf(List.of(doc("<html></html>", null)), params))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("Failed to finish merge job");
     }
 
     @Test
-    void shouldSetWeasyPrintServiceUrlOnParams() {
-        Response startResponse = mockResponse(201, "\"job-id\"");
-        Response addResponse = mockResponse(200, "ok");
-        Response finishResponse = mockPdfResponse(200, "pdf".getBytes());
+    void shouldAbortMergeWhenThreadInterrupted() {
+        Response startResponse = mockResponse(201, "{\"jobId\":\"interrupted-job\"}");
+        when(invocationBuilder.post(any(Entity.class))).thenReturn(startResponse);
+
+        Response deleteResponse = mockResponse(204, "");
+        when(invocationBuilder.delete()).thenReturn(deleteResponse);
+
+        Thread.currentThread().interrupt();
+
+        MergeJobStartParams params = MergeJobStartParams.builder().build();
+
+        assertThatThrownBy(() -> connector.convertMergedToPdf(
+                List.of(doc("<html>doc1</html>", null), doc("<html>doc2</html>", null)), params))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("was cancelled");
+
+        Thread.interrupted();
+    }
+
+    @Test
+    void shouldDeleteJobOnFailure() {
+        Response startResponse = mockResponse(201, "{\"jobId\":\"fail-job\"}");
+        Response finishErrorResponse = mockResponse(500, "Merge failed");
 
         when(invocationBuilder.post(any(Entity.class)))
                 .thenReturn(startResponse)
-                .thenReturn(addResponse)
-                .thenReturn(finishResponse);
+                .thenReturn(finishErrorResponse);
+
+        Response deleteResponse = mockResponse(204, "");
+        when(invocationBuilder.delete()).thenReturn(deleteResponse);
 
         MergeJobStartParams params = MergeJobStartParams.builder().build();
-        assertThat(params.getWeasyPrintServiceUrl()).isNull();
 
-        connector.convertMergedToPdf(List.of(new MergeDocumentData("<html/>", null)), params);
+        assertThatThrownBy(() -> connector.convertMergedToPdf(List.of(doc("<html></html>", null)), params))
+                .isInstanceOf(IllegalStateException.class);
 
-        assertThat(params.getWeasyPrintServiceUrl()).isEqualTo(WEASYPRINT_URL);
+        verify(invocationBuilder).delete();
+    }
+
+    private MergeDocumentData doc(String html, String coverPageHtml) {
+        return new MergeDocumentData(html, coverPageHtml, DEFAULT_PARAMS);
     }
 
     private Response mockResponse(int status, String body) {
         Response response = mock(Response.class);
-        when(response.getStatus()).thenReturn(status);
+        lenient().when(response.getStatus()).thenReturn(status);
         lenient().when(response.readEntity(String.class)).thenReturn(body);
         return response;
     }
 
     private Response mockPdfResponse(int status, byte[] body) {
+        return mockPdfResponse(status, body, null);
+    }
+
+    private Response mockPdfResponse(int status, byte[] body, String failedCount) {
         Response response = mock(Response.class);
-        when(response.getStatus()).thenReturn(status);
-        when(response.readEntity(java.io.InputStream.class)).thenReturn(new ByteArrayInputStream(body));
+        lenient().when(response.getStatus()).thenReturn(status);
+        lenient().when(response.readEntity(java.io.InputStream.class)).thenReturn(new ByteArrayInputStream(body));
+        lenient().when(response.getHeaderString("X-Documents-Failed")).thenReturn(failedCount);
         return response;
     }
 }

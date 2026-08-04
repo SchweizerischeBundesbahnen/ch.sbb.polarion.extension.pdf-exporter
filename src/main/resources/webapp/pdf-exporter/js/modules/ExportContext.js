@@ -208,22 +208,36 @@ export default class ExportContext extends ExtensionContext {
         });
     }
 
-    async pullAndGetResultPdf(url, successCallback, errorCallback) {
+    async pullAndGetResultPdf(url, successCallback, errorCallback, isInterrupted = () => false) {
+        if (isInterrupted()) {
+            return;
+        }
         await new Promise(resolve => setTimeout(resolve, ExportContext.PULL_INTERVAL));
+        if (isInterrupted()) {
+            return;
+        }
         this.callAsync({
             method: "GET",
             url: url,
             responseType: "blob",
             onOk: (responseText, request) => {
+                if (isInterrupted()) {
+                    return;
+                }
                 if (request.status === 202) {
                     console.log('Async PDF conversion: still in progress, retrying...');
-                    this.pullAndGetResultPdf(url, successCallback, errorCallback);
+                    this.pullAndGetResultPdf(url, successCallback, errorCallback, isInterrupted);
                 } else if (request.status === 200) {
                     let warningMessage;
                     let count = request.getResponseHeader("Missing-WorkItem-Attachments-Count");
                     if (count > 0) {
                         let attachment = request.getResponseHeader("WorkItem-IDs-With-Missing-Attachment")
                         warningMessage = `${count} image(s) in WI(s) ${attachment} were not exported. They were replaced with an image containing 'This image is not accessible'.`;
+                    }
+                    let failedDocCount = request.getResponseHeader("X-Documents-Failed");
+                    if (failedDocCount && parseInt(failedDocCount) > 0) {
+                        warningMessage = warningMessage ? warningMessage + "<br><br>" : "";
+                        warningMessage += `${failedDocCount} document(s) failed to convert and were excluded from the merged PDF.`;
                     }
                     let pdfVariantCompliant = request.getResponseHeader("PDF-Variant-Compliant");
                     if (pdfVariantCompliant) {
@@ -287,7 +301,9 @@ export default class ExportContext extends ExtensionContext {
         });
     }
 
-    async asyncConvertMergePdf(request, successCallback, errorCallback) {
+    async asyncConvertMergePdf(request, successCallback, errorCallback, options = {}) {
+        const isInterrupted = options.isInterrupted || (() => false);
+        const onJobStarted = options.onJobStarted;
         this.callAsync({
             method: "POST",
             url: "/polarion/pdf-exporter/rest/internal/convert/merge/jobs",
@@ -295,11 +311,32 @@ export default class ExportContext extends ExtensionContext {
             responseType: "blob",
             body: request,
             onOk: (responseText, request) => {
-                this.pullAndGetResultPdf(request.getResponseHeader("Location"), successCallback, errorCallback);
+                const jobUrl = request.getResponseHeader("Location");
+                if (onJobStarted) {
+                    onJobStarted(jobUrl);
+                }
+                // The user may have pressed Stop before the job URL was known - cancel it right away
+                if (isInterrupted()) {
+                    this.cancelJob(jobUrl);
+                    return;
+                }
+                this.pullAndGetResultPdf(jobUrl, successCallback, errorCallback, isInterrupted);
             },
             onError: (status, errorMessage, request) => {
                 errorCallback(request.response);
             }
+        });
+    }
+
+    cancelJob(jobUrl) {
+        if (!jobUrl) {
+            return;
+        }
+        this.callAsync({
+            method: "POST",
+            url: jobUrl + "/cancel",
+            onOk: () => {},
+            onError: (status, errorMessage) => console.warn("Failed to cancel export job:", errorMessage)
         });
     }
 

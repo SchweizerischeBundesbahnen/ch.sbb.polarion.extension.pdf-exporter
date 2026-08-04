@@ -27,8 +27,8 @@ public class PdfExporterExtensionConfiguration extends ExtensionConfiguration {
     public static final String WEASYPRINT_SERVICE_DEFAULT_VALUE = "http://localhost:9080";
 
     public static final String BULK_PROCESSING_SERVICE = "bulk.processing.service";
-    public static final String BULK_PROCESSING_SERVICE_DESCRIPTION = "The URL of the bulk processing service used for merging multiple documents into a single PDF";
-    public static final String BULK_PROCESSING_SERVICE_DEFAULT_VALUE = "http://localhost:9070";
+    public static final String BULK_PROCESSING_SERVICE_DESCRIPTION = "The URL of the bulk processing service used for merging multiple documents into a single PDF. Leave blank to disable bulk export.";
+    public static final String BULK_PROCESSING_SERVICE_DEFAULT_VALUE = "";
 
     public static final String WEBHOOKS_ENABLED = "webhooks.enabled";
     public static final String WEBHOOKS_ENABLED_DESCRIPTION = "Enable <a href='#enabling-webhooks'>webhooks</a>";

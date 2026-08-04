@@ -2,6 +2,7 @@ package ch.sbb.polarion.extension.pdf_exporter.converter;
 
 import ch.sbb.polarion.extension.generic.rest.filter.LogoutFilter;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
+import ch.sbb.polarion.extension.pdf_exporter.weasyprint.BulkProcessingConnector;
 import ch.sbb.polarion.extension.pdf_exporter.util.DebugDataStorage;
 import ch.sbb.polarion.extension.pdf_exporter.util.ExportContext;
 import com.polarion.core.util.StringUtils;
@@ -37,8 +38,10 @@ public class PdfConverterJobsService {
     // Static maps are necessary for per-request scoped InternalController and ApiController. In case of singletons static can be removed
     private static final Map<String, JobDetails> jobs = new ConcurrentHashMap<>();
     private static final Map<String, String> failedJobsReasons = new ConcurrentHashMap<>();
+    private static final java.util.Set<String> cancelledJobIds = ConcurrentHashMap.newKeySet();
     private static final ExecutorService jobExecutor = Executors.newCachedThreadPool();
     private static final String UNKNOWN_JOB_MESSAGE = "Converter Job is unknown: %s";
+    private static final String CANCELLED_BY_USER_MESSAGE = "Cancelled by user";
 
     private final PdfConverter pdfConverter;
     private final ISecurityService securityService;
@@ -60,12 +63,19 @@ public class PdfConverterJobsService {
         ExportParams representativeParams = documentExportParams.isEmpty() ? null : documentExportParams.get(0);
         boolean isMerge = documentExportParams.size() > 1;
 
+        // Store worker thread reference so we can interrupt it on timeout.
+        // CompletableFuture.cancel(true) does NOT interrupt — we handle it manually.
+        final java.util.concurrent.atomic.AtomicReference<Thread> workerThread = new java.util.concurrent.atomic.AtomicReference<>();
+
         CompletableFuture<byte[]> asyncJob = CompletableFuture.supplyAsync(() -> {
+            workerThread.set(Thread.currentThread());
             try {
                 DebugDataStorage.setCurrentJobId(jobId);
                 return securityService.doAsUser(userSubject, (PrivilegedAction<byte[]>) () -> {
                     if (isMerge) {
-                        return pdfConverter.convertMergedToPdf(documentExportParams);
+                        BulkProcessingConnector.MergeResult mergeResult = pdfConverter.convertMergedToPdf(documentExportParams);
+                        jobContext.failedDocumentCount()[0] = mergeResult.failedDocumentCount();
+                        return mergeResult.pdfBytes();
                     } else {
                         return pdfConverter.convertToPdf(representativeParams, null);
                     }
@@ -73,9 +83,11 @@ public class PdfConverterJobsService {
             } catch (Exception e) {
                 String errorMessage = String.format("PDF conversion job '%s' failed with error: %s", jobId, e.getMessage());
                 logger.error(errorMessage, e);
-                failedJobsReasons.put(jobId, StringUtils.getEmptyIfNull(e.getMessage()));
+                // Only store the reason if not already set (e.g. by timeout handler)
+                failedJobsReasons.putIfAbsent(jobId, StringUtils.getEmptyIfNull(e.getMessage()));
                 throw e;
             } finally {
+                workerThread.set(null);
                 DebugDataStorage.clearCurrentJobId();
                 jobContext.workItemIDsWithMissingAttachment.addAll(ExportContext.getWorkItemIDsWithMissingAttachment());
                 ExportContext.clear();
@@ -91,9 +103,19 @@ public class PdfConverterJobsService {
                     String failedReason = StringUtils.getEmptyIfNull(e.getMessage());
                     if (e instanceof TimeoutException) {
                         failedReason = String.format("Timeout after %d min", timeoutInMinutes);
-                        asyncJob.cancel(true);
+                        // Interrupt the actual worker thread (unlike cancel(true) which is a no-op on CompletableFuture)
+                        Thread t = workerThread.get();
+                        if (t != null) {
+                            t.interrupt();
+                        }
+                        failedJobsReasons.put(jobId, failedReason);
+                    } else if (cancelledJobIds.contains(jobId)) {
+                        // User-initiated cancellation: keep the "Cancelled by user" reason set by cancelJob(),
+                        // don't overwrite it with the raw interruption exception message
+                        failedReason = failedJobsReasons.getOrDefault(jobId, CANCELLED_BY_USER_MESSAGE);
+                    } else {
+                        failedJobsReasons.put(jobId, failedReason);
                     }
-                    failedJobsReasons.put(jobId, failedReason);
                     logger.error(String.format("PDF conversion job '%s' failed with error: %s", jobId, failedReason), e);
                     asyncJob.completeExceptionally(e);
                     return null;
@@ -104,9 +126,31 @@ public class PdfConverterJobsService {
                 .user(securityService.getCurrentUser())
                 .exportParams(representativeParams)
                 .startingTime(Instant.now())
+                .workerThread(workerThread)
                 .jobContext(jobContext).build();
         jobs.put(jobId, jobDetails);
         return jobId;
+    }
+
+    /**
+     * Cancels a running job on user request. Unlike {@link CompletableFuture#cancel(boolean)} (which is a no-op on the
+     * worker thread), this interrupts the actual worker thread so long-running conversions (e.g. merge export) can
+     * observe the interruption, stop and clean up remote resources.
+     */
+    public void cancelJob(String jobId) {
+        JobDetails jobDetails = getJobDetails(jobId);
+        if (jobDetails.future().isDone()) {
+            return;
+        }
+        // Mark as user-cancelled and record the reason before interrupting so neither the worker's own error
+        // handling nor the exceptionally stage overwrites it
+        cancelledJobIds.add(jobId);
+        failedJobsReasons.put(jobId, CANCELLED_BY_USER_MESSAGE);
+        Thread workerThread = jobDetails.workerThread() == null ? null : jobDetails.workerThread().get();
+        if (workerThread != null) {
+            workerThread.interrupt();
+        }
+        jobDetails.future().cancel(true);
     }
 
     public JobState getJobState(String jobId) {
@@ -166,6 +210,7 @@ public class PdfConverterJobsService {
     private static void removeKeyFromJobMaps(String id) {
         jobs.remove(id);
         failedJobsReasons.remove(id);
+        cancelledJobIds.remove(id);
         DebugDataStorage.remove(id);
     }
 
@@ -173,6 +218,8 @@ public class PdfConverterJobsService {
     void cancelJobsAndCleanMap() {
         jobs.values().forEach(j -> j.future().cancel(true));
         jobs.clear();
+        failedJobsReasons.clear();
+        cancelledJobIds.clear();
     }
 
     @Builder
@@ -181,12 +228,19 @@ public class PdfConverterJobsService {
             String user,
             ExportParams exportParams,
             Instant startingTime,
+            java.util.concurrent.atomic.AtomicReference<Thread> workerThread,
             JobContext jobContext) {
     }
 
     @Builder
     public record JobContext(
-            List<String> workItemIDsWithMissingAttachment) {
+            List<String> workItemIDsWithMissingAttachment,
+            @Builder.Default
+            int[] failedDocumentCount) {
+
+        public static class JobContextBuilder {
+            private int[] failedDocumentCount = new int[]{0};
+        }
     }
 
     @Builder
