@@ -301,10 +301,12 @@ input[type='checkbox']:indeterminate {
 }
 
 /* `min-height: 0` is what lets a flex item shrink below its content - without it the list keeps its full
-   height and the dialog overflows again. */
+   height and the dialog overflows again. The bottom padding is dropped because the sticky outcome bar below
+   provides the bottom edge; with it, list rows would scroll through a 16px band under that bar. */
 .rsp-modal:has(.bulk-export-progress) .rsp-modal-content {
   overflow: auto;
   min-height: 0;
+  padding-bottom: 0;
 }
 
 .bulk-export-progress .export-item {
@@ -368,13 +370,22 @@ input[type='checkbox']:indeterminate {
   margin-left: 26px;
 }
 
-/* The progress bar and the outcome, which sat in the dialog footer while that footer was this dialog's
-   own markup. RSP's Modal owns its footer, so they are the last thing in the body instead. */
+/* The progress bar and the outcome. They sat in the dialog footer, next to the Stop button, while that
+   footer was this dialog's own markup; RSP's Modal owns its footer, so they are the last thing in the body.
+   Sticky, because that is the difference that matters: a run over two dozen items scrolls the list, and a bar
+   that scrolled away with it would leave the user watching a list with no idea how far along it is.
+   The horizontal bleed spans the content's side padding, so the bar reads as the bottom edge of the list
+   rather than as one more row. */
 .bulk-export-outcome {
+  position: sticky;
+  bottom: 0;
   display: flex;
   align-items: center;
-  margin-top: 12px;
+  margin: 0 -16px;
+  padding: 10px 16px;
   min-height: 24px;
+  background: #fff;
+  border-top: 1px solid #aaa;
 }
 
 .bulk-export-outcome .result {

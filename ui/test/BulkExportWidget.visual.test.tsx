@@ -141,9 +141,9 @@ describe.skipIf(!__PIXEL_REFERENCES__)('Bulk PDF Export widget visual', () => {
    * Starts a bulk run over the whole selection and returns the host plus a hold on each conversion, so a
    * reference can be taken with the run going and again once it is over.
    */
-  async function startRun(): Promise<{ host: HTMLElement; finish: (fail?: boolean) => void }> {
+  async function startRun(items = SAMPLE_ITEMS): Promise<{ host: HTMLElement; finish: (fail?: boolean) => void }> {
     const pending: { resolve: () => void; reject: (error: Error) => void }[] = [];
-    const host = mounted(SAMPLE_ITEMS, {
+    const host = mounted(items, {
       popup: popupDependencies(),
       convert: () =>
         new Promise((resolve, reject) => {
@@ -176,6 +176,38 @@ describe.skipIf(!__PIXEL_REFERENCES__)('Bulk PDF Export widget visual', () => {
     await vi.waitFor(() => expect(host.shadowRoot!.querySelector('.export-item.in-progress')).not.toBeNull());
 
     await dialogSnapshot(host, 'widget-progress-in-progress');
+  });
+
+  it('a bulk export over more items than the dialog can show at once', async () => {
+    // The bar reporting how far along the run is stays put at the bottom of the list, where the legacy
+    // dialog had it in the footer next to Stop. It used to be the last thing in the body, so a run over two
+    // dozen items scrolled it out of sight - leaving the user watching a list of clocks with no progress
+    // reported anywhere.
+    const many = {
+      ...SAMPLE_ITEMS,
+      items: Array.from({ length: 24 }, (_unused, index) => ({
+        ...SAMPLE_ITEMS.items[index % SAMPLE_ITEMS.items.length],
+        id: `Report ${index + 1}`,
+      })),
+      totalCount: 24,
+    };
+    const { host, finish } = await startRun(many);
+    // Nine done, so the bar is past the quarter mark where it starts naming the count
+    for (let index = 0; index < 9; index++) {
+      finish();
+      await vi.waitFor(() => expect(host.shadowRoot!.querySelectorAll('.export-item.finished').length).toBe(index + 1));
+    }
+
+    // Narrow the window first: 24 rows fit whole at the viewport the other references are taken at
+    await page.viewport(900, 700);
+    const root = host.shadowRoot!;
+    const content = root.querySelector('.rsp-modal-content')!;
+    // The list has more to show than it shows, which is the condition this reference is about
+    expect(content.scrollHeight).toBeGreaterThan(content.clientHeight + 1);
+    await userEvent.hover(root.querySelector('.rsp-modal-title')!);
+    await expect(page.elementLocator(root.querySelector<HTMLElement>('.rsp-modal')!)).toMatchScreenshot(
+      'widget-progress-long-run',
+    );
   });
 
   it('a bulk export that finished with a failure among the items', async () => {

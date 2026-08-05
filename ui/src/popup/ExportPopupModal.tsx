@@ -365,11 +365,15 @@ export default function ExportPopupModal({
           </div>
         )}
 
-        <div className="notifications">
-          {warning && <div className="alert alert-warning">{warning}</div>}
-          {error && <div className="alert alert-error">{error}</div>}
-          {success && <div className="alert alert-success">{success}</div>}
-        </div>
+        {/* Only where there is something to say. The legacy markup carried this block with three hidden
+            alerts inside it, so its 10px of padding sat above the form whether or not anything was shown. */}
+        {(warning || error || success) && (
+          <div className="notifications">
+            {warning && <div className="alert alert-warning">{warning}</div>}
+            {error && <div className="alert alert-error">{error}</div>}
+            {success && <div className="alert alert-success">{success}</div>}
+          </div>
+        )}
 
         {autoSelectAvailable && (
           <div id="popup-auto-select-style-package-container" className="flex-container">

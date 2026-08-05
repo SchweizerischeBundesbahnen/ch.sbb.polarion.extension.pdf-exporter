@@ -56,6 +56,15 @@
   position: relative;
 }
 
+/* The two sentences introducing the style package and its settings.
+   Stated rather than left to the browser, whose default is `1em` above and below - 13px of it above the
+   first line, on top of the content padding, and 13px more between the sentence and the row under it. The
+   legacy popup inherited that same default; in a shadow root there is not even a page reset that could have
+   squashed it. Nothing above (the content padding is the gap) and one row's worth below. */
+.pdf-export-form p {
+  margin: 0 0 8px;
+}
+
 /* Covers the form while one of the four operations runs, so nothing can be changed under it. `opacity`
    rather than a solid white: the legacy overlay let the form show through faintly. */
 .in-progress-overlay {
