@@ -20,8 +20,14 @@ import type { RefObject } from 'react';
  * A `MutationObserver` rather than a one-off pass, because the form grows dropdowns as it goes: ticking
  * "Cover page" or switching comments on mounts a `SearchableSelect` that creates its portal right then.
  *
- * This belongs in RSP rather than here - every extension that puts a dropdown inside the shared `Modal` has
- * the same problem, and the library knows both the portal and the dialog. Until it does, this is the one
+ * This is a regression of RSP 0.2.0, not a fact of life. Its `Modal` was a `<div class="rsp-modal-overlay">`
+ * at `z-index: 1000` until then, and `.sd-portal` declares `z-index: 2147483000` - so the option list won on
+ * z-index, which is how strictdoc-exporter's format dropdown works today on 0.1.0 with no code of its own for
+ * it. The rewrite onto `<dialog>` moved the modal into the top layer, where z-index does not compare, and
+ * that deliberate "always on top" value stopped being reachable. pdf-exporter is only the first extension to
+ * combine the 0.2.0 `Modal` with a `SearchableSelect`; strictdoc breaks the same way the moment it upgrades.
+ *
+ * So the fix belongs in RSP, which knows both the portal and the dialog. Until it is there, this is the one
  * place in this extension that needs it.
  */
 export default function useDropdownPopupsInDialog(inside: RefObject<HTMLElement | null>): void {
