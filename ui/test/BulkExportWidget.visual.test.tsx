@@ -9,6 +9,7 @@ import {
   SAMPLE_SHIM,
 } from '../src/widget/sampleData';
 import type { BulkExportItems } from '../src/widget/types';
+import { SAMPLE_STYLE_PACKAGE_FULL, popupDependencies } from './exportPopupSamples';
 
 // Docker-only snapshots of the widget as a report page shows it, mounted the way the renderer mounts
 // it: its own shadow root, carrying the tokens and the widget's stylesheet. Polarion's page CSS is not
@@ -17,7 +18,7 @@ import type { BulkExportItems } from '../src/widget/types';
 
 const hosts: HTMLElement[] = [];
 
-function mounted(items: BulkExportItems): HTMLElement {
+function mounted(items: BulkExportItems, deps: Partial<Parameters<typeof mountInto>[2]> = {}): HTMLElement {
   const host = document.createElement('div');
   host.id = `widget-visual-${hosts.length}`;
   host.className = 'polarion-PdfExporter-BulkExportWidget sbb-ui';
@@ -27,7 +28,7 @@ function mounted(items: BulkExportItems): HTMLElement {
   host.setAttribute('data-signature', SAMPLE_SHIM.signature);
   document.body.appendChild(host);
   hosts.push(host);
-  mountInto(host, readShim(host), `#${host.id}`, { loadItems: () => Promise.resolve(items) });
+  mountInto(host, readShim(host), { loadItems: () => Promise.resolve(items), ...deps });
   return host;
 }
 
@@ -101,6 +102,95 @@ describe.skipIf(!__PIXEL_REFERENCES__)('Bulk PDF Export widget visual', () => {
     await snapshot(host, 'widget-empty');
   });
 
+  /**
+   * Snapshots a dialog of the widget's, which is a native <dialog> in the top layer of its shadow root - so
+   * its host's box is empty and the dialog itself is what a reference can show. The viewport is a fixed one
+   * taller than any of these dialogs: they cap their own height against it, which makes a viewport derived
+   * from their height circular. Same value as the toolbar dialog's references.
+   */
+  async function dialogSnapshot(host: HTMLElement, name: string): Promise<void> {
+    await userEvent.hover(host.shadowRoot!.querySelector('.rsp-modal-title')!);
+    await page.viewport(900, 1800);
+    await expect(page.elementLocator(host.shadowRoot!.querySelector<HTMLElement>('.rsp-modal')!)).toMatchScreenshot(
+      name,
+    );
+  }
+
+  /** Drives the widget to its export dialog, which is the one the toolbar buttons open as well. */
+  async function openExportDialog(host: HTMLElement): Promise<void> {
+    host.shadowRoot!.querySelectorAll<HTMLInputElement>('input.export-item')[0].click();
+    await vi.waitFor(() =>
+      expect(host.shadowRoot!.querySelector('#bulk-export-pdf')!.className).not.toContain('defaultCursor'),
+    );
+    host.shadowRoot!.querySelector<HTMLElement>('#bulk-export-pdf')!.click();
+    await vi.waitFor(() => expect(host.shadowRoot!.querySelector('.pdf-export-form')).not.toBeNull());
+  }
+
+  it('the export dialog, styled by the stylesheets of this shadow root', async () => {
+    // The same dialog a toolbar button opens (see ExportPopup.visual.test.tsx); what this reference adds is
+    // that it is styled inside the widget's root, where a second stylesheet is present.
+    const host = mounted(SAMPLE_ITEMS, { popup: popupDependencies({ stylePackage: SAMPLE_STYLE_PACKAGE_FULL }) });
+    await settled(host);
+    await openExportDialog(host);
+    await vi.waitFor(() => expect(host.shadowRoot!.querySelector('#popup-style-package-content')).not.toBeNull());
+
+    await dialogSnapshot(host, 'widget-export-dialog');
+  });
+
+  /**
+   * Starts a bulk run over the whole selection and returns the host plus a hold on each conversion, so a
+   * reference can be taken with the run going and again once it is over.
+   */
+  async function startRun(): Promise<{ host: HTMLElement; finish: (fail?: boolean) => void }> {
+    const pending: { resolve: () => void; reject: (error: Error) => void }[] = [];
+    const host = mounted(SAMPLE_ITEMS, {
+      popup: popupDependencies(),
+      convert: () =>
+        new Promise((resolve, reject) => {
+          pending.push({ resolve: () => resolve({ blob: new Blob(['pdf']), fileName: null, warning: null }), reject });
+        }),
+      download: () => {},
+      downloadAttachments: () => Promise.resolve(),
+    });
+    await settled(host);
+
+    host.shadowRoot!.querySelectorAll<HTMLInputElement>('input.export-item').forEach((box) => box.click());
+    await vi.waitFor(() =>
+      expect(host.shadowRoot!.querySelector('#bulk-export-pdf')!.className).not.toContain('defaultCursor'),
+    );
+    host.shadowRoot!.querySelector<HTMLElement>('#bulk-export-pdf')!.click();
+    await vi.waitFor(() => expect(host.shadowRoot!.querySelector('.pdf-export-form')).not.toBeNull());
+    host.shadowRoot!.querySelector<HTMLButtonElement>('.rsp-modal-footer .sbb-btn--primary')!.click();
+    await vi.waitFor(() => expect(host.shadowRoot!.querySelector('.bulk-export-progress')).not.toBeNull());
+
+    const finish = (fail = false) => {
+      const next = pending.shift();
+      if (fail) next?.reject(new Error('Conversion failed: the document has no content'));
+      else next?.resolve();
+    };
+    return { host, finish };
+  }
+
+  it('a bulk export in progress', async () => {
+    const { host } = await startRun();
+    await vi.waitFor(() => expect(host.shadowRoot!.querySelector('.export-item.in-progress')).not.toBeNull());
+
+    await dialogSnapshot(host, 'widget-progress-in-progress');
+  });
+
+  it('a bulk export that finished with a failure among the items', async () => {
+    const { host, finish } = await startRun();
+    for (let index = 0; index < SAMPLE_ITEMS.items.length; index++) {
+      finish(index === 1);
+      await vi.waitFor(() =>
+        expect(host.shadowRoot!.querySelectorAll('.export-item.finished, .export-item.error').length).toBe(index + 1),
+      );
+    }
+    await vi.waitFor(() => expect(host.shadowRoot!.querySelector('.bulk-export-outcome .result')).not.toBeNull());
+
+    await dialogSnapshot(host, 'widget-progress-finished-with-errors');
+  });
+
   it('an endpoint that refused the descriptor', async () => {
     const host = document.createElement('div');
     host.id = 'widget-visual-error';
@@ -108,7 +198,7 @@ describe.skipIf(!__PIXEL_REFERENCES__)('Bulk PDF Export widget visual', () => {
     host.setAttribute('data-title', 'Test Runs');
     document.body.appendChild(host);
     hosts.push(host);
-    mountInto(host, readShim(host), '#widget-visual-error', {
+    mountInto(host, readShim(host), {
       loadItems: () =>
         Promise.reject(
           new Error('The widget descriptor is missing or was not signed by this server. Reload the page.'),

@@ -1,21 +1,25 @@
 import { describe, expect, it } from 'vitest';
-import { childValue, resolveLanguage, toExportForm } from '../src/formext/exportForm';
-import { buildExportParams, toRequestBody } from '../src/formext/exportParams';
+import { childValue, resolveLanguage, toExportForm } from '../src/export/exportForm';
+import type { ExportTarget } from '../src/export/exportParams';
+import { buildExportParams, toRequestBody } from '../src/export/exportParams';
 import {
   CHAPTERS_ERROR,
   parseChapters,
   parseMetadataFields,
   validateNumberedListStyles,
-} from '../src/formext/validation';
+} from '../src/export/validation';
 import { SAMPLE_DOCUMENT, SAMPLE_STYLE_PACKAGE_FULL } from './sidePanelSamples';
 
-// The rules the export dialogs run on, which the legacy ExportPanel.js carried as DOM manipulation: how a
-// style package becomes a form, what the three value-carrying fields accept, and what the export request
-// ends up saying. They are asserted here rather than through the panel because they are the part the DLE
-// toolbar popup will reuse when it is migrated.
+// The rules both export dialogs run on, which the legacy ExportPanel.js and ExportPopup.js carried as DOM
+// manipulation: how a style package becomes a form, what the three value-carrying fields accept, and what
+// the export request ends up saying. They are asserted here rather than through either dialog because they
+// are what the two share.
 
-const params = (form = toExportForm(SAMPLE_STYLE_PACKAGE_FULL), fileName?: string) => {
-  const built = buildExportParams(form, SAMPLE_DOCUMENT, fileName);
+/** What the side panel exports, and the popup's default. */
+const LIVE_DOC: ExportTarget = { documentType: 'LIVE_DOC', exportType: 'SINGLE' };
+
+const params = (form = toExportForm(SAMPLE_STYLE_PACKAGE_FULL), target: ExportTarget = LIVE_DOC) => {
+  const built = buildExportParams(form, SAMPLE_DOCUMENT, target);
   if ('error' in built) {
     throw new Error(`unexpected validation error: ${built.error.message}`);
   }
@@ -166,10 +170,10 @@ describe('building the export request', () => {
     const form = toExportForm(SAMPLE_STYLE_PACKAGE_FULL);
     const context = { ...SAMPLE_DOCUMENT, urlQueryParameters: { revision: '42', query: 'type:task' } };
 
-    const on = buildExportParams(form, context);
+    const on = buildExportParams(form, context, LIVE_DOC);
     expect('params' in on && on.params.urlQueryParameters).toEqual({ revision: '42', query: 'type:requirement' });
 
-    const off = buildExportParams({ ...form, workItemsQueryEnabled: false }, context);
+    const off = buildExportParams({ ...form, workItemsQueryEnabled: false }, context, LIVE_DOC);
     // Dropped, not emptied: an empty query is a filter that matches nothing
     expect('params' in off && off.params.urlQueryParameters).toEqual({ revision: '42' });
   });
@@ -177,7 +181,7 @@ describe('building the export request', () => {
   it('refuses to build on a bad chapters entry, and says which field it is', () => {
     const form = { ...toExportForm(SAMPLE_STYLE_PACKAGE_FULL), specificChapters: 'x' };
 
-    const built = buildExportParams(form, SAMPLE_DOCUMENT);
+    const built = buildExportParams(form, SAMPLE_DOCUMENT, LIVE_DOC);
 
     expect('error' in built && built.error).toEqual({ field: 'chapters', message: CHAPTERS_ERROR });
   });
@@ -185,7 +189,7 @@ describe('building the export request', () => {
   it('refuses to build on a bad numbered list styles entry', () => {
     const form = { ...toExportForm(SAMPLE_STYLE_PACKAGE_FULL), customNumberedListStyles: 'zz' };
 
-    const built = buildExportParams(form, SAMPLE_DOCUMENT);
+    const built = buildExportParams(form, SAMPLE_DOCUMENT, LIVE_DOC);
 
     expect('error' in built && built.error.field).toBe('numberedListStyles');
   });
@@ -199,7 +203,10 @@ describe('building the export request', () => {
   });
 
   it('leaves out of the body what is not set, which is not the same as sending null', () => {
-    const body = JSON.parse(toRequestBody(params(undefined, 'Doc.pdf'))) as Record<string, unknown>;
+    const body = JSON.parse(toRequestBody(params(undefined, { ...LIVE_DOC, fileName: 'Doc.pdf' }))) as Record<
+      string,
+      unknown
+    >;
 
     expect(body.fileName).toBe('Doc.pdf');
     expect(body).not.toHaveProperty('baselineRevision');

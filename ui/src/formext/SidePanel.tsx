@@ -1,8 +1,16 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { SearchableSelect } from '@grigoriev/react-sbb-polarion';
 import type { SelectOption } from '@grigoriev/react-sbb-polarion';
-import type { SingleExportContextLike } from '../services/productModules';
-import { createSingleExportContext } from '../services/productModules';
+import validateIcon from '../assets/validate.svg';
+import type { PanelData } from '../export/exportData';
+import { loadPanelData, loadStylePackage } from '../export/exportData';
+import type { ExportForm } from '../export/exportForm';
+import { childValue, toExportForm } from '../export/exportForm';
+import type { ExportField } from '../export/exportParams';
+import { buildExportParams, toRequestBody } from '../export/exportParams';
+import { convertPdf, downloadBlob, errorMessageOf } from '../services/conversion';
+import type { DocumentIdentity } from '../services/exportContext';
+import { currentDocumentLocation, toDocumentIdentity } from '../services/exportContext';
 import {
   COMMENTS_RENDER_TYPES,
   FULL_FONTS_HELP,
@@ -17,13 +25,6 @@ import {
   UNREFERENCED_COMMENTS_HELP,
 } from '../services/stylePackage';
 import useRemote from '../services/useRemote';
-import type { ExportForm } from './exportForm';
-import { childValue, toExportForm } from './exportForm';
-import type { ExportField } from './exportParams';
-import { buildExportParams, toRequestBody } from './exportParams';
-import type { DocumentIdentity, PanelData } from './panelData';
-import { loadPanelData, loadStylePackage } from './panelData';
-import validateIcon from './validate.svg';
 
 /** How many invalid page previews the panel shows; the endpoint is asked for one more to detect "more". */
 const MAX_PAGE_PREVIEWS = 4;
@@ -61,28 +62,23 @@ interface WidthValidationResult {
 
 /** What the panel reaches outside itself for, so the dev harness and the tests can replace it. */
 export interface SidePanelDependencies {
-  createContext?: typeof createSingleExportContext;
+  /** Where the document is. Read from the editor URL when not given, which is what happens in Polarion. */
+  location?: DocumentIdentity;
   loadData?: typeof loadPanelData;
   loadPackage?: typeof loadStylePackage;
+  convert?: typeof convertPdf;
+  download?: typeof downloadBlob;
 }
 
 export interface SidePanelProps {
   deps?: SidePanelDependencies;
 }
 
-/** The message an error response carries, whatever shape it came in. */
-async function errorMessageOf(response: Response): Promise<string> {
-  try {
-    const text = await response.text();
-    const error = text ? (JSON.parse(text) as { message?: string; errorMessage?: string }) : null;
-    return error?.message ?? error?.errorMessage ?? '';
-  } catch {
-    return '';
-  }
-}
-
 /** `<prefix>` on its own line, then the detail - the legacy `prefix + ":<br>" + message`. */
 const withDetail = (prefix: string, detail: string): string => (detail ? `${prefix}:\n${detail}` : prefix);
+
+/** What a rejected conversion says, which is the server's message or nothing. */
+const messageOf = (error: unknown): string => (error instanceof Error ? error.message : '');
 
 /**
  * PDF Exporter's Document Properties side panel: the React port of `sidePanelContent.html` +
@@ -96,14 +92,19 @@ const withDetail = (prefix: string, detail: string): string => (detail ? `${pref
  * What did change is where the data comes from. `PdfExporterFormExtension` used to render this markup with
  * the style packages, setting names, link roles, file name and export permission already substituted into
  * it; now those are read over REST - the same endpoints the DLE toolbar popup has always read them from.
+ * The document location and the conversion protocol used to come from the product's `ExportContext.js`,
+ * loaded at runtime from the other webapp; both are `services/exportContext.ts` and `services/conversion.ts`
+ * now, which this app owns and the popup shares.
  */
 export default function SidePanel({ deps }: Readonly<SidePanelProps>) {
-  const { sendRequest } = useRemote();
-  const createContext = deps?.createContext ?? createSingleExportContext;
+  const { sendRequest, sendAbsoluteRequest } = useRemote();
   const loadData = deps?.loadData ?? loadPanelData;
   const loadPackage = deps?.loadPackage ?? loadStylePackage;
+  const convert = deps?.convert ?? convertPdf;
+  const download = deps?.download ?? downloadBlob;
 
-  const [context, setContext] = useState<SingleExportContextLike | null>(null);
+  const remote = useMemo(() => ({ sendRequest, sendAbsoluteRequest }), [sendRequest, sendAbsoluteRequest]);
+
   const [data, setData] = useState<PanelData | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -131,51 +132,21 @@ export default function SidePanel({ deps }: Readonly<SidePanelProps>) {
 
   const busy = exporting || validating;
 
-  /** Where the document lives, as the product's ExportContext read it out of the editor URL. */
-  const document_: DocumentIdentity | null = useMemo(() => {
-    if (!context) {
-      return null;
-    }
-    return {
-      scope: context.getScope(),
-      projectId: context.getProjectId(),
-      locationPath: context.getLocationPath(),
-      spaceId: context.getSpaceId() || undefined,
-      documentName: context.getDocumentName() || undefined,
-      baselineRevision: context.getBaselineRevision(),
-      revision: context.getRevision(),
-      urlQueryParameters: context.getUrlQueryParameters(),
-    };
-  }, [context]);
+  /** Where the document lives, read out of the editor URL the way the product's ExportContext read it. */
+  const document_: DocumentIdentity = useMemo(
+    () => deps?.location ?? toDocumentIdentity(currentDocumentLocation({ documentType: 'LIVE_DOC' })),
+    [deps?.location],
+  );
 
   /**
    * The `?query=` of the editor URL. The document is on screen filtered, so an export started here should
    * match it - which is why it takes priority over the style package's own work items query.
    */
-  const urlQuery = document_?.urlQueryParameters?.query;
+  const urlQuery = document_.urlQueryParameters?.query;
 
-  // The product's ExportContext is loaded once: it carries the conversion protocol and the reading of the
-  // Polarion location hash, neither of which this app owns.
+  // Everything the panel offers. The style packages and the option lists are required - there is nothing to
+  // choose from without them - so a failure here is reported instead of an empty panel.
   useEffect(() => {
-    let cancelled = false;
-    createContext({ documentType: 'LIVE_DOC', rootComponentSelector: '#pdf-exporter-panel' })
-      .then((loaded) => {
-        if (!cancelled) setContext(loaded);
-      })
-      .catch(() => {
-        if (!cancelled) setLoadError(PACKAGE_LOAD_ERROR);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [createContext]);
-
-  // Then everything the panel offers. The style packages and the option lists are required - there is
-  // nothing to choose from without them - so a failure here is reported instead of an empty panel.
-  useEffect(() => {
-    if (!document_) {
-      return undefined;
-    }
     let cancelled = false;
     loadData(sendRequest, document_)
       .then((loaded) => {
@@ -206,7 +177,7 @@ export default function SidePanel({ deps }: Readonly<SidePanelProps>) {
   // The selected style package decides every field below it, so it is read whenever it changes - the same
   // request the legacy panel made from its `change` handler.
   useEffect(() => {
-    if (!data || !document_ || !stylePackage) {
+    if (!data || !stylePackage) {
       return undefined;
     }
     const sequence = ++latestPackage.current;
@@ -248,10 +219,14 @@ export default function SidePanel({ deps }: Readonly<SidePanelProps>) {
 
   /** The export request, or null when a field is wrong - which is then marked and reported. */
   const prepareRequest = (name?: string): string | null => {
-    if (!form || !document_) {
+    if (!form) {
       return null;
     }
-    const built = buildExportParams(form, document_, name);
+    const built = buildExportParams(form, document_, {
+      documentType: 'LIVE_DOC',
+      exportType: 'SINGLE',
+      fileName: name,
+    });
     if ('error' in built) {
       setInvalidField(built.error.field);
       setExportError(built.error.message);
@@ -261,10 +236,7 @@ export default function SidePanel({ deps }: Readonly<SidePanelProps>) {
     return toRequestBody(built.params);
   };
 
-  const exportToPdf = () => {
-    if (!context) {
-      return;
-    }
+  const exportToPdf = async () => {
     clearMessages();
     const name = exportFileName();
     const request = prepareRequest(name);
@@ -272,23 +244,17 @@ export default function SidePanel({ deps }: Readonly<SidePanelProps>) {
       return;
     }
     setExporting(true);
-    context.asyncConvertPdf(
-      request,
-      (result) => {
-        setExporting(false);
-        if (result.warning) {
-          // The product builds this message with <br>, which this panel renders as text.
-          setExportWarning(result.warning.replace(/<br\s*\/?>/g, '\n'));
-        }
-        context.downloadBlob(result.response, name);
-      },
-      (response) => {
-        setExporting(false);
-        void errorMessageOf(response).then((message) =>
-          setExportError(withDetail('Error occurred during PDF generation', message)),
-        );
-      },
-    );
+    try {
+      const result = await convert(remote, request);
+      if (result.warning) {
+        setExportWarning(result.warning);
+      }
+      download(result.blob, name);
+    } catch (error) {
+      setExportError(withDetail('Error occurred during PDF generation', messageOf(error)));
+    } finally {
+      setExporting(false);
+    }
   };
 
   const validatePdf = async () => {

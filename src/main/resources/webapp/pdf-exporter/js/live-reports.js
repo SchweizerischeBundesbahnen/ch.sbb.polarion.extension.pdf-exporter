@@ -13,9 +13,8 @@
  *
  *   scriptInjection.mainHead=<script src="/polarion/pdf-exporter/js/live-reports.js" data-expand-tools="true"></script>
  *
- * 2. The stylesheets and micromodal library used by ExportPopup.js — both for the toolbar button
- *    above and for the classic "Export to PDF Button" report widget (which renders server-side
- *    and opens the same popup on click).
+ * 2. This extension's own toolbar-button stylesheet. The export dialog needs nothing on the page: it
+ *    is a React module that mounts into a shadow root of its own, styles included.
  *
  * This script replaces loading starter.js via mainHead (deprecated). The element ids match the
  * ones starter.js uses, so nothing is injected twice if both run.
@@ -40,6 +39,12 @@
     // injected button inherits the native look, sizing and hover behavior
     // (polarion-Button-HighlightOnHover dims the icon and brightens it on hover; the label color
     // never changes).
+    // The export dialog is a React module of the pdf-exporter-app webapp, imported on click. It mounts
+    // itself into a shadow root of its own, so nothing has to be injected into the page for it. The
+    // timestamp is captured once per page load, so a click reuses the module the previous click loaded
+    // while an updated extension is still picked up on the next page open.
+    const POPUP_MODULE = `/polarion/pdf-exporter-app/ui/app/assets/export-popup.js${timestampParam}`;
+
     const TOOLBAR_HTML = `
         <table class="dleToolBarTable">
             <tr class="dleToolBarRow">
@@ -49,8 +54,8 @@
                 <td style="vertical-align: middle;">
                     <table class="polarion-dle-toolbar-ButtonWithLabel polarion-Button-shared polarion-Button-HighlightOnHover pdf-rp-toolbar-button"
                            role="button" cellpadding="0" cellspacing="0" title="Export to PDF" tabindex="0"
-                           onclick="import('${EXT_BASE}ui/js/modules/ExportPopup.js')
-                                      .then(module => new module.default({documentType: 'LIVE_REPORT'}))
+                           onclick="import('${POPUP_MODULE}')
+                                      .then(module => module.openExportPopup({documentType: 'LIVE_REPORT'}))
                                       .catch(console.error);">
                         <colgroup><col><col></colgroup>
                         <tbody><tr>
@@ -70,16 +75,6 @@
             link.type = 'text/css';
             link.href = href;
             top.document.head.appendChild(link);
-        }
-    }
-
-    function injectScript(id, src) {
-        if (!top.document.getElementById(id)) {
-            const script = top.document.createElement('script');
-            script.id = id;
-            script.setAttribute('src', src);
-            script.setAttribute('type', 'text/javascript');
-            top.document.head.appendChild(script);
         }
     }
 
@@ -112,14 +107,8 @@
         return top.__genericDleToolbarEnginePromise;
     }
 
+    // Only this extension's own toolbar-button rules. Everything the export dialog needs travels with it.
     injectStyle('pdf-exporter-styles', `${EXT_BASE}css/pdf-exporter.css${timestampParam}`);
-    injectStyle('pdf-micromodal-styles', `${EXT_BASE}ui/generic/css/micromodal.css${timestampParam}`);
-    injectStyle('generic-control-tokens', `${EXT_BASE}ui/generic/css/control-tokens.css${timestampParam}`);
-    injectStyle('generic-checkbox-styles', `${EXT_BASE}ui/generic/css/checkboxes.css${timestampParam}`);
-    injectStyle('generic-searchable-dropdown-styles', `${EXT_BASE}ui/generic/css/searchable-dropdown.css${timestampParam}`);
-    injectStyle('generic-inputs-styles', `${EXT_BASE}ui/generic/css/inputs.css${timestampParam}`);
-    injectStyle('generic-alerts-styles', `${EXT_BASE}ui/generic/css/alerts.css${timestampParam}`);
-    injectScript('pdf-micromodal-script', `${EXT_BASE}ui/generic/js/micromodal.min.js${timestampParam}`);
 
     // Load the shared self-healing engine and inject the report-toolbar button through it.
     loadEngine(`${EXT_BASE}ui/generic/js/dle-toolbar-starter.js${timestampParam}`).then(function () {

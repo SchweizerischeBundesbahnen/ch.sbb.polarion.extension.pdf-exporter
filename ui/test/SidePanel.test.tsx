@@ -3,7 +3,6 @@ import { cleanup, render } from 'vitest-browser-react';
 import { userEvent } from 'vitest/browser';
 import SidePanel from '../src/formext/SidePanel';
 import type { SidePanelDependencies } from '../src/formext/SidePanel';
-import type { ConversionResult } from '../src/services/productModules';
 import type { StylePackageSettings } from '../src/services/stylePackage';
 import { installFetchMock } from './mockFetch';
 import type { Route } from './mockFetch';
@@ -12,6 +11,7 @@ import {
   SAMPLE_STYLE_PACKAGE,
   SAMPLE_STYLE_PACKAGE_FULL,
   SAMPLE_STYLE_PACKAGE_HIDDEN,
+  pdfResult,
   sampleDependencies,
 } from './sidePanelSamples';
 
@@ -20,8 +20,8 @@ import {
 // through `mountSidePanel` so the assertions read the document rather than a shadow root; the mounting
 // itself is covered by SidePanelMount.test.tsx.
 //
-// The product's export JS and the REST data are replaced (see sidePanelSamples): a browser test has neither
-// Polarion to read from nor an editor URL to be in.
+// The document location, the conversion and the REST data are replaced (see sidePanelSamples): a browser
+// test has neither a Polarion to read from nor an editor URL to be in.
 
 const open = (deps: SidePanelDependencies = sampleDependencies()) => render(<SidePanel deps={deps} />);
 
@@ -167,7 +167,10 @@ describe('what the style package puts on screen', () => {
     const requests: string[] = [];
     open(
       sampleDependencies({
-        asyncConvertPdf: (request) => requests.push(request as string),
+        convert: (request) => {
+          requests.push(request);
+          return Promise.resolve(pdfResult());
+        },
       }),
     );
     await settled();
@@ -220,7 +223,14 @@ describe('what the style package puts on screen', () => {
 
   it('drives the dropdowns of the page setup into the export', async () => {
     const requests: string[] = [];
-    open(sampleDependencies({ asyncConvertPdf: (request) => requests.push(request as string) }));
+    open(
+      sampleDependencies({
+        convert: (request) => {
+          requests.push(request);
+          return Promise.resolve(pdfResult());
+        },
+      }),
+    );
     await settled();
 
     // The SearchableSelect mirrors the native select it wraps, so driving the select is driving the control
@@ -257,7 +267,10 @@ describe('what the style package puts on screen', () => {
     open(
       sampleDependencies({
         stylePackage: SAMPLE_STYLE_PACKAGE_FULL,
-        asyncConvertPdf: (request) => requests.push(request as string),
+        convert: (request) => {
+          requests.push(request);
+          return Promise.resolve(pdfResult());
+        },
       }),
     );
     await settled();
@@ -325,11 +338,10 @@ describe('what the panel says when it cannot load', () => {
     await vi.waitFor(() => expect(text('#style-package-error')).toContain('error loading style package settings'));
   });
 
-  it('reports the product export JS being unavailable, which is what loads the document location', async () => {
-    open({ ...sampleDependencies(), createContext: () => Promise.reject(new Error('404')) });
-
-    await vi.waitFor(() => expect(text('#style-package-error')).toContain('error loading style package settings'));
-  });
+  // There used to be a third failure here: the product's export JS, loaded at runtime from the other
+  // webapp, being unavailable - which is what read the document out of the editor URL. That parsing is
+  // `services/exportContext.ts` now, bundled with the panel, so the failure mode is gone rather than
+  // untested; the parsing itself is covered by exportContext.test.ts.
 });
 
 describe('exporting', () => {
@@ -339,11 +351,11 @@ describe('exporting', () => {
     open(
       sampleDependencies({
         stylePackage: SAMPLE_STYLE_PACKAGE_FULL,
-        asyncConvertPdf: (request, onSuccess) => {
-          requests.push(request as string);
-          onSuccess({ response: new Blob(['pdf']) } as ConversionResult);
+        convert: (request) => {
+          requests.push(request);
+          return Promise.resolve(pdfResult());
         },
-        downloadBlob: (_blob, name) => downloads.push(name),
+        download: (_blob, name) => downloads.push(name),
       }),
     );
     await settled();
@@ -362,8 +374,8 @@ describe('exporting', () => {
     const downloads: string[] = [];
     open(
       sampleDependencies({
-        asyncConvertPdf: (_request, onSuccess) => onSuccess({ response: new Blob(['pdf']) } as ConversionResult),
-        downloadBlob: (_blob, name) => downloads.push(name),
+        convert: () => Promise.resolve(pdfResult()),
+        download: (_blob, name) => downloads.push(name),
       }),
     );
     await settled();
@@ -379,8 +391,8 @@ describe('exporting', () => {
     const downloads: string[] = [];
     open(
       sampleDependencies({
-        asyncConvertPdf: (_request, onSuccess) => onSuccess({ response: new Blob(['pdf']) } as ConversionResult),
-        downloadBlob: (_blob, name) => downloads.push(name),
+        convert: () => Promise.resolve(pdfResult()),
+        download: (_blob, name) => downloads.push(name),
       }),
     );
     await settled();
@@ -392,12 +404,9 @@ describe('exporting', () => {
   });
 
   it('shows the warning a conversion came back with, as text rather than markup', async () => {
-    open(
-      sampleDependencies({
-        asyncConvertPdf: (_request, onSuccess) =>
-          onSuccess({ response: new Blob(['pdf']), warning: 'One image<br><br>was not exported' } as ConversionResult),
-      }),
-    );
+    // The conversion builds a multi-part warning with blank lines between the parts (see
+    // services/conversion.ts); the panel renders it as text, never as markup.
+    open(sampleDependencies({ convert: () => Promise.resolve(pdfResult('One image\n\nwas not exported')) }));
     await settled();
 
     await userEvent.click(field<HTMLButtonElement>('#export-pdf')!);
@@ -408,8 +417,7 @@ describe('exporting', () => {
   it('shows why a conversion failed', async () => {
     open(
       sampleDependencies({
-        asyncConvertPdf: (_request, _onSuccess, onError) =>
-          onError(new Response(JSON.stringify({ message: 'The document has no content' }), { status: 500 })),
+        convert: () => Promise.reject(new Error('The document has no content')),
       }),
     );
     await settled();
@@ -424,7 +432,7 @@ describe('exporting', () => {
   it('says only that it failed when the server gave no reason', async () => {
     open(
       sampleDependencies({
-        asyncConvertPdf: (_request, _onSuccess, onError) => onError(new Response('', { status: 500 })),
+        convert: () => Promise.reject(new Error('')),
       }),
     );
     await settled();

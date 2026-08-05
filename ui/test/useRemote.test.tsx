@@ -59,4 +59,20 @@ describe('useRemote', () => {
     expect(String(url)).toContain('/polarion/pdf-exporter/rest/api/version');
     expect((init!.headers as Record<string, string>)['Authorization']).toBe('Bearer tok123');
   });
+
+  it('sends an absolute URL as given, still authenticated', async () => {
+    // The conversion endpoints answer a job submission with an absolute Location header and expect it
+    // polled verbatim, so that URL may not be prefixed with the REST base - but it still needs the token.
+    vi.stubEnv('VITE_BEARER_TOKEN', 'tok123');
+    const fetchMock = vi.fn(async () => new Response('{}', { status: 200 }));
+    vi.stubGlobal('fetch', fetchMock);
+    api = undefined as unknown as ReturnType<typeof useRemote>;
+    render(<Capture />);
+    await vi.waitFor(() => expect(api).toBeTruthy());
+    const job = '/polarion/pdf-exporter/rest/api/convert/jobs/job-1';
+    await api.sendAbsoluteRequest({ method: 'GET', url: job });
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(String(url)).toBe(job);
+    expect((init!.headers as Record<string, string>)['Authorization']).toBe('Bearer tok123');
+  });
 });

@@ -35,28 +35,86 @@ There is one `index.html` / bundle. The page to render is chosen from the `featu
   controllers are registered in `PdfExporterRestApplication` for this page.
 - `/?feature=bulk-widget` - the development harness of the Bulk PDF Export widget (see below).
 - `/?feature=side-panel` - the development harness of the Document Properties side panel (see below).
-  Together with `bulk-widget` these are the only two features no administration page points at.
+- `/?feature=export-popup` - the development harness of the "Export to PDF" dialog (see below). Together
+  with the two above, these are the only three features no administration page points at.
 
 Features are declared in [`src/features.tsx`](src/features.tsx). Add a page component under
 `src/pages/`, register it there, and it appears on the landing page automatically. The ids must stay
 in sync with the `pageUrl`s in `src/main/resources/META-INF/hivemodule.xml` — a mismatch shows up as a
 blank page in Polarion and no test catches it.
 
-## The three entries
+## The four entries
 
-`index.html` is the administration SPA. The other two are ES modules that server-rendered markup imports
+`index.html` is the administration SPA. The other three are ES modules that server-rendered markup imports
 at runtime, each built to a **fixed** name because its importer names it by URL and cannot know the hash
 Vite would emit:
 
-| Entry                   | Emitted as              | Imported by                                      | Export it is called through |
-| ----------------------- | ----------------------- | ------------------------------------------------ | --------------------------- |
-| `src/widget/main.tsx`   | `assets/bulk-widget.js` | `BulkPdfExportWidgetRenderer`                    | `default(selector)`         |
-| `src/formext/mount.tsx` | `assets/side-panel.js`  | `webapp/pdf-exporter/html/sidePanelContent.html` | `mountSidePanel(selector)`  |
+| Entry                   | Emitted as               | Imported by                                                                            | Export it is called through |
+| ----------------------- | ------------------------ | -------------------------------------------------------------------------------------- | --------------------------- |
+| `src/widget/main.tsx`   | `assets/bulk-widget.js`  | `BulkPdfExportWidgetRenderer`                                                          | `default(selector)`         |
+| `src/formext/mount.tsx` | `assets/side-panel.js`   | `webapp/pdf-exporter/html/sidePanelContent.html`                                        | `mountSidePanel(selector)`  |
+| `src/popup/mount.tsx`   | `assets/export-popup.js` | `webapp/pdf-exporter/js/starter.js`, `js/live-reports.js`, `ExportToPdfButtonRenderer` | `openExportPopup(options)`  |
 
-Both need `rollupOptions.preserveEntrySignatures: 'strict'` to keep that export, which a Vite app build
-otherwise drops. Nothing in the Vitest suites sees the built files, so
-[`scripts/check-runtime-entries.mjs`](scripts/check-runtime-entries.mjs) checks both after every build -
-the widget once shipped as `module.default is not a function` on a report page for exactly this reason.
+All three need `rollupOptions.preserveEntrySignatures: 'strict'` to keep that export, which a Vite app
+build otherwise drops. Nothing in the Vitest suites sees the built files, so
+[`scripts/check-runtime-entries.mjs`](scripts/check-runtime-entries.mjs) checks all three after every
+build - the widget once shipped as `module.default is not a function` on a report page for exactly this
+reason.
+
+## The shared export model
+
+Three surfaces export: the toolbar dialog, the Document Properties side panel and the bulk export widget.
+What they share is [`src/export/`](src/export/) plus two services:
+
+| Module                       | What it holds                                                                          |
+| ---------------------------- | -------------------------------------------------------------------------------------- |
+| `export/documentType.ts`     | Which rows a document type shows, and which of them the request carries.                |
+| `export/exportForm.ts`       | A style package read into form state.                                                   |
+| `export/exportParams.ts`     | Form state turned into an export request.                                               |
+| `export/exportData.ts`       | The REST reads each dialog needs before it can be shown.                                |
+| `export/validation.ts`       | The three fields a user can get wrong.                                                  |
+| `services/exportContext.ts`  | Where the item is, read out of the Polarion location hash.                              |
+| `services/conversion.ts`     | Submit a conversion job, poll it, download the result; test run and collection extras.  |
+
+The last two were `webapp/pdf-exporter/js/modules/ExportContext.js` and `ExportParams.js`, loaded at
+runtime from the other webapp by whichever surface needed them. Nothing loads them any more and
+`js/modules/` is gone; what remains in that webapp is the three injector scripts, `css/starter.css`, a
+`css/pdf-exporter.css` holding only the report-toolbar button rules, and the three HTML templates the Java
+renderer reads server-side.
+
+`export/documentType.ts` deliberately answers two questions rather than one. The legacy popup showed a
+handful of rows for a baseline collection - fit to page, mark referenced work items, the two "cut empty"
+switches, localize enums - whose export request then left every one of them out. That divergence is
+transcribed as data (`VISIBLE_FOR` vs `SENT_FOR`) and asserted in `test/documentType.test.ts`, so it stays a
+decision instead of becoming a regression.
+
+## The "Export to PDF" dialog
+
+`src/popup/` is the dialog four surfaces open: the document editor toolbar button, the Live Report toolbar
+button, the "Export to PDF Button" report widget, and the Bulk PDF Export widget. The first three import
+`assets/export-popup.js` and call `openExportPopup({documentType})`; the widget is part of this app and
+renders `ExportPopupModal` directly, because it has a React tree to render it into and a progress dialog to
+hand the chosen parameters to.
+
+The chrome is RSP's shared `Modal` - a native `<dialog>`, so the top layer, the backdrop and Escape come for
+free. That replaced micromodal: `openExportPopup` appends a host to the page body, mounts into a **shadow
+root** of it with RSP's stylesheet and `src/popup/export-popup.css` injected, and removes the host on close.
+Nothing is put on the page for it any more, which is why `starter.js` and `live-reports.js` no longer inject
+the micromodal library and the six generic control stylesheets, and why `BulkPdfExportWidgetRenderer` no
+longer inlines four stylesheets next to its shim.
+
+Two details of `export-popup.css` are worth knowing. It raises the shared modal's `max-width` past its 640px
+cap, because this form is two 340px columns - keyed on `.pdf-export-form` so that the same stylesheet,
+injected next to the progress dialog in the widget's shadow root, does not resize that one. And the optional
+value fields are hidden with `visibility` rather than removed, which is what the legacy popup did: ticking a
+checkbox must not reflow the column around it.
+
+`/?feature=export-popup` opens the dialog through the **real** `openExportPopup` against a **real** item:
+pick a document, a document type and an export type, and the harness writes the Polarion hash that item is
+opened at. A test run and a baseline collection are addressed by an id rather than by a space and a name, so
+the harness asks for that id and writes the hash shape they really have - feeding a test run type a
+document's path is a combination no endpoint accepts, and not a state the dialog can be in. A bulk export
+shows the parameters it hands back instead of running one.
 
 ## The Bulk PDF Export widget
 
@@ -71,13 +129,21 @@ page's own stylesheets are cloned into it so that the table and the button keep 
 rows come from `POST /widgets/bulk-export/items`, cells included: those are the HTML Polarion rendered
 for each field.
 
-Two things stay outside the shadow root, both because they are shared with the product's other export
-surfaces: the export parameters dialog (`ExportPopup.js`, imported at runtime from the `pdf-exporter`
-webapp) and the bulk progress dialog, which renders into the page body where the micromodal styling
-the widget renderer puts on the page reaches it.
+Both dialogs the widget owns are inside that shadow root too: the export parameters dialog
+(`src/popup/ExportPopupModal.tsx`, rendered directly rather than imported at runtime) and the progress
+dialog, which is RSP's shared `Modal` styled by `widget.css`. Both used to be micromodal markup in the
+report page's body, styled by stylesheets the renderer inlined next to the shim; nothing is inlined there
+now.
 
-`/?feature=bulk-widget` mounts the very same widget against sample data, one button per state. The
-export dialog itself needs a Polarion behind `VITE_BASE_URL`.
+The progress dialog offers exactly one action at a time - Stop while the run is going, Close once it is
+over - while the shared `Modal` always renders both of its footer buttons, so `widget.css` hides the one
+that does not apply. A `Modal` that could be told to render a single button would replace that; it is the
+only place in the extension that needs it.
+
+`/?feature=bulk-widget` mounts the very same widget against sample data, one button per table state. Its two
+dialogs are reached through it rather than rendered standalone, since both are styled by that shadow root;
+the export dialog needs a Polarion behind `VITE_BASE_URL`, and the progress dialog's own states are
+pixel-locked in `test/BulkExportWidget.visual.test.tsx`.
 
 ## The Document Properties side panel
 
@@ -98,25 +164,19 @@ document language, the webhooks switch and the export permission. The server sid
 of that into the fragment's markup, which is why there is now one description of this form instead of two.
 The trade is a short loading state, where the server-rendered panel arrived populated.
 
-What the popup will reuse when it is migrated is kept out of the component: `exportForm.ts` (a style
-package read into form state), `exportParams.ts` (form state into an export request), `validation.ts` and
-`../services/stylePackage.ts` (the model plus the fixed option lists, shared with the Style Packages
-administration page).
-
 `/?feature=side-panel` is a **real** scenario rather than a set of stubs. It takes the project from the
 scope the Overview page carries, lists that project's documents (`services/documents.ts`, following the
-JSON:API pages up to a cap), and once one is picked it writes the Polarion editor hash that document is
-opened at and mounts the panel with **no dependencies injected**. So the panel loads the product's export
-JS, that JS reads the document out of the hash exactly as it does in the editor, and every REST call goes
-to the real server. The pick is remembered in a cookie, keyed by project, and preselected next time.
+JSON:API pages up to a cap, behind the shared `components/DocumentPicker.tsx`), and once one is picked it
+writes the Polarion editor hash that document is opened at and mounts the panel with **no dependencies
+injected**. So the panel reads the document out of the hash exactly as it does in the editor, and every REST
+call goes to the real server. The pick is remembered in a cookie, keyed by project, and preselected next
+time.
 
 That is the one thing the Vitest suites cannot cover — a real editor URL and the real endpoints behind it —
 so the page needs `VITE_BASE_URL` for the proxy and `VITE_BEARER_TOKEN` for the platform API the document
 list comes from. The panel's own states are covered offline and pixel-locked by
 `test/SidePanel.visual.test.tsx`. Its fixture is `test/sidePanelSamples.ts`, which lives with the tests
 because nothing in `src/` stubs the panel any more.
-
-The legacy `js/modules/ExportPanel.js` is now unused; it is kept for one release as the revert path.
 
 ## Local development
 
@@ -173,7 +233,7 @@ under `ui/`. They are check-only and never modify your files.
 
 ## Production build
 
-`npm run build` emits all three entries to `ui/dist/app` with base path
+`npm run build` emits all four entries to `ui/dist/app` with base path
 `/polarion/pdf-exporter-app/ui/app/`. The Maven build (frontend-maven-plugin +
 maven-resources-plugin) runs this automatically and copies the bundle into
 `src/main/resources/webapp/pdf-exporter-app/app`, where `PdfExporterAppServlet` serves it at

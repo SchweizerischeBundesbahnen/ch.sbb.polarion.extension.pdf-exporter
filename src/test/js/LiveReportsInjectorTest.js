@@ -57,16 +57,20 @@ describe('live-reports.js injector', function () {
 
     const flushPromises = () => new Promise((resolve) => setTimeout(resolve, 0));
 
-    it('injects the popup stylesheets and micromodal once', async function () {
+    it('injects this extension\'s own toolbar stylesheet, and nothing else', async function () {
         await loadInjector();
-        for (const id of ['pdf-exporter-styles', 'pdf-micromodal-styles', 'generic-control-tokens',
+
+        const link = document.getElementById('pdf-exporter-styles');
+        expect(link).to.exist;
+        expect(link.tagName).to.equal('LINK');
+
+        // The export dialog is a React module that styles itself inside its own shadow root, so the six
+        // generic control stylesheets and the micromodal library it used to need on the page are gone.
+        for (const id of ['pdf-micromodal-styles', 'pdf-micromodal-script', 'generic-control-tokens',
             'generic-checkbox-styles', 'generic-searchable-dropdown-styles', 'generic-inputs-styles',
             'generic-alerts-styles']) {
-            const link = document.getElementById(id);
-            expect(link, id).to.exist;
-            expect(link.tagName).to.equal('LINK');
+            expect(document.getElementById(id), id).to.not.exist;
         }
-        expect(document.getElementById('pdf-micromodal-script')).to.exist;
     });
 
     it('creates the report-toolbar starter against the richPagePreview target and injects', async function () {
@@ -82,7 +86,8 @@ describe('live-reports.js injector', function () {
     it('builds the button from its own script URL and opens the popup in Live Report context', async function () {
         await loadInjector();
         const html = createdConfigs[0].alternateHtml;
-        expect(html).to.contain('/polarion/pdf-exporter/ui/js/modules/ExportPopup.js');
+        expect(html).to.contain('/polarion/pdf-exporter-app/ui/app/assets/export-popup.js');
+        expect(html).to.contain('module.openExportPopup(');
         expect(html).to.contain("documentType: 'LIVE_REPORT'");
         expect(html).to.contain('Export to PDF');
         // visually separated from the native buttons, like the DLE toolbar button

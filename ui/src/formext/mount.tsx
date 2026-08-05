@@ -1,8 +1,8 @@
 import { createRoot } from 'react-dom/client';
 import type { Root } from 'react-dom/client';
+import { mountInShadow } from '../services/shadowMount';
 import SidePanel from './SidePanel';
 import type { SidePanelDependencies } from './SidePanel';
-import { mountInShadow } from './shadowMount';
 import panelStyle from './side-panel.css?inline';
 
 /**

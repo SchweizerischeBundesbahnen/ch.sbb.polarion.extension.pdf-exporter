@@ -1,6 +1,13 @@
 import { useCallback, useRef, useState } from 'react';
-import type { ConversionResult, ExportContextLike, ExportParamsLike } from '../services/productModules';
-import { createExportContext } from '../services/productModules';
+import type { ExportParamsJson } from '../export/exportParams';
+import { toRequestBody } from '../export/exportParams';
+import type { Remote } from '../services/conversion';
+import {
+  convertCollectionDocuments,
+  convertPdf,
+  downloadBlob,
+  downloadTestRunAttachments,
+} from '../services/conversion';
 import type { BulkExportItem, DocumentType } from './types';
 
 export type BulkExportStatus = 'closed' | 'in-progress' | 'interrupted' | 'finished';
@@ -24,7 +31,6 @@ export interface BulkExportState {
 }
 
 const CLOSED: BulkExportState = { status: 'closed', rows: [], processed: 0, errors: false };
-const START_ERROR = 'Could not start the export.';
 
 /** The document type of a single item, which may differ from the widget's when it lists collections. */
 export function documentTypeOf(item: BulkExportItem): DocumentType | '' {
@@ -67,48 +73,31 @@ export function itemName(item: BulkExportItem): string {
   return `${space}${item.id ?? ''}`;
 }
 
-async function errorMessageOf(response: Response): Promise<string> {
-  try {
-    const text = await response.text();
-    const error = text ? JSON.parse(text) : null;
-    return error?.message ?? error?.errorMessage ?? 'Export failed';
-  } catch {
-    return 'Export failed';
-  }
-}
+/** What a failed export says. Anything the server did not explain reads as a plain failure. */
+const failureOf = (error: unknown): string =>
+  error instanceof Error && error.message ? error.message : 'Export failed';
 
-function convert(context: ExportContextLike, exportParams: ExportParamsLike): Promise<ConversionResult> {
-  return new Promise((resolve, reject) => {
-    context.asyncConvertPdf(exportParams.toJSON(), resolve, (response) => {
-      errorMessageOf(response).then(reject, reject);
-    });
-  });
-}
-
-function convertCollection(
-  context: ExportContextLike,
-  exportParams: ExportParamsLike,
-  collectionId: string,
-): Promise<void> {
-  return new Promise((resolve, reject) => {
-    context.convertCollectionDocuments(exportParams, collectionId, resolve, (response) => {
-      errorMessageOf(response).then(reject, reject);
-    });
-  });
+/** What the run reaches outside itself for, so the tests can watch it instead of converting. */
+export interface BulkExportDependencies {
+  convert?: typeof convertPdf;
+  convertCollection?: typeof convertCollectionDocuments;
+  download?: typeof downloadBlob;
+  downloadAttachments?: typeof downloadTestRunAttachments;
 }
 
 /**
  * Exports the selected items one after another, the way the widget's vanilla predecessor did: a single
  * conversion at a time, each downloaded as soon as it is ready, and the run stoppable in between.
  *
- * The conversion protocol itself stays in the product's ExportContext, which the DLE toolbar and the
- * document export use as well - only the sequencing and the progress state live here.
+ * The conversion protocol itself is `services/conversion.ts`, which the export dialog and the document
+ * properties side panel run through as well - only the sequencing and the progress state live here.
  */
-export default function useBulkExport(
-  exportPages: boolean,
-  hostSelector: string,
-  createContext: typeof createExportContext = createExportContext,
-) {
+export default function useBulkExport(exportPages: boolean, remote: Remote, deps: BulkExportDependencies = {}) {
+  const convert = deps.convert ?? convertPdf;
+  const convertCollection = deps.convertCollection ?? convertCollectionDocuments;
+  const download = deps.download ?? downloadBlob;
+  const downloadAttachments = deps.downloadAttachments ?? downloadTestRunAttachments;
+
   const [state, setState] = useState<BulkExportState>(CLOSED);
   const stopped = useRef(false);
 
@@ -119,43 +108,56 @@ export default function useBulkExport(
     }));
   }, []);
 
+  /** The shared export parameters, readdressed to one selected item. */
+  const paramsFor = useCallback((item: BulkExportItem, shared: ExportParamsJson): ExportParamsJson => {
+    const documentType = documentTypeOf(item);
+    const params: ExportParamsJson = { ...shared, projectId: item.projectId, documentType };
+    if (documentType === 'TEST_RUN') {
+      return { ...params, urlQueryParameters: { ...(shared.urlQueryParameters ?? {}), id: item.id ?? '' } };
+    }
+    if (documentType === 'BASELINE_COLLECTION') {
+      return params;
+    }
+    return { ...params, locationPath: `${item.spaceId ?? ''}/${item.id ?? ''}` };
+  }, []);
+
   const exportItem = useCallback(
-    async (context: ExportContextLike, item: BulkExportItem, exportParams: ExportParamsLike) => {
+    async (item: BulkExportItem, shared: ExportParamsJson) => {
       const documentType = documentTypeOf(item);
-      exportParams.projectId = item.projectId;
-      exportParams.documentType = documentType;
+      const params = paramsFor(item, shared);
 
       if (documentType === 'BASELINE_COLLECTION') {
-        await convertCollection(context, exportParams, item.id ?? '');
+        await convertCollection(remote, {
+          projectId: item.projectId ?? '',
+          collectionId: item.id ?? '',
+          exportPages,
+          params,
+          toRequestBody,
+        });
         return;
       }
 
-      if (documentType === 'TEST_RUN') {
-        exportParams.urlQueryParameters = { ...(exportParams.urlQueryParameters ?? {}), id: item.id ?? '' };
+      if (documentType === 'TEST_RUN' && params.attachmentsFilter !== null && !params.embedAttachments) {
         // Attachments are downloaded next to the PDF unless they are embedded into it
-        if (exportParams.attachmentsFilter !== null && !exportParams.embedAttachments) {
-          context.downloadTestRunAttachments(
-            item.projectId ?? '',
-            item.id ?? '',
-            exportParams.revision ?? null,
-            exportParams.attachmentsFilter ?? null,
-            exportParams.testcaseFieldId,
-          );
-        }
-      } else {
-        exportParams.locationPath = `${item.spaceId ?? ''}/${item.id ?? ''}`;
+        void downloadAttachments(remote, {
+          projectId: item.projectId ?? '',
+          testRunId: item.id ?? '',
+          revision: params.revision,
+          filter: params.attachmentsFilter,
+          testCaseFieldId: params.testcaseFieldId,
+        });
       }
 
-      const result = await convert(context, exportParams);
+      const result = await convert(remote, toRequestBody(params));
       const fallbackName = `${item.spaceId ? `${item.spaceId}_` : ''}${item.id ?? ''}.pdf`;
-      context.downloadBlob(result.response, result.fileName || fallbackName);
+      download(result.blob, result.fileName || fallbackName);
     },
-    [],
+    [convert, convertCollection, download, downloadAttachments, exportPages, paramsFor, remote],
   );
 
   /** Runs the export of the given items. Resolves when the run is over, stopped or not. */
   const start = useCallback(
-    async (items: BulkExportItem[], exportParams: ExportParamsLike) => {
+    async (items: BulkExportItem[], exportParams: ExportParamsJson) => {
       stopped.current = false;
       setState({
         status: 'in-progress',
@@ -164,45 +166,24 @@ export default function useBulkExport(
         errors: false,
       });
 
-      let context: ExportContextLike;
-      try {
-        context = await createContext({ exportPages, rootComponentSelector: hostSelector });
-      } catch {
-        // The product's export JS is loaded at runtime and can be gone by the time the user gets here -
-        // a redeployed server, an expired session. Without this the run would keep every row paused and
-        // report the failure as an interruption once the user closes the dialog. A user who stopped the
-        // run while the load was still pending keeps their own outcome, as at the end of the run below.
-        setState((previous) =>
-          previous.status === 'interrupted'
-            ? previous
-            : {
-                ...previous,
-                status: 'finished',
-                errors: true,
-                rows: previous.rows.map((row) => ({ ...row, state: 'error', error: START_ERROR })),
-              },
-        );
-        return;
-      }
-
       for (let index = 0; index < items.length; index++) {
         if (stopped.current) {
           return;
         }
         updateRow(index, { state: 'in-progress' });
         try {
-          await exportItem(context, items[index], exportParams);
+          await exportItem(items[index], exportParams);
           updateRow(index, { state: 'finished' });
           setState((previous) => ({ ...previous, processed: previous.processed + 1 }));
         } catch (error) {
-          updateRow(index, { state: 'error', error: typeof error === 'string' ? error : 'Export failed' });
+          updateRow(index, { state: 'error', error: failureOf(error) });
           setState((previous) => ({ ...previous, errors: true, processed: previous.processed + 1 }));
         }
       }
 
       setState((previous) => (previous.status === 'interrupted' ? previous : { ...previous, status: 'finished' }));
     },
-    [createContext, exportItem, exportPages, hostSelector, updateRow],
+    [exportItem, updateRow],
   );
 
   /** Stops after the item currently being converted: a running conversion cannot be recalled. */

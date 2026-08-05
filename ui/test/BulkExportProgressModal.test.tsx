@@ -5,11 +5,13 @@ import BulkExportProgressModal from '../src/widget/BulkExportProgressModal';
 import { SAMPLE_ITEMS } from '../src/widget/sampleData';
 import type { BulkExportState, ExportRowState } from '../src/widget/useBulkExport';
 
-// The progress dialog of a running bulk export. It renders into the page body, not into the widget's
-// shadow root, because it wears the same micromodal styling as the export parameters dialog that opens
-// it - and that stylesheet is put on the page by the widget renderer. This suite is behavior only for
-// the same reason: the stylesheet is not part of this app, so a screenshot here would show the markup
-// unstyled and prove nothing.
+// The progress dialog of a running bulk export: RSP's shared Modal, rendered inside the widget's own shadow
+// root in production. It is rendered directly here, so the assertions read the document rather than a shadow
+// root; how it looks in that root is covered by BulkExportWidget.visual.test.tsx.
+//
+// The dialog offers exactly one action at a time, Stop or Close, while the shared Modal always renders both
+// of its footer buttons - widget.css hides the one that does not apply. That hiding is CSS the suite does not
+// carry, so which button is *offered* is asserted through the `running` / `done` class the CSS keys off.
 
 const rowsWith = (...states: ExportRowState[]) =>
   states.map((state, index) => ({ item: SAMPLE_ITEMS.items[index], state }));
@@ -22,7 +24,7 @@ const state = (over: Partial<BulkExportState> = {}): BulkExportState => ({
   ...over,
 });
 
-const modal = () => document.querySelector('#bulk-pdf-export-modal-popup');
+const modal = () => document.querySelector('#bulk-pdf-export-popup');
 
 /** Renders the dialog and waits for it: a React root paints after the call that asks it to. */
 async function open(state: BulkExportState) {
@@ -32,8 +34,11 @@ async function open(state: BulkExportState) {
 
 const onStop = vi.fn();
 const onClose = vi.fn();
-const items = () => Array.from(document.querySelectorAll('.modal__content .export-item'));
-const footerButton = () => document.querySelector<HTMLElement>('.modal__footer button')!;
+const items = () => Array.from(document.querySelectorAll('.bulk-export-progress .export-item'));
+const stopButton = () => document.querySelector<HTMLElement>('.rsp-modal-footer .sbb-btn--primary')!;
+const closeButton = () => document.querySelector<HTMLElement>('.rsp-modal-footer .sbb-btn--secondary')!;
+/** Which of the two footer buttons the CSS leaves visible. */
+const offers = () => (modal()!.classList.contains('running') ? 'Stop' : 'Close');
 
 afterEach(() => {
   cleanup();
@@ -45,7 +50,7 @@ describe('Bulk export progress dialog', () => {
   it('stays away until a run starts', async () => {
     render(<BulkExportProgressModal state={state({ status: 'closed', rows: [] })} onStop={onStop} onClose={onClose} />);
 
-    await vi.waitFor(() => expect(document.querySelector('.modal__overlay')).toBeNull());
+    await vi.waitFor(() => expect(document.querySelector('.rsp-modal')).toBeNull());
     expect(modal()).toBeNull();
   });
 
@@ -70,8 +75,9 @@ describe('Bulk export progress dialog', () => {
     expect(bar.textContent).toBe('1 out of 3 finished');
     expect(document.querySelector('.result')).toBeNull();
 
-    expect(footerButton().textContent).toBe('Stop');
-    await userEvent.click(footerButton());
+    expect(offers()).toBe('Stop');
+    expect(stopButton().textContent).toBe('Stop');
+    await userEvent.click(stopButton());
     expect(onStop).toHaveBeenCalled();
   });
 
@@ -95,8 +101,9 @@ describe('Bulk export progress dialog', () => {
     expect(document.querySelector('.result')?.className).toBe('result finished');
     expect(document.querySelector('.progress-bar')).toBeNull();
 
-    expect(footerButton().textContent).toBe('Close');
-    await userEvent.click(footerButton());
+    expect(offers()).toBe('Close');
+    expect(closeButton().textContent).toBe('Close');
+    await userEvent.click(closeButton());
     expect(onClose).toHaveBeenCalled();
   });
 

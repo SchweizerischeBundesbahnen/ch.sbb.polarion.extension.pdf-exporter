@@ -53,7 +53,7 @@ describe('Bulk PDF Export widget mounting', () => {
   it('renders the widget into a shadow root of the shim', async () => {
     const host = shim();
 
-    mountInto(host, readShim(host), `#${host.id}`, { loadItems: loaded });
+    mountInto(host, readShim(host), { loadItems: loaded });
 
     await vi.waitFor(() => expect(host.shadowRoot!.querySelector('h3')?.textContent).toBe('Test Runs'));
     // The page sees none of it: the widget's markup is behind the shadow boundary
@@ -64,7 +64,7 @@ describe('Bulk PDF Export widget mounting', () => {
   it('gives the shadow root the styles the widget needs', async () => {
     const host = shim();
 
-    mountInto(host, readShim(host), `#${host.id}`, { loadItems: loaded });
+    mountInto(host, readShim(host), { loadItems: loaded });
 
     await vi.waitFor(() => expect(host.shadowRoot!.querySelector('h3')).not.toBeNull());
     const styles = Array.from(host.shadowRoot!.querySelectorAll('style')).map((style) => style.textContent ?? '');
@@ -106,7 +106,7 @@ describe('Bulk PDF Export widget mounting', () => {
     document.head.appendChild(pageCss);
 
     const host = shim();
-    mountInto(host, readShim(host), `#${host.id}`, { loadItems: loaded });
+    mountInto(host, readShim(host), { loadItems: loaded });
     await vi.waitFor(() => expect(host.shadowRoot!.querySelector('.polarion-rpw-table-show-query')).not.toBeNull());
 
     // The clone has to be in effect, or this would pass for the wrong reason
@@ -135,10 +135,10 @@ describe('Bulk PDF Export widget mounting', () => {
 
   it('mounts a shim only once, however often the module is imported', async () => {
     const host = shim();
-    mountInto(host, readShim(host), `#${host.id}`, { loadItems: loaded });
+    mountInto(host, readShim(host), { loadItems: loaded });
     await vi.waitFor(() => expect(host.shadowRoot!.querySelector('h3')).not.toBeNull());
 
-    mountInto(host, readShim(host), `#${host.id}`, { loadItems: loaded });
+    mountInto(host, readShim(host), { loadItems: loaded });
 
     expect(host.shadowRoot!.querySelectorAll('h3').length).toBe(1);
   });

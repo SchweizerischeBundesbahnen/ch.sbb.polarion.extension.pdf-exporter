@@ -1,6 +1,7 @@
 import type { SendRequest } from '@grigoriev/react-sbb-polarion';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { loadDocumentLanguage, loadPanelData, loadStylePackage } from '../src/formext/panelData';
+import { loadDocumentLanguage, loadPanelData, loadPopupData, loadStylePackage } from '../src/export/exportData';
+import type { PopupDataRequest } from '../src/export/exportData';
 import { installFetchMock, jsonResponse } from './mockFetch';
 import type { Route } from './mockFetch';
 import { SAMPLE_DOCUMENT } from './sidePanelSamples';
@@ -174,5 +175,144 @@ describe('loading the panel data', () => {
     installFetchMock([{ method: 'GET', match: /style-package\/names/, status: 404 }]);
 
     await expect(loadStylePackage(sendRequest, 'Gone', 'project/elibrary/')).rejects.toThrow('HTTP 404');
+  });
+});
+
+describe('loading the export popup data', () => {
+  const request = (overrides: Partial<PopupDataRequest> = {}): PopupDataRequest => ({
+    documentType: 'LIVE_DOC',
+    exportType: 'SINGLE',
+    document: SAMPLE_DOCUMENT,
+    ...overrides,
+  });
+
+  const urls = (fetchMock: ReturnType<typeof installFetchMock>) => fetchMock.mock.calls.map(([url]) => String(url));
+
+  it('reads everything a single document export offers', async () => {
+    installFetchMock(baseRoutes());
+
+    const data = await loadPopupData(sendRequest, request());
+
+    expect(data.stylePackages.map((option) => option.id)).toEqual(['Specification', 'Default']);
+    expect(data.childNames.css.map((option) => option.id)).toEqual(['Default', 'SBB']);
+    expect(data.roles.map((option) => option.id)).toEqual(['relates_to', 'verifies']);
+    expect(data.fileName).toBe('E-Library Doc.pdf');
+    expect(data.documentLanguage).toBe('de');
+    expect(data.webhooksEnabled).toBe(true);
+  });
+
+  it('refuses to open on an empty child setting, as the popup always did', async () => {
+    // The popup's own loadSettingNames rejected on a zero count rather than offering an empty dropdown, and
+    // the whole form then reported "Error occurred loading form data". The side panel tolerates this.
+    installFetchMock(routesWith({ method: 'GET', match: /\/settings\/css\/names/, json: [] }));
+
+    await expect(loadPopupData(sendRequest, request())).rejects.toThrow("No 'css' configurations");
+    await expect(loadPanelData(sendRequest, SAMPLE_DOCUMENT)).resolves.toMatchObject({ childNames: { css: [] } });
+  });
+
+  it('refuses to open when no style package suits the selection', async () => {
+    installFetchMock(routesWith({ method: 'POST', match: /suitable-names/, json: [] }));
+
+    await expect(loadPopupData(sendRequest, request())).rejects.toThrow('No style packages');
+  });
+
+  it('reports any read that fails, unlike the side panel', async () => {
+    for (const failing of [/\/link-role-names/, /\/export-filename/, /\/document-language/, /\/webhooks\/status/]) {
+      installFetchMock(
+        routesWith({ method: failing.source.includes('filename') ? 'POST' : 'GET', match: failing, status: 500 }),
+      );
+
+      await expect(loadPopupData(sendRequest, request()), failing.source).rejects.toThrow();
+    }
+  });
+
+  it('skips the link roles for a type that has none', async () => {
+    const fetchMock = installFetchMock(baseRoutes());
+
+    const data = await loadPopupData(sendRequest, request({ documentType: 'LIVE_REPORT' }));
+
+    expect(data.roles).toEqual([]);
+    expect(urls(fetchMock).some((url) => url.includes('link-role-names'))).toBe(false);
+  });
+
+  it('skips the document language for a report and for a test run', async () => {
+    for (const documentType of ['LIVE_REPORT', 'TEST_RUN'] as const) {
+      const fetchMock = installFetchMock(baseRoutes());
+
+      const data = await loadPopupData(sendRequest, request({ documentType }));
+
+      expect(data.documentLanguage, documentType).toBeNull();
+      expect(urls(fetchMock).some((url) => url.includes('document-language'))).toBe(false);
+    }
+  });
+
+  it('skips the file name and the document language for a bulk export', async () => {
+    const fetchMock = installFetchMock(baseRoutes());
+
+    const data = await loadPopupData(
+      sendRequest,
+      request({
+        exportType: 'BULK',
+        identifiers: [
+          { projectId: 'elibrary', spaceId: 'Specs', documentName: 'One' },
+          { projectId: 'elibrary', spaceId: 'Specs', documentName: 'Two' },
+        ],
+      }),
+    );
+
+    expect(data.fileName).toBe('');
+    expect(data.documentLanguage).toBeNull();
+    expect(urls(fetchMock).some((url) => url.includes('export-filename'))).toBe(false);
+  });
+
+  it('asks for the style packages that suit every selected item of a bulk export', async () => {
+    const identifiers = [
+      { projectId: 'elibrary', spaceId: 'Specs', documentName: 'One' },
+      { projectId: 'other', documentName: 'Two' },
+    ];
+    const fetchMock = installFetchMock(baseRoutes());
+
+    await loadPopupData(sendRequest, request({ exportType: 'BULK', identifiers }));
+
+    const call = fetchMock.mock.calls.find(([url]) => String(url).includes('suitable-names'))!;
+    expect(JSON.parse(String(call[1]!.body))).toEqual(identifiers);
+  });
+
+  it('sends the file name request the popup sent, baseline revision and URL parameters included', async () => {
+    const fetchMock = installFetchMock(baseRoutes());
+
+    await loadPopupData(
+      sendRequest,
+      request({
+        document: { ...SAMPLE_DOCUMENT, baselineRevision: '6749', urlQueryParameters: { revision: '112' } },
+      }),
+    );
+
+    const call = fetchMock.mock.calls.find(([url]) => String(url).includes('export-filename'))!;
+    expect(JSON.parse(String(call[1]!.body))).toEqual({
+      documentType: 'LIVE_DOC',
+      projectId: 'elibrary',
+      locationPath: 'Default Space/Cross Link Issue',
+      baselineRevision: '6749',
+      urlQueryParameters: { revision: '112' },
+    });
+  });
+
+  it('names an item with no space or document, which the endpoint dereferences without a null check', async () => {
+    // A test run and a collection have no location path, so their identifier is the project alone plus an
+    // empty document name. The legacy popup sent the string "undefined" here; the server matches it against
+    // real ids either way, so both find only the style packages that carry no matching query.
+    const fetchMock = installFetchMock(baseRoutes());
+
+    await loadPopupData(
+      sendRequest,
+      request({
+        documentType: 'TEST_RUN',
+        document: { documentType: 'TEST_RUN', scope: 'project/elibrary/', projectId: 'elibrary' },
+      }),
+    );
+
+    const call = fetchMock.mock.calls.find(([url]) => String(url).includes('suitable-names'))!;
+    expect(JSON.parse(String(call[1]!.body))).toEqual([{ projectId: 'elibrary', documentName: '' }]);
   });
 });

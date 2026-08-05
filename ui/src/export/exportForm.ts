@@ -60,6 +60,14 @@ export interface ExportForm {
   rolesEnabled: boolean;
   linkedWorkitemRoles: string[];
   linkRoleDirection: string;
+  /**
+   * The four test run fields. Only the toolbar popup shows them, and only for a test run, but they are part
+   * of a style package like everything else here, so they are read into the form whatever is being exported.
+   */
+  downloadAttachments: boolean;
+  attachmentsFilter: string;
+  testcaseFieldId: string;
+  embedAttachments: boolean;
 }
 
 export interface ExportFormContext {
@@ -137,6 +145,12 @@ export function toExportForm(content: StylePackageSettings, context: ExportFormC
     rolesEnabled: roles.length > 0,
     linkedWorkitemRoles: roles,
     linkRoleDirection: content.linkRoleDirection ?? DEFAULT_LINK_ROLE_DIRECTION,
+    // One switch over two values, the way the legacy popup derived it: attachments are downloaded when the
+    // package names a filter or a test case field, either of them being enough.
+    downloadAttachments: !!(content.attachmentsFilter || content.testcaseFieldId),
+    attachmentsFilter: content.attachmentsFilter ?? '',
+    testcaseFieldId: content.testcaseFieldId ?? '',
+    embedAttachments: !!content.embedAttachments,
   };
 }
 

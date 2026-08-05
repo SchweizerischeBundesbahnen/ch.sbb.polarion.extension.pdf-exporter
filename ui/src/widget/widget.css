@@ -277,3 +277,158 @@ input[type='checkbox']:indeterminate {
   margin-top: 30px;
   color: #a20013;
 }
+
+/* --- The bulk export progress dialog ------------------------------------------------------------- */
+
+/* One row per selected item, its state as the run reaches it. These rules were in the page copy of
+   pdf-exporter.css, under `.modal__container.pdf-exporter`, because the dialog was micromodal markup
+   portalled into the report page's body. It is RSP's shared Modal inside this shadow root now, so its
+   styling belongs with the widget, and the values are the ones it had. */
+
+/* The legacy dialog was `width: 80vw` capped at 750px. RSP's Modal sizes itself to its content, which for a
+   list of item names is too narrow to read as a dialog, so the lower bound is stated back. */
+.rsp-modal:has(.bulk-export-progress) {
+  width: min(600px, 100vw - 32px);
+}
+
+.bulk-export-progress .export-item {
+  padding: 5px;
+  border-bottom: 1px solid #aaa;
+}
+
+.bulk-export-progress .export-item .title .name {
+  font-weight: bold;
+}
+
+.bulk-export-progress .export-item .icon {
+  padding-right: 10px;
+  font-size: 18px;
+  vertical-align: middle;
+}
+
+.bulk-export-progress .export-item .icon .sbb-spinner {
+  width: 18px;
+  height: 18px;
+}
+
+.bulk-export-progress .export-item.paused {
+  color: #888;
+}
+
+/* The per-state glyphs are FontAwesome code points, which is what the report page provides. */
+.bulk-export-progress .export-item.paused .icon i.fa:before {
+  content: '\f017'; /* clock */
+}
+
+.bulk-export-progress .export-item.finished .icon {
+  color: green;
+}
+
+.bulk-export-progress .export-item.finished .icon i.fa:before {
+  content: '\f00c'; /* check mark */
+}
+
+.bulk-export-progress .export-item.interrupted .icon,
+.bulk-export-progress .export-item.error .icon {
+  color: red;
+}
+
+.bulk-export-progress .export-item.error .icon i.fa:before {
+  content: '\f06a'; /* exclamation in a circle */
+}
+
+.bulk-export-progress .export-item.interrupted .icon i.fa:before {
+  content: '\f05e'; /* ban */
+}
+
+.bulk-export-progress .export-item:not(.in-progress) .icon .sbb-spinner {
+  display: none;
+}
+
+.bulk-export-progress .export-item .error-message {
+  color: rgb(255 0 0 / 70%);
+  font-size: 10px;
+  font-family: monospace;
+  margin-left: 26px;
+}
+
+/* The progress bar and the outcome, which sat in the dialog footer while that footer was this dialog's
+   own markup. RSP's Modal owns its footer, so they are the last thing in the body instead. */
+.bulk-export-outcome {
+  display: flex;
+  align-items: center;
+  margin-top: 12px;
+  min-height: 24px;
+}
+
+.bulk-export-outcome .result {
+  flex-grow: 1;
+}
+
+.bulk-export-outcome .result.finished {
+  color: green;
+}
+
+.bulk-export-outcome .result.interrupted,
+.bulk-export-outcome .result.finished.with-errors {
+  color: red;
+}
+
+.progress-bar {
+  height: 24px;
+  flex-grow: 1;
+  background: #eeeeee;
+  border-radius: 4px;
+}
+
+.progress-bar > span {
+  display: block;
+  position: relative;
+  height: 100%;
+  padding: 0 10px;
+  border-radius: 4px;
+  background-color: var(--sbb-accent);
+  overflow: hidden;
+  line-height: 1.6em;
+  text-align: center;
+  color: white;
+}
+
+.progress-bar > span:after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(
+    -45deg,
+    rgb(255 255 255 / 20%) 25%,
+    transparent 25%,
+    transparent 50%,
+    rgb(255 255 255 / 20%) 50%,
+    rgb(255 255 255 / 20%) 75%,
+    transparent 75%,
+    transparent
+  );
+  z-index: 1;
+  background-size: 50px 50px;
+  animation: move 2s linear infinite;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+@keyframes move {
+  0% {
+    background-position: 0 0;
+  }
+  100% {
+    background-position: 50px 50px;
+  }
+}
+
+/* This dialog offers exactly one action at a time - Stop while the run is going, Close once it is over -
+   while RSP's shared Modal always renders both of its footer buttons. Hiding the one that does not apply
+   is what keeps the footer as it was. A Modal that could be told to render a single button would replace
+   this; it is the only place in the extension that needs it. */
+.rsp-modal:has(.bulk-export-progress.running) .rsp-modal-footer .sbb-btn--secondary,
+.rsp-modal:has(.bulk-export-progress.done) .rsp-modal-footer .sbb-btn--primary {
+  display: none;
+}
