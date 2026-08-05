@@ -137,6 +137,44 @@ describe('mounting the export dialog', () => {
     expect(footer.bottom).toBeLessThanOrEqual(window.innerHeight);
   });
 
+  /** The dropdown option lists, wherever they currently live. */
+  const portalsIn = (parent: ShadowRoot | Element): Element[] =>
+    [...parent.children].filter((child) => child.classList.contains('sd-portal'));
+
+  it('puts the dropdown option lists inside the dialog, where they are painted above it', async () => {
+    // The regression this guards: the shared dropdown appends its `position: fixed` option list to the
+    // element's root node - the shadow root, a *sibling* of the dialog. RSP's Modal is a native <dialog>
+    // opened with showModal(), so it is in the browser's top layer and paints above anything in the normal
+    // layer whatever its z-index. The list opened underneath the dialog, with only the part hanging past the
+    // dialog's bottom edge visible.
+    open({ location: location('LIVE_DOC') });
+    await loaded();
+
+    const root = shadow()!;
+    const dialog = root.querySelector<HTMLElement>('dialog.rsp-modal')!;
+
+    expect(portalsIn(dialog).length).toBeGreaterThan(0);
+    expect(portalsIn(root)).toEqual([]);
+    // And the dialog must not clip them, or a list longer than the room below its trigger is cut off
+    expect(getComputedStyle(dialog).overflow).toBe('visible');
+  });
+
+  it('adopts the option list of a dropdown that appears later', async () => {
+    // The form grows dropdowns as it goes: switching the work item roles on mounts two SearchableSelects,
+    // each creating its option list right then - which is why this is an observer and not a one-off pass.
+    open({ location: location('LIVE_DOC') });
+    await loaded();
+    const root = shadow()!;
+    const dialog = root.querySelector<HTMLElement>('dialog.rsp-modal')!;
+    const before = portalsIn(dialog).length;
+
+    root.querySelector<HTMLInputElement>('#popup-selected-roles')!.click();
+
+    await vi.waitFor(() => expect(root.querySelector('#popup-roles-selector')).not.toBeNull());
+    await vi.waitFor(() => expect(portalsIn(dialog).length).toBe(before + 2));
+    expect(portalsIn(root)).toEqual([]);
+  });
+
   it('reads the item out of the page URL when it is not told where it is', async () => {
     window.history.replaceState({}, '', `${window.location.pathname}#/project/elibrary/wiki/Specs/BigDoc`);
 

@@ -30,6 +30,10 @@
      scrollbar where the legacy popup had none; 85vh is 748px, which is what put one there.
    - The dialog becomes a flex column that does **not** scroll, and its content area is the only scroller.
      One scrollbar, on the part that has more to show, with the title and the buttons where they were.
+   - `overflow: visible` rather than the library's `auto`. Nothing overflows a flex column whose content area
+     shrinks to fit, so there is nothing to scroll or hide; what this allows is the one thing that is meant
+     to escape the dialog's box - a dropdown's option list, which is moved in here to be painted above the
+     dialog at all (see dialogPortals.ts) and would otherwise be cut off at the dialog's edge.
 
    Keyed on the form inside rather than on `.rsp-modal` itself: the bulk export widget injects this
    stylesheet into the shadow root it also renders its progress dialog in, and that dialog keeps its own
@@ -40,7 +44,7 @@
   max-height: calc(100vh - 32px);
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow: visible;
 }
 
 /* `min-height: 0` is what lets a flex item shrink below its content: without it the content area keeps its

@@ -32,6 +32,7 @@ import {
   UNREFERENCED_COMMENTS_HELP,
 } from '../services/stylePackage';
 import useRemote from '../services/useRemote';
+import useDropdownPopupsInDialog from './dialogPortals';
 
 /** How many invalid page previews the popup shows; the endpoint is asked for one more to detect "more". */
 const MAX_PAGE_PREVIEWS = 4;
@@ -155,6 +156,10 @@ export default function ExportPopupModal({
 
   /** Which package load is the current one; a slower earlier one must not overwrite it. */
   const latestPackage = useRef(0);
+
+  /** The form, which is what locates the dialog around it - see {@link useDropdownPopupsInDialog}. */
+  const form_ = useRef<HTMLDivElement>(null);
+  useDropdownPopupsInDialog(form_);
 
   const busy = progress !== null;
 
@@ -357,7 +362,7 @@ export default function ExportPopupModal({
       {/* `pdf-export-form` is what the stylesheet keys the dialog's own width off, so that the same
           stylesheet injected next to another dialog in the same shadow root - the bulk export progress
           dialog, in the widget - does not resize that one too. */}
-      <div className="form-wrapper pdf-export-form">
+      <div className="form-wrapper pdf-export-form" ref={form_}>
         {busy && (
           <div className="in-progress-overlay show">
             <span className="sbb-spinner" role="img" aria-label="Loading" />

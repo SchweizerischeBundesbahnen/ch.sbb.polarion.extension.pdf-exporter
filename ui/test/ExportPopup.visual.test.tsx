@@ -155,6 +155,29 @@ describe.skipIf(!__PIXEL_REFERENCES__)('export dialog visual', () => {
     await snapshot(shadow, 'popup-invalid-field');
   });
 
+  it('an open dropdown, which has to paint above the dialog', async () => {
+    // The option list is a `position: fixed` portal the shared dropdown creates outside the React tree, and
+    // the dialog is in the browser's top layer - so the list is moved into the dialog to be painted above it
+    // at all (see popup/dialogPortals.ts). It is a child of the dialog, so this element screenshot shows it.
+    const shadow = mounted({ stylePackage: SAMPLE_STYLE_PACKAGE });
+    await settled(shadow);
+    await dropdownsUpgraded(shadow);
+
+    const trigger = shadow
+      .querySelector('#popup-pdf-variant-selector')!
+      .closest('.property-wrapper')!
+      .querySelector<HTMLInputElement>('input.sd-trigger')!;
+    // The shared dropdown opens on mousedown, not on click
+    trigger.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+    await vi.waitFor(() => {
+      const list = shadow.querySelector<HTMLElement>('.sd-portal[style*="block"] .options');
+      expect(list).not.toBeNull();
+      expect(list!.querySelectorAll('.option').length).toBeGreaterThan(0);
+    });
+
+    await snapshotDialog(shadow, 'popup-dropdown-open');
+  });
+
   it('the data it could not read', async () => {
     const shadow = mounted({ loadError: new Error("No 'css' configurations in scope 'project/elibrary/'") });
     await vi.waitFor(() => expect(shadow.querySelector('.notifications .alert-error')).not.toBeNull());
