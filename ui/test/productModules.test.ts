@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { ensureMicroModal } from '../src/widget/productModules';
+import { ensureMicroModal } from '../src/services/productModules';
 
 // The product's export dialog needs the `MicroModal` global and does not load it itself: every entry
 // point that opens the dialog provides it (live-reports.js and starter.js inject the script, the

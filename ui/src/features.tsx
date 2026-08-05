@@ -7,6 +7,7 @@ import Disclaimer from './pages/Disclaimer';
 import FilenameTemplate from './pages/FilenameTemplate';
 import HeaderFooter from './pages/HeaderFooter';
 import Localization from './pages/Localization';
+import SidePanelPreview from './pages/SidePanelPreview';
 import StylePackageWeights from './pages/StylePackageWeights';
 import StylePackages from './pages/StylePackages';
 import UserGuide from './pages/UserGuide';
@@ -20,6 +21,10 @@ import WidgetPreview from './pages/WidgetPreview';
  *
  * Every administration entry of the extension is served from here; the legacy `pdf-exporter-admin`
  * webapp no longer exists.
+ *
+ * A label ending in `(dev)` marks a development harness - a page reachable only from the dev landing page,
+ * which nothing in Polarion points at. That is the marker json-editor and strictdoc-exporter use for the
+ * same thing, so it means the same across the extensions.
  */
 export interface Feature {
   id: string;
@@ -103,9 +108,17 @@ export const FEATURES: Feature[] = [
   },
   {
     id: 'bulk-widget',
-    label: 'Bulk PDF Export widget (preview)',
+    label: 'Bulk PDF Export widget (dev)',
     description: 'Development harness for the report page widget. No administration page points here.',
     component: WidgetPreview,
+  },
+  {
+    id: 'side-panel',
+    label: 'Document Properties side panel (dev)',
+    description:
+      'Development harness for the export panel in the document editor: runs the real panel against a real ' +
+      'document of the selected project. No administration page points here.',
+    component: SidePanelPreview,
   },
 ];
 

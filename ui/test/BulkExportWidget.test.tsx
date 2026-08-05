@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render } from 'vitest-browser-react';
 import { userEvent } from 'vitest/browser';
+import type { BulkCallback } from '../src/services/productModules';
 import BulkExportWidget from '../src/widget/BulkExportWidget';
-import type { BulkCallback } from '../src/widget/productModules';
 import { SAMPLE_ITEMS, SAMPLE_ITEMS_EMPTY, SAMPLE_ITEMS_WITH_UNREADABLE, SAMPLE_SHIM } from '../src/widget/sampleData';
 import type { BulkExportItems } from '../src/widget/types';
 import { installFetchMock } from './mockFetch';

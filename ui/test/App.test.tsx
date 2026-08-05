@@ -67,8 +67,10 @@ describe('App router', () => {
       '?feature=style-package',
       '?feature=style-package-weights',
       '?feature=authorization',
-      // Last, and the only entry no administration page points at: the widget's dev harness
+      // Last, and the only entries no administration page points at: the two development harnesses, for
+      // the report page widget and for the document editor's export panel
       '?feature=bulk-widget',
+      '?feature=side-panel',
     ]);
   });
 

@@ -1,14 +1,14 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render } from 'vitest-browser-react';
 import { userEvent } from 'vitest/browser';
-import BulkExportWidget from '../src/widget/BulkExportWidget';
 import type {
   BulkCallback,
   ConversionResult,
   ExportContextLike,
   ExportContextOptions,
   ExportParamsLike,
-} from '../src/widget/productModules';
+} from '../src/services/productModules';
+import BulkExportWidget from '../src/widget/BulkExportWidget';
 import { SAMPLE_ITEMS, SAMPLE_SHIM } from '../src/widget/sampleData';
 import type { BulkExportItem, BulkExportItems } from '../src/widget/types';
 
