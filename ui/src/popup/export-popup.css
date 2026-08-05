@@ -21,19 +21,33 @@
    the page. Same intent, expressed against the shared modal: as wide as the two columns need, no wider
    than the viewport. Later in this root than the library's own rule, which is what makes it win.
 
+   The height is the same story. RSP caps the whole dialog at 85vh and lets *it* scroll; the legacy popup
+   capped its content area at 80vh and let only that scroll, so its header and footer stayed put and a
+   dialog of this height needed no scrollbar at all at an ordinary window size. Both are restated here:
+
+   - `max-height` is the viewport less the 16px margin the shared modal already keeps at its sides, rather
+     than 85vh. At an 880px viewport that is 848px against the 821px this form needs, so there is no
+     scrollbar where the legacy popup had none; 85vh is 748px, which is what put one there.
+   - The dialog becomes a flex column that does **not** scroll, and its content area is the only scroller.
+     One scrollbar, on the part that has more to show, with the title and the buttons where they were.
+
    Keyed on the form inside rather than on `.rsp-modal` itself: the bulk export widget injects this
    stylesheet into the shadow root it also renders its progress dialog in, and that dialog keeps its own
-   size (see widget.css). */
+   size (see widget.css, which gives it the same treatment for the same reasons). */
 .rsp-modal:has(.pdf-export-form) {
   width: max-content;
   max-width: min(820px, 100vw - 32px);
+  max-height: calc(100vh - 32px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
-/* The legacy popup let its content area scroll at 80vh while the header and footer stayed put. RSP's
-   Modal scrolls the whole dialog instead, which would take the footer buttons off screen on a long form. */
+/* `min-height: 0` is what lets a flex item shrink below its content: without it the content area keeps its
+   full height, the dialog overflows again and the scrollbar goes back on the dialog. */
 .rsp-modal:has(.pdf-export-form) .rsp-modal-content {
-  max-height: 80vh;
   overflow: auto;
+  min-height: 0;
 }
 
 /* --- The form ------------------------------------------------------------------------------------ */

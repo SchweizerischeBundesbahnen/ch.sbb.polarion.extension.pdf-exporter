@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { page } from 'vitest/browser';
 import mount, { adoptPageStyles, mountInto, readShim } from '../src/widget/main';
 import { SAMPLE_ITEMS, SAMPLE_SHIM } from '../src/widget/sampleData';
+import { SAMPLE_STYLE_PACKAGE_FULL, popupDependencies } from './exportPopupSamples';
 
 // How the widget gets onto a report page: BulkPdfExportWidgetRenderer emits a shim element carrying the
 // signed descriptor and imports this module, which turns that element into a shadow root of its own.
@@ -27,7 +29,18 @@ function shim(attributes: Record<string, string> = {}): HTMLElement {
 
 const loaded = () => Promise.resolve(SAMPLE_ITEMS);
 
-afterEach(() => {
+/** Everything inside the root that has more to show than it shows, and offers a scrollbar for it. */
+const scrollers = (root: ShadowRoot): string[] =>
+  [...new Set(root.querySelectorAll('*'))]
+    .filter(
+      (element) =>
+        element.scrollHeight > element.clientHeight + 1 &&
+        ['auto', 'scroll'].includes(getComputedStyle(element).overflowY),
+    )
+    .map((element) => element.className || element.tagName);
+
+afterEach(async () => {
+  await page.viewport(1280, 720);
   hosts.splice(0).forEach((host) => host.remove());
   document.head.querySelectorAll('link[data-test-stylesheet]').forEach((link) => link.remove());
 });
@@ -150,5 +163,32 @@ describe('Bulk PDF Export widget mounting', () => {
     expect(error).toHaveBeenCalledWith(expect.stringContaining('#no-such-widget'));
 
     error.mockRestore();
+  });
+
+  it('lets each of its dialogs scroll its own content and never itself', async () => {
+    // Both dialogs are inside this root and styled by the stylesheets it carries, so this is the only place
+    // the rule can be checked. A dialog that scrolled itself would take its footer buttons off screen -
+    // Export on the one, and Stop on the other, which is the control a running export is looked at for.
+    await page.viewport(1280, 500);
+    const host = shim();
+    mountInto(host, readShim(host), {
+      loadItems: loaded,
+      popup: popupDependencies({ stylePackage: SAMPLE_STYLE_PACKAGE_FULL }),
+      // Never completes, so the progress dialog stays on screen with the run going
+      convert: () => new Promise(() => {}),
+    });
+    const root = host.shadowRoot!;
+    await vi.waitFor(() => expect(root.querySelector('.polarion-rpw-table-counts')).not.toBeNull());
+
+    root.querySelectorAll<HTMLInputElement>('input.export-item').forEach((box) => box.click());
+    root.querySelector<HTMLElement>('#bulk-export-pdf')!.click();
+    await vi.waitFor(() => expect(root.querySelector('#popup-style-package-content')).not.toBeNull());
+
+    expect(scrollers(root)).toEqual(['rsp-modal-content']);
+
+    root.querySelector<HTMLButtonElement>('.rsp-modal-footer .sbb-btn--primary')!.click();
+    await vi.waitFor(() => expect(root.querySelector('.bulk-export-progress')).not.toBeNull());
+
+    expect(scrollers(root)).not.toContain('rsp-modal');
   });
 });

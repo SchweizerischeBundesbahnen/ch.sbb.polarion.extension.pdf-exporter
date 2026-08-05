@@ -1,5 +1,6 @@
 import type { Root } from 'react-dom/client';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { page } from 'vitest/browser';
 import { openExportPopup } from '../src/popup/mount';
 import { popupRoutes } from './exportPopupSamples';
 import { installFetchMock } from './mockFetch';
@@ -27,7 +28,21 @@ const open = (options: Parameters<typeof openExportPopup>[0] = {}) => {
   return root;
 };
 
-afterEach(() => {
+/** The viewport the rest of the suite runs at, restored after the two tests that change it. */
+const DEFAULT_VIEWPORT = { width: 1280, height: 720 } as const;
+
+/** Everything inside the dialog that has more to show than it shows, and offers a scrollbar for it. */
+const scrollers = (shadow: ShadowRoot): string[] =>
+  [...new Set(shadow.querySelectorAll('*'))]
+    .filter(
+      (element) =>
+        element.scrollHeight > element.clientHeight + 1 &&
+        ['auto', 'scroll'].includes(getComputedStyle(element).overflowY),
+    )
+    .map((element) => element.className || element.tagName);
+
+afterEach(async () => {
+  await page.viewport(DEFAULT_VIEWPORT.width, DEFAULT_VIEWPORT.height);
   // Unmount before removing the host, so the dialog's own effects run their cleanup
   roots.splice(0).forEach((root) => root.unmount());
   document.querySelectorAll('body > div').forEach((element) => {
@@ -86,6 +101,40 @@ describe('mounting the export dialog', () => {
 
     const dialog = shadow()!.querySelector<HTMLElement>('.rsp-modal')!;
     expect(dialog.getBoundingClientRect().width).toBeGreaterThan(640);
+  });
+
+  it('may use the whole window height, not the share the shared modal allows itself', async () => {
+    // The regression this guards: RSP's Modal caps the dialog at 85vh, which is 135px less than this at a
+    // 900px window - enough to put a scrollbar on a form that had none on the page before. The cap here is
+    // the window less the 16px margin the shared modal already keeps at its sides.
+    await page.viewport(1280, 900);
+    open({ location: location('LIVE_DOC') });
+    await loaded();
+
+    const dialog = shadow()!.querySelector<HTMLElement>('.rsp-modal')!;
+    expect(getComputedStyle(dialog).maxHeight).toBe(`${window.innerHeight - 32}px`);
+    // Whatever the form's height, the dialog itself is never the scroller
+    expect(scrollers(shadow()!)).not.toContain('rsp-modal');
+  });
+
+  it('scrolls its content and nothing else where the form does not fit', async () => {
+    await page.viewport(1280, 560);
+    open({ location: location('LIVE_DOC') });
+    await loaded();
+
+    // Exactly one scrollbar, and on the content: the title and the buttons stay where they are
+    expect(scrollers(shadow()!)).toEqual(['rsp-modal-content']);
+
+    const header = shadow()!.querySelector('.rsp-modal-header')!.getBoundingClientRect();
+    const footer = shadow()!.querySelector('.rsp-modal-footer')!.getBoundingClientRect();
+    const content = shadow()!.querySelector('.rsp-modal-content')!;
+    content.scrollTop = content.scrollHeight;
+
+    expect(shadow()!.querySelector('.rsp-modal-header')!.getBoundingClientRect().top).toBe(header.top);
+    expect(shadow()!.querySelector('.rsp-modal-footer')!.getBoundingClientRect().bottom).toBe(footer.bottom);
+    // Both are on screen, which is the point of the dialog not being the scroller
+    expect(header.top).toBeGreaterThanOrEqual(0);
+    expect(footer.bottom).toBeLessThanOrEqual(window.innerHeight);
   });
 
   it('reads the item out of the page URL when it is not told where it is', async () => {

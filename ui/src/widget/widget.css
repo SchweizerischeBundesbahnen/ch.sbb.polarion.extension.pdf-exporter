@@ -286,9 +286,25 @@ input[type='checkbox']:indeterminate {
    styling belongs with the widget, and the values are the ones it had. */
 
 /* The legacy dialog was `width: 80vw` capped at 750px. RSP's Modal sizes itself to its content, which for a
-   list of item names is too narrow to read as a dialog, so the lower bound is stated back. */
+   list of item names is too narrow to read as a dialog, so the lower bound is stated back.
+
+   The height is handled as the export dialog handles its own (see popup/export-popup.css): a flex column
+   that does not scroll, whose content area is the only scroller. A bulk run over many items would otherwise
+   scroll the whole dialog and take the Stop button off screen - which is the one control the user needs
+   while the run is the reason they are looking at it. */
 .rsp-modal:has(.bulk-export-progress) {
   width: min(600px, 100vw - 32px);
+  max-height: calc(100vh - 32px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* `min-height: 0` is what lets a flex item shrink below its content - without it the list keeps its full
+   height and the dialog overflows again. */
+.rsp-modal:has(.bulk-export-progress) .rsp-modal-content {
+  overflow: auto;
+  min-height: 0;
 }
 
 .bulk-export-progress .export-item {
