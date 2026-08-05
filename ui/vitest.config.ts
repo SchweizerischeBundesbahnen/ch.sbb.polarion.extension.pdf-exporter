@@ -72,12 +72,15 @@ export default defineConfig({
     },
     coverage: {
       // istanbul (source instrumented at transform time), NOT v8: in browser mode v8 intermittently
-      // reports 0% depending on the dep-optimization cache. `all: false` so the istanbul uncovered-files
-      // pass (which can crash in browser mode) never runs.
+      // reports 0% depending on the dep-optimization cache.
       provider: 'istanbul',
       reporter: ['text', 'html', 'lcov'],
       reportsDirectory: './coverage',
-      all: false,
+      // `include` also pulls untested files into the report (Vitest 4 runs the uncovered-files pass
+      // whenever it is set), so an unimported source file cannot silently pass the threshold gate. It
+      // replaced `coverage.all`, which Vitest 4 dropped from the option type: the `all: false` that used to
+      // sit here did nothing at runtime - the istanbul provider never reads it - and only showed up as a
+      // type error in the IDE. `tsc --noEmit` does not see it either way, tsconfig covering `src` only.
       include: ['src/**'],
       // Excluded: the app bootstrap (main.tsx), declaration files and CSS, plus the dev-only Landing
       // page (`vite dev` scaffolding never opened in Polarion; the router test covers its selection
