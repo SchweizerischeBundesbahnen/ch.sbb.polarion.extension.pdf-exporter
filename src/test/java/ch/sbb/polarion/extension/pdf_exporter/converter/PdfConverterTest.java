@@ -502,16 +502,7 @@ class PdfConverterTest {
     }
 
     @Test
-    void shouldResolveDocumentLanguageFromDefaultDocLanguageCustomField() {
-        IEnumOption enumOption = mock(IEnumOption.class);
-        when(enumOption.getId()).thenReturn("de");
-        when(module.getCustomField("docLanguage")).thenReturn(enumOption);
-
-        assertThat(newPdfConverter().resolveDocumentLanguage(languageTestDocumentData(), ExportParams.builder().build())).isEqualTo("de");
-    }
-
-    @Test
-    void shouldResolveDocumentLanguageFromConfiguredCustomField() {
+    void shouldResolveConfiguredEnumLanguageCustomField() {
         IEnumOption enumOption = mock(IEnumOption.class);
         when(enumOption.getId()).thenReturn("fr");
         when(module.getCustomField("myLanguageField")).thenReturn(enumOption);
@@ -521,14 +512,39 @@ class PdfConverterTest {
     }
 
     @Test
-    void shouldReadDocumentLanguageStringValueDirectly() {
+    void shouldResolveConfiguredStringLanguageValue() {
         when(module.getCustomField("docLanguage")).thenReturn("de");
+        ExportParams exportParams = ExportParams.builder().languageCustomField("docLanguage").build();
 
-        assertThat(newPdfConverter().resolveDocumentLanguage(languageTestDocumentData(), ExportParams.builder().build())).isEqualTo("de");
+        assertThat(newPdfConverter().resolveDocumentLanguage(languageTestDocumentData(), exportParams)).isEqualTo("de");
     }
 
     @Test
-    void shouldReturnNullLanguageWhenDocLanguageFieldAbsent() {
+    void shouldNotResolveLanguageWhenNoCustomFieldConfigured() {
+        // Opt-in: with no configured field id nothing is read, so existing exports keep the template default
         assertThat(newPdfConverter().resolveDocumentLanguage(languageTestDocumentData(), ExportParams.builder().build())).isNull();
+    }
+
+    @Test
+    void shouldReturnNullWhenLanguageCustomFieldMissing() {
+        ExportParams exportParams = ExportParams.builder().languageCustomField("docLanguage").build();
+
+        assertThat(newPdfConverter().resolveDocumentLanguage(languageTestDocumentData(), exportParams)).isNull();
+    }
+
+    @Test
+    void shouldReturnNullWhenLanguageCustomFieldReadThrows() {
+        when(module.getCustomField("badField")).thenThrow(new IllegalArgumentException("no such field"));
+        ExportParams exportParams = ExportParams.builder().languageCustomField("badField").build();
+
+        assertThat(newPdfConverter().resolveDocumentLanguage(languageTestDocumentData(), exportParams)).isNull();
+    }
+
+    @Test
+    void shouldRejectNonIsoLanguageValue() {
+        when(module.getCustomField("docLanguage")).thenReturn("German");
+        ExportParams exportParams = ExportParams.builder().languageCustomField("docLanguage").build();
+
+        assertThat(newPdfConverter().resolveDocumentLanguage(languageTestDocumentData(), exportParams)).isNull();
     }
 }

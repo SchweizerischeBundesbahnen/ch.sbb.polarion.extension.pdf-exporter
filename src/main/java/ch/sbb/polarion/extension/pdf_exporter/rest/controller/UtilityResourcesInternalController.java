@@ -5,10 +5,10 @@ import ch.sbb.polarion.extension.pdf_exporter.properties.PdfExporterExtensionCon
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
 import ch.sbb.polarion.extension.pdf_exporter.service.PdfExporterPolarionService;
 import ch.sbb.polarion.extension.pdf_exporter.util.DocumentFileNameHelper;
+import ch.sbb.polarion.extension.pdf_exporter.util.DocumentLanguageResolver;
 import ch.sbb.polarion.extension.pdf_exporter.util.EnumValuesProvider;
 import com.polarion.alm.tracker.model.IModule;
 import com.polarion.alm.tracker.model.ITrackerProject;
-import com.polarion.platform.persistence.IEnumOption;
 import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -79,8 +79,7 @@ public class UtilityResourcesInternalController {
     public String getDocumentLanguage(@QueryParam("projectId") String projectId, @QueryParam("spaceId") String spaceId,
                                       @QueryParam("documentName") String documentName, @QueryParam("revision") String revision) {
         IModule module = pdfExporterPolarionService.getModule(projectId, spaceId, documentName, revision);
-        Object documentLanguageField = module.getCustomField(DOC_LANGUAGE_FIELD);
-        return (documentLanguageField instanceof IEnumOption option) ? option.getId() : null;
+        return DocumentLanguageResolver.readLanguageCode(module, DOC_LANGUAGE_FIELD);
     }
 
     @GET

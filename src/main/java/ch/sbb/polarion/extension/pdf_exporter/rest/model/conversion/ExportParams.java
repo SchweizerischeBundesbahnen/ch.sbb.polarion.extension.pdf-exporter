@@ -93,7 +93,7 @@ public class ExportParams extends ConversionParams {
     @Schema(description = "Language in the exported document")
     private String language;
 
-    @Schema(description = "ID of the LiveDoc custom field holding the document language (ISO 639-1); defaults to 'docLanguage'")
+    @Schema(description = "ID of the LiveDoc custom field holding the document language as an ISO 639-1 code (e.g. 'docLanguage'); leave empty to disable language injection")
     private String languageCustomField;
 
     @Schema(description = "Specific Workitem roles", example = "[\"has parent\", \"depends on\"]")

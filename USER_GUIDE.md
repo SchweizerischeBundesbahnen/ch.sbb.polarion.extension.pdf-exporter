@@ -270,7 +270,8 @@ The fields specified in this setting will be automatically embedded into the res
 The ID of the LiveDoc custom field that holds the document's language. Its value is used as-is as the
 [ISO 639-1] language code (e.g. `de`, `en`, `fr`) and injected
 into the HTML sent to WeasyPrint as the `<html lang="…">` attribute, which lets WeasyPrint hyphenate the text according
-to that language. Leave the field empty to fall back to the default `docLanguage` custom field.
+to that language. A common choice is the `docLanguage` custom field; leaving this setting empty disables language
+injection, so the export keeps its default language.
 
 Note that setting the language only enables language-aware hyphenation; the hyphenation itself must be turned on in the
 style package's CSS, for example:

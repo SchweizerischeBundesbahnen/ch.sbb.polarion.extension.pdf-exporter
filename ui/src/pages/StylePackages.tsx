@@ -56,7 +56,8 @@ const WORK_ITEMS_QUERY_HELP =
 
 const LANGUAGE_CUSTOM_FIELD_HELP =
   'ID of the LiveDoc custom field that holds the document language. Its value is used as-is as the ISO 639-1 ' +
-  "code (e.g. 'de', 'en', 'fr') and injected into the exported HTML as the <html lang> attribute.";
+  "code (e.g. 'de', 'en', 'fr') and injected into the exported HTML as the <html lang> attribute. Leave empty to " +
+  'disable language injection.';
 
 /**
  * The form behind the page. It is not the stored document: a setting the document expresses as "null

@@ -23,6 +23,7 @@ import ch.sbb.polarion.extension.pdf_exporter.settings.LocalizationSettings;
 import ch.sbb.polarion.extension.pdf_exporter.settings.WebhooksSettings;
 import ch.sbb.polarion.extension.pdf_exporter.util.DebugDataStorage;
 import ch.sbb.polarion.extension.pdf_exporter.util.DocumentDataFactory;
+import ch.sbb.polarion.extension.pdf_exporter.util.DocumentLanguageResolver;
 import ch.sbb.polarion.extension.pdf_exporter.util.EnumValuesProvider;
 import ch.sbb.polarion.extension.pdf_exporter.util.HtmlLogger;
 import ch.sbb.polarion.extension.pdf_exporter.util.MediaUtils;
@@ -34,7 +35,6 @@ import ch.sbb.polarion.extension.pdf_exporter.util.PdfTemplateProcessor;
 import ch.sbb.polarion.extension.pdf_exporter.util.PolarionTypes;
 import ch.sbb.polarion.extension.pdf_exporter.util.html.HtmlLinksHelper;
 import ch.sbb.polarion.extension.pdf_exporter.util.placeholder.PlaceholderProcessor;
-import ch.sbb.polarion.extension.pdf_exporter.util.placeholder.PlaceholderValues;
 import ch.sbb.polarion.extension.pdf_exporter.util.velocity.VelocityEvaluator;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.WeasyPrintOptions;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.service.WeasyPrintServiceConnector;
@@ -45,7 +45,6 @@ import com.polarion.alm.tracker.model.ITrackerProject;
 import com.polarion.core.util.StringUtils;
 import com.polarion.core.util.logging.Logger;
 import com.polarion.platform.internal.security.UserAccountVault;
-import com.polarion.platform.persistence.IEnumOption;
 import lombok.AllArgsConstructor;
 import org.apache.commons.text.StringEscapeUtils;
 import org.glassfish.jersey.media.multipart.FormDataBodyPart;
@@ -349,29 +348,10 @@ public class PdfConverter {
         return pdfTemplateProcessor.processUsing(exportParams, documentName, htmlData.cssContent, content, metaTags, documentLanguage);
     }
 
-    /**
-     * Resolves the document's language (ISO 639-1) so it can be injected as the {@code lang} attribute of the exported
-     * HTML, letting WeasyPrint hyphenate. The LiveDoc custom field to read is taken from the style package
-     * ({@code languageCustomField}, defaulting to {@code docLanguage}); its value is expected to already be an ISO
-     * 639-1 code (an enum option id or a plain string). Returns {@code null} when no language can be resolved (e.g.
-     * non-LiveDoc exports or an empty field), in which case the template falls back to the default.
-     */
     @Nullable
     @VisibleForTesting
     String resolveDocumentLanguage(@NotNull DocumentData<? extends IUniqueObject> documentData, @NotNull ExportParams exportParams) {
-        if (!(documentData.getDocumentObject() instanceof IModule module)) {
-            return null;
-        }
-        String fieldId = StringUtils.isEmpty(exportParams.getLanguageCustomField())
-                ? PlaceholderValues.DOC_LANGUAGE_FIELD
-                : exportParams.getLanguageCustomField();
-        Object fieldValue = module.getCustomField(fieldId);
-        if (fieldValue instanceof IEnumOption enumOption) {
-            return enumOption.getId();
-        } else if (fieldValue instanceof String stringValue) {
-            return StringUtils.isEmpty(stringValue) ? null : stringValue;
-        }
-        return null;
+        return DocumentLanguageResolver.resolve(documentData, exportParams);
     }
 
     @NotNull
