@@ -521,11 +521,10 @@ class PdfConverterTest {
     }
 
     @Test
-    void shouldMapDocumentLanguageValueToIsoCode() {
-        when(module.getCustomField("docLanguage")).thenReturn("German");
-        ExportParams exportParams = ExportParams.builder().languageMapping("German=de\nEnglish=en").build();
+    void shouldReadDocumentLanguageStringValueDirectly() {
+        when(module.getCustomField("docLanguage")).thenReturn("de");
 
-        assertThat(newPdfConverter().resolveDocumentLanguage(languageTestDocumentData(), exportParams)).isEqualTo("de");
+        assertThat(newPdfConverter().resolveDocumentLanguage(languageTestDocumentData(), ExportParams.builder().build())).isEqualTo("de");
     }
 
     @Test

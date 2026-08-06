@@ -79,7 +79,6 @@ class StylePackageSettingsTest {
                     .coverPage("customCoverPage")
                     .orientation("customOrientation")
                     .languageCustomField("docLanguage")
-                    .languageMapping("German=de")
                     .build();
             customProjectModel.setBundleTimestamp("custom");
             when(mockedSettingsService.read(eq(mockProjectLocation), any())).thenReturn(customProjectModel.serialize());
@@ -92,7 +91,6 @@ class StylePackageSettingsTest {
             assertEquals("customCoverPage", loadedModel.getCoverPage());
             assertEquals("customOrientation", loadedModel.getOrientation());
             assertEquals("docLanguage", loadedModel.getLanguageCustomField());
-            assertEquals("German=de", loadedModel.getLanguageMapping());
             assertEquals("custom", loadedModel.getBundleTimestamp());
             assertNull(loadedModel.getRenderComments());
 

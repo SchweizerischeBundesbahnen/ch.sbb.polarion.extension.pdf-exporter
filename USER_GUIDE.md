@@ -25,6 +25,7 @@
     * [Specific Workitem roles](#specific-workitem-roles)
     * [Work items query](#work-items-query)
     * [Metadata fields](#metadata-fields)
+    * [Document language custom field (hyphenation)](#document-language-custom-field-hyphenation)
     * [File name](#file-name)
     * [Download attachments](#download-attachments)
     * [Embed attachments into resulted PDF](#embed-attachments-into-resulted-pdf)
@@ -264,6 +265,21 @@ If you select this checkbox, an input field will appear where you can specify wh
 The fields specified in this setting will be automatically embedded into the resulting PDF as metadata.
 
 ![Metadata fields](docs/user_guide/img/metadata_fields.png)
+
+### Document language custom field (hyphenation)
+The ID of the LiveDoc custom field that holds the document's language. Its value is used as-is as the
+[ISO 639-1] language code (e.g. `de`, `en`, `fr`) and injected
+into the HTML sent to WeasyPrint as the `<html lang="…">` attribute, which lets WeasyPrint hyphenate the text according
+to that language. Leave the field empty to fall back to the default `docLanguage` custom field.
+
+Note that setting the language only enables language-aware hyphenation; the hyphenation itself must be turned on in the
+style package's CSS, for example:
+
+```css
+.content { hyphens: auto; }
+```
+
+![Document language custom field](docs/user_guide/img/style_package_document_language.png)
 
 ### Custom styles of numbered lists
 If you select this checkbox, an input field will appear where you can override the default styles of numbered lists inlined in text. Shortcuts are used for simplicity:

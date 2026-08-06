@@ -352,9 +352,9 @@ public class PdfConverter {
     /**
      * Resolves the document's language (ISO 639-1) so it can be injected as the {@code lang} attribute of the exported
      * HTML, letting WeasyPrint hyphenate. The LiveDoc custom field to read is taken from the style package
-     * ({@code languageCustomField}, defaulting to {@code docLanguage}); its raw value is optionally translated to an
-     * ISO code via the style package's {@code languageMapping}. Returns {@code null} when no language can be resolved
-     * (e.g. non-LiveDoc exports or an empty field), in which case the template falls back to the default.
+     * ({@code languageCustomField}, defaulting to {@code docLanguage}); its value is expected to already be an ISO
+     * 639-1 code (an enum option id or a plain string). Returns {@code null} when no language can be resolved (e.g.
+     * non-LiveDoc exports or an empty field), in which case the template falls back to the default.
      */
     @Nullable
     @VisibleForTesting
@@ -366,40 +366,12 @@ public class PdfConverter {
                 ? PlaceholderValues.DOC_LANGUAGE_FIELD
                 : exportParams.getLanguageCustomField();
         Object fieldValue = module.getCustomField(fieldId);
-        String rawLanguage;
         if (fieldValue instanceof IEnumOption enumOption) {
-            rawLanguage = enumOption.getId();
+            return enumOption.getId();
         } else if (fieldValue instanceof String stringValue) {
-            rawLanguage = stringValue;
-        } else {
-            rawLanguage = null;
+            return StringUtils.isEmpty(stringValue) ? null : stringValue;
         }
-        if (StringUtils.isEmpty(rawLanguage)) {
-            return null;
-        }
-        return applyLanguageMapping(rawLanguage, exportParams.getLanguageMapping());
-    }
-
-    /**
-     * Translates a raw document-language value to an ISO 639-1 code using the style package's mapping ('value=code'
-     * per line, case-insensitive). Returns the raw value unchanged when there is no mapping or no matching entry.
-     */
-    @NotNull
-    private String applyLanguageMapping(@NotNull String rawLanguage, @Nullable String languageMapping) {
-        if (StringUtils.isEmpty(languageMapping)) {
-            return rawLanguage;
-        }
-        for (String line : languageMapping.split("\\R")) {
-            int separatorIndex = line.indexOf('=');
-            if (separatorIndex > 0) {
-                String key = line.substring(0, separatorIndex).trim();
-                String value = line.substring(separatorIndex + 1).trim();
-                if (key.equalsIgnoreCase(rawLanguage)) {
-                    return value;
-                }
-            }
-        }
-        return rawLanguage;
+        return null;
     }
 
     @NotNull

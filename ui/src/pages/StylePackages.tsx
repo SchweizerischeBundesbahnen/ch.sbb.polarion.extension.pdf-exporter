@@ -116,6 +116,10 @@ const WORK_ITEMS_QUERY_HELP =
   "Lucene query applied to filter work items within the document, e.g. 'type:requirement'. Leave empty to " +
   'include all work items.';
 
+const LANGUAGE_CUSTOM_FIELD_HELP =
+  'ID of the LiveDoc custom field that holds the document language. Its value is used as-is as the ISO 639-1 ' +
+  "code (e.g. 'de', 'en', 'fr') and injected into the exported HTML as the <html lang> attribute.";
+
 /** Content of one named `style-package` configuration, as `StylePackageModel` serializes it. */
 interface StylePackageSettings {
   matchingQuery?: string | null;
@@ -147,7 +151,6 @@ interface StylePackageSettings {
   customNumberedListStyles?: string | null;
   language?: string | null;
   languageCustomField?: string | null;
-  languageMapping?: string | null;
   linkedWorkitemRoles?: string[] | null;
   linkRoleDirection?: string | null;
   workItemsQuery?: string | null;
@@ -199,7 +202,6 @@ interface Form {
   localizeEnums: boolean;
   language: string;
   languageCustomField: string;
-  languageMapping: string;
   rolesEnabled: boolean;
   linkedWorkitemRoles: string[];
   linkRoleDirection: string;
@@ -276,7 +278,6 @@ function toForm(content: StylePackageSettings): Form {
     localizeEnums: !!content.language,
     language: content.language ?? 'de',
     languageCustomField: content.languageCustomField ?? '',
-    languageMapping: content.languageMapping ?? '',
     rolesEnabled: roles.length > 0,
     linkedWorkitemRoles: roles,
     linkRoleDirection: content.linkRoleDirection ?? 'BOTH',
@@ -470,7 +471,6 @@ export default function StylePackages() {
       customNumberedListStyles: form.customListStylesEnabled ? form.customNumberedListStyles : null,
       language: form.localizeEnums ? form.language : null,
       languageCustomField: form.languageCustomField.trim() || null,
-      languageMapping: form.languageMapping.trim() || null,
       linkedWorkitemRoles: form.rolesEnabled ? form.linkedWorkitemRoles : null,
       linkRoleDirection: form.rolesEnabled ? form.linkRoleDirection : null,
       exposePageWidthValidation: form.exposePageWidthValidation,
@@ -965,7 +965,8 @@ export default function StylePackages() {
               />
             </div>
             <div className="input-group with-value">
-              <label htmlFor="language-custom-field">Language custom field (hyphenation)</label>
+              <label htmlFor="language-custom-field">Document Language custom field</label>
+              <span className="more-info" title={LANGUAGE_CUSTOM_FIELD_HELP} />
               <input
                 id="language-custom-field"
                 className="grows"
@@ -973,17 +974,6 @@ export default function StylePackages() {
                 placeholder="docLanguage"
                 value={form.languageCustomField}
                 onChange={(e) => patch({ languageCustomField: e.target.value })}
-              />
-            </div>
-            <div className="input-group with-value">
-              <label htmlFor="language-mapping">Language value mapping (value=ISO 639-1 per line)</label>
-              <textarea
-                id="language-mapping"
-                className="grows"
-                rows={3}
-                placeholder="e.g. German=de"
-                value={form.languageMapping}
-                onChange={(e) => patch({ languageMapping: e.target.value })}
               />
             </div>
           </div>

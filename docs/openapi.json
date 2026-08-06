@@ -2146,10 +2146,6 @@
             "description": "ID of the LiveDoc custom field holding the document language (ISO 639-1); defaults to 'docLanguage'",
             "type": "string"
           },
-          "languageMapping": {
-            "description": "Optional mapping of document-language custom field values to ISO 639-1 codes, one 'value=code' per line",
-            "type": "string"
-          },
           "linkRoleDirection": {
             "description": "Direction of linked workitem roles resolution",
             "enum": [
