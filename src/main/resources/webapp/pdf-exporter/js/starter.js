@@ -109,10 +109,9 @@
             pending.length = 0;
             return;
         }
-        // Nothing is injected for the export dialog any more: it styles itself inside its own shadow root.
-        // What is left is this extension's own toolbar-button rules; the .dleToolBar* ones (incl. the
-        // disabled state) come from generic's css/dle-toolbar.css, which the toolbar engine injects itself.
-        generic.injectStyles("pdf-exporter-styles", `${EXT_BASE}css/pdf-exporter.css${timestampParam}`);
+        // No stylesheet is injected here any more: the export dialog styles itself inside its own shadow
+        // root, and the button's .dleToolBar* rules (incl. the disabled state) come from generic's
+        // css/dle-toolbar.css, which the toolbar engine injects itself.
 
         // The engine owns the disabled state: it injects the button disabled, runs permissionCheck,
         // then enables it if permitted (or keeps it disabled on failure — fail-closed), and preserves

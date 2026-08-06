@@ -30,15 +30,17 @@
     `ExportPopupModal` directly instead, being part of the same app. Its CSS is
     `ui/src/popup/export-popup.css`.
 
-  No shadow-mounted surface's CSS belongs in `pdf-exporter.css`, which a shadow root cannot see. That file
-  is down to the report-toolbar button rules; see [`ui/README.md`](ui/README.md) for the layering.
+  Each shadow root carries its own CSS, so the extension now puts **no stylesheet on a Polarion page at
+  all**. `css/pdf-exporter.css` is deleted and the injectors call no `injectStyle`; the toolbar buttons use
+  Polarion's own classes plus generic's `css/dle-toolbar.css`. See [`ui/README.md`](ui/README.md) for the
+  layering.
 - **`webapp/pdf-exporter/js/modules/` is gone.** `ExportPopup.js`, `ExportPanel.js`, `ExportContext.js` and
   `ExportParams.js` were ported into the app: `ui/src/export/` (the shared export model - which rows a
   document type shows, a style package read into a form, a form turned into a request),
   `ui/src/services/exportContext.ts` (the location hash) and `ui/src/services/conversion.ts` (the convert-job
   protocol). Nothing is loaded across webapps at runtime any more. What is left in `webapp/pdf-exporter` is
-  the three injector scripts, `css/starter.css`, the slim `css/pdf-exporter.css` and the three HTML templates
-  the Java renderer reads server-side (`sidePanelContent.html`, `pdfTemplate.html`, `headerAndFooter.html`).
+  the three injector scripts, the empty `css/starter.css` trigger and the three HTML templates the Java
+  renderer reads server-side (`sidePanelContent.html`, `pdfTemplate.html`, `headerAndFooter.html`).
 - **The UI build comes from the generic parent**, activated by the presence of `ui/package.json` (its
   `vite-ui` profile): `npm ci` + `npm run build`, the bundle copied into `webapp/pdf-exporter-app/`, and
   the JS suite in the Maven `test` phase. This pom adds nothing for it. Note it also redirects

@@ -57,20 +57,19 @@ describe('live-reports.js injector', function () {
 
     const flushPromises = () => new Promise((resolve) => setTimeout(resolve, 0));
 
-    it('injects this extension\'s own toolbar stylesheet, and nothing else', async function () {
+    it('injects no stylesheet at all', async function () {
         await loadInjector();
 
-        const link = document.getElementById('pdf-exporter-styles');
-        expect(link).to.exist;
-        expect(link.tagName).to.equal('LINK');
-
-        // The export dialog is a React module that styles itself inside its own shadow root, so the six
-        // generic control stylesheets and the micromodal library it used to need on the page are gone.
-        for (const id of ['pdf-micromodal-styles', 'pdf-micromodal-script', 'generic-control-tokens',
-            'generic-checkbox-styles', 'generic-searchable-dropdown-styles', 'generic-inputs-styles',
-            'generic-alerts-styles']) {
+        // The button uses Polarion's own toolbar classes and the export dialog is a React module that
+        // styles itself inside its own shadow root. So this extension's own page stylesheet is gone,
+        // along with the six generic control stylesheets and the micromodal library the legacy popup
+        // needed on the page.
+        for (const id of ['pdf-exporter-styles', 'pdf-micromodal-styles', 'pdf-micromodal-script',
+            'generic-control-tokens', 'generic-checkbox-styles', 'generic-searchable-dropdown-styles',
+            'generic-inputs-styles', 'generic-alerts-styles']) {
             expect(document.getElementById(id), id).to.not.exist;
         }
+        expect(document.querySelectorAll('link[rel="stylesheet"]').length).to.equal(0);
     });
 
     it('creates the report-toolbar starter against the richPagePreview target and injects', async function () {

@@ -1,14 +1,14 @@
 /* The look of the Document Properties side panel, injected into its shadow root.
 
-   These rules are the panel's half of webapp/pdf-exporter/css/pdf-exporter.css, which the
+   These rules are the panel's half of the deleted webapp/pdf-exporter/css/pdf-exporter.css, which the
    server-rendered panel used to load as a page stylesheet. A shadow root sees none of the page's rules,
    so they live here now, bundled with the panel and injected into the root next to
    react-sbb-polarion's stylesheet (see shadowMount.ts). Every value is the one the legacy panel had, so
    the panel looks exactly as it did.
 
-   The page copy stays where it is: the DLE toolbar popup is still server-rendered markup in the page
-   body and needs `.property-wrapper` / `.buttons-wrapper` there. That duplication ends when the popup is
-   migrated too.
+   There is no page copy any more. The export popup is a React surface in a shadow root of its own and
+   carries its `.property-wrapper` / `.buttons-wrapper` rules in popup/export-popup.css, so the
+   duplication that stylesheet held ended when the popup was migrated.
 
    The ids below are the legacy fragment's own. They are safe to keep - and worth keeping, the rules
    being copies - because inside a shadow root they cannot collide with anything on the editor page.

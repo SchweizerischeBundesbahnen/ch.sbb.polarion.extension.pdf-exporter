@@ -4,17 +4,16 @@
  *
  *   scriptInjection.mainHead=<script src="/polarion/pdf-exporter/js/live-reports.js"></script>
  *
- * It provides two things:
- *
- * 1. An "Export to PDF" button in the native Live Report toolbar (the one behind "Expand Tools"),
- *    injected via the shared self-healing engine — no report modification needed. The button
- *    appears only in view mode, once the toolbar is expanded. To keep that toolbar always
- *    expanded (Polarion itself forgets the state on every page open), opt in with:
+ * It injects an "Export to PDF" button into the native Live Report toolbar (the one behind
+ * "Expand Tools") via the shared self-healing engine — no report modification needed. The button
+ * appears only in view mode, once the toolbar is expanded. To keep that toolbar always expanded
+ * (Polarion itself forgets the state on every page open), opt in with:
  *
  *   scriptInjection.mainHead=<script src="/polarion/pdf-exporter/js/live-reports.js" data-expand-tools="true"></script>
  *
- * 2. This extension's own toolbar-button stylesheet. The export dialog needs nothing on the page: it
- *    is a React module that mounts into a shadow root of its own, styles included.
+ * Nothing else is put on the page. The button uses Polarion's own toolbar classes, and the export
+ * dialog is a React module that mounts into a shadow root of its own, styles included — so this
+ * script injects no stylesheet.
  *
  * This script replaces loading starter.js via mainHead (deprecated). The element ids match the
  * ones starter.js uses, so nothing is injected twice if both run.
@@ -52,7 +51,7 @@
                 <td><img src="/polarion/ria/images/toolbar_splitter_gray.gif" class="gwt-Image polarion-dle-ToolbarPanel-separator"></td>
                 <td><div class="gwt-Label polarion-dle-toolbar-Padding"></div></td>
                 <td style="vertical-align: middle;">
-                    <table class="polarion-dle-toolbar-ButtonWithLabel polarion-Button-shared polarion-Button-HighlightOnHover pdf-rp-toolbar-button"
+                    <table class="polarion-dle-toolbar-ButtonWithLabel polarion-Button-shared polarion-Button-HighlightOnHover"
                            role="button" cellpadding="0" cellspacing="0" title="Export to PDF" tabindex="0"
                            onclick="import('${POPUP_MODULE}')
                                       .then(module => module.openExportPopup({documentType: 'LIVE_REPORT'}))
@@ -66,17 +65,6 @@
                 </td>
             </tr>
         </table>`;
-
-    function injectStyle(id, href) {
-        if (!top.document.getElementById(id)) {
-            const link = top.document.createElement('link');
-            link.id = id;
-            link.rel = 'stylesheet';
-            link.type = 'text/css';
-            link.href = href;
-            top.document.head.appendChild(link);
-        }
-    }
 
     // Load the shared engine once across all extensions and resolve when it is ready. Using a single
     // shared promise (kept on `top`) is race-free for the multi-extension case: whichever extension's
@@ -106,9 +94,6 @@
         }
         return top.__genericDleToolbarEnginePromise;
     }
-
-    // Only this extension's own toolbar-button rules. Everything the export dialog needs travels with it.
-    injectStyle('pdf-exporter-styles', `${EXT_BASE}css/pdf-exporter.css${timestampParam}`);
 
     // Load the shared self-healing engine and inject the report-toolbar button through it.
     loadEngine(`${EXT_BASE}ui/generic/js/dle-toolbar-starter.js${timestampParam}`).then(function () {

@@ -78,9 +78,9 @@ What they share is [`src/export/`](src/export/) plus two services:
 
 The last two were `webapp/pdf-exporter/js/modules/ExportContext.js` and `ExportParams.js`, loaded at
 runtime from the other webapp by whichever surface needed them. Nothing loads them any more and
-`js/modules/` is gone; what remains in that webapp is the three injector scripts, `css/starter.css`, a
-`css/pdf-exporter.css` holding only the report-toolbar button rules, and the three HTML templates the Java
-renderer reads server-side.
+`js/modules/` is gone; what remains in that webapp is the three injector scripts, the empty
+`css/starter.css` trigger, and the three HTML templates the Java renderer reads server-side.
+`css/pdf-exporter.css` is gone too: the injectors put no stylesheet on the page any more.
 
 `export/documentType.ts` deliberately answers two questions rather than one. The legacy popup showed a
 handful of rows for a baseline collection - fit to page, mark referenced work items, the two "cut empty"

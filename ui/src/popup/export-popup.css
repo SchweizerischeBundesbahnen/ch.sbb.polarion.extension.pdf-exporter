@@ -1,8 +1,8 @@
 /* The look of the "Export to PDF" dialog, injected into its shadow root.
 
-   These rules are the popup's half of webapp/pdf-exporter/css/pdf-exporter.css, which the legacy popup
-   loaded as a page stylesheet (injected by starter.js / live-reports.js and inlined by the bulk widget
-   renderer). A shadow root sees none of the page's rules, so they live here now, bundled with the popup and
+   These rules are the popup's half of the deleted webapp/pdf-exporter/css/pdf-exporter.css, which the
+   legacy popup loaded as a page stylesheet (injected by starter.js / live-reports.js and inlined by the
+   bulk widget renderer). A shadow root sees none of the page's rules, so they live here now, bundled with the popup and
    injected into the root next to react-sbb-polarion's stylesheet - see mount.tsx. Every value is the one the
    legacy popup had, so the dialog looks as it did.
 

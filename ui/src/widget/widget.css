@@ -8,7 +8,7 @@
 
    Every value below is Polarion's own, read from
    `com.polarion.alm.ui_<version>/war/gwt/polarion/rpe_content_*.css` in a 2606 installation, plus the
-   handful of overrides the widget always had in pdf-exporter.css. Where a rule differs from Polarion's,
+   handful of overrides the widget always had in the deleted pdf-exporter.css. Where a rule differs from Polarion's,
    it says so. The button's border, background and text colors were not in a stylesheet at all: the
    server-rendered widget set them inline from `LinearGradientColor`, whose default #F0F0F0 button
    computes to the three values used here.
@@ -280,8 +280,8 @@ input[type='checkbox']:indeterminate {
 
 /* --- The bulk export progress dialog ------------------------------------------------------------- */
 
-/* One row per selected item, its state as the run reaches it. These rules were in the page copy of
-   pdf-exporter.css, under `.modal__container.pdf-exporter`, because the dialog was micromodal markup
+/* One row per selected item, its state as the run reaches it. These rules were in the page copy of the
+   deleted pdf-exporter.css, under `.modal__container.pdf-exporter`, because the dialog was micromodal markup
    portalled into the report page's body. It is RSP's shared Modal inside this shadow root now, so its
    styling belongs with the widget, and the values are the ones it had. */
 
