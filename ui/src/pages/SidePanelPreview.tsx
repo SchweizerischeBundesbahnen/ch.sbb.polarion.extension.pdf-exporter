@@ -49,7 +49,7 @@ export default function SidePanelPreview() {
 
     let root: { unmount: () => void } | undefined;
     let cancelled = false;
-    void import('../formext/mount').then(({ mountSidePanel }) => {
+    void import('../sidepanel/mount').then(({ mountSidePanel }) => {
       if (cancelled) {
         return;
       }

@@ -87,7 +87,7 @@ export default defineConfig(({ command, mode }) => {
         input: {
           index: fileURLToPath(new URL('index.html', import.meta.url)),
           'bulk-widget': fileURLToPath(new URL('src/widget/main.tsx', import.meta.url)),
-          'side-panel': fileURLToPath(new URL('src/formext/mount.tsx', import.meta.url)),
+          'side-panel': fileURLToPath(new URL('src/sidepanel/mount.tsx', import.meta.url)),
           'export-popup': fileURLToPath(new URL('src/popup/mount.tsx', import.meta.url)),
         },
         output: {

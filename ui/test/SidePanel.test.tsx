@@ -1,9 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render } from 'vitest-browser-react';
 import { userEvent } from 'vitest/browser';
-import SidePanel from '../src/formext/SidePanel';
-import type { SidePanelDependencies } from '../src/formext/SidePanel';
 import type { StylePackageSettings } from '../src/services/stylePackage';
+import SidePanel from '../src/sidepanel/SidePanel';
+import type { SidePanelDependencies } from '../src/sidepanel/SidePanel';
 import { installFetchMock } from './mockFetch';
 import type { Route } from './mockFetch';
 import {

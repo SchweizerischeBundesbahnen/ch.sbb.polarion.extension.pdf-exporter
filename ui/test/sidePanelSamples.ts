@@ -1,9 +1,9 @@
 import type { SelectOption } from '@grigoriev/react-sbb-polarion';
 import type { PanelData } from '../src/export/exportData';
-import type { SidePanelDependencies } from '../src/formext/SidePanel';
 import type { ConversionResult } from '../src/services/conversion';
 import type { DocumentIdentity } from '../src/services/exportContext';
 import type { StylePackageSettings } from '../src/services/stylePackage';
+import type { SidePanelDependencies } from '../src/sidepanel/SidePanel';
 
 /**
  * A side panel filled in without a Polarion behind it: the fixture the panel's suites share.
@@ -12,8 +12,8 @@ import type { StylePackageSettings } from '../src/services/stylePackage';
  * of which a browser test has. This stands in for all three, so the behavior suites and the visual
  * references describe the same panel.
  *
- * It lived in `src/formext/` while the development harness rendered stubbed states. The harness now runs the
- * real panel against a real document (`pages/SidePanelPreview.tsx`), so nothing in `src/` uses this any
+ * It lived next to the panel in `src/` while the development harness rendered stubbed states. The harness
+ * now runs the real panel against a real document (`pages/SidePanelPreview.tsx`), so nothing in `src/` uses this any
  * more and it belongs here - out of the shipped tree and out of the coverage denominator, a fixture's
  * coverage percentage meaning nothing.
  */

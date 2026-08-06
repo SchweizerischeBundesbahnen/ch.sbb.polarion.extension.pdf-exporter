@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { mountSidePanel } from '../src/formext/mount';
+import { mountSidePanel } from '../src/sidepanel/mount';
 import { sampleDependencies } from './sidePanelSamples';
 
 // How the panel gets into the document editor: PdfExporterFormExtension emits a fragment whose <link>

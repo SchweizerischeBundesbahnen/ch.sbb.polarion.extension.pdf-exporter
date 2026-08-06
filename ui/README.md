@@ -49,11 +49,11 @@ blank page in Polarion and no test catches it.
 at runtime, each built to a **fixed** name because its importer names it by URL and cannot know the hash
 Vite would emit:
 
-| Entry                   | Emitted as               | Imported by                                                                            | Export it is called through |
-| ----------------------- | ------------------------ | -------------------------------------------------------------------------------------- | --------------------------- |
-| `src/widget/main.tsx`   | `assets/bulk-widget.js`  | `BulkPdfExportWidgetRenderer`                                                          | `default(selector)`         |
-| `src/formext/mount.tsx` | `assets/side-panel.js`   | `webapp/pdf-exporter/html/sidePanelContent.html`                                        | `mountSidePanel(selector)`  |
-| `src/popup/mount.tsx`   | `assets/export-popup.js` | `webapp/pdf-exporter/js/starter.js`, `js/live-reports.js`, `ExportToPdfButtonRenderer` | `openExportPopup(options)`  |
+| Entry                     | Emitted as               | Imported by                                                                            | Export it is called through |
+| ------------------------- | ------------------------ | -------------------------------------------------------------------------------------- | --------------------------- |
+| `src/widget/main.tsx`     | `assets/bulk-widget.js`  | `BulkPdfExportWidgetRenderer`                                                          | `default(selector)`         |
+| `src/sidepanel/mount.tsx` | `assets/side-panel.js`   | `webapp/pdf-exporter/html/sidePanelContent.html`                                        | `mountSidePanel(selector)`  |
+| `src/popup/mount.tsx`     | `assets/export-popup.js` | `webapp/pdf-exporter/js/starter.js`, `js/live-reports.js`, `ExportToPdfButtonRenderer` | `openExportPopup(options)`  |
 
 All three need `rollupOptions.preserveEntrySignatures: 'strict'` to keep that export, which a Vite app
 build otherwise drops. Nothing in the Vitest suites sees the built files, so
@@ -147,15 +147,16 @@ pixel-locked in `test/BulkExportWidget.visual.test.tsx`.
 
 ## The Document Properties side panel
 
-The "PDF Exporter" pane of the document editor's Document Properties sidebar is `src/formext/`, built to
+The "PDF Exporter" pane of the document editor's Document Properties sidebar is `src/sidepanel/`, built to
 `assets/side-panel.js`. `PdfExporterFormExtension` contributes nothing but the fragment that imports it:
 an empty `#pdf-exporter-panel` div plus a `<link>` to an empty `css/starter.css` whose `onload` fires the
 import (an inline module `<script>` does not run inside a GWT-injected fragment).
 
 It mounts into a **shadow root** of that div. The properties pane is one page shared by every extension's
 panel, each possibly built against a different RSP version, so the isolation goes both ways:
-`shadowMount.ts` injects RSP's stylesheet, a base-font rule (nothing inside a shadow root inherits the
-page's font) and the panel's own `side-panel.css` into the root, and none of it can leak out. The
+`services/shadowMount.ts` (shared with the export dialog) injects RSP's stylesheet, a base-font rule
+(nothing inside a shadow root inherits the page's font) and the panel's own `side-panel.css` into the
+root, and none of it can leak out. The
 SearchableDropdown popup is shadow-aware and portals into the same root.
 
 Everything the panel offers is read over REST from the endpoints the DLE toolbar's export popup has always

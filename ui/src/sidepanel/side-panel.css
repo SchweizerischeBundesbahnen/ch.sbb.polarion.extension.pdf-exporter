@@ -3,7 +3,7 @@
    These rules are the panel's half of the deleted webapp/pdf-exporter/css/pdf-exporter.css, which the
    server-rendered panel used to load as a page stylesheet. A shadow root sees none of the page's rules,
    so they live here now, bundled with the panel and injected into the root next to
-   react-sbb-polarion's stylesheet (see shadowMount.ts). Every value is the one the legacy panel had, so
+   react-sbb-polarion's stylesheet (see services/shadowMount.ts). Every value is the one the legacy panel had, so
    the panel looks exactly as it did.
 
    There is no page copy any more. The export popup is a React surface in a shadow root of its own and

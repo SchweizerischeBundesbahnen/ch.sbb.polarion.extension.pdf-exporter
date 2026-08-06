@@ -12,7 +12,7 @@ import panelStyle from './side-panel.css?inline';
  * and calls `mountSidePanel("#pdf-exporter-panel")`.
  *
  * The panel is mounted inside a **shadow root** on that fragment div, so its styles are fully encapsulated
- * on the shared editor page (see shadowMount.ts). The wrapper classes the panel CSS expects
+ * on the shared editor page (see services/shadowMount.ts). The wrapper classes the panel CSS expects
  * (`pdf-exporter form-wrapper`) plus the token scope (`sbb-ui`) are reproduced on the inner container, and
  * `side-panel.css` is bundled (via `?inline`) and injected into the shadow alongside
  * react-sbb-polarion's bundled stylesheet.
