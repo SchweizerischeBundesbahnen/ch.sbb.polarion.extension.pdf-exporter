@@ -57,6 +57,7 @@ export interface ExportForm {
   customNumberedListStyles: string;
   localizeEnums: boolean;
   language: string;
+  languageCustomField: string;
   rolesEnabled: boolean;
   linkedWorkitemRoles: string[];
   linkRoleDirection: string;
@@ -134,6 +135,8 @@ export function toExportForm(content: StylePackageSettings, context: ExportFormC
     customNumberedListStyles: content.customNumberedListStyles ?? '',
     localizeEnums: !!content.language,
     language: documentLanguage ?? content.language ?? LANGUAGES[0].id,
+    // Admin-only field (no control): carried from the package so the export request keeps it, like the popup does.
+    languageCustomField: content.languageCustomField ?? '',
     rolesEnabled: roles.length > 0,
     linkedWorkitemRoles: roles,
     linkRoleDirection: content.linkRoleDirection ?? DEFAULT_LINK_ROLE_DIRECTION,
