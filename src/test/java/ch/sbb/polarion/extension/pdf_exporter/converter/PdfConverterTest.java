@@ -541,6 +541,16 @@ class PdfConverterTest {
     }
 
     @Test
+    void shouldNormalizeUnderscoreLocaleToHyphen() {
+        IEnumOption enumOption = mock(IEnumOption.class);
+        when(enumOption.getId()).thenReturn("de_CH");
+        when(module.getCustomField("docLanguage")).thenReturn(enumOption);
+        ExportParams exportParams = ExportParams.builder().languageCustomField("docLanguage").build();
+
+        assertThat(newPdfConverter().resolveDocumentLanguage(languageTestDocumentData(), exportParams)).isEqualTo("de-CH");
+    }
+
+    @Test
     void shouldRejectNonIsoLanguageValue() {
         when(module.getCustomField("docLanguage")).thenReturn("German");
         ExportParams exportParams = ExportParams.builder().languageCustomField("docLanguage").build();

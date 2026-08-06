@@ -27,36 +27,37 @@ public final class DocumentLanguageResolver {
     }
 
     /**
-     * Reads a custom field of the given module as a language code: the id of an enum option, or a non-blank plain
-     * string value. Returns {@code null} when the field is unset or of another type.
-     */
-    public static @Nullable String readLanguageCode(@NotNull IModule module, @NotNull String fieldId) {
-        Object value = module.getCustomField(fieldId);
-        if (value instanceof IEnumOption enumOption) {
-            return enumOption.getId();
-        }
-        return (value instanceof String string && !string.isBlank()) ? string : null;
-    }
-
-    /**
      * Resolves the document's language for injection into {@code <html lang>}. The feature is opt-in: the style
      * package must name the LiveDoc custom field to read ({@code languageCustomField}); when it is unset nothing is
-     * read and {@code null} is returned, so existing exports are unaffected. The field value must be a valid ISO 639-1
-     * style tag - any other value (free text, quotes, placeholder tokens) is ignored so it can never break or be
-     * injected into the attribute. Reading is guarded so an unknown field id cannot fail the whole export.
+     * read and {@code null} is returned, so existing exports are unaffected. The field's value (an enum option id or a
+     * plain string) must be a valid ISO 639-1 style tag - any other value (free text, quotes, placeholder tokens) is
+     * ignored so it can never break or be injected into the attribute. Underscore locale separators (e.g. an enum id
+     * {@code de_CH}) are normalized to hyphens. Reading is guarded so an unknown field id cannot fail the export.
      */
     public static @Nullable String resolve(@NotNull DocumentData<? extends IUniqueObject> documentData, @NotNull ExportParams exportParams) {
         String fieldId = exportParams.getLanguageCustomField();
         if (StringUtils.isEmpty(fieldId) || !(documentData.getDocumentObject() instanceof IModule module)) {
             return null;
         }
-        String language;
+        String raw;
         try {
-            language = readLanguageCode(module, fieldId);
+            Object value = module.getCustomField(fieldId);
+            if (value instanceof IEnumOption enumOption) {
+                raw = enumOption.getId();
+            } else if (value instanceof String string) {
+                raw = string;
+            } else {
+                return null;
+            }
         } catch (Exception e) {
             logger.warn(String.format("Could not read document language custom field '%s': %s", fieldId, e.getMessage()));
             return null;
         }
-        return language != null && ISO_LANGUAGE_TAG.matcher(language).matches() ? language : null;
+        if (raw == null) {
+            return null;
+        }
+        // Polarion enum ids often use underscores for locales (e.g. 'de_CH'); emit a valid hyphenated BCP 47 tag.
+        String normalized = raw.replace('_', '-');
+        return ISO_LANGUAGE_TAG.matcher(normalized).matches() ? normalized : null;
     }
 }

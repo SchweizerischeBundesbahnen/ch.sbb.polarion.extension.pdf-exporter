@@ -1,9 +1,9 @@
 package ch.sbb.polarion.extension.pdf_exporter.util.placeholder;
 
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.headerfooter.Placeholder;
-import ch.sbb.polarion.extension.pdf_exporter.util.DocumentLanguageResolver;
 import ch.sbb.polarion.extension.pdf_exporter.util.PolarionTypes;
 import com.polarion.alm.tracker.model.IModule;
+import com.polarion.platform.persistence.IEnumOption;
 import lombok.Builder;
 import lombok.ToString;
 import org.jetbrains.annotations.NotNull;
@@ -96,8 +96,12 @@ public class PlaceholderValues {
     }
 
     private @NotNull Locale getDocumentLocale(@NotNull IModule document) {
-        String language = DocumentLanguageResolver.readLanguageCode(document, DOC_LANGUAGE_FIELD);
-        return language != null ? Locale.forLanguageTag(language) : Locale.getDefault();
+        Object docLanguage = document.getCustomField(DOC_LANGUAGE_FIELD);
+        if (docLanguage instanceof IEnumOption enumOption) {
+            return Locale.forLanguageTag(enumOption.getId());
+        } else {
+            return Locale.getDefault();
+        }
     }
 
     private @NotNull TimeZone getDocumentTimeZone(@NotNull IModule document) {
