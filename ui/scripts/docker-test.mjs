@@ -7,6 +7,8 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const uiDir = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+// The repository root, not uiDir, is what gets mounted - see the -v argument below.
+const repoRoot = resolve(uiDir, '..');
 
 // Which inner npm script to run in the container (default: test).
 const script = process.argv[2] || 'test';
@@ -34,13 +36,18 @@ const args = [
   // then print as an [ERROR] line in an otherwise clean build.
   '-e',
   'COREPACK_ENABLE_DOWNLOAD_PROMPT=0',
+  // The whole repository, not just ui/, so the container sees the same layout as the host. The `node`
+  // project of vitest.config.ts tests the product injector scripts in
+  // src/main/resources/webapp/pdf-exporter/js/, which sit outside ui/ - with ui/ alone mounted their
+  // relative import resolves to a path that does not exist in the container. Nothing outside ui/ is
+  // read by the suite otherwise, and a bind mount copies nothing, so this costs no time.
   '-v',
-  `${uiDir}:/work`,
+  `${repoRoot}:/work`,
   // Shadow node_modules so the container's Linux install does not overwrite host binaries.
   '-v',
-  '/work/node_modules',
+  '/work/ui/node_modules',
   '-w',
-  '/work',
+  '/work/ui',
   image,
   'bash',
   '-c',

@@ -219,6 +219,26 @@ npm run test:update:docker     # regenerate the committed reference PNGs after a
 > Docker wrapper invokes; the visual suites detect that they are not in the reference environment and
 > skip themselves, so a run there proves nothing about the screenshots.
 
+### Two projects
+
+`vitest.config.ts` declares two projects, and every command above runs both:
+
+| Project | Environment | Files | Tests |
+| --- | --- | --- | --- |
+| `browser` | real Chromium via Playwright | `test/**/*.{test,spec}.{ts,tsx}` | this app, in `src/` |
+| `node` | jsdom | `test/**/*.node.test.ts` | the product injector scripts in `src/main/resources/webapp/pdf-exporter/js/` |
+
+Target one with `--project`, e.g. `npx vitest run --project node`.
+
+The injectors are page scripts served from the `pdf-exporter` webapp, not part of this bundle. They had
+their own mocha suite, `package.json` and `node_modules/` at the repository root; that second toolchain
+is gone. They stay out of browser mode on purpose: the scripts drive the **top** frame, and Vitest
+browser mode runs each test file in an iframe while keeping `top` for its own runner page, which is
+never reloaded between files. Their import specifier must be written out in full at each call site - the
+files sit outside the Vite root, and a specifier held in a variable resolves against the root instead.
+
+Coverage is unaffected by the `node` project: the gate's `include` is `src/**`, relative to `ui/`.
+
 ## Formatting & linting
 
 ```bash
@@ -234,7 +254,7 @@ under `ui/`. They are check-only and never modify your files.
 ## Production build
 
 `npm run build` emits all four entries to `ui/dist/app` with base path
-`/polarion/pdf-exporter-app/ui/app/`. The Maven build (frontend-maven-plugin +
-maven-resources-plugin) runs this automatically and copies the bundle into
+`/polarion/pdf-exporter-app/ui/app/`. The Maven build (the parent's `vite-ui` profile:
+frontend-maven-plugin + maven-resources-plugin) runs this automatically and copies the bundle into
 `src/main/resources/webapp/pdf-exporter-app/app`, where `PdfExporterAppServlet` serves it at
 `/polarion/pdf-exporter-app/ui/app/index.html`.

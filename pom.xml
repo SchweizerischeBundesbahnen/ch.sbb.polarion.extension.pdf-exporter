@@ -84,10 +84,10 @@
         <markdown2html-maven-plugin.disclaimer.outputFileName>disclaimer.html</markdown2html-maven-plugin.disclaimer.outputFileName>
         <markdown2html-maven-plugin.disclaimer.outputFile>${markdown2html-maven-plugin.extensionContextAdminHtml}/${markdown2html-maven-plugin.disclaimer.outputFileName}</markdown2html-maven-plugin.disclaimer.outputFile>
 
+        <!-- Not for a plugin declared here: this project declares no frontend-maven-plugin of its own
+             any more. The parent's vite-ui profile reads this property, so it pins the version the ui/
+             build runs with, one minor ahead of the parent's own default. -->
         <frontend-maven-plugin.version>2.0.2</frontend-maven-plugin.version>
-
-        <!--suppress UnresolvedMavenProperty -->
-        <skipJavaScriptTests>${skipTests}</skipJavaScriptTests>
     </properties>
 
 
@@ -400,63 +400,6 @@
             <plugin>
                 <groupId>io.github.grigoriev</groupId>
                 <artifactId>pre-commit-run-maven-plugin</artifactId>
-            </plugin>
-
-            <plugin>
-                <groupId>com.github.eirslett</groupId>
-                <artifactId>frontend-maven-plugin</artifactId>
-                <version>${frontend-maven-plugin.version}</version>
-                <executions>
-                    <execution>
-                        <id>install-node-and-npm</id>
-                        <goals>
-                            <goal>install-node-and-npm</goal>
-                        </goals>
-                        <configuration>
-                            <!-- Spelled out per execution since the React app arrived: the parent's
-                                 vite-ui profile declares this same plugin with a plugin-level
-                                 <workingDirectory>ui</workingDirectory>, which Maven merges into this
-                                 declaration and which would otherwise move the product-JS build into
-                                 ui/ - where `npm run test` is the Vitest browser suite, not this
-                                 project's mocha one. Setting it at plugin level here is not an option
-                                 either: that would drag the parent's own vite executions back out of
-                                 ui/. -->
-                            <workingDirectory>${project.basedir}</workingDirectory>
-                            <nodeVersion>${frontend-maven-plugin.nodeVersion}</nodeVersion>
-                            <npmVersion>${frontend-maven-plugin.npmVersion}</npmVersion>
-                            <skip>${skipJavaScriptTests}</skip>
-                        </configuration>
-                        <phase>test</phase>
-                    </execution>
-
-                    <!-- Install JavaScript dependencies using npm -->
-                    <execution>
-                        <id>npm-install</id>
-                        <goals>
-                            <goal>npm</goal>
-                        </goals>
-                        <configuration>
-                            <workingDirectory>${project.basedir}</workingDirectory>
-                            <arguments>install</arguments>
-                            <skip>${skipJavaScriptTests}</skip>
-                        </configuration>
-                        <phase>test</phase>
-                    </execution>
-
-                    <!-- Run JavaScript tests -->
-                    <execution>
-                        <id>npm-test</id>
-                        <goals>
-                            <goal>npm</goal>
-                        </goals>
-                        <configuration>
-                            <workingDirectory>${project.basedir}</workingDirectory>
-                            <arguments>run test</arguments>
-                            <skip>${skipJavaScriptTests}</skip>
-                        </configuration>
-                        <phase>test</phase>
-                    </execution>
-                </executions>
             </plugin>
         </plugins>
     </build>
