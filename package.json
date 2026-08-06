@@ -1,15 +1,14 @@
 {
   "name": "maven-js-project",
   "scripts": {
-    "test": "cross-env NODE_OPTIONS=\"--experimental-loader=./src/test/js/path-redirector.mjs\" npx mocha src/test/js/**/*.js"
+    "test": "mocha --node-option import=./src/test/js/register-hooks.mjs src/test/js/**/*.js"
   },
   "type": "module",
   "version": "1.0.0",
   "devDependencies": {
     "chai": "6.2.2",
-    "cross-env": "10.1.0",
     "jsdom": "30.0.1",
-    "mocha": "11.7.6"
+    "mocha": "11.8.0"
   },
   "overrides": {
     "serialize-javascript": "^7.0.3",

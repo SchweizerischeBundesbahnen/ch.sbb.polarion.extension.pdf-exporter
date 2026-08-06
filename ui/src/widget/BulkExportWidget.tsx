@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import type { BulkCallback, ExportParamsLike, createExportContext } from '../services/productModules';
+import { openExportPopup } from '../services/productModules';
 import useRemote from '../services/useRemote';
 import BulkExportProgressModal from './BulkExportProgressModal';
-import type { BulkCallback, ExportParamsLike, createExportContext } from './productModules';
-import { openExportPopup } from './productModules';
 import type { BulkExportItem, BulkExportItems, WidgetShim } from './types';
 import useBulkExport from './useBulkExport';
 

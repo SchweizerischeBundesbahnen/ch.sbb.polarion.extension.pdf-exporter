@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState } from 'react';
-import type { ConversionResult, ExportContextLike, ExportParamsLike } from './productModules';
-import { createExportContext } from './productModules';
+import type { ConversionResult, ExportContextLike, ExportParamsLike } from '../services/productModules';
+import { createExportContext } from '../services/productModules';
 import type { BulkExportItem, DocumentType } from './types';
 
 export type BulkExportStatus = 'closed' | 'in-progress' | 'interrupted' | 'finished';

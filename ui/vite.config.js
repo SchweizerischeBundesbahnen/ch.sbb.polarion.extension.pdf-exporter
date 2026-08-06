@@ -75,22 +75,27 @@ export default defineConfig(({ command, mode }) => {
       rollupOptions: {
         // Keep what an entry exports. A Vite app build assumes its entries are only ever executed, so it
         // drops their exports - which leaves the widget bundle without the `default` the renderer's
-        // `import(...).then(module => module.default(...))` calls. scripts/check-widget-entry.mjs guards
-        // this after every build, since no test sees the built file.
+        // `import(...).then(module => module.default(...))` calls, and the side panel bundle without its
+        // `mountSidePanel`. scripts/check-runtime-entries.mjs guards both after every build, since no test
+        // sees the built files.
         preserveEntrySignatures: 'strict',
-        // Two entries: the admin SPA (index.html) and the bulk export widget, which is imported at
-        // runtime by the widget renderer on a Polarion report page.
+        // Three entries: the admin SPA (index.html), the bulk export widget imported at runtime by the
+        // widget renderer on a Polarion report page, and the Document Properties side panel imported by
+        // the form-extension fragment in the document editor.
         input: {
           index: fileURLToPath(new URL('index.html', import.meta.url)),
           'bulk-widget': fileURLToPath(new URL('src/widget/main.tsx', import.meta.url)),
+          'side-panel': fileURLToPath(new URL('src/formext/mount.tsx', import.meta.url)),
         },
         output: {
-          // The widget's file name must stay predictable: BulkPdfExportWidgetRenderer imports it by
-          // URL and cannot know the hash Vite would append. It appends the extension version instead,
-          // which is what busts the browser cache on an update.
+          // These two file names must stay predictable: their importers name them by URL and cannot know
+          // the hash Vite would append. They append the extension version instead, which is what busts
+          // the browser cache on an update.
           entryFileNames: (chunk) =>
-            chunk.name === 'bulk-widget' ? 'assets/bulk-widget.js' : 'assets/[name]-[hash].js',
-          // What both entries share (React above all) lands in one chunk. Rollup would name it after
+            chunk.name === 'bulk-widget' || chunk.name === 'side-panel'
+              ? `assets/${chunk.name}.js`
+              : 'assets/[name]-[hash].js',
+          // What the entries share (React above all) lands in one chunk. Rollup would name it after
           // whichever module it happened to pick, which reads as nonsense next to bulk-widget.js on a
           // report page.
           chunkFileNames: 'assets/shared-[hash].js',

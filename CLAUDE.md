@@ -10,12 +10,21 @@
   `ui/src/features.tsx` - a mismatch is a blank page and no test catches it. The legacy
   `pdf-exporter-admin` webapp is gone: its menu icons moved to `webapp/pdf-exporter-app/images/`, so
   two webapps remain - `pdf-exporter` (REST + the product JS) and `pdf-exporter-app`.
-- **`pdf-exporter-app` also serves the Bulk PDF Export widget**, which is not an administration page:
-  `BulkPdfExportWidgetRenderer` emits a shim on the report page and imports the app's second Vite entry,
-  `assets/bulk-widget.js`, which mounts React into a shadow root of that shim. The rows come from
-  `POST /widgets/bulk-export/items`, carrying the signed descriptor the renderer resolved - see
-  `WidgetDescriptorSigner` for why it is signed, and [`ui/README.md`](ui/README.md) for the layering.
-  The widget's own CSS lives in `ui/src/widget/widget.css`, not in `pdf-exporter.css`.
+- **`pdf-exporter-app` also serves two surfaces that are not administration pages**, each a Vite entry of
+  its own with a **fixed** file name (their importers name them by URL) kept exporting by
+  `preserveEntrySignatures: 'strict'` and guarded by `ui/scripts/check-runtime-entries.mjs`:
+  - **Bulk PDF Export widget** - `BulkPdfExportWidgetRenderer` emits a shim on the report page and imports
+    `assets/bulk-widget.js`, which mounts React into a shadow root of that shim. The rows come from
+    `POST /widgets/bulk-export/items`, carrying the signed descriptor the renderer resolved - see
+    `WidgetDescriptorSigner` for why it is signed. Its CSS is `ui/src/widget/widget.css`.
+  - **Document Properties side panel** - `PdfExporterFormExtension` emits only a fragment (an empty
+    `#pdf-exporter-panel` div plus a `<link>` to `css/starter.css` whose `onload` fires the import) and
+    `assets/side-panel.js` mounts React into a shadow root of it. It reads its data from the same internal
+    REST endpoints the DLE toolbar popup uses; the Java side substitutes nothing but the bundle version.
+    Its CSS is `ui/src/formext/side-panel.css`. `js/modules/ExportPanel.js` is its unused predecessor.
+
+  Neither one's CSS belongs in `pdf-exporter.css`, which a shadow root cannot see. See
+  [`ui/README.md`](ui/README.md) for the layering.
 - **The UI build comes from the generic parent**, activated by the presence of `ui/package.json` (its
   `vite-ui` profile): `npm ci` + `npm run build`, the bundle copied into `webapp/pdf-exporter-app/`, and
   the JS suite in the Maven `test` phase. This pom adds nothing for it. Note it also redirects

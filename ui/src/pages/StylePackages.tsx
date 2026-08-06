@@ -13,89 +13,33 @@ import {
 import { toast } from 'sonner';
 import { getScope } from '../services/scope';
 import useNamedSettings from '../services/settings';
+import {
+  CHILD_SETTINGS,
+  COMMENTS_RENDER_TYPES,
+  type ChildNames,
+  type ChildSetting,
+  DEFAULT_HEADERS_COLOR,
+  DEFAULT_IMAGE_DENSITY,
+  DEFAULT_NAME,
+  DEFAULT_ORIENTATION,
+  DEFAULT_PAPER_SIZE,
+  DEFAULT_PDF_VARIANT,
+  DEFAULT_RENDER_COMMENTS,
+  FULL_FONTS_HELP,
+  IMAGE_DENSITIES,
+  LANGUAGES,
+  LINK_ROLE_DIRECTIONS,
+  NATIVE_COMMENTS_HELP,
+  NO_CHILD_NAMES,
+  ORIENTATIONS,
+  PAPER_SIZES,
+  PDF_VARIANTS,
+  type StylePackageSettings,
+  UNREFERENCED_COMMENTS_HELP,
+} from '../services/stylePackage';
 import useRemote from '../services/useRemote';
 
 const FEATURE = 'style-package';
-
-/** The configuration every child dropdown falls back to, and the one whose matching query is unused. */
-const DEFAULT_NAME = 'Default';
-
-/** The `value` of the JSP page's color input, kept so an unset color looks the way it always did. */
-const DEFAULT_HEADERS_COLOR = '#004d73';
-
-/**
- * The named settings a style package points at. Each of them is an administration page of its own, so
- * this page only lists their names - it never reads their content.
- */
-const CHILD_SETTINGS = ['cover-page', 'css', 'header-footer', 'localization', 'webhooks'] as const;
-type ChildSetting = (typeof CHILD_SETTINGS)[number];
-type ChildNames = Record<ChildSetting, SelectOption[]>;
-
-const NO_CHILD_NAMES: ChildNames = {
-  'cover-page': [],
-  css: [],
-  'header-footer': [],
-  localization: [],
-  webhooks: [],
-};
-
-const PAPER_SIZES: SelectOption[] = [
-  { id: 'A5', name: 'A5' },
-  { id: 'A4', name: 'A4' },
-  { id: 'A3', name: 'A3' },
-  { id: 'B5', name: 'B5' },
-  { id: 'B4', name: 'B4' },
-  { id: 'JIS_B5', name: 'JIS-B5' },
-  { id: 'JIS_B4', name: 'JIS-B4' },
-  { id: 'LETTER', name: 'Letter' },
-  { id: 'LEGAL', name: 'Legal' },
-  { id: 'LEDGER', name: 'Ledger' },
-];
-
-const ORIENTATIONS: SelectOption[] = [
-  { id: 'PORTRAIT', name: 'Portrait' },
-  { id: 'LANDSCAPE', name: 'Landscape' },
-];
-
-const PDF_VARIANTS: SelectOption[] = [
-  { id: 'PDF_A_1A', name: 'pdf/a-1a' },
-  { id: 'PDF_A_1B', name: 'pdf/a-1b' },
-  { id: 'PDF_A_2A', name: 'pdf/a-2a' },
-  { id: 'PDF_A_2B', name: 'pdf/a-2b' },
-  { id: 'PDF_A_2U', name: 'pdf/a-2u' },
-  { id: 'PDF_A_3A', name: 'pdf/a-3a' },
-  { id: 'PDF_A_3B', name: 'pdf/a-3b' },
-  { id: 'PDF_A_3U', name: 'pdf/a-3u' },
-  { id: 'PDF_A_4E', name: 'pdf/a-4e' },
-  { id: 'PDF_A_4F', name: 'pdf/a-4f' },
-  { id: 'PDF_A_4U', name: 'pdf/a-4u' },
-  { id: 'PDF_UA_1', name: 'pdf/ua-1' },
-  { id: 'PDF_UA_2', name: 'pdf/ua-2' },
-];
-
-const IMAGE_DENSITIES: SelectOption[] = [
-  { id: 'DPI_96', name: '96 dpi' },
-  { id: 'DPI_192', name: '192 dpi' },
-  { id: 'DPI_300', name: '300 dpi' },
-  { id: 'DPI_600', name: '600 dpi' },
-];
-
-const COMMENTS_RENDER_TYPES: SelectOption[] = [
-  { id: 'OPEN', name: 'Open' },
-  { id: 'ALL', name: 'All' },
-];
-
-const LANGUAGES: SelectOption[] = [
-  { id: 'de', name: 'Deutsch' },
-  { id: 'fr', name: 'Français' },
-  { id: 'it', name: 'Italiano' },
-];
-
-const LINK_ROLE_DIRECTIONS: SelectOption[] = [
-  { id: 'BOTH', name: 'Both directions' },
-  { id: 'DIRECT', name: 'Direct only' },
-  { id: 'REVERSE', name: 'Reverse only' },
-];
 
 const WEIGHT_HELP =
   'A float number from 0.0 to 100, which will determine the position of current style package in the ' +
@@ -106,12 +50,6 @@ const MATCHING_QUERY_HELP =
   "this query the style package won't be visible. If you want to make this style package be available to " +
   'all documents, just leave this field empty.';
 
-const FULL_FONTS_HELP =
-  'When enabled, fonts are embedded in their entirety without subsetting: full glyph coverage and better ' +
-  'editability of the resulting PDF, at the cost of a larger file. This is not a robustness switch: ' +
-  'subsetting already keeps a font whole when it cannot be applied, while skipping it can itself fail on ' +
-  'a damaged font.';
-
 const WORK_ITEMS_QUERY_HELP =
   "Lucene query applied to filter work items within the document, e.g. 'type:requirement'. Leave empty to " +
   'include all work items.';
@@ -119,46 +57,6 @@ const WORK_ITEMS_QUERY_HELP =
 const LANGUAGE_CUSTOM_FIELD_HELP =
   'ID of the LiveDoc custom field that holds the document language. Its value is used as-is as the ISO 639-1 ' +
   "code (e.g. 'de', 'en', 'fr') and injected into the exported HTML as the <html lang> attribute.";
-
-/** Content of one named `style-package` configuration, as `StylePackageModel` serializes it. */
-interface StylePackageSettings {
-  matchingQuery?: string | null;
-  weight?: number | null;
-  exposeSettings?: boolean;
-  coverPage?: string | null;
-  headerFooter?: string | null;
-  css?: string | null;
-  localization?: string | null;
-  webhooks?: string | null;
-  headersColor?: string | null;
-  paperSize?: string | null;
-  orientation?: string | null;
-  pdfVariant?: string | null;
-  imageDensity?: string | null;
-  fullFonts?: boolean;
-  fitToPage?: boolean;
-  renderComments?: string | null;
-  renderNativeComments?: boolean;
-  includeUnreferencedComments?: boolean;
-  watermark?: boolean;
-  markReferencedWorkitems?: boolean;
-  cutEmptyChapters?: boolean;
-  cutEmptyWorkitemAttributes?: boolean;
-  cutLocalURLs?: boolean;
-  followHTMLPresentationalHints?: boolean;
-  specificChapters?: string | null;
-  metadataFields?: string | null;
-  customNumberedListStyles?: string | null;
-  language?: string | null;
-  languageCustomField?: string | null;
-  linkedWorkitemRoles?: string[] | null;
-  linkRoleDirection?: string | null;
-  workItemsQuery?: string | null;
-  exposePageWidthValidation?: boolean;
-  attachmentsFilter?: string | null;
-  testcaseFieldId?: string | null;
-  embedAttachments?: boolean;
-}
 
 /**
  * The form behind the page. It is not the stored document: a setting the document expresses as "null
@@ -253,15 +151,15 @@ function toForm(content: StylePackageSettings): Form {
     webhooksEnabled: !!content.webhooks,
     webhooks: content.webhooks ?? DEFAULT_NAME,
     headersColor: content.headersColor ?? DEFAULT_HEADERS_COLOR,
-    paperSize: content.paperSize ?? 'A4',
-    orientation: content.orientation ?? 'PORTRAIT',
-    pdfVariant: content.pdfVariant ?? 'PDF_A_2B',
-    imageDensity: content.imageDensity ?? 'DPI_96',
+    paperSize: content.paperSize ?? DEFAULT_PAPER_SIZE,
+    orientation: content.orientation ?? DEFAULT_ORIENTATION,
+    pdfVariant: content.pdfVariant ?? DEFAULT_PDF_VARIANT,
+    imageDensity: content.imageDensity ?? DEFAULT_IMAGE_DENSITY,
     fullFonts: !!content.fullFonts,
     fitToPage: !!content.fitToPage,
     followHTMLPresentationalHints: !!content.followHTMLPresentationalHints,
     renderCommentsEnabled: !!content.renderComments,
-    renderComments: content.renderComments ?? 'OPEN',
+    renderComments: content.renderComments ?? DEFAULT_RENDER_COMMENTS,
     includeUnreferencedComments: !!content.includeUnreferencedComments,
     renderNativeComments: !!content.renderNativeComments,
     watermark: !!content.watermark,
@@ -815,10 +713,7 @@ export default function StylePackages() {
             </div>
             {form.renderCommentsEnabled && (
               <div className="checkbox input-group render-comments-options">
-                <label
-                  htmlFor="include-unreferenced-comments"
-                  title="Unreferenced comments will be rendered at the end of the document"
-                >
+                <label htmlFor="include-unreferenced-comments" title={UNREFERENCED_COMMENTS_HELP}>
                   <input
                     id="include-unreferenced-comments"
                     type="checkbox"
@@ -827,10 +722,7 @@ export default function StylePackages() {
                   />
                   include unreferenced
                 </label>
-                <label
-                  htmlFor="render-native-comments"
-                  title="Comments will be transformed into native PDF sticky notes/bubbles"
-                >
+                <label htmlFor="render-native-comments" title={NATIVE_COMMENTS_HELP}>
                   <input
                     id="render-native-comments"
                     type="checkbox"
