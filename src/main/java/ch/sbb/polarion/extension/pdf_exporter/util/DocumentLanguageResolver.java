@@ -19,8 +19,9 @@ import java.util.regex.Pattern;
  */
 public final class DocumentLanguageResolver {
 
-    // A permissive ISO 639-1 style language tag: 2-3 letters, optional subtags (e.g. 'de', 'en', 'de-CH').
-    private static final Pattern ISO_LANGUAGE_TAG = Pattern.compile("^[A-Za-z]{2,3}(-[A-Za-z0-9]+)*$");
+    // A permissive ISO 639-1 style language tag: 2-3 letters, optional subtags (e.g. 'de', 'en', 'de-CH'). The subtag
+    // repetition is possessive and its group non-capturing so it never backtracks recursively (Sonar java:S5998).
+    private static final Pattern ISO_LANGUAGE_TAG = Pattern.compile("^[A-Za-z]{2,3}(?:-[A-Za-z0-9]+)*+$");
     private static final Logger logger = Logger.getLogger(DocumentLanguageResolver.class);
 
     private DocumentLanguageResolver() {
@@ -41,14 +42,11 @@ public final class DocumentLanguageResolver {
         }
         String raw;
         try {
-            Object value = module.getCustomField(fieldId);
-            if (value instanceof IEnumOption enumOption) {
-                raw = enumOption.getId();
-            } else if (value instanceof String string) {
-                raw = string;
-            } else {
-                return null;
-            }
+            raw = switch (module.getCustomField(fieldId)) {
+                case IEnumOption enumOption -> enumOption.getId();
+                case String string -> string;
+                case null, default -> null;
+            };
         } catch (Exception e) {
             logger.warn(String.format("Could not read document language custom field '%s': %s", fieldId, e.getMessage()));
             return null;
