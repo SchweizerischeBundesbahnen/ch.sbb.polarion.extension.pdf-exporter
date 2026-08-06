@@ -21,6 +21,16 @@
    the page. Same intent, expressed against the shared modal: as wide as the two columns need, no wider
    than the viewport. Later in this root than the library's own rule, which is what makes it win.
 
+   732px is that width stated exactly: 340 + 20 gap + 340, plus the content area's 16px of padding a side.
+   The cap is what sizes the settings forms, because `max-content` asks for far more than they need - a
+   wrapping flex container's max-content is every item on ONE line, so the full-width rows (Headings color,
+   the query and file name fields) are added to the two columns instead of being stacked above them, and
+   this form asks for 997px. The previous 820px cap was simply a larger arbitrary number, and the 88px it
+   left over showed as dead space to the right of the columns while the full-width rows ran past them.
+
+   `max-content` is kept rather than replaced with a flat width: the bulk dialog has no settings block and
+   sizes itself to about 585px, and a flat 732px would stretch it for nothing.
+
    The height is the same story. RSP caps the whole dialog at 85vh and lets *it* scroll; the legacy popup
    capped its content area at 80vh and let only that scroll, so its header and footer stayed put and a
    dialog of this height needed no scrollbar at all at an ordinary window size. Both are restated here:
@@ -40,7 +50,7 @@
    size (see widget.css, which gives it the same treatment for the same reasons). */
 .rsp-modal:has(.pdf-export-form) {
   width: max-content;
-  max-width: min(820px, 100vw - 32px);
+  max-width: min(732px, 100vw - 32px);
   max-height: calc(100vh - 32px);
   display: flex;
   flex-direction: column;
@@ -122,8 +132,22 @@
   flex-wrap: wrap;
 }
 
+/* 340px wide in practice - two of them plus the 20px gap are exactly the 700px the dialog gives them - but
+   stated as a flex basis BELOW that, so they shrink instead of wrapping when something takes a few pixels
+   away. What takes them is a scrollbar: a classic one is about 15px, and at a fixed `width: 340px` the pair
+   no longer fits on one line, so the right column wraps under the left and the form becomes one tall
+   column. That is what a real Polarion showed while every reference screenshot stayed green, because
+   Playwright hides scrollbars in headless Chromium by default and the suite could not draw one. It does
+   now - `vitest.config.ts` passes `ignoreDefaultArgs: ['--hide-scrollbars']` - so a real scrollbar takes
+   real width in `ExportPopupMount.test.tsx` and in the `popup-small-window` reference, both of which fail
+   if this rule goes back to a fixed width.
+
+   The basis is 320 rather than 340 so the pair (660px + gap) still fits after that loss. They grow back to
+   340 each whenever the room is there, and below about 680px of content they still wrap to one column,
+   which is what a narrow window wants. A lone `.flex-column` in a container stretches to the full width;
+   nothing depends on its right edge, so no layout moves. */
 .flex-column {
-  width: 340px;
+  flex: 1 1 320px;
 }
 
 /* A group separated from the one above it by a hairline, as the legacy markup did with an inline style on
@@ -179,6 +203,14 @@
 .property-wrapper.wide {
   width: 100%;
   gap: 8px;
+}
+
+/* A row that takes a line of its own above the two columns, so the columns start level below it. The
+   colour picker uses it: it is the odd one out among the page settings, and leaving it in the left column
+   pushed "PDF variant" a row higher than "Paper size", so the four dropdowns did not line up as a block.
+   `wide` is not the same thing - it also widens the label-to-field gap for the query field. */
+.property-wrapper.full-row {
+  width: 100%;
 }
 
 .property-wrapper > label.nowrap {

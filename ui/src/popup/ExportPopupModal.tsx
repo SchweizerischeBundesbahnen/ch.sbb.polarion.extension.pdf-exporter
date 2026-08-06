@@ -508,19 +508,29 @@ export default function ExportPopupModal({
               </div>
             )}
 
+            {/*
+              One container for the whole settings block, NOT one per group of rows. A flex row is as tall
+              as its taller column, so a column split across several containers cannot use the space a
+              shorter neighbour leaves: the legacy popup had three of them here and "Headings color" sat
+              alone beside four dropdowns, leaving a hole, while a row hidden for a document type left
+              another one that the rows below it could not rise into. Two continuous columns have neither.
+
+              Paper size and Orientation sit in the left column for the same reason - they balance the
+              column that opens with the single colour picker. Keep both columns roughly equal in row count
+              when adding a field, and check every document type: which rows appear is decided per type by
+              `shows()`, so a field added to the longer column costs height only for some of them.
+            */}
             <div className="flex-container group-start">
-              <div className="flex-column">
-                <div className="property-wrapper">
-                  <label htmlFor="popup-headers-color" className="fixed-width w-1">
-                    Headings color:
-                  </label>
-                  <input
-                    id="popup-headers-color"
-                    type="color"
-                    value={form.headersColor}
-                    onChange={(e) => patch({ headersColor: e.target.value })}
-                  />
-                </div>
+              <div className="property-wrapper full-row">
+                <label htmlFor="popup-headers-color" className="fixed-width w-1">
+                  Headings color:
+                </label>
+                <input
+                  id="popup-headers-color"
+                  type="color"
+                  value={form.headersColor}
+                  onChange={(e) => patch({ headersColor: e.target.value })}
+                />
               </div>
               <div className="flex-column">
                 <div className="property-wrapper">
@@ -547,47 +557,6 @@ export default function ExportPopupModal({
                     disabled={busy}
                   />
                 </div>
-                <div className="property-wrapper">
-                  <label htmlFor="popup-pdf-variant-selector" className="fixed-width w-1">
-                    PDF variant:
-                  </label>
-                  <SearchableSelect
-                    id="popup-pdf-variant-selector"
-                    options={PDF_VARIANTS}
-                    value={form.pdfVariant}
-                    onChange={(value) => patch({ pdfVariant: value })}
-                    disabled={busy}
-                  />
-                </div>
-                <div className="property-wrapper">
-                  <label htmlFor="popup-image-density-selector" className="fixed-width w-1">
-                    Image density:
-                  </label>
-                  <SearchableSelect
-                    id="popup-image-density-selector"
-                    options={IMAGE_DENSITIES}
-                    value={form.imageDensity}
-                    onChange={(value) => patch({ imageDensity: value })}
-                    disabled={busy}
-                  />
-                </div>
-                <div className="property-wrapper">
-                  <label htmlFor="popup-full-fonts">
-                    <input
-                      id="popup-full-fonts"
-                      type="checkbox"
-                      checked={form.fullFonts}
-                      onChange={(e) => patch({ fullFonts: e.target.checked })}
-                    />
-                    Embed full fonts (no subsetting)
-                  </label>
-                  <div className="more-info" title={FULL_FONTS_HELP} />
-                </div>
-              </div>
-            </div>
-
-            <div className="flex-container">
-              <div className="flex-column">
                 {shows('fitToPage') && (
                   <div className="property-wrapper">
                     <label htmlFor="popup-fit-to-page">
@@ -676,63 +645,6 @@ export default function ExportPopupModal({
                     Watermark
                   </label>
                 </div>
-              </div>
-              <div className="flex-column">
-                {shows('cutEmptyChapters') && (
-                  <div className="property-wrapper">
-                    <label htmlFor="popup-cut-empty-chapters">
-                      <input
-                        id="popup-cut-empty-chapters"
-                        type="checkbox"
-                        checked={form.cutEmptyChapters}
-                        onChange={(e) => patch({ cutEmptyChapters: e.target.checked })}
-                      />
-                      Cut empty chapters (any level)
-                    </label>
-                  </div>
-                )}
-                {shows('cutEmptyWorkitemAttributes') && (
-                  <div className="property-wrapper">
-                    <label htmlFor="popup-cut-empty-wi-attributes">
-                      <input
-                        id="popup-cut-empty-wi-attributes"
-                        type="checkbox"
-                        checked={form.cutEmptyWorkitemAttributes}
-                        onChange={(e) => patch({ cutEmptyWorkitemAttributes: e.target.checked })}
-                      />
-                      Cut empty Workitem attributes
-                    </label>
-                  </div>
-                )}
-                <div className="property-wrapper">
-                  <label htmlFor="popup-cut-urls">
-                    <input
-                      id="popup-cut-urls"
-                      type="checkbox"
-                      checked={form.cutLocalURLs}
-                      onChange={(e) => patch({ cutLocalURLs: e.target.checked })}
-                    />
-                    Cut local Polarion URLs
-                  </label>
-                </div>
-                {shows('markReferencedWorkitems') && (
-                  <div className="property-wrapper">
-                    <label htmlFor="popup-mark-referenced-workitems">
-                      <input
-                        id="popup-mark-referenced-workitems"
-                        type="checkbox"
-                        checked={form.markReferencedWorkitems}
-                        onChange={(e) => patch({ markReferencedWorkitems: e.target.checked })}
-                      />
-                      Mark referenced Workitems
-                    </label>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="flex-container">
-              <div className="flex-column">
                 {shows('customListStyles') && (
                   <div className="property-wrapper">
                     <label htmlFor="popup-custom-list-styles">
@@ -801,6 +713,92 @@ export default function ExportPopupModal({
                 )}
               </div>
               <div className="flex-column">
+                <div className="property-wrapper">
+                  <label htmlFor="popup-pdf-variant-selector" className="fixed-width w-1">
+                    PDF variant:
+                  </label>
+                  <SearchableSelect
+                    id="popup-pdf-variant-selector"
+                    options={PDF_VARIANTS}
+                    value={form.pdfVariant}
+                    onChange={(value) => patch({ pdfVariant: value })}
+                    disabled={busy}
+                  />
+                </div>
+                <div className="property-wrapper">
+                  <label htmlFor="popup-image-density-selector" className="fixed-width w-1">
+                    Image density:
+                  </label>
+                  <SearchableSelect
+                    id="popup-image-density-selector"
+                    options={IMAGE_DENSITIES}
+                    value={form.imageDensity}
+                    onChange={(value) => patch({ imageDensity: value })}
+                    disabled={busy}
+                  />
+                </div>
+                <div className="property-wrapper">
+                  <label htmlFor="popup-full-fonts">
+                    <input
+                      id="popup-full-fonts"
+                      type="checkbox"
+                      checked={form.fullFonts}
+                      onChange={(e) => patch({ fullFonts: e.target.checked })}
+                    />
+                    Embed full fonts (no subsetting)
+                  </label>
+                  <div className="more-info" title={FULL_FONTS_HELP} />
+                </div>
+                {shows('cutEmptyChapters') && (
+                  <div className="property-wrapper">
+                    <label htmlFor="popup-cut-empty-chapters">
+                      <input
+                        id="popup-cut-empty-chapters"
+                        type="checkbox"
+                        checked={form.cutEmptyChapters}
+                        onChange={(e) => patch({ cutEmptyChapters: e.target.checked })}
+                      />
+                      Cut empty chapters (any level)
+                    </label>
+                  </div>
+                )}
+                {shows('cutEmptyWorkitemAttributes') && (
+                  <div className="property-wrapper">
+                    <label htmlFor="popup-cut-empty-wi-attributes">
+                      <input
+                        id="popup-cut-empty-wi-attributes"
+                        type="checkbox"
+                        checked={form.cutEmptyWorkitemAttributes}
+                        onChange={(e) => patch({ cutEmptyWorkitemAttributes: e.target.checked })}
+                      />
+                      Cut empty Workitem attributes
+                    </label>
+                  </div>
+                )}
+                <div className="property-wrapper">
+                  <label htmlFor="popup-cut-urls">
+                    <input
+                      id="popup-cut-urls"
+                      type="checkbox"
+                      checked={form.cutLocalURLs}
+                      onChange={(e) => patch({ cutLocalURLs: e.target.checked })}
+                    />
+                    Cut local Polarion URLs
+                  </label>
+                </div>
+                {shows('markReferencedWorkitems') && (
+                  <div className="property-wrapper">
+                    <label htmlFor="popup-mark-referenced-workitems">
+                      <input
+                        id="popup-mark-referenced-workitems"
+                        type="checkbox"
+                        checked={form.markReferencedWorkitems}
+                        onChange={(e) => patch({ markReferencedWorkitems: e.target.checked })}
+                      />
+                      Mark referenced Workitems
+                    </label>
+                  </div>
+                )}
                 {shows('localizeEnums') && (
                   <div className="property-wrapper">
                     <label htmlFor="popup-localization">

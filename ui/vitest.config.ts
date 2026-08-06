@@ -88,7 +88,15 @@ export default defineConfig({
             // deviceScaleFactor: 2 -> all visual-regression references are captured at 2x (sharper, and
             // finer diffs). Set on the provider's contextOptions (not the instance - the provider reads
             // it there).
-            provider: playwright({ contextOptions: { deviceScaleFactor: 2 } }),
+            // `ignoreDefaultArgs: ['--hide-scrollbars']` because Playwright passes that flag to headless
+            // Chromium by default, and a hidden scrollbar takes no width. The export dialog once shipped
+            // with its two columns wrapping into one on a real Polarion, for want of the ~15px a scrollbar
+            // takes, and every reference screenshot stayed green. Scrollbars are real here now, so the
+            // three references that scroll show one - and the layout is held to it.
+            provider: playwright({
+              contextOptions: { deviceScaleFactor: 2 },
+              launchOptions: { ignoreDefaultArgs: ['--hide-scrollbars'] },
+            }),
             headless: true,
             instances: [{ browser: 'chromium', viewport: { width: 1280, height: 720 } }],
             expect: {

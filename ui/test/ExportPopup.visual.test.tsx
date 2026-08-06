@@ -178,6 +178,43 @@ describe.skipIf(!__PIXEL_REFERENCES__)('export dialog visual', () => {
     await snapshotDialog(shadow, 'popup-dropdown-open');
   });
 
+  it('a short window, where the scrollbar must not push the second column away', async () => {
+    // The one reference not taken at VIEWPORT, and the only one that reproduces the defect this dialog
+    // actually shipped with: in a real Polarion the two columns wrapped into a single tall column.
+    //
+    // The window is a normal width and merely short. That is enough: the form goes over its height cap, the
+    // content area scrolls, and the scrollbar takes about 15px off it - leaving 685px where two fixed 340px
+    // columns and their 20px gap need 700. The columns are sized to shrink rather than wrap (see
+    // .flex-column in export-popup.css), so they stay level here. Verified against the old rule: it wraps
+    // at this viewport, so this reference catches it.
+    //
+    // The scrollbar is real, not simulated. It needs `ignoreDefaultArgs: ['--hide-scrollbars']` in
+    // vitest.config.ts: Playwright passes that flag to headless Chromium by default, which is why this
+    // whole class of defect was invisible to the suite while the dialog was broken in production.
+    //
+    // A dropdown is left open as well, so the reference also shows that the option list still paints above
+    // the dialog and lands in the right place when the form behind it is scrollable.
+    const shadow = mounted({ stylePackage: SAMPLE_STYLE_PACKAGE_FULL, data: { webhooksEnabled: true } });
+    await settled(shadow);
+    await dropdownsUpgraded(shadow);
+    await page.viewport(900, 520);
+
+    const trigger = shadow
+      .querySelector('#popup-orientation-selector')!
+      .closest('.property-wrapper')!
+      .querySelector<HTMLInputElement>('input.sd-trigger')!;
+    trigger.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+    await vi.waitFor(() => {
+      const list = shadow.querySelector<HTMLElement>('.sd-portal[style*="block"] .options');
+      expect(list).not.toBeNull();
+      expect(list!.querySelectorAll('.option').length).toBeGreaterThan(0);
+    });
+
+    await expect(page.elementLocator(shadow.querySelector<HTMLElement>('.rsp-modal')!)).toMatchScreenshot(
+      'popup-small-window',
+    );
+  });
+
   it('the data it could not read', async () => {
     const shadow = mounted({ loadError: new Error("No 'css' configurations in scope 'project/elibrary/'") });
     await vi.waitFor(() => expect(shadow.querySelector('.notifications .alert-error')).not.toBeNull());

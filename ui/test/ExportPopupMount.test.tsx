@@ -91,7 +91,35 @@ describe('mounting the export dialog', () => {
     // Rules only export-popup.css states, checked as computed style: they prove the stylesheet is in effect
     // inside the root, not merely present as text.
     expect(getComputedStyle(shadow()!.querySelector('.property-wrapper')!).display).toBe('flex');
-    expect(getComputedStyle(shadow()!.querySelector('.flex-column')!).width).toBe('340px');
+    expect(getComputedStyle(shadow()!.querySelector('.flex-column')!).flexBasis).toBe('320px');
+  });
+
+  it('keeps the two settings columns side by side when a scrollbar takes width off the form', async () => {
+    // Short enough that the form goes over its height cap and the content area scrolls. The scrollbar then
+    // takes about 15px off it, leaving 685px where two fixed 340px columns and their 20px gap need 700 - so
+    // a fixed width wrapped the right column underneath, which is how the dialog shipped. The columns are
+    // sized to shrink instead.
+    //
+    // The scrollbar is a real one, which the suite can only draw because vitest.config.ts passes
+    // `ignoreDefaultArgs: ['--hide-scrollbars']`. Playwright hides scrollbars in headless Chromium by
+    // default, and that is precisely why this defect reached production with every test green.
+    await page.viewport(900, 520);
+    open({ location: location('LIVE_DOC') });
+    await loaded();
+
+    const content = shadow()!.querySelector<HTMLElement>('.rsp-modal-content')!;
+    expect(content.scrollHeight).toBeGreaterThan(content.clientHeight); // it really does scroll
+    expect(content.offsetWidth - content.clientWidth).toBeGreaterThan(0); // and the scrollbar takes width
+
+    const columns = Array.from(
+      shadow()!.querySelectorAll<HTMLElement>('.flex-container.group-start:has(.full-row) > .flex-column'),
+    );
+    expect(columns).toHaveLength(2);
+    const [left, right] = columns.map((column) => column.getBoundingClientRect());
+    expect(Math.round(left.top)).toBe(Math.round(right.top)); // same row, i.e. not wrapped
+    expect(Math.round(left.width)).toBe(Math.round(right.width)); // and still equal
+
+    await page.viewport(DEFAULT_VIEWPORT.width, DEFAULT_VIEWPORT.height);
   });
 
   it('widens the dialog beyond what the shared modal caps itself at', async () => {
