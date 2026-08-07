@@ -281,6 +281,11 @@
                     </label>
                     <input id='metadata-fields-input' placeholder='e.g. docOwner, docLanguage, customField*' type='text' style='visibility: hidden; margin-left: 10px; width: 280px'/>
                 </div>
+                <div class='input-group flex-centered'>
+                    <label for='language-custom-field'>Document Language custom field</label>
+                    <div class='more-info' title="ID of the LiveDoc custom field that holds the document language. Its value is used as-is as the ISO 639-1 code (e.g. 'de', 'en', 'fr') and injected into the exported HTML as the <html lang> attribute, which lets WeasyPrint hyphenate the text according to that language. The field may be a text field or an enumeration; for an enumeration the option's ID is used, so the option IDs must be ISO 639-1 codes. Leave empty to disable language injection."></div>
+                    <input id='language-custom-field' placeholder='docLanguage' type='text' style='margin-left: 10px; width: 200px'/>
+                </div>
             </div>
             <div class="flex-column">
                 <div class='checkbox input-group'>

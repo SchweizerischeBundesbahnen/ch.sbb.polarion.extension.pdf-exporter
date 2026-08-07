@@ -265,6 +265,7 @@ function saveStylePackage() {
             'metadataFields': ctx.getCheckboxValueById('metadata-fields') ? ctx.getValueById('metadata-fields-input') : null,
             'customNumberedListStyles': ctx.getCheckboxValueById('custom-list-styles') ? ctx.getValueById('numbered-list-styles') : null,
             'language': ctx.getCheckboxValueById('localization') ? Languages.languageSelect.getSelectedValue() : null,
+            'languageCustomField': ctx.getValueById('language-custom-field') || null,
             'linkedWorkitemRoles': ctx.getCheckboxValueById('selected-roles') ? LinkRoles.rolesSelect.getSelectedValue() : null,
             'linkRoleDirection': ctx.getCheckboxValueById('selected-roles') ? LinkRoleDirections.linkRoleDirectionSelect.getSelectedValue() : null,
             'exposePageWidthValidation': ctx.getCheckboxValueById('expose-page-width-validation'),
@@ -350,6 +351,8 @@ function setStylePackage(content) {
     ctx.setCheckboxValueById('metadata-fields', !!stylePackage.metadataFields);
     ctx.getElementById('metadata-fields').dispatchEvent(new Event('change'));
     ctx.setValueById('metadata-fields-input', stylePackage.metadataFields || "");
+
+    ctx.setValueById('language-custom-field', stylePackage.languageCustomField || "");
 
     ctx.setCheckboxValueById('work-items-query-checkbox', !!stylePackage.workItemsQuery);
     ctx.getElementById('work-items-query-checkbox').dispatchEvent(new Event('change'));
