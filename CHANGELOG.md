@@ -1,5 +1,12 @@
 # Changelog
 
+## [12.7.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v12.6.0...v12.7.0) (2026-08-07)
+
+
+### Features
+
+* backport hyphenation support to release-v12 ([#989](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/989)) ([#990](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/990)) ([edfcb6f](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/edfcb6ffaf277dc7958fa83a7c0854a8ca9c33b9))
+
 ## [12.6.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v12.5.2...v12.6.0) (2026-07-22)
 
 
