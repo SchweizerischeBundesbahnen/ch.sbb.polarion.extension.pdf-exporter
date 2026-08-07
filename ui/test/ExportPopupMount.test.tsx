@@ -248,6 +248,22 @@ describe('mounting the export dialog', () => {
     // The root was unmounted with it, so the afterEach unmount is a no-op
     roots.length = 0;
   });
+
+  it('closes a previously opened dialog instead of stacking a second one on top of it', async () => {
+    // A second click on a toolbar button while the first dialog is still open must not leave two
+    // independently submittable dialogs behind - see the greptile review on PR #991.
+    const firstRoot = open({ location: location('LIVE_DOC') });
+    await loaded();
+    const firstHost = document.body.lastElementChild!;
+
+    open({ location: location('LIVE_DOC') });
+    await loaded();
+
+    expect(firstHost.isConnected).toBe(false);
+    expect([...document.querySelectorAll('body > div')].filter((element) => element.shadowRoot)).toHaveLength(1);
+    // The first root was already unmounted by the second open() call
+    roots.splice(roots.indexOf(firstRoot), 1);
+  });
 });
 
 /** Where the sample document is, spelled out as the endpoints want it. */

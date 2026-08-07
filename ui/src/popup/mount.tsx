@@ -45,8 +45,18 @@ export interface OpenExportPopupOptions {
   deps?: ExportPopupDependencies;
 }
 
+/**
+ * Closes whatever dialog a previous {@link openExportPopup} call left open, if any. Without this, a second
+ * click on a toolbar button (or any other trigger) while the first dialog is still open would mount a
+ * second, independently submittable dialog on top of it - the toolbar buttons carry no disabled state of
+ * their own while a dialog is open.
+ */
+let closeOpenPopup: (() => void) | null = null;
+
 /** Opens the dialog. Returns the React root so the dev harness and the tests can unmount it. */
 export function openExportPopup(options: OpenExportPopupOptions = {}): Root {
+  closeOpenPopup?.();
+
   const host = document.createElement('div');
   document.body.appendChild(host);
   const container = mountInShadow(host, {
@@ -65,9 +75,11 @@ export function openExportPopup(options: OpenExportPopupOptions = {}): Root {
 
   const root = createRoot(container);
   const close = () => {
+    closeOpenPopup = null;
     root.unmount();
     host.remove();
   };
+  closeOpenPopup = close;
   root.render(
     <ExportPopupModal
       document={location}
