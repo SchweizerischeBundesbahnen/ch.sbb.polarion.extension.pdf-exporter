@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build && node scripts/check-runtime-entries.mjs",
+    "typecheck": "tsc --noEmit",
+    "build": "npm run typecheck && vite build && node scripts/check-runtime-entries.mjs",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",

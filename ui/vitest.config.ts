@@ -131,7 +131,8 @@ export default defineConfig({
       // whenever it is set), so an unimported source file cannot silently pass the threshold gate. It
       // replaced `coverage.all`, which Vitest 4 dropped from the option type: the `all: false` that used to
       // sit here did nothing at runtime - the istanbul provider never reads it - and only showed up as a
-      // type error in the IDE. `tsc --noEmit` does not see it either way, tsconfig covering `src` only.
+      // type error in the IDE. `npm run typecheck` does not see it either way: tsconfig covers `src` and
+      // `test`, so this config file is not part of the program.
       // Scope is this app's src/ only, so the injector scripts the node project covers (which live
       // outside ui/) do not enter the report or move the gate - exactly as under the old mocha suite,
       // which measured no coverage at all.

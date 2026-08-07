@@ -36,7 +36,7 @@ describe('useRemote', () => {
   it('targets the extension REST base and appends the endpoint path', async () => {
     // The base is `/internal` (session) or `/api` (when VITE_BEARER_TOKEN is set); assert the parts
     // that hold regardless of whether a dev token is configured.
-    const fetchMock = vi.fn(async () => new Response('{}', { status: 200 }));
+    const fetchMock = vi.fn<typeof fetch>(async () => new Response('{}', { status: 200 }));
     vi.stubGlobal('fetch', fetchMock);
     render(<Capture />);
     await vi.waitFor(() => expect(api).toBeTruthy());
@@ -47,7 +47,7 @@ describe('useRemote', () => {
 
   it('uses the token-authenticated /api base and sends the Authorization header when a token is set', async () => {
     vi.stubEnv('VITE_BEARER_TOKEN', 'tok123');
-    const fetchMock = vi.fn(async () => new Response('{}', { status: 200 }));
+    const fetchMock = vi.fn<typeof fetch>(async () => new Response('{}', { status: 200 }));
     vi.stubGlobal('fetch', fetchMock);
     // Reset the captured hook so waitFor blocks until THIS test's <Capture> re-renders (the module-level
     // `api` still holds the previous test's token-less instance otherwise).
@@ -64,7 +64,7 @@ describe('useRemote', () => {
     // The conversion endpoints answer a job submission with an absolute Location header and expect it
     // polled verbatim, so that URL may not be prefixed with the REST base - but it still needs the token.
     vi.stubEnv('VITE_BEARER_TOKEN', 'tok123');
-    const fetchMock = vi.fn(async () => new Response('{}', { status: 200 }));
+    const fetchMock = vi.fn<typeof fetch>(async () => new Response('{}', { status: 200 }));
     vi.stubGlobal('fetch', fetchMock);
     api = undefined as unknown as ReturnType<typeof useRemote>;
     render(<Capture />);

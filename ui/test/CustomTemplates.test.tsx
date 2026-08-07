@@ -107,7 +107,9 @@ describe('Filename template page', () => {
     open('filename', filenameRoutes());
     await vi.waitFor(() => expect(field('custom-documentNameTemplate').value).toBe('doc-$id'));
 
-    await userEvent.click(Array.from(document.querySelectorAll<HTMLElement>('.tabs .tab')).at(-1)!);
+    // Indexed rather than `.at(-1)`: that is ES2022, and tsconfig's `lib` is ES2020 for the app's sake.
+    const tabs = document.querySelectorAll<HTMLElement>('.tabs .tab');
+    await userEvent.click(tabs[tabs.length - 1]);
 
     await vi.waitFor(() => expect(field('default-documentNameTemplate')).not.toBeNull());
     expect(field('default-documentNameTemplate').value).toBe('$document.id');

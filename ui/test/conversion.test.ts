@@ -201,7 +201,14 @@ describe('convertCollectionDocuments', () => {
     { method: 'GET', match: /job-1$/, respond: () => pdf({ 'PDF-Variant-Compliant': 'true' }) },
   ];
 
-  const options = (download: ReturnType<typeof vi.fn>, exportPages: boolean) => ({
+  /**
+   * A spy for the `download` option, typed as the option itself. A bare `vi.fn()` is
+   * `Mock<Procedure | Constructable>`, whose constructor half makes it assignable to no plain function
+   * type, so the signature has to be stated for the option to accept it.
+   */
+  const downloadSpy = () => vi.fn<(blob: Blob, fileName: string) => void>();
+
+  const options = (download: ReturnType<typeof downloadSpy>, exportPages: boolean) => ({
     projectId: 'elibrary',
     collectionId: '144',
     exportPages,
@@ -224,7 +231,7 @@ describe('convertCollectionDocuments', () => {
         },
       ]),
     );
-    const download = vi.fn();
+    const download = downloadSpy();
 
     await convertCollectionDocuments(remote, options(download, false));
 
@@ -243,12 +250,12 @@ describe('convertCollectionDocuments', () => {
     ];
 
     installFetchMock(collectionRoutes(documents));
-    const withoutPages = vi.fn();
+    const withoutPages = downloadSpy();
     await convertCollectionDocuments(remote, options(withoutPages, false));
     expect(withoutPages).toHaveBeenCalledTimes(1);
 
     installFetchMock(collectionRoutes(documents));
-    const withPages = vi.fn();
+    const withPages = downloadSpy();
     await convertCollectionDocuments(remote, options(withPages, true));
     expect(withPages).toHaveBeenCalledTimes(2);
   });
@@ -256,7 +263,7 @@ describe('convertCollectionDocuments', () => {
   it('warns and returns for an empty collection', async () => {
     installFetchMock(collectionRoutes([]));
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    const download = vi.fn();
+    const download = downloadSpy();
 
     await convertCollectionDocuments(remote, options(download, true));
 
@@ -286,7 +293,9 @@ describe('convertCollectionDocuments', () => {
       { method: 'GET', match: /job-1$/, respond: () => pdf({ 'PDF-Variant-Compliant': 'true' }) },
     ]);
 
-    await expect(convertCollectionDocuments(remote, options(vi.fn(), false))).rejects.toThrow('document is empty');
+    await expect(convertCollectionDocuments(remote, options(downloadSpy(), false))).rejects.toThrow(
+      'document is empty',
+    );
   });
 
   it('rejects when the collection cannot be listed', async () => {
@@ -297,6 +306,6 @@ describe('convertCollectionDocuments', () => {
         respond: () => jsonResponse({ message: 'no access' }, 403),
       },
     ]);
-    await expect(convertCollectionDocuments(remote, options(vi.fn(), false))).rejects.toThrow('no access');
+    await expect(convertCollectionDocuments(remote, options(downloadSpy(), false))).rejects.toThrow('no access');
   });
 });

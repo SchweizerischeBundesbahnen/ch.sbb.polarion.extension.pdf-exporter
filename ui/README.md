@@ -240,14 +240,20 @@ files sit outside the Vite root, and a specifier held in a variable resolves aga
 
 Coverage is unaffected by the `node` project: the gate's `include` is `src/**`, relative to `ui/`.
 
-## Formatting & linting
+## Formatting, linting & typechecking
 
 ```bash
 npm run format          # Prettier: format every file in place
 npm run format:check    # Prettier: check only (what pre-commit / CI runs)
 npm run lint            # ESLint: report problems
 npm run lint:fix        # ESLint: auto-fix what it can
+npm run typecheck       # tsc --noEmit over src/ and test/
 ```
+
+`typecheck` runs first in `npm run build`, so the Maven build fails on a type error rather than only the
+IDE showing one. `tsconfig.json` covers `src` **and** `test`: a test is code, and while it was left out
+three tests kept passing a `hostSelector` prop that `BulkExportWidget` had stopped declaring. The config
+files themselves (`vite.config.js`, `vitest.config.ts`, `scripts/*.mjs`) are still outside the program.
 
 The repo's pre-commit hooks run `format:check`, `lint` and the dockerized coverage suite on any change
 under `ui/`. They are check-only and never modify your files.

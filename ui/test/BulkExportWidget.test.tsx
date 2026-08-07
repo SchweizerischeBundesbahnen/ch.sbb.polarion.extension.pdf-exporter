@@ -37,7 +37,7 @@ afterEach(() => {
 describe('Bulk PDF Export widget', () => {
   it('asks the endpoint for its rows, passing the descriptor of the shim back unchanged', async () => {
     const fetchMock = installFetchMock([{ method: 'POST', match: ITEMS_ROUTE, json: SAMPLE_ITEMS }]);
-    render(<BulkExportWidget shim={SAMPLE_SHIM} hostSelector="#host" />);
+    render(<BulkExportWidget shim={SAMPLE_SHIM} />);
 
     await vi.waitFor(() => expect(rows().length).toBe(4));
     const [url, init] = fetchMock.mock.calls[0];
@@ -51,7 +51,7 @@ describe('Bulk PDF Export widget', () => {
   it('renders the widget frame before the rows arrive', async () => {
     let deliver!: (items: BulkExportItems) => void;
     const pending = new Promise<BulkExportItems>((resolve) => (deliver = resolve));
-    render(<BulkExportWidget shim={SAMPLE_SHIM} hostSelector="#host" deps={{ loadItems: () => pending }} />);
+    render(<BulkExportWidget shim={SAMPLE_SHIM} deps={{ loadItems: () => pending }} />);
 
     // The title and the button come from the shim, so they are there while the request is in flight
     await vi.waitFor(() => expect(document.querySelector('h3')?.textContent).toBe('Test Runs'));
@@ -203,7 +203,7 @@ describe('Bulk PDF Export widget', () => {
         json: { message: 'The widget descriptor is missing or was not signed by this server. Reload the page.' },
       },
     ]);
-    render(<BulkExportWidget shim={SAMPLE_SHIM} hostSelector="#host" />);
+    render(<BulkExportWidget shim={SAMPLE_SHIM} />);
 
     await vi.waitFor(() => expect(document.querySelector('.widget-error')).not.toBeNull());
     expect(document.querySelector('.widget-error')?.textContent).toContain('Reload the page');
