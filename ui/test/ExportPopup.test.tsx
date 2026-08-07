@@ -499,6 +499,29 @@ describe('exporting', () => {
     expect(sent.urlQueryParameters).toEqual({ query: 'type:task' });
   });
 
+  it("carries the package's language custom field, which the dialog shows nowhere", async () => {
+    // The one field of a style package the export sends without ever putting it on screen: an administrator
+    // names the LiveDoc field holding the document's language, and the server reads it during the export. So
+    // the only thing that can say it survived the dialog is what the dialog sends.
+    const requests: string[] = [];
+    open({
+      deps: popupDependencies({
+        stylePackage: { ...SAMPLE_STYLE_PACKAGE_FULL, languageCustomField: 'docLanguage' },
+        convert: (request) => {
+          requests.push(request);
+          return Promise.resolve(pdfResult());
+        },
+      }),
+    });
+    await settledWithSettings();
+
+    await userEvent.click(exportButton());
+
+    await vi.waitFor(() => expect(requests).toHaveLength(1));
+    const sent = JSON.parse(requests[0]) as Record<string, unknown>;
+    expect(sent.languageCustomField).toBe('docLanguage');
+  });
+
   it('appends .pdf to a name the user typed without it', async () => {
     const downloads: string[] = [];
     open({
