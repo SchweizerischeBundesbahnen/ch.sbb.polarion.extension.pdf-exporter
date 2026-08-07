@@ -273,6 +273,12 @@ into the HTML sent to WeasyPrint as the `<html lang="…">` attribute, which let
 to that language. A common choice is the `docLanguage` custom field; leaving this setting empty disables language
 injection, so the export keeps its default language.
 
+The custom field may be a plain text field or an enumeration field. For an enumeration, the selected option's **ID**
+is used as the language code, so the enum option IDs must be ISO 639-1 codes (their names may be anything, e.g.
+*English*, *Deutsch*):
+
+![Language enumeration](docs/user_guide/img/style_package_language_enum.png)
+
 Note that setting the language only enables language-aware hyphenation; the hyphenation itself must be turned on in the
 style package's CSS, for example:
 
