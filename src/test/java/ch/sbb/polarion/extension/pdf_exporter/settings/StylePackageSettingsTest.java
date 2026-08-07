@@ -78,6 +78,7 @@ class StylePackageSettingsTest {
                     .css("customCSS")
                     .coverPage("customCoverPage")
                     .orientation("customOrientation")
+                    .languageCustomField("docLanguage")
                     .build();
             customProjectModel.setBundleTimestamp("custom");
             when(mockedSettingsService.read(eq(mockProjectLocation), any())).thenReturn(customProjectModel.serialize());
@@ -89,6 +90,7 @@ class StylePackageSettingsTest {
             assertEquals("customCSS", loadedModel.getCss());
             assertEquals("customCoverPage", loadedModel.getCoverPage());
             assertEquals("customOrientation", loadedModel.getOrientation());
+            assertEquals("docLanguage", loadedModel.getLanguageCustomField());
             assertEquals("custom", loadedModel.getBundleTimestamp());
             assertNull(loadedModel.getRenderComments());
 

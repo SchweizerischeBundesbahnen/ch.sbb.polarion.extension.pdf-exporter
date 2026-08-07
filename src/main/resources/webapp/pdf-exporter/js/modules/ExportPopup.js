@@ -376,6 +376,9 @@ export default class ExportPopup {
         this.ctx.setValue("popup-language", languageValue);
         this.ctx.visibleIf("popup-language", stylePackage.language);
 
+        // Admin-only field (no control): carried from the selected package so the manual export path keeps it.
+        this.languageCustomField = stylePackage.languageCustomField;
+
         const rolesProvided = stylePackage.linkedWorkitemRoles && stylePackage.linkedWorkitemRoles.length && stylePackage.linkedWorkitemRoles.length > 0;
         this.ctx.setCheckbox("popup-selected-roles", rolesProvided);
         this.ctx.querySelectorAll(`#popup-roles-selector option`).forEach(roleOption => {
@@ -611,6 +614,7 @@ export default class ExportPopup {
             .setChapters(selectedChapters)
             .setMetadataFields(live_doc && this.ctx.getElementById('popup-metadata-fields').checked ? selectedMetadataFields : null)
             .setLanguage(live_doc && this.ctx.getElementById('popup-localization').checked ? this.ctx.getElementById("popup-language").value : null)
+            .setLanguageCustomField(this.languageCustomField)
             .setLinkedWorkitemRoles(selectedRoles)
             .setLinkRoleDirection(selectedRoles.length > 0 ? this.ctx.getElementById("popup-roles-direction-selector").value : null)
             .setFileName(fileName)

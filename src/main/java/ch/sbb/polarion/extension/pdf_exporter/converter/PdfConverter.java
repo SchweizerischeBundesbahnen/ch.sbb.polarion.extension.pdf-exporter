@@ -23,6 +23,7 @@ import ch.sbb.polarion.extension.pdf_exporter.settings.LocalizationSettings;
 import ch.sbb.polarion.extension.pdf_exporter.settings.WebhooksSettings;
 import ch.sbb.polarion.extension.pdf_exporter.util.DebugDataStorage;
 import ch.sbb.polarion.extension.pdf_exporter.util.DocumentDataFactory;
+import ch.sbb.polarion.extension.pdf_exporter.util.DocumentLanguageResolver;
 import ch.sbb.polarion.extension.pdf_exporter.util.EnumValuesProvider;
 import ch.sbb.polarion.extension.pdf_exporter.util.HtmlLogger;
 import ch.sbb.polarion.extension.pdf_exporter.util.MediaUtils;
@@ -184,7 +185,8 @@ public class PdfConverter {
         HtmlData htmlData = new HtmlData(cssContent, preparedDocumentContent, headerFooterContent);
 
         String metaTags = timedIfNotNull(generationLog, "Build meta tags", () -> buildMetaTags(documentData, exportParams));
-        String composedHtml = timedIfNotNull(generationLog, "Compose HTML", () -> composeHtml(documentData.getTitle(), htmlData, exportParams, metaTags));
+        String documentLanguage = resolveDocumentLanguage(documentData, exportParams);
+        String composedHtml = timedIfNotNull(generationLog, "Compose HTML", () -> composeHtml(documentData.getTitle(), htmlData, exportParams, metaTags, documentLanguage));
 
         if (metaInfoCallback != null) {
             metaInfoCallback.setLinkedWorkItems(WorkItemRefData.extractListFromHtml(composedHtml, exportParams.getProjectId()));
@@ -339,10 +341,17 @@ public class PdfConverter {
     String composeHtml(@NotNull String documentName,
                        @NotNull HtmlData htmlData,
                        @NotNull ExportParams exportParams,
-                       @NotNull String metaTags) {
+                       @NotNull String metaTags,
+                       @Nullable String documentLanguage) {
         String content = htmlData.headerFooterContent
                 + "<div class='content'>" + htmlData.documentContent + "</div>";
-        return pdfTemplateProcessor.processUsing(exportParams, documentName, htmlData.cssContent, content, metaTags);
+        return pdfTemplateProcessor.processUsing(exportParams, documentName, htmlData.cssContent, content, metaTags, documentLanguage);
+    }
+
+    @Nullable
+    @VisibleForTesting
+    String resolveDocumentLanguage(@NotNull DocumentData<? extends IUniqueObject> documentData, @NotNull ExportParams exportParams) {
+        return DocumentLanguageResolver.resolve(documentData, exportParams);
     }
 
     @NotNull
