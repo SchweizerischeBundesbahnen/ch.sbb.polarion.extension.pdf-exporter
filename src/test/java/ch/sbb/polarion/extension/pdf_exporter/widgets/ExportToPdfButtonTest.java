@@ -94,7 +94,8 @@ class ExportToPdfButtonTest {
         // which is the override this widget exists for, and the one line of it no other test reaches.
         RichPageWidgetCommonContext context = mock(RichPageWidgetCommonContext.class, RETURNS_DEEP_STUBS);
         // AbstractWidgetRenderer casts the context's transaction to the internal one
-        when(context.transaction()).thenReturn(mock(InternalReadOnlyTransaction.class, RETURNS_DEEP_STUBS));
+        InternalReadOnlyTransaction transaction = mock(InternalReadOnlyTransaction.class, RETURNS_DEEP_STUBS);
+        when(context.transaction()).thenReturn(transaction);
         // A real literal, not a deep stub: RichTextRenderTarget is a sealed abstract enum, which Mockito cannot
         // mock at all. RP_VIEW is a report page being viewed, which is where this widget sits. `doReturn` and not
         // `when`, because `when(context.target())` would run the deep-stub answer and try to mock the enum first.
