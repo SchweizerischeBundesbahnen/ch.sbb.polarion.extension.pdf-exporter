@@ -38,16 +38,31 @@ export default function useRemote() {
       },
     );
 
-  /** Call an endpoint relative to the REST base (e.g. `/version`, `/configuration-properties`). */
-  const sendRequest = useCallback(
-    ({ method, url, body, contentType }: RequestParams): Promise<Response> => {
+  const send = useCallback(
+    (url: string, { method, body, contentType }: Omit<RequestParams, 'url'>): Promise<Response> => {
       const headers = authHeaders(contentType ? { 'Content-Type': contentType } : undefined);
-      return fetch(`${restBase}${url}`, { method, mode: 'cors', cache: 'no-cache', headers, body }).catch(
-        networkErrorResponse,
-      );
+      return fetch(url, { method, mode: 'cors', cache: 'no-cache', headers, body }).catch(networkErrorResponse);
     },
-    [restBase, authHeaders],
+    [authHeaders],
   );
 
-  return { sendRequest };
+  /** Call an endpoint relative to the REST base (e.g. `/version`, `/configuration-properties`). */
+  const sendRequest = useCallback(
+    ({ url, ...rest }: RequestParams): Promise<Response> => send(`${restBase}${url}`, rest),
+    [restBase, send],
+  );
+
+  /**
+   * Call a URL the server handed out, with the same authentication as {@link sendRequest}.
+   *
+   * The conversion endpoints answer a job submission with an absolute `Location` header and expect it to be
+   * polled as given, so that URL cannot go through the REST base - but it still needs the bearer token when
+   * one is configured, which a bare `fetch` would leave out.
+   */
+  const sendAbsoluteRequest = useCallback(
+    ({ url, ...rest }: RequestParams): Promise<Response> => send(url, rest),
+    [send],
+  );
+
+  return { sendRequest, sendAbsoluteRequest };
 }

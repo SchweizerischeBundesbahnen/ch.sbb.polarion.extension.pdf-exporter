@@ -599,18 +599,22 @@ export default function StylePackages() {
           </div>
         )}
 
-        {/* How the page itself is printed. */}
+        {/* How the page is printed, what the renderer does with the content and the switches carrying a
+            value of their own: one container with two continuous columns, not three stacked ones. A flex
+            row is as tall as its taller column, so while these were three containers a short column could
+            never be filled from the block below it - "Headings color" alone on the left against five rows
+            on the right left a four-row hole under it. The colour picker now takes a line of its own above
+            the columns, which is what lets the four dropdowns line up as a block. Same arrangement, and
+            the same reasoning, as the export dialog: see ui/src/popup/ExportPopupModal.tsx. */}
         <div className="flex-container section">
-          <div className="flex-column">
-            <div className="input-group">
-              <label htmlFor="headers-color">Headings color:</label>
-              <input
-                id="headers-color"
-                type="color"
-                value={form.headersColor}
-                onChange={(e) => patch({ headersColor: e.target.value })}
-              />
-            </div>
+          <div className="input-group full-row">
+            <label htmlFor="headers-color">Headings color:</label>
+            <input
+              id="headers-color"
+              type="color"
+              value={form.headersColor}
+              onChange={(e) => patch({ headersColor: e.target.value })}
+            />
           </div>
           <div className="flex-column">
             <div className="input-group">
@@ -631,44 +635,6 @@ export default function StylePackages() {
                 onChange={(value) => patch({ orientation: value })}
               />
             </div>
-            <div className="input-group">
-              <label htmlFor="pdf-variant-select">PDF Variant:</label>
-              <SearchableSelect
-                id="pdf-variant-select"
-                options={PDF_VARIANTS}
-                value={form.pdfVariant}
-                onChange={(value) => patch({ pdfVariant: value })}
-              />
-            </div>
-            <div className="input-group">
-              <label htmlFor="image-density-select">Image density:</label>
-              <SearchableSelect
-                id="image-density-select"
-                options={IMAGE_DENSITIES}
-                value={form.imageDensity}
-                onChange={(value) => patch({ imageDensity: value })}
-              />
-            </div>
-            {/* `flex-centered` for the same reason the weight and query rows have it: it is what centers
-                the info icon against the text next to it. */}
-            <div className="checkbox input-group flex-centered">
-              <label htmlFor="full-fonts">
-                <input
-                  id="full-fonts"
-                  type="checkbox"
-                  checked={form.fullFonts}
-                  onChange={(e) => patch({ fullFonts: e.target.checked })}
-                />
-                Embed full fonts (no subsetting)
-              </label>
-              <span className="more-info" title={FULL_FONTS_HELP} />
-            </div>
-          </div>
-        </div>
-
-        {/* What the renderer does with the content. */}
-        <div className="flex-container">
-          <div className="flex-column">
             <div className="checkbox input-group">
               <label htmlFor="fit-to-page">
                 <input
@@ -746,58 +712,7 @@ export default function StylePackages() {
                 Watermark
               </label>
             </div>
-          </div>
-          <div className="flex-column">
-            <div className="checkbox input-group">
-              <label htmlFor="cut-empty-chapters">
-                <input
-                  id="cut-empty-chapters"
-                  type="checkbox"
-                  checked={form.cutEmptyChapters}
-                  onChange={(e) => patch({ cutEmptyChapters: e.target.checked })}
-                />
-                Cut empty chapters (any level)
-              </label>
-            </div>
-            <div className="checkbox input-group">
-              <label htmlFor="cut-empty-wi-attributes">
-                <input
-                  id="cut-empty-wi-attributes"
-                  type="checkbox"
-                  checked={form.cutEmptyWorkitemAttributes}
-                  onChange={(e) => patch({ cutEmptyWorkitemAttributes: e.target.checked })}
-                />
-                Cut empty Workitem attributes
-              </label>
-            </div>
-            <div className="checkbox input-group">
-              <label htmlFor="cut-urls">
-                <input
-                  id="cut-urls"
-                  type="checkbox"
-                  checked={form.cutLocalURLs}
-                  onChange={(e) => patch({ cutLocalURLs: e.target.checked })}
-                />
-                Cut local Polarion URLs
-              </label>
-            </div>
-            <div className="checkbox input-group">
-              <label htmlFor="mark-referenced-workitems">
-                <input
-                  id="mark-referenced-workitems"
-                  type="checkbox"
-                  checked={form.markReferencedWorkitems}
-                  onChange={(e) => patch({ markReferencedWorkitems: e.target.checked })}
-                />
-                Mark referenced Workitems
-              </label>
-            </div>
-          </div>
-        </div>
-
-        {/* Switches that carry a value of their own. */}
-        <div className="flex-container">
-          <div className="flex-column">
+            {/* Switches that carry a value of their own. */}
             <div className="checkbox input-group with-value">
               <label htmlFor="custom-list-styles">
                 <input
@@ -859,7 +774,9 @@ export default function StylePackages() {
               />
             </div>
             <div className="input-group with-value">
-              <label htmlFor="language-custom-field">Document Language custom field</label>
+              <label htmlFor="language-custom-field" className="nowrap">
+                Document Language custom field
+              </label>
               <span className="more-info" title={LANGUAGE_CUSTOM_FIELD_HELP} />
               <input
                 id="language-custom-field"
@@ -872,6 +789,82 @@ export default function StylePackages() {
             </div>
           </div>
           <div className="flex-column">
+            <div className="input-group">
+              <label htmlFor="pdf-variant-select">PDF Variant:</label>
+              <SearchableSelect
+                id="pdf-variant-select"
+                options={PDF_VARIANTS}
+                value={form.pdfVariant}
+                onChange={(value) => patch({ pdfVariant: value })}
+              />
+            </div>
+            <div className="input-group">
+              <label htmlFor="image-density-select">Image density:</label>
+              <SearchableSelect
+                id="image-density-select"
+                options={IMAGE_DENSITIES}
+                value={form.imageDensity}
+                onChange={(value) => patch({ imageDensity: value })}
+              />
+            </div>
+            {/* `flex-centered` for the same reason the weight and query rows have it: it is what centers
+                the info icon against the text next to it. */}
+            <div className="checkbox input-group flex-centered">
+              <label htmlFor="full-fonts">
+                <input
+                  id="full-fonts"
+                  type="checkbox"
+                  checked={form.fullFonts}
+                  onChange={(e) => patch({ fullFonts: e.target.checked })}
+                />
+                Embed full fonts (no subsetting)
+              </label>
+              <span className="more-info" title={FULL_FONTS_HELP} />
+            </div>
+            <div className="checkbox input-group">
+              <label htmlFor="cut-empty-chapters">
+                <input
+                  id="cut-empty-chapters"
+                  type="checkbox"
+                  checked={form.cutEmptyChapters}
+                  onChange={(e) => patch({ cutEmptyChapters: e.target.checked })}
+                />
+                Cut empty chapters (any level)
+              </label>
+            </div>
+            <div className="checkbox input-group">
+              <label htmlFor="cut-empty-wi-attributes">
+                <input
+                  id="cut-empty-wi-attributes"
+                  type="checkbox"
+                  checked={form.cutEmptyWorkitemAttributes}
+                  onChange={(e) => patch({ cutEmptyWorkitemAttributes: e.target.checked })}
+                />
+                Cut empty Workitem attributes
+              </label>
+            </div>
+            <div className="checkbox input-group">
+              <label htmlFor="cut-urls">
+                <input
+                  id="cut-urls"
+                  type="checkbox"
+                  checked={form.cutLocalURLs}
+                  onChange={(e) => patch({ cutLocalURLs: e.target.checked })}
+                />
+                Cut local Polarion URLs
+              </label>
+            </div>
+            <div className="checkbox input-group">
+              <label htmlFor="mark-referenced-workitems">
+                <input
+                  id="mark-referenced-workitems"
+                  type="checkbox"
+                  checked={form.markReferencedWorkitems}
+                  onChange={(e) => patch({ markReferencedWorkitems: e.target.checked })}
+                />
+                Mark referenced Workitems
+              </label>
+            </div>
             <div className="checkbox input-group">
               <label htmlFor="localization">
                 <input

@@ -75,24 +75,27 @@ export default defineConfig(({ command, mode }) => {
       rollupOptions: {
         // Keep what an entry exports. A Vite app build assumes its entries are only ever executed, so it
         // drops their exports - which leaves the widget bundle without the `default` the renderer's
-        // `import(...).then(module => module.default(...))` calls, and the side panel bundle without its
-        // `mountSidePanel`. scripts/check-runtime-entries.mjs guards both after every build, since no test
-        // sees the built files.
+        // `import(...).then(module => module.default(...))` calls, the side panel bundle without its
+        // `mountSidePanel` and the popup bundle without its `openExportPopup`.
+        // scripts/check-runtime-entries.mjs guards all three after every build, since no test sees the
+        // built files.
         preserveEntrySignatures: 'strict',
-        // Three entries: the admin SPA (index.html), the bulk export widget imported at runtime by the
-        // widget renderer on a Polarion report page, and the Document Properties side panel imported by
-        // the form-extension fragment in the document editor.
+        // Four entries: the admin SPA (index.html), the bulk export widget imported at runtime by the
+        // widget renderer on a Polarion report page, the Document Properties side panel imported by the
+        // form-extension fragment in the document editor, and the "Export to PDF" dialog imported by the
+        // two toolbar injectors and the report page's export button.
         input: {
           index: fileURLToPath(new URL('index.html', import.meta.url)),
           'bulk-widget': fileURLToPath(new URL('src/widget/main.tsx', import.meta.url)),
-          'side-panel': fileURLToPath(new URL('src/formext/mount.tsx', import.meta.url)),
+          'side-panel': fileURLToPath(new URL('src/sidepanel/mount.tsx', import.meta.url)),
+          'export-popup': fileURLToPath(new URL('src/popup/mount.tsx', import.meta.url)),
         },
         output: {
-          // These two file names must stay predictable: their importers name them by URL and cannot know
+          // These three file names must stay predictable: their importers name them by URL and cannot know
           // the hash Vite would append. They append the extension version instead, which is what busts
           // the browser cache on an update.
           entryFileNames: (chunk) =>
-            chunk.name === 'bulk-widget' || chunk.name === 'side-panel'
+            ['bulk-widget', 'side-panel', 'export-popup'].includes(chunk.name)
               ? `assets/${chunk.name}.js`
               : 'assets/[name]-[hash].js',
           // What the entries share (React above all) lands in one chunk. Rollup would name it after

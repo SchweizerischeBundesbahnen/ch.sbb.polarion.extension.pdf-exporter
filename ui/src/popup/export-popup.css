@@ -1,0 +1,385 @@
+/* The look of the "Export to PDF" dialog, injected into its shadow root.
+
+   These rules are the popup's half of the deleted webapp/pdf-exporter/css/pdf-exporter.css, which the
+   legacy popup loaded as a page stylesheet (injected by starter.js / live-reports.js and inlined by the
+   bulk widget renderer). A shadow root sees none of the page's rules, so they live here now, bundled with the popup and
+   injected into the root next to react-sbb-polarion's stylesheet - see mount.tsx. Every value is the one the
+   legacy popup had, so the dialog looks as it did.
+
+   The dialog chrome is NOT here: the header, the footer buttons, the overlay and the backdrop come from
+   RSP's shared Modal, which replaced micromodal. What the legacy `.modal__container.pdf-exporter` rules
+   said about that chrome is therefore gone; what they said about the form inside it is below, rescoped from
+   `.modal__container.pdf-exporter` to `.pdf-exporter` (the container React mounts into).
+
+   The ids are the legacy markup's own. They are safe to keep - and worth keeping, the rules being copies -
+   because inside a shadow root they cannot collide with anything on the page. */
+
+/* --- The dialog ---------------------------------------------------------------------------------- */
+
+/* RSP's Modal caps itself at min(640px, 100vw - 32px), which is a dialog for a handful of fields. This
+   form is two 340px columns plus the gap and the padding, and it had `width: 80vw; max-width: 750px` on
+   the page. Same intent, expressed against the shared modal: as wide as the two columns need, no wider
+   than the viewport. Later in this root than the library's own rule, which is what makes it win.
+
+   732px is that width stated exactly: 340 + 20 gap + 340, plus the content area's 16px of padding a side.
+   The cap is what sizes the settings forms, because `max-content` asks for far more than they need - a
+   wrapping flex container's max-content is every item on ONE line, so the full-width rows (Headings color,
+   the query and file name fields) are added to the two columns instead of being stacked above them, and
+   this form asks for 997px. The previous 820px cap was simply a larger arbitrary number, and the 88px it
+   left over showed as dead space to the right of the columns while the full-width rows ran past them.
+
+   `max-content` is kept rather than replaced with a flat width: the bulk dialog has no settings block and
+   sizes itself to about 585px, and a flat 732px would stretch it for nothing.
+
+   The height is the same story. RSP caps the whole dialog at 85vh and lets *it* scroll; the legacy popup
+   capped its content area at 80vh and let only that scroll, so its header and footer stayed put and a
+   dialog of this height needed no scrollbar at all at an ordinary window size. Both are restated here:
+
+   - `max-height` is the viewport less the 16px margin the shared modal already keeps at its sides, rather
+     than 85vh. At an 880px viewport that is 848px against the 821px this form needs, so there is no
+     scrollbar where the legacy popup had none; 85vh is 748px, which is what put one there.
+   - The dialog becomes a flex column that does **not** scroll, and its content area is the only scroller.
+     One scrollbar, on the part that has more to show, with the title and the buttons where they were.
+   - `overflow: visible` rather than the library's `auto`. Nothing overflows a flex column whose content area
+     shrinks to fit, so there is nothing to scroll or hide; what this allows is the one thing that is meant
+     to escape the dialog's box - a dropdown's option list, which is moved in here to be painted above the
+     dialog at all (see dialogPortals.ts) and would otherwise be cut off at the dialog's edge.
+
+   Keyed on the form inside rather than on `.rsp-modal` itself: the bulk export widget injects this
+   stylesheet into the shadow root it also renders its progress dialog in, and that dialog keeps its own
+   size (see widget.css, which gives it the same treatment for the same reasons). */
+.rsp-modal:has(.pdf-export-form) {
+  width: max-content;
+  max-width: min(732px, 100vw - 32px);
+  max-height: calc(100vh - 32px);
+  display: flex;
+  flex-direction: column;
+  overflow: visible;
+}
+
+/* `min-height: 0` is what lets a flex item shrink below its content: without it the content area keeps its
+   full height, the dialog overflows again and the scrollbar goes back on the dialog. */
+.rsp-modal:has(.pdf-export-form) .rsp-modal-content {
+  overflow: auto;
+  min-height: 0;
+}
+
+/* --- The form ------------------------------------------------------------------------------------ */
+
+.form-wrapper {
+  position: relative;
+}
+
+/* The two sentences introducing the style package and its settings.
+   Stated rather than left to the browser, whose default is `1em` above and below - 13px of it above the
+   first line, on top of the content padding, and 13px more between the sentence and the row under it. The
+   legacy popup inherited that same default; in a shadow root there is not even a page reset that could have
+   squashed it. Nothing above (the content padding is the gap) and one row's worth below. */
+.pdf-export-form p {
+  margin: 0 0 8px;
+}
+
+/* Covers the form while one of the four operations runs, so nothing can be changed under it. `opacity`
+   rather than a solid white: the legacy overlay let the form show through faintly. */
+.in-progress-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  background: white;
+  opacity: 80%;
+  display: none;
+  flex-flow: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.in-progress-overlay.show {
+  display: flex;
+}
+
+.in-progress-overlay .sbb-spinner {
+  width: 48px;
+  height: 48px;
+}
+
+/* --- Notifications ------------------------------------------------------------------------------- */
+
+.notifications {
+  padding: 0 0 10px;
+}
+
+/* Box padding only; alert colours (bg/border) come from the shared .notifications .alert-* rules in
+   react-sbb-polarion's stylesheet. `pre-line` because a conversion warning is several sentences separated
+   by blank lines (see services/conversion.ts) and is rendered as text, never as markup. */
+.notifications .alert {
+  margin-bottom: 10px;
+  padding: 6px 12px;
+  border-radius: 3px;
+  white-space: pre-line;
+}
+
+/* Layout only; text colour + weight come from the shared .validation-alerts .alert-* rules. */
+.validation-alerts {
+  display: inline-block;
+  padding: 0 10px;
+}
+
+/* --- Columns ------------------------------------------------------------------------------------- */
+
+.flex-container {
+  display: flex;
+  column-gap: 20px;
+  flex-wrap: wrap;
+}
+
+/* 340px wide in practice - two of them plus the 20px gap are exactly the 700px the dialog gives them - but
+   stated as a flex basis BELOW that, so they shrink instead of wrapping when something takes a few pixels
+   away. What takes them is a scrollbar: a classic one is about 15px, and at a fixed `width: 340px` the pair
+   no longer fits on one line, so the right column wraps under the left and the form becomes one tall
+   column. That is what a real Polarion showed while every reference screenshot stayed green, because
+   Playwright hides scrollbars in headless Chromium by default and the suite could not draw one. It does
+   now - `vitest.config.ts` passes `ignoreDefaultArgs: ['--hide-scrollbars']` - so a real scrollbar takes
+   real width in `ExportPopupMount.test.tsx` and in the `popup-small-window` reference, both of which fail
+   if this rule goes back to a fixed width.
+
+   The basis is 320 rather than 340 so the pair (660px + gap) still fits after that loss. They grow back to
+   340 each whenever the room is there, and below about 680px of content they still wrap to one column,
+   which is what a narrow window wants. A lone `.flex-column` in a container stretches to the full width;
+   nothing depends on its right edge, so no layout moves. */
+.flex-column {
+  flex: 1 1 320px;
+}
+
+/* A group separated from the one above it by a hairline, as the legacy markup did with an inline style on
+   the element that opens the group. */
+.group-start {
+  border-top: 1px solid #eee;
+  margin-top: 15px;
+  padding-top: 5px;
+}
+
+/* The settings block opens with a tighter rule than the groups inside it - the legacy inline style on
+   #popup-style-package-content. */
+#popup-style-package-content.group-start {
+  margin-top: 10px;
+  padding-top: 10px;
+}
+
+/* --- Rows ---------------------------------------------------------------------------------------- */
+
+.property-wrapper {
+  margin-top: 8px;
+  padding-right: 10px;
+  display: flex;
+  align-items: center;
+  column-gap: 5px;
+}
+
+.property-wrapper label {
+  margin-top: 2px;
+  margin-bottom: 3px;
+}
+
+.property-wrapper label.fixed-width {
+  display: inline-block;
+}
+
+.pdf-exporter .property-wrapper label.fixed-width.w-1 {
+  width: 100px;
+}
+
+.property-wrapper label input[type='checkbox'] {
+  vertical-align: middle;
+}
+
+.property-wrapper .more-info {
+  background: var(--sbb-info-icon) no-repeat;
+  width: 16px;
+  height: 16px;
+  cursor: help;
+}
+
+/* The work items query row spans both columns, its field taking whatever the label leaves. */
+.property-wrapper.wide {
+  width: 100%;
+  gap: 8px;
+}
+
+/* A row that takes a line of its own above the two columns, so the columns start level below it. The
+   colour picker uses it: it is the odd one out among the page settings, and leaving it in the left column
+   pushed "PDF variant" a row higher than "Paper size", so the four dropdowns did not line up as a block.
+   `wide` is not the same thing - it also widens the label-to-field gap for the query field. */
+.property-wrapper.full-row {
+  width: 100%;
+}
+
+.property-wrapper > label.nowrap {
+  white-space: nowrap;
+}
+
+.property-wrapper > input.grows {
+  flex: 1;
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+.property-wrapper > input.w-200 {
+  width: 200px;
+}
+
+/* --- Controls ------------------------------------------------------------------------------------ */
+
+/* input[type="color"] is excluded: the colour picker's look is owned entirely by the shared control system
+   in react-sbb-polarion's stylesheet (scoped to .form-wrapper), which this root carries. Keeping the colour
+   input out of these baseline rules leaves that in sole control, so admin page, side panel and popup render
+   identically. */
+.property-wrapper select,
+.property-wrapper input:not([type='color']) {
+  font-weight: 600;
+  font-family: 'Segoe UI', 'Selawik', 'Open Sans', Arial, sans-serif;
+  font-size: 13px;
+  border: 1px solid #cccccc;
+  border-radius: 2px;
+}
+
+/* Every dropdown here is a SearchableSelect, which hides its native <select> once it has upgraded it.
+   These rules are what the <select> falls back to if that upgrade ever throws. */
+.property-wrapper select {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  background: transparent var(--sbb-combo-chevron) no-repeat;
+  background-position: calc(100% - 1rem) 55% !important;
+  background-size: 16px 16px;
+  padding: 2px 2rem 4px 0.4rem;
+}
+
+.property-wrapper input:not([type='color']) {
+  padding: 2px 4px 4px 0.4rem;
+}
+
+/* A field the export was refused on.
+   The legacy rule was `.property-wrapper input.error`, which never won: the shared control system styles
+   text inputs through `.form-wrapper input[type=text]:not(.sd-trigger):not(.search-box)` - specificity
+   (0,4,1) against the legacy rule's (0,3,1) - so the popup set a class that changed nothing and only the
+   notification said anything. `[type='text']` is what brings these selectors to the same specificity, and
+   being later in the shadow root is what makes them win. The `:focus` variant is restated because the
+   shared system raises its own there, and the field is usually still focused when the export is refused. */
+.pdf-exporter .property-wrapper input[type='text'].error,
+.pdf-exporter .property-wrapper input[type='text'].error:hover,
+.pdf-exporter .property-wrapper input[type='text'].error:focus {
+  border-color: red;
+  color: red;
+}
+
+/* Uniform control sizing so every combo-like control matches the admin comboboxes (130 x 23). The
+   searchable-dropdown wraps a native <select>; its container may inherit an inline width from the original
+   element, so !important pins it to 130px. */
+.pdf-exporter .searchable-dropdown {
+  width: 130px !important;
+  display: inline-block;
+}
+
+.pdf-exporter .searchable-dropdown > .sd-trigger {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+/* Ensure the dropdown popup is combobox-width + 35px here too (high specificity so a Polarion .options
+   rule in the page context cannot flatten it back to the trigger width). */
+.property-wrapper .searchable-dropdown .options {
+  min-width: calc(100% + 35px);
+}
+
+/* Workitem-roles multiselect + its direction dropdown are stacked under the label, indented. The visible
+   .searchable-dropdown container is inserted next to the hidden <select> and does NOT inherit its margins,
+   so indent + vertical gap are pinned on the container itself. */
+#popup-roles-wrapper {
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+#popup-roles-selector + .searchable-dropdown,
+#popup-roles-direction-selector + .searchable-dropdown {
+  margin-left: 20px;
+  margin-top: 4px;
+}
+
+/* The two comment options sit indented under the switch that reveals them, side by side. */
+#popup-render-comments-options {
+  display: flex;
+  padding-left: 20px;
+  column-gap: 5px;
+}
+
+/* --- Buttons ------------------------------------------------------------------------------------- */
+
+/* The Validate button. The Export and Close buttons are the shared Modal's footer and are styled by the
+   library, not here. */
+.buttons-wrapper {
+  margin: 10px 0;
+  padding-top: 10px;
+}
+
+.buttons-wrapper button {
+  vertical-align: middle;
+  background-color: transparent;
+  border: 1px solid #dedede;
+  color: #555;
+  padding: 4px 8px;
+  font-size: 12px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.buttons-wrapper button:disabled {
+  text-shadow: white 1px 1px 0.01em;
+  color: #c9d1d7;
+  cursor: default;
+}
+
+.buttons-wrapper button img {
+  margin-right: 6px;
+  vertical-align: bottom;
+}
+
+.buttons-wrapper button:disabled img {
+  opacity: 0.3;
+}
+
+/* --- Page width validation results --------------------------------------------------------------- */
+
+.preview {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.popup-validate-result-img {
+  width: 22%;
+  border: solid 1px red;
+  cursor: zoom-in;
+  margin: 5px;
+}
+
+.popup-img-zoomed {
+  border: 3px solid red;
+  z-index: 999;
+  cursor: zoom-out;
+  display: block;
+  position: fixed;
+  top: 0;
+  width: auto;
+  height: 90%;
+  margin: 5% auto;
+}
+
+.suspicious-list {
+  margin: 0;
+  color: black;
+}
+
+.suspicious-list a {
+  color: #007993;
+}

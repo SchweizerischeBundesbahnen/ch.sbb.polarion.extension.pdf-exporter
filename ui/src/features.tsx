@@ -4,6 +4,7 @@ import Authorization from './pages/Authorization';
 import CoverPage from './pages/CoverPage';
 import Css from './pages/Css';
 import Disclaimer from './pages/Disclaimer';
+import ExportPopupPreview from './pages/ExportPopupPreview';
 import FilenameTemplate from './pages/FilenameTemplate';
 import HeaderFooter from './pages/HeaderFooter';
 import Localization from './pages/Localization';
@@ -119,6 +120,14 @@ export const FEATURES: Feature[] = [
       'Development harness for the export panel in the document editor: runs the real panel against a real ' +
       'document of the selected project. No administration page points here.',
     component: SidePanelPreview,
+  },
+  {
+    id: 'export-popup',
+    label: 'Export to PDF dialog (dev)',
+    description:
+      'Development harness for the export dialog the toolbar buttons open: runs the real dialog against a ' +
+      'real document, for any document type and either export type. No administration page points here.',
+    component: ExportPopupPreview,
   },
 ];
 

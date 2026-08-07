@@ -1,10 +1,10 @@
 /* Intentionally empty trigger stylesheet. The Document Properties side panel fragment
    (html/sidePanelContent.html) loads this file via a <link> whose `onload` handler dynamically imports
    and mounts the React side-panel bundle - an inline module <script> would not run inside a
-   GWT-injected fragment. The panel's real styles (ui/src/formext/side-panel.css) are bundled into the
-   React app and injected into the shadow root (see ui/src/formext/shadowMount.ts), so this file only
-   needs to exist and be served for the onload trigger to fire.
+   GWT-injected fragment. The panel's real styles (ui/src/sidepanel/side-panel.css) are bundled into the
+   React app and injected into the shadow root (see ui/src/services/shadowMount.ts, shared with the
+   export dialog), so this file only needs to exist and be served for the onload trigger to fire.
 
-   pdf-exporter.css is deliberately NOT linked here any more: the panel's styles live in its shadow root,
-   and what still needs that stylesheet on the editor page - the DLE toolbar and its export popup -
-   injects it itself (js/starter.js, js/dle-toolbar.js). */
+   This is the extension's only stylesheet on a Polarion page, and it is empty on purpose. Every surface
+   this extension renders mounts into a shadow root and carries its own styles; the injected toolbar
+   buttons use Polarion's own classes plus generic's css/dle-toolbar.css. */

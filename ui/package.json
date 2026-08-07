@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build && node scripts/check-runtime-entries.mjs",
+    "typecheck": "tsc --noEmit",
+    "build": "npm run typecheck && vite build && node scripts/check-runtime-entries.mjs",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -40,6 +41,7 @@
     "eslint-config-prettier": "10.1.8",
     "eslint-plugin-react-hooks": "7.1.1",
     "globals": "17.9.0",
+    "jsdom": "30.0.1",
     "playwright": "1.62.1",
     "prettier": "3.9.6",
     "typescript": "6.0.3",

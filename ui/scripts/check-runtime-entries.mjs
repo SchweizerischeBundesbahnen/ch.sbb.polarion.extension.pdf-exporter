@@ -1,6 +1,6 @@
 // Checks the built bundles that Polarion imports by URL, which nothing else can check.
 //
-// Two of this app's three entries are not the SPA: they are ES modules loaded at runtime by
+// Three of this app's four entries are not the SPA: they are ES modules loaded at runtime by
 // server-rendered markup, by a fixed name, for a named export.
 //
 //   BulkPdfExportWidgetRenderer:
@@ -9,6 +9,10 @@
 //   webapp/pdf-exporter/html/sidePanelContent.html:
 //     import('/polarion/pdf-exporter-app/ui/app/assets/side-panel.js')
 //         .then(module => module.mountSidePanel('#pdf-exporter-panel'))
+//   webapp/pdf-exporter/js/starter.js, webapp/pdf-exporter/js/live-reports.js,
+//   ExportToPdfButtonRenderer:
+//     import('/polarion/pdf-exporter-app/ui/app/assets/export-popup.js')
+//         .then(module => module.openExportPopup({documentType: '...'}))
 //
 // So each emitted file must keep both its name and that export. The Vitest suites import the source
 // modules instead of the build output, so neither would notice: a Vite app build drops entry signatures
@@ -36,6 +40,14 @@ const ENTRIES = [
       /export\s+(function|const|let|var)\s+mountSidePanel\b/.test(bundle) ||
       /export\s*\{[^}]*\bmountSidePanel\b/.test(bundle),
     importer: 'the side panel fragment calls module.mountSidePanel(selector)',
+  },
+  {
+    file: 'export-popup.js',
+    exported: 'openExportPopup',
+    present: (bundle) =>
+      /export\s+(function|const|let|var)\s+openExportPopup\b/.test(bundle) ||
+      /export\s*\{[^}]*\bopenExportPopup\b/.test(bundle),
+    importer: 'the toolbar injectors and the report export button call module.openExportPopup(options)',
   },
 ];
 

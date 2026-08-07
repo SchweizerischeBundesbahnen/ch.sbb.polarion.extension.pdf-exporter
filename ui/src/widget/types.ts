@@ -1,5 +1,10 @@
-/** The document types the export endpoints understand. Mirrors the Java `DocumentType`. */
-export type DocumentType = 'LIVE_DOC' | 'LIVE_REPORT' | 'TEST_RUN' | 'BASELINE_COLLECTION' | 'WIKI_PAGE';
+// The document type is the export model's, not the widget's: what a widget lists decides what its export
+// dialog offers, so both sides read the same definition. Imported rather than re-exported straight through,
+// because `DocumentType` is also a DOM global (the `<!DOCTYPE>` node) - a bare `export type { … } from` would
+// leave the references below silently bound to that one instead.
+import type { DocumentType } from '../export/documentType';
+
+export type { DocumentType };
 
 /** A column of the widget's table, as the widget was configured on the page. */
 export interface BulkExportColumn {

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { page, userEvent } from 'vitest/browser';
-import { mountSidePanel } from '../src/formext/mount';
+import { mountSidePanel } from '../src/sidepanel/mount';
 import {
   SAMPLE_STYLE_PACKAGE,
   SAMPLE_STYLE_PACKAGE_FULL,
