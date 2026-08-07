@@ -46,6 +46,7 @@ export interface ExportParamsJson {
   chapters?: string[] | null;
   metadataFields?: string[] | null;
   language?: string | null;
+  languageCustomField?: string | null;
   linkedWorkitemRoles?: string[];
   linkRoleDirection?: string | null;
   fileName?: string;
@@ -161,6 +162,9 @@ export function buildExportParams(form: ExportForm, context: DocumentContext, ta
       chapters,
       metadataFields,
       language: sent('localizeEnums') && form.localizeEnums ? form.language : null,
+      // No document type guard, the way the legacy dialogs sent it: an admin-only field with no control,
+      // passed through from the selected style package whatever is being exported.
+      languageCustomField: form.languageCustomField || null,
       linkedWorkitemRoles: roles,
       linkRoleDirection: roles.length > 0 ? form.linkRoleDirection : null,
       fileName: target.fileName,
