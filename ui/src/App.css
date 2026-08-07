@@ -291,9 +291,13 @@
   flex-wrap: wrap;
 }
 
+/* Equal air on both sides of the rule: `margin-top` above it, `padding-top` below it, the same 15px.
+   They used to be 20 and 15, which read as 30 above against 15 below, because the bottom row of the
+   block above still added its own 10px `margin-bottom` on top of the margin. That trailing margin is
+   dropped just below, so what is left here is the whole gap and the two numbers can simply match. */
 .style-packages-page .flex-container.section {
   border-top: 1px solid #ccc;
-  margin-top: 20px;
+  margin-top: 15px;
   padding-top: 15px;
 }
 
@@ -305,10 +309,34 @@
   flex-grow: 1;
 }
 
+/* A row taking a line of its own above the two columns, so both columns start level below it. The
+   headings colour picker uses it: it is the odd one out among the page settings, and leaving it in the
+   left column pushed "PDF Variant" a row higher than "Paper Size", so the four dropdowns did not line up
+   as a block. The export dialog has the same rule for the same row - see popup/export-popup.css. */
+.style-packages-page .input-group.full-row {
+  width: 100%;
+}
+
 /* The three rules the JSP page inherited from generic's configurations.css: 120px labels are what line
    the controls of the two columns up with each other. Not in RSP's bundled CSS, so they live here. */
 .style-packages-page .input-group {
   margin-bottom: 10px;
+}
+
+/* The row spacing is between rows, so the last row of a column does not carry it. Without this, the
+   bottom of every block is 10px taller than it looks and that padding lands above the next section's
+   rule, which is what made the gap above a rule twice the gap below it. */
+.style-packages-page .flex-column > .input-group:last-child,
+.style-packages-page .flex-grow > .input-group:last-child {
+  margin-bottom: 0;
+}
+
+/* Two blocks with no rule between them are still two blocks: they get the same 10px of air that
+   separates the rows inside them. This used to come from the trailing row margin dropped above, which
+   was why removing that margin closed the gap between "Expose style package settings" and "Cover page"
+   entirely. Stated on the block that needs it instead of left to a margin nobody could see. */
+.style-packages-page .flex-container + .flex-container:not(.section) {
+  margin-top: 10px;
 }
 
 .style-packages-page .input-group label {
@@ -327,6 +355,17 @@
 /* A label carrying a checkbox is as wide as its text, not a 120px column head. */
 .style-packages-page .checkbox.input-group label {
   width: auto;
+}
+
+/* A label that is a sentence rather than a column head, so the 120px above would wrap it. The Document
+   Language custom field row needs it: the rows around it in that column carry checkbox labels, which are
+   already `width: auto`, and it is the only one of them without a checkbox. */
+.style-packages-page .input-group label.nowrap {
+  width: auto;
+  white-space: nowrap;
+  /* The same 4px the flex-centered rows put between a label and its info icon. Without it the icon
+     touches the last word, because that gap came from the 120px column width being wider than the text. */
+  margin-right: 4px;
 }
 
 /* Except these two, which the JSP page held at the column width so the dropdown behind them lines up
