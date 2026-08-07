@@ -8,6 +8,7 @@ import com.polarion.core.boot.PolarionProperties;
 import com.polarion.core.config.Configuration;
 import com.polarion.core.util.StringUtils;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Optional;
 
@@ -16,6 +17,7 @@ public class PdfTemplateProcessor {
     private static final String LOCALHOST = "localhost";
     public static final String HTTP_PROTOCOL_PREFIX = "http://";
     public static final String HTTPS_PROTOCOL_PREFIX = "https://";
+    private static final String DEFAULT_LANGUAGE = "en";
 
     @NotNull
     public String processUsing(@NotNull ExportParams exportParams, @NotNull String documentName, @NotNull String css, @NotNull String content) {
@@ -23,6 +25,10 @@ public class PdfTemplateProcessor {
     }
 
     public String processUsing(@NotNull ExportParams exportParams, @NotNull String documentName, @NotNull String css, @NotNull String content, @NotNull String metaTags) {
+        return processUsing(exportParams, documentName, css, content, metaTags, null);
+    }
+
+    public String processUsing(@NotNull ExportParams exportParams, @NotNull String documentName, @NotNull String css, @NotNull String content, @NotNull String metaTags, @Nullable String language) {
         css += buildSizeCss(exportParams.getOrientation(), exportParams.getPaperSize());
 
         if (exportParams.isMarkReferencedWorkitems()) {
@@ -43,6 +49,7 @@ public class PdfTemplateProcessor {
         }
 
         return ScopeUtils.getFileContent("webapp/pdf-exporter/html/pdfTemplate.html")
+                .replace("{LANG}", StringUtils.isEmpty(language) ? DEFAULT_LANGUAGE : language)
                 .replace("{DOC_NAME}", documentName)
                 .replace("{BASE_URL}", buildBaseUrlHeader())
                 .replace("{CSS}", css)

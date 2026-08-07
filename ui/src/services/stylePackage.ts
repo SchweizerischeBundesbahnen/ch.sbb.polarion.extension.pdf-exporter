@@ -40,6 +40,7 @@ export interface StylePackageSettings {
   metadataFields?: string | null;
   customNumberedListStyles?: string | null;
   language?: string | null;
+  languageCustomField?: string | null;
   linkedWorkitemRoles?: string[] | null;
   linkRoleDirection?: string | null;
   workItemsQuery?: string | null;

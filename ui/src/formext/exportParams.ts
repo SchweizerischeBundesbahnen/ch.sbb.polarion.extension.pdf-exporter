@@ -39,6 +39,7 @@ export interface ExportParamsJson {
   chapters?: string[] | null;
   metadataFields?: string[] | null;
   language?: string | null;
+  languageCustomField?: string | null;
   linkedWorkitemRoles?: string[];
   linkRoleDirection?: string | null;
   fileName?: string;
@@ -133,6 +134,7 @@ export function buildExportParams(form: ExportForm, context: DocumentContext, fi
       chapters,
       metadataFields,
       language: form.localizeEnums ? form.language : null,
+      languageCustomField: form.languageCustomField || null,
       linkedWorkitemRoles: roles,
       linkRoleDirection: roles.length > 0 ? form.linkRoleDirection : null,
       fileName,

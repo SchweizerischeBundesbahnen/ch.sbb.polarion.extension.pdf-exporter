@@ -54,6 +54,12 @@ const WORK_ITEMS_QUERY_HELP =
   "Lucene query applied to filter work items within the document, e.g. 'type:requirement'. Leave empty to " +
   'include all work items.';
 
+const LANGUAGE_CUSTOM_FIELD_HELP =
+  'ID of the LiveDoc custom field that holds the document language. Its value is used as-is as the ISO 639-1 ' +
+  "code (e.g. 'de', 'en', 'fr') and injected into the exported HTML as the <html lang> attribute. The field may be a " +
+  "text field or an enumeration; for an enumeration the option's ID is used, so the option IDs must be ISO 639-1 " +
+  'codes. Leave empty to disable language injection.';
+
 /**
  * The form behind the page. It is not the stored document: a setting the document expresses as "null
  * means off" is two fields here - the checkbox that switches it on and the value it carries - so
@@ -95,6 +101,7 @@ interface Form {
   metadataFields: string;
   localizeEnums: boolean;
   language: string;
+  languageCustomField: string;
   rolesEnabled: boolean;
   linkedWorkitemRoles: string[];
   linkRoleDirection: string;
@@ -170,6 +177,7 @@ function toForm(content: StylePackageSettings): Form {
     metadataFields: content.metadataFields ?? '',
     localizeEnums: !!content.language,
     language: content.language ?? 'de',
+    languageCustomField: content.languageCustomField ?? '',
     rolesEnabled: roles.length > 0,
     linkedWorkitemRoles: roles,
     linkRoleDirection: content.linkRoleDirection ?? 'BOTH',
@@ -362,6 +370,7 @@ export default function StylePackages() {
       metadataFields: form.metadataFieldsEnabled ? form.metadataFields : null,
       customNumberedListStyles: form.customListStylesEnabled ? form.customNumberedListStyles : null,
       language: form.localizeEnums ? form.language : null,
+      languageCustomField: form.languageCustomField.trim() || null,
       linkedWorkitemRoles: form.rolesEnabled ? form.linkedWorkitemRoles : null,
       linkRoleDirection: form.rolesEnabled ? form.linkRoleDirection : null,
       exposePageWidthValidation: form.exposePageWidthValidation,
@@ -847,6 +856,18 @@ export default function StylePackages() {
                 disabled={!form.metadataFieldsEnabled}
                 value={form.metadataFields}
                 onChange={(e) => patch({ metadataFields: e.target.value })}
+              />
+            </div>
+            <div className="input-group with-value">
+              <label htmlFor="language-custom-field">Document Language custom field</label>
+              <span className="more-info" title={LANGUAGE_CUSTOM_FIELD_HELP} />
+              <input
+                id="language-custom-field"
+                className="grows"
+                type="text"
+                placeholder="docLanguage"
+                value={form.languageCustomField}
+                onChange={(e) => patch({ languageCustomField: e.target.value })}
               />
             </div>
           </div>

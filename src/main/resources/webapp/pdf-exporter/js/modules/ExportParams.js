@@ -88,6 +88,7 @@ export default class ExportParams {
         this.chapters = builder.chapters;
         this.metadataFields = builder.metadataFields;
         this.language = builder.language;
+        this.languageCustomField = builder.languageCustomField;
         this.linkedWorkitemRoles = builder.linkedWorkitemRoles;
         this.linkRoleDirection = builder.linkRoleDirection;
         this.fileName = builder.fileName;
@@ -148,6 +149,7 @@ export default class ExportParams {
                 this.chapters = undefined;
                 this.metadataFields = undefined;
                 this.language = undefined;
+                this.languageCustomField = undefined;
                 this.linkedWorkitemRoles = undefined;
                 this.fileName = undefined;
                 this.urlQueryParameters = undefined;
@@ -297,6 +299,11 @@ export default class ExportParams {
 
             setLanguage(language) {
                 this.language = language;
+                return this;
+            }
+
+            setLanguageCustomField(languageCustomField) {
+                this.languageCustomField = languageCustomField;
                 return this;
             }
 
