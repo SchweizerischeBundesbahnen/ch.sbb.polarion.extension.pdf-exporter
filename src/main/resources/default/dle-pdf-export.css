@@ -75,6 +75,11 @@ html {
     }
 }
 
+.content {
+    hyphens: auto;
+    -webkit-hyphens: auto;
+}
+
 .content .title {
     font-size: 2em;
     font-weight: 600;
