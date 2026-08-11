@@ -137,6 +137,7 @@ jobs:
         run: |
           mvn --batch-mode -s "${SETTINGS_XML}" clean deploy \
             -Dmaven.test.skip=true \
+            -DskipJsTests=true \
             -P gpg-sign \
             -P central-publishing \
             -Dcentral.timeout=3600 \
