@@ -387,6 +387,8 @@
                 <artifactId>swagger-maven-plugin-jakarta</artifactId>
                 <configuration>
                     <outputFormat>JSON</outputFormat>
+                    <!-- Stable ordering, so a rebuild does not reshuffle docs/openapi.json. -->
+                    <sortOutput>true</sortOutput>
                     <resourcePackages>
                         <package>ch.sbb.polarion.extension.generic.rest.controller.info</package>
                         <package>ch.sbb.polarion.extension.generic.rest.controller.roles</package>
