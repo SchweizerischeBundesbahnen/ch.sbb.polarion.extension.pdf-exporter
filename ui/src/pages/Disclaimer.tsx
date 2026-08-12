@@ -22,8 +22,9 @@ export default function Disclaimer() {
     let cancelled = false;
     sendRequest({ method: 'GET', url: '/disclaimer' })
       .then(async (response) => {
-        if (cancelled) return;
         const article = response.ok ? (await response.text()).trim() : '';
+        // Re-checked after the body is read: an unmount during that await must not set state.
+        if (cancelled) return;
         if (article) {
           setHtml(article);
         } else {
