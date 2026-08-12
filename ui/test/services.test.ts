@@ -1,5 +1,4 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { DISCLAIMER_URL, fetchArticle } from '../src/services/articles';
 import { getCookie, setCookie } from '../src/services/cookies';
 import { isEmbedded } from '../src/services/params';
 import { fetchProjects } from '../src/services/projects';
@@ -99,23 +98,5 @@ describe('fetchProjects', () => {
   it('returns an empty list when the response has no data array', async () => {
     installFetchMock([{ method: 'GET', match: /\/projects/, json: {} }]);
     expect(await fetchProjects()).toEqual([]);
-  });
-});
-
-describe('fetchArticle', () => {
-  afterEach(() => {
-    vi.unstubAllGlobals();
-  });
-
-  it('returns the article body', async () => {
-    installFetchMock([{ method: 'GET', match: /disclaimer\.html$/, respond: () => new Response('<p>text</p>') }]);
-    await expect(fetchArticle(DISCLAIMER_URL)).resolves.toBe('<p>text</p>');
-  });
-
-  it('returns null for a missing or empty article', async () => {
-    installFetchMock([{ method: 'GET', match: /a\.html$/, respond: () => new Response('', { status: 404 }) }]);
-    await expect(fetchArticle('/a.html')).resolves.toBeNull();
-    installFetchMock([{ method: 'GET', match: /b\.html$/, respond: () => new Response('\n  \n') }]);
-    await expect(fetchArticle('/b.html')).resolves.toBeNull();
   });
 });
