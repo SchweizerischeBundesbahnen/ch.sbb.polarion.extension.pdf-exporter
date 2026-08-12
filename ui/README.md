@@ -204,7 +204,7 @@ ones.
 
 **One command, locally and in CI: `npm run test:coverage:docker`.** It runs the full suite (behavior +
 visual regression) plus the 80% istanbul coverage gate inside the pinned Playwright Docker image,
-which is what the Maven `test` phase and CI execute. Docker must be running. It is not a pre-commit
+which is what the Maven `test` phase and CI execute. Docker must be running. It is also a pre-commit
 hook; see [Formatting, linting & typechecking](#formatting-linting--typechecking).
 
 The image's bundled npm is older than the `packageManager` pin, so the container installs the pinned
@@ -256,12 +256,14 @@ IDE showing one. `tsconfig.json` covers `src` **and** `test`: a test is code, an
 three tests kept passing a `hostSelector` prop that `BulkExportWidget` had stopped declaring. The config
 files themselves (`vite.config.js`, `vitest.config.ts`, `scripts/*.mjs`) are still outside the program.
 
-The repo's pre-commit hooks run `format:check` and `lint` on any change under `ui/`. They are
-check-only and never modify your files. Both use `language: system`, so run `npm ci` in `ui/` before
-`pre-commit run -a`. Without it they fail with an npm error rather than a lint finding.
+The repo's pre-commit hooks run `format:check`, `lint` and the dockerized coverage suite on any change
+under `ui/`. They are check-only and never modify your files. All use `language: system`, so run
+`npm ci` in `ui/` before `pre-commit run -a`. Without it they fail with an npm error rather than a
+lint finding.
 
-The dockerized coverage suite is deliberately **not** a hook: it needs Docker and adds 30-60s+ to every
-UI commit. The Maven `test` phase and CI already run it.
+The dockerized suite is the slow one: it needs Docker running and adds 30-60s+ to a UI commit. That is
+the price of catching a broken suite or a coverage drop before the push rather than in CI, which runs
+the same command.
 
 ## Production build
 
