@@ -24,12 +24,6 @@ export default defineConfig(({ command, mode }) => {
             target: polarionUrl,
             changeOrigin: true,
           },
-          // The build-generated help articles served straight from the app webapp; the Usage
-          // Disclaimer page reads disclaimer.html from here (there is no REST endpoint for it).
-          '/polarion/pdf-exporter-app/ui/html': {
-            target: polarionUrl,
-            changeOrigin: true,
-          },
           // The extension's own webapp context: its REST API, which the About page reads.
           '/polarion/pdf-exporter/rest': {
             target: polarionUrl,
