@@ -23,7 +23,7 @@ describe.skipIf(!__PIXEL_REFERENCES__)('Article pages visual', () => {
       [
         {
           method: 'GET',
-          match: /disclaimer\.html$/,
+          match: /\/disclaimer$/,
           respond: () => new Response(ARTICLE, { status: 200, headers: { 'Content-Type': 'text/html' } }),
         },
       ],
