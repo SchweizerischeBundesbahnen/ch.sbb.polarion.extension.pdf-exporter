@@ -580,6 +580,27 @@
         ]
       }
     },
+    "/api/disclaimer": {
+      "get": {
+        "operationId": "getDisclaimer",
+        "responses": {
+          "default": {
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "HTML help article"
+          }
+        },
+        "summary": "Returns the build-generated DISCLAIMER help article shown on the Usage Disclaimer page",
+        "tags": [
+          "Extension Information"
+        ]
+      }
+    },
     "/api/document-language": {
       "get": {
         "operationId": "getDocumentLanguage",
@@ -1006,6 +1027,37 @@
         "summary": "Returns the build-generated README help article shown on the About page",
         "tags": [
           "Extension Information"
+        ]
+      }
+    },
+    "/api/roles": {
+      "get": {
+        "operationId": "getRoles",
+        "parameters": [
+          {
+            "description": "Scope, e.g. project/<projectId>/ (empty for global scope)",
+            "in": "query",
+            "name": "scope",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RolesInfo"
+                }
+              }
+            },
+            "description": "Successfully retrieved the available roles"
+          }
+        },
+        "summary": "Get the global and project roles available in the specified scope",
+        "tags": [
+          "Roles"
         ]
       }
     },
@@ -1690,10 +1742,159 @@
           "Utility resources"
         ]
       }
+    },
+    "/api/widgets/bulk-export/items": {
+      "post": {
+        "description": "Executes the data set the widget resolved when it was rendered. The descriptor must carry the signature the renderer issued for it, otherwise the request is rejected.",
+        "operationId": "getItems",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkExportItemsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkExportItems"
+                }
+              }
+            },
+            "description": "Successfully retrieved the rows of the widget"
+          },
+          "400": {
+            "description": "The descriptor is missing, malformed or not signed by this server"
+          }
+        },
+        "summary": "Get the rows of a bulk export widget",
+        "tags": [
+          "Widgets"
+        ]
+      }
     }
   },
   "components": {
     "schemas": {
+      "BulkExportColumn": {
+        "description": "A column of the bulk export widget's table",
+        "properties": {
+          "id": {
+            "description": "Id of the rendered field",
+            "example": "status",
+            "type": "string"
+          },
+          "label": {
+            "description": "Label shown in the table header, resolved when the widget was rendered",
+            "example": "Status",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "BulkExportItem": {
+        "description": "One row of the bulk export widget's table",
+        "properties": {
+          "cells": {
+            "description": "The item's cells, rendered by Polarion in the order of the widget's columns",
+            "items": {
+              "description": "The item's cells, rendered by Polarion in the order of the widget's columns",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "id": {
+            "description": "Id of the item",
+            "example": "build_quick-20170211-141155",
+            "type": "string"
+          },
+          "message": {
+            "description": "Why the row is not readable, localized",
+            "example": "You do not have permission to read this item",
+            "type": "string"
+          },
+          "name": {
+            "description": "Name of the item, for baseline collections",
+            "type": "string"
+          },
+          "projectId": {
+            "description": "Id of the project the item belongs to",
+            "example": "elibrary",
+            "type": "string"
+          },
+          "readable": {
+            "description": "Whether the current user may read the item. An unreadable row shows only its message",
+            "type": "boolean"
+          },
+          "spaceId": {
+            "description": "Id of the space the item belongs to, for documents and pages",
+            "type": "string"
+          },
+          "type": {
+            "description": "Name of the item's Polarion prototype",
+            "example": "TestRun",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "BulkExportItems": {
+        "description": "The table content of a bulk export widget",
+        "properties": {
+          "columns": {
+            "description": "Columns to render, in order",
+            "items": {
+              "$ref": "#/components/schemas/BulkExportColumn"
+            },
+            "type": "array"
+          },
+          "countMessage": {
+            "description": "The footer message, localized",
+            "example": "9 items found",
+            "type": "string"
+          },
+          "items": {
+            "description": "The rows, already limited to the widget's top value",
+            "items": {
+              "$ref": "#/components/schemas/BulkExportItem"
+            },
+            "type": "array"
+          },
+          "openInTableUrl": {
+            "description": "Link opening the query in Polarion's table view, null when the prototype has no such view",
+            "type": "string"
+          },
+          "query": {
+            "description": "The query to show behind the footer's info icon",
+            "type": "string"
+          },
+          "totalCount": {
+            "description": "How many items the query found, which may exceed the number of rows",
+            "example": 9,
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "BulkExportItemsRequest": {
+        "description": "A signed request for the rows of a bulk export widget",
+        "properties": {
+          "descriptor": {
+            "description": "Base64url encoded descriptor, as emitted by the widget renderer",
+            "type": "string"
+          },
+          "signature": {
+            "description": "Signature of the descriptor, as emitted by the widget renderer",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "ConfigurationPropertiesModel": {
         "description": "Extension configuration properties shown on the About page",
         "properties": {
@@ -1962,6 +2163,10 @@
             "description": "Language in the exported document",
             "type": "string"
           },
+          "languageCustomField": {
+            "description": "ID of the LiveDoc custom field holding the document language as an ISO 639-1 code (e.g. 'docLanguage'). The field may be a text field or an enumeration; for an enumeration the option's ID is used, so option IDs must be ISO 639-1 codes. Leave empty to disable language injection",
+            "type": "string"
+          },
           "linkRoleDirection": {
             "description": "Direction of linked workitem roles resolution",
             "enum": [
@@ -2138,6 +2343,32 @@
             "type": "string"
           }
         },
+        "type": "object"
+      },
+      "RolesInfo": {
+        "description": "Roles available to grant in a given scope",
+        "properties": {
+          "globalRoles": {
+            "description": "Roles defined for the whole repository",
+            "items": {
+              "description": "Roles defined for the whole repository",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "projectRoles": {
+            "description": "Roles defined for the project of the scope; empty in global scope",
+            "items": {
+              "description": "Roles defined for the project of the scope; empty in global scope",
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "globalRoles",
+          "projectRoles"
+        ],
         "type": "object"
       },
       "SettingName": {

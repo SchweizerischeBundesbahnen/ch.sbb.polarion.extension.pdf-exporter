@@ -18,7 +18,7 @@ import org.jetbrains.annotations.NotNull;
  */
 public abstract class AbstractPdfExporterButtonWidget extends GenericButtonWidget {
 
-    protected static final String APP_ICON = "/polarion/pdf-exporter-admin/ui/images/app-icon.svg";
+    protected static final String APP_ICON = "/polarion/pdf-exporter-app/ui/images/app-icon.svg";
 
     private final String label;
     private final String detailsHtml;

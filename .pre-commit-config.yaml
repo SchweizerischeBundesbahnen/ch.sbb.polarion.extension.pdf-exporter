@@ -47,6 +47,26 @@ repos:
         entry: \bDEV-\d{1,6}\b
         language: pygrep
         types: [text]
+      - id: ui-prettier
+        name: UI Prettier (format:check)
+        entry: npm --prefix ui run format:check
+        language: system
+        pass_filenames: false
+        files: ^ui/.*\.(ts|tsx|css|html)$
+      - id: ui-eslint
+        name: UI ESLint
+        entry: npm --prefix ui run lint
+        language: system
+        pass_filenames: false
+        files: ^ui/.*\.(ts|tsx|js|mjs)$
+      # Dockerized Vitest (behavior + visual regression) with the 80% coverage gate. Heavy
+      # (~30-60s+, needs Docker running); gated on ui/ source changes.
+      - id: ui-test-coverage-docker
+        name: UI Vitest + coverage gate (Docker)
+        entry: npm --prefix ui run test:coverage:docker
+        language: system
+        pass_filenames: false
+        files: ^ui/.*\.(ts|tsx|css)$
   - repo: https://github.com/zricethezav/gitleaks
     rev: v8.30.1
     hooks:
@@ -57,11 +77,11 @@ repos:
       - id: check-git-config-user-email
         args: [--templates, ^\S+\.\S+@sbb\.ch$]
   - repo: https://github.com/commitizen-tools/commitizen
-    rev: v4.16.5
+    rev: v4.17.0
     hooks:
       - id: commitizen
   - repo: https://github.com/woodruffw/zizmor-pre-commit
-    rev: v1.28.0
+    rev: v1.29.0
     hooks:
       - id: zizmor
   - repo: https://github.com/rhysd/actionlint

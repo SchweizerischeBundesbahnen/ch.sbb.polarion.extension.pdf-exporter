@@ -5,6 +5,7 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.DocumentData;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.coverpage.CoverPageModel;
 import ch.sbb.polarion.extension.pdf_exporter.settings.CoverPageSettings;
+import ch.sbb.polarion.extension.pdf_exporter.util.DocumentLanguageResolver;
 import ch.sbb.polarion.extension.pdf_exporter.util.HtmlProcessor;
 import ch.sbb.polarion.extension.pdf_exporter.util.MediaUtils;
 import ch.sbb.polarion.extension.pdf_exporter.util.PdfGenerationLog;
@@ -100,7 +101,9 @@ public class CoverPageProcessor {
         String evaluatedContent = velocityEvaluator.evaluateVelocityExpressions(documentData, content);
         String css = coverPageSettings.processImagePlaceholders(settings.getTemplateCss());
         css = htmlProcessor.replaceResourcesAsBase64Encoded(css);
-        return pdfTemplateProcessor.processUsing(exportParams, documentData.getTitle(), css, evaluatedContent);
+        // Resolve the language the same way as the body (same resolver, same inputs) so the cover page hyphenates consistently
+        String documentLanguage = DocumentLanguageResolver.resolve(documentData, exportParams);
+        return pdfTemplateProcessor.processUsing(exportParams, documentData.getTitle(), css, evaluatedContent, "", documentLanguage);
     }
 
 }

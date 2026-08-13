@@ -4,18 +4,16 @@
  *
  *   scriptInjection.mainHead=<script src="/polarion/pdf-exporter/js/live-reports.js"></script>
  *
- * It provides two things:
- *
- * 1. An "Export to PDF" button in the native Live Report toolbar (the one behind "Expand Tools"),
- *    injected via the shared self-healing engine — no report modification needed. The button
- *    appears only in view mode, once the toolbar is expanded. To keep that toolbar always
- *    expanded (Polarion itself forgets the state on every page open), opt in with:
+ * It injects an "Export to PDF" button into the native Live Report toolbar (the one behind
+ * "Expand Tools") via the shared self-healing engine — no report modification needed. The button
+ * appears only in view mode, once the toolbar is expanded. To keep that toolbar always expanded
+ * (Polarion itself forgets the state on every page open), opt in with:
  *
  *   scriptInjection.mainHead=<script src="/polarion/pdf-exporter/js/live-reports.js" data-expand-tools="true"></script>
  *
- * 2. The stylesheets and micromodal library used by ExportPopup.js — both for the toolbar button
- *    above and for the classic "Export to PDF Button" report widget (which renders server-side
- *    and opens the same popup on click).
+ * Nothing else is put on the page. The button uses Polarion's own toolbar classes, and the export
+ * dialog is a React module that mounts into a shadow root of its own, styles included — so this
+ * script injects no stylesheet.
  *
  * This script replaces loading starter.js via mainHead (deprecated). The element ids match the
  * ones starter.js uses, so nothing is injected twice if both run.
@@ -40,6 +38,12 @@
     // injected button inherits the native look, sizing and hover behavior
     // (polarion-Button-HighlightOnHover dims the icon and brightens it on hover; the label color
     // never changes).
+    // The export dialog is a React module of the pdf-exporter-app webapp, imported on click. It mounts
+    // itself into a shadow root of its own, so nothing has to be injected into the page for it. The
+    // timestamp is captured once per page load, so a click reuses the module the previous click loaded
+    // while an updated extension is still picked up on the next page open.
+    const POPUP_MODULE = `/polarion/pdf-exporter-app/ui/app/assets/export-popup.js${timestampParam}`;
+
     const TOOLBAR_HTML = `
         <table class="dleToolBarTable">
             <tr class="dleToolBarRow">
@@ -47,10 +51,10 @@
                 <td><img src="/polarion/ria/images/toolbar_splitter_gray.gif" class="gwt-Image polarion-dle-ToolbarPanel-separator"></td>
                 <td><div class="gwt-Label polarion-dle-toolbar-Padding"></div></td>
                 <td style="vertical-align: middle;">
-                    <table class="polarion-dle-toolbar-ButtonWithLabel polarion-Button-shared polarion-Button-HighlightOnHover pdf-rp-toolbar-button"
+                    <table class="polarion-dle-toolbar-ButtonWithLabel polarion-Button-shared polarion-Button-HighlightOnHover"
                            role="button" cellpadding="0" cellspacing="0" title="Export to PDF" tabindex="0"
-                           onclick="import('${EXT_BASE}ui/js/modules/ExportPopup.js')
-                                      .then(module => new module.default({documentType: 'LIVE_REPORT'}))
+                           onclick="import('${POPUP_MODULE}')
+                                      .then(module => module.openExportPopup({documentType: 'LIVE_REPORT'}))
                                       .catch(console.error);">
                         <colgroup><col><col></colgroup>
                         <tbody><tr>
@@ -61,27 +65,6 @@
                 </td>
             </tr>
         </table>`;
-
-    function injectStyle(id, href) {
-        if (!top.document.getElementById(id)) {
-            const link = top.document.createElement('link');
-            link.id = id;
-            link.rel = 'stylesheet';
-            link.type = 'text/css';
-            link.href = href;
-            top.document.head.appendChild(link);
-        }
-    }
-
-    function injectScript(id, src) {
-        if (!top.document.getElementById(id)) {
-            const script = top.document.createElement('script');
-            script.id = id;
-            script.setAttribute('src', src);
-            script.setAttribute('type', 'text/javascript');
-            top.document.head.appendChild(script);
-        }
-    }
 
     // Load the shared engine once across all extensions and resolve when it is ready. Using a single
     // shared promise (kept on `top`) is race-free for the multi-extension case: whichever extension's
@@ -111,15 +94,6 @@
         }
         return top.__genericDleToolbarEnginePromise;
     }
-
-    injectStyle('pdf-exporter-styles', `${EXT_BASE}css/pdf-exporter.css${timestampParam}`);
-    injectStyle('pdf-micromodal-styles', `${EXT_BASE}ui/generic/css/micromodal.css${timestampParam}`);
-    injectStyle('generic-control-tokens', `${EXT_BASE}ui/generic/css/control-tokens.css${timestampParam}`);
-    injectStyle('generic-checkbox-styles', `${EXT_BASE}ui/generic/css/checkboxes.css${timestampParam}`);
-    injectStyle('generic-searchable-dropdown-styles', `${EXT_BASE}ui/generic/css/searchable-dropdown.css${timestampParam}`);
-    injectStyle('generic-inputs-styles', `${EXT_BASE}ui/generic/css/inputs.css${timestampParam}`);
-    injectStyle('generic-alerts-styles', `${EXT_BASE}ui/generic/css/alerts.css${timestampParam}`);
-    injectScript('pdf-micromodal-script', `${EXT_BASE}ui/generic/js/micromodal.min.js${timestampParam}`);
 
     // Load the shared self-healing engine and inject the report-toolbar button through it.
     loadEngine(`${EXT_BASE}ui/generic/js/dle-toolbar-starter.js${timestampParam}`).then(function () {

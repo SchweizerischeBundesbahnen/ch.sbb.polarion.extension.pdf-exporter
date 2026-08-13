@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns="https://jakarta.ee/xml/ns/jakartaee"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee
+                             https://jakarta.ee/xml/ns/jakartaee/web-app_6_1.xsd"
+         version="6.1">
+    <display-name>pdf-exporter-app</display-name>
+
+    <filter>
+        <filter-name>DoAsFilter</filter-name>
+        <filter-class>com.polarion.portal.tomcat.servlets.DoAsFilter</filter-class>
+    </filter>
+
+    <filter-mapping>
+        <filter-name>DoAsFilter</filter-name>
+        <url-pattern>/*</url-pattern>
+    </filter-mapping>
+
+    <servlet>
+        <servlet-name>pdf-exporter-app</servlet-name>
+        <servlet-class>ch.sbb.polarion.extension.pdf_exporter.PdfExporterAppServlet</servlet-class>
+
+        <init-param>
+            <param-name>debug</param-name>
+            <param-value>0</param-value>
+        </init-param>
+        <load-on-startup>1</load-on-startup>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>pdf-exporter-app</servlet-name>
+        <url-pattern>/ui/*</url-pattern>
+    </servlet-mapping>
+
+    <session-config>
+        <session-timeout>30</session-timeout>
+    </session-config>
+
+    <mime-mapping>
+        <extension>log</extension>
+        <mime-type>text/plain</mime-type>
+    </mime-mapping>
+
+    <!-- Static, non-sensitive assets served without authentication: the app's own bundle assets and
+         the shared generic UI toolkit (JS/CSS). Exempting /ui/generic/* lets these load same-origin
+         in Polarion and lets the vite dev proxy fetch them without a Polarion session. -->
+    <security-constraint>
+        <web-resource-collection>
+            <web-resource-name>All</web-resource-name>
+            <url-pattern>/ui/app/assets/*</url-pattern>
+            <url-pattern>/ui/generic/*</url-pattern>
+        </web-resource-collection>
+    </security-constraint>
+
+    <security-constraint>
+        <web-resource-collection>
+            <web-resource-name>All</web-resource-name>
+            <url-pattern>/*</url-pattern>
+        </web-resource-collection>
+        <auth-constraint>
+            <role-name>user</role-name>
+        </auth-constraint>
+    </security-constraint>
+
+    <!-- Login configuration uses form-based authentication -->
+    <login-config>
+        <auth-method>FORM</auth-method>
+        <realm-name>PolarionRealm</realm-name>
+        <form-login-config>
+            <form-login-page>/login/login</form-login-page>
+            <form-error-page>/login/error</form-error-page>
+        </form-login-config>
+    </login-config>
+</web-app>

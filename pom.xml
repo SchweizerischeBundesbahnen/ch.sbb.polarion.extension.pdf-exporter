@@ -5,7 +5,7 @@
     <parent>
         <groupId>ch.sbb.polarion.extensions</groupId>
         <artifactId>ch.sbb.polarion.extension.generic</artifactId>
-        <version>15.10.0</version>
+        <version>15.11.0</version>
     </parent>
 
     <artifactId>ch.sbb.polarion.extension.pdf-exporter</artifactId>
@@ -58,7 +58,6 @@
         <verapdf.version>1.30.2</verapdf.version>
         <rhino.version>1.9.1</rhino.version>
 
-        <exec-maven-plugin.version>3.3.0</exec-maven-plugin.version>
 
         <maven-jar-plugin.Extension-Context>pdf-exporter</maven-jar-plugin.Extension-Context>
         <maven-jar-plugin.Automatic-Module-Name>ch.sbb.polarion.extension.pdf_exporter</maven-jar-plugin.Automatic-Module-Name>
@@ -76,30 +75,27 @@
         <maven-jar-plugin.Require-Bundle.extension>com.polarion.alm.wiki,org.jsoup,net.bytebuddy.byte-buddy,org.apache.tika.patched;resolution:=optional,org.apache.tika;resolution:=optional</maven-jar-plugin.Require-Bundle.extension>
         <maven-jar-plugin.Require-Bundle>${maven-jar-plugin.Require-Bundle.common},${maven-jar-plugin.Require-Bundle.extension}</maven-jar-plugin.Require-Bundle>
 
-        <!--suppress UnresolvedMavenProperty -->
-        <markdown2html-maven-plugin.version>1.6.0</markdown2html-maven-plugin.version>
-        <markdown2html-maven-plugin.failOnError>${env.MARKDOWN2HTML_MAVEN_PLUGIN_FAIL_ON_ERROR}</markdown2html-maven-plugin.failOnError>
+        <!-- A broken README.md -> about.html conversion fails the build instead of shipping an
+             empty About page. markdown2html renders locally since 1.7.x - no GitHub API, no token -
+             so the same setting is right in CI, in a deploy job and on a developer machine. -->
+        <markdown2html-maven-plugin.failOnError>true</markdown2html-maven-plugin.failOnError>
         <markdown2html-maven-plugin.user-guide.inputFile>${project.basedir}/USER_GUIDE.md</markdown2html-maven-plugin.user-guide.inputFile>
         <markdown2html-maven-plugin.user-guide.outputFileName>user-guide.html</markdown2html-maven-plugin.user-guide.outputFileName>
         <markdown2html-maven-plugin.user-guide.outputFile>${markdown2html-maven-plugin.extensionContextAdminHtml}/${markdown2html-maven-plugin.user-guide.outputFileName}</markdown2html-maven-plugin.user-guide.outputFile>
         <markdown2html-maven-plugin.disclaimer.inputFile>${project.basedir}/DISCLAIMER.md</markdown2html-maven-plugin.disclaimer.inputFile>
         <markdown2html-maven-plugin.disclaimer.outputFileName>disclaimer.html</markdown2html-maven-plugin.disclaimer.outputFileName>
         <markdown2html-maven-plugin.disclaimer.outputFile>${markdown2html-maven-plugin.extensionContextAdminHtml}/${markdown2html-maven-plugin.disclaimer.outputFileName}</markdown2html-maven-plugin.disclaimer.outputFile>
-        <swagger-maven-plugin.version>2.2.22</swagger-maven-plugin.version>
 
-        <frontend-maven-plugin.version>2.0.1</frontend-maven-plugin.version>
-        <!-- When bumping nodeVersion/npmVersion, keep package.json ("engines" and "packageManager") in sync. -->
-        <frontend-maven-plugin.nodeVersion>v24.11.0</frontend-maven-plugin.nodeVersion>
-        <frontend-maven-plugin.npmVersion>11.6.1</frontend-maven-plugin.npmVersion>
-
-        <!--suppress UnresolvedMavenProperty -->
-        <skipJavaScriptTests>${skipTests}</skipJavaScriptTests>
+        <!-- Not for a plugin declared here: this project declares no frontend-maven-plugin of its own
+             any more. The parent's vite-ui profile reads this property, so it pins the version the ui/
+             build runs with, one minor ahead of the parent's own default. -->
+        <frontend-maven-plugin.version>2.0.2</frontend-maven-plugin.version>
 
         <velocity-engine-core.artifactId>org.apache.velocity.engine-core_2.3.0</velocity-engine-core.artifactId>
     </properties>
 
-    <profiles>
 
+    <profiles>
         <profile>
             <id>tests-with-weasyprint-docker</id>
 
@@ -385,8 +381,10 @@
                 <artifactId>swagger-maven-plugin-jakarta</artifactId>
                 <configuration>
                     <outputFormat>JSON</outputFormat>
+                    <!-- Stable ordering, so a rebuild does not reshuffle docs/openapi.json. -->
                     <resourcePackages>
                         <package>ch.sbb.polarion.extension.generic.rest.controller.info</package>
+                        <package>ch.sbb.polarion.extension.generic.rest.controller.roles</package>
                         <package>ch.sbb.polarion.extension.generic.rest.controller.settings</package>
                         <package>ch.sbb.polarion.extension.generic.rest.model</package>
                         <package>ch.sbb.polarion.extension.pdf_exporter.rest.controller</package>
@@ -397,52 +395,6 @@
             <plugin>
                 <groupId>io.github.grigoriev</groupId>
                 <artifactId>pre-commit-run-maven-plugin</artifactId>
-            </plugin>
-
-            <plugin>
-                <groupId>com.github.eirslett</groupId>
-                <artifactId>frontend-maven-plugin</artifactId>
-                <version>${frontend-maven-plugin.version}</version>
-                <executions>
-                    <execution>
-                        <id>install-node-and-npm</id>
-                        <goals>
-                            <goal>install-node-and-npm</goal>
-                        </goals>
-                        <configuration>
-                            <nodeVersion>${frontend-maven-plugin.nodeVersion}</nodeVersion>
-                            <npmVersion>${frontend-maven-plugin.npmVersion}</npmVersion>
-                            <skip>${skipJavaScriptTests}</skip>
-                        </configuration>
-                        <phase>test</phase>
-                    </execution>
-
-                    <!-- Install JavaScript dependencies using npm -->
-                    <execution>
-                        <id>npm-install</id>
-                        <goals>
-                            <goal>npm</goal>
-                        </goals>
-                        <configuration>
-                            <arguments>install</arguments>
-                            <skip>${skipJavaScriptTests}</skip>
-                        </configuration>
-                        <phase>test</phase>
-                    </execution>
-
-                    <!-- Run JavaScript tests -->
-                    <execution>
-                        <id>npm-test</id>
-                        <goals>
-                            <goal>npm</goal>
-                        </goals>
-                        <configuration>
-                            <arguments>run test</arguments>
-                            <skip>${skipJavaScriptTests}</skip>
-                        </configuration>
-                        <phase>test</phase>
-                    </execution>
-                </executions>
             </plugin>
         </plugins>
     </build>

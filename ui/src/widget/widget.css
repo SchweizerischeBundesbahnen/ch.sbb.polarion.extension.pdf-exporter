@@ -1,0 +1,461 @@
+/* The look of the Bulk PDF Export widget, injected into its shadow root.
+
+   The widget renders on a Polarion report page but inside a shadow root, so the page's own rules do not
+   reach its markup. The page's stylesheets are cloned into the root all the same (see mount.tsx),
+   because the cells arrive as the HTML Polarion rendered for each field and carry Polarion's own classes
+   for icons, enum colors and work item links - those cannot be reproduced here. This sheet is injected
+   after them and owns the widget's own frame.
+
+   Every value below is Polarion's own, read from
+   `com.polarion.alm.ui_<version>/war/gwt/polarion/rpe_content_*.css` in a 2606 installation, plus the
+   handful of overrides the widget always had in the deleted pdf-exporter.css. Where a rule differs from Polarion's,
+   it says so. The button's border, background and text colors were not in a stylesheet at all: the
+   server-rendered widget set them inline from `LinearGradientColor`, whose default #F0F0F0 button
+   computes to the three values used here.
+
+   The --sbb-* tokens are inherited from the host element, which carries .sbb-ui: custom properties cross
+   the shadow boundary, ordinary rules do not. */
+
+:host {
+  display: block;
+  /* .polarion-rpe-content: the rich page content area the widget sits in */
+  font-size: 10pt;
+  /* The typeface Polarion's own headings name. Stated rather than inherited from the report page: the
+     shadow root has to look the same in the dev harness and in the visual references, where there is no
+     Polarion page to inherit from - a missing font layer is what turns a reference serif. */
+  font-family: var(--sbb-control-font-family);
+  color: #1a1a1a;
+  /* widget override */
+  margin-bottom: 30px;
+}
+
+/* --- Header ------------------------------------------------------------------------------------- */
+
+/* .polarion-rpe-content h3, whose margin the widget overrides */
+.header h3 {
+  margin: 0 0 20px;
+  font-size: 23px;
+  font-weight: bold;
+  color: #000028;
+}
+
+/* widget rule */
+.header p {
+  color: grey;
+  margin: 8px 0 0;
+}
+
+/* --- Export button ------------------------------------------------------------------------------ */
+
+/* widget override: Polarion's own link wrapper is inline */
+.polarion-TestsExecutionButton-link {
+  display: block;
+}
+
+.polarion-TestsExecutionButton-buttons {
+  table-layout: fixed;
+  font-size: 18px;
+  font-family: Arial;
+  cursor: pointer;
+  text-align: center;
+  border: 1px solid;
+  border-radius: 6px;
+  padding-left: 2px;
+  padding-right: 2px;
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 20%);
+  white-space: normal;
+  word-wrap: break-word;
+  /* Inline on the server-rendered widget, from LinearGradientColor's default #F0F0F0: the light stop is
+     the color itself, the dark stop is 0.9 of it, the border 0.9 of that, and the text is the dark
+     variant picked for a light button. */
+  border-color: #c2c2c2;
+  background: linear-gradient(to bottom, #f0f0f0 0%, #d8d8d8 100%);
+  color: #000028;
+  /* widget override */
+  display: inline-block;
+}
+
+.polarion-TestsExecutionButton-buttons.polarion-TestsExecutionButton-buttons-defaultCursor {
+  cursor: default;
+}
+
+.polarion-TestsExecutionButton-buttons-content {
+  border-collapse: collapse;
+  padding: 0;
+  table-layout: fixed;
+  /* widget override of Polarion's 213px, which is meant for the wide execution buttons */
+  min-width: auto;
+}
+
+.polarion-TestsExecutionButton-buttons-content-labelCell {
+  vertical-align: middle;
+  line-height: 1;
+  text-align: center;
+  /* widget override of Polarion's 20px 10px 6px */
+  padding: 10px;
+}
+
+.polarion-TestsExecutionButton-labelTextNew {
+  /* widget override of Polarion's 26px */
+  font-size: 20px;
+  font-weight: bold;
+  color: #43a134;
+  font-family: Arial;
+  text-align: center;
+  text-shadow: 1px 1px 0 white;
+  padding-bottom: 1px;
+}
+
+/* widget rule: nothing selected yet, so the button does not react */
+.polarion-TestsExecutionButton-buttons-defaultCursor .polarion-TestsExecutionButton-labelTextNew {
+  color: gray;
+}
+
+/* --- Table -------------------------------------------------------------------------------------- */
+
+/* widget rule */
+.export-items {
+  display: flex;
+  margin-top: 30px;
+}
+
+.polarion-rpw-table-main {
+  width: 100%;
+}
+
+.polarion-rpw-table-content {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.polarion-rpw-table-header-row > th {
+  vertical-align: top;
+  text-align: left;
+  padding: 0 4px;
+  height: 28px;
+  color: #757575;
+  font-weight: normal;
+  border-bottom: 1px solid #d2d7da;
+}
+
+.polarion-rpw-table-content-row > td {
+  vertical-align: top;
+  padding: 9px 14px 9px 4px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.polarion-rpw-table-not-readable-cell {
+  font-style: italic;
+}
+
+/* Links inside the cells Polarion rendered. Polarion's own stylesheet colors them on a report page and
+   is cloned into this root, but it is not there in the dev harness or in the references, and an
+   unstyled browser default (blue, underlined) is the one thing that never looks like Polarion. */
+.polarion-rpw-table-content a {
+  color: #007993;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.polarion-rpw-table-content a:hover {
+  color: #005159;
+  text-decoration: underline;
+}
+
+/* --- Footer ------------------------------------------------------------------------------------- */
+
+.polarion-rpw-table-footer {
+  text-align: center;
+  font-style: italic;
+  width: 100%;
+  vertical-align: top;
+}
+
+.polarion-rpw-table-counts {
+  display: inline-block;
+  padding: 0 7px;
+  vertical-align: middle;
+}
+
+.polarion-rpw-table-counts a {
+  color: #007993;
+  text-decoration: none;
+}
+
+.polarion-rpw-table-counts a:hover {
+  color: #005159;
+  text-decoration: underline;
+}
+
+.polarion-rpw-table-open-in-table {
+  display: inline-block;
+  padding: 0 7px;
+  cursor: pointer;
+  vertical-align: middle;
+}
+
+.polarion-rpw-table-open-in-table > a > img {
+  border: 0;
+  opacity: 0.3;
+}
+
+.polarion-rpw-table-open-in-table > a > img:hover {
+  opacity: 1;
+}
+
+.polarion-rpw-table-show-query {
+  display: inline-block;
+  cursor: pointer;
+  vertical-align: middle;
+  opacity: 0.3;
+}
+
+.polarion-rpw-table-show-query:hover {
+  opacity: 1;
+}
+
+/* Departs from Polarion twice, both deliberate.
+   `display`: Polarion's rule is `display: none` and its widget toggles the element's inline style, while
+   this one renders the block only while it is shown - stating it back is what keeps the block visible on
+   a report page, where Polarion's stylesheet is cloned into this root.
+   The rest: the query is centred under the footer it belongs to and set on a light background, so that
+   it reads as one block rather than a line of text adrift at the left edge. `fit-content` keeps the
+   background around the query itself, and a long one still wraps within the table's width. */
+.polarion-rpw-table-query {
+  display: block;
+  width: fit-content;
+  max-width: 100%;
+  margin: 5px auto 0;
+  padding: 4px 10px;
+  background-color: #f5f5f5;
+  color: #717171;
+  text-align: center;
+  font-style: normal;
+  overflow-wrap: break-word;
+}
+
+/* --- Checkboxes --------------------------------------------------------------------------------- */
+
+/* The shared 2606 checkbox styling (generic checkboxes.css) is scoped to .form-wrapper /
+   .standard-admin-page / .modal__container, none of which the widget is inside, so it is re-applied
+   here from the same tokens. --sbb-checkbox-* are self-contained data URIs, so they resolve in the
+   shadow root as well. */
+input[type='checkbox'] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: var(--sbb-toggle-size);
+  height: var(--sbb-toggle-size);
+  margin: 0 4px 0 0;
+  vertical-align: middle;
+  cursor: pointer;
+  background: var(--sbb-checkbox-unchecked) no-repeat center;
+  background-size: var(--sbb-toggle-size) var(--sbb-toggle-size);
+}
+
+input[type='checkbox']:checked {
+  background-image: var(--sbb-checkbox-checked);
+}
+
+input[type='checkbox']:indeterminate {
+  background-image: var(--sbb-checkbox-indeterminate);
+}
+
+/* --- States the server-rendered predecessor had no need for, its rows being part of the page ----- */
+
+.widget-loading {
+  margin-top: 30px;
+}
+
+.widget-loading .sbb-spinner {
+  width: 24px;
+  height: 24px;
+  display: inline-block;
+}
+
+.widget-error {
+  margin-top: 30px;
+  color: #a20013;
+}
+
+/* --- The bulk export progress dialog ------------------------------------------------------------- */
+
+/* One row per selected item, its state as the run reaches it. These rules were in the page copy of the
+   deleted pdf-exporter.css, under `.modal__container.pdf-exporter`, because the dialog was micromodal markup
+   portalled into the report page's body. It is RSP's shared Modal inside this shadow root now, so its
+   styling belongs with the widget, and the values are the ones it had. */
+
+/* The legacy dialog was `width: 80vw` capped at 750px. RSP's Modal sizes itself to its content, which for a
+   list of item names is too narrow to read as a dialog, so the lower bound is stated back.
+
+   The height is handled as the export dialog handles its own (see popup/export-popup.css): a flex column
+   that does not scroll, whose content area is the only scroller. A bulk run over many items would otherwise
+   scroll the whole dialog and take the Stop button off screen - which is the one control the user needs
+   while the run is the reason they are looking at it. */
+.rsp-modal:has(.bulk-export-progress) {
+  width: min(600px, 100vw - 32px);
+  max-height: calc(100vh - 32px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* `min-height: 0` is what lets a flex item shrink below its content - without it the list keeps its full
+   height and the dialog overflows again. The bottom padding is dropped because the sticky outcome bar below
+   provides the bottom edge; with it, list rows would scroll through a 16px band under that bar. */
+.rsp-modal:has(.bulk-export-progress) .rsp-modal-content {
+  overflow: auto;
+  min-height: 0;
+  padding-bottom: 0;
+}
+
+.bulk-export-progress .export-item {
+  padding: 5px;
+  border-bottom: 1px solid #aaa;
+}
+
+.bulk-export-progress .export-item .title .name {
+  font-weight: bold;
+}
+
+.bulk-export-progress .export-item .icon {
+  padding-right: 10px;
+  font-size: 18px;
+  vertical-align: middle;
+}
+
+.bulk-export-progress .export-item .icon .sbb-spinner {
+  width: 18px;
+  height: 18px;
+}
+
+.bulk-export-progress .export-item.paused {
+  color: #888;
+}
+
+/* The per-state glyphs are FontAwesome code points, which is what the report page provides. */
+.bulk-export-progress .export-item.paused .icon i.fa:before {
+  content: '\f017'; /* clock */
+}
+
+.bulk-export-progress .export-item.finished .icon {
+  color: green;
+}
+
+.bulk-export-progress .export-item.finished .icon i.fa:before {
+  content: '\f00c'; /* check mark */
+}
+
+.bulk-export-progress .export-item.interrupted .icon,
+.bulk-export-progress .export-item.error .icon {
+  color: red;
+}
+
+.bulk-export-progress .export-item.error .icon i.fa:before {
+  content: '\f06a'; /* exclamation in a circle */
+}
+
+.bulk-export-progress .export-item.interrupted .icon i.fa:before {
+  content: '\f05e'; /* ban */
+}
+
+.bulk-export-progress .export-item:not(.in-progress) .icon .sbb-spinner {
+  display: none;
+}
+
+.bulk-export-progress .export-item .error-message {
+  color: rgb(255 0 0 / 70%);
+  font-size: 10px;
+  font-family: monospace;
+  margin-left: 26px;
+}
+
+/* The progress bar and the outcome. They sat in the dialog footer, next to the Stop button, while that
+   footer was this dialog's own markup; RSP's Modal owns its footer, so they are the last thing in the body.
+   Sticky, because that is the difference that matters: a run over two dozen items scrolls the list, and a bar
+   that scrolled away with it would leave the user watching a list with no idea how far along it is.
+   The horizontal bleed spans the content's side padding, so the bar reads as the bottom edge of the list
+   rather than as one more row. */
+.bulk-export-outcome {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  margin: 0 -16px;
+  padding: 10px 16px;
+  min-height: 24px;
+  background: #fff;
+  border-top: 1px solid #aaa;
+}
+
+.bulk-export-outcome .result {
+  flex-grow: 1;
+}
+
+.bulk-export-outcome .result.finished {
+  color: green;
+}
+
+.bulk-export-outcome .result.interrupted,
+.bulk-export-outcome .result.finished.with-errors {
+  color: red;
+}
+
+.progress-bar {
+  height: 24px;
+  flex-grow: 1;
+  background: #eeeeee;
+  border-radius: 4px;
+}
+
+.progress-bar > span {
+  display: block;
+  position: relative;
+  height: 100%;
+  padding: 0 10px;
+  border-radius: 4px;
+  background-color: var(--sbb-accent);
+  overflow: hidden;
+  line-height: 1.6em;
+  text-align: center;
+  color: white;
+}
+
+.progress-bar > span:after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(
+    -45deg,
+    rgb(255 255 255 / 20%) 25%,
+    transparent 25%,
+    transparent 50%,
+    rgb(255 255 255 / 20%) 50%,
+    rgb(255 255 255 / 20%) 75%,
+    transparent 75%,
+    transparent
+  );
+  z-index: 1;
+  background-size: 50px 50px;
+  animation: move 2s linear infinite;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+@keyframes move {
+  0% {
+    background-position: 0 0;
+  }
+  100% {
+    background-position: 50px 50px;
+  }
+}
+
+/* This dialog offers exactly one action at a time - Stop while the run is going, Close once it is over -
+   while RSP's shared Modal always renders both of its footer buttons. Hiding the one that does not apply
+   is what keeps the footer as it was. A Modal that could be told to render a single button would replace
+   this; it is the only place in the extension that needs it. */
+.rsp-modal:has(.bulk-export-progress.running) .rsp-modal-footer .sbb-btn--secondary,
+.rsp-modal:has(.bulk-export-progress.done) .rsp-modal-footer .sbb-btn--primary {
+  display: none;
+}

@@ -33,7 +33,7 @@ class BulkPdfExportWidgetTest {
 
         String icon = widget.getIcon(context);
 
-        assertEquals("/polarion/pdf-exporter-admin/ui/images/app-icon.svg", icon);
+        assertEquals("/polarion/pdf-exporter-app/ui/images/app-icon.svg", icon);
     }
 
     @Test

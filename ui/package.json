@@ -1,0 +1,66 @@
+{
+  "name": "pdf-exporter-app",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "typecheck": "tsc --noEmit",
+    "build": "npm run typecheck && vite build && node scripts/check-runtime-entries.mjs",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:update": "node -e \"process.platform==='linux'||(console.error('\\n[test:update] Reference screenshots must be generated on Linux (inside the pinned Playwright Docker image). Use npm run test:update:docker.\\n'),process.exit(1))\" && vitest run --update",
+    "test:docker": "node scripts/docker-test.mjs test",
+    "test:update:docker": "node scripts/docker-test.mjs test:update",
+    "test:coverage": "vitest run --coverage --exclude \"**/*.visual.test.tsx\"",
+    "test:coverage:full": "vitest run --coverage",
+    "test:coverage:docker": "node scripts/docker-test.mjs test:coverage:full",
+    "format": "prettier --write \"**/*.{ts,tsx,css,html}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,css,html}\"",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
+  },
+  "dependencies": {
+    "@grigoriev/react-sbb-polarion": "^0.2.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "sonner": "^2.0.7"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@testing-library/jest-dom": "7.0.1",
+    "@trivago/prettier-plugin-sort-imports": "6.0.2",
+    "@types/node": "24.13.3",
+    "@types/react": "19.2.18",
+    "@types/react-dom": "19.2.4",
+    "@vitejs/plugin-react": "6.0.5",
+    "@vitest/browser-playwright": "4.1.10",
+    "@vitest/coverage-istanbul": "4.1.10",
+    "eslint": "10.8.1",
+    "eslint-config-prettier": "10.1.8",
+    "eslint-plugin-react-hooks": "7.1.1",
+    "globals": "17.9.0",
+    "jsdom": "30.0.1",
+    "playwright": "1.62.1",
+    "prettier": "3.9.6",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.66.0",
+    "vite": "8.2.1",
+    "vitest": "4.1.10",
+    "vitest-browser-react": "2.2.0"
+  },
+  "overrides": {
+    "@trivago/prettier-plugin-sort-imports": {
+      "minimatch": "^10.2.6"
+    }
+  },
+  "engines": {
+    "node": "^24.15.0 || >=26.0.0",
+    "npm": ">=12"
+  },
+  "packageManager": "npm@12.0.2",
+  "allowScripts": {
+    "esbuild": true
+  }
+}

@@ -20,14 +20,22 @@
     // so nothing below hardcodes the /polarion/<ext>/ segment.
     const EXT_BASE = (document.currentScript && document.currentScript.src || '').replace(/js\/starter\.js.*$/, '') || '/polarion/pdf-exporter/';
 
+    // The export dialog is a React module of the pdf-exporter-app webapp, imported on click. It mounts
+    // itself into a shadow root of its own, so nothing has to be injected into the page for it: the
+    // micromodal library and the six generic control stylesheets the legacy popup needed are gone.
+    // The timestamp is captured once per page load, so a click reuses the module the previous click
+    // loaded while an updated extension is still picked up on the next page open.
+    const POPUP_MODULE = `/polarion/pdf-exporter-app/ui/app/assets/export-popup.js${timestampParam}`;
+    const openPopup = documentType => `import('${POPUP_MODULE}')
+                                .then(module => module.openExportPopup({documentType: '${documentType}'}))
+                                .catch(console.error);`;
+
     const TOOLBAR_HTML = `
         <table class="dleToolBarTable">
             <tr class="dleToolBarRow">
                 <td class="dleToolBarTableCell" title="Export to PDF">
                     <div class="dleToolBarSingleButton dleToolBarButton"
-                    onclick="import('${EXT_BASE}ui/js/modules/ExportPopup.js')
-                                .then(module => new module.default())
-                                .catch(console.error);">
+                    onclick="${openPopup('LIVE_DOC')}">
                         <img class="polarion-MenuButton-Icon" src="/polarion/ria/images/dle/operations/actionPdfExport16.svg${timestampParam}" style="margin: 0">
                         <span style="margin: 0 5px 0 10px; font-weight: bold;">Export to PDF</span>
                     </div>
@@ -43,9 +51,7 @@
                 <td ><div class="gwt-Label polarion-dle-toolbar-Padding"></div></td>
                 <td class="dleToolBarTableCell" title="Export to PDF">
                     <div class="dleToolBarSingleButton dleToolBarButton"
-                    onclick="import('${EXT_BASE}ui/js/modules/ExportPopup.js')
-                                .then(module => new module.default())
-                                .catch(console.error);">
+                    onclick="${openPopup('LIVE_DOC')}">
                         <img class="polarion-MenuButton-Icon" src="/polarion/ria/images/dle/operations/actionPdfExport16.svg${timestampParam}" style="margin: 0">
                     </div>
                 </td>
@@ -103,16 +109,9 @@
             pending.length = 0;
             return;
         }
-        generic.injectStyles("pdf-exporter-styles", `${EXT_BASE}css/pdf-exporter.css${timestampParam}`);
-        generic.injectStyles("pdf-micromodal-styles", `${EXT_BASE}ui/generic/css/micromodal.css${timestampParam}`);
-        generic.injectStyles("generic-control-tokens", `${EXT_BASE}ui/generic/css/control-tokens.css${timestampParam}`);
-        generic.injectStyles("generic-checkbox-styles", `${EXT_BASE}ui/generic/css/checkboxes.css${timestampParam}`);
-        generic.injectStyles("generic-searchable-dropdown-styles", `${EXT_BASE}ui/generic/css/searchable-dropdown.css${timestampParam}`);
-        generic.injectStyles("generic-inputs-styles", `${EXT_BASE}ui/generic/css/inputs.css${timestampParam}`);
-        generic.injectStyles("generic-alerts-styles", `${EXT_BASE}ui/generic/css/alerts.css${timestampParam}`);
-        // .dleToolBar* rules (incl. the disabled state) come from generic's css/dle-toolbar.css, which
-        // the toolbar engine injects itself — no need to inject or duplicate it here.
-        generic.injectScript("pdf-micromodal-script", `${EXT_BASE}ui/generic/js/micromodal.min.js${timestampParam}`);
+        // No stylesheet is injected here any more: the export dialog styles itself inside its own shadow
+        // root, and the button's .dleToolBar* rules (incl. the disabled state) come from generic's
+        // css/dle-toolbar.css, which the toolbar engine injects itself.
 
         // The engine owns the disabled state: it injects the button disabled, runs permissionCheck,
         // then enables it if permitted (or keeps it disabled on failure — fail-closed), and preserves
