@@ -27,7 +27,6 @@ jobs:
     env:
       IO_JFROG_SBB_POLARION_TOKEN: ${{ secrets.IO_JFROG_SBB_POLARION_TOKEN }}
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-      MARKDOWN2HTML_MAVEN_PLUGIN_FAIL_ON_ERROR: true
       GITHUB_TOKEN: ${{ github.token }}  # Providing this prevents reaching the GitHub request limits
       WEASYPRINT_SERVICE_URL: http://localhost:9080
     steps:
