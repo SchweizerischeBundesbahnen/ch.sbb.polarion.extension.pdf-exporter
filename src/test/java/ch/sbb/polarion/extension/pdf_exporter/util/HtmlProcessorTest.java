@@ -670,7 +670,9 @@ class HtmlProcessorTest {
             // a data url token which no url() holds must not hide what stands after it
             "a { --x: data: } @\\69mport \"http://169.254.169.254/latest/meta-data/\";",
             // an import inside a media rule is dropped by the parser, and the renderer would read it
-            "@media print { @import url(http://169.254.169.254/latest/meta-data/); }"
+            "@media print { @import url(http://169.254.169.254/latest/meta-data/); }",
+            // the same characters read as a string in one rule, and read by nothing in the next
+            "a { content: \"http://169.254.169.254/\" } @\\69mport \"http://169.254.169.254/\";"
     })
     @SneakyThrows
     void dropAStylesheetNamingAnAddressNothingAccountedForTest(String css) {

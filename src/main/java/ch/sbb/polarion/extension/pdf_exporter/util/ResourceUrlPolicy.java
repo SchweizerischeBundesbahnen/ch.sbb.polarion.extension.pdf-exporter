@@ -188,6 +188,24 @@ public class ResourceUrlPolicy {
     }
 
     /**
+     * Tells whether a refusal of this url turned on the port its scheme implies. An allowlist entry may
+     * carry a port, {@code cdn.example.com:443} names the https spelling of that host and only that one,
+     * so the same reference under the other scheme is a question of its own.
+     *
+     * @return true when the url is not exempt as it stands, while the port of the other scheme is
+     */
+    public boolean isRefusalPortSpecific(@NotNull URL url) {
+        String rawHost = url.getHost();
+        if (rawHost == null || rawHost.isBlank() || url.getPort() != -1) {
+            // a port written out is the port under either scheme, so nothing turns on the scheme here
+            return false;
+        }
+        String host = stripBrackets(rawHost.toLowerCase(Locale.ROOT));
+        int port = effectivePort(url.getProtocol(), -1);
+        return !isExempt(host, port) && isExempt(host, port == 443 ? 80 : 443);
+    }
+
+    /**
      * @return the scheme a network path reference like {@code //host/path} gets, taken from the Polarion
      * base url the conversion service reads the document with
      */

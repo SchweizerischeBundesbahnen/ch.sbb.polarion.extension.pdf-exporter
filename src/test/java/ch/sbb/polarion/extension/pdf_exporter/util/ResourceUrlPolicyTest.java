@@ -214,6 +214,26 @@ class ResourceUrlPolicyTest {
     }
 
     @Test
+    void tellsWhetherARefusalTurnedOnThePortOfTheScheme() {
+        // an entry carrying a port names that port only, and the port of a url comes from its scheme
+        ResourceUrlPolicy policy = policy(Mode.ALLOWLIST_ONLY, List.of("cdn.example.com:443"));
+
+        assertTrue(policy.isRefusalPortSpecific(url("http://cdn.example.com/logo.png")));
+        assertFalse(policy.isRefusalPortSpecific(url("https://cdn.example.com/logo.png")));
+        // a port written out is the port under either scheme, and an unlisted host is refused as a host
+        assertFalse(policy.isRefusalPortSpecific(url("http://cdn.example.com:8080/logo.png")));
+        assertFalse(policy.isRefusalPortSpecific(url("http://other.example.com/logo.png")));
+    }
+
+    @Test
+    void tellsNothingTurnsOnThePortWhereTheHostIsListedWithoutOne() {
+        ResourceUrlPolicy policy = policy(Mode.ALLOWLIST_ONLY, List.of("cdn.example.com"));
+
+        assertFalse(policy.isRefusalPortSpecific(url("http://cdn.example.com/logo.png")));
+        assertFalse(policy.isRefusalPortSpecific(url("https://cdn.example.com/logo.png")));
+    }
+
+    @Test
     void allowAllRejectsNothingButForeignSchemes() {
         ResourceUrlPolicy policy = policy(Mode.ALLOW_ALL, List.of());
         assertTrue(policy.isAllowed(url("http://127.0.0.1:8080/secret")));

@@ -518,12 +518,9 @@ public class MediaUtils {
 
     private boolean mayReferenceAResource(@NotNull String css) {
         String probe = decodeCssEscapes(css).toLowerCase(Locale.ROOT);
-        if (probe.contains("url(") || probe.contains("@import")) {
-            return true;
-        }
-        // an address of its own still has to reach the backstop, but the payload of a data url is the
-        // resource itself and an SVG in one names the namespace of SVG: that is no address to check
-        return namesAnAbsoluteAddress(probe.replaceAll("(?is)url\\([^)]*\\)", ""));
+        // an address of its own still has to reach the backstop, which is what judges whether anything
+        // accounted for it: the payload of a data url is exempted there, by the range of the url() term
+        return probe.contains("url(") || probe.contains("@import") || namesAnAbsoluteAddress(probe);
     }
 
     /**
@@ -560,34 +557,32 @@ public class MediaUtils {
                 .filter(Objects::nonNull)
                 .map(range -> selectorOf(css, range))
                 .forEach(ranges::add);
+        ranges.addAll(readStringRangesOf(css, stylesheet, lineStarts));
 
-        StringBuilder probe = new StringBuilder(css);
-        ranges.stream()
-                .sorted((left, right) -> Integer.compare(right.start(), left.start()))
-                .forEach(range -> probe.replace(range.start(), range.end(), " "));
-        String text = stripCssComments(probe.toString());
-        for (String readString : readStringsOf(stylesheet)) {
-            text = text.replace(readString, "");
-        }
-        return namesAnAbsoluteAddress(text);
+        // each range keeps its length, so one range never moves another and an overlap changes nothing
+        char[] probe = css.toCharArray();
+        ranges.forEach(range -> Arrays.fill(probe, range.start(), range.end(), ' '));
+        return namesAnAbsoluteAddress(stripCssComments(new String(probe)));
     }
 
     /**
-     * @return the string values the parser read, which are text: css fetches nothing from a string
+     * @return where the parser read a string, which is text: css fetches nothing from a string
      */
-    private List<String> readStringsOf(@NotNull CascadingStyleSheet stylesheet) {
-        List<String> readStrings = new ArrayList<>();
+    private List<CssRange> readStringRangesOf(@NotNull String css, @NotNull CascadingStyleSheet stylesheet, int[] lineStarts) {
+        List<CssRange> ranges = new ArrayList<>();
         CSSVisitor.visitCSS(stylesheet, new DefaultCSSVisitor() {
             @Override
             public void onDeclaration(@NotNull CSSDeclaration declaration) {
                 declaration.getExpression().getAllMembers().stream()
                         .filter(CSSExpressionMemberTermSimple.class::isInstance)
-                        .map(member -> ((CSSExpressionMemberTermSimple) member).getValue())
-                        .filter(value -> value.startsWith("\"") || value.startsWith("'"))
-                        .forEach(readStrings::add);
+                        .map(CSSExpressionMemberTermSimple.class::cast)
+                        .filter(member -> member.getValue().startsWith("\"") || member.getValue().startsWith("'"))
+                        .map(member -> rangeOf(lineStarts, css, member.getSourceLocation()))
+                        .filter(Objects::nonNull)
+                        .forEach(ranges::add);
             }
         });
-        return readStrings;
+        return ranges;
     }
 
     /**

@@ -213,6 +213,10 @@ To load resources from an internal host, list it explicitly:
 ch.sbb.polarion.extension.pdf-exporter.externalResources.allowedHosts=cdn.intranet,images.intranet:8443
 ```
 
+An entry may carry a port, and then it names that port only: `cdn.intranet:443` allows the https spelling
+of that host, `cdn.intranet` allows both. A reference written `//host/path` takes the scheme of `base.url`
+first and the other one after, so it reaches the host under whichever scheme the entry names.
+
 The policy itself can be changed:
 ```properties
 # blockInternal (default) - public addresses, the Polarion server and the allowed hosts

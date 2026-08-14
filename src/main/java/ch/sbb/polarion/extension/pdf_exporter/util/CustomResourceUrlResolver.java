@@ -108,8 +108,11 @@ public class CustomResourceUrlResolver implements IUrlResolver {
 
     private SchemeAttempt resolveWithScheme(@NotNull String scheme, @NotNull String urlStr) {
         try {
-            // a decision was taken, whether it produced a resource or refused one
-            return new SchemeAttempt(resolveImpl(URI.create(normalizeUrl(scheme + ":" + urlStr)).toURL()), true);
+            URL url = URI.create(normalizeUrl(scheme + ":" + urlStr)).toURL();
+            InputStream stream = resolveImpl(url);
+            // a decision was taken, whether it produced a resource or refused one, unless the refusal
+            // itself turned on the scheme: an allowed host carrying a port is allowed under that port only
+            return new SchemeAttempt(stream, stream != null || !policy.isRefusalPortSpecific(url));
         } catch (Exception e) {
             logger.debug("Failed to load resource " + scheme + ":" + urlStr + ": " + e.getMessage());
             // nothing was decided unless tls itself failed, and then the other scheme is not an answer
