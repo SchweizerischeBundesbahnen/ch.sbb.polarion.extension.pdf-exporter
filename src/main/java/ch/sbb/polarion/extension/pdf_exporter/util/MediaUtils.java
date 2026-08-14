@@ -50,7 +50,11 @@ import static ch.sbb.polarion.extension.pdf_exporter.util.TikaMimeTypeResolver.P
 @UtilityClass
 public class MediaUtils {
     public static final String IMG_SRC_REGEX = "<img[^<>]*src=(\"|')(?<url>[^(\"|')]*)(\"|')";
-    public static final String URL_REGEX = "url\\(\\s*([\"'])?(?<url>.*?)\\1?\\s*\\)";
+    public static final String URL_REGEX = "(?i)url\\(\\s*([\"'])?(?<url>.*?)\\1?\\s*\\)";
+    /**
+     * {@code @import "..."} without the {@code url(...)} wrapper, which {@link #URL_REGEX} does not match.
+     */
+    public static final String CSS_IMPORT_REGEX = "(?i)@import\\s+([\"'])(?<url>[^\"']+)\\1\\s*;?";
     public static final String DATA_URL_PREFIX = "data:";
     public static final String THUMBNAIL_PARAMETER = "thumbnail";
     /**
@@ -276,21 +280,45 @@ public class MediaUtils {
             if (MediaUtils.isDataUrl(url)) {
                 return null;
             }
-            if (fileResourceProvider.isForbidden(url)) {
-                // the url is replaced, not kept, so that WeasyPrint does not load it either
-                return engine.group().replace(url, BLOCKED_RESOURCE_PLACEHOLDER);
+            if (!fileResourceProvider.isForbidden(url)) {
+                // For renderable images (e.g. .png, .svg) strip 'thumbnail' to fetch full-size content.
+                // For everything else (spreadsheets, documents, unknown formats) keep 'thumbnail' so Polarion returns an icon preview.
+                String resourceUrl = isRenderableImageUrl(url) ? removeQueryParameter(url, THUMBNAIL_PARAMETER) : url;
+                String base64String = fileResourceProvider.getResourceAsBase64String(resourceUrl);
+                if (base64String != null) {
+                    return engine.group().replace(url, base64String);
+                }
             }
-            // For renderable images (e.g. .png, .svg) strip 'thumbnail' to fetch full-size content.
-            // For everything else (spreadsheets, documents, unknown formats) keep 'thumbnail' so Polarion returns an icon preview.
-            String resourceUrl = isRenderableImageUrl(url) ? removeQueryParameter(url, THUMBNAIL_PARAMETER) : url;
-            String base64String = fileResourceProvider.getResourceAsBase64String(resourceUrl);
-            return base64String == null ? null : engine.group().replace(url, base64String);
+            // An absolute url which was not inlined, whatever the reason, must not stay in the HTML:
+            // WeasyPrint would load it from its own network position. A relative url is left untouched,
+            // WeasyPrint cannot resolve it.
+            return isAbsoluteHttpUrl(url) ? engine.group().replace(url, BLOCKED_RESOURCE_PLACEHOLDER) : null;
         };
 
+        // drop a forbidden '@import "..."', there is nothing to inline it with
+        RegexMatcher.IReplacementCalculator importReplacement = engine ->
+                fileResourceProvider.isForbidden(engine.group("url")) ? "" : null;
+
         // replace tags like <img src="...
-        String intermediateResult = RegexMatcher.get(IMG_SRC_REGEX).replace(content, dataReplacement);
+        String result = RegexMatcher.get(IMG_SRC_REGEX).replace(content, dataReplacement);
         // replace CSS parameters like background: src('/polarion/...
-        return RegexMatcher.get(URL_REGEX).useJavaUtil().replace(intermediateResult, dataReplacement);
+        result = RegexMatcher.get(URL_REGEX).useJavaUtil().replace(result, dataReplacement);
+        return RegexMatcher.get(CSS_IMPORT_REGEX).useJavaUtil().replace(result, importReplacement);
+    }
+
+    /**
+     * Normalizes a resource url the same way for the policy check and for the request itself.
+     */
+    public String normalizeUrl(@NotNull String url) {
+        return url.replace(" ", "%20").replace("%5F", "_");
+    }
+
+    public boolean isAbsoluteHttpUrl(@Nullable String url) {
+        if (url == null) {
+            return false;
+        }
+        String lowerCased = url.trim().toLowerCase(Locale.ROOT);
+        return lowerCased.startsWith("http://") || lowerCased.startsWith("https://");
     }
 
     /**

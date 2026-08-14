@@ -155,6 +155,25 @@ class ResourceUrlPolicyTest {
         assertFalse(policy(Mode.BLOCK_INTERNAL, List.of()).isAllowedContentType(contentType));
     }
 
+    @ParameterizedTest
+    @CsvSource({"'',true", "application/octet-stream,true", "binary/octet-stream; charset=binary,true",
+            "image/png,false", "text/css,false"})
+    void decidesWhenTheContentHasToBeSniffed(String contentType, boolean expected) {
+        assertEquals(expected, policy(Mode.BLOCK_INTERNAL, List.of()).isSniffingRequired(contentType));
+    }
+
+    @ParameterizedTest
+    @CsvSource({"text/html,true", "application/xhtml+xml,true", "application/json; charset=utf-8,true",
+            "image/png,false", "text/css,false", "application/xml,false"})
+    void rejectsSniffedDocumentTypes(String sniffedType, boolean expected) {
+        assertEquals(expected, policy(Mode.BLOCK_INTERNAL, List.of()).isRejectedSniffedType(sniffedType));
+    }
+
+    @Test
+    void acceptsUnknownSniffedType() {
+        assertFalse(policy(Mode.BLOCK_INTERNAL, List.of()).isRejectedSniffedType(null));
+    }
+
     @Test
     void acceptsMissingContentType() {
         assertTrue(policy(Mode.BLOCK_INTERNAL, List.of()).isAllowedContentType(null));

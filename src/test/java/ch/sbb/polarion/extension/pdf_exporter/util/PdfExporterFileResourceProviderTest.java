@@ -501,9 +501,14 @@ class PdfExporterFileResourceProviderTest {
 
         assertTrue(provider.isForbidden("http://169.254.169.254/latest/meta-data/"));
         assertTrue(provider.isForbidden("http://10.0.0.5/img.png"));
-        assertTrue(provider.isForbidden("http://a b c"));
+        assertTrue(provider.isForbidden("HTTP://10.0.0.5/img.png"));
         assertFalse(provider.isForbidden("https://8.8.8.8/img.png"));
+        // a url with a space is normalized the same way the resolver normalizes it before requesting
+        assertFalse(provider.isForbidden("https://8.8.8.8/some path/img.png"));
+        // nothing below is ever requested over the network, so nothing below may be replaced
         assertFalse(provider.isForbidden("/polarion/wi-attachment/elibrary/EL-1/img.png"));
         assertFalse(provider.isForbidden("data:image/png;base64,AAAA"));
+        assertFalse(provider.isForbidden("#gradient"));
+        assertFalse(provider.isForbidden("images/local.png"));
     }
 }

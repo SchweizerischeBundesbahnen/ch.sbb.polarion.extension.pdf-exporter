@@ -1,6 +1,7 @@
 package ch.sbb.polarion.extension.pdf_exporter.util;
 
 import ch.sbb.polarion.extension.pdf_exporter.util.ResourceUrlPolicy.Mode;
+import ch.sbb.polarion.extension.generic.test_extensions.BundleJarsPrioritizingRunnableMockExtension;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 import lombok.SneakyThrows;
@@ -31,7 +32,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@ExtendWith(MockitoExtension.class)
+@ExtendWith({MockitoExtension.class, BundleJarsPrioritizingRunnableMockExtension.class})
 class CustomResourceUrlResolverTest {
 
     private static final byte[] PNG_CONTENT = "not really a png".getBytes(StandardCharsets.UTF_8);
@@ -130,6 +131,22 @@ class CustomResourceUrlResolverTest {
     void skipsForeignContentType() throws IOException {
         respond("/secret", "application/json", "{\"internal\":\"api response\"}".getBytes(StandardCharsets.UTF_8), false);
         assertNull(resolver(16).resolveImpl(toUrl(url("/secret"))));
+    }
+
+    @Test
+    void skipsDocumentDisguisedAsOctetStream() throws IOException {
+        respond("/secret", "application/octet-stream", "<html><body>internal page</body></html>".getBytes(StandardCharsets.UTF_8), false);
+        assertNull(resolver(16).resolveImpl(toUrl(url("/secret"))));
+    }
+
+    @Test
+    @SneakyThrows
+    void readsImageWithoutContentType() {
+        respond("/img.png", null, PNG_CONTENT, false);
+        try (InputStream stream = resolver(16).resolveImpl(toUrl(url("/img.png")))) {
+            assertNotNull(stream);
+            assertArrayEquals(PNG_CONTENT, stream.readAllBytes());
+        }
     }
 
     @Test

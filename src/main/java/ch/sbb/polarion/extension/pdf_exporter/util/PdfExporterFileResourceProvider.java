@@ -65,13 +65,17 @@ public class PdfExporterFileResourceProvider implements FileResourceProvider {
         this.policy = policy;
     }
 
+    /**
+     * Only an absolute http(s) url is checked. A relative url, a data url and an SVG fragment like
+     * {@code url(#gradient)} are never requested over the network, so they stay untouched.
+     */
     @Override
     public boolean isForbidden(@NotNull String resource) {
-        if (MediaUtils.isDataUrl(resource) || resource.startsWith("/")) {
+        if (!MediaUtils.isAbsoluteHttpUrl(resource)) {
             return false;
         }
         try {
-            return !policy.isAllowed(URI.create(resource).toURL());
+            return !policy.isAllowed(URI.create(MediaUtils.normalizeUrl(resource.trim())).toURL());
         } catch (Exception e) {
             logger.warn("Cannot parse the resource url '" + resource + "', it is treated as forbidden");
             return true;

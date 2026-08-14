@@ -129,7 +129,18 @@ public class CustomResourceUrlResolver implements IUrlResolver {
                 content.write(buffer, 0, read);
             }
         }
-        return new ByteArrayInputStream(content.toByteArray());
+
+        byte[] bytes = content.toByteArray();
+        if (policy.isSniffingRequired(contentType)) {
+            // A missing or generic content type passes the header check, so the content decides. This
+            // catches an internal service which answers with a document instead of an image.
+            String sniffedType = MediaUtils.getMimeTypeUsingTikaByContent(url.toString(), bytes);
+            if (policy.isRejectedSniffedType(sniffedType)) {
+                logger.warn("Skipped resource " + url + ": its content is '" + sniffedType + "', not an image, a font or a stylesheet");
+                return null;
+            }
+        }
+        return new ByteArrayInputStream(bytes);
     }
 
     private String ensureAbsoluteUrl(String url) {
@@ -141,7 +152,8 @@ public class CustomResourceUrlResolver implements IUrlResolver {
         return StringUtils.removeSuffix(baseUrl, "/");
     }
 
+    // delegates, so that the policy check and the request itself normalize a url identically
     private String normalizeUrl(String urlStr) {
-        return urlStr.replace(" ", "%20").replace("%5F", "_");
+        return MediaUtils.normalizeUrl(urlStr);
     }
 }

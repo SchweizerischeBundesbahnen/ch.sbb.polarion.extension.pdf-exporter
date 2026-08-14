@@ -12,12 +12,14 @@ import java.net.InetAddress;
 import java.net.URI;
 import java.net.URL;
 import java.net.UnknownHostException;
+import java.security.Security;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Decides which resource URLs the exporter may request while inlining images, fonts and stylesheets.
@@ -33,10 +35,17 @@ public class ResourceUrlPolicy {
 
     private static final String HTTP = "http";
     private static final String HTTPS = "https";
+    private static final String ADDRESS_CACHE_TTL_PROPERTY = "networkaddress.cache.ttl";
+    private static final AtomicBoolean ADDRESS_CACHE_WARNED = new AtomicBoolean();
 
     private static final List<String> ALLOWED_CONTENT_TYPE_PREFIXES = List.of(
             "image/", "font/", "application/font", "application/x-font", "text/css",
             "application/octet-stream", "binary/octet-stream");
+
+    // XML is not listed on purpose: Tika reports a plain SVG as application/xml often enough,
+    // and rejecting it would drop legitimate images.
+    private static final Set<String> REJECTED_SNIFFED_TYPES = Set.of(
+            "text/html", "application/xhtml+xml", "application/json");
 
     private final Mode mode;
     private final Set<String> allowedHosts;
@@ -87,8 +96,27 @@ public class ResourceUrlPolicy {
         if (StringUtils.isEmptyTrimmed(contentType)) {
             return true;
         }
-        String mediaType = contentType.split(";")[0].trim().toLowerCase(Locale.ROOT);
+        String mediaType = mediaType(contentType);
         return ALLOWED_CONTENT_TYPE_PREFIXES.stream().anyMatch(mediaType::startsWith);
+    }
+
+    /**
+     * A missing or generic content type tells nothing, so the content itself has to be looked at.
+     */
+    public boolean isSniffingRequired(@Nullable String contentType) {
+        return StringUtils.isEmptyTrimmed(contentType) || mediaType(contentType).endsWith("/octet-stream");
+    }
+
+    /**
+     * @param sniffedType media type detected in the content, null when nothing was detected
+     * @return true if the content is a document, which no image, font or stylesheet ever is
+     */
+    public boolean isRejectedSniffedType(@Nullable String sniffedType) {
+        return sniffedType != null && REJECTED_SNIFFED_TYPES.contains(mediaType(sniffedType));
+    }
+
+    private static String mediaType(@NotNull String contentType) {
+        return contentType.split(";")[0].trim().toLowerCase(Locale.ROOT);
     }
 
     public boolean isAllowed(@NotNull URL url) {
@@ -126,8 +154,18 @@ public class ResourceUrlPolicy {
     /**
      * Every address the host resolves to must be public. A host resolving to both a public and a
      * private address is rejected, otherwise the private one stays reachable.
+     * <p>
+     * The connection resolves the same name a second time, so a DNS rebinding attack would need the
+     * answer to change between the two calls. It cannot: this call fills the JVM address cache, and
+     * the connection reads it from there. The cache holds a positive answer for
+     * {@code networkaddress.cache.ttl} seconds, 30 by default. An installation which sets that
+     * property to 0 loses this protection, therefore {@link #warnAboutDisabledAddressCache()} logs it.
+     * Binding the socket to the vetted address instead is not possible here: {@code HttpURLConnection}
+     * refuses a {@code Host} header, and a literal address would break TLS host name verification.
+     * </p>
      */
     private boolean hasOnlyPublicAddresses(@NotNull URL url, @NotNull String host) {
+        warnAboutDisabledAddressCache();
         try {
             InetAddress[] addresses = InetAddress.getAllByName(host);
             if (addresses.length == 0) {
@@ -215,6 +253,19 @@ public class ResourceUrlPolicy {
         int eleventh = bytes[10] & 0xFF;
         int twelfth = bytes[11] & 0xFF;
         return (eleventh == 0 && twelfth == 0) || (eleventh == 0xFF && twelfth == 0xFF);
+    }
+
+    /**
+     * Logs once if the JVM address cache is off, because the policy relies on it, see
+     * {@link #hasOnlyPublicAddresses}.
+     */
+    @VisibleForTesting
+    static void warnAboutDisabledAddressCache() {
+        if (ADDRESS_CACHE_WARNED.compareAndSet(false, true) && "0".equals(Security.getProperty(ADDRESS_CACHE_TTL_PROPERTY))) {
+            logger.warn("The java security property '" + ADDRESS_CACHE_TTL_PROPERTY + "' is 0, which turns the JVM address cache off."
+                    + " A host name can then resolve to a different address for the check and for the request itself."
+                    + " Set it to a positive value, or list the hosts a document may load resources from.");
+        }
     }
 
     private static boolean deny(@NotNull URL url, @NotNull String reason) {

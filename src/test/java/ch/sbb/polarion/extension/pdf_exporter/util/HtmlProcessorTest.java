@@ -77,6 +77,9 @@ class HtmlProcessorTest {
         LocalizationModel localizationModel = new LocalizationModel(deTranslations, frTranslations, itTranslations);
 
         lenient().when(localizationSettings.load(anyString(), any(SettingId.class))).thenReturn(localizationModel);
+        // by default every resource inlines to itself, so that a test which is not about resources
+        // keeps its urls. A url which does not inline is replaced by a placeholder, see inlineBase64Resources.
+        lenient().when(fileResourceProvider.getResourceAsBase64String(anyString())).thenAnswer(invocation -> invocation.getArgument(0));
     }
 
     @Test
@@ -522,6 +525,43 @@ class HtmlProcessorTest {
         when(fileResourceProvider.isForbidden(url)).thenReturn(true);
         String result = processor.replaceResourcesAsBase64Encoded(html);
         assertEquals("<div><img id=\"image\" src=\"" + MediaUtils.BLOCKED_RESOURCE_PLACEHOLDER + "\"/></div>", result);
+    }
+
+    @Test
+    @SneakyThrows
+    void replaceNotInlinedAbsoluteUrlWithPlaceholderTest() {
+        // the resolver refused the resource, for instance by its content type: the url must not survive
+        String html = "<div><img id=\"image\" src=\"http://example.com/img.png\"/></div>";
+        when(fileResourceProvider.getResourceAsBase64String(any())).thenReturn(null);
+        String result = processor.replaceResourcesAsBase64Encoded(html);
+        assertEquals("<div><img id=\"image\" src=\"" + MediaUtils.BLOCKED_RESOURCE_PLACEHOLDER + "\"/></div>", result);
+    }
+
+    @Test
+    @SneakyThrows
+    void keepNotInlinedRelativeUrlsTest() {
+        // a relative url and an SVG fragment cannot be loaded by WeasyPrint, leave them alone
+        String html = "<div style=\"fill: url(#gradient)\"><img id=\"image\" src=\"images/local.png\"/></div>";
+        when(fileResourceProvider.getResourceAsBase64String(any())).thenReturn(null);
+        assertEquals(html, processor.replaceResourcesAsBase64Encoded(html));
+    }
+
+    @Test
+    @SneakyThrows
+    void dropForbiddenCssImportTest() {
+        String html = "<style>@import \"http://169.254.169.254/latest/meta-data/\"; body { color: red; }</style>";
+        when(fileResourceProvider.isForbidden("http://169.254.169.254/latest/meta-data/")).thenReturn(true);
+        String result = processor.replaceResourcesAsBase64Encoded(html);
+        assertEquals("<style> body { color: red; }</style>", result);
+    }
+
+    @Test
+    @SneakyThrows
+    void replaceUppercaseCssUrlTest() {
+        String html = "<style>body { background: URL(http://169.254.169.254/latest/meta-data/); }</style>";
+        when(fileResourceProvider.isForbidden("http://169.254.169.254/latest/meta-data/")).thenReturn(true);
+        String result = processor.replaceResourcesAsBase64Encoded(html);
+        assertEquals("<style>body { background: URL(" + MediaUtils.BLOCKED_RESOURCE_PLACEHOLDER + "); }</style>", result);
     }
 
     @Test
