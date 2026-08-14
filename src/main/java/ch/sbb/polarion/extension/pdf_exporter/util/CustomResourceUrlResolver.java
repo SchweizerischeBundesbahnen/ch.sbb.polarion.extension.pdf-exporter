@@ -233,7 +233,9 @@ public class CustomResourceUrlResolver implements IUrlResolver {
             return false;
         }
         try {
-            return selector.select(URI.create(url.toString())).stream().anyMatch(proxy -> proxy.type() != Proxy.Type.DIRECT);
+            // only an http proxy counts: the route planner of the client ignores a socks one, which the
+            // jvm applies at the socket, and the connection is pinned to the vetted address as ever
+            return selector.select(URI.create(url.toString())).stream().anyMatch(proxy -> proxy.type() == Proxy.Type.HTTP);
         } catch (RuntimeException e) {
             logger.warn("Cannot tell whether '" + url + "' goes through a proxy, it is treated as direct", e);
             return false;

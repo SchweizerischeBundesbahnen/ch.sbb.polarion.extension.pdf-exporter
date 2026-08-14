@@ -280,6 +280,26 @@ class CustomResourceUrlResolverTest {
 
     @Test
     @SneakyThrows
+    void keepsFetchingWhenOnlyASocksProxyIsConfigured() {
+        // the route planner of the client ignores a socks proxy, so the request stays direct and pinned
+        respond("/img.png", "image/png", PNG_CONTENT, false);
+        System.setProperty("socksProxyHost", "socks.invalid");
+        System.setProperty("socksProxyPort", "1080");
+        try {
+            ResourceUrlPolicy policy = new ResourceUrlPolicy(Mode.ALLOW_ALL, List.of(), null, 16);
+
+            try (InputStream stream = new CustomResourceUrlResolver(policy).resolveImpl(toUrl(url("/img.png")))) {
+                assertNotNull(stream);
+                assertArrayEquals(PNG_CONTENT, stream.readAllBytes());
+            }
+        } finally {
+            System.clearProperty("socksProxyHost");
+            System.clearProperty("socksProxyPort");
+        }
+    }
+
+    @Test
+    @SneakyThrows
     void keepsFetchingAHostTheProxyIsNotUsedFor() {
         respond("/img.png", "image/png", PNG_CONTENT, false);
         System.setProperty("http.proxyHost", "proxy.invalid");
