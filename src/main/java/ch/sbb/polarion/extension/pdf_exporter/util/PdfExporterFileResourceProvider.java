@@ -71,10 +71,11 @@ public class PdfExporterFileResourceProvider implements FileResourceProvider {
      */
     @Override
     public boolean isForbidden(@NotNull String resource) {
-        if (!MediaUtils.isAbsoluteHttpUrl(resource)) {
+        // the escapes go first: '\\68 ttp://host' names an address as much as 'http://host' does
+        String candidate = MediaUtils.decodeCssEscapes(resource).trim();
+        if (!MediaUtils.isAbsoluteHttpUrl(candidate)) {
             return false;
         }
-        String candidate = MediaUtils.decodeCssEscapes(resource).trim();
         try {
             if (MediaUtils.isNetworkPathReference(candidate)) {
                 // '//host/path' has no scheme of its own and is loaded under both, so both decide here

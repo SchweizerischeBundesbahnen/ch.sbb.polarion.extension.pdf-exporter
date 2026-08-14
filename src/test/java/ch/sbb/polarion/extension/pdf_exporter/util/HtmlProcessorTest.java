@@ -632,6 +632,41 @@ class HtmlProcessorTest {
 
     @Test
     @SneakyThrows
+    void inlineARelativeCssUrlTest() {
+        // a stylesheet whose urls are all relative is inlined as well, it names no address to check
+        String html = "<style>body { background: url(images/logo.png); }</style>";
+        when(fileResourceProvider.getResourceAsBase64String("images/logo.png")).thenReturn("data:image/png;base64,AAAA");
+
+        String result = processor.replaceResourcesAsBase64Encoded(html);
+
+        assertTrue(result.contains("url(data:image/png;base64,AAAA)"));
+    }
+
+    @Test
+    @SneakyThrows
+    void keepAStyleAttributeUsableAfterInliningTest() {
+        // a quote around the value would end the attribute early, so the data url goes in bare
+        String html = "<div style=\"background: url(images/logo.png)\"></div>";
+        when(fileResourceProvider.getResourceAsBase64String("images/logo.png")).thenReturn("data:image/png;base64,AAAA");
+
+        String result = processor.replaceResourcesAsBase64Encoded(html);
+
+        assertEquals("<div style=\"background: url(data:image/png;base64,AAAA)\"></div>", result);
+    }
+
+    @Test
+    @SneakyThrows
+    void keepAStylesheetHoldingAnUnencodedSvgDataUrlTest() {
+        // the payload of such a data url carries quotes and the namespace of SVG, neither is an address
+        String html = "<style>body { background: url(\"data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg'/>\"); color: red; }</style>";
+
+        String result = processor.replaceResourcesAsBase64Encoded(html);
+
+        assertTrue(result.contains("color"));
+    }
+
+    @Test
+    @SneakyThrows
     void keepTextWhichOnlyLooksLikeAStyleAttributeTest() {
         // neither the text of the document nor the value of another attribute is a style attribute
         String html = "<p>the style = big</p><div title=\"style=background:url(http://169.254.169.254/x)\">t</div>";

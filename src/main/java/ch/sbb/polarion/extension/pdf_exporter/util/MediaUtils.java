@@ -61,6 +61,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -336,21 +337,7 @@ public class MediaUtils {
     }
 
     public String inlineBase64Resources(String content, FileResourceProvider fileResourceProvider) {
-        // replace tags like <img src="...
-        String result = RegexMatcher.get(IMG_SRC_REGEX).replace(content, imageReplacement(fileResourceProvider));
-        // the css of the document is read by a parser, see inlineCssResources
-        return processCssRegions(result, css -> inlineCssResources(css, fileResourceProvider));
-    }
-
-    private RegexMatcher.IReplacementCalculator imageReplacement(FileResourceProvider fileResourceProvider) {
-        return engine -> {
-            String url = engine.group("url");
-            if (url == null || url.isEmpty() || MediaUtils.isDataUrl(url)) {
-                return null;
-            }
-            String replacement = replacementFor(fileResourceProvider, url);
-            return replacement == null ? null : engine.group().replace(url, replacement);
-        };
+        return processResourceRegions(content, fileResourceProvider);
     }
 
     /**
@@ -366,8 +353,8 @@ public class MediaUtils {
         if (!fileResourceProvider.isForbidden(url)) {
             // For renderable images (e.g. .png, .svg) strip 'thumbnail' to fetch full-size content.
             // For everything else (spreadsheets, documents, unknown formats) keep 'thumbnail' so Polarion returns an icon preview.
-            String resourceUrl = isRenderableImageUrl(url) ? removeQueryParameter(url, THUMBNAIL_PARAMETER) : url;
-            String base64String = fileResourceProvider.getResourceAsBase64String(resourceUrl);
+            String strippedUrl = isRenderableImageUrl(url) ? removeQueryParameter(url, THUMBNAIL_PARAMETER) : url;
+            String base64String = fileResourceProvider.getResourceAsBase64String(Objects.requireNonNullElse(strippedUrl, url));
             if (base64String != null) {
                 return base64String;
             }
@@ -388,10 +375,6 @@ public class MediaUtils {
      * </p>
      */
     public String inlineCssResources(@NotNull String css, @NotNull FileResourceProvider fileResourceProvider) {
-        if (!namesAnAbsoluteAddress(css)) {
-            // nothing to check and nothing to rewrite, so the css stays exactly as the document has it
-            return css;
-        }
         CSSReaderSettings settings = new CSSReaderSettings()
                 // a browser keeps what it understands and skips the rest, and so does the conversion service
                 .setBrowserCompliantMode(true)
@@ -417,7 +400,8 @@ public class MediaUtils {
             public void onUrlDeclaration(@Nullable ICSSTopLevelRule topLevelRule, @NotNull CSSDeclaration declaration, @NotNull CSSExpressionMemberTermURI uri) {
                 String replacement = replacementFor(fileResourceProvider, uri.getURIString());
                 if (replacement != null) {
-                    edits.add(new CssEdit(uri.getSourceLocation(), "url(\"" + replacement + "\")"));
+                    // no quotes around it: the value is a data url, and a quote would end a style attribute
+                    edits.add(new CssEdit(uri.getSourceLocation(), "url(" + replacement + ")"));
                 }
             }
         });
@@ -473,8 +457,8 @@ public class MediaUtils {
      * the resource itself, and an SVG in one names the namespace of SVG.
      */
     private boolean namesAnAbsoluteAddress(@NotNull String css) {
-        // a data url ends at the bracket or the quote around it, the base64 of it may hold anything else
-        String probe = decodeCssEscapes(css).replaceAll("(?i)data:[^)\"']*", "").toLowerCase(Locale.ROOT);
+        // a data url ends at the bracket of the url() around it, its payload may carry quotes of its own
+        String probe = decodeCssEscapes(css).replaceAll("(?i)data:[^)]*", "").toLowerCase(Locale.ROOT);
         return probe.contains("http:") || probe.contains("https:") || probe.contains(NETWORK_PATH_PREFIX);
     }
 
@@ -554,36 +538,44 @@ public class MediaUtils {
 
 
     /**
-     * Hands the parts of an HTML document which are CSS, a style element and a style attribute, to the
-     * given rewriting, and puts the result back where it stood. JSoup says where those parts are, so
-     * every form HTML allows is covered and nothing outside a tag is mistaken for one. The document is
-     * not written back by JSoup: only the parts which changed are replaced in the original text.
+     * Rewrites every resource an HTML document points at: the source of an image, the css of a style
+     * element and the css of a style attribute. JSoup says where each of them stands, so every form HTML
+     * allows is covered and nothing outside a tag is mistaken for one. JSoup does not write the document
+     * back, only the parts which changed are replaced in the original text.
      */
-    private String processCssRegions(@NotNull String html, @NotNull UnaryOperator<String> rewrite) {
+    private String processResourceRegions(@NotNull String html, @NotNull FileResourceProvider fileResourceProvider) {
         Document document = Jsoup.parse(html, "", Parser.htmlParser().setTrackPosition(true));
-        List<int[]> regions = new ArrayList<>();
+        List<Object[]> regions = new ArrayList<>();
+        for (Element image : document.select("img[src]")) {
+            addRegion(regions, image.attributes().sourceRange("src").valueRange(),
+                    url -> Optional.ofNullable(replacementFor(fileResourceProvider, url)).orElse(url));
+        }
         for (Element styleElement : document.select("style")) {
-            styleElement.dataNodes().stream()
-                    .map(DataNode::sourceRange)
-                    .filter(Range::isTracked)
-                    .forEach(range -> regions.add(new int[]{range.startPos(), range.endPos(), 0}));
+            styleElement.dataNodes().forEach(data ->
+                    addRegion(regions, data.sourceRange(), css -> inlineCssResources(css, fileResourceProvider)));
         }
         for (Element element : document.select("[style]")) {
-            Range valueRange = element.attributes().sourceRange("style").valueRange();
-            if (valueRange.isTracked()) {
-                regions.add(new int[]{valueRange.startPos(), valueRange.endPos(), 1});
-            }
+            addRegion(regions, element.attributes().sourceRange("style").valueRange(),
+                    css -> rewriteDeclarations(css, declarations -> inlineCssResources(declarations, fileResourceProvider)));
         }
 
         StringBuilder result = new StringBuilder(html);
         regions.stream()
-                .filter(region -> region[0] >= 0 && region[1] >= region[0] && region[1] <= html.length())
-                .sorted((left, right) -> Integer.compare(right[0], left[0]))
+                .sorted((left, right) -> Integer.compare((int) right[0], (int) left[0]))
                 .forEach(region -> {
-                    String css = html.substring(region[0], region[1]);
-                    result.replace(region[0], region[1], region[2] == 0 ? rewrite.apply(css) : rewriteDeclarations(css, rewrite));
+                    int start = (int) region[0];
+                    int end = (int) region[1];
+                    @SuppressWarnings("unchecked")
+                    UnaryOperator<String> rewrite = (UnaryOperator<String>) region[2];
+                    result.replace(start, end, rewrite.apply(html.substring(start, end)));
                 });
         return result.toString();
+    }
+
+    private void addRegion(@NotNull List<Object[]> regions, @NotNull Range range, @NotNull UnaryOperator<String> rewrite) {
+        if (range.isTracked() && range.startPos() >= 0 && range.endPos() >= range.startPos()) {
+            regions.add(new Object[]{range.startPos(), range.endPos(), rewrite});
+        }
     }
 
     /**

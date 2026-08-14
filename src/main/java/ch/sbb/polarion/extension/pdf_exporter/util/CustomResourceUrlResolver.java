@@ -27,9 +27,12 @@ import java.net.URI;
 import java.net.URL;
 import java.util.stream.Stream;
 
+import java.util.Set;
+
 import static java.net.HttpURLConnection.HTTP_MOVED_PERM;
 import static java.net.HttpURLConnection.HTTP_MOVED_TEMP;
 import static java.net.HttpURLConnection.HTTP_OK;
+import static java.net.HttpURLConnection.HTTP_SEE_OTHER;
 
 /**
  * Custom version of {@link com.polarion.alm.tracker.internal.url.GenericUrlResolver} with the redirect support.
@@ -49,6 +52,8 @@ public class CustomResourceUrlResolver implements IUrlResolver {
     private static final int MAX_REDIRECTS = 5;
     private static final int BUFFER_SIZE = 8192;
     private static final String SKIPPED_RESOURCE = "Skipped resource ";
+    // every redirect a client follows, the permanent and the temporary ones of both generations
+    private static final Set<Integer> REDIRECT_STATUS_CODES = Set.of(HTTP_MOVED_PERM, HTTP_MOVED_TEMP, HTTP_SEE_OTHER, 307, 308);
     private static final String HTTP_SCHEME = "http";
     private static final String HTTPS_SCHEME = "https";
 
@@ -107,15 +112,15 @@ public class CustomResourceUrlResolver implements IUrlResolver {
     public InputStream resolveImpl(@NotNull URL url) {
         URL currentUrl = url;
         for (int redirect = 0; redirect <= MAX_REDIRECTS; redirect++) {
-            InetAddress[] addresses = policy.vetAddresses(currentUrl);
-            if (addresses == null) {
-                return null;
-            }
             if (isProxied(currentUrl) && !policy.isExplicitlyTrusted(currentUrl)) {
                 // A proxy resolves the host name itself, so the vetted addresses would decide nothing.
                 // Only a host the configuration trusts as such may be fetched that way.
                 logger.warn(SKIPPED_RESOURCE + currentUrl + ": it would go through a proxy, which resolves the host name itself."
                         + " List the host in the allowed hosts property to fetch it anyway.");
+                return null;
+            }
+            InetAddress[] addresses = policy.vetAddresses(currentUrl);
+            if (addresses == null) {
                 return null;
             }
             try (CloseableHttpClient client = createClient(currentUrl, addresses);
@@ -124,7 +129,7 @@ public class CustomResourceUrlResolver implements IUrlResolver {
                 if (statusCode == HTTP_OK) {
                     return readContent(response, currentUrl);
                 }
-                if (statusCode != HTTP_MOVED_PERM && statusCode != HTTP_MOVED_TEMP) {
+                if (!REDIRECT_STATUS_CODES.contains(statusCode)) {
                     return null;
                 }
                 Header location = response.getFirstHeader(HttpHeaders.LOCATION);
