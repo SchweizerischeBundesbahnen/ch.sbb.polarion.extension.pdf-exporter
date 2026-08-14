@@ -52,15 +52,19 @@ public class MediaUtils {
     public static final String IMG_SRC_REGEX = "<img[^<>]*src=(\"|')(?<url>[^(\"|')]*)(\"|')";
     public static final String URL_REGEX = "(?i)url\\(\\s*([\"'])?(?<url>.*?)\\1?\\s*\\)";
     /**
+     * What CSS allows between {@code @import} and its target: nothing, whitespace or a comment.
+     */
+    private static final String CSS_AT_RULE_SEPARATOR = "(?:\\s|/\\*[\\s\\S]*?\\*/)*";
+    /**
      * {@code @import "..."} without the {@code url(...)} wrapper, which {@link #URL_REGEX} does not match.
      * The trailing {@code [^;]*} swallows a media condition, so the whole at-rule goes when it is dropped.
      */
-    public static final String CSS_IMPORT_REGEX = "(?i)@import\\s+([\"'])(?<url>[^\"']+)\\1[^;]*;?";
+    public static final String CSS_IMPORT_REGEX = "(?i)@import" + CSS_AT_RULE_SEPARATOR + "([\"'])(?<url>[^\"']+)\\1[^;]*;?";
     /**
      * {@code @import url(...)}. {@link #URL_REGEX} matches its url as well, but only this one can drop
      * the whole at-rule, media condition included.
      */
-    public static final String CSS_IMPORT_URL_REGEX = "(?i)@import\\s+url\\(\\s*([\"'])?(?<url>[^\"')]+)\\1?\\s*\\)[^;]*;?";
+    public static final String CSS_IMPORT_URL_REGEX = "(?i)@import" + CSS_AT_RULE_SEPARATOR + "url\\(\\s*([\"'])?(?<url>[^\"')]+)\\1?\\s*\\)[^;]*;?";
     public static final String DATA_URL_PREFIX = "data:";
     public static final String THUMBNAIL_PARAMETER = "thumbnail";
     /**

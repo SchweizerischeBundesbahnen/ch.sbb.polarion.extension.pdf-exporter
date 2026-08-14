@@ -576,6 +576,39 @@ class HtmlProcessorTest {
 
     @Test
     @SneakyThrows
+    void dropForbiddenCssImportWithCommentTest() {
+        // CSS allows a comment, or nothing at all, between the at-keyword and its target
+        String url = "http://169.254.169.254/latest/meta-data/";
+        String html = "<style>@import/*sneaky*/\"" + url + "\"; body { color: red; }</style>";
+        when(fileResourceProvider.isForbidden(url)).thenReturn(true);
+        assertEquals("<style> body { color: red; }</style>", processor.replaceResourcesAsBase64Encoded(html));
+    }
+
+    @Test
+    @SneakyThrows
+    void dropForbiddenCssImportWithoutSeparatorTest() {
+        String url = "http://169.254.169.254/latest/meta-data/";
+        String html = "<style>@import\"" + url + "\"; body { color: red; }</style>";
+        when(fileResourceProvider.isForbidden(url)).thenReturn(true);
+        assertEquals("<style> body { color: red; }</style>", processor.replaceResourcesAsBase64Encoded(html));
+    }
+
+    @Test
+    @SneakyThrows
+    void replaceForbiddenImageWrittenInUppercaseTest() {
+        // the base64 pass always runs on JSoup output, which lowercases the tag and quotes the attribute
+        String url = "http://169.254.169.254/latest/meta-data/";
+        String normalized = JSoupUtils.parseHtml("<div><IMG SRC=" + url + "></div>").body().html();
+        when(fileResourceProvider.isForbidden(url)).thenReturn(true);
+
+        String result = processor.replaceResourcesAsBase64Encoded(normalized);
+
+        assertFalse(result.contains("169.254.169.254"));
+        assertTrue(result.contains(MediaUtils.BLOCKED_RESOURCE_PLACEHOLDER));
+    }
+
+    @Test
+    @SneakyThrows
     void keepAllowedCssImportTest() {
         String html = "<style>@import \"http://example.com/theme.css\" screen; body { color: red; }</style>";
         assertEquals(html, processor.replaceResourcesAsBase64Encoded(html));

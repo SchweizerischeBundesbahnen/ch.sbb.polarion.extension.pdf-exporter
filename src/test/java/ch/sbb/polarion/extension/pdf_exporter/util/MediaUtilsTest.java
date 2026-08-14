@@ -18,6 +18,8 @@ import java.util.Set;
 
 import static ch.sbb.polarion.extension.pdf_exporter.util.MediaUtils.THUMBNAIL_PARAMETER;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith({MockitoExtension.class, BundleJarsPrioritizingRunnableMockExtension.class, PdfExporterExtensionConfigurationExtension.class})
@@ -214,11 +216,11 @@ class MediaUtilsTest {
 
     @Test
     void keepsDataUrlsWhileInlining() {
-        FileResourceProvider provider = org.mockito.Mockito.mock(FileResourceProvider.class);
+        FileResourceProvider provider = mock(FileResourceProvider.class);
         String html = "<div><img src=\"data:image/png;base64,AAAA\"/></div>";
 
         assertEquals(html, MediaUtils.inlineBase64Resources(html, provider));
-        org.mockito.Mockito.verifyNoInteractions(provider);
+        verifyNoInteractions(provider);
     }
 
     @Test
