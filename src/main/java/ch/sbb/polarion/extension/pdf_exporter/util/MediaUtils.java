@@ -357,7 +357,9 @@ public class MediaUtils {
      * @return what the url of a resource has to be replaced with, null when it may stay as it is
      */
     @Nullable
-    private String replacementFor(@NotNull FileResourceProvider fileResourceProvider, @NotNull String url) {
+    private String replacementFor(@NotNull FileResourceProvider fileResourceProvider, @NotNull String rawUrl) {
+        // the document may write a url with whitespace around it, every step below has to see the same one
+        String url = rawUrl.trim();
         if (isDataUrl(url)) {
             return null;
         }

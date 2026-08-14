@@ -619,6 +619,19 @@ class HtmlProcessorTest {
 
     @Test
     @SneakyThrows
+    void inlineAnImageWrittenWithWhitespaceAroundItsUrlTest() {
+        String url = "//cdn.example/image.png";
+        String html = "<div><img src=\" " + url + " \"/></div>";
+        when(fileResourceProvider.getResourceAsBase64String(url)).thenReturn("data:image/png;base64,AAAA");
+
+        String result = processor.replaceResourcesAsBase64Encoded(html);
+
+        assertTrue(result.contains("data:image/png;base64,AAAA"));
+        assertFalse(result.contains(MediaUtils.BLOCKED_RESOURCE_PLACEHOLDER));
+    }
+
+    @Test
+    @SneakyThrows
     void keepTextWhichOnlyLooksLikeAStyleAttributeTest() {
         // neither the text of the document nor the value of another attribute is a style attribute
         String html = "<p>the style = big</p><div title=\"style=background:url(http://169.254.169.254/x)\">t</div>";
