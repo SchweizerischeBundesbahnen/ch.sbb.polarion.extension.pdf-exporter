@@ -557,6 +557,32 @@ class HtmlProcessorTest {
 
     @Test
     @SneakyThrows
+    void dropForbiddenConditionalCssImportTest() {
+        // a media condition after the url must not save the at-rule from being dropped
+        String url = "http://169.254.169.254/latest/meta-data/";
+        String html = "<style>@import \"" + url + "\" screen and (min-width:1px); body { color: red; }</style>";
+        when(fileResourceProvider.isForbidden(url)).thenReturn(true);
+        assertEquals("<style> body { color: red; }</style>", processor.replaceResourcesAsBase64Encoded(html));
+    }
+
+    @Test
+    @SneakyThrows
+    void dropForbiddenCssImportUrlFormTest() {
+        String url = "http://169.254.169.254/latest/meta-data/";
+        String html = "<style>@import url(\"" + url + "\") print; body { color: red; }</style>";
+        when(fileResourceProvider.isForbidden(url)).thenReturn(true);
+        assertEquals("<style> body { color: red; }</style>", processor.replaceResourcesAsBase64Encoded(html));
+    }
+
+    @Test
+    @SneakyThrows
+    void keepAllowedCssImportTest() {
+        String html = "<style>@import \"http://example.com/theme.css\" screen; body { color: red; }</style>";
+        assertEquals(html, processor.replaceResourcesAsBase64Encoded(html));
+    }
+
+    @Test
+    @SneakyThrows
     void replaceUppercaseCssUrlTest() {
         String html = "<style>body { background: URL(http://169.254.169.254/latest/meta-data/); }</style>";
         when(fileResourceProvider.isForbidden("http://169.254.169.254/latest/meta-data/")).thenReturn(true);

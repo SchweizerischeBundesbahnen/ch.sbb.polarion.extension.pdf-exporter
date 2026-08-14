@@ -53,8 +53,14 @@ public class MediaUtils {
     public static final String URL_REGEX = "(?i)url\\(\\s*([\"'])?(?<url>.*?)\\1?\\s*\\)";
     /**
      * {@code @import "..."} without the {@code url(...)} wrapper, which {@link #URL_REGEX} does not match.
+     * The trailing {@code [^;]*} swallows a media condition, so the whole at-rule goes when it is dropped.
      */
-    public static final String CSS_IMPORT_REGEX = "(?i)@import\\s+([\"'])(?<url>[^\"']+)\\1\\s*;?";
+    public static final String CSS_IMPORT_REGEX = "(?i)@import\\s+([\"'])(?<url>[^\"']+)\\1[^;]*;?";
+    /**
+     * {@code @import url(...)}. {@link #URL_REGEX} matches its url as well, but only this one can drop
+     * the whole at-rule, media condition included.
+     */
+    public static final String CSS_IMPORT_URL_REGEX = "(?i)@import\\s+url\\(\\s*([\"'])?(?<url>[^\"')]+)\\1?\\s*\\)[^;]*;?";
     public static final String DATA_URL_PREFIX = "data:";
     public static final String THUMBNAIL_PARAMETER = "thumbnail";
     /**
@@ -295,15 +301,17 @@ public class MediaUtils {
             return isAbsoluteHttpUrl(url) ? engine.group().replace(url, BLOCKED_RESOURCE_PLACEHOLDER) : null;
         };
 
-        // drop a forbidden '@import "..."', there is nothing to inline it with
+        // drop a forbidden '@import', there is nothing to inline it with
         RegexMatcher.IReplacementCalculator importReplacement = engine ->
                 fileResourceProvider.isForbidden(engine.group("url")) ? "" : null;
 
         // replace tags like <img src="...
         String result = RegexMatcher.get(IMG_SRC_REGEX).replace(content, dataReplacement);
+        // drop a forbidden '@import' before its url reaches the pass below, which would only replace the url
+        result = RegexMatcher.get(CSS_IMPORT_URL_REGEX).useJavaUtil().replace(result, importReplacement);
+        result = RegexMatcher.get(CSS_IMPORT_REGEX).useJavaUtil().replace(result, importReplacement);
         // replace CSS parameters like background: src('/polarion/...
-        result = RegexMatcher.get(URL_REGEX).useJavaUtil().replace(result, dataReplacement);
-        return RegexMatcher.get(CSS_IMPORT_REGEX).useJavaUtil().replace(result, importReplacement);
+        return RegexMatcher.get(URL_REGEX).useJavaUtil().replace(result, dataReplacement);
     }
 
     /**

@@ -202,4 +202,28 @@ class MediaUtilsTest {
         g2d.dispose();
     }
 
+
+    @Test
+    void recognizesAbsoluteHttpUrls() {
+        assertTrue(MediaUtils.isAbsoluteHttpUrl("http://example.com/img.png"));
+        assertTrue(MediaUtils.isAbsoluteHttpUrl(" HTTPS://example.com/img.png"));
+        assertFalse(MediaUtils.isAbsoluteHttpUrl(null));
+        assertFalse(MediaUtils.isAbsoluteHttpUrl("/polarion/img.png"));
+        assertFalse(MediaUtils.isAbsoluteHttpUrl("data:image/png;base64,AAAA"));
+    }
+
+    @Test
+    void keepsDataUrlsWhileInlining() {
+        FileResourceProvider provider = org.mockito.Mockito.mock(FileResourceProvider.class);
+        String html = "<div><img src=\"data:image/png;base64,AAAA\"/></div>";
+
+        assertEquals(html, MediaUtils.inlineBase64Resources(html, provider));
+        org.mockito.Mockito.verifyNoInteractions(provider);
+    }
+
+    @Test
+    void normalizesUrlForTheRequestAndTheCheck() {
+        assertEquals("http://example.com/some%20path/img_name.png",
+                MediaUtils.normalizeUrl("http://example.com/some path/img%5Fname.png"));
+    }
 }

@@ -1,5 +1,7 @@
 package ch.sbb.polarion.extension.pdf_exporter.util;
 
+import ch.sbb.polarion.extension.pdf_exporter.properties.PdfExporterExtensionConfiguration;
+
 import ch.sbb.polarion.extension.generic.test_extensions.PlatformContextMockExtension;
 import ch.sbb.polarion.extension.generic.test_extensions.TransactionalExecutorExtension;
 import com.polarion.alm.tracker.internal.url.GenericUrlResolver;
@@ -510,5 +512,24 @@ class PdfExporterFileResourceProviderTest {
         assertFalse(provider.isForbidden("data:image/png;base64,AAAA"));
         assertFalse(provider.isForbidden("#gradient"));
         assertFalse(provider.isForbidden("images/local.png"));
+        // an absolute url which cannot be parsed at all must not reach WeasyPrint either
+        assertTrue(provider.isForbidden("http://[unterminated/img.png"));
+    }
+
+    @Test
+    void buildsItsResolversFromTheConfiguration() {
+        PdfExporterExtensionConfiguration configuration = mock(PdfExporterExtensionConfiguration.class);
+        IAttachmentUrlResolver parentUrlResolver = mock(IAttachmentUrlResolver.class);
+
+        try (MockedStatic<PdfExporterExtensionConfiguration> configurationMock = mockStatic(PdfExporterExtensionConfiguration.class);
+             MockedStatic<PolarionUrlResolver> polarionUrlResolverMock = mockStatic(PolarionUrlResolver.class)) {
+            configurationMock.when(PdfExporterExtensionConfiguration::getInstance).thenReturn(configuration);
+            polarionUrlResolverMock.when(PolarionUrlResolver::getInstance).thenReturn(parentUrlResolver);
+
+            PdfExporterFileResourceProvider provider = new PdfExporterFileResourceProvider();
+
+            assertTrue(provider.isForbidden("http://10.0.0.5/img.png"));
+            assertFalse(provider.isForbidden("https://8.8.8.8/img.png"));
+        }
     }
 }

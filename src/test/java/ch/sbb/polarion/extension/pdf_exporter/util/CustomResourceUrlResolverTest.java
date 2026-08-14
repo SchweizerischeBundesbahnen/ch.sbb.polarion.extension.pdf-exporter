@@ -1,5 +1,6 @@
 package ch.sbb.polarion.extension.pdf_exporter.util;
 
+import ch.sbb.polarion.extension.pdf_exporter.properties.PdfExporterExtensionConfiguration;
 import ch.sbb.polarion.extension.pdf_exporter.util.ResourceUrlPolicy.Mode;
 import ch.sbb.polarion.extension.generic.test_extensions.BundleJarsPrioritizingRunnableMockExtension;
 import com.sun.net.httpserver.HttpExchange;
@@ -9,6 +10,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.InputStream;
@@ -27,6 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -187,6 +190,41 @@ class CustomResourceUrlResolverTest {
             exchange.close();
         });
         assertNull(resolver(16).resolveImpl(toUrl(url("/no-location.png"))));
+    }
+
+    @Test
+    @SneakyThrows
+    void followsPermanentRedirect() {
+        server.createContext("/old.png", exchange -> {
+            requestCount.incrementAndGet();
+            exchange.getResponseHeaders().add("Location", "/img.png");
+            exchange.sendResponseHeaders(301, -1);
+            exchange.close();
+        });
+        respond("/img.png", "image/png", PNG_CONTENT, false);
+        try (InputStream stream = resolver(16).resolveImpl(toUrl(url("/old.png")))) {
+            assertNotNull(stream);
+            assertArrayEquals(PNG_CONTENT, stream.readAllBytes());
+        }
+    }
+
+    @Test
+    void skipsRedirectWithBlankLocation() {
+        redirect("/blank.png", "  ");
+        assertNull(resolver(16).resolveImpl(toUrl(url("/blank.png"))));
+    }
+
+    @Test
+    void takesItsPolicyFromTheConfiguration() {
+        PdfExporterExtensionConfiguration configuration = mock(PdfExporterExtensionConfiguration.class);
+        when(configuration.getExternalResourcesPolicy()).thenReturn("allowAll");
+
+        try (MockedStatic<PdfExporterExtensionConfiguration> mocked = mockStatic(PdfExporterExtensionConfiguration.class)) {
+            mocked.when(PdfExporterExtensionConfiguration::getInstance).thenReturn(configuration);
+            respond("/img.png", "image/png", PNG_CONTENT, false);
+
+            assertNotNull(new CustomResourceUrlResolver().resolveImpl(toUrl(url("/img.png"))));
+        }
     }
 
     @Test

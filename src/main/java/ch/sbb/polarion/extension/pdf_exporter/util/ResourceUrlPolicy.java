@@ -142,16 +142,23 @@ public class ResourceUrlPolicy {
             return denyAddresses(url, "the host is not in " + PdfExporterExtensionConfiguration.EXTERNAL_RESOURCES_ALLOWED_HOSTS);
         }
 
+        return resolveAddresses(url, host, exempt);
+    }
+
+    /**
+     * Unless the host is exempt, every address it resolves to must be public. A host resolving to both a
+     * public and a private address is rejected, otherwise the private one stays reachable.
+     */
+    @Nullable
+    private InetAddress[] resolveAddresses(@NotNull URL url, @NotNull String host, boolean exempt) {
         try {
             InetAddress[] addresses = InetAddress.getAllByName(host);
             if (addresses.length == 0) {
                 return denyAddresses(url, "the host resolves to no address");
             }
-            if (!exempt) {
-                for (InetAddress address : addresses) {
-                    if (!isPublicAddress(address)) {
-                        return denyAddresses(url, "the host resolves to the non public address " + address.getHostAddress());
-                    }
+            for (InetAddress address : addresses) {
+                if (!exempt && !isPublicAddress(address)) {
+                    return denyAddresses(url, "the host resolves to the non public address " + address.getHostAddress());
                 }
             }
             return addresses;
