@@ -558,10 +558,8 @@ class HtmlProcessorTest {
             "@import url( \"URL\" /*sneaky*/ );"
     })
     @SneakyThrows
-    void dropForbiddenCssImportTest(String atRule) {
-        String url = "http://169.254.169.254/latest/meta-data/";
-        String html = "<style>" + atRule.replace("URL", url) + " body { color: red; }</style>";
-        when(fileResourceProvider.isForbidden(url)).thenReturn(true);
+    void dropAbsoluteCssImportTest(String atRule) {
+        String html = "<style>" + atRule.replace("URL", "http://169.254.169.254/latest/meta-data/") + " body { color: red; }</style>";
 
         assertEquals("<style> body { color: red; }</style>", processor.replaceResourcesAsBase64Encoded(html));
     }
@@ -572,6 +570,18 @@ class HtmlProcessorTest {
         String url = "http://169.254.169.254/latest/meta-data/";
         String html = "<style>body { background: url(/*sneaky*/\"" + url + "\"); }</style>";
         when(fileResourceProvider.isForbidden(url)).thenReturn(true);
+
+        String result = processor.replaceResourcesAsBase64Encoded(html);
+
+        assertFalse(result.contains("169.254.169.254"));
+        assertTrue(result.contains(MediaUtils.BLOCKED_RESOURCE_PLACEHOLDER));
+    }
+
+    @Test
+    @SneakyThrows
+    void replaceForbiddenNetworkPathReferenceTest() {
+        String html = "<style>body { background: url(//169.254.169.254/latest/meta-data/); }</style>";
+        when(fileResourceProvider.isForbidden("//169.254.169.254/latest/meta-data/")).thenReturn(true);
 
         String result = processor.replaceResourcesAsBase64Encoded(html);
 
@@ -603,8 +613,16 @@ class HtmlProcessorTest {
 
     @Test
     @SneakyThrows
-    void keepAllowedCssImportTest() {
+    void dropExternalCssImportEvenWhenAllowedTest() {
+        // the at-rule is never inlined, so WeasyPrint would load it itself, unchecked
         String html = "<style>@import \"http://example.com/theme.css\" screen; body { color: red; }</style>";
+        assertEquals("<style> body { color: red; }</style>", processor.replaceResourcesAsBase64Encoded(html));
+    }
+
+    @Test
+    @SneakyThrows
+    void keepRelativeCssImportTest() {
+        String html = "<style>@import \"theme.css\"; body { color: red; }</style>";
         assertEquals(html, processor.replaceResourcesAsBase64Encoded(html));
     }
 

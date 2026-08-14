@@ -74,8 +74,13 @@ public class PdfExporterFileResourceProvider implements FileResourceProvider {
         if (!MediaUtils.isAbsoluteHttpUrl(resource)) {
             return false;
         }
+        String candidate = resource.trim();
+        if (MediaUtils.isNetworkPathReference(candidate)) {
+            // '//host/path' has no scheme of its own, the check runs against the plain http reading of it
+            candidate = "http:" + candidate;
+        }
         try {
-            return !policy.isAllowed(URI.create(MediaUtils.normalizeUrl(resource.trim())).toURL());
+            return !policy.isAllowed(URI.create(MediaUtils.normalizeUrl(candidate)).toURL());
         } catch (Exception e) {
             logger.warn("Cannot parse the resource url '" + resource + "', it is treated as forbidden");
             return true;

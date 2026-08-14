@@ -115,6 +115,10 @@ public class CustomResourceUrlResolver implements IUrlResolver {
                 .setRedirectsEnabled(false)
                 .build();
         return HttpClients.custom()
+                // the replaced HttpURLConnection honoured http.proxyHost and friends, keep doing that.
+                // Behind a proxy the socket goes to the proxy, so the proxy resolves the host name and
+                // the addresses below only decide whether the request is made at all.
+                .useSystemProperties()
                 .setDefaultRequestConfig(requestConfig)
                 .setDnsResolver(pinnedResolver)
                 .disableAutomaticRetries()

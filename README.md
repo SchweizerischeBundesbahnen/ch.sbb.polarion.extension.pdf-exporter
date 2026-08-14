@@ -227,6 +227,14 @@ the size limit:
 ch.sbb.polarion.extension.pdf-exporter.externalResources.maxSizeMB=32
 ```
 
+A CSS `@import` of an absolute address is removed, whether the policy allows the address or not: an
+at-rule cannot be embedded, so WeasyPrint would have to load it itself, past every check above. Reference
+such a stylesheet with `<link rel="stylesheet">` instead, the extension loads and embeds that one.
+
+A configured JVM proxy (`http.proxyHost` and friends) is used for these requests. Behind a proxy the
+proxy resolves the host name, so the address checks decide whether the request is made at all, while
+the connection itself can no longer be pinned to a checked address.
+
 Blocked resources are reported in the Polarion log. The document is exported without them.
 
 ### Debug option

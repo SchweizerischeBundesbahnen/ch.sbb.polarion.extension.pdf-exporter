@@ -512,6 +512,9 @@ class PdfExporterFileResourceProviderTest {
         assertFalse(provider.isForbidden("data:image/png;base64,AAAA"));
         assertFalse(provider.isForbidden("#gradient"));
         assertFalse(provider.isForbidden("images/local.png"));
+        // a network path reference gets its scheme from the base url of the conversion service
+        assertTrue(provider.isForbidden("//169.254.169.254/latest/meta-data/"));
+        assertFalse(provider.isForbidden("//8.8.8.8/img.png"));
         // an absolute url which cannot be parsed at all must not reach WeasyPrint either
         assertTrue(provider.isForbidden("http://[unterminated/img.png"));
     }

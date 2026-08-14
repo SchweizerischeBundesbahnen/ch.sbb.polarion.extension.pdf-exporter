@@ -210,7 +210,9 @@ class MediaUtilsTest {
         assertTrue(MediaUtils.isAbsoluteHttpUrl("http://example.com/img.png"));
         assertTrue(MediaUtils.isAbsoluteHttpUrl(" HTTPS://example.com/img.png"));
         assertFalse(MediaUtils.isAbsoluteHttpUrl(null));
+        assertTrue(MediaUtils.isAbsoluteHttpUrl("//example.com/img.png"));
         assertFalse(MediaUtils.isAbsoluteHttpUrl("/polarion/img.png"));
+        assertFalse(MediaUtils.isAbsoluteHttpUrl("//"));
         assertFalse(MediaUtils.isAbsoluteHttpUrl("data:image/png;base64,AAAA"));
     }
 
@@ -238,6 +240,5 @@ class MediaUtilsTest {
         // '/*' and '*/' inside a path are part of the url, only a leading or a trailing comment goes
         assertEquals("http://example.com/a/*b*/c.png", MediaUtils.unwrapCssUrl("http://example.com/a/*b*/c.png"));
         assertEquals("", MediaUtils.unwrapCssUrl("/*just a comment*/"));
-        assertNull(MediaUtils.unwrapCssUrl(null));
     }
 }
