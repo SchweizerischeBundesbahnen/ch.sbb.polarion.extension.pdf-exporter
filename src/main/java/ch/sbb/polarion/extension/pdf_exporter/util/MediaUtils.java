@@ -298,12 +298,23 @@ public class MediaUtils {
         StringBuilder decoded = new StringBuilder();
         while (matcher.find()) {
             String hex = matcher.group(1);
-            // the pattern caps the escape at six hex digits, so the value always fits into an int
-            String replacement = hex != null ? codePointOf(Integer.parseInt(hex, 16)) : matcher.group(2);
+            String replacement = hex != null ? codePointOf(hexValueOf(hex)) : matcher.group(2);
             matcher.appendReplacement(decoded, Matcher.quoteReplacement(replacement));
         }
         matcher.appendTail(decoded);
         return decoded.toString();
+    }
+
+    /**
+     * Reads the hex digits of a CSS escape. The pattern caps them at six, so the value fits into an int,
+     * and every character it captured is a hex digit, so there is nothing here that could fail.
+     */
+    private int hexValueOf(@NotNull String hex) {
+        int value = 0;
+        for (int i = 0; i < hex.length(); i++) {
+            value = (value << 4) + Character.digit(hex.charAt(i), 16);
+        }
+        return value;
     }
 
     /**
