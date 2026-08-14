@@ -619,6 +619,15 @@ class HtmlProcessorTest {
 
     @Test
     @SneakyThrows
+    void keepTextWhichOnlyLooksLikeAStyleAttributeTest() {
+        // neither the text of the document nor the value of another attribute is a style attribute
+        String html = "<p>the style = big</p><div title=\"style=background:url(http://169.254.169.254/x)\">t</div>";
+
+        assertEquals(html, processor.replaceResourcesAsBase64Encoded(html));
+    }
+
+    @Test
+    @SneakyThrows
     void keepACssStringHoldingAnAddressTest() {
         // a string value is text, css fetches nothing from it, so the stylesheet stays usable
         String html = "<style>/* see http://example.com */ body { content: \"https://example.com\"; color: red; }</style>";

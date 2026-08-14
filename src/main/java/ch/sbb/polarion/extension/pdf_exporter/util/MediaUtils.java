@@ -22,6 +22,12 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PdfVariant;
 import ch.sbb.polarion.extension.pdf_exporter.service.PdfExporterPolarionService;
 import com.polarion.alm.shared.api.transaction.TransactionalExecutor;
 import com.polarion.core.util.StringUtils;
+import org.jsoup.parser.Parser;
+import org.jsoup.nodes.Range;
+import org.jsoup.nodes.Element;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.DataNode;
+import org.jsoup.Jsoup;
 import com.polarion.core.util.logging.Logger;
 import com.polarion.platform.service.repository.IRepositoryReadOnlyConnection;
 import com.polarion.subterra.base.location.ILocation;
@@ -70,7 +76,6 @@ public class MediaUtils {
     public static final String URL_REGEX = "(?i)url\\(\\s*([\"'])?(?<url>.*?)\\1?\\s*\\)";
     public static final String DATA_URL_PREFIX = "data:";
     private static final String NETWORK_PATH_PREFIX = "//";
-    private static final String STYLE_ATTRIBUTE = "style";
     private static final Pattern CSS_ESCAPE_PATTERN = Pattern.compile("\\\\(?:([0-9a-fA-F]{1,6})[ \\t\\r\\n\\f]?|(.))", Pattern.DOTALL);
     public static final String THUMBNAIL_PARAMETER = "thumbnail";
     /**
@@ -534,90 +539,35 @@ public class MediaUtils {
 
     /**
      * Hands the parts of an HTML document which are CSS, a style element and a style attribute, to the
-     * given rewriting. Everything else, a script or the text of the document, stays as it is. The regions
-     * are found by scanning: a pattern over a whole document is one more thing an editor could make slow.
+     * given rewriting, and puts the result back where it stood. JSoup says where those parts are, so
+     * every form HTML allows is covered and nothing outside a tag is mistaken for one. The document is
+     * not written back by JSoup: only the parts which changed are replaced in the original text.
      */
     private String processCssRegions(@NotNull String html, @NotNull UnaryOperator<String> rewrite) {
-        return processStyleAttributes(processStyleElements(html, rewrite), rewrite);
-    }
-
-    private String processStyleElements(@NotNull String html, @NotNull UnaryOperator<String> rewrite) {
-        String lowerCased = html.toLowerCase(Locale.ROOT);
-        StringBuilder result = new StringBuilder(html.length());
-        int index = 0;
-        int start;
-        while ((start = lowerCased.indexOf("<style", index)) >= 0) {
-            int contentStart = html.indexOf('>', start);
-            int contentEnd = contentStart < 0 ? -1 : lowerCased.indexOf("</style", contentStart);
-            if (contentEnd < 0) {
-                break;
+        Document document = Jsoup.parse(html, "", Parser.htmlParser().setTrackPosition(true));
+        List<int[]> regions = new ArrayList<>();
+        for (Element styleElement : document.select("style")) {
+            styleElement.dataNodes().stream()
+                    .map(DataNode::sourceRange)
+                    .filter(Range::isTracked)
+                    .forEach(range -> regions.add(new int[]{range.startPos(), range.endPos(), 0}));
+        }
+        for (Element element : document.select("[style]")) {
+            Range valueRange = element.attributes().sourceRange("style").valueRange();
+            if (valueRange.isTracked()) {
+                regions.add(new int[]{valueRange.startPos(), valueRange.endPos(), 1});
             }
-            result.append(html, index, contentStart + 1).append(rewrite.apply(html.substring(contentStart + 1, contentEnd)));
-            index = contentEnd;
         }
-        return result.append(html, index, html.length()).toString();
-    }
 
-    /**
-     * Rewrites the value of every style attribute. HTML allows whitespace around the equals sign and a
-     * value without quotes, so the attribute is read rather than matched.
-     */
-    private String processStyleAttributes(@NotNull String html, @NotNull UnaryOperator<String> rewrite) {
-        String lowerCased = html.toLowerCase(Locale.ROOT);
-        StringBuilder result = new StringBuilder(html.length());
-        int index = 0;
-        int start;
-        while ((start = lowerCased.indexOf(STYLE_ATTRIBUTE, index)) >= 0) {
-            int nameEnd = start + STYLE_ATTRIBUTE.length();
-            int equals = skipWhitespace(html, nameEnd);
-            if (!isInsideTag(html, start) || start > 0 && !isAttributeStart(html.charAt(start - 1))
-                    || equals >= html.length() || html.charAt(equals) != '=') {
-                result.append(html, index, nameEnd);
-                index = nameEnd;
-                continue;
-            }
-            int valueStart = skipWhitespace(html, equals + 1);
-            char quote = valueStart < html.length() ? html.charAt(valueStart) : 0;
-            boolean quoted = quote == '"' || quote == '\'';
-            int contentStart = quoted ? valueStart + 1 : valueStart;
-            int contentEnd = quoted ? html.indexOf(quote, contentStart) : endOfUnquotedValue(html, contentStart);
-            if (contentEnd < 0) {
-                result.append(html, index, nameEnd);
-                index = nameEnd;
-                continue;
-            }
-            result.append(html, index, contentStart).append(rewriteDeclarations(html.substring(contentStart, contentEnd), rewrite));
-            index = contentEnd;
-        }
-        return result.append(html, index, html.length()).toString();
-    }
-
-    /**
-     * An attribute lives inside a tag. The same word in the text of the document is text, and rewriting
-     * that as css would take it out of the document.
-     */
-    private boolean isInsideTag(@NotNull String html, int index) {
-        return html.lastIndexOf('<', index) > html.lastIndexOf('>', index);
-    }
-
-    private boolean isAttributeStart(char character) {
-        return Character.isWhitespace(character) || character == '\'' || character == '"' || character == '/';
-    }
-
-    private int skipWhitespace(@NotNull String html, int index) {
-        int i = index;
-        while (i < html.length() && Character.isWhitespace(html.charAt(i))) {
-            i++;
-        }
-        return i;
-    }
-
-    private int endOfUnquotedValue(@NotNull String html, int index) {
-        int i = index;
-        while (i < html.length() && !Character.isWhitespace(html.charAt(i)) && html.charAt(i) != '>') {
-            i++;
-        }
-        return i;
+        StringBuilder result = new StringBuilder(html);
+        regions.stream()
+                .filter(region -> region[0] >= 0 && region[1] >= region[0] && region[1] <= html.length())
+                .sorted((left, right) -> Integer.compare(right[0], left[0]))
+                .forEach(region -> {
+                    String css = html.substring(region[0], region[1]);
+                    result.replace(region[0], region[1], region[2] == 0 ? rewrite.apply(css) : rewriteDeclarations(css, rewrite));
+                });
+        return result.toString();
     }
 
     /**
@@ -625,11 +575,11 @@ public class MediaUtils {
      * for the parser and unwrapped afterwards.
      */
     private String rewriteDeclarations(@NotNull String declarations, @NotNull UnaryOperator<String> rewrite) {
-        String rewritten = rewrite.apply("a{" + declarations + "}").trim();
+        String rewritten = rewrite.apply("a{" + declarations + "}");
         int open = rewritten.indexOf('{');
         int close = rewritten.lastIndexOf('}');
         // an empty or unexpected result means the declarations were dropped, they do not come back
-        return open < 0 || close < open ? "" : rewritten.substring(open + 1, close).trim();
+        return open < 0 || close < open ? "" : rewritten.substring(open + 1, close);
     }
 
     /**
