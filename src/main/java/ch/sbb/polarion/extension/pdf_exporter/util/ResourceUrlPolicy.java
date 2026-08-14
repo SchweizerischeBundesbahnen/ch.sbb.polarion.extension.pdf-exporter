@@ -62,11 +62,13 @@ public class ResourceUrlPolicy {
 
     public static ResourceUrlPolicy getInstance() {
         PdfExporterExtensionConfiguration configuration = PdfExporterExtensionConfiguration.getInstance();
+        String allowedHosts = configuration.getExternalResourcesAllowedHosts();
+        int maxSizeMB = configuration.getExternalResourcesMaxSizeMB();
         return new ResourceUrlPolicy(
                 Mode.parse(configuration.getExternalResourcesPolicy()),
-                Arrays.asList(configuration.getExternalResourcesAllowedHosts().split(",")),
+                allowedHosts == null ? List.of() : Arrays.asList(allowedHosts.split(",")),
                 System.getProperty(PolarionProperties.BASE_URL),
-                configuration.getExternalResourcesMaxSizeMB());
+                maxSizeMB > 0 ? maxSizeMB : PdfExporterExtensionConfiguration.EXTERNAL_RESOURCES_MAX_SIZE_MB_DEFAULT_VALUE);
     }
 
     /**
