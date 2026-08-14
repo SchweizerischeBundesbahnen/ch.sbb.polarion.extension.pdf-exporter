@@ -17,6 +17,8 @@ import org.jetbrains.annotations.VisibleForTesting;
 import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
 
+import java.util.List;
+
 import jakarta.inject.Singleton;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.core.Response;
@@ -55,10 +57,14 @@ public class ConverterApiController extends ConverterInternalController {
     @Override
     @RolesRestricted
     public Response startPdfConverterJob(ExportParams exportParams) {
-        // In async case logout inside the filter must be deactivated. Async Job itself will care about logout after finishing
         deactivateLogoutFilter();
-
         return polarionService.callPrivileged(() -> super.startPdfConverterJob(exportParams));
+    }
+
+    @Override
+    public Response startMergeExportJob(List<ExportParams> exportParamsList) {
+        deactivateLogoutFilter();
+        return polarionService.callPrivileged(() -> super.startMergeExportJob(exportParamsList));
     }
 
     @Override

@@ -5,6 +5,27 @@
     "version": "v1"
   },
   "paths": {
+    "/api/bulk-processing/status": {
+      "get": {
+        "operationId": "getBulkProcessingServiceStatus",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkProcessingServiceStatus"
+                }
+              }
+            },
+            "description": "Bulk processing service status"
+          }
+        },
+        "summary": "Checks if the bulk processing service is available",
+        "tags": [
+          "Utility resources"
+        ]
+      }
+    },
     "/api/configuration-properties": {
       "get": {
         "operationId": "getConfigurationProperties",
@@ -57,6 +78,31 @@
         "summary": "Returns the extension configuration status for the given scope",
         "tags": [
           "Extension Information"
+        ]
+      }
+    },
+    "/api/configuration/bulk-processing": {
+      "get": {
+        "description": "Retrieves the status of the Bulk Processing Service configuration.",
+        "operationId": "checkBulkProcessing",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ConfigurationStatus"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successfully retrieved Bulk Processing Service configuration"
+          }
+        },
+        "summary": "Checks Bulk Processing Service configuration",
+        "tags": [
+          "Configuration status"
         ]
       }
     },
@@ -507,6 +553,33 @@
         ]
       }
     },
+    "/api/convert/jobs/{id}/cancel": {
+      "post": {
+        "operationId": "cancelPdfConverterJob",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Cancellation request accepted"
+          },
+          "404": {
+            "description": "Conversion job id is unknown"
+          }
+        },
+        "summary": "Cancels a running PDF conversion job",
+        "tags": [
+          "PDF Processing"
+        ]
+      }
+    },
     "/api/convert/jobs/{id}/result": {
       "get": {
         "operationId": "getPdfConverterJobResult",
@@ -575,6 +648,32 @@
           }
         },
         "summary": "Returns PDF conversion job result",
+        "tags": [
+          "PDF Processing"
+        ]
+      }
+    },
+    "/api/convert/merge/jobs": {
+      "post": {
+        "operationId": "startMergeExportJob",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "items": {
+                  "$ref": "#/components/schemas/ExportParams"
+                },
+                "type": "array"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Merge export job started, job URI is returned in Location header"
+          }
+        },
+        "summary": "Starts asynchronous merge export job combining multiple documents into a single PDF",
         "tags": [
           "PDF Processing"
         ]
@@ -1891,6 +1990,14 @@
           "signature": {
             "description": "Signature of the descriptor, as emitted by the widget renderer",
             "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "BulkProcessingServiceStatus": {
+        "properties": {
+          "available": {
+            "type": "boolean"
           }
         },
         "type": "object"

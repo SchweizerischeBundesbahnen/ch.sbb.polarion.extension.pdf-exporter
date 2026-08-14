@@ -135,10 +135,10 @@ export default function BulkExportWidget({ shim, deps = {} }: Props) {
   );
 
   const startBulkExport = useCallback(
-    (params: ExportParamsJson) => {
+    (params: ExportParamsJson, mergeIntoSinglePdf?: boolean, mergeFileName?: string | null) => {
       const items = exporting ?? [];
       setExporting(null);
-      void bulk.start(items, params);
+      void bulk.start(items, params, mergeIntoSinglePdf, mergeFileName);
     },
     [bulk, exporting],
   );

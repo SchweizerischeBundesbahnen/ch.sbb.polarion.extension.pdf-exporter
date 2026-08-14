@@ -15,7 +15,13 @@ import type { ExportForm } from '../export/exportForm';
 import { childValue, toExportForm } from '../export/exportForm';
 import type { ExportField, ExportParamsJson } from '../export/exportParams';
 import { buildExportParams, toRequestBody } from '../export/exportParams';
-import { convertPdf, downloadBlob, downloadTestRunAttachments, errorMessageOf } from '../services/conversion';
+import {
+  convertPdf,
+  downloadBlob,
+  downloadTestRunAttachments,
+  errorMessageOf,
+  isBulkProcessingAvailable,
+} from '../services/conversion';
 import { getCookie, setCookie } from '../services/cookies';
 import type { DocumentIdentity } from '../services/exportContext';
 import {
@@ -59,8 +65,15 @@ interface WidthValidationResult {
  * A bulk export is a run of per-item conversions driven by the Bulk PDF Export widget, which owns the
  * progress dialog; the popup only collects the parameters they all share. This is the React equivalent of
  * the legacy `bulkCallback.openPopup(exportParams)`.
+ *
+ * `mergeIntoSinglePdf`/`mergeFileName` are set when the user asks the selection to be combined into one
+ * file rather than exported one file per item; they are absent for the per-document run.
  */
-export type BulkExportStarter = (params: ExportParamsJson) => void;
+export type BulkExportStarter = (
+  params: ExportParamsJson,
+  mergeIntoSinglePdf?: boolean,
+  mergeFileName?: string | null,
+) => void;
 
 /** What the popup reaches outside itself for, so the dev harness and the tests can replace it. */
 export interface ExportPopupDependencies {
@@ -69,6 +82,7 @@ export interface ExportPopupDependencies {
   convert?: typeof convertPdf;
   download?: typeof downloadBlob;
   downloadAttachments?: typeof downloadTestRunAttachments;
+  isBulkAvailable?: typeof isBulkProcessingAvailable;
 }
 
 export interface ExportPopupModalProps {
@@ -127,6 +141,7 @@ export default function ExportPopupModal({
   const convert = deps?.convert ?? convertPdf;
   const download = deps?.download ?? downloadBlob;
   const downloadAttachments = deps?.downloadAttachments ?? downloadTestRunAttachments;
+  const isBulkAvailable = deps?.isBulkAvailable ?? isBulkProcessingAvailable;
 
   const remote = useMemo(() => ({ sendRequest, sendAbsoluteRequest }), [sendRequest, sendAbsoluteRequest]);
 
@@ -143,6 +158,12 @@ export default function ExportPopupModal({
   const [form, setForm] = useState<ExportForm | null>(null);
   const [fileName, setFileName] = useState('');
   const [invalidField, setInvalidField] = useState<ExportField | null>(null);
+
+  // Merge-into-single-file is a bulk-only option, and only where the bulk processing (merge) service is
+  // configured and reachable - which is what the checkbox is gated on, as the legacy popup gated it.
+  const [mergeAvailable, setMergeAvailable] = useState(false);
+  const [mergeIntoSinglePdf, setMergeIntoSinglePdf] = useState(false);
+  const [mergeFileName, setMergeFileName] = useState('merged-document.pdf');
 
   /** What the form is busy with, or null. One overlay for all four operations, as the legacy popup had. */
   const [progress, setProgress] = useState<string | null>('Loading form data');
@@ -234,6 +255,23 @@ export default function ExportPopupModal({
     };
   }, [data, document_.scope, loadPackage, sendRequest, stylePackage, urlQuery]);
 
+  // Whether the merge option can be offered at all. Asked once, for a bulk export only; a single export
+  // never merges. A failure or an unreachable service leaves the option hidden, as the legacy popup did.
+  useEffect(() => {
+    if (exportType !== 'BULK') {
+      return undefined;
+    }
+    let cancelled = false;
+    isBulkAvailable(remote).then((available) => {
+      if (!cancelled) {
+        setMergeAvailable(available);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [exportType, isBulkAvailable, remote]);
+
   const patch = (values: Partial<ExportForm>) => setForm((current) => (current ? { ...current, ...values } : current));
 
   /** The name to export under: what the user typed, or the server's default, always ending in `.pdf`. */
@@ -270,11 +308,14 @@ export default function ExportPopupModal({
       return;
     }
 
-    // A bulk export is run by the widget that opened this dialog, one item at a time, with its own progress
-    // dialog. The parameters are all it needed from here.
+    // A bulk export is run by the widget that opened this dialog, with its own progress dialog: either one
+    // item at a time, or - when asked and the merge service is up - combined into a single file. The
+    // parameters, and that choice, are all it needed from here.
     if (exportType === 'BULK') {
+      const merge = mergeAvailable && mergeIntoSinglePdf;
+      const mergedName = mergeFileName || 'merged-document.pdf';
       onClose();
-      onBulkExport?.(params);
+      onBulkExport?.(params, merge, merge ? (mergedName.endsWith('.pdf') ? mergedName : `${mergedName}.pdf`) : null);
       return;
     }
 
@@ -955,6 +996,33 @@ export default function ExportPopupModal({
               type="text"
               value={fileName}
               onChange={(e) => setFileName(e.target.value)}
+            />
+          </div>
+        )}
+
+        {exportType === 'BULK' && mergeAvailable && (
+          <div className="property-wrapper" id="popup-merge-into-single-pdf-wrapper">
+            <label htmlFor="popup-merge-into-single-pdf">
+              <input
+                id="popup-merge-into-single-pdf"
+                type="checkbox"
+                checked={mergeIntoSinglePdf}
+                onChange={(e) => setMergeIntoSinglePdf(e.target.checked)}
+              />
+              Merge all documents into a single PDF
+            </label>
+          </div>
+        )}
+
+        {exportType === 'BULK' && mergeAvailable && mergeIntoSinglePdf && (
+          <div className="property-wrapper" id="popup-merge-filename-wrapper">
+            <label htmlFor="popup-merge-filename">Merged file name:</label>
+            <input
+              id="popup-merge-filename"
+              className="grows"
+              type="text"
+              value={mergeFileName}
+              onChange={(e) => setMergeFileName(e.target.value)}
             />
           </div>
         )}

@@ -21,6 +21,7 @@ const state = (over: Partial<BulkExportState> = {}): BulkExportState => ({
   rows: rowsWith('finished', 'in-progress', 'paused'),
   processed: 1,
   errors: false,
+  merge: false,
   ...over,
 });
 
