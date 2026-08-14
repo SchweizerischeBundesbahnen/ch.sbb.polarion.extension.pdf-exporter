@@ -5,6 +5,7 @@ import ch.sbb.polarion.extension.generic.util.BundleJarsPrioritizingRunnable;
 import ch.sbb.polarion.extension.generic.util.ScopeUtils;
 import com.helger.css.CSSSourceLocation;
 import com.helger.css.ICSSSourceLocationAware;
+import com.helger.css.decl.CSSStyleRule;
 import com.helger.css.decl.CSSUnknownRule;
 import com.helger.css.decl.ICSSExpressionMember;
 import com.helger.css.decl.CSSDeclaration;
@@ -557,7 +558,7 @@ public class MediaUtils {
                 .filter(Objects::nonNull)
                 .map(range -> selectorOf(css, range))
                 .forEach(ranges::add);
-        ranges.addAll(readStringRangesOf(css, stylesheet, lineStarts));
+        ranges.addAll(textRangesOf(css, stylesheet, lineStarts));
 
         // each range keeps its length, so one range never moves another and an overlap changes nothing
         char[] probe = css.toCharArray();
@@ -566,11 +567,20 @@ public class MediaUtils {
     }
 
     /**
-     * @return where the parser read a string, which is text: css fetches nothing from a string
+     * @return where the parser read something which fetches nothing: a string, and the selector of a
+     * style rule at any depth, which the top-level pass does not reach inside a grouping at-rule
      */
-    private List<CssRange> readStringRangesOf(@NotNull String css, @NotNull CascadingStyleSheet stylesheet, int[] lineStarts) {
+    private List<CssRange> textRangesOf(@NotNull String css, @NotNull CascadingStyleSheet stylesheet, int[] lineStarts) {
         List<CssRange> ranges = new ArrayList<>();
         CSSVisitor.visitCSS(stylesheet, new DefaultCSSVisitor() {
+            @Override
+            public void onBeginStyleRule(@NotNull CSSStyleRule styleRule) {
+                CssRange range = rangeOf(lineStarts, css, styleRule.getSourceLocation());
+                if (range != null) {
+                    ranges.add(selectorOf(css, range));
+                }
+            }
+
             @Override
             public void onDeclaration(@NotNull CSSDeclaration declaration) {
                 declaration.getExpression().getAllMembers().stream()

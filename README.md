@@ -239,7 +239,8 @@ A configured JVM proxy (`http.proxyHost` and friends) is used for these requests
 host name itself, so a request routed through one cannot be pinned to a checked address. Such a request
 is therefore only made for a host the configuration trusts as such: the Polarion server and the hosts
 listed above. Everything else is loaded directly, with the address check binding, or not at all. Hosts
-in `http.nonProxyHosts` are loaded directly and keep the address check.
+in `http.nonProxyHosts` are loaded directly and keep the address check. A SOCKS proxy is not a route the
+client takes, so a request under one stays direct and keeps the address check as well.
 
 Blocked resources are reported in the Polarion log. The document is exported without them.
 

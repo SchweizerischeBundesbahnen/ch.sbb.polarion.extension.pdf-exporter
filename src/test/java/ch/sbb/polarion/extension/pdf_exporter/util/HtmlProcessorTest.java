@@ -685,7 +685,9 @@ class HtmlProcessorTest {
     @ValueSource(strings = {
             "a[href^=\"https://example.com\"] { color: red; }",          // an address in a selector fetches nothing
             "@namespace url(http://www.w3.org/1999/xhtml); a { color: red; }", // nor one in an at-rule prelude
-            "a { content: \"https://example.com\"; color: red; }"          // nor one in a string value
+            "a { content: \"https://example.com\"; color: red; }",         // nor one in a string value
+            // nor one in a selector nested in a grouping at-rule, the print-stylesheet idiom
+            "@media print { a[href^=\"https://example.com\"]::after { color: red; } }"
     })
     @SneakyThrows
     void keepAStylesheetWhoseAddressIsNotAResourceTest(String css) {
