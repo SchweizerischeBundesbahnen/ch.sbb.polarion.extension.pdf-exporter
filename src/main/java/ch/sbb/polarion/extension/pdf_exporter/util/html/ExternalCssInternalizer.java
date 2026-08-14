@@ -36,7 +36,7 @@ public class ExternalCssInternalizer implements LinkInternalizer {
         }
         inlinedContent.append(">");
 
-        String cssContent = new String(fileResourceProvider.getResourceAsBytes(url));
+        String cssContent = MediaUtils.stripCssComments(new String(fileResourceProvider.getResourceAsBytes(url)));
         cssContent = processRelativeUrls(url, cssContent);
         cssContent = MediaUtils.inlineBase64Resources(cssContent, fileResourceProvider);
         inlinedContent.append(cssContent);

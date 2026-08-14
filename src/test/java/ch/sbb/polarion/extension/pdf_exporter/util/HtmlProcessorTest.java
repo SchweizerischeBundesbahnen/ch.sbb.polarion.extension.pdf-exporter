@@ -556,7 +556,9 @@ class HtmlProcessorTest {
             "@import\"URL\";",                                // and it allows no separator at all
             "@import url(/*sneaky*/\"URL\");",                 // a comment inside url() too
             "@import url( \"URL\" /*sneaky*/ );",
-            "@import \"http\\3a //169.254.169.254/latest/meta-data/\";"   // a css escape hides the scheme
+            "@import \"http\\3a //169.254.169.254/latest/meta-data/\";",  // a css escape hides the scheme
+            "@import url(/* ) */\"URL\");",                    // a ')' inside a comment used to cut the match
+            "@import/* ; */\"URL\";"                           // and a ';' inside one
     })
     @SneakyThrows
     void dropAbsoluteCssImportTest(String atRule) {
@@ -588,6 +590,31 @@ class HtmlProcessorTest {
 
         assertFalse(result.contains("169.254.169.254"));
         assertTrue(result.contains(MediaUtils.BLOCKED_RESOURCE_PLACEHOLDER));
+    }
+
+    @Test
+    @SneakyThrows
+    void replaceForbiddenCssUrlBehindACommentHoldingAParenthesisTest() {
+        String url = "http://169.254.169.254/latest/meta-data/";
+        String html = "<style>body { background: url(/* ) */\"" + url + "\"); }</style>";
+        when(fileResourceProvider.isForbidden(url)).thenReturn(true);
+
+        String result = processor.replaceResourcesAsBase64Encoded(html);
+
+        assertFalse(result.contains("169.254.169.254"));
+        assertTrue(result.contains(MediaUtils.BLOCKED_RESOURCE_PLACEHOLDER));
+    }
+
+    @Test
+    @SneakyThrows
+    void stripsCommentsOnlyInsideCssTest() {
+        String html = "<script>var a = 1; /* keep me */</script><p>text /* keep me too */</p>"
+                + "<div style=\"color: red /* drop me */\"></div>";
+
+        String result = processor.replaceResourcesAsBase64Encoded(html);
+
+        assertEquals("<script>var a = 1; /* keep me */</script><p>text /* keep me too */</p>"
+                + "<div style=\"color: red \"></div>", result);
     }
 
     @Test

@@ -261,4 +261,14 @@ class MediaUtilsTest {
     void unwrapsAnEscapedCssUrl() {
         assertTrue(MediaUtils.isAbsoluteHttpUrl(MediaUtils.unwrapCssUrl("\"http\\3a //169.254.169.254/x\"")));
     }
+
+    @Test
+    void stripsCssComments() {
+        assertEquals("a{}", MediaUtils.stripCssComments("a{/* x */}"));
+        assertEquals("a{content:\"/* kept */\"}", MediaUtils.stripCssComments("a{content:\"/* kept */\"}"));
+        assertEquals("a{content:'/* kept */'}", MediaUtils.stripCssComments("a{content:'/* kept */'}"));
+        assertEquals("url(\"x\")", MediaUtils.stripCssComments("url(/* ) */\"x\")"));
+        assertEquals("a{", MediaUtils.stripCssComments("a{/* unterminated"));
+        assertEquals("plain", MediaUtils.stripCssComments("plain"));
+    }
 }

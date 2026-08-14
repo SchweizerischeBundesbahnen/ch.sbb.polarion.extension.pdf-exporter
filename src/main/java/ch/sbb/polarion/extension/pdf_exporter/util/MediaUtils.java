@@ -69,6 +69,8 @@ public class MediaUtils {
     public static final String CSS_IMPORT_URL_REGEX = "(?i)@import" + CSS_AT_RULE_SEPARATOR + "url\\((?<url>[^)]*)\\)[^;]*;?";
     public static final String DATA_URL_PREFIX = "data:";
     private static final String NETWORK_PATH_PREFIX = "//";
+    private static final Pattern STYLE_ELEMENT_PATTERN = Pattern.compile("(?is)(<style[^>]*>)(.*?)(</style>)");
+    private static final Pattern STYLE_ATTRIBUTE_PATTERN = Pattern.compile("(?i)style=([\"'])([^\"']*)\\1");
     private static final Pattern CSS_ESCAPE_PATTERN = Pattern.compile("\\\\(?:([0-9a-fA-F]{1,6})[ \\t\\r\\n\\f]?|(.))", Pattern.DOTALL);
     private static final String COMMENT_START = "/*";
     private static final String COMMENT_END = "*/";
@@ -331,6 +333,9 @@ public class MediaUtils {
     }
 
     public String inlineBase64Resources(String content, FileResourceProvider fileResourceProvider) {
+        // A comment may sit anywhere in CSS, a ')' or a quote inside one would derail every pattern
+        // below. They carry no meaning for the conversion, so they go first.
+        content = stripCommentsInCssRegions(content);
         // replace tags like <img src="...
         String result = RegexMatcher.get(IMG_SRC_REGEX).replace(content, replacement(fileResourceProvider, false));
         // An at-rule is never inlined, so any absolute target has to go: a forbidden one because the
@@ -398,6 +403,59 @@ public class MediaUtils {
             unwrapped = unwrapped.substring(1, unwrapped.length() - 1).trim();
         }
         return unwrapped;
+    }
+
+    /**
+     * Removes CSS comments from a stylesheet. A quoted string keeps what it holds, CSS starts no comment
+     * in there, and an unterminated comment runs to the end, as CSS says it does.
+     */
+    public String stripCssComments(@NotNull String css) {
+        if (!css.contains(COMMENT_START)) {
+            return css;
+        }
+        StringBuilder result = new StringBuilder(css.length());
+        char quote = 0;
+        for (int i = 0; i < css.length(); i++) {
+            char current = css.charAt(i);
+            if (quote != 0) {
+                result.append(current);
+                if (current == '\\' && i + 1 < css.length()) {
+                    result.append(css.charAt(++i));
+                } else if (current == quote) {
+                    quote = 0;
+                }
+            } else if (current == '"' || current == '\'') {
+                quote = current;
+                result.append(current);
+            } else if (current == '/' && i + 1 < css.length() && css.charAt(i + 1) == '*') {
+                int end = css.indexOf(COMMENT_END, i + 2);
+                i = end < 0 ? css.length() : end + 1;
+            } else {
+                result.append(current);
+            }
+        }
+        return result.toString();
+    }
+
+    /**
+     * Removes CSS comments from the parts of an HTML document which are CSS, a style element and a style
+     * attribute. Everything else, a script or the text of the document, keeps what it has.
+     */
+    private String stripCommentsInCssRegions(@NotNull String html) {
+        String result = replaceGroup(STYLE_ELEMENT_PATTERN, html, 2);
+        return replaceGroup(STYLE_ATTRIBUTE_PATTERN, result, 2);
+    }
+
+    private String replaceGroup(@NotNull Pattern pattern, @NotNull String content, int group) {
+        Matcher matcher = pattern.matcher(content);
+        StringBuilder result = new StringBuilder();
+        while (matcher.find()) {
+            String css = matcher.group(group);
+            String replacement = matcher.group().replace(css, stripCssComments(css));
+            matcher.appendReplacement(result, Matcher.quoteReplacement(replacement));
+        }
+        matcher.appendTail(result);
+        return result.toString();
     }
 
     /**
