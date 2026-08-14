@@ -516,6 +516,16 @@ class HtmlProcessorTest {
 
     @Test
     @SneakyThrows
+    void replaceForbiddenImageWithPlaceholderTest() {
+        String url = "http://169.254.169.254/latest/meta-data/";
+        String html = "<div><img id=\"image\" src=\"" + url + "\"/></div>";
+        when(fileResourceProvider.isForbidden(url)).thenReturn(true);
+        String result = processor.replaceResourcesAsBase64Encoded(html);
+        assertEquals("<div><img id=\"image\" src=\"" + MediaUtils.BLOCKED_RESOURCE_PLACEHOLDER + "\"/></div>", result);
+    }
+
+    @Test
+    @SneakyThrows
     void replaceSvgImagesAsBase64EncodedTest() {
         String html = "<div><img id=\"image1\" src=\"http://localhost/some-path/img1.svg\"/> <img id='image2' src='http://localhost/some-path/img2.svg'/> <img id='image1' src='http://localhost/some-path/img1.svg'/></div>";
         byte[] imgBytes;

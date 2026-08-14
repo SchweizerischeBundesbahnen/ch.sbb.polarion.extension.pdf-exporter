@@ -10,4 +10,12 @@ public interface FileResourceProvider {
 
     byte[] getResourceAsBytes(@NotNull String resource);
 
+    /**
+     * Tells whether the resource policy forbids requesting this URL. Such a URL must not be left in the
+     * HTML either: WeasyPrint would then load it from its own network position.
+     */
+    default boolean isForbidden(@NotNull String resource) {
+        return false;
+    }
+
 }

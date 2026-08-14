@@ -36,6 +36,18 @@ public class PdfExporterExtensionConfiguration extends ExtensionConfiguration {
             "png", "jpg", "jpeg", "gif", "bmp", "svg", "webp", "avif", "ico", "cur", "tif", "tiff", "vsdx"
     ));
 
+    public static final String EXTERNAL_RESOURCES_POLICY = "externalResources.policy";
+    public static final String EXTERNAL_RESOURCES_POLICY_DESCRIPTION = "Which hosts a document may load <a href='#external-resources'>images, fonts and stylesheets</a> from";
+    public static final String EXTERNAL_RESOURCES_POLICY_DEFAULT_VALUE = "blockInternal";
+
+    public static final String EXTERNAL_RESOURCES_ALLOWED_HOSTS = "externalResources.allowedHosts";
+    public static final String EXTERNAL_RESOURCES_ALLOWED_HOSTS_DESCRIPTION = "Comma separated hosts which are always allowed as a source of <a href='#external-resources'>external resources</a>";
+    public static final String EXTERNAL_RESOURCES_ALLOWED_HOSTS_DEFAULT_VALUE = "";
+
+    public static final String EXTERNAL_RESOURCES_MAX_SIZE_MB = "externalResources.maxSizeMB";
+    public static final String EXTERNAL_RESOURCES_MAX_SIZE_MB_DESCRIPTION = "Size in MB a single loaded <a href='#external-resources'>external resource</a> may reach";
+    public static final int EXTERNAL_RESOURCES_MAX_SIZE_MB_DEFAULT_VALUE = 16;
+
     @Override
     public String getDebugDescription() {
         return DEBUG_DESCRIPTION;
@@ -103,12 +115,67 @@ public class PdfExporterExtensionConfiguration extends ExtensionConfiguration {
         return String.join(", ", RENDERABLE_IMAGE_EXTENSIONS_DEFAULT_VALUE);
     }
 
+    @PropertyMapping(EXTERNAL_RESOURCES_POLICY)
+    public String getExternalResourcesPolicy() {
+        return SystemValueReader.getInstance().readString(getPropertyPrefix() + EXTERNAL_RESOURCES_POLICY, EXTERNAL_RESOURCES_POLICY_DEFAULT_VALUE);
+    }
+
+    @SuppressWarnings("unused")
+    @PropertyMappingDescription(EXTERNAL_RESOURCES_POLICY)
+    public String getExternalResourcesPolicyDescription() {
+        return EXTERNAL_RESOURCES_POLICY_DESCRIPTION;
+    }
+
+    @SuppressWarnings("unused")
+    @PropertyMappingDefaultValue(EXTERNAL_RESOURCES_POLICY)
+    public String getExternalResourcesPolicyDefaultValue() {
+        return EXTERNAL_RESOURCES_POLICY_DEFAULT_VALUE;
+    }
+
+    @NotNull
+    @PropertyMapping(EXTERNAL_RESOURCES_ALLOWED_HOSTS)
+    public String getExternalResourcesAllowedHosts() {
+        return SystemValueReader.getInstance().readString(getPropertyPrefix() + EXTERNAL_RESOURCES_ALLOWED_HOSTS, EXTERNAL_RESOURCES_ALLOWED_HOSTS_DEFAULT_VALUE);
+    }
+
+    @SuppressWarnings("unused")
+    @PropertyMappingDescription(EXTERNAL_RESOURCES_ALLOWED_HOSTS)
+    public String getExternalResourcesAllowedHostsDescription() {
+        return EXTERNAL_RESOURCES_ALLOWED_HOSTS_DESCRIPTION;
+    }
+
+    @SuppressWarnings("unused")
+    @PropertyMappingDefaultValue(EXTERNAL_RESOURCES_ALLOWED_HOSTS)
+    public String getExternalResourcesAllowedHostsDefaultValue() {
+        return EXTERNAL_RESOURCES_ALLOWED_HOSTS_DEFAULT_VALUE;
+    }
+
+    @PropertyMapping(EXTERNAL_RESOURCES_MAX_SIZE_MB)
+    public int getExternalResourcesMaxSizeMB() {
+        return SystemValueReader.getInstance().readInt(getPropertyPrefix() + EXTERNAL_RESOURCES_MAX_SIZE_MB, EXTERNAL_RESOURCES_MAX_SIZE_MB_DEFAULT_VALUE);
+    }
+
+    @SuppressWarnings("unused")
+    @PropertyMappingDescription(EXTERNAL_RESOURCES_MAX_SIZE_MB)
+    public String getExternalResourcesMaxSizeMBDescription() {
+        return EXTERNAL_RESOURCES_MAX_SIZE_MB_DESCRIPTION;
+    }
+
+    @SuppressWarnings("unused")
+    @PropertyMappingDefaultValue(EXTERNAL_RESOURCES_MAX_SIZE_MB)
+    public String getExternalResourcesMaxSizeMBDefaultValue() {
+        return String.valueOf(EXTERNAL_RESOURCES_MAX_SIZE_MB_DEFAULT_VALUE);
+    }
+
     @Override
     public @NotNull List<String> getSupportedProperties() {
         List<String> supportedProperties = new ArrayList<>(super.getSupportedProperties());
         supportedProperties.add(WEASYPRINT_SERVICE);
         supportedProperties.add(WEBHOOKS_ENABLED);
         supportedProperties.add(RENDERABLE_IMAGE_EXTENSIONS);
+        supportedProperties.add(EXTERNAL_RESOURCES_POLICY);
+        supportedProperties.add(EXTERNAL_RESOURCES_ALLOWED_HOSTS);
+        supportedProperties.add(EXTERNAL_RESOURCES_MAX_SIZE_MB);
         return supportedProperties;
     }
 

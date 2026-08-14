@@ -493,4 +493,17 @@ class PdfExporterFileResourceProviderTest {
             assertFalse(filteredResolvers.contains(mockResolver2));
         }
     }
+
+    @Test
+    void reportsUrlsRejectedByThePolicyAsForbidden() {
+        PdfExporterFileResourceProvider provider = new PdfExporterFileResourceProvider(
+                List.of(resolverMock), new ResourceUrlPolicy(ResourceUrlPolicy.Mode.BLOCK_INTERNAL, List.of(), null, 16));
+
+        assertTrue(provider.isForbidden("http://169.254.169.254/latest/meta-data/"));
+        assertTrue(provider.isForbidden("http://10.0.0.5/img.png"));
+        assertTrue(provider.isForbidden("http://a b c"));
+        assertFalse(provider.isForbidden("https://8.8.8.8/img.png"));
+        assertFalse(provider.isForbidden("/polarion/wi-attachment/elibrary/EL-1/img.png"));
+        assertFalse(provider.isForbidden("data:image/png;base64,AAAA"));
+    }
 }

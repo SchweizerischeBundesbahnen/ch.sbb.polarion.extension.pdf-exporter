@@ -53,6 +53,11 @@ public class MediaUtils {
     public static final String URL_REGEX = "url\\(\\s*([\"'])?(?<url>.*?)\\1?\\s*\\)";
     public static final String DATA_URL_PREFIX = "data:";
     public static final String THUMBNAIL_PARAMETER = "thumbnail";
+    /**
+     * A 1x1 transparent PNG which replaces a resource the {@link ResourceUrlPolicy} rejected.
+     */
+    public static final String BLOCKED_RESOURCE_PLACEHOLDER =
+            "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
     private static final Logger logger = Logger.getLogger(MediaUtils.class);
     private static final int RIGHT_WHITE_AREA_PX = 30;
     private static final int PDF_TO_PNG_DPI = 300;
@@ -270,6 +275,10 @@ public class MediaUtils {
             String url = engine.group("url");
             if (MediaUtils.isDataUrl(url)) {
                 return null;
+            }
+            if (fileResourceProvider.isForbidden(url)) {
+                // the url is replaced, not kept, so that WeasyPrint does not load it either
+                return engine.group().replace(url, BLOCKED_RESOURCE_PLACEHOLDER);
             }
             // For renderable images (e.g. .png, .svg) strip 'thumbnail' to fetch full-size content.
             // For everything else (spreadsheets, documents, unknown formats) keep 'thumbnail' so Polarion returns an icon preview.

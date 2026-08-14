@@ -200,6 +200,35 @@ To override this list, adjust the following property in the `polarion.properties
 ch.sbb.polarion.extension.pdf-exporter.renderable.image.extensions=png, jpg, jpeg, gif, bmp, svg, webp, avif, ico, cur, tif, tiff, vsdx
 ```
 
+### External resources
+
+A document can reference an image, a font or a stylesheet by an absolute URL. The extension loads such a
+resource and embeds it into the exported PDF. Because a document editor controls that URL, the request is
+restricted. By default the extension rejects every address which is not public: loopback, private ranges,
+link local addresses including the cloud metadata address `169.254.169.254`, and their IPv6 equivalents.
+The Polarion server itself, as configured by `base.url`, always stays reachable.
+
+To load resources from an internal host, list it explicitly:
+```properties
+ch.sbb.polarion.extension.pdf-exporter.externalResources.allowedHosts=cdn.intranet,images.intranet:8443
+```
+
+The policy itself can be changed:
+```properties
+# blockInternal (default) - public addresses, the Polarion server and the allowed hosts
+# allowlistOnly            - only the Polarion server and the allowed hosts
+# allowAll                 - no restriction, this exposes the server's network to document editors
+ch.sbb.polarion.extension.pdf-exporter.externalResources.policy=allowlistOnly
+```
+
+A loaded resource must be served as an image, a font or a stylesheet, and it may not exceed 16 MB. To change
+the size limit:
+```properties
+ch.sbb.polarion.extension.pdf-exporter.externalResources.maxSizeMB=32
+```
+
+Blocked resources are reported in the Polarion log. The document is exported without them.
+
 ### Debug option
 
 This extension makes intensive HTML processing to extend similar standard Polarion functionality. There is a possibility to log
