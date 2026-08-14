@@ -510,25 +510,13 @@ public class MediaUtils {
      */
     private String stripCssComments(@NotNull String css) {
         StringBuilder result = new StringBuilder(css.length());
-        char quote = 0;
         int i = 0;
         while (i < css.length()) {
             char current = css.charAt(i);
-            if (quote != 0) {
-                result.append(current);
-                if (current == '\\' && i + 1 < css.length()) {
-                    result.append(css.charAt(++i));
-                } else if (current == quote) {
-                    quote = 0;
-                }
-                i++;
-            } else if (current == '"' || current == '\'') {
-                quote = current;
-                result.append(current);
-                i++;
-            } else if (current == '/' && i + 1 < css.length() && css.charAt(i + 1) == '*') {
-                int end = css.indexOf("*/", i + 2);
-                i = end < 0 ? css.length() : end + 2;
+            if (current == '"' || current == '\'') {
+                i = appendString(css, i, result);
+            } else if (isCommentStart(css, i)) {
+                i = endOfComment(css, i);
             } else {
                 result.append(current);
                 i++;
@@ -536,6 +524,32 @@ public class MediaUtils {
         }
         return result.toString();
     }
+
+    private boolean isCommentStart(@NotNull String css, int index) {
+        return css.charAt(index) == '/' && index + 1 < css.length() && css.charAt(index + 1) == '*';
+    }
+
+    private int endOfComment(@NotNull String css, int index) {
+        int end = css.indexOf("*/", index + 2);
+        return end < 0 ? css.length() : end + 2;
+    }
+
+    private int appendString(@NotNull String css, int index, @NotNull StringBuilder result) {
+        char quote = css.charAt(index);
+        result.append(quote);
+        int i = index + 1;
+        while (i < css.length()) {
+            char current = css.charAt(i++);
+            result.append(current);
+            if (current == '\\' && i < css.length()) {
+                result.append(css.charAt(i++));
+            } else if (current == quote) {
+                break;
+            }
+        }
+        return i;
+    }
+
 
     /**
      * Hands the parts of an HTML document which are CSS, a style element and a style attribute, to the
