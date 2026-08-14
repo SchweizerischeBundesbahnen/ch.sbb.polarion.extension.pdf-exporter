@@ -3,18 +3,20 @@ package ch.sbb.polarion.extension.pdf_exporter.util;
 import ch.sbb.polarion.extension.generic.regex.RegexMatcher;
 import ch.sbb.polarion.extension.generic.util.BundleJarsPrioritizingRunnable;
 import ch.sbb.polarion.extension.generic.util.ScopeUtils;
+import com.helger.css.CSSSourceLocation;
 import com.helger.css.decl.CSSDeclaration;
+import com.helger.css.decl.CSSImportRule;
 import com.helger.css.decl.CSSExpressionMemberTermURI;
 import com.helger.css.decl.CascadingStyleSheet;
 import com.helger.css.decl.ICSSTopLevelRule;
 import com.helger.css.decl.visit.CSSVisitor;
+import com.helger.css.decl.CSSExpressionMemberTermSimple;
 import com.helger.css.decl.visit.DefaultCSSUrlVisitor;
+import com.helger.css.decl.visit.DefaultCSSVisitor;
 import com.helger.css.handler.DoNothingCSSParseExceptionCallback;
 import com.helger.css.reader.CSSReader;
 import com.helger.css.reader.CSSReaderSettings;
 import com.helger.css.reader.errorhandler.DoNothingCSSParseErrorHandler;
-import com.helger.css.writer.CSSWriter;
-import com.helger.css.writer.CSSWriterSettings;
 import ch.sbb.polarion.extension.pdf_exporter.properties.PdfExporterExtensionConfiguration;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PdfVariant;
 import ch.sbb.polarion.extension.pdf_exporter.service.PdfExporterPolarionService;
@@ -56,7 +58,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiFunction;
 import java.util.function.UnaryOperator;
 
@@ -69,7 +70,7 @@ public class MediaUtils {
     public static final String URL_REGEX = "(?i)url\\(\\s*([\"'])?(?<url>.*?)\\1?\\s*\\)";
     public static final String DATA_URL_PREFIX = "data:";
     private static final String NETWORK_PATH_PREFIX = "//";
-    private static final String STYLE_ATTRIBUTE = "style=";
+    private static final String STYLE_ATTRIBUTE = "style";
     private static final Pattern CSS_ESCAPE_PATTERN = Pattern.compile("\\\\(?:([0-9a-fA-F]{1,6})[ \\t\\r\\n\\f]?|(.))", Pattern.DOTALL);
     public static final String THUMBNAIL_PARAMETER = "thumbnail";
     /**
@@ -380,6 +381,10 @@ public class MediaUtils {
      * </p>
      */
     public String inlineCssResources(@NotNull String css, @NotNull FileResourceProvider fileResourceProvider) {
+        if (!namesAnAbsoluteAddress(css)) {
+            // nothing to check and nothing to rewrite, so the css stays exactly as the document has it
+            return css;
+        }
         CSSReaderSettings settings = new CSSReaderSettings()
                 // a browser keeps what it understands and skips the rest, and so does the conversion service
                 .setBrowserCompliantMode(true)
@@ -390,41 +395,141 @@ public class MediaUtils {
             logger.warn("Dropped a stylesheet which cannot be parsed, the resources it points at cannot be checked");
             return "";
         }
-        AtomicBoolean changed = new AtomicBoolean(false);
-        for (int i = stylesheet.getImportRuleCount() - 1; i >= 0; i--) {
-            if (isAbsoluteHttpUrl(stylesheet.getImportRuleAtIndex(i).getLocationString())) {
-                stylesheet.removeImportRule(i);
-                changed.set(true);
+
+        // The parser tells where each url and each import stands, and only those parts are rewritten.
+        // Everything else keeps the formatting the document came with.
+        List<CssEdit> edits = new ArrayList<>();
+        for (int i = 0; i < stylesheet.getImportRuleCount(); i++) {
+            CSSImportRule importRule = stylesheet.getImportRuleAtIndex(i);
+            if (isAbsoluteHttpUrl(decodeCssEscapes(importRule.getLocationString()))) {
+                edits.add(new CssEdit(importRule.getSourceLocation(), ""));
             }
         }
         CSSVisitor.visitCSSUrl(stylesheet, new DefaultCSSUrlVisitor() {
             @Override
             public void onUrlDeclaration(@Nullable ICSSTopLevelRule topLevelRule, @NotNull CSSDeclaration declaration, @NotNull CSSExpressionMemberTermURI uri) {
                 String replacement = replacementFor(fileResourceProvider, uri.getURIString());
-                if (replacement != null && !replacement.equals(uri.getURIString())) {
-                    uri.setURIString(replacement);
-                    changed.set(true);
+                if (replacement != null) {
+                    edits.add(new CssEdit(uri.getSourceLocation(), "url(\"" + replacement + "\")"));
                 }
             }
         });
-        String result = changed.get() ? new CSSWriter(new CSSWriterSettings()).setWriteHeaderText(false).getCSSAsString(stylesheet) : css;
-        if (pointsAtAnAbsoluteAddress(result)) {
-            // The parser did not surface this address, so nothing checked it. Whatever syntax hid it from
-            // the parser, WeasyPrint may well understand, so the stylesheet does not go on.
-            logger.warn("Dropped a stylesheet: it points at an absolute address which could not be read as a resource");
+
+        String result = applyEdits(css, edits);
+        if (namesAnAddressNothingRead(stylesheet, result)) {
+            logger.warn("Dropped a stylesheet: it names an absolute address which could not be read as a resource");
             return "";
         }
         return result;
     }
 
+    private record CssEdit(@Nullable CSSSourceLocation location, @NotNull String replacement) {
+    }
+
     /**
-     * Tells whether a stylesheet still names an absolute address after every url of it was rewritten.
-     * Nothing may: an allowed one is embedded as a data url by then, a rejected one is the placeholder,
-     * and an import of one is removed. So one that is left is one nothing understood.
+     * Applies the edits back to front, so that an offset stays valid while the ones before it are used.
      */
-    private boolean pointsAtAnAbsoluteAddress(@NotNull String css) {
-        String probe = decodeCssEscapes(css).toLowerCase(Locale.ROOT).replaceAll("data:[^)\"';\\s]*", "");
+    private String applyEdits(@NotNull String css, @NotNull List<CssEdit> edits) {
+        int[] lineStarts = lineStartsOf(css);
+        StringBuilder result = new StringBuilder(css);
+        edits.stream()
+                .filter(edit -> edit.location() != null)
+                .map(edit -> new int[]{offsetOf(lineStarts, css, edit.location().getFirstTokenBeginLineNumber(), edit.location().getFirstTokenBeginColumnNumber() - 1),
+                        offsetOf(lineStarts, css, edit.location().getLastTokenEndLineNumber(), edit.location().getLastTokenEndColumnNumber()), edits.indexOf(edit)})
+                .filter(range -> range[0] >= 0 && range[1] >= range[0] && range[1] <= css.length())
+                .sorted((left, right) -> Integer.compare(right[0], left[0]))
+                .forEach(range -> result.replace(range[0], range[1], edits.get(range[2]).replacement()));
+        return result.toString();
+    }
+
+    private int[] lineStartsOf(@NotNull String css) {
+        List<Integer> starts = new ArrayList<>();
+        starts.add(0);
+        for (int i = 0; i < css.length(); i++) {
+            if (css.charAt(i) == '\n') {
+                starts.add(i + 1);
+            }
+        }
+        return starts.stream().mapToInt(Integer::intValue).toArray();
+    }
+
+    private int offsetOf(int[] lineStarts, @NotNull String css, int line, int column) {
+        if (line < 1 || line > lineStarts.length) {
+            return -1;
+        }
+        int offset = lineStarts[line - 1] + column;
+        return offset > css.length() ? -1 : offset;
+    }
+
+    /**
+     * Tells whether a stylesheet names an address at all. A data url does not count, what it carries is
+     * the resource itself, and an SVG in one names the namespace of SVG.
+     */
+    private boolean namesAnAbsoluteAddress(@NotNull String css) {
+        // a data url ends at the bracket or the quote around it, the base64 of it may hold anything else
+        String probe = decodeCssEscapes(css).replaceAll("(?i)data:[^)\"']*", "").toLowerCase(Locale.ROOT);
         return probe.contains("http:") || probe.contains("https:") || probe.contains(NETWORK_PATH_PREFIX);
+    }
+
+    /**
+     * Tells whether a rewritten stylesheet still names an absolute address which nothing checked. Every
+     * url the parser read is a data url or the placeholder by then, and an import of an address is gone,
+     * so an address which is left hid from the parser and the stylesheet cannot be handed on.
+     * <p>
+     * A comment does not count, the renderer ignores it, and neither does a plain string value: css
+     * fetches nothing from a string, and a stylesheet may legitimately carry an address in one.
+     * </p>
+     */
+    private boolean namesAnAddressNothingRead(@NotNull CascadingStyleSheet stylesheet, @NotNull String css) {
+        List<String> readStrings = new ArrayList<>();
+        CSSVisitor.visitCSS(stylesheet, new DefaultCSSVisitor() {
+            @Override
+            public void onDeclaration(@NotNull CSSDeclaration declaration) {
+                declaration.getExpression().getAllMembers().stream()
+                        .filter(CSSExpressionMemberTermSimple.class::isInstance)
+                        .map(member -> ((CSSExpressionMemberTermSimple) member).getValue())
+                        .filter(value -> value.startsWith("\"") || value.startsWith("'"))
+                        .forEach(readStrings::add);
+            }
+        });
+        String probe = stripCssComments(css);
+        for (String readString : readStrings) {
+            probe = probe.replace(readString, "");
+        }
+        return namesAnAbsoluteAddress(probe);
+    }
+
+    /**
+     * Removes the comments of a stylesheet, for reading it only. A quoted string keeps what it holds,
+     * css starts no comment in there, and an unterminated comment runs to the end, as css says it does.
+     */
+    private String stripCssComments(@NotNull String css) {
+        StringBuilder result = new StringBuilder(css.length());
+        char quote = 0;
+        int i = 0;
+        while (i < css.length()) {
+            char current = css.charAt(i);
+            if (quote != 0) {
+                result.append(current);
+                if (current == '\\' && i + 1 < css.length()) {
+                    result.append(css.charAt(++i));
+                } else if (current == quote) {
+                    quote = 0;
+                }
+                i++;
+            } else if (current == '"' || current == '\'') {
+                quote = current;
+                result.append(current);
+                i++;
+            } else if (current == '/' && i + 1 < css.length() && css.charAt(i + 1) == '*') {
+                int end = css.indexOf("*/", i + 2);
+                i = end < 0 ? css.length() : end + 2;
+            } else {
+                result.append(current);
+                i++;
+            }
+        }
+        return result.toString();
     }
 
     /**
@@ -453,24 +558,66 @@ public class MediaUtils {
         return result.append(html, index, html.length()).toString();
     }
 
+    /**
+     * Rewrites the value of every style attribute. HTML allows whitespace around the equals sign and a
+     * value without quotes, so the attribute is read rather than matched.
+     */
     private String processStyleAttributes(@NotNull String html, @NotNull UnaryOperator<String> rewrite) {
         String lowerCased = html.toLowerCase(Locale.ROOT);
         StringBuilder result = new StringBuilder(html.length());
         int index = 0;
         int start;
         while ((start = lowerCased.indexOf(STYLE_ATTRIBUTE, index)) >= 0) {
-            int quoteAt = start + STYLE_ATTRIBUTE.length();
-            char quote = quoteAt < html.length() ? html.charAt(quoteAt) : 0;
-            int valueEnd = quote == '"' || quote == '\'' ? html.indexOf(quote, quoteAt + 1) : -1;
-            if (valueEnd < 0) {
-                result.append(html, index, quoteAt);
-                index = quoteAt;
+            int nameEnd = start + STYLE_ATTRIBUTE.length();
+            int equals = skipWhitespace(html, nameEnd);
+            if (!isInsideTag(html, start) || start > 0 && !isAttributeStart(html.charAt(start - 1))
+                    || equals >= html.length() || html.charAt(equals) != '=') {
+                result.append(html, index, nameEnd);
+                index = nameEnd;
                 continue;
             }
-            result.append(html, index, quoteAt + 1).append(rewriteDeclarations(html.substring(quoteAt + 1, valueEnd), rewrite));
-            index = valueEnd;
+            int valueStart = skipWhitespace(html, equals + 1);
+            char quote = valueStart < html.length() ? html.charAt(valueStart) : 0;
+            boolean quoted = quote == '"' || quote == '\'';
+            int contentStart = quoted ? valueStart + 1 : valueStart;
+            int contentEnd = quoted ? html.indexOf(quote, contentStart) : endOfUnquotedValue(html, contentStart);
+            if (contentEnd < 0) {
+                result.append(html, index, nameEnd);
+                index = nameEnd;
+                continue;
+            }
+            result.append(html, index, contentStart).append(rewriteDeclarations(html.substring(contentStart, contentEnd), rewrite));
+            index = contentEnd;
         }
         return result.append(html, index, html.length()).toString();
+    }
+
+    /**
+     * An attribute lives inside a tag. The same word in the text of the document is text, and rewriting
+     * that as css would take it out of the document.
+     */
+    private boolean isInsideTag(@NotNull String html, int index) {
+        return html.lastIndexOf('<', index) > html.lastIndexOf('>', index);
+    }
+
+    private boolean isAttributeStart(char character) {
+        return Character.isWhitespace(character) || character == '\'' || character == '"' || character == '/';
+    }
+
+    private int skipWhitespace(@NotNull String html, int index) {
+        int i = index;
+        while (i < html.length() && Character.isWhitespace(html.charAt(i))) {
+            i++;
+        }
+        return i;
+    }
+
+    private int endOfUnquotedValue(@NotNull String html, int index) {
+        int i = index;
+        while (i < html.length() && !Character.isWhitespace(html.charAt(i)) && html.charAt(i) != '>') {
+            i++;
+        }
+        return i;
     }
 
     /**

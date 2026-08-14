@@ -601,6 +601,34 @@ class HtmlProcessorTest {
         assertFalse(processor.replaceResourcesAsBase64Encoded(html).contains("169.254.169.254"));
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "style=\"background: url(ADDRESS)\"",
+            "style = \"background: url(ADDRESS)\"",
+            "style='background: url(ADDRESS)'",
+            "style=background:url(ADDRESS)"
+    })
+    @SneakyThrows
+    void keepAForbiddenUrlOutOfEveryFormOfAStyleAttributeTest(String attribute) {
+        String address = "http://169.254.169.254/latest/meta-data/";
+        String html = "<div " + attribute.replace("ADDRESS", address) + "></div>";
+        lenient().when(fileResourceProvider.isForbidden(address)).thenReturn(true);
+
+        assertFalse(processor.replaceResourcesAsBase64Encoded(html).contains("169.254.169.254"));
+    }
+
+    @Test
+    @SneakyThrows
+    void keepACssStringHoldingAnAddressTest() {
+        // a string value is text, css fetches nothing from it, so the stylesheet stays usable
+        String html = "<style>/* see http://example.com */ body { content: \"https://example.com\"; color: red; }</style>";
+
+        String result = processor.replaceResourcesAsBase64Encoded(html);
+
+        assertTrue(result.contains("https://example.com"));
+        assertTrue(result.contains("color"));
+    }
+
     @Test
     @SneakyThrows
     void keepAForbiddenUrlOutOfAStyleAttributeTest() {
