@@ -45,6 +45,7 @@ public class ResourceUrlPolicy {
     private final Mode mode;
     private final Set<String> allowedHosts;
     private final String baseUrlHost;
+    private final String baseUrlScheme;
     private final int baseUrlPort;
     private final long maxResourceBytes;
 
@@ -62,6 +63,7 @@ public class ResourceUrlPolicy {
         URI baseUri = parseBaseUrl(baseUrl);
         this.baseUrlHost = baseUri == null || baseUri.getHost() == null ? null : baseUri.getHost().toLowerCase(Locale.ROOT);
         this.baseUrlPort = baseUri == null ? -1 : effectivePort(baseUri.getScheme(), baseUri.getPort());
+        this.baseUrlScheme = baseUri != null && HTTPS.equalsIgnoreCase(baseUri.getScheme()) ? HTTPS : HTTP;
     }
 
     public static ResourceUrlPolicy getInstance() {
@@ -137,7 +139,7 @@ public class ResourceUrlPolicy {
         String host = stripBrackets(rawHost.toLowerCase(Locale.ROOT));
         int port = effectivePort(protocol, url.getPort());
 
-        boolean exempt = isBaseUrlOrigin(host, port) || isExplicitlyAllowed(host, port) || mode == Mode.ALLOW_ALL;
+        boolean exempt = isExempt(host, port);
         if (!exempt && mode == Mode.ALLOWLIST_ONLY) {
             return denyAddresses(url, "the host is not in " + PdfExporterExtensionConfiguration.EXTERNAL_RESOURCES_ALLOWED_HOSTS);
         }
@@ -165,6 +167,33 @@ public class ResourceUrlPolicy {
         } catch (UnknownHostException e) {
             return denyAddresses(url, "the host cannot be resolved");
         }
+    }
+
+    /**
+     * Tells whether the configuration trusts the url as such, rather than its addresses: the Polarion
+     * server itself, a host the administrator listed, or any host when the policy is off. Only such a
+     * url may be requested through a proxy, where the connection cannot be pinned to a checked address.
+     */
+    public boolean isExplicitlyTrusted(@NotNull URL url) {
+        String rawHost = url.getHost();
+        if (rawHost == null || rawHost.isBlank()) {
+            return false;
+        }
+        String protocol = url.getProtocol() == null ? "" : url.getProtocol().toLowerCase(Locale.ROOT);
+        return isExempt(stripBrackets(rawHost.toLowerCase(Locale.ROOT)), effectivePort(protocol, url.getPort()));
+    }
+
+    private boolean isExempt(@NotNull String host, int port) {
+        return isBaseUrlOrigin(host, port) || isExplicitlyAllowed(host, port) || mode == Mode.ALLOW_ALL;
+    }
+
+    /**
+     * @return the scheme a network path reference like {@code //host/path} gets, taken from the Polarion
+     * base url the conversion service reads the document with
+     */
+    @NotNull
+    public String getBaseUrlScheme() {
+        return baseUrlScheme;
     }
 
     private static String stripBrackets(@NotNull String host) {

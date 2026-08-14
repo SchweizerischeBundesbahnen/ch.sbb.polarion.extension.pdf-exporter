@@ -42,6 +42,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.function.BiFunction;
 
 import static ch.sbb.polarion.extension.pdf_exporter.util.TikaMimeTypeResolver.PARAM_RESULT;
@@ -67,6 +69,7 @@ public class MediaUtils {
     public static final String CSS_IMPORT_URL_REGEX = "(?i)@import" + CSS_AT_RULE_SEPARATOR + "url\\((?<url>[^)]*)\\)[^;]*;?";
     public static final String DATA_URL_PREFIX = "data:";
     private static final String NETWORK_PATH_PREFIX = "//";
+    private static final Pattern CSS_ESCAPE_PATTERN = Pattern.compile("\\\\(?:([0-9a-fA-F]{1,6})[ \\t\\r\\n\\f]?|(.))", Pattern.DOTALL);
     private static final String COMMENT_START = "/*";
     private static final String COMMENT_END = "*/";
     public static final String THUMBNAIL_PARAMETER = "thumbnail";
@@ -283,6 +286,25 @@ public class MediaUtils {
     /**
      * Check whether particular string is a <a href="https://www.rfc-editor.org/rfc/rfc2397">'data' URL</a>-encoded entry.
      */
+    /**
+     * Resolves the CSS escapes of a value, {@code http\\3a //host} and the like. A stylesheet reaches
+     * WeasyPrint as text, and WeasyPrint resolves them, so the check has to see the same value.
+     */
+    public String decodeCssEscapes(@NotNull String value) {
+        if (value.indexOf('\\') < 0) {
+            return value;
+        }
+        Matcher matcher = CSS_ESCAPE_PATTERN.matcher(value);
+        StringBuilder decoded = new StringBuilder();
+        while (matcher.find()) {
+            String hex = matcher.group(1);
+            String replacement = hex != null ? Character.toString(Integer.parseInt(hex, 16)) : matcher.group(2);
+            matcher.appendReplacement(decoded, Matcher.quoteReplacement(replacement));
+        }
+        matcher.appendTail(decoded);
+        return decoded.toString();
+    }
+
     public boolean isDataUrl(@Nullable String resourceUrl) {
         return resourceUrl != null && resourceUrl.startsWith(DATA_URL_PREFIX);
     }
@@ -343,7 +365,7 @@ public class MediaUtils {
      */
     @NotNull
     public String unwrapCssUrl(@NotNull String url) {
-        String unwrapped = url.trim();
+        String unwrapped = decodeCssEscapes(url).trim();
         while (unwrapped.startsWith(COMMENT_START) && unwrapped.contains(COMMENT_END)) {
             unwrapped = unwrapped.substring(unwrapped.indexOf(COMMENT_END) + COMMENT_END.length()).trim();
         }

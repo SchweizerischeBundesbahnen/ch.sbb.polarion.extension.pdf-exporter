@@ -236,6 +236,55 @@ class CustomResourceUrlResolverTest {
     }
 
     @Test
+    @SneakyThrows
+    void resolvesANetworkPathReferenceAgainstItsOwnHost() {
+        // '//127.0.0.1:port/img.png' names its own host, only the scheme comes from the base url
+        respond("/img.png", "image/png", PNG_CONTENT, false);
+        ResourceUrlPolicy policy = new ResourceUrlPolicy(Mode.ALLOW_ALL, List.of(), "http://localhost", 16);
+        CustomResourceUrlResolver resolver = new CustomResourceUrlResolver(policy);
+
+        try (InputStream stream = resolver.resolve("//127.0.0.1:" + server.getAddress().getPort() + "/img.png")) {
+            assertNotNull(stream);
+            assertArrayEquals(PNG_CONTENT, stream.readAllBytes());
+        }
+    }
+
+    @Test
+    void skipsAProxiedResourceWhichIsNotExplicitlyTrusted() {
+        // a proxy resolves the host name itself, so the vetted addresses would decide nothing
+        System.setProperty("http.proxyHost", "proxy.invalid");
+        System.setProperty("http.proxyPort", "3128");
+        try {
+            ResourceUrlPolicy policy = new ResourceUrlPolicy(Mode.BLOCK_INTERNAL, List.of(), null, 16);
+
+            assertNull(new CustomResourceUrlResolver(policy).resolveImpl(toUrl("http://8.8.8.8/img.png")));
+        } finally {
+            System.clearProperty("http.proxyHost");
+            System.clearProperty("http.proxyPort");
+        }
+    }
+
+    @Test
+    @SneakyThrows
+    void keepsFetchingAHostTheProxyIsNotUsedFor() {
+        respond("/img.png", "image/png", PNG_CONTENT, false);
+        System.setProperty("http.proxyHost", "proxy.invalid");
+        System.setProperty("http.proxyPort", "3128");
+        try {
+            ResourceUrlPolicy policy = new ResourceUrlPolicy(Mode.BLOCK_INTERNAL,
+                    List.of("127.0.0.1:" + server.getAddress().getPort()), null, 16);
+
+            try (InputStream stream = new CustomResourceUrlResolver(policy).resolveImpl(toUrl(url("/img.png")))) {
+                assertNotNull(stream);
+                assertArrayEquals(PNG_CONTENT, stream.readAllBytes());
+            }
+        } finally {
+            System.clearProperty("http.proxyHost");
+            System.clearProperty("http.proxyPort");
+        }
+    }
+
+    @Test
     void skipsErrorResponse() {
         status("/missing.png", 404);
         assertNull(resolver(16).resolveImpl(toUrl(url("/missing.png"))));

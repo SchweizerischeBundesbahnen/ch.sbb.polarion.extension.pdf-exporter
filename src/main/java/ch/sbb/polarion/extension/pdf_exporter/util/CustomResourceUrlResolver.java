@@ -13,6 +13,7 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.conn.DnsResolver;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
+import org.apache.http.impl.conn.SystemDefaultDnsResolver;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.VisibleForTesting;
 
@@ -20,6 +21,8 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.net.InetAddress;
+import java.net.Proxy;
+import java.net.ProxySelector;
 import java.net.URI;
 import java.net.URL;
 import java.util.stream.Stream;
@@ -80,7 +83,14 @@ public class CustomResourceUrlResolver implements IUrlResolver {
             if (addresses == null) {
                 return null;
             }
-            try (CloseableHttpClient client = createClient(addresses);
+            if (isProxied(currentUrl) && !policy.isExplicitlyTrusted(currentUrl)) {
+                // A proxy resolves the host name itself, so the vetted addresses would decide nothing.
+                // Only a host the configuration trusts as such may be fetched that way.
+                logger.warn(SKIPPED_RESOURCE + currentUrl + ": it would go through a proxy, which resolves the host name itself."
+                        + " List the host in the allowed hosts property to fetch it anyway.");
+                return null;
+            }
+            try (CloseableHttpClient client = createClient(currentUrl, addresses);
                  CloseableHttpResponse response = client.execute(new HttpGet(URI.create(currentUrl.toString())))) {
                 int statusCode = response.getStatusLine().getStatusCode();
                 if (statusCode == HTTP_OK) {
@@ -101,12 +111,16 @@ public class CustomResourceUrlResolver implements IUrlResolver {
     }
 
     /**
-     * Builds a client for a single request. Its name resolution answers with the vetted addresses only,
-     * which binds the request to what {@link ResourceUrlPolicy#vetAddresses} approved. The host name stays
-     * in the request, so the Host header and the TLS host name verification keep working.
+     * Builds a client for a single request. Its name resolution answers with the vetted addresses for the
+     * host of that request, which binds the request to what {@link ResourceUrlPolicy#vetAddresses}
+     * approved. The host name stays in the request, so the Host header and the TLS host name verification
+     * keep working. Any other name, a proxy host as a rule, is left to the system resolver.
      */
-    private CloseableHttpClient createClient(@NotNull InetAddress[] addresses) {
-        DnsResolver pinnedResolver = host -> addresses;
+    private CloseableHttpClient createClient(@NotNull URL url, @NotNull InetAddress[] addresses) {
+        String pinnedHost = url.getHost() == null ? "" : stripBrackets(url.getHost());
+        DnsResolver pinnedResolver = host -> pinnedHost.equalsIgnoreCase(host)
+                ? addresses
+                : SystemDefaultDnsResolver.INSTANCE.resolve(host);
         RequestConfig requestConfig = RequestConfig.custom()
                 .setConnectTimeout(CONNECTION_TIMEOUT_MS)
                 .setConnectionRequestTimeout(CONNECTION_TIMEOUT_MS)
@@ -178,7 +192,28 @@ public class CustomResourceUrlResolver implements IUrlResolver {
     }
 
     private String ensureAbsoluteUrl(String url) {
+        if (MediaUtils.isNetworkPathReference(url)) {
+            // '//host/path' names its own host, only the scheme comes from the Polarion base url
+            return policy.getBaseUrlScheme() + ":" + url;
+        }
         return url.startsWith("/") ? getBaseUrl() + url : url;
+    }
+
+    private static String stripBrackets(@NotNull String host) {
+        return host.startsWith("[") && host.endsWith("]") ? host.substring(1, host.length() - 1) : host;
+    }
+
+    private boolean isProxied(@NotNull URL url) {
+        ProxySelector selector = ProxySelector.getDefault();
+        if (selector == null) {
+            return false;
+        }
+        try {
+            return selector.select(URI.create(url.toString())).stream().anyMatch(proxy -> proxy.type() != Proxy.Type.DIRECT);
+        } catch (RuntimeException e) {
+            logger.warn("Cannot tell whether '" + url + "' goes through a proxy, it is treated as direct", e);
+            return false;
+        }
     }
 
     private String getBaseUrl() {

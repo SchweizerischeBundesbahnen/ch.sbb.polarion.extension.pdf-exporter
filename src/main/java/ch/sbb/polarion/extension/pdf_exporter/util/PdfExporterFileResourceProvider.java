@@ -74,10 +74,10 @@ public class PdfExporterFileResourceProvider implements FileResourceProvider {
         if (!MediaUtils.isAbsoluteHttpUrl(resource)) {
             return false;
         }
-        String candidate = resource.trim();
+        String candidate = MediaUtils.decodeCssEscapes(resource).trim();
         if (MediaUtils.isNetworkPathReference(candidate)) {
-            // '//host/path' has no scheme of its own, the check runs against the plain http reading of it
-            candidate = "http:" + candidate;
+            // '//host/path' has no scheme of its own, it gets the one of the Polarion base url
+            candidate = policy.getBaseUrlScheme() + ":" + candidate;
         }
         try {
             return !policy.isAllowed(URI.create(MediaUtils.normalizeUrl(candidate)).toURL());

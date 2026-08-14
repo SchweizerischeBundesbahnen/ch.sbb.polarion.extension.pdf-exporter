@@ -231,9 +231,11 @@ A CSS `@import` of an absolute address is removed, whether the policy allows the
 at-rule cannot be embedded, so WeasyPrint would have to load it itself, past every check above. Reference
 such a stylesheet with `<link rel="stylesheet">` instead, the extension loads and embeds that one.
 
-A configured JVM proxy (`http.proxyHost` and friends) is used for these requests. Behind a proxy the
-proxy resolves the host name, so the address checks decide whether the request is made at all, while
-the connection itself can no longer be pinned to a checked address.
+A configured JVM proxy (`http.proxyHost` and friends) is used for these requests. A proxy resolves the
+host name itself, so a request routed through one cannot be pinned to a checked address. Such a request
+is therefore only made for a host the configuration trusts as such: the Polarion server and the hosts
+listed above. Everything else is loaded directly, with the address check binding, or not at all. Hosts
+in `http.nonProxyHosts` are loaded directly and keep the address check.
 
 Blocked resources are reported in the Polarion log. The document is exported without them.
 

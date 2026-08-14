@@ -555,7 +555,8 @@ class HtmlProcessorTest {
             "@import/*sneaky*/\"URL\";",                      // CSS allows a comment between the at-keyword and its target
             "@import\"URL\";",                                // and it allows no separator at all
             "@import url(/*sneaky*/\"URL\");",                 // a comment inside url() too
-            "@import url( \"URL\" /*sneaky*/ );"
+            "@import url( \"URL\" /*sneaky*/ );",
+            "@import \"http\\3a //169.254.169.254/latest/meta-data/\";"   // a css escape hides the scheme
     })
     @SneakyThrows
     void dropAbsoluteCssImportTest(String atRule) {

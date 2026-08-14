@@ -180,6 +180,23 @@ class ResourceUrlPolicyTest {
     }
 
     @Test
+    void tellsWhichUrlsTheConfigurationTrustsAsSuch() {
+        ResourceUrlPolicy policy = policy(Mode.BLOCK_INTERNAL, List.of("8.8.4.4"));
+        assertTrue(policy.isExplicitlyTrusted(url("https://8.8.4.4/img.png")));
+        assertTrue(policy.isExplicitlyTrusted(url("http://localhost/polarion/img.png")));
+        assertFalse(policy.isExplicitlyTrusted(url("https://8.8.8.8/img.png")));
+        assertFalse(policy.isExplicitlyTrusted(url("http:///img.png")));
+        assertTrue(policy(Mode.ALLOW_ALL, List.of()).isExplicitlyTrusted(url("https://8.8.8.8/img.png")));
+    }
+
+    @Test
+    void readsTheSchemeOfTheBaseUrl() {
+        assertEquals("http", policy(Mode.BLOCK_INTERNAL, List.of()).getBaseUrlScheme());
+        assertEquals("https", new ResourceUrlPolicy(Mode.BLOCK_INTERNAL, List.of(), "https://polarion.example", 16).getBaseUrlScheme());
+        assertEquals("http", new ResourceUrlPolicy(Mode.BLOCK_INTERNAL, List.of(), null, 16).getBaseUrlScheme());
+    }
+
+    @Test
     void allowsExplicitlyListedHosts() {
         // an allowed host still has to resolve, so the test uses addresses instead of invented names
         ResourceUrlPolicy policy = policy(Mode.BLOCK_INTERNAL, List.of(" 10.0.0.5 ", "127.0.0.1:8443", ""));

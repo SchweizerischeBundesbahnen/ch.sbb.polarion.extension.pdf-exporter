@@ -241,4 +241,17 @@ class MediaUtilsTest {
         assertEquals("http://example.com/a/*b*/c.png", MediaUtils.unwrapCssUrl("http://example.com/a/*b*/c.png"));
         assertEquals("", MediaUtils.unwrapCssUrl("/*just a comment*/"));
     }
+
+    @Test
+    void decodesCssEscapes() {
+        assertEquals("http://host/x", MediaUtils.decodeCssEscapes("http\\3a //host/x"));
+        assertEquals("http://host/x", MediaUtils.decodeCssEscapes("\\68 ttp\\3A //host/x"));
+        assertEquals("http://host/x", MediaUtils.decodeCssEscapes("http\\:" + "//host/x"));
+        assertEquals("plain", MediaUtils.decodeCssEscapes("plain"));
+    }
+
+    @Test
+    void unwrapsAnEscapedCssUrl() {
+        assertTrue(MediaUtils.isAbsoluteHttpUrl(MediaUtils.unwrapCssUrl("\"http\\3a //169.254.169.254/x\"")));
+    }
 }
