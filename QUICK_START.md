@@ -32,7 +32,7 @@ Start Polarion.
 On admin pane of Default Repository select menu Configuration Properties, add following line and save your changes:
 
 ```properties
-scriptInjection.mainHead=<script src="/polarion/pdf-exporter/js/starter.js"></script>
+scriptInjection.mainHead=<script src="/polarion/pdf-exporter/js/live-reports.js"></script>
 ```
 
 ## Configure PDF Exporter for Live Documents

@@ -1,5 +1,5 @@
 // Shared setup for the *.node.test.ts suites that cover the product injector scripts in
-// src/main/resources/webapp/pdf-exporter/js/ (dle-toolbar.js, live-reports.js, starter.js).
+// src/main/resources/webapp/pdf-exporter/js/ (dle-toolbar.js, live-reports.js).
 //
 // Those are plain IIFEs, not modules: they read `document.currentScript` and `top` at load time and
 // leave their state on `top`. So every test needs the globals in place BEFORE the import, a fresh
@@ -35,8 +35,7 @@ export const setCurrentScript = (src: string, dataset: Record<string, string> = 
 export const resetInjectorGlobals = (): void => {
   document.head.innerHTML = '';
   document.body.innerHTML = '';
-  delete globals().PdfExporterStarter;
-  delete globals().GenericDleToolbarStarter;
+  delete globals().CommonDleToolbarStarter;
   delete globals().__genericDleToolbarEnginePromise;
   delete globals().__genericDleToolbarSeq;
   window.location.hash = '';
@@ -45,15 +44,14 @@ export const resetInjectorGlobals = (): void => {
 /** What an injector hands to the shared engine's `create`. */
 export interface ToolbarConfig {
   markerId: string;
-  defaultHtml?: string;
-  alternateHtml?: string;
+  html?: string;
   target?: string;
   order?: number;
   permissionCheckUrl?: string;
 }
 
 /**
- * A stand-in for generic's GenericDleToolbarStarter that records what it was asked to do. The arrays
+ * A stand-in for the shared CommonDleToolbarStarter that records what it was asked to do. The arrays
  * stay live, so a test can assert on them after the import.
  */
 export const engineRecorder = () => {

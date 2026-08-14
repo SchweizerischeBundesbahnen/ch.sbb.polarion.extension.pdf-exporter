@@ -19,8 +19,6 @@ class LiveReportMainHeadStatusProviderTest {
 
     // Recommended single-tag Live Reports loader.
     public static final String CONFIG_NEW = "<script src=\"/polarion/pdf-exporter/js/live-reports.js\"></script>";
-    // Deprecated form (loads starter.js).
-    public static final String CONFIG_DEPRECATED = "<script src=\"/polarion/pdf-exporter/js/starter.js\"></script>";
 
     public static Stream<Arguments> provideConfigurationStatus() {
         ConfigurationStatus notConfigured = ConfigurationStatus.builder()
@@ -33,32 +31,18 @@ class LiveReportMainHeadStatusProviderTest {
                 .status(Status.OK)
                 .details("")
                 .build();
-        ConfigurationStatus deprecated = ConfigurationStatus.builder()
-                .name(LiveReportMainHeadStatusProvider.LIVE_REPORT_BUTTON)
-                .status(Status.WARNING)
-                .details(LiveReportMainHeadStatusProvider.DEPRECATED_DETAILS)
-                .build();
 
         return Stream.of(
                 Arguments.of("", "", notConfigured),
                 Arguments.of(null, null, notConfigured),
 
-                // Recommended single-tag form → OK.
+                // The single-tag form → OK.
                 Arguments.of(CONFIG_NEW, "", ok),
                 Arguments.of("", CONFIG_NEW, ok),
                 Arguments.of(CONFIG_NEW, CONFIG_NEW, ok),
                 Arguments.of("<script></script> <script src=\"/polarion/pdf-exporter/js/live-reports.js\"></script> <script></script>", "", ok),
                 // Recommended form with the data-expand-tools opt-in attribute → still OK.
-                Arguments.of("<script src=\"/polarion/pdf-exporter/js/live-reports.js\" data-expand-tools=\"true\"></script>", "", ok),
-
-                // Deprecated starter.js form → WARNING with deprecation hint.
-                Arguments.of(CONFIG_DEPRECATED, "", deprecated),
-                Arguments.of("", CONFIG_DEPRECATED, deprecated),
-                Arguments.of(CONFIG_DEPRECATED, CONFIG_DEPRECATED, deprecated),
-
-                // The recommended form on either source wins over a deprecated form.
-                Arguments.of(CONFIG_NEW, CONFIG_DEPRECATED, ok),
-                Arguments.of(CONFIG_DEPRECATED, CONFIG_NEW, ok)
+                Arguments.of("<script src=\"/polarion/pdf-exporter/js/live-reports.js\" data-expand-tools=\"true\"></script>", "", ok)
         );
     }
 

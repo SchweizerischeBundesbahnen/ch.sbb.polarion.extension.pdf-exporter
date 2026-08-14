@@ -15,8 +15,9 @@
  * dialog is a React module that mounts into a shadow root of its own, styles included — so this
  * script injects no stylesheet.
  *
- * This script replaces loading starter.js via mainHead (deprecated). The element ids match the
- * ones starter.js uses, so nothing is injected twice if both run.
+ * It keeps its own markup rather than the engine's addButton(): the Live Report toolbar shows a
+ * labelled replica of Polarion's own buttons, not the document editor's icon-only one. So it loads
+ * the engine and drives create() directly.
  */
 (function () {
     const timestampParam = `?timestamp=${Date.now()}`;
@@ -25,10 +26,15 @@
     // so nothing below hardcodes the /polarion/<ext>/ segment.
     const EXT_BASE = (document.currentScript && document.currentScript.src || '').replace(/js\/live-reports\.js.*$/, '') || '/polarion/pdf-exporter/';
 
+    // Base of the React app's webapp (…/polarion/<ext>-app/ui/app/), derived from EXT_BASE for the
+    // same reason. Everything this script loads at runtime now comes from there: the export dialog
+    // and the shared toolbar engine, both built from ui/ and served by this extension itself.
+    const APP_BASE = EXT_BASE.replace(/\/$/, '-app/ui/app/');
+
     // Read the opt-in for keeping the report toolbar always expanded from the script tag itself.
     const expandTools = !!(document.currentScript && document.currentScript.dataset.expandTools === 'true');
 
-    // Capture config-execution order synchronously (like starter.js does) so several extensions'
+    // Capture config-execution order synchronously (this runs in mainHead order) so several extensions'
     // report-toolbar buttons keep a stable left-to-right order on re-render.
     const seq = top.__genericDleToolbarSeq || (top.__genericDleToolbarSeq = { n: 0 });
     const myOrder = seq.n++;
@@ -42,7 +48,7 @@
     // itself into a shadow root of its own, so nothing has to be injected into the page for it. The
     // timestamp is captured once per page load, so a click reuses the module the previous click loaded
     // while an updated extension is still picked up on the next page open.
-    const POPUP_MODULE = `/polarion/pdf-exporter-app/ui/app/assets/export-popup.js${timestampParam}`;
+    const POPUP_MODULE = `${APP_BASE}assets/export-popup.js${timestampParam}`;
 
     const TOOLBAR_HTML = `
         <table class="dleToolBarTable">
@@ -75,7 +81,7 @@
     function loadEngine(src) {
         if (!top.__genericDleToolbarEnginePromise) {
             top.__genericDleToolbarEnginePromise = new Promise((resolve) => {
-                if (top.GenericDleToolbarStarter || window.GenericDleToolbarStarter) {
+                if (top.CommonDleToolbarStarter || window.CommonDleToolbarStarter) {
                     resolve();
                     return;
                 }
@@ -96,18 +102,18 @@
     }
 
     // Load the shared self-healing engine and inject the report-toolbar button through it.
-    loadEngine(`${EXT_BASE}ui/generic/js/dle-toolbar-starter.js${timestampParam}`).then(function () {
-        const generic = top.GenericDleToolbarStarter || window.GenericDleToolbarStarter;
-        if (!generic) {
-            console.error("pdf-exporter: GenericDleToolbarStarter is not available after the engine loaded — Live Report toolbar button injection skipped.");
+    loadEngine(`${APP_BASE}dle-toolbar-starter.js${timestampParam}`).then(function () {
+        const common = top.CommonDleToolbarStarter || window.CommonDleToolbarStarter;
+        if (!common) {
+            console.error("pdf-exporter: CommonDleToolbarStarter is not available after the engine loaded — Live Report toolbar button injection skipped.");
             return;
         }
         if (expandTools) {
-            generic.autoExpandRichPageTools();
+            common.autoExpandRichPageTools();
         }
-        generic.create({
+        common.create({
             markerId: 'pdf-exporter-rp-toolbar-injected',
-            alternateHtml: TOOLBAR_HTML,
+            html: TOOLBAR_HTML,
             target: 'richPagePreview',
             order: myOrder
         }).injectToolbar();

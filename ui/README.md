@@ -53,7 +53,7 @@ Vite would emit:
 | ------------------------- | ------------------------ | -------------------------------------------------------------------------------------- | --------------------------- |
 | `src/widget/main.tsx`     | `assets/bulk-widget.js`  | `BulkPdfExportWidgetRenderer`                                                          | `default(selector)`         |
 | `src/sidepanel/mount.tsx` | `assets/side-panel.js`   | `webapp/pdf-exporter/html/sidePanelContent.html`                                        | `mountSidePanel(selector)`  |
-| `src/popup/mount.tsx`     | `assets/export-popup.js` | `webapp/pdf-exporter/js/starter.js`, `js/live-reports.js`, `ExportToPdfButtonRenderer` | `openExportPopup(options)`  |
+| `src/popup/mount.tsx`     | `assets/export-popup.js` | `webapp/pdf-exporter/js/dle-toolbar.js`, `js/live-reports.js`, `ExportToPdfButtonRenderer` | `openExportPopup(options)`  |
 
 All three need `rollupOptions.preserveEntrySignatures: 'strict'` to keep that export, which a Vite app
 build otherwise drops. Nothing in the Vitest suites sees the built files, so

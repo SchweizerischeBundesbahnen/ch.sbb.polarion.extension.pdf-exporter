@@ -100,18 +100,6 @@ Alternatively you can configure PDF Exporter such a way that a button to open th
 > scriptInjection.dleEditorHead=<script src="/polarion/pdf-exporter/js/dle-toolbar.js"></script><script src="/polarion/docx-exporter/js/dle-toolbar.js"></script><script src="/polarion/strictdoc-exporter/js/dle-toolbar.js"></script>
 > ```
 
-#### Deprecated configuration
-
-The explicit `PdfExporterStarter.injectToolbar(...)` configuration still works but is **deprecated** in favor of the single-tag `dle-toolbar.js` form above (removal is planned for a future major version):
-
-```properties
-# Button in Polarion's native document toolbar — equivalent to the recommended dle-toolbar.js form above.
-scriptInjection.dleEditorHead=<script src="/polarion/pdf-exporter/js/starter.js"></script><script>PdfExporterStarter.injectToolbar({alternate: true});</script>
-```
-```properties
-# A separate toolbar with the button placed above the document editing area.
-scriptInjection.dleEditorHead=<script src="/polarion/pdf-exporter/js/starter.js"></script><script>PdfExporterStarter.injectToolbar();</script>
-```
 
 ### PDF Exporter view to open in Live Reports
 
@@ -130,12 +118,6 @@ First of all you need to inject appropriate JavaScript code into Polarion:
 
 > [!NOTE]
 > `scriptInjection.mainHead` is a single Polarion-wide property that holds exactly one value. If you also inject other scripts through it, concatenate all the `<script>` tags into that one value rather than adding separate `scriptInjection.mainHead=` lines — the last one overrides the rest.
-
-The explicit `starter.js` form still works but is **deprecated** in favor of the single-tag `live-reports.js` form above (removal is planned for a future major version):
-
-```properties
-scriptInjection.mainHead=<script src="/polarion/pdf-exporter/js/starter.js"></script>
-```
 
 With the script injected, open a project and the Live Report you wish to export, then click "Expand Tools" on top of the page. An "Export to PDF" button appears in the report's toolbar (view mode only) — click it to open the PDF Exporter view in a popup and proceed with exporting the report. Be aware that in report's context limited set of properties are available for configuration in PDF popup, the rest of them are relevant only in Live Document context.
 

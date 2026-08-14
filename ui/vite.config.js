@@ -1,6 +1,28 @@
+import react from '@vitejs/plugin-react';
+import { copyFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { defineConfig, loadEnv } from 'vite';
-import react from '@vitejs/plugin-react';
+
+// react-sbb-polarion ships classic scripts that run outside this app's bundle, in a Polarion page
+// rather than in the app's own frame, so they cannot be imported and have to be served as files. This
+// extension needs one (it renders no breadcrumb, contributing no navigation topic):
+//   dle-toolbar-starter.js  the self-healing toolbar engine, loaded by webapp/pdf-exporter/js/
+//                           dle-toolbar.js and live-reports.js (see APP_BASE there)
+// Copying them next to the built app is what replaces fetching them from generic's webapp.
+const RSP_SHELL_SCRIPTS = ['dle-toolbar-starter.js'];
+
+function copyRspShellScripts() {
+  return {
+    name: 'copy-rsp-shell-scripts',
+    writeBundle(options) {
+      const require = createRequire(import.meta.url);
+      for (const name of RSP_SHELL_SCRIPTS) {
+        copyFileSync(require.resolve(`@grigoriev/react-sbb-polarion/${name}`), `${options.dir}/${name}`);
+      }
+    },
+  };
+}
 
 export default defineConfig(({ command, mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
@@ -53,7 +75,7 @@ export default defineConfig(({ command, mode }) => {
   }
 
   return {
-    plugins: [react()],
+    plugins: [react(), copyRspShellScripts()],
     resolve,
     // Never let a developer's personal access token reach a shipped bundle. VITE_BEARER_TOKEN is a
     // `vite dev` convenience (it switches useRemote to the token-authenticated /api endpoints); Vite

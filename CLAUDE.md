@@ -24,7 +24,7 @@
     REST endpoints the export dialog uses; the Java side substitutes nothing but the bundle version.
     Its CSS is `ui/src/sidepanel/side-panel.css`.
   - **"Export to PDF" dialog** - `assets/export-popup.js` exporting `openExportPopup({documentType})`,
-    imported on click by `js/starter.js` (document editor toolbar), `js/live-reports.js` (report toolbar)
+    imported on click by `js/dle-toolbar.js` (document editor toolbar), `js/live-reports.js` (report toolbar)
     and `ExportToPdfButtonRenderer` (the report widget button). It appends its own host to the page body and
     mounts into a shadow root of it. The Bulk PDF Export widget is the fourth caller and renders
     `ExportPopupModal` directly instead, being part of the same app. Its CSS is

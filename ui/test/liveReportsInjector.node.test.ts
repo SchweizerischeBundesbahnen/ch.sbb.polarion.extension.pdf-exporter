@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { engineRecorder, flushPromises, globals, resetInjectorGlobals, setCurrentScript } from './injectorHarness';
 
 // live-reports.js is the recommended report-page injector: a single mainHead script tag that adds the
-// "Export to PDF" button to the native Live Report toolbar through generic's shared self-healing engine.
+// "Export to PDF" button to the native Live Report toolbar through the shared self-healing engine.
 //
 // The import specifier must be written out in full at every call site - see injectorHarness.ts.
 
@@ -25,7 +25,7 @@ describe('live-reports.js injector', () => {
     const engineTag = document.createElement('script');
     engineTag.id = 'generic-dle-toolbar-engine';
     document.head.appendChild(engineTag);
-    globals().GenericDleToolbarStarter = engine.stub;
+    globals().CommonDleToolbarStarter = engine.stub;
     setCurrentScript(SELF_URL, expandTools ? { expandTools: 'true' } : {});
 
     await import('../../src/main/resources/webapp/pdf-exporter/js/live-reports.js');
@@ -66,7 +66,7 @@ describe('live-reports.js injector', () => {
 
   it('builds the button from its own script URL and opens the popup in Live Report context', async () => {
     await loadInjector();
-    const html = engine.createdConfigs[0].alternateHtml;
+    const html = engine.createdConfigs[0].html;
     expect(html).toContain('/polarion/pdf-exporter-app/ui/app/assets/export-popup.js');
     expect(html).toContain('module.openExportPopup(');
     expect(html).toContain("documentType: 'LIVE_REPORT'");
@@ -87,7 +87,7 @@ describe('live-reports.js injector', () => {
 
   it('waits for an in-flight engine load instead of dropping the button (multi-extension)', async () => {
     // Another extension already added the engine <script> (same id) but it hasn't finished loading yet -
-    // GenericDleToolbarStarter is not defined. Our onload must NOT run synchronously (that dropped the
+    // CommonDleToolbarStarter is not defined. Our onload must NOT run synchronously (that dropped the
     // button before this fix); it must wait for the load event.
     const engineTag = document.createElement('script');
     engineTag.id = 'generic-dle-toolbar-engine';
@@ -100,7 +100,7 @@ describe('live-reports.js injector', () => {
     expect(engine.createdConfigs).toHaveLength(0); // engine not loaded yet -> nothing created
 
     // The engine finishes loading and defines its global, then fires load.
-    globals().GenericDleToolbarStarter = engine.stub;
+    globals().CommonDleToolbarStarter = engine.stub;
     engineTag.dispatchEvent(new window.Event('load'));
     await flushPromises(); // the engine promise resolves on load -> its .then(create) runs
 

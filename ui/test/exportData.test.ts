@@ -117,7 +117,7 @@ describe('loading the panel data', () => {
   });
 
   it('does not grant the export on a permission that could not be read', async () => {
-    // Fail closed, as generic's DLE toolbar engine does for this same endpoint. `unknown` rather than
+    // Fail closed, as the DLE toolbar engine does for this same endpoint. `unknown` rather than
     // `denied`, so the panel does not tell the user they are not allowed when it does not know that.
     installFetchMock(routesWith({ method: 'GET', match: /\/permissions\/export/, status: 503 }));
 
@@ -127,7 +127,7 @@ describe('loading the panel data', () => {
   });
 
   it('does not grant the export on a body that does not say `true`', async () => {
-    // A malformed or truthy-but-not-true answer is not a grant either; generic reads it the same way.
+    // A malformed or truthy-but-not-true answer is not a grant either; the engine reads it the same way.
     for (const body of [{}, { permitted: null }, { permitted: 'yes' }, { permitted: 1 }]) {
       installFetchMock(routesWith({ method: 'GET', match: /\/permissions\/export/, json: body }));
 
