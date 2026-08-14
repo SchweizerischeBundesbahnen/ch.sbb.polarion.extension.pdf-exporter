@@ -665,6 +665,19 @@ class HtmlProcessorTest {
         assertTrue(result.contains("color"));
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "a[href^=\"https://example.com\"] { color: red; }",          // an address in a selector fetches nothing
+            "@namespace url(http://www.w3.org/1999/xhtml); a { color: red; }", // nor one in an at-rule prelude
+            "a { content: \"https://example.com\"; color: red; }"          // nor one in a string value
+    })
+    @SneakyThrows
+    void keepAStylesheetWhoseAddressIsNotAResourceTest(String css) {
+        String html = "<style>" + css + "</style>";
+
+        assertTrue(processor.replaceResourcesAsBase64Encoded(html).contains("color"));
+    }
+
     @Test
     @SneakyThrows
     void keepTextWhichOnlyLooksLikeAStyleAttributeTest() {

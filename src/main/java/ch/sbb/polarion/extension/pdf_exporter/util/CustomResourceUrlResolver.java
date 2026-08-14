@@ -14,6 +14,7 @@ import org.apache.http.conn.DnsResolver;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.SystemDefaultDnsResolver;
+import javax.net.ssl.SSLException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.VisibleForTesting;
 
@@ -28,6 +29,7 @@ import java.net.URL;
 import java.util.stream.Stream;
 
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.net.HttpURLConnection.HTTP_MOVED_PERM;
 import static java.net.HttpURLConnection.HTTP_MOVED_TEMP;
@@ -90,21 +92,33 @@ public class CustomResourceUrlResolver implements IUrlResolver {
      */
     private InputStream resolveNetworkPathReference(@NotNull String urlStr) {
         String preferredScheme = policy.getBaseUrlScheme();
-        InputStream stream = resolveWithScheme(preferredScheme, urlStr);
-        if (stream != null) {
+        AtomicBoolean tlsFailure = new AtomicBoolean();
+        InputStream stream = resolveWithScheme(preferredScheme, urlStr, tlsFailure);
+        if (stream != null || tlsFailure.get()) {
+            // a host which speaks tls badly is not a reason to ask it for the same resource in the clear
             return stream;
         }
-        return resolveWithScheme(HTTPS_SCHEME.equals(preferredScheme) ? HTTP_SCHEME : HTTPS_SCHEME, urlStr);
+        return resolveWithScheme(HTTPS_SCHEME.equals(preferredScheme) ? HTTP_SCHEME : HTTPS_SCHEME, urlStr, new AtomicBoolean());
     }
 
-    private InputStream resolveWithScheme(@NotNull String scheme, @NotNull String urlStr) {
+    private InputStream resolveWithScheme(@NotNull String scheme, @NotNull String urlStr, @NotNull AtomicBoolean tlsFailure) {
         try {
             return resolveImpl(URI.create(normalizeUrl(scheme + ":" + urlStr)).toURL());
         } catch (Exception e) {
+            tlsFailure.set(isTlsFailure(e));
             // the other scheme is tried next, a failure here is not the end of it
             logger.debug("Failed to load resource " + scheme + ":" + urlStr + ": " + e.getMessage());
             return null;
         }
+    }
+
+    private boolean isTlsFailure(@NotNull Throwable failure) {
+        for (Throwable current = failure; current != null; current = current.getCause()) {
+            if (current instanceof SSLException) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @SneakyThrows
