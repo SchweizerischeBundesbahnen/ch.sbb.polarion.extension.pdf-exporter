@@ -30,6 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -261,6 +262,19 @@ class CustomResourceUrlResolverTest {
             assertNotNull(stream);
             assertArrayEquals(PNG_CONTENT, stream.readAllBytes());
         }
+    }
+
+    @Test
+    @SneakyThrows
+    void keepsTheAnswerOfTheFirstSchemeOfANetworkPathReference() {
+        // the host answered, and 404 is an answer: asking it again over the other scheme adds nothing
+        status("/missing.png", 404);
+        ResourceUrlPolicy policy = new ResourceUrlPolicy(Mode.ALLOW_ALL, List.of(), "http://localhost", 16);
+        CustomResourceUrlResolver resolver = spy(new CustomResourceUrlResolver(policy));
+
+        assertNull(resolver.resolve("//127.0.0.1:" + server.getAddress().getPort() + "/missing.png"));
+
+        verify(resolver, times(1)).resolveImpl(any());
     }
 
     @Test

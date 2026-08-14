@@ -14,9 +14,11 @@ import org.apache.http.conn.DnsResolver;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.SystemDefaultDnsResolver;
-import javax.net.ssl.SSLException;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
+
+import javax.net.ssl.SSLException;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -26,10 +28,8 @@ import java.net.Proxy;
 import java.net.ProxySelector;
 import java.net.URI;
 import java.net.URL;
-import java.util.stream.Stream;
-
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Stream;
 
 import static java.net.HttpURLConnection.HTTP_MOVED_PERM;
 import static java.net.HttpURLConnection.HTTP_MOVED_TEMP;
@@ -92,24 +92,36 @@ public class CustomResourceUrlResolver implements IUrlResolver {
      */
     private InputStream resolveNetworkPathReference(@NotNull String urlStr) {
         String preferredScheme = policy.getBaseUrlScheme();
-        AtomicBoolean tlsFailure = new AtomicBoolean();
-        InputStream stream = resolveWithScheme(preferredScheme, urlStr, tlsFailure);
-        if (stream != null || tlsFailure.get()) {
-            // a host which speaks tls badly is not a reason to ask it for the same resource in the clear
-            return stream;
+        String otherScheme = HTTPS_SCHEME.equals(preferredScheme) ? HTTP_SCHEME : HTTPS_SCHEME;
+        SchemeAttempt preferred = resolveWithScheme(preferredScheme, urlStr);
+        if (preferred.conclusive()) {
+            // the host answered, and what it answered was read or refused: the other scheme adds nothing,
+            // and a host which speaks tls badly is not asked for the same resource in the clear either
+            return preferred.stream();
         }
-        return resolveWithScheme(HTTPS_SCHEME.equals(preferredScheme) ? HTTP_SCHEME : HTTPS_SCHEME, urlStr, new AtomicBoolean());
+        SchemeAttempt other = resolveWithScheme(otherScheme, urlStr);
+        if (other.stream() == null) {
+            logger.warn(SKIPPED_RESOURCE + urlStr + ": neither " + preferredScheme + " nor " + otherScheme + " could read it");
+        }
+        return other.stream();
     }
 
-    private InputStream resolveWithScheme(@NotNull String scheme, @NotNull String urlStr, @NotNull AtomicBoolean tlsFailure) {
+    private SchemeAttempt resolveWithScheme(@NotNull String scheme, @NotNull String urlStr) {
         try {
-            return resolveImpl(URI.create(normalizeUrl(scheme + ":" + urlStr)).toURL());
+            // a decision was taken, whether it produced a resource or refused one
+            return new SchemeAttempt(resolveImpl(URI.create(normalizeUrl(scheme + ":" + urlStr)).toURL()), true);
         } catch (Exception e) {
-            tlsFailure.set(isTlsFailure(e));
-            // the other scheme is tried next, a failure here is not the end of it
             logger.debug("Failed to load resource " + scheme + ":" + urlStr + ": " + e.getMessage());
-            return null;
+            // nothing was decided unless tls itself failed, and then the other scheme is not an answer
+            return new SchemeAttempt(null, isTlsFailure(e));
         }
+    }
+
+    /**
+     * @param stream     what the scheme produced, null if it produced nothing
+     * @param conclusive whether trying the other scheme would still answer the question
+     */
+    private record SchemeAttempt(@Nullable InputStream stream, boolean conclusive) {
     }
 
     private boolean isTlsFailure(@NotNull Throwable failure) {

@@ -384,12 +384,7 @@ public class MediaUtils {
             // style attribute of a large document is not worth a parser run for that
             return css;
         }
-        CSSReaderSettings settings = new CSSReaderSettings()
-                // a browser keeps what it understands and skips the rest, and so does the conversion service
-                .setBrowserCompliantMode(true)
-                .setCustomErrorHandler(new DoNothingCSSParseErrorHandler())
-                .setCustomExceptionHandler(new DoNothingCSSParseExceptionCallback());
-        CascadingStyleSheet stylesheet = CSSReader.readFromStringReader(css, settings);
+        CascadingStyleSheet stylesheet = parse(css);
         if (stylesheet == null) {
             logger.warn("Dropped a stylesheet which cannot be parsed, the resources it points at cannot be checked");
             return "";
@@ -398,50 +393,97 @@ public class MediaUtils {
         // The parser tells where each url and each import stands, and only those parts are rewritten.
         // Everything else keeps the formatting the document came with.
         int[] lineStarts = lineStartsOf(css);
-        List<int[]> accounted = new ArrayList<>();
-        List<CssEdit> edits = new ArrayList<>();
+        CssRewrite rewrite = new CssRewrite();
+        readImports(css, stylesheet, lineStarts, rewrite);
+        readUrls(css, stylesheet, lineStarts, rewrite, fileResourceProvider);
+
+        if (!rewrite.complete() || namesAnAddressNothingAccountedFor(css, stylesheet, lineStarts, rewrite.accounted())) {
+            logger.warn("Dropped a stylesheet: it names an absolute address which could not be read as a resource");
+            return "";
+        }
+        return applyEdits(css, rewrite.edits());
+    }
+
+    @Nullable
+    private CascadingStyleSheet parse(@NotNull String css) {
+        CSSReaderSettings settings = new CSSReaderSettings()
+                // a browser keeps what it understands and skips the rest, and so does the conversion service
+                .setBrowserCompliantMode(true)
+                .setCustomErrorHandler(new DoNothingCSSParseErrorHandler())
+                .setCustomExceptionHandler(new DoNothingCSSParseExceptionCallback());
+        return CSSReader.readFromStringReader(css, settings);
+    }
+
+    private void readImports(@NotNull String css, @NotNull CascadingStyleSheet stylesheet, int[] lineStarts, @NotNull CssRewrite rewrite) {
         for (CSSImportRule importRule : stylesheet.getAllImportRules()) {
-            int[] range = rangeOf(lineStarts, css, importRule.getSourceLocation());
-            if (isAbsoluteHttpUrl(decodeCssEscapes(importRule.getLocationString())) && range == null) {
-                return dropped(css);
-            }
-            if (range != null) {
-                accounted.add(range);
-                if (isAbsoluteHttpUrl(decodeCssEscapes(importRule.getLocationString()))) {
-                    edits.add(new CssEdit(range, ""));
+            CssRange range = rangeOf(lineStarts, css, importRule.getSourceLocation());
+            boolean absolute = isAbsoluteHttpUrl(decodeCssEscapes(importRule.getLocationString()));
+            if (range == null) {
+                rewrite.missed(!absolute);
+            } else {
+                rewrite.accounted().add(range);
+                if (absolute) {
+                    // an at-rule is never inlined, so the target of an absolute one has to go
+                    rewrite.edits().add(new CssEdit(range, ""));
                 }
             }
         }
-        boolean[] everyUrlPlaced = {true};
+    }
+
+    private void readUrls(@NotNull String css, @NotNull CascadingStyleSheet stylesheet, int[] lineStarts,
+                          @NotNull CssRewrite rewrite, @NotNull FileResourceProvider fileResourceProvider) {
         CSSVisitor.visitCSSUrl(stylesheet, new DefaultCSSUrlVisitor() {
             @Override
             public void onUrlDeclaration(@Nullable ICSSTopLevelRule topLevelRule, @NotNull CSSDeclaration declaration, @NotNull CSSExpressionMemberTermURI uri) {
-                int[] range = rangeOf(lineStarts, css, uri.getSourceLocation());
+                CssRange range = rangeOf(lineStarts, css, uri.getSourceLocation());
                 String replacement = replacementFor(fileResourceProvider, uri.getURIString());
                 if (range == null) {
-                    everyUrlPlaced[0] = replacement == null;
+                    rewrite.missed(replacement == null);
                     return;
                 }
-                accounted.add(range);
+                rewrite.accounted().add(range);
                 if (replacement != null) {
                     // no quotes around it: the value is a data url, and a quote would end a style attribute
-                    edits.add(new CssEdit(range, "url(" + replacement + ")"));
+                    rewrite.edits().add(new CssEdit(range, "url(" + replacement + ")"));
                 }
             }
         });
+    }
 
-        if (!everyUrlPlaced[0] || namesAnAddressNothingAccountedFor(css, stylesheet, lineStarts, accounted)) {
-            return dropped(css);
+    /**
+     * What a run over a stylesheet collects: where the parser accounted for something, what has to be
+     * written back, and whether anything it had to rewrite could not be placed.
+     */
+    @VisibleForTesting
+    static final class CssRewrite {
+        private final List<CssRange> accounted = new ArrayList<>();
+        private final List<CssEdit> edits = new ArrayList<>();
+        private boolean complete = true;
+
+        List<CssRange> accounted() {
+            return accounted;
         }
-        return applyEdits(css, edits);
+
+        List<CssEdit> edits() {
+            return edits;
+        }
+
+        boolean complete() {
+            return complete;
+        }
+
+        /**
+         * @param harmless whether what could not be placed needed no rewriting in the first place
+         */
+        void missed(boolean harmless) {
+            complete &= harmless;
+        }
     }
 
-    private String dropped(@NotNull String css) {
-        logger.warn("Dropped a stylesheet: it names an absolute address which could not be read as a resource");
-        return "";
+    private record CssRange(int start, int end) {
     }
 
-    private record CssEdit(@NotNull int[] range, @NotNull String replacement) {
+    private record CssEdit(@NotNull CssRange range, @NotNull String replacement) {
     }
 
     /**
@@ -450,8 +492,8 @@ public class MediaUtils {
     private String applyEdits(@NotNull String css, @NotNull List<CssEdit> edits) {
         StringBuilder result = new StringBuilder(css);
         edits.stream()
-                .sorted((left, right) -> Integer.compare(right.range()[0], left.range()[0]))
-                .forEach(edit -> result.replace(edit.range()[0], edit.range()[1], edit.replacement()));
+                .sorted((left, right) -> Integer.compare(right.range().start(), left.range().start()))
+                .forEach(edit -> result.replace(edit.range().start(), edit.range().end(), edit.replacement()));
         return result.toString();
     }
 
@@ -476,16 +518,20 @@ public class MediaUtils {
 
     private boolean mayReferenceAResource(@NotNull String css) {
         String probe = decodeCssEscapes(css).toLowerCase(Locale.ROOT);
-        return probe.contains("url(") || probe.contains("@import") || namesAnAbsoluteAddress(probe);
+        if (probe.contains("url(") || probe.contains("@import")) {
+            return true;
+        }
+        // an address of its own still has to reach the backstop, but the payload of a data url is the
+        // resource itself and an SVG in one names the namespace of SVG: that is no address to check
+        return namesAnAbsoluteAddress(probe.replaceAll("(?is)url\\([^)]*\\)", ""));
     }
 
     /**
-     * Tells whether a stylesheet names an address at all. A data url does not count, what it carries is
-     * the resource itself, and an SVG in one names the namespace of SVG.
+     * Tells whether a text names an address at all. Nothing is taken out of it here: the caller decides
+     * what its probe holds, and inside the backstop a url the parser read is already out of the way.
      */
     private boolean namesAnAbsoluteAddress(@NotNull String css) {
-        // a data url ends at the bracket of the url() around it, its payload may carry quotes of its own
-        String probe = decodeCssEscapes(css).replaceAll("(?i)data:[^)]*", "").toLowerCase(Locale.ROOT);
+        String probe = decodeCssEscapes(css).toLowerCase(Locale.ROOT);
         return probe.contains("http:") || probe.contains("https:") || probe.contains(NETWORK_PATH_PREFIX);
     }
 
@@ -500,8 +546,8 @@ public class MediaUtils {
      * </p>
      */
     private boolean namesAnAddressNothingAccountedFor(@NotNull String css, @NotNull CascadingStyleSheet stylesheet,
-                                                      int[] lineStarts, @NotNull List<int[]> accounted) {
-        List<int[]> ranges = new ArrayList<>(accounted);
+                                                      int[] lineStarts, @NotNull List<CssRange> accounted) {
+        List<CssRange> ranges = new ArrayList<>(accounted);
         stylesheet.getAllNamespaceRules().stream()
                 .map(rule -> rangeOf(lineStarts, css, rule.getSourceLocation()))
                 .filter(Objects::nonNull)
@@ -517,8 +563,8 @@ public class MediaUtils {
 
         StringBuilder probe = new StringBuilder(css);
         ranges.stream()
-                .sorted((left, right) -> Integer.compare(right[0], left[0]))
-                .forEach(range -> probe.replace(range[0], range[1], " "));
+                .sorted((left, right) -> Integer.compare(right.start(), left.start()))
+                .forEach(range -> probe.replace(range.start(), range.end(), " "));
         String text = stripCssComments(probe.toString());
         for (String readString : readStringsOf(stylesheet)) {
             text = text.replace(readString, "");
@@ -547,19 +593,19 @@ public class MediaUtils {
     /**
      * @return the part of a rule up to its body, the selector or the prelude, which fetches nothing
      */
-    private int[] selectorOf(@NotNull String css, @NotNull int[] ruleRange) {
-        int body = css.indexOf('{', ruleRange[0]);
-        return new int[]{ruleRange[0], body < 0 || body > ruleRange[1] ? ruleRange[1] : body};
+    private CssRange selectorOf(@NotNull String css, @NotNull CssRange ruleRange) {
+        int body = css.indexOf('{', ruleRange.start());
+        return new CssRange(ruleRange.start(), body < 0 || body > ruleRange.end() ? ruleRange.end() : body);
     }
 
     @Nullable
-    private int[] rangeOf(int[] lineStarts, @NotNull String css, @Nullable CSSSourceLocation location) {
+    private CssRange rangeOf(int[] lineStarts, @NotNull String css, @Nullable CSSSourceLocation location) {
         if (location == null) {
             return null;
         }
         int start = offsetOf(lineStarts, css, location.getFirstTokenBeginLineNumber(), location.getFirstTokenBeginColumnNumber() - 1);
         int end = offsetOf(lineStarts, css, location.getLastTokenEndLineNumber(), location.getLastTokenEndColumnNumber());
-        return start < 0 || end < start || end > css.length() ? null : new int[]{start, end};
+        return start < 0 || end < start || end > css.length() ? null : new CssRange(start, end);
     }
 
     /**

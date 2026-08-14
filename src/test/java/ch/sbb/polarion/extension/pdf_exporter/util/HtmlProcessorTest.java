@@ -667,6 +667,20 @@ class HtmlProcessorTest {
 
     @ParameterizedTest
     @ValueSource(strings = {
+            // a data url token which no url() holds must not hide what stands after it
+            "a { --x: data: } @\\69mport \"http://169.254.169.254/latest/meta-data/\";",
+            // an import inside a media rule is dropped by the parser, and the renderer would read it
+            "@media print { @import url(http://169.254.169.254/latest/meta-data/); }"
+    })
+    @SneakyThrows
+    void dropAStylesheetNamingAnAddressNothingAccountedForTest(String css) {
+        String result = processor.replaceResourcesAsBase64Encoded("<style>" + css + "</style>");
+
+        assertFalse(result.contains("169.254.169.254"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
             "a[href^=\"https://example.com\"] { color: red; }",          // an address in a selector fetches nothing
             "@namespace url(http://www.w3.org/1999/xhtml); a { color: red; }", // nor one in an at-rule prelude
             "a { content: \"https://example.com\"; color: red; }"          // nor one in a string value
