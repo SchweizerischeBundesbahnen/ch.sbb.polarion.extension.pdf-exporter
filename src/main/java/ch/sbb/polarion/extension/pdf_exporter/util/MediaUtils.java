@@ -304,24 +304,33 @@ public class MediaUtils {
             if (rawUrl == null || rawUrl.isEmpty()) {
                 return null;
             }
-            String url = css ? unwrapCssUrl(rawUrl) : rawUrl;
-            if (MediaUtils.isDataUrl(url)) {
-                return null;
-            }
-            if (!fileResourceProvider.isForbidden(url)) {
-                // For renderable images (e.g. .png, .svg) strip 'thumbnail' to fetch full-size content.
-                // For everything else (spreadsheets, documents, unknown formats) keep 'thumbnail' so Polarion returns an icon preview.
-                String resourceUrl = isRenderableImageUrl(url) ? removeQueryParameter(url, THUMBNAIL_PARAMETER) : url;
-                String base64String = fileResourceProvider.getResourceAsBase64String(resourceUrl);
-                if (base64String != null) {
-                    return engine.group().replace(rawUrl, base64String);
-                }
-            }
-            // An absolute url which was not inlined, whatever the reason, must not stay in the HTML:
-            // WeasyPrint would load it from its own network position. A relative url is left untouched,
-            // WeasyPrint cannot resolve it.
-            return isAbsoluteHttpUrl(url) ? engine.group().replace(rawUrl, BLOCKED_RESOURCE_PLACEHOLDER) : null;
+            return inlineOrBlock(fileResourceProvider, engine.group(), rawUrl, css ? unwrapCssUrl(rawUrl) : rawUrl);
         };
+    }
+
+    private String inlineOrBlock(FileResourceProvider fileResourceProvider, String match, String rawUrl, String url) {
+        if (MediaUtils.isDataUrl(url)) {
+            return null;
+        }
+        String base64String = inline(fileResourceProvider, url);
+        if (base64String != null) {
+            return match.replace(rawUrl, base64String);
+        }
+        // An absolute url which was not inlined, whatever the reason, must not stay in the HTML:
+        // WeasyPrint would load it from its own network position. A relative url is left untouched,
+        // WeasyPrint cannot resolve it.
+        return isAbsoluteHttpUrl(url) ? match.replace(rawUrl, BLOCKED_RESOURCE_PLACEHOLDER) : null;
+    }
+
+    @Nullable
+    private String inline(FileResourceProvider fileResourceProvider, String url) {
+        if (fileResourceProvider.isForbidden(url)) {
+            return null;
+        }
+        // For renderable images (e.g. .png, .svg) strip 'thumbnail' to fetch full-size content.
+        // For everything else (spreadsheets, documents, unknown formats) keep 'thumbnail' so Polarion returns an icon preview.
+        String resourceUrl = isRenderableImageUrl(url) ? removeQueryParameter(url, THUMBNAIL_PARAMETER) : url;
+        return fileResourceProvider.getResourceAsBase64String(resourceUrl);
     }
 
     /**

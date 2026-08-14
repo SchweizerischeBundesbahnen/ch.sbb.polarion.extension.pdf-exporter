@@ -235,10 +235,33 @@ public class ResourceUrlPolicy {
         if (isIpv4Embedded(bytes)) { // ::ffff:0:0/96 and ::/96, an IPv4 address in IPv6 form
             return isPublicIpv4(Arrays.copyOfRange(bytes, 12, 16));
         }
+        if (isNat64WellKnown(bytes)) { // 64:ff9b::/96, DNS64 answers with it and NAT64 forwards to the IPv4 address
+            return isPublicIpv4(Arrays.copyOfRange(bytes, 12, 16));
+        }
+        if (isNat64LocalUse(bytes)) { // 64:ff9b:1::/48, the IPv4 address can sit at several offsets in there
+            return false;
+        }
         if (first == 0x20 && second == 0x02) { // 2002::/16, 6to4 carries the IPv4 address in the prefix
             return isPublicIpv4(Arrays.copyOfRange(bytes, 2, 6));
         }
         return first != 0x20 || second != 0x01 || bytes[2] != 0 || bytes[3] != 0; // 2001:0::/32, Teredo
+    }
+
+    private static boolean isNat64WellKnown(byte[] bytes) {
+        if (bytes[0] != 0 || (bytes[1] & 0xFF) != 0x64 || (bytes[2] & 0xFF) != 0xFF || (bytes[3] & 0xFF) != 0x9B) {
+            return false;
+        }
+        for (int i = 4; i < 12; i++) {
+            if (bytes[i] != 0) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static boolean isNat64LocalUse(byte[] bytes) {
+        return bytes[0] == 0 && (bytes[1] & 0xFF) == 0x64 && (bytes[2] & 0xFF) == 0xFF && (bytes[3] & 0xFF) == 0x9B
+                && bytes[4] == 0 && (bytes[5] & 0xFF) == 0x01;
     }
 
     private static boolean isIpv4Embedded(byte[] bytes) {

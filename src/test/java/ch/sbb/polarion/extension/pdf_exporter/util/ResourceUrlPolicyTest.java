@@ -95,7 +95,9 @@ class ResourceUrlPolicyTest {
             "http://[2002:c612:0001::]/secret",  // 6to4 of 198.18.0.1
             "http://[2002:c613:0001::]/secret",  // 6to4 of 198.19.0.1
             "http://[2002:0000:0001::]/secret",  // 6to4 of 0.0.0.1
-            "http://[2002:f000:0001::]/secret"   // 6to4 of 240.0.0.1
+            "http://[2002:f000:0001::]/secret",  // 6to4 of 240.0.0.1
+            "http://[64:ff9b::a9fe:a9fe]/secret", // NAT64 well known prefix carrying 169.254.169.254
+            "http://[64:ff9b:1::1]/secret"       // NAT64 local use prefix, the address can sit anywhere in it
     })
     void blocksNonPublicAddressesEmbeddedInIpv6(String value) {
         assertFalse(policy(Mode.BLOCK_INTERNAL, List.of()).isAllowed(url(value)));
@@ -114,7 +116,9 @@ class ResourceUrlPolicyTest {
             "http://[2002:c614:0001::]/img.png",  // 6to4 of 198.20.0.1, above it
             "http://[2001:0100::1]/img.png",      // not Teredo, the third byte is set
             "http://[2001:0001::1]/img.png",      // not Teredo, the fourth byte is set
-            "http://[2003::1]/img.png"            // not Teredo, the second byte differs
+            "http://[2003::1]/img.png",           // not Teredo, the second byte differs
+            "http://[64:ff9b::808:808]/img.png",  // NAT64 well known prefix carrying 8.8.8.8
+            "http://[64:ff9c::1]/img.png"         // next to the NAT64 prefix, not in it
     })
     void allowsPublicAddressesNextToTheBlockedRanges(String value) {
         assertTrue(policy(Mode.BLOCK_INTERNAL, List.of()).isAllowed(url(value)));

@@ -228,4 +228,16 @@ class MediaUtilsTest {
         assertEquals("http://example.com/some%20path/img_name.png",
                 MediaUtils.normalizeUrl("http://example.com/some path/img%5Fname.png"));
     }
+
+    @Test
+    void unwrapsCssUrlValues() {
+        assertEquals("http://example.com/a.png", MediaUtils.unwrapCssUrl("/*c*/\"http://example.com/a.png\""));
+        assertEquals("http://example.com/a.png", MediaUtils.unwrapCssUrl(" \"http://example.com/a.png\" /*c*/ "));
+        assertEquals("http://example.com/a.png", MediaUtils.unwrapCssUrl("'http://example.com/a.png'"));
+        assertEquals("http://example.com/a.png", MediaUtils.unwrapCssUrl("http://example.com/a.png"));
+        // '/*' and '*/' inside a path are part of the url, only a leading or a trailing comment goes
+        assertEquals("http://example.com/a/*b*/c.png", MediaUtils.unwrapCssUrl("http://example.com/a/*b*/c.png"));
+        assertEquals("", MediaUtils.unwrapCssUrl("/*just a comment*/"));
+        assertNull(MediaUtils.unwrapCssUrl(null));
+    }
 }
