@@ -231,16 +231,6 @@ class MediaUtilsTest {
                 MediaUtils.normalizeUrl("http://example.com/some path/img%5Fname.png"));
     }
 
-    @Test
-    void unwrapsCssUrlValues() {
-        assertEquals("http://example.com/a.png", MediaUtils.unwrapCssUrl("/*c*/\"http://example.com/a.png\""));
-        assertEquals("http://example.com/a.png", MediaUtils.unwrapCssUrl(" \"http://example.com/a.png\" /*c*/ "));
-        assertEquals("http://example.com/a.png", MediaUtils.unwrapCssUrl("'http://example.com/a.png'"));
-        assertEquals("http://example.com/a.png", MediaUtils.unwrapCssUrl("http://example.com/a.png"));
-        // '/*' and '*/' inside a path are part of the url, only a leading or a trailing comment goes
-        assertEquals("http://example.com/a/*b*/c.png", MediaUtils.unwrapCssUrl("http://example.com/a/*b*/c.png"));
-        assertEquals("", MediaUtils.unwrapCssUrl("/*just a comment*/"));
-    }
 
     @Test
     void decodesCssEscapes() {
@@ -257,18 +247,5 @@ class MediaUtilsTest {
         assertEquals("\uFFFD", MediaUtils.decodeCssEscapes("\\D800"));
     }
 
-    @Test
-    void unwrapsAnEscapedCssUrl() {
-        assertTrue(MediaUtils.isAbsoluteHttpUrl(MediaUtils.unwrapCssUrl("\"http\\3a //169.254.169.254/x\"")));
-    }
 
-    @Test
-    void stripsCssComments() {
-        assertEquals("a{}", MediaUtils.stripCssComments("a{/* x */}"));
-        assertEquals("a{content:\"/* kept */\"}", MediaUtils.stripCssComments("a{content:\"/* kept */\"}"));
-        assertEquals("a{content:'/* kept */'}", MediaUtils.stripCssComments("a{content:'/* kept */'}"));
-        assertEquals("url(\"x\")", MediaUtils.stripCssComments("url(/* ) */\"x\")"));
-        assertEquals("a{", MediaUtils.stripCssComments("a{/* unterminated"));
-        assertEquals("plain", MediaUtils.stripCssComments("plain"));
-    }
 }

@@ -3,6 +3,18 @@ package ch.sbb.polarion.extension.pdf_exporter.util;
 import ch.sbb.polarion.extension.generic.regex.RegexMatcher;
 import ch.sbb.polarion.extension.generic.util.BundleJarsPrioritizingRunnable;
 import ch.sbb.polarion.extension.generic.util.ScopeUtils;
+import com.helger.css.decl.CSSDeclaration;
+import com.helger.css.decl.CSSExpressionMemberTermURI;
+import com.helger.css.decl.CascadingStyleSheet;
+import com.helger.css.decl.ICSSTopLevelRule;
+import com.helger.css.decl.visit.CSSVisitor;
+import com.helger.css.decl.visit.DefaultCSSUrlVisitor;
+import com.helger.css.handler.DoNothingCSSParseExceptionCallback;
+import com.helger.css.reader.CSSReader;
+import com.helger.css.reader.CSSReaderSettings;
+import com.helger.css.reader.errorhandler.DoNothingCSSParseErrorHandler;
+import com.helger.css.writer.CSSWriter;
+import com.helger.css.writer.CSSWriterSettings;
 import ch.sbb.polarion.extension.pdf_exporter.properties.PdfExporterExtensionConfiguration;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PdfVariant;
 import ch.sbb.polarion.extension.pdf_exporter.service.PdfExporterPolarionService;
@@ -44,7 +56,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiFunction;
+import java.util.function.UnaryOperator;
 
 import static ch.sbb.polarion.extension.pdf_exporter.util.TikaMimeTypeResolver.PARAM_RESULT;
 import static ch.sbb.polarion.extension.pdf_exporter.util.TikaMimeTypeResolver.PARAM_VALUE;
@@ -53,27 +67,10 @@ import static ch.sbb.polarion.extension.pdf_exporter.util.TikaMimeTypeResolver.P
 public class MediaUtils {
     public static final String IMG_SRC_REGEX = "<img[^<>]*src=(\"|')(?<url>[^(\"|')]*)(\"|')";
     public static final String URL_REGEX = "(?i)url\\(\\s*([\"'])?(?<url>.*?)\\1?\\s*\\)";
-    /**
-     * What CSS allows between {@code @import} and its target: nothing, whitespace or a comment.
-     */
-    private static final String CSS_AT_RULE_SEPARATOR = "(?:\\s|/\\*[\\s\\S]*?\\*/)*";
-    /**
-     * {@code @import "..."} without the {@code url(...)} wrapper, which {@link #URL_REGEX} does not match.
-     * The trailing {@code [^;]*} swallows a media condition, so the whole at-rule goes when it is dropped.
-     */
-    public static final String CSS_IMPORT_REGEX = "(?i)@import" + CSS_AT_RULE_SEPARATOR + "([\"'])(?<url>[^\"']+)\\1[^;]*;?";
-    /**
-     * {@code @import url(...)}. {@link #URL_REGEX} matches its url as well, but only this one can drop
-     * the whole at-rule, media condition included.
-     */
-    public static final String CSS_IMPORT_URL_REGEX = "(?i)@import" + CSS_AT_RULE_SEPARATOR + "url\\((?<url>[^)]*)\\)[^;]*;?";
     public static final String DATA_URL_PREFIX = "data:";
     private static final String NETWORK_PATH_PREFIX = "//";
-    private static final Pattern STYLE_ELEMENT_PATTERN = Pattern.compile("(?is)(<style[^>]*>)(.*?)(</style>)");
-    private static final Pattern STYLE_ATTRIBUTE_PATTERN = Pattern.compile("(?i)style=([\"'])([^\"']*)\\1");
+    private static final String STYLE_ATTRIBUTE = "style=";
     private static final Pattern CSS_ESCAPE_PATTERN = Pattern.compile("\\\\(?:([0-9a-fA-F]{1,6})[ \\t\\r\\n\\f]?|(.))", Pattern.DOTALL);
-    private static final String COMMENT_START = "/*";
-    private static final String COMMENT_END = "*/";
     public static final String THUMBNAIL_PARAMETER = "thumbnail";
     /**
      * A 1x1 transparent PNG which replaces a resource the {@link ResourceUrlPolicy} rejected.
@@ -286,9 +283,6 @@ public class MediaUtils {
     }
 
     /**
-     * Check whether particular string is a <a href="https://www.rfc-editor.org/rfc/rfc2397">'data' URL</a>-encoded entry.
-     */
-    /**
      * Resolves the CSS escapes of a value, {@code http\\3a //host} and the like. A stylesheet reaches
      * WeasyPrint as text, and WeasyPrint resolves them, so the check has to see the same value.
      */
@@ -328,134 +322,167 @@ public class MediaUtils {
         return valid ? Character.toString(value) : "\uFFFD";
     }
 
+    /**
+     * Check whether particular string is a <a href="https://www.rfc-editor.org/rfc/rfc2397">'data' URL</a>-encoded entry.
+     */
     public boolean isDataUrl(@Nullable String resourceUrl) {
         return resourceUrl != null && resourceUrl.startsWith(DATA_URL_PREFIX);
     }
 
     public String inlineBase64Resources(String content, FileResourceProvider fileResourceProvider) {
-        // A comment may sit anywhere in CSS, a ')' or a quote inside one would derail every pattern
-        // below. They carry no meaning for the conversion, so they go first.
-        content = stripCommentsInCssRegions(content);
         // replace tags like <img src="...
-        String result = RegexMatcher.get(IMG_SRC_REGEX).replace(content, replacement(fileResourceProvider, false));
-        // An at-rule is never inlined, so any absolute target has to go: a forbidden one because the
-        // policy rejected it, an allowed one because WeasyPrint would then load it from its own network
-        // position, with none of the checks this class applies. A relative target stays.
-        RegexMatcher.IReplacementCalculator importReplacement = engine ->
-                isAbsoluteHttpUrl(unwrapCssUrl(engine.group("url"))) ? "" : null;
-        result = RegexMatcher.get(CSS_IMPORT_URL_REGEX).useJavaUtil().replace(result, importReplacement);
-        result = RegexMatcher.get(CSS_IMPORT_REGEX).useJavaUtil().replace(result, importReplacement);
-        // replace CSS parameters like background: src('/polarion/...
-        return RegexMatcher.get(URL_REGEX).useJavaUtil().replace(result, replacement(fileResourceProvider, true));
+        String result = RegexMatcher.get(IMG_SRC_REGEX).replace(content, imageReplacement(fileResourceProvider));
+        // the css of the document is read by a parser, see inlineCssResources
+        return processCssRegions(result, css -> inlineCssResources(css, fileResourceProvider));
     }
 
-    private RegexMatcher.IReplacementCalculator replacement(FileResourceProvider fileResourceProvider, boolean css) {
+    private RegexMatcher.IReplacementCalculator imageReplacement(FileResourceProvider fileResourceProvider) {
         return engine -> {
-            String rawUrl = engine.group("url");
-            if (rawUrl == null || rawUrl.isEmpty()) {
+            String url = engine.group("url");
+            if (url == null || url.isEmpty() || MediaUtils.isDataUrl(url)) {
                 return null;
             }
-            return inlineOrBlock(fileResourceProvider, engine.group(), rawUrl, css ? unwrapCssUrl(rawUrl) : rawUrl);
+            String replacement = replacementFor(fileResourceProvider, url);
+            return replacement == null ? null : engine.group().replace(url, replacement);
         };
     }
 
-    private String inlineOrBlock(@NotNull FileResourceProvider fileResourceProvider, @NotNull String match, @NotNull String rawUrl, @NotNull String url) {
-        if (MediaUtils.isDataUrl(url)) {
-            return null;
-        }
-        String base64String = inline(fileResourceProvider, url);
-        if (base64String != null) {
-            return match.replace(rawUrl, base64String);
-        }
-        // An absolute url which was not inlined, whatever the reason, must not stay in the HTML:
-        // WeasyPrint would load it from its own network position. A relative url is left untouched,
-        // WeasyPrint cannot resolve it.
-        return isAbsoluteHttpUrl(url) ? match.replace(rawUrl, BLOCKED_RESOURCE_PLACEHOLDER) : null;
-    }
-
+    /**
+     * @return what the url of a resource has to be replaced with, null when it may stay as it is
+     */
     @Nullable
-    private String inline(@NotNull FileResourceProvider fileResourceProvider, @NotNull String url) {
-        if (fileResourceProvider.isForbidden(url)) {
+    private String replacementFor(@NotNull FileResourceProvider fileResourceProvider, @NotNull String url) {
+        if (isDataUrl(url)) {
             return null;
         }
-        // For renderable images (e.g. .png, .svg) strip 'thumbnail' to fetch full-size content.
-        // For everything else (spreadsheets, documents, unknown formats) keep 'thumbnail' so Polarion returns an icon preview.
-        String resourceUrl = isRenderableImageUrl(url) ? removeQueryParameter(url, THUMBNAIL_PARAMETER) : url;
-        return fileResourceProvider.getResourceAsBase64String(resourceUrl);
-    }
-
-    /**
-     * Takes the target out of a CSS url value. A comment is allowed on either side of it, and a quote
-     * stays in the value whenever a comment kept the pattern from capturing it separately. Only the
-     * leading and the trailing comment go, a url may well carry the very same characters in its path.
-     */
-    @NotNull
-    public String unwrapCssUrl(@NotNull String url) {
-        String unwrapped = decodeCssEscapes(url).trim();
-        while (unwrapped.startsWith(COMMENT_START) && unwrapped.contains(COMMENT_END)) {
-            unwrapped = unwrapped.substring(unwrapped.indexOf(COMMENT_END) + COMMENT_END.length()).trim();
-        }
-        while (unwrapped.endsWith(COMMENT_END) && unwrapped.lastIndexOf(COMMENT_START) > 0) {
-            unwrapped = unwrapped.substring(0, unwrapped.lastIndexOf(COMMENT_START)).trim();
-        }
-        if (unwrapped.length() > 1 && (unwrapped.startsWith("\"") && unwrapped.endsWith("\"")
-                || unwrapped.startsWith("'") && unwrapped.endsWith("'"))) {
-            unwrapped = unwrapped.substring(1, unwrapped.length() - 1).trim();
-        }
-        return unwrapped;
-    }
-
-    /**
-     * Removes CSS comments from a stylesheet. A quoted string keeps what it holds, CSS starts no comment
-     * in there, and an unterminated comment runs to the end, as CSS says it does.
-     */
-    public String stripCssComments(@NotNull String css) {
-        if (!css.contains(COMMENT_START)) {
-            return css;
-        }
-        StringBuilder result = new StringBuilder(css.length());
-        char quote = 0;
-        for (int i = 0; i < css.length(); i++) {
-            char current = css.charAt(i);
-            if (quote != 0) {
-                result.append(current);
-                if (current == '\\' && i + 1 < css.length()) {
-                    result.append(css.charAt(++i));
-                } else if (current == quote) {
-                    quote = 0;
-                }
-            } else if (current == '"' || current == '\'') {
-                quote = current;
-                result.append(current);
-            } else if (current == '/' && i + 1 < css.length() && css.charAt(i + 1) == '*') {
-                int end = css.indexOf(COMMENT_END, i + 2);
-                i = end < 0 ? css.length() : end + 1;
-            } else {
-                result.append(current);
+        if (!fileResourceProvider.isForbidden(url)) {
+            // For renderable images (e.g. .png, .svg) strip 'thumbnail' to fetch full-size content.
+            // For everything else (spreadsheets, documents, unknown formats) keep 'thumbnail' so Polarion returns an icon preview.
+            String resourceUrl = isRenderableImageUrl(url) ? removeQueryParameter(url, THUMBNAIL_PARAMETER) : url;
+            String base64String = fileResourceProvider.getResourceAsBase64String(resourceUrl);
+            if (base64String != null) {
+                return base64String;
             }
         }
-        return result.toString();
+        // An absolute url which was not inlined, whatever the reason, must not stay in the document:
+        // WeasyPrint would load it from its own network position. A relative url is left
+        // untouched, the service cannot resolve it.
+        return isAbsoluteHttpUrl(url) ? BLOCKED_RESOURCE_PLACEHOLDER : null;
     }
 
     /**
-     * Removes CSS comments from the parts of an HTML document which are CSS, a style element and a style
-     * attribute. Everything else, a script or the text of the document, keeps what it has.
+     * Rewrites the resources a stylesheet points at: every url is inlined, replaced by the placeholder or
+     * left alone, and an {@code @import} of an absolute address is removed, since an at-rule is never
+     * inlined and WeasyPrint would load it itself.
+     * <p>
+     * The stylesheet is parsed rather than matched. A comment, an escape or a media condition may sit
+     * almost anywhere in CSS, and a pattern that survives all of them does not exist.
+     * </p>
      */
-    private String stripCommentsInCssRegions(@NotNull String html) {
-        String result = replaceGroup(STYLE_ELEMENT_PATTERN, html, 2);
-        return replaceGroup(STYLE_ATTRIBUTE_PATTERN, result, 2);
+    public String inlineCssResources(@NotNull String css, @NotNull FileResourceProvider fileResourceProvider) {
+        CSSReaderSettings settings = new CSSReaderSettings()
+                // a browser keeps what it understands and skips the rest, and so does the conversion service
+                .setBrowserCompliantMode(true)
+                .setCustomErrorHandler(new DoNothingCSSParseErrorHandler())
+                .setCustomExceptionHandler(new DoNothingCSSParseExceptionCallback());
+        CascadingStyleSheet stylesheet = CSSReader.readFromStringReader(css, settings);
+        if (stylesheet == null) {
+            logger.warn("Dropped a stylesheet which cannot be parsed, the resources it points at cannot be checked");
+            return "";
+        }
+        AtomicBoolean changed = new AtomicBoolean(false);
+        for (int i = stylesheet.getImportRuleCount() - 1; i >= 0; i--) {
+            if (isAbsoluteHttpUrl(stylesheet.getImportRuleAtIndex(i).getLocationString())) {
+                stylesheet.removeImportRule(i);
+                changed.set(true);
+            }
+        }
+        CSSVisitor.visitCSSUrl(stylesheet, new DefaultCSSUrlVisitor() {
+            @Override
+            public void onUrlDeclaration(@Nullable ICSSTopLevelRule topLevelRule, @NotNull CSSDeclaration declaration, @NotNull CSSExpressionMemberTermURI uri) {
+                String replacement = replacementFor(fileResourceProvider, uri.getURIString());
+                if (replacement != null && !replacement.equals(uri.getURIString())) {
+                    uri.setURIString(replacement);
+                    changed.set(true);
+                }
+            }
+        });
+        String result = changed.get() ? new CSSWriter(new CSSWriterSettings()).setWriteHeaderText(false).getCSSAsString(stylesheet) : css;
+        if (pointsAtAnAbsoluteAddress(result)) {
+            // The parser did not surface this address, so nothing checked it. Whatever syntax hid it from
+            // the parser, WeasyPrint may well understand, so the stylesheet does not go on.
+            logger.warn("Dropped a stylesheet: it points at an absolute address which could not be read as a resource");
+            return "";
+        }
+        return result;
     }
 
-    private String replaceGroup(@NotNull Pattern pattern, @NotNull String content, int group) {
-        Matcher matcher = pattern.matcher(content);
-        StringBuilder result = new StringBuilder();
-        while (matcher.find()) {
-            String css = matcher.group(group);
-            String replacement = matcher.group().replace(css, stripCssComments(css));
-            matcher.appendReplacement(result, Matcher.quoteReplacement(replacement));
+    /**
+     * Tells whether a stylesheet still names an absolute address after every url of it was rewritten.
+     * Nothing may: an allowed one is embedded as a data url by then, a rejected one is the placeholder,
+     * and an import of one is removed. So one that is left is one nothing understood.
+     */
+    private boolean pointsAtAnAbsoluteAddress(@NotNull String css) {
+        String probe = decodeCssEscapes(css).toLowerCase(Locale.ROOT).replaceAll("data:[^)\"';\\s]*", "");
+        return probe.contains("http:") || probe.contains("https:") || probe.contains(NETWORK_PATH_PREFIX);
+    }
+
+    /**
+     * Hands the parts of an HTML document which are CSS, a style element and a style attribute, to the
+     * given rewriting. Everything else, a script or the text of the document, stays as it is. The regions
+     * are found by scanning: a pattern over a whole document is one more thing an editor could make slow.
+     */
+    private String processCssRegions(@NotNull String html, @NotNull UnaryOperator<String> rewrite) {
+        return processStyleAttributes(processStyleElements(html, rewrite), rewrite);
+    }
+
+    private String processStyleElements(@NotNull String html, @NotNull UnaryOperator<String> rewrite) {
+        String lowerCased = html.toLowerCase(Locale.ROOT);
+        StringBuilder result = new StringBuilder(html.length());
+        int index = 0;
+        int start;
+        while ((start = lowerCased.indexOf("<style", index)) >= 0) {
+            int contentStart = html.indexOf('>', start);
+            int contentEnd = contentStart < 0 ? -1 : lowerCased.indexOf("</style", contentStart);
+            if (contentEnd < 0) {
+                break;
+            }
+            result.append(html, index, contentStart + 1).append(rewrite.apply(html.substring(contentStart + 1, contentEnd)));
+            index = contentEnd;
         }
-        matcher.appendTail(result);
-        return result.toString();
+        return result.append(html, index, html.length()).toString();
+    }
+
+    private String processStyleAttributes(@NotNull String html, @NotNull UnaryOperator<String> rewrite) {
+        String lowerCased = html.toLowerCase(Locale.ROOT);
+        StringBuilder result = new StringBuilder(html.length());
+        int index = 0;
+        int start;
+        while ((start = lowerCased.indexOf(STYLE_ATTRIBUTE, index)) >= 0) {
+            int quoteAt = start + STYLE_ATTRIBUTE.length();
+            char quote = quoteAt < html.length() ? html.charAt(quoteAt) : 0;
+            int valueEnd = quote == '"' || quote == '\'' ? html.indexOf(quote, quoteAt + 1) : -1;
+            if (valueEnd < 0) {
+                result.append(html, index, quoteAt);
+                index = quoteAt;
+                continue;
+            }
+            result.append(html, index, quoteAt + 1).append(rewriteDeclarations(html.substring(quoteAt + 1, valueEnd), rewrite));
+            index = valueEnd;
+        }
+        return result.append(html, index, html.length()).toString();
+    }
+
+    /**
+     * The value of a style attribute is a declaration list, not a stylesheet, so it is wrapped into a rule
+     * for the parser and unwrapped afterwards.
+     */
+    private String rewriteDeclarations(@NotNull String declarations, @NotNull UnaryOperator<String> rewrite) {
+        String rewritten = rewrite.apply("a{" + declarations + "}").trim();
+        int open = rewritten.indexOf('{');
+        int close = rewritten.lastIndexOf('}');
+        // an empty or unexpected result means the declarations were dropped, they do not come back
+        return open < 0 || close < open ? "" : rewritten.substring(open + 1, close).trim();
     }
 
     /**
