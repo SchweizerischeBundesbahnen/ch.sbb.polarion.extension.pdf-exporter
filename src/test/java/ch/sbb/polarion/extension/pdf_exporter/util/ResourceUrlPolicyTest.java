@@ -93,17 +93,18 @@ class ResourceUrlPolicyTest {
 
     @Test
     void allowsExplicitlyListedHosts() {
-        ResourceUrlPolicy policy = policy(Mode.BLOCK_INTERNAL, List.of(" 10.0.0.5 ", "cdn.intranet:8443", ""));
+        // an allowed host still has to resolve, so the test uses addresses instead of invented names
+        ResourceUrlPolicy policy = policy(Mode.BLOCK_INTERNAL, List.of(" 10.0.0.5 ", "127.0.0.1:8443", ""));
         assertTrue(policy.isAllowed(url("http://10.0.0.5/img.png")));
-        assertTrue(policy.isAllowed(url("https://cdn.intranet:8443/img.png")));
-        assertFalse(policy.isAllowed(url("https://cdn.intranet/img.png")));
+        assertTrue(policy.isAllowed(url("https://127.0.0.1:8443/img.png")));
+        assertFalse(policy.isAllowed(url("https://127.0.0.1/img.png")));
         assertFalse(policy.isAllowed(url("http://10.0.0.6/img.png")));
     }
 
     @Test
     void allowlistOnlyRejectsEverythingElse() {
-        ResourceUrlPolicy policy = policy(Mode.ALLOWLIST_ONLY, List.of("cdn.example.com"));
-        assertTrue(policy.isAllowed(url("https://cdn.example.com/img.png")));
+        ResourceUrlPolicy policy = policy(Mode.ALLOWLIST_ONLY, List.of("8.8.4.4"));
+        assertTrue(policy.isAllowed(url("https://8.8.4.4/img.png")));
         assertFalse(policy.isAllowed(url("https://8.8.8.8/img.png")));
     }
 
@@ -183,7 +184,7 @@ class ResourceUrlPolicyTest {
     void readsItsConfiguration() {
         PdfExporterExtensionConfiguration configuration = mock(PdfExporterExtensionConfiguration.class);
         when(configuration.getExternalResourcesPolicy()).thenReturn("allowlistOnly");
-        when(configuration.getExternalResourcesAllowedHosts()).thenReturn("cdn.example.com, 10.0.0.5");
+        when(configuration.getExternalResourcesAllowedHosts()).thenReturn("8.8.4.4, 10.0.0.5");
         when(configuration.getExternalResourcesMaxSizeMB()).thenReturn(4);
 
         try (MockedStatic<PdfExporterExtensionConfiguration> mocked = mockStatic(PdfExporterExtensionConfiguration.class)) {
@@ -191,9 +192,9 @@ class ResourceUrlPolicyTest {
 
             ResourceUrlPolicy policy = ResourceUrlPolicy.getInstance();
             assertEquals(4L * 1024 * 1024, policy.getMaxResourceBytes());
-            assertTrue(policy.isAllowed(url("https://cdn.example.com/img.png")));
+            assertTrue(policy.isAllowed(url("https://8.8.4.4/img.png")));
             assertTrue(policy.isAllowed(url("http://10.0.0.5/img.png")));
-            assertFalse(policy.isAllowed(url("https://other.example.com/img.png")));
+            assertFalse(policy.isAllowed(url("https://8.8.8.8/img.png")));
         }
     }
 

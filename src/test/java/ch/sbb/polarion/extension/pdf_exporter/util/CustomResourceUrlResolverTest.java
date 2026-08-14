@@ -11,7 +11,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.net.URI;
@@ -120,7 +119,7 @@ class CustomResourceUrlResolverTest {
     }
 
     @Test
-    void skipsResourceRejectedByPolicy() throws IOException {
+    void skipsResourceRejectedByPolicy() {
         respond("/img.png", "image/png", PNG_CONTENT, false);
         ResourceUrlPolicy policy = new ResourceUrlPolicy(Mode.BLOCK_INTERNAL, List.of(), null, 16);
         assertNull(new CustomResourceUrlResolver(policy).resolveImpl(toUrl(url("/img.png"))));
@@ -128,13 +127,13 @@ class CustomResourceUrlResolverTest {
     }
 
     @Test
-    void skipsForeignContentType() throws IOException {
+    void skipsForeignContentType() {
         respond("/secret", "application/json", "{\"internal\":\"api response\"}".getBytes(StandardCharsets.UTF_8), false);
         assertNull(resolver(16).resolveImpl(toUrl(url("/secret"))));
     }
 
     @Test
-    void skipsDocumentDisguisedAsOctetStream() throws IOException {
+    void skipsDocumentDisguisedAsOctetStream() {
         respond("/secret", "application/octet-stream", "<html><body>internal page</body></html>".getBytes(StandardCharsets.UTF_8), false);
         assertNull(resolver(16).resolveImpl(toUrl(url("/secret"))));
     }
@@ -150,13 +149,13 @@ class CustomResourceUrlResolverTest {
     }
 
     @Test
-    void skipsResourceExceedingDeclaredSize() throws IOException {
+    void skipsResourceExceedingDeclaredSize() {
         respond("/img.png", "image/png", PNG_CONTENT, false);
         assertNull(resolver(0).resolveImpl(toUrl(url("/img.png"))));
     }
 
     @Test
-    void skipsResourceExceedingStreamedSize() throws IOException {
+    void skipsResourceExceedingStreamedSize() {
         respond("/img.png", "image/png", PNG_CONTENT, true);
         assertNull(resolver(0).resolveImpl(toUrl(url("/img.png"))));
     }
@@ -174,14 +173,14 @@ class CustomResourceUrlResolverTest {
     }
 
     @Test
-    void stopsOnRedirectLoop() throws IOException {
+    void stopsOnRedirectLoop() {
         redirect("/loop.png", url("/loop.png"));
         assertNull(resolver(16).resolveImpl(toUrl(url("/loop.png"))));
         assertEquals(6, requestCount.get());
     }
 
     @Test
-    void skipsRedirectWithoutLocation() throws IOException {
+    void skipsRedirectWithoutLocation() {
         server.createContext("/no-location.png", exchange -> {
             requestCount.incrementAndGet();
             exchange.sendResponseHeaders(302, -1);
@@ -191,7 +190,7 @@ class CustomResourceUrlResolverTest {
     }
 
     @Test
-    void skipsRedirectToBlockedTarget() throws IOException {
+    void skipsRedirectToBlockedTarget() {
         redirect("/old.png", "http://169.254.169.254/latest/meta-data/");
         ResourceUrlPolicy policy = new ResourceUrlPolicy(Mode.BLOCK_INTERNAL, List.of("127.0.0.1:" + server.getAddress().getPort()), null, 16);
         assertNull(new CustomResourceUrlResolver(policy).resolveImpl(toUrl(url("/old.png"))));
@@ -199,7 +198,7 @@ class CustomResourceUrlResolverTest {
     }
 
     @Test
-    void skipsErrorResponse() throws IOException {
+    void skipsErrorResponse() {
         status("/missing.png", 404);
         assertNull(resolver(16).resolveImpl(toUrl(url("/missing.png"))));
     }

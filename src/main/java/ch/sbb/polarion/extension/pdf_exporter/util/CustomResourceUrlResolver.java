@@ -4,24 +4,37 @@ import com.polarion.alm.tracker.internal.url.IUrlResolver;
 import com.polarion.core.util.StringUtils;
 import com.polarion.core.util.logging.Logger;
 import lombok.SneakyThrows;
+import org.apache.http.Header;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpHeaders;
+import org.apache.http.client.config.RequestConfig;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.conn.DnsResolver;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.VisibleForTesting;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
-import java.net.HttpURLConnection;
+import java.net.InetAddress;
 import java.net.URI;
 import java.net.URL;
 import java.util.stream.Stream;
 
-import static java.net.HttpURLConnection.*;
+import static java.net.HttpURLConnection.HTTP_MOVED_PERM;
+import static java.net.HttpURLConnection.HTTP_MOVED_TEMP;
+import static java.net.HttpURLConnection.HTTP_OK;
 
 /**
  * Custom version of {@link com.polarion.alm.tracker.internal.url.GenericUrlResolver} with the redirect support.
  * <p>
  * Every request passes {@link ResourceUrlPolicy}, which keeps a document editor from making the server
- * fetch an arbitrary address and from getting the response body back in the exported document.
+ * fetch an arbitrary address and from getting the response body back in the exported document. The
+ * connection is pinned to the addresses the policy vetted, so a second name resolution cannot reach an
+ * address the policy never saw.
  * </p>
  */
 public class CustomResourceUrlResolver implements IUrlResolver {
@@ -32,6 +45,7 @@ public class CustomResourceUrlResolver implements IUrlResolver {
     private static final int READ_TIMEOUT_MS = 3_000;
     private static final int MAX_REDIRECTS = 5;
     private static final int BUFFER_SIZE = 8192;
+    private static final String SKIPPED_RESOURCE = "Skipped resource ";
 
     private final ResourceUrlPolicy policy;
 
@@ -39,7 +53,6 @@ public class CustomResourceUrlResolver implements IUrlResolver {
         this(ResourceUrlPolicy.getInstance());
     }
 
-    @VisibleForTesting
     public CustomResourceUrlResolver(@NotNull ResourceUrlPolicy policy) {
         this.policy = policy;
     }
@@ -63,67 +76,84 @@ public class CustomResourceUrlResolver implements IUrlResolver {
     public InputStream resolveImpl(@NotNull URL url) {
         URL currentUrl = url;
         for (int redirect = 0; redirect <= MAX_REDIRECTS; redirect++) {
-            if (!policy.isAllowed(currentUrl)) {
+            InetAddress[] addresses = policy.vetAddresses(currentUrl);
+            if (addresses == null) {
                 return null;
             }
-            HttpURLConnection connection = openConnection(currentUrl);
-            try {
-                int responseCode = connection.getResponseCode();
-                if (responseCode == HTTP_OK) {
-                    return readContent(connection, currentUrl);
+            try (CloseableHttpClient client = createClient(addresses);
+                 CloseableHttpResponse response = client.execute(new HttpGet(URI.create(currentUrl.toString())))) {
+                int statusCode = response.getStatusLine().getStatusCode();
+                if (statusCode == HTTP_OK) {
+                    return readContent(response, currentUrl);
                 }
-                if (responseCode != HTTP_MOVED_PERM && responseCode != HTTP_MOVED_TEMP) {
+                if (statusCode != HTTP_MOVED_PERM && statusCode != HTTP_MOVED_TEMP) {
                     return null;
                 }
-                String location = connection.getHeaderField("Location");
-                if (StringUtils.isEmptyTrimmed(location)) {
+                Header location = response.getFirstHeader(HttpHeaders.LOCATION);
+                if (location == null || StringUtils.isEmptyTrimmed(location.getValue())) {
                     return null;
                 }
-                currentUrl = URI.create(normalizeUrl(currentUrl.toString())).resolve(normalizeUrl(location.trim())).toURL();
-            } finally {
-                connection.disconnect();
+                currentUrl = URI.create(normalizeUrl(currentUrl.toString())).resolve(normalizeUrl(location.getValue().trim())).toURL();
             }
         }
         logger.warn("Failed to load resource: " + url + ", more than " + MAX_REDIRECTS + " redirects");
         return null;
     }
 
-    @SneakyThrows
-    private HttpURLConnection openConnection(@NotNull URL url) {
-        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-        connection.setConnectTimeout(CONNECTION_TIMEOUT_MS);
-        connection.setReadTimeout(READ_TIMEOUT_MS);
-        // redirects are followed by this class, so that the policy sees every single hop
-        connection.setInstanceFollowRedirects(false);
-        connection.connect();
-        return connection;
+    /**
+     * Builds a client for a single request. Its name resolution answers with the vetted addresses only,
+     * which binds the request to what {@link ResourceUrlPolicy#vetAddresses} approved. The host name stays
+     * in the request, so the Host header and the TLS host name verification keep working.
+     */
+    private CloseableHttpClient createClient(@NotNull InetAddress[] addresses) {
+        DnsResolver pinnedResolver = host -> addresses;
+        RequestConfig requestConfig = RequestConfig.custom()
+                .setConnectTimeout(CONNECTION_TIMEOUT_MS)
+                .setConnectionRequestTimeout(CONNECTION_TIMEOUT_MS)
+                .setSocketTimeout(READ_TIMEOUT_MS)
+                // redirects are followed by this class, so that the policy sees every single hop
+                .setRedirectsEnabled(false)
+                .build();
+        return HttpClients.custom()
+                .setDefaultRequestConfig(requestConfig)
+                .setDnsResolver(pinnedResolver)
+                .disableAutomaticRetries()
+                .disableCookieManagement()
+                .disableAuthCaching()
+                .build();
     }
 
     /**
      * Reads at most {@link ResourceUrlPolicy#getMaxResourceBytes()} bytes. The content is fully read here
-     * because the connection is closed as soon as this method returns.
+     * because the response is closed as soon as this method returns.
      */
     @SneakyThrows
-    private InputStream readContent(@NotNull HttpURLConnection connection, @NotNull URL url) {
-        String contentType = connection.getContentType();
+    private InputStream readContent(@NotNull CloseableHttpResponse response, @NotNull URL url) {
+        HttpEntity entity = response.getEntity();
+        if (entity == null) {
+            return null;
+        }
+
+        Header contentTypeHeader = entity.getContentType();
+        String contentType = contentTypeHeader == null ? null : contentTypeHeader.getValue();
         if (!policy.isAllowedContentType(contentType)) {
-            logger.warn("Skipped resource " + url + ": the content type '" + contentType + "' is not an image, a font or a stylesheet");
+            logger.warn(SKIPPED_RESOURCE + url + ": the content type '" + contentType + "' is not an image, a font or a stylesheet");
             return null;
         }
 
         long maxBytes = policy.getMaxResourceBytes();
-        if (connection.getContentLengthLong() > maxBytes) {
-            logger.warn("Skipped resource " + url + ": it is larger than " + maxBytes + " bytes");
+        if (entity.getContentLength() > maxBytes) {
+            logger.warn(SKIPPED_RESOURCE + url + ": it is larger than " + maxBytes + " bytes");
             return null;
         }
 
         ByteArrayOutputStream content = new ByteArrayOutputStream();
         byte[] buffer = new byte[BUFFER_SIZE];
-        try (InputStream inputStream = connection.getInputStream()) {
+        try (InputStream inputStream = entity.getContent()) {
             int read;
             while ((read = inputStream.read(buffer)) != -1) {
                 if (content.size() + read > maxBytes) {
-                    logger.warn("Skipped resource " + url + ": it is larger than " + maxBytes + " bytes");
+                    logger.warn(SKIPPED_RESOURCE + url + ": it is larger than " + maxBytes + " bytes");
                     return null;
                 }
                 content.write(buffer, 0, read);
@@ -136,7 +166,7 @@ public class CustomResourceUrlResolver implements IUrlResolver {
             // catches an internal service which answers with a document instead of an image.
             String sniffedType = MediaUtils.getMimeTypeUsingTikaByContent(url.toString(), bytes);
             if (policy.isRejectedSniffedType(sniffedType)) {
-                logger.warn("Skipped resource " + url + ": its content is '" + sniffedType + "', not an image, a font or a stylesheet");
+                logger.warn(SKIPPED_RESOURCE + url + ": its content is '" + sniffedType + "', not an image, a font or a stylesheet");
                 return null;
             }
         }

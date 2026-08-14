@@ -2,7 +2,6 @@ package ch.sbb.polarion.extension.pdf_exporter.util;
 
 import ch.sbb.polarion.extension.pdf_exporter.properties.PdfExporterExtensionConfiguration;
 import com.polarion.core.boot.PolarionProperties;
-import com.polarion.core.util.StringUtils;
 import com.polarion.core.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -12,14 +11,12 @@ import java.net.InetAddress;
 import java.net.URI;
 import java.net.URL;
 import java.net.UnknownHostException;
-import java.security.Security;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Decides which resource URLs the exporter may request while inlining images, fonts and stylesheets.
@@ -35,8 +32,6 @@ public class ResourceUrlPolicy {
 
     private static final String HTTP = "http";
     private static final String HTTPS = "https";
-    private static final String ADDRESS_CACHE_TTL_PROPERTY = "networkaddress.cache.ttl";
-    private static final AtomicBoolean ADDRESS_CACHE_WARNED = new AtomicBoolean();
 
     private static final List<String> ALLOWED_CONTENT_TYPE_PREFIXES = List.of(
             "image/", "font/", "application/font", "application/x-font", "text/css",
@@ -58,7 +53,7 @@ public class ResourceUrlPolicy {
         this.allowedHosts = new HashSet<>();
         if (allowedHosts != null) {
             allowedHosts.stream()
-                    .filter(host -> !StringUtils.isEmptyTrimmed(host))
+                    .filter(host -> host != null && !host.isBlank())
                     .map(host -> host.trim().toLowerCase(Locale.ROOT))
                     .forEach(this.allowedHosts::add);
         }
@@ -93,7 +88,7 @@ public class ResourceUrlPolicy {
      * could return. An absent content type is accepted, the content is sniffed later anyway.
      */
     public boolean isAllowedContentType(@Nullable String contentType) {
-        if (StringUtils.isEmptyTrimmed(contentType)) {
+        if (contentType == null || contentType.isBlank()) {
             return true;
         }
         String mediaType = mediaType(contentType);
@@ -104,7 +99,7 @@ public class ResourceUrlPolicy {
      * A missing or generic content type tells nothing, so the content itself has to be looked at.
      */
     public boolean isSniffingRequired(@Nullable String contentType) {
-        return StringUtils.isEmptyTrimmed(contentType) || mediaType(contentType).endsWith("/octet-stream");
+        return contentType == null || contentType.isBlank() || mediaType(contentType).endsWith("/octet-stream");
     }
 
     /**
@@ -120,27 +115,53 @@ public class ResourceUrlPolicy {
     }
 
     public boolean isAllowed(@NotNull URL url) {
+        return vetAddresses(url) != null;
+    }
+
+    /**
+     * @return the addresses the url may be requested from, null if the url may not be requested at all.
+     * The caller connects to exactly these addresses, which is what makes the check binding: a second
+     * name resolution cannot answer with an address this method did not see.
+     */
+    @Nullable
+    public InetAddress[] vetAddresses(@NotNull URL url) {
         String protocol = url.getProtocol() == null ? "" : url.getProtocol().toLowerCase(Locale.ROOT);
         if (!HTTP.equals(protocol) && !HTTPS.equals(protocol)) {
-            return deny(url, "only http and https are supported");
+            return denyAddresses(url, "only http and https are supported");
         }
 
-        String host = url.getHost();
-        if (StringUtils.isEmptyTrimmed(host)) {
-            return deny(url, "no host");
+        String rawHost = url.getHost();
+        if (rawHost == null || rawHost.isBlank()) {
+            return denyAddresses(url, "no host");
         }
-        host = host.toLowerCase(Locale.ROOT);
+        String host = stripBrackets(rawHost.toLowerCase(Locale.ROOT));
         int port = effectivePort(protocol, url.getPort());
 
-        if (isBaseUrlOrigin(host, port) || isExplicitlyAllowed(host, port)) {
-            return true;
+        boolean exempt = isBaseUrlOrigin(host, port) || isExplicitlyAllowed(host, port) || mode == Mode.ALLOW_ALL;
+        if (!exempt && mode == Mode.ALLOWLIST_ONLY) {
+            return denyAddresses(url, "the host is not in " + PdfExporterExtensionConfiguration.EXTERNAL_RESOURCES_ALLOWED_HOSTS);
         }
 
-        return switch (mode) {
-            case ALLOW_ALL -> true;
-            case ALLOWLIST_ONLY -> deny(url, "the host is not in " + PdfExporterExtensionConfiguration.EXTERNAL_RESOURCES_ALLOWED_HOSTS);
-            case BLOCK_INTERNAL -> hasOnlyPublicAddresses(url, host);
-        };
+        try {
+            InetAddress[] addresses = InetAddress.getAllByName(host);
+            if (addresses.length == 0) {
+                return denyAddresses(url, "the host resolves to no address");
+            }
+            if (!exempt) {
+                for (InetAddress address : addresses) {
+                    if (!isPublicAddress(address)) {
+                        return denyAddresses(url, "the host resolves to the non public address " + address.getHostAddress());
+                    }
+                }
+            }
+            return addresses;
+        } catch (UnknownHostException e) {
+            return denyAddresses(url, "the host cannot be resolved");
+        }
+    }
+
+    private static String stripBrackets(@NotNull String host) {
+        return host.startsWith("[") && host.endsWith("]") ? host.substring(1, host.length() - 1) : host;
     }
 
     private boolean isBaseUrlOrigin(@NotNull String host, int port) {
@@ -149,37 +170,6 @@ public class ResourceUrlPolicy {
 
     private boolean isExplicitlyAllowed(@NotNull String host, int port) {
         return allowedHosts.contains(host) || allowedHosts.contains(host + ":" + port);
-    }
-
-    /**
-     * Every address the host resolves to must be public. A host resolving to both a public and a
-     * private address is rejected, otherwise the private one stays reachable.
-     * <p>
-     * The connection resolves the same name a second time, so a DNS rebinding attack would need the
-     * answer to change between the two calls. It cannot: this call fills the JVM address cache, and
-     * the connection reads it from there. The cache holds a positive answer for
-     * {@code networkaddress.cache.ttl} seconds, 30 by default. An installation which sets that
-     * property to 0 loses this protection, therefore {@link #warnAboutDisabledAddressCache()} logs it.
-     * Binding the socket to the vetted address instead is not possible here: {@code HttpURLConnection}
-     * refuses a {@code Host} header, and a literal address would break TLS host name verification.
-     * </p>
-     */
-    private boolean hasOnlyPublicAddresses(@NotNull URL url, @NotNull String host) {
-        warnAboutDisabledAddressCache();
-        try {
-            InetAddress[] addresses = InetAddress.getAllByName(host);
-            if (addresses.length == 0) {
-                return deny(url, "the host resolves to no address");
-            }
-            for (InetAddress address : addresses) {
-                if (!isPublicAddress(address)) {
-                    return deny(url, "the host resolves to the non public address " + address.getHostAddress());
-                }
-            }
-            return true;
-        } catch (UnknownHostException e) {
-            return deny(url, "the host cannot be resolved");
-        }
     }
 
     @VisibleForTesting
@@ -255,28 +245,16 @@ public class ResourceUrlPolicy {
         return (eleventh == 0 && twelfth == 0) || (eleventh == 0xFF && twelfth == 0xFF);
     }
 
-    /**
-     * Logs once if the JVM address cache is off, because the policy relies on it, see
-     * {@link #hasOnlyPublicAddresses}.
-     */
-    @VisibleForTesting
-    static void warnAboutDisabledAddressCache() {
-        if (ADDRESS_CACHE_WARNED.compareAndSet(false, true) && "0".equals(Security.getProperty(ADDRESS_CACHE_TTL_PROPERTY))) {
-            logger.warn("The java security property '" + ADDRESS_CACHE_TTL_PROPERTY + "' is 0, which turns the JVM address cache off."
-                    + " A host name can then resolve to a different address for the check and for the request itself."
-                    + " Set it to a positive value, or list the hosts a document may load resources from.");
-        }
-    }
-
-    private static boolean deny(@NotNull URL url, @NotNull String reason) {
+    @Nullable
+    private static InetAddress[] denyAddresses(@NotNull URL url, @NotNull String reason) {
         logger.warn("Blocked the request to '" + url + "': " + reason
                 + ". See the '" + PdfExporterExtensionConfiguration.EXTERNAL_RESOURCES_POLICY + "' property.");
-        return false;
+        return null;
     }
 
     @Nullable
     private static URI parseBaseUrl(@Nullable String baseUrl) {
-        if (StringUtils.isEmptyTrimmed(baseUrl)) {
+        if (baseUrl == null || baseUrl.isBlank()) {
             return null;
         }
         try {
@@ -309,7 +287,7 @@ public class ResourceUrlPolicy {
         ALLOW_ALL;
 
         public static Mode parse(@Nullable String value) {
-            if (!StringUtils.isEmptyTrimmed(value)) {
+            if (value != null && !value.isBlank()) {
                 String normalized = value.trim().replace("_", "").replace("-", "");
                 for (Mode mode : values()) {
                     if (mode.name().replace("_", "").equalsIgnoreCase(normalized)) {
