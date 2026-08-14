@@ -49,6 +49,8 @@ public class CustomResourceUrlResolver implements IUrlResolver {
     private static final int MAX_REDIRECTS = 5;
     private static final int BUFFER_SIZE = 8192;
     private static final String SKIPPED_RESOURCE = "Skipped resource ";
+    private static final String HTTP_SCHEME = "http";
+    private static final String HTTPS_SCHEME = "https";
 
     private final ResourceUrlPolicy policy;
 
@@ -66,12 +68,38 @@ public class CustomResourceUrlResolver implements IUrlResolver {
 
     public InputStream resolve(@NotNull String urlStr) {
         try {
-            URL url = URI.create(normalizeUrl(ensureAbsoluteUrl(urlStr))).toURL();
-            return resolveImpl(url);
+            if (MediaUtils.isNetworkPathReference(urlStr)) {
+                return resolveNetworkPathReference(urlStr);
+            }
+            return resolveImpl(URI.create(normalizeUrl(ensureAbsoluteUrl(urlStr))).toURL());
         } catch (Exception e) {
             logger.warn("Failed to load resource: " + urlStr, e);
         }
         return null;
+    }
+
+    /**
+     * A reference like {@code //host/path} takes the scheme of the base url the document carries, and
+     * that base is built elsewhere, from the cluster host among other things. Rather than guessing which
+     * one it ends up with, both are tried, each one checked by the policy on its own.
+     */
+    private InputStream resolveNetworkPathReference(@NotNull String urlStr) {
+        String preferredScheme = policy.getBaseUrlScheme();
+        InputStream stream = resolveWithScheme(preferredScheme, urlStr);
+        if (stream != null) {
+            return stream;
+        }
+        return resolveWithScheme(HTTPS_SCHEME.equals(preferredScheme) ? HTTP_SCHEME : HTTPS_SCHEME, urlStr);
+    }
+
+    private InputStream resolveWithScheme(@NotNull String scheme, @NotNull String urlStr) {
+        try {
+            return resolveImpl(URI.create(normalizeUrl(scheme + ":" + urlStr)).toURL());
+        } catch (Exception e) {
+            // the other scheme is tried next, a failure here is not the end of it
+            logger.debug("Failed to load resource " + scheme + ":" + urlStr + ": " + e.getMessage());
+            return null;
+        }
     }
 
     @SneakyThrows
@@ -192,10 +220,6 @@ public class CustomResourceUrlResolver implements IUrlResolver {
     }
 
     private String ensureAbsoluteUrl(String url) {
-        if (MediaUtils.isNetworkPathReference(url)) {
-            // '//host/path' names its own host, only the scheme comes from the Polarion base url
-            return policy.getBaseUrlScheme() + ":" + url;
-        }
         return url.startsWith("/") ? getBaseUrl() + url : url;
     }
 

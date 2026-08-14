@@ -75,11 +75,12 @@ public class PdfExporterFileResourceProvider implements FileResourceProvider {
             return false;
         }
         String candidate = MediaUtils.decodeCssEscapes(resource).trim();
-        if (MediaUtils.isNetworkPathReference(candidate)) {
-            // '//host/path' has no scheme of its own, it gets the one of the Polarion base url
-            candidate = policy.getBaseUrlScheme() + ":" + candidate;
-        }
         try {
+            if (MediaUtils.isNetworkPathReference(candidate)) {
+                // '//host/path' has no scheme of its own and is loaded under both, so both decide here
+                return !policy.isAllowed(URI.create(MediaUtils.normalizeUrl("https:" + candidate)).toURL())
+                        && !policy.isAllowed(URI.create(MediaUtils.normalizeUrl("http:" + candidate)).toURL());
+            }
             return !policy.isAllowed(URI.create(MediaUtils.normalizeUrl(candidate)).toURL());
         } catch (Exception e) {
             logger.warn("Cannot parse the resource url '" + resource + "', it is treated as forbidden");

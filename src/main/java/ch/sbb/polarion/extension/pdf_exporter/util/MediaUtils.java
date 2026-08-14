@@ -298,11 +298,21 @@ public class MediaUtils {
         StringBuilder decoded = new StringBuilder();
         while (matcher.find()) {
             String hex = matcher.group(1);
-            String replacement = hex != null ? Character.toString(Integer.parseInt(hex, 16)) : matcher.group(2);
+            // the pattern caps the escape at six hex digits, so the value always fits into an int
+            String replacement = hex != null ? codePointOf(Integer.parseInt(hex, 16)) : matcher.group(2);
             matcher.appendReplacement(decoded, Matcher.quoteReplacement(replacement));
         }
         matcher.appendTail(decoded);
         return decoded.toString();
+    }
+
+    /**
+     * CSS turns an escape of zero, of a surrogate and of a value above the last code point into the
+     * replacement character, and so does this.
+     */
+    private String codePointOf(int value) {
+        boolean valid = value > 0 && value <= Character.MAX_CODE_POINT && !(value >= Character.MIN_SURROGATE && value <= Character.MAX_SURROGATE);
+        return valid ? Character.toString(value) : "\uFFFD";
     }
 
     public boolean isDataUrl(@Nullable String resourceUrl) {

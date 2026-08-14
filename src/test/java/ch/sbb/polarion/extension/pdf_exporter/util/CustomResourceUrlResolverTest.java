@@ -250,6 +250,20 @@ class CustomResourceUrlResolverTest {
     }
 
     @Test
+    @SneakyThrows
+    void fallsBackToTheOtherSchemeOfANetworkPathReference() {
+        // the base url says https, the server speaks http: the second attempt has to find it
+        respond("/img.png", "image/png", PNG_CONTENT, false);
+        ResourceUrlPolicy policy = new ResourceUrlPolicy(Mode.ALLOW_ALL, List.of(), "https://localhost", 16);
+        CustomResourceUrlResolver resolver = new CustomResourceUrlResolver(policy);
+
+        try (InputStream stream = resolver.resolve("//127.0.0.1:" + server.getAddress().getPort() + "/img.png")) {
+            assertNotNull(stream);
+            assertArrayEquals(PNG_CONTENT, stream.readAllBytes());
+        }
+    }
+
+    @Test
     void skipsAProxiedResourceWhichIsNotExplicitlyTrusted() {
         // a proxy resolves the host name itself, so the vetted addresses would decide nothing
         System.setProperty("http.proxyHost", "proxy.invalid");

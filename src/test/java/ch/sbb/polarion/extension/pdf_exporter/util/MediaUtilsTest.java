@@ -251,6 +251,13 @@ class MediaUtilsTest {
     }
 
     @Test
+    void turnsAnUnusableCssEscapeIntoTheReplacementCharacter() {
+        assertEquals("\uFFFD", MediaUtils.decodeCssEscapes("\\FFFFFF"));
+        assertEquals("\uFFFD", MediaUtils.decodeCssEscapes("\\0"));
+        assertEquals("\uFFFD", MediaUtils.decodeCssEscapes("\\D800"));
+    }
+
+    @Test
     void unwrapsAnEscapedCssUrl() {
         assertTrue(MediaUtils.isAbsoluteHttpUrl(MediaUtils.unwrapCssUrl("\"http\\3a //169.254.169.254/x\"")));
     }
