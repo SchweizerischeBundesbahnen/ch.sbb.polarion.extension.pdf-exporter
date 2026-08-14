@@ -26,6 +26,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -546,51 +547,44 @@ class HtmlProcessorTest {
         assertEquals(html, processor.replaceResourcesAsBase64Encoded(html));
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "@import \"URL\";",
+            "@import \"URL\" screen and (min-width:1px);",   // a media condition must not save the at-rule
+            "@import url(\"URL\") print;",                    // the url() form goes as a whole too
+            "@import/*sneaky*/\"URL\";",                      // CSS allows a comment between the at-keyword and its target
+            "@import\"URL\";",                                // and it allows no separator at all
+            "@import url(/*sneaky*/\"URL\");",                 // a comment inside url() too
+            "@import url( \"URL\" /*sneaky*/ );"
+    })
+    @SneakyThrows
+    void dropForbiddenCssImportTest(String atRule) {
+        String url = "http://169.254.169.254/latest/meta-data/";
+        String html = "<style>" + atRule.replace("URL", url) + " body { color: red; }</style>";
+        when(fileResourceProvider.isForbidden(url)).thenReturn(true);
+
+        assertEquals("<style> body { color: red; }</style>", processor.replaceResourcesAsBase64Encoded(html));
+    }
+
     @Test
     @SneakyThrows
-    void dropForbiddenCssImportTest() {
-        String html = "<style>@import \"http://169.254.169.254/latest/meta-data/\"; body { color: red; }</style>";
-        when(fileResourceProvider.isForbidden("http://169.254.169.254/latest/meta-data/")).thenReturn(true);
+    void replaceForbiddenCssUrlHiddenBehindACommentTest() {
+        String url = "http://169.254.169.254/latest/meta-data/";
+        String html = "<style>body { background: url(/*sneaky*/\"" + url + "\"); }</style>";
+        when(fileResourceProvider.isForbidden(url)).thenReturn(true);
+
         String result = processor.replaceResourcesAsBase64Encoded(html);
-        assertEquals("<style> body { color: red; }</style>", result);
+
+        assertFalse(result.contains("169.254.169.254"));
+        assertTrue(result.contains(MediaUtils.BLOCKED_RESOURCE_PLACEHOLDER));
     }
 
     @Test
     @SneakyThrows
-    void dropForbiddenConditionalCssImportTest() {
-        // a media condition after the url must not save the at-rule from being dropped
-        String url = "http://169.254.169.254/latest/meta-data/";
-        String html = "<style>@import \"" + url + "\" screen and (min-width:1px); body { color: red; }</style>";
-        when(fileResourceProvider.isForbidden(url)).thenReturn(true);
-        assertEquals("<style> body { color: red; }</style>", processor.replaceResourcesAsBase64Encoded(html));
-    }
-
-    @Test
-    @SneakyThrows
-    void dropForbiddenCssImportUrlFormTest() {
-        String url = "http://169.254.169.254/latest/meta-data/";
-        String html = "<style>@import url(\"" + url + "\") print; body { color: red; }</style>";
-        when(fileResourceProvider.isForbidden(url)).thenReturn(true);
-        assertEquals("<style> body { color: red; }</style>", processor.replaceResourcesAsBase64Encoded(html));
-    }
-
-    @Test
-    @SneakyThrows
-    void dropForbiddenCssImportWithCommentTest() {
-        // CSS allows a comment, or nothing at all, between the at-keyword and its target
-        String url = "http://169.254.169.254/latest/meta-data/";
-        String html = "<style>@import/*sneaky*/\"" + url + "\"; body { color: red; }</style>";
-        when(fileResourceProvider.isForbidden(url)).thenReturn(true);
-        assertEquals("<style> body { color: red; }</style>", processor.replaceResourcesAsBase64Encoded(html));
-    }
-
-    @Test
-    @SneakyThrows
-    void dropForbiddenCssImportWithoutSeparatorTest() {
-        String url = "http://169.254.169.254/latest/meta-data/";
-        String html = "<style>@import\"" + url + "\"; body { color: red; }</style>";
-        when(fileResourceProvider.isForbidden(url)).thenReturn(true);
-        assertEquals("<style> body { color: red; }</style>", processor.replaceResourcesAsBase64Encoded(html));
+    void keepsCommentLikeCharactersInsideAUrlTest() {
+        // '/*' and '*/' are legal inside a path, only a leading or a trailing comment is stripped
+        String html = "<style>body { background: url(\"http://example.com/a/*b*/c.png\"); }</style>";
+        assertEquals(html, processor.replaceResourcesAsBase64Encoded(html));
     }
 
     @Test

@@ -64,8 +64,10 @@ public class MediaUtils {
      * {@code @import url(...)}. {@link #URL_REGEX} matches its url as well, but only this one can drop
      * the whole at-rule, media condition included.
      */
-    public static final String CSS_IMPORT_URL_REGEX = "(?i)@import" + CSS_AT_RULE_SEPARATOR + "url\\(\\s*([\"'])?(?<url>[^\"')]+)\\1?\\s*\\)[^;]*;?";
+    public static final String CSS_IMPORT_URL_REGEX = "(?i)@import" + CSS_AT_RULE_SEPARATOR + "url\\((?<url>[^)]*)\\)[^;]*;?";
     public static final String DATA_URL_PREFIX = "data:";
+    private static final String COMMENT_START = "/*";
+    private static final String COMMENT_END = "*/";
     public static final String THUMBNAIL_PARAMETER = "thumbnail";
     /**
      * A 1x1 transparent PNG which replaces a resource the {@link ResourceUrlPolicy} rejected.
@@ -285,8 +287,24 @@ public class MediaUtils {
     }
 
     public String inlineBase64Resources(String content, FileResourceProvider fileResourceProvider) {
-        RegexMatcher.IReplacementCalculator dataReplacement = engine -> {
-            String url = engine.group("url");
+        // replace tags like <img src="...
+        String result = RegexMatcher.get(IMG_SRC_REGEX).replace(content, replacement(fileResourceProvider, false));
+        // drop a forbidden '@import' before its url reaches the pass below, which would only replace the url
+        RegexMatcher.IReplacementCalculator importReplacement = engine ->
+                fileResourceProvider.isForbidden(unwrapCssUrl(engine.group("url"))) ? "" : null;
+        result = RegexMatcher.get(CSS_IMPORT_URL_REGEX).useJavaUtil().replace(result, importReplacement);
+        result = RegexMatcher.get(CSS_IMPORT_REGEX).useJavaUtil().replace(result, importReplacement);
+        // replace CSS parameters like background: src('/polarion/...
+        return RegexMatcher.get(URL_REGEX).useJavaUtil().replace(result, replacement(fileResourceProvider, true));
+    }
+
+    private RegexMatcher.IReplacementCalculator replacement(FileResourceProvider fileResourceProvider, boolean css) {
+        return engine -> {
+            String rawUrl = engine.group("url");
+            if (rawUrl == null || rawUrl.isEmpty()) {
+                return null;
+            }
+            String url = css ? unwrapCssUrl(rawUrl) : rawUrl;
             if (MediaUtils.isDataUrl(url)) {
                 return null;
             }
@@ -296,26 +314,37 @@ public class MediaUtils {
                 String resourceUrl = isRenderableImageUrl(url) ? removeQueryParameter(url, THUMBNAIL_PARAMETER) : url;
                 String base64String = fileResourceProvider.getResourceAsBase64String(resourceUrl);
                 if (base64String != null) {
-                    return engine.group().replace(url, base64String);
+                    return engine.group().replace(rawUrl, base64String);
                 }
             }
             // An absolute url which was not inlined, whatever the reason, must not stay in the HTML:
             // WeasyPrint would load it from its own network position. A relative url is left untouched,
             // WeasyPrint cannot resolve it.
-            return isAbsoluteHttpUrl(url) ? engine.group().replace(url, BLOCKED_RESOURCE_PLACEHOLDER) : null;
+            return isAbsoluteHttpUrl(url) ? engine.group().replace(rawUrl, BLOCKED_RESOURCE_PLACEHOLDER) : null;
         };
+    }
 
-        // drop a forbidden '@import', there is nothing to inline it with
-        RegexMatcher.IReplacementCalculator importReplacement = engine ->
-                fileResourceProvider.isForbidden(engine.group("url")) ? "" : null;
-
-        // replace tags like <img src="...
-        String result = RegexMatcher.get(IMG_SRC_REGEX).replace(content, dataReplacement);
-        // drop a forbidden '@import' before its url reaches the pass below, which would only replace the url
-        result = RegexMatcher.get(CSS_IMPORT_URL_REGEX).useJavaUtil().replace(result, importReplacement);
-        result = RegexMatcher.get(CSS_IMPORT_REGEX).useJavaUtil().replace(result, importReplacement);
-        // replace CSS parameters like background: src('/polarion/...
-        return RegexMatcher.get(URL_REGEX).useJavaUtil().replace(result, dataReplacement);
+    /**
+     * Takes the target out of a CSS url value. A comment is allowed on either side of it, and a quote
+     * stays in the value whenever a comment kept the pattern from capturing it separately. Only the
+     * leading and the trailing comment go, a url may well carry the very same characters in its path.
+     */
+    public String unwrapCssUrl(@Nullable String url) {
+        if (url == null) {
+            return null;
+        }
+        String unwrapped = url.trim();
+        while (unwrapped.startsWith(COMMENT_START) && unwrapped.contains(COMMENT_END)) {
+            unwrapped = unwrapped.substring(unwrapped.indexOf(COMMENT_END) + COMMENT_END.length()).trim();
+        }
+        while (unwrapped.endsWith(COMMENT_END) && unwrapped.lastIndexOf(COMMENT_START) > 0) {
+            unwrapped = unwrapped.substring(0, unwrapped.lastIndexOf(COMMENT_START)).trim();
+        }
+        if (unwrapped.length() > 1 && (unwrapped.startsWith("\"") && unwrapped.endsWith("\"")
+                || unwrapped.startsWith("'") && unwrapped.endsWith("'"))) {
+            unwrapped = unwrapped.substring(1, unwrapped.length() - 1).trim();
+        }
+        return unwrapped;
     }
 
     /**
