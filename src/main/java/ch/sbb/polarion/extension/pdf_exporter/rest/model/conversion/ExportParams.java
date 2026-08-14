@@ -93,6 +93,9 @@ public class ExportParams extends ConversionParams {
     @Schema(description = "Language in the exported document")
     private String language;
 
+    @Schema(description = "ID of the LiveDoc custom field holding the document language as an ISO 639-1 code (e.g. 'docLanguage'). The field may be a text field or an enumeration; for an enumeration the option's ID is used, so option IDs must be ISO 639-1 codes. Leave empty to disable language injection")
+    private String languageCustomField;
+
     @Schema(description = "Specific Workitem roles", example = "[\"has parent\", \"depends on\"]")
     private List<String> linkedWorkitemRoles;
 
@@ -149,6 +152,7 @@ public class ExportParams extends ConversionParams {
         numberedListStyles = stylePackageModel.getCustomNumberedListStyles();
         chapters = stylePackageModel.getSpecificChapters() != null ? Arrays.stream(stylePackageModel.getSpecificChapters().split(",")).toList() : null;
         language = stylePackageModel.getLanguage();
+        languageCustomField = stylePackageModel.getLanguageCustomField();
         linkedWorkitemRoles = stylePackageModel.getLinkedWorkitemRoles();
         linkRoleDirection = LinkRoleDirection.fromString(stylePackageModel.getLinkRoleDirection());
         attachmentsFilter = stylePackageModel.getAttachmentsFilter();

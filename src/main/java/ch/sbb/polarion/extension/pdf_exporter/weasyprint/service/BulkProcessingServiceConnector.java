@@ -1,7 +1,7 @@
 package ch.sbb.polarion.extension.pdf_exporter.weasyprint.service;
 
 import ch.sbb.polarion.extension.pdf_exporter.properties.PdfExporterExtensionConfiguration;
-2import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.DocumentConversionParams;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.DocumentConversionParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.MergeJobStartParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PdfVariant;
 import ch.sbb.polarion.extension.pdf_exporter.util.PdfPostProcessor;

@@ -138,6 +138,7 @@ public class PdfExportFunction implements IFunction<IModule> {
                 .chapters(stylePackage.getSpecificChapters() == null ? null : List.of(stylePackage.getSpecificChapters().split(",")))
                 .metadataFields(stylePackage.getMetadataFields() == null ? null : List.of(stylePackage.getMetadataFields().split(",")))
                 .language(stylePackage.getLanguage())
+                .languageCustomField(stylePackage.getLanguageCustomField())
                 .linkedWorkitemRoles(stylePackage.getLinkedWorkitemRoles())
                 .attachmentsFilter(stylePackage.getAttachmentsFilter())
                 .testcaseFieldId(stylePackage.getTestcaseFieldId())

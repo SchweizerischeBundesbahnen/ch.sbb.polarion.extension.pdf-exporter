@@ -38,9 +38,6 @@ target/
 *.iml
 dependency-reduced-pom.xml
 
-src/main/resources/webapp/*-admin/html/about.html
-src/main/resources/webapp/*-admin/html/user-guide.html
-src/main/resources/webapp/*-admin/html/disclaimer.html
 src/main/resources/webapp/*-app/html/about.html
 src/main/resources/webapp/*-app/html/user-guide.html
 src/main/resources/webapp/*-app/html/disclaimer.html

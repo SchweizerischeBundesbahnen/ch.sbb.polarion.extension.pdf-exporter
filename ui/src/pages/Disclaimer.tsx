@@ -1,23 +1,29 @@
 import { type ReactNode, useEffect, useState } from 'react';
 import { PageLayout } from '@grigoriev/react-sbb-polarion';
-import { DISCLAIMER_URL, PROJECT_URL, fetchArticle } from '../services/articles';
+import useRemote from '../services/useRemote';
+
+/** Where this extension's sources live; used when the build-generated article is missing. */
+const PROJECT_URL = 'https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter';
 
 /**
- * Usage Disclaimer: the build-generated DISCLAIMER.html.
+ * Usage Disclaimer: the build-generated DISCLAIMER article.
  *
- * Unlike About and User Guide there is no REST endpoint for it - generic serves `/readme` and
- * `/user-guide` only - so the article is read straight from this extension's app webapp, where
- * markdown2html writes it during the build. When it is missing (a build without the plugin run) the
- * page points at the online source, exactly as the JSP page it replaces did.
+ * Read from generic's `/disclaimer` endpoint, the same way About and User Guide read theirs - so the
+ * page no longer needs the extension context in a static URL. The endpoint answers with an empty
+ * body when nothing was generated, which is how a consumer tells "not generated" from "not
+ * applicable"; that case points at the online source, exactly as the JSP page it replaces did.
  */
 export default function Disclaimer() {
+  const { sendRequest } = useRemote();
   const [html, setHtml] = useState<string | null>(null);
   const [missing, setMissing] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
-    fetchArticle(DISCLAIMER_URL)
-      .then((article) => {
+    sendRequest({ method: 'GET', url: '/disclaimer' })
+      .then(async (response) => {
+        const article = response.ok ? (await response.text()).trim() : '';
+        // Re-checked after the body is read: an unmount during that await must not set state.
         if (cancelled) return;
         if (article) {
           setHtml(article);
@@ -31,7 +37,7 @@ export default function Disclaimer() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [sendRequest]);
 
   let content: ReactNode;
   if (missing) {

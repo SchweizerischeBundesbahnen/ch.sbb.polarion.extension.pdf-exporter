@@ -81,6 +81,31 @@
         ]
       }
     },
+    "/api/configuration/bulk-processing": {
+      "get": {
+        "description": "Retrieves the status of the Bulk Processing Service configuration.",
+        "operationId": "checkBulkProcessing",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ConfigurationStatus"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successfully retrieved Bulk Processing Service configuration"
+          }
+        },
+        "summary": "Checks Bulk Processing Service configuration",
+        "tags": [
+          "Configuration status"
+        ]
+      }
+    },
     "/api/configuration/cors-config": {
       "get": {
         "description": "Retrieves the status of the CORS configuration.",
@@ -528,6 +553,33 @@
         ]
       }
     },
+    "/api/convert/jobs/{id}/cancel": {
+      "post": {
+        "operationId": "cancelPdfConverterJob",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Cancellation request accepted"
+          },
+          "404": {
+            "description": "Conversion job id is unknown"
+          }
+        },
+        "summary": "Cancels a running PDF conversion job",
+        "tags": [
+          "PDF Processing"
+        ]
+      }
+    },
     "/api/convert/jobs/{id}/result": {
       "get": {
         "operationId": "getPdfConverterJobResult",
@@ -624,6 +676,27 @@
         "summary": "Starts asynchronous merge export job combining multiple documents into a single PDF",
         "tags": [
           "PDF Processing"
+        ]
+      }
+    },
+    "/api/disclaimer": {
+      "get": {
+        "operationId": "getDisclaimer",
+        "responses": {
+          "default": {
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "HTML help article"
+          }
+        },
+        "summary": "Returns the build-generated DISCLAIMER help article shown on the Usage Disclaimer page",
+        "tags": [
+          "Extension Information"
         ]
       }
     },
@@ -2195,6 +2268,10 @@
           },
           "language": {
             "description": "Language in the exported document",
+            "type": "string"
+          },
+          "languageCustomField": {
+            "description": "ID of the LiveDoc custom field holding the document language as an ISO 639-1 code (e.g. 'docLanguage'). The field may be a text field or an enumeration; for an enumeration the option's ID is used, so option IDs must be ISO 639-1 codes. Leave empty to disable language injection",
             "type": "string"
           },
           "linkRoleDirection": {

@@ -1,6 +1,5 @@
 package ch.sbb.polarion.extension.pdf_exporter.widgets;
 
-import ch.sbb.polarion.extension.generic.util.ScopeUtils;
 import ch.sbb.polarion.extension.generic.util.VersionUtils;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.DocumentType;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.widgets.BulkExportColumn;
@@ -30,7 +29,6 @@ import org.jetbrains.annotations.VisibleForTesting;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 /**
  * Renders the Bulk PDF Export widget as a shim which the React widget app mounts into.
@@ -42,7 +40,6 @@ import java.util.stream.Collectors;
  */
 public class BulkPdfExportWidgetRenderer extends AbstractWidgetRenderer {
 
-    private static final String CSS_IMPORT_RULE = "@import";
     private static final String WIDGET_MODULE_URL = "/polarion/pdf-exporter-app/ui/app/assets/bulk-widget.js";
 
     private final @NotNull DataSetParameter dataSetParameter;
@@ -109,15 +106,11 @@ public class BulkPdfExportWidgetRenderer extends AbstractWidgetRenderer {
         String panelId = "bulk-%s".formatted(UUID.randomUUID().toString());
         String descriptor = WidgetDescriptorSigner.getInstance().encode(buildDescriptor());
 
-        // Next to the shim, not inside it: the shim becomes a shadow host, and the export dialogs these
-        // stylesheets are for render in the page body, which a shadow root would not reach. Those dialogs are the
-        // product's own, shared with the document export and the DLE toolbar; the widget's own styling ships with
-        // the widget app and is injected into its shadow root (see ui/src/widget/widget.css).
-        builder.tag().style().append().html(inlineCss("/css/micromodal.css"));
-        builder.tag().style().append().html(inlineCss("/css/control-tokens.css"));
-        builder.tag().style().append().html(inlineCss("/css/alerts.css"));
-        builder.tag().style().append().html(inlineCss("/webapp/pdf-exporter/css/pdf-exporter.css"));
-
+        // Nothing is put on the page for this widget. Everything it renders - the table, the export dialog and the
+        // progress dialog - lives in the shadow root the widget app attaches to the shim below, styled by the
+        // stylesheets that app injects into it (ui/src/widget/widget.css and ui/src/popup/export-popup.css). The
+        // four stylesheets that used to be inlined here were for the two dialogs while they were the product's own
+        // markup in the page body.
         HtmlTagBuilder shim = builder.tag().div();
         // sbb-ui carries generic's --sbb-* design tokens (control-tokens.css), which the widget's shadow root
         // inherits through this element: the token declarations live on .sbb-ui, while generic's
@@ -191,35 +184,5 @@ public class BulkPdfExportWidgetRenderer extends AbstractWidgetRenderer {
     private @NotNull String getBundleVersion() {
         String version = VersionUtils.getVersion().getBundleVersion();
         return version == null ? "0" : version;
-    }
-
-    /**
-     * Reads a stylesheet to be embedded into an inline style tag, dropping its @import rules.
-     * <p>
-     * An inline style tag has no URL of its own, so a relative @import is resolved against the page URL instead of
-     * against the stylesheet. The result never exists (Polarion answers with an HTML error page, which the browser
-     * then refuses as a stylesheet because of its MIME type), while the very same @import works when the stylesheet
-     * is linked by href. Nothing is lost by dropping it here: every stylesheet the imports refer to is embedded
-     * explicitly by the caller anyway.
-     */
-    @NotNull
-    private String inlineCss(@NotNull String path) {
-        return stripCssImports(ScopeUtils.getFileContent(path));
-    }
-
-    @VisibleForTesting
-    @NotNull
-    static String stripCssImports(@NotNull String css) {
-        return css.lines()
-                .filter(line -> !startsWithImportRule(line.stripLeading()))
-                .collect(Collectors.joining("\n"));
-    }
-
-    /**
-     * Only rules starting a line are recognized: comments mention "@import" mid-sentence and must stay untouched.
-     * The comparison ignores case, as at-rule keywords are case-insensitive in CSS.
-     */
-    private static boolean startsWithImportRule(@NotNull String line) {
-        return line.regionMatches(true, 0, CSS_IMPORT_RULE, 0, CSS_IMPORT_RULE.length());
     }
 }

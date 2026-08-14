@@ -27,13 +27,10 @@ import com.polarion.alm.shared.api.utils.html.HtmlContentBuilder;
 import com.polarion.alm.shared.api.utils.html.HtmlFragmentBuilder;
 import com.polarion.alm.shared.api.utils.html.HtmlTagBuilder;
 import com.polarion.alm.shared.api.utils.html.HtmlTagSelector;
-import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.MockedStatic;
 
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -200,52 +197,17 @@ class BulkPdfExportWidgetRendererTest {
     }
 
     @Test
-    @SneakyThrows
-    void stripCssImportsRemovesImportsFromBundledStylesheet() {
-        // The bundled file is used on purpose: should the import move to another stylesheet of the bundle,
-        // this test keeps guarding the widget instead of a hand-written sample.
-        String original;
-        try (InputStream is = getClass().getResourceAsStream("/css/micromodal.css")) {
-            assertNotNull(is, "bundled micromodal.css is expected on the classpath");
-            original = new String(is.readAllBytes(), StandardCharsets.UTF_8);
-        }
-        assertTrue(original.contains("@import url(\"control-tokens.css\");"), "bundled micromodal.css is expected to import control-tokens.css");
+    void noStylesheetIsPutOnThePageForTheWidget() {
+        // Everything the widget renders - the table, the export dialog and the progress dialog - lives in the shadow
+        // root the widget app attaches to the shim, styled by the stylesheets that app injects into it. Four
+        // stylesheets used to be inlined next to the shim for the two dialogs, which were the product's own markup in
+        // the report page's body; the shim and the loader script are all that is emitted now.
+        RichPageWidgetCommonContext context = mock(RichPageWidgetCommonContext.class, RETURNS_DEEP_STUBS);
+        CapturingBuilder builder = new CapturingBuilder();
 
-        String stripped = BulkPdfExportWidgetRenderer.stripCssImports(original);
+        mockRenderer(context).render(builder.fragmentBuilder);
 
-        // A relative @import inside an inline style tag is resolved against the page URL and always 404s
-        assertFalse(stripped.contains("@import url("), "inlined stylesheet must not keep @import rules");
-        // ... while everything else must survive: exactly one line is expected to disappear
-        assertTrue(stripped.contains(".modal__container"), "inlined stylesheet must keep its own rules");
-        assertEquals(original.lines().count() - 1, stripped.lines().count());
-        assertEquals(original.lines().filter(line -> !line.contains("@import url(")).toList(), stripped.lines().toList());
-    }
-
-    @Test
-    void stripCssImportsHandlesIndentedAndUpperCaseRules() {
-        // Leading whitespace is allowed before an at-rule, and at-rule keywords are case-insensitive in CSS
-        String css = "    @import url(\"a.css\");\n\t@import url(\"b.css\");\n@IMPORT url(\"c.css\");\n@Import url(\"d.css\");\n.modal { color: red; }";
-
-        String stripped = BulkPdfExportWidgetRenderer.stripCssImports(css);
-
-        assertEquals(".modal { color: red; }", stripped);
-    }
-
-    @Test
-    void stripCssImportsKeepsImportsMentionedInComments() {
-        String css = """
-                /* common.css @imports this one; see the note about @import URLs
-                   being de-duped by the browser. */
-                @import url("control-tokens.css");
-                .modal { color: red; }""";
-
-        String stripped = BulkPdfExportWidgetRenderer.stripCssImports(css);
-
-        assertFalse(stripped.contains("@import url("), "the rule itself must be dropped");
-        // Matching the word inside the comment would swallow everything up to the next semicolon,
-        // including the comment terminator, turning the rest of the file into a comment
-        assertTrue(stripped.contains("*/"), "the comment must stay intact");
-        assertTrue(stripped.contains(".modal { color: red; }"), "rules must stay intact");
+        verify(builder.tagSelector, never()).style();
     }
 
     @Test
@@ -328,10 +290,10 @@ class BulkPdfExportWidgetRendererTest {
         private final HtmlFragmentBuilder fragmentBuilder = mock(HtmlFragmentBuilder.class, RETURNS_DEEP_STUBS);
         private final HtmlAttributesBuilder attributesBuilder = mock(HtmlAttributesBuilder.class);
         private final HtmlContentBuilder scriptContent = mock(HtmlContentBuilder.class);
-
         @SuppressWarnings("unchecked")
+        private final HtmlTagSelector<HtmlTagBuilder> tagSelector = mock(HtmlTagSelector.class);
+
         private CapturingBuilder() {
-            HtmlTagSelector<HtmlTagBuilder> tagSelector = mock(HtmlTagSelector.class);
             HtmlTagBuilder div = mock(HtmlTagBuilder.class, RETURNS_DEEP_STUBS);
             HtmlTagBuilder script = mock(HtmlTagBuilder.class);
             HtmlTagBuilder style = mock(HtmlTagBuilder.class, RETURNS_DEEP_STUBS);
@@ -342,7 +304,7 @@ class BulkPdfExportWidgetRendererTest {
             when(attributesBuilder.className(anyString())).thenReturn(attributesBuilder);
             when(attributesBuilder.id(anyString())).thenReturn(attributesBuilder);
             when(attributesBuilder.byName(anyString(), anyString())).thenReturn(attributesBuilder);
-            // The stylesheets and the loader are siblings of the shim, so that the shim can become a shadow host
+            // The loader is a sibling of the shim, so that the shim can become a shadow host
             when(tagSelector.script()).thenReturn(script);
             when(script.append()).thenReturn(scriptContent);
         }

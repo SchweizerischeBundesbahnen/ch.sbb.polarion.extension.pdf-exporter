@@ -2,9 +2,10 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render } from 'vitest-browser-react';
 import { userEvent } from 'vitest/browser';
 import BulkExportWidget from '../src/widget/BulkExportWidget';
-import type { BulkCallback } from '../src/widget/productModules';
+import type { WidgetDependencies } from '../src/widget/BulkExportWidget';
 import { SAMPLE_ITEMS, SAMPLE_ITEMS_EMPTY, SAMPLE_ITEMS_WITH_UNREADABLE, SAMPLE_SHIM } from '../src/widget/sampleData';
 import type { BulkExportItems } from '../src/widget/types';
+import { popupDependencies } from './exportPopupSamples';
 import { installFetchMock } from './mockFetch';
 
 // The widget as a report page shows it. It is rendered without its shadow root here: what this suite
@@ -20,10 +21,13 @@ const selectAll = () => document.querySelector<HTMLInputElement>('#export-all')!
 const exportButton = () => document.querySelector<HTMLElement>('#bulk-export-pdf')!;
 const isDisabled = () => exportButton().classList.contains('polarion-TestsExecutionButton-buttons-defaultCursor');
 
-const open = (items = SAMPLE_ITEMS, deps = {}) => {
+const open = (items = SAMPLE_ITEMS, deps: WidgetDependencies = {}) => {
   installFetchMock([{ method: 'POST', match: ITEMS_ROUTE, json: items }]);
-  return render(<BulkExportWidget shim={SAMPLE_SHIM} hostSelector="#host" deps={deps} />);
+  return render(<BulkExportWidget shim={SAMPLE_SHIM} deps={deps} />);
 };
+
+/** The export dialog, which the button opens for the selection. Its own behavior: ExportPopup.test.tsx. */
+const dialog = () => document.querySelector('.pdf-export-form');
 
 afterEach(() => {
   cleanup();
@@ -33,7 +37,7 @@ afterEach(() => {
 describe('Bulk PDF Export widget', () => {
   it('asks the endpoint for its rows, passing the descriptor of the shim back unchanged', async () => {
     const fetchMock = installFetchMock([{ method: 'POST', match: ITEMS_ROUTE, json: SAMPLE_ITEMS }]);
-    render(<BulkExportWidget shim={SAMPLE_SHIM} hostSelector="#host" />);
+    render(<BulkExportWidget shim={SAMPLE_SHIM} />);
 
     await vi.waitFor(() => expect(rows().length).toBe(4));
     const [url, init] = fetchMock.mock.calls[0];
@@ -47,7 +51,7 @@ describe('Bulk PDF Export widget', () => {
   it('renders the widget frame before the rows arrive', async () => {
     let deliver!: (items: BulkExportItems) => void;
     const pending = new Promise<BulkExportItems>((resolve) => (deliver = resolve));
-    render(<BulkExportWidget shim={SAMPLE_SHIM} hostSelector="#host" deps={{ loadItems: () => pending }} />);
+    render(<BulkExportWidget shim={SAMPLE_SHIM} deps={{ loadItems: () => pending }} />);
 
     // The title and the button come from the shim, so they are there while the request is in flight
     await vi.waitFor(() => expect(document.querySelector('h3')?.textContent).toBe('Test Runs'));
@@ -123,31 +127,36 @@ describe('Bulk PDF Export widget', () => {
     expect(selectAll().checked).toBe(true);
   });
 
-  it('hands the selected items to the export dialog', async () => {
-    const openExportPopup = vi.fn<(documentType: string, callback: BulkCallback) => Promise<void>>(() =>
-      Promise.resolve(),
-    );
-    open(SAMPLE_ITEMS, { openExportPopup });
+  it('opens the export dialog for the selected items', async () => {
+    const identifiers: unknown[] = [];
+    open(SAMPLE_ITEMS, {
+      popup: {
+        ...popupDependencies(),
+        loadData: (_send, request) => {
+          identifiers.push(request.identifiers);
+          expect(request.documentType).toBe('TEST_RUN');
+          expect(request.exportType).toBe('BULK');
+          return Promise.reject(new Error('enough'));
+        },
+      },
+    });
     await vi.waitFor(() => expect(rows().length).toBe(4));
 
     await userEvent.click(checkboxes()[1]);
     await userEvent.click(exportButton());
 
-    expect(openExportPopup).toHaveBeenCalledTimes(1);
-    const [documentType, callback] = openExportPopup.mock.calls[0];
-    expect(documentType).toBe('TEST_RUN');
-    expect(callback.getDocIdentifiers()).toEqual([{ projectId: 'elibrary', documentName: '0_9b RT' }]);
+    await vi.waitFor(() => expect(dialog()).not.toBeNull());
+    expect(identifiers).toEqual([[{ projectId: 'elibrary', documentName: '0_9b RT' }]]);
   });
 
   it('does not open the export dialog with nothing selected', async () => {
-    const openExportPopup = vi.fn(() => Promise.resolve());
-    open(SAMPLE_ITEMS, { openExportPopup });
+    open(SAMPLE_ITEMS, { popup: popupDependencies() });
     await vi.waitFor(() => expect(rows().length).toBe(4));
 
     // Clicked directly: the button reports itself as disabled, which Playwright refuses to click
     exportButton().click();
 
-    expect(openExportPopup).not.toHaveBeenCalled();
+    expect(dialog()).toBeNull();
   });
 
   it('reports how many items were found and links to the table view', async () => {
@@ -194,7 +203,7 @@ describe('Bulk PDF Export widget', () => {
         json: { message: 'The widget descriptor is missing or was not signed by this server. Reload the page.' },
       },
     ]);
-    render(<BulkExportWidget shim={SAMPLE_SHIM} hostSelector="#host" />);
+    render(<BulkExportWidget shim={SAMPLE_SHIM} />);
 
     await vi.waitFor(() => expect(document.querySelector('.widget-error')).not.toBeNull());
     expect(document.querySelector('.widget-error')?.textContent).toContain('Reload the page');

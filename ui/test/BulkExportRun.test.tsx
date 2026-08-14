@@ -1,134 +1,150 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render } from 'vitest-browser-react';
 import { userEvent } from 'vitest/browser';
+import type { CollectionDocument, ConversionResult, MergeOptions } from '../src/services/conversion';
 import BulkExportWidget from '../src/widget/BulkExportWidget';
-import type {
-  BulkCallback,
-  CollectionDocument,
-  ConversionResult,
-  ExportContextLike,
-  ExportContextOptions,
-  ExportParamsLike,
-  MergeOptions,
-} from '../src/widget/productModules';
+import type { WidgetDependencies } from '../src/widget/BulkExportWidget';
 import { SAMPLE_ITEMS, SAMPLE_SHIM } from '../src/widget/sampleData';
 import type { BulkExportItem, BulkExportItems } from '../src/widget/types';
+import { SAMPLE_STYLE_PACKAGE_FULL, popupDependencies } from './exportPopupSamples';
 
-// A bulk export from the click on the button to the last download: the widget hands the selection to
-// the export dialog, the dialog hands back the parameters the user chose, and the run converts one item
-// at a time. The product's export JS is replaced here - a browser can only load it from a running
-// Polarion - so what is asserted is exactly what the widget asks it to do.
+// A bulk export from the click on the button to the last download: the widget opens its export dialog for the
+// selection, the dialog hands back the parameters the user chose, and the run converts one item at a time.
+//
+// Both dialogs are the widget's own React now, so the whole path is exercised here - selecting rows, the real
+// export dialog, its Export button, the progress dialog. Only the conversion is replaced: it needs a running
+// Polarion. What is asserted is therefore exactly what the widget asks the conversion to do.
 
-const conversions: {
+interface Conversion {
   request: Record<string, unknown>;
   resolve: (result: ConversionResult) => void;
-  reject: (response: Response) => void;
-}[] = [];
+  reject: (error: Error) => void;
+}
+
+const conversions: Conversion[] = [];
 const downloads: { fileName: string }[] = [];
-const attachmentCalls: unknown[][] = [];
-const collectionCalls: { collectionId: string; resolve: () => void; reject: (response: Response) => void }[] = [];
+const attachmentCalls: Record<string, unknown>[] = [];
+const collectionCalls: { collectionId: string; resolve: () => void; reject: (error: Error) => void }[] = [];
 const mergeConversions: {
-  request: unknown[];
+  request: Record<string, unknown>[];
   resolve: (result: ConversionResult) => void;
-  reject: (response: Response) => void;
+  reject: (error: Error) => void;
   options?: MergeOptions;
 }[] = [];
 const cancelCalls: string[] = [];
 let collectionDocuments: CollectionDocument[] = [];
 const MERGE_JOB_URL = '/polarion/pdf-exporter/rest/internal/convert/jobs/merge-job';
-let contextOptions: ExportContextOptions | null = null;
 
-const context: ExportContextLike = {
-  asyncConvertPdf: (request, onSuccess, onError) =>
-    conversions.push({ request: request as Record<string, unknown>, resolve: onSuccess, reject: onError }),
-  asyncConvertMergePdf: (request, onSuccess, onError, options) => {
-    options?.onJobStarted?.(MERGE_JOB_URL);
-    mergeConversions.push({
-      request: JSON.parse(request as string) as unknown[],
-      resolve: onSuccess,
-      reject: onError,
-      options,
-    });
+const pdf = (fileName: string | null = null): ConversionResult => ({
+  blob: new Blob(['pdf']),
+  fileName,
+  warning: null,
+});
+
+/**
+ * Dependencies that hold every conversion open, so the run can be observed one item at a time. The merge
+ * service is reported available, so the dialog offers the "merge into single PDF" option to the merge tests.
+ */
+const deps = (items: BulkExportItems): WidgetDependencies => ({
+  loadItems: () => Promise.resolve(items),
+  popup: {
+    ...popupDependencies({ stylePackage: SAMPLE_STYLE_PACKAGE_FULL }),
+    isBulkAvailable: () => Promise.resolve(true),
   },
-  cancelJob: (jobUrl) => cancelCalls.push(jobUrl),
-  getCollectionDocuments: () => Promise.resolve(collectionDocuments),
-  convertCollectionDocuments: (_params, collectionId, onComplete, onError) =>
-    collectionCalls.push({ collectionId, resolve: onComplete, reject: onError }),
-  downloadTestRunAttachments: (...args) => attachmentCalls.push(args),
-  downloadBlob: (_blob, fileName) => downloads.push({ fileName }),
-};
-
-/** Stands in for the product's ExportParams: a mutable bag the run fills in per item. */
-const exportParams = (over: Partial<ExportParamsLike> = {}): ExportParamsLike => {
-  const params: Record<string, unknown> = { attachmentsFilter: null, embedAttachments: false, ...over };
-  params.toJSON = () => ({ ...params, toJSON: undefined });
-  return params as unknown as ExportParamsLike;
-};
-
-const failure = (message: string) => new Response(JSON.stringify({ message }), { status: 500 });
-
-let openPopup: BulkCallback['openPopup'] | null = null;
-let docIdentifiers: BulkCallback['getDocIdentifiers'] | null = null;
-
-const deps = {
-  openExportPopup: (_documentType: string, callback: BulkCallback) => {
-    openPopup = callback.openPopup;
-    docIdentifiers = callback.getDocIdentifiers;
+  convert: (_remote, request) =>
+    new Promise<ConversionResult>((resolve, reject) => {
+      conversions.push({ request: JSON.parse(request) as Record<string, unknown>, resolve, reject });
+    }),
+  convertCollection: (_remote, options) =>
+    new Promise<void>((resolve, reject) => {
+      collectionCalls.push({ collectionId: options.collectionId, resolve, reject });
+    }),
+  convertMerge: (_remote, request, options) =>
+    new Promise<ConversionResult>((resolve, reject) => {
+      // The real convertMerge hands the job url back the moment the job is accepted; the run keeps it for a
+      // later Stop to cancel. The test double does the same synchronously so a Stop right after has it.
+      options?.onJobStarted?.(MERGE_JOB_URL);
+      mergeConversions.push({ request: JSON.parse(request) as Record<string, unknown>[], resolve, reject, options });
+    }),
+  cancel: (_remote, jobUrl) => {
+    cancelCalls.push(jobUrl);
     return Promise.resolve();
   },
-  createExportContext: (options: ExportContextOptions) => {
-    contextOptions = options;
-    return Promise.resolve(context);
+  listCollection: () => Promise.resolve(collectionDocuments),
+  download: (_blob, fileName) => downloads.push({ fileName }),
+  downloadAttachments: (_remote, options) => {
+    attachmentCalls.push(options as unknown as Record<string, unknown>);
+    return Promise.resolve();
   },
-};
+});
 
 const rows = () => Array.from(document.querySelectorAll('.polarion-rpw-table-content-row'));
 const checkboxes = () => Array.from(document.querySelectorAll<HTMLInputElement>('input.export-item'));
-const progressRows = () => Array.from(document.querySelectorAll('.modal__content .export-item'));
-const result = () => document.querySelector('.modal__footer .result')?.textContent;
+const progressDialog = () => document.querySelector('.bulk-export-progress');
+const progressRows = () => Array.from(document.querySelectorAll('.bulk-export-progress .export-item'));
+const result = () => document.querySelector('.bulk-export-outcome .result')?.textContent;
+const primaryButton = () => document.querySelector<HTMLButtonElement>('.rsp-modal-footer .sbb-btn--primary')!;
+const secondaryButton = () => document.querySelector<HTMLButtonElement>('.rsp-modal-footer .sbb-btn--secondary')!;
 
-/** Opens the widget, selects the given rows and walks through the export dialog. */
+/**
+ * Opens the widget, selects the given rows and walks through the export dialog to the run.
+ *
+ * `settings` are applied to the dialog's form before Export is pressed, which is how a test says what the
+ * user chose. The dialog's own behavior is covered by ExportPopup.test.tsx.
+ */
 async function startExport(
   items: BulkExportItems,
   selection: number[],
-  params = exportParams(),
-  overrides: Partial<typeof deps> = {},
+  settings: () => Promise<void> = async () => {},
   merge?: { fileName?: string },
 ) {
-  render(
-    <BulkExportWidget
-      shim={SAMPLE_SHIM}
-      hostSelector="#host"
-      deps={{ ...deps, ...overrides, loadItems: () => Promise.resolve(items) }}
-    />,
-  );
+  render(<BulkExportWidget shim={SAMPLE_SHIM} deps={deps(items)} />);
   await vi.waitFor(() => expect(rows().length).toBe(items.items.length));
   for (const index of selection) {
     await userEvent.click(checkboxes()[index]);
   }
   await userEvent.click(document.querySelector<HTMLElement>('#bulk-export-pdf')!);
-  await vi.waitFor(() => expect(openPopup).not.toBeNull());
-  if (merge) {
-    openPopup!(params, true, merge.fileName ?? 'merged-document.pdf');
-  } else {
-    openPopup!(params);
+
+  // The export dialog opens for the selection. Where the automatic style package pick applies - a bulk run
+  // over documents or collections - it is on by default and hides the form, so it is switched off: what the
+  // run then converts is what the form says. A bulk run over test runs is offered no such pick.
+  await vi.waitFor(() =>
+    expect(document.querySelector('#popup-auto-select-style-package, #popup-style-package-select')).not.toBeNull(),
+  );
+  const autoSelect = document.querySelector<HTMLInputElement>('#popup-auto-select-style-package');
+  if (autoSelect?.checked) {
+    await userEvent.click(autoSelect);
   }
-  await vi.waitFor(() => expect(document.querySelector('#bulk-pdf-export-modal-popup')).not.toBeNull());
+  await vi.waitFor(() => expect(document.querySelector('#popup-style-package-content')).not.toBeNull());
+  await settings();
+
+  // A merge run ticks the bulk-only "merge into single PDF" option, offered because the merge service is
+  // reported available, and names the merged file when the test cares which name it carries.
+  if (merge) {
+    await vi.waitFor(() => expect(document.querySelector('#popup-merge-into-single-pdf')).not.toBeNull());
+    await userEvent.click(document.querySelector<HTMLInputElement>('#popup-merge-into-single-pdf')!);
+    if (merge.fileName !== undefined) {
+      await userEvent.fill(document.querySelector<HTMLInputElement>('#popup-merge-filename')!, merge.fileName);
+    }
+  }
+
+  await userEvent.click(primaryButton());
+  await vi.waitFor(() => expect(progressDialog()).not.toBeNull());
 }
 
 const finishMerge = async (fileName?: string) => {
   await vi.waitFor(() => expect(mergeConversions.length).toBeGreaterThan(0));
-  mergeConversions.shift()!.resolve({ response: new Blob(['pdf']), fileName });
+  mergeConversions.shift()!.resolve(pdf(fileName ?? null));
 };
 
 const finishConversion = async (fileName?: string) => {
   await vi.waitFor(() => expect(conversions.length).toBeGreaterThan(0));
-  conversions.shift()!.resolve({ response: new Blob(['pdf']), fileName });
+  conversions.shift()!.resolve(pdf(fileName ?? null));
 };
 
 const failConversion = async (message: string) => {
   await vi.waitFor(() => expect(conversions.length).toBeGreaterThan(0));
-  conversions.shift()!.reject(failure(message));
+  conversions.shift()!.reject(new Error(message));
 };
 
 const documentItem = (spaceId: string, id: string): BulkExportItem => ({
@@ -160,9 +176,7 @@ afterEach(() => {
   mergeConversions.length = 0;
   cancelCalls.length = 0;
   collectionDocuments = [];
-  contextOptions = null;
-  openPopup = null;
-  docIdentifiers = null;
+  document.cookie = 'selected-style-package=; path=/; max-age=0';
 });
 
 describe('Bulk export run', () => {
@@ -184,27 +198,28 @@ describe('Bulk export run', () => {
     expect(downloads.map((download) => download.fileName)).toEqual(['first.pdf', 'second.pdf']);
   });
 
-  it('binds the export context to the widget and its export-pages setting', async () => {
-    await startExport(SAMPLE_ITEMS, [0]);
-
-    await vi.waitFor(() => expect(contextOptions).not.toBeNull());
-    expect(contextOptions).toEqual({ exportPages: false, rootComponentSelector: '#host' });
-  });
-
   it('addresses a test run by id and fetches its attachments alongside', async () => {
-    await startExport(SAMPLE_ITEMS, [0], exportParams({ attachmentsFilter: '.*', revision: '42' }));
+    // The sample widget lists test runs, and the style package names an attachments filter
+    await startExport(SAMPLE_ITEMS, [0]);
 
     await vi.waitFor(() => expect(conversions.length).toBe(1));
     expect(conversions[0].request).toMatchObject({
       projectId: 'elibrary',
       documentType: 'TEST_RUN',
       urlQueryParameters: { id: 'build_quick-20170211-141155' },
+      attachmentsFilter: '*.*',
     });
-    expect(attachmentCalls[0].slice(0, 4)).toEqual(['elibrary', 'build_quick-20170211-141155', '42', '.*']);
+    expect(attachmentCalls[0]).toMatchObject({
+      projectId: 'elibrary',
+      testRunId: 'build_quick-20170211-141155',
+      filter: '*.*',
+    });
   });
 
   it('leaves the attachments alone when they are embedded into the PDF', async () => {
-    await startExport(SAMPLE_ITEMS, [0], exportParams({ attachmentsFilter: '.*', embedAttachments: true }));
+    await startExport(SAMPLE_ITEMS, [0], async () => {
+      await userEvent.click(document.querySelector<HTMLInputElement>('#popup-embed-attachments')!);
+    });
 
     await vi.waitFor(() => expect(conversions.length).toBe(1));
     expect(attachmentCalls).toEqual([]);
@@ -249,44 +264,20 @@ describe('Bulk export run', () => {
     expect(downloads.map((download) => download.fileName)).toEqual(['second.pdf']);
   });
 
-  it('ends the run when the product export JS cannot be loaded', async () => {
-    await startExport(SAMPLE_ITEMS, [0, 1], exportParams(), {
-      createExportContext: () => Promise.reject(new Error('Failed to fetch dynamically imported module')),
-    });
+  it('says a failure happened even when the server gave no reason', async () => {
+    await startExport(SAMPLE_ITEMS, [0]);
 
+    await failConversion('');
     await vi.waitFor(() => expect(result()).toBe('Export finished with errors'));
-    // Nothing was ever converted, and no row is left waiting for a conversion that cannot come
-    expect(conversions.length).toBe(0);
-    expect(progressRows().every((row) => row.className.includes('error'))).toBe(true);
-    expect(progressRows()[0].querySelector('.error-message')?.textContent).toBe('Could not start the export.');
-  });
-
-  it('keeps the user interruption when the product export JS fails after Stop', async () => {
-    let failLoad: (reason: Error) => void = () => {};
-    await startExport(SAMPLE_ITEMS, [0, 1], exportParams(), {
-      createExportContext: () =>
-        new Promise<ExportContextLike>((_resolve, reject) => {
-          failLoad = reject;
-        }),
-    });
-
-    // The load is still pending, so the dialog offers Stop and the user takes it
-    await userEvent.click(document.querySelector<HTMLElement>('#bulk-stop-export-pdf')!);
-    expect(result()).toBe('Export interrupted by user');
-
-    failLoad(new Error('Failed to fetch dynamically imported module'));
-    await new Promise((resolve) => setTimeout(resolve, 20));
-
-    // The failure arrives after the fact and must not rewrite what the user did
-    expect(result()).toBe('Export interrupted by user');
-    expect(progressRows().every((row) => row.className.includes('interrupted'))).toBe(true);
+    expect(progressRows()[0].querySelector('.error-message')?.textContent).toBe('Export failed');
   });
 
   it('stops the run when the user asks, leaving what was queued untouched', async () => {
     await startExport(SAMPLE_ITEMS, [0, 1, 2]);
     await vi.waitFor(() => expect(conversions.length).toBe(1));
 
-    await userEvent.click(document.querySelector<HTMLElement>('#bulk-stop-export-pdf')!);
+    // While the run is going the dialog offers Stop, and only Stop
+    await userEvent.click(primaryButton());
 
     expect(result()).toBe('Export interrupted by user');
     expect(progressRows()[1].className).toContain('interrupted');
@@ -304,38 +295,72 @@ describe('Bulk export run', () => {
     await finishConversion('first.pdf');
     await vi.waitFor(() => expect(result()).toBe('Export successfully finished'));
 
-    await userEvent.click(document.querySelector<HTMLElement>('.modal__footer .polarion-JSWizardButton')!);
+    // The run is over, so the dialog offers Close
+    await userEvent.click(secondaryButton());
 
-    expect(document.querySelector('#bulk-pdf-export-modal-popup')).toBeNull();
+    await vi.waitFor(() => expect(progressDialog()).toBeNull());
   });
 
-  it('tells the export dialog which items were selected', async () => {
-    await startExport(
-      withItems([documentItem('Requirements', 'Specification'), documentItem('_default', 'Home')]),
-      [1],
+  it('offers the style packages that suit every selected item', async () => {
+    const items = withItems([documentItem('Requirements', 'Specification'), documentItem('_default', 'Home')]);
+    const requested: unknown[] = [];
+    render(
+      <BulkExportWidget
+        shim={SAMPLE_SHIM}
+        deps={{
+          ...deps(items),
+          popup: {
+            ...popupDependencies(),
+            loadData: (_send, request) => {
+              requested.push(request.identifiers);
+              return Promise.reject(new Error('enough'));
+            },
+          },
+        }}
+      />,
     );
+    await vi.waitFor(() => expect(rows().length).toBe(2));
+    await userEvent.click(checkboxes()[1]);
+    await userEvent.click(document.querySelector<HTMLElement>('#bulk-export-pdf')!);
 
-    expect(docIdentifiers!()).toEqual([{ projectId: 'elibrary', spaceId: '_default', documentName: 'Home' }]);
+    await vi.waitFor(() => expect(requested.length).toBe(1));
+    expect(requested[0]).toEqual([{ projectId: 'elibrary', spaceId: '_default', documentName: 'Home' }]);
+  });
+
+  // That an empty selection opens nothing is covered by BulkExportWidget.test.tsx, which reads the disabled
+  // state of the button rather than clicking it - a click on an aria-disabled control is not something a
+  // browser driver will do.
+
+  it('lets the user close the export dialog without exporting', async () => {
+    render(<BulkExportWidget shim={SAMPLE_SHIM} deps={deps(SAMPLE_ITEMS)} />);
+    await vi.waitFor(() => expect(rows().length).toBe(SAMPLE_ITEMS.items.length));
+    await userEvent.click(checkboxes()[0]);
+    await userEvent.click(document.querySelector<HTMLElement>('#bulk-export-pdf')!);
+    await vi.waitFor(() => expect(document.querySelector('#popup-style-package-select')).not.toBeNull());
+
+    await userEvent.click(secondaryButton());
+
+    await vi.waitFor(() => expect(document.querySelector('.rsp-modal')).toBeNull());
+    expect(conversions.length).toBe(0);
   });
 
   it('merges the selection into a single file when asked, submitting all documents at once', async () => {
     await startExport(
       withItems([documentItem('Requirements', 'Specification'), documentItem('Design', 'Overview')]),
       [0, 1],
-      exportParams(),
-      {},
+      async () => {},
       { fileName: 'release.pdf' },
     );
 
-    // The title reflects the merge, and both rows go straight to in-progress: one job for the whole set
-    expect(document.querySelector('.modal__title span')?.textContent).toBe(
+    // The title reflects the merge: one job for the whole set rather than one conversion per item
+    expect(document.querySelector('.rsp-modal-title')?.textContent).toBe(
       'Bulk export to PDF (merging into single file)',
     );
     await vi.waitFor(() => expect(mergeConversions.length).toBe(1));
     expect(conversions.length).toBe(0);
     expect(mergeConversions[0].request).toHaveLength(2);
     // The merged file name rides on the first document
-    expect((mergeConversions[0].request[0] as Record<string, unknown>).fileName).toBe('release.pdf');
+    expect(mergeConversions[0].request[0].fileName).toBe('release.pdf');
     expect(mergeConversions[0].request[1]).toMatchObject({ locationPath: 'Design/Overview' });
 
     await finishMerge('release.pdf');
@@ -350,7 +375,7 @@ describe('Bulk export run', () => {
       { projectId: 'elibrary', spaceId: 'Requirements', documentName: 'Specification', documentType: 'LIVE_DOC' },
       { projectId: 'elibrary', spaceId: 'Design', documentName: 'Overview', documentType: 'LIVE_DOC' },
     ];
-    await startExport(withItems([collectionItem('C1', 'Release 1.0')]), [0], exportParams(), {}, {});
+    await startExport(withItems([collectionItem('C1', 'Release 1.0')]), [0], async () => {}, {});
 
     await vi.waitFor(() => expect(mergeConversions.length).toBe(1));
     expect(mergeConversions[0].request).toHaveLength(2);
@@ -359,10 +384,11 @@ describe('Bulk export run', () => {
   });
 
   it('cancels the backend merge job when the user stops, and keeps the interruption', async () => {
-    await startExport(SAMPLE_ITEMS, [0, 1], exportParams(), {}, {});
+    await startExport(SAMPLE_ITEMS, [0, 1], async () => {}, {});
     await vi.waitFor(() => expect(mergeConversions.length).toBe(1));
 
-    await userEvent.click(document.querySelector<HTMLElement>('#bulk-stop-export-pdf')!);
+    // While the run is going the progress dialog offers Stop, and only Stop
+    await userEvent.click(primaryButton());
 
     expect(result()).toBe('Export interrupted by user');
     expect(cancelCalls).toEqual([MERGE_JOB_URL]);
@@ -370,7 +396,7 @@ describe('Bulk export run', () => {
     expect(progressRows().every((row) => row.className.includes('interrupted'))).toBe(true);
 
     // A result arriving after the stop must not download anything or rewrite the outcome
-    mergeConversions[0].resolve({ response: new Blob(['pdf']), fileName: 'release.pdf' });
+    mergeConversions[0].resolve(pdf('release.pdf'));
     await new Promise((resolve) => setTimeout(resolve, 20));
     expect(result()).toBe('Export interrupted by user');
     expect(downloads.length).toBe(0);

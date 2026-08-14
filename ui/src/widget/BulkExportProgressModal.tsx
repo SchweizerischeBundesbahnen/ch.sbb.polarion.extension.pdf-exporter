@@ -1,8 +1,6 @@
-import { createPortal } from 'react-dom';
+import { Modal } from '@grigoriev/react-sbb-polarion';
 import type { BulkExportState } from './useBulkExport';
 import { itemName, itemTypeLabel } from './useBulkExport';
-
-const POPUP_ID = 'bulk-pdf-export-modal-popup';
 
 interface Props {
   state: BulkExportState;
@@ -18,13 +16,20 @@ function resultMessage(state: BulkExportState): string {
 }
 
 /**
- * The progress dialog of a bulk export.
+ * The progress dialog of a bulk export: one row per selected item, its state as the run reaches it.
  *
- * It is rendered into the document body rather than into the widget's shadow root: the dialog wears the
- * same micromodal styling as the export parameters dialog that opens it, and that stylesheet is put on
- * the page by the widget renderer, where the product's own dialogs need it too.
+ * It is RSP's shared `Modal`, rendered inside the widget's own shadow root - so it is styled by the
+ * stylesheets that root carries and needs nothing on the report page around it. It used to be micromodal
+ * markup portalled into the page body, because the export dialog it follows was the product's own and put
+ * its stylesheet there; both dialogs are this app's now.
+ *
+ * The shared Modal owns its footer, so the progress bar and the outcome are the last thing in the body
+ * rather than sitting next to the buttons. That footer always renders both of its buttons, while this dialog
+ * offers exactly one at a time - Stop while the run is going, Close once it is over - so `widget.css` hides
+ * the other one, keyed off the `running` / `done` class below. A `Modal` that could be told to show one
+ * button would make that unnecessary; until then this is the one place that needs it.
  */
-export default function BulkExportProgressModal({ state, onStop, onClose }: Props) {
+export default function BulkExportProgressModal({ state, onStop, onClose }: Readonly<Props>) {
   if (state.status === 'closed') {
     return null;
   }
@@ -32,75 +37,53 @@ export default function BulkExportProgressModal({ state, onStop, onClose }: Prop
   const running = state.status === 'in-progress';
   const progress = state.rows.length === 0 ? 0 : Math.round((state.processed / state.rows.length) * 100);
 
-  return createPortal(
-    <div className="modal micromodal-slide is-open" id={POPUP_ID} aria-hidden="false">
-      <div className="modal__overlay" tabIndex={-1}>
-        <div
-          id="bulk-pdf-export-popup"
-          className="modal__container pdf-exporter"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby={`${POPUP_ID}-title`}
-        >
-          <header className="modal__header">
-            <h2
-              className="modal__title"
-              id={`${POPUP_ID}-title`}
-              style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}
-            >
-              <span>{state.merge ? 'Bulk export to PDF (merging into single file)' : 'Bulk export to PDF'}</span>
-            </h2>
-          </header>
-          <main className="modal__content">
-            {state.rows.map((row, index) => (
-              <div className={`export-item ${row.state}`} key={`${row.item.projectId}/${row.item.id}/${index}`}>
-                <span className="icon">
-                  <i className="fa" />
-                  <span className="sbb-spinner" role="img" aria-label="In progress" />
-                </span>
-                <span className="title">
-                  <span className="type">{itemTypeLabel(row.item)}</span>
-                  <span className="name">{itemName(row.item)}</span>
-                </span>
-                {row.error && <div className="error-message">{row.error}</div>}
-              </div>
-            ))}
-          </main>
-          <footer className="modal__footer">
-            {/* A single item needs no progress bar: its own row already shows the state */}
-            {running && state.rows.length > 1 && (
-              <div className="progress-bar">
-                <span style={{ width: `${progress}%` }}>
-                  {progress > 25 ? `${state.processed} out of ${state.rows.length} finished` : ''}
-                </span>
-              </div>
-            )}
-            {!running && (
-              <span
-                className={`result ${state.status === 'interrupted' ? 'interrupted' : 'finished'}${
-                  state.status === 'finished' && state.errors ? ' with-errors' : ''
-                }`}
-              >
-                {resultMessage(state)}
+  return (
+    <Modal
+      open
+      // A merge run says so in the title, the way the legacy dialog did: the whole selection becomes one file.
+      title={state.merge ? 'Bulk export to PDF (merging into single file)' : 'Bulk export to PDF'}
+      okText="Stop"
+      cancelText="Close"
+      onOk={running ? onStop : onClose}
+      // The header's close button and Escape. Closing stops the run as well - a conversion already handed to
+      // the server cannot be recalled, but nothing further is started.
+      onCancel={onClose}
+    >
+      <div className={`bulk-export-progress ${running ? 'running' : 'done'}`} id="bulk-pdf-export-popup">
+        {state.rows.map((row, index) => (
+          <div className={`export-item ${row.state}`} key={`${row.item.projectId}/${row.item.id}/${index}`}>
+            <span className="icon">
+              <i className="fa" />
+              <span className="sbb-spinner" role="img" aria-label="In progress" />
+            </span>
+            <span className="title">
+              <span className="type">{itemTypeLabel(row.item)}</span>
+              <span className="name">{itemName(row.item)}</span>
+            </span>
+            {row.error && <div className="error-message">{row.error}</div>}
+          </div>
+        ))}
+
+        <div className="bulk-export-outcome">
+          {/* A single item needs no progress bar: its own row already shows the state */}
+          {running && state.rows.length > 1 && (
+            <div className="progress-bar">
+              <span style={{ width: `${progress}%` }}>
+                {progress > 25 ? `${state.processed} out of ${state.rows.length} finished` : ''}
               </span>
-            )}
-            {running ? (
-              <button
-                id="bulk-stop-export-pdf"
-                className="polarion-JSWizardButton-Primary action-button"
-                onClick={onStop}
-              >
-                Stop
-              </button>
-            ) : (
-              <button className="polarion-JSWizardButton" aria-label="Close this dialog window" onClick={onClose}>
-                Close
-              </button>
-            )}
-          </footer>
+            </div>
+          )}
+          {!running && (
+            <span
+              className={`result ${state.status === 'interrupted' ? 'interrupted' : 'finished'}${
+                state.status === 'finished' && state.errors ? ' with-errors' : ''
+              }`}
+            >
+              {resultMessage(state)}
+            </span>
+          )}
         </div>
       </div>
-    </div>,
-    document.body,
+    </Modal>
   );
 }

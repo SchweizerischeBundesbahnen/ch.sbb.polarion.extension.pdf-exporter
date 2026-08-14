@@ -5,7 +5,7 @@
     <parent>
         <groupId>ch.sbb.polarion.extensions</groupId>
         <artifactId>ch.sbb.polarion.extension.generic</artifactId>
-        <version>15.10.1</version>
+        <version>15.11.0</version>
     </parent>
 
     <artifactId>ch.sbb.polarion.extension.pdf-exporter</artifactId>
@@ -75,8 +75,10 @@
         <maven-jar-plugin.Require-Bundle.extension>com.polarion.alm.wiki,org.jsoup,net.bytebuddy.byte-buddy,org.apache.tika.patched;resolution:=optional,org.apache.tika;resolution:=optional</maven-jar-plugin.Require-Bundle.extension>
         <maven-jar-plugin.Require-Bundle>${maven-jar-plugin.Require-Bundle.common},${maven-jar-plugin.Require-Bundle.extension}</maven-jar-plugin.Require-Bundle>
 
-        <!--suppress UnresolvedMavenProperty -->
-        <markdown2html-maven-plugin.failOnError>${env.MARKDOWN2HTML_MAVEN_PLUGIN_FAIL_ON_ERROR}</markdown2html-maven-plugin.failOnError>
+        <!-- A broken README.md -> about.html conversion fails the build instead of shipping an
+             empty About page. markdown2html renders locally since 1.7.x - no GitHub API, no token -
+             so the same setting is right in CI, in a deploy job and on a developer machine. -->
+        <markdown2html-maven-plugin.failOnError>true</markdown2html-maven-plugin.failOnError>
         <markdown2html-maven-plugin.user-guide.inputFile>${project.basedir}/USER_GUIDE.md</markdown2html-maven-plugin.user-guide.inputFile>
         <markdown2html-maven-plugin.user-guide.outputFileName>user-guide.html</markdown2html-maven-plugin.user-guide.outputFileName>
         <markdown2html-maven-plugin.user-guide.outputFile>${markdown2html-maven-plugin.extensionContextAdminHtml}/${markdown2html-maven-plugin.user-guide.outputFileName}</markdown2html-maven-plugin.user-guide.outputFile>
@@ -84,10 +86,10 @@
         <markdown2html-maven-plugin.disclaimer.outputFileName>disclaimer.html</markdown2html-maven-plugin.disclaimer.outputFileName>
         <markdown2html-maven-plugin.disclaimer.outputFile>${markdown2html-maven-plugin.extensionContextAdminHtml}/${markdown2html-maven-plugin.disclaimer.outputFileName}</markdown2html-maven-plugin.disclaimer.outputFile>
 
+        <!-- Not for a plugin declared here: this project declares no frontend-maven-plugin of its own
+             any more. The parent's vite-ui profile reads this property, so it pins the version the ui/
+             build runs with, one minor ahead of the parent's own default. -->
         <frontend-maven-plugin.version>2.0.2</frontend-maven-plugin.version>
-
-        <!--suppress UnresolvedMavenProperty -->
-        <skipJavaScriptTests>${skipTests}</skipJavaScriptTests>
     </properties>
 
 
@@ -387,6 +389,7 @@
                 <artifactId>swagger-maven-plugin-jakarta</artifactId>
                 <configuration>
                     <outputFormat>JSON</outputFormat>
+                    <!-- Stable ordering, so a rebuild does not reshuffle docs/openapi.json. -->
                     <resourcePackages>
                         <package>ch.sbb.polarion.extension.generic.rest.controller.info</package>
                         <package>ch.sbb.polarion.extension.generic.rest.controller.roles</package>
@@ -400,96 +403,6 @@
             <plugin>
                 <groupId>io.github.grigoriev</groupId>
                 <artifactId>pre-commit-run-maven-plugin</artifactId>
-            </plugin>
-
-            <!-- generic.app.jar carries the shared JSP fragments (/common/jsp/notifications.jsp and
-                 friends) that the administration pages include, and it reaches a webapp by being copied
-                 into its WEB-INF/lib. The parent copies it into exactly one webapp -
-                 `generic.app.ui.webapp` - and its vite-ui profile points that at the React app as soon
-                 as ui/ exists. This extension is mid-conversion and serves both UIs, so the JSP webapp
-                 needs its own copy: without it every page still on JSP answers 500 with
-                 "JSP file [/common/jsp/notifications.jsp] not found".
-                 Delete this execution together with the last JSP page. -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-dependency-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>copy-generic-app-to-admin-webapp</id>
-                        <phase>prepare-package</phase>
-                        <goals>
-                            <goal>copy</goal>
-                        </goals>
-                        <configuration>
-                            <artifactItems>
-                                <artifactItem>
-                                    <groupId>ch.sbb.polarion.extensions</groupId>
-                                    <artifactId>ch.sbb.polarion.extension.generic.app</artifactId>
-                                    <version>${project.parent.version}</version>
-                                    <type>jar</type>
-                                </artifactItem>
-                            </artifactItems>
-                            <outputDirectory>${basedir}/target/classes/webapp/${maven-jar-plugin.Extension-Context}-admin/WEB-INF/lib</outputDirectory>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <plugin>
-                <groupId>com.github.eirslett</groupId>
-                <artifactId>frontend-maven-plugin</artifactId>
-                <version>${frontend-maven-plugin.version}</version>
-                <executions>
-                    <execution>
-                        <id>install-node-and-npm</id>
-                        <goals>
-                            <goal>install-node-and-npm</goal>
-                        </goals>
-                        <configuration>
-                            <!-- Spelled out per execution since the React app arrived: the parent's
-                                 vite-ui profile declares this same plugin with a plugin-level
-                                 <workingDirectory>ui</workingDirectory>, which Maven merges into this
-                                 declaration and which would otherwise move the product-JS build into
-                                 ui/ - where `npm run test` is the Vitest browser suite, not this
-                                 project's mocha one. Setting it at plugin level here is not an option
-                                 either: that would drag the parent's own vite executions back out of
-                                 ui/. -->
-                            <workingDirectory>${project.basedir}</workingDirectory>
-                            <nodeVersion>${frontend-maven-plugin.nodeVersion}</nodeVersion>
-                            <npmVersion>${frontend-maven-plugin.npmVersion}</npmVersion>
-                            <skip>${skipJavaScriptTests}</skip>
-                        </configuration>
-                        <phase>test</phase>
-                    </execution>
-
-                    <!-- Install JavaScript dependencies using npm -->
-                    <execution>
-                        <id>npm-install</id>
-                        <goals>
-                            <goal>npm</goal>
-                        </goals>
-                        <configuration>
-                            <workingDirectory>${project.basedir}</workingDirectory>
-                            <arguments>install</arguments>
-                            <skip>${skipJavaScriptTests}</skip>
-                        </configuration>
-                        <phase>test</phase>
-                    </execution>
-
-                    <!-- Run JavaScript tests -->
-                    <execution>
-                        <id>npm-test</id>
-                        <goals>
-                            <goal>npm</goal>
-                        </goals>
-                        <configuration>
-                            <workingDirectory>${project.basedir}</workingDirectory>
-                            <arguments>run test</arguments>
-                            <skip>${skipJavaScriptTests}</skip>
-                        </configuration>
-                        <phase>test</phase>
-                    </execution>
-                </executions>
             </plugin>
         </plugins>
     </build>

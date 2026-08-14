@@ -26,7 +26,7 @@ public class BulkPdfExportWidget extends TableWidget {
     @NotNull
     @Override
     public String getIcon(@NotNull RichPageWidgetContext widgetContext) {
-        return "/polarion/pdf-exporter-admin/ui/images/app-icon.svg";
+        return "/polarion/pdf-exporter-app/ui/images/app-icon.svg";
     }
 
     @NotNull

@@ -24,12 +24,6 @@ export default defineConfig(({ command, mode }) => {
             target: polarionUrl,
             changeOrigin: true,
           },
-          // The build-generated help articles served straight from the app webapp; the Usage
-          // Disclaimer page reads disclaimer.html from here (there is no REST endpoint for it).
-          '/polarion/pdf-exporter-app/ui/html': {
-            target: polarionUrl,
-            changeOrigin: true,
-          },
           // The extension's own webapp context: its REST API, which the About page reads.
           '/polarion/pdf-exporter/rest': {
             target: polarionUrl,
@@ -75,22 +69,30 @@ export default defineConfig(({ command, mode }) => {
       rollupOptions: {
         // Keep what an entry exports. A Vite app build assumes its entries are only ever executed, so it
         // drops their exports - which leaves the widget bundle without the `default` the renderer's
-        // `import(...).then(module => module.default(...))` calls. scripts/check-widget-entry.mjs guards
-        // this after every build, since no test sees the built file.
+        // `import(...).then(module => module.default(...))` calls, the side panel bundle without its
+        // `mountSidePanel` and the popup bundle without its `openExportPopup`.
+        // scripts/check-runtime-entries.mjs guards all three after every build, since no test sees the
+        // built files.
         preserveEntrySignatures: 'strict',
-        // Two entries: the admin SPA (index.html) and the bulk export widget, which is imported at
-        // runtime by the widget renderer on a Polarion report page.
+        // Four entries: the admin SPA (index.html), the bulk export widget imported at runtime by the
+        // widget renderer on a Polarion report page, the Document Properties side panel imported by the
+        // form-extension fragment in the document editor, and the "Export to PDF" dialog imported by the
+        // two toolbar injectors and the report page's export button.
         input: {
           index: fileURLToPath(new URL('index.html', import.meta.url)),
           'bulk-widget': fileURLToPath(new URL('src/widget/main.tsx', import.meta.url)),
+          'side-panel': fileURLToPath(new URL('src/sidepanel/mount.tsx', import.meta.url)),
+          'export-popup': fileURLToPath(new URL('src/popup/mount.tsx', import.meta.url)),
         },
         output: {
-          // The widget's file name must stay predictable: BulkPdfExportWidgetRenderer imports it by
-          // URL and cannot know the hash Vite would append. It appends the extension version instead,
-          // which is what busts the browser cache on an update.
+          // These three file names must stay predictable: their importers name them by URL and cannot know
+          // the hash Vite would append. They append the extension version instead, which is what busts
+          // the browser cache on an update.
           entryFileNames: (chunk) =>
-            chunk.name === 'bulk-widget' ? 'assets/bulk-widget.js' : 'assets/[name]-[hash].js',
-          // What both entries share (React above all) lands in one chunk. Rollup would name it after
+            ['bulk-widget', 'side-panel', 'export-popup'].includes(chunk.name)
+              ? `assets/${chunk.name}.js`
+              : 'assets/[name]-[hash].js',
+          // What the entries share (React above all) lands in one chunk. Rollup would name it after
           // whichever module it happened to pick, which reads as nonsense next to bulk-widget.js on a
           // report page.
           chunkFileNames: 'assets/shared-[hash].js',

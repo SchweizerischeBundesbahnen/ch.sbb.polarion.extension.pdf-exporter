@@ -170,10 +170,15 @@ class PdfConverterJobsServiceTest {
     void shouldGetAllJobsStatuses() {
         prepareSecurityServiceSubject(subject);
         ExportParams exportParams = ExportParams.builder().build();
-        lenient().when(pdfConverter.convertToPdf(exportParams, null)).thenReturn("test pdf".getBytes());
+        when(pdfConverter.convertToPdf(exportParams, null)).thenReturn("test pdf".getBytes());
 
         String jobId1 = pdfConverterJobsService.startJob(exportParams, 60);
         String jobId2 = pdfConverterJobsService.startJob(exportParams, 60);
+
+        // Wait for both jobs: the conversion runs on a separate thread, so without this the stubs of
+        // the calls made inside the async body may stay unused and strict stubbing fails the test.
+        waitToFinishJob(jobId1);
+        waitToFinishJob(jobId2);
 
         Map<String, JobState> allJobsStates = pdfConverterJobsService.getAllJobsStates();
         assertThat(allJobsStates).containsOnlyKeys(jobId1, jobId2);

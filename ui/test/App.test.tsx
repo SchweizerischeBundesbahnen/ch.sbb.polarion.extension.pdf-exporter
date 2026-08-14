@@ -37,6 +37,7 @@ describe('findFeature', () => {
     expect(findFeature('about')?.id).toBe('about');
     expect(findFeature('disclaimer')?.id).toBe('disclaimer');
     expect(findFeature('user-guide')?.id).toBe('user-guide');
+    expect(findFeature('style-package')?.id).toBe('style-package');
     expect(findFeature('style-package-weights')?.id).toBe('style-package-weights');
     expect(findFeature('authorization')?.id).toBe('authorization');
     expect(findFeature('nope')).toBeUndefined();
@@ -63,10 +64,14 @@ describe('App router', () => {
       '?feature=filename',
       '?feature=localization',
       '?feature=webhooks',
+      '?feature=style-package',
       '?feature=style-package-weights',
       '?feature=authorization',
-      // Last, and the only entry no administration page points at: the widget's dev harness
+      // Last, and the only entries no administration page points at: the three development harnesses, for
+      // the report page widget, the document editor's export panel and the toolbar export dialog
       '?feature=bulk-widget',
+      '?feature=side-panel',
+      '?feature=export-popup',
     ]);
   });
 

@@ -1,6 +1,7 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import rspStyles from '@grigoriev/react-sbb-polarion/style.css?inline';
+import popupStyles from '../popup/export-popup.css?inline';
 import BulkExportWidget from './BulkExportWidget';
 import type { WidgetDependencies } from './BulkExportWidget';
 import type { DocumentType, WidgetShim } from './types';
@@ -47,7 +48,7 @@ function addStyle(root: ShadowRoot, css: string): void {
  * Gives a host element its shadow root with the styles the widget needs, and renders the widget into
  * it. Separate from {@link mount} so that the dev harness can mount the same widget with its own data.
  */
-export function mountInto(host: HTMLElement, shim: WidgetShim, hostSelector: string, deps?: WidgetDependencies): void {
+export function mountInto(host: HTMLElement, shim: WidgetShim, deps?: WidgetDependencies): void {
   if (host.shadowRoot) {
     return;
   }
@@ -55,18 +56,23 @@ export function mountInto(host: HTMLElement, shim: WidgetShim, hostSelector: str
   adoptPageStyles(root);
   // After the page's stylesheets, so that the widget's own rules win where both have something to say
   addStyle(root, rspStyles);
+  // The widget renders two dialogs of its own: the export parameters dialog, whose stylesheet this is, and
+  // the progress dialog, which widget.css styles. Both used to be micromodal markup in the report page's
+  // body, styled by stylesheets the widget renderer put on the page; both are inside this root now.
+  addStyle(root, popupStyles);
   addStyle(root, widgetStyles);
 
   const container = document.createElement('div');
-  // The scope the --sbb-* tokens are declared on. They would also inherit from the host, which carries
-  // the same class in Polarion, but declaring them inside keeps the widget self-contained - which is
-  // what the dev harness and the tests mount it as
-  container.className = 'sbb-ui';
+  // `sbb-ui` is the scope the --sbb-* tokens are declared on. They would also inherit from the host, which
+  // carries the same class in Polarion, but declaring them inside keeps the widget self-contained - which is
+  // what the dev harness and the tests mount it as. `pdf-exporter` is what the export dialog's own rules are
+  // scoped to; the widget's markup has nothing those rules match.
+  container.className = 'sbb-ui pdf-exporter';
   root.appendChild(container);
 
   createRoot(container).render(
     <StrictMode>
-      <BulkExportWidget shim={shim} hostSelector={hostSelector} deps={deps} />
+      <BulkExportWidget shim={shim} deps={deps} />
     </StrictMode>,
   );
 }
@@ -74,8 +80,8 @@ export function mountInto(host: HTMLElement, shim: WidgetShim, hostSelector: str
 /**
  * Mounts the widget into the shim the renderer emitted.
  *
- * A report page may carry several of these widgets, so everything is scoped to the shim's own id, and
- * each gets a shadow root of its own: the page around it is Polarion's, not this app's.
+ * A report page may carry several of these widgets, so each is found by the shim's own id and gets a shadow
+ * root of its own: the page around it is Polarion's, not this app's.
  */
 export default function mount(selector: string): void {
   const host = document.querySelector<HTMLElement>(selector);
@@ -83,5 +89,5 @@ export default function mount(selector: string): void {
     console.error(`Bulk PDF Export widget: no element matches ${selector}`);
     return;
   }
-  mountInto(host, readShim(host), selector);
+  mountInto(host, readShim(host));
 }

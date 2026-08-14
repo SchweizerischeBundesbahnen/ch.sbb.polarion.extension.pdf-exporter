@@ -1,29 +1,30 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import type { DocIdentifier } from '../export/exportData';
+import type { ExportParamsJson } from '../export/exportParams';
+import ExportPopupModal from '../popup/ExportPopupModal';
+import type { ExportPopupDependencies } from '../popup/ExportPopupModal';
+import type { DocumentIdentity } from '../services/exportContext';
 import useRemote from '../services/useRemote';
 import BulkExportProgressModal from './BulkExportProgressModal';
-import type { BulkCallback, ExportParamsLike, createExportContext } from './productModules';
-import { openExportPopup } from './productModules';
 import type { BulkExportItem, BulkExportItems, WidgetShim } from './types';
 import useBulkExport from './useBulkExport';
+import type { BulkExportDependencies } from './useBulkExport';
 
 /** How the widget gets its rows. Rejects with an Error whose message the widget shows. */
 export type LoadItems = () => Promise<BulkExportItems>;
 
 /**
  * What the widget reaches outside itself for. Everything here has a working default; the dev harness
- * replaces the REST call, and the tests replace the product's export JS as well, which a browser can
- * only load from a running Polarion.
+ * replaces the REST call, and the tests replace the conversion as well, which needs a running Polarion.
  */
-export interface WidgetDependencies {
+export interface WidgetDependencies extends BulkExportDependencies {
   loadItems?: LoadItems;
-  openExportPopup?: typeof openExportPopup;
-  createExportContext?: typeof createExportContext;
+  /** What the export dialog reaches outside itself for; the widget only passes it through. */
+  popup?: ExportPopupDependencies;
 }
 
 interface Props {
   shim: WidgetShim;
-  /** Selector of the widget's host element, which the product's export context is bound to. */
-  hostSelector: string;
   deps?: WidgetDependencies;
 }
 
@@ -38,13 +39,16 @@ const LOAD_ERROR = 'Could not load the items of this widget.';
  * testable and previewable outside Polarion. The cells arrive as the HTML Polarion rendered for them, so
  * that fields keep the icons, links and colors they have in every other Polarion table.
  */
-export default function BulkExportWidget({ shim, hostSelector, deps = {} }: Props) {
-  const { sendRequest } = useRemote();
+export default function BulkExportWidget({ shim, deps = {} }: Props) {
+  const { sendRequest, sendAbsoluteRequest } = useRemote();
+  const remote = useMemo(() => ({ sendRequest, sendAbsoluteRequest }), [sendRequest, sendAbsoluteRequest]);
   const [data, setData] = useState<BulkExportItems | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [queryShown, setQueryShown] = useState(false);
-  const bulk = useBulkExport(shim.exportPages, hostSelector, deps.createExportContext);
+  /** The selection the export dialog is open for, or null while it is closed. */
+  const [exporting, setExporting] = useState<BulkExportItem[] | null>(null);
+  const bulk = useBulkExport(shim.exportPages, remote, deps);
 
   const loadFromRest: LoadItems = useCallback(async () => {
     const response = await sendRequest({
@@ -100,18 +104,44 @@ export default function BulkExportWidget({ shim, hostSelector, deps = {} }: Prop
     if (selectedItems.length === 0) {
       return;
     }
-    const callback: BulkCallback = {
-      getDocIdentifiers: () =>
-        selectedItems.map((item) => ({
-          ...(item.projectId ? { projectId: item.projectId } : {}),
-          ...(item.spaceId ? { spaceId: item.spaceId } : {}),
-          documentName: item.id ?? '',
-        })),
-      openPopup: (exportParams: ExportParamsLike, mergeIntoSinglePdf?: boolean, mergeFileName?: string | null) =>
-        void bulk.start(selectedItems, exportParams, mergeIntoSinglePdf, mergeFileName),
-    };
-    void (deps.openExportPopup ?? openExportPopup)(shim.documentType, callback);
-  }, [bulk, deps, selectedItems, shim.documentType]);
+    setExporting(selectedItems);
+  }, [selectedItems]);
+
+  /**
+   * The items the style packages have to suit: a bulk export is only offered the packages that apply to
+   * every one of them, which is what the endpoint takes this list for.
+   */
+  const identifiers: DocIdentifier[] = useMemo(
+    () =>
+      (exporting ?? []).map((item) => ({
+        ...(item.projectId ? { projectId: item.projectId } : {}),
+        ...(item.spaceId ? { spaceId: item.spaceId } : {}),
+        documentName: item.id ?? '',
+      })),
+    [exporting],
+  );
+
+  /**
+   * Where the dialog reads its scope from. A bulk export has no page location of its own - each item is
+   * readdressed as it is converted - so this carries the project and nothing else.
+   */
+  const dialogDocument: DocumentIdentity = useMemo(
+    () => ({
+      documentType: shim.documentType,
+      projectId: identifiers[0]?.projectId ?? null,
+      scope: identifiers[0]?.projectId ? `project/${identifiers[0].projectId}/` : '',
+    }),
+    [identifiers, shim.documentType],
+  );
+
+  const startBulkExport = useCallback(
+    (params: ExportParamsJson, mergeIntoSinglePdf?: boolean, mergeFileName?: string | null) => {
+      const items = exporting ?? [];
+      setExporting(null);
+      void bulk.start(items, params, mergeIntoSinglePdf, mergeFileName);
+    },
+    [bulk, exporting],
+  );
 
   const columns = data?.columns ?? [];
   const exportDisabled = selectedItems.length === 0;
@@ -272,6 +302,17 @@ export default function BulkExportWidget({ shim, hostSelector, deps = {} }: Prop
             </tbody>
           </table>
         </div>
+      )}
+
+      {exporting && (
+        <ExportPopupModal
+          document={dialogDocument}
+          exportType="BULK"
+          identifiers={identifiers}
+          onBulkExport={startBulkExport}
+          onClose={() => setExporting(null)}
+          deps={deps.popup}
+        />
       )}
 
       <BulkExportProgressModal state={bulk.state} onStop={bulk.stop} onClose={bulk.close} />

@@ -1,6 +1,17 @@
 import { useCallback, useRef, useState } from 'react';
-import type { ConversionResult, ExportContextLike, ExportParamsLike } from './productModules';
-import { createExportContext } from './productModules';
+import type { ExportParamsJson } from '../export/exportParams';
+import { toRequestBody } from '../export/exportParams';
+import type { Remote } from '../services/conversion';
+import {
+  ConversionInterrupted,
+  cancelJob,
+  convertCollectionDocuments,
+  convertMergePdf,
+  convertPdf,
+  downloadBlob,
+  downloadTestRunAttachments,
+  listCollectionDocuments,
+} from '../services/conversion';
 import type { BulkExportItem, DocumentType } from './types';
 
 export type BulkExportStatus = 'closed' | 'in-progress' | 'interrupted' | 'finished';
@@ -26,7 +37,6 @@ export interface BulkExportState {
 }
 
 const CLOSED: BulkExportState = { status: 'closed', rows: [], processed: 0, errors: false, merge: false };
-const START_ERROR = 'Could not start the export.';
 const DEFAULT_MERGE_FILENAME = 'merged-document.pdf';
 
 /** The document type of a single item, which may differ from the widget's when it lists collections. */
@@ -70,48 +80,41 @@ export function itemName(item: BulkExportItem): string {
   return `${space}${item.id ?? ''}`;
 }
 
-async function errorMessageOf(response: Response): Promise<string> {
-  try {
-    const text = await response.text();
-    const error = text ? JSON.parse(text) : null;
-    return error?.message ?? error?.errorMessage ?? 'Export failed';
-  } catch {
-    return 'Export failed';
-  }
-}
+/** What a failed export says. Anything the server did not explain reads as a plain failure. */
+const failureOf = (error: unknown): string =>
+  error instanceof Error && error.message ? error.message : 'Export failed';
 
-function convert(context: ExportContextLike, exportParams: ExportParamsLike): Promise<ConversionResult> {
-  return new Promise((resolve, reject) => {
-    context.asyncConvertPdf(exportParams.toJSON(), resolve, (response) => {
-      errorMessageOf(response).then(reject, reject);
-    });
-  });
-}
+/** One merge document as the endpoint takes it: the params without what is not set, as `toRequestBody` sends a single one. */
+const withoutEmpty = (params: ExportParamsJson): Record<string, unknown> =>
+  Object.fromEntries(Object.entries(params).filter(([, value]) => value !== null && value !== undefined));
 
-function convertCollection(
-  context: ExportContextLike,
-  exportParams: ExportParamsLike,
-  collectionId: string,
-): Promise<void> {
-  return new Promise((resolve, reject) => {
-    context.convertCollectionDocuments(exportParams, collectionId, resolve, (response) => {
-      errorMessageOf(response).then(reject, reject);
-    });
-  });
+/** What the run reaches outside itself for, so the tests can watch it instead of converting. */
+export interface BulkExportDependencies {
+  convert?: typeof convertPdf;
+  convertCollection?: typeof convertCollectionDocuments;
+  convertMerge?: typeof convertMergePdf;
+  cancel?: typeof cancelJob;
+  listCollection?: typeof listCollectionDocuments;
+  download?: typeof downloadBlob;
+  downloadAttachments?: typeof downloadTestRunAttachments;
 }
 
 /**
  * Exports the selected items one after another, the way the widget's vanilla predecessor did: a single
  * conversion at a time, each downloaded as soon as it is ready, and the run stoppable in between.
  *
- * The conversion protocol itself stays in the product's ExportContext, which the DLE toolbar and the
- * document export use as well - only the sequencing and the progress state live here.
+ * The conversion protocol itself is `services/conversion.ts`, which the export dialog and the document
+ * properties side panel run through as well - only the sequencing and the progress state live here.
  */
-export default function useBulkExport(
-  exportPages: boolean,
-  hostSelector: string,
-  createContext: typeof createExportContext = createExportContext,
-) {
+export default function useBulkExport(exportPages: boolean, remote: Remote, deps: BulkExportDependencies = {}) {
+  const convert = deps.convert ?? convertPdf;
+  const convertCollection = deps.convertCollection ?? convertCollectionDocuments;
+  const convertMerge = deps.convertMerge ?? convertMergePdf;
+  const cancel = deps.cancel ?? cancelJob;
+  const listCollection = deps.listCollection ?? listCollectionDocuments;
+  const download = deps.download ?? downloadBlob;
+  const downloadAttachments = deps.downloadAttachments ?? downloadTestRunAttachments;
+
   const [state, setState] = useState<BulkExportState>(CLOSED);
   const stopped = useRef(false);
   // A merge export is a single backend job; keep what Stop needs to cancel it. Refs, not state, so that
@@ -126,38 +129,51 @@ export default function useBulkExport(
     }));
   }, []);
 
+  /** The shared export parameters, readdressed to one selected item. */
+  const paramsFor = useCallback((item: BulkExportItem, shared: ExportParamsJson): ExportParamsJson => {
+    const documentType = documentTypeOf(item);
+    const params: ExportParamsJson = { ...shared, projectId: item.projectId, documentType };
+    if (documentType === 'TEST_RUN') {
+      return { ...params, urlQueryParameters: { ...(shared.urlQueryParameters ?? {}), id: item.id ?? '' } };
+    }
+    if (documentType === 'BASELINE_COLLECTION') {
+      return params;
+    }
+    return { ...params, locationPath: `${item.spaceId ?? ''}/${item.id ?? ''}` };
+  }, []);
+
   const exportItem = useCallback(
-    async (context: ExportContextLike, item: BulkExportItem, exportParams: ExportParamsLike) => {
+    async (item: BulkExportItem, shared: ExportParamsJson) => {
       const documentType = documentTypeOf(item);
-      exportParams.projectId = item.projectId;
-      exportParams.documentType = documentType;
+      const params = paramsFor(item, shared);
 
       if (documentType === 'BASELINE_COLLECTION') {
-        await convertCollection(context, exportParams, item.id ?? '');
+        await convertCollection(remote, {
+          projectId: item.projectId ?? '',
+          collectionId: item.id ?? '',
+          exportPages,
+          params,
+          toRequestBody,
+        });
         return;
       }
 
-      if (documentType === 'TEST_RUN') {
-        exportParams.urlQueryParameters = { ...(exportParams.urlQueryParameters ?? {}), id: item.id ?? '' };
+      if (documentType === 'TEST_RUN' && params.attachmentsFilter !== null && !params.embedAttachments) {
         // Attachments are downloaded next to the PDF unless they are embedded into it
-        if (exportParams.attachmentsFilter !== null && !exportParams.embedAttachments) {
-          context.downloadTestRunAttachments(
-            item.projectId ?? '',
-            item.id ?? '',
-            exportParams.revision ?? null,
-            exportParams.attachmentsFilter ?? null,
-            exportParams.testcaseFieldId,
-          );
-        }
-      } else {
-        exportParams.locationPath = `${item.spaceId ?? ''}/${item.id ?? ''}`;
+        void downloadAttachments(remote, {
+          projectId: item.projectId ?? '',
+          testRunId: item.id ?? '',
+          revision: params.revision,
+          filter: params.attachmentsFilter,
+          testCaseFieldId: params.testcaseFieldId,
+        });
       }
 
-      const result = await convert(context, exportParams);
+      const result = await convert(remote, toRequestBody(params));
       const fallbackName = `${item.spaceId ? `${item.spaceId}_` : ''}${item.id ?? ''}.pdf`;
-      context.downloadBlob(result.response, result.fileName || fallbackName);
+      download(result.blob, result.fileName || fallbackName);
     },
-    [],
+    [convert, convertCollection, download, downloadAttachments, exportPages, paramsFor, remote],
   );
 
   /**
@@ -166,16 +182,8 @@ export default function useBulkExport(
    * Collections are expanded into their member documents, the way the per-item run expands them too.
    */
   const runMerge = useCallback(
-    async (context: ExportContextLike, items: BulkExportItem[], exportParams: ExportParamsLike, mergeFileName: string) => {
-      // A fresh copy of the shared export parameters per document. The product's toJSON() returns a JSON
-      // string; tolerate an object too so the params can be cloned without a round-trip assumption.
-      const cloneParams = (): Record<string, unknown> => {
-        const raw = exportParams.toJSON();
-        return typeof raw === 'string'
-          ? (JSON.parse(raw) as Record<string, unknown>)
-          : { ...(raw as Record<string, unknown>) };
-      };
-      const documents: Record<string, unknown>[] = [];
+    async (items: BulkExportItem[], shared: ExportParamsJson, mergeFileName: string) => {
+      const documents: ExportParamsJson[] = [];
 
       for (let index = 0; index < items.length; index++) {
         if (stopped.current) {
@@ -187,14 +195,14 @@ export default function useBulkExport(
 
         if (documentType === 'BASELINE_COLLECTION') {
           try {
-            const collectionDocs = await context.getCollectionDocuments(item.projectId ?? '', item.id ?? '');
+            const collectionDocs = await listCollection(remote, item.projectId ?? '', item.id ?? '');
             // Live reports are only merged when the widget exports pages, matching the per-item run
             const members = exportPages
               ? collectionDocs
               : collectionDocs.filter((doc) => doc.documentType !== 'LIVE_REPORT');
             for (const member of members) {
               documents.push({
-                ...cloneParams(),
+                ...shared,
                 projectId: member.projectId,
                 locationPath: `${member.spaceId}/${member.documentName}`,
                 revision: member.revision,
@@ -208,13 +216,7 @@ export default function useBulkExport(
           continue;
         }
 
-        const document = { ...cloneParams(), projectId: item.projectId, documentType } as Record<string, unknown>;
-        if (documentType === 'TEST_RUN') {
-          document.urlQueryParameters = { id: item.id ?? '' };
-        } else {
-          document.locationPath = `${item.spaceId ?? ''}/${item.id ?? ''}`;
-        }
-        documents.push(document);
+        documents.push(paramsFor(item, shared));
       }
 
       if (stopped.current) {
@@ -225,69 +227,59 @@ export default function useBulkExport(
         return;
       }
 
-      // The backend derives the merge parameters from the first document
-      documents[0].fileName = mergeFileName;
+      // The backend derives the merge parameters (the file name among them) from the first document
+      documents[0] = { ...documents[0], fileName: mergeFileName };
 
-      await new Promise<void>((resolve) => {
-        context.asyncConvertMergePdf(
-          JSON.stringify(documents),
-          (result) => {
-            // A result that arrives after the user stopped must not download or rewrite the outcome
+      try {
+        const result = await convertMerge(remote, JSON.stringify(documents.map(withoutEmpty)), {
+          isInterrupted: () => stopped.current,
+          onJobStarted: (jobUrl) => {
+            cancelMerge.current = () => void cancel(remote, jobUrl);
+            // A Stop pressed before the job url was known has not cancelled anything yet
             if (stopped.current) {
-              resolve();
-              return;
+              cancelMerge.current();
             }
-            context.downloadBlob(result.response, mergeFileName);
-            setState((previous) => ({
-              ...previous,
-              status: 'finished',
-              processed: previous.rows.length,
-              rows: previous.rows.map((row) => (row.state === 'in-progress' ? { ...row, state: 'finished' } : row)),
-            }));
-            resolve();
           },
-          (response) => {
-            if (stopped.current) {
-              resolve();
-              return;
-            }
-            errorMessageOf(response).then((message) => {
-              setState((previous) =>
-                previous.status === 'interrupted'
-                  ? previous
-                  : {
-                      ...previous,
-                      status: 'finished',
-                      errors: true,
-                      rows: previous.rows.map((row) =>
-                        row.state === 'in-progress' ? { ...row, state: 'error', error: message } : row,
-                      ),
-                    },
-              );
-              resolve();
-            });
-          },
-          {
-            isInterrupted: () => stopped.current,
-            onJobStarted: (jobUrl) => {
-              cancelMerge.current = () => context.cancelJob(jobUrl);
-              // A Stop pressed before the job url was known has not cancelled anything yet
-              if (stopped.current) {
-                cancelMerge.current();
-              }
-            },
-          },
+        });
+        // A result that arrives after the user stopped must not download or rewrite the outcome
+        if (stopped.current) {
+          return;
+        }
+        download(result.blob, result.fileName || mergeFileName);
+        setState((previous) => ({
+          ...previous,
+          status: 'finished',
+          processed: previous.rows.length,
+          rows: previous.rows.map((row) => (row.state === 'in-progress' ? { ...row, state: 'finished' } : row)),
+        }));
+      } catch (error) {
+        // A run stopped by the user keeps its own 'interrupted' outcome rather than reporting a failure
+        if (error instanceof ConversionInterrupted || stopped.current) {
+          return;
+        }
+        const message = failureOf(error);
+        setState((previous) =>
+          previous.status === 'interrupted'
+            ? previous
+            : {
+                ...previous,
+                status: 'finished',
+                errors: true,
+                rows: previous.rows.map((row) =>
+                  row.state === 'in-progress' ? { ...row, state: 'error', error: message } : row,
+                ),
+              },
         );
-      });
+      }
     },
-    [exportPages, updateRow],
+    [cancel, convertMerge, download, exportPages, listCollection, paramsFor, remote, updateRow],
   );
 
   /** Runs the export of the given items. Resolves when the run is over, stopped or not. */
   const start = useCallback(
     async (
       items: BulkExportItem[],
-      exportParams: ExportParamsLike,
+      exportParams: ExportParamsJson,
       mergeIntoSinglePdf = false,
       mergeFileName: string | null = DEFAULT_MERGE_FILENAME,
     ) => {
@@ -302,29 +294,8 @@ export default function useBulkExport(
         merge: mergeIntoSinglePdf,
       });
 
-      let context: ExportContextLike;
-      try {
-        context = await createContext({ exportPages, rootComponentSelector: hostSelector });
-      } catch {
-        // The product's export JS is loaded at runtime and can be gone by the time the user gets here -
-        // a redeployed server, an expired session. Without this the run would keep every row paused and
-        // report the failure as an interruption once the user closes the dialog. A user who stopped the
-        // run while the load was still pending keeps their own outcome, as at the end of the run below.
-        setState((previous) =>
-          previous.status === 'interrupted'
-            ? previous
-            : {
-                ...previous,
-                status: 'finished',
-                errors: true,
-                rows: previous.rows.map((row) => ({ ...row, state: 'error', error: START_ERROR })),
-              },
-        );
-        return;
-      }
-
       if (mergeIntoSinglePdf) {
-        await runMerge(context, items, exportParams, mergeFileName || DEFAULT_MERGE_FILENAME);
+        await runMerge(items, exportParams, mergeFileName || DEFAULT_MERGE_FILENAME);
         return;
       }
 
@@ -334,18 +305,18 @@ export default function useBulkExport(
         }
         updateRow(index, { state: 'in-progress' });
         try {
-          await exportItem(context, items[index], exportParams);
+          await exportItem(items[index], exportParams);
           updateRow(index, { state: 'finished' });
           setState((previous) => ({ ...previous, processed: previous.processed + 1 }));
         } catch (error) {
-          updateRow(index, { state: 'error', error: typeof error === 'string' ? error : 'Export failed' });
+          updateRow(index, { state: 'error', error: failureOf(error) });
           setState((previous) => ({ ...previous, errors: true, processed: previous.processed + 1 }));
         }
       }
 
       setState((previous) => (previous.status === 'interrupted' ? previous : { ...previous, status: 'finished' }));
     },
-    [createContext, exportItem, exportPages, hostSelector, runMerge, updateRow],
+    [exportItem, runMerge, updateRow],
   );
 
   /**
