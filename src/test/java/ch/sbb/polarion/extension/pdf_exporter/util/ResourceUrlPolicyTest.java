@@ -50,6 +50,11 @@ class ResourceUrlPolicyTest {
             "http://100.64.0.1/secret",
             "http://192.0.0.1/secret",
             "http://198.18.0.1/secret",
+            // assigned but not globally routable: a deployment may point any of them at its own service
+            "http://192.0.2.1/secret",
+            "http://198.51.100.1/secret",
+            "http://203.0.113.1/secret",
+            "http://192.88.99.1/secret",
             "http://240.0.0.1/secret",
             "http://0.0.0.0/secret",
             "http://[::ffff:127.0.0.1]/secret",

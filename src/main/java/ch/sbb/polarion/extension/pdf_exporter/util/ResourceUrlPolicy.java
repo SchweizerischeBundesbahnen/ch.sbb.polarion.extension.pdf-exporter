@@ -337,34 +337,34 @@ public class ResourceUrlPolicy {
         int second = bytes[1] & 0xFF;
         int third = bytes[2] & 0xFF;
 
-        if (first == 0) { // 0.0.0.0/8, "this network"
-            return false;
-        }
-        if (first == 10 || first == 127) { // 10.0.0.0/8 private, 127.0.0.0/8 loopback
-            return false;
-        }
-        if (first == 172 && second >= 16 && second <= 31) { // 172.16.0.0/12, private
-            return false;
-        }
-        if (first == 192 && second == 168) { // 192.168.0.0/16, private
-            return false;
-        }
-        if (first == 169 && second == 254) { // 169.254.0.0/16, link local, holds the cloud metadata address
-            return false;
-        }
-        if (first >= 224 && first <= 239) { // 224.0.0.0/4, multicast
-            return false;
-        }
-        if (first == 100 && second >= 64 && second <= 127) { // 100.64.0.0/10, carrier grade NAT
-            return false;
-        }
-        if (first == 192 && second == 0 && third == 0) { // 192.0.0.0/24, IETF protocol assignments
-            return false;
-        }
-        if (first == 198 && (second == 18 || second == 19)) { // 198.18.0.0/15, benchmarking
-            return false;
-        }
-        return first < 240; // 240.0.0.0/4, reserved, includes the broadcast address
+        return !isPrivateOrLocalIpv4(first, second)
+                && !isSpecialUseIpv4(first, second, third)
+                && first < 240; // 240.0.0.0/4, reserved, includes the broadcast address
+    }
+
+    private static boolean isPrivateOrLocalIpv4(int first, int second) {
+        return first == 0                                        // 0.0.0.0/8, this network
+                || first == 10                                   // 10.0.0.0/8, private
+                || first == 127                                  // 127.0.0.0/8, loopback
+                || (first == 172 && second >= 16 && second <= 31) // 172.16.0.0/12, private
+                || (first == 192 && second == 168)               // 192.168.0.0/16, private
+                || (first == 169 && second == 254)               // 169.254.0.0/16, link local, holds the cloud metadata address
+                || (first == 100 && second >= 64 && second <= 127); // 100.64.0.0/10, carrier grade NAT
+    }
+
+    /**
+     * Ranges which are assigned but not globally routable. A deployment may point any of them at
+     * something of its own, and none of them names a host on the internet, so none may be requested
+     * on behalf of a document editor.
+     */
+    private static boolean isSpecialUseIpv4(int first, int second, int third) {
+        return (first >= 224 && first <= 239)                    // 224.0.0.0/4, multicast
+                || (first == 192 && second == 0 && third == 0)   // 192.0.0.0/24, protocol assignments
+                || (first == 192 && second == 0 && third == 2)   // 192.0.2.0/24, documentation
+                || (first == 192 && second == 88 && third == 99) // 192.88.99.0/24, 6to4 relay anycast
+                || (first == 198 && (second == 18 || second == 19)) // 198.18.0.0/15, benchmarking
+                || (first == 198 && second == 51 && third == 100) // 198.51.100.0/24, documentation
+                || (first == 203 && second == 0 && third == 113); // 203.0.113.0/24, documentation
     }
 
     private static boolean isPublicIpv6(byte[] bytes) {
