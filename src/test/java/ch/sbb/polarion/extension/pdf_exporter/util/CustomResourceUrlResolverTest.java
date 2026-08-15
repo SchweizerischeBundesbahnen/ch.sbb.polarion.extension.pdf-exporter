@@ -20,6 +20,10 @@ import java.security.cert.CertificateException;
 import java.net.Proxy;
 import java.net.ProxySelector;
 import java.net.SocketAddress;
+import java.io.IOException;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.net.URI;
@@ -334,6 +338,38 @@ class CustomResourceUrlResolverTest {
         } finally {
             System.clearProperty("socksProxyHost");
             System.clearProperty("socksProxyPort");
+        }
+    }
+
+    @Test
+    @SneakyThrows
+    void sendsARequestThroughASocksProxyAtTheSocket() {
+        // the client plans no route to a socks proxy, the jvm applies it under the connection, so a
+        // socks setup keeps working: the request reaches the proxy rather than the host directly
+        try (ServerSocket socksProxy = new ServerSocket(0)) {
+            AtomicBoolean reached = new AtomicBoolean();
+            Thread listener = new Thread(() -> {
+                try (Socket accepted = socksProxy.accept()) {
+                    reached.set(accepted != null);
+                } catch (IOException e) {
+                    // the test asks whether the connection arrived, and nothing else
+                }
+            });
+            listener.setDaemon(true);
+            listener.start();
+            System.setProperty("socksProxyHost", "127.0.0.1");
+            System.setProperty("socksProxyPort", String.valueOf(socksProxy.getLocalPort()));
+            try {
+                ResourceUrlPolicy policy = new ResourceUrlPolicy(Mode.ALLOW_ALL, List.of(), null, 16);
+
+                assertNull(new CustomResourceUrlResolver(policy).resolve("http://8.8.8.8/img.png"));
+
+                listener.join(5000);
+                assertTrue(reached.get());
+            } finally {
+                System.clearProperty("socksProxyHost");
+                System.clearProperty("socksProxyPort");
+            }
         }
     }
 
