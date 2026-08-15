@@ -359,6 +359,10 @@ class CustomResourceUrlResolverTest {
 
             assertTrue(resolver.decideProxy(ProxySelector.getDefault(), toUrl("http://8.8.8.8/img.png")).proxied());
             assertNull(resolver.resolveImpl(toUrl("http://8.8.8.8/img.png")));
+
+            // and a trusted host is no reason to send the request past the route the configuration names
+            ResourceUrlPolicy trusting = new ResourceUrlPolicy(Mode.ALLOWLIST_ONLY, List.of("8.8.8.8"), null, 16);
+            assertNull(new CustomResourceUrlResolver(trusting).resolveImpl(toUrl("http://8.8.8.8/img.png")));
         } finally {
             ProxySelector.setDefault(previous);
         }

@@ -163,6 +163,12 @@ public class CustomResourceUrlResolver implements IUrlResolver {
                         + " List the host in the allowed hosts property to fetch it anyway.");
                 return null;
             }
+            if (proxy.proxied() && proxy.host() == null) {
+                // the host is trusted, but the proxy to reach it through was not named, and a request
+                // sent past the configured route is not the request the configuration asked for
+                logger.warn(SKIPPED_RESOURCE + currentUrl + ": it goes through a proxy which could not be named.");
+                return null;
+            }
             InetAddress[] addresses = policy.vetAddresses(currentUrl);
             if (addresses == null) {
                 return null;
