@@ -31,6 +31,7 @@ import com.polarion.core.util.StringUtils;
 import org.jsoup.parser.Parser;
 import org.jsoup.nodes.Range;
 import org.jsoup.nodes.Element;
+import org.jsoup.nodes.Entities;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.DataNode;
 import org.jsoup.Jsoup;
@@ -686,36 +687,55 @@ public class MediaUtils {
      */
     private String processResourceRegions(@NotNull String html, @NotNull FileResourceProvider fileResourceProvider) {
         Document document = Jsoup.parse(html, "", Parser.htmlParser().setTrackPosition(true));
-        List<Object[]> regions = new ArrayList<>();
+        List<Region> regions = new ArrayList<>();
         for (Element image : document.select("img[src]")) {
-            addRegion(regions, image.attributes().sourceRange("src").valueRange(),
+            // the value of an attribute is read as the parser read it, entities resolved: that is the
+            // address the renderer sees, and the markup says nothing the renderer would not
+            addAttributeRegion(regions, image, "src",
                     url -> Optional.ofNullable(replacementFor(fileResourceProvider, url)).orElse(url));
         }
         for (Element styleElement : document.select("style")) {
+            // a style element holds raw text, so its source and its value are the same characters
             styleElement.dataNodes().forEach(data ->
-                    addRegion(regions, data.sourceRange(), css -> inlineCssResources(css, fileResourceProvider)));
+                    addRegion(regions, data.sourceRange(), html, css -> inlineCssResources(css, fileResourceProvider), false));
         }
         for (Element element : document.select("[style]")) {
-            addRegion(regions, element.attributes().sourceRange("style").valueRange(),
+            addAttributeRegion(regions, element, "style",
                     css -> rewriteDeclarations(css, declarations -> inlineCssResources(declarations, fileResourceProvider)));
         }
 
         StringBuilder result = new StringBuilder(html);
         regions.stream()
-                .sorted((left, right) -> Integer.compare((int) right[0], (int) left[0]))
+                .sorted((left, right) -> Integer.compare(right.start(), left.start()))
                 .forEach(region -> {
-                    int start = (int) region[0];
-                    int end = (int) region[1];
-                    @SuppressWarnings("unchecked")
-                    UnaryOperator<String> rewrite = (UnaryOperator<String>) region[2];
-                    result.replace(start, end, rewrite.apply(html.substring(start, end)));
+                    String rewritten = region.rewrite().apply(region.input());
+                    if (!rewritten.equals(region.input())) {
+                        // an attribute is written back as markup, so what goes in there is escaped again
+                        result.replace(region.start(), region.end(), region.escape() ? Entities.escape(rewritten) : rewritten);
+                    }
                 });
         return result.toString();
     }
 
-    private void addRegion(@NotNull List<Object[]> regions, @NotNull Range range, @NotNull UnaryOperator<String> rewrite) {
+    private void addAttributeRegion(@NotNull List<Region> regions, @NotNull Element element, @NotNull String attribute,
+                                    @NotNull UnaryOperator<String> rewrite) {
+        Range range = element.attributes().sourceRange(attribute).valueRange();
         if (range.isTracked() && range.startPos() >= 0 && range.endPos() >= range.startPos()) {
-            regions.add(new Object[]{range.startPos(), range.endPos(), rewrite});
+            regions.add(new Region(range.startPos(), range.endPos(), element.attr(attribute), rewrite, true));
+        }
+    }
+
+    /**
+     * @param input   what the region says, as the parser read it
+     * @param escape  whether writing it back means writing markup
+     */
+    private record Region(int start, int end, @NotNull String input, @NotNull UnaryOperator<String> rewrite, boolean escape) {
+    }
+
+    private void addRegion(@NotNull List<Region> regions, @NotNull Range range, @NotNull String html,
+                           @NotNull UnaryOperator<String> rewrite, boolean escape) {
+        if (range.isTracked() && range.startPos() >= 0 && range.endPos() >= range.startPos()) {
+            regions.add(new Region(range.startPos(), range.endPos(), html.substring(range.startPos(), range.endPos()), rewrite, escape));
         }
     }
 

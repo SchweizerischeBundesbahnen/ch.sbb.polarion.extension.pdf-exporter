@@ -656,6 +656,23 @@ class HtmlProcessorTest {
 
     @Test
     @SneakyThrows
+    void blockAnAddressWrittenWithHtmlEntitiesInAnAttributeTest() {
+        // the renderer reads an attribute after the html parser resolved its entities, and so does this
+        when(fileResourceProvider.isForbidden("http://169.254.169.254/latest/meta-data/")).thenReturn(true);
+
+        String style = processor.replaceResourcesAsBase64Encoded(
+                "<div style=\"background: url(&quot;http://169.254.169.254/latest/meta-data/&quot;)\"></div>");
+        String image = processor.replaceResourcesAsBase64Encoded(
+                "<img src=\"&#104;ttp://169.254.169.254/latest/meta-data/\">");
+
+        assertFalse(style.contains("169.254.169.254"));
+        assertFalse(image.contains("169.254.169.254"));
+        assertTrue(style.contains("data:image/png;base64,"));
+        assertTrue(image.contains("data:image/png;base64,"));
+    }
+
+    @Test
+    @SneakyThrows
     void blockAnEscapedSchemeOfAForbiddenAddressTest() {
         // the parser resolves the escape, so the policy is asked about the address the renderer would read
         String html = "<style>a { background: url(\"http\\3a //169.254.169.254/latest/meta-data/\") }</style>";
