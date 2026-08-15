@@ -6,6 +6,7 @@ import ch.sbb.polarion.extension.generic.test_extensions.BundleJarsPrioritizingR
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 import lombok.SneakyThrows;
+import org.apache.http.HttpHost;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -498,6 +499,42 @@ class CustomResourceUrlResolverTest {
             System.clearProperty("http.proxyHost");
             System.clearProperty("http.proxyPort");
         }
+    }
+
+    @Test
+    void readsTheProxyListAsTheJvmReadsIt() {
+        // a pac file writing 'DIRECT; PROXY host:port' means direct, and the entry after it is a fallback
+        CustomResourceUrlResolver resolver = resolver(16);
+        HttpHost proxyHost = new HttpHost("proxy.invalid", 3128);
+
+        assertFalse(resolver.decideProxy(selectorOf(Proxy.NO_PROXY, httpProxy()), toUrl("http://8.8.8.8/i.png")).proxied());
+        assertTrue(resolver.decideProxy(selectorOf(httpProxy(), Proxy.NO_PROXY), toUrl("http://8.8.8.8/i.png")).proxied());
+        // a socks entry is no route the client plans, so it decides nothing either way
+        assertEquals(proxyHost.toHostString(),
+                resolver.decideProxy(selectorOf(socksProxy(), httpProxy()), toUrl("http://8.8.8.8/i.png")).host().toHostString());
+        assertFalse(resolver.decideProxy(selectorOf(socksProxy()), toUrl("http://8.8.8.8/i.png")).proxied());
+    }
+
+    private Proxy httpProxy() {
+        return new Proxy(Proxy.Type.HTTP, InetSocketAddress.createUnresolved("proxy.invalid", 3128));
+    }
+
+    private Proxy socksProxy() {
+        return new Proxy(Proxy.Type.SOCKS, InetSocketAddress.createUnresolved("socks.invalid", 1080));
+    }
+
+    private ProxySelector selectorOf(Proxy... proxies) {
+        return new ProxySelector() {
+            @Override
+            public List<Proxy> select(URI uri) {
+                return List.of(proxies);
+            }
+
+            @Override
+            public void connectFailed(URI uri, SocketAddress address, IOException failure) {
+                // the test asks what the list says, and never reports a failure to it
+            }
+        };
     }
 
     @Test

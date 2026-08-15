@@ -323,10 +323,14 @@ public class CustomResourceUrlResolver implements IUrlResolver {
             return new ProxyDecision(false, null);
         }
         try {
+            // the jvm takes the first entry it can use, direct or http, and reading the list the same way
+            // keeps the answer the one the configuration meant: 'DIRECT; PROXY host:port' means direct
             return selector.select(URI.create(url.toString())).stream()
-                    .filter(proxy -> proxy.type() == Proxy.Type.HTTP)
+                    .filter(proxy -> proxy.type() == Proxy.Type.DIRECT || proxy.type() == Proxy.Type.HTTP)
                     .findFirst()
-                    .map(proxy -> new ProxyDecision(true, hostOf(proxy)))
+                    .map(proxy -> proxy.type() == Proxy.Type.HTTP
+                            ? new ProxyDecision(true, hostOf(proxy))
+                            : new ProxyDecision(false, null))
                     .orElseGet(() -> new ProxyDecision(false, null));
         } catch (RuntimeException e) {
             // a selector which cannot answer is no reason to fetch anything past the check
