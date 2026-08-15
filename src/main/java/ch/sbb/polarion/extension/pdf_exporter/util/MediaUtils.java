@@ -366,7 +366,10 @@ public class MediaUtils {
             return null;
         }
         if (!fileResourceProvider.isForbidden(url)) {
-            String base64String = fileResourceProvider.getResourceAsBase64String(url);
+            // a renderable image is wanted at its full size, so the thumbnail parameter goes. Everything
+            // else keeps it, and Polarion answers with the icon preview it has for a document
+            String requested = isRenderableImageUrl(url) ? removeQueryParameter(url, THUMBNAIL_PARAMETER) : url;
+            String base64String = fileResourceProvider.getResourceAsBase64String(Objects.requireNonNullElse(requested, url));
             if (base64String != null) {
                 return base64String;
             }
@@ -417,6 +420,9 @@ public class MediaUtils {
         CSSReaderSettings settings = new CSSReaderSettings()
                 // a browser keeps what it understands and skips the rest, and so does the conversion service
                 .setBrowserCompliantMode(true)
+                // a tab counts as one column, so a column of the parser is an offset of the text again:
+                // the default of eight moves every position on a line which carries one
+                .setTabSize(1)
                 .setCustomErrorHandler(new DoNothingCSSParseErrorHandler())
                 .setCustomExceptionHandler(new DoNothingCSSParseExceptionCallback());
         return CSSReader.readFromStringReader(css, settings);
@@ -806,7 +812,11 @@ public class MediaUtils {
             return false;
         }
         String trimmed = url.trim();
-        return !isDataUrl(trimmed) && (SCHEME_PATTERN.matcher(trimmed).find() || isNetworkPathReference(trimmed));
+        if (isDataUrl(trimmed)) {
+            // a data url carries the resource itself, there is nowhere for it to be read from
+            return false;
+        }
+        return SCHEME_PATTERN.matcher(trimmed).find() || isNetworkPathReference(trimmed);
     }
 
     /**

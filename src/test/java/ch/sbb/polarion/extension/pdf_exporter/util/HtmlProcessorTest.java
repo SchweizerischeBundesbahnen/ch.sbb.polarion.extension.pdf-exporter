@@ -3,6 +3,7 @@ package ch.sbb.polarion.extension.pdf_exporter.util;
 import ch.sbb.polarion.extension.generic.settings.SettingId;
 import ch.sbb.polarion.extension.generic.test_extensions.BundleJarsPrioritizingRunnableMockExtension;
 import ch.sbb.polarion.extension.pdf_exporter.configuration.PdfExporterExtensionConfigurationExtension;
+import ch.sbb.polarion.extension.pdf_exporter.properties.PdfExporterExtensionConfiguration;
 import ch.sbb.polarion.extension.pdf_exporter.TestStringUtils;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ConversionParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.DocumentType;
@@ -39,6 +40,7 @@ import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Set;
 import java.util.Map;
 import java.util.stream.Stream;
 
@@ -716,6 +718,32 @@ class HtmlProcessorTest {
                 "<style>@import \"file:///etc/hostname\"; a { color: red }</style>");
 
         assertFalse(result.contains("/etc/hostname"));
+    }
+
+    @Test
+    @SneakyThrows
+    void readAUrlOfATabIndentedDeclarationTest() {
+        // the parser counts a tab as one column here, so its columns are the offsets of the text
+        String html = "<style>a {\n\tbackground: url(images/logo.png);\n}</style>";
+        when(fileResourceProvider.getResourceAsBase64String("images/logo.png")).thenReturn("data:image/png;base64,AAAA");
+
+        String result = processor.replaceResourcesAsBase64Encoded(html);
+
+        assertEquals("<style>a {\n\tbackground: url(data:image/png;base64,AAAA);\n}</style>", result);
+    }
+
+    @Test
+    @SneakyThrows
+    void askForARenderableImageWithoutItsThumbnailTest() {
+        // a thumbnail is what Polarion answers for a document, and an image is wanted at its full size
+        when(PdfExporterExtensionConfiguration.getInstance().getRenderableImageExtensions()).thenReturn(Set.of("png"));
+        when(fileResourceProvider.getResourceAsBase64String("/polarion/attachment/img.png?revision=2"))
+                .thenReturn("data:image/png;base64,AAAA");
+
+        String result = processor.replaceResourcesAsBase64Encoded(
+                "<img src=\"/polarion/attachment/img.png?revision=2&thumbnail=true\">");
+
+        assertTrue(result.contains("data:image/png;base64,AAAA"));
     }
 
     @Test
