@@ -85,6 +85,12 @@ public class MediaUtils {
     public static final String URL_REGEX = "(?i)url\\(\\s*([\"'])?(?<url>.*?)\\1?\\s*\\)";
     public static final String DATA_URL_PREFIX = "data:";
     private static final String NETWORK_PATH_PREFIX = "//";
+    // what a detector answers when it read the content and recognized nothing in it
+    private static final String OCTET_STREAM = "application/octet-stream";
+
+    private static final Document.OutputSettings ATTRIBUTE_OUTPUT_SETTINGS =
+            new Document.OutputSettings().escapeMode(Entities.EscapeMode.xhtml);
+
     // a url which names a scheme names where it is read from, and this class can vet two of them
     private static final Pattern SCHEME_PATTERN = Pattern.compile("^[a-z][a-z\\d+.-]*:", Pattern.CASE_INSENSITIVE);
 
@@ -725,12 +731,6 @@ public class MediaUtils {
      * allows is covered and nothing outside a tag is mistaken for one. JSoup does not write the document
      * back, only the parts which changed are replaced in the original text.
      */
-    // what a detector answers when it read the content and recognized nothing in it
-    private static final String OCTET_STREAM = "application/octet-stream";
-
-    private static final Document.OutputSettings ATTRIBUTE_OUTPUT_SETTINGS =
-            new Document.OutputSettings().escapeMode(Entities.EscapeMode.xhtml);
-
     private String processResourceRegions(@NotNull String html, @NotNull FileResourceProvider fileResourceProvider) {
         Document document = Jsoup.parse(html, "", Parser.htmlParser().setTrackPosition(true));
         List<Region> regions = new ArrayList<>();
@@ -820,11 +820,9 @@ public class MediaUtils {
             return false;
         }
         String trimmed = url.trim();
-        if (isDataUrl(trimmed)) {
-            // a data url carries the resource itself, there is nowhere for it to be read from
-            return false;
-        }
-        return SCHEME_PATTERN.matcher(trimmed).find() || isNetworkPathReference(trimmed);
+        boolean namesSomewhere = SCHEME_PATTERN.matcher(trimmed).find() || isNetworkPathReference(trimmed);
+        // a data url carries the resource itself, there is nowhere for it to be read from
+        return namesSomewhere && !isDataUrl(trimmed);
     }
 
     /**
