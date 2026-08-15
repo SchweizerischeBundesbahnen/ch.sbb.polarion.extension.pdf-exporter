@@ -326,8 +326,8 @@ class CustomResourceUrlResolverTest {
                 assertNotNull(stream);
                 assertArrayEquals(PNG_CONTENT, stream.readAllBytes());
             }
-            // and the classification itself, which the mode of the policy above cannot answer for
-            assertFalse(new CustomResourceUrlResolver(policy).isProxied(toUrl(url("/img.png"))));
+            // and the classification itself, asked about an address no default non-proxy list covers
+            assertFalse(new CustomResourceUrlResolver(policy).isProxied(toUrl("http://8.8.8.8/img.png")));
         } finally {
             System.clearProperty("socksProxyHost");
             System.clearProperty("socksProxyPort");
