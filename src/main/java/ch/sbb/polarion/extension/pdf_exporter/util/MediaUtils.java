@@ -439,6 +439,8 @@ public class MediaUtils {
             @Override
             public void onUrlDeclaration(@Nullable ICSSTopLevelRule topLevelRule, @NotNull CSSDeclaration declaration, @NotNull CSSExpressionMemberTermURI uri) {
                 CssRange range = rangeOf(lineStarts, css, uri.getSourceLocation());
+                // the parser resolves the escapes of a url term itself, so this value is the one the
+                // renderer would read, and the one the policy is asked about
                 String replacement = replacementFor(fileResourceProvider, uri.getURIString());
                 if (range == null) {
                     rewrite.missed(replacement == null);

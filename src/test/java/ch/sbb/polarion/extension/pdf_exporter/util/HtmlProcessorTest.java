@@ -656,6 +656,19 @@ class HtmlProcessorTest {
 
     @Test
     @SneakyThrows
+    void blockAnEscapedSchemeOfAForbiddenAddressTest() {
+        // the parser resolves the escape, so the policy is asked about the address the renderer would read
+        String html = "<style>a { background: url(\"http\\3a //169.254.169.254/latest/meta-data/\") }</style>";
+        when(fileResourceProvider.isForbidden("http://169.254.169.254/latest/meta-data/")).thenReturn(true);
+
+        String result = processor.replaceResourcesAsBase64Encoded(html);
+
+        assertFalse(result.contains("169.254.169.254"));
+        assertTrue(result.contains("data:image/png;base64,"));
+    }
+
+    @Test
+    @SneakyThrows
     void keepAStylesheetHoldingAnUnencodedSvgDataUrlTest() {
         // the payload of such a data url carries quotes and the namespace of SVG, neither is an address
         String html = "<style>body { background: url(\"data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg'/>\"); color: red; }</style>";
