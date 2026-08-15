@@ -5,6 +5,8 @@ import ch.sbb.polarion.extension.generic.util.BundleJarsPrioritizingRunnable;
 import ch.sbb.polarion.extension.generic.util.ScopeUtils;
 import com.helger.css.CSSSourceLocation;
 import com.helger.css.ICSSSourceLocationAware;
+import com.helger.css.decl.CSSMediaRule;
+import com.helger.css.decl.CSSSupportsRule;
 import com.helger.css.decl.CSSStyleRule;
 import com.helger.css.decl.CSSUnknownRule;
 import com.helger.css.decl.ICSSExpressionMember;
@@ -567,15 +569,29 @@ public class MediaUtils {
     }
 
     /**
-     * @return where the parser read something which fetches nothing: a string, and the selector of a
-     * style rule at any depth, which the top-level pass does not reach inside a grouping at-rule
+     * @return where the parser read something which fetches nothing: a string, and the selector or the
+     * prelude of a rule at any depth, which the top-level pass does not reach inside a grouping at-rule
      */
     private List<CssRange> textRangesOf(@NotNull String css, @NotNull CascadingStyleSheet stylesheet, int[] lineStarts) {
         List<CssRange> ranges = new ArrayList<>();
         CSSVisitor.visitCSS(stylesheet, new DefaultCSSVisitor() {
             @Override
             public void onBeginStyleRule(@NotNull CSSStyleRule styleRule) {
-                CssRange range = rangeOf(lineStarts, css, styleRule.getSourceLocation());
+                addPreludeOf(styleRule);
+            }
+
+            @Override
+            public void onBeginMediaRule(@NotNull CSSMediaRule mediaRule) {
+                addPreludeOf(mediaRule);
+            }
+
+            @Override
+            public void onBeginSupportsRule(@NotNull CSSSupportsRule supportsRule) {
+                addPreludeOf(supportsRule);
+            }
+
+            private void addPreludeOf(@NotNull ICSSSourceLocationAware rule) {
+                CssRange range = rangeOf(lineStarts, css, rule.getSourceLocation());
                 if (range != null) {
                     ranges.add(selectorOf(css, range));
                 }

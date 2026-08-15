@@ -13,6 +13,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import javax.net.ssl.SSLException;
+import javax.net.ssl.SSLHandshakeException;
+import javax.net.ssl.SSLPeerUnverifiedException;
+import java.security.cert.CertificateException;
 import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.net.URI;
@@ -293,6 +297,22 @@ class CustomResourceUrlResolverTest {
     }
 
     @Test
+    void triesTheOtherSchemeWhereTheHostDoesNotSpeakTlsAtAll() {
+        CustomResourceUrlResolver resolver = resolver(16);
+
+        // a peer which is not speaking tls answered nothing, and the other scheme is the next question
+        assertFalse(resolver.isCertificateFailure(new SSLException("Unrecognized SSL message, plaintext connection?")));
+        // a refused certificate is an answer, and never one to repeat in the clear
+        assertTrue(resolver.isCertificateFailure(new SSLHandshakeException("failed") {
+            @Override
+            public synchronized Throwable getCause() {
+                return new CertificateException("no trusted certificate found");
+            }
+        }));
+        assertTrue(resolver.isCertificateFailure(new SSLPeerUnverifiedException("hostname mismatch")));
+    }
+
+    @Test
     @SneakyThrows
     void keepsFetchingWhenOnlyASocksProxyIsConfigured() {
         // the route planner of the client ignores a socks proxy, so the request stays direct and pinned
@@ -306,9 +326,25 @@ class CustomResourceUrlResolverTest {
                 assertNotNull(stream);
                 assertArrayEquals(PNG_CONTENT, stream.readAllBytes());
             }
+            // and the classification itself, which the mode of the policy above cannot answer for
+            assertFalse(new CustomResourceUrlResolver(policy).isProxied(toUrl(url("/img.png"))));
         } finally {
             System.clearProperty("socksProxyHost");
             System.clearProperty("socksProxyPort");
+        }
+    }
+
+    @Test
+    void classifiesAnHttpProxyAsARoute() {
+        System.setProperty("http.proxyHost", "proxy.invalid");
+        System.setProperty("http.proxyPort", "3128");
+        try {
+            CustomResourceUrlResolver resolver = resolver(16);
+
+            assertTrue(resolver.isProxied(toUrl("http://8.8.8.8/img.png")));
+        } finally {
+            System.clearProperty("http.proxyHost");
+            System.clearProperty("http.proxyPort");
         }
     }
 

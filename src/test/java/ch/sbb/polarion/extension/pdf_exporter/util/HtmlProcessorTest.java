@@ -687,7 +687,9 @@ class HtmlProcessorTest {
             "@namespace url(http://www.w3.org/1999/xhtml); a { color: red; }", // nor one in an at-rule prelude
             "a { content: \"https://example.com\"; color: red; }",         // nor one in a string value
             // nor one in a selector nested in a grouping at-rule, the print-stylesheet idiom
-            "@media print { a[href^=\"https://example.com\"]::after { color: red; } }"
+            "@media print { a[href^=\"https://example.com\"]::after { color: red; } }",
+            // nor one in the prelude of an at-rule nested in another one
+            "@media print { @supports (background: url(\"https://example.com/x.png\")) { a { color: red; } } }"
     })
     @SneakyThrows
     void keepAStylesheetWhoseAddressIsNotAResourceTest(String css) {

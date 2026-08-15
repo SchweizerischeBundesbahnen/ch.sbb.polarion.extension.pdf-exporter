@@ -18,7 +18,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
 
-import javax.net.ssl.SSLException;
+import javax.net.ssl.SSLPeerUnverifiedException;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -28,6 +28,7 @@ import java.net.Proxy;
 import java.net.ProxySelector;
 import java.net.URI;
 import java.net.URL;
+import java.security.cert.CertificateException;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -115,8 +116,8 @@ public class CustomResourceUrlResolver implements IUrlResolver {
             return new SchemeAttempt(stream, stream != null || !policy.isRefusalPortSpecific(url));
         } catch (Exception e) {
             logger.debug("Failed to load resource " + scheme + ":" + urlStr + ": " + e.getMessage());
-            // nothing was decided unless tls itself failed, and then the other scheme is not an answer
-            return new SchemeAttempt(null, isTlsFailure(e));
+            // nothing was decided unless the peer showed a certificate which was refused
+            return new SchemeAttempt(null, isCertificateFailure(e));
         }
     }
 
@@ -127,9 +128,15 @@ public class CustomResourceUrlResolver implements IUrlResolver {
     private record SchemeAttempt(@Nullable InputStream stream, boolean conclusive) {
     }
 
-    private boolean isTlsFailure(@NotNull Throwable failure) {
+    /**
+     * A host which does not speak tls on that port answered nothing, and the other scheme of a network
+     * path reference is the question to ask next. A host which showed a certificate the client refused
+     * did answer, and the answer to a refused certificate is never the same resource in the clear.
+     */
+    @VisibleForTesting
+    boolean isCertificateFailure(@NotNull Throwable failure) {
         for (Throwable current = failure; current != null; current = current.getCause()) {
-            if (current instanceof SSLException) {
+            if (current instanceof CertificateException || current instanceof SSLPeerUnverifiedException) {
                 return true;
             }
         }
@@ -261,7 +268,8 @@ public class CustomResourceUrlResolver implements IUrlResolver {
         return host.startsWith("[") && host.endsWith("]") ? host.substring(1, host.length() - 1) : host;
     }
 
-    private boolean isProxied(@NotNull URL url) {
+    @VisibleForTesting
+    boolean isProxied(@NotNull URL url) {
         ProxySelector selector = ProxySelector.getDefault();
         if (selector == null) {
             return false;
