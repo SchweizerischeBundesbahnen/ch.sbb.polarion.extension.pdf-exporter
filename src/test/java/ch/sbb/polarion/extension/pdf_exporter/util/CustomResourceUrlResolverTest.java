@@ -330,10 +330,37 @@ class CustomResourceUrlResolverTest {
                 assertArrayEquals(PNG_CONTENT, stream.readAllBytes());
             }
             // and the classification itself, asked about an address no default non-proxy list covers
-            assertFalse(new CustomResourceUrlResolver(policy).isProxied(ProxySelector.getDefault(), toUrl("http://8.8.8.8/img.png")));
+            assertFalse(new CustomResourceUrlResolver(policy).decideProxy(ProxySelector.getDefault(), toUrl("http://8.8.8.8/img.png")).proxied());
         } finally {
             System.clearProperty("socksProxyHost");
             System.clearProperty("socksProxyPort");
+        }
+    }
+
+    @Test
+    @SneakyThrows
+    void treatsASelectorWhichCannotAnswerAsAProxy() {
+        // a check which cannot be made is not a check that passed, so such a url is skipped as proxied
+        ProxySelector previous = ProxySelector.getDefault();
+        ProxySelector.setDefault(new ProxySelector() {
+            @Override
+            public List<Proxy> select(URI uri) {
+                throw new IllegalStateException("no answer");
+            }
+
+            @Override
+            public void connectFailed(URI uri, SocketAddress address, java.io.IOException failure) {
+                // nothing to report, this selector never answers in the first place
+            }
+        });
+        try {
+            ResourceUrlPolicy policy = new ResourceUrlPolicy(Mode.BLOCK_INTERNAL, List.of(), null, 16);
+            CustomResourceUrlResolver resolver = new CustomResourceUrlResolver(policy);
+
+            assertTrue(resolver.decideProxy(ProxySelector.getDefault(), toUrl("http://8.8.8.8/img.png")).proxied());
+            assertNull(resolver.resolveImpl(toUrl("http://8.8.8.8/img.png")));
+        } finally {
+            ProxySelector.setDefault(previous);
         }
     }
 
@@ -378,7 +405,7 @@ class CustomResourceUrlResolverTest {
         try {
             CustomResourceUrlResolver resolver = resolver(16);
 
-            assertTrue(resolver.isProxied(ProxySelector.getDefault(), toUrl("http://8.8.8.8/img.png")));
+            assertTrue(resolver.decideProxy(ProxySelector.getDefault(), toUrl("http://8.8.8.8/img.png")).proxied());
         } finally {
             System.clearProperty("http.proxyHost");
             System.clearProperty("http.proxyPort");

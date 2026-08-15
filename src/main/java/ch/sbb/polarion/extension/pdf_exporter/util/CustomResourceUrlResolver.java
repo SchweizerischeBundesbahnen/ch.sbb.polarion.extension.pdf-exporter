@@ -6,6 +6,7 @@ import com.polarion.core.util.logging.Logger;
 import lombok.SneakyThrows;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
+import org.apache.http.HttpHost;
 import org.apache.http.HttpHeaders;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -14,7 +15,8 @@ import org.apache.http.conn.DnsResolver;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.SystemDefaultDnsResolver;
-import org.apache.http.impl.conn.SystemDefaultRoutePlanner;
+import org.apache.http.impl.conn.DefaultProxyRoutePlanner;
+import org.apache.http.impl.conn.DefaultRoutePlanner;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
@@ -25,6 +27,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.Proxy;
 import java.net.ProxySelector;
 import java.net.URI;
@@ -148,11 +151,12 @@ public class CustomResourceUrlResolver implements IUrlResolver {
     @VisibleForTesting
     public InputStream resolveImpl(@NotNull URL url) {
         URL currentUrl = url;
-        // one selector answers both the check below and the routing of the client built from it, so the
-        // two cannot read a different proxy setup, whoever installed the one in place
+        // the selector is asked once per hop, and the answer both decides and routes: what the check
+        // let through cannot be routed anywhere else
         ProxySelector selector = ProxySelector.getDefault();
         for (int redirect = 0; redirect <= MAX_REDIRECTS; redirect++) {
-            if (isProxied(selector, currentUrl) && !policy.isExplicitlyTrusted(currentUrl)) {
+            ProxyDecision proxy = decideProxy(selector, currentUrl);
+            if (proxy.proxied() && !policy.isExplicitlyTrusted(currentUrl)) {
                 // A proxy resolves the host name itself, so the vetted addresses would decide nothing.
                 // Only a host the configuration trusts as such may be fetched that way.
                 logger.warn(SKIPPED_RESOURCE + currentUrl + ": it would go through a proxy, which resolves the host name itself."
@@ -163,7 +167,7 @@ public class CustomResourceUrlResolver implements IUrlResolver {
             if (addresses == null) {
                 return null;
             }
-            try (CloseableHttpClient client = createClient(currentUrl, addresses, selector);
+            try (CloseableHttpClient client = createClient(currentUrl, addresses, proxy);
                  CloseableHttpResponse response = client.execute(new HttpGet(URI.create(currentUrl.toString())))) {
                 int statusCode = response.getStatusLine().getStatusCode();
                 if (statusCode == HTTP_OK) {
@@ -189,7 +193,7 @@ public class CustomResourceUrlResolver implements IUrlResolver {
      * approved. The host name stays in the request, so the Host header and the TLS host name verification
      * keep working. Any other name, a proxy host as a rule, is left to the system resolver.
      */
-    private CloseableHttpClient createClient(@NotNull URL url, @NotNull InetAddress[] addresses, @Nullable ProxySelector selector) {
+    private CloseableHttpClient createClient(@NotNull URL url, @NotNull InetAddress[] addresses, @NotNull ProxyDecision proxy) {
         String pinnedHost = url.getHost() == null ? "" : stripBrackets(url.getHost());
         DnsResolver pinnedResolver = host -> pinnedHost.equalsIgnoreCase(host)
                 ? addresses
@@ -206,8 +210,8 @@ public class CustomResourceUrlResolver implements IUrlResolver {
                 // Behind a proxy the socket goes to the proxy, so the proxy resolves the host name and
                 // the addresses below only decide whether the request is made at all.
                 .useSystemProperties()
-                // the routes come from the selector the check read, not from a second reading of it
-                .setRoutePlanner(new SystemDefaultRoutePlanner(selector))
+                // the route is the answer the check already got, so the selector is asked no second time
+                .setRoutePlanner(proxy.host() == null ? new DefaultRoutePlanner(null) : new DefaultProxyRoutePlanner(proxy.host()))
                 .setDefaultRequestConfig(requestConfig)
                 .setDnsResolver(pinnedResolver)
                 .disableAutomaticRetries()
@@ -274,19 +278,46 @@ public class CustomResourceUrlResolver implements IUrlResolver {
         return host.startsWith("[") && host.endsWith("]") ? host.substring(1, host.length() - 1) : host;
     }
 
+    /**
+     * Asks the selector once and keeps the answer. The request is routed by this answer and by nothing
+     * else, so a selector which answers differently the next time it is asked cannot route a request the
+     * check let through. Only an http proxy is a route: a socks one the jvm applies at the socket, after
+     * the connection has been bound to a vetted address.
+     *
+     * @return what to do with the url, and where to route it if that is through a proxy
+     */
     @VisibleForTesting
-    boolean isProxied(@Nullable ProxySelector selector, @NotNull URL url) {
+    ProxyDecision decideProxy(@Nullable ProxySelector selector, @NotNull URL url) {
         if (selector == null) {
-            return false;
+            return new ProxyDecision(false, null);
         }
         try {
-            // only an http proxy counts: the route planner of the client ignores a socks one, which the
-            // jvm applies at the socket, and the connection is pinned to the vetted address as ever
-            return selector.select(URI.create(url.toString())).stream().anyMatch(proxy -> proxy.type() == Proxy.Type.HTTP);
+            return selector.select(URI.create(url.toString())).stream()
+                    .filter(proxy -> proxy.type() == Proxy.Type.HTTP)
+                    .findFirst()
+                    .map(proxy -> new ProxyDecision(true, hostOf(proxy)))
+                    .orElseGet(() -> new ProxyDecision(false, null));
         } catch (RuntimeException e) {
-            logger.warn("Cannot tell whether '" + url + "' goes through a proxy, it is treated as direct", e);
-            return false;
+            // a selector which cannot answer is no reason to fetch anything past the check
+            logger.warn("Cannot tell whether '" + url + "' goes through a proxy, it is treated as proxied", e);
+            return new ProxyDecision(true, null);
         }
+    }
+
+    @Nullable
+    private HttpHost hostOf(@NotNull Proxy proxy) {
+        if (proxy.address() instanceof InetSocketAddress address) {
+            return new HttpHost(address.getHostString(), address.getPort());
+        }
+        return null;
+    }
+
+    /**
+     * @param proxied whether the url would be requested through an http proxy
+     * @param host    the proxy to route to, null where there is nothing to route to or nothing was told
+     */
+    @VisibleForTesting
+    record ProxyDecision(boolean proxied, @Nullable HttpHost host) {
     }
 
     private String getBaseUrl() {
