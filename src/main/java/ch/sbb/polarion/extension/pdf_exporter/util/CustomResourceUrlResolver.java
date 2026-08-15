@@ -14,6 +14,7 @@ import org.apache.http.conn.DnsResolver;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.SystemDefaultDnsResolver;
+import org.apache.http.impl.conn.SystemDefaultRoutePlanner;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
@@ -147,8 +148,11 @@ public class CustomResourceUrlResolver implements IUrlResolver {
     @VisibleForTesting
     public InputStream resolveImpl(@NotNull URL url) {
         URL currentUrl = url;
+        // one selector answers both the check below and the routing of the client built from it, so the
+        // two cannot read a different proxy setup, whoever installed the one in place
+        ProxySelector selector = ProxySelector.getDefault();
         for (int redirect = 0; redirect <= MAX_REDIRECTS; redirect++) {
-            if (isProxied(currentUrl) && !policy.isExplicitlyTrusted(currentUrl)) {
+            if (isProxied(selector, currentUrl) && !policy.isExplicitlyTrusted(currentUrl)) {
                 // A proxy resolves the host name itself, so the vetted addresses would decide nothing.
                 // Only a host the configuration trusts as such may be fetched that way.
                 logger.warn(SKIPPED_RESOURCE + currentUrl + ": it would go through a proxy, which resolves the host name itself."
@@ -159,7 +163,7 @@ public class CustomResourceUrlResolver implements IUrlResolver {
             if (addresses == null) {
                 return null;
             }
-            try (CloseableHttpClient client = createClient(currentUrl, addresses);
+            try (CloseableHttpClient client = createClient(currentUrl, addresses, selector);
                  CloseableHttpResponse response = client.execute(new HttpGet(URI.create(currentUrl.toString())))) {
                 int statusCode = response.getStatusLine().getStatusCode();
                 if (statusCode == HTTP_OK) {
@@ -185,7 +189,7 @@ public class CustomResourceUrlResolver implements IUrlResolver {
      * approved. The host name stays in the request, so the Host header and the TLS host name verification
      * keep working. Any other name, a proxy host as a rule, is left to the system resolver.
      */
-    private CloseableHttpClient createClient(@NotNull URL url, @NotNull InetAddress[] addresses) {
+    private CloseableHttpClient createClient(@NotNull URL url, @NotNull InetAddress[] addresses, @Nullable ProxySelector selector) {
         String pinnedHost = url.getHost() == null ? "" : stripBrackets(url.getHost());
         DnsResolver pinnedResolver = host -> pinnedHost.equalsIgnoreCase(host)
                 ? addresses
@@ -202,6 +206,8 @@ public class CustomResourceUrlResolver implements IUrlResolver {
                 // Behind a proxy the socket goes to the proxy, so the proxy resolves the host name and
                 // the addresses below only decide whether the request is made at all.
                 .useSystemProperties()
+                // the routes come from the selector the check read, not from a second reading of it
+                .setRoutePlanner(new SystemDefaultRoutePlanner(selector))
                 .setDefaultRequestConfig(requestConfig)
                 .setDnsResolver(pinnedResolver)
                 .disableAutomaticRetries()
@@ -269,8 +275,7 @@ public class CustomResourceUrlResolver implements IUrlResolver {
     }
 
     @VisibleForTesting
-    boolean isProxied(@NotNull URL url) {
-        ProxySelector selector = ProxySelector.getDefault();
+    boolean isProxied(@Nullable ProxySelector selector, @NotNull URL url) {
         if (selector == null) {
             return false;
         }

@@ -17,6 +17,9 @@ import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLHandshakeException;
 import javax.net.ssl.SSLPeerUnverifiedException;
 import java.security.cert.CertificateException;
+import java.net.Proxy;
+import java.net.ProxySelector;
+import java.net.SocketAddress;
 import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.net.URI;
@@ -327,10 +330,44 @@ class CustomResourceUrlResolverTest {
                 assertArrayEquals(PNG_CONTENT, stream.readAllBytes());
             }
             // and the classification itself, asked about an address no default non-proxy list covers
-            assertFalse(new CustomResourceUrlResolver(policy).isProxied(toUrl("http://8.8.8.8/img.png")));
+            assertFalse(new CustomResourceUrlResolver(policy).isProxied(ProxySelector.getDefault(), toUrl("http://8.8.8.8/img.png")));
         } finally {
             System.clearProperty("socksProxyHost");
             System.clearProperty("socksProxyPort");
+        }
+    }
+
+    @Test
+    @SneakyThrows
+    void routesByTheSelectorAndNotByTheProperty() {
+        // the check reads the selector, so the routes have to come from there too: a selector answering
+        // no proxy wins over http.proxyHost, and a request under it stays direct as the check said
+        respond("/img.png", "image/png", PNG_CONTENT, false);
+        System.setProperty("http.proxyHost", "proxy.invalid");
+        System.setProperty("http.proxyPort", "3128");
+        ProxySelector previous = ProxySelector.getDefault();
+        ProxySelector.setDefault(new ProxySelector() {
+            @Override
+            public List<Proxy> select(URI uri) {
+                return List.of(Proxy.NO_PROXY);
+            }
+
+            @Override
+            public void connectFailed(URI uri, SocketAddress address, java.io.IOException failure) {
+                // nothing to report, the test asks for a route and never for a failure
+            }
+        });
+        try {
+            ResourceUrlPolicy policy = new ResourceUrlPolicy(Mode.ALLOW_ALL, List.of(), null, 16);
+
+            try (InputStream stream = new CustomResourceUrlResolver(policy).resolveImpl(toUrl(url("/img.png")))) {
+                assertNotNull(stream);
+                assertArrayEquals(PNG_CONTENT, stream.readAllBytes());
+            }
+        } finally {
+            ProxySelector.setDefault(previous);
+            System.clearProperty("http.proxyHost");
+            System.clearProperty("http.proxyPort");
         }
     }
 
@@ -341,7 +378,7 @@ class CustomResourceUrlResolverTest {
         try {
             CustomResourceUrlResolver resolver = resolver(16);
 
-            assertTrue(resolver.isProxied(toUrl("http://8.8.8.8/img.png")));
+            assertTrue(resolver.isProxied(ProxySelector.getDefault(), toUrl("http://8.8.8.8/img.png")));
         } finally {
             System.clearProperty("http.proxyHost");
             System.clearProperty("http.proxyPort");
