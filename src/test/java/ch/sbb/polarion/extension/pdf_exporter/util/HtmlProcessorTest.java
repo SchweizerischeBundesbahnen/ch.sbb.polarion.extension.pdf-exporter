@@ -26,6 +26,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -77,6 +78,9 @@ class HtmlProcessorTest {
         LocalizationModel localizationModel = new LocalizationModel(deTranslations, frTranslations, itTranslations);
 
         lenient().when(localizationSettings.load(anyString(), any(SettingId.class))).thenReturn(localizationModel);
+        // by default every resource inlines to itself, so that a test which is not about resources
+        // keeps its urls. A url which does not inline is replaced by a placeholder, see inlineBase64Resources.
+        lenient().when(fileResourceProvider.getResourceAsBase64String(anyString())).thenAnswer(invocation -> invocation.getArgument(0));
     }
 
     @Test
@@ -512,6 +516,356 @@ class HtmlProcessorTest {
         when(fileResourceProvider.getResourceAsBase64String(any())).thenReturn("base64Data");
         String result = processor.replaceResourcesAsBase64Encoded(html);
         assertEquals("<div><img id=\"image\" src=\"base64Data\"/></div>", result);
+    }
+
+    @Test
+    @SneakyThrows
+    void replaceForbiddenImageWithPlaceholderTest() {
+        String url = "http://169.254.169.254/latest/meta-data/";
+        String html = "<div><img id=\"image\" src=\"" + url + "\"/></div>";
+        when(fileResourceProvider.isForbidden(url)).thenReturn(true);
+        String result = processor.replaceResourcesAsBase64Encoded(html);
+        assertEquals("<div><img id=\"image\" src=\"" + MediaUtils.BLOCKED_RESOURCE_PLACEHOLDER + "\"/></div>", result);
+    }
+
+    @Test
+    @SneakyThrows
+    void replaceNotInlinedAbsoluteUrlWithPlaceholderTest() {
+        // the resolver refused the resource, for instance by its content type: the url must not survive
+        String html = "<div><img id=\"image\" src=\"http://example.com/img.png\"/></div>";
+        when(fileResourceProvider.getResourceAsBase64String(any())).thenReturn(null);
+        String result = processor.replaceResourcesAsBase64Encoded(html);
+        assertEquals("<div><img id=\"image\" src=\"" + MediaUtils.BLOCKED_RESOURCE_PLACEHOLDER + "\"/></div>", result);
+    }
+
+    @Test
+    @SneakyThrows
+    void keepNotInlinedRelativeUrlsTest() {
+        // a relative url and an SVG fragment cannot be loaded by WeasyPrint, leave them alone
+        String html = "<div style=\"fill: url(#gradient)\"><img id=\"image\" src=\"images/local.png\"/></div>";
+        when(fileResourceProvider.getResourceAsBase64String(any())).thenReturn(null);
+        assertEquals(html, processor.replaceResourcesAsBase64Encoded(html));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "@import \"URL\";",
+            "@import \"URL\" screen and (min-width:1px);",   // a media condition must not save the at-rule
+            "@import url(\"URL\") print;",                    // the url() form goes as a whole too
+            "@import/*sneaky*/\"URL\";",                      // CSS allows a comment between the at-keyword and its target
+            "@import\"URL\";",                                // and it allows no separator at all
+            "@import url(/*sneaky*/\"URL\");",                 // a comment inside url() too
+            "@import url( \"URL\" /*sneaky*/ );",
+            "@import \"http\\3a //169.254.169.254/latest/meta-data/\";",  // a css escape hides the scheme
+            "@import url(/* ) */\"URL\");",                    // a ')' inside a comment used to cut the match
+            "@import/* ; */\"URL\";",                          // and a ';' inside one
+            "@\\69mport \"URL\";",                              // an escaped at-keyword
+            "@\\69mport \\75rl(\"URL\");"                        // an escaped at-keyword and function
+    })
+    @SneakyThrows
+    void dropAbsoluteCssImportTest(String atRule) {
+        String html = "<style>" + atRule.replace("URL", "http://169.254.169.254/latest/meta-data/") + " body { color: red; }</style>";
+
+        // either the at-rule goes, or the whole stylesheet does when nothing could read it
+        assertFalse(processor.replaceResourcesAsBase64Encoded(html).contains("169.254.169.254"));
+    }
+
+
+    @Test
+    @SneakyThrows
+    void replaceForbiddenNetworkPathReferenceTest() {
+        String html = "<style>body { background: url(//169.254.169.254/latest/meta-data/); }</style>";
+        when(fileResourceProvider.isForbidden("//169.254.169.254/latest/meta-data/")).thenReturn(true);
+
+        String result = processor.replaceResourcesAsBase64Encoded(html);
+
+        assertFalse(result.contains("169.254.169.254"));
+        assertTrue(result.contains(MediaUtils.BLOCKED_RESOURCE_PLACEHOLDER));
+    }
+
+
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "url(/*sneaky*/\"ADDRESS\")",
+            "url(/* ) */\"ADDRESS\")",
+            "url(\"ADDRESS\" /*sneaky*/)",
+            "\\75rl(\"ADDRESS\")"
+    })
+    @SneakyThrows
+    void keepAForbiddenCssUrlOutOfTheDocumentTest(String value) {
+        String address = "http://169.254.169.254/latest/meta-data/";
+        String html = "<style>body { background: " + value.replace("ADDRESS", address) + "; }</style>";
+        lenient().when(fileResourceProvider.isForbidden(address)).thenReturn(true);
+
+        assertFalse(processor.replaceResourcesAsBase64Encoded(html).contains("169.254.169.254"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "style=\"background: url(ADDRESS)\"",
+            "style = \"background: url(ADDRESS)\"",
+            "style='background: url(ADDRESS)'",
+            "style=background:url(ADDRESS)"
+    })
+    @SneakyThrows
+    void keepAForbiddenUrlOutOfEveryFormOfAStyleAttributeTest(String attribute) {
+        String address = "http://169.254.169.254/latest/meta-data/";
+        String html = "<div " + attribute.replace("ADDRESS", address) + "></div>";
+        lenient().when(fileResourceProvider.isForbidden(address)).thenReturn(true);
+
+        assertFalse(processor.replaceResourcesAsBase64Encoded(html).contains("169.254.169.254"));
+    }
+
+    @Test
+    @SneakyThrows
+    void inlineAnImageWrittenWithWhitespaceAroundItsUrlTest() {
+        String url = "//cdn.example/image.png";
+        String html = "<div><img src=\" " + url + " \"/></div>";
+        when(fileResourceProvider.getResourceAsBase64String(url)).thenReturn("data:image/png;base64,AAAA");
+
+        String result = processor.replaceResourcesAsBase64Encoded(html);
+
+        assertTrue(result.contains("data:image/png;base64,AAAA"));
+        assertFalse(result.contains(MediaUtils.BLOCKED_RESOURCE_PLACEHOLDER));
+    }
+
+    @Test
+    @SneakyThrows
+    void inlineARelativeCssUrlTest() {
+        // a stylesheet whose urls are all relative is inlined as well, it names no address to check
+        String html = "<style>body { background: url(images/logo.png); }</style>";
+        when(fileResourceProvider.getResourceAsBase64String("images/logo.png")).thenReturn("data:image/png;base64,AAAA");
+
+        String result = processor.replaceResourcesAsBase64Encoded(html);
+
+        assertTrue(result.contains("url(data:image/png;base64,AAAA)"));
+    }
+
+    @Test
+    @SneakyThrows
+    void keepAStyleAttributeUsableAfterInliningTest() {
+        // a quote around the value would end the attribute early, so the data url goes in bare
+        String html = "<div style=\"background: url(images/logo.png)\"></div>";
+        when(fileResourceProvider.getResourceAsBase64String("images/logo.png")).thenReturn("data:image/png;base64,AAAA");
+
+        String result = processor.replaceResourcesAsBase64Encoded(html);
+
+        assertEquals("<div style=\"background: url(data:image/png;base64,AAAA)\"></div>", result);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            // pandoc-service loads the src of an image and of a frame, weasyprint-service the src of an
+            // image, the data of an object and the src of an embed. The image of an inline svg is
+            // rewritten as well, a data url being a valid href there
+            "<img src=\"http://169.254.169.254/latest/meta-data/\">",
+            "<object data=\"http://169.254.169.254/latest/meta-data/\"></object>",
+            "<embed src=\"http://169.254.169.254/latest/meta-data/\">",
+            "<iframe src=\"http://169.254.169.254/latest/meta-data/\"></iframe>",
+            "<svg><image href=\"http://169.254.169.254/latest/meta-data/\"/></svg>",
+            "<svg><image xlink:href=\"http://169.254.169.254/latest/meta-data/\"/></svg>"
+    })
+    @SneakyThrows
+    void blockAnAddressInEveryAttributeAConverterReadsTest(String html) {
+        when(fileResourceProvider.isForbidden("http://169.254.169.254/latest/meta-data/")).thenReturn(true);
+
+        String result = processor.replaceResourcesAsBase64Encoded(html);
+
+        assertFalse(result.contains("169.254.169.254"));
+        assertTrue(result.contains("data:image/png;base64,"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"\n", "\r\n", "\r"})
+    @SneakyThrows
+    void readAUrlAtItsPositionWhateverEndsTheLineBeforeItTest(String lineBreak) {
+        // the parser ends a line on a carriage return as well, so the positions it reports are counted
+        // that way here too, and a rewrite lands where the url stands and nowhere else
+        String html = "<style>a { color: red }" + lineBreak + "b { background: url(images/logo.png) }</style>";
+        when(fileResourceProvider.getResourceAsBase64String("images/logo.png")).thenReturn("data:image/png;base64,AAAA");
+
+        String result = processor.replaceResourcesAsBase64Encoded(html);
+
+        assertEquals("<style>a { color: red }" + lineBreak + "b { background: url(data:image/png;base64,AAAA) }</style>", result);
+    }
+
+    @Test
+    @SneakyThrows
+    void blockAnEscapedSchemeOfAForbiddenAddressInAStyleAttributeTest() {
+        // the gate resolves the escapes, so the decision which follows it reads the same address
+        when(fileResourceProvider.isForbidden(anyString())).thenReturn(true);
+
+        String result = processor.replaceResourcesAsBase64Encoded(
+                "<div style=\"background: url(http\\3a //169.254.169.254/latest/meta-data/)\"></div>");
+
+        assertFalse(result.contains("169.254.169.254"));
+    }
+
+    @Test
+    @SneakyThrows
+    void blockAnAddressWrittenWithHtmlEntitiesInAnAttributeTest() {
+        // the renderer reads an attribute after the html parser resolved its entities, and so does this
+        when(fileResourceProvider.isForbidden("http://169.254.169.254/latest/meta-data/")).thenReturn(true);
+
+        String style = processor.replaceResourcesAsBase64Encoded(
+                "<div style=\"background: url(&quot;http://169.254.169.254/latest/meta-data/&quot;)\"></div>");
+        String image = processor.replaceResourcesAsBase64Encoded(
+                "<img src=\"&#104;ttp://169.254.169.254/latest/meta-data/\">");
+
+        assertFalse(style.contains("169.254.169.254"));
+        assertFalse(image.contains("169.254.169.254"));
+        assertTrue(style.contains("data:image/png;base64,"));
+        assertTrue(image.contains("data:image/png;base64,"));
+    }
+
+    @Test
+    @SneakyThrows
+    void blockAnEscapedSchemeOfAForbiddenAddressTest() {
+        // the parser resolves the escape, so the policy is asked about the address the renderer would read
+        String html = "<style>a { background: url(\"http\\3a //169.254.169.254/latest/meta-data/\") }</style>";
+        when(fileResourceProvider.isForbidden("http://169.254.169.254/latest/meta-data/")).thenReturn(true);
+
+        String result = processor.replaceResourcesAsBase64Encoded(html);
+
+        assertFalse(result.contains("169.254.169.254"));
+        assertTrue(result.contains("data:image/png;base64,"));
+    }
+
+    @Test
+    @SneakyThrows
+    void keepAStylesheetHoldingAnUnencodedSvgDataUrlTest() {
+        // the payload of such a data url carries quotes and the namespace of SVG, neither is an address
+        String html = "<style>body { background: url(\"data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg'/>\"); color: red; }</style>";
+
+        String result = processor.replaceResourcesAsBase64Encoded(html);
+
+        assertTrue(result.contains("color"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            // a data url token which no url() holds must not hide what stands after it
+            "a { --x: data: } @\\69mport \"http://169.254.169.254/latest/meta-data/\";",
+            // an import inside a media rule is dropped by the parser, and the renderer would read it
+            "@media print { @import url(http://169.254.169.254/latest/meta-data/); }",
+            // the same characters read as a string in one rule, and read by nothing in the next
+            "a { content: \"http://169.254.169.254/\" } @\\69mport \"http://169.254.169.254/\";"
+    })
+    @SneakyThrows
+    void dropAStylesheetNamingAnAddressNothingAccountedForTest(String css) {
+        String result = processor.replaceResourcesAsBase64Encoded("<style>" + css + "</style>");
+
+        assertFalse(result.contains("169.254.169.254"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "a[href^=\"https://example.com\"] { color: red; }",          // an address in a selector fetches nothing
+            "@namespace url(http://www.w3.org/1999/xhtml); a { color: red; }", // nor one in an at-rule prelude
+            "a { content: \"https://example.com\"; color: red; }",         // nor one in a string value
+            // nor one in a selector nested in a grouping at-rule, the print-stylesheet idiom
+            "@media print { a[href^=\"https://example.com\"]::after { color: red; } }",
+            // nor one in the prelude of an at-rule nested in another one
+            "@media print { @supports (background: url(\"https://example.com/x.png\")) { a { color: red; } } }"
+    })
+    @SneakyThrows
+    void keepAStylesheetWhoseAddressIsNotAResourceTest(String css) {
+        String html = "<style>" + css + "</style>";
+
+        assertTrue(processor.replaceResourcesAsBase64Encoded(html).contains("color"));
+    }
+
+    @Test
+    @SneakyThrows
+    void keepTextWhichOnlyLooksLikeAStyleAttributeTest() {
+        // neither the text of the document nor the value of another attribute is a style attribute
+        String html = "<p>the style = big</p><div title=\"style=background:url(http://169.254.169.254/x)\">t</div>";
+
+        assertEquals(html, processor.replaceResourcesAsBase64Encoded(html));
+    }
+
+    @Test
+    @SneakyThrows
+    void keepACssStringHoldingAnAddressTest() {
+        // a string value is text, css fetches nothing from it, so the stylesheet stays usable
+        String html = "<style>/* see http://example.com */ body { content: \"https://example.com\"; color: red; }</style>";
+
+        String result = processor.replaceResourcesAsBase64Encoded(html);
+
+        assertTrue(result.contains("https://example.com"));
+        assertTrue(result.contains("color"));
+    }
+
+    @Test
+    @SneakyThrows
+    void keepAForbiddenUrlOutOfAStyleAttributeTest() {
+        String address = "http://169.254.169.254/latest/meta-data/";
+        String html = "<div style=\"background: url(/*sneaky*/'" + address + "')\"></div>";
+        lenient().when(fileResourceProvider.isForbidden(address)).thenReturn(true);
+
+        assertFalse(processor.replaceResourcesAsBase64Encoded(html).contains("169.254.169.254"));
+    }
+
+    @Test
+    @SneakyThrows
+    void keepsCommentLikeCharactersInsideAUrlTest() {
+        // '/*' and '*/' are legal inside a path, only a leading or a trailing comment is stripped
+        String url = "http://example.com/a/*b*/c.png";
+        String html = "<style>body { background: url(\"" + url + "\"); }</style>";
+        when(fileResourceProvider.getResourceAsBase64String(url)).thenReturn("data:image/png;base64,AAAA");
+
+        String result = processor.replaceResourcesAsBase64Encoded(html);
+
+        // the parser hands over the url as it stands, '/*' and '*/' in a path are part of it
+        verify(fileResourceProvider).getResourceAsBase64String(url);
+        assertTrue(result.contains("data:image/png;base64,AAAA"));
+    }
+
+    @Test
+    @SneakyThrows
+    void replaceForbiddenImageWrittenInUppercaseTest() {
+        // the base64 pass always runs on JSoup output, which lowercases the tag and quotes the attribute
+        String url = "http://169.254.169.254/latest/meta-data/";
+        String normalized = JSoupUtils.parseHtml("<div><IMG SRC=" + url + "></div>").body().html();
+        when(fileResourceProvider.isForbidden(url)).thenReturn(true);
+
+        String result = processor.replaceResourcesAsBase64Encoded(normalized);
+
+        assertFalse(result.contains("169.254.169.254"));
+        assertTrue(result.contains(MediaUtils.BLOCKED_RESOURCE_PLACEHOLDER));
+    }
+
+    @Test
+    @SneakyThrows
+    void dropExternalCssImportEvenWhenAllowedTest() {
+        // the at-rule is never inlined, so WeasyPrint would load it itself, unchecked
+        String html = "<style>@import \"http://example.com/theme.css\" screen; body { color: red; }</style>";
+
+        String result = processor.replaceResourcesAsBase64Encoded(html);
+
+        assertFalse(result.contains("theme.css"));
+        assertTrue(result.contains("color"));
+    }
+
+    @Test
+    @SneakyThrows
+    void keepRelativeCssImportTest() {
+        // WeasyPrint cannot resolve a relative import, and it names no address, so it stays
+        String html = "<style>@import \"theme.css\"; body { color: red; }</style>";
+        assertEquals(html, processor.replaceResourcesAsBase64Encoded(html));
+    }
+
+    @Test
+    @SneakyThrows
+    void replaceUppercaseCssUrlTest() {
+        String html = "<style>body { background: URL(http://169.254.169.254/latest/meta-data/); }</style>";
+        lenient().when(fileResourceProvider.isForbidden("http://169.254.169.254/latest/meta-data/")).thenReturn(true);
+
+        String result = processor.replaceResourcesAsBase64Encoded(html);
+
+        assertFalse(result.contains("169.254.169.254"));
+        assertTrue(result.contains(MediaUtils.BLOCKED_RESOURCE_PLACEHOLDER));
     }
 
     @Test

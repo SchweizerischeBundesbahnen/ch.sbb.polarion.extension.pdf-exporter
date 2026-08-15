@@ -5,6 +5,7 @@ import ch.sbb.polarion.extension.pdf_exporter.util.FileResourceProvider;
 import ch.sbb.polarion.extension.pdf_exporter.util.MediaUtils;
 import com.polarion.core.util.StringUtils;
 
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -38,7 +39,7 @@ public class ExternalCssInternalizer implements LinkInternalizer {
 
         String cssContent = new String(fileResourceProvider.getResourceAsBytes(url));
         cssContent = processRelativeUrls(url, cssContent);
-        cssContent = MediaUtils.inlineBase64Resources(cssContent, fileResourceProvider);
+        cssContent = MediaUtils.inlineCssResources(cssContent, fileResourceProvider);
         inlinedContent.append(cssContent);
         inlinedContent.append("</style>");
 
@@ -53,7 +54,9 @@ public class ExternalCssInternalizer implements LinkInternalizer {
         String resourcePath = resourceUrl.substring(0, lastSlashPosition + 1);
         return RegexMatcher.get(MediaUtils.URL_REGEX).useJavaUtil().replace(cssContent, engine -> {
             String url = engine.group("url");
-            return Stream.of("/", "http:", "https:", MediaUtils.DATA_URL_PREFIX).anyMatch(url::startsWith) ? null :
+            // the pattern reads a url in any case, so the prefixes are compared in one
+            String lowerCased = url.toLowerCase(Locale.ROOT);
+            return Stream.of("/", "http:", "https:", MediaUtils.DATA_URL_PREFIX).anyMatch(lowerCased::startsWith) ? null :
                     "url(%s%s)".formatted(resourcePath, url);
         });
     }

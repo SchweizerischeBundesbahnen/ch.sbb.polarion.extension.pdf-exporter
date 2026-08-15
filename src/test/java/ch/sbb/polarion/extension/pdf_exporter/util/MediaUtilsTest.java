@@ -18,10 +18,25 @@ import java.util.Set;
 
 import static ch.sbb.polarion.extension.pdf_exporter.util.MediaUtils.THUMBNAIL_PARAMETER;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith({MockitoExtension.class, BundleJarsPrioritizingRunnableMockExtension.class, PdfExporterExtensionConfigurationExtension.class})
 class MediaUtilsTest {
+
+    @Test
+    void anUnplaceableRewriteIsNotClearedByALaterOneTest() {
+        // the flag answers "was every rewrite placed", so one that was not stands whatever follows it
+        MediaUtils.CssRewrite rewrite = new MediaUtils.CssRewrite();
+        assertTrue(rewrite.complete());
+
+        rewrite.missed(false);
+        rewrite.missed(true);
+
+        assertFalse(rewrite.complete());
+    }
+
 
     @Test
     void dataUrlTest() {
@@ -201,5 +216,49 @@ class MediaUtilsTest {
         g2d.fillRect(0, 0, image.getWidth(), image.getHeight());
         g2d.dispose();
     }
+
+
+    @Test
+    void recognizesAbsoluteHttpUrls() {
+        assertTrue(MediaUtils.isAbsoluteHttpUrl("http://example.com/img.png"));
+        assertTrue(MediaUtils.isAbsoluteHttpUrl(" HTTPS://example.com/img.png"));
+        assertFalse(MediaUtils.isAbsoluteHttpUrl(null));
+        assertTrue(MediaUtils.isAbsoluteHttpUrl("//example.com/img.png"));
+        assertFalse(MediaUtils.isAbsoluteHttpUrl("/polarion/img.png"));
+        assertFalse(MediaUtils.isAbsoluteHttpUrl("//"));
+        assertFalse(MediaUtils.isAbsoluteHttpUrl("data:image/png;base64,AAAA"));
+    }
+
+    @Test
+    void keepsDataUrlsWhileInlining() {
+        FileResourceProvider provider = mock(FileResourceProvider.class);
+        String html = "<div><img src=\"data:image/png;base64,AAAA\"/></div>";
+
+        assertEquals(html, MediaUtils.inlineBase64Resources(html, provider));
+        verifyNoInteractions(provider);
+    }
+
+    @Test
+    void normalizesUrlForTheRequestAndTheCheck() {
+        assertEquals("http://example.com/some%20path/img_name.png",
+                MediaUtils.normalizeUrl("http://example.com/some path/img%5Fname.png"));
+    }
+
+
+    @Test
+    void decodesCssEscapes() {
+        assertEquals("http://host/x", MediaUtils.decodeCssEscapes("http\\3a //host/x"));
+        assertEquals("http://host/x", MediaUtils.decodeCssEscapes("\\68 ttp\\3A //host/x"));
+        assertEquals("http://host/x", MediaUtils.decodeCssEscapes("http\\:" + "//host/x"));
+        assertEquals("plain", MediaUtils.decodeCssEscapes("plain"));
+    }
+
+    @Test
+    void turnsAnUnusableCssEscapeIntoTheReplacementCharacter() {
+        assertEquals("\uFFFD", MediaUtils.decodeCssEscapes("\\FFFFFF"));
+        assertEquals("\uFFFD", MediaUtils.decodeCssEscapes("\\0"));
+        assertEquals("\uFFFD", MediaUtils.decodeCssEscapes("\\D800"));
+    }
+
 
 }

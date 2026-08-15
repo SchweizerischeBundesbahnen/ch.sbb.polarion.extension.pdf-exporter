@@ -1430,6 +1430,13 @@ public class HtmlProcessor {
         return MediaUtils.inlineBase64Resources(html, fileResourceProvider);
     }
 
+    /**
+     * The same for a value which is a stylesheet rather than a document, a cover page style for one.
+     */
+    public String replaceCssResourcesAsBase64Encoded(String css) {
+        return MediaUtils.inlineCssResources(css, fileResourceProvider);
+    }
+
     public String internalizeLinks(String html) {
         return httpLinksHelper.internalizeLinks(html);
     }

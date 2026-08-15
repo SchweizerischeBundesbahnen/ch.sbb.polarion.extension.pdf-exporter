@@ -1,5 +1,7 @@
 package ch.sbb.polarion.extension.pdf_exporter.util;
 
+import ch.sbb.polarion.extension.pdf_exporter.properties.PdfExporterExtensionConfiguration;
+
 import ch.sbb.polarion.extension.generic.test_extensions.PlatformContextMockExtension;
 import ch.sbb.polarion.extension.generic.test_extensions.TransactionalExecutorExtension;
 import com.polarion.alm.tracker.internal.url.GenericUrlResolver;
@@ -491,6 +493,66 @@ class PdfExporterFileResourceProviderTest {
             assertTrue(filteredResolvers.contains(mockResolver1));
             assertTrue(filteredResolvers.contains(mockResolver3));
             assertFalse(filteredResolvers.contains(mockResolver2));
+        }
+    }
+
+    @Test
+    void reportsUrlsRejectedByThePolicyAsForbidden() {
+        PdfExporterFileResourceProvider provider = new PdfExporterFileResourceProvider(
+                List.of(resolverMock), new ResourceUrlPolicy(ResourceUrlPolicy.Mode.BLOCK_INTERNAL, List.of(), null, 16));
+
+        // the address of a host is the request's own question, and the request binds to the answer:
+        // what is refused here is what stays refused whatever the host resolves to
+        assertFalse(provider.isForbidden("http://169.254.169.254/latest/meta-data/"));
+        assertFalse(provider.isForbidden("http://10.0.0.5/img.png"));
+        assertFalse(provider.isForbidden("HTTP://10.0.0.5/img.png"));
+        assertFalse(provider.isForbidden("https://8.8.8.8/img.png"));
+        // a url with a space is normalized the same way the resolver normalizes it before requesting
+        assertFalse(provider.isForbidden("https://8.8.8.8/some path/img.png"));
+        // nothing below is ever requested over the network, so nothing below may be replaced
+        assertFalse(provider.isForbidden("/polarion/wi-attachment/elibrary/EL-1/img.png"));
+        assertFalse(provider.isForbidden("data:image/png;base64,AAAA"));
+        assertFalse(provider.isForbidden("#gradient"));
+        assertFalse(provider.isForbidden("images/local.png"));
+        assertFalse(provider.isForbidden("//169.254.169.254/latest/meta-data/"));
+        assertFalse(provider.isForbidden("//8.8.8.8/img.png"));
+        // an absolute url which cannot be parsed at all must not reach WeasyPrint either
+        assertTrue(provider.isForbidden("http://[unterminated/img.png"));
+    }
+
+    @Test
+    void reportsUrlsRefusedByTheirOriginAsForbidden() {
+        // an allowlist refuses by the origin alone, and that answer holds before anything is resolved
+        PdfExporterFileResourceProvider provider = new PdfExporterFileResourceProvider(
+                List.of(resolverMock), new ResourceUrlPolicy(ResourceUrlPolicy.Mode.ALLOWLIST_ONLY, List.of("https://8.8.8.8"), null, 16));
+
+        assertFalse(provider.isForbidden("https://8.8.8.8/img.png"));
+        // the entry names https, and an entry names what it writes
+        assertTrue(provider.isForbidden("http://8.8.8.8/img.png"));
+        assertTrue(provider.isForbidden("https://8.8.4.4/img.png"));
+        // a network path reference is refused only where both of its spellings are
+        assertFalse(provider.isForbidden("//8.8.8.8/img.png"));
+        assertTrue(provider.isForbidden("//8.8.4.4/img.png"));
+        // and what is never requested over the network is never refused
+        assertFalse(provider.isForbidden("/polarion/wi-attachment/elibrary/EL-1/img.png"));
+        assertFalse(provider.isForbidden("images/local.png"));
+    }
+
+    @Test
+    void buildsItsResolversFromTheConfiguration() {
+        PdfExporterExtensionConfiguration configuration = mock(PdfExporterExtensionConfiguration.class);
+        IAttachmentUrlResolver parentUrlResolver = mock(IAttachmentUrlResolver.class);
+
+        try (MockedStatic<PdfExporterExtensionConfiguration> configurationMock = mockStatic(PdfExporterExtensionConfiguration.class);
+             MockedStatic<PolarionUrlResolver> polarionUrlResolverMock = mockStatic(PolarionUrlResolver.class)) {
+            configurationMock.when(PdfExporterExtensionConfiguration::getInstance).thenReturn(configuration);
+            polarionUrlResolverMock.when(PolarionUrlResolver::getInstance).thenReturn(parentUrlResolver);
+
+            PdfExporterFileResourceProvider provider = new PdfExporterFileResourceProvider();
+
+            // the default policy refuses nothing by its origin, it refuses by the address of the host
+            assertFalse(provider.isForbidden("http://10.0.0.5/img.png"));
+            assertFalse(provider.isForbidden("https://8.8.8.8/img.png"));
         }
     }
 }
