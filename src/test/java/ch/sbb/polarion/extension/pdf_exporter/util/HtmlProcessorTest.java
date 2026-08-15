@@ -748,6 +748,19 @@ class HtmlProcessorTest {
 
     @Test
     @SneakyThrows
+    void keepAnApostropheOfAStyleAttributeEscapedTest() {
+        // the value is written back as markup, so a quote in it may not end the attribute it sits in
+        when(fileResourceProvider.getResourceAsBase64String("/a.png")).thenReturn("data:image/png;base64,AAAA");
+
+        String result = processor.replaceResourcesAsBase64Encoded(
+                "<img style='background:url(/a.png);font-family:&#39; src=http://169.254.169.254/x &#39;' src='/b.png'>");
+
+        assertFalse(result.contains("' src=http://169.254.169.254/x '"));
+        assertTrue(result.contains("data:image/png;base64,AAAA"));
+    }
+
+    @Test
+    @SneakyThrows
     void blockAnEscapedSchemeOfAForbiddenAddressInAStyleAttributeTest() {
         // the gate resolves the escapes, so the decision which follows it reads the same address
         when(fileResourceProvider.isForbidden(anyString())).thenReturn(true);

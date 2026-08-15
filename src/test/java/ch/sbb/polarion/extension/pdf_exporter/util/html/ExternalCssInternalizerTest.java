@@ -89,7 +89,7 @@ class ExternalCssInternalizerTest {
         );
     }
     @ParameterizedTest
-    @ValueSource(strings = {"stylesheet", "Stylesheet", "STYLESHEET", "stylesheet ", " stylesheet", "alternate stylesheet"})
+    @ValueSource(strings = {"stylesheet", "Stylesheet", "STYLESHEET", "stylesheet ", " stylesheet"})
     void internalizesEverySpellingOfTheRelAStylesheetHas(String rel) {
         // a renderer reads rel as a list of tokens, each case insensitive, and loads all of these
         when(fileResourceProvider.getResourceAsBytes("my-href-location")).thenReturn("test-stylesheet".getBytes());
@@ -100,7 +100,10 @@ class ExternalCssInternalizerTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"icon", "preload", "stylesheets", "nostylesheet"})
+    @ValueSource(strings = {"icon", "preload", "stylesheets", "nostylesheet",
+            // an alternative style sheet is skipped by a renderer until someone selects it, and nothing
+            // selects one in an export: measured, weasyprint-service does not ask for such a link
+            "alternate stylesheet", "stylesheet alternate", "Alternate Stylesheet"})
     void keepsALinkWhichNamesNoStylesheet(String rel) {
         Optional<String> result = cssLinkInliner.inline(Map.of("rel", rel, "href", "my-href-location"));
 

@@ -6,6 +6,7 @@ import ch.sbb.polarion.extension.pdf_exporter.util.MediaUtils;
 import com.polarion.core.util.StringUtils;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.List;
 import java.util.Locale;
 import java.util.Arrays;
 import java.util.Map;
@@ -64,10 +65,14 @@ public class ExternalCssInternalizer implements LinkInternalizer {
     }
     /**
      * Reads the rel of a link the way a renderer reads it: a list of tokens, separated by whitespace,
-     * each of them case insensitive. An exact comparison misses {@code rel="Stylesheet"}, which
-     * weasyprint-service loads all the same.
+     * each of them case insensitive. An exact comparison misses {@code rel="Stylesheet"}, which a
+     * renderer loads all the same. An alternative style sheet is left alone, since nothing selects one
+     * in an export and inlining it would apply a stylesheet the renderer would have skipped.
      */
     private boolean namesAStylesheet(@Nullable String rel) {
-        return rel != null && Arrays.stream(rel.trim().toLowerCase(Locale.ROOT).split("\\s+"))
-                .anyMatch("stylesheet"::equals);
+        if (rel == null) {
+            return false;
+        }
+        List<String> tokens = Arrays.asList(rel.trim().toLowerCase(Locale.ROOT).split("\\s+"));
+        return tokens.contains("stylesheet") && !tokens.contains("alternate");
     }}

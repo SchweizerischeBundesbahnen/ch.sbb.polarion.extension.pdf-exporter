@@ -181,6 +181,15 @@ class CustomResourceUrlResolverTest {
     }
 
     @Test
+    @SneakyThrows
+    void skipsUnknownBytesWhateverTheSenderCalledThem() {
+        // a detector which recognizes nothing in the content has answered, and the answer is no
+        respond("/img.png", "image/png", new byte[]{7, 7, 7, 7, 7, 7, 7, 7}, false);
+
+        assertNull(resolver(16).resolveImpl(toUrl(url("/img.png"))));
+    }
+
+    @Test
     void skipsResourceExceedingDeclaredSize() {
         respond("/img.png", "image/png", PNG_CONTENT, false);
         assertNull(resolver(0).resolveImpl(toUrl(url("/img.png"))));

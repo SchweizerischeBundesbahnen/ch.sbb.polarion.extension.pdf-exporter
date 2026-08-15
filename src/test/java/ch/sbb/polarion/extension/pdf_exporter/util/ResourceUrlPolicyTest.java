@@ -326,6 +326,8 @@ class ResourceUrlPolicyTest {
             "image/svg+xml,application/xml,false",
             // the sender named a shape the content does not have
             "image/png,text/plain,true",
+            "image/png,application/octet-stream,true",
+            "font/woff2,application/octet-stream,true",
             "image/png,text/html,true",
             "font/woff2,application/json,true",
             "text/css,text/html,true",

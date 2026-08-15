@@ -725,6 +725,12 @@ public class MediaUtils {
      * allows is covered and nothing outside a tag is mistaken for one. JSoup does not write the document
      * back, only the parts which changed are replaced in the original text.
      */
+    // what a detector answers when it read the content and recognized nothing in it
+    private static final String OCTET_STREAM = "application/octet-stream";
+
+    private static final Document.OutputSettings ATTRIBUTE_OUTPUT_SETTINGS =
+            new Document.OutputSettings().escapeMode(Entities.EscapeMode.xhtml);
+
     private String processResourceRegions(@NotNull String html, @NotNull FileResourceProvider fileResourceProvider) {
         Document document = Jsoup.parse(html, "", Parser.htmlParser().setTrackPosition(true));
         List<Region> regions = new ArrayList<>();
@@ -752,8 +758,10 @@ public class MediaUtils {
                 .forEach(region -> {
                     String rewritten = region.rewrite().apply(region.input());
                     if (!rewritten.equals(region.input())) {
-                        // an attribute is written back as markup, so what goes in there is escaped again
-                        result.replace(region.start(), region.end(), region.escape() ? Entities.escape(rewritten) : rewritten);
+                        // an attribute is written back as markup, so what goes in there is escaped again,
+                        // by settings of its own: the default ones of jsoup are shared and can be changed
+                        result.replace(region.start(), region.end(),
+                                region.escape() ? Entities.escape(rewritten, ATTRIBUTE_OUTPUT_SETTINGS) : rewritten);
                     }
                 });
         return result.toString();
@@ -923,7 +931,8 @@ public class MediaUtils {
         for (BiFunction<String, byte[], String> source : mimeSources) {
             try {
                 String mimeType = source.apply(resource, resourceBytes);
-                if (!StringUtils.isEmpty(mimeType)) {
+                // unknown bytes name no type, so the next source gets its turn
+                if (!StringUtils.isEmpty(mimeType) && !OCTET_STREAM.equals(mimeType)) {
                     return mimeType;
                 }
             } catch (Exception e) {

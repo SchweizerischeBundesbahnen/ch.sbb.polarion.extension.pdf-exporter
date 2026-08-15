@@ -3,7 +3,6 @@ package ch.sbb.polarion.extension.pdf_exporter.util;
 import ch.sbb.polarion.extension.generic.util.BundleJarsPrioritizingRunnable;
 import com.polarion.core.util.logging.Logger;
 import org.apache.tika.Tika;
-import org.apache.tika.mime.MimeTypes;
 
 import java.util.Map;
 import java.util.Optional;
@@ -28,10 +27,10 @@ public class TikaMimeTypeResolver implements BundleJarsPrioritizingRunnable {
         try {
             Object value = map.get(PARAM_VALUE);
             String detected = value instanceof String stringValue ? tika.detect(stringValue) : tika.detect((byte[]) value);
-            // Ignore 'application/octet-stream' fallback
-            if (!MimeTypes.OCTET_STREAM.equals(detected)) {
-                detectedMimeType = Optional.ofNullable(detected);
-            }
+            // 'application/octet-stream' is an answer as well: it says the content is unknown bytes,
+            // which the caller deciding whether a resource may be used has to be able to tell from a
+            // detector which did not run. A caller looking for a usable mime type skips it itself.
+            detectedMimeType = Optional.ofNullable(detected);
         } catch (Exception e) {
             logger.warn("Tika failed to detect mime type", e);
         }
