@@ -103,7 +103,10 @@ public class CoverPageProcessor {
         css = htmlProcessor.replaceCssResourcesAsBase64Encoded(css);
         // Resolve the language the same way as the body (same resolver, same inputs) so the cover page hyphenates consistently
         String documentLanguage = DocumentLanguageResolver.resolve(documentData, exportParams);
-        return pdfTemplateProcessor.processUsing(exportParams, documentData.getTitle(), css, evaluatedContent, "", documentLanguage);
+        String titleHtml = pdfTemplateProcessor.processUsing(exportParams, documentData.getTitle(), css, evaluatedContent, "", documentLanguage);
+        // a link of the template names a stylesheet the conversion service would fetch itself, so it is
+        // read here as the body of a document is, and its target goes through the resource policy
+        return htmlProcessor.internalizeLinks(titleHtml);
     }
 
 }

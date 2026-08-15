@@ -113,6 +113,9 @@ class CoverPageProcessorTest {
 
         // Assert
         assertThat(result).isEqualTo("result title html");
+        // the composed cover page goes through the same link handling as the body of a document, so a
+        // stylesheet it names is fetched by this extension and not by the conversion service
+        verify(htmlProcessor).internalizeLinks("result title html");
     }
 
     private DocumentData<IModule> prepareMocks(CoverPageModel coverPageModel, ExportParams exportParams) {
@@ -130,6 +133,7 @@ class CoverPageProcessorTest {
         when(pdfTemplateProcessor.processUsing(eq(exportParams), eq("test document"), eq("test template css"), eq("replaced template html"), eq(""), any())).thenReturn("result title html");
         when(htmlProcessor.replaceResourcesAsBase64Encoded("replaced template html")).thenReturn("replaced template html");
         when(htmlProcessor.replaceCssResourcesAsBase64Encoded("test template css")).thenReturn("test template css");
+        lenient().when(htmlProcessor.internalizeLinks("result title html")).thenReturn("result title html");
         return documentData;
     }
 }
