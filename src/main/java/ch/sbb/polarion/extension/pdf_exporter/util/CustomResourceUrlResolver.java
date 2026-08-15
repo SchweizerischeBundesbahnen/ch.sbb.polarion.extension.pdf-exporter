@@ -156,17 +156,7 @@ public class CustomResourceUrlResolver implements IUrlResolver {
         ProxySelector selector = ProxySelector.getDefault();
         for (int redirect = 0; redirect <= MAX_REDIRECTS; redirect++) {
             ProxyDecision proxy = decideProxy(selector, currentUrl);
-            if (proxy.proxied() && !policy.isExplicitlyTrusted(currentUrl)) {
-                // A proxy resolves the host name itself, so the vetted addresses would decide nothing.
-                // Only a host the configuration trusts as such may be fetched that way.
-                logger.warn(SKIPPED_RESOURCE + currentUrl + ": it would go through a proxy, which resolves the host name itself."
-                        + " List the host in the allowed hosts property to fetch it anyway.");
-                return null;
-            }
-            if (proxy.proxied() && proxy.host() == null) {
-                // the host is trusted, but the proxy to reach it through was not named, and a request
-                // sent past the configured route is not the request the configuration asked for
-                logger.warn(SKIPPED_RESOURCE + currentUrl + ": it goes through a proxy which could not be named.");
+            if (!mayBeFetched(currentUrl, proxy)) {
                 return null;
             }
             InetAddress[] addresses = policy.vetAddresses(currentUrl);
@@ -175,22 +165,57 @@ public class CustomResourceUrlResolver implements IUrlResolver {
             }
             try (CloseableHttpClient client = createClient(currentUrl, addresses, proxy);
                  CloseableHttpResponse response = client.execute(new HttpGet(URI.create(currentUrl.toString())))) {
-                int statusCode = response.getStatusLine().getStatusCode();
-                if (statusCode == HTTP_OK) {
+                if (response.getStatusLine().getStatusCode() == HTTP_OK) {
                     return readContent(response, currentUrl);
                 }
-                if (!REDIRECT_STATUS_CODES.contains(statusCode)) {
+                URL target = redirectTarget(response, currentUrl);
+                if (target == null) {
                     return null;
                 }
-                Header location = response.getFirstHeader(HttpHeaders.LOCATION);
-                if (location == null || StringUtils.isEmptyTrimmed(location.getValue())) {
-                    return null;
-                }
-                currentUrl = URI.create(normalizeUrl(currentUrl.toString())).resolve(normalizeUrl(location.getValue().trim())).toURL();
+                currentUrl = target;
             }
         }
         logger.warn("Failed to load resource: " + url + ", more than " + MAX_REDIRECTS + " redirects");
         return null;
+    }
+
+    /**
+     * @return whether the request may be made at all, given where it would be routed
+     */
+    private boolean mayBeFetched(@NotNull URL url, @NotNull ProxyDecision proxy) {
+        if (!proxy.proxied()) {
+            return true;
+        }
+        if (!policy.isExplicitlyTrusted(url)) {
+            // A proxy resolves the host name itself, so the vetted addresses would decide nothing.
+            // Only a host the configuration trusts as such may be fetched that way.
+            logger.warn(SKIPPED_RESOURCE + url + ": it would go through a proxy, which resolves the host name itself."
+                    + " List the host in the allowed hosts property to fetch it anyway.");
+            return false;
+        }
+        if (proxy.host() == null) {
+            // the host is trusted, but the proxy to reach it through was not named, and a request
+            // sent past the configured route is not the request the configuration asked for
+            logger.warn(SKIPPED_RESOURCE + url + ": it goes through a proxy which could not be named.");
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * @return where the response sends the request next, null where it sends it nowhere
+     */
+    @SneakyThrows
+    @Nullable
+    private URL redirectTarget(@NotNull CloseableHttpResponse response, @NotNull URL currentUrl) {
+        if (!REDIRECT_STATUS_CODES.contains(response.getStatusLine().getStatusCode())) {
+            return null;
+        }
+        Header location = response.getFirstHeader(HttpHeaders.LOCATION);
+        if (location == null || StringUtils.isEmptyTrimmed(location.getValue())) {
+            return null;
+        }
+        return URI.create(normalizeUrl(currentUrl.toString())).resolve(normalizeUrl(location.getValue().trim())).toURL();
     }
 
     /**
