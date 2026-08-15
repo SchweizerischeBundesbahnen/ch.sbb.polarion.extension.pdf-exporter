@@ -3,6 +3,8 @@ package ch.sbb.polarion.extension.pdf_exporter.util.html;
 import ch.sbb.polarion.extension.pdf_exporter.configuration.PdfExporterExtensionConfigurationExtension;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
@@ -50,5 +52,33 @@ class HtmlLinksHelperTest {
         ArgumentCaptor<Map<String, String>> captor = ArgumentCaptor.forClass(Map.class);
         verify(linkInternalizer1).inline(captor.capture());
         assertThat(captor.getValue()).containsExactly(Map.entry("attr1", "value1"), Map.entry("attr2", "value2")); // also it must lowercase attributes
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            // a renderer reads each of these as one link, so each of them reaches an inliner here
+            "<link rel=stylesheet href=http://169.254.169.254/x.css>",
+            "<link rel='stylesheet' href=http://169.254.169.254/x.css>",
+            "<link rel=\"stylesheet\" href=\"http://169.254.169.254/x.css?a=>b\">",
+            "<link REL=Stylesheet HREF='http://169.254.169.254/x.css'>",
+            "<link\n   rel = 'stylesheet'\n   href = 'http://169.254.169.254/x.css'>"
+    })
+    void shouldReadALinkWhateverItsAttributesLookLike(String linkTag) {
+        when(linkInternalizer1.inline(anyMap())).thenReturn(Optional.of("<style>replacement</style>"));
+
+        String resultHtml = htmlLinksHelper.internalizeLinks("<html lang='en'><head>" + linkTag + "</head>");
+
+        assertThat(resultHtml)
+                .isEqualTo("<html lang='en'><head><style>replacement</style></head>")
+                .doesNotContain("169.254.169.254");
+    }
+
+    @Test
+    void shouldReadTheAddressOfALinkWithoutQuotes() {
+        Map<String, String> attributes = HtmlLinksHelper.parseLinkTagAttributes(
+                "<link rel=stylesheet href=http://169.254.169.254/x.css>");
+
+        assertThat(attributes).containsExactly(
+                Map.entry("rel", "stylesheet"), Map.entry("href", "http://169.254.169.254/x.css"));
     }
 }

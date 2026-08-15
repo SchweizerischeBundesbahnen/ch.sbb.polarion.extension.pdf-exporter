@@ -376,7 +376,7 @@ public class PdfConverter {
         String processed = velocityEvaluator.evaluateVelocityExpressions(documentData, content);
 
         String cssContent = (exportParams.getDocumentType() != DocumentType.LIVE_DOC) ? appendWikiCss(processed) : processed;
-        return htmlProcessor.replaceResourcesAsBase64Encoded(cssContent);
+        return htmlProcessor.replaceCssResourcesAsBase64Encoded(cssContent);
     }
 
     @VisibleForTesting
