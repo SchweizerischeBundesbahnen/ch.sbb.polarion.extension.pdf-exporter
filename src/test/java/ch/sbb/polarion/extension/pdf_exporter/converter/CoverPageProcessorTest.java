@@ -129,7 +129,7 @@ class CoverPageProcessorTest {
         when(coverPageSettings.processImagePlaceholders("test template css")).thenCallRealMethod();
         when(pdfTemplateProcessor.processUsing(eq(exportParams), eq("test document"), eq("test template css"), eq("replaced template html"), eq(""), any())).thenReturn("result title html");
         when(htmlProcessor.replaceResourcesAsBase64Encoded("replaced template html")).thenReturn("replaced template html");
-        when(htmlProcessor.replaceResourcesAsBase64Encoded("test template css")).thenReturn("test template css");
+        when(htmlProcessor.replaceCssResourcesAsBase64Encoded("test template css")).thenReturn("test template css");
         return documentData;
     }
 }

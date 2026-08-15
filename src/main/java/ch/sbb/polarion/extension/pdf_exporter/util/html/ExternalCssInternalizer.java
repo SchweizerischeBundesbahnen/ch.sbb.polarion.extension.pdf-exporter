@@ -4,7 +4,11 @@ import ch.sbb.polarion.extension.generic.regex.RegexMatcher;
 import ch.sbb.polarion.extension.pdf_exporter.util.FileResourceProvider;
 import ch.sbb.polarion.extension.pdf_exporter.util.MediaUtils;
 import com.polarion.core.util.StringUtils;
+import org.jetbrains.annotations.Nullable;
 
+import java.util.List;
+import java.util.Locale;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -22,7 +26,7 @@ public class ExternalCssInternalizer implements LinkInternalizer {
     @Override
     public Optional<String> inline(Map<String, String> attributes) {
         String url = attributes.get(HREF);
-        if (!"stylesheet".equals(attributes.get("rel"))
+        if (!namesAStylesheet(attributes.get("rel"))
                 || StringUtils.isEmptyTrimmed(url)) {
             return Optional.empty();
         }
@@ -38,7 +42,7 @@ public class ExternalCssInternalizer implements LinkInternalizer {
 
         String cssContent = new String(fileResourceProvider.getResourceAsBytes(url));
         cssContent = processRelativeUrls(url, cssContent);
-        cssContent = MediaUtils.inlineBase64Resources(cssContent, fileResourceProvider);
+        cssContent = MediaUtils.inlineCssResources(cssContent, fileResourceProvider);
         inlinedContent.append(cssContent);
         inlinedContent.append("</style>");
 
@@ -53,8 +57,22 @@ public class ExternalCssInternalizer implements LinkInternalizer {
         String resourcePath = resourceUrl.substring(0, lastSlashPosition + 1);
         return RegexMatcher.get(MediaUtils.URL_REGEX).useJavaUtil().replace(cssContent, engine -> {
             String url = engine.group("url");
-            return Stream.of("/", "http:", "https:", MediaUtils.DATA_URL_PREFIX).anyMatch(url::startsWith) ? null :
+            // the pattern reads a url in any case, so the prefixes are compared in one
+            String lowerCased = url.toLowerCase(Locale.ROOT);
+            return Stream.of("/", "http:", "https:", MediaUtils.DATA_URL_PREFIX).anyMatch(lowerCased::startsWith) ? null :
                     "url(%s%s)".formatted(resourcePath, url);
         });
     }
-}
+    /**
+     * Reads the rel of a link the way a renderer reads it: a list of tokens, separated by whitespace,
+     * each of them case insensitive. An exact comparison misses {@code rel="Stylesheet"}, which a
+     * renderer loads all the same. An alternative style sheet is left alone, since nothing selects one
+     * in an export and inlining it would apply a stylesheet the renderer would have skipped.
+     */
+    private boolean namesAStylesheet(@Nullable String rel) {
+        if (rel == null) {
+            return false;
+        }
+        List<String> tokens = Arrays.asList(rel.trim().toLowerCase(Locale.ROOT).split("\\s+"));
+        return tokens.contains("stylesheet") && !tokens.contains("alternate");
+    }}

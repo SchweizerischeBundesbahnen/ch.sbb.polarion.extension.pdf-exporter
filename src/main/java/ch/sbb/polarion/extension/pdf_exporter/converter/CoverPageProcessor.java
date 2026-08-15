@@ -100,7 +100,7 @@ public class CoverPageProcessor {
         content = htmlProcessor.replaceResourcesAsBase64Encoded(content);
         String evaluatedContent = velocityEvaluator.evaluateVelocityExpressions(documentData, content);
         String css = coverPageSettings.processImagePlaceholders(settings.getTemplateCss());
-        css = htmlProcessor.replaceResourcesAsBase64Encoded(css);
+        css = htmlProcessor.replaceCssResourcesAsBase64Encoded(css);
         // Resolve the language the same way as the body (same resolver, same inputs) so the cover page hyphenates consistently
         String documentLanguage = DocumentLanguageResolver.resolve(documentData, exportParams);
         return pdfTemplateProcessor.processUsing(exportParams, documentData.getTitle(), css, evaluatedContent, "", documentLanguage);

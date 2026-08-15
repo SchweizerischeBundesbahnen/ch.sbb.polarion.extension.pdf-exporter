@@ -98,35 +98,35 @@ class TikaMimeTypeResolverTest {
     }
 
     @Test
-    void testRunWithUnknownFileNameReturnsEmptyOptional() {
+    void testRunWithUnknownFileNameReportsUnknownBytes() {
         Map<String, Object> input = Map.of(TikaMimeTypeResolver.PARAM_VALUE, "unknown_file");
         Map<String, Object> result = resolver.run(input);
 
         assertThat(result).containsKey(TikaMimeTypeResolver.PARAM_RESULT);
         Optional<String> mimeType = (Optional<String>) result.get(TikaMimeTypeResolver.PARAM_RESULT);
-        assertThat(mimeType).isEmpty();
+        assertThat(mimeType).contains("application/octet-stream");
     }
 
     @Test
-    void testRunWithEmptyByteArrayReturnsEmptyOptional() {
+    void testRunWithEmptyByteArrayReportsUnknownBytes() {
         byte[] emptyContent = new byte[0];
         Map<String, Object> input = Map.of(TikaMimeTypeResolver.PARAM_VALUE, emptyContent);
         Map<String, Object> result = resolver.run(input);
 
         assertThat(result).containsKey(TikaMimeTypeResolver.PARAM_RESULT);
         Optional<String> mimeType = (Optional<String>) result.get(TikaMimeTypeResolver.PARAM_RESULT);
-        assertThat(mimeType).isEmpty();
+        assertThat(mimeType).contains("application/octet-stream");
     }
 
     @Test
-    void testRunWithRandomByteArrayReturnsEmptyOptional() {
+    void testRunWithRandomByteArrayReportsUnknownBytes() {
         byte[] randomContent = new byte[]{0x01, 0x02, 0x03, 0x04, 0x05};
         Map<String, Object> input = Map.of(TikaMimeTypeResolver.PARAM_VALUE, randomContent);
         Map<String, Object> result = resolver.run(input);
 
         assertThat(result).containsKey(TikaMimeTypeResolver.PARAM_RESULT);
         Optional<String> mimeType = (Optional<String>) result.get(TikaMimeTypeResolver.PARAM_RESULT);
-        assertThat(mimeType).isEmpty();
+        assertThat(mimeType).contains("application/octet-stream");
     }
 
 
