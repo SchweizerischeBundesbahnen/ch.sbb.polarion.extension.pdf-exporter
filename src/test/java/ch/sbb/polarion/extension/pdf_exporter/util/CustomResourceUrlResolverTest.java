@@ -16,21 +16,24 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLHandshakeException;
 import javax.net.ssl.SSLPeerUnverifiedException;
-import java.security.cert.CertificateException;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.Proxy;
 import java.net.ProxySelector;
-import java.net.SocketAddress;
-import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.io.InputStream;
-import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.net.URI;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.security.cert.CertificateException;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -347,16 +350,8 @@ class CustomResourceUrlResolverTest {
         // the client plans no route to a socks proxy, the jvm applies it under the connection, so a
         // socks setup keeps working: the request reaches the proxy rather than the host directly
         try (ServerSocket socksProxy = new ServerSocket(0)) {
-            AtomicBoolean reached = new AtomicBoolean();
-            Thread listener = new Thread(() -> {
-                try (Socket accepted = socksProxy.accept()) {
-                    reached.set(accepted != null);
-                } catch (IOException e) {
-                    // the test asks whether the connection arrived, and nothing else
-                }
-            });
-            listener.setDaemon(true);
-            listener.start();
+            SocksRequest seen = new SocksRequest();
+            Thread listener = readSocksRequest(socksProxy, seen);
             System.setProperty("socksProxyHost", "127.0.0.1");
             System.setProperty("socksProxyPort", String.valueOf(socksProxy.getLocalPort()));
             try {
@@ -365,12 +360,79 @@ class CustomResourceUrlResolverTest {
                 assertNull(new CustomResourceUrlResolver(policy).resolve("http://8.8.8.8/img.png"));
 
                 listener.join(5000);
-                assertTrue(reached.get());
+                assertTrue(seen.reached.get());
+                // and it names an address, never a host name the proxy would resolve on its own
+                assertEquals(SOCKS_ADDRESS_TYPE_IPV4, seen.addressType.get());
+                assertEquals("8.8.8.8", seen.address.get());
             } finally {
                 System.clearProperty("socksProxyHost");
                 System.clearProperty("socksProxyPort");
             }
         }
+    }
+
+    @Test
+    @SneakyThrows
+    void namesTheVettedAddressToASocksProxyRatherThanTheHost() {
+        // a proxy which resolves the host name itself would decide the address, and that is what this
+        // asks: the request names an address, so the name never reaches the proxy
+        try (ServerSocket socksProxy = new ServerSocket(0)) {
+            SocksRequest seen = new SocksRequest();
+            Thread listener = readSocksRequest(socksProxy, seen);
+            System.setProperty("socksProxyHost", "127.0.0.1");
+            System.setProperty("socksProxyPort", String.valueOf(socksProxy.getLocalPort()));
+            // the jvm keeps loopback out of every proxy by default, and here the proxy is the point
+            System.setProperty("socksNonProxyHosts", "");
+            try {
+                ResourceUrlPolicy policy = new ResourceUrlPolicy(Mode.ALLOW_ALL, List.of(), null, 16);
+
+                assertNull(new CustomResourceUrlResolver(policy).resolve("http://localhost:" + server.getAddress().getPort() + "/img.png"));
+
+                listener.join(5000);
+                assertTrue(seen.reached.get());
+                assertEquals(SOCKS_ADDRESS_TYPE_IPV4, seen.addressType.get());
+                assertEquals("127.0.0.1", seen.address.get());
+            } finally {
+                System.clearProperty("socksProxyHost");
+                System.clearProperty("socksProxyPort");
+                System.clearProperty("socksNonProxyHosts");
+            }
+        }
+    }
+
+    /**
+     * Answers the greeting of a socks 5 client and keeps what its request names, then closes.
+     */
+    private Thread readSocksRequest(ServerSocket socksProxy, SocksRequest seen) {
+        Thread listener = new Thread(() -> {
+            try (Socket accepted = socksProxy.accept()) {
+                InputStream in = accepted.getInputStream();
+                in.read();
+                int methods = in.read();
+                in.readNBytes(Math.max(methods, 0));
+                accepted.getOutputStream().write(new byte[]{5, 0});
+                accepted.getOutputStream().flush();
+                byte[] head = in.readNBytes(4);
+                seen.reached.set(head.length == 4);
+                seen.addressType.set(head.length == 4 ? head[3] : -1);
+                if (head.length == 4 && head[3] == SOCKS_ADDRESS_TYPE_IPV4) {
+                    seen.address.set(InetAddress.getByAddress(in.readNBytes(4)).getHostAddress());
+                }
+            } catch (IOException e) {
+                // the test asks what the request named, and a closed connection names nothing
+            }
+        });
+        listener.setDaemon(true);
+        listener.start();
+        return listener;
+    }
+
+    private static final int SOCKS_ADDRESS_TYPE_IPV4 = 1;
+
+    private static final class SocksRequest {
+        private final AtomicBoolean reached = new AtomicBoolean();
+        private final AtomicInteger addressType = new AtomicInteger(-1);
+        private final AtomicReference<String> address = new AtomicReference<>();
     }
 
     @Test
