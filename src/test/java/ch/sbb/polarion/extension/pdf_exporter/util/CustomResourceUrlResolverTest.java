@@ -53,9 +53,8 @@ import static org.mockito.Mockito.when;
 @ExtendWith({MockitoExtension.class, BundleJarsPrioritizingRunnableMockExtension.class})
 class CustomResourceUrlResolverTest {
 
-    private static final byte[] PNG_CONTENT = "not really a png".getBytes(StandardCharsets.UTF_8);
-    // a sender which says nothing about its content leaves the content to say it, so this one has to
-    private static final byte[] PNG_BYTES = {(byte) 0x89, 'P', 'N', 'G', 13, 10, 26, 10, 0, 0, 0, 13, 'I', 'H', 'D', 'R'};
+    // the content has to be what its sender calls it, so the bytes of the tests are the bytes of a png
+    private static final byte[] PNG_CONTENT = {(byte) 0x89, 'P', 'N', 'G', 13, 10, 26, 10, 0, 0, 0, 13, 'I', 'H', 'D', 'R'};
 
     private HttpServer server;
     private final AtomicInteger requestCount = new AtomicInteger();
@@ -162,10 +161,10 @@ class CustomResourceUrlResolverTest {
     @Test
     @SneakyThrows
     void readsImageWithoutContentType() {
-        respond("/img.png", null, PNG_BYTES, false);
+        respond("/img.png", null, PNG_CONTENT, false);
         try (InputStream stream = resolver(16).resolveImpl(toUrl(url("/img.png")))) {
             assertNotNull(stream);
-            assertArrayEquals(PNG_BYTES, stream.readAllBytes());
+            assertArrayEquals(PNG_CONTENT, stream.readAllBytes());
         }
     }
 

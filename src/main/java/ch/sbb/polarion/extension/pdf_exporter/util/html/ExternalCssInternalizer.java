@@ -4,8 +4,10 @@ import ch.sbb.polarion.extension.generic.regex.RegexMatcher;
 import ch.sbb.polarion.extension.pdf_exporter.util.FileResourceProvider;
 import ch.sbb.polarion.extension.pdf_exporter.util.MediaUtils;
 import com.polarion.core.util.StringUtils;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Locale;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -23,7 +25,7 @@ public class ExternalCssInternalizer implements LinkInternalizer {
     @Override
     public Optional<String> inline(Map<String, String> attributes) {
         String url = attributes.get(HREF);
-        if (!"stylesheet".equals(attributes.get("rel"))
+        if (!namesAStylesheet(attributes.get("rel"))
                 || StringUtils.isEmptyTrimmed(url)) {
             return Optional.empty();
         }
@@ -60,4 +62,12 @@ public class ExternalCssInternalizer implements LinkInternalizer {
                     "url(%s%s)".formatted(resourcePath, url);
         });
     }
-}
+    /**
+     * Reads the rel of a link the way a renderer reads it: a list of tokens, separated by whitespace,
+     * each of them case insensitive. An exact comparison misses {@code rel="Stylesheet"}, which
+     * weasyprint-service loads all the same.
+     */
+    private boolean namesAStylesheet(@Nullable String rel) {
+        return rel != null && Arrays.stream(rel.trim().toLowerCase(Locale.ROOT).split("\\s+"))
+                .anyMatch("stylesheet"::equals);
+    }}

@@ -262,29 +262,6 @@ class ResourceUrlPolicyTest {
         assertFalse(policy.isRefusalSchemeSpecific(url("https://cdn.example.com/logo.png")));
     }
 
-    @ParameterizedTest
-    @ValueSource(strings = {
-            "image/png", "image/svg+xml", "font/woff2", "application/font-woff", "text/css"
-    })
-    void acceptsSniffedContentOfAResource(String sniffed) {
-        assertFalse(policy(Mode.BLOCK_INTERNAL, List.of()).isRejectedSniffedType(sniffed));
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = {
-            // what a forged request brings back: a page, a listing, a configuration, a plain text
-            "text/html", "application/xhtml+xml", "application/json", "text/plain", "application/xml",
-            "text/csv", "application/pdf", "application/zip", "application/octet-stream"
-    })
-    void rejectsSniffedContentWhichIsNoResource(String sniffed) {
-        assertTrue(policy(Mode.BLOCK_INTERNAL, List.of()).isRejectedSniffedType(sniffed));
-    }
-
-    @Test
-    void rejectsContentNothingCouldBeDetectedIn() {
-        assertTrue(policy(Mode.BLOCK_INTERNAL, List.of()).isRejectedSniffedType(null));
-    }
-
     @Test
     void allowAllRejectsNothingButForeignSchemes() {
         ResourceUrlPolicy policy = policy(Mode.ALLOW_ALL, List.of());
@@ -337,17 +314,39 @@ class ResourceUrlPolicyTest {
     }
 
     @ParameterizedTest
-    @CsvSource({"'',true", "application/octet-stream,true", "binary/octet-stream; charset=binary,true",
-            "image/png,false", "text/css,false"})
-    void decidesWhenTheContentHasToBeSniffed(String contentType, boolean expected) {
-        assertEquals(expected, policy(Mode.BLOCK_INTERNAL, List.of()).isSniffingRequired(contentType));
+    @CsvSource({
+            // the sender named a kind and the content is one: believed
+            "image/png,image/png,false",
+            "font/woff2,font/woff2,false",
+            "image/svg+xml,image/svg+xml,false",
+            // a stylesheet and an svg read as text, and the sender named one of those two
+            "text/css,text/plain,false",
+            "text/css; charset=utf-8,text/plain,false",
+            "image/svg+xml,text/plain,false",
+            "image/svg+xml,application/xml,false",
+            // the sender named a shape the content does not have
+            "image/png,text/plain,true",
+            "image/png,text/html,true",
+            "font/woff2,application/json,true",
+            "text/css,text/html,true",
+            // the sender named nothing usable, so the content alone answers
+            "'',image/png,false",
+            "application/octet-stream,image/png,false",
+            "application/octet-stream,text/plain,true",
+            "'',text/plain,true",
+            "'',application/xml,true"
+    })
+    void judgesTheContentAgainstWhatItsSenderCalledIt(String declared, String sniffed, boolean rejected) {
+        assertEquals(rejected, policy(Mode.BLOCK_INTERNAL, List.of()).isRejectedContent(declared, sniffed));
     }
 
-    @ParameterizedTest
-    @CsvSource({"image/png,false", "text/css; charset=utf-8,false", "image/svg+xml,false",
-            "text/html,true", "application/json; charset=utf-8,true", "application/xml,true"})
-    void readsTheParametersOfASniffedType(String sniffedType, boolean expected) {
-        assertEquals(expected, policy(Mode.BLOCK_INTERNAL, List.of()).isRejectedSniffedType(sniffedType));
+    @Test
+    void believesASenderWhichNamedAKindWhenNothingCouldBeDetected() {
+        ResourceUrlPolicy policy = policy(Mode.BLOCK_INTERNAL, List.of());
+
+        assertFalse(policy.isRejectedContent("image/png", null));
+        assertTrue(policy.isRejectedContent(null, null));
+        assertTrue(policy.isRejectedContent("application/octet-stream", null));
     }
 
     @Test

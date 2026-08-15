@@ -298,14 +298,12 @@ public class CustomResourceUrlResolver implements IUrlResolver {
         }
 
         byte[] bytes = content.toByteArray();
-        if (policy.isSniffingRequired(contentType)) {
-            // A missing or generic content type passes the header check, so the content decides. This
-            // catches an internal service which answers with a document instead of an image.
-            String sniffedType = MediaUtils.getMimeTypeUsingTikaByContent(url.toString(), bytes);
-            if (policy.isRejectedSniffedType(sniffedType)) {
-                logger.warn(SKIPPED_RESOURCE + url + ": its content is '" + sniffedType + "', not an image, a font or a stylesheet");
-                return null;
-            }
+        // the header says what the sender calls it, and the content says what it is: both are asked,
+        // so a service which answers a forged request cannot name its way past the check
+        String sniffedType = MediaUtils.getMimeTypeUsingTikaByContent(url.toString(), bytes);
+        if (policy.isRejectedContent(contentType, sniffedType)) {
+            logger.warn(SKIPPED_RESOURCE + url + ": its content is '" + sniffedType + "', not an image, a font or a stylesheet");
+            return null;
         }
         return new ByteArrayInputStream(bytes);
     }

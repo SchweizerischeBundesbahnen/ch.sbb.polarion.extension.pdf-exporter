@@ -35,16 +35,22 @@ public class ResourceUrlPolicy {
 
     private static final String HTTP = "http";
     private static final String HTTPS = "https";
+    private static final String CSS = "text/css";
 
     private static final List<String> ALLOWED_CONTENT_TYPE_PREFIXES = List.of(
-            "image/", "font/", "application/font", "application/x-font", "text/css",
+            "image/", "font/", "application/font", "application/x-font", CSS,
             "application/octet-stream", "binary/octet-stream");
 
     // What the content itself may turn out to be. This is the allowed list once more, without the
     // generic types: those say nothing, and the question here is what the bytes are. Tika reports an
     // SVG as image/svg+xml, so nothing has to be said about xml for an image's sake.
     private static final List<String> ALLOWED_SNIFFED_TYPE_PREFIXES = List.of(
-            "image/", "font/", "application/font", "application/x-font", "text/css");
+            "image/", "font/", "application/font", "application/x-font", CSS);
+
+    // What a text looks like to a detector, and the two kinds of resource which are one. A stylesheet
+    // reads as plain text and an SVG without a namespace does too, so the sender has to name those.
+    private static final Set<String> TEXTUAL_CONTENT = Set.of("text/plain", "application/xml", "text/xml");
+    private static final Set<String> TEXTUAL_RESOURCE_TYPES = Set.of(CSS, "image/svg+xml");
 
     private final Mode mode;
     private final Set<AllowedOrigin> allowedOrigins;
@@ -103,26 +109,26 @@ public class ResourceUrlPolicy {
     }
 
     /**
-     * A missing or generic content type tells nothing, so the content itself has to be looked at.
-     */
-    public boolean isSniffingRequired(@Nullable String contentType) {
-        return contentType == null || contentType.isBlank() || mediaType(contentType).endsWith("/octet-stream");
-    }
-
-    /**
-     * Judges the content of a resource whose sender said nothing usable about it. The header check is
-     * an allowlist, and so is this one: what a forged request brings back is a document, a listing or a
-     * plain text as a rule, and none of those has to reach the export.
+     * Judges the content of a resource against what its sender called it. The header alone leaves the
+     * verdict to the sender, so the content has to agree with it: an image or a font has a shape, and
+     * text does not, which is why a stylesheet and an SVG are believed only where the sender named one.
      *
-     * @param sniffedType media type detected in the content, null when nothing was detected
-     * @return true if the content is not an image, a font or a stylesheet
+     * @param declaredType the content type the sender reported, null when it reported none
+     * @param sniffedType  the media type detected in the content, null when nothing was detected
+     * @return true if the resource may not be used
      */
-    public boolean isRejectedSniffedType(@Nullable String sniffedType) {
+    public boolean isRejectedContent(@Nullable String declaredType, @Nullable String sniffedType) {
+        boolean saidNothing = declaredType == null || declaredType.isBlank()
+                || mediaType(declaredType).endsWith("/octet-stream");
         if (sniffedType == null) {
-            return true;
+            // nothing was read out of the content, so only a sender which named a kind is believed
+            return saidNothing;
         }
-        String mediaType = mediaType(sniffedType);
-        return ALLOWED_SNIFFED_TYPE_PREFIXES.stream().noneMatch(mediaType::startsWith);
+        String sniffed = mediaType(sniffedType);
+        if (ALLOWED_SNIFFED_TYPE_PREFIXES.stream().anyMatch(sniffed::startsWith)) {
+            return false;
+        }
+        return saidNothing || !TEXTUAL_CONTENT.contains(sniffed) || !TEXTUAL_RESOURCE_TYPES.contains(mediaType(declaredType));
     }
 
     private static String mediaType(@NotNull String contentType) {

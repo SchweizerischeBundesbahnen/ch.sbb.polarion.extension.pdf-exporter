@@ -690,6 +690,34 @@ class HtmlProcessorTest {
         assertEquals("<style>a { color: red }" + lineBreak + "b { background: url(data:image/png;base64,AAAA) }</style>", result);
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = {
+            // weasyprint-service reads a file url through an import, and a path from the root of the
+            // file system goes to the base url of the document, so only the scheme names somewhere else
+            "<img src=\"file:///etc/hostname\">",
+            "<div style=\"background: url(file:///etc/hostname)\"></div>",
+            "<style>a { background: url(file:///etc/hostname) }</style>"
+    })
+    @SneakyThrows
+    void replaceAUrlAConverterWouldReadElsewhereTest(String html) {
+        // nothing here can be loaded by the extension, which is exactly why it must not stay
+        when(fileResourceProvider.getResourceAsBase64String(anyString())).thenReturn(null);
+
+        String result = processor.replaceResourcesAsBase64Encoded(html);
+
+        assertFalse(result.contains("/etc/hostname"));
+    }
+
+    @Test
+    @SneakyThrows
+    void dropAnImportOfAFileUrlTest() {
+        // an at-rule is never inlined, so its target is removed whatever the provider would answer
+        String result = processor.replaceResourcesAsBase64Encoded(
+                "<style>@import \"file:///etc/hostname\"; a { color: red }</style>");
+
+        assertFalse(result.contains("/etc/hostname"));
+    }
+
     @Test
     @SneakyThrows
     void blockAnEscapedSchemeOfAForbiddenAddressInAStyleAttributeTest() {
