@@ -386,7 +386,42 @@ public class ResourceUrlPolicy {
         if (first == 0x20 && second == 0x02) { // 2002::/16, 6to4 carries the IPv4 address in the prefix
             return isPublicIpv4(Arrays.copyOfRange(bytes, 2, 6));
         }
-        return first != 0x20 || second != 0x01 || bytes[2] != 0 || bytes[3] != 0; // 2001:0::/32, Teredo
+        return !isSpecialUseIpv6(bytes);
+    }
+
+    /**
+     * Ranges which are assigned but not globally routable, the counterpart of the IPv4 list above. A
+     * deployment may point any of them at something of its own, and none of them names a host on the
+     * internet.
+     */
+    private static boolean isSpecialUseIpv6(byte[] bytes) {
+        int first = bytes[0] & 0xFF;
+        int second = bytes[1] & 0xFF;
+        int third = bytes[2] & 0xFF;
+
+        if (first == 0x01 && second == 0x00) { // 100::/64, discard only
+            return isZero(bytes, 2, 8);
+        }
+        if (first == 0x20 && second == 0x01 && third == 0x0d && (bytes[3] & 0xFF) == 0xb8) {
+            return true; // 2001:db8::/32, documentation
+        }
+        if (first == 0x20 && second == 0x01) {
+            // 2001::/23, the protocol assignments: Teredo, benchmarking, ORCHID and the rest of them
+            return (third & 0xFE) == 0;
+        }
+        if (first == 0x3f) { // 3fff::/20, documentation
+            return (second & 0xF0) == 0xf0;
+        }
+        return first == 0x5f && second == 0x00; // 5f00::/16, segment routing
+    }
+
+    private static boolean isZero(byte[] bytes, int from, int to) {
+        for (int i = from; i < to; i++) {
+            if (bytes[i] != 0) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private static boolean isNat64WellKnown(byte[] bytes) {

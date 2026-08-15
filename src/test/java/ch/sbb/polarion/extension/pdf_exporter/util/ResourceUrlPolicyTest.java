@@ -55,6 +55,14 @@ class ResourceUrlPolicyTest {
             "http://198.51.100.1/secret",
             "http://203.0.113.1/secret",
             "http://192.88.99.1/secret",
+            // the same on the other side: assigned, and naming no host on the internet
+            "http://[2001:db8::1]/secret",
+            "http://[2001:2::1]/secret",
+            "http://[100::1]/secret",
+            "http://[3fff::1]/secret",
+            "http://[5f00::1]/secret",
+            "http://[2001:0100::1]/secret",  // inside the protocol assignments, as Teredo is
+            "http://[2001:0001::1]/secret",
             "http://240.0.0.1/secret",
             "http://0.0.0.0/secret",
             "http://[::ffff:127.0.0.1]/secret",
@@ -119,9 +127,8 @@ class ResourceUrlPolicyTest {
             "http://[2002:c001:0001::]/img.png",  // 6to4 of 192.1.0.1
             "http://[2002:c611:0001::]/img.png",  // 6to4 of 198.17.0.1, below the benchmark range
             "http://[2002:c614:0001::]/img.png",  // 6to4 of 198.20.0.1, above it
-            "http://[2001:0100::1]/img.png",      // not Teredo, the third byte is set
-            "http://[2001:0001::1]/img.png",      // not Teredo, the fourth byte is set
-            "http://[2003::1]/img.png",           // not Teredo, the second byte differs
+            "http://[2001:0200::1]/img.png",      // just above the protocol assignments of 2001::/23
+            "http://[2003::1]/img.png",           // outside 2001::/23 altogether
             "http://[64:ff9b::808:808]/img.png",  // NAT64 well known prefix carrying 8.8.8.8
             "http://[64:ff9c::1]/img.png"         // next to the NAT64 prefix, not in it
     })
