@@ -97,10 +97,12 @@ public class MediaUtils {
     private static final Pattern CSS_ESCAPE_PATTERN = Pattern.compile("\\\\(?:([0-9a-fA-F]{1,6})[ \\t\\r\\n\\f]?|(.))", Pattern.DOTALL);
     public static final String THUMBNAIL_PARAMETER = "thumbnail";
     /**
-     * A 1x1 transparent PNG which replaces a resource the {@link ResourceUrlPolicy} rejected.
+     * A 1x1 fully transparent PNG which replaces a resource the {@link ResourceUrlPolicy} rejected.
+     * It must draw nothing: a placeholder which paints marks the exported document where the reader
+     * expects the picture it named.
      */
     public static final String BLOCKED_RESOURCE_PLACEHOLDER =
-            "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
+            "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR42mNgAAIAAAUAAen63NgAAAAASUVORK5CYII=";
     private static final Logger logger = Logger.getLogger(MediaUtils.class);
     private static final int RIGHT_WHITE_AREA_PX = 30;
     private static final int PDF_TO_PNG_DPI = 300;

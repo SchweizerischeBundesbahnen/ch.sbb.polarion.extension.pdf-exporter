@@ -11,8 +11,11 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
+import java.util.Base64;
 import java.util.List;
 import java.util.Set;
 
@@ -48,6 +51,23 @@ class MediaUtilsTest {
         assertFalse(MediaUtils.isDataUrl(" data:123"));
         assertTrue(MediaUtils.isDataUrl("data:123"));
         assertTrue(MediaUtils.isDataUrl("data:   123"));
+    }
+
+    @Test
+    @SneakyThrows
+    void theBlockedResourcePlaceholderPaintsNothingTest() {
+        // the placeholder stands where a picture was refused, and it is read by a converter which paints
+        // what it is given: a pixel which carries a color marks every exported document with a dot
+        String prefix = "data:image/png;base64,";
+        assertTrue(MediaUtils.BLOCKED_RESOURCE_PLACEHOLDER.startsWith(prefix));
+
+        byte[] png = Base64.getDecoder().decode(MediaUtils.BLOCKED_RESOURCE_PLACEHOLDER.substring(prefix.length()));
+        BufferedImage image = ImageIO.read(new ByteArrayInputStream(png));
+
+        assertNotNull(image);
+        assertEquals(1, image.getWidth());
+        assertEquals(1, image.getHeight());
+        assertEquals(0, image.getRGB(0, 0) >>> 24, "the placeholder must be fully transparent");
     }
 
     @Test
