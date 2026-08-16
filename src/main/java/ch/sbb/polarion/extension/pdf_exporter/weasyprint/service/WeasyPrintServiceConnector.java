@@ -21,10 +21,12 @@ import org.glassfish.jersey.media.multipart.MultiPartFeature;
 import org.glassfish.jersey.media.multipart.file.FileDataBodyPart;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.VisibleForTesting;
 
 import jakarta.ws.rs.client.Client;
 import jakarta.ws.rs.client.ClientBuilder;
 import jakarta.ws.rs.client.Entity;
+import jakarta.ws.rs.client.Invocation;
 import jakarta.ws.rs.client.WebTarget;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
@@ -43,6 +45,7 @@ public class WeasyPrintServiceConnector implements WeasyPrintConverter {
     private static final String PYTHON_VERSION_HEADER = "Python-Version";
     private static final String WEASYPRINT_VERSION_HEADER = "Weasyprint-Version";
     private static final String WEASYPRINT_SERVICE_VERSION_HEADER = "Weasyprint-Service-Version";
+    private static final String API_KEY_HEADER = "X-API-Key";
 
     private static final AtomicReference<String> pythonVersion = new AtomicReference<>();
     private static final AtomicReference<String> weasyPrintVersion = new AtomicReference<>();
@@ -51,12 +54,19 @@ public class WeasyPrintServiceConnector implements WeasyPrintConverter {
     @Getter
     private final @NotNull String weasyPrintServiceBaseUrl;
 
+    private final @NotNull ApiKeyProvider apiKeyProvider;
+
     public WeasyPrintServiceConnector() {
         this(PdfExporterExtensionConfiguration.getInstance().getWeasyPrintService());
     }
 
     public WeasyPrintServiceConnector(@NotNull String weasyPrintServiceBaseUrl) {
+        this(weasyPrintServiceBaseUrl, new ApiKeyProvider());
+    }
+
+    public WeasyPrintServiceConnector(@NotNull String weasyPrintServiceBaseUrl, @NotNull ApiKeyProvider apiKeyProvider) {
         this.weasyPrintServiceBaseUrl = weasyPrintServiceBaseUrl;
+        this.apiKeyProvider = apiKeyProvider;
     }
 
     @Override
@@ -203,7 +213,8 @@ public class WeasyPrintServiceConnector implements WeasyPrintConverter {
     }
 
     private byte[] sendConvertingRequest(@NotNull WebTarget webTarget, @NotNull Entity<?> requestEntity) {
-        try (Response response = webTarget.request("application/pdf").post(requestEntity)) {
+        String apiKey = apiKeyProvider.getApiKey();
+        try (Response response = requestWithApiKey(webTarget, apiKey).post(requestEntity)) {
             if (response.getStatus() == Response.Status.OK.getStatusCode()) {
                 InputStream inputStream = response.readEntity(InputStream.class);
                 try {
@@ -212,11 +223,32 @@ public class WeasyPrintServiceConnector implements WeasyPrintConverter {
                 } catch (IOException e) {
                     throw new IllegalStateException("Could not read response stream", e);
                 }
+            } else if (response.getStatus() == Response.Status.UNAUTHORIZED.getStatusCode()) {
+                throw new IllegalStateException(unauthorizedMessage(apiKey != null));
             } else {
                 String errorMessage = response.readEntity(String.class);
                 throw new IllegalStateException(String.format("Not expected response from WeasyPrint Service. Status: %s, Message: [%s]", response.getStatus(), errorMessage));
             }
         }
+    }
+
+    /**
+     * Builds the request, carrying the API key when one is configured.
+     */
+    @VisibleForTesting
+    Invocation.Builder requestWithApiKey(@NotNull WebTarget webTarget, @Nullable String apiKey) {
+        Invocation.Builder builder = webTarget.request("application/pdf");
+        return apiKey == null ? builder : builder.header(API_KEY_HEADER, apiKey);
+    }
+
+    /**
+     * Tells the two ways a 401 is reached apart, since each one has a different fix.
+     */
+    @VisibleForTesting
+    static @NotNull String unauthorizedMessage(boolean apiKeySent) {
+        return apiKeySent
+                ? "WeasyPrint Service rejected the configured API key. Check that the Polarion secret named in '" + PdfExporterExtensionConfiguration.WEASYPRINT_API_KEY_SECRET + "' holds the key the service was started with."
+                : "WeasyPrint Service requires an API key, none is configured. Name the Polarion secret holding it in '" + PdfExporterExtensionConfiguration.WEASYPRINT_API_KEY_SECRET + "'.";
     }
 
     @Override

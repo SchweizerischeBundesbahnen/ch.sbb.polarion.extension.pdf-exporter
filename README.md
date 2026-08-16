@@ -58,6 +58,30 @@ To change WeasyPrint Service URL, adjust the following property in the `polarion
 ch.sbb.polarion.extension.pdf-exporter.weasyprint.service=http://localhost:9080
 ```
 
+### WeasyPrint API key
+
+The WeasyPrint service can require an API key, which it does as soon as it is started with `API_KEY` set.
+The extension then has to send that key, and it reads it from Polarion's secrets manager.
+
+The key itself is never written into `polarion.properties`. The property holds the **name** of a secret:
+
+```properties
+ch.sbb.polarion.extension.pdf-exporter.weasyprint.apiKeySecret=weasyprint-api-key
+```
+
+Store the key under that name in the secrets manager of the Polarion installation. The properties file,
+its backups and the About page then carry a name, not a credential.
+
+An unset or empty property sends no key, which is what a service started without `API_KEY` expects.
+
+Three failures are reported apart, since each one has a different fix:
+
+| What the log says | What to do |
+| --- | --- |
+| requires an API key, none is configured | name the secret in the property above |
+| could not read the API key from the Polarion secret | check that a secret of that name exists and is readable |
+| rejected the configured API key | check the secret holds the key the service was started with |
+
 ### PDF exporter extension to appear on a Document's properties pane
 
 1. Open a project where you wish PDF Exporter to be available
