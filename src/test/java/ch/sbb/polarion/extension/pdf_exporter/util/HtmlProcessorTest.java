@@ -919,10 +919,15 @@ class HtmlProcessorTest {
 
     @Test
     @SneakyThrows
-    void keepRelativeCssImportTest() {
-        // WeasyPrint cannot resolve a relative import, and it names no address, so it stays
+    void dropRelativeCssImportTest() {
+        // an at-rule is never embedded, so its target is read by weasyprint-service itself, from wherever that
+        // service resolves it: that is not where the stylesheet names it, and nothing here vetted it
         String html = "<style>@import \"theme.css\"; body { color: red; }</style>";
-        assertEquals(html, processor.replaceResourcesAsBase64Encoded(html));
+
+        String result = processor.replaceResourcesAsBase64Encoded(html);
+
+        assertFalse(result.contains("theme.css"));
+        assertTrue(result.contains("color: red"));
     }
 
     @Test

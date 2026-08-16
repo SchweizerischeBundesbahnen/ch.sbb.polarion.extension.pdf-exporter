@@ -225,6 +225,21 @@ public class CustomResourceUrlResolver implements IUrlResolver {
     }
 
     /**
+     * The client asks for the host as the url spells it, and an ipv6 literal keeps its brackets there,
+     * so both spellings are compared without them. Any other name, a proxy host as a rule, is left to
+     * the system resolver.
+     *
+     * @param addresses the addresses the host was vetted for, null where the request goes to a proxy
+     */
+    @VisibleForTesting
+    DnsResolver pinnedResolver(@Nullable String host, @Nullable InetAddress[] addresses) {
+        String pinnedHost = host == null ? "" : stripBrackets(host);
+        return asked -> addresses != null && pinnedHost.equalsIgnoreCase(stripBrackets(asked))
+                ? addresses
+                : SystemDefaultDnsResolver.INSTANCE.resolve(asked);
+    }
+
+    /**
      * Builds a client for a single request. Its name resolution answers with the vetted addresses for the
      * host of that request, which binds the request to what {@link ResourceUrlPolicy#vetAddresses}
      * approved. The host name stays in the request, so the Host header and the TLS host name verification
@@ -234,10 +249,7 @@ public class CustomResourceUrlResolver implements IUrlResolver {
      *                  which resolves the name itself
      */
     private CloseableHttpClient createClient(@NotNull URL url, @Nullable InetAddress[] addresses, @NotNull ProxyDecision proxy) {
-        String pinnedHost = url.getHost() == null ? "" : stripBrackets(url.getHost());
-        DnsResolver pinnedResolver = host -> addresses != null && pinnedHost.equalsIgnoreCase(host)
-                ? addresses
-                : SystemDefaultDnsResolver.INSTANCE.resolve(host);
+        DnsResolver pinnedResolver = pinnedResolver(url.getHost(), addresses);
         RequestConfig requestConfig = RequestConfig.custom()
                 .setConnectTimeout(CONNECTION_TIMEOUT_MS)
                 .setConnectionRequestTimeout(CONNECTION_TIMEOUT_MS)

@@ -7,6 +7,7 @@ import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 import lombok.SneakyThrows;
 import org.apache.http.HttpHost;
+import org.apache.http.conn.DnsResolver;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -178,6 +179,20 @@ class CustomResourceUrlResolverTest {
 
         assertNull(resolver(16).resolveImpl(toUrl(url("/secrets"))));
         assertNull(resolver(16).resolveImpl(toUrl(url("/blob"))));
+    }
+
+    @Test
+    @SneakyThrows
+    void pinsTheAddressUnderEverySpellingOfTheHost() {
+        // the client asks for the host as the url spells it, and an ipv6 literal keeps its brackets
+        // there, so the pin has to answer for that spelling as well or it answers for nothing
+        InetAddress[] vetted = {InetAddress.getByName("::1")};
+        DnsResolver resolver = resolver(16).pinnedResolver("[::1]", vetted);
+
+        assertArrayEquals(vetted, resolver.resolve("[::1]"));
+        assertArrayEquals(vetted, resolver.resolve("::1"));
+        // any other name is left to the system, a proxy host as a rule
+        assertArrayEquals(InetAddress.getAllByName("127.0.0.1"), resolver.resolve("127.0.0.1"));
     }
 
     @Test

@@ -247,17 +247,19 @@ which one. That is the fail-closed direction: such an address would be read by t
 itself. A custom property holding an address, `--api: https://service.example`, is such a case, so a
 stylesheet using one loses its styling in the export.
 
-A CSS `@import` of an absolute address is removed, whether the policy allows the address or not, and
-every `@import` of a stylesheet loaded through `<link rel="stylesheet">` is removed as well: such a
-target is relative to that stylesheet, and a renderer reads it relative to the document instead, so
-what it would fetch is not what the stylesheet names. An at-rule cannot be embedded either, so
-WeasyPrint would have to load it itself, past every check above. Reference such a stylesheet with `<link rel="stylesheet">` instead, the extension loads and embeds that one.
+A CSS `@import` is removed, whatever it names and wherever it stands. An at-rule cannot be embedded,
+so WeasyPrint would have to load it itself, past every check above. Reference such a stylesheet
+with a `<link rel="stylesheet">` instead, the extension loads and embeds that one.
 
 A configured JVM proxy (`http.proxyHost` and friends) is used for these requests. A proxy resolves the
 host name itself, so a request routed through one cannot be pinned to a checked address. Such a request
 is therefore only made for a host the configuration trusts as such: the Polarion server and the origins
 listed above. Everything else is loaded directly, with the address check binding, or not at all. Hosts
 in `http.nonProxyHosts` are loaded directly and keep the address check.
+
+Note what this costs: where a proxy is configured for every destination, `BLOCK_INTERNAL` behaves
+as `ALLOWLIST_ONLY`, since a proxied request is made only for the Polarion server and the origins
+listed above.
 
 A SOCKS proxy needs no such gate. It is no route the client plans, the JVM applies it at the socket, and
 the socket is connected to the address the check approved, not to a host name the proxy would resolve.

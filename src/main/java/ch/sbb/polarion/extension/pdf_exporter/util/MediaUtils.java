@@ -413,7 +413,8 @@ public class MediaUtils {
         }
         CascadingStyleSheet stylesheet = parse(css);
         if (stylesheet == null) {
-            logger.warn("Dropped a stylesheet which cannot be parsed, the resources it points at cannot be checked");
+            logger.warn("Dropped a stylesheet which cannot be parsed, so the resources it points at cannot be"
+                    + " checked: " + describe(stylesheetUrl, css));
             return "";
         }
 
@@ -421,16 +422,29 @@ public class MediaUtils {
         // Everything else keeps the formatting the document came with.
         int[] lineStarts = lineStartsOf(css);
         CssRewrite rewrite = new CssRewrite();
-        // what decides is whether this css is a stylesheet of its own, which the url says and the
-        // location does not: a stylesheet named 'file.css' has no location and is fetched all the same
-        readImports(css, stylesheet, lineStarts, rewrite, stylesheetUrl != null);
+        readImports(css, stylesheet, lineStarts, rewrite);
         readUrls(css, stylesheet, lineStarts, rewrite, fileResourceProvider, locationOf(stylesheetUrl));
 
         if (!rewrite.complete() || namesAnAddressNothingAccountedFor(css, stylesheet, lineStarts, rewrite.accounted())) {
-            logger.warn("Dropped a stylesheet: it names an absolute address which could not be read as a resource");
+            logger.warn("Dropped a stylesheet: it names an address which nothing in it accounts for, so a"
+                    + " conversion service would read that address itself: " + describe(stylesheetUrl, css));
             return "";
         }
         return applyEdits(css, rewrite.edits());
+    }
+
+    /**
+     * @return what the log needs to name the stylesheet which was dropped: where it came from, or its
+     * first line where it is part of a document and has no url of its own
+     */
+    @NotNull
+    private String describe(@Nullable String stylesheetUrl, @NotNull String css) {
+        if (stylesheetUrl != null) {
+            return "it was loaded from '" + stylesheetUrl + "'";
+        }
+        String head = css.strip();
+        int end = Math.min(head.length(), 120);
+        return "it begins with '" + head.substring(0, end).replaceAll("\\s+", " ") + (end < head.length() ? "…'" : "'");
     }
 
     @Nullable
@@ -447,25 +461,21 @@ public class MediaUtils {
     }
 
     /**
-     * @param fetched whether this stylesheet was fetched from somewhere of its own. Every import of
-     *                such a stylesheet goes: its target is relative to the stylesheet, and the parser
-     *                reports the position of the whole rule rather than of the target, so it cannot be
-     *                pointed at the right place. What the renderer would read instead is a path of the
-     *                document, which nothing here vetted.
+     * Every import goes, whatever it names. An at-rule cannot be embedded, so its target is read by the
+     * conversion service itself, past every check here: an absolute address would be fetched from the
+     * network of that service, and a relative one from wherever that service resolves it, which is not
+     * where the stylesheet names it.
      */
     private void readImports(@NotNull String css, @NotNull CascadingStyleSheet stylesheet, int[] lineStarts,
-                             @NotNull CssRewrite rewrite, boolean fetched) {
+                             @NotNull CssRewrite rewrite) {
         for (CSSImportRule importRule : stylesheet.getAllImportRules()) {
             CssRange range = rangeOf(lineStarts, css, importRule.getSourceLocation());
-            boolean absolute = fetched || isReadElsewhere(decodeCssEscapes(importRule.getLocationString()));
             if (range == null) {
-                rewrite.missed(!absolute);
+                // it has to go and there is nowhere to write that, so the stylesheet goes instead
+                rewrite.missed(false);
             } else {
                 rewrite.accounted().add(range);
-                if (absolute) {
-                    // an at-rule is never inlined, so the target of an absolute one has to go
-                    rewrite.edits().add(new CssEdit(range, ""));
-                }
+                rewrite.edits().add(new CssEdit(range, ""));
             }
         }
     }

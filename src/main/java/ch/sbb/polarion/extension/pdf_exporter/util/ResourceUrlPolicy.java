@@ -81,10 +81,10 @@ public class ResourceUrlPolicy {
         int size = maxSizeMB > 0 ? maxSizeMB : PdfExporterExtensionConfiguration.EXTERNAL_RESOURCES_MAX_SIZE_MB_DEFAULT_VALUE;
         this.maxResourceBytes = (long) size * 1024 * 1024;
 
-        URI baseUri = parseBaseUrl(baseUrl);
-        this.baseUrlHost = baseUri == null || baseUri.getHost() == null ? null : baseUri.getHost().toLowerCase(Locale.ROOT);
-        this.baseUrlPort = baseUri == null ? -1 : effectivePort(baseUri.getScheme(), baseUri.getPort());
-        this.baseUrlScheme = baseUri != null && HTTPS.equalsIgnoreCase(baseUri.getScheme()) ? HTTPS : HTTP;
+        URL baseUrlParsed = parseBaseUrl(baseUrl);
+        this.baseUrlHost = hostOfBaseUrl(baseUrlParsed, baseUrl);
+        this.baseUrlPort = baseUrlParsed == null ? -1 : effectivePort(baseUrlParsed.getProtocol(), baseUrlParsed.getPort());
+        this.baseUrlScheme = baseUrlParsed != null && HTTPS.equalsIgnoreCase(baseUrlParsed.getProtocol()) ? HTTPS : HTTP;
     }
 
     public static ResourceUrlPolicy getInstance() {
@@ -479,14 +479,35 @@ public class ResourceUrlPolicy {
         return null;
     }
 
+    /**
+     * Reads the host of the Polarion base url, and says when it cannot: the exemption of the server
+     * would otherwise be off without a word.
+     */
     @Nullable
-    private static URI parseBaseUrl(@Nullable String baseUrl) {
+    private static String hostOfBaseUrl(@Nullable URL baseUrlParsed, @Nullable String baseUrl) {
+        String host = baseUrlParsed == null ? null : baseUrlParsed.getHost();
+        if (host == null || host.isBlank()) {
+            if (baseUrl != null && !baseUrl.isBlank()) {
+                logger.warn("Cannot read the host of the Polarion base url '" + baseUrl
+                        + "', so the server itself is not exempt from the external resources policy");
+            }
+            return null;
+        }
+        return stripBrackets(host.toLowerCase(Locale.ROOT));
+    }
+
+    /**
+     * Reads the base url as a url rather than as a uri: the rules of {@link URI} refuse an authority
+     * which a Polarion installation may well carry, an underscore in a host name among them.
+     */
+    @Nullable
+    private static URL parseBaseUrl(@Nullable String baseUrl) {
         if (baseUrl == null || baseUrl.isBlank()) {
             return null;
         }
         try {
-            return URI.create(baseUrl.trim());
-        } catch (IllegalArgumentException e) {
+            return URI.create(baseUrl.trim()).toURL();
+        } catch (Exception e) {
             logger.warn("Cannot parse the Polarion base url '" + baseUrl + "'");
             return null;
         }

@@ -361,6 +361,16 @@ class ResourceUrlPolicyTest {
     }
 
     @Test
+    void exemptsTheServerWhereItsNameIsSpelledUnusually() {
+        // java refuses an authority its own rules do not like, an underscore among them, and the
+        // exemption of the server would be off without a word
+        ResourceUrlPolicy policy = new ResourceUrlPolicy(Mode.ALLOWLIST_ONLY, List.of(), "http://polarion_server:8080", 16);
+
+        assertTrue(policy.isExplicitlyTrusted(url("http://polarion_server:8080/polarion/img.png")));
+        assertFalse(policy.isExplicitlyTrusted(url("http://other_server:8080/img.png")));
+    }
+
+    @Test
     void keepsTheSizeCapUsableWhateverItIsGiven() {
         // the cap holds for every caller of the constructor, not only for the configured one
         assertEquals(16L * 1024 * 1024, new ResourceUrlPolicy(Mode.BLOCK_INTERNAL, List.of(), BASE_URL, 0).getMaxResourceBytes());
