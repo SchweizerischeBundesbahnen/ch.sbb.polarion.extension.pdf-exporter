@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Stream;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -36,16 +37,24 @@ public class ResourceUrlPolicy {
     private static final String HTTP = "http";
     private static final String HTTPS = "https";
     private static final String CSS = "text/css";
+    private static final String OCTET_STREAM = "application/octet-stream";
 
-    private static final List<String> ALLOWED_CONTENT_TYPE_PREFIXES = List.of(
-            "image/", "font/", "application/font", "application/x-font", CSS,
-            "application/octet-stream", "binary/octet-stream");
+    // the kinds a font is served and read as, named once and read by every list below
+    private static final List<String> FONT_TYPE_PREFIXES = List.of(
+            "font/", "application/font", "application/x-font", "application/vnd.ms-fontobject",
+            "application/vnd.ms-opentype");
+
+    private static final List<String> ALLOWED_CONTENT_TYPE_PREFIXES = Stream.concat(
+            Stream.of("image/", CSS, OCTET_STREAM, "binary/octet-stream"),
+            FONT_TYPE_PREFIXES.stream()).toList();
 
     // What the content itself may turn out to be. This is the allowed list once more, without the
     // generic types: those say nothing, and the question here is what the bytes are. Tika reports an
     // SVG as image/svg+xml, so nothing has to be said about xml for an image's sake.
-    private static final List<String> ALLOWED_SNIFFED_TYPE_PREFIXES = List.of(
-            "image/", "font/", "application/font", "application/x-font", CSS);
+    // What the content itself may turn out to be: the allowed list once more, without the generic
+    // types, since those say nothing and the question here is what the bytes are.
+    private static final List<String> ALLOWED_SNIFFED_TYPE_PREFIXES = Stream.concat(
+            Stream.of("image/", CSS), FONT_TYPE_PREFIXES.stream()).toList();
 
     // What a text looks like to a detector, and the two kinds of resource which are one. A stylesheet
     // reads as plain text and an SVG without a namespace does too, so the sender has to name those.
@@ -69,7 +78,8 @@ public class ResourceUrlPolicy {
                     .filter(Objects::nonNull)
                     .forEach(this.allowedOrigins::add);
         }
-        this.maxResourceBytes = (long) maxSizeMB * 1024 * 1024;
+        int size = maxSizeMB > 0 ? maxSizeMB : PdfExporterExtensionConfiguration.EXTERNAL_RESOURCES_MAX_SIZE_MB_DEFAULT_VALUE;
+        this.maxResourceBytes = (long) size * 1024 * 1024;
 
         URI baseUri = parseBaseUrl(baseUrl);
         this.baseUrlHost = baseUri == null || baseUri.getHost() == null ? null : baseUri.getHost().toLowerCase(Locale.ROOT);
@@ -85,7 +95,7 @@ public class ResourceUrlPolicy {
                 Mode.parse(configuration.getExternalResourcesPolicy()),
                 allowedOrigins == null ? List.of() : Arrays.asList(allowedOrigins.split(",")),
                 System.getProperty(PolarionProperties.BASE_URL),
-                maxSizeMB > 0 ? maxSizeMB : PdfExporterExtensionConfiguration.EXTERNAL_RESOURCES_MAX_SIZE_MB_DEFAULT_VALUE);
+                maxSizeMB);
     }
 
     /**
@@ -128,7 +138,17 @@ public class ResourceUrlPolicy {
         if (ALLOWED_SNIFFED_TYPE_PREFIXES.stream().anyMatch(sniffed::startsWith)) {
             return false;
         }
-        return saidNothing || !TEXTUAL_CONTENT.contains(sniffed) || !TEXTUAL_RESOURCE_TYPES.contains(mediaType(declaredType));
+        if (saidNothing) {
+            return true;
+        }
+        String declared = mediaType(declaredType);
+        if (OCTET_STREAM.equals(sniffed)) {
+            // the content was read and recognized as nothing, which a font may well be: the detector
+            // reads no woff and no woff2. An image and a stylesheet it does read, so those two have to
+            // look like what their sender called them
+            return FONT_TYPE_PREFIXES.stream().noneMatch(declared::startsWith);
+        }
+        return !TEXTUAL_CONTENT.contains(sniffed) || !TEXTUAL_RESOURCE_TYPES.contains(declared);
     }
 
     private static String mediaType(@NotNull String contentType) {

@@ -1,6 +1,5 @@
 package ch.sbb.polarion.extension.pdf_exporter.util.html;
 
-import ch.sbb.polarion.extension.generic.regex.RegexMatcher;
 import ch.sbb.polarion.extension.pdf_exporter.util.FileResourceProvider;
 import ch.sbb.polarion.extension.pdf_exporter.util.MediaUtils;
 import com.polarion.core.util.StringUtils;
@@ -15,7 +14,6 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.regex.Pattern;
 import java.util.Optional;
-import java.util.stream.Stream;
 
 public class ExternalCssInternalizer implements LinkInternalizer {
 
@@ -49,29 +47,16 @@ public class ExternalCssInternalizer implements LinkInternalizer {
         }
         inlinedContent.append(">");
 
+        // the urls of a fetched stylesheet are relative to it, and the parser resolves each of them
+        // against that location: no pattern runs over a stylesheet the document points at
         String cssContent = new String(fileResourceProvider.getResourceAsBytes(url));
-        cssContent = processRelativeUrls(url, cssContent);
-        cssContent = MediaUtils.inlineCssResources(cssContent, fileResourceProvider);
+        cssContent = MediaUtils.inlineCssResources(cssContent, fileResourceProvider, url);
         inlinedContent.append(keepInsideStyleElement(cssContent));
         inlinedContent.append("</style>");
 
         return Optional.of(inlinedContent.toString());
     }
 
-    private String processRelativeUrls(String resourceUrl, String cssContent) {
-        int lastSlashPosition = resourceUrl.lastIndexOf('/');
-        if (lastSlashPosition == -1) {
-            return cssContent;
-        }
-        String resourcePath = resourceUrl.substring(0, lastSlashPosition + 1);
-        return RegexMatcher.get(MediaUtils.URL_REGEX).useJavaUtil().replace(cssContent, engine -> {
-            String url = engine.group("url");
-            // the pattern reads a url in any case, so the prefixes are compared in one
-            String lowerCased = url.toLowerCase(Locale.ROOT);
-            return Stream.of("/", "http:", "https:", MediaUtils.DATA_URL_PREFIX).anyMatch(lowerCased::startsWith) ? null :
-                    "url(%s%s)".formatted(resourcePath, url);
-        });
-    }
     /**
      * Reads the rel of a link the way a renderer reads it: a list of tokens, separated by whitespace,
      * each of them case insensitive. An exact comparison misses {@code rel="Stylesheet"}, which a

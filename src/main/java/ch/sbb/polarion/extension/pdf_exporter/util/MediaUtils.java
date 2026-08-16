@@ -396,6 +396,16 @@ public class MediaUtils {
      * </p>
      */
     public String inlineCssResources(@NotNull String css, @NotNull FileResourceProvider fileResourceProvider) {
+        return inlineCssResources(css, fileResourceProvider, null);
+    }
+
+    /**
+     * @param stylesheetUrl where the stylesheet itself was read from, null when the css is part of a
+     *                      document. A url of a stylesheet is relative to that location, not to the
+     *                      document, so each one is resolved against it before it is judged or fetched.
+     */
+    public String inlineCssResources(@NotNull String css, @NotNull FileResourceProvider fileResourceProvider,
+                                     @Nullable String stylesheetUrl) {
         if (!mayReferenceAResource(css)) {
             // no url, no import and no address: there is nothing to rewrite and nothing to check, and a
             // style attribute of a large document is not worth a parser run for that
@@ -412,7 +422,7 @@ public class MediaUtils {
         int[] lineStarts = lineStartsOf(css);
         CssRewrite rewrite = new CssRewrite();
         readImports(css, stylesheet, lineStarts, rewrite);
-        readUrls(css, stylesheet, lineStarts, rewrite, fileResourceProvider);
+        readUrls(css, stylesheet, lineStarts, rewrite, fileResourceProvider, locationOf(stylesheetUrl));
 
         if (!rewrite.complete() || namesAnAddressNothingAccountedFor(css, stylesheet, lineStarts, rewrite.accounted())) {
             logger.warn("Dropped a stylesheet: it names an absolute address which could not be read as a resource");
@@ -450,15 +460,48 @@ public class MediaUtils {
         }
     }
 
+    /**
+     * @return the location a url of that stylesheet is relative to, null where there is none
+     */
+    @Nullable
+    private String locationOf(@Nullable String stylesheetUrl) {
+        if (stylesheetUrl == null) {
+            return null;
+        }
+        int lastSlash = stylesheetUrl.lastIndexOf('/');
+        return lastSlash < 0 ? null : stylesheetUrl.substring(0, lastSlash + 1);
+    }
+
+    /**
+     * @return the url as the renderer would read it from that location: a relative one is resolved
+     * against it, everything which names its own place is left as it stands
+     */
+    @NotNull
+    private String resolveAgainst(@Nullable String location, @NotNull String url) {
+        String trimmed = url.trim();
+        if (location == null || trimmed.isEmpty() || trimmed.startsWith("/") || trimmed.startsWith("#")
+                || isDataUrl(trimmed) || isNetworkPathReference(trimmed) || SCHEME_PATTERN.matcher(trimmed).find()) {
+            return url;
+        }
+        return location + trimmed;
+    }
+
     private void readUrls(@NotNull String css, @NotNull CascadingStyleSheet stylesheet, int[] lineStarts,
-                          @NotNull CssRewrite rewrite, @NotNull FileResourceProvider fileResourceProvider) {
+                          @NotNull CssRewrite rewrite, @NotNull FileResourceProvider fileResourceProvider,
+                          @Nullable String location) {
         CSSVisitor.visitCSSUrl(stylesheet, new DefaultCSSUrlVisitor() {
             @Override
             public void onUrlDeclaration(@Nullable ICSSTopLevelRule topLevelRule, @NotNull CSSDeclaration declaration, @NotNull CSSExpressionMemberTermURI uri) {
                 CssRange range = rangeOf(lineStarts, css, uri.getSourceLocation());
                 // the parser resolves the escapes of a url term itself, so this value is the one the
                 // renderer would read, and the one the policy is asked about
-                String replacement = replacementFor(fileResourceProvider, uri.getURIString());
+                String resolved = resolveAgainst(location, uri.getURIString());
+                String replacement = replacementFor(fileResourceProvider, resolved);
+                if (replacement == null && !resolved.equals(uri.getURIString())) {
+                    // it was not inlined, so the text keeps the address of the resource itself, which is
+                    // not the one the document would resolve
+                    replacement = resolved;
+                }
                 if (range == null) {
                     rewrite.missed(replacement == null);
                     return;

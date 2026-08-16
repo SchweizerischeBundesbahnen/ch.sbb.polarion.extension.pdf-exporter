@@ -191,14 +191,30 @@ class CustomResourceUrlResolverTest {
 
     @Test
     void skipsResourceExceedingDeclaredSize() {
-        respond("/img.png", "image/png", PNG_CONTENT, false);
-        assertNull(resolver(0).resolveImpl(toUrl(url("/img.png"))));
+        // a png of two megabytes, so the cap is what refuses it and not the shape of its content
+        respond("/img.png", "image/png", pngOfTwoMegabytes(), false);
+        assertNull(resolver(1).resolveImpl(toUrl(url("/img.png"))));
     }
 
     @Test
     void skipsResourceExceedingStreamedSize() {
-        respond("/img.png", "image/png", PNG_CONTENT, true);
-        assertNull(resolver(0).resolveImpl(toUrl(url("/img.png"))));
+        respond("/img.png", "image/png", pngOfTwoMegabytes(), true);
+        assertNull(resolver(1).resolveImpl(toUrl(url("/img.png"))));
+    }
+
+    @Test
+    @SneakyThrows
+    void readsResourceUnderTheSize() {
+        respond("/img.png", "image/png", pngOfTwoMegabytes(), false);
+        try (InputStream stream = resolver(4).resolveImpl(toUrl(url("/img.png")))) {
+            assertNotNull(stream);
+        }
+    }
+
+    private static byte[] pngOfTwoMegabytes() {
+        byte[] content = new byte[2 * 1024 * 1024];
+        System.arraycopy(PNG_CONTENT, 0, content, 0, PNG_CONTENT.length);
+        return content;
     }
 
     @Test

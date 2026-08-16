@@ -336,10 +336,16 @@ class ResourceUrlPolicyTest {
             "text/css; charset=utf-8,text/plain,false",
             "image/svg+xml,text/plain,false",
             "image/svg+xml,application/xml,false",
+            // a font is the one kind whose content a detector may not recognize: measured, a woff and
+            // a woff2 read as a stream of bytes, while an image and a stylesheet are read as they are
+            "font/woff2,application/octet-stream,false",
+            "font/woff,application/octet-stream,false",
+            "application/vnd.ms-fontobject,application/octet-stream,false",
+            "application/x-font-ttf,application/octet-stream,false",
             // the sender named a shape the content does not have
             "image/png,text/plain,true",
             "image/png,application/octet-stream,true",
-            "font/woff2,application/octet-stream,true",
+            "text/css,application/octet-stream,true",
             "image/png,text/html,true",
             "font/woff2,application/json,true",
             "text/css,text/html,true",
@@ -352,6 +358,14 @@ class ResourceUrlPolicyTest {
     })
     void judgesTheContentAgainstWhatItsSenderCalledIt(String declared, String sniffed, boolean rejected) {
         assertEquals(rejected, policy(Mode.BLOCK_INTERNAL, List.of()).isRejectedContent(declared, sniffed));
+    }
+
+    @Test
+    void keepsTheSizeCapUsableWhateverItIsGiven() {
+        // the cap holds for every caller of the constructor, not only for the configured one
+        assertEquals(16L * 1024 * 1024, new ResourceUrlPolicy(Mode.BLOCK_INTERNAL, List.of(), BASE_URL, 0).getMaxResourceBytes());
+        assertEquals(16L * 1024 * 1024, new ResourceUrlPolicy(Mode.BLOCK_INTERNAL, List.of(), BASE_URL, -5).getMaxResourceBytes());
+        assertEquals(4L * 1024 * 1024, new ResourceUrlPolicy(Mode.BLOCK_INTERNAL, List.of(), BASE_URL, 4).getMaxResourceBytes());
     }
 
     @Test

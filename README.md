@@ -242,6 +242,11 @@ A resource may not exceed 16 MB. To change the size limit:
 ch.sbb.polarion.extension.pdf-exporter.externalResources.maxSizeMB=32
 ```
 
+A stylesheet which names an address that nothing in it accounts for is dropped whole, and the log says
+which one. That is the fail-closed direction: such an address would be read by the conversion service
+itself. A custom property holding an address, `--api: https://service.example`, is such a case, so a
+stylesheet using one loses its styling in the export.
+
 A CSS `@import` of an absolute address is removed, whether the policy allows the address or not: an
 at-rule cannot be embedded, so WeasyPrint would have to load it itself, past every check above. Reference
 such a stylesheet with `<link rel="stylesheet">` instead, the extension loads and embeds that one.
