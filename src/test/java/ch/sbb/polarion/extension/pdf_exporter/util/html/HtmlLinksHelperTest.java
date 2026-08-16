@@ -81,4 +81,22 @@ class HtmlLinksHelperTest {
         assertThat(attributes).containsExactly(
                 Map.entry("rel", "stylesheet"), Map.entry("href", "http://169.254.169.254/x.css"));
     }
+
+    @Test
+    void shouldReplaceLinksWhereTheyStandWhateverTheTreeOrderIs() {
+        // a link written inside a table is moved before it by the parser, so the element the parser
+        // lists first is the one written second: the replacements have to follow the text
+        when(linkInternalizer1.inline(anyMap())).thenAnswer(invocation -> {
+            Map<?, ?> attributes = invocation.getArgument(0);
+            return Optional.of("<style>" + attributes.get("href") + " inlined, and longer than the tag was</style>");
+        });
+
+        String resultHtml = htmlLinksHelper.internalizeLinks(
+                "<table><tr><td><link rel='stylesheet' href='a.css'></td><link rel='stylesheet' href='b.css'></tr></table>");
+
+        assertThat(resultHtml)
+                .contains("<style>a.css inlined, and longer than the tag was</style>")
+                .contains("<style>b.css inlined, and longer than the tag was</style>")
+                .doesNotContain("<link");
+    }
 }

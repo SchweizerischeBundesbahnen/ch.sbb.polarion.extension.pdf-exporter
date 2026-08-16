@@ -107,6 +107,26 @@ class PdfExporterFileResourceProviderTest {
     }
 
     @Test
+    void getResourceAsBase64StringKeepsSvgMimeWhenTheContentIsNotRecognized() {
+        // the detector answers with the stream of bytes where it recognized nothing, which names no
+        // type: an svg it could not read stays the svg its name and its source say
+        PdfExporterFileResourceProvider providerSpy = mock(PdfExporterFileResourceProvider.class);
+        byte[] svgContent = "<svg></svg>".getBytes(StandardCharsets.UTF_8);
+        when(providerSpy.getResourceAsBytes("img.svg")).thenReturn(svgContent);
+        when(providerSpy.getResourceAsBase64String(any())).thenCallRealMethod();
+
+        try (MockedStatic<MediaUtils> mockedMediaUtils = mockStatic(MediaUtils.class)) {
+            mockedMediaUtils.when(() -> MediaUtils.isDataUrl("img.svg")).thenReturn(false);
+            mockedMediaUtils.when(() -> MediaUtils.guessMimeType("img.svg", svgContent)).thenReturn("image/svg+xml");
+            mockedMediaUtils.when(() -> MediaUtils.getMimeTypeUsingTikaByContent("img.svg", svgContent))
+                    .thenReturn("application/octet-stream");
+
+            String result = providerSpy.getResourceAsBase64String("img.svg");
+            assertEquals("data:image/svg+xml;base64," + Base64.getEncoder().encodeToString(svgContent), result);
+        }
+    }
+
+    @Test
     @SneakyThrows
     void getResourceAsBytesSuccess() {
         when(resolverMock.canResolve(TEST_RESOURCE)).thenReturn(true);

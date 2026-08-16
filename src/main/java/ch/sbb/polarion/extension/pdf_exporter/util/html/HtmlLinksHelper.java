@@ -1,6 +1,7 @@
 package ch.sbb.polarion.extension.pdf_exporter.util.html;
 
 import ch.sbb.polarion.extension.pdf_exporter.util.FileResourceProvider;
+import org.jetbrains.annotations.NotNull;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Attribute;
 import org.jsoup.nodes.Document;
@@ -55,25 +56,27 @@ public class HtmlLinksHelper {
      */
     public String internalizeLinks(String htmlContent) {
         Document document = Jsoup.parse(htmlContent, "", Parser.htmlParser().setTrackPosition(true));
-        List<int[]> replaced = new ArrayList<>();
-        List<String> replacements = new ArrayList<>();
+        List<InlinedLink> inlinedLinks = new ArrayList<>();
         for (Element link : document.select("link")) {
             Range range = link.sourceRange();
             if (!range.isTracked() || range.startPos() < 0 || range.endPos() < range.startPos()) {
                 continue;
             }
-            Optional<String> inlined = inlineLinkTag(attributesOf(link));
-            if (inlined.isPresent()) {
-                replaced.add(new int[]{range.startPos(), range.endPos()});
-                replacements.add(inlined.get());
-            }
+            inlineLinkTag(attributesOf(link))
+                    .ifPresent(inlined -> inlinedLinks.add(new InlinedLink(range.startPos(), range.endPos(), inlined)));
         }
 
         StringBuilder result = new StringBuilder(htmlContent);
-        for (int i = replaced.size() - 1; i >= 0; i--) {
-            result.replace(replaced.get(i)[0], replaced.get(i)[1], replacements.get(i));
-        }
+        // back to front, so an offset stays valid while the ones before it are used. The parser lists an
+        // element in the order of the tree it built, which is not the order of the text: one written
+        // inside a table is moved before it, and its position would then be read after a longer one
+        inlinedLinks.stream()
+                .sorted((left, right) -> Integer.compare(right.start(), left.start()))
+                .forEach(link -> result.replace(link.start(), link.end(), link.replacement()));
         return result.toString();
+    }
+
+    private record InlinedLink(int start, int end, @NotNull String replacement) {
     }
 
     private Optional<String> inlineLinkTag(Map<String, String> attributesMap) {

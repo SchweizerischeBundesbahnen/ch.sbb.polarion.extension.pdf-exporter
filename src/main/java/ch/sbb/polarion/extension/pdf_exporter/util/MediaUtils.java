@@ -86,7 +86,7 @@ public class MediaUtils {
     public static final String DATA_URL_PREFIX = "data:";
     private static final String NETWORK_PATH_PREFIX = "//";
     // what a detector answers when it read the content and recognized nothing in it
-    private static final String OCTET_STREAM = "application/octet-stream";
+    public static final String OCTET_STREAM = "application/octet-stream";
 
     private static final Document.OutputSettings ATTRIBUTE_OUTPUT_SETTINGS =
             new Document.OutputSettings().escapeMode(Entities.EscapeMode.xhtml);

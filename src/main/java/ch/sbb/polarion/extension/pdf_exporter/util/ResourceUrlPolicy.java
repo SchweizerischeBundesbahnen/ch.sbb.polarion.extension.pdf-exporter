@@ -409,8 +409,8 @@ public class ResourceUrlPolicy {
             // 2001::/23, the protocol assignments: Teredo, benchmarking, ORCHID and the rest of them
             return (third & 0xFE) == 0;
         }
-        if (first == 0x3f) { // 3fff::/20, documentation
-            return (second & 0xF0) == 0xf0;
+        if (first == 0x3f && second == 0xff) { // 3fff::/20, documentation
+            return (third & 0xF0) == 0;
         }
         return first == 0x5f && second == 0x00; // 5f00::/16, segment routing
     }
