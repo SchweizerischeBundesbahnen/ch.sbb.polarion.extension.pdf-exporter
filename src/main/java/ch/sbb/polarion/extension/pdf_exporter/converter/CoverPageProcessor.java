@@ -97,8 +97,10 @@ public class CoverPageProcessor {
         }
         String templateHtml = settings.getTemplateHtml();
         String content = placeholderProcessor.replacePlaceholders(documentData, exportParams, templateHtml, overridenPlaceholderValues);
-        content = htmlProcessor.replaceResourcesAsBase64Encoded(content);
+        // velocity reads the document itself, so it writes content of the document into the page: the
+        // resources are vetted after it has written them, as the header, the footer and the css are
         String evaluatedContent = velocityEvaluator.evaluateVelocityExpressions(documentData, content);
+        evaluatedContent = htmlProcessor.replaceResourcesAsBase64Encoded(evaluatedContent);
         String css = coverPageSettings.processImagePlaceholders(settings.getTemplateCss());
         css = htmlProcessor.replaceCssResourcesAsBase64Encoded(css);
         // Resolve the language the same way as the body (same resolver, same inputs) so the cover page hyphenates consistently
