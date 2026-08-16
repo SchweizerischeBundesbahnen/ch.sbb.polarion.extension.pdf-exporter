@@ -421,7 +421,7 @@ public class MediaUtils {
         // Everything else keeps the formatting the document came with.
         int[] lineStarts = lineStartsOf(css);
         CssRewrite rewrite = new CssRewrite();
-        readImports(css, stylesheet, lineStarts, rewrite);
+        readImports(css, stylesheet, lineStarts, rewrite, locationOf(stylesheetUrl) != null);
         readUrls(css, stylesheet, lineStarts, rewrite, fileResourceProvider, locationOf(stylesheetUrl));
 
         if (!rewrite.complete() || namesAnAddressNothingAccountedFor(css, stylesheet, lineStarts, rewrite.accounted())) {
@@ -444,10 +444,18 @@ public class MediaUtils {
         return CSSReader.readFromStringReader(css, settings);
     }
 
-    private void readImports(@NotNull String css, @NotNull CascadingStyleSheet stylesheet, int[] lineStarts, @NotNull CssRewrite rewrite) {
+    /**
+     * @param fetched whether this stylesheet was fetched from somewhere of its own. Every import of
+     *                such a stylesheet goes: its target is relative to the stylesheet, and the parser
+     *                reports the position of the whole rule rather than of the target, so it cannot be
+     *                pointed at the right place. What the renderer would read instead is a path of the
+     *                document, which nothing here vetted.
+     */
+    private void readImports(@NotNull String css, @NotNull CascadingStyleSheet stylesheet, int[] lineStarts,
+                             @NotNull CssRewrite rewrite, boolean fetched) {
         for (CSSImportRule importRule : stylesheet.getAllImportRules()) {
             CssRange range = rangeOf(lineStarts, css, importRule.getSourceLocation());
-            boolean absolute = isReadElsewhere(decodeCssEscapes(importRule.getLocationString()));
+            boolean absolute = fetched || isReadElsewhere(decodeCssEscapes(importRule.getLocationString()));
             if (range == null) {
                 rewrite.missed(!absolute);
             } else {

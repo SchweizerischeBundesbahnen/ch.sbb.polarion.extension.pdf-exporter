@@ -184,4 +184,33 @@ class ExternalCssInternalizerTest {
         assertThat(result).isPresent();
         assertThat(result.get()).doesNotContain("url(http://169.254.169.254/x.png)");
     }
+
+    @Test
+    void shouldEscapeAResolvedUrlWhichStaysInTheStylesheet() {
+        // the stylesheet was fetched from a relative location, so what it names stays relative and stays
+        // in the text: the address is written back escaped, and a bracket in it cannot end the term
+        when(fileResourceProvider.getResourceAsBytes("styles/file.css")).thenReturn(
+                "a { background: url(\"x.png) } b { background: url(http://169.254.169.254/x.png) } c { color: red\"); }"
+                        .getBytes());
+
+        Optional<String> result = cssLinkInliner.inline(Map.of("rel", "stylesheet", "href", "styles/file.css"));
+
+        assertThat(result).isPresent();
+        assertThat(result.get())
+                .doesNotContain("url(http://169.254.169.254/x.png)")
+                .contains("styles/x.png");
+    }
+
+    @Test
+    void shouldRemoveAnImportOfAFetchedStylesheet() {
+        // its target is relative to the stylesheet, and a renderer would read it relative to the
+        // document: what it would fetch is not what the stylesheet names, and nothing vetted it
+        when(fileResourceProvider.getResourceAsBytes("/some/location/file.css"))
+                .thenReturn("@import \"theme.css\"; a { color: red }".getBytes());
+
+        Optional<String> result = cssLinkInliner.inline(Map.of("rel", "stylesheet", "href", "/some/location/file.css"));
+
+        assertThat(result).isPresent();
+        assertThat(result.get()).doesNotContain("theme.css").contains("color: red");
+    }
 }
