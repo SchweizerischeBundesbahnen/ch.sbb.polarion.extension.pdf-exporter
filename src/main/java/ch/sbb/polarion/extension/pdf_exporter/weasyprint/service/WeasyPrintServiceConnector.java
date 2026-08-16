@@ -215,21 +215,26 @@ public class WeasyPrintServiceConnector implements WeasyPrintConverter {
     private byte[] sendConvertingRequest(@NotNull WebTarget webTarget, @NotNull Entity<?> requestEntity) {
         String apiKey = apiKeyProvider.getApiKey();
         try (Response response = requestWithApiKey(webTarget, apiKey).post(requestEntity)) {
-            if (response.getStatus() == Response.Status.OK.getStatusCode()) {
-                InputStream inputStream = response.readEntity(InputStream.class);
-                try {
-                    logWeasyPrintVersionFromHeader(response);
-                    return inputStream.readAllBytes();
-                } catch (IOException e) {
-                    throw new IllegalStateException("Could not read response stream", e);
-                }
-            } else if (response.getStatus() == Response.Status.UNAUTHORIZED.getStatusCode()) {
-                throw new IllegalStateException(unauthorizedMessage(apiKey != null));
-            } else {
-                String errorMessage = response.readEntity(String.class);
-                throw new IllegalStateException(String.format("Not expected response from WeasyPrint Service. Status: %s, Message: [%s]", response.getStatus(), errorMessage));
+            return readConversionResponse(response, apiKey != null);
+        }
+    }
+
+    @VisibleForTesting
+    byte[] readConversionResponse(@NotNull Response response, boolean apiKeySent) {
+        if (response.getStatus() == Response.Status.OK.getStatusCode()) {
+            InputStream inputStream = response.readEntity(InputStream.class);
+            try {
+                logWeasyPrintVersionFromHeader(response);
+                return inputStream.readAllBytes();
+            } catch (IOException e) {
+                throw new IllegalStateException("Could not read response stream", e);
             }
         }
+        if (response.getStatus() == Response.Status.UNAUTHORIZED.getStatusCode()) {
+            throw new IllegalStateException(unauthorizedMessage(apiKeySent));
+        }
+        String errorMessage = response.readEntity(String.class);
+        throw new IllegalStateException(String.format("Not expected response from WeasyPrint Service. Status: %s, Message: [%s]", response.getStatus(), errorMessage));
     }
 
     /**
