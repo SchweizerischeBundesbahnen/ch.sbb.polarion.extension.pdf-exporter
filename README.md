@@ -250,8 +250,8 @@ stylesheet using one loses its styling in the export.
 A CSS `@import` of an absolute address is removed, whether the policy allows the address or not, and
 every `@import` of a stylesheet loaded through `<link rel="stylesheet">` is removed as well: such a
 target is relative to that stylesheet, and a renderer reads it relative to the document instead, so
-what it would fetch is not what the stylesheet names. An at-rule cannot be embedded either, so WeasyPrint would have to load it itself, past every check above. Reference
-such a stylesheet with `<link rel="stylesheet">` instead, the extension loads and embeds that one.
+what it would fetch is not what the stylesheet names. An at-rule cannot be embedded either, so
+WeasyPrint would have to load it itself, past every check above. Reference such a stylesheet with `<link rel="stylesheet">` instead, the extension loads and embeds that one.
 
 A configured JVM proxy (`http.proxyHost` and friends) is used for these requests. A proxy resolves the
 host name itself, so a request routed through one cannot be pinned to a checked address. Such a request

@@ -421,7 +421,9 @@ public class MediaUtils {
         // Everything else keeps the formatting the document came with.
         int[] lineStarts = lineStartsOf(css);
         CssRewrite rewrite = new CssRewrite();
-        readImports(css, stylesheet, lineStarts, rewrite, locationOf(stylesheetUrl) != null);
+        // what decides is whether this css is a stylesheet of its own, which the url says and the
+        // location does not: a stylesheet named 'file.css' has no location and is fetched all the same
+        readImports(css, stylesheet, lineStarts, rewrite, stylesheetUrl != null);
         readUrls(css, stylesheet, lineStarts, rewrite, fileResourceProvider, locationOf(stylesheetUrl));
 
         if (!rewrite.complete() || namesAnAddressNothingAccountedFor(css, stylesheet, lineStarts, rewrite.accounted())) {

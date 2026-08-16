@@ -201,6 +201,19 @@ class ExternalCssInternalizerTest {
                 .contains("styles/x.png");
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = {"/some/location/file.css", "styles/file.css", "file.css"})
+    void shouldRemoveAnImportOfAFetchedStylesheetWhereverItCameFrom(String href) {
+        // what decides is that the css is a stylesheet of its own, not whether its url carries a path
+        when(fileResourceProvider.getResourceAsBytes(href))
+                .thenReturn("@import \"theme.css\"; a { color: red }".getBytes());
+
+        Optional<String> result = cssLinkInliner.inline(Map.of("rel", "stylesheet", "href", href));
+
+        assertThat(result).isPresent();
+        assertThat(result.get()).doesNotContain("theme.css").contains("color: red");
+    }
+
     @Test
     void shouldRemoveAnImportOfAFetchedStylesheet() {
         // its target is relative to the stylesheet, and a renderer would read it relative to the
