@@ -305,6 +305,13 @@ public class CustomResourceUrlResolver implements IUrlResolver {
             logger.warn(SKIPPED_RESOURCE + url + ": its content is '" + sniffedType + "', not an image, a font or a stylesheet");
             return null;
         }
+        if (sniffedType == null) {
+            // the detector did not answer at all, which is an installation of the extension rather than
+            // an answer about this resource. The kind its sender named carries it, and the log says so,
+            // because a policy which quietly stops checking is worse than one which says it cannot
+            logger.warn("Could not read the content of " + url + ", the detector did not answer. It is used as '"
+                    + contentType + "', which is what its sender named.");
+        }
         return new ByteArrayInputStream(bytes);
     }
 
