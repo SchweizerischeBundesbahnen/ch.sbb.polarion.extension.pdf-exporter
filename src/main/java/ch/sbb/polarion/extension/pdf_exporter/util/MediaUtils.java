@@ -473,6 +473,25 @@ public class MediaUtils {
     }
 
     /**
+     * Escapes an address so that it can stand in a url term without quotes. A url token ends at a
+     * bracket, a quote or a space, and a value read inside quotes may carry any of them, so each one
+     * is written as the escape css reads it by.
+     */
+    @NotNull
+    private String escapeCssUrl(@NotNull String url) {
+        StringBuilder escaped = new StringBuilder(url.length());
+        for (int i = 0; i < url.length(); i++) {
+            char current = url.charAt(i);
+            if (current == '\\' || current == '"' || current == '\'' || current == '(' || current == ')'
+                    || Character.isWhitespace(current)) {
+                escaped.append('\\');
+            }
+            escaped.append(current);
+        }
+        return escaped.toString();
+    }
+
+    /**
      * @return the url as the renderer would read it from that location: a relative one is resolved
      * against it, everything which names its own place is left as it stands
      */
@@ -499,8 +518,9 @@ public class MediaUtils {
                 String replacement = replacementFor(fileResourceProvider, resolved);
                 if (replacement == null && !resolved.equals(uri.getURIString())) {
                     // it was not inlined, so the text keeps the address of the resource itself, which is
-                    // not the one the document would resolve
-                    replacement = resolved;
+                    // not the one the document would resolve. The parser read that address inside
+                    // quotes, where it may carry what a url term cannot: those characters are escaped
+                    replacement = escapeCssUrl(resolved);
                 }
                 if (range == null) {
                     rewrite.missed(replacement == null);
