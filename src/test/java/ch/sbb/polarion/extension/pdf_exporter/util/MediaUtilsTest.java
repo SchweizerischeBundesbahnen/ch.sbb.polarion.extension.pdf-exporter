@@ -11,17 +11,35 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
+import java.util.Base64;
 import java.util.List;
 import java.util.Set;
 
 import static ch.sbb.polarion.extension.pdf_exporter.util.MediaUtils.THUMBNAIL_PARAMETER;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith({MockitoExtension.class, BundleJarsPrioritizingRunnableMockExtension.class, PdfExporterExtensionConfigurationExtension.class})
 class MediaUtilsTest {
+
+    @Test
+    void anUnplaceableRewriteIsNotClearedByALaterOneTest() {
+        // the flag answers "was every rewrite placed", so one that was not stands whatever follows it
+        MediaUtils.CssRewrite rewrite = new MediaUtils.CssRewrite();
+        assertTrue(rewrite.complete());
+
+        rewrite.missed(false);
+        rewrite.missed(true);
+
+        assertFalse(rewrite.complete());
+    }
+
 
     @Test
     void dataUrlTest() {
@@ -33,6 +51,23 @@ class MediaUtilsTest {
         assertFalse(MediaUtils.isDataUrl(" data:123"));
         assertTrue(MediaUtils.isDataUrl("data:123"));
         assertTrue(MediaUtils.isDataUrl("data:   123"));
+    }
+
+    @Test
+    @SneakyThrows
+    void theBlockedResourcePlaceholderPaintsNothingTest() {
+        // the placeholder stands where a picture was refused, and it is read by a converter which paints
+        // what it is given: a pixel which carries a color marks every exported document with a dot
+        String prefix = "data:image/png;base64,";
+        assertTrue(MediaUtils.BLOCKED_RESOURCE_PLACEHOLDER.startsWith(prefix));
+
+        byte[] png = Base64.getDecoder().decode(MediaUtils.BLOCKED_RESOURCE_PLACEHOLDER.substring(prefix.length()));
+        BufferedImage image = ImageIO.read(new ByteArrayInputStream(png));
+
+        assertNotNull(image);
+        assertEquals(1, image.getWidth());
+        assertEquals(1, image.getHeight());
+        assertEquals(0, image.getRGB(0, 0) >>> 24, "the placeholder must be fully transparent");
     }
 
     @Test
@@ -201,5 +236,49 @@ class MediaUtilsTest {
         g2d.fillRect(0, 0, image.getWidth(), image.getHeight());
         g2d.dispose();
     }
+
+
+    @Test
+    void recognizesAbsoluteHttpUrls() {
+        assertTrue(MediaUtils.isAbsoluteHttpUrl("http://example.com/img.png"));
+        assertTrue(MediaUtils.isAbsoluteHttpUrl(" HTTPS://example.com/img.png"));
+        assertFalse(MediaUtils.isAbsoluteHttpUrl(null));
+        assertTrue(MediaUtils.isAbsoluteHttpUrl("//example.com/img.png"));
+        assertFalse(MediaUtils.isAbsoluteHttpUrl("/polarion/img.png"));
+        assertFalse(MediaUtils.isAbsoluteHttpUrl("//"));
+        assertFalse(MediaUtils.isAbsoluteHttpUrl("data:image/png;base64,AAAA"));
+    }
+
+    @Test
+    void keepsDataUrlsWhileInlining() {
+        FileResourceProvider provider = mock(FileResourceProvider.class);
+        String html = "<div><img src=\"data:image/png;base64,AAAA\"/></div>";
+
+        assertEquals(html, MediaUtils.inlineBase64Resources(html, provider));
+        verifyNoInteractions(provider);
+    }
+
+    @Test
+    void normalizesUrlForTheRequestAndTheCheck() {
+        assertEquals("http://example.com/some%20path/img_name.png",
+                MediaUtils.normalizeUrl("http://example.com/some path/img%5Fname.png"));
+    }
+
+
+    @Test
+    void decodesCssEscapes() {
+        assertEquals("http://host/x", MediaUtils.decodeCssEscapes("http\\3a //host/x"));
+        assertEquals("http://host/x", MediaUtils.decodeCssEscapes("\\68 ttp\\3A //host/x"));
+        assertEquals("http://host/x", MediaUtils.decodeCssEscapes("http\\:" + "//host/x"));
+        assertEquals("plain", MediaUtils.decodeCssEscapes("plain"));
+    }
+
+    @Test
+    void turnsAnUnusableCssEscapeIntoTheReplacementCharacter() {
+        assertEquals("\uFFFD", MediaUtils.decodeCssEscapes("\\FFFFFF"));
+        assertEquals("\uFFFD", MediaUtils.decodeCssEscapes("\\0"));
+        assertEquals("\uFFFD", MediaUtils.decodeCssEscapes("\\D800"));
+    }
+
 
 }
