@@ -200,6 +200,71 @@ To override this list, adjust the following property in the `polarion.properties
 ch.sbb.polarion.extension.pdf-exporter.renderable.image.extensions=png, jpg, jpeg, gif, bmp, svg, webp, avif, ico, cur, tif, tiff, vsdx
 ```
 
+### External resources
+
+A document can reference an image, a font or a stylesheet by an absolute URL. The extension loads such a
+resource and embeds it into the exported PDF. Because a document editor controls that URL, the request is
+restricted. By default the extension rejects every address which is not public: loopback, private ranges,
+link local addresses including the cloud metadata address `169.254.169.254`, and their IPv6 equivalents.
+The Polarion server itself, as configured by `base.url`, always stays reachable.
+
+To load resources from an internal host, list its origin explicitly:
+```properties
+ch.sbb.polarion.extension.pdf-exporter.externalResources.allowedOrigins=cdn.intranet,https://images.intranet:8443
+```
+
+An entry is written `[scheme://]host[:port]`, and what it leaves out is not compared:
+
+| Entry | What it allows |
+| --- | --- |
+| `cdn.intranet` | that host under either scheme, on any port |
+| `cdn.intranet:8443` | that host on port 8443, under either scheme |
+| `https://cdn.intranet` | that host under https, on port 443 |
+| `https://cdn.intranet:8443` | that host under https, on port 8443 |
+
+A reference written `//host/path` takes the scheme of `base.url` first and the other one after, so it
+reaches the host under whichever scheme an entry names.
+
+The policy itself can be changed. The value is one of these three names, written exactly so:
+```properties
+# BLOCK_INTERNAL (default) - public addresses, the Polarion server and the allowed origins
+# ALLOWLIST_ONLY           - only the Polarion server and the allowed origins
+# ALLOW_ALL                - no restriction, this exposes the server's network to document editors
+ch.sbb.polarion.extension.pdf-exporter.externalResources.policy=ALLOWLIST_ONLY
+```
+
+A loaded resource must be served as an image, a font or a stylesheet. Where the sender says nothing about
+the content, or calls it `application/octet-stream`, the content itself decides and must be recognizable as
+one of the three: a text of any other kind is refused, and so is a body nothing could be detected in.
+
+A resource may not exceed 16 MB. To change the size limit:
+```properties
+ch.sbb.polarion.extension.pdf-exporter.externalResources.maxSizeMB=32
+```
+
+A stylesheet which names an address that nothing in it accounts for is dropped whole, and the log says
+which one. That is the fail-closed direction: such an address would be read by the conversion service
+itself. A custom property holding an address, `--api: https://service.example`, is such a case, so a
+stylesheet using one loses its styling in the export.
+
+A CSS `@import` of an absolute address is removed, whether the policy allows the address or not, and
+every `@import` of a stylesheet loaded through `<link rel="stylesheet">` is removed as well: such a
+target is relative to that stylesheet, and a renderer reads it relative to the document instead, so
+what it would fetch is not what the stylesheet names. An at-rule cannot be embedded either, so
+WeasyPrint would have to load it itself, past every check above. Reference such a stylesheet with `<link rel="stylesheet">` instead, the extension loads and embeds that one.
+
+A configured JVM proxy (`http.proxyHost` and friends) is used for these requests. A proxy resolves the
+host name itself, so a request routed through one cannot be pinned to a checked address. Such a request
+is therefore only made for a host the configuration trusts as such: the Polarion server and the origins
+listed above. Everything else is loaded directly, with the address check binding, or not at all. Hosts
+in `http.nonProxyHosts` are loaded directly and keep the address check.
+
+A SOCKS proxy needs no such gate. It is no route the client plans, the JVM applies it at the socket, and
+the socket is connected to the address the check approved, not to a host name the proxy would resolve.
+So a request does traverse the SOCKS proxy, and its destination is still the vetted address.
+
+Blocked resources are reported in the Polarion log. The document is exported without them.
+
 ### Debug option
 
 This extension makes intensive HTML processing to extend similar standard Polarion functionality. There is a possibility to log
