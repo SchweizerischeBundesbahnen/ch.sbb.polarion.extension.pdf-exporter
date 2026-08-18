@@ -6,7 +6,7 @@ export default defineConfig(({ command, mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
   const polarionUrl = env.VITE_BASE_URL || 'http://localhost';
 
-  // Dedupe so the app and @grigoriev/react-sbb-polarion resolve to this app's single instance of
+  // Dedupe so the app and @sbb-polarion/react-sbb-polarion resolve to this app's single instance of
   // each: React (two copies mean "invalid hook call") and sonner (the RSP `Toaster` host and the
   // toasts RSP components fire must share one instance, or the toasts never reach the host).
   const resolve = { dedupe: ['react', 'react-dom', 'sonner'] };

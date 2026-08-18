@@ -1,4 +1,4 @@
-import styleText from '@grigoriev/react-sbb-polarion/style.css?inline';
+import styleText from '@sbb-polarion/react-sbb-polarion/style.css?inline';
 
 interface ShadowMountOptions {
   /** Classes for the inner container React mounts into (token scope + any wrapper classes the

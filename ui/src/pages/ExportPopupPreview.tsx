@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { PageLayout, SearchableSelect } from '@grigoriev/react-sbb-polarion';
+import { PageLayout, SearchableSelect } from '@sbb-polarion/react-sbb-polarion';
 import DocumentPicker from '../components/DocumentPicker';
 import type { DocumentType, ExportType } from '../export/documentType';
 import { documentEditorHash } from '../services/documents';

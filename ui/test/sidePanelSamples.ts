@@ -1,4 +1,4 @@
-import type { SelectOption } from '@grigoriev/react-sbb-polarion';
+import type { SelectOption } from '@sbb-polarion/react-sbb-polarion';
 import type { PanelData } from '../src/export/exportData';
 import type { ConversionResult } from '../src/services/conversion';
 import type { DocumentIdentity } from '../src/services/exportContext';

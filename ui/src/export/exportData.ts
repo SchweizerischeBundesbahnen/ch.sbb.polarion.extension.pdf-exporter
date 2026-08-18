@@ -1,4 +1,4 @@
-import type { SelectOption, SendRequest, SettingName } from '@grigoriev/react-sbb-polarion';
+import type { SelectOption, SendRequest, SettingName } from '@sbb-polarion/react-sbb-polarion';
 import type { DocumentIdentity } from '../services/exportContext';
 import { CHILD_SETTINGS, type ChildNames, NO_CHILD_NAMES, type StylePackageSettings } from '../services/stylePackage';
 import type { DocumentType, ExportType } from './documentType';

@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { StylePackageWeights, createStylePackageWeightsService } from '@grigoriev/react-sbb-polarion';
+import { StylePackageWeights, createStylePackageWeightsService } from '@sbb-polarion/react-sbb-polarion';
 import useRemote from '../services/useRemote';
 
 /**

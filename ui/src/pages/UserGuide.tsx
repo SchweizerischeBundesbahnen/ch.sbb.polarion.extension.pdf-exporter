@@ -1,4 +1,4 @@
-import { UserGuide } from '@grigoriev/react-sbb-polarion';
+import { UserGuide } from '@sbb-polarion/react-sbb-polarion';
 import useRemote from '../services/useRemote';
 
 /**

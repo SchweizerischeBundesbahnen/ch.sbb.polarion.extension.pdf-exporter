@@ -4,7 +4,7 @@
 
 - **`ch.sbb.polarion.extension.generic`** is the parent project providing reusable infrastructure for all Polarion plugins in this org (settings framework, REST base classes, OSGi helpers, etc.). Before implementing anything cross-cutting, check if it already exists there.
 - **All administration pages are React now.** They were converted to
-  [react-sbb-polarion](https://github.com/grigoriev/react-sbb-polarion) one at a time, and
+  [react-sbb-polarion](https://github.com/SchweizerischeBundesbahnen/react-sbb-polarion) one at a time, and
   `pdf-exporter-app` (the Vite bundle in `ui/`, see [`ui/README.md`](ui/README.md)) serves every one of
   them. `hivemodule.xml` carries a `pageUrl` per menu entry; the ids there must match
   `ui/src/features.tsx` - a mismatch is a blank page and no test catches it. The legacy
