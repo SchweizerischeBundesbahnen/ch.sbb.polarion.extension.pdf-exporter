@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { AuthorizationSettings, createAuthorizationService } from '@grigoriev/react-sbb-polarion';
+import { AuthorizationSettings, createAuthorizationService } from '@sbb-polarion/react-sbb-polarion';
 import useRemote from '../services/useRemote';
 
 /** The named-settings feature the export permissions are stored under. */

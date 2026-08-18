@@ -1,7 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { configureGenericModules } from '@grigoriev/react-sbb-polarion';
-import '@grigoriev/react-sbb-polarion/style.css';
+import { configureGenericModules } from '@sbb-polarion/react-sbb-polarion';
+import '@sbb-polarion/react-sbb-polarion/style.css';
 import App from './App';
 import './App.css';
 

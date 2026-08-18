@@ -1,4 +1,4 @@
-import type { SendRequest } from '@grigoriev/react-sbb-polarion';
+import type { SendRequest } from '@sbb-polarion/react-sbb-polarion';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { loadDocumentLanguage, loadPanelData, loadPopupData, loadStylePackage } from '../src/export/exportData';
 import type { PopupDataRequest } from '../src/export/exportData';
