@@ -36,7 +36,7 @@ export const resetInjectorGlobals = (): void => {
   document.head.innerHTML = '';
   document.body.innerHTML = '';
   delete globals().PdfExporterStarter;
-  delete globals().GenericDleToolbarStarter;
+  delete globals().CommonDleToolbarStarter;
   delete globals().__genericDleToolbarEnginePromise;
   delete globals().__genericDleToolbarSeq;
   window.location.hash = '';
@@ -45,15 +45,14 @@ export const resetInjectorGlobals = (): void => {
 /** What an injector hands to the shared engine's `create`. */
 export interface ToolbarConfig {
   markerId: string;
-  defaultHtml?: string;
-  alternateHtml?: string;
+  html?: string;
   target?: string;
   order?: number;
   permissionCheckUrl?: string;
 }
 
 /**
- * A stand-in for generic's GenericDleToolbarStarter that records what it was asked to do. The arrays
+ * A stand-in for the library's CommonDleToolbarStarter that records what it was asked to do. The arrays
  * stay live, so a test can assert on them after the import.
  */
 export const engineRecorder = () => {

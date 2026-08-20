@@ -1,40 +1,39 @@
 /*
- * One-tag DLE toolbar injector — the simple, recommended way to add the PDF Exporter button to
- * Polarion's native document editor toolbar. Configure a single script tag:
+ * One-tag DLE toolbar injector — adds the PDF Exporter button to Polarion's native document editor
+ * toolbar. Configure a single script tag:
  *
  *   scriptInjection.dleEditorHead=<script src="/polarion/pdf-exporter/js/dle-toolbar.js"></script>
  *
- * It loads the thin starter (which pulls the shared self-healing engine) and injects the toolbar
- * button, so no separate <script>PdfExporterStarter.injectToolbar({alternate: true});</script> tag
- * is needed. The deprecated explicit-injectToolbar config keeps working; see starter.js.
+ * Everything below the button's own identity - the toolbar selectors, the stable left-to-right order
+ * across extensions, the permission check, and re-injection after GWT re-renders the toolbar - lives in
+ * the shared engine, which installs itself from the data-* attributes on the script tag that loads it.
+ *
+ * The engine comes from react-sbb-polarion now, not from generic's webapp: it is emitted as a classic
+ * script and copied next to this extension's built app, which is where the URL below points.
  */
 (function () {
-    function injectToolbar() {
-        window.PdfExporterStarter.injectToolbar({alternate: true});
-    }
+    // One timestamp per page load: a click reuses what the previous click loaded, while an updated
+    // extension is still picked up on the next page open.
+    const timestampParam = `?timestamp=${Date.now()}`;
+    const APP_BASE = '/polarion/pdf-exporter-app/ui/app/';
 
-    // starter.js may already be loaded (e.g. also configured via scriptInjection.mainHead) —
-    // reuse it rather than loading it again.
-    if (window.PdfExporterStarter) {
-        injectToolbar();
-        return;
-    }
+    // The export dialog is a React module of the pdf-exporter-app webapp, imported on click. It mounts
+    // into a shadow root of its own, so nothing has to be injected into the page for it.
+    const openPopup = `import('${APP_BASE}assets/export-popup.js${timestampParam}')
+        .then(module => module.openExportPopup({documentType: 'LIVE_DOC'}))
+        .catch(console.error);`;
 
-    // Load starter.js relative to this script's own URL (…/polarion/<ext>/js/dle-toolbar.js),
-    // so nothing here hardcodes the /polarion/<ext>/ segment.
-    const starterSrc = (document.currentScript && document.currentScript.src || '')
-        .replace(/dle-toolbar\.js.*$/, 'starter.js') || '/polarion/pdf-exporter/js/starter.js';
-    const script = document.createElement('script');
-    script.src = starterSrc;
-    script.onload = function () {
-        if (window.PdfExporterStarter) {
-            injectToolbar();
-        } else {
-            console.error("pdf-exporter: starter.js loaded but PdfExporterStarter is not defined — DLE toolbar button injection skipped.");
-        }
+    const engine = document.createElement('script');
+    engine.src = `${APP_BASE}dle-toolbar-starter.js${timestampParam}`;
+    engine.dataset.marker = 'pdf-exporter';
+    engine.dataset.title = 'Export to PDF';
+    engine.dataset.icon = `/polarion/ria/images/dle/operations/actionPdfExport16.svg${timestampParam}`;
+    engine.dataset.onclick = openPopup;
+    // GET → { permitted: boolean }. The engine appends the current project and injects the button
+    // disabled until the answer arrives, fail-closed. Server-side authorization is enforced regardless.
+    engine.dataset.permissionUrl = '/polarion/pdf-exporter/rest/internal/permissions/export';
+    engine.onerror = function () {
+        console.error('pdf-exporter: failed to load the DLE toolbar engine — toolbar injection skipped.');
     };
-    script.onerror = function () {
-        console.error("pdf-exporter: failed to load starter.js — DLE toolbar button injection skipped.");
-    };
-    document.head.appendChild(script);
+    document.head.appendChild(engine);
 })();

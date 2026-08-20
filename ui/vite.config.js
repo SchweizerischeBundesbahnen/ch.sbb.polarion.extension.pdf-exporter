@@ -1,6 +1,35 @@
+import { copyFileSync, readFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
+
+// react-sbb-polarion emits the DLE toolbar engine as its own classic script: it runs in Polarion's
+// document-editor iframe, driving the shell window, so it is not part of this app's bundle. The
+// extension serves it - copied next to the built app for a build, and answered from the package under
+// `vite dev`, where nothing is built. See "Shell scripts" in the library's README.
+const RSP_SHELL_SCRIPTS = ['dle-toolbar-starter.js'];
+
+function copyRspShellScripts() {
+  return {
+    name: 'copy-rsp-shell-scripts',
+    configureServer(server) {
+      const require = createRequire(import.meta.url);
+      for (const name of RSP_SHELL_SCRIPTS) {
+        server.middlewares.use(`/${name}`, (_req, res) => {
+          res.setHeader('Content-Type', 'text/javascript');
+          res.end(readFileSync(require.resolve(`@sbb-polarion/react-sbb-polarion/${name}`)));
+        });
+      }
+    },
+    writeBundle(options) {
+      const require = createRequire(import.meta.url);
+      for (const name of RSP_SHELL_SCRIPTS) {
+        copyFileSync(require.resolve(`@sbb-polarion/react-sbb-polarion/${name}`), `${options.dir}/${name}`);
+      }
+    },
+  };
+}
 
 export default defineConfig(({ command, mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
@@ -13,17 +42,10 @@ export default defineConfig(({ command, mode }) => {
 
   if (command === 'serve') {
     return {
-      plugins: [react()],
+      plugins: [react(), copyRspShellScripts()],
       resolve,
       server: {
         proxy: {
-          // Generic UI toolkit (SearchableDropdown JS + its CSS) served by GenericUiServlet. Served
-          // unauthenticated in Polarion (see the pdf-exporter-app web.xml), so the dev proxy can fetch
-          // it without a session.
-          '/polarion/pdf-exporter-app/ui/generic': {
-            target: polarionUrl,
-            changeOrigin: true,
-          },
           // The extension's own webapp context: its REST API, which the About page reads.
           '/polarion/pdf-exporter/rest': {
             target: polarionUrl,
@@ -53,7 +75,7 @@ export default defineConfig(({ command, mode }) => {
   }
 
   return {
-    plugins: [react()],
+    plugins: [react(), copyRspShellScripts()],
     resolve,
     // Never let a developer's personal access token reach a shipped bundle. VITE_BEARER_TOKEN is a
     // `vite dev` convenience (it switches useRemote to the token-authenticated /api endpoints); Vite
