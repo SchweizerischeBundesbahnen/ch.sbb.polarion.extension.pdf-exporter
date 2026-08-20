@@ -33,6 +33,23 @@ describe('live-reports.js injector', () => {
     await flushPromises(); // the engine promise resolves synchronously; let its .then(create) run
   };
 
+  // Every other case here hands the injector an engine that is already on the page, so loadEngine takes
+  // its "already there" branch and never builds a URL. This one leaves the page empty, which is the
+  // first load in a Polarion session and the only path that names where the engine is served from.
+  it('loads the engine from the app assets when nothing has loaded it yet', async () => {
+    setCurrentScript(SELF_URL);
+    await import('../../src/main/resources/webapp/pdf-exporter/js/live-reports.js');
+    await flushPromises();
+
+    const engineTag = document.head.querySelector<HTMLScriptElement>('script[src*="dle-toolbar-starter.js"]');
+    expect(engineTag, 'no engine script was appended').not.toBeNull();
+    expect(engineTag!.getAttribute('src')).toContain('/polarion/pdf-exporter-app/ui/app/assets/dle-toolbar-starter.js');
+    // Cache-busted per page load, like every other artifact these injectors reference.
+    expect(engineTag!.getAttribute('src')).toMatch(/\?timestamp=\d+$/);
+    // Shared with any extension still on generic's older engine, so one page loads one engine.
+    expect(engineTag!.id).toBe('common-dle-toolbar-engine');
+  });
+
   it('injects no stylesheet at all', async () => {
     await loadInjector();
 
