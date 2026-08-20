@@ -21,9 +21,8 @@
 (function () {
     const timestampParam = `?timestamp=${Date.now()}`;
 
-    // Extension web-context base, derived from this script's own URL (…/polarion/<ext>/js/live-reports.js)
-    // so nothing below hardcodes the /polarion/<ext>/ segment.
-    const EXT_BASE = (document.currentScript && document.currentScript.src || '').replace(/js\/live-reports\.js.*$/, '') || '/polarion/pdf-exporter/';
+    // The toolbar engine is a react-sbb-polarion artifact, copied next to this extension's built app.
+    const APP_BASE = '/polarion/pdf-exporter-app/ui/app/';
 
     // Read the opt-in for keeping the report toolbar always expanded from the script tag itself.
     const expandTools = !!(document.currentScript && document.currentScript.dataset.expandTools === 'true');
@@ -71,11 +70,17 @@
     // live-reports.js runs first creates the <script> and the promise; the others reuse the same
     // promise, and `.then()` fires for every extension whether the engine is still loading or already
     // loaded (unlike a load-event listener, which is missed if the load already happened).
-    const ENGINE_ID = 'generic-dle-toolbar-engine';
+    // Deliberately NOT generic's engine id or promise key. The two engines export different globals
+    // (GenericDleToolbarStarter vs CommonDleToolbarStarter), so sharing the loader bookkeeping would
+    // hand this file an engine it cannot use - or, when the other extension's tag is already in the
+    // document, leave the promise waiting for a load event that has already fired. What the two DO
+    // share, and must keep sharing, are the registries on `top`: button order and the injected
+    // stylesheet are coordinated through those, not through how the script got loaded.
+    const ENGINE_ID = 'common-dle-toolbar-engine';
     function loadEngine(src) {
-        if (!top.__genericDleToolbarEnginePromise) {
-            top.__genericDleToolbarEnginePromise = new Promise((resolve) => {
-                if (top.GenericDleToolbarStarter || window.GenericDleToolbarStarter) {
+        if (!top.__commonDleToolbarEnginePromise) {
+            top.__commonDleToolbarEnginePromise = new Promise((resolve) => {
+                if (top.CommonDleToolbarStarter || window.CommonDleToolbarStarter) {
                     resolve();
                     return;
                 }
@@ -92,22 +97,22 @@
                 top.document.head.appendChild(script);
             });
         }
-        return top.__genericDleToolbarEnginePromise;
+        return top.__commonDleToolbarEnginePromise;
     }
 
     // Load the shared self-healing engine and inject the report-toolbar button through it.
-    loadEngine(`${EXT_BASE}ui/generic/js/dle-toolbar-starter.js${timestampParam}`).then(function () {
-        const generic = top.GenericDleToolbarStarter || window.GenericDleToolbarStarter;
-        if (!generic) {
-            console.error("pdf-exporter: GenericDleToolbarStarter is not available after the engine loaded — Live Report toolbar button injection skipped.");
+    loadEngine(`${APP_BASE}assets/dle-toolbar-starter.js${timestampParam}`).then(function () {
+        const engine = top.CommonDleToolbarStarter || window.CommonDleToolbarStarter;
+        if (!engine) {
+            console.error("pdf-exporter: CommonDleToolbarStarter is not available after the engine loaded — Live Report toolbar button injection skipped.");
             return;
         }
         if (expandTools) {
-            generic.autoExpandRichPageTools();
+            engine.autoExpandRichPageTools();
         }
-        generic.create({
+        engine.create({
             markerId: 'pdf-exporter-rp-toolbar-injected',
-            alternateHtml: TOOLBAR_HTML,
+            html: TOOLBAR_HTML,
             target: 'richPagePreview',
             order: myOrder
         }).injectToolbar();
