@@ -6,9 +6,11 @@ import react from '@vitejs/plugin-react';
 
 // react-sbb-polarion emits the DLE toolbar engine as its own classic script: it runs in Polarion's
 // document-editor iframe, driving the shell window, so it is not part of this app's bundle. The
-// extension serves it - copied into the built app's assets/ for a build (the one path this app's
-// web.xml serves without authentication), and answered from the package under
-// `vite dev`, where nothing is built. See "Shell scripts" in the library's README.
+// extension serves it, copied into the built app's assets/ - the one path this app's web.xml serves
+// without authentication. There is no `vite dev` counterpart, and none is needed: the scripts that
+// request the engine are injected into Polarion's own pages through scriptInjection and ask for an
+// absolute /polarion/... URL, which the dev server is never in the path of. See "Shell scripts" in the
+// library's README.
 const RSP_SHELL_SCRIPTS = ['dle-toolbar-starter.js'];
 
 function copyRspShellScripts() {
@@ -34,7 +36,7 @@ export default defineConfig(({ command, mode }) => {
 
   if (command === 'serve') {
     return {
-      plugins: [react(), copyRspShellScripts()],
+      plugins: [react()],
       resolve,
       server: {
         proxy: {
