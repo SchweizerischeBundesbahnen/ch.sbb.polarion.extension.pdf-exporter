@@ -1,4 +1,4 @@
-import { copyFileSync, readFileSync } from 'node:fs';
+import { copyFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { defineConfig, loadEnv } from 'vite';
@@ -14,15 +14,6 @@ const RSP_SHELL_SCRIPTS = ['dle-toolbar-starter.js'];
 function copyRspShellScripts() {
   return {
     name: 'copy-rsp-shell-scripts',
-    configureServer(server) {
-      const require = createRequire(import.meta.url);
-      for (const name of RSP_SHELL_SCRIPTS) {
-        server.middlewares.use(`/assets/${name}`, (_req, res) => {
-          res.setHeader('Content-Type', 'text/javascript');
-          res.end(readFileSync(require.resolve(`@sbb-polarion/react-sbb-polarion/${name}`)));
-        });
-      }
-    },
     writeBundle(options) {
       const require = createRequire(import.meta.url);
       for (const name of RSP_SHELL_SCRIPTS) {
