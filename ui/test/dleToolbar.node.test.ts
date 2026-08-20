@@ -36,12 +36,12 @@ describe('dle-toolbar.js injector', () => {
     await flushPromises();
   };
 
-  it('loads the engine from the built app, where the Vite copy step puts it', async () => {
+  it('loads the engine from the app assets, where the Vite copy step puts it', async () => {
     await load();
 
     const script = engineScript();
     expect(script).not.toBeNull();
-    expect(script!.src).toContain(`${APP_BASE}dle-toolbar-starter.js`);
+    expect(script!.src).toContain(`${APP_BASE}assets/dle-toolbar-starter.js`);
     // Cache-busted per page load, so an updated extension is picked up on the next page open.
     expect(script!.src).toMatch(/\?timestamp=\d+$/);
   });

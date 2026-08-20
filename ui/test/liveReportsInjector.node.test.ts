@@ -24,7 +24,7 @@ describe('live-reports.js injector', () => {
    */
   const loadInjector = async ({ expandTools = false } = {}): Promise<void> => {
     const engineTag = document.createElement('script');
-    engineTag.id = 'generic-dle-toolbar-engine';
+    engineTag.id = 'common-dle-toolbar-engine';
     document.head.appendChild(engineTag);
     globals().CommonDleToolbarStarter = engine.stub;
     setCurrentScript(SELF_URL, expandTools ? { expandTools: 'true' } : {});
@@ -91,7 +91,7 @@ describe('live-reports.js injector', () => {
     // CommonDleToolbarStarter is not defined. Our onload must NOT run synchronously (that dropped the
     // button before this fix); it must wait for the load event.
     const engineTag = document.createElement('script');
-    engineTag.id = 'generic-dle-toolbar-engine';
+    engineTag.id = 'common-dle-toolbar-engine';
     document.head.appendChild(engineTag);
     setCurrentScript(SELF_URL);
 

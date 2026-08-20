@@ -37,7 +37,7 @@ export const resetInjectorGlobals = (): void => {
   document.body.innerHTML = '';
   delete globals().PdfExporterStarter;
   delete globals().CommonDleToolbarStarter;
-  delete globals().__genericDleToolbarEnginePromise;
+  delete globals().__commonDleToolbarEnginePromise;
   delete globals().__genericDleToolbarSeq;
   window.location.hash = '';
 };

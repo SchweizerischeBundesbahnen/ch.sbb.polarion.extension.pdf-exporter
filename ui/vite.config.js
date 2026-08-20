@@ -6,7 +6,8 @@ import react from '@vitejs/plugin-react';
 
 // react-sbb-polarion emits the DLE toolbar engine as its own classic script: it runs in Polarion's
 // document-editor iframe, driving the shell window, so it is not part of this app's bundle. The
-// extension serves it - copied next to the built app for a build, and answered from the package under
+// extension serves it - copied into the built app's assets/ for a build (the one path this app's
+// web.xml serves without authentication), and answered from the package under
 // `vite dev`, where nothing is built. See "Shell scripts" in the library's README.
 const RSP_SHELL_SCRIPTS = ['dle-toolbar-starter.js'];
 
@@ -16,7 +17,7 @@ function copyRspShellScripts() {
     configureServer(server) {
       const require = createRequire(import.meta.url);
       for (const name of RSP_SHELL_SCRIPTS) {
-        server.middlewares.use(`/${name}`, (_req, res) => {
+        server.middlewares.use(`/assets/${name}`, (_req, res) => {
           res.setHeader('Content-Type', 'text/javascript');
           res.end(readFileSync(require.resolve(`@sbb-polarion/react-sbb-polarion/${name}`)));
         });
@@ -25,7 +26,7 @@ function copyRspShellScripts() {
     writeBundle(options) {
       const require = createRequire(import.meta.url);
       for (const name of RSP_SHELL_SCRIPTS) {
-        copyFileSync(require.resolve(`@sbb-polarion/react-sbb-polarion/${name}`), `${options.dir}/${name}`);
+        copyFileSync(require.resolve(`@sbb-polarion/react-sbb-polarion/${name}`), `${options.dir}/assets/${name}`);
       }
     },
   };
