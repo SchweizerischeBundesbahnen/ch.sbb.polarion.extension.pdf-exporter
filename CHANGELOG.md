@@ -1,5 +1,14 @@
 # Changelog
 
+## [13.6.1](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v13.6.0...v13.6.1) (2026-08-21)
+
+
+### Bug Fixes
+
+* **deps:** update dependency org.xhtmlrenderer:flying-saucer-core to v10.5.0 ([f92076a](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/f92076a9dc6c664876c5f44b28b7246caf86d237))
+* move to generic 16.0.0 and react-sbb-polarion 2.0.1 ([#1013](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/1013)) ([1c50bef](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/1c50befa85cf10531560e529ac8961d4c0a3066d))
+* vet every external resource before loading it ([#1006](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/1006)) ([918c2ae](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/918c2aee9015480652ccfdf35b5e29905c85e183))
+
 ## [13.6.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v13.5.0...v13.6.0) (2026-08-13)
 
 
