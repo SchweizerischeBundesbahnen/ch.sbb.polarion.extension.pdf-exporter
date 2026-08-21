@@ -18,6 +18,7 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.controller.UtilityResourcesAp
 import ch.sbb.polarion.extension.pdf_exporter.rest.controller.UtilityResourcesInternalController;
 import ch.sbb.polarion.extension.pdf_exporter.rest.exception.NoSuchElementExceptionMapper;
 import ch.sbb.polarion.extension.pdf_exporter.rest.exception.UnresolvableObjectExceptionMapper;
+import ch.sbb.polarion.extension.pdf_exporter.rest.exception.UserFriendlyRuntimeExceptionMapper;
 import ch.sbb.polarion.extension.pdf_exporter.rest.exception.WrapperExceptionMapper;
 import ch.sbb.polarion.extension.pdf_exporter.rest.exception.XLIFFExceptionMapper;
 import ch.sbb.polarion.extension.pdf_exporter.rest.filter.ExportContextFilter;
@@ -59,7 +60,8 @@ public class PdfExporterRestApplication extends GenericRestApplication {
                 new XLIFFExceptionMapper(),
                 new UnresolvableObjectExceptionMapper(),
                 new WrapperExceptionMapper(),
-                new NoSuchElementExceptionMapper()
+                new NoSuchElementExceptionMapper(),
+                new UserFriendlyRuntimeExceptionMapper()
         );
     }
 

@@ -4,6 +4,7 @@ import ch.sbb.polarion.extension.generic.configuration.ConfigurationStatus;
 import ch.sbb.polarion.extension.generic.configuration.ConfigurationStatusProvider;
 import ch.sbb.polarion.extension.generic.configuration.Status;
 import ch.sbb.polarion.extension.generic.util.VersionUtils;
+import ch.sbb.polarion.extension.pdf_exporter.properties.PdfExporterExtensionConfiguration;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.service.WeasyPrintServiceConnector;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.service.model.WeasyPrintInfo;
 import org.junit.jupiter.api.Test;
@@ -345,4 +346,37 @@ class WeasyPrintStatusProviderTest {
         }
     }
 
+
+    @Test
+    void reportsAKeyConfiguredForAPlainHttpAddress() {
+        // /version carries no key, so the service answers and the page would look healthy while every
+        // export is refused. The configuration page is where an administrator looks first.
+        WeasyPrintServiceConnector weasyPrintServiceConnector = mock(WeasyPrintServiceConnector.class);
+        when(weasyPrintServiceConnector.getWeasyPrintServiceBaseUrl()).thenReturn("http://localhost:9080");
+
+        List<ConfigurationStatus> statuses = new WeasyPrintStatusProvider(weasyPrintServiceConnector, () -> "weasyprint-api-key")
+                .getStatuses(ConfigurationStatusProvider.Context.builder().build());
+
+        assertEquals(1, statuses.size());
+        assertEquals(Status.ERROR, statuses.get(0).getStatus());
+        assertThat(statuses.get(0).getDetails())
+                .contains(PdfExporterExtensionConfiguration.WEASYPRINT_API_KEY_SECRET)
+                .contains(PdfExporterExtensionConfiguration.WEASYPRINT_SERVICE)
+                .contains("every export is refused");
+        verify(weasyPrintServiceConnector, never()).getWeasyPrintInfo();
+    }
+
+    @Test
+    void asksTheServiceWhereTheKeyTravelsOverHttps() {
+        WeasyPrintServiceConnector weasyPrintServiceConnector = mock(WeasyPrintServiceConnector.class);
+        when(weasyPrintServiceConnector.getWeasyPrintServiceBaseUrl()).thenReturn("https://weasyprint.intranet:9080");
+        when(weasyPrintServiceConnector.getWeasyPrintInfo()).thenReturn(WeasyPrintInfo.builder().apiVersion(1).python("3.12.5").weasyprint("62.3").weasyprintService("1.0.0").chromium("148").build());
+
+        try (MockedStatic<VersionUtils> versions = mockStatic(VersionUtils.class)) {
+            versions.when(() -> VersionUtils.getValueFromProperties(VERSION_FILE, "weasyprint-service.api-version")).thenReturn("1");
+
+            assertEquals(4, new WeasyPrintStatusProvider(weasyPrintServiceConnector, () -> "weasyprint-api-key")
+                    .getStatuses(ConfigurationStatusProvider.Context.builder().build()).size());
+        }
+    }
 }

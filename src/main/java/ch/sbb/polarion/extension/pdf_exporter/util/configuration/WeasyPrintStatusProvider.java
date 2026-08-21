@@ -5,12 +5,16 @@ import ch.sbb.polarion.extension.generic.configuration.ConfigurationStatusProvid
 import ch.sbb.polarion.extension.generic.configuration.Status;
 import ch.sbb.polarion.extension.generic.util.Discoverable;
 import ch.sbb.polarion.extension.generic.util.VersionUtils;
+import ch.sbb.polarion.extension.pdf_exporter.properties.PdfExporterExtensionConfiguration;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.service.WeasyPrintServiceConnector;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.service.model.WeasyPrintInfo;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.VisibleForTesting;
 
 import java.util.List;
+import java.util.Locale;
+import java.util.function.Supplier;
 import java.util.Map;
 
 import static ch.sbb.polarion.extension.pdf_exporter.util.exporter.Constants.VERSION_FILE;
@@ -20,12 +24,25 @@ public class WeasyPrintStatusProvider extends ConfigurationStatusProvider {
 
     private final WeasyPrintServiceConnector weasyPrintServiceConnector;
 
+    private final @NotNull Supplier<String> apiKeySecretName;
+
     public WeasyPrintStatusProvider() {
-        this.weasyPrintServiceConnector = new WeasyPrintServiceConnector();
+        this(new WeasyPrintServiceConnector(), () -> PdfExporterExtensionConfiguration.getInstance().getWeasyPrintApiKeySecret());
     }
 
+    /**
+     * Names no secret, so the transport of a key is not judged. Reading the configuration needs a
+     * running extension context, which a plain unit test does not have.
+     */
+    @VisibleForTesting
     public WeasyPrintStatusProvider(WeasyPrintServiceConnector weasyPrintServiceConnector) {
+        this(weasyPrintServiceConnector, () -> null);
+    }
+
+    @VisibleForTesting
+    public WeasyPrintStatusProvider(WeasyPrintServiceConnector weasyPrintServiceConnector, @NotNull Supplier<String> apiKeySecretName) {
         this.weasyPrintServiceConnector = weasyPrintServiceConnector;
+        this.apiKeySecretName = apiKeySecretName;
     }
 
     private enum WeasyPrintServiceInfo {
@@ -44,6 +61,12 @@ public class WeasyPrintStatusProvider extends ConfigurationStatusProvider {
 
     @Override
     public @NotNull List<ConfigurationStatus> getStatuses(@NotNull Context context) {
+        ConfigurationStatus transportStatus = apiKeyTransportStatus();
+        if (transportStatus != null) {
+            // reported here rather than at the first export: /version carries no key, so the service
+            // answers happily while every export is refused
+            return List.of(transportStatus);
+        }
         try {
             WeasyPrintInfo weasyPrintInfo = weasyPrintServiceConnector.getWeasyPrintInfo();
             String expectedApiVersionStr = VersionUtils.getValueFromProperties(VERSION_FILE, "weasyprint-service.api-version");
@@ -62,6 +85,22 @@ public class WeasyPrintStatusProvider extends ConfigurationStatusProvider {
         } catch (Exception e) {
             return List.of(new ConfigurationStatus(WEASY_PRINT_SERVICE_INFO.get(WeasyPrintServiceInfo.VERSION), Status.ERROR, e.getMessage()));
         }
+    }
+
+    /**
+     * @return what to show where a key is configured for a service named over plain http, null otherwise
+     */
+    private @Nullable ConfigurationStatus apiKeyTransportStatus() {
+        String secretName = apiKeySecretName.get();
+        if (secretName == null || secretName.isBlank()) {
+            return null;
+        }
+        if (weasyPrintServiceConnector.getWeasyPrintServiceBaseUrl().toLowerCase(Locale.ROOT).startsWith("https://")) {
+            return null;
+        }
+        return new ConfigurationStatus(WEASY_PRINT_SERVICE_INFO.get(WeasyPrintServiceInfo.VERSION), Status.ERROR,
+                String.format("An API key is configured in '%s', but '%s' names a plain http address. The key is not sent over http, so every export is refused. Name the service with an https address.",
+                        PdfExporterExtensionConfiguration.WEASYPRINT_API_KEY_SECRET, PdfExporterExtensionConfiguration.WEASYPRINT_SERVICE));
     }
 
     private static @Nullable Integer parseExpectedApiVersion(@Nullable String expectedApiVersionStr) {

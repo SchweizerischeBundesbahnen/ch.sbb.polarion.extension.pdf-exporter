@@ -29,6 +29,8 @@ import java.util.concurrent.TimeUnit;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -312,5 +314,18 @@ class PdfConverterJobsServiceTest {
         when(securityService.getCurrentSubject()).thenReturn(userSubject);
         when(securityService.doAsUser(eq(userSubject), any(PrivilegedAction.class))).thenAnswer(invocation ->
                 ((PrivilegedAction<?>) invocation.getArgument(1)).run());
+    }
+
+    @Test
+    void namesTheFailureRatherThanItsWrapper() {
+        // the message of this one is stored as the reason of a failed job, and the export dialog
+        // shows it: a CompletionException would put its own class name in front of the text
+        RuntimeException thrown = new IllegalStateException("the secret holds nothing");
+
+        assertEquals("the secret holds nothing", PdfConverterJobsService.describeFailure(new java.util.concurrent.CompletionException(thrown)));
+        assertEquals("the secret holds nothing", PdfConverterJobsService.describeFailure(new java.util.concurrent.ExecutionException(thrown)));
+        assertEquals("the secret holds nothing", PdfConverterJobsService.describeFailure(thrown));
+        // a failure with no message still has to say something
+        assertEquals("java.util.ConcurrentModificationException", PdfConverterJobsService.describeFailure(new java.util.concurrent.CompletionException(new java.util.ConcurrentModificationException())));
     }
 }
