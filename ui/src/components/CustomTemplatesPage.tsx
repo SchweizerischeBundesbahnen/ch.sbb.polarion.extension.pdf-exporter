@@ -9,7 +9,7 @@ import {
   RevisionsTable,
   Tabs,
   useConfirm,
-} from '@grigoriev/react-sbb-polarion';
+} from '@sbb-polarion/react-sbb-polarion';
 import { toast } from 'sonner';
 import { getScope } from '../services/scope';
 import useNamedSettings from '../services/settings';

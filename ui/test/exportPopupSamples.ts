@@ -1,4 +1,4 @@
-import type { SelectOption } from '@grigoriev/react-sbb-polarion';
+import type { SelectOption } from '@sbb-polarion/react-sbb-polarion';
 import type { PopupData } from '../src/export/exportData';
 import type { ExportPopupDependencies } from '../src/popup/ExportPopupModal';
 import type { ConversionResult } from '../src/services/conversion';

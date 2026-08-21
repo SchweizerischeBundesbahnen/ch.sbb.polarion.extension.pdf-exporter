@@ -58,7 +58,7 @@ export default defineConfig({
       'react/jsx-dev-runtime',
       'vitest-browser-react',
       'sonner',
-      '@grigoriev/react-sbb-polarion',
+      '@sbb-polarion/react-sbb-polarion',
     ],
   },
   test: {

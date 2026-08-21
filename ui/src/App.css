@@ -103,7 +103,7 @@
 }
 
 /* The About page (and its .markdown-body README article headings) is the shared
-   @grigoriev/react-sbb-polarion component; its styles ship in the lib's bundled style.css. */
+   @sbb-polarion/react-sbb-polarion component; its styles ship in the lib's bundled style.css. */
 
 /* The editor fills the page below the tab bar: the stylesheets these pages hold are long, and the
    legacy page gave them the same full-height box. RSP's CodeEditor fills whatever it is given. */

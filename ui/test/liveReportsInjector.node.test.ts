@@ -2,7 +2,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { engineRecorder, flushPromises, globals, resetInjectorGlobals, setCurrentScript } from './injectorHarness';
 
 // live-reports.js is the recommended report-page injector: a single mainHead script tag that adds the
-// "Export to PDF" button to the native Live Report toolbar through generic's shared self-healing engine.
+// "Export to PDF" button to the native Live Report toolbar through the shared self-healing engine, which
+// react-sbb-polarion ships and this extension serves next to its built app.
 //
 // The import specifier must be written out in full at every call site - see injectorHarness.ts.
 
@@ -23,14 +24,31 @@ describe('live-reports.js injector', () => {
    */
   const loadInjector = async ({ expandTools = false } = {}): Promise<void> => {
     const engineTag = document.createElement('script');
-    engineTag.id = 'generic-dle-toolbar-engine';
+    engineTag.id = 'common-dle-toolbar-engine';
     document.head.appendChild(engineTag);
-    globals().GenericDleToolbarStarter = engine.stub;
+    globals().CommonDleToolbarStarter = engine.stub;
     setCurrentScript(SELF_URL, expandTools ? { expandTools: 'true' } : {});
 
     await import('../../src/main/resources/webapp/pdf-exporter/js/live-reports.js');
     await flushPromises(); // the engine promise resolves synchronously; let its .then(create) run
   };
+
+  // Every other case here hands the injector an engine that is already on the page, so loadEngine takes
+  // its "already there" branch and never builds a URL. This one leaves the page empty, which is the
+  // first load in a Polarion session and the only path that names where the engine is served from.
+  it('loads the engine from the app assets when nothing has loaded it yet', async () => {
+    setCurrentScript(SELF_URL);
+    await import('../../src/main/resources/webapp/pdf-exporter/js/live-reports.js');
+    await flushPromises();
+
+    const engineTag = document.head.querySelector<HTMLScriptElement>('script[src*="dle-toolbar-starter.js"]');
+    expect(engineTag, 'no engine script was appended').not.toBeNull();
+    expect(engineTag!.getAttribute('src')).toContain('/polarion/pdf-exporter-app/ui/app/assets/dle-toolbar-starter.js');
+    // Cache-busted per page load, like every other artifact these injectors reference.
+    expect(engineTag!.getAttribute('src')).toMatch(/\?timestamp=\d+$/);
+    // Shared with any extension still on generic's older engine, so one page loads one engine.
+    expect(engineTag!.id).toBe('common-dle-toolbar-engine');
+  });
 
   it('injects no stylesheet at all', async () => {
     await loadInjector();
@@ -66,7 +84,7 @@ describe('live-reports.js injector', () => {
 
   it('builds the button from its own script URL and opens the popup in Live Report context', async () => {
     await loadInjector();
-    const html = engine.createdConfigs[0].alternateHtml;
+    const html = engine.createdConfigs[0].html;
     expect(html).toContain('/polarion/pdf-exporter-app/ui/app/assets/export-popup.js');
     expect(html).toContain('module.openExportPopup(');
     expect(html).toContain("documentType: 'LIVE_REPORT'");
@@ -87,10 +105,10 @@ describe('live-reports.js injector', () => {
 
   it('waits for an in-flight engine load instead of dropping the button (multi-extension)', async () => {
     // Another extension already added the engine <script> (same id) but it hasn't finished loading yet -
-    // GenericDleToolbarStarter is not defined. Our onload must NOT run synchronously (that dropped the
+    // CommonDleToolbarStarter is not defined. Our onload must NOT run synchronously (that dropped the
     // button before this fix); it must wait for the load event.
     const engineTag = document.createElement('script');
-    engineTag.id = 'generic-dle-toolbar-engine';
+    engineTag.id = 'common-dle-toolbar-engine';
     document.head.appendChild(engineTag);
     setCurrentScript(SELF_URL);
 
@@ -100,7 +118,7 @@ describe('live-reports.js injector', () => {
     expect(engine.createdConfigs).toHaveLength(0); // engine not loaded yet -> nothing created
 
     // The engine finishes loading and defines its global, then fires load.
-    globals().GenericDleToolbarStarter = engine.stub;
+    globals().CommonDleToolbarStarter = engine.stub;
     engineTag.dispatchEvent(new window.Event('load'));
     await flushPromises(); // the engine promise resolves on load -> its .then(create) runs
 

@@ -1,22 +1,25 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { flushPromises, globals, resetInjectorGlobals, setCurrentScript } from './injectorHarness';
+import { flushPromises, resetInjectorGlobals, setCurrentScript } from './injectorHarness';
 
-// dle-toolbar.js is the one-tag document-editor injector: it exists so an administrator configures a
-// single dleEditorHead script instead of a script plus an inline PdfExporterStarter.injectToolbar call.
-// All it does is get starter.js loaded and then make that call.
+// dle-toolbar.js is the one-tag document-editor injector, and since react-sbb-polarion 2.0.0 that is all
+// it is: it appends the shared engine with this extension's button on data-* attributes, and the engine
+// installs itself from them. Everything it used to carry - the button markup, the project-id parsing, the
+// call queue, the ordering - moved into the engine and is covered by the library's own suite.
+//
+// So what belongs here is the contract between the two: the URL the engine is loaded from, and the
+// attributes it is handed.
 //
 // The import specifier must be written out in full at every call site - see injectorHarness.ts.
 
 const SELF_URL = 'http://localhost/polarion/pdf-exporter/js/dle-toolbar.js';
+const APP_BASE = '/polarion/pdf-exporter-app/ui/app/';
 
 describe('dle-toolbar.js injector', () => {
   let consoleError: ReturnType<typeof vi.spyOn>;
-  let injectToolbarCalls: unknown[];
 
   beforeEach(() => {
     vi.resetModules();
     resetInjectorGlobals();
-    injectToolbarCalls = [];
     consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
   });
 
@@ -24,11 +27,8 @@ describe('dle-toolbar.js injector', () => {
     consoleError.mockRestore();
   });
 
-  const starterStub = () => ({ injectToolbar: (params?: unknown) => injectToolbarCalls.push(params) });
-
-  /** The starter.js <script> this injector appends when the global is not there yet. */
-  const starterScript = (): HTMLScriptElement | null =>
-    document.head.querySelector<HTMLScriptElement>('script[src*="starter.js"]');
+  const engineScript = (): HTMLScriptElement | null =>
+    document.head.querySelector<HTMLScriptElement>('script[src*="dle-toolbar-starter.js"]');
 
   const load = async (selfUrl = SELF_URL): Promise<void> => {
     setCurrentScript(selfUrl);
@@ -36,54 +36,42 @@ describe('dle-toolbar.js injector', () => {
     await flushPromises();
   };
 
-  it('reuses an already loaded starter instead of loading it twice', async () => {
-    // starter.js may also be configured via mainHead, in which case the global is already there.
-    globals().PdfExporterStarter = starterStub();
-
+  it('loads the engine from the app assets, where the Vite copy step puts it', async () => {
     await load();
 
-    expect(injectToolbarCalls).toEqual([{ alternate: true }]);
-    expect(starterScript()).toBeNull();
+    const script = engineScript();
+    expect(script).not.toBeNull();
+    expect(script!.src).toContain(`${APP_BASE}assets/dle-toolbar-starter.js`);
+    // Cache-busted per page load, so an updated extension is picked up on the next page open.
+    expect(script!.src).toMatch(/\?timestamp=\d+$/);
   });
 
-  it('loads starter.js from its own URL when the starter is absent', async () => {
-    // A non-default web context proves the path is derived from document.currentScript.
-    await load('http://localhost/polarion/my-ctx/js/dle-toolbar.js');
-
-    expect(starterScript()?.src).toBe('http://localhost/polarion/my-ctx/js/starter.js');
-    expect(injectToolbarCalls).toHaveLength(0); // nothing to call yet
-  });
-
-  it('injects the alternate toolbar once the loaded starter.js defines the global', async () => {
+  it('describes the button on the script tag, which is what the engine installs from', async () => {
     await load();
 
-    globals().PdfExporterStarter = starterStub();
-    starterScript()!.dispatchEvent(new window.Event('load'));
-    await flushPromises();
-
-    // alternate: true - this button belongs in the toolbar row, not above the editor.
-    expect(injectToolbarCalls).toEqual([{ alternate: true }]);
+    const { dataset } = engineScript()!;
+    expect(dataset.marker).toBe('pdf-exporter');
+    expect(dataset.title).toBe('Export to PDF');
+    expect(dataset.icon).toContain('/polarion/ria/images/dle/operations/actionPdfExport16.svg');
+    expect(dataset.permissionUrl).toBe('/polarion/pdf-exporter/rest/internal/permissions/export');
   });
 
-  it('logs instead of throwing when starter.js loads without defining the global', async () => {
+  it('opens the export dialog for a Live Doc on click', async () => {
     await load();
 
-    starterScript()!.dispatchEvent(new window.Event('load'));
-    await flushPromises();
-
-    expect(injectToolbarCalls).toHaveLength(0);
-    expect(consoleError).toHaveBeenCalledWith(
-      expect.stringContaining('starter.js loaded but PdfExporterStarter is not defined'),
-    );
+    const onclick = engineScript()!.dataset.onclick!;
+    expect(onclick).toContain(`${APP_BASE}assets/export-popup.js`);
+    expect(onclick).toContain("documentType: 'LIVE_DOC'");
+    // The dialog mounts into a shadow root of its own, so a failure has to reach the console rather
+    // than an unhandled rejection.
+    expect(onclick).toContain('.catch(console.error)');
   });
 
-  it('logs when starter.js fails to load', async () => {
+  it('logs instead of throwing when the engine cannot be loaded', async () => {
     await load();
 
-    starterScript()!.dispatchEvent(new window.Event('error'));
-    await flushPromises();
+    engineScript()!.onerror!(new Event('error'));
 
-    expect(injectToolbarCalls).toHaveLength(0);
-    expect(consoleError).toHaveBeenCalledWith(expect.stringContaining('failed to load starter.js'));
+    expect(consoleError).toHaveBeenCalledWith(expect.stringContaining('failed to load the DLE toolbar engine'));
   });
 });
