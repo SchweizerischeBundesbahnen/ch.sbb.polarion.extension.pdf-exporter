@@ -84,8 +84,6 @@
         <markdown2html-maven-plugin.disclaimer.inputFile>${project.basedir}/DISCLAIMER.md</markdown2html-maven-plugin.disclaimer.inputFile>
         <markdown2html-maven-plugin.disclaimer.outputFileName>disclaimer.html</markdown2html-maven-plugin.disclaimer.outputFileName>
         <markdown2html-maven-plugin.disclaimer.outputFile>${markdown2html-maven-plugin.extensionContextAdminHtml}/${markdown2html-maven-plugin.disclaimer.outputFileName}</markdown2html-maven-plugin.disclaimer.outputFile>
-
-        <velocity-engine-core.artifactId>org.apache.velocity.engine-core_2.3.0</velocity-engine-core.artifactId>
     </properties>
 
 
@@ -159,7 +157,7 @@
 
         <dependency>
             <groupId>com.polarion.thirdparty</groupId>
-            <artifactId>${velocity-engine-core.artifactId}</artifactId>
+            <artifactId>org.apache.velocity.engine-core_2.3.0</artifactId>
             <version>${polarion.version}</version>
             <scope>provided</scope>
         </dependency>
