@@ -8,6 +8,7 @@ import com.polarion.core.util.StringUtils;
 import com.polarion.core.util.logging.Logger;
 import com.polarion.platform.security.ISecurityService;
 import lombok.Builder;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.VisibleForTesting;
 import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -26,6 +27,7 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -75,7 +77,9 @@ public class PdfConverterJobsService {
         asyncConversionJob
                 .orTimeout(timeoutInMinutes, TimeUnit.MINUTES)
                 .exceptionally(e -> {
-                    String failedReason = StringUtils.getEmptyIfNull(e.getMessage());
+                    // the future hands over a CompletionException whose message is "<class>: <text>",
+                    // and this text is what the export dialog shows, so the cause speaks for itself
+                    String failedReason = describeFailure(e);
                     if (e instanceof TimeoutException) {
                         failedReason = String.format("Timeout after %d min", timeoutInMinutes);
                     }
@@ -199,5 +203,29 @@ public class PdfConverterJobsService {
             return requestAttributes.getAttribute(LogoutFilter.ASYNC_SKIP_LOGOUT, RequestAttributes.SCOPE_REQUEST) == Boolean.TRUE;
         }
         return false;
+    }
+
+    /**
+     * @return what the export dialog shows: the message of the failure itself, or its class where it
+     *         carries no message, since an empty reason tells the reader nothing
+     */
+    @VisibleForTesting
+    static @NotNull String describeFailure(@NotNull Throwable thrown) {
+        Throwable reason = rootReason(thrown);
+        String message = StringUtils.getEmptyIfNull(reason.getMessage());
+        return message.isBlank() ? reason.getClass().getName() : message;
+    }
+
+    /**
+     * @return the failure worth showing: a future wraps what was thrown, and the wrapper says only
+     *         which class it was
+     */
+    @VisibleForTesting
+    static @NotNull Throwable rootReason(@NotNull Throwable thrown) {
+        Throwable reason = thrown;
+        while ((reason instanceof CompletionException || reason instanceof ExecutionException) && reason.getCause() != null) {
+            reason = reason.getCause();
+        }
+        return reason;
     }
 }
