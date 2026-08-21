@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { SearchableSelect } from '@grigoriev/react-sbb-polarion';
+import { SearchableSelect } from '@sbb-polarion/react-sbb-polarion';
 import { getCookie, setCookie } from '../services/cookies';
 import { MAX_PAGES, documentPath, fetchDocuments } from '../services/documents';
 import type { ProjectDocument } from '../services/documents';

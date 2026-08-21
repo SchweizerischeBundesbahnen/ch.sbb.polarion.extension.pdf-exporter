@@ -1,5 +1,5 @@
 import { type ReactNode, useEffect, useState } from 'react';
-import { PageLayout } from '@grigoriev/react-sbb-polarion';
+import { PageLayout } from '@sbb-polarion/react-sbb-polarion';
 import useRemote from '../services/useRemote';
 
 /** Where this extension's sources live; used when the build-generated article is missing. */

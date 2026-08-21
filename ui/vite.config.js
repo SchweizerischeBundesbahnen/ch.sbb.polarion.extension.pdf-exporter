@@ -1,12 +1,35 @@
+import { copyFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
+
+// react-sbb-polarion emits the DLE toolbar engine as its own classic script: it runs in Polarion's
+// document-editor iframe, driving the shell window, so it is not part of this app's bundle. The
+// extension serves it, copied into the built app's assets/ - the one path this app's web.xml serves
+// without authentication. There is no `vite dev` counterpart, and none is needed: the scripts that
+// request the engine are injected into Polarion's own pages through scriptInjection and ask for an
+// absolute /polarion/... URL, which the dev server is never in the path of. See "Shell scripts" in the
+// library's README.
+const RSP_SHELL_SCRIPTS = ['dle-toolbar-starter.js'];
+
+function copyRspShellScripts() {
+  return {
+    name: 'copy-rsp-shell-scripts',
+    writeBundle(options) {
+      const require = createRequire(import.meta.url);
+      for (const name of RSP_SHELL_SCRIPTS) {
+        copyFileSync(require.resolve(`@sbb-polarion/react-sbb-polarion/${name}`), `${options.dir}/assets/${name}`);
+      }
+    },
+  };
+}
 
 export default defineConfig(({ command, mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
   const polarionUrl = env.VITE_BASE_URL || 'http://localhost';
 
-  // Dedupe so the app and @grigoriev/react-sbb-polarion resolve to this app's single instance of
+  // Dedupe so the app and @sbb-polarion/react-sbb-polarion resolve to this app's single instance of
   // each: React (two copies mean "invalid hook call") and sonner (the RSP `Toaster` host and the
   // toasts RSP components fire must share one instance, or the toasts never reach the host).
   const resolve = { dedupe: ['react', 'react-dom', 'sonner'] };
@@ -17,13 +40,6 @@ export default defineConfig(({ command, mode }) => {
       resolve,
       server: {
         proxy: {
-          // Generic UI toolkit (SearchableDropdown JS + its CSS) served by GenericUiServlet. Served
-          // unauthenticated in Polarion (see the pdf-exporter-app web.xml), so the dev proxy can fetch
-          // it without a session.
-          '/polarion/pdf-exporter-app/ui/generic': {
-            target: polarionUrl,
-            changeOrigin: true,
-          },
           // The extension's own webapp context: its REST API, which the About page reads.
           '/polarion/pdf-exporter/rest': {
             target: polarionUrl,
@@ -53,7 +69,7 @@ export default defineConfig(({ command, mode }) => {
   }
 
   return {
-    plugins: [react()],
+    plugins: [react(), copyRspShellScripts()],
     resolve,
     // Never let a developer's personal access token reach a shipped bundle. VITE_BEARER_TOKEN is a
     // `vite dev` convenience (it switches useRemote to the token-authenticated /api endpoints); Vite

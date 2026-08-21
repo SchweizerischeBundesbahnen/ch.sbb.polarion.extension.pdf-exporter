@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { SearchableSelect } from '@grigoriev/react-sbb-polarion';
-import type { SelectOption } from '@grigoriev/react-sbb-polarion';
+import { SearchableSelect } from '@sbb-polarion/react-sbb-polarion';
+import type { SelectOption } from '@sbb-polarion/react-sbb-polarion';
 import validateIcon from '../assets/validate.svg';
 import type { PanelData } from '../export/exportData';
 import { loadPanelData, loadStylePackage } from '../export/exportData';

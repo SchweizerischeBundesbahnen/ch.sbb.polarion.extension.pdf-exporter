@@ -1,5 +1,5 @@
 import { useCallback, useMemo } from 'react';
-import type { Revision, SettingName } from '@grigoriev/react-sbb-polarion';
+import type { Revision, SettingName } from '@sbb-polarion/react-sbb-polarion';
 import useRemote from './useRemote';
 
 /** Extracts a readable message from a failed response, the way the legacy ExtensionContext did. */

@@ -1,5 +1,6 @@
 package ch.sbb.polarion.extension.pdf_exporter.util;
 
+import ch.sbb.polarion.extension.pdf_exporter.properties.PdfExporterExtensionConfiguration;
 import com.polarion.alm.shared.api.transaction.TransactionalExecutor;
 import com.polarion.alm.tracker.internal.url.GenericUrlResolver;
 import com.polarion.alm.tracker.internal.url.IAttachmentUrlResolver;
@@ -41,14 +42,51 @@ public class PdfExporterFileResourceProvider implements FileResourceProvider {
     private static final Logger logger = Logger.getLogger(PdfExporterFileResourceProvider.class);
 
     private final List<IUrlResolver> resolvers;
+    private final ResourceUrlPolicy policy;
 
     public PdfExporterFileResourceProvider() {
-        this.resolvers = Arrays.asList(getPolarionUrlResolverWithoutGenericUrlChildResolver(), new CustomResourceUrlResolver());
+        this(ResourceUrlPolicy.getInstance());
+    }
+
+    private PdfExporterFileResourceProvider(@NotNull ResourceUrlPolicy policy) {
+        this.policy = policy;
+        this.resolvers = Arrays.asList(getPolarionUrlResolverWithoutGenericUrlChildResolver(), new CustomResourceUrlResolver(policy));
     }
 
     @VisibleForTesting
     public PdfExporterFileResourceProvider(List<IUrlResolver> resolvers) {
+        this(resolvers, new ResourceUrlPolicy(ResourceUrlPolicy.Mode.ALLOW_ALL, null, null,
+                PdfExporterExtensionConfiguration.EXTERNAL_RESOURCES_MAX_SIZE_MB_DEFAULT_VALUE));
+    }
+
+    @VisibleForTesting
+    public PdfExporterFileResourceProvider(List<IUrlResolver> resolvers, @NotNull ResourceUrlPolicy policy) {
         this.resolvers = resolvers;
+        this.policy = policy;
+    }
+
+    /**
+     * Only an absolute http(s) url is checked. A relative url, a data url and an SVG fragment like
+     * {@code url(#gradient)} are never requested over the network, so they stay untouched.
+     */
+    @Override
+    public boolean isForbidden(@NotNull String resource) {
+        // the escapes go first: '\\68 ttp://host' names an address as much as 'http://host' does
+        String candidate = MediaUtils.decodeCssEscapes(resource).trim();
+        if (!MediaUtils.isAbsoluteHttpUrl(candidate)) {
+            return false;
+        }
+        try {
+            if (MediaUtils.isNetworkPathReference(candidate)) {
+                // '//host/path' has no scheme of its own and is loaded under both, so both decide here
+                return policy.isRefusedByOrigin(URI.create(MediaUtils.normalizeUrl("https:" + candidate)).toURL())
+                        && policy.isRefusedByOrigin(URI.create(MediaUtils.normalizeUrl("http:" + candidate)).toURL());
+            }
+            return policy.isRefusedByOrigin(URI.create(MediaUtils.normalizeUrl(candidate)).toURL());
+        } catch (Exception e) {
+            logger.warn("Cannot parse the resource url '" + resource + "', it is treated as forbidden");
+            return true;
+        }
     }
 
     @SneakyThrows
@@ -69,7 +107,9 @@ public class PdfExporterFileResourceProvider implements FileResourceProvider {
             if (MIME_TYPE_SVG.equals(mimeType)) {
                 // Additional check to verify that the content is indeed an SVG
                 String refinedMimeType = MediaUtils.getMimeTypeUsingTikaByContent(resource, resourceBytes);
-                if (refinedMimeType != null) {
+                // the detector answers with the stream of bytes where it recognized nothing, and that
+                // names no type: an svg it could not read stays the svg its name and its source say
+                if (refinedMimeType != null && !MediaUtils.OCTET_STREAM.equals(refinedMimeType)) {
                     mimeType = refinedMimeType;
                 }
             }

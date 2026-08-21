@@ -9,7 +9,7 @@
     </parent>
 
     <artifactId>ch.sbb.polarion.extension.pdf-exporter</artifactId>
-    <version>13.5.1-SNAPSHOT</version>
+    <version>13.6.1-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>Polarion ALM extension to convert Documents to PDF files</name>
@@ -46,7 +46,7 @@
     <properties>
         <pdfbox.version>3.0.8</pdfbox.version>
         <okapi.xliff.version>1.48.0</okapi.xliff.version>
-        <flying-saucer.version>10.4.0</flying-saucer.version>
+        <flying-saucer.version>10.5.0</flying-saucer.version>
 
         <slf4j.version>2.0.18</slf4j.version>
         <testcontainers.version>2.0.5</testcontainers.version>
@@ -65,14 +65,17 @@
         <maven-jar-plugin.Configuration-Properties-Prefix>ch.sbb.polarion.extension.pdf-exporter.</maven-jar-plugin.Configuration-Properties-Prefix>
         <web.app.name>${maven-jar-plugin.Extension-Context}</web.app.name>
 
+
         <!-- Extension-specific Require-Bundle (in addition to common ones from parent POM):
             com.polarion.alm.wiki
             org.jsoup
             net.bytebuddy.byte-buddy
             org.apache.tika.patched;resolution:=optional
             org.apache.tika;resolution:=optional
+            org.apache.httpcomponents.httpclient, org.apache.httpcomponents.httpcore (used by
+              CustomResourceUrlResolver to pin a request to the addresses ResourceUrlPolicy vetted)
         -->
-        <maven-jar-plugin.Require-Bundle.extension>com.polarion.alm.wiki,org.jsoup,net.bytebuddy.byte-buddy,org.apache.tika.patched;resolution:=optional,org.apache.tika;resolution:=optional</maven-jar-plugin.Require-Bundle.extension>
+        <maven-jar-plugin.Require-Bundle.extension>com.polarion.alm.wiki,org.jsoup,net.bytebuddy.byte-buddy,org.apache.tika.patched;resolution:=optional,org.apache.tika;resolution:=optional,org.apache.httpcomponents.httpclient,org.apache.httpcomponents.httpcore</maven-jar-plugin.Require-Bundle.extension>
         <maven-jar-plugin.Require-Bundle>${maven-jar-plugin.Require-Bundle.common},${maven-jar-plugin.Require-Bundle.extension}</maven-jar-plugin.Require-Bundle>
 
         <markdown2html-maven-plugin.user-guide.inputFile>${project.basedir}/USER_GUIDE.md</markdown2html-maven-plugin.user-guide.inputFile>
@@ -139,6 +142,20 @@
     </dependencyManagement>
 
     <dependencies>
+        <!-- Polarion's own httpcomponents bundles, resolved at runtime via Require-Bundle above
+             and never packaged. Used by CustomResourceUrlResolver. -->
+        <dependency>
+            <groupId>com.polarion.thirdparty</groupId>
+            <artifactId>org.apache.httpcomponents.httpclient_4.5.14</artifactId>
+            <version>${polarion.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.polarion.thirdparty</groupId>
+            <artifactId>org.apache.httpcomponents.httpcore_4.4.16</artifactId>
+            <version>${polarion.version}</version>
+            <scope>provided</scope>
+        </dependency>
         <dependency>
             <groupId>ch.sbb.polarion.extensions</groupId>
             <artifactId>ch.sbb.polarion.extension.generic.app</artifactId>

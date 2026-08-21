@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { SearchableSelect } from '@grigoriev/react-sbb-polarion';
+import { SearchableSelect } from '@sbb-polarion/react-sbb-polarion';
 import { toast } from 'sonner';
 import CustomTemplatesPage from '../components/CustomTemplatesPage';
 import { getScope } from '../services/scope';
