@@ -74,13 +74,19 @@ its backups and the About page then carry a name, not a credential.
 
 An unset or empty property sends no key, which is what a service started without `API_KEY` expects.
 
-Three failures are reported apart, since each one has a different fix:
+**The key is only sent over https.** Where a key is configured and `weasyprint.service` names a plain
+`http` address, the export is refused instead: a key is a reusable credential, and on plain http
+everyone on the path keeps a copy of it. Give the service an `https` address, or clear the property
+where the service needs no key. Without a key nothing changes, `http` keeps working as before.
 
-| What the log says | What to do |
+Four failures are reported apart, since each one has a different fix:
+
+| What the export says | What to do |
 | --- | --- |
 | requires an API key, none is configured | name the secret in the property above |
 | could not read the API key from the Polarion secret | check that a secret of that name exists and is readable |
 | rejected the configured API key | check the secret holds the key the service was started with |
+| not sent over plain http | name the service with an https address |
 
 ### PDF exporter extension to appear on a Document's properties pane
 

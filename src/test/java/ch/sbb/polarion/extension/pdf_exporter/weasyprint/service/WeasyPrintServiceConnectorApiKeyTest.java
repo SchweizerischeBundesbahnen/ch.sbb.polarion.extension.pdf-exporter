@@ -1,7 +1,9 @@
 package ch.sbb.polarion.extension.pdf_exporter.weasyprint.service;
 
 import ch.sbb.polarion.extension.pdf_exporter.properties.PdfExporterExtensionConfiguration;
+import com.polarion.core.util.exceptions.UserFriendlyRuntimeException;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentMatchers;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -25,7 +27,11 @@ class WeasyPrintServiceConnectorApiKeyTest {
     private static final String API_KEY = "s3cr3t";
 
     private static WeasyPrintServiceConnector connector() {
-        return new WeasyPrintServiceConnector("http://localhost:9080", new ApiKeyProvider());
+        return new WeasyPrintServiceConnector("https://weasyprint.intranet:9080", new ApiKeyProvider());
+    }
+
+    private static WeasyPrintServiceConnector plainHttpConnector() {
+        return new WeasyPrintServiceConnector("http://weasyprint.intranet:9080", new ApiKeyProvider());
     }
 
     @Test
@@ -65,7 +71,7 @@ class WeasyPrintServiceConnectorApiKeyTest {
         WeasyPrintServiceConnector connector = connector();
 
         assertThatThrownBy(() -> connector.readConversionResponse(response, true))
-                .isInstanceOf(IllegalStateException.class)
+                .isInstanceOf(UserFriendlyRuntimeException.class)
                 .hasMessageContaining("rejected the configured API key");
     }
 
@@ -76,7 +82,7 @@ class WeasyPrintServiceConnectorApiKeyTest {
         WeasyPrintServiceConnector connector = connector();
 
         assertThatThrownBy(() -> connector.readConversionResponse(response, false))
-                .isInstanceOf(IllegalStateException.class)
+                .isInstanceOf(UserFriendlyRuntimeException.class)
                 .hasMessageContaining("requires an API key, none is configured");
     }
 
@@ -91,6 +97,32 @@ class WeasyPrintServiceConnectorApiKeyTest {
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("Status: 500")
                 .hasMessageContaining("boom");
+    }
+
+    @Test
+    void shouldRefuseToSendTheKeyOverPlainHttp() {
+        // a key is a reusable credential: on plain http anyone on the path keeps it
+        WebTarget webTarget = mock(WebTarget.class);
+        Invocation.Builder builder = mock(Invocation.Builder.class);
+        when(webTarget.request("application/pdf")).thenReturn(builder);
+        WeasyPrintServiceConnector connector = plainHttpConnector();
+
+        assertThatThrownBy(() -> connector.requestWithApiKey(webTarget, API_KEY))
+                .isInstanceOf(UserFriendlyRuntimeException.class)
+                .hasMessageContaining("not sent over plain http")
+                .hasMessageContaining(PdfExporterExtensionConfiguration.WEASYPRINT_API_KEY_SECRET)
+                .hasMessageNotContaining(API_KEY);
+        verify(builder, never()).header(ArgumentMatchers.anyString(), ArgumentMatchers.any());
+    }
+
+    @Test
+    void shouldKeepWorkingOverPlainHttpWhenNoKeyIsConfigured() {
+        // the transport rule guards a credential; where there is none, nothing changes
+        WebTarget webTarget = mock(WebTarget.class);
+        Invocation.Builder builder = mock(Invocation.Builder.class);
+        when(webTarget.request("application/pdf")).thenReturn(builder);
+
+        assertThat(plainHttpConnector().requestWithApiKey(webTarget, null)).isSameAs(builder);
     }
 
     @Test

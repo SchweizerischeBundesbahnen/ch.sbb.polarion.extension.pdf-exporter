@@ -19,6 +19,8 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.endsWith;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith({MockitoExtension.class,  CurrentContextExtension.class})
@@ -168,5 +170,33 @@ class PdfExporterExtensionConfigurationTest {
         assertTrue(properties.contains(PdfExporterExtensionConfiguration.EXTERNAL_RESOURCES_POLICY));
         assertTrue(properties.contains(PdfExporterExtensionConfiguration.EXTERNAL_RESOURCES_ALLOWED_ORIGINS));
         assertTrue(properties.contains(PdfExporterExtensionConfiguration.EXTERNAL_RESOURCES_MAX_SIZE_MB));
+        assertTrue(properties.contains(PdfExporterExtensionConfiguration.WEASYPRINT_API_KEY_SECRET));
+    }
+
+    @Test
+    void getWeasyPrintApiKeySecretReturnsConfiguredValue() {
+        when(systemValueReader.readString(anyString(), anyString())).thenReturn("weasyprint-api-key");
+        assertEquals("weasyprint-api-key", configuration.getWeasyPrintApiKeySecret());
+    }
+
+    @Test
+    void getWeasyPrintApiKeySecretReadsTheDocumentedPropertyName() {
+        // the key of the property is part of the contract with polarion.properties, a typo here is
+        // a silently unread setting
+        when(systemValueReader.readString(anyString(), anyString())).thenAnswer(invocation -> invocation.getArgument(1));
+        configuration.getWeasyPrintApiKeySecret();
+
+        verify(systemValueReader).readString(endsWith("weasyprint.apiKeySecret"), eq(PdfExporterExtensionConfiguration.WEASYPRINT_API_KEY_SECRET_DEFAULT_VALUE));
+    }
+
+    @Test
+    void getWeasyPrintApiKeySecretDescriptionReturnsConstant() {
+        assertEquals(PdfExporterExtensionConfiguration.WEASYPRINT_API_KEY_SECRET_DESCRIPTION, configuration.getWeasyPrintApiKeySecretDescription());
+    }
+
+    @Test
+    void getWeasyPrintApiKeySecretDefaultValueNamesNoSecret() {
+        // the empty default is what ApiKeyProvider reads as "this service needs no key"
+        assertEquals("", configuration.getWeasyPrintApiKeySecretDefaultValue());
     }
 }
