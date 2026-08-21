@@ -87,7 +87,7 @@ Five failures are reported apart, since each one has a different fix:
 | What the export says | What to do |
 | --- | --- |
 | requires an API key, none is configured | name the secret in the property above |
-| could not read the API key from the Polarion secret | check that the secret is readable for the Polarion process |
+| could not read the WeasyPrint API key from the Polarion secret | check that the secret is readable for the Polarion process |
 | is empty or does not exist | store a non-empty key under that secret name |
 | rejected the configured API key | check the secret holds the key the service was started with |
 | not sent over plain http | name the service with an https address |
