@@ -85,11 +85,6 @@
         <markdown2html-maven-plugin.disclaimer.outputFileName>disclaimer.html</markdown2html-maven-plugin.disclaimer.outputFileName>
         <markdown2html-maven-plugin.disclaimer.outputFile>${markdown2html-maven-plugin.extensionContextAdminHtml}/${markdown2html-maven-plugin.disclaimer.outputFileName}</markdown2html-maven-plugin.disclaimer.outputFile>
 
-        <!-- Not for a plugin declared here: this project declares no frontend-maven-plugin of its own
-             any more. The parent's vite-ui profile reads this property, so it pins the version the ui/
-             build runs with, one minor ahead of the parent's own default. -->
-        <frontend-maven-plugin.version>2.0.2</frontend-maven-plugin.version>
-
         <velocity-engine-core.artifactId>org.apache.velocity.engine-core_2.3.0</velocity-engine-core.artifactId>
     </properties>
 
