@@ -16,11 +16,12 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Integration test for the document-language feature (#983): the language injected into the {@code <html lang>}
  * attribute drives WeasyPrint's hyphenation.
  * <p>
- * Two fixtures containing long words and narrow columns/table cells are exported through the real WeasyPrint service -
- * {@code hyphenationDe.html} declares {@code lang='de'}, {@code hyphenationEn.html} declares {@code lang='en'}. With
- * {@code hyphens: auto}, WeasyPrint hyphenates at the syllable boundaries of the declared language, so the rendered
- * pages must match language-specific reference images pixel-for-pixel ({@link MediaUtils#diffImages}). This proves the
- * injected {@code lang} value actually reaches WeasyPrint and is honored per language.
+ * Each fixture contains long words in a narrow, justified column and declares a document language
+ * ({@code hyphenationDe} / {@code hyphenationEn} / {@code hyphenationDeLongWords} = {@code de}, {@code hyphenationIt} =
+ * {@code it}). With {@code hyphens: auto}, WeasyPrint hyphenates at the syllable
+ * boundaries of the declared language, so the rendered pages must match language-specific reference images
+ * pixel-for-pixel ({@link MediaUtils#diffImages}). This proves the injected {@code lang} value actually reaches
+ * WeasyPrint and is honored per language.
  */
 class HyphenationTest extends BaseWeasyPrintTest {
 
@@ -32,6 +33,16 @@ class HyphenationTest extends BaseWeasyPrintTest {
     @Test
     void englishHyphenationMatchesReference() {
         assertMatchesReference("hyphenationEn");
+    }
+
+    @Test
+    void germanLongCompoundHyphenationMatchesReference() {
+        assertMatchesReference("hyphenationDeLongWords");
+    }
+
+    @Test
+    void italianHyphenationMatchesReference() {
+        assertMatchesReference("hyphenationIt");
     }
 
     @SneakyThrows
