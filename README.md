@@ -82,12 +82,13 @@ the rule holds for `localhost` too, since a certificate is what proves the trans
 address. The About page reports this combination before anyone exports, because the version endpoint
 carries no key and would otherwise look healthy.
 
-Four failures are reported apart, since each one has a different fix:
+Five failures are reported apart, since each one has a different fix:
 
 | What the export says | What to do |
 | --- | --- |
 | requires an API key, none is configured | name the secret in the property above |
-| could not read the API key from the Polarion secret | check that a secret of that name exists and is readable |
+| could not read the API key from the Polarion secret | check that the secret is readable for the Polarion process |
+| is empty or does not exist | store a non-empty key under that secret name |
 | rejected the configured API key | check the secret holds the key the service was started with |
 | not sent over plain http | name the service with an https address |
 

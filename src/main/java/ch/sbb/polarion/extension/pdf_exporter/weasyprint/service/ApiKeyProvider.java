@@ -20,11 +20,12 @@ public class ApiKeyProvider {
 
     /**
      * Reads the API key configured for the WeasyPrint service.
+     * <p>
+     * Where a name is configured but no value can be read for it, or the value is empty, this fails
+     * with a user friendly exception, so the reason survives the catch-all of the conversion paths
+     * and reaches the export dialog, where the person who can fix the configuration reads it.
      *
      * @return the key, or {@code null} when no secret name is configured
-     * @throws UserFriendlyRuntimeException if a name is configured but no value can be read for it;
-     *         user friendly so the reason reaches the export dialog, where the person who can fix the
-     *         configuration reads it
      */
     public @Nullable String getApiKey() {
         String configured = PdfExporterExtensionConfiguration.getInstance().getWeasyPrintApiKeySecret();
