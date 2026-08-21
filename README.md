@@ -77,7 +77,10 @@ An unset or empty property sends no key, which is what a service started without
 **The key is only sent over https.** Where a key is configured and `weasyprint.service` names a plain
 `http` address, the export is refused instead: a key is a reusable credential, and on plain http
 everyone on the path keeps a copy of it. Give the service an `https` address, or clear the property
-where the service needs no key. Without a key nothing changes, `http` keeps working as before.
+where the service needs no key. Without a key nothing changes, `http` keeps working as before, and
+the rule holds for `localhost` too, since a certificate is what proves the transport rather than the
+address. The About page reports this combination before anyone exports, because the version endpoint
+carries no key and would otherwise look healthy.
 
 Four failures are reported apart, since each one has a different fix:
 
