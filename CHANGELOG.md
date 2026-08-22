@@ -1,5 +1,12 @@
 # Changelog
 
+## [13.7.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v13.6.1...v13.7.0) (2026-08-22)
+
+
+### Features
+
+* send an api key to the weasyprint service ([#1009](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/1009)) ([ecded45](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/ecded45ceafa416200970956f3b47c6b4322edcf))
+
 ## [13.6.1](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v13.6.0...v13.6.1) (2026-08-21)
 
 
