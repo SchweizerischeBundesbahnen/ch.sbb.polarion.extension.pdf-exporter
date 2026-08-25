@@ -9,8 +9,7 @@ These are kept out of the defaults on purpose: the right behaviour depends on th
 (its columns, content and language), and changing a global default would affect every export and could
 regress other documents.
 
-> For PDF/A and PDF/UA compliance issues, see the [Known issues](README.md#known-issues) section of the
-> README.
+> For PDF/A and PDF/UA compliance limitations, see the [Limitations](README.md#limitations) section of the README.
 
 ## Table column sizing in wide tables
 
