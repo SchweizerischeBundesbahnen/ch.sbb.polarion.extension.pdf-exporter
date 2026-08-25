@@ -453,7 +453,10 @@ Each concurrent conversion requires additional memory proportional to the values
 
 After a conversion completes, container memory (RSS) may not decrease — this is normal Python/glibc behavior, not a leak. To reclaim memory after traffic spikes, enable `RECLAIM_MEMORY_AFTER_CONVERSION=true` in weasyprint-service (runs `gc.collect` + `malloc_trim` after each conversion). See [weasyprint-service README](https://github.com/SchweizerischeBundesbahnen/weasyprint-service#post-conversion-memory-reclamation) for details.
 
-## Known issues
+## Limitations
+
+See also [Limitations and workarounds](LIMITATIONS.md) for content-specific, by-design behaviour and the
+settings and workarounds you can apply to adjust it.
 
 ### PDF/A-*A variants with icon fonts (FontAwesome)
 
@@ -513,7 +516,7 @@ WeasyPrint 67.0 introduced breaking changes in PDF variant support:
 - `pdf/a-3a` - Accessible PDF/A-3 (tagged, Unicode, file attachments)
 - `pdf/a-4e` - PDF/A-4 for engineering documents (allows 3D, RichMedia)
 - `pdf/a-4f` - PDF/A-4 with embedded files (requires attachments in document)
-- `pdf/ua-2` - Accessible PDF for assistive technologies (ISO 14289-2:2024) - **partial support, see Known issues**
+- `pdf/ua-2` - Accessible PDF for assistive technologies (ISO 14289-2:2024) - **partial support, see Limitations**
 
 **Post-processing applied automatically:**
 
