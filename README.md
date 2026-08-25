@@ -455,6 +455,9 @@ After a conversion completes, container memory (RSS) may not decrease — this i
 
 ## Known issues
 
+See also [Limitations and workarounds](LIMITATIONS.md) for content-specific, by-design behaviour and the
+settings and workarounds you can apply to adjust it.
+
 ### PDF/A-*A variants with icon fonts (FontAwesome)
 
 PDF/A "A" (accessible) variants require that characters from Unicode Private Use Area (PUA) have `ActualText` entries for accessibility.
