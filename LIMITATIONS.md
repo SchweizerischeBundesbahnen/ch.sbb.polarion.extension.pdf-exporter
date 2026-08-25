@@ -52,10 +52,14 @@ Notes:
 
 - **Specificity matters.** The selector must be `table tr th`, otherwise it does not win against the
   default rule and nothing changes.
-- `hyphens: auto` only takes effect when the **document language** is set. Without a language the header
-  is simply not hyphenated (the column may then be as wide as the longest header word), but the text is
-  still never broken mid-character. A long single-word header (e.g. `Verantwortlichkeitsbereich`) needs
-  the language to break at syllables so that a "long header / short content" column does not stay wide.
+- `hyphens: auto` only takes effect when the **document language** is set, and that is opt-in: enter the ID of the
+  LiveDoc custom field holding the language in the style package's **Document Language custom field** setting, and
+  set that field on the document — see
+  [Document language custom field (hyphenation)](USER_GUIDE.md#document-language-custom-field-hyphenation).
+  Without a language the header is simply not hyphenated (the column may then be as wide as the longest header
+  word), but the text is still never broken mid-character. A long single-word header (e.g.
+  `Verantwortlichkeitsbereich`) needs the language to break at syllables so that a "long header / short content"
+  column does not stay wide.
 - If a **body** cell with a long identifier (not a link) still breaks, protect that column too by giving
   its cells `white-space: nowrap`.
 
@@ -77,7 +81,11 @@ preserved.
 - Export **without** *Fit images and tables to page width* to keep the Polarion-defined widths — note
   that very wide tables may then overflow the page.
 - Or restore the widths with a **webhook** (available since v6.1.0) that adjusts the HTML before it is
-  sent to the WeasyPrint service; see the webhook-samples repository for an example.
+  sent to the WeasyPrint service; see the
+  [webhook samples repository](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter.webhook-samples)
+  for an example. Note that webhooks are disabled by default and must first be enabled with
+  `ch.sbb.polarion.extension.pdf-exporter.webhooks.enabled=true` in `polarion.properties` (see the README's
+  [Enabling webhooks](README.md#enabling-webhooks) section).
 
 See discussion [#30](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/discussions/30).
 
