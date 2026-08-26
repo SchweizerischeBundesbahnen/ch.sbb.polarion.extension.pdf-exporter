@@ -2,6 +2,13 @@
 
 ## Gotchas
 
+- **A dependency can block Polarion startup through its manifest alone.** Polarion 2606 scans every
+  nested jar and rejects both a class that references a forbidden package and a `META-INF/MANIFEST.MF`
+  whose attribute value *contains* one, so an OSGi `uses:="javax.annotation.processing,..."` counts as
+  `javax.annotation` and the whole extension is reported as "not Jakarta compatible" - no CI job sees
+  this, only a local deploy.
+  That is why `tika.version` stays on 3.x (`renovate.json` holds it there); tika-core 4.0.0 trips it.
+  Check a bump with a real deploy, or `unzip -p <nested>.jar META-INF/MANIFEST.MF | grep javax`.
 - **`ch.sbb.polarion.extension.generic`** is the parent project providing reusable infrastructure for all Polarion plugins in this org (settings framework, REST base classes, OSGi helpers, etc.). Before implementing anything cross-cutting, check if it already exists there.
 - **All administration pages are React now.** They were converted to
   [react-sbb-polarion](https://github.com/SchweizerischeBundesbahnen/react-sbb-polarion) one at a time, and
