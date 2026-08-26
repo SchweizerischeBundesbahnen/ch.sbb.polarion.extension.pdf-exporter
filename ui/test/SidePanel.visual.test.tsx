@@ -8,6 +8,7 @@ import {
   sampleDependencies,
 } from './sidePanelSamples';
 import type { SampleOptions } from './sidePanelSamples';
+import { parkPointer } from './visualHelpers';
 
 // Docker-only snapshots of the export panel as the document editor shows it, mounted the way the
 // form-extension fragment mounts it: its own shadow root, carrying react-sbb-polarion's stylesheet, the
@@ -47,10 +48,8 @@ const dropdownsUpgraded = (host: HTMLElement) =>
 
 async function snapshot(host: HTMLElement, name: string): Promise<void> {
   await dropdownsUpgraded(host);
-  // Park the pointer somewhere without hover styling. Wherever it happened to rest after the previous test
-  // might have some, which is enough to make a reference disagree with itself from one run to the next.
-  await userEvent.hover(host.shadowRoot!.querySelector('p')!);
   await page.viewport(640, Math.ceil(host.scrollHeight) + 40);
+  await parkPointer(host.shadowRoot!.querySelector('p')!);
   await expect(page.elementLocator(host)).toMatchScreenshot(name);
 }
 

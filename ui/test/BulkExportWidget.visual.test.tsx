@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { page, userEvent } from 'vitest/browser';
+import { page } from 'vitest/browser';
 import { mountInto, readShim } from '../src/widget/main';
 import {
   SAMPLE_ITEMS,
@@ -10,6 +10,7 @@ import {
 } from '../src/widget/sampleData';
 import type { BulkExportItems } from '../src/widget/types';
 import { SAMPLE_STYLE_PACKAGE_FULL, popupDependencies } from './exportPopupSamples';
+import { parkPointer } from './visualHelpers';
 
 // Docker-only snapshots of the widget as a report page shows it, mounted the way the renderer mounts
 // it: its own shadow root, carrying the tokens and the widget's stylesheet. Polarion's page CSS is not
@@ -33,14 +34,10 @@ function mounted(items: BulkExportItems, deps: Partial<Parameters<typeof mountIn
 }
 
 async function snapshot(host: HTMLElement, name: string): Promise<void> {
-  // Park the pointer on the heading first. It carries no hover styling, while wherever the pointer
-  // happened to rest after the previous test might - a link picking up its underline is enough to make
-  // a reference disagree with itself from one run to the next.
-  const heading = host.shadowRoot!.querySelector('h3');
-  if (heading) {
-    await userEvent.hover(heading);
-  }
   await page.viewport(1280, Math.ceil(host.scrollHeight) + 40);
+  // The widget's own heading carries no hover styling; a widget rendered without one parks the pointer
+  // off the page instead.
+  await parkPointer(host.shadowRoot!.querySelector('h3') ?? undefined);
   await expect(page.elementLocator(host)).toMatchScreenshot(name);
 }
 
@@ -109,8 +106,8 @@ describe.skipIf(!__PIXEL_REFERENCES__)('Bulk PDF Export widget visual', () => {
    * from their height circular. Same value as the toolbar dialog's references.
    */
   async function dialogSnapshot(host: HTMLElement, name: string): Promise<void> {
-    await userEvent.hover(host.shadowRoot!.querySelector('.rsp-modal-title')!);
     await page.viewport(900, 1800);
+    await parkPointer(host.shadowRoot!.querySelector('.rsp-modal-title')!);
     await expect(page.elementLocator(host.shadowRoot!.querySelector<HTMLElement>('.rsp-modal')!)).toMatchScreenshot(
       name,
     );
@@ -204,7 +201,7 @@ describe.skipIf(!__PIXEL_REFERENCES__)('Bulk PDF Export widget visual', () => {
     const content = root.querySelector('.rsp-modal-content')!;
     // The list has more to show than it shows, which is the condition this reference is about
     expect(content.scrollHeight).toBeGreaterThan(content.clientHeight + 1);
-    await userEvent.hover(root.querySelector('.rsp-modal-title')!);
+    await parkPointer(root.querySelector('.rsp-modal-title')!);
     await expect(page.elementLocator(root.querySelector<HTMLElement>('.rsp-modal')!)).toMatchScreenshot(
       'widget-progress-long-run',
     );
