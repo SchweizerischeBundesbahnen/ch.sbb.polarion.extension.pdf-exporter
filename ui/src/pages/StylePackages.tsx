@@ -131,10 +131,11 @@ function adjustWeight(raw: string): string {
 
 /**
  * A name that belongs to a parent scope is marked the same way `ConfigurationsPane` marks its own
- * options, so "(inherited)" means one thing everywhere on the administration pages.
+ * options: the shared `inherited` flag, which the dropdown renders as a small italic "global" on the
+ * right of the option and turns the names of this scope bold.
  */
 function toOption(name: SettingName, scope: string): SelectOption {
-  return { id: name.name, name: name.scope === scope ? name.name : `${name.name} (inherited)` };
+  return { id: name.name, name: name.name, inherited: name.scope !== scope };
 }
 
 function toForm(content: StylePackageSettings): Form {
