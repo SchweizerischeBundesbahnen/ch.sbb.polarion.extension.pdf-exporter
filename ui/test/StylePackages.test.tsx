@@ -196,8 +196,11 @@ describe('Style Packages page', () => {
     open();
     await loaded();
 
-    const options = Array.from(select('css-select')!.options).map((o) => o.textContent);
-    expect(options).toEqual(['Default', 'Compact (inherited)']);
+    const options = Array.from(select('css-select')!.options);
+    // The name stays plain: the marker is the `parent` class, which the shared dropdown paints as a
+    // small italic "global" on the right of the option.
+    expect(options.map((o) => o.textContent)).toEqual(['Default', 'Compact']);
+    expect(options.map((o) => o.className)).toEqual(['', 'parent']);
   });
 
   it('falls back to Default for a child configuration the scope no longer offers', async () => {
@@ -379,7 +382,8 @@ describe('Style Packages page', () => {
     await pick('webhooks-select', 'Default');
     await clickButton('Save');
 
-    // The stored value is the configuration's name; "(inherited)" is a label, not part of it.
+    // The stored value is the configuration's name; the scope marker is a class on the option, not
+    // part of the name.
     expect(await savedBody(fetchMock)).toMatchObject({
       coverPage: 'Default',
       css: 'Compact',

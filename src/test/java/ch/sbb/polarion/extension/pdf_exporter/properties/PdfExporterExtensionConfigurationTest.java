@@ -17,7 +17,10 @@ import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.endsWith;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith({MockitoExtension.class,  CurrentContextExtension.class})
@@ -127,11 +130,73 @@ class PdfExporterExtensionConfigurationTest {
     }
 
     @Test
+    void getExternalResourcesPolicyReturnsConfiguredValue() {
+        when(systemValueReader.readString(anyString(), anyString())).thenReturn("allowlistOnly");
+
+        assertEquals("allowlistOnly", configuration.getExternalResourcesPolicy());
+    }
+
+    @Test
+    void getExternalResourcesAllowedOriginsReturnsConfiguredValue() {
+        when(systemValueReader.readString(anyString(), anyString())).thenReturn("cdn.intranet");
+
+        assertEquals("cdn.intranet", configuration.getExternalResourcesAllowedOrigins());
+    }
+
+    @Test
+    void getExternalResourcesMaxSizeMBReturnsConfiguredValue() {
+        when(systemValueReader.readInt(anyString(), anyInt())).thenReturn(32);
+
+        assertEquals(32, configuration.getExternalResourcesMaxSizeMB());
+    }
+
+    @Test
+    void getExternalResourcesDescriptionsAndDefaultsReturnConstants() {
+        assertEquals(PdfExporterExtensionConfiguration.EXTERNAL_RESOURCES_POLICY_DESCRIPTION, configuration.getExternalResourcesPolicyDescription());
+        assertEquals(PdfExporterExtensionConfiguration.EXTERNAL_RESOURCES_POLICY_DEFAULT_VALUE, configuration.getExternalResourcesPolicyDefaultValue());
+        assertEquals(PdfExporterExtensionConfiguration.EXTERNAL_RESOURCES_ALLOWED_ORIGINS_DESCRIPTION, configuration.getExternalResourcesAllowedOriginsDescription());
+        assertEquals(PdfExporterExtensionConfiguration.EXTERNAL_RESOURCES_ALLOWED_ORIGINS_DEFAULT_VALUE, configuration.getExternalResourcesAllowedOriginsDefaultValue());
+        assertEquals(PdfExporterExtensionConfiguration.EXTERNAL_RESOURCES_MAX_SIZE_MB_DESCRIPTION, configuration.getExternalResourcesMaxSizeMBDescription());
+        assertEquals("16", configuration.getExternalResourcesMaxSizeMBDefaultValue());
+    }
+
+    @Test
     void getSupportedPropertiesContainsAllProperties() {
         var properties = configuration.getSupportedProperties();
 
         assertTrue(properties.contains(PdfExporterExtensionConfiguration.WEASYPRINT_SERVICE));
         assertTrue(properties.contains(PdfExporterExtensionConfiguration.WEBHOOKS_ENABLED));
         assertTrue(properties.contains(PdfExporterExtensionConfiguration.RENDERABLE_IMAGE_EXTENSIONS));
+        assertTrue(properties.contains(PdfExporterExtensionConfiguration.EXTERNAL_RESOURCES_POLICY));
+        assertTrue(properties.contains(PdfExporterExtensionConfiguration.EXTERNAL_RESOURCES_ALLOWED_ORIGINS));
+        assertTrue(properties.contains(PdfExporterExtensionConfiguration.EXTERNAL_RESOURCES_MAX_SIZE_MB));
+        assertTrue(properties.contains(PdfExporterExtensionConfiguration.WEASYPRINT_API_KEY_SECRET));
+    }
+
+    @Test
+    void getWeasyPrintApiKeySecretReturnsConfiguredValue() {
+        when(systemValueReader.readString(anyString(), anyString())).thenReturn("weasyprint-api-key");
+        assertEquals("weasyprint-api-key", configuration.getWeasyPrintApiKeySecret());
+    }
+
+    @Test
+    void getWeasyPrintApiKeySecretReadsTheDocumentedPropertyName() {
+        // the key of the property is part of the contract with polarion.properties, a typo here is
+        // a silently unread setting
+        when(systemValueReader.readString(anyString(), anyString())).thenAnswer(invocation -> invocation.getArgument(1));
+        configuration.getWeasyPrintApiKeySecret();
+
+        verify(systemValueReader).readString(endsWith("weasyprint.apiKeySecret"), eq(PdfExporterExtensionConfiguration.WEASYPRINT_API_KEY_SECRET_DEFAULT_VALUE));
+    }
+
+    @Test
+    void getWeasyPrintApiKeySecretDescriptionReturnsConstant() {
+        assertEquals(PdfExporterExtensionConfiguration.WEASYPRINT_API_KEY_SECRET_DESCRIPTION, configuration.getWeasyPrintApiKeySecretDescription());
+    }
+
+    @Test
+    void getWeasyPrintApiKeySecretDefaultValueNamesNoSecret() {
+        // the empty default is what ApiKeyProvider reads as "this service needs no key"
+        assertEquals("", configuration.getWeasyPrintApiKeySecretDefaultValue());
     }
 }

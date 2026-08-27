@@ -123,6 +123,7 @@ class PdfConverterTest {
         when(weasyPrintServiceConnector.convertToPdf(eq("test html content"), any(WeasyPrintOptions.class), any(), any())).thenReturn("test document content".getBytes());
         when(htmlProcessor.internalizeLinks(anyString())).thenAnswer(a -> a.getArgument(0));
         when(htmlProcessor.replaceResourcesAsBase64Encoded(anyString())).thenAnswer(a -> a.getArgument(0));
+        lenient().when(htmlProcessor.replaceCssResourcesAsBase64Encoded(anyString())).thenAnswer(a -> a.getArgument(0));
 
         // Act
         byte[] result = pdfConverter.convertToPdf(exportParams, null);
@@ -157,7 +158,7 @@ class PdfConverterTest {
         when(pdfExporterPolarionService.getPolarionProductName()).thenReturn("testProductName");
         when(pdfExporterPolarionService.getPolarionVersion()).thenReturn("testVersion");
         lenient().when(module.getCustomField("customField")).thenReturn("customValue");
-        when(htmlProcessor.replaceResourcesAsBase64Encoded(anyString())).thenAnswer(a -> a.getArgument(0));
+        when(htmlProcessor.replaceCssResourcesAsBase64Encoded(anyString())).thenAnswer(a -> a.getArgument(0));
 
         String cssContent = pdfConverter.getCssContent(documentData, exportParams);
 
@@ -200,6 +201,7 @@ class PdfConverterTest {
 
         when(velocityEvaluator.evaluateVelocityExpressions(eq(documentData), anyString())).thenAnswer(a -> a.getArguments()[1]);
         when(htmlProcessor.replaceResourcesAsBase64Encoded(anyString())).thenAnswer(a -> a.getArgument(0));
+        lenient().when(htmlProcessor.replaceCssResourcesAsBase64Encoded(anyString())).thenAnswer(a -> a.getArgument(0));
 
         // Act
         PdfConverter pdfConverter = new PdfConverter(null, headerFooterSettings, null, placeholderProcessor, velocityEvaluator, null, null, htmlProcessor, null, bulkProcessingConnector);
@@ -425,6 +427,7 @@ class PdfConverterTest {
         when(velocityEvaluator.evaluateVelocityExpressions(eq(documentData), anyString())).thenAnswer(a -> a.getArguments()[1]);
         when(htmlProcessor.internalizeLinks(anyString())).thenAnswer(a -> a.getArgument(0));
         when(htmlProcessor.replaceResourcesAsBase64Encoded(anyString())).thenAnswer(a -> a.getArgument(0));
+        lenient().when(htmlProcessor.replaceCssResourcesAsBase64Encoded(anyString())).thenAnswer(a -> a.getArgument(0));
 
         when(module.getValue("field1")).thenReturn("Value & <one>");
         when(module.getValue("my_field")).thenReturn("Quote\"Val");
@@ -478,6 +481,7 @@ class PdfConverterTest {
         when(velocityEvaluator.evaluateVelocityExpressions(eq(documentData), anyString())).thenAnswer(a -> a.getArguments()[1]);
         when(htmlProcessor.internalizeLinks(anyString())).thenAnswer(a -> a.getArgument(0));
         when(htmlProcessor.replaceResourcesAsBase64Encoded(anyString())).thenAnswer(a -> a.getArgument(0));
+        lenient().when(htmlProcessor.replaceCssResourcesAsBase64Encoded(anyString())).thenAnswer(a -> a.getArgument(0));
 
         ArgumentCaptor<String> metaCaptor = ArgumentCaptor.forClass(String.class);
         when(pdfTemplateProcessor.processUsing(any(ExportParams.class), anyString(), anyString(), anyString(), metaCaptor.capture(), any()))
@@ -528,6 +532,7 @@ class PdfConverterTest {
         when(pdfTemplateProcessor.processUsing(any(ExportParams.class), eq("testDocument"), eq("css content"), anyString(), anyString(), any())).thenReturn("test html content");
         when(htmlProcessor.internalizeLinks(anyString())).thenAnswer(a -> a.getArgument(0));
         when(htmlProcessor.replaceResourcesAsBase64Encoded(anyString())).thenAnswer(a -> a.getArgument(0));
+        when(htmlProcessor.replaceCssResourcesAsBase64Encoded(anyString())).thenAnswer(a -> a.getArgument(0));
 
         when(bulkProcessingConnector.convertMergedToPdf(anyList(), any(MergeJobStartParams.class))).thenReturn(new BulkProcessingConnector.MergeResult("merged pdf".getBytes(), 0));
 
@@ -578,6 +583,7 @@ class PdfConverterTest {
         when(pdfTemplateProcessor.processUsing(any(ExportParams.class), eq("testDocument"), eq("css content"), anyString(), anyString(), any())).thenReturn("test html content");
         when(htmlProcessor.internalizeLinks(anyString())).thenAnswer(a -> a.getArgument(0));
         when(htmlProcessor.replaceResourcesAsBase64Encoded(anyString())).thenAnswer(a -> a.getArgument(0));
+        when(htmlProcessor.replaceCssResourcesAsBase64Encoded(anyString())).thenAnswer(a -> a.getArgument(0));
 
         when(coverPageProcessor.composeTitleHtml(eq(documentData), eq(exportParams), any(PlaceholderValues.class))).thenReturn("<cover>title</cover>");
         when(bulkProcessingConnector.convertMergedToPdf(anyList(), any(MergeJobStartParams.class))).thenReturn(new BulkProcessingConnector.MergeResult("merged pdf".getBytes(), 0));

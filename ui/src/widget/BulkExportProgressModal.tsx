@@ -1,4 +1,4 @@
-import { Modal } from '@grigoriev/react-sbb-polarion';
+import { Modal } from '@sbb-polarion/react-sbb-polarion';
 import type { BulkExportState } from './useBulkExport';
 import { itemName, itemTypeLabel } from './useBulkExport';
 

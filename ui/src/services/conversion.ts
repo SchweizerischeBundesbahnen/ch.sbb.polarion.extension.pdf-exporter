@@ -10,7 +10,7 @@
  * lets the three surfaces await an export instead of threading success and error callbacks. The requests,
  * the headers read off them and the messages built from those headers are unchanged.
  */
-import type { SendRequest } from '@grigoriev/react-sbb-polarion';
+import type { SendRequest } from '@sbb-polarion/react-sbb-polarion';
 
 /** The two request flavors a conversion needs: the REST base, and a URL the server handed out. */
 export interface Remote {

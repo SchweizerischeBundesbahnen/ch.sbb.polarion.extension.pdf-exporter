@@ -1,6 +1,6 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import rspStyles from '@grigoriev/react-sbb-polarion/style.css?inline';
+import rspStyles from '@sbb-polarion/react-sbb-polarion/style.css?inline';
 import popupStyles from '../popup/export-popup.css?inline';
 import BulkExportWidget from './BulkExportWidget';
 import type { WidgetDependencies } from './BulkExportWidget';

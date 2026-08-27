@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { PageLayout } from '@grigoriev/react-sbb-polarion';
+import { PageLayout } from '@sbb-polarion/react-sbb-polarion';
 import DocumentPicker from '../components/DocumentPicker';
 import { documentEditorHash } from '../services/documents';
 import type { ProjectDocument } from '../services/documents';

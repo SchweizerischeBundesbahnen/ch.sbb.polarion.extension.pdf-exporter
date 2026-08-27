@@ -2,9 +2,16 @@
 
 ## Gotchas
 
+- **A dependency can block Polarion startup through its manifest alone.** Polarion 2606 scans every
+  nested jar and rejects both a class that references a forbidden package and a `META-INF/MANIFEST.MF`
+  whose attribute value *contains* one, so an OSGi `uses:="javax.annotation.processing,..."` counts as
+  `javax.annotation` and the whole extension is reported as "not Jakarta compatible" - no CI job sees
+  this, only a local deploy.
+  That is why `tika.version` stays on 3.x (`renovate.json` holds it there); tika-core 4.0.0 trips it.
+  Check a bump with a real deploy, or `unzip -p <nested>.jar META-INF/MANIFEST.MF | grep javax`.
 - **`ch.sbb.polarion.extension.generic`** is the parent project providing reusable infrastructure for all Polarion plugins in this org (settings framework, REST base classes, OSGi helpers, etc.). Before implementing anything cross-cutting, check if it already exists there.
 - **All administration pages are React now.** They were converted to
-  [react-sbb-polarion](https://github.com/grigoriev/react-sbb-polarion) one at a time, and
+  [react-sbb-polarion](https://github.com/SchweizerischeBundesbahnen/react-sbb-polarion) one at a time, and
   `pdf-exporter-app` (the Vite bundle in `ui/`, see [`ui/README.md`](ui/README.md)) serves every one of
   them. `hivemodule.xml` carries a `pageUrl` per menu entry; the ids there must match
   `ui/src/features.tsx` - a mismatch is a blank page and no test catches it. The legacy
@@ -55,7 +62,7 @@
   browser mode runs each file in an iframe and keeps `top` for its own runner page. Name them
   `*.node.test.ts` - that suffix is what routes a file between the two projects.
 - **Package naming**: Use `ch.sbb.polarion.extension.pdf_exporter` (underscore). Pre-v7.0.0 code used `pdf.exporter` (dot) — don't follow old patterns still present in the codebase.
-- **Maven Settings**: Builds require `.mvn/settings.xml` (JFrog, GitHub Packages, Sonatype credentials via env vars). CI passes it with `-s .mvn/settings.xml`. `.mvn/maven.config` auto-activates the Polarion version profile.
+- **Maven Settings**: Builds require `.mvn/settings.xml` (JFrog, GitHub Packages, Sonatype credentials via env vars). CI passes it with `-s .mvn/settings.xml`.
 - **Polarion Dependencies**: You must extract dependencies from the Polarion installer using [polarion-artifacts-deployer](https://github.com/SchweizerischeBundesbahnen/polarion-artifacts-deployer) before the Maven build will work.
 - **Local Polarion Installation**: Requires `POLARION_HOME` environment variable. Use the `install-to-local-polarion` Maven profile: `mvn clean install -P install-to-local-polarion`
 - **After any code change**: Delete `<POLARION_HOME>/data/workspace/.config` before restarting Polarion or changes won't be picked up.

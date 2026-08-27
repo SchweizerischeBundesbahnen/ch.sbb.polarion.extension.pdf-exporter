@@ -6,7 +6,7 @@ import {
   PageLayout,
   RevisionsTable,
   useConfirm,
-} from '@grigoriev/react-sbb-polarion';
+} from '@sbb-polarion/react-sbb-polarion';
 import { toast } from 'sonner';
 import useLocalizationFiles, { type TranslationsMap, saveBlob } from '../services/localization';
 import { getScope } from '../services/scope';

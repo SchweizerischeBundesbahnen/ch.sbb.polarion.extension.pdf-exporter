@@ -3,11 +3,38 @@ package ch.sbb.polarion.extension.pdf_exporter.util;
 import ch.sbb.polarion.extension.generic.regex.RegexMatcher;
 import ch.sbb.polarion.extension.generic.util.BundleJarsPrioritizingRunnable;
 import ch.sbb.polarion.extension.generic.util.ScopeUtils;
+import com.helger.css.CSSSourceLocation;
+import com.helger.css.ICSSSourceLocationAware;
+import com.helger.css.decl.CSSMediaRule;
+import com.helger.css.decl.CSSSupportsRule;
+import com.helger.css.decl.CSSStyleRule;
+import com.helger.css.decl.CSSUnknownRule;
+import com.helger.css.decl.ICSSExpressionMember;
+import com.helger.css.decl.CSSDeclaration;
+import com.helger.css.decl.CSSImportRule;
+import com.helger.css.decl.CSSExpressionMemberTermURI;
+import com.helger.css.decl.CascadingStyleSheet;
+import com.helger.css.decl.ICSSTopLevelRule;
+import com.helger.css.decl.visit.CSSVisitor;
+import com.helger.css.decl.CSSExpressionMemberTermSimple;
+import com.helger.css.decl.visit.DefaultCSSUrlVisitor;
+import com.helger.css.decl.visit.DefaultCSSVisitor;
+import com.helger.css.handler.DoNothingCSSParseExceptionCallback;
+import com.helger.css.reader.CSSReader;
+import com.helger.css.reader.CSSReaderSettings;
+import com.helger.css.reader.errorhandler.DoNothingCSSParseErrorHandler;
 import ch.sbb.polarion.extension.pdf_exporter.properties.PdfExporterExtensionConfiguration;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PdfVariant;
 import ch.sbb.polarion.extension.pdf_exporter.service.PdfExporterPolarionService;
 import com.polarion.alm.shared.api.transaction.TransactionalExecutor;
 import com.polarion.core.util.StringUtils;
+import org.jsoup.parser.Parser;
+import org.jsoup.nodes.Range;
+import org.jsoup.nodes.Element;
+import org.jsoup.nodes.Entities;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.DataNode;
+import org.jsoup.Jsoup;
 import com.polarion.core.util.logging.Logger;
 import com.polarion.platform.service.repository.IRepositoryReadOnlyConnection;
 import com.polarion.subterra.base.location.ILocation;
@@ -41,8 +68,13 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Stream;
 import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.function.BiFunction;
+import java.util.function.UnaryOperator;
 
 import static ch.sbb.polarion.extension.pdf_exporter.util.TikaMimeTypeResolver.PARAM_RESULT;
 import static ch.sbb.polarion.extension.pdf_exporter.util.TikaMimeTypeResolver.PARAM_VALUE;
@@ -50,9 +82,27 @@ import static ch.sbb.polarion.extension.pdf_exporter.util.TikaMimeTypeResolver.P
 @UtilityClass
 public class MediaUtils {
     public static final String IMG_SRC_REGEX = "<img[^<>]*src=(\"|')(?<url>[^(\"|')]*)(\"|')";
-    public static final String URL_REGEX = "url\\(\\s*([\"'])?(?<url>.*?)\\1?\\s*\\)";
+    public static final String URL_REGEX = "(?i)url\\(\\s*([\"'])?(?<url>.*?)\\1?\\s*\\)";
     public static final String DATA_URL_PREFIX = "data:";
+    private static final String NETWORK_PATH_PREFIX = "//";
+    // what a detector answers when it read the content and recognized nothing in it
+    public static final String OCTET_STREAM = "application/octet-stream";
+
+    private static final Document.OutputSettings ATTRIBUTE_OUTPUT_SETTINGS =
+            new Document.OutputSettings().escapeMode(Entities.EscapeMode.xhtml);
+
+    // a url which names a scheme names where it is read from, and this class can vet two of them
+    private static final Pattern SCHEME_PATTERN = Pattern.compile("^[a-z][a-z\\d+.-]*:", Pattern.CASE_INSENSITIVE);
+
+    private static final Pattern CSS_ESCAPE_PATTERN = Pattern.compile("\\\\(?:([0-9a-fA-F]{1,6})[ \\t\\r\\n\\f]?|(.))", Pattern.DOTALL);
     public static final String THUMBNAIL_PARAMETER = "thumbnail";
+    /**
+     * A 1x1 fully transparent PNG which replaces a resource the {@link ResourceUrlPolicy} rejected.
+     * It must draw nothing: a placeholder which paints marks the exported document where the reader
+     * expects the picture it named.
+     */
+    public static final String BLOCKED_RESOURCE_PLACEHOLDER =
+            "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR42mNgAAIAAAUAAen63NgAAAAASUVORK5CYII=";
     private static final Logger logger = Logger.getLogger(MediaUtils.class);
     private static final int RIGHT_WHITE_AREA_PX = 30;
     private static final int PDF_TO_PNG_DPI = 300;
@@ -259,6 +309,46 @@ public class MediaUtils {
     }
 
     /**
+     * Resolves the CSS escapes of a value, {@code http\\3a //host} and the like. A stylesheet reaches
+     * WeasyPrint as text, and WeasyPrint resolves them, so the check has to see the same value.
+     */
+    public String decodeCssEscapes(@NotNull String value) {
+        if (value.indexOf('\\') < 0) {
+            return value;
+        }
+        Matcher matcher = CSS_ESCAPE_PATTERN.matcher(value);
+        StringBuilder decoded = new StringBuilder();
+        while (matcher.find()) {
+            String hex = matcher.group(1);
+            String replacement = hex != null ? codePointOf(hexValueOf(hex)) : matcher.group(2);
+            matcher.appendReplacement(decoded, Matcher.quoteReplacement(replacement));
+        }
+        matcher.appendTail(decoded);
+        return decoded.toString();
+    }
+
+    /**
+     * Reads the hex digits of a CSS escape. The pattern caps them at six, so the value fits into an int,
+     * and every character it captured is a hex digit, so there is nothing here that could fail.
+     */
+    private int hexValueOf(@NotNull String hex) {
+        int value = 0;
+        for (int i = 0; i < hex.length(); i++) {
+            value = (value << 4) + Character.digit(hex.charAt(i), 16);
+        }
+        return value;
+    }
+
+    /**
+     * CSS turns an escape of zero, of a surrogate and of a value above the last code point into the
+     * replacement character, and so does this.
+     */
+    private String codePointOf(int value) {
+        boolean valid = value > 0 && value <= Character.MAX_CODE_POINT && !(value >= Character.MIN_SURROGATE && value <= Character.MAX_SURROGATE);
+        return valid ? Character.toString(value) : "\uFFFD";
+    }
+
+    /**
      * Check whether particular string is a <a href="https://www.rfc-editor.org/rfc/rfc2397">'data' URL</a>-encoded entry.
      */
     public boolean isDataUrl(@Nullable String resourceUrl) {
@@ -266,22 +356,575 @@ public class MediaUtils {
     }
 
     public String inlineBase64Resources(String content, FileResourceProvider fileResourceProvider) {
-        RegexMatcher.IReplacementCalculator dataReplacement = engine -> {
-            String url = engine.group("url");
-            if (MediaUtils.isDataUrl(url)) {
-                return null;
-            }
-            // For renderable images (e.g. .png, .svg) strip 'thumbnail' to fetch full-size content.
-            // For everything else (spreadsheets, documents, unknown formats) keep 'thumbnail' so Polarion returns an icon preview.
-            String resourceUrl = isRenderableImageUrl(url) ? removeQueryParameter(url, THUMBNAIL_PARAMETER) : url;
-            String base64String = fileResourceProvider.getResourceAsBase64String(resourceUrl);
-            return base64String == null ? null : engine.group().replace(url, base64String);
-        };
+        return processResourceRegions(content, fileResourceProvider);
+    }
 
-        // replace tags like <img src="...
-        String intermediateResult = RegexMatcher.get(IMG_SRC_REGEX).replace(content, dataReplacement);
-        // replace CSS parameters like background: src('/polarion/...
-        return RegexMatcher.get(URL_REGEX).useJavaUtil().replace(intermediateResult, dataReplacement);
+    /**
+     * @return what the url of a resource has to be replaced with, null when it may stay as it is
+     */
+    @Nullable
+    private String replacementFor(@NotNull FileResourceProvider fileResourceProvider, @NotNull String rawUrl) {
+        // the document may write a url with whitespace around it, every step below has to see the same one
+        String url = rawUrl.trim();
+        // the escapes are resolved for the decisions and for those only: what is fetched is the url as
+        // it stands, and a backslash a path carries is a backslash. isForbidden resolves them as well,
+        // so the gate and the decision below cannot read the same url differently
+        String decoded = decodeCssEscapes(url);
+        if (isDataUrl(decoded)) {
+            return null;
+        }
+        if (!fileResourceProvider.isForbidden(url)) {
+            // a renderable image is wanted at its full size, so the thumbnail parameter goes. Everything
+            // else keeps it, and Polarion answers with the icon preview it has for a document
+            String requested = isRenderableImageUrl(url) ? removeQueryParameter(url, THUMBNAIL_PARAMETER) : url;
+            String base64String = fileResourceProvider.getResourceAsBase64String(Objects.requireNonNullElse(requested, url));
+            if (base64String != null) {
+                return base64String;
+            }
+        }
+        // A url which was not inlined, whatever the reason, must not stay in the document where the
+        // conversion service would read it from its own network or its own file system. A relative url
+        // is left untouched, no service reads one.
+        return isReadElsewhere(decoded) ? BLOCKED_RESOURCE_PLACEHOLDER : null;
+    }
+
+    /**
+     * Rewrites the resources a stylesheet points at: every url is inlined, replaced by the placeholder or
+     * left alone, and an {@code @import} of an absolute address is removed, since an at-rule is never
+     * inlined and WeasyPrint would load it itself.
+     * <p>
+     * The stylesheet is parsed rather than matched. A comment, an escape or a media condition may sit
+     * almost anywhere in CSS, and a pattern that survives all of them does not exist.
+     * </p>
+     */
+    public String inlineCssResources(@NotNull String css, @NotNull FileResourceProvider fileResourceProvider) {
+        return inlineCssResources(css, fileResourceProvider, null);
+    }
+
+    /**
+     * @param stylesheetUrl where the stylesheet itself was read from, null when the css is part of a
+     *                      document. A url of a stylesheet is relative to that location, not to the
+     *                      document, so each one is resolved against it before it is judged or fetched.
+     */
+    public String inlineCssResources(@NotNull String css, @NotNull FileResourceProvider fileResourceProvider,
+                                     @Nullable String stylesheetUrl) {
+        if (!mayReferenceAResource(css)) {
+            // no url, no import and no address: there is nothing to rewrite and nothing to check, and a
+            // style attribute of a large document is not worth a parser run for that
+            return css;
+        }
+        CascadingStyleSheet stylesheet = parse(css);
+        if (stylesheet == null) {
+            logger.warn("Dropped a stylesheet which cannot be parsed, so the resources it points at cannot be"
+                    + " checked: " + describe(stylesheetUrl, css));
+            return "";
+        }
+
+        // The parser tells where each url and each import stands, and only those parts are rewritten.
+        // Everything else keeps the formatting the document came with.
+        int[] lineStarts = lineStartsOf(css);
+        CssRewrite rewrite = new CssRewrite();
+        readImports(css, stylesheet, lineStarts, rewrite);
+        readUrls(css, stylesheet, lineStarts, rewrite, fileResourceProvider, locationOf(stylesheetUrl));
+
+        if (!rewrite.complete() || namesAnAddressNothingAccountedFor(css, stylesheet, lineStarts, rewrite.accounted())) {
+            logger.warn("Dropped a stylesheet: it names an address which nothing in it accounts for, so a"
+                    + " conversion service would read that address itself: " + describe(stylesheetUrl, css));
+            return "";
+        }
+        return applyEdits(css, rewrite.edits());
+    }
+
+    /**
+     * @return what the log needs to name the stylesheet which was dropped: where it came from, or its
+     * first line where it is part of a document and has no url of its own
+     */
+    @NotNull
+    private String describe(@Nullable String stylesheetUrl, @NotNull String css) {
+        if (stylesheetUrl != null) {
+            return "it was loaded from '" + stylesheetUrl + "'";
+        }
+        String head = css.strip();
+        int end = Math.min(head.length(), 120);
+        return "it begins with '" + head.substring(0, end).replaceAll("\\s+", " ") + (end < head.length() ? "…'" : "'");
+    }
+
+    @Nullable
+    private CascadingStyleSheet parse(@NotNull String css) {
+        CSSReaderSettings settings = new CSSReaderSettings()
+                // a browser keeps what it understands and skips the rest, and so does the conversion service
+                .setBrowserCompliantMode(true)
+                // a tab counts as one column, so a column of the parser is an offset of the text again:
+                // the default of eight moves every position on a line which carries one
+                .setTabSize(1)
+                .setCustomErrorHandler(new DoNothingCSSParseErrorHandler())
+                .setCustomExceptionHandler(new DoNothingCSSParseExceptionCallback());
+        return CSSReader.readFromStringReader(css, settings);
+    }
+
+    /**
+     * Every import goes, whatever it names. An at-rule cannot be embedded, so its target is read by the
+     * conversion service itself, past every check here: an absolute address would be fetched from the
+     * network of that service, and a relative one from wherever that service resolves it, which is not
+     * where the stylesheet names it.
+     */
+    private void readImports(@NotNull String css, @NotNull CascadingStyleSheet stylesheet, int[] lineStarts,
+                             @NotNull CssRewrite rewrite) {
+        for (CSSImportRule importRule : stylesheet.getAllImportRules()) {
+            CssRange range = rangeOf(lineStarts, css, importRule.getSourceLocation());
+            if (range == null) {
+                // it has to go and there is nowhere to write that, so the stylesheet goes instead
+                rewrite.missed(false);
+            } else {
+                rewrite.accounted().add(range);
+                rewrite.edits().add(new CssEdit(range, ""));
+            }
+        }
+    }
+
+    /**
+     * @return the location a url of that stylesheet is relative to, null where there is none
+     */
+    @Nullable
+    private String locationOf(@Nullable String stylesheetUrl) {
+        if (stylesheetUrl == null) {
+            return null;
+        }
+        int lastSlash = stylesheetUrl.lastIndexOf('/');
+        return lastSlash < 0 ? null : stylesheetUrl.substring(0, lastSlash + 1);
+    }
+
+    /**
+     * Escapes an address so that it can stand in a url term without quotes. A url token ends at a
+     * bracket, a quote or a space, and a value read inside quotes may carry any of them, so each one
+     * is written as the escape css reads it by.
+     */
+    @NotNull
+    private String escapeCssUrl(@NotNull String url) {
+        StringBuilder escaped = new StringBuilder(url.length());
+        for (int i = 0; i < url.length(); i++) {
+            char current = url.charAt(i);
+            if (current == '\\' || current == '"' || current == '\'' || current == '(' || current == ')'
+                    || Character.isWhitespace(current)) {
+                escaped.append('\\');
+            }
+            escaped.append(current);
+        }
+        return escaped.toString();
+    }
+
+    /**
+     * @return the url as the renderer would read it from that location: a relative one is resolved
+     * against it, everything which names its own place is left as it stands
+     */
+    @NotNull
+    private String resolveAgainst(@Nullable String location, @NotNull String url) {
+        String trimmed = url.trim();
+        if (location == null || trimmed.isEmpty() || trimmed.startsWith("/") || trimmed.startsWith("#")
+                || isDataUrl(trimmed) || isNetworkPathReference(trimmed) || SCHEME_PATTERN.matcher(trimmed).find()) {
+            return url;
+        }
+        return location + trimmed;
+    }
+
+    private void readUrls(@NotNull String css, @NotNull CascadingStyleSheet stylesheet, int[] lineStarts,
+                          @NotNull CssRewrite rewrite, @NotNull FileResourceProvider fileResourceProvider,
+                          @Nullable String location) {
+        CSSVisitor.visitCSSUrl(stylesheet, new DefaultCSSUrlVisitor() {
+            @Override
+            public void onUrlDeclaration(@Nullable ICSSTopLevelRule topLevelRule, @NotNull CSSDeclaration declaration, @NotNull CSSExpressionMemberTermURI uri) {
+                CssRange range = rangeOf(lineStarts, css, uri.getSourceLocation());
+                // the parser resolves the escapes of a url term itself, so this value is the one the
+                // renderer would read, and the one the policy is asked about
+                String resolved = resolveAgainst(location, uri.getURIString());
+                String replacement = replacementFor(fileResourceProvider, resolved);
+                if (replacement == null && !resolved.equals(uri.getURIString())) {
+                    // it was not inlined, so the text keeps the address of the resource itself, which is
+                    // not the one the document would resolve. The parser read that address inside
+                    // quotes, where it may carry what a url term cannot: those characters are escaped
+                    replacement = escapeCssUrl(resolved);
+                }
+                if (range == null) {
+                    rewrite.missed(replacement == null);
+                    return;
+                }
+                rewrite.accounted().add(range);
+                if (replacement != null) {
+                    // no quotes around it: the value is a data url, and a quote would end a style attribute
+                    rewrite.edits().add(new CssEdit(range, "url(" + replacement + ")"));
+                }
+            }
+        });
+    }
+
+    /**
+     * What a run over a stylesheet collects: where the parser accounted for something, what has to be
+     * written back, and whether anything it had to rewrite could not be placed.
+     */
+    @VisibleForTesting
+    static final class CssRewrite {
+        private final List<CssRange> accounted = new ArrayList<>();
+        private final List<CssEdit> edits = new ArrayList<>();
+        private boolean complete = true;
+
+        List<CssRange> accounted() {
+            return accounted;
+        }
+
+        List<CssEdit> edits() {
+            return edits;
+        }
+
+        boolean complete() {
+            return complete;
+        }
+
+        /**
+         * @param harmless whether what could not be placed needed no rewriting in the first place
+         */
+        void missed(boolean harmless) {
+            complete &= harmless;
+        }
+    }
+
+    private record CssRange(int start, int end) {
+    }
+
+    private record CssEdit(@NotNull CssRange range, @NotNull String replacement) {
+    }
+
+    /**
+     * Applies the edits back to front, so that an offset stays valid while the ones before it are used.
+     */
+    private String applyEdits(@NotNull String css, @NotNull List<CssEdit> edits) {
+        StringBuilder result = new StringBuilder(css);
+        edits.stream()
+                .sorted((left, right) -> Integer.compare(right.range().start(), left.range().start()))
+                .forEach(edit -> result.replace(edit.range().start(), edit.range().end(), edit.replacement()));
+        return result.toString();
+    }
+
+    /**
+     * Where each line of a stylesheet begins, counted the way the parser counts it: a line feed ends a
+     * line, a carriage return ends one as well, the two together end one line and not two. A form feed
+     * ends none, which is what the parser reports for it.
+     */
+    private int[] lineStartsOf(@NotNull String css) {
+        List<Integer> starts = new ArrayList<>();
+        starts.add(0);
+        int i = 0;
+        while (i < css.length()) {
+            char current = css.charAt(i);
+            if (current == '\r' && i + 1 < css.length() && css.charAt(i + 1) == '\n') {
+                i += 2;
+                starts.add(i);
+            } else if (current == '\r' || current == '\n') {
+                i++;
+                starts.add(i);
+            } else {
+                i++;
+            }
+        }
+        return starts.stream().mapToInt(Integer::intValue).toArray();
+    }
+
+    private int offsetOf(int[] lineStarts, @NotNull String css, int line, int column) {
+        if (line < 1 || line > lineStarts.length) {
+            return -1;
+        }
+        int offset = lineStarts[line - 1] + column;
+        return offset > css.length() ? -1 : offset;
+    }
+
+    private boolean mayReferenceAResource(@NotNull String css) {
+        String probe = decodeCssEscapes(css).toLowerCase(Locale.ROOT);
+        // an address of its own still has to reach the backstop, which is what judges whether anything
+        // accounted for it: the payload of a data url is exempted there, by the range of the url() term
+        return probe.contains("url(") || probe.contains("@import") || namesAnAbsoluteAddress(probe);
+    }
+
+    /**
+     * Tells whether a text names an address at all. Nothing is taken out of it here: the caller decides
+     * what its probe holds, and inside the backstop a url the parser read is already out of the way.
+     */
+    private boolean namesAnAbsoluteAddress(@NotNull String css) {
+        String probe = decodeCssEscapes(css).toLowerCase(Locale.ROOT);
+        // file: is the one scheme besides http and https which a conversion service here resolves
+        return probe.contains("http:") || probe.contains("https:") || probe.contains("file:")
+                || probe.contains(NETWORK_PATH_PREFIX);
+    }
+
+    /**
+     * Tells whether a stylesheet names an absolute address which nothing accounted for.
+     * <p>
+     * What is accounted for is taken out of the text first: a url and an import the parser read, a
+     * namespace rule, the selector of every rule, the strings the parser read as values, the comments
+     * and the data urls. None of those makes the renderer fetch an unchecked address. Whatever names an
+     * address after that, an escaped at-keyword, a value the parser dropped, a function it does not
+     * know, was read by nothing, and the renderer may well read it.
+     * </p>
+     */
+    private boolean namesAnAddressNothingAccountedFor(@NotNull String css, @NotNull CascadingStyleSheet stylesheet,
+                                                      int[] lineStarts, @NotNull List<CssRange> accounted) {
+        List<CssRange> ranges = new ArrayList<>(accounted);
+        stylesheet.getAllNamespaceRules().stream()
+                .map(rule -> rangeOf(lineStarts, css, rule.getSourceLocation()))
+                .filter(Objects::nonNull)
+                .forEach(ranges::add);
+        stylesheet.getAllRules().stream()
+                // an unknown rule is one the parser could not read, and that is what this looks for
+                .filter(rule -> !(rule instanceof CSSUnknownRule))
+                .filter(ICSSSourceLocationAware.class::isInstance)
+                .map(rule -> rangeOf(lineStarts, css, ((ICSSSourceLocationAware) rule).getSourceLocation()))
+                .filter(Objects::nonNull)
+                .map(range -> selectorOf(css, range))
+                .forEach(ranges::add);
+        ranges.addAll(textRangesOf(css, stylesheet, lineStarts));
+
+        // each range keeps its length, so one range never moves another and an overlap changes nothing
+        char[] probe = css.toCharArray();
+        ranges.forEach(range -> Arrays.fill(probe, range.start(), range.end(), ' '));
+        return namesAnAbsoluteAddress(stripCssComments(new String(probe)));
+    }
+
+    /**
+     * @return where the parser read something which fetches nothing: a string, and the selector or the
+     * prelude of a rule at any depth, which the top-level pass does not reach inside a grouping at-rule
+     */
+    private List<CssRange> textRangesOf(@NotNull String css, @NotNull CascadingStyleSheet stylesheet, int[] lineStarts) {
+        List<CssRange> ranges = new ArrayList<>();
+        CSSVisitor.visitCSS(stylesheet, new DefaultCSSVisitor() {
+            @Override
+            public void onBeginStyleRule(@NotNull CSSStyleRule styleRule) {
+                addPreludeOf(styleRule);
+            }
+
+            @Override
+            public void onBeginMediaRule(@NotNull CSSMediaRule mediaRule) {
+                addPreludeOf(mediaRule);
+            }
+
+            @Override
+            public void onBeginSupportsRule(@NotNull CSSSupportsRule supportsRule) {
+                addPreludeOf(supportsRule);
+            }
+
+            private void addPreludeOf(@NotNull ICSSSourceLocationAware rule) {
+                CssRange range = rangeOf(lineStarts, css, rule.getSourceLocation());
+                if (range != null) {
+                    ranges.add(selectorOf(css, range));
+                }
+            }
+
+            @Override
+            public void onDeclaration(@NotNull CSSDeclaration declaration) {
+                declaration.getExpression().getAllMembers().stream()
+                        .filter(CSSExpressionMemberTermSimple.class::isInstance)
+                        .map(CSSExpressionMemberTermSimple.class::cast)
+                        .filter(member -> member.getValue().startsWith("\"") || member.getValue().startsWith("'"))
+                        .map(member -> rangeOf(lineStarts, css, member.getSourceLocation()))
+                        .filter(Objects::nonNull)
+                        .forEach(ranges::add);
+            }
+        });
+        return ranges;
+    }
+
+    /**
+     * @return the part of a rule up to its body, the selector or the prelude, which fetches nothing
+     */
+    private CssRange selectorOf(@NotNull String css, @NotNull CssRange ruleRange) {
+        int body = css.indexOf('{', ruleRange.start());
+        return new CssRange(ruleRange.start(), body < 0 || body > ruleRange.end() ? ruleRange.end() : body);
+    }
+
+    @Nullable
+    private CssRange rangeOf(int[] lineStarts, @NotNull String css, @Nullable CSSSourceLocation location) {
+        if (location == null) {
+            return null;
+        }
+        int start = offsetOf(lineStarts, css, location.getFirstTokenBeginLineNumber(), location.getFirstTokenBeginColumnNumber() - 1);
+        int end = offsetOf(lineStarts, css, location.getLastTokenEndLineNumber(), location.getLastTokenEndColumnNumber());
+        return start < 0 || end < start || end > css.length() ? null : new CssRange(start, end);
+    }
+
+    /**
+     * Removes the comments of a stylesheet, for reading it only. A quoted string keeps what it holds,
+     * css starts no comment in there, and an unterminated comment runs to the end, as css says it does.
+     */
+    private String stripCssComments(@NotNull String css) {
+        StringBuilder result = new StringBuilder(css.length());
+        int i = 0;
+        while (i < css.length()) {
+            char current = css.charAt(i);
+            if (current == '"' || current == '\'') {
+                i = appendString(css, i, result);
+            } else if (isCommentStart(css, i)) {
+                i = endOfComment(css, i);
+            } else {
+                result.append(current);
+                i++;
+            }
+        }
+        return result.toString();
+    }
+
+    private boolean isCommentStart(@NotNull String css, int index) {
+        return css.charAt(index) == '/' && index + 1 < css.length() && css.charAt(index + 1) == '*';
+    }
+
+    private int endOfComment(@NotNull String css, int index) {
+        int end = css.indexOf("*/", index + 2);
+        return end < 0 ? css.length() : end + 2;
+    }
+
+    private int appendString(@NotNull String css, int index, @NotNull StringBuilder result) {
+        char quote = css.charAt(index);
+        result.append(quote);
+        int i = index + 1;
+        while (i < css.length()) {
+            char current = css.charAt(i++);
+            result.append(current);
+            if (current == '\\' && i < css.length()) {
+                result.append(css.charAt(i++));
+            } else if (current == quote) {
+                break;
+            }
+        }
+        return i;
+    }
+
+
+    /**
+     * Where a conversion service reads an address out of the markup, measured against the services this
+     * extension family drives: pandoc-service loads {@code img[src]} and {@code iframe[src]},
+     * weasyprint-service loads {@code img[src]}, {@code object[data]} and {@code embed[src]}. The image
+     * of an inline svg is not loaded by either of them today and is rewritten all the same, a data url
+     * being a valid href there.
+     */
+    private static final List<String[]> RESOURCE_ATTRIBUTES = List.of(
+            new String[]{"img[src]", "src"},
+            new String[]{"object[data]", "data"},
+            new String[]{"embed[src]", "src"},
+            new String[]{"iframe[src]", "src"},
+            new String[]{"image[href]", "href"},
+            new String[]{"image[xlink:href]", "xlink:href"});
+
+    /**
+     * Rewrites every resource an HTML document points at: the source of an image, the css of a style
+     * element and the css of a style attribute. JSoup says where each of them stands, so every form HTML
+     * allows is covered and nothing outside a tag is mistaken for one. JSoup does not write the document
+     * back, only the parts which changed are replaced in the original text.
+     */
+    private String processResourceRegions(@NotNull String html, @NotNull FileResourceProvider fileResourceProvider) {
+        Document document = Jsoup.parse(html, "", Parser.htmlParser().setTrackPosition(true));
+        List<Region> regions = new ArrayList<>();
+        for (String[] attribute : RESOURCE_ATTRIBUTES) {
+            for (Element element : document.select(attribute[0])) {
+                // the value of an attribute is read as the parser read it, entities resolved: that is the
+                // address the renderer sees, and the markup says nothing the renderer would not
+                addAttributeRegion(regions, element, attribute[1],
+                        url -> Optional.ofNullable(replacementFor(fileResourceProvider, url)).orElse(url));
+            }
+        }
+        for (Element styleElement : document.select("style")) {
+            // a style element holds raw text, so its source and its value are the same characters
+            styleElement.dataNodes().forEach(data ->
+                    addRegion(regions, data.sourceRange(), html, css -> inlineCssResources(css, fileResourceProvider), false));
+        }
+        for (Element element : document.select("[style]")) {
+            addAttributeRegion(regions, element, "style",
+                    css -> rewriteDeclarations(css, declarations -> inlineCssResources(declarations, fileResourceProvider)));
+        }
+
+        StringBuilder result = new StringBuilder(html);
+        regions.stream()
+                .sorted((left, right) -> Integer.compare(right.start(), left.start()))
+                .forEach(region -> {
+                    String rewritten = region.rewrite().apply(region.input());
+                    if (!rewritten.equals(region.input())) {
+                        // an attribute is written back as markup, so what goes in there is escaped again,
+                        // by settings of its own: the default ones of jsoup are shared and can be changed
+                        result.replace(region.start(), region.end(),
+                                region.escape() ? Entities.escape(rewritten, ATTRIBUTE_OUTPUT_SETTINGS) : rewritten);
+                    }
+                });
+        return result.toString();
+    }
+
+    private void addAttributeRegion(@NotNull List<Region> regions, @NotNull Element element, @NotNull String attribute,
+                                    @NotNull UnaryOperator<String> rewrite) {
+        Range range = element.attributes().sourceRange(attribute).valueRange();
+        if (range.isTracked() && range.startPos() >= 0 && range.endPos() >= range.startPos()) {
+            regions.add(new Region(range.startPos(), range.endPos(), element.attr(attribute), rewrite, true));
+        }
+    }
+
+    /**
+     * @param input   what the region says, as the parser read it
+     * @param escape  whether writing it back means writing markup
+     */
+    private record Region(int start, int end, @NotNull String input, @NotNull UnaryOperator<String> rewrite, boolean escape) {
+    }
+
+    private void addRegion(@NotNull List<Region> regions, @NotNull Range range, @NotNull String html,
+                           @NotNull UnaryOperator<String> rewrite, boolean escape) {
+        if (range.isTracked() && range.startPos() >= 0 && range.endPos() >= range.startPos()) {
+            regions.add(new Region(range.startPos(), range.endPos(), html.substring(range.startPos(), range.endPos()), rewrite, escape));
+        }
+    }
+
+    /**
+     * The value of a style attribute is a declaration list, not a stylesheet, so it is wrapped into a rule
+     * for the parser and unwrapped afterwards.
+     */
+    private String rewriteDeclarations(@NotNull String declarations, @NotNull UnaryOperator<String> rewrite) {
+        String rewritten = rewrite.apply("a{" + declarations + "}");
+        int open = rewritten.indexOf('{');
+        int close = rewritten.lastIndexOf('}');
+        // an empty or unexpected result means the declarations were dropped, they do not come back
+        return open < 0 || close < open ? "" : rewritten.substring(open + 1, close);
+    }
+
+    /**
+     * Normalizes a resource url the same way for the policy check and for the request itself.
+     */
+    public String normalizeUrl(@NotNull String url) {
+        return url.replace(" ", "%20").replace("%5F", "_");
+    }
+
+    /**
+     * Tells whether a converter would read this url from somewhere of its own, which here means an
+     * address in any scheme, and a network path reference, which takes the scheme of the base url.
+     * Measured against weasyprint-service: it reads a {@code file:} url through an {@code @import},
+     * while a path from the root goes to the base url the document carries, which is the Polarion
+     * server. A relative url is read from nowhere, and a data url carries its own content.
+     */
+    public boolean isReadElsewhere(@Nullable String url) {
+        if (url == null) {
+            return false;
+        }
+        String trimmed = url.trim();
+        boolean namesSomewhere = SCHEME_PATTERN.matcher(trimmed).find() || isNetworkPathReference(trimmed);
+        // a data url carries the resource itself, there is nowhere for it to be read from
+        return namesSomewhere && !isDataUrl(trimmed);
+    }
+
+    /**
+     * A network path reference like {@code //host/path} counts as well: the conversion service reads the
+     * document with a base url and gives such a reference the scheme of that base.
+     */
+    public boolean isAbsoluteHttpUrl(@Nullable String url) {
+        if (url == null) {
+            return false;
+        }
+        String lowerCased = url.trim().toLowerCase(Locale.ROOT);
+        return lowerCased.startsWith("http://") || lowerCased.startsWith("https://") || isNetworkPathReference(lowerCased);
+    }
+
+    public boolean isNetworkPathReference(@NotNull String url) {
+        String trimmed = url.trim();
+        return trimmed.startsWith(NETWORK_PATH_PREFIX) && trimmed.length() > NETWORK_PATH_PREFIX.length();
     }
 
     /**
@@ -371,7 +1014,8 @@ public class MediaUtils {
         for (BiFunction<String, byte[], String> source : mimeSources) {
             try {
                 String mimeType = source.apply(resource, resourceBytes);
-                if (!StringUtils.isEmpty(mimeType)) {
+                // unknown bytes name no type, so the next source gets its turn
+                if (!StringUtils.isEmpty(mimeType) && !OCTET_STREAM.equals(mimeType)) {
                     return mimeType;
                 }
             } catch (Exception e) {

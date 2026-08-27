@@ -1,5 +1,32 @@
 # Changelog
 
+## [13.6.1](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v13.6.0...v13.6.1) (2026-08-21)
+
+
+### Bug Fixes
+
+* **deps:** update dependency org.xhtmlrenderer:flying-saucer-core to v10.5.0 ([f92076a](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/f92076a9dc6c664876c5f44b28b7246caf86d237))
+* move to generic 16.0.0 and react-sbb-polarion 2.0.1 ([#1013](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/1013)) ([1c50bef](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/1c50befa85cf10531560e529ac8961d4c0a3066d))
+* vet every external resource before loading it ([#1006](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/1006)) ([918c2ae](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/918c2aee9015480652ccfdf35b5e29905c85e183))
+
+## [13.6.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v13.5.0...v13.6.0) (2026-08-13)
+
+
+### Features
+
+* convert the first administration pages to React ([#973](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/973)) ([7ba0994](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/7ba099477777672c27ee45743608cb5e99c24d28)), closes [#964](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/964)
+* convert the four template editor pages to React ([#977](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/977)) ([875d12c](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/875d12ce1d67382d18688ce3a1f48b9cb14c1fe3)), closes [#966](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/966)
+* convert the Localization and Webhooks admin pages to React ([#981](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/981)) ([a282969](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/a282969231c7b5455534e30f6592dc8cb4f55a4d)), closes [#965](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/965)
+* convert the Style Package Weights admin page to React ([#976](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/976)) ([f311310](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/f311310151b82dbd6d20a0f8b946b8668502f6ce)), closes [#970](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/970)
+* hyphenation support - inject document language into exported HTML ([f6961db](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/f6961db38b8d6f7929f1bef98e2338002f4320e2)), closes [#983](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/983)
+
+
+### Bug Fixes
+
+* **deps:** update dependency ch.sbb.polarion.extensions:ch.sbb.polarion.extension.generic to v15.10.1 ([2162128](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/2162128903224c5023934cc4f3160ef8325a19c6))
+* **deps:** update dependency ch.sbb.polarion.extensions:ch.sbb.polarion.extension.generic to v15.11.0 ([62d5219](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/62d52191e6cfb2adf297d329a65ecff738be311f))
+* keep the shared JSP fragments reachable for the JSP pages ([#979](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/979)) ([f6e161e](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/f6e161e52f3a53255e25e0c1eb310c0e70865a77))
+
 ## [13.5.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v13.4.0...v13.5.0) (2026-07-28)
 
 

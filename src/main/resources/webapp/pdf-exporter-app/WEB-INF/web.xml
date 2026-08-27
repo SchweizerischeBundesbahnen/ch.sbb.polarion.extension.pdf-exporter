@@ -41,14 +41,11 @@
         <mime-type>text/plain</mime-type>
     </mime-mapping>
 
-    <!-- Static, non-sensitive assets served without authentication: the app's own bundle assets and
-         the shared generic UI toolkit (JS/CSS). Exempting /ui/generic/* lets these load same-origin
-         in Polarion and lets the vite dev proxy fetch them without a Polarion session. -->
+    <!-- Static, non-sensitive assets served without authentication: the app's own bundle assets. -->
     <security-constraint>
         <web-resource-collection>
             <web-resource-name>All</web-resource-name>
             <url-pattern>/ui/app/assets/*</url-pattern>
-            <url-pattern>/ui/generic/*</url-pattern>
         </web-resource-collection>
     </security-constraint>
 

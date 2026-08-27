@@ -1,4 +1,4 @@
-import { Toaster } from '@grigoriev/react-sbb-polarion';
+import { Toaster } from '@sbb-polarion/react-sbb-polarion';
 import { findFeature } from './features';
 import Landing from './pages/Landing';
 

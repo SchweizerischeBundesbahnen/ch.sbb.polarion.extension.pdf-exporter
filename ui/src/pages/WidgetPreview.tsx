@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { PageLayout } from '@grigoriev/react-sbb-polarion';
+import { PageLayout } from '@sbb-polarion/react-sbb-polarion';
 import {
   SAMPLE_ITEMS,
   SAMPLE_ITEMS_EMPTY,

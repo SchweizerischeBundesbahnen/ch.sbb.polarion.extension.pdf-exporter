@@ -96,13 +96,18 @@ public class CoverPageProcessor {
         }
         String templateHtml = settings.getTemplateHtml();
         String content = placeholderProcessor.replacePlaceholders(documentData, exportParams, templateHtml, overridenPlaceholderValues);
-        content = htmlProcessor.replaceResourcesAsBase64Encoded(content);
+        // velocity reads the document itself, so it writes content of the document into the page: the
+        // resources are vetted after it has written them, as the header, the footer and the css are
         String evaluatedContent = velocityEvaluator.evaluateVelocityExpressions(documentData, content);
+        evaluatedContent = htmlProcessor.replaceResourcesAsBase64Encoded(evaluatedContent);
         String css = coverPageSettings.processImagePlaceholders(settings.getTemplateCss());
-        css = htmlProcessor.replaceResourcesAsBase64Encoded(css);
+        css = htmlProcessor.replaceCssResourcesAsBase64Encoded(css);
         // Resolve the language the same way as the body (same resolver, same inputs) so the cover page hyphenates consistently
         String documentLanguage = DocumentLanguageResolver.resolve(documentData, exportParams);
-        return pdfTemplateProcessor.processUsing(exportParams, documentData.getTitle(), css, evaluatedContent, "", documentLanguage);
+        String titleHtml = pdfTemplateProcessor.processUsing(exportParams, documentData.getTitle(), css, evaluatedContent, "", documentLanguage);
+        // a link of the template names a stylesheet the conversion service would fetch itself, so it is
+        // read here as the body of a document is, and its target goes through the resource policy
+        return htmlProcessor.internalizeLinks(titleHtml);
     }
 
 }

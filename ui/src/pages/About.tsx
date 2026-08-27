@@ -1,4 +1,4 @@
-import { About } from '@grigoriev/react-sbb-polarion';
+import { About } from '@sbb-polarion/react-sbb-polarion';
 import appIcon from '../assets/app-icon.svg';
 import useRemote from '../services/useRemote';
 

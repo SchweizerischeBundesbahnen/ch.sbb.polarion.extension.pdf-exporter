@@ -58,6 +58,40 @@ To change WeasyPrint Service URL, adjust the following property in the `polarion
 ch.sbb.polarion.extension.pdf-exporter.weasyprint.service=http://localhost:9080
 ```
 
+### WeasyPrint API key
+
+The WeasyPrint service can require an API key, which it does as soon as it is started with `API_KEY` set.
+The extension then has to send that key, and it reads it from Polarion's secrets manager.
+
+The key itself is never written into `polarion.properties`. The property holds the **name** of a secret:
+
+```properties
+ch.sbb.polarion.extension.pdf-exporter.weasyprint.apiKeySecret=weasyprint-api-key
+```
+
+Store the key under that name in the secrets manager of the Polarion installation. The properties file,
+its backups and the About page then carry a name, not a credential.
+
+An unset or empty property sends no key, which is what a service started without `API_KEY` expects.
+
+**The key is only sent over https.** Where a key is configured and `weasyprint.service` names a plain
+`http` address, the export is refused instead: a key is a reusable credential, and on plain http
+everyone on the path keeps a copy of it. Give the service an `https` address, or clear the property
+where the service needs no key. Without a key nothing changes, `http` keeps working as before, and
+the rule holds for `localhost` too, since a certificate is what proves the transport rather than the
+address. The About page reports this combination before anyone exports, because the version endpoint
+carries no key and would otherwise look healthy.
+
+Five failures are reported apart, since each one has a different fix:
+
+| What the export says | What to do |
+| --- | --- |
+| requires an API key, none is configured | name the secret in the property above |
+| could not read the WeasyPrint API key from the Polarion secret | check that the secret is readable for the Polarion process |
+| is empty or does not exist | store a non-empty key under that secret name |
+| rejected the configured API key | check the secret holds the key the service was started with |
+| not sent over plain http | name the service with an https address |
+
 ### PDF exporter extension to appear on a Document's properties pane
 
 1. Open a project where you wish PDF Exporter to be available
@@ -222,6 +256,73 @@ To override this list, adjust the following property in the `polarion.properties
 ch.sbb.polarion.extension.pdf-exporter.renderable.image.extensions=png, jpg, jpeg, gif, bmp, svg, webp, avif, ico, cur, tif, tiff, vsdx
 ```
 
+### External resources
+
+A document can reference an image, a font or a stylesheet by an absolute URL. The extension loads such a
+resource and embeds it into the exported PDF. Because a document editor controls that URL, the request is
+restricted. By default the extension rejects every address which is not public: loopback, private ranges,
+link local addresses including the cloud metadata address `169.254.169.254`, and their IPv6 equivalents.
+The Polarion server itself, as configured by `base.url`, always stays reachable.
+
+To load resources from an internal host, list its origin explicitly:
+```properties
+ch.sbb.polarion.extension.pdf-exporter.externalResources.allowedOrigins=cdn.intranet,https://images.intranet:8443
+```
+
+An entry is written `[scheme://]host[:port]`, and what it leaves out is not compared:
+
+| Entry | What it allows |
+| --- | --- |
+| `cdn.intranet` | that host under either scheme, on any port |
+| `cdn.intranet:8443` | that host on port 8443, under either scheme |
+| `https://cdn.intranet` | that host under https, on port 443 |
+| `https://cdn.intranet:8443` | that host under https, on port 8443 |
+
+A reference written `//host/path` takes the scheme of `base.url` first and the other one after, so it
+reaches the host under whichever scheme an entry names.
+
+The policy itself can be changed. The value is one of these three names, written exactly so:
+```properties
+# BLOCK_INTERNAL (default) - public addresses, the Polarion server and the allowed origins
+# ALLOWLIST_ONLY           - only the Polarion server and the allowed origins
+# ALLOW_ALL                - no restriction, this exposes the server's network to document editors
+ch.sbb.polarion.extension.pdf-exporter.externalResources.policy=ALLOWLIST_ONLY
+```
+
+A loaded resource must be served as an image, a font or a stylesheet. Where the sender says nothing about
+the content, or calls it `application/octet-stream`, the content itself decides and must be recognizable as
+one of the three: a text of any other kind is refused, and so is a body nothing could be detected in.
+
+A resource may not exceed 16 MB. To change the size limit:
+```properties
+ch.sbb.polarion.extension.pdf-exporter.externalResources.maxSizeMB=32
+```
+
+A stylesheet which names an address that nothing in it accounts for is dropped whole, and the log says
+which one. That is the fail-closed direction: such an address would be read by the conversion service
+itself. A custom property holding an address, `--api: https://service.example`, is such a case, so a
+stylesheet using one loses its styling in the export.
+
+A CSS `@import` is removed, whatever it names and wherever it stands. An at-rule cannot be embedded,
+so WeasyPrint would have to load it itself, past every check above. Reference such a stylesheet
+with a `<link rel="stylesheet">` instead, the extension loads and embeds that one.
+
+A configured JVM proxy (`http.proxyHost` and friends) is used for these requests. A proxy resolves the
+host name itself, so a request routed through one cannot be pinned to a checked address. Such a request
+is therefore only made for a host the configuration trusts as such: the Polarion server and the origins
+listed above. Everything else is loaded directly, with the address check binding, or not at all. Hosts
+in `http.nonProxyHosts` are loaded directly and keep the address check.
+
+Note what this costs: where a proxy is configured for every destination, `BLOCK_INTERNAL` behaves
+as `ALLOWLIST_ONLY`, since a proxied request is made only for the Polarion server and the origins
+listed above.
+
+A SOCKS proxy needs no such gate. It is no route the client plans, the JVM applies it at the socket, and
+the socket is connected to the address the check approved, not to a host name the proxy would resolve.
+So a request does traverse the SOCKS proxy, and its destination is still the vetted address.
+
+Blocked resources are reported in the Polarion log. The document is exported without them.
+
 ### Debug option
 
 This extension makes intensive HTML processing to extend similar standard Polarion functionality. There is a possibility to log
@@ -374,7 +475,10 @@ Each concurrent conversion requires additional memory proportional to the values
 
 After a conversion completes, container memory (RSS) may not decrease — this is normal Python/glibc behavior, not a leak. To reclaim memory after traffic spikes, enable `RECLAIM_MEMORY_AFTER_CONVERSION=true` in weasyprint-service (runs `gc.collect` + `malloc_trim` after each conversion). See [weasyprint-service README](https://github.com/SchweizerischeBundesbahnen/weasyprint-service#post-conversion-memory-reclamation) for details.
 
-## Known issues
+## Limitations
+
+See also [Limitations and workarounds](LIMITATIONS.md) for content-specific, by-design behaviour and the
+settings and workarounds you can apply to adjust it.
 
 ### PDF/A-*A variants with icon fonts (FontAwesome)
 
@@ -434,7 +538,7 @@ WeasyPrint 67.0 introduced breaking changes in PDF variant support:
 - `pdf/a-3a` - Accessible PDF/A-3 (tagged, Unicode, file attachments)
 - `pdf/a-4e` - PDF/A-4 for engineering documents (allows 3D, RichMedia)
 - `pdf/a-4f` - PDF/A-4 with embedded files (requires attachments in document)
-- `pdf/ua-2` - Accessible PDF for assistive technologies (ISO 14289-2:2024) - **partial support, see Known issues**
+- `pdf/ua-2` - Accessible PDF for assistive technologies (ISO 14289-2:2024) - **partial support, see Limitations**
 
 **Post-processing applied automatically:**
 
