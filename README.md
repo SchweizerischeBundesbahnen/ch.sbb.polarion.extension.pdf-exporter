@@ -375,7 +375,7 @@ In case if both of them specified 'existing_wi_id' has higher priority.
 By default a project offers its own style packages plus the ones defined on the global level. Section
 `Style Package` of the administration pages carries a `Change visibility` button next to `Add new`. It opens
 a dialog which explains the two levels, offers the switch `Hide style packages defined on the global level`
-and stores it with `Update`. The switch is off - the behavior described above - unless an administrator
+and stores it with `Change`. The switch is off - the behavior described above - unless an administrator
 ticks it. It is a configuration of its own, above all style packages of the scope, so it belongs to no
 single style package.
 

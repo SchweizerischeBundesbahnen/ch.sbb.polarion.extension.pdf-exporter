@@ -93,7 +93,14 @@ public class StylePackageVisibilitySettings extends GenericNamedSettings<StylePa
     @Override
     public @NotNull StylePackageVisibilityModel save(@NotNull String scope, @NotNull SettingId id, @NotNull StylePackageVisibilityModel what) {
         StylePackageVisibilityModel saved = super.save(scope, id, what);
-        hiddenGlobalStylePackages.remove(scope);
+        if (DEFAULT_SCOPE.equals(scope)) {
+            // The global document is the default of every project that stores none, so all of them have to
+            // read it again - their cache key holds the global folder revision, which a content-only change
+            // of that document does not move.
+            hiddenGlobalStylePackages.clear();
+        } else {
+            hiddenGlobalStylePackages.remove(scope);
+        }
         return saved;
     }
 
