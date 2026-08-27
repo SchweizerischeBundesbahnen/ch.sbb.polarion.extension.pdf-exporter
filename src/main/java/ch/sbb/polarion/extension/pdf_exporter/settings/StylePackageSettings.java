@@ -1,7 +1,6 @@
 package ch.sbb.polarion.extension.pdf_exporter.settings;
 
 import ch.sbb.polarion.extension.generic.settings.GenericNamedSettings;
-import ch.sbb.polarion.extension.generic.settings.NamedSettingsRegistry;
 import ch.sbb.polarion.extension.generic.settings.SettingId;
 import ch.sbb.polarion.extension.generic.settings.SettingName;
 import ch.sbb.polarion.extension.generic.settings.SettingsService;
@@ -21,6 +20,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
+@SuppressWarnings("java:S2160") // the added field is a collaborator, not state: equality stays the feature name of the parent
 public class StylePackageSettings extends GenericNamedSettings<StylePackageModel> {
     public static final String FEATURE_NAME = "style-package";
     public static final String DEFAULT_HEADERS_COLOR = "#000028";

@@ -18,6 +18,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * being what every project uses unless it saves its own. Kept apart from the style packages themselves
  * because it applies to all of them at once; the Style Packages administration page edits it.
  */
+@SuppressWarnings("java:S2160") // the added field is a cache, not state: equality stays the feature name of the parent
 public class StylePackageVisibilitySettings extends GenericNamedSettings<StylePackageVisibilityModel> {
     public static final String FEATURE_NAME = "style-package-visibility";
 
