@@ -58,6 +58,40 @@ To change WeasyPrint Service URL, adjust the following property in the `polarion
 ch.sbb.polarion.extension.pdf-exporter.weasyprint.service=http://localhost:9080
 ```
 
+### WeasyPrint API key
+
+The WeasyPrint service can require an API key, which it does as soon as it is started with `API_KEY` set.
+The extension then has to send that key, and it reads it from Polarion's secrets manager.
+
+The key itself is never written into `polarion.properties`. The property holds the **name** of a secret:
+
+```properties
+ch.sbb.polarion.extension.pdf-exporter.weasyprint.apiKeySecret=weasyprint-api-key
+```
+
+Store the key under that name in the secrets manager of the Polarion installation. The properties file,
+its backups and the About page then carry a name, not a credential.
+
+An unset or empty property sends no key, which is what a service started without `API_KEY` expects.
+
+**The key is only sent over https.** Where a key is configured and `weasyprint.service` names a plain
+`http` address, the export is refused instead: a key is a reusable credential, and on plain http
+everyone on the path keeps a copy of it. Give the service an `https` address, or clear the property
+where the service needs no key. Without a key nothing changes, `http` keeps working as before, and
+the rule holds for `localhost` too, since a certificate is what proves the transport rather than the
+address. The About page reports this combination before anyone exports, because the version endpoint
+carries no key and would otherwise look healthy.
+
+Five failures are reported apart, since each one has a different fix:
+
+| What the export says | What to do |
+| --- | --- |
+| requires an API key, none is configured | name the secret in the property above |
+| could not read the WeasyPrint API key from the Polarion secret | check that the secret is readable for the Polarion process |
+| is empty or does not exist | store a non-empty key under that secret name |
+| rejected the configured API key | check the secret holds the key the service was started with |
+| not sent over plain http | name the service with an https address |
+
 ### PDF exporter extension to appear on a Document's properties pane
 
 1. Open a project where you wish PDF Exporter to be available
@@ -445,7 +479,10 @@ Each concurrent conversion requires additional memory proportional to the values
 
 After a conversion completes, container memory (RSS) may not decrease — this is normal Python/glibc behavior, not a leak. To reclaim memory after traffic spikes, enable `RECLAIM_MEMORY_AFTER_CONVERSION=true` in weasyprint-service (runs `gc.collect` + `malloc_trim` after each conversion). See [weasyprint-service README](https://github.com/SchweizerischeBundesbahnen/weasyprint-service#post-conversion-memory-reclamation) for details.
 
-## Known issues
+## Limitations
+
+See also [Limitations and workarounds](LIMITATIONS.md) for content-specific, by-design behaviour and the
+settings and workarounds you can apply to adjust it.
 
 ### PDF/A-*A variants with icon fonts (FontAwesome)
 
@@ -505,7 +542,7 @@ WeasyPrint 67.0 introduced breaking changes in PDF variant support:
 - `pdf/a-3a` - Accessible PDF/A-3 (tagged, Unicode, file attachments)
 - `pdf/a-4e` - PDF/A-4 for engineering documents (allows 3D, RichMedia)
 - `pdf/a-4f` - PDF/A-4 with embedded files (requires attachments in document)
-- `pdf/ua-2` - Accessible PDF for assistive technologies (ISO 14289-2:2024) - **partial support, see Known issues**
+- `pdf/ua-2` - Accessible PDF for assistive technologies (ISO 14289-2:2024) - **partial support, see Limitations**
 
 **Post-processing applied automatically:**
 

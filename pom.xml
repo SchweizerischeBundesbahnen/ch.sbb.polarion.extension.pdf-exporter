@@ -9,7 +9,7 @@
     </parent>
 
     <artifactId>ch.sbb.polarion.extension.pdf-exporter</artifactId>
-    <version>13.6.1-SNAPSHOT</version>
+    <version>13.6.2-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>Polarion ALM extension to convert Documents to PDF files</name>
@@ -52,6 +52,13 @@
         <testcontainers.version>2.0.5</testcontainers.version>
 
         <awaitility.version>4.3.0</awaitility.version>
+        <!-- Hold at 3.x: tika-core 4.0.0 ships the compile-time processor
+             org/apache/tika/annotation/TikaComponentProcessor.class and an OSGi manifest exporting
+             org.apache.tika.annotation with uses:="javax.annotation.processing,...". Polarion 2606's
+             JakartaCompatibilityChecker rejects both a class referencing and a manifest value
+             containing a forbidden package prefix, and "javax.annotation.processing" contains
+             "javax.annotation" - so the extension jar counts as one incompatible file and Polarion
+             refuses to start. See renovate.json. -->
         <tika.version>3.3.2</tika.version>
         <ph-css.version>8.2.1</ph-css.version>
         <commons-text.version>1.15.0</commons-text.version>

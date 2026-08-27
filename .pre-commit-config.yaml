@@ -77,7 +77,7 @@ repos:
       - id: check-git-config-user-email
         args: [--templates, ^\S+\.\S+@sbb\.ch$]
   - repo: https://github.com/commitizen-tools/commitizen
-    rev: v4.17.1
+    rev: v4.18.0
     hooks:
       - id: commitizen
   - repo: https://github.com/woodruffw/zizmor-pre-commit
