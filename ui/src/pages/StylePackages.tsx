@@ -35,7 +35,9 @@ import {
   PAPER_SIZES,
   PDF_VARIANTS,
   type StylePackageSettings,
+  type StylePackageVisibility,
   UNREFERENCED_COMMENTS_HELP,
+  VISIBILITY_FEATURE,
 } from '../services/stylePackage';
 import useRemote from '../services/useRemote';
 
@@ -210,6 +212,7 @@ const EMPTY_FORM = toForm({});
 export default function StylePackages() {
   const scope = getScope();
   const settings = useNamedSettings<StylePackageSettings>(FEATURE);
+  const visibility = useNamedSettings<StylePackageVisibility>(VISIBILITY_FEATURE);
   const { sendRequest } = useRemote();
   const { confirm, confirmDialog } = useConfirm();
   const paneRef = useRef<ConfigurationsPaneHandle>(null);
@@ -234,6 +237,14 @@ export default function StylePackages() {
 
   /** Whether the installation has webhooks at all; unknown until the status is read. */
   const [webhooksEnabled, setWebhooksEnabled] = useState<boolean | null>(null);
+
+  // Which style packages this scope offers at all: a document of its own, above every package, edited
+  // through the dialog the pane opens from its "Change visibility" button. The page keeps the value
+  // because the pane neither reads nor stores it - it only shows it and hands back what was picked.
+  const [hideGlobalPackages, setHideGlobalPackages] = useState(false);
+  const [visibilityInherited, setVisibilityInherited] = useState(false);
+  const [visibilityLoaded, setVisibilityLoaded] = useState(false);
+  const [visibilityError, setVisibilityError] = useState(false);
 
   const patch = (values: Partial<Form>) => setForm((current) => ({ ...current, ...values }));
 
@@ -312,6 +323,62 @@ export default function StylePackages() {
       cancelled = true;
     };
   }, [sendRequest]);
+
+  /** Whether the scope stores the visibility document itself, or reads the one of the global scope. */
+  const loadVisibilityOwnership = useCallback(async () => {
+    if (scope === '') {
+      setVisibilityInherited(false);
+      return;
+    }
+    try {
+      const names = await visibility.loadConfigurationNames(scope);
+      setVisibilityInherited(!names.some((name) => name.scope === scope));
+    } catch {
+      // Purely informational: a failure here must not stand in the way of reading or writing the switch.
+      setVisibilityInherited(false);
+    }
+  }, [scope, visibility]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const content = await visibility.loadContent(DEFAULT_NAME, scope);
+        if (cancelled) return;
+        setHideGlobalPackages(!!content.hideGlobalStylePackages);
+        setVisibilityError(false);
+      } catch {
+        if (cancelled) return;
+        setVisibilityError(true);
+      }
+      setVisibilityLoaded(true);
+      await loadVisibilityOwnership();
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [visibility, scope, loadVisibilityOwnership]);
+
+  /**
+   * Stores what the pane's visibility dialog was set to. The pane reloads its list of packages once this
+   * resolves, which is what takes the inherited packages out of the dropdown and puts the "Default" the
+   * project just received into it.
+   *
+   * A failure is rethrown on purpose: the dialog stays open and says so. The toast is still worth it - it
+   * carries the message of the backend ("no permission for this project"), which the dialog does not.
+   */
+  const saveVisibility = async (hidden: boolean) => {
+    toast.dismiss();
+    try {
+      await visibility.saveContent(DEFAULT_NAME, scope, { hideGlobalStylePackages: hidden });
+    } catch (e) {
+      toast.error((e as Error).message || 'Error occurred during saving the data.');
+      throw e;
+    }
+    setHideGlobalPackages(hidden);
+    toast.success('Data successfully saved.');
+    await loadVisibilityOwnership();
+  };
 
   /**
    * The configuration a child dropdown actually points at. A stored name that the scope no longer
@@ -443,6 +510,11 @@ export default function StylePackages() {
           </div>
         )}
         {rolesError && <div className="alert alert-error">There was an error loading link role names.</div>}
+        {visibilityError && (
+          <div className="alert alert-error">
+            There was an error loading the visibility of the style packages of the global level.
+          </div>
+        )}
       </div>
 
       <p>
@@ -459,6 +531,26 @@ export default function StylePackages() {
         onContentLoaded={applyContent}
         onSelectedChange={setSelectedConfig}
         onEditingNameChange={setEditingName}
+        visibility={{
+          globalHidden: hideGlobalPackages,
+          onChange: saveVisibility,
+          // Nothing to change while the stored value is unknown, so the button stays out of reach
+          disabled: !visibilityLoaded || visibilityError,
+          note: (
+            <>
+              <p>
+                The style package named &quot;Default&quot; can never be missing: as long as this project has none of
+                its own, it is the built-in one of the extension. Save a &quot;Default&quot; on this project to decide
+                what it contains.
+              </p>
+              {visibilityInherited && (
+                <p>
+                  <i>This value is the one inherited from the global scope. Updating it stores it on this project.</i>
+                </p>
+              )}
+            </>
+          ),
+        }}
       />
 
       <fieldset className="style-packages-page" disabled={editingName}>

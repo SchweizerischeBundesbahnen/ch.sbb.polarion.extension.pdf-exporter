@@ -46,6 +46,10 @@ All exporter settings are combined into named style packages. Different packages
 
 ![Style packages](docs/user_guide/img/style_packages.png)
 
+The dropdown offers the packages of the project you export from and the packages defined for the whole
+Polarion. A project can be configured to offer its own packages only, in which case the ones of the global
+level do not appear there. Ask your project administrator which packages your project offers.
+
 ## Options
 A package can also expose its options to be redefined by the end user before exporting a document into PDF.
 
