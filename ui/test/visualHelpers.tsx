@@ -12,7 +12,6 @@ import type { Route } from './mockFetch';
  *
  * The caller's `settled` says the page's own content has arrived; every dropdown being painted is
  * waited for on top of it, for every page, so a new suite cannot forget it (see `dropdownsUpgraded`).
- * The pointer is taken off the page on the same terms - see `parkPointer`.
  */
 export async function snapshotFeature(
   feature: string,
@@ -28,67 +27,87 @@ export async function snapshotFeature(
   await vi.waitFor(() => expect(settled() && dropdownsUpgraded()).toBe(true));
   const app = document.querySelector('.app') as HTMLElement;
   await page.viewport(1280, Math.ceil(app.scrollHeight) + 40);
-  await parkPointer();
+  await settleBeforeCapture();
   await expect(page.elementLocator(app)).toMatchScreenshot(name);
 }
 
-const PARKING_ID = 'visual-pointer-parking';
-const NO_TRANSITIONS_ID = 'visual-no-transitions';
+/**
+ * Everything a page has to have finished before it is worth photographing: its text rendering pinned, its
+ * fonts settled, the pointer off any control, the hover styling that pointer leaves behind faded out, and a
+ * frame painted. Call it as the LAST thing before the capture, once the viewport is final.
+ *
+ * Two of these were measured to make the Cover Page reference disagree with itself run after run, and this
+ * is what each was worth:
+ *
+ *  - the pointer, 4578 subpixels: the reference had been captured with the mouse resting on the HTML
+ *    editor, so it carried a `:hover` shadow that no other run reproduced (see `parkPointer`);
+ *  - the antialiasing, 644 subpixels: the same glyphs in the same place, drawn with a different gamma,
+ *    depending on which file had run before (see `pinTextRendering`).
+ *
+ * The rest are precautions rather than proven culprits, kept because they are cheap and each removes a way
+ * for a capture to land on an unfinished page: `document.fonts.ready` (the pages name fonts Polarion serves
+ * and nothing serves under test, and `document.fonts.status` was indeed "loading" in a lone run against
+ * "loaded" in a run after another file), the wait for the hover transition, and the two frames.
+ *
+ * @param park whether to move the pointer away, for the captures that do not aim it somewhere themselves.
+ */
+export async function settleBeforeCapture(park = true): Promise<void> {
+  pinTextRendering();
+  await document.fonts.ready;
+  if (park) {
+    await parkPointer();
+  }
+  // The hover styling of whatever the pointer leaves behind fades over `transition: box-shadow .15s`, and a
+  // capture in the middle of that fade is a reference that only sometimes reproduces.
+  await new Promise((resolve) => setTimeout(resolve, 200));
+  // Two frames: the first lets the style changes above be laid out, the second lets them be painted.
+  await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve(undefined))));
+}
 
 /**
- * Takes the pointer off the page and stops the transitions it drives, so that a reference shows the page
- * as it loads and not as it reacts to the mouse.
+ * Pins text to grayscale antialiasing for the capture.
  *
- * The browser keeps one pointer position for the whole run, and a test file inherits it from whichever
- * file ran before. So a page can open with an element already hovered - and RSP answers `:hover` on its
- * controls with a box shadow, faded in over 150ms. The cover page reference was recorded that way, with
- * the shadow of the HTML editor baked into it: it held only as long as the pointer kept landing on that
- * editor, and disagreed by 4578 pixels as soon as it did not, which is what the three page suites do
- * when they run without the rest. The transitions are stopped rather than waited out, because moving the
- * pointer away starts the very same fade in reverse, which a shot can catch just as well.
+ * Chromium decides per layer how to rasterize text, and the decision depends on the compositing of the page
+ * as a whole - which differs between "this file ran on its own" and "this file ran after that one". The
+ * result is the same glyphs at the same coordinates with a different gamma, 644 subpixels apart, and it
+ * flipped from run to run on the dropdown triggers of the Cover Page and Style Packages references. Asking
+ * for grayscale explicitly takes the decision away from the compositor.
  *
- * Call this **after** the viewport is final: a resize moves the page under a pointer that stays where it
- * is, which hovers whatever ends up beneath it.
- *
- * @param target where to leave the pointer. A dialog names one of its own hover-free elements, its title:
- *   a `<dialog>` is in the top layer, which paints over any box parked behind it, and its shadow root is
- *   out of reach of a stylesheet in the document. A page names nothing and gets a box of this helper's
- *   own - held in a corner of the viewport, painting nothing, outside the `.app` element the page
- *   references capture, and left in the document, because removing it hands the hover straight back to
- *   whatever is underneath.
+ * Test-only, injected for the capture: nothing in the product asks for this, and the references are
+ * regenerated with it so they and the runs agree.
  */
-export async function parkPointer(target?: Element): Promise<void> {
-  stopTransitions(document);
-  const root = target?.getRootNode();
-  if (root instanceof ShadowRoot) {
-    stopTransitions(root);
-  }
-  await userEvent.hover(target ?? parkingBox());
-}
-
-/** The box the pointer is parked on - see {@link parkPointer}. */
-function parkingBox(): HTMLElement {
-  const existing = document.getElementById(PARKING_ID);
-  if (existing) {
-    return existing;
-  }
-  const parking = document.createElement('div');
-  parking.id = PARKING_ID;
-  parking.style.cssText =
-    'position: fixed; top: 0; right: 0; width: 8px; height: 8px; z-index: 2147483647; pointer-events: auto';
-  document.body.appendChild(parking);
-  return parking;
-}
-
-/** Switches the transitions and animations of one document or shadow root off, once. */
-function stopTransitions(root: Document | ShadowRoot): void {
-  if (root.getElementById(NO_TRANSITIONS_ID)) {
+function pinTextRendering(): void {
+  if (document.getElementById('visual-text-rendering')) {
     return;
   }
   const style = document.createElement('style');
-  style.id = NO_TRANSITIONS_ID;
-  style.textContent = '*, *::before, *::after { transition: none !important; animation: none !important }';
-  (root instanceof Document ? root.head : root).appendChild(style);
+  style.id = 'visual-text-rendering';
+  style.textContent = '*, *::before, *::after { -webkit-font-smoothing: antialiased !important; }';
+  document.head.appendChild(style);
+}
+
+/**
+ * Moves the pointer onto a spot of its own.
+ *
+ * The mouse position survives a test, and a browser-mode file, since all of them run in one page - so
+ * whatever the pointer last touched stays hovered while the next file takes its screenshot. The controls
+ * of these pages do react: `.code-editor:hover` and the `sbb-btn` / dropdown-trigger rules paint a shadow.
+ * That is what made the Cover Page reference carry a hover shadow under the HTML editor - and then
+ * disagree with every run in which the pointer happened to rest elsewhere.
+ *
+ * The spot is `position: fixed` in the corner and above everything, so it has no styling of its own and
+ * nothing can intercept the hover. `force` skips the actionability check for the sake of the pages that
+ * capture inside a modal `<dialog>`, whose backdrop sits above every z-index.
+ */
+export async function parkPointer(): Promise<void> {
+  const spot = document.createElement('div');
+  spot.style.cssText = 'position:fixed;right:0;bottom:0;width:4px;height:4px;z-index:2147483647;';
+  document.body.appendChild(spot);
+  try {
+    await userEvent.hover(spot, { force: true });
+  } finally {
+    spot.remove();
+  }
 }
 
 export const found = (selector: string) => () => document.querySelector(selector) !== null;

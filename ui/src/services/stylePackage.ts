@@ -10,6 +10,17 @@ import type { SelectOption } from '@sbb-polarion/react-sbb-polarion';
  * same lists of paper sizes, PDF variants and so on, in three copies, until this module.
  */
 
+/**
+ * The feature id of the settings document that says which style packages a scope offers. It is a document
+ * of its own rather than a field of a style package: it applies to all of them at once.
+ */
+export const VISIBILITY_FEATURE = 'style-package-visibility';
+
+/** Content of the `style-package-visibility` document, as `StylePackageVisibilityModel` serializes it. */
+export interface StylePackageVisibility {
+  hideGlobalStylePackages?: boolean;
+}
+
 /** Content of one named `style-package` configuration, as `StylePackageModel` serializes it. */
 export interface StylePackageSettings {
   matchingQuery?: string | null;

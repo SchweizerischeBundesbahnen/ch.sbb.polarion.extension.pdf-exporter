@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render } from 'vitest-browser-react';
 import { userEvent } from 'vitest/browser';
 import App from '../src/App';
-import { installFetchMock } from './mockFetch';
+import { installFetchMock, jsonResponse } from './mockFetch';
 import type { FetchMock, Route } from './mockFetch';
 
 // The Style Packages page: the four child settings a package points at, the ~30 switches it carries,
@@ -72,6 +72,14 @@ const baseRoutes = (): Route[] => [
   { method: 'GET', match: /\/settings\/style-package\/default-content/, json: { weight: 50 } },
   { method: 'GET', match: /\/settings\/style-package\/names\/[^/]+\/revisions/, json: [] },
   { method: 'PUT', match: /\/settings\/style-package\/names\/[^/]+\/content/, json: {} },
+  // The switch above the packages: its own document, so its own endpoints
+  { method: 'GET', match: /\/settings\/style-package-visibility\/names\?/, json: [{ name: 'Default', scope: '' }] },
+  {
+    method: 'GET',
+    match: /\/settings\/style-package-visibility\/names\/Default\/content/,
+    json: { hideGlobalStylePackages: false },
+  },
+  { method: 'PUT', match: /\/settings\/style-package-visibility\/names\/Default\/content/, json: {} },
 ];
 
 /** The first matching route wins, so an override has to come before the defaults it replaces. */
@@ -87,6 +95,32 @@ const open = (routes = baseRoutes()) => {
 const field = <T extends HTMLElement>(selector: string) => document.querySelector<T>(selector);
 const input = (id: string) => document.querySelector<HTMLInputElement>(`#${id}`)!;
 const select = (id: string) => document.querySelector<HTMLSelectElement>(`#${id}`);
+
+/** The style packages the pane currently offers, in the order it lists them. */
+const packageOptions = () =>
+  Array.from(document.querySelector<HTMLSelectElement>('.configurations-pane select')!.options).map((o) => o.value);
+
+/** The pane's own button for the switch above the packages, and the dialog it opens. */
+const visibilityButton = () =>
+  Array.from(document.querySelectorAll<HTMLButtonElement>('.configurations-pane button')).find(
+    (b) => (b.textContent ?? '').trim() === 'Change visibility',
+  )!;
+const visibilityDialog = () => document.querySelector('.config-visibility-dialog');
+const visibilityCheckbox = () =>
+  document.querySelector<HTMLInputElement>('.config-visibility-dialog input[type="checkbox"]')!;
+const dialogButton = (label: string) =>
+  Array.from(document.querySelectorAll<HTMLButtonElement>('.rsp-modal-footer .sbb-btn')).find(
+    (b) => (b.textContent ?? '').trim() === label,
+  )!;
+
+/** The button is out of reach until the document behind the switch has been read. */
+const visibilityLoaded = async () => vi.waitFor(() => expect(visibilityButton().disabled).toBe(false));
+
+const openVisibilityDialog = async () => {
+  await visibilityLoaded();
+  await userEvent.click(visibilityButton());
+  await vi.waitFor(() => expect(visibilityDialog()).not.toBeNull());
+};
 
 /** The form is filled once the selected style package's content has landed. */
 const loaded = async () => vi.waitFor(() => expect(input('style-package-weight').value).toBe('42.5'));
@@ -196,8 +230,11 @@ describe('Style Packages page', () => {
     open();
     await loaded();
 
-    const options = Array.from(select('css-select')!.options).map((o) => o.textContent);
-    expect(options).toEqual(['Default', 'Compact (inherited)']);
+    const options = Array.from(select('css-select')!.options);
+    // The name stays plain: the marker is the `parent` class, which the shared dropdown paints as a
+    // small italic "global" on the right of the option.
+    expect(options.map((o) => o.textContent)).toEqual(['Default', 'Compact']);
+    expect(options.map((o) => o.className)).toEqual(['', 'parent']);
   });
 
   it('falls back to Default for a child configuration the scope no longer offers', async () => {
@@ -379,7 +416,8 @@ describe('Style Packages page', () => {
     await pick('webhooks-select', 'Default');
     await clickButton('Save');
 
-    // The stored value is the configuration's name; "(inherited)" is a label, not part of it.
+    // The stored value is the configuration's name; the scope marker is a class on the option, not
+    // part of the name.
     expect(await savedBody(fetchMock)).toMatchObject({
       coverPage: 'Default',
       css: 'Compact',
@@ -614,6 +652,131 @@ describe('Style Packages page', () => {
 
     await vi.waitFor(() => expect(fetchMock.mock.calls.some(([u]) => String(u).includes('revision=4242'))).toBe(true));
     expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'PUT')).toBe(false);
+  });
+
+  it('loads the stored switch into the dialog the pane opens', async () => {
+    open(
+      routesWith({
+        method: 'GET',
+        match: /\/settings\/style-package-visibility\/names\/Default\/content/,
+        json: { hideGlobalStylePackages: true },
+      }),
+    );
+    await openVisibilityDialog();
+
+    expect(visibilityCheckbox().checked).toBe(true);
+    expect(document.querySelector('.rsp-modal-title')?.textContent).toBe('Visibility of style packages');
+    // The extension's own note: what "Default" stands for while the project has none of its own
+    expect(visibilityDialog()!.textContent).toContain('it is the built-in one of the extension');
+    // Read from the global scope, so the dialog says where the value comes from
+    expect(visibilityDialog()!.textContent).toContain('inherited from the global scope');
+  });
+
+  it('says nothing about inheritance once the scope stores the switch itself', async () => {
+    open(
+      routesWith({
+        method: 'GET',
+        match: /\/settings\/style-package-visibility\/names\?/,
+        json: [{ name: 'Default', scope: SCOPE }],
+      }),
+    );
+    await openVisibilityDialog();
+
+    expect(visibilityDialog()!.textContent).not.toContain('inherited from the global scope');
+  });
+
+  it('stores the switch and reloads the style packages it can change', async () => {
+    // Hiding the global level takes the packages inherited from it out of the list, so the pane has to read
+    // its list again once the switch is stored. "Default" stays: that name is never missing.
+    let hidden = false;
+    const fetchMock = open(
+      routesWith(
+        {
+          method: 'PUT',
+          match: /\/settings\/style-package-visibility\/names\/Default\/content/,
+          respond: () => {
+            hidden = true;
+            return jsonResponse({});
+          },
+        },
+        {
+          method: 'GET',
+          match: /\/settings\/style-package\/names\?/,
+          respond: () =>
+            jsonResponse(
+              hidden
+                ? [
+                    { name: 'Default', scope: '' },
+                    { name: 'Test runs', scope: SCOPE },
+                  ]
+                : [
+                    { name: 'Test runs', scope: SCOPE },
+                    { name: 'Corporate', scope: '' },
+                  ],
+            ),
+        },
+      ),
+    );
+    await loaded();
+    await openVisibilityDialog();
+    expect(packageOptions()).toEqual(['Test runs', 'Corporate']);
+
+    await userEvent.click(visibilityCheckbox());
+    await userEvent.click(dialogButton('Change'));
+
+    await vi.waitFor(() => {
+      const put = fetchMock.mock.calls.find(
+        ([url, init]) => init?.method === 'PUT' && String(url).includes('/settings/style-package-visibility/'),
+      );
+      expect(put).toBeDefined();
+      expect(String(put![0])).toContain(`scope=${encodeURIComponent(SCOPE)}`);
+      expect(JSON.parse(String(put![1]!.body))).toEqual({ hideGlobalStylePackages: true });
+    });
+    // The package of the global level is gone from the dropdown; "Default" and the project's own stay
+    await vi.waitFor(() => expect(packageOptions()).toEqual(['Default', 'Test runs']));
+    await vi.waitFor(() => expect(visibilityDialog()).toBeNull());
+    // The style package itself is untouched by the switch
+    expect(
+      fetchMock.mock.calls.some(
+        ([url, init]) => init?.method === 'PUT' && String(url).includes('/settings/style-package/names/'),
+      ),
+    ).toBe(false);
+  });
+
+  it('keeps the dialog open and reports a rejected write', async () => {
+    open(
+      routesWith({
+        method: 'PUT',
+        match: /\/settings\/style-package-visibility\/names\/Default\/content/,
+        json: { message: 'no permission for this project' },
+        status: 403,
+      }),
+    );
+    await openVisibilityDialog();
+
+    await userEvent.click(visibilityCheckbox());
+    await userEvent.click(dialogButton('Change'));
+
+    await vi.waitFor(() => expect(document.body.textContent).toContain('no permission for this project'));
+    expect(visibilityDialog()).not.toBeNull();
+    expect(visibilityDialog()!.textContent).toContain('Error occurred while saving the visibility');
+  });
+
+  it('leaves the switch out of reach when its document cannot be read', async () => {
+    open(
+      routesWith({
+        method: 'GET',
+        match: /\/settings\/style-package-visibility\/names\/Default\/content/,
+        status: 500,
+        json: {},
+      }),
+    );
+    await loaded();
+
+    await vi.waitFor(() =>
+      expect(document.body.textContent).toContain('error loading the visibility of the style packages'),
+    );
+    expect(visibilityButton().disabled).toBe(true);
   });
 
   it('reports the message of a save the backend rejects', async () => {
