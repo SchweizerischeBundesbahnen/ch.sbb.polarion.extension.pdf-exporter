@@ -103,6 +103,10 @@ export default defineConfig({
             // dialogs at 0.38. They are now captured 1:1. Raise this window before adding a reference that
             // wants a taller or wider viewport, or that one goes back to being a downscale.
             //
+            // 1920x2200 is the value the other extensions use as well. The width is free - nothing asks for
+            // more than 1280 and the scale caps at 1 - so it is the familiar full-HD number; the height is
+            // the binding one and has to clear the 1800 the dialogs ask for.
+            //
             // `--disable-font-subpixel-positioning` puts every glyph on a whole pixel, and that is what
             // makes the references reproducible. Without it Chromium places a glyph on the subpixel its
             // layout lands on and picks the phase to rasterize it at from what it has already drawn in the
@@ -110,7 +114,7 @@ export default defineConfig({
             // with no others. The cover page dropdown, whose box starts at x=150.28125, is what CI reported
             // as `18 pixels (ratio 0.01) differ` on a commit whose other run of the same suite passed.
             provider: playwright({
-              contextOptions: { deviceScaleFactor: 2, viewport: { width: 1440, height: 2200 } },
+              contextOptions: { deviceScaleFactor: 2, viewport: { width: 1920, height: 2200 } },
               launchOptions: {
                 ignoreDefaultArgs: ['--hide-scrollbars'],
                 args: ['--disable-font-subpixel-positioning'],
