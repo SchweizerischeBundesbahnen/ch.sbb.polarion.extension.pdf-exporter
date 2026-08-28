@@ -45,9 +45,13 @@ let parkingSpot: HTMLElement | undefined;
  * The spot is NOT removed afterwards. Blink re-runs the hover hit test at the last known pointer
  * position whenever the hovered node leaves the DOM, so removing it would hand the hover straight to
  * whatever sits in that corner - and the settle that follows would then be long enough to fade that
- * element's shadow IN rather than out. It paints nothing (no background, no border), so it cannot show
- * up in a capture; it is `position: fixed` in the corner, above everything, and transparent to the
- * pointer's own hit testing only after the hover has landed on it.
+ * element's shadow IN rather than out.
+ *
+ * It therefore stays hit-testable for the rest of the file. `pointer-events: none` would let the hover
+ * fall through to the page, which is the very thing this exists to prevent, so the spot does intercept
+ * the pointer in its 4px of the bottom-right corner for good. Nothing these suites render puts anything
+ * interactive there, and it paints nothing - no background, no border - so it cannot show up in a
+ * capture either.
  */
 export async function parkPointer(): Promise<void> {
   if (!parkingSpot) {
@@ -56,8 +60,9 @@ export async function parkPointer(): Promise<void> {
     parkingSpot.style.cssText = 'position:fixed;right:0;bottom:0;width:4px;height:4px;z-index:2147483647;';
     document.body.appendChild(parkingSpot);
   }
-  // `force` skips the actionability check, which a modal <dialog> would otherwise fail: its ::backdrop
-  // sits in the top layer, above every z-index. The pointer still moves, which is all this needs.
+  // `force` skips the actionability check, which a capture taken inside a modal <dialog> would
+  // otherwise fail: its ::backdrop sits in the top layer, above every z-index. Not every extension has
+  // such a capture, but this helper is the same file in all of them.
   await userEvent.hover(parkingSpot, { force: true });
 }
 
@@ -81,7 +86,9 @@ export async function settleLayout(): Promise<void> {
  * Transitions and animations are off for the whole file (see test/setup.ts), so there is nothing left
  * to outrun with a sleep here.
  *
- * @param park whether to move the pointer away, for the captures that aim it somewhere themselves.
+ * @param park whether to move the pointer away. The suites that aim the pointer somewhere themselves
+ *   pass false; the parameter is part of the shape this helper has in every extension, so it is here
+ *   even where this repository has no such caller.
  */
 export async function settleBeforeCapture(park = true): Promise<void> {
   await document.fonts.ready;
