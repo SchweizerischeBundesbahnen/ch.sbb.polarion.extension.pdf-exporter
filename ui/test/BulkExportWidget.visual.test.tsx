@@ -10,7 +10,7 @@ import {
 } from '../src/widget/sampleData';
 import type { BulkExportItems } from '../src/widget/types';
 import { SAMPLE_STYLE_PACKAGE_FULL, popupDependencies } from './exportPopupSamples';
-import { settleBeforeCapture } from './visualHelpers';
+import { settleBeforeCapture, settleLayout } from './visualHelpers';
 
 // Docker-only snapshots of the widget as a report page shows it, mounted the way the renderer mounts
 // it: its own shadow root, carrying the tokens and the widget's stylesheet. Polarion's page CSS is not
@@ -41,6 +41,7 @@ async function snapshot(host: HTMLElement, name: string): Promise<void> {
   if (heading) {
     await userEvent.hover(heading);
   }
+  await settleLayout();
   await page.viewport(1280, Math.ceil(host.scrollHeight) + 40);
   await settleBeforeCapture(false);
   await expect(page.elementLocator(host)).toMatchScreenshot(name);
