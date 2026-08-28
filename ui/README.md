@@ -21,13 +21,18 @@ There is one `index.html` / bundle. The page to render is chosen from the `featu
   Footer, `/?feature=filename` - Filename template. The four editor pages: RSP's `CodeEditor` over the
   named settings, with the built-in values shown read-only on a second tab. The last three share
   `components/CustomTemplatesPage.tsx`, since they differ only in their fields and their copy.
-- `/?feature=style-package` - Style Packages. The widest settings page of the extension: the ~30 export
-  switches of one named package, plus the four child settings it points at (cover page, CSS,
-  header/footer, localization) and the optional webhooks. It lists their names from
-  `settings/<child>/names` and marks the ones of a parent scope `(inherited)`, the way
-  `ConfigurationsPane` marks its own. The "Use webhooks" row is there only while `/webhooks/status`
-  reports the feature on, and the role picker needs `link-role-names`; both failures are reported
-  rather than shown as an empty dropdown.
+- `/?feature=style-package` - Style Packages. The widest settings page of the extension. Its configuration
+  pane carries RSP's `Change visibility` button, which the page wires to the separate
+  `style-package-visibility` setting - one `Default` document per scope, the global one acting as the
+  default of every project that stores none, the shape `authorization` uses. The page holds the value and
+  the writer; the pane owns the dialog and reloads its list of packages once the write resolves, since
+  hiding the global level drops the packages inherited from it. Below
+  the pane come the ~30 export switches of one named package, plus the four child settings it points at
+  (cover page, CSS, header/footer, localization) and the optional webhooks. It lists their names from
+  `settings/<child>/names` and marks the ones of a parent scope `(inherited)`, the way `ConfigurationsPane`
+  marks its own. The "Use webhooks" row is there only while `/webhooks/status` reports the feature on, and
+  the role picker needs `link-role-names`; both failures are reported rather than shown as an empty
+  dropdown.
 - `/?feature=style-package-weights` - Style Package Weights (RSP's shared `StylePackageWeights` over
   this extension's `settings/style-package/weights` endpoint; the list is shared with docx-exporter).
 - `/?feature=authorization` - Authorization (RSP's shared `AuthorizationSettings` over the

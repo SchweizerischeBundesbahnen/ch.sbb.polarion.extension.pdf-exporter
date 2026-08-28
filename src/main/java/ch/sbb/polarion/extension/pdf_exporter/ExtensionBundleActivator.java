@@ -10,6 +10,7 @@ import ch.sbb.polarion.extension.pdf_exporter.settings.FileNameTemplateSettings;
 import ch.sbb.polarion.extension.pdf_exporter.settings.HeaderFooterSettings;
 import ch.sbb.polarion.extension.pdf_exporter.settings.LocalizationSettings;
 import ch.sbb.polarion.extension.pdf_exporter.settings.StylePackageSettings;
+import ch.sbb.polarion.extension.pdf_exporter.settings.StylePackageVisibilitySettings;
 import ch.sbb.polarion.extension.pdf_exporter.settings.WebhooksSettings;
 import com.polarion.alm.ui.server.forms.extensions.IFormExtension;
 import com.polarion.core.util.logging.Logger;
@@ -49,7 +50,8 @@ public class ExtensionBundleActivator extends GenericBundleActivator {
                             new CoverPageSettings(),
                             new WebhooksSettings(),
                             new FileNameTemplateSettings(),
-                            new AuthorizationSettings()
+                            new AuthorizationSettings(),
+                            new StylePackageVisibilitySettings()
                     )
             );
         } catch (Exception e) {

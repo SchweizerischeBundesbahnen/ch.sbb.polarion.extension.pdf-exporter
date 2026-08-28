@@ -11,6 +11,7 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.stylepackage.S
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.stylepackage.StylePackageWeightInfo;
 import ch.sbb.polarion.extension.pdf_exporter.settings.AuthorizationSettings;
 import ch.sbb.polarion.extension.pdf_exporter.settings.StylePackageSettings;
+import ch.sbb.polarion.extension.pdf_exporter.settings.StylePackageVisibilitySettings;
 import com.polarion.alm.projects.IProjectService;
 import com.polarion.alm.tracker.ITestManagementService;
 import com.polarion.alm.tracker.ITrackerService;
@@ -47,6 +48,7 @@ class PdfExporterPolarionServiceTest {
     private final ITrackerService trackerService = mock(ITrackerService.class);
     private final ITestManagementService testManagementService = mock(ITestManagementService.class);
     private StylePackageSettings stylePackageSettings;
+    private StylePackageVisibilitySettings stylePackageVisibilitySettings;
 
     private final PdfExporterPolarionService service = new PdfExporterPolarionService(
             trackerService,
@@ -61,8 +63,10 @@ class PdfExporterPolarionServiceTest {
     void setUp() {
         stylePackageSettings = mock(StylePackageSettings.class);
         when(stylePackageSettings.getFeatureName()).thenReturn("style-package");
+        stylePackageVisibilitySettings = mock(StylePackageVisibilitySettings.class);
+        when(stylePackageVisibilitySettings.getFeatureName()).thenReturn(StylePackageVisibilitySettings.FEATURE_NAME);
         NamedSettingsRegistry.INSTANCE.getAll().clear();
-        NamedSettingsRegistry.INSTANCE.register(List.of(stylePackageSettings));
+        NamedSettingsRegistry.INSTANCE.register(List.of(stylePackageSettings, stylePackageVisibilitySettings));
     }
 
     @Test
@@ -134,6 +138,22 @@ class PdfExporterPolarionServiceTest {
 
         verify(stylePackageSettings, times(2)).read(anyString(), any(SettingId.class), isNull());
         verify(stylePackageSettings, times(2)).save(anyString(), any(SettingId.class), any(StylePackageModel.class));
+    }
+
+    @Test
+    void testGetSuitableStylePackagesOfProjectsHidingTheGlobalOnes() {
+        String hidingProject = "hidingProject";
+        when(stylePackageVisibilitySettings.isGlobalStylePackagesHidden(ScopeUtils.getScopeFromProject(hidingProject))).thenReturn(true);
+
+        // Documents of several projects can only share the style packages of the global scope, which this
+        // project does not use, so nothing but "Default" is left
+        Collection<SettingName> result = service.getSuitableStylePackages(List.of(
+                new DocIdentifier(hidingProject, "someSpaceId", "documentName"),
+                new DocIdentifier("anotherProject", "someSpaceId", "documentName")
+        ));
+
+        assertEquals(List.of("Default"), result.stream().map(SettingName::getName).toList());
+        verify(stylePackageSettings, never()).readNames(anyString());
     }
 
     @Test

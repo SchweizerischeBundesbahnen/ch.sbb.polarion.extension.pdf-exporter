@@ -5,6 +5,7 @@ import ch.sbb.polarion.extension.generic.context.CurrentContextExtension;
 import ch.sbb.polarion.extension.generic.exception.ObjectNotFoundException;
 import ch.sbb.polarion.extension.generic.settings.GenericNamedSettings;
 import ch.sbb.polarion.extension.generic.settings.SettingId;
+import ch.sbb.polarion.extension.generic.settings.SettingName;
 import ch.sbb.polarion.extension.generic.settings.SettingsService;
 import ch.sbb.polarion.extension.generic.util.ScopeUtils;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.CommentsRenderType;
@@ -17,6 +18,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Collection;
 import java.util.List;
 
 import static ch.sbb.polarion.extension.generic.settings.NamedSettings.DEFAULT_NAME;
@@ -27,6 +29,8 @@ import static org.mockito.Mockito.*;
 @ExtendWith({MockitoExtension.class, CurrentContextExtension.class})
 @CurrentContextConfig("pdf-exporter")
 class StylePackageSettingsTest {
+
+    private static final String PROJECT_SCOPE = "project/test_project/";
 
     @Test
     void testSettingDoesNotExist() {
@@ -116,7 +120,9 @@ class StylePackageSettingsTest {
             SettingsService mockedSettingsService = mock(SettingsService.class);
             mockScopeUtils.when(() -> ScopeUtils.getFileContent(any())).thenCallRealMethod();
 
-            GenericNamedSettings<StylePackageModel> settings = new StylePackageSettings(mockedSettingsService);
+            // The visibility settings are mocked away: this test is about the names only, with the global
+            // style packages of the scope left visible.
+            GenericNamedSettings<StylePackageModel> settings = new StylePackageSettings(mockedSettingsService, mock(StylePackageVisibilitySettings.class));
 
             String projectName = "test_project";
             String settingOne = "setting_one";
@@ -260,6 +266,116 @@ class StylePackageSettingsTest {
             assertSame(expectedModel, result);
             verify(stylePackageSettings).load(isNull(), eq(SettingId.fromName(settingName)));
         }
+    }
+
+    @Test
+    void testHiddenGlobalStylePackagesAreNotListed() {
+        try (MockedStatic<ScopeUtils> mockScopeUtils = mockStatic(ScopeUtils.class)) {
+            Fixture fixture = hidingFixture(mockScopeUtils, List.of("project_id"));
+
+            Collection<SettingName> names = fixture.settings.readNames(PROJECT_SCOPE);
+
+            assertEquals(List.of(DEFAULT_NAME, "project_one"), names.stream().map(SettingName::getName).toList());
+            // "Default" is not persisted on the project, so it is still the entry of the global scope
+            assertEquals(List.of(GenericNamedSettings.DEFAULT_SCOPE, PROJECT_SCOPE), names.stream().map(SettingName::getScope).toList());
+        }
+    }
+
+    @Test
+    void testProjectDefaultShadowsTheHiddenGlobalOne() {
+        try (MockedStatic<ScopeUtils> mockScopeUtils = mockStatic(ScopeUtils.class)) {
+            Fixture fixture = hidingFixture(mockScopeUtils, List.of("default_id"));
+
+            Collection<SettingName> names = fixture.settings.readNames(PROJECT_SCOPE);
+
+            assertEquals(List.of(DEFAULT_NAME), names.stream().map(SettingName::getName).toList());
+            assertEquals(List.of(PROJECT_SCOPE), names.stream().map(SettingName::getScope).toList());
+        }
+    }
+
+    @Test
+    void testHiddenGlobalStylePackageCannotBeRead() {
+        try (MockedStatic<ScopeUtils> mockScopeUtils = mockStatic(ScopeUtils.class)) {
+            Fixture fixture = hidingFixture(mockScopeUtils, List.of("project_id"));
+
+            SettingId globalName = SettingId.fromName("global_one");
+            assertThrows(ObjectNotFoundException.class, () -> fixture.settings.read(PROJECT_SCOPE, globalName, null));
+        }
+    }
+
+    @Test
+    void testDefaultFallsBackToBuiltInValuesInsteadOfTheGlobalOne() {
+        try (MockedStatic<ScopeUtils> mockScopeUtils = mockStatic(ScopeUtils.class)) {
+            Fixture fixture = hidingFixture(mockScopeUtils, List.of("project_id"));
+
+            StylePackageModel model = fixture.settings.read(PROJECT_SCOPE, SettingId.fromName(DEFAULT_NAME), null);
+
+            assertEquals(StylePackageSettings.DEFAULT_HEADERS_COLOR, model.getHeadersColor());
+            assertEquals(DEFAULT_NAME, model.getCss());
+        }
+    }
+
+    @Test
+    void testStylePackagesOfTheProjectStayReadable() {
+        try (MockedStatic<ScopeUtils> mockScopeUtils = mockStatic(ScopeUtils.class)) {
+            Fixture fixture = hidingFixture(mockScopeUtils, List.of("project_id"));
+
+            assertEquals("projectCss", fixture.settings.read(PROJECT_SCOPE, SettingId.fromName("project_one"), null).getCss());
+        }
+    }
+
+    @Test
+    void testGlobalScopeListsItsOwnStylePackages() {
+        try (MockedStatic<ScopeUtils> mockScopeUtils = mockStatic(ScopeUtils.class)) {
+            Fixture fixture = hidingFixture(mockScopeUtils, List.of("project_id"));
+
+            Collection<SettingName> names = fixture.settings.readNames(GenericNamedSettings.DEFAULT_SCOPE);
+
+            assertEquals(List.of(DEFAULT_NAME, "global_one"), names.stream().map(SettingName::getName).toList());
+        }
+    }
+
+    /**
+     * A project which hides the global style packages: one style package of its own (named after the file id
+     * given - "project_one", or "Default" when the id is "default_id") and one on the global scope.
+     */
+    private Fixture hidingFixture(MockedStatic<ScopeUtils> mockScopeUtils, List<String> projectFileIds) {
+        SettingsService settingsService = mock(SettingsService.class);
+        mockScopeUtils.when(() -> ScopeUtils.getFileContent(any())).thenCallRealMethod();
+
+        ILocation globalLocation = mockLocation(mockScopeUtils, GenericNamedSettings.DEFAULT_SCOPE);
+        stubSettingsFolder(settingsService, globalLocation, List.of("global_id"), namedModel("global_one", "globalCss"));
+
+        ILocation projectLocation = mockLocation(mockScopeUtils, PROJECT_SCOPE);
+        String projectSettingName = projectFileIds.contains("default_id") ? DEFAULT_NAME : "project_one";
+        stubSettingsFolder(settingsService, projectLocation, projectFileIds, namedModel(projectSettingName, "projectCss"));
+
+        StylePackageVisibilitySettings stylePackageVisibilitySettings = mock(StylePackageVisibilitySettings.class);
+        lenient().when(stylePackageVisibilitySettings.isGlobalStylePackagesHidden(PROJECT_SCOPE)).thenReturn(true);
+
+        return new Fixture(new StylePackageSettings(settingsService, stylePackageVisibilitySettings), settingsService);
+    }
+
+    private ILocation mockLocation(MockedStatic<ScopeUtils> mockScopeUtils, String scope) {
+        ILocation location = mock(ILocation.class);
+        lenient().when(location.append(anyString())).thenReturn(location);
+        mockScopeUtils.when(() -> ScopeUtils.getContextLocation(scope)).thenReturn(location);
+        return location;
+    }
+
+    private void stubSettingsFolder(SettingsService settingsService, ILocation location, List<String> fileIds, StylePackageModel content) {
+        lenient().when(settingsService.getLastRevision(location)).thenReturn("1");
+        lenient().when(settingsService.getPersistedSettingFileNames(location)).thenReturn(fileIds);
+        lenient().when(settingsService.read(eq(location), any())).thenReturn(content.serialize());
+    }
+
+    private StylePackageModel namedModel(String name, String css) {
+        StylePackageModel model = StylePackageModel.builder().css(css).build();
+        model.setName(name);
+        return model;
+    }
+
+    private record Fixture(StylePackageSettings settings, SettingsService settingsService) {
     }
 
     @Test
