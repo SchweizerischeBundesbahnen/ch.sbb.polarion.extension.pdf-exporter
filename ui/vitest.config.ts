@@ -107,6 +107,7 @@ export default defineConfig({
             // more than 1280 and the scale caps at 1 - so it is the familiar full-HD number; the height is
             // the binding one and has to clear the 1800 the dialogs ask for.
             //
+            // `--disable-lcd-text` asks for grayscale antialiasing, and
             // `--disable-font-subpixel-positioning` puts every glyph on a whole pixel, and that is what
             // makes the references reproducible. Without it Chromium places a glyph on the subpixel its
             // layout lands on and picks the phase to rasterize it at from what it has already drawn in the
@@ -117,7 +118,7 @@ export default defineConfig({
               contextOptions: { deviceScaleFactor: 2, viewport: { width: 1920, height: 2200 } },
               launchOptions: {
                 ignoreDefaultArgs: ['--hide-scrollbars'],
-                args: ['--disable-font-subpixel-positioning'],
+                args: ['--disable-font-subpixel-positioning', '--disable-lcd-text'],
               },
             }),
             headless: true,
