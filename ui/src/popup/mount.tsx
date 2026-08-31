@@ -1,6 +1,7 @@
 import { createRoot } from 'react-dom/client';
 import type { Root } from 'react-dom/client';
 import type { DocumentType, ExportType } from '../export/documentType';
+import formStyle from '../export/export-form.css?inline';
 import type { DocIdentifier } from '../export/exportData';
 import type { DocumentIdentity } from '../services/exportContext';
 import { currentDocumentLocation, toDocumentIdentity } from '../services/exportContext';
@@ -21,8 +22,8 @@ import popupStyle from './export-popup.css?inline';
  * of its own to render the dialog into, and a progress dialog to hand the parameters to.
  *
  * The dialog is mounted inside a **shadow root** on a throwaway host appended to the page body, so its
- * styles are fully encapsulated on whatever page opened it: RSP's stylesheet and `export-popup.css` are
- * injected into that root, and the SearchableDropdown popup portals into the same root. Closing unmounts
+ * styles are fully encapsulated on whatever page opened it: RSP's stylesheet, the shared
+ * `export/export-form.css` and the dialog's own `export-popup.css` are injected into that root, and the SearchableDropdown popup portals into the same root. Closing unmounts
  * React and removes the host. That is what replaced the page-level micromodal library and the six generic
  * control stylesheets the legacy popup needed injected before it could be opened.
  */
@@ -63,7 +64,7 @@ export function openExportPopup(options: OpenExportPopupOptions = {}): Root {
     // `pdf-exporter form-wrapper` so the form's own rules match, `sbb-ui` for the design tokens - the same
     // three classes the side panel's container carries.
     containerClassName: 'pdf-exporter form-wrapper sbb-ui',
-    styleTexts: [popupStyle],
+    styleTexts: [formStyle, popupStyle],
   });
 
   // `exportType` is passed on so that a bulk run resolves no location path at all: its items are picked in

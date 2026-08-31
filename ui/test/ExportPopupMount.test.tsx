@@ -31,6 +31,15 @@ const open = (options: Parameters<typeof openExportPopup>[0] = {}) => {
 /** The viewport the rest of the suite runs at, restored after the two tests that change it. */
 const DEFAULT_VIEWPORT = { width: 1280, height: 720 } as const;
 
+/**
+ * The columns a section of the form is laid out in, as the browser resolved them.
+ *
+ * How many there are is a container query on the form (see export/export-form.css), so this is what says
+ * whether the dialog is wide enough for two - and it is read off the computed style rather than measured,
+ * so an empty section cannot pass for a folded one.
+ */
+const columnsOf = (section: Element): string[] => getComputedStyle(section).gridTemplateColumns.split(' ');
+
 /** Everything inside the dialog that has more to show than it shows, and offers a scrollbar for it. */
 const scrollers = (shadow: ShadowRoot): string[] =>
   [...new Set(shadow.querySelectorAll('*'))]
@@ -72,8 +81,10 @@ describe('mounting the export dialog', () => {
     expect(styles.some((css) => css.includes('--sbb-checkbox-checked'))).toBe(true);
     // ... the base font, which nothing inside a shadow root inherits from the page ...
     expect(styles.some((css) => css.includes('--sbb-control-font-family'))).toBe(true);
-    // ... and the dialog's own two-column layout, which used to be a page stylesheet
-    expect(styles.some((css) => css.includes('.flex-column'))).toBe(true);
+    // ... the shared export form, whose layout used to be a page stylesheet ...
+    expect(styles.some((css) => css.includes('.pdf-section'))).toBe(true);
+    // ... and the dialog's own chrome, which is what is left of export-popup.css
+    expect(styles.some((css) => css.includes('.in-progress-overlay'))).toBe(true);
   });
 
   it('carries the classes the dialog CSS and the tokens are scoped to', async () => {
@@ -88,21 +99,22 @@ describe('mounting the export dialog', () => {
     open({ location: location('LIVE_DOC') });
     await loaded();
 
-    // Rules only export-popup.css states, checked as computed style: they prove the stylesheet is in effect
-    // inside the root, not merely present as text.
-    expect(getComputedStyle(shadow()!.querySelector('.property-wrapper')!).display).toBe('flex');
-    expect(getComputedStyle(shadow()!.querySelector('.flex-column')!).flexBasis).toBe('320px');
+    // Rules only this extension's stylesheets state, checked as computed style: they prove the sheets are
+    // in effect inside the root, not merely present as text.
+    expect(getComputedStyle(shadow()!.querySelector('.property-wrapper')!).display).toBe('grid');
+    // The dialog is wide enough for the form's two-column layout, which is a container query on the form
+    expect(columnsOf(shadow()!.querySelector('.pdf-section')!)).toHaveLength(2);
   });
 
   it('keeps the two settings columns side by side when a scrollbar takes width off the form', async () => {
     // Short enough that the form goes over its height cap and the content area scrolls. The scrollbar then
-    // takes about 15px off it, leaving 685px where two fixed 340px columns and their 20px gap need 700 - so
-    // a fixed width wrapped the right column underneath, which is how the dialog shipped. The columns are
-    // sized to shrink instead.
+    // takes about 15px off the form's width, and the form's own container query is what decides how many
+    // columns are left - so this is where a layout that measured the window rather than the form, or a
+    // breakpoint set too close to the dialog's width, folds the two columns into one.
     //
     // The scrollbar is a real one, which the suite can only draw because vitest.config.ts passes
     // `ignoreDefaultArgs: ['--hide-scrollbars']`. Playwright hides scrollbars in headless Chromium by
-    // default, and that is precisely why this defect reached production with every test green.
+    // default, and that is precisely why this class of defect once reached production with every test green.
     await page.viewport(900, 520);
     open({ location: location('LIVE_DOC') });
     await loaded();
@@ -111,13 +123,26 @@ describe('mounting the export dialog', () => {
     expect(content.scrollHeight).toBeGreaterThan(content.clientHeight); // it really does scroll
     expect(content.offsetWidth - content.clientWidth).toBeGreaterThan(0); // and the scrollbar takes width
 
-    const columns = Array.from(
-      shadow()!.querySelectorAll<HTMLElement>('.flex-container.group-start:has(.full-row) > .flex-column'),
-    );
-    expect(columns).toHaveLength(2);
-    const [left, right] = columns.map((column) => column.getBoundingClientRect());
-    expect(Math.round(left.top)).toBe(Math.round(right.top)); // same row, i.e. not wrapped
-    expect(Math.round(left.width)).toBe(Math.round(right.width)); // and still equal
+    const section = shadow()!.querySelector<HTMLElement>('.pdf-section')!;
+    expect(columnsOf(section)).toHaveLength(2);
+    const [first, second] = Array.from(section.children)
+      .slice(0, 2)
+      .map((row) => row.getBoundingClientRect());
+    expect(Math.round(first.top)).toBe(Math.round(second.top)); // the same line, i.e. not folded
+    expect(Math.round(first.width)).toBe(Math.round(second.width)); // and still equal
+
+    await page.viewport(DEFAULT_VIEWPORT.width, DEFAULT_VIEWPORT.height);
+  });
+
+  it('folds the form into one column where the window cannot hold two', async () => {
+    // The dialog gives way at min(732px, 100vw - 32px), so a narrow window leaves the form under the 620px
+    // its two columns need - and the rows then stack instead of being squeezed. Nothing about this is the
+    // dialog's own: the panel folds at the same width, in the properties pane, from the same rule.
+    await page.viewport(520, 900);
+    open({ location: location('LIVE_DOC') });
+    await loaded();
+
+    expect(columnsOf(shadow()!.querySelector('.pdf-section')!)).toHaveLength(1);
 
     await page.viewport(DEFAULT_VIEWPORT.width, DEFAULT_VIEWPORT.height);
   });

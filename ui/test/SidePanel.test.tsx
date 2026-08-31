@@ -80,16 +80,19 @@ describe('what the style package puts on screen', () => {
     expect(field<HTMLInputElement>('#headers-color')!.value).toBe('#004d73');
   });
 
-  it('shows a value field only while its switch is on', async () => {
+  it('reserves the space of a value field rather than removing it, as the export dialog does', async () => {
+    // `visibility` and not `display`: ticking a checkbox must not reflow the rows around it.
     open();
     await settled();
 
-    expect(field('#chapters')).toBeNull();
-    await userEvent.click(checkbox('specific-chapters'));
-    expect(field('#chapters')).not.toBeNull();
+    const chapters = field<HTMLInputElement>('#chapters')!;
+    expect(getComputedStyle(chapters).visibility).toBe('hidden');
 
     await userEvent.click(checkbox('specific-chapters'));
-    expect(field('#chapters')).toBeNull();
+    expect(getComputedStyle(field('#chapters')!).visibility).toBe('visible');
+
+    await userEvent.click(checkbox('specific-chapters'));
+    expect(getComputedStyle(field('#chapters')!).visibility).toBe('hidden');
   });
 
   it('shows the comment options only while comments are rendered', async () => {
@@ -135,7 +138,8 @@ describe('what the style package puts on screen', () => {
     open(sampleDependencies({ stylePackage: SAMPLE_STYLE_PACKAGE_FULL, data: { roles: [] } }));
     await settled();
 
-    expect(field('.roles-fields')).toBeNull();
+    expect(field('#selected-roles')).toBeNull();
+    expect(field('#roles-wrapper')).toBeNull();
   });
 
   it('offers the roles and their direction once the roles are switched on', async () => {
@@ -326,16 +330,18 @@ describe('what the style package puts on screen', () => {
 });
 
 describe('what the panel says when it cannot load', () => {
+  // Reported as the same alert an export failure is, in the same place - which is what the export dialog
+  // has always done and what the panel used to say in plain red text of its own under the button.
   it('reports a style package that cannot be read', async () => {
     open({ ...sampleDependencies(), loadPackage: () => Promise.reject(new Error('HTTP 500')) });
 
-    await vi.waitFor(() => expect(text('#style-package-error')).toContain('error loading style package settings'));
+    await vi.waitFor(() => expect(text('#export-error')).toContain('error loading style package settings'));
   });
 
   it('reports data that cannot be read', async () => {
     open({ ...sampleDependencies(), loadData: () => Promise.reject(new Error('HTTP 500')) });
 
-    await vi.waitFor(() => expect(text('#style-package-error')).toContain('error loading style package settings'));
+    await vi.waitFor(() => expect(text('#export-error')).toContain('error loading style package settings'));
   });
 
   // There used to be a third failure here: the product's export JS, loaded at runtime from the other
@@ -425,7 +431,7 @@ describe('exporting', () => {
     await userEvent.click(field<HTMLButtonElement>('#export-pdf')!);
 
     await vi.waitFor(() =>
-      expect(text('#export-error')).toBe('Error occurred during PDF generation:\nThe document has no content'),
+      expect(text('#export-error')).toBe('Error occurred during PDF generation: The document has no content'),
     );
   });
 
@@ -602,15 +608,17 @@ describe('validating the page width', () => {
     expect(document.querySelector('.validate-result-img')!.className).not.toContain('img-zoomed');
   });
 
-  it('shows why a validation failed', async () => {
+  it('shows why a validation failed, where a refused export is reported too', async () => {
     validation([{ method: 'POST', match: /\/validate\?/, status: 500, json: { message: 'Rendering failed' } }]);
     await settled();
 
     await userEvent.click(field<HTMLButtonElement>('#validate-pdf')!);
 
     await vi.waitFor(() =>
-      expect(text('#validate-error')).toBe('Error occurred validating pages width:\nRendering failed'),
+      expect(text('#export-error')).toBe('Error occurred validating pages width: Rendering failed'),
     );
+    // `#validate-error` says what a validation that *ran* found, so it stays empty here
+    expect(text('#validate-error')).toBe('');
   });
 
   it('asks for one preview more than it shows, so it knows there are more', async () => {

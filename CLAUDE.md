@@ -29,21 +29,24 @@
     `#pdf-exporter-panel` div plus a `<link>` to `css/starter.css` whose `onload` fires the import) and
     `assets/side-panel.js` mounts React into a shadow root of it. It reads its data from the same internal
     REST endpoints the export dialog uses; the Java side substitutes nothing but the bundle version.
-    Its CSS is `ui/src/sidepanel/side-panel.css`.
+    Its CSS is the shared `ui/src/export/export-form.css` plus `ui/src/sidepanel/side-panel.css` for the
+    pane's own chrome.
   - **"Export to PDF" dialog** - `assets/export-popup.js` exporting `openExportPopup({documentType})`,
     imported on click by `js/starter.js` (document editor toolbar), `js/live-reports.js` (report toolbar)
     and `ExportToPdfButtonRenderer` (the report widget button). It appends its own host to the page body and
     mounts into a shadow root of it. The Bulk PDF Export widget is the fourth caller and renders
-    `ExportPopupModal` directly instead, being part of the same app. Its CSS is
-    `ui/src/popup/export-popup.css`.
+    `ExportPopupModal` directly instead, being part of the same app. Its CSS is the shared
+    `ui/src/export/export-form.css` plus `ui/src/popup/export-popup.css` for the dialog's own chrome.
 
   Each shadow root carries its own CSS, so the extension now puts **no stylesheet on a Polarion page at
   all**. `css/pdf-exporter.css` is deleted and the injectors call no `injectStyle`; the toolbar buttons use
   Polarion's own classes plus generic's `css/dle-toolbar.css`. See [`ui/README.md`](ui/README.md) for the
   layering.
 - **`webapp/pdf-exporter/js/modules/` is gone.** `ExportPopup.js`, `ExportPanel.js`, `ExportContext.js` and
-  `ExportParams.js` were ported into the app: `ui/src/export/` (the shared export model - which rows a
-  document type shows, a style package read into a form, a form turned into a request),
+  `ExportParams.js` were ported into the app: `ui/src/export/` (the shared export model **and the form
+  itself** - which rows a document type shows, a style package read into a form, a form turned into a
+  request, and `ExportFormView.tsx`, which the dialog and the side panel both render: they differ only in
+  the chrome around it, and its layout follows the width it is given through a container query),
   `ui/src/services/exportContext.ts` (the location hash) and `ui/src/services/conversion.ts` (the convert-job
   protocol). Nothing is loaded across webapps at runtime any more. What is left in `webapp/pdf-exporter` is
   the three injector scripts, the empty `css/starter.css` trigger and the three HTML templates the Java

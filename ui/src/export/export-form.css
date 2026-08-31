@@ -1,0 +1,439 @@
+/* The look of the export form, shared by the "Export to PDF" dialog and the Document Properties side panel.
+
+   Both surfaces render the same form (export/ExportFormView.tsx) and differ only in what surrounds it: a
+   dialog with its footer buttons, or a pane with an "Export to PDF" button of its own. So the rows, the
+   columns, the alerts and the page width previews are one stylesheet, injected into each surface's shadow
+   root next to react-sbb-polarion's stylesheet - see popup/mount.tsx, sidepanel/mount.tsx and widget/main.tsx.
+   What is left in popup/export-popup.css and sidepanel/side-panel.css is each surface's own chrome.
+
+   The ids the markup carries are the legacy fragment's own, prefixed per surface (`popup-` in the dialog,
+   bare in the panel). They are safe to keep - and worth keeping, the rules being copies - because inside a
+   shadow root they cannot collide with anything on the page.
+
+   Rules for a control's insides are deliberately absent: a dropdown, a text field and a colour picker are
+   styled by the shared control system in react-sbb-polarion's stylesheet (scoped to `.form-wrapper`), which
+   both roots carry. What is here is where a control sits, not what it looks like. */
+
+/* --- The form ------------------------------------------------------------------------------------ */
+
+/* The query container, and the three measurements every row is laid out against.
+
+   `container-type: inline-size` is what makes one form fit a 360px properties pane and a 700px dialog: the
+   sections below ask how much room *the form* has, not how wide the window is. The dialog is therefore
+   sized in export-popup.css rather than left to fit its content - an element with inline-size containment
+   contributes nothing to its parent's max-content width, so a `width: max-content` dialog around this form
+   would collapse to a single column whatever the window.
+
+   The gutter and the label column are stated once so that every checkbox, every label text and every
+   control lands on the same three x positions - in both columns of the wide layout and in the one column of
+   the narrow one. That is what the legacy forms did not do: each row was a flex line, so a dropdown started
+   wherever its own label happened to end. 148px is the widest label ("Comments rendering") plus room for a
+   font the browser had to substitute; a label that does not fit belongs in `.pdf-fields` below. */
+.pdf-export-form {
+  position: relative;
+  container-type: inline-size;
+  container-name: pdf-export-form;
+  --pdf-switch-column: 15px; /* --sbb-toggle-size, the checkbox's own width */
+  --pdf-label-column: 148px;
+  --pdf-cell-gap: 5px;
+  --pdf-column-gap: 24px;
+}
+
+/* The two sentences introducing the style package and its settings.
+   Stated rather than left to the browser, whose default is `1em` above and below - 13px of it above the
+   first line, on top of the content padding, and 13px more between the sentence and the row under it.
+   Nothing above (the surface's own padding is the gap) and one row's worth below. */
+.pdf-export-form p {
+  margin: 0 0 8px;
+}
+
+/* A group separated from the one above it by a hairline, as the legacy markup did with an inline style on
+   the element that opens the group. */
+.pdf-export-form .group-start {
+  border-top: 1px solid #eee;
+  margin-top: 15px;
+  padding-top: 5px;
+}
+
+/* The settings block opens with a tighter rule than the groups inside it - the legacy inline style on
+   #style-package-content. */
+.pdf-export-form .settings-block.group-start {
+  margin-top: 10px;
+  padding-top: 10px;
+}
+
+/* --- Columns ------------------------------------------------------------------------------------- */
+
+/* A section of rows: one column, and two wherever the form has room for two.
+
+   Rows flow across before they flow down, which is what keeps a section dense: every grid row is one row of
+   controls tall, so a section can leave at most one half-empty cell at its end. The legacy dialog instead
+   split its fields into two *continuous* flex columns, and a row hidden for a document type then left a
+   hole its neighbours could not rise into - which is why its markup carried a note about keeping the two
+   columns equal in length by hand. Nothing has to be balanced by hand here.
+
+   620px is two columns at their narrowest (15 + 148 + 5 + 130 for a dropdown, twice, plus the gap). Below
+   it the section is a single column, which is the properties pane and a narrow window alike. */
+.pdf-section {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  column-gap: var(--pdf-column-gap);
+}
+
+@container pdf-export-form (min-width: 620px) {
+  .pdf-section {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* A row that takes a line of its own, whether the section has one column or two. Used where a row carries
+   something wider than a cell (the file name, a Lucene query) and where the row below it belongs to it. */
+.pdf-section > .full-row {
+  grid-column: 1 / -1;
+}
+
+/* --- Rows ---------------------------------------------------------------------------------------- */
+
+/* One row: the checkbox gutter, the label, the control.
+
+   A row without a checkbox leaves the gutter empty, so its label still starts where every other label
+   starts. A row without a control lets its label take the rest of the line, which is what the long switch
+   texts ("Follow HTML presentational hints") need. `min-height` keeps such a row as tall as a row with a
+   control, so the vertical rhythm does not change from one to the next. */
+.property-wrapper {
+  display: grid;
+  grid-template-columns: var(--pdf-switch-column) var(--pdf-label-column) minmax(0, 1fr);
+  align-items: center;
+  column-gap: var(--pdf-cell-gap);
+  margin-top: 8px;
+  min-height: var(--sbb-control-height, 23px);
+}
+
+.property-wrapper > input[type='checkbox'] {
+  grid-column: 1;
+  justify-self: center;
+  margin: 0;
+}
+
+.property-wrapper > label {
+  grid-column: 2;
+}
+
+.property-wrapper > label:last-child {
+  grid-column: 2 / -1;
+}
+
+/* The cell the control sits in. Always an element of its own, never the control itself: a SearchableSelect
+   renders the native `<select>` it upgrades *and* the visible `.searchable-dropdown` next to it, and two
+   grid items in one track would place the second one on a row of its own. */
+.property-wrapper > .field {
+  grid-column: 3;
+  justify-self: start;
+  min-width: 0;
+}
+
+/* A field that takes whatever the label leaves, rather than its natural width. */
+.property-wrapper > .field.grows {
+  justify-self: stretch;
+}
+
+.property-wrapper > .field.grows > input {
+  width: 100%;
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+/* A cell that replaces the label rather than following it: the options a switch reveals, indented to the
+   label column so they read as belonging to the row above. */
+.property-wrapper > .field.field-wide {
+  grid-column: 2 / -1;
+  justify-self: stretch;
+}
+
+/* A row that belongs to the row above it. Full width, so the switch it depends on keeps its own line. */
+.pdf-section > .sub-row {
+  grid-column: 1 / -1;
+  margin-top: 4px;
+}
+
+/* The pair of comment options, and the workitem-roles selectors: side by side, wrapping where a narrow
+   pane cannot hold both. */
+.pdf-export-form .option-pair {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: 16px;
+  row-gap: 4px;
+}
+
+.pdf-export-form .option-pair label {
+  display: inline-flex;
+  align-items: center;
+}
+
+.pdf-export-form .more-info {
+  background: var(--sbb-info-icon) no-repeat;
+  width: 16px;
+  height: 16px;
+  margin-left: 6px;
+  cursor: help;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+/* --- Rows whose label is too long for the label column -------------------------------------------- */
+
+/* The four switches that reveal a text field ("Specific higher level chapters", "Custom styles of numbered
+   lists", ...). Their texts are wider than the label column, so they get a grid of their own whose label
+   track is `max-content`: the four rows share it, so the four fields still line up with each other, and no
+   text has to be measured into a magic number. The legacy panel wrote three such numbers by hand
+   (`w-chapters: 195px`, `w-metadata: 115px`, `w-list-styles: 210px`) and the fields did not line up.
+
+   `display: contents` on each row is what puts the checkbox, the label and the field into the shared
+   tracks; the row keeps no box of its own, so the spacing is the grid's `row-gap`. */
+.pdf-fields {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: var(--pdf-switch-column) max-content minmax(0, 1fr);
+  align-items: center;
+  column-gap: var(--pdf-cell-gap);
+  row-gap: 8px;
+  margin-top: 8px;
+}
+
+.pdf-field {
+  display: contents;
+}
+
+.pdf-fields > .pdf-field > input[type='checkbox'] {
+  grid-column: 1;
+  justify-self: center;
+  margin: 0;
+}
+
+.pdf-fields > .pdf-field > label {
+  grid-column: 2;
+}
+
+.pdf-fields > .pdf-field > .field {
+  grid-column: 3;
+  min-width: 0;
+}
+
+.pdf-fields > .pdf-field > .field > input {
+  width: 100%;
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+/* Narrower than the longest of those labels plus a usable field: the field moves under its label instead,
+   still in the label column so the four of them stay aligned. */
+@container pdf-export-form (max-width: 340px) {
+  .pdf-fields {
+    grid-template-columns: var(--pdf-switch-column) minmax(0, 1fr);
+  }
+
+  .pdf-fields > .pdf-field > .field {
+    grid-column: 2;
+  }
+}
+
+/* --- Controls ------------------------------------------------------------------------------------ */
+
+/* Scoped to the form rather than to a row: the four switches with a text field of their own are laid out by
+   `.pdf-fields` and carry no `.property-wrapper`, and a field there has to look like every other field.
+
+   input[type="color"] is excluded: the colour picker's look is owned entirely by the shared control system
+   in react-sbb-polarion's stylesheet (scoped to .form-wrapper), which both roots carry. Keeping the colour
+   input out of these baseline rules leaves that in sole control, so admin page, side panel and dialog
+   render identically. */
+.pdf-export-form select,
+.pdf-export-form input:not([type='color']) {
+  font-weight: 600;
+  font-family: 'Segoe UI', 'Selawik', 'Open Sans', Arial, sans-serif;
+  font-size: 13px;
+  border: 1px solid #cccccc;
+  border-radius: 2px;
+}
+
+/* Every dropdown here is a SearchableSelect, which hides its native <select> once it has upgraded it.
+   These rules are what the <select> falls back to if that upgrade ever throws. */
+.pdf-export-form select {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  background: transparent var(--sbb-combo-chevron) no-repeat;
+  background-position: calc(100% - 1rem) 55% !important;
+  background-size: 16px 16px;
+  padding: 2px 2rem 4px 0.4rem;
+}
+
+.pdf-export-form input:not([type='color']) {
+  padding: 2px 4px 4px 0.4rem;
+}
+
+/* A field the export was refused on.
+   The legacy rule was `.property-wrapper input.error`, which never won: the shared control system styles
+   text inputs through `.form-wrapper input[type=text]:not(.sd-trigger):not(.search-box)` - specificity
+   (0,4,1) against the legacy rule's (0,3,1) - so the form set a class that changed nothing and only the
+   notification said anything. `[type='text']` is what brings these selectors to the same specificity, and
+   being later in the shadow root is what makes them win. The `:focus` variant is restated because the
+   shared system raises its own there, and the field is usually still focused when the export is refused. */
+.pdf-exporter .pdf-export-form input[type='text'].error,
+.pdf-exporter .pdf-export-form input[type='text'].error:hover,
+.pdf-exporter .pdf-export-form input[type='text'].error:focus {
+  border-color: red;
+  color: red;
+}
+
+/* Uniform control sizing so every combo-like control matches the admin comboboxes (130 x 23). The
+   searchable-dropdown wraps a native <select>; its container may inherit an inline width from the original
+   element, so !important pins it to 130px. */
+.pdf-exporter .searchable-dropdown {
+  width: 130px !important;
+  display: inline-block;
+}
+
+.pdf-exporter .searchable-dropdown > .sd-trigger {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+/* Ensure the dropdown popup is combobox-width + 35px here too (high specificity so a Polarion .options
+   rule in the page context cannot flatten it back to the trigger width). */
+.pdf-export-form .searchable-dropdown .options {
+  min-width: calc(100% + 35px);
+}
+
+/* --- Alerts -------------------------------------------------------------------------------------- */
+
+/* What the form says about what just happened, in one block directly above the button that started it -
+   the same block on both surfaces, where the dialog used to put alert boxes at the top of its form and the
+   panel plain red and orange text under its button.
+
+   `pre-line` because a conversion warning is several sentences separated by blank lines (see
+   services/conversion.ts) and is rendered as text, never as markup. The colours, the borders and the
+   glyphs come from the shared `.notifications .alert-*` rules in react-sbb-polarion's stylesheet; the width
+   is restated because that shared rule leaves 32px for a page container's padding, which a form inside a
+   pane or a dialog has already had taken off it. */
+.notifications {
+  padding: 10px 0 0;
+}
+
+.notifications .alert {
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0 0 8px;
+  padding: 6px 12px;
+  border-radius: 3px;
+  white-space: pre-line;
+}
+
+.notifications .alert:last-child {
+  margin-bottom: 0;
+}
+
+/* The result of a validation run, beside the button that ran it. Layout only; text colour and weight come
+   from the shared `.validation-alerts .alert-*` rules. */
+.validation-alerts {
+  display: inline-block;
+  padding: 0 10px;
+  white-space: pre-line;
+}
+
+/* --- Buttons ------------------------------------------------------------------------------------- */
+
+/* The "Validate pages width" button, and the panel's own "Export to PDF" button next to it. The dialog's
+   Export and Close buttons are the shared Modal's footer and are styled by the library, not here. */
+.buttons-wrapper {
+  margin: 10px 0 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.buttons-wrapper button {
+  background-color: transparent;
+  border: 1px solid #dedede;
+  color: #555;
+  padding: 4px 8px;
+  font-size: 12px;
+  font-weight: bold;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+}
+
+.buttons-wrapper button:disabled {
+  text-shadow: white 1px 1px 0.01em;
+  color: #c9d1d7;
+  cursor: default;
+}
+
+.buttons-wrapper button img {
+  margin-right: 6px;
+}
+
+.buttons-wrapper button:disabled img {
+  opacity: 0.3;
+}
+
+/* The spinner beside a button, shown only while that button's operation runs: the surface switches it on
+   with an inline `display`. The dialog covers its whole form with an overlay instead and never switches
+   one on, so it must be off by default here rather than in either surface's own stylesheet. */
+.buttons-wrapper .sbb-spinner {
+  display: none;
+  width: 20px;
+  height: 20px;
+}
+
+/* --- Page width validation results --------------------------------------------------------------- */
+
+/* Four previews across where the form is wide, two where it is a pane: a share of the width with a floor
+   and a ceiling, rather than the dialog's 22% (77px in a pane) or the panel's flat 200px (four of which do
+   not fit a dialog). */
+.preview {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.validate-result-img {
+  flex: 0 1 calc(25% - 8px);
+  min-width: 120px;
+  max-width: 200px;
+  border: solid 1px red;
+  cursor: zoom-in;
+}
+
+/* Clicked open: as tall as the viewport allows, centred, above everything. `position: fixed` is measured
+   against the viewport even from inside a shadow root, so one rule serves the dialog and the pane. */
+.validate-result-img.img-zoomed {
+  position: fixed;
+  top: 5%;
+  left: 50%;
+  transform: translateX(-50%);
+  height: 90%;
+  width: auto;
+  max-width: none;
+  border: 3px solid red;
+  z-index: 999;
+  cursor: zoom-out;
+}
+
+.suspicious-wi {
+  margin-top: 8px;
+}
+
+.suspicious-list {
+  margin: 0;
+  color: black;
+}
+
+.suspicious-list a {
+  color: #007993;
+}

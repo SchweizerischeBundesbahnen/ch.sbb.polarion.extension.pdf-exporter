@@ -65,14 +65,20 @@ describe('mounting the side panel', () => {
 
   it('styles the panel from inside the shadow root, the page having no rules for it', async () => {
     const element = host();
+    // The width of Polarion's Document Properties pane, which is what the form lays itself out against.
+    element.style.width = '360px';
 
     mounted(element);
     await loaded(element);
 
-    // A rule that only side-panel.css states, checked as computed style: it proves the stylesheet is in
+    // A rule that only this extension's stylesheets state, checked as computed style: it proves they are in
     // effect inside the root, not merely present as text.
     const row = element.shadowRoot!.querySelector('.property-wrapper')!;
-    expect(getComputedStyle(row).display).toBe('flex');
+    expect(getComputedStyle(row).display).toBe('grid');
+    // The pane is 360px wide, which is one column of the shared form - a container query on the form, so
+    // the panel gets there without a rule of its own.
+    const section = element.shadowRoot!.querySelector('.pdf-section')!;
+    expect(getComputedStyle(section).gridTemplateColumns.split(' ')).toHaveLength(1);
   });
 
   it('says it is loading with the same indicator the export popup uses', async () => {

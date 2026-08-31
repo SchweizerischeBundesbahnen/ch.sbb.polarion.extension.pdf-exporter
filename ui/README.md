@@ -57,7 +57,7 @@ Vite would emit:
 | Entry                     | Emitted as               | Imported by                                                                            | Export it is called through |
 | ------------------------- | ------------------------ | -------------------------------------------------------------------------------------- | --------------------------- |
 | `src/widget/main.tsx`     | `assets/bulk-widget.js`  | `BulkPdfExportWidgetRenderer`                                                          | `default(selector)`         |
-| `src/sidepanel/mount.tsx` | `assets/side-panel.js`   | `webapp/pdf-exporter/html/sidePanelContent.html`                                        | `mountSidePanel(selector)`  |
+| `src/sidepanel/mount.tsx` | `assets/side-panel.js`   | `webapp/pdf-exporter/html/sidePanelContent.html`                                       | `mountSidePanel(selector)`  |
 | `src/popup/mount.tsx`     | `assets/export-popup.js` | `webapp/pdf-exporter/js/starter.js`, `js/live-reports.js`, `ExportToPdfButtonRenderer` | `openExportPopup(options)`  |
 
 All three need `rollupOptions.preserveEntrySignatures: 'strict'` to keep that export, which a Vite app
@@ -71,15 +71,19 @@ reason.
 Three surfaces export: the toolbar dialog, the Document Properties side panel and the bulk export widget.
 What they share is [`src/export/`](src/export/) plus two services:
 
-| Module                       | What it holds                                                                          |
-| ---------------------------- | -------------------------------------------------------------------------------------- |
-| `export/documentType.ts`     | Which rows a document type shows, and which of them the request carries.                |
-| `export/exportForm.ts`       | A style package read into form state.                                                   |
-| `export/exportParams.ts`     | Form state turned into an export request.                                               |
-| `export/exportData.ts`       | The REST reads each dialog needs before it can be shown.                                |
-| `export/validation.ts`       | The three fields a user can get wrong.                                                  |
-| `services/exportContext.ts`  | Where the item is, read out of the Polarion location hash.                              |
-| `services/conversion.ts`     | Submit a conversion job, poll it, download the result; test run and collection extras.  |
+| Module                      | What it holds                                                                          |
+| --------------------------- | -------------------------------------------------------------------------------------- |
+| `export/documentType.ts`    | Which rows a document type shows, and which of them the request carries.               |
+| `export/exportForm.ts`      | A style package read into form state.                                                  |
+| `export/exportParams.ts`    | Form state turned into an export request.                                              |
+| `export/exportData.ts`      | The REST reads each dialog needs before it can be shown.                               |
+| `export/validation.ts`      | The three fields a user can get wrong.                                                 |
+| `export/ExportFormView.tsx` | The form itself: every row, on both surfaces.                                          |
+| `export/formRows.tsx`       | The three kinds of row the form is built from.                                         |
+| `export/export-form.css`    | How those rows and their columns are laid out, and how the form reports.               |
+| `export/reporting.ts`       | What the form tells the user, and the page width validation behind one of its buttons. |
+| `services/exportContext.ts` | Where the item is, read out of the Polarion location hash.                             |
+| `services/conversion.ts`    | Submit a conversion job, poll it, download the result; test run and collection extras. |
 
 The last two were `webapp/pdf-exporter/js/modules/ExportContext.js` and `ExportParams.js`, loaded at
 runtime from the other webapp by whichever surface needed them. Nothing loads them any more and
@@ -93,6 +97,41 @@ switches, localize enums - whose export request then left every one of them out.
 transcribed as data (`VISIBLE_FOR` vs `SENT_FOR`) and asserted in `test/documentType.test.ts`, so it stays a
 decision instead of becoming a regression.
 
+## The shared export form
+
+The dialog and the side panel render the **same** form: `export/ExportFormView.tsx`. They were two copies of
+it - the same rows, the same style package, the same validation, the same request - laid out by hand, the
+dialog in two fixed flex columns and the panel in one, each with its own label widths, its own way of hiding
+an optional field, and its own way of reporting a failure. What is left per surface is the chrome: RSP's
+`Modal` with its footer, or a `<fieldset>` in the properties pane with an "Export to PDF" button of its own
+(passed in as `actions`).
+
+Three things about that form are worth knowing.
+
+**It follows the room it has, not the surface it is on.** `.pdf-export-form` is a query container
+(`container-type: inline-size`), and a section of rows is one column below 620px of form width and two above
+it. So the 360px properties pane gets one column, the dialog two, and a narrow window folds the dialog's
+form without a rule of its own. That is also why `export-popup.css` **states** the dialog's width rather
+than sizing it to its content: an element with inline-size containment contributes nothing to its parent's
+max-content width, so a `width: max-content` dialog would collapse to one column at every window size.
+
+**Every control starts at the same x.** A row is a three-track grid - a checkbox gutter, a fixed label
+column, the control - so checkboxes, label texts and controls line up down the whole form and across both
+columns. The four switches whose text is too long for that label column (chapters, metadata fields, the
+Lucene query, the list styles) get a grid of their own whose label track is `max-content`: they share it, so
+their fields align with each other without a measured-by-hand number. The legacy panel wrote three such
+numbers (`w-chapters: 195px`, `w-metadata: 115px`, `w-list-styles: 210px`) and the fields still did not line
+up.
+
+**It reports in one place.** Warnings, failures and the success of an export are `.notifications` alert boxes
+directly above the button that started the operation, on both surfaces; the panel's plain red and orange text
+under its button is gone, and so is the third place its validation errors used to land. A form that scrolls
+brings the block into view when something appears in it. What a validation that _ran_ found stays beside the
+Validate button, where the dialog has always put it.
+
+An optional value field is hidden with `visibility` rather than removed - what the legacy dialog did and the
+panel did not: ticking a checkbox must not reflow the rows around it.
+
 ## The "Export to PDF" dialog
 
 `src/popup/` is the dialog four surfaces open: the document editor toolbar button, the Live Report toolbar
@@ -103,16 +142,16 @@ hand the chosen parameters to.
 
 The chrome is RSP's shared `Modal` - a native `<dialog>`, so the top layer, the backdrop and Escape come for
 free. That replaced micromodal: `openExportPopup` appends a host to the page body, mounts into a **shadow
-root** of it with RSP's stylesheet and `src/popup/export-popup.css` injected, and removes the host on close.
-Nothing is put on the page for it any more, which is why `starter.js` and `live-reports.js` no longer inject
-the micromodal library and the six generic control stylesheets, and why `BulkPdfExportWidgetRenderer` no
-longer inlines four stylesheets next to its shim.
+root** of it with RSP's stylesheet, the shared `src/export/export-form.css` and the dialog's own
+`src/popup/export-popup.css` injected, and removes the host on close. Nothing is put on the page for it any
+more, which is why `starter.js` and `live-reports.js` no longer inject the micromodal library and the six
+generic control stylesheets, and why `BulkPdfExportWidgetRenderer` no longer inlines four stylesheets next
+to its shim.
 
-Two details of `export-popup.css` are worth knowing. It raises the shared modal's `max-width` past its 640px
-cap, because this form is two 340px columns - keyed on `.pdf-export-form` so that the same stylesheet,
-injected next to the progress dialog in the widget's shadow root, does not resize that one. And the optional
-value fields are hidden with `visibility` rather than removed, which is what the legacy popup did: ticking a
-checkbox must not reflow the column around it.
+`export-popup.css` is now only what a dialog has that a pane does not: its size, and the overlay that covers
+the form while an operation runs. The size is `min(732px, 100vw - 32px)`, which raises the shared modal's
+640px cap to the two columns the form asks for - keyed on `.pdf-export-form` so that the same stylesheet,
+injected next to the progress dialog in the widget's shadow root, does not resize that one.
 
 `/?feature=export-popup` opens the dialog through the **real** `openExportPopup` against a **real** item:
 pick a document, a document type and an export type, and the harness writes the Polarion hash that item is
@@ -160,9 +199,12 @@ import (an inline module `<script>` does not run inside a GWT-injected fragment)
 It mounts into a **shadow root** of that div. The properties pane is one page shared by every extension's
 panel, each possibly built against a different RSP version, so the isolation goes both ways:
 `services/shadowMount.ts` (shared with the export dialog) injects RSP's stylesheet, a base-font rule
-(nothing inside a shadow root inherits the page's font) and the panel's own `side-panel.css` into the
-root, and none of it can leak out. The
-SearchableDropdown popup is shadow-aware and portals into the same root.
+(nothing inside a shadow root inherits the page's font), the shared `export/export-form.css` and the panel's
+own `side-panel.css` into the root, and none of it can leak out. The SearchableDropdown popup is shadow-aware
+and portals into the same root.
+
+`side-panel.css` is now only what the pane has that a dialog does not: the fieldset an export disables in one
+go, the loading state, and the spinner beside the panel's own button. The form is the shared one.
 
 Everything the panel offers is read over REST from the endpoints the DLE toolbar's export popup has always
 used: the suitable style packages, the child setting names, the link roles, the default file name, the
@@ -230,10 +272,10 @@ npm run test:update:docker     # regenerate the committed reference PNGs after a
 
 `vitest.config.ts` declares two projects, and every command above runs both:
 
-| Project | Environment | Files | Tests |
-| --- | --- | --- | --- |
-| `browser` | real Chromium via Playwright | `test/**/*.{test,spec}.{ts,tsx}` | this app, in `src/` |
-| `node` | jsdom | `test/**/*.node.test.ts` | the product injector scripts in `src/main/resources/webapp/pdf-exporter/js/` |
+| Project   | Environment                  | Files                            | Tests                                                                        |
+| --------- | ---------------------------- | -------------------------------- | ---------------------------------------------------------------------------- |
+| `browser` | real Chromium via Playwright | `test/**/*.{test,spec}.{ts,tsx}` | this app, in `src/`                                                          |
+| `node`    | jsdom                        | `test/**/*.node.test.ts`         | the product injector scripts in `src/main/resources/webapp/pdf-exporter/js/` |
 
 Target one with `--project`, e.g. `npx vitest run --project node`.
 

@@ -725,7 +725,7 @@ describe('validating the page width', () => {
     await userEvent.click(field<HTMLButtonElement>('#popup-validate-pdf')!);
 
     await vi.waitFor(() => expect(text('.validation-alerts .alert-error')).toBe('2 invalid pages found:'));
-    expect(document.querySelectorAll('#page-previews img')).toHaveLength(2);
+    expect(document.querySelectorAll('#popup-page-previews img')).toHaveLength(2);
     const link = field<HTMLAnchorElement>('.suspicious-list a')!;
     expect(link.textContent).toBe('EL-1');
     expect(link.target).toBe('_blank');
@@ -746,7 +746,7 @@ describe('validating the page width', () => {
     await vi.waitFor(() =>
       expect(text('.validation-alerts .alert-error')).toBe('Invalid pages found. First 4 of them:'),
     );
-    expect(document.querySelectorAll('#page-previews img')).toHaveLength(4);
+    expect(document.querySelectorAll('#popup-page-previews img')).toHaveLength(4);
   });
 
   it('zooms a preview on click and back on the next one', async () => {
@@ -755,14 +755,14 @@ describe('validating the page width', () => {
     ]);
     await settled();
     await userEvent.click(field<HTMLButtonElement>('#popup-validate-pdf')!);
-    await vi.waitFor(() => expect(document.querySelectorAll('#page-previews img')).toHaveLength(1));
+    await vi.waitFor(() => expect(document.querySelectorAll('#popup-page-previews img')).toHaveLength(1));
 
-    const preview = field<HTMLImageElement>('#page-previews img')!;
+    const preview = field<HTMLImageElement>('#popup-page-previews img')!;
     await userEvent.click(preview);
-    expect(field('#page-previews img')!.className).toContain('popup-img-zoomed');
+    expect(field('#popup-page-previews img')!.className).toContain('img-zoomed');
 
-    await userEvent.click(field<HTMLImageElement>('#page-previews img')!);
-    expect(field('#page-previews img')!.className).not.toContain('popup-img-zoomed');
+    await userEvent.click(field<HTMLImageElement>('#popup-page-previews img')!);
+    expect(field('#popup-page-previews img')!.className).not.toContain('img-zoomed');
   });
 
   it('reports a validation that could not be run at all', async () => {
