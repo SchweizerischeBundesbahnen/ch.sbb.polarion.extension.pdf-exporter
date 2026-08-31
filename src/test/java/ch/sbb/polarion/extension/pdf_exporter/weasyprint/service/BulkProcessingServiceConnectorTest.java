@@ -167,7 +167,9 @@ class BulkProcessingServiceConnectorTest {
                 doc("<html>fail</html>", null),
                 doc("<html>ok</html>", null)), params);
 
-        assertThat(result.failedDocumentCount()).isEqualTo(1);
+        // One document failed to upload and, separately, the server reported one uploaded document failed to
+        // render (X-Documents-Failed=1) - disjoint sets, so two documents were dropped from the merged PDF.
+        assertThat(result.failedDocumentCount()).isEqualTo(2);
     }
 
     @Test

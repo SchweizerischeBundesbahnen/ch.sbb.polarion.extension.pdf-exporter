@@ -19,6 +19,8 @@ import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
@@ -38,8 +40,12 @@ class UtilityResourcesInternalControllerBulkProcessingTest {
         WebTarget webTarget = mock(WebTarget.class);
         invocationBuilder = mock(Invocation.Builder.class);
 
+        ClientBuilder clientBuilder = mock(ClientBuilder.class);
         clientBuilderMockedStatic = mockStatic(ClientBuilder.class);
-        clientBuilderMockedStatic.when(ClientBuilder::newClient).thenReturn(client);
+        clientBuilderMockedStatic.when(ClientBuilder::newBuilder).thenReturn(clientBuilder);
+        when(clientBuilder.connectTimeout(anyLong(), any())).thenReturn(clientBuilder);
+        when(clientBuilder.readTimeout(anyLong(), any())).thenReturn(clientBuilder);
+        when(clientBuilder.build()).thenReturn(client);
         when(client.target(anyString())).thenReturn(webTarget);
         when(webTarget.request(MediaType.APPLICATION_JSON)).thenReturn(invocationBuilder);
 

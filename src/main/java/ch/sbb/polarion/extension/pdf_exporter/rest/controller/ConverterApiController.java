@@ -62,6 +62,7 @@ public class ConverterApiController extends ConverterInternalController {
     }
 
     @Override
+    @RolesRestricted
     public Response startMergeExportJob(List<ExportParams> exportParamsList) {
         deactivateLogoutFilter();
         return polarionService.callPrivileged(() -> super.startMergeExportJob(exportParamsList));

@@ -218,6 +218,7 @@ public class ConverterInternalController {
                             description = "Merge export job started, job URI is returned in Location header"
                     )
             })
+    @RolesRestricted
     public Response startMergeExportJob(List<ExportParams> exportParamsList) {
         if (exportParamsList == null || exportParamsList.isEmpty()) {
             throw new BadRequestException("At least one document must be provided for merge export");

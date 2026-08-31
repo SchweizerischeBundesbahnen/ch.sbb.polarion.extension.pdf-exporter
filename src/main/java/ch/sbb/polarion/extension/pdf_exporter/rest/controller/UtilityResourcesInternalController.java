@@ -45,6 +45,11 @@ public class UtilityResourcesInternalController {
 
     private final PdfExporterPolarionService pdfExporterPolarionService;
 
+    // Short timeouts: this readiness probe blocks the export dialog, so a configured-but-unresponsive bulk
+    // processing service must fail fast (hiding the merge option) rather than hang the dialog.
+    private static final int STATUS_CONNECT_TIMEOUT_MS = 2_000;
+    private static final int STATUS_READ_TIMEOUT_MS = 3_000;
+
     public UtilityResourcesInternalController() {
         pdfExporterPolarionService = new PdfExporterPolarionService();
     }
@@ -151,7 +156,10 @@ public class UtilityResourcesInternalController {
         }
         Client client = null;
         try {
-            client = ClientBuilder.newClient();
+            client = ClientBuilder.newBuilder()
+                    .connectTimeout(STATUS_CONNECT_TIMEOUT_MS, java.util.concurrent.TimeUnit.MILLISECONDS)
+                    .readTimeout(STATUS_READ_TIMEOUT_MS, java.util.concurrent.TimeUnit.MILLISECONDS)
+                    .build();
             Response response = client.target(bulkProcessingServiceUrl + "/ready").request(MediaType.APPLICATION_JSON).get();
             return BulkProcessingServiceStatus.builder().available(response.getStatus() == Response.Status.OK.getStatusCode()).build();
         } catch (Exception e) {

@@ -231,7 +231,7 @@ To configure the Bulk Processing Service URL, add the following line to `polario
 ch.sbb.polarion.extension.pdf-exporter.bulk.processing.service=http://localhost:9070
 ```
 
-Default value: `http://localhost:9070`
+Default value: empty. When the property is not set, bulk export (merge into a single PDF) is disabled and the "Merge all documents into a single PDF" checkbox is hidden.
 
 The Bulk Processing Service must be deployed in the same Docker network as Polarion and the WeasyPrint service. Example:
 ```bash

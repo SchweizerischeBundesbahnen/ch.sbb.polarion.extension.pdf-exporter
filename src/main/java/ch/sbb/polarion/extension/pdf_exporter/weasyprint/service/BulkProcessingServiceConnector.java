@@ -74,7 +74,9 @@ public class BulkProcessingServiceConnector implements BulkProcessingConnector {
                 }
             }
             FinishResult finishResult = finishMergeJob(jobId);
-            failedCount = finishResult.failedCount > 0 ? finishResult.failedCount : failedCount;
+            // Upload failures (documents that never reached the server) and server-side render failures are
+            // disjoint sets, so the number dropped from the merged PDF is their sum, not either one alone.
+            failedCount += finishResult.failedCount;
             byte[] pdfBytes = pdfPostProcessor.postProcess(finishResult.pdfBytes, PdfVariant.fromWeasyPrintParameter(params.getPdfVariant()), null);
             return new MergeResult(pdfBytes, failedCount);
         } catch (Exception e) {
