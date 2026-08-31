@@ -3,6 +3,7 @@ import { cleanup, render } from 'vitest-browser-react';
 import { page } from 'vitest/browser';
 import App from '../src/App';
 import { installFetchMock } from './mockFetch';
+import { settleBeforeCapture, settleLayout } from './visualHelpers';
 
 // Docker-only snapshot of the Authorization page: the two role groups with the Polarion-styled
 // checkboxes, the Save / Cancel / Default / Revisions toolbar and the Quick Help text. This is the
@@ -35,7 +36,9 @@ describe.skipIf(!__PIXEL_REFERENCES__)('Authorization page visual', () => {
 
     await vi.waitFor(() => expect(document.querySelectorAll('.roles-list input[type="checkbox"]').length).toBe(4));
     const app = document.querySelector('.app') as HTMLElement;
+    await settleLayout();
     await page.viewport(1280, Math.ceil(app.scrollHeight) + 40);
+    await settleBeforeCapture();
     await expect(page.elementLocator(app)).toMatchScreenshot('authorization-loaded');
   });
 });

@@ -27,6 +27,10 @@ const image = `mcr.microsoft.com/playwright:v${playwrightVersion}-noble`;
 const args = [
   'run',
   '--rm',
+  // The capture window is 1920x2200 at deviceScaleFactor 2, and Chromium rasters it in shared
+  // memory. The image's default 64 MB /dev/shm is not enough headroom for that, and running out
+  // shows up as a crashed browser rather than a failed assertion.
+  '--shm-size=1g',
   // Marks this run as THE reference environment for the pixel comparisons. The committed screenshots
   // are locked to this image, so the visual tests assert only when this is set (see vitest.config.ts);
   // anywhere else they skip instead of failing on the host's font metrics.

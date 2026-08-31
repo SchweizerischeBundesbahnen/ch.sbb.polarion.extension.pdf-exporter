@@ -392,6 +392,32 @@ In case if both of them specified 'existing_wi_id' has higher priority.
    its area for custom values is always enabled, but default values can be enabled or disabled. Therefore, either only custom CSS is used or default CSS is combined with custom.
 5. To change configuration of PDF Exporter extension just edit corresponding section and press `Save` button.
 
+### Hiding the style packages of the global level
+
+By default a project offers its own style packages plus the ones defined on the global level. Section
+`Style Package` of the administration pages carries a `Change visibility` button next to `Add new`. It opens
+a dialog which explains the two levels, offers the switch `Hide style packages defined on the global level`
+and stores it with `Change`. The switch is off - the behavior described above - unless an administrator
+ticks it. It is a configuration of its own, above all style packages of the scope, so it belongs to no
+single style package.
+
+With the switch on for a project:
+
+1. Only the style packages defined on that project are listed, on the export dialogs, on the side panel and
+   on the administration pages `Style Package` and `Style Package Weights`.
+2. A style package of the global level can no longer be used by its name either, for example in the
+   [workflow function](#workflow-function-configuration). The export reports it as unavailable.
+3. Documents of several projects exported at once (Bulk PDF Export) can only share the style packages of the
+   global level, so as soon as one of the projects hides them only `Default` is offered.
+
+The style package named `Default` can never be missing. While a project that hides the global level has no
+`Default` of its own, that name stands for the built-in values of the extension - not for the `Default` of the
+global level, which is hidden like every other style package there. Save a `Default` on the project to decide
+what it contains.
+
+Ticked on the global scope the switch applies to every project which does not set it itself, which makes it
+the installation-wide default. The global scope keeps listing its own style packages.
+
 ### CSS for booklet layout
 
 If you export PDF to be printed as a booklet, then you may need to alternate blocks in header/footer depending on the fact if it's even or odd page.

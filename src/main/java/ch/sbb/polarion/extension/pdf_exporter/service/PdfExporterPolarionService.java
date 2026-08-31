@@ -14,6 +14,7 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.stylepackage.S
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.stylepackage.StylePackageWeightInfo;
 import ch.sbb.polarion.extension.pdf_exporter.settings.AuthorizationSettings;
 import ch.sbb.polarion.extension.pdf_exporter.settings.StylePackageSettings;
+import ch.sbb.polarion.extension.pdf_exporter.settings.StylePackageVisibilitySettings;
 import ch.sbb.polarion.extension.pdf_exporter.util.WildcardUtils;
 import com.polarion.alm.projects.IProjectService;
 import com.polarion.alm.projects.model.IUniqueObject;
@@ -110,6 +111,11 @@ public class PdfExporterPolarionService extends PolarionService {
         StylePackageSettings stylePackageSettings = (StylePackageSettings) NamedSettingsRegistry.INSTANCE.getByFeatureName(StylePackageSettings.FEATURE_NAME);
         // if user mixes items from different projects then we can use only 'default'-level style packages
         String stylePackageScope = ScopeUtils.getScopeFromProject(docIdentifiers.stream().map(DocIdentifier::getProjectId).distinct().count() == 1 ? docIdentifiers.get(0).getProjectId() : GenericNamedSettings.DEFAULT_SCOPE);
+        // that fallback offers exactly the style packages a project hiding the global level may not use,
+        // so as soon as one of the projects hides them only 'Default' is left to offer
+        if (GenericNamedSettings.DEFAULT_SCOPE.equals(stylePackageScope) && anyProjectHidesGlobalStylePackages(docIdentifiers)) {
+            return List.of(SettingName.builder().id(NamedSettings.DEFAULT_NAME).name(NamedSettings.DEFAULT_NAME).scope(GenericNamedSettings.DEFAULT_SCOPE).build());
+        }
         Collection<SettingName> stylePackageNames = stylePackageSettings.readNames(stylePackageScope);
         List<SettingName> names = stylePackageNames.stream().filter(stylePackageName -> docIdentifiers.stream().allMatch(
                 i -> isStylePackageSuitable(i.getProjectId(), i.getSpaceId(), i.getDocumentName(), stylePackageSettings, stylePackageScope, stylePackageName))).toList();
@@ -136,6 +142,17 @@ public class PdfExporterPolarionService extends PolarionService {
         }).orElse(null);
 
         return mostSuitableName != null ? stylePackageSettings.read(stylePackageScope, SettingId.fromName(mostSuitableName.getName()), null) : stylePackageSettings.defaultValues();
+    }
+
+    private boolean anyProjectHidesGlobalStylePackages(@NotNull List<DocIdentifier> docIdentifiers) {
+        StylePackageVisibilitySettings stylePackageVisibilitySettings = StylePackageVisibilitySettings.registered();
+        if (stylePackageVisibilitySettings == null) {
+            return false;
+        }
+        return docIdentifiers.stream()
+                .map(DocIdentifier::getProjectId)
+                .distinct()
+                .anyMatch(projectId -> stylePackageVisibilitySettings.isGlobalStylePackagesHidden(ScopeUtils.getScopeFromProject(projectId)));
     }
 
     @SuppressWarnings("unchecked")

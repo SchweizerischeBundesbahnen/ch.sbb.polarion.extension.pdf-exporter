@@ -3,6 +3,7 @@ import { cleanup, render } from 'vitest-browser-react';
 import { page } from 'vitest/browser';
 import App from '../src/App';
 import { installFetchMock } from './mockFetch';
+import { settleBeforeCapture, settleLayout } from './visualHelpers';
 
 // Docker-only snapshot of the Style Package Weights page: the ordered list with its drag handles and
 // caret buttons, a read-only entry inherited from the global scope, and the Save / Cancel toolbar.
@@ -35,7 +36,9 @@ describe.skipIf(!__PIXEL_REFERENCES__)('Style Package Weights page visual', () =
 
     await vi.waitFor(() => expect(document.querySelectorAll('.weights-list li').length).toBe(3));
     const app = document.querySelector('.app') as HTMLElement;
+    await settleLayout();
     await page.viewport(1280, Math.ceil(app.scrollHeight) + 40);
+    await settleBeforeCapture();
     await expect(page.elementLocator(app)).toMatchScreenshot('weights-loaded');
   });
 });

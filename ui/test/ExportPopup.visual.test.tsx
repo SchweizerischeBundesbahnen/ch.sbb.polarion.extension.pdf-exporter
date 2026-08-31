@@ -13,6 +13,7 @@ import {
   SAMPLE_TEST_RUN,
   popupDependencies,
 } from './exportPopupSamples';
+import { settleBeforeCapture } from './visualHelpers';
 
 // Docker-only snapshots of the "Export to PDF" dialog as a toolbar button opens it, mounted the way
 // openExportPopup mounts it: its own shadow root, carrying react-sbb-polarion's stylesheet, the base font
@@ -74,6 +75,7 @@ async function snapshotDialog(shadow: ShadowRoot, name: string): Promise<void> {
   // might have some, which is enough to make a reference disagree with itself from one run to the next.
   await userEvent.hover(shadow.querySelector('.rsp-modal-title')!);
   await page.viewport(VIEWPORT.width, VIEWPORT.height);
+  await settleBeforeCapture(false);
   await expect(page.elementLocator(shadow.querySelector<HTMLElement>('.rsp-modal')!)).toMatchScreenshot(name);
 }
 
