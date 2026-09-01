@@ -286,6 +286,7 @@ public class ConverterInternalController {
                             description = "Conversion job id is unknown"
                     )
             })
+    @RolesRestricted
     public Response cancelPdfConverterJob(@PathParam("id") String jobId) {
         pdfConverterJobService.cancelJob(jobId);
         return Response.noContent().build();
