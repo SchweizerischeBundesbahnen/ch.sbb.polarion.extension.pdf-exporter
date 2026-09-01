@@ -76,7 +76,7 @@ public class PdfConverterJobsService {
                 return securityService.doAsUser(userSubject, (PrivilegedAction<byte[]>) () -> {
                     if (isMerge) {
                         BulkProcessingConnector.MergeResult mergeResult = pdfConverter.convertMergedToPdf(documentExportParams);
-                        jobContext.failedDocumentCount()[0] = mergeResult.failedDocumentCount();
+                        jobContext.failedDocumentCount().set(mergeResult.failedDocumentCount());
                         return mergeResult.pdfBytes();
                     } else {
                         return pdfConverter.convertToPdf(representativeParams, null);
@@ -101,29 +101,7 @@ public class PdfConverterJobsService {
 
         asyncJob
                 .orTimeout(timeoutInMinutes, TimeUnit.MINUTES)
-                .exceptionally(e -> {
-                    // the future hands over a CompletionException whose message is "<class>: <text>",
-                    // and this text is what the export dialog shows, so the cause speaks for itself
-                    String failedReason = describeFailure(e);
-                    if (e instanceof TimeoutException) {
-                        failedReason = String.format("Timeout after %d min", timeoutInMinutes);
-                        // Interrupt the actual worker thread (unlike cancel(true) which is a no-op on CompletableFuture)
-                        Thread t = workerThread.get();
-                        if (t != null) {
-                            t.interrupt();
-                        }
-                        failedJobsReasons.put(jobId, failedReason);
-                    } else if (cancelledJobIds.contains(jobId)) {
-                        // User-initiated cancellation: keep the "Cancelled by user" reason set by cancelJob(),
-                        // don't overwrite it with the raw interruption exception message
-                        failedReason = failedJobsReasons.getOrDefault(jobId, CANCELLED_BY_USER_MESSAGE);
-                    } else {
-                        failedJobsReasons.put(jobId, failedReason);
-                    }
-                    logger.error(String.format("PDF conversion job '%s' failed with error: %s", jobId, failedReason), e);
-                    asyncJob.completeExceptionally(e);
-                    return null;
-                });
+                .exceptionally(e -> handleJobFailure(jobId, e, timeoutInMinutes, workerThread, asyncJob));
 
         JobDetails jobDetails = JobDetails.builder()
                 .future(asyncJob)
@@ -134,6 +112,32 @@ public class PdfConverterJobsService {
                 .jobContext(jobContext).build();
         jobs.put(jobId, jobDetails);
         return jobId;
+    }
+
+    private byte[] handleJobFailure(String jobId, Throwable e, int timeoutInMinutes,
+                                    java.util.concurrent.atomic.AtomicReference<Thread> workerThread,
+                                    CompletableFuture<byte[]> asyncJob) {
+        // the future hands over a CompletionException whose message is "<class>: <text>",
+        // and this text is what the export dialog shows, so the cause speaks for itself
+        String failedReason = describeFailure(e);
+        if (e instanceof TimeoutException) {
+            failedReason = String.format("Timeout after %d min", timeoutInMinutes);
+            // Interrupt the actual worker thread (unlike cancel(true) which is a no-op on CompletableFuture)
+            Thread t = workerThread.get();
+            if (t != null) {
+                t.interrupt();
+            }
+            failedJobsReasons.put(jobId, failedReason);
+        } else if (cancelledJobIds.contains(jobId)) {
+            // User-initiated cancellation: keep the "Cancelled by user" reason set by cancelJob(),
+            // don't overwrite it with the raw interruption exception message
+            failedReason = failedJobsReasons.getOrDefault(jobId, CANCELLED_BY_USER_MESSAGE);
+        } else {
+            failedJobsReasons.put(jobId, failedReason);
+        }
+        logger.error(String.format("PDF conversion job '%s' failed with error: %s", jobId, failedReason), e);
+        asyncJob.completeExceptionally(e);
+        return null;
     }
 
     /**
@@ -239,11 +243,10 @@ public class PdfConverterJobsService {
     @Builder
     public record JobContext(
             List<String> workItemIDsWithMissingAttachment,
-            @Builder.Default
-            int[] failedDocumentCount) {
+            java.util.concurrent.atomic.AtomicInteger failedDocumentCount) {
 
         public static class JobContextBuilder {
-            private int[] failedDocumentCount = new int[]{0};
+            private java.util.concurrent.atomic.AtomicInteger failedDocumentCount = new java.util.concurrent.atomic.AtomicInteger();
         }
     }
 

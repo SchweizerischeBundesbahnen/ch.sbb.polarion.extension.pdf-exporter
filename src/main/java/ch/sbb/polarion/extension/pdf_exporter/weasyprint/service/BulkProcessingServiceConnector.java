@@ -60,19 +60,8 @@ public class BulkProcessingServiceConnector implements BulkProcessingConnector {
     @Override
     public MergeResult convertMergedToPdf(@NotNull List<MergeDocumentData> documents, @NotNull MergeJobStartParams params) {
         String jobId = startMergeJob(params);
-        int failedCount = 0;
         try {
-            for (MergeDocumentData doc : documents) {
-                if (Thread.currentThread().isInterrupted()) {
-                    throw new IllegalStateException(String.format("Merge job '%s' was cancelled", jobId));
-                }
-                try {
-                    addDocumentToJob(jobId, doc.htmlContent(), doc.coverPageHtml(), doc.params());
-                } catch (Exception e) {
-                    failedCount++;
-                    logger.warn(String.format("Failed to add document to merge job '%s': %s", jobId, e.getMessage()));
-                }
-            }
+            int failedCount = addDocumentsToJob(jobId, documents);
             FinishResult finishResult = finishMergeJob(jobId);
             // Upload failures (documents that never reached the server) and server-side render failures are
             // disjoint sets, so the number dropped from the merged PDF is their sum, not either one alone.
@@ -86,6 +75,29 @@ public class BulkProcessingServiceConnector implements BulkProcessingConnector {
         }
     }
 
+    /**
+     * Uploads every document to the running merge job, returning how many failed to upload. A single upload
+     * failure does not abort the merge - the document is skipped and counted - but an interruption does.
+     */
+    private int addDocumentsToJob(@NotNull String jobId, @NotNull List<MergeDocumentData> documents) {
+        int failedCount = 0;
+        for (MergeDocumentData doc : documents) {
+            if (Thread.currentThread().isInterrupted()) {
+                throw new IllegalStateException(String.format("Merge job '%s' was cancelled", jobId));
+            }
+            try {
+                addDocumentToJob(jobId, doc.htmlContent(), doc.coverPageHtml(), doc.params());
+            } catch (Exception e) {
+                failedCount++;
+                logger.warn(String.format("Failed to add document to merge job '%s': %s", jobId, e.getMessage()));
+            }
+        }
+        return failedCount;
+    }
+
+    // A payload carrier (the merged PDF bytes); it is never compared by value, so the array-aware
+    // equals/hashCode/toString java:S6218 asks for would be dead boilerplate here.
+    @SuppressWarnings("java:S6218")
     private record FinishResult(byte[] pdfBytes, int failedCount) {}
 
     private @NotNull String startMergeJob(@NotNull MergeJobStartParams params) {

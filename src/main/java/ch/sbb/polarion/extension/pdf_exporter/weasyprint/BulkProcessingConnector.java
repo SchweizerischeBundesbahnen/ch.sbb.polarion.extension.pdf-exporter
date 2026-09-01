@@ -17,5 +17,8 @@ public interface BulkProcessingConnector {
 
     record MergeDocumentData(@NotNull String htmlContent, @Nullable String coverPageHtml, @NotNull DocumentConversionParams params) {}
 
+    // A payload carrier (the merged PDF bytes); it is never compared by value, so the array-aware
+    // equals/hashCode/toString java:S6218 asks for would be dead boilerplate here.
+    @SuppressWarnings("java:S6218")
     record MergeResult(byte[] pdfBytes, int failedDocumentCount) {}
 }
