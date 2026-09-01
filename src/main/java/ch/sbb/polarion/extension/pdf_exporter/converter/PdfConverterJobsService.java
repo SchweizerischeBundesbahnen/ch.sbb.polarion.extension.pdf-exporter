@@ -61,10 +61,7 @@ public class PdfConverterJobsService {
         String jobId = UUID.randomUUID().toString();
         Subject userSubject = securityService.getCurrentSubject();
         boolean isJobLogoutRequired = isJobLogoutRequired();
-        final JobContext jobContext = JobContext.builder()
-                .workItemIDsWithMissingAttachment(new ArrayList<>())
-                .failedDocumentCount(new java.util.concurrent.atomic.AtomicInteger())
-                .build();
+        final JobContext jobContext = JobContext.builder().workItemIDsWithMissingAttachment(new ArrayList<>()).build();
         ExportParams representativeParams = documentExportParams.isEmpty() ? null : documentExportParams.get(0);
         boolean isMerge = documentExportParams.size() > 1;
 
@@ -79,7 +76,7 @@ public class PdfConverterJobsService {
                 return securityService.doAsUser(userSubject, (PrivilegedAction<byte[]>) () -> {
                     if (isMerge) {
                         BulkProcessingConnector.MergeResult mergeResult = pdfConverter.convertMergedToPdf(documentExportParams);
-                        jobContext.failedDocumentCount().set(mergeResult.failedDocumentCount());
+                        jobContext.failedDocumentCount()[0] = mergeResult.failedDocumentCount();
                         return mergeResult.pdfBytes();
                     } else {
                         return pdfConverter.convertToPdf(representativeParams, null);
@@ -140,9 +137,7 @@ public class PdfConverterJobsService {
         }
         logger.error(String.format("PDF conversion job '%s' failed with error: %s", jobId, failedReason), e);
         asyncJob.completeExceptionally(e);
-        // The returned value is discarded - the dependent stage is not kept; the job result is read from
-        // asyncJob, which is completed exceptionally above - so an empty array stands in for "no result".
-        return new byte[0];
+        return null;
     }
 
     /**
@@ -249,6 +244,10 @@ public class PdfConverterJobsService {
     public record JobContext(
             List<String> workItemIDsWithMissingAttachment,
             java.util.concurrent.atomic.AtomicInteger failedDocumentCount) {
+
+        public static class JobContextBuilder {
+            private java.util.concurrent.atomic.AtomicInteger failedDocumentCount = new java.util.concurrent.atomic.AtomicInteger();
+        }
     }
 
     @Builder
