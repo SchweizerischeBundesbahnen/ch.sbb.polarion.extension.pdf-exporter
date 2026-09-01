@@ -363,7 +363,7 @@ public class ConverterInternalController {
             );
         }
 
-        int failedDocCount = pdfConverterJobService.getJobContext(jobId).failedDocumentCount()[0];
+        int failedDocCount = pdfConverterJobService.getJobContext(jobId).failedDocumentCount().get();
         if (failedDocCount > 0) {
             responseBuilder.header(FAILED_DOCUMENT_COUNT, failedDocCount);
         }

@@ -159,7 +159,7 @@ class ConverterInternalControllerTest {
     @Test
     void getPdfConverterJobResult_success() {
         when(pdfConverterJobService.getJobResult("testJobId")).thenReturn(Optional.of("test pdf".getBytes()));
-        when(pdfConverterJobService.getJobContext("testJobId")).thenReturn(PdfConverterJobsService.JobContext.builder().workItemIDsWithMissingAttachment(new ArrayList<String>()).build());
+        when(pdfConverterJobService.getJobContext("testJobId")).thenReturn(PdfConverterJobsService.JobContext.builder().workItemIDsWithMissingAttachment(new ArrayList<String>()).failedDocumentCount(new java.util.concurrent.atomic.AtomicInteger()).build());
         Response jobResult = internalController.getPdfConverterJobResult("testJobId");
 
         assertThat(jobResult.getStatus()).isEqualTo(HttpStatus.OK.value());

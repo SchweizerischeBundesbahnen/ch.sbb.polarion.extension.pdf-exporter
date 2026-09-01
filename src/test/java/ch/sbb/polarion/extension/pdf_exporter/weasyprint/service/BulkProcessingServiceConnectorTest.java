@@ -144,7 +144,8 @@ class BulkProcessingServiceConnectorTest {
 
         MergeJobStartParams params = MergeJobStartParams.builder().build();
 
-        assertThatThrownBy(() -> connector.convertMergedToPdf(List.of(doc("<html></html>", null)), params))
+        List<MergeDocumentData> documents = List.of(doc("<html></html>", null));
+        assertThatThrownBy(() -> connector.convertMergedToPdf(documents, params))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("Failed to start merge job");
     }
@@ -188,7 +189,8 @@ class BulkProcessingServiceConnectorTest {
 
         MergeJobStartParams params = MergeJobStartParams.builder().build();
 
-        assertThatThrownBy(() -> connector.convertMergedToPdf(List.of(doc("<html></html>", null)), params))
+        List<MergeDocumentData> documents = List.of(doc("<html></html>", null));
+        assertThatThrownBy(() -> connector.convertMergedToPdf(documents, params))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("Failed to finish merge job");
     }
@@ -205,8 +207,8 @@ class BulkProcessingServiceConnectorTest {
 
         MergeJobStartParams params = MergeJobStartParams.builder().build();
 
-        assertThatThrownBy(() -> connector.convertMergedToPdf(
-                List.of(doc("<html>doc1</html>", null), doc("<html>doc2</html>", null)), params))
+        List<MergeDocumentData> documents = List.of(doc("<html>doc1</html>", null), doc("<html>doc2</html>", null));
+        assertThatThrownBy(() -> connector.convertMergedToPdf(documents, params))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("was cancelled");
 
@@ -227,7 +229,8 @@ class BulkProcessingServiceConnectorTest {
 
         MergeJobStartParams params = MergeJobStartParams.builder().build();
 
-        assertThatThrownBy(() -> connector.convertMergedToPdf(List.of(doc("<html></html>", null)), params))
+        List<MergeDocumentData> documents = List.of(doc("<html></html>", null));
+        assertThatThrownBy(() -> connector.convertMergedToPdf(documents, params))
                 .isInstanceOf(IllegalStateException.class);
 
         verify(invocationBuilder).delete();
