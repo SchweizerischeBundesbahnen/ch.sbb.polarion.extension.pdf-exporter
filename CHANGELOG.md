@@ -1,5 +1,25 @@
 # Changelog
 
+## [13.7.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v13.6.1...v13.7.0) (2026-08-31)
+
+
+### Features
+
+* add possibility to show/hide style packages from global scope on project's level ([#1027](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/1027)) ([d72f59a](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/d72f59a277155013d577bb26e8d8cb60b8595283)), closes [#1010](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/1010)
+* send an api key to the weasyprint service ([#1009](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/1009)) ([ecded45](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/ecded45ceafa416200970956f3b47c6b4322edcf))
+
+
+### Bug Fixes
+
+* **deps:** update dependency org.apache.tika:tika-core to v4 ([#1019](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/1019)) ([172654d](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/172654dfdd8252d66a92c124c26d9ac87cfbb308))
+* hold tika-core on 3.x to keep Polarion startable ([#1026](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/1026)) ([3fafc7e](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/3fafc7e78919b29eaed1ffc456f1c89579371a21))
+* mark an inherited setting with the "global" marker ([#1025](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/1025)) ([5b50720](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/5b5072059a35dba6811553e3546434837dd129eb))
+
+
+### Documentation
+
+* add Limitations and Workarounds page and link it from the README ([#1022](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/1022)) ([203bc7a](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/203bc7a5280b31e03f7e3f19712a66914359ca51)), closes [#1015](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/1015)
+
 ## [13.6.1](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v13.6.0...v13.6.1) (2026-08-21)
 
 
