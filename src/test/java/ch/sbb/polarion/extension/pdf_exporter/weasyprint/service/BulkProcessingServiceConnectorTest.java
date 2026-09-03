@@ -175,9 +175,32 @@ class BulkProcessingServiceConnectorTest {
                 doc("<html>fail</html>", null),
                 doc("<html>ok</html>", null)), params);
 
-        // One document failed to upload and, separately, the server reported one uploaded document failed to
-        // render (X-Documents-Failed=1) - disjoint sets, so two documents were dropped from the merged PDF.
+        // The first add is refused (500), so that document never reached the server - an upload failure the
+        // server does not know about. Separately the server reports one rendered-but-failed document
+        // (X-Documents-Failed=1). Disjoint sets, so two documents were dropped from the merged PDF.
         assertThat(result.failedDocumentCount()).isEqualTo(2);
+    }
+
+    @Test
+    void shouldNotDoubleCountServerReportedRenderFailures() {
+        // A document the server received but could not render is accepted (202) and recorded server-side,
+        // surfacing only in X-Documents-Failed at finish. It must be counted once, not once per side.
+        Response startResponse = mockResponse(201, "{\"jobId\":\"job-id\"}");
+        Response addAccepted = mockResponse(202, "{\"status\":\"accepted\"}");
+        Response addFailedButRecorded = mockResponse(202, "{\"status\":\"failed\"}");
+        Response finishResponse = mockPdfResponse(200, "partial-pdf".getBytes(), "1");
+
+        when(invocationBuilder.post(any(Entity.class)))
+                .thenReturn(startResponse)
+                .thenReturn(addFailedButRecorded)
+                .thenReturn(addAccepted)
+                .thenReturn(finishResponse);
+
+        MergeResult result = connector.convertMergedToPdf(List.of(
+                doc("<html>fail</html>", null),
+                doc("<html>ok</html>", null)), MergeJobStartParams.builder().build());
+
+        assertThat(result.failedDocumentCount()).isEqualTo(1);
     }
 
     @Test

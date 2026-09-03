@@ -116,8 +116,11 @@ public class BulkProcessingServiceConnector implements BulkProcessingConnector {
         try {
             int failedCount = addDocumentsToJob(jobId, documents);
             FinishResult finishResult = finishMergeJob(jobId);
-            // Upload failures (documents that never reached the server) and server-side render failures are
-            // disjoint sets, so the number dropped from the merged PDF is their sum, not either one alone.
+            // Two disjoint failure sets are summed. A document the server received but could not render is
+            // recorded by the server, which accepts the upload (202) and reports it in X-Documents-Failed at
+            // finish, so it is never counted here. addDocumentsToJob only counts documents that never reached
+            // the server - a failed upload - which the server therefore does not know about. Summing them is
+            // correct precisely because neither side counts the other's failures.
             failedCount += finishResult.failedCount;
             byte[] pdfBytes = pdfPostProcessor.postProcess(finishResult.pdfBytes, PdfVariant.fromWeasyPrintParameter(params.getPdfVariant()), null);
             return new MergeResult(pdfBytes, failedCount);
