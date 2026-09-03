@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { mountSidePanel } from '../src/sidepanel/mount';
 import { sampleDependencies } from './sidePanelSamples';
+import { clearToasts } from './toasts';
 
 // How the panel gets into the document editor: PdfExporterFormExtension emits a fragment whose <link>
 // onload imports this module and calls mountSidePanel on the host div. The pane is shared with every other
@@ -23,6 +24,9 @@ const loaded = (element: HTMLElement) =>
   vi.waitFor(() => expect(element.shadowRoot!.querySelector('#filename')).not.toBeNull());
 
 afterEach(() => {
+  // Before the hosts go: a toast outlives its host, and the next host to mount is handed everything of it
+  // that is still active.
+  clearToasts();
   hosts.splice(0).forEach((element) => element.remove());
 });
 
@@ -105,6 +109,26 @@ describe('mounting the side panel', () => {
     expect(block.display).toBe('flex');
     expect(block.flexDirection).toBe('column');
     expect(block.alignItems).toBe('center');
+  });
+
+  it('reports through a toast whose stylesheet is inside the root', async () => {
+    // sonner injects its stylesheet into `document.head` when its module loads, and a shadow root sees
+    // nothing of the document's rules - so the form's own stylesheet imports it (export/export-form.css).
+    // Checked as computed style, because an unstyled toast host is not a broken layout, it is an invisible
+    // message: the rules are all it has.
+    const element = host();
+    // A conversion that fails, which is the shortest way to a report
+    mountSidePanel(`#${element.id}`, sampleDependencies({ convert: () => Promise.reject(new Error('no renderer')) }));
+    await loaded(element);
+
+    element.shadowRoot!.querySelector<HTMLButtonElement>('#export-pdf')!.click();
+
+    const toaster = await vi.waitFor(() => {
+      const found = element.shadowRoot!.querySelector<HTMLElement>('[data-sonner-toaster]');
+      expect(found).not.toBeNull();
+      return found!;
+    });
+    expect(getComputedStyle(toaster).position).toBe('fixed');
   });
 
   it('marks a field the export was refused on, outranking the shared control styling', async () => {

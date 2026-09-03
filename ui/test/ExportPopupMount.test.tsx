@@ -1,9 +1,12 @@
 import type { Root } from 'react-dom/client';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { page } from 'vitest/browser';
+import { page, userEvent } from 'vitest/browser';
 import { openExportPopup } from '../src/popup/mount';
+import { mountSidePanel } from '../src/sidepanel/mount';
 import { popupRoutes } from './exportPopupSamples';
 import { installFetchMock } from './mockFetch';
+import { sampleDependencies } from './sidePanelSamples';
+import { clearToasts } from './toasts';
 
 // How the export dialog gets onto a Polarion page: the two toolbar injectors and the report page's export
 // button import assets/export-popup.js and call openExportPopup. It appends a host of its own to the body
@@ -14,6 +17,8 @@ import { installFetchMock } from './mockFetch';
 // what is under test is the mounting: the styles that reach the root, and the location read off the page URL.
 
 const roots: Root[] = [];
+/** Side panel hosts a test mounted next to the dialog, removed with it. */
+const panes: HTMLElement[] = [];
 const origHash = window.location.hash;
 
 /** The shadow root of the host openExportPopup appended, which is the last child of the body. */
@@ -52,8 +57,12 @@ const scrollers = (shadow: ShadowRoot): string[] =>
 
 afterEach(async () => {
   await page.viewport(DEFAULT_VIEWPORT.width, DEFAULT_VIEWPORT.height);
+  // Before the roots go: a toast outlives its host, and the next host to mount is handed everything of it
+  // that is still active.
+  clearToasts();
   // Unmount before removing the host, so the dialog's own effects run their cleanup
   roots.splice(0).forEach((root) => root.unmount());
+  panes.splice(0).forEach((pane) => pane.remove());
   document.querySelectorAll('body > div').forEach((element) => {
     if (element.shadowRoot) element.remove();
   });
@@ -156,6 +165,72 @@ describe('mounting the export dialog', () => {
     expect(dialog.getBoundingClientRect().width).toBeGreaterThan(640);
   });
 
+  /** Refuses an export on a field the form cannot accept, which is the shortest way to a report. */
+  const refuse = async () => {
+    // The field's space is reserved rather than filled while its switch is off, so the switch goes on first
+    shadow()!.querySelector<HTMLInputElement>('#popup-specific-chapters')!.click();
+    await userEvent.fill(shadow()!.querySelector<HTMLInputElement>('#popup-chapters')!, 'one, two');
+    shadow()!.querySelector<HTMLButtonElement>('.rsp-modal-footer .sbb-btn--primary')!.click();
+    return await vi.waitFor(() => {
+      const toast = shadow()!.querySelector<HTMLElement>('[data-sonner-toast]');
+      expect(toast).not.toBeNull();
+      return toast!;
+    });
+  };
+
+  it('reports through a toast inside the dialog, which is what the top layer paints above it', async () => {
+    // Two things at once, and both are ways this can silently stop working. The toast host has to be a
+    // descendant of the <dialog>: the dialog is in the browser's top layer, which paints above everything in
+    // the normal layer whatever its z-index, so a host outside it would report behind the dialog and under
+    // its backdrop. And sonner's stylesheet has to be INSIDE this root: sonner injects it into
+    // `document.head` when its module loads, which a shadow root sees nothing of, so the form's own
+    // stylesheet imports it (see export/export-form.css).
+    open({ location: location('LIVE_DOC') });
+    await loaded();
+
+    const toast = await refuse();
+
+    expect(shadow()!.querySelector('dialog')!.contains(toast)).toBe(true);
+    expect(getComputedStyle(shadow()!.querySelector('[data-sonner-toaster]')!).position).toBe('fixed');
+    // The close button in the corner a reader looks for it in, which sonner puts on the left for a
+    // left-to-right document and this stylesheet moves back (see export-form.css)
+    const box = toast.getBoundingClientRect();
+    const close = toast.querySelector('[data-close-button]')!.getBoundingClientRect();
+    expect(close.left).toBeGreaterThan(box.left + box.width / 2);
+    expect(close.top).toBeLessThan(box.top + box.height / 2);
+    // Measured against the window, not the dialog: the toaster is `position: fixed`, and the form it sits
+    // beside is a query container - so a host rendered inside the form would be positioned against *that*
+    // instead, halfway down a dialog.
+    expect(toast.getBoundingClientRect().top).toBeLessThan(64);
+  });
+
+  it('reports once where a side panel is on the page as well', async () => {
+    // Both surfaces mount a toast host of their own, and `toast()` broadcasts to every one of them - so
+    // without the taking-turns rule in export/ExportToaster.tsx the editor would show every message twice,
+    // once in the dialog and once behind its backdrop. This is that page: a document open in the editor
+    // (the panel) with the toolbar's dialog over it.
+    const pane = document.createElement('div');
+    pane.id = 'pdf-exporter-panel-with-dialog';
+    pane.className = 'pdf-exporter form-wrapper';
+    document.body.appendChild(pane);
+    panes.push(pane);
+    mountSidePanel(`#${pane.id}`, sampleDependencies());
+    await vi.waitFor(() => expect(pane.shadowRoot!.querySelector('#filename')).not.toBeNull());
+
+    open({ location: location('LIVE_DOC') });
+    await loaded();
+    await refuse();
+
+    expect(pane.shadowRoot!.querySelectorAll('[data-sonner-toast]')).toHaveLength(0);
+    expect(shadow()!.querySelectorAll('[data-sonner-toast]')).toHaveLength(1);
+
+    // And what the dialog reported goes with it: the panel's host takes over the moment the dialog unmounts,
+    // and a toast outlives its host, so without the dialog clearing up the message would reappear in the
+    // pane as an echo of a dialog that is no longer there.
+    roots.splice(0).forEach((root) => root.unmount());
+    await vi.waitFor(() => expect(pane.shadowRoot!.querySelectorAll('[data-sonner-toast]')).toHaveLength(0));
+  });
+
   it('may use the whole window height, not the share the shared modal allows itself', async () => {
     // The regression this guards: RSP's Modal caps the dialog at 85vh, which is 135px less than this at a
     // 900px window - enough to put a scrollbar on a form that had none on the page before. The cap here is
@@ -223,8 +298,11 @@ describe('mounting the export dialog', () => {
 
     root.querySelector<HTMLInputElement>('#popup-selected-roles')!.click();
 
-    await vi.waitFor(() => expect(root.querySelector('#popup-roles-selector')).not.toBeNull());
-    await vi.waitFor(() => expect(portalsIn(dialog).length).toBe(before + 2));
+    // A longer wait than the 1s default: two SearchableSelects mount, each creates its option list in an
+    // effect of its own, and the observer moves it in a callback after that - which the container has been
+    // seen to take over a second for, under load.
+    await vi.waitFor(() => expect(root.querySelector('#popup-roles-selector')).not.toBeNull(), { timeout: 5000 });
+    await vi.waitFor(() => expect(portalsIn(dialog).length).toBe(before + 2), { timeout: 5000 });
     expect(portalsIn(root)).toEqual([]);
   });
 

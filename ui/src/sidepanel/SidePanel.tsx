@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import ToastHost from '../components/ToastHost';
 import ExportFormView from '../export/ExportFormView';
 import type { PanelData } from '../export/exportData';
 import { loadPanelData, loadStylePackage } from '../export/exportData';
@@ -12,9 +13,12 @@ import {
   EXPORT_SUCCESS,
   VALIDATION_ERROR,
   type WidthValidationResult,
-  messageOf,
+  clearReports,
+  reportFailure,
+  reportRefusal,
+  reportSuccess,
+  reportWarning,
   validatePageWidth,
-  withDetail,
 } from '../export/reporting';
 import { convertPdf, downloadBlob } from '../services/conversion';
 import type { DocumentIdentity } from '../services/exportContext';
@@ -102,9 +106,8 @@ export default function SidePanel({ deps }: Readonly<SidePanelProps>) {
 
   const [exporting, setExporting] = useState(false);
   const [validating, setValidating] = useState(false);
-  const [warning, setWarning] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+  /** Why the panel cannot be used at all. Everything else it has to say is a toast - see `reporting.ts`. */
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [validationOk, setValidationOk] = useState<string | null>(null);
   const [validation, setValidation] = useState<WidthValidationResult | null>(null);
   const [zoomed, setZoomed] = useState<number | null>(null);
@@ -136,10 +139,10 @@ export default function SidePanel({ deps }: Readonly<SidePanelProps>) {
         setData(loaded);
         setFileName(loaded.fileName);
         setStylePackage(loaded.stylePackages[0]?.id ?? '');
-        setError(null);
+        setLoadError(null);
       })
       .catch(() => {
-        if (!cancelled) setError(PACKAGE_LOAD_ERROR);
+        if (!cancelled) setLoadError(PACKAGE_LOAD_ERROR);
       });
     return () => {
       cancelled = true;
@@ -169,12 +172,12 @@ export default function SidePanel({ deps }: Readonly<SidePanelProps>) {
       .then((content) => {
         if (cancelled || sequence !== latestPackage.current) return;
         applyPackage(content, data.documentLanguage);
-        setError(null);
+        setLoadError(null);
         setLoadingPackage(false);
       })
       .catch(() => {
         if (cancelled || sequence !== latestPackage.current) return;
-        setError(PACKAGE_LOAD_ERROR);
+        setLoadError(PACKAGE_LOAD_ERROR);
         setLoadingPackage(false);
       });
     return () => {
@@ -190,10 +193,9 @@ export default function SidePanel({ deps }: Readonly<SidePanelProps>) {
     return name && !name.endsWith('.pdf') ? `${name}.pdf` : name;
   };
 
+  /** What the last operation said, taken back before the next one starts. */
   const clearAlerts = () => {
-    setWarning(null);
-    setError(null);
-    setSuccess(null);
+    clearReports();
     setValidationOk(null);
     setValidation(null);
     setZoomed(null);
@@ -212,7 +214,7 @@ export default function SidePanel({ deps }: Readonly<SidePanelProps>) {
     });
     if ('error' in built) {
       setInvalidField(built.error.field);
-      setError(built.error.message);
+      reportRefusal(built.error.message);
       return null;
     }
     setInvalidField(null);
@@ -230,12 +232,12 @@ export default function SidePanel({ deps }: Readonly<SidePanelProps>) {
     try {
       const result = await convert(remote, request);
       if (result.warning) {
-        setWarning(result.warning);
+        reportWarning(result.warning);
       }
       download(result.blob, name);
-      setSuccess(EXPORT_SUCCESS);
+      reportSuccess(EXPORT_SUCCESS);
     } catch (failure) {
-      setError(withDetail(EXPORT_ERROR, messageOf(failure)));
+      reportFailure(EXPORT_ERROR, failure);
     } finally {
       setExporting(false);
     }
@@ -256,7 +258,7 @@ export default function SidePanel({ deps }: Readonly<SidePanelProps>) {
         setValidation(result);
       }
     } catch (failure) {
-      setError(withDetail(VALIDATION_ERROR, messageOf(failure)));
+      reportFailure(VALIDATION_ERROR, failure);
     } finally {
       setValidating(false);
     }
@@ -264,11 +266,11 @@ export default function SidePanel({ deps }: Readonly<SidePanelProps>) {
 
   // Nothing to show a form for: the option lists the panel offers could not be read at all. Reported as the
   // same alert the form itself would carry, which is the one the export dialog shows in the same case.
-  if (error && !form) {
+  if (loadError && !form) {
     return (
       <div className="notifications">
-        <div id="export-error" className="alert alert-error">
-          {error}
+        <div id="load-error" className="alert alert-error">
+          {loadError}
         </div>
       </div>
     );
@@ -292,58 +294,63 @@ export default function SidePanel({ deps }: Readonly<SidePanelProps>) {
         : undefined;
 
   return (
-    <fieldset className="panel-fieldset" disabled={busy}>
-      <ExportFormView
-        ids={IDS}
-        documentType="LIVE_DOC"
-        exportType="SINGLE"
-        data={data}
-        stylePackage={stylePackage}
-        onStylePackage={setStylePackage}
-        autoSelect={false}
-        onAutoSelect={() => {}}
-        form={form}
-        onPatch={patch}
-        exposeSettings={exposeSettings}
-        fileName={fileName}
-        onFileName={setFileName}
-        invalidField={invalidField}
-        busy={busy}
-        alerts={{ warning, error, success }}
-        onWarning={setWarning}
-        validation={{
-          exposed: exposePageWidthValidation,
-          onRun: () => void validatePdf(),
-          disabled: actionsDisabled,
-          running: validating,
-          title: permissionTitle,
-          ok: validationOk,
-          result: validation,
-          zoomed,
-          onZoom: setZoomed,
-        }}
-        actions={
-          <div className="buttons-wrapper">
-            <button
-              type="button"
-              id="export-pdf"
-              disabled={actionsDisabled}
-              title={permissionTitle}
-              onClick={() => void exportToPdf()}
-            >
-              <img src={EXPORT_ICON} alt="" />
-              Export to PDF
-            </button>
-            <span
-              id="export-pdf-progress"
-              className="sbb-spinner"
-              role="img"
-              aria-label="Loading"
-              style={exporting ? { display: 'inline-block' } : undefined}
-            />
-          </div>
-        }
-      />
-    </fieldset>
+    <>
+      {/* Outside the fieldset, which is disabled while an export runs, and outside `ExportFormView`, which
+          is a query container and therefore a containing block for anything `position: fixed` inside it. */}
+      <ToastHost />
+
+      <fieldset className="panel-fieldset" disabled={busy}>
+        <ExportFormView
+          ids={IDS}
+          documentType="LIVE_DOC"
+          exportType="SINGLE"
+          data={data}
+          stylePackage={stylePackage}
+          onStylePackage={setStylePackage}
+          autoSelect={false}
+          onAutoSelect={() => {}}
+          form={form}
+          onPatch={patch}
+          exposeSettings={exposeSettings}
+          fileName={fileName}
+          onFileName={setFileName}
+          invalidField={invalidField}
+          busy={busy}
+          loadError={loadError}
+          validation={{
+            exposed: exposePageWidthValidation,
+            onRun: () => void validatePdf(),
+            disabled: actionsDisabled,
+            running: validating,
+            title: permissionTitle,
+            ok: validationOk,
+            result: validation,
+            zoomed,
+            onZoom: setZoomed,
+          }}
+          actions={
+            <div className="buttons-wrapper">
+              <button
+                type="button"
+                id="export-pdf"
+                disabled={actionsDisabled}
+                title={permissionTitle}
+                onClick={() => void exportToPdf()}
+              >
+                <img src={EXPORT_ICON} alt="" />
+                Export to PDF
+              </button>
+              <span
+                id="export-pdf-progress"
+                className="sbb-spinner"
+                role="img"
+                aria-label="Loading"
+                style={exporting ? { display: 'inline-block' } : undefined}
+              />
+            </div>
+          }
+        />
+      </fieldset>
+    </>
   );
 }

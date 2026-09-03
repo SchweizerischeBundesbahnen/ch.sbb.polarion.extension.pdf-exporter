@@ -2,7 +2,7 @@
 
    Both surfaces render the same form (export/ExportFormView.tsx) and differ only in what surrounds it: a
    dialog with its footer buttons, or a pane with an "Export to PDF" button of its own. So the rows, the
-   columns, the alerts and the page width previews are one stylesheet, injected into each surface's shadow
+   columns, the toasts and the page width previews are one stylesheet, injected into each surface's shadow
    root next to react-sbb-polarion's stylesheet - see popup/mount.tsx, sidepanel/mount.tsx and widget/main.tsx.
    What is left in popup/export-popup.css and sidepanel/side-panel.css is each surface's own chrome.
 
@@ -13,6 +13,13 @@
    Rules for a control's insides are deliberately absent: a dropdown, a text field and a colour picker are
    styled by the shared control system in react-sbb-polarion's stylesheet (scoped to `.form-wrapper`), which
    both roots carry. What is here is where a control sits, not what it looks like. */
+
+/* The toast stylesheet, bundled in rather than left to sonner.
+
+   sonner injects these rules into `document.head` when its module loads, which is all an administration
+   page needs - and nothing at all to a form inside a shadow root, which sees no rule of the document's.
+   Vite inlines the import at build time, so each root gets the toast styles next to the form's own. */
+@import 'sonner/dist/styles.css';
 
 /* --- The form ------------------------------------------------------------------------------------ */
 
@@ -78,12 +85,23 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   column-gap: var(--pdf-column-gap);
+  /* Rows keep their own height rather than stretching to the tallest of the line, so that a row whose value
+     is on a second line (the workitem roles) does not leave its neighbour floating between the two. */
+  align-items: start;
 }
 
 @container pdf-export-form (min-width: 620px) {
   .pdf-section {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+}
+
+/* A section that stays one column however much room the form has. For the rows that carry a value the user
+   types: a Lucene query or a list of metadata fields reads better across the whole form than squeezed into
+   half of it, and one column is also what keeps the four of them one under another rather than paired up.
+   Two classes against the query's one, so this wins wherever it is stated. */
+.pdf-section.single-column {
+  grid-template-columns: minmax(0, 1fr);
 }
 
 /* A row that takes a line of its own, whether the section has one column or two. Used where a row carries
@@ -121,6 +139,17 @@
 
 .property-wrapper > label:last-child {
   grid-column: 2 / -1;
+}
+
+/* A row whose value follows its label rather than starting at the label column.
+
+   Only for the two labels that do not fit that column - "Specific higher level chapters" and "Custom styles
+   of numbered lists" are sentences, and a column wide enough for them would push every aligned control on
+   the form halfway across it. Every other switch that reveals a field keeps the shared column, so its
+   dropdown or its text field lines up with the rest. The value column is what is left of the row: a control
+   sits right after the text, a text field runs to the end of the row. */
+.property-wrapper.tight {
+  grid-template-columns: var(--pdf-switch-column) auto minmax(0, 1fr);
 }
 
 /* The cell the control sits in. Always an element of its own, never the control itself: a SearchableSelect
@@ -179,63 +208,6 @@
   cursor: help;
   display: inline-block;
   vertical-align: middle;
-}
-
-/* --- Rows whose label is too long for the label column -------------------------------------------- */
-
-/* The four switches that reveal a text field ("Specific higher level chapters", "Custom styles of numbered
-   lists", ...). Their texts are wider than the label column, so they get a grid of their own whose label
-   track is `max-content`: the four rows share it, so the four fields still line up with each other, and no
-   text has to be measured into a magic number. The legacy panel wrote three such numbers by hand
-   (`w-chapters: 195px`, `w-metadata: 115px`, `w-list-styles: 210px`) and the fields did not line up.
-
-   `display: contents` on each row is what puts the checkbox, the label and the field into the shared
-   tracks; the row keeps no box of its own, so the spacing is the grid's `row-gap`. */
-.pdf-fields {
-  grid-column: 1 / -1;
-  display: grid;
-  grid-template-columns: var(--pdf-switch-column) max-content minmax(0, 1fr);
-  align-items: center;
-  column-gap: var(--pdf-cell-gap);
-  row-gap: 8px;
-  margin-top: 8px;
-}
-
-.pdf-field {
-  display: contents;
-}
-
-.pdf-fields > .pdf-field > input[type='checkbox'] {
-  grid-column: 1;
-  justify-self: center;
-  margin: 0;
-}
-
-.pdf-fields > .pdf-field > label {
-  grid-column: 2;
-}
-
-.pdf-fields > .pdf-field > .field {
-  grid-column: 3;
-  min-width: 0;
-}
-
-.pdf-fields > .pdf-field > .field > input {
-  width: 100%;
-  box-sizing: border-box;
-  min-width: 0;
-}
-
-/* Narrower than the longest of those labels plus a usable field: the field moves under its label instead,
-   still in the label column so the four of them stay aligned. */
-@container pdf-export-form (max-width: 340px) {
-  .pdf-fields {
-    grid-template-columns: var(--pdf-switch-column) minmax(0, 1fr);
-  }
-
-  .pdf-fields > .pdf-field > .field {
-    grid-column: 2;
-  }
 }
 
 /* --- Controls ------------------------------------------------------------------------------------ */
@@ -306,17 +278,47 @@
   min-width: calc(100% + 35px);
 }
 
+/* --- Toasts -------------------------------------------------------------------------------------- */
+
+/* Twice the 356px sonner sizes a toast at, capped to the window.
+
+   What an export surface reports is not "Saved.": a failed conversion carries the server's own message,
+   which at 356px wraps over four or five lines in a box the eye then has to read downwards. Twice that keeps
+   most of them to one or two lines.
+
+   Here rather than on the `Toaster`, and with `!important`, for one reason each. Here, because this
+   stylesheet is injected into the three shadow roots that carry the export form and nowhere else: an
+   administration page keeps sonner's own width, where a 712px box at the top of the page would cover the
+   controls under it - which is exactly what it did to the Style Packages suite when this was tried on the
+   shared host. And `!important`, because sonner writes `--width` as an inline style on its host, which an
+   author rule cannot outrank otherwise. Below a 600px window sonner ignores the variable anyway and goes
+   full width with its own mobile offsets. */
+[data-sonner-toaster][dir] {
+  --width: min(712px, calc(100vw - 32px)) !important;
+
+  /* The close button in the top RIGHT corner, which is where a reader looks for it. sonner puts it top
+     left for a left-to-right document (top right being where it puts it for a right-to-left one), through
+     these three variables and nothing else - so these are sonner's own right-to-left values, mirrored back.
+     `[dir]` rather than a bare attribute selector because that is what sonner's own declaration is scoped
+     to (`[data-sonner-toaster][dir='ltr']`): same specificity, and later in this sheet. */
+  --toast-close-button-start: unset;
+  --toast-close-button-end: 0;
+  --toast-close-button-transform: translate(35%, -35%);
+}
+
 /* --- Alerts -------------------------------------------------------------------------------------- */
 
-/* What the form says about what just happened, in one block directly above the button that started it -
-   the same block on both surfaces, where the dialog used to put alert boxes at the top of its form and the
-   panel plain red and orange text under its button.
+/* Why the form cannot be used, where that is the case: the option lists or the style package behind it
+   could not be read.
 
-   `pre-line` because a conversion warning is several sentences separated by blank lines (see
-   services/conversion.ts) and is rendered as text, never as markup. The colours, the borders and the
-   glyphs come from the shared `.notifications .alert-*` rules in react-sbb-polarion's stylesheet; the width
-   is restated because that shared rule leaves 32px for a page container's padding, which a form inside a
-   pane or a dialog has already had taken off it. */
+   The one message that stays in the form. What happened during an operation - an export that failed, a
+   warning, a success - is an event and is reported as a toast (see export/reporting.ts); this is a state,
+   and a toast that came and went would leave a form that quietly does not work.
+
+   `pre-line` because a server message may carry its own line breaks, and it is rendered as text, never as
+   markup. The colours, the border and the glyph come from the shared `.notifications .alert-*` rules in
+   react-sbb-polarion's stylesheet; the width is restated because that shared rule leaves 32px for a page
+   container's padding, which a form inside a pane or a dialog has already had taken off it. */
 .notifications {
   padding: 10px 0 0;
 }

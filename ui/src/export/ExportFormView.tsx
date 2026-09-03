@@ -1,4 +1,4 @@
-import { type ReactNode, type RefObject, useEffect, useRef } from 'react';
+import { type ReactNode, type RefObject } from 'react';
 import { SearchableSelect } from '@sbb-polarion/react-sbb-polarion';
 import type { SelectOption } from '@sbb-polarion/react-sbb-polarion';
 import validateIcon from '../assets/validate.svg';
@@ -26,8 +26,8 @@ import {
 import type { ExportForm } from './exportForm';
 import { childValue } from './exportForm';
 import type { ExportField } from './exportParams';
-import { FieldCell, FieldRow, SwitchRow, TextFieldRow } from './formRows';
-import { MAX_PAGE_PREVIEWS, STICKY_NOTES_WARNING, type WidthValidationResult, invalidPagesSummary } from './reporting';
+import { FieldCell, FieldRow, SwitchRow } from './formRows';
+import { MAX_PAGE_PREVIEWS, type WidthValidationResult, invalidPagesSummary, reportStickyNotes } from './reporting';
 
 /** The option lists an export form offers, whoever read them. Both `PopupData` and `PanelData` are one. */
 export interface ExportFormData {
@@ -36,13 +36,6 @@ export interface ExportFormData {
   /** Empty where link roles do not apply, in which case the roles row is not offered at all. */
   roles: SelectOption[];
   webhooksEnabled: boolean;
-}
-
-/** What the form says about what just happened. One block, directly above the button that started it. */
-export interface ExportFormAlerts {
-  warning: string | null;
-  error: string | null;
-  success: string | null;
 }
 
 /** The page width validation: what it is offered for, what it answered, and how to run it again. */
@@ -93,9 +86,15 @@ export interface ExportFormViewProps {
   invalidField: ExportField | null;
   /** Something is running: every control is out of reach until it is done. */
   busy: boolean;
-  alerts: ExportFormAlerts;
-  /** Raised by "as sticky notes", which is not a PDF/A construct - the form says so as it is asked for. */
-  onWarning: (warning: string | null) => void;
+  /**
+   * Why the form cannot be used, where that is the case: the option lists or the style package behind it
+   * could not be read.
+   *
+   * The one message that stays in the form. Everything else an export surface has to say is an event and is
+   * reported as a toast (see `reporting.ts`); this is a state, and a toast that came and went would leave a
+   * form that quietly does not work.
+   */
+  loadError: string | null;
   validation: PageWidthValidation;
   /** The surface's own action area: the panel's "Export to PDF" button. The dialog's are its footer. */
   actions?: ReactNode;
@@ -140,8 +139,7 @@ export default function ExportFormView({
   onFileName,
   invalidField,
   busy,
-  alerts,
-  onWarning,
+  loadError,
   validation,
   actions,
   overlay,
@@ -157,22 +155,10 @@ export default function ExportFormView({
   const settingsShown = !!form && exposeSettings && !autoSelected;
   const validationShown = isPageWidthValidationOffered(exportType, validation.exposed);
   const rolesShown = shows('roles') && !!data && data.roles.length > 0;
-  const textFieldsShown =
-    shows('specificChapters') || shows('metadataFields') || shows('workItemsQuery') || shows('customListStyles');
+  const valueFieldsShown = shows('specificChapters') || shows('workItemsQuery') || shows('metadataFields');
 
   const result = validation.result;
   const previews = result?.invalidPages.slice(0, MAX_PAGE_PREVIEWS) ?? [];
-
-  // The alerts sit next to the button that produced them, which on both surfaces is the bottom of the
-  // form. That is only where the eye is if the form is short enough to be on screen whole, so a form that
-  // scrolls (a tall dialog, a properties pane) brings them into view rather than reporting into nothing.
-  const alertsRef = useRef<HTMLDivElement>(null);
-  const announced = alerts.error || alerts.warning || alerts.success;
-  useEffect(() => {
-    if (announced) {
-      alertsRef.current?.scrollIntoView({ block: 'nearest' });
-    }
-  }, [announced]);
 
   return (
     <div className="pdf-export-form" ref={formRef}>
@@ -280,9 +266,9 @@ export default function ExportFormView({
             )}
           </div>
 
-          {/* The page the PDF is laid out on. */}
+          {/* The page the PDF is laid out on: the colour picker on a line of its own, then the two pairs. */}
           <div className="pdf-section group-start">
-            <FieldRow label="Headings color:" labelFor={id('headers-color')}>
+            <FieldRow className="full-row" label="Headings color:" labelFor={id('headers-color')}>
               <FieldCell>
                 <input
                   id={id('headers-color')}
@@ -338,7 +324,13 @@ export default function ExportFormView({
             </FieldRow>
           </div>
 
-          {/* What the renderer does and does not carry over. Switches only, so two of them fit a line. */}
+          {/* What the renderer does and does not carry over.
+
+              The order is the one the two-column layout wants, and the rows flow across before they flow
+              down: what reads as a list in a properties pane is two columns of five in a dialog, with the
+              pairs that belong together ("cut empty chapters" / "cut empty Workitem attributes") side by
+              side. Which is also why a row is never given a column: a document type that hides one of them
+              (a report hides six) reflows the rest rather than leaving a hole. */}
           <div className="pdf-section group-start">
             <SwitchRow
               id={id('full-fonts')}
@@ -401,6 +393,26 @@ export default function ExportFormView({
                 onChange={(checked) => onPatch({ markReferencedWorkitems: checked })}
               />
             )}
+            {shows('customListStyles') && (
+              <SwitchRow
+                className="tight"
+                id={id('custom-list-styles')}
+                label="Custom styles of numbered lists"
+                checked={form.customListStylesEnabled}
+                onChange={(checked) => onPatch({ customListStylesEnabled: checked })}
+              >
+                <FieldCell grows shown={form.customListStylesEnabled}>
+                  <input
+                    id={id('numbered-list-styles')}
+                    className={invalidField === 'numberedListStyles' ? 'error' : undefined}
+                    type="text"
+                    placeholder="eg. 1ai"
+                    value={form.customNumberedListStyles}
+                    onChange={(event) => onPatch({ customNumberedListStyles: event.target.value })}
+                  />
+                </FieldCell>
+              </SwitchRow>
+            )}
             {shows('localizeEnums') && (
               <SwitchRow
                 id={id('localization')}
@@ -421,167 +433,160 @@ export default function ExportFormView({
             )}
           </div>
 
-          {/* The two switches whose choices need a line of their own, so they take a full row each. */}
-          {(shows('renderComments') || rolesShown) && (
+          {/* How comments are rendered, and the two options that go with it - a section of its own, since
+              those options belong under the row rather than beside it. */}
+          {shows('renderComments') && (
             <div className="pdf-section group-start">
-              {shows('renderComments') && (
-                <>
-                  <SwitchRow
-                    className="full-row"
-                    id={id('render-comments')}
-                    label="Comments rendering"
-                    checked={form.renderCommentsEnabled}
-                    onChange={(checked) => onPatch({ renderCommentsEnabled: checked })}
-                  >
-                    <FieldCell shown={form.renderCommentsEnabled}>
-                      <SearchableSelect
-                        id={id('render-comments-selector')}
-                        options={COMMENTS_RENDER_TYPES}
-                        value={form.renderComments}
-                        onChange={(value) => onPatch({ renderComments: value })}
-                        disabled={busy}
-                      />
-                    </FieldCell>
-                  </SwitchRow>
-                  {form.renderCommentsEnabled && (
-                    <div className="property-wrapper sub-row" id={id('render-comments-options')}>
-                      <FieldCell wide>
-                        <div className="option-pair">
-                          <label htmlFor={id('include-unreferenced-comments')} title={UNREFERENCED_COMMENTS_HELP}>
-                            <input
-                              id={id('include-unreferenced-comments')}
-                              type="checkbox"
-                              checked={form.includeUnreferencedComments}
-                              onChange={(event) => onPatch({ includeUnreferencedComments: event.target.checked })}
-                            />
-                            include unreferenced
-                          </label>
-                          <label htmlFor={id('render-native-comments')} title={NATIVE_COMMENTS_HELP}>
-                            <input
-                              id={id('render-native-comments')}
-                              type="checkbox"
-                              checked={form.renderNativeComments}
-                              onChange={(event) => {
-                                onPatch({ renderNativeComments: event.target.checked });
-                                onWarning(event.target.checked ? STICKY_NOTES_WARNING : null);
-                              }}
-                            />
-                            as sticky notes
-                          </label>
-                        </div>
-                      </FieldCell>
-                    </div>
-                  )}
-                </>
-              )}
-
-              {rolesShown && data && (
-                <>
-                  <SwitchRow
-                    className="full-row"
-                    id={id('selected-roles')}
-                    label="Specific Workitem roles"
-                    checked={form.rolesEnabled}
-                    onChange={(checked) => onPatch({ rolesEnabled: checked })}
+              <SwitchRow
+                className="full-row"
+                id={id('render-comments')}
+                label="Comments rendering"
+                checked={form.renderCommentsEnabled}
+                onChange={(checked) => onPatch({ renderCommentsEnabled: checked })}
+              >
+                <FieldCell shown={form.renderCommentsEnabled}>
+                  <SearchableSelect
+                    id={id('render-comments-selector')}
+                    options={COMMENTS_RENDER_TYPES}
+                    value={form.renderComments}
+                    onChange={(value) => onPatch({ renderComments: value })}
+                    disabled={busy}
                   />
-                  {form.rolesEnabled && (
-                    <div className="property-wrapper sub-row" id={id('roles-wrapper')}>
-                      <FieldCell wide>
-                        <div className="option-pair">
-                          <SearchableSelect
-                            id={id('roles-selector')}
-                            multiple
-                            options={data.roles}
-                            value={form.linkedWorkitemRoles}
-                            onChange={(values) => onPatch({ linkedWorkitemRoles: values })}
-                            disabled={busy}
-                          />
-                          <SearchableSelect
-                            id={id('roles-direction-selector')}
-                            options={LINK_ROLE_DIRECTIONS}
-                            value={form.linkRoleDirection}
-                            onChange={(value) => onPatch({ linkRoleDirection: value })}
-                            disabled={busy}
-                          />
-                        </div>
-                      </FieldCell>
+                </FieldCell>
+              </SwitchRow>
+              {form.renderCommentsEnabled && (
+                <div className="property-wrapper sub-row" id={id('render-comments-options')}>
+                  <FieldCell wide>
+                    <div className="option-pair">
+                      <label htmlFor={id('include-unreferenced-comments')} title={UNREFERENCED_COMMENTS_HELP}>
+                        <input
+                          id={id('include-unreferenced-comments')}
+                          type="checkbox"
+                          checked={form.includeUnreferencedComments}
+                          onChange={(event) => onPatch({ includeUnreferencedComments: event.target.checked })}
+                        />
+                        include unreferenced
+                      </label>
+                      <label htmlFor={id('render-native-comments')} title={NATIVE_COMMENTS_HELP}>
+                        <input
+                          id={id('render-native-comments')}
+                          type="checkbox"
+                          checked={form.renderNativeComments}
+                          onChange={(event) => {
+                            onPatch({ renderNativeComments: event.target.checked });
+                            // Sticky notes are not a PDF/A construct, so the form says so as soon as
+                            // they are asked for rather than after a non-compliant file was produced.
+                            reportStickyNotes(event.target.checked);
+                          }}
+                        />
+                        as sticky notes
+                      </label>
                     </div>
-                  )}
-                </>
+                  </FieldCell>
+                </div>
               )}
             </div>
           )}
 
-          {/* The switches whose text is too long for the label column - see `.pdf-fields`. */}
-          {textFieldsShown && (
-            <div className="pdf-fields group-start">
+          {/* What to export of the document, rather than how to render it: the three switches that carry a
+              value the user types. One column whatever the form's width, so each of them has the whole
+              width for its field and the three read as a list. */}
+          {valueFieldsShown && (
+            <div className="pdf-section single-column group-start">
               {shows('specificChapters') && (
-                <TextFieldRow
+                <SwitchRow
+                  className="tight"
                   id={id('specific-chapters')}
                   label="Specific higher level chapters"
                   checked={form.specificChaptersEnabled}
                   onChange={(checked) => onPatch({ specificChaptersEnabled: checked })}
                 >
-                  <input
-                    id={id('chapters')}
-                    className={invalidField === 'chapters' ? 'error' : undefined}
-                    type="text"
-                    placeholder="eg. 1,2,4 etc."
-                    value={form.specificChapters}
-                    onChange={(event) => onPatch({ specificChapters: event.target.value })}
-                  />
-                </TextFieldRow>
-              )}
-              {shows('metadataFields') && (
-                <TextFieldRow
-                  id={id('metadata-fields')}
-                  label="Metadata fields"
-                  checked={form.metadataFieldsEnabled}
-                  onChange={(checked) => onPatch({ metadataFieldsEnabled: checked })}
-                >
-                  <input
-                    id={id('metadata-fields-input')}
-                    type="text"
-                    placeholder="e.g. docOwner, docLanguage, customField*"
-                    value={form.metadataFields}
-                    onChange={(event) => onPatch({ metadataFields: event.target.value })}
-                  />
-                </TextFieldRow>
+                  <FieldCell grows shown={form.specificChaptersEnabled}>
+                    <input
+                      id={id('chapters')}
+                      className={invalidField === 'chapters' ? 'error' : undefined}
+                      type="text"
+                      placeholder="eg. 1,2,4 etc."
+                      value={form.specificChapters}
+                      onChange={(event) => onPatch({ specificChapters: event.target.value })}
+                    />
+                  </FieldCell>
+                </SwitchRow>
               )}
               {shows('workItemsQuery') && (
-                <TextFieldRow
+                <SwitchRow
                   id={id('work-items-query')}
                   label="Work items query"
                   checked={form.workItemsQueryEnabled}
                   onChange={(checked) => onPatch({ workItemsQueryEnabled: checked })}
                 >
-                  <input
-                    id={id('work-items-query-input')}
-                    type="text"
-                    title="Lucene query applied to filter work items within the document, e.g. 'type:requirement'."
-                    placeholder="e.g. type:requirement"
-                    value={form.workItemsQuery}
-                    onChange={(event) => onPatch({ workItemsQuery: event.target.value })}
-                  />
-                </TextFieldRow>
+                  <FieldCell grows shown={form.workItemsQueryEnabled}>
+                    <input
+                      id={id('work-items-query-input')}
+                      type="text"
+                      title="Lucene query applied to filter work items within the document, e.g. 'type:requirement'."
+                      placeholder="e.g. type:requirement"
+                      value={form.workItemsQuery}
+                      onChange={(event) => onPatch({ workItemsQuery: event.target.value })}
+                    />
+                  </FieldCell>
+                </SwitchRow>
               )}
-              {shows('customListStyles') && (
-                <TextFieldRow
-                  id={id('custom-list-styles')}
-                  label="Custom styles of numbered lists"
-                  checked={form.customListStylesEnabled}
-                  onChange={(checked) => onPatch({ customListStylesEnabled: checked })}
+              {shows('metadataFields') && (
+                <SwitchRow
+                  id={id('metadata-fields')}
+                  label="Metadata fields"
+                  checked={form.metadataFieldsEnabled}
+                  onChange={(checked) => onPatch({ metadataFieldsEnabled: checked })}
                 >
-                  <input
-                    id={id('numbered-list-styles')}
-                    className={invalidField === 'numberedListStyles' ? 'error' : undefined}
-                    type="text"
-                    placeholder="eg. 1ai"
-                    value={form.customNumberedListStyles}
-                    onChange={(event) => onPatch({ customNumberedListStyles: event.target.value })}
-                  />
-                </TextFieldRow>
+                  <FieldCell grows shown={form.metadataFieldsEnabled}>
+                    <input
+                      id={id('metadata-fields-input')}
+                      type="text"
+                      placeholder="e.g. docOwner, docLanguage, customField*"
+                      value={form.metadataFields}
+                      onChange={(event) => onPatch({ metadataFields: event.target.value })}
+                    />
+                  </FieldCell>
+                </SwitchRow>
               )}
+            </div>
+          )}
+
+          {/* Which work items a document's links pull in, which is a question of its own - and two controls
+              wide, so it takes a line to itself between the hairlines rather than a place in a list. */}
+          {rolesShown && data && (
+            <div className="pdf-section single-column group-start">
+              <SwitchRow
+                rowId={id('roles-wrapper')}
+                id={id('selected-roles')}
+                label="Specific Workitem roles"
+                checked={form.rolesEnabled}
+                onChange={(checked) => onPatch({ rolesEnabled: checked })}
+              >
+                {form.rolesEnabled && (
+                  <FieldCell grows>
+                    {/* Two controls in one cell, side by side while the form has room for both. */}
+                    <div className="option-pair">
+                      <SearchableSelect
+                        id={id('roles-selector')}
+                        multiple
+                        options={data.roles}
+                        value={form.linkedWorkitemRoles}
+                        onChange={(values) => onPatch({ linkedWorkitemRoles: values })}
+                        disabled={busy}
+                      />
+                      <SearchableSelect
+                        id={id('roles-direction-selector')}
+                        options={LINK_ROLE_DIRECTIONS}
+                        value={form.linkRoleDirection}
+                        onChange={(value) => onPatch({ linkRoleDirection: value })}
+                        disabled={busy}
+                      />
+                    </div>
+                  </FieldCell>
+                )}
+              </SwitchRow>
             </div>
           )}
 
@@ -642,36 +647,26 @@ export default function ExportFormView({
       )}
 
       {isFileNameOffered(exportType) && (
-        <FieldRow rowId={id('filename-wrapper')} label="File name:" labelFor={id('filename')}>
-          <FieldCell grows>
-            <input
-              id={id('filename')}
-              type="text"
-              value={fileName}
-              onChange={(event) => onFileName(event.target.value)}
-            />
-          </FieldCell>
-        </FieldRow>
+        <div className="pdf-section group-start">
+          <FieldRow className="full-row" rowId={id('filename-wrapper')} label="File name:" labelFor={id('filename')}>
+            <FieldCell grows>
+              <input
+                id={id('filename')}
+                type="text"
+                value={fileName}
+                onChange={(event) => onFileName(event.target.value)}
+              />
+            </FieldCell>
+          </FieldRow>
+        </div>
       )}
 
       {/* Only where there is something to say: an empty block would keep its padding above the buttons. */}
-      {announced && (
-        <div className="notifications" ref={alertsRef}>
-          {alerts.warning && (
-            <div id={id('export-warning')} className="alert alert-warning">
-              {alerts.warning}
-            </div>
-          )}
-          {alerts.error && (
-            <div id={id('export-error')} className="alert alert-error">
-              {alerts.error}
-            </div>
-          )}
-          {alerts.success && (
-            <div id={id('export-success')} className="alert alert-success">
-              {alerts.success}
-            </div>
-          )}
+      {loadError && (
+        <div className="notifications">
+          <div id={id('load-error')} className="alert alert-error">
+            {loadError}
+          </div>
         </div>
       )}
 

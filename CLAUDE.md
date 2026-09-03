@@ -24,7 +24,10 @@
     `assets/bulk-widget.js`, which mounts React into a shadow root of that shim. The rows come from
     `POST /widgets/bulk-export/items`, carrying the signed descriptor the renderer resolved - see
     `WidgetDescriptorSigner` for why it is signed. Its CSS is `ui/src/widget/widget.css`, which also styles
-    the bulk progress dialog. The renderer puts **nothing** else on the page.
+    the bulk progress dialog. The renderer puts **nothing** else on the page. Its container carries no
+    `form-wrapper` on purpose - RSP scopes its control system to that class and the widget's markup is
+    Polarion's own table - so the export dialog it renders is wrapped in one of its own, without which the
+    same dialog looks different here than from a toolbar button.
   - **Document Properties side panel** - `PdfExporterFormExtension` emits only a fragment (an empty
     `#pdf-exporter-panel` div plus a `<link>` to `css/starter.css` whose `onload` fires the import) and
     `assets/side-panel.js` mounts React into a shadow root of it. It reads its data from the same internal
@@ -42,6 +45,14 @@
   all**. `css/pdf-exporter.css` is deleted and the injectors call no `injectStyle`; the toolbar buttons use
   Polarion's own classes plus generic's `css/dle-toolbar.css`. See [`ui/README.md`](ui/README.md) for the
   layering.
+- **A toast inside a shadow root needs its stylesheet brought in, and one host.** `sonner` (through RSP's
+  `Toaster`) injects its CSS into `document.head` when its module loads, which none of the three
+  shadow-mounted surfaces can see - so `ui/src/export/export-form.css` imports `sonner/dist/styles.css` and
+  Vite inlines it into every root that carries the form. And `toast()` broadcasts to **every** mounted
+  `Toaster`, while the side panel and the export dialog are both on the page whenever a document is open in
+  the editor: `ui/src/components/ToastHost.tsx` is what makes the newest host the only one that renders. The
+  dialog's host must be **inside** the `<dialog>` (the top layer paints above everything outside it) and
+  outside `ExportFormView` (a query container is a containing block for `position: fixed`).
 - **`webapp/pdf-exporter/js/modules/` is gone.** `ExportPopup.js`, `ExportPanel.js`, `ExportContext.js` and
   `ExportParams.js` were ported into the app: `ui/src/export/` (the shared export model **and the form
   itself** - which rows a document type shows, a style package read into a form, a form turned into a

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Modal } from '@sbb-polarion/react-sbb-polarion';
+import ToastHost from '../components/ToastHost';
 import ExportFormView from '../export/ExportFormView';
 import type { DocumentType, ExportType } from '../export/documentType';
 import { isFileNameOffered } from '../export/documentType';
@@ -15,7 +16,12 @@ import {
   EXPORT_SUCCESS,
   VALIDATION_ERROR,
   type WidthValidationResult,
+  clearReports,
   messageOf,
+  reportFailure,
+  reportRefusal,
+  reportSuccess,
+  reportWarning,
   validatePageWidth,
   withDetail,
 } from '../export/reporting';
@@ -113,9 +119,8 @@ export default function ExportPopupModal({
   /** What the form is busy with, or null. One overlay for all four operations, as the legacy popup had. */
   const [progress, setProgress] = useState<string | null>('Loading form data');
 
-  const [warning, setWarning] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+  /** Why the form cannot be used at all. Everything else it has to say is a toast - see `reporting.ts`. */
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [validationOk, setValidationOk] = useState<string | null>(null);
   const [validation, setValidation] = useState<WidthValidationResult | null>(null);
   const [zoomed, setZoomed] = useState<number | null>(null);
@@ -129,16 +134,20 @@ export default function ExportPopupModal({
 
   const busy = progress !== null;
 
+  // Whatever the dialog reported goes with it. A toast outlives its host, so the side panel's host - which
+  // stands down while this one is up (see ToastHost) - would be handed it the moment this dialog unmounts,
+  // and the message would reappear as an echo of a dialog that is no longer there.
+  useEffect(() => clearReports, []);
+
   /**
    * The `?query=` of the page URL. The item is on screen filtered, so an export started here should match
    * it - which is why it takes priority over the style package's own work items query.
    */
   const urlQuery = document_.urlQueryParameters?.query;
 
+  /** What the last operation said, taken back before the next one starts. */
   const clearAlerts = useCallback(() => {
-    setWarning(null);
-    setError(null);
-    setSuccess(null);
+    clearReports();
     setValidationOk(null);
     setValidation(null);
     setZoomed(null);
@@ -163,7 +172,7 @@ export default function ExportPopupModal({
       })
       .catch((failure: unknown) => {
         if (cancelled) return;
-        setError(withDetail(LOAD_ERROR, messageOf(failure)));
+        setLoadError(withDetail(LOAD_ERROR, messageOf(failure)));
         setProgress(null);
       });
     return () => {
@@ -188,11 +197,12 @@ export default function ExportPopupModal({
         setExposeSettings(!!content.exposeSettings);
         setExposePageWidthValidation(!!content.exposePageWidthValidation);
         setInvalidField(null);
+        setLoadError(null);
         setProgress(null);
       })
       .catch((failure: unknown) => {
         if (cancelled || sequence !== latestPackage.current) return;
-        setError(withDetail(PACKAGE_LOAD_ERROR, messageOf(failure)));
+        setLoadError(withDetail(PACKAGE_LOAD_ERROR, messageOf(failure)));
         setProgress(null);
       });
     return () => {
@@ -221,7 +231,7 @@ export default function ExportPopupModal({
     });
     if ('error' in built) {
       setInvalidField(built.error.field);
-      setError(built.error.message);
+      reportRefusal(built.error.message);
       return null;
     }
     setInvalidField(null);
@@ -259,12 +269,12 @@ export default function ExportPopupModal({
     try {
       const result = await convert(remote, toRequestBody(params));
       if (result.warning) {
-        setWarning(result.warning);
+        reportWarning(result.warning);
       }
       download(result.blob, name);
-      setSuccess(EXPORT_SUCCESS);
+      reportSuccess(EXPORT_SUCCESS);
     } catch (failure) {
-      setError(withDetail(EXPORT_ERROR, messageOf(failure)));
+      reportFailure(EXPORT_ERROR, failure);
     } finally {
       setProgress(null);
     }
@@ -285,7 +295,7 @@ export default function ExportPopupModal({
         setValidation(result);
       }
     } catch (failure) {
-      setError(withDetail(VALIDATION_ERROR, messageOf(failure)));
+      reportFailure(VALIDATION_ERROR, failure);
     } finally {
       setProgress(null);
     }
@@ -301,6 +311,11 @@ export default function ExportPopupModal({
       onOk={() => void exportToPdf()}
       onCancel={onClose}
     >
+      {/* Inside the dialog on purpose: it is a native `<dialog>` in the top layer, and a toast host outside
+          it would be painted behind the dialog and dimmed by its backdrop. Outside `ExportFormView`, which
+          is a query container and therefore a containing block for anything `position: fixed` inside it. */}
+      <ToastHost />
+
       <ExportFormView
         ids={IDS}
         documentType={documentType}
@@ -317,8 +332,7 @@ export default function ExportPopupModal({
         onFileName={setFileName}
         invalidField={invalidField}
         busy={busy}
-        alerts={{ warning, error, success }}
-        onWarning={setWarning}
+        loadError={loadError}
         validation={{
           exposed: exposePageWidthValidation,
           onRun: () => void validatePdf(),

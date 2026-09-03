@@ -71,19 +71,20 @@ reason.
 Three surfaces export: the toolbar dialog, the Document Properties side panel and the bulk export widget.
 What they share is [`src/export/`](src/export/) plus two services:
 
-| Module                      | What it holds                                                                          |
-| --------------------------- | -------------------------------------------------------------------------------------- |
-| `export/documentType.ts`    | Which rows a document type shows, and which of them the request carries.               |
-| `export/exportForm.ts`      | A style package read into form state.                                                  |
-| `export/exportParams.ts`    | Form state turned into an export request.                                              |
-| `export/exportData.ts`      | The REST reads each dialog needs before it can be shown.                               |
-| `export/validation.ts`      | The three fields a user can get wrong.                                                 |
-| `export/ExportFormView.tsx` | The form itself: every row, on both surfaces.                                          |
-| `export/formRows.tsx`       | The three kinds of row the form is built from.                                         |
-| `export/export-form.css`    | How those rows and their columns are laid out, and how the form reports.               |
-| `export/reporting.ts`       | What the form tells the user, and the page width validation behind one of its buttons. |
-| `services/exportContext.ts` | Where the item is, read out of the Polarion location hash.                             |
-| `services/conversion.ts`    | Submit a conversion job, poll it, download the result; test run and collection extras. |
+| Module                      | What it holds                                                                           |
+| --------------------------- | --------------------------------------------------------------------------------------- |
+| `export/documentType.ts`    | Which rows a document type shows, and which of them the request carries.                |
+| `export/exportForm.ts`      | A style package read into form state.                                                   |
+| `export/exportParams.ts`    | Form state turned into an export request.                                               |
+| `export/exportData.ts`      | The REST reads each dialog needs before it can be shown.                                |
+| `export/validation.ts`      | The three fields a user can get wrong.                                                  |
+| `export/ExportFormView.tsx` | The form itself: every row, on both surfaces.                                           |
+| `export/formRows.tsx`       | The two kinds of row the form is built from, and the cell a control sits in.            |
+| `export/export-form.css`    | How those rows and their columns are laid out; the toast styles a shadow root needs.    |
+| `export/reporting.ts`       | What the form tells the user, as toasts, and the page width validation behind a button. |
+| `components/ToastHost.tsx`  | The one toast host that renders, wherever several are mounted.                          |
+| `services/exportContext.ts` | Where the item is, read out of the Polarion location hash.                              |
+| `services/conversion.ts`    | Submit a conversion job, poll it, download the result; test run and collection extras.  |
 
 The last two were `webapp/pdf-exporter/js/modules/ExportContext.js` and `ExportParams.js`, loaded at
 runtime from the other webapp by whichever surface needed them. Nothing loads them any more and
@@ -106,7 +107,7 @@ an optional field, and its own way of reporting a failure. What is left per surf
 `Modal` with its footer, or a `<fieldset>` in the properties pane with an "Export to PDF" button of its own
 (passed in as `actions`).
 
-Three things about that form are worth knowing.
+Four things about that form are worth knowing.
 
 **It follows the room it has, not the surface it is on.** `.pdf-export-form` is a query container
 (`container-type: inline-size`), and a section of rows is one column below 620px of form width and two above
@@ -115,19 +116,68 @@ form without a rule of its own. That is also why `export-popup.css` **states** t
 than sizing it to its content: an element with inline-size containment contributes nothing to its parent's
 max-content width, so a `width: max-content` dialog would collapse to one column at every window size.
 
-**Every control starts at the same x.** A row is a three-track grid - a checkbox gutter, a fixed label
-column, the control - so checkboxes, label texts and controls line up down the whole form and across both
-columns. The four switches whose text is too long for that label column (chapters, metadata fields, the
-Lucene query, the list styles) get a grid of their own whose label track is `max-content`: they share it, so
-their fields align with each other without a measured-by-hand number. The legacy panel wrote three such
-numbers (`w-chapters: 195px`, `w-metadata: 115px`, `w-list-styles: 210px`) and the fields still did not line
-up.
+**Every label starts at the same x.** A row is a three-track grid: a checkbox gutter, a label column, the
+control. So the checkboxes line up down the whole form, the label texts line up beside them, and the rows
+whose label _names_ a control - the style package, the four configurations, the page setup, the file name -
+put every one of those controls on one more shared x, in both columns of the wide layout.
 
-**It reports in one place.** Warnings, failures and the success of an export are `.notifications` alert boxes
-directly above the button that started the operation, on both surfaces; the panel's plain red and orange text
-under its button is gone, and so is the third place its validation errors used to land. A form that scrolls
-brings the block into view when something appears in it. What a validation that _ran_ found stays beside the
-Validate button, where the dialog has always put it.
+Two labels do not fit that column - "Specific higher level chapters" and "Custom styles of numbered lists"
+are sentences, and widening the column to hold them would push every aligned control halfway across the
+form. Those two rows let their field follow the label instead (`.tight`), which is what the legacy panel's
+three hand-written label widths (`w-chapters: 195px`, `w-metadata: 115px`, `w-list-styles: 210px`) were
+reaching for, less consistently. Every other switch that reveals a field keeps the shared column, so its
+dropdown or its text field lines up with the rest - the workitem roles included, whose two selectors sit
+side by side there and wrap onto a second line only where a pane is too narrow to hold both.
+
+**The order is the two-column order, and one column falls out of it.** Rows flow across a section before
+they flow down, so the DOM order is the reading order in a pane and pairs up into columns in a dialog: the
+ten render switches become two columns of five with their opposites side by side ("cut empty chapters" next
+to "cut empty Workitem attributes"). Nothing is assigned to a column, which is what lets a document type
+hide six of those rows (a report does) and have the rest close up rather than leave holes.
+
+Three parts of the form opt out. The colour picker and the file name take a line of their own; and the
+section of switches that carry a typed value - chapters, roles, the Lucene query, the metadata fields -
+stays one column at every width (`.single-column`), so each of them has the whole form for its field and the
+four read as a list.
+
+**It reports through toasts.** A failed export, a conversion warning, a refused export and a successful one
+are `toast.error` / `toast.warning` / `toast.success` - the same toasts every administration page of this
+extension raises, through the same host (RSP's `Toaster`). The dialog's alert boxes inside the form are gone,
+and so are the panel's plain red and orange text under its button and the third place its validation errors
+used to land. These are events: the message no longer takes a place in a layout that has to make room for it,
+cannot be scrolled away from the button that produced it, and looks the same whichever surface raised it.
+`export/reporting.ts` is the whole of it - a failure waits to be dismissed, as the alert box it replaced did;
+a warning outstays the 5s a "saved" toast gets; a success does not. Each of those is a `duration` on the
+call, so any of them can be given an auto-close (or taken off one) there and nowhere else.
+
+The host is `expand`ed, which is not cosmetic: one operation can report twice - a conversion that produced a
+file _and_ had something to say about it raises a warning and a success - and sonner stacks its toasts by
+default, the newest in front with the rest scaled down behind it and their text hidden until the pointer is
+over them. Expanded, each is laid out under the one before it and both are read at once.
+
+The box is twice sonner's own 356px, capped to the window: a conversion failure carries the server's message,
+which at 356px reads as four or five wrapped lines. That width is set in `export-form.css` rather than on the
+`Toaster`, so it reaches the three shadow roots that carry the export form and no administration page - a
+712px box at the top of one of those covers the controls under it, which is what it did to the Style Packages
+suite when it was tried on the shared host.
+
+Two things stay in the form, because they describe a **state** rather than an event: the form that could not
+be loaded (a toast that came and went would leave a form that quietly does not work), and what a page width
+validation that _ran_ found, beside the Validate button where the dialog has always put it.
+
+Toasts in a shadow root need two things that an administration page does not.
+
+- **Their stylesheet has to be inside the root.** sonner injects its CSS into `document.head` when its module
+  loads, which a shadow root sees nothing of, so `export/export-form.css` imports `sonner/dist/styles.css`
+  and Vite inlines it - the form's stylesheet carries the toast styles because the form raises toasts.
+- **Only one host may render at a time**, which is `components/ToastHost.tsx`. `toast()` is a module
+  singleton that broadcasts to every mounted `Toaster`, and two of these surfaces are on one page whenever a
+  document is open in the editor - the side panel and the dialog the toolbar opens over it - so both hosts
+  would show every message twice, one of the two behind the dialog's backdrop. The hosts take turns: the
+  newest renders, the rest stand down until it is gone. The dialog's own host is rendered **inside** the
+  dialog, because a native `<dialog>` is in the browser's top layer and paints above anything outside it
+  whatever its z-index; and outside `ExportFormView`, because a query container is a containing block for
+  everything `position: fixed` within it.
 
 An optional value field is hidden with `visibility` rather than removed - what the legacy dialog did and the
 panel did not: ticking a checkbox must not reflow the rows around it.
@@ -178,6 +228,13 @@ Both dialogs the widget owns are inside that shadow root too: the export paramet
 dialog, which is RSP's shared `Modal` styled by `widget.css`. Both used to be micromodal markup in the
 report page's body, styled by stylesheets the renderer inlined next to the shim; nothing is inlined there
 now.
+
+The export dialog is wrapped in a `form-wrapper` div, and that is not decoration: RSP scopes its whole
+control system - text field metrics, the colour picker, checkbox states - to `.form-wrapper` /
+`.standard-admin-page` / `.modal__container`, and the widget's own container carries none of them on purpose,
+its markup being Polarion's table and buttons which that system would restyle. Without the wrapper the very
+same dialog looks different here than it does from a toolbar button; `widget.css` re-applies the checkbox
+styling for the widget's own rows for the same reason.
 
 The progress dialog offers exactly one action at a time - Stop while the run is going, Close once it is
 over - while the shared `Modal` always renders both of its footer buttons, so `widget.css` hides the one

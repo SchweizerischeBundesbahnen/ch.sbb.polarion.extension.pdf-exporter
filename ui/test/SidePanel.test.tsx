@@ -14,6 +14,7 @@ import {
   pdfResult,
   sampleDependencies,
 } from './sidePanelSamples';
+import { clearToasts, toastText, toasted, untoasted } from './toasts';
 
 // The export panel of the document editor: what the selected style package puts on screen, what the export
 // sends, and what the user is told when something is wrong. The panel is rendered directly rather than
@@ -37,6 +38,7 @@ const selected = (id: string) => field<HTMLSelectElement>(`#${id}`)?.value;
 
 afterEach(() => {
   cleanup();
+  clearToasts();
   vi.unstubAllGlobals();
 });
 
@@ -113,10 +115,11 @@ describe('what the style package puts on screen', () => {
     await userEvent.click(checkbox('render-comments'));
 
     await userEvent.click(checkbox('render-native-comments'));
-    expect(text('#export-warning')).toContain('not compliant with any of PDF/A variants');
+    expect(await toasted('warning')).toContain('not compliant with any of PDF/A variants');
 
+    // Taken back when the checkbox goes off again: it is the one report that belongs to a control
     await userEvent.click(checkbox('render-native-comments'));
-    expect(text('#export-warning')).toBe('');
+    await untoasted('warning');
   });
 
   it('hides the webhooks row where the installation has webhooks switched off', async () => {
@@ -330,18 +333,19 @@ describe('what the style package puts on screen', () => {
 });
 
 describe('what the panel says when it cannot load', () => {
-  // Reported as the same alert an export failure is, in the same place - which is what the export dialog
-  // has always done and what the panel used to say in plain red text of its own under the button.
+  // A form that could not be loaded is a state, not an event, so it stays in the panel rather than becoming
+  // a toast that comes and goes - which is what the export dialog does with the same failure.
   it('reports a style package that cannot be read', async () => {
     open({ ...sampleDependencies(), loadPackage: () => Promise.reject(new Error('HTTP 500')) });
 
-    await vi.waitFor(() => expect(text('#export-error')).toContain('error loading style package settings'));
+    await vi.waitFor(() => expect(text('#load-error')).toContain('error loading style package settings'));
+    expect(toastText('error')).toBe('');
   });
 
   it('reports data that cannot be read', async () => {
     open({ ...sampleDependencies(), loadData: () => Promise.reject(new Error('HTTP 500')) });
 
-    await vi.waitFor(() => expect(text('#export-error')).toContain('error loading style package settings'));
+    await vi.waitFor(() => expect(text('#load-error')).toContain('error loading style package settings'));
   });
 
   // There used to be a third failure here: the product's export JS, loaded at runtime from the other
@@ -417,7 +421,7 @@ describe('exporting', () => {
 
     await userEvent.click(field<HTMLButtonElement>('#export-pdf')!);
 
-    expect(text('#export-warning')).toBe('One image\n\nwas not exported');
+    expect(await toasted('warning')).toBe('One image\n\nwas not exported');
   });
 
   it('shows why a conversion failed', async () => {
@@ -430,9 +434,7 @@ describe('exporting', () => {
 
     await userEvent.click(field<HTMLButtonElement>('#export-pdf')!);
 
-    await vi.waitFor(() =>
-      expect(text('#export-error')).toBe('Error occurred during PDF generation: The document has no content'),
-    );
+    expect(await toasted('error')).toBe('Error occurred during PDF generation: The document has no content');
   });
 
   it('says only that it failed when the server gave no reason', async () => {
@@ -445,7 +447,7 @@ describe('exporting', () => {
 
     await userEvent.click(field<HTMLButtonElement>('#export-pdf')!);
 
-    await vi.waitFor(() => expect(text('#export-error')).toBe('Error occurred during PDF generation'));
+    expect(await toasted('error')).toBe('Error occurred during PDF generation');
   });
 
   it('disables the panel and shows the spinner while an export runs', async () => {
@@ -470,7 +472,7 @@ describe('exporting', () => {
     await userEvent.fill(field<HTMLInputElement>('#chapters')!, 'one, two');
     await userEvent.click(field<HTMLButtonElement>('#export-pdf')!);
 
-    expect(text('#export-error')).toContain('comma separated list of integer values');
+    expect(await toasted('error')).toContain('comma separated list of integer values');
     expect(field('#chapters')!.className).toContain('error');
     // Nothing was started, so the panel is still usable
     expect(field<HTMLButtonElement>('#export-pdf')!.disabled).toBe(false);
@@ -483,7 +485,7 @@ describe('exporting', () => {
     await userEvent.fill(field<HTMLInputElement>('#numbered-list-styles')!, 'xyz');
     await userEvent.click(field<HTMLButtonElement>('#export-pdf')!);
 
-    expect(text('#export-error')).toContain("combination of characters '1aAiI'");
+    expect(await toasted('error')).toContain("combination of characters '1aAiI'");
     expect(field('#numbered-list-styles')!.className).toContain('error');
   });
 
@@ -614,9 +616,7 @@ describe('validating the page width', () => {
 
     await userEvent.click(field<HTMLButtonElement>('#validate-pdf')!);
 
-    await vi.waitFor(() =>
-      expect(text('#export-error')).toBe('Error occurred validating pages width: Rendering failed'),
-    );
+    expect(await toasted('error')).toBe('Error occurred validating pages width: Rendering failed');
     // `#validate-error` says what a validation that *ran* found, so it stays empty here
     expect(text('#validate-error')).toBe('');
   });

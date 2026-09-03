@@ -3,10 +3,11 @@ import type { CSSProperties, ReactNode } from 'react';
 /**
  * The rows an export form is built from.
  *
- * One row is a three-track grid - the checkbox gutter, the label, the control - so every checkbox, every
- * label text and every control of the whole form lands on the same three x positions. See
- * `export-form.css`; these components are what guarantees the markup those rules expect, which is why the
- * form does not write `<div className="property-wrapper">` by hand anywhere.
+ * One row is a three-track grid - the checkbox gutter, the label, the control - so every checkbox and every
+ * label text of the whole form lands on the same two x positions, and so does every control whose row is
+ * one of the aligned ones (`tight` is the variant for the rest; see `export-form.css`). These components
+ * are what guarantees the markup those rules expect, which is why the form does not write
+ * `<div className="property-wrapper">` by hand anywhere.
  *
  * The checkbox is a **sibling** of its label rather than a child of it, which is what gives it a gutter of
  * its own. `htmlFor` still makes the text toggle the switch.
@@ -44,7 +45,10 @@ export function FieldCell({ children, grows, wide, shown = true }: Readonly<Fiel
 }
 
 interface RowBase {
-  /** Row modifiers: `full-row` for a row that takes a line of its own, `sub-row` for one that belongs above. */
+  /**
+   * Row modifiers: `full-row` for a row that takes a line of its own, `sub-row` for one that belongs to the
+   * row above it, `tight` for a value that follows its label instead of starting at the label column.
+   */
   className?: string;
   /** The id of the row element itself, where something needs to address the row rather than the control. */
   rowId?: string;
@@ -97,33 +101,6 @@ export function SwitchRow({
         {label}
       </label>
       {children}
-    </div>
-  );
-}
-
-export interface TextFieldRowProps {
-  /** The id of the checkbox, which is also what the label points at. */
-  id: string;
-  label: ReactNode;
-  checked: boolean;
-  onChange: (checked: boolean) => void;
-  /** The text field the switch reveals. Its space is kept while the switch is off. */
-  children: ReactNode;
-}
-
-/**
- * One of the switches whose text is too long for the label column, so that all of them share a label track
- * of their own - see `.pdf-fields` in `export-form.css`. The row keeps no box: `display: contents` puts the
- * checkbox, the label and the field straight into that grid.
- */
-export function TextFieldRow({ id, label, checked, onChange, children }: Readonly<TextFieldRowProps>) {
-  return (
-    <div className="pdf-field">
-      <input id={id} type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} />
-      <label htmlFor={id}>{label}</label>
-      <div className="field" style={reserved(checked)}>
-        {children}
-      </div>
     </div>
   );
 }
