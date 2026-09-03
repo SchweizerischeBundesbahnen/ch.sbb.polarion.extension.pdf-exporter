@@ -206,9 +206,9 @@ describe('mounting the export dialog', () => {
 
   it('reports once where a side panel is on the page as well', async () => {
     // Both surfaces mount a toast host of their own, and `toast()` broadcasts to every one of them - so
-    // without the taking-turns rule in export/ExportToaster.tsx the editor would show every message twice,
-    // once in the dialog and once behind its backdrop. This is that page: a document open in the editor
-    // (the panel) with the toolbar's dialog over it.
+    // without the taking-turns rule in src/components/ToastHost.tsx the editor would show every message
+    // twice, once in the dialog and once behind its backdrop. This is that page: a document open in the
+    // editor (the panel) with the toolbar's dialog over it.
     const pane = document.createElement('div');
     pane.id = 'pdf-exporter-panel-with-dialog';
     pane.className = 'pdf-exporter form-wrapper';

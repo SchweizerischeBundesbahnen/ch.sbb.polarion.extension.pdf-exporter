@@ -11,7 +11,7 @@ import { errorMessageOf } from '../services/conversion';
  * panel plain red and orange text under its button, and the panel's validation errors ended up in a third
  * place again. They report through these functions now, which is `sonner`'s `toast` - the same toasts every
  * administration page of this extension has always used, and the same host (RSP's `Toaster`, see
- * ExportToaster).
+ * components/ToastHost.tsx).
  *
  * Toasts rather than a block in the form because these are events, not state: the message no longer takes
  * a place in a layout it has to be given room in, cannot be scrolled away from the button that produced it,
