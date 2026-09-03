@@ -10,6 +10,7 @@ import jakarta.ws.rs.client.Entity;
 import jakarta.ws.rs.client.Invocation;
 import jakarta.ws.rs.client.WebTarget;
 import jakarta.ws.rs.core.Response;
+import com.polarion.core.util.exceptions.UserFriendlyRuntimeException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -27,6 +28,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
@@ -49,6 +51,8 @@ class BulkProcessingServiceConnectorTest {
     private WebTarget webTarget;
     @Mock
     private Invocation.Builder invocationBuilder;
+    @Mock
+    private ApiKeyProvider apiKeyProvider;
 
     private MockedStatic<ClientBuilder> clientBuilderMockedStatic;
     private BulkProcessingServiceConnector connector;
@@ -69,7 +73,10 @@ class BulkProcessingServiceConnectorTest {
         lenient().when(webTarget.request(any(jakarta.ws.rs.core.MediaType.class))).thenReturn(invocationBuilder);
         lenient().when(webTarget.queryParam(anyString(), any())).thenReturn(webTarget);
 
-        connector = new BulkProcessingServiceConnector(BULK_SERVICE_URL, WEASYPRINT_URL);
+        // Default: no API key configured, which keeps the pre-existing behavior of these tests.
+        lenient().when(apiKeyProvider.getApiKey()).thenReturn(null);
+
+        connector = new BulkProcessingServiceConnector(BULK_SERVICE_URL, WEASYPRINT_URL, apiKeyProvider);
     }
 
     @AfterEach
@@ -234,6 +241,52 @@ class BulkProcessingServiceConnectorTest {
                 .isInstanceOf(IllegalStateException.class);
 
         verify(invocationBuilder).delete();
+    }
+
+    @Test
+    void shouldSendApiKeyHeaderOverHttps() {
+        when(apiKeyProvider.getApiKey()).thenReturn("secret");
+        lenient().when(invocationBuilder.header(anyString(), any())).thenReturn(invocationBuilder);
+
+        Response startResponse = mockResponse(201, "{\"jobId\":\"job\"}");
+        Response addResponse = mockResponse(202, "{\"status\":\"accepted\"}");
+        Response finishResponse = mockPdfResponse(200, "merged-pdf-content".getBytes());
+        when(invocationBuilder.post(any(Entity.class)))
+                .thenReturn(startResponse)
+                .thenReturn(addResponse)
+                .thenReturn(finishResponse);
+
+        BulkProcessingServiceConnector httpsConnector = new BulkProcessingServiceConnector("https://localhost:9070", WEASYPRINT_URL, apiKeyProvider);
+        httpsConnector.convertMergedToPdf(List.of(doc("<html></html>", null)), MergeJobStartParams.builder().build());
+
+        verify(invocationBuilder, atLeastOnce()).header("X-API-Key", "secret");
+    }
+
+    @Test
+    void shouldRejectApiKeyOverPlainHttp() {
+        when(apiKeyProvider.getApiKey()).thenReturn("secret");
+
+        // The connector from setUp is named over http, so the key must never leave.
+        assertThatThrownBy(() -> connector.convertMergedToPdf(List.of(doc("<html></html>", null)), MergeJobStartParams.builder().build()))
+                .isInstanceOf(UserFriendlyRuntimeException.class)
+                .hasMessageContaining("not sent over plain http");
+    }
+
+    @Test
+    void shouldReportMissingKeyOnUnauthorized() {
+        // apiKeyProvider returns null (default), so a 401 means the service wants a key we do not have.
+        Response startResponse = mockResponse(401, "Unauthorized");
+        when(invocationBuilder.post(any(Entity.class))).thenReturn(startResponse);
+
+        assertThatThrownBy(() -> connector.convertMergedToPdf(List.of(doc("<html></html>", null)), MergeJobStartParams.builder().build()))
+                .isInstanceOf(UserFriendlyRuntimeException.class)
+                .hasMessageContaining("requires an API key");
+    }
+
+    @Test
+    void unauthorizedMessageDistinguishesTheTwoCases() {
+        assertThat(BulkProcessingServiceConnector.unauthorizedMessage(true)).contains("rejected the configured API key");
+        assertThat(BulkProcessingServiceConnector.unauthorizedMessage(false)).contains("requires an API key");
     }
 
     private MergeDocumentData doc(String html, String coverPageHtml) {

@@ -33,6 +33,10 @@ public class PdfExporterExtensionConfiguration extends ExtensionConfiguration {
     public static final String WEASYPRINT_API_KEY_SECRET_DESCRIPTION = "Name of the Polarion secret holding the <a href='#weasyprint-api-key'>API key of the WeasyPrint service</a>";
     public static final String WEASYPRINT_API_KEY_SECRET_DEFAULT_VALUE = "";
 
+    public static final String BULK_PROCESSING_API_KEY_SECRET = "bulk.processing.apiKeySecret";
+    public static final String BULK_PROCESSING_API_KEY_SECRET_DESCRIPTION = "Name of the Polarion secret holding the <a href='#bulk-processing-api-key'>API key of the bulk processing service</a>";
+    public static final String BULK_PROCESSING_API_KEY_SECRET_DEFAULT_VALUE = "";
+
     public static final String WEBHOOKS_ENABLED = "webhooks.enabled";
     public static final String WEBHOOKS_ENABLED_DESCRIPTION = "Enable <a href='#enabling-webhooks'>webhooks</a>";
     public static final Boolean WEBHOOKS_ENABLED_DEFAULT_VALUE = false;
@@ -109,6 +113,23 @@ public class PdfExporterExtensionConfiguration extends ExtensionConfiguration {
     @PropertyMappingDefaultValue(WEASYPRINT_API_KEY_SECRET)
     public String getWeasyPrintApiKeySecretDefaultValue() {
         return WEASYPRINT_API_KEY_SECRET_DEFAULT_VALUE;
+    }
+
+    @PropertyMapping(BULK_PROCESSING_API_KEY_SECRET)
+    public String getBulkProcessingApiKeySecret() {
+        return SystemValueReader.getInstance().readString(getPropertyPrefix() + BULK_PROCESSING_API_KEY_SECRET, BULK_PROCESSING_API_KEY_SECRET_DEFAULT_VALUE);
+    }
+
+    @SuppressWarnings("unused")
+    @PropertyMappingDescription(BULK_PROCESSING_API_KEY_SECRET)
+    public String getBulkProcessingApiKeySecretDescription() {
+        return BULK_PROCESSING_API_KEY_SECRET_DESCRIPTION;
+    }
+
+    @SuppressWarnings("unused")
+    @PropertyMappingDefaultValue(BULK_PROCESSING_API_KEY_SECRET)
+    public String getBulkProcessingApiKeySecretDefaultValue() {
+        return BULK_PROCESSING_API_KEY_SECRET_DEFAULT_VALUE;
     }
 
     @NotNull
@@ -213,6 +234,7 @@ public class PdfExporterExtensionConfiguration extends ExtensionConfiguration {
         supportedProperties.add(WEASYPRINT_SERVICE);
         supportedProperties.add(BULK_PROCESSING_SERVICE);
         supportedProperties.add(WEASYPRINT_API_KEY_SECRET);
+        supportedProperties.add(BULK_PROCESSING_API_KEY_SECRET);
         supportedProperties.add(WEBHOOKS_ENABLED);
         supportedProperties.add(RENDERABLE_IMAGE_EXTENSIONS);
         supportedProperties.add(EXTERNAL_RESOURCES_POLICY);

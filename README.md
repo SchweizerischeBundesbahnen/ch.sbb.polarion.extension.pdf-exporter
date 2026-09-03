@@ -242,6 +242,22 @@ docker run --detach \
   ghcr.io/schweizerischebundesbahnen/bulk-processing-service:latest
 ```
 
+<a id="bulk-processing-api-key"></a>
+#### Bulk Processing API key
+
+The bulk processing service can require an API key, which it does as soon as it is started with `API_KEY` set.
+As with the WeasyPrint service, the extension reads the key from Polarion's secrets manager, and the property
+holds the **name** of a secret, never the key itself:
+
+```properties
+ch.sbb.polarion.extension.pdf-exporter.bulk.processing.apiKeySecret=bulk-processing-api-key
+```
+
+An unset or empty property sends no key. The key is only sent over `https`: where a key is configured and
+`bulk.processing.service` names a plain `http` address, the export is refused rather than putting the
+credential on the wire. A `401` from the service is reported apart from other errors, since it means either
+that no key is configured or that the configured key was rejected, each with a different fix.
+
 ### Renderable image extensions
 
 The exporter can embed certain file types as full-size images (raster formats, SVG, convertible diagrams like Visio).

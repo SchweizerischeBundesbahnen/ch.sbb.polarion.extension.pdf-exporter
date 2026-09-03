@@ -9,30 +9,36 @@ import ch.sbb.polarion.extension.pdf_exporter.weasyprint.BulkProcessingConnector
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.service.model.BulkProcessingServiceInfo;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.polarion.core.util.exceptions.UserFriendlyRuntimeException;
 import com.polarion.core.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.VisibleForTesting;
 
 import jakarta.ws.rs.client.Client;
 import jakarta.ws.rs.client.ClientBuilder;
 import jakarta.ws.rs.client.Entity;
+import jakarta.ws.rs.client.Invocation;
 import jakarta.ws.rs.client.WebTarget;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 public class BulkProcessingServiceConnector implements BulkProcessingConnector {
     private static final Logger logger = Logger.getLogger(BulkProcessingServiceConnector.class);
 
     private static final String MERGE_API_PREFIX = "/api/convert/";
+    private static final String API_KEY_HEADER = "X-API-Key";
     private static final int CONNECT_TIMEOUT_MS = 10_000;
     private static final int READ_TIMEOUT_MS = 600_000;
 
     private final @NotNull String bulkProcessingServiceBaseUrl;
     private final @NotNull String weasyPrintServiceBaseUrl;
+    private final @NotNull ApiKeyProvider apiKeyProvider;
     private final PdfPostProcessor pdfPostProcessor = new PdfPostProcessor();
 
     public BulkProcessingServiceConnector() {
@@ -41,8 +47,14 @@ public class BulkProcessingServiceConnector implements BulkProcessingConnector {
     }
 
     public BulkProcessingServiceConnector(@NotNull String bulkProcessingServiceBaseUrl, @NotNull String weasyPrintServiceBaseUrl) {
+        this(bulkProcessingServiceBaseUrl, weasyPrintServiceBaseUrl,
+                new ApiKeyProvider(() -> PdfExporterExtensionConfiguration.getInstance().getBulkProcessingApiKeySecret(), "bulk processing service"));
+    }
+
+    public BulkProcessingServiceConnector(@NotNull String bulkProcessingServiceBaseUrl, @NotNull String weasyPrintServiceBaseUrl, @NotNull ApiKeyProvider apiKeyProvider) {
         this.bulkProcessingServiceBaseUrl = bulkProcessingServiceBaseUrl;
         this.weasyPrintServiceBaseUrl = weasyPrintServiceBaseUrl;
+        this.apiKeyProvider = apiKeyProvider;
     }
 
     private static @NotNull Client createClient() {
@@ -50,6 +62,47 @@ public class BulkProcessingServiceConnector implements BulkProcessingConnector {
                 .connectTimeout(CONNECT_TIMEOUT_MS, java.util.concurrent.TimeUnit.MILLISECONDS)
                 .readTimeout(READ_TIMEOUT_MS, java.util.concurrent.TimeUnit.MILLISECONDS)
                 .build();
+    }
+
+    /**
+     * Builds the request, carrying the API key when one is configured.
+     * <p>
+     * A key is a reusable credential, so it is only ever handed to a transport which protects it.
+     * Where the service is named over plain http the request is refused instead: sending the key
+     * would put it on the wire for anyone on the path to keep.
+     *
+     * @return the key that was attached, or {@code null} when none is configured
+     */
+    @VisibleForTesting
+    @Nullable String applyApiKey(@NotNull Invocation.Builder builder) {
+        String apiKey = apiKeyProvider.getApiKey();
+        if (apiKey != null) {
+            failOnInsecureTransport();
+            builder.header(API_KEY_HEADER, apiKey);
+        }
+        return apiKey;
+    }
+
+    /**
+     * Refuses to send the key where the transport does not protect it.
+     */
+    @VisibleForTesting
+    void failOnInsecureTransport() {
+        if (!bulkProcessingServiceBaseUrl.toLowerCase(Locale.ROOT).startsWith("https://")) {
+            throw new UserFriendlyRuntimeException(String.format(
+                    "The bulk processing service API key is not sent over plain http. Name the service in '%s' with an https address, or clear '%s' where the service needs no key.",
+                    PdfExporterExtensionConfiguration.BULK_PROCESSING_SERVICE, PdfExporterExtensionConfiguration.BULK_PROCESSING_API_KEY_SECRET));
+        }
+    }
+
+    /**
+     * Tells the two ways a 401 is reached apart, since each one has a different fix.
+     */
+    @VisibleForTesting
+    static @NotNull String unauthorizedMessage(boolean apiKeySent) {
+        return apiKeySent
+                ? "Bulk processing service rejected the configured API key. Check that the Polarion secret named in '" + PdfExporterExtensionConfiguration.BULK_PROCESSING_API_KEY_SECRET + "' holds the key the service was started with."
+                : "Bulk processing service requires an API key, none is configured. Name the Polarion secret holding it in '" + PdfExporterExtensionConfiguration.BULK_PROCESSING_API_KEY_SECRET + "'.";
     }
 
     /**
@@ -113,8 +166,9 @@ public class BulkProcessingServiceConnector implements BulkProcessingConnector {
                 throw new IllegalStateException("Could not serialize merge job start params", e);
             }
 
-            try (Response response = webTarget.request(MediaType.APPLICATION_JSON)
-                    .post(Entity.entity(jsonBody, MediaType.APPLICATION_JSON))) {
+            Invocation.Builder builder = webTarget.request(MediaType.APPLICATION_JSON);
+            boolean apiKeySent = applyApiKey(builder) != null;
+            try (Response response = builder.post(Entity.entity(jsonBody, MediaType.APPLICATION_JSON))) {
                 if (response.getStatus() == Response.Status.OK.getStatusCode()
                         || response.getStatus() == Response.Status.CREATED.getStatusCode()) {
                     String responseBody = response.readEntity(String.class);
@@ -123,6 +177,9 @@ public class BulkProcessingServiceConnector implements BulkProcessingConnector {
                     } catch (Exception e) {
                         throw new IllegalStateException("Could not parse job ID from start response: " + responseBody, e);
                     }
+                } else if (response.getStatus() == Response.Status.UNAUTHORIZED.getStatusCode()) {
+                    // user friendly on purpose: the reason has to reach the export dialog, not only the log
+                    throw new UserFriendlyRuntimeException(unauthorizedMessage(apiKeySent));
                 } else {
                     String errorMessage = response.readEntity(String.class);
                     throw new IllegalStateException(String.format(
@@ -157,8 +214,12 @@ public class BulkProcessingServiceConnector implements BulkProcessingConnector {
                 throw new IllegalStateException("Could not serialize add document request", e);
             }
 
-            try (Response response = webTarget.request(MediaType.APPLICATION_JSON)
-                    .post(Entity.entity(jsonBody, MediaType.APPLICATION_JSON))) {
+            Invocation.Builder builder = webTarget.request(MediaType.APPLICATION_JSON);
+            boolean apiKeySent = applyApiKey(builder) != null;
+            try (Response response = builder.post(Entity.entity(jsonBody, MediaType.APPLICATION_JSON))) {
+                if (response.getStatus() == Response.Status.UNAUTHORIZED.getStatusCode()) {
+                    throw new UserFriendlyRuntimeException(unauthorizedMessage(apiKeySent));
+                }
                 if (response.getStatus() != Response.Status.OK.getStatusCode()
                         && response.getStatus() != Response.Status.ACCEPTED.getStatusCode()) {
                     String errorMessage = response.readEntity(String.class);
@@ -180,8 +241,9 @@ public class BulkProcessingServiceConnector implements BulkProcessingConnector {
             client = createClient();
             WebTarget webTarget = client.target(bulkProcessingServiceBaseUrl + MERGE_API_PREFIX + jobId + "/finish");
 
-            try (Response response = webTarget.request("application/pdf")
-                    .post(Entity.entity("", MediaType.TEXT_PLAIN))) {
+            Invocation.Builder builder = webTarget.request("application/pdf");
+            boolean apiKeySent = applyApiKey(builder) != null;
+            try (Response response = builder.post(Entity.entity("", MediaType.TEXT_PLAIN))) {
                 if (response.getStatus() == Response.Status.OK.getStatusCode()) {
                     InputStream inputStream = response.readEntity(InputStream.class);
                     int failedCount = 0;
@@ -198,6 +260,8 @@ public class BulkProcessingServiceConnector implements BulkProcessingConnector {
                     } catch (IOException e) {
                         throw new IllegalStateException("Could not read merged PDF response stream", e);
                     }
+                } else if (response.getStatus() == Response.Status.UNAUTHORIZED.getStatusCode()) {
+                    throw new UserFriendlyRuntimeException(unauthorizedMessage(apiKeySent));
                 } else {
                     String errorMessage = response.readEntity(String.class);
                     throw new IllegalStateException(String.format(
@@ -242,7 +306,10 @@ public class BulkProcessingServiceConnector implements BulkProcessingConnector {
         Client client = null;
         try {
             client = createClient();
-            client.target(bulkProcessingServiceBaseUrl + MERGE_API_PREFIX + jobId).request().delete().close();
+            WebTarget webTarget = client.target(bulkProcessingServiceBaseUrl + MERGE_API_PREFIX + jobId);
+            Invocation.Builder builder = webTarget.request();
+            applyApiKey(builder);
+            builder.delete().close();
         } catch (Exception cleanup) {
             logger.warn(String.format("Failed to delete merge job '%s': %s", jobId, cleanup.getMessage()));
         } finally {
