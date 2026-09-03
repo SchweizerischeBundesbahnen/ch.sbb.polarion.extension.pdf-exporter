@@ -34,8 +34,9 @@
    The gutter and the label column are stated once so that every checkbox, every label text and every
    control lands on the same three x positions - in both columns of the wide layout and in the one column of
    the narrow one. That is what the legacy forms did not do: each row was a flex line, so a dropdown started
-   wherever its own label happened to end. 148px is the widest label ("Comments rendering") plus room for a
-   font the browser had to substitute; a label that does not fit belongs in `.pdf-fields` below. */
+   wherever its own label happened to end. 148px is the widest label that has to fit it ("Comments
+   rendering") plus room for a font the browser had to substitute; the two labels that do not fit are
+   sentences, and their rows let their value follow the label instead - see `.property-wrapper.tight`. */
 .pdf-export-form {
   position: relative;
   container-type: inline-size;
@@ -187,7 +188,7 @@
 
 /* The pair of comment options, and the workitem-roles selectors: side by side, wrapping where a narrow
    pane cannot hold both. */
-.pdf-export-form .option-pair {
+.property-wrapper .option-pair {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -195,12 +196,12 @@
   row-gap: 4px;
 }
 
-.pdf-export-form .option-pair label {
+.property-wrapper .option-pair label {
   display: inline-flex;
   align-items: center;
 }
 
-.pdf-export-form .more-info {
+.property-wrapper .more-info {
   background: var(--sbb-info-icon) no-repeat;
   width: 16px;
   height: 16px;
@@ -212,15 +213,12 @@
 
 /* --- Controls ------------------------------------------------------------------------------------ */
 
-/* Scoped to the form rather than to a row: the four switches with a text field of their own are laid out by
-   `.pdf-fields` and carry no `.property-wrapper`, and a field there has to look like every other field.
-
-   input[type="color"] is excluded: the colour picker's look is owned entirely by the shared control system
+/* input[type="color"] is excluded: the colour picker's look is owned entirely by the shared control system
    in react-sbb-polarion's stylesheet (scoped to .form-wrapper), which both roots carry. Keeping the colour
    input out of these baseline rules leaves that in sole control, so admin page, side panel and dialog
    render identically. */
-.pdf-export-form select,
-.pdf-export-form input:not([type='color']) {
+.property-wrapper select,
+.property-wrapper input:not([type='color']) {
   font-weight: 600;
   font-family: 'Segoe UI', 'Selawik', 'Open Sans', Arial, sans-serif;
   font-size: 13px;
@@ -230,7 +228,7 @@
 
 /* Every dropdown here is a SearchableSelect, which hides its native <select> once it has upgraded it.
    These rules are what the <select> falls back to if that upgrade ever throws. */
-.pdf-export-form select {
+.property-wrapper select {
   appearance: none !important;
   -webkit-appearance: none !important;
   -moz-appearance: none !important;
@@ -240,7 +238,7 @@
   padding: 2px 2rem 4px 0.4rem;
 }
 
-.pdf-export-form input:not([type='color']) {
+.property-wrapper input:not([type='color']) {
   padding: 2px 4px 4px 0.4rem;
 }
 
@@ -251,9 +249,9 @@
    notification said anything. `[type='text']` is what brings these selectors to the same specificity, and
    being later in the shadow root is what makes them win. The `:focus` variant is restated because the
    shared system raises its own there, and the field is usually still focused when the export is refused. */
-.pdf-exporter .pdf-export-form input[type='text'].error,
-.pdf-exporter .pdf-export-form input[type='text'].error:hover,
-.pdf-exporter .pdf-export-form input[type='text'].error:focus {
+.pdf-exporter .property-wrapper input[type='text'].error,
+.pdf-exporter .property-wrapper input[type='text'].error:hover,
+.pdf-exporter .property-wrapper input[type='text'].error:focus {
   border-color: red;
   color: red;
 }
@@ -274,7 +272,7 @@
 
 /* Ensure the dropdown popup is combobox-width + 35px here too (high specificity so a Polarion .options
    rule in the page context cannot flatten it back to the trigger width). */
-.pdf-export-form .searchable-dropdown .options {
+.property-wrapper .searchable-dropdown .options {
   min-width: calc(100% + 35px);
 }
 
