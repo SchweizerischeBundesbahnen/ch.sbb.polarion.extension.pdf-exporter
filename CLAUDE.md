@@ -51,8 +51,8 @@
   Vite inlines it into every root that carries the form. And `toast()` broadcasts to **every** mounted
   `Toaster`, while the side panel and the export dialog are both on the page whenever a document is open in
   the editor: `ui/src/components/ToastHost.tsx` is what makes the newest host the only one that renders. The
-  dialog's host must be **inside** the `<dialog>` (the top layer paints above everything outside it) and
-  outside `ExportFormView` (a query container is a containing block for `position: fixed`).
+  dialog's host must be **inside** the `<dialog>`, the top layer painting above everything outside it, and
+  the panel's outside its `<fieldset>`, which would otherwise disable the toast's own close button.
 - **`webapp/pdf-exporter/js/modules/` is gone.** `ExportPopup.js`, `ExportPanel.js`, `ExportContext.js` and
   `ExportParams.js` were ported into the app: `ui/src/export/` (the shared export model **and the form
   itself** - which rows a document type shows, a style package read into a form, a form turned into a

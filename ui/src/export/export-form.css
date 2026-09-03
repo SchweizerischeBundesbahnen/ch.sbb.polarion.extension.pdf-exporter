@@ -410,8 +410,15 @@
   cursor: zoom-in;
 }
 
-/* Clicked open: as tall as the viewport allows, centred, above everything. `position: fixed` is measured
-   against the viewport even from inside a shadow root, so one rule serves the dialog and the pane. */
+/* Clicked open: as tall as the viewport allows, centred, above everything.
+
+   `position: fixed` is measured against the viewport from inside a shadow root, and from inside the form
+   that carries `container-type: inline-size` as well - a query container is NOT a fixed-positioning
+   containing block, which is worth stating because it reads as though it should be, and one review has
+   already been written on the assumption that it is. What WOULD move these percentages onto another box is a
+   `transform`, a `filter` or a `contain: layout` on an ancestor, so `test/SidePanelMount.test.tsx` measures
+   the opened preview against the viewport rather than trusting the rule. One rule serves the dialog and the
+   pane. */
 .validate-result-img.img-zoomed {
   position: fixed;
   top: 5%;

@@ -312,8 +312,7 @@ export default function ExportPopupModal({
       onCancel={onClose}
     >
       {/* Inside the dialog on purpose: it is a native `<dialog>` in the top layer, and a toast host outside
-          it would be painted behind the dialog and dimmed by its backdrop. Outside `ExportFormView`, which
-          is a query container and therefore a containing block for anything `position: fixed` inside it. */}
+          it would be painted behind the dialog and dimmed by its backdrop. */}
       <ToastHost />
 
       <ExportFormView

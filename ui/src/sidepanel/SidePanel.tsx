@@ -295,8 +295,8 @@ export default function SidePanel({ deps }: Readonly<SidePanelProps>) {
 
   return (
     <>
-      {/* Outside the fieldset, which is disabled while an export runs, and outside `ExportFormView`, which
-          is a query container and therefore a containing block for anything `position: fixed` inside it. */}
+      {/* Outside the fieldset on purpose: it is disabled while an export runs, and a disabled fieldset
+          disables every control inside it - a toast's own close button included. */}
       <ToastHost />
 
       <fieldset className="panel-fieldset" disabled={busy}>

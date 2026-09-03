@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { mountSidePanel } from '../src/sidepanel/mount';
+import { installFetchMock } from './mockFetch';
 import { sampleDependencies } from './sidePanelSamples';
 import { clearToasts } from './toasts';
 
@@ -20,6 +21,9 @@ function host(): HTMLElement {
 
 const mounted = (element: HTMLElement) => mountSidePanel(`#${element.id}`, sampleDependencies());
 
+/** A 1x1 PNG, for the preview that has to have a size to be measured. */
+const PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFAAH/q842iQAAAABJRU5ErkJggg==';
+
 const loaded = (element: HTMLElement) =>
   vi.waitFor(() => expect(element.shadowRoot!.querySelector('#filename')).not.toBeNull());
 
@@ -28,6 +32,7 @@ afterEach(() => {
   // that is still active.
   clearToasts();
   hosts.splice(0).forEach((element) => element.remove());
+  vi.unstubAllGlobals();
 });
 
 describe('mounting the side panel', () => {
@@ -129,6 +134,51 @@ describe('mounting the side panel', () => {
       return found!;
     });
     expect(getComputedStyle(toaster).position).toBe('fixed');
+  });
+
+  it('opens a page width preview against the window, not against the form it came from', async () => {
+    // A zoomed preview asks for 90% of the height, centred, and it is rendered inside the form - which is a
+    // query container (`container-type: inline-size`) in a 360px pane. A query container is NOT a
+    // fixed-positioning containing block, so those percentages are the viewport's; but that reads as though
+    // it should be the other way round, and a `transform`, a `filter` or a `contain: layout` on any ancestor
+    // WOULD make it so. Hence measured rather than assumed.
+    installFetchMock([
+      {
+        method: 'POST',
+        match: /\/validate\?/,
+        // A real image: one that does not decode has no size, and `width: auto` would have nothing to work
+        // from.
+        json: { invalidPages: [{ content: PNG }], suspiciousWorkItems: [] },
+      },
+    ]);
+    const element = host();
+    // The width of Polarion's Document Properties pane, which is the box this must NOT be measured against.
+    element.style.width = '360px';
+    mounted(element);
+    await loaded(element);
+
+    element.shadowRoot!.querySelector<HTMLButtonElement>('#validate-pdf')!.click();
+    const preview = await vi.waitFor(() => {
+      const found = element.shadowRoot!.querySelector<HTMLElement>('.validate-result-img');
+      expect(found).not.toBeNull();
+      return found!;
+    });
+    preview.click();
+
+    const open = await vi.waitFor(() => {
+      const found = element.shadowRoot!.querySelector<HTMLElement>('.img-zoomed');
+      expect(found).not.toBeNull();
+      return found!;
+    });
+
+    // The viewport a `position: fixed` box is measured against, which is the window less its scrollbars
+    const viewport = document.documentElement;
+    // 90% of its height, read off the computed style: the rectangle would carry the 3px border too
+    expect(parseFloat(getComputedStyle(open).height)).toBeCloseTo(viewport.clientHeight * 0.9, 0);
+    const box = open.getBoundingClientRect();
+    expect(Math.round(box.top)).toBe(Math.round(viewport.clientHeight * 0.05));
+    // And centred on the viewport, which a box measured against the pane could not be
+    expect(Math.round(box.left + box.width / 2)).toBe(Math.round(viewport.clientWidth / 2));
   });
 
   it('marks a field the export was refused on, outranking the shared control styling', async () => {

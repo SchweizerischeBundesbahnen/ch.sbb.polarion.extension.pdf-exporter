@@ -176,8 +176,8 @@ Toasts in a shadow root need two things that an administration page does not.
   would show every message twice, one of the two behind the dialog's backdrop. The hosts take turns: the
   newest renders, the rest stand down until it is gone. The dialog's own host is rendered **inside** the
   dialog, because a native `<dialog>` is in the browser's top layer and paints above anything outside it
-  whatever its z-index; and outside `ExportFormView`, because a query container is a containing block for
-  everything `position: fixed` within it.
+  whatever its z-index; the panel's is outside its `<fieldset>`, which is disabled while an export runs and
+  would disable the toast's close button with everything else.
 
 An optional value field is hidden with `visibility` rather than removed - what the legacy dialog did and the
 panel did not: ticking a checkbox must not reflow the rows around it.
