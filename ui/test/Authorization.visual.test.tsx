@@ -5,9 +5,11 @@ import App from '../src/App';
 import { installFetchMock } from './mockFetch';
 import { settleBeforeCapture, settleLayout } from './visualHelpers';
 
-// Docker-only snapshot of the Authorization page: the two role groups with the Polarion-styled
-// checkboxes, the Save / Cancel / Default / Revisions toolbar and the Quick Help text. This is the
-// page a styling change in the shared component would move without any behaviour test noticing.
+// Docker-only snapshot of the Authorization page: the two role groups, each a multi-select
+// SearchableSelect whose chips and trigger only render in the product's look under the
+// `.standard-admin-page` scope, the Save / Cancel / Default / Revisions toolbar and the Quick Help
+// text. This is the page a styling change in the shared component would move without any behavior test
+// noticing.
 
 const origUrl = window.location.pathname + window.location.search;
 
@@ -34,7 +36,9 @@ describe.skipIf(!__PIXEL_REFERENCES__)('Authorization page visual', () => {
     window.history.replaceState({}, '', '?feature=authorization&embedded=true&scope=project/elibrary/');
     render(<App />);
 
-    await vi.waitFor(() => expect(document.querySelectorAll('.roles-list input[type="checkbox"]').length).toBe(4));
+    // Both controls, not just the first: they are upgraded asynchronously, and a capture taken between
+    // the two catches the page mid-upgrade.
+    await vi.waitFor(() => expect(document.querySelectorAll('.roles-group .sd-trigger-multi')).toHaveLength(2));
     const app = document.querySelector('.app') as HTMLElement;
     await settleLayout();
     await page.viewport(1280, Math.ceil(app.scrollHeight) + 40);
