@@ -1,40 +1,33 @@
-/* The look of the Document Properties side panel, injected into its shadow root.
+/* The chrome of the Document Properties side panel, injected into its shadow root next to the shared export
+   form's stylesheet (export/export-form.css) - see services/shadowMount.ts. The form inside is styled
+   entirely by that shared sheet, which the "Export to PDF" dialog carries as well; what is left here is
+   what only the panel has: the fieldset it disables in one go, its loading state, and the spinner beside
+   its own "Export to PDF" button.
 
-   These rules are the panel's half of the deleted webapp/pdf-exporter/css/pdf-exporter.css, which the
-   server-rendered panel used to load as a page stylesheet. A shadow root sees none of the page's rules,
-   so they live here now, bundled with the panel and injected into the root next to
-   react-sbb-polarion's stylesheet (see services/shadowMount.ts). Every value is the one the legacy panel had, so
-   the panel looks exactly as it did.
+   The ids below are the legacy fragment's own. They are safe to keep - and worth keeping, the rules being
+   copies - because inside a shadow root they cannot collide with anything on the editor page.
+   `#pdf-exporter-panel` is the exception: that is the host element, which sits OUTSIDE this root. */
 
-   There is no page copy any more. The export popup is a React surface in a shadow root of its own and
-   carries its `.property-wrapper` / `.buttons-wrapper` rules in popup/export-popup.css, so the
-   duplication that stylesheet held ended when the popup was migrated.
+/* The panel is one fieldset so that an export in progress disables every control at once, which is what the
+   legacy panel did by setting `disabled` on all of them through jQuery's `:input`. A fieldset brings a
+   border, margin and padding of its own, none of which the panel ever had.
 
-   The ids below are the legacy fragment's own. They are safe to keep - and worth keeping, the rules
-   being copies - because inside a shadow root they cannot collide with anything on the editor page.
-   `#pdf-exporter-panel` is the exception: that is the host element, which sits OUTSIDE this root, so
-   those rules are scoped to `.pdf-exporter` (the container React mounts into) instead. */
-
-.form-wrapper {
-  position: relative;
-}
-
-/* The panel is one fieldset so that an export in progress disables every control at once, which is what
-   the legacy panel did by setting `disabled` on all of them through jQuery's `:input`. A fieldset brings
-   a border, margin and padding of its own, none of which the panel ever had. */
+   The 10px on the right is the one it did have, on every row (`.property-wrapper`): the properties pane
+   gives the panel its full width, so without it a text field's border sits on the pane's edge. It is kept
+   here rather than in the shared form stylesheet because the dialog has the modal's own padding already. */
 .panel-fieldset {
   border: 0;
   margin: 0;
-  padding: 0;
+  padding: 0 10px 0 0;
   min-width: 0;
 }
 
 /* A state the server-rendered panel had no need for: it arrived with its data already in it.
 
-   Laid out as the export popup lays out its in-progress overlay (popupForm.html: a 48px spinner above its
-   message, centred in a column) - the same shape diff-tool's panels use through their PanelShell. A 20px
-   spinner alone - which is what a button-sized one is - reads as a stuck glyph in an empty pane rather
-   than as work in progress. */
+   Laid out as the export dialog lays out its in-progress overlay (a 48px spinner above its message, centred
+   in a column) - the same shape diff-tool's panels use through their PanelShell. A 20px spinner alone -
+   which is what a button-sized one is - reads as a stuck glyph in an empty pane rather than as work in
+   progress. */
 .panel-loading {
   display: flex;
   flex-flow: column;
@@ -51,270 +44,4 @@
 
 .panel-loading-message {
   color: #555;
-}
-
-/* --- Rows ---------------------------------------------------------------------------------------- */
-
-.property-wrapper {
-  margin-top: 8px;
-  padding-right: 10px;
-  display: flex;
-  align-items: center;
-  column-gap: 5px;
-}
-
-.property-wrapper.hidden {
-  display: none;
-}
-
-.property-wrapper label {
-  margin-top: 2px;
-  margin-bottom: 3px;
-}
-
-.property-wrapper label input[type='checkbox'] {
-  vertical-align: middle;
-}
-
-.property-wrapper .more-info {
-  background: var(--sbb-info-icon) no-repeat;
-  width: 16px;
-  height: 16px;
-  cursor: help;
-}
-
-/* A group separated from the one above it by a hairline, as the legacy fragment did with an inline
-   style on the row that opens the group. */
-.property-wrapper.group-start,
-.group-start {
-  border-top: 1px solid #eee;
-  padding-top: 10px;
-}
-
-/* --- Controls ------------------------------------------------------------------------------------ */
-
-/* input[type="color"] is excluded: the colour picker's look is owned entirely by the shared control
-   system in the react-sbb-polarion stylesheet (scoped to .form-wrapper), which this root carries.
-   Keeping the colour input out of these baseline rules leaves that in sole control, so admin page,
-   side panel and popup render identically. */
-.property-wrapper select,
-.property-wrapper input:not([type='color']) {
-  font-weight: 600;
-  font-family: 'Segoe UI', 'Selawik', 'Open Sans', Arial, sans-serif;
-  font-size: 13px;
-  border: 1px solid #cccccc;
-  border-radius: 2px;
-}
-
-/* Every dropdown in the panel is a SearchableSelect, which hides its native <select> once it has
-   upgraded it. These two rules are what the <select> falls back to if that upgrade ever throws. */
-.property-wrapper select {
-  appearance: none !important;
-  -webkit-appearance: none !important;
-  -moz-appearance: none !important;
-  background: transparent var(--sbb-combo-chevron) no-repeat;
-  background-position: calc(100% - 1rem) 55% !important;
-  background-size: 16px 16px;
-  padding: 2px 2rem 4px 0.4rem;
-}
-
-.property-wrapper input:not([type='color']) {
-  padding: 2px 4px 4px 0.4rem;
-}
-
-/* A field the export was refused on.
-   The legacy rule was `.property-wrapper input.error`, which never won: the shared control system styles
-   text inputs through `.form-wrapper input[type=text]:not(.sd-trigger):not(.search-box)` - specificity
-   (0,4,1) against the legacy rule's (0,3,1) - so the legacy panel set a class that changed nothing, and
-   only the message below the button said anything. `[type='text']` is what brings these selectors to the
-   same specificity, and being later in the shadow root is what makes them win. The `:focus` variant is
-   restated because the shared system raises its own there, and the field is usually still focused when
-   the export is refused. */
-.pdf-exporter .property-wrapper input[type='text'].error,
-.pdf-exporter .property-wrapper input[type='text'].error:hover,
-.pdf-exporter .property-wrapper input[type='text'].error:focus {
-  border-color: red;
-  color: red;
-}
-
-/* Uniform control sizing so every combo-like control matches the admin comboboxes (130 x 23). The
-   searchable-dropdown wraps a native <select>; its container may inherit an inline width from the
-   original element, so !important pins it to 130px. */
-.pdf-exporter .searchable-dropdown {
-  width: 130px !important;
-  display: inline-block;
-}
-
-.pdf-exporter .searchable-dropdown > .sd-trigger {
-  width: 100%;
-  min-width: 0;
-  box-sizing: border-box;
-}
-
-/* Ensure the dropdown popup is combobox-width + 35px here too (high specificity so a Polarion .options
-   rule in the editor context cannot flatten it back to the trigger width). */
-.property-wrapper .searchable-dropdown .options {
-  min-width: calc(100% + 35px);
-}
-
-/* Workitem-roles multiselect + its direction dropdown are stacked under the label. The visible
-   .searchable-dropdown container is inserted next to the hidden <select> and does NOT inherit its
-   margins, so indent + vertical gap are pinned on the container itself. */
-#roles-wrapper {
-  flex-direction: column;
-  align-items: flex-start;
-}
-
-#roles-selector + .searchable-dropdown,
-#roles-direction-selector + .searchable-dropdown {
-  margin-left: 20px;
-  margin-top: 4px;
-}
-
-/* The two rows the legacy fragment laid out by hand: a checkbox whose label is wide enough to keep the
-   text on one line, followed by a text field taking the rest of the row. */
-.property-wrapper > label.w-chapters {
-  width: 195px;
-}
-
-.property-wrapper > label.w-metadata {
-  width: 115px;
-}
-
-.property-wrapper > label.w-list-styles {
-  width: 210px;
-}
-
-.property-wrapper > label.nowrap {
-  white-space: nowrap;
-}
-
-.property-wrapper > input.grows {
-  flex: 1;
-  box-sizing: border-box;
-  min-width: 0;
-}
-
-/* The file name row: a fixed label, the field taking the rest of the width. */
-.property-wrapper > label.w-filename {
-  width: 80px;
-}
-
-#filename {
-  width: 100%;
-}
-
-/* --- Buttons ------------------------------------------------------------------------------------- */
-
-.buttons-wrapper {
-  margin: 10px 0;
-}
-
-.buttons-wrapper button {
-  vertical-align: middle;
-  background-color: transparent;
-  border: 1px solid #dedede;
-  color: #555;
-  padding: 4px 8px;
-  font-size: 12px;
-  font-weight: bold;
-  cursor: pointer;
-}
-
-.buttons-wrapper button:not(:first-child) {
-  margin-left: 5px;
-}
-
-.buttons-wrapper button:disabled {
-  text-shadow: white 1px 1px 0.01em;
-  color: #c9d1d7;
-  cursor: default;
-}
-
-.buttons-wrapper button img {
-  margin-right: 6px;
-  vertical-align: bottom;
-}
-
-.buttons-wrapper button:disabled img {
-  opacity: 0.3;
-}
-
-#export-pdf-progress,
-#validate-pdf-progress {
-  display: none;
-  width: 20px;
-  height: 20px;
-  vertical-align: middle;
-}
-
-/* --- Messages ------------------------------------------------------------------------------------ */
-
-#export-error,
-#validate-error,
-#style-package-error {
-  display: block;
-  color: red;
-  font-weight: bold;
-}
-
-#export-warning {
-  display: block;
-  color: orange;
-  font-weight: bold;
-}
-
-/* Gap only when a message is actually present - these status divs are empty in the normal state, and an
-   unconditional margin on an empty block would permanently shift the following controls down. */
-#export-error:not(:empty),
-#validate-error:not(:empty),
-#style-package-error:not(:empty),
-#export-warning:not(:empty) {
-  margin-top: 6px;
-}
-
-/* Success message stays inline to the right of the Validate button (short text), vertically centred
-   against it. The error message, by contrast, is a full-width block below the button (long messages). */
-#validate-ok {
-  display: inline-block;
-  vertical-align: middle;
-  color: green;
-  font-weight: bold;
-}
-
-#validate-ok:not(:empty) {
-  margin-left: 8px;
-}
-
-/* --- Page width validation results --------------------------------------------------------------- */
-
-.validate-result-img {
-  width: 200px;
-  border: solid 1px red;
-  cursor: zoom-in;
-}
-
-.img-zoomed {
-  border: 5px solid red;
-  z-index: 999;
-  cursor: zoom-out;
-  display: block;
-  width: auto;
-  height: auto;
-  position: fixed;
-  right: 30px;
-  top: 30px;
-}
-
-.suspicious-list {
-  margin: 0;
-  color: black;
-}
-
-.suspicious-list a {
-  color: #007993;
-}
-
-.hidden {
-  display: none;
 }

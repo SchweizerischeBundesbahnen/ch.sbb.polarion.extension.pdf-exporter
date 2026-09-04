@@ -138,6 +138,36 @@ describe('Bulk PDF Export widget mounting', () => {
     expect(getComputedStyle(query).display).toBe('block');
   });
 
+  it('styles its export dialog the way a toolbar dialog is styled', async () => {
+    // The widget's container deliberately carries no `form-wrapper`, the class react-sbb-polarion scopes its
+    // control system to: the widget's own markup is Polarion's table and buttons, which that system would
+    // restyle. The dialog it opens is the same dialog a toolbar button opens and has to look like it, so the
+    // widget puts the class around the dialog alone - without which its colour picker and its text fields
+    // fall back to the browser's.
+    const host = shim();
+    mountInto(host, readShim(host), {
+      loadItems: loaded,
+      popup: popupDependencies({ stylePackage: SAMPLE_STYLE_PACKAGE_FULL }),
+    });
+    const root = host.shadowRoot!;
+    await vi.waitFor(() => expect(root.querySelector('.polarion-rpw-table-counts')).not.toBeNull());
+
+    root.querySelectorAll<HTMLInputElement>('input.export-item').forEach((box) => box.click());
+    root.querySelector<HTMLElement>('#bulk-export-pdf')!.click();
+    const color = await vi.waitFor(() => {
+      const found = root.querySelector<HTMLInputElement>('#popup-headers-color');
+      expect(found).not.toBeNull();
+      return found!;
+    });
+
+    expect(color.closest('.form-wrapper')).not.toBeNull();
+    // Values only that control system states, so these fail if the class stops reaching the dialog
+    expect(getComputedStyle(color).width).toBe('130px');
+    expect(getComputedStyle(color).height).toBe('23px');
+    // And the table around the dialog is still Polarion's, not a form control
+    expect(root.querySelector('.polarion-rpw-table-main')!.closest('.form-wrapper')).toBeNull();
+  });
+
   it('mounts the shim the selector points at', async () => {
     const host = shim();
 

@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { mountSidePanel } from '../src/sidepanel/mount';
+import { installFetchMock } from './mockFetch';
 import { sampleDependencies } from './sidePanelSamples';
+import { clearToasts } from './toasts';
 
 // How the panel gets into the document editor: PdfExporterFormExtension emits a fragment whose <link>
 // onload imports this module and calls mountSidePanel on the host div. The pane is shared with every other
@@ -19,11 +21,18 @@ function host(): HTMLElement {
 
 const mounted = (element: HTMLElement) => mountSidePanel(`#${element.id}`, sampleDependencies());
 
+/** A 1x1 PNG, for the preview that has to have a size to be measured. */
+const PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFAAH/q842iQAAAABJRU5ErkJggg==';
+
 const loaded = (element: HTMLElement) =>
   vi.waitFor(() => expect(element.shadowRoot!.querySelector('#filename')).not.toBeNull());
 
 afterEach(() => {
+  // Before the hosts go: a toast outlives its host, and the next host to mount is handed everything of it
+  // that is still active.
+  clearToasts();
   hosts.splice(0).forEach((element) => element.remove());
+  vi.unstubAllGlobals();
 });
 
 describe('mounting the side panel', () => {
@@ -65,14 +74,20 @@ describe('mounting the side panel', () => {
 
   it('styles the panel from inside the shadow root, the page having no rules for it', async () => {
     const element = host();
+    // The width of Polarion's Document Properties pane, which is what the form lays itself out against.
+    element.style.width = '360px';
 
     mounted(element);
     await loaded(element);
 
-    // A rule that only side-panel.css states, checked as computed style: it proves the stylesheet is in
+    // A rule that only this extension's stylesheets state, checked as computed style: it proves they are in
     // effect inside the root, not merely present as text.
     const row = element.shadowRoot!.querySelector('.property-wrapper')!;
-    expect(getComputedStyle(row).display).toBe('flex');
+    expect(getComputedStyle(row).display).toBe('grid');
+    // The pane is 360px wide, which is one column of the shared form - a container query on the form, so
+    // the panel gets there without a rule of its own.
+    const section = element.shadowRoot!.querySelector('.pdf-section')!;
+    expect(getComputedStyle(section).gridTemplateColumns.split(' ')).toHaveLength(1);
   });
 
   it('says it is loading with the same indicator the export popup uses', async () => {
@@ -99,6 +114,73 @@ describe('mounting the side panel', () => {
     expect(block.display).toBe('flex');
     expect(block.flexDirection).toBe('column');
     expect(block.alignItems).toBe('center');
+  });
+
+  it('reports through a toast whose stylesheet is inside the root', async () => {
+    // sonner injects its stylesheet into `document.head` when its module loads, and a shadow root sees
+    // nothing of the document's rules - so the form's own stylesheet imports it (export/export-form.css).
+    // Checked as computed style, because an unstyled toast host is not a broken layout, it is an invisible
+    // message: the rules are all it has.
+    const element = host();
+    // A conversion that fails, which is the shortest way to a report
+    mountSidePanel(`#${element.id}`, sampleDependencies({ convert: () => Promise.reject(new Error('no renderer')) }));
+    await loaded(element);
+
+    element.shadowRoot!.querySelector<HTMLButtonElement>('#export-pdf')!.click();
+
+    const toaster = await vi.waitFor(() => {
+      const found = element.shadowRoot!.querySelector<HTMLElement>('[data-sonner-toaster]');
+      expect(found).not.toBeNull();
+      return found!;
+    });
+    expect(getComputedStyle(toaster).position).toBe('fixed');
+  });
+
+  it('opens a page width preview in a dialog that fits the window', async () => {
+    // What the stylesheet has to do for that dialog, checked where the stylesheet is in effect: it is wider
+    // than the 640px the shared Modal caps itself at, its footer is gone (a preview has nothing to confirm,
+    // so the header's close button is the only one), and the image is capped by height rather than left to
+    // its natural size - so the dialog never has to scroll to show a whole page.
+    installFetchMock([
+      {
+        method: 'POST',
+        match: /\/validate\?/,
+        // A real image: one that does not decode has no size, and `max-width` would have nothing to cap.
+        json: { invalidPages: [{ content: PNG }], suspiciousWorkItems: [] },
+      },
+    ]);
+    const element = host();
+    // The width of Polarion's Document Properties pane, which the dialog is not confined to
+    element.style.width = '360px';
+    mounted(element);
+    await loaded(element);
+
+    element.shadowRoot!.querySelector<HTMLButtonElement>('#validate-pdf')!.click();
+    const preview = await vi.waitFor(() => {
+      const found = element.shadowRoot!.querySelector<HTMLElement>('.validate-result-img');
+      expect(found).not.toBeNull();
+      return found!;
+    });
+    preview.click();
+
+    const opened = await vi.waitFor(() => {
+      const found = element.shadowRoot!.querySelector<HTMLElement>('#page-preview-zoom');
+      expect(found).not.toBeNull();
+      return found!;
+    });
+    const dialog = opened.closest<HTMLElement>('.rsp-modal')!;
+    const image = opened.querySelector<HTMLImageElement>('img')!;
+
+    // Past the 640px the library caps itself at, so a page can be shown at a readable width
+    expect(parseFloat(getComputedStyle(dialog).maxWidth)).toBeGreaterThan(640);
+    expect(getComputedStyle(dialog.querySelector('.rsp-modal-footer')!).display).toBe('none');
+    // And a red header, this being a finding rather than a document
+    expect(getComputedStyle(dialog.querySelector('.rsp-modal-header')!).backgroundColor).toBe('rgb(162, 0, 19)');
+    // Capped by height, so the dialog sizes itself to the page instead of scrolling: 85vh (the library's
+    // own cap on the dialog) less its header and the content's padding. Read as a computed value, since the
+    // sample preview is a 1x1 image and nothing about its natural size would reach the cap.
+    const viewport = document.documentElement.clientHeight;
+    expect(parseFloat(getComputedStyle(image).maxHeight)).toBeCloseTo(viewport * 0.85 - 100, 0);
   });
 
   it('marks a field the export was refused on, outranking the shared control styling', async () => {

@@ -18,6 +18,7 @@ import {
 } from './exportPopupSamples';
 import { installFetchMock } from './mockFetch';
 import type { Route } from './mockFetch';
+import { clearToasts, toastText, toasted, untoasted } from './toasts';
 
 // The "Export to PDF" dialog the toolbar buttons open: which rows the item being exported puts on screen,
 // what the export sends, what the user is told when something is wrong, and how a bulk export hands its
@@ -79,6 +80,7 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup();
+  clearToasts();
   vi.unstubAllGlobals();
   document.cookie = 'selected-style-package=; path=/; max-age=0';
 });
@@ -170,10 +172,11 @@ describe('what the style package puts on screen', () => {
     await userEvent.click(checkbox('popup-render-comments'));
 
     await userEvent.click(checkbox('popup-render-native-comments'));
-    expect(text('.notifications .alert-warning')).toContain('not compliant with any of PDF/A variants');
+    expect(await toasted('warning')).toContain('not compliant with any of PDF/A variants');
 
+    // Taken back when the checkbox goes off again: it is the one report that belongs to a control
     await userEvent.click(checkbox('popup-render-native-comments'));
-    expect(field('.notifications .alert-warning')).toBeNull();
+    await untoasted('warning');
   });
 
   it('hides the webhooks row where the installation has webhooks switched off', async () => {
@@ -400,7 +403,9 @@ describe('exporting', () => {
     expect(sent.paperSize).toBe('A4');
     expect(sent.chapters).toEqual(['1', '2']);
     expect(sent.fileName).toBe('E-Library Cross Link Issue.pdf');
-    expect(text('.notifications .alert-success')).toBe('PDF was successfully generated');
+    expect(await toasted('success')).toBe('PDF was successfully generated');
+    // Every kind of message can be sent away by hand, a success included
+    expect(field('[data-sonner-toast][data-type="success"] [data-close-button]')).not.toBeNull();
   });
 
   it('carries every switch and every typed value into the export', async () => {
@@ -560,7 +565,26 @@ describe('exporting', () => {
 
     await userEvent.click(exportButton());
 
-    await vi.waitFor(() => expect(text('.notifications .alert-warning')).toBe('One image\n\nwas not exported'));
+    expect(await toasted('warning')).toBe('One image\n\nwas not exported');
+  });
+
+  it('shows the warning and the success of one export next to each other, not stacked', async () => {
+    // Sonner stacks its toasts by default: the newest in front, the ones behind it scaled down with their
+    // text hidden until the pointer is over them. A conversion that produced a file and had something to say
+    // about it raises both, and the success would cover the warning - see components/ToastHost.tsx.
+    open({ deps: popupDependencies({ convert: () => Promise.resolve(pdfResult('One image was not exported')) }) });
+    await settled();
+
+    await userEvent.click(exportButton());
+
+    await toasted('warning');
+    await toasted('success');
+    const [warning, success] = (['warning', 'success'] as const).map((kind) =>
+      field(`[data-sonner-toast][data-type="${kind}"]`)!.getBoundingClientRect(),
+    );
+    // One under the other, whichever way round: no overlap at all
+    expect(Math.min(warning.bottom, success.bottom)).toBeLessThanOrEqual(Math.max(warning.top, success.top) + 1);
+    expect(warning.height).toBeGreaterThan(0);
   });
 
   it('shows why a conversion failed', async () => {
@@ -569,11 +593,7 @@ describe('exporting', () => {
 
     await userEvent.click(exportButton());
 
-    await vi.waitFor(() =>
-      expect(text('.notifications .alert-error')).toBe(
-        'Error occurred during PDF generation: The document has no content',
-      ),
-    );
+    expect(await toasted('error')).toBe('Error occurred during PDF generation: The document has no content');
   });
 
   it('says only that it failed when the server gave no reason', async () => {
@@ -582,7 +602,7 @@ describe('exporting', () => {
 
     await userEvent.click(exportButton());
 
-    await vi.waitFor(() => expect(text('.notifications .alert-error')).toBe('Error occurred during PDF generation'));
+    expect(await toasted('error')).toBe('Error occurred during PDF generation');
   });
 
   it('covers the form and disables the actions while an export runs', async () => {
@@ -633,7 +653,7 @@ describe('exporting', () => {
     await userEvent.click(checkbox('popup-embed-attachments'));
     await userEvent.click(exportButton());
 
-    await vi.waitFor(() => expect(field('.notifications .alert-success')).not.toBeNull());
+    await toasted('success');
     expect(attachmentCalls).toEqual([]);
   });
 
@@ -644,7 +664,7 @@ describe('exporting', () => {
     await userEvent.fill(field<HTMLInputElement>('#popup-chapters')!, 'one, two');
     await userEvent.click(exportButton());
 
-    expect(text('.notifications .alert-error')).toContain('comma separated list of integer values');
+    expect(await toasted('error')).toContain('comma separated list of integer values');
     expect(field('#popup-chapters')!.className).toContain('error');
     // Nothing was started, so the dialog is still usable
     expect(exportButton().disabled).toBe(false);
@@ -657,7 +677,7 @@ describe('exporting', () => {
     await userEvent.fill(field<HTMLInputElement>('#popup-numbered-list-styles')!, 'xyz');
     await userEvent.click(exportButton());
 
-    expect(text('.notifications .alert-error')).toContain("combination of characters '1aAiI'");
+    expect(await toasted('error')).toContain("combination of characters '1aAiI'");
     expect(field('#popup-numbered-list-styles')!.className).toContain('error');
   });
 
@@ -676,8 +696,11 @@ describe('what the dialog says when it cannot load', () => {
   it('reports the data it could not read, and refuses to export', async () => {
     open({ deps: popupDependencies({ loadError: new Error("No 'css' configurations in scope 'project/elibrary/'") }) });
 
-    await vi.waitFor(() => expect(text('.notifications .alert-error')).toContain('Error occurred loading form data'));
-    expect(text('.notifications .alert-error')).toContain("No 'css' configurations");
+    // A form that could not be loaded is a state, not an event, so it stays in the form rather than
+    // becoming a toast that comes and goes.
+    await vi.waitFor(() => expect(text('#popup-load-error')).toContain('Error occurred loading form data'));
+    expect(text('#popup-load-error')).toContain("No 'css' configurations");
+    expect(toastText('error')).toBe('');
     expect(exportButton().disabled).toBe(true);
     expect(field('.in-progress-overlay.show')).toBeNull();
   });
@@ -686,7 +709,7 @@ describe('what the dialog says when it cannot load', () => {
     open({ deps: { ...popupDependencies(), loadPackage: () => Promise.reject(new Error('HTTP 500')) } });
 
     await vi.waitFor(() =>
-      expect(text('.notifications .alert-error')).toBe('Error occurred loading style package data: HTTP 500'),
+      expect(text('#popup-load-error')).toBe('Error occurred loading style package data: HTTP 500'),
     );
   });
 });
@@ -725,7 +748,7 @@ describe('validating the page width', () => {
     await userEvent.click(field<HTMLButtonElement>('#popup-validate-pdf')!);
 
     await vi.waitFor(() => expect(text('.validation-alerts .alert-error')).toBe('2 invalid pages found:'));
-    expect(document.querySelectorAll('#page-previews img')).toHaveLength(2);
+    expect(document.querySelectorAll('#popup-page-previews img')).toHaveLength(2);
     const link = field<HTMLAnchorElement>('.suspicious-list a')!;
     expect(link.textContent).toBe('EL-1');
     expect(link.target).toBe('_blank');
@@ -746,23 +769,45 @@ describe('validating the page width', () => {
     await vi.waitFor(() =>
       expect(text('.validation-alerts .alert-error')).toBe('Invalid pages found. First 4 of them:'),
     );
-    expect(document.querySelectorAll('#page-previews img')).toHaveLength(4);
+    expect(document.querySelectorAll('#popup-page-previews img')).toHaveLength(4);
   });
 
-  it('zooms a preview on click and back on the next one', async () => {
+  it('opens a preview in a dialog of its own, and closes it again', async () => {
     validation([
-      { method: 'POST', match: /\/validate\?/, json: { invalidPages: [{ content: PNG }], suspiciousWorkItems: [] } },
+      {
+        method: 'POST',
+        match: /\/validate\?/,
+        json: { invalidPages: [{ content: PNG }, { content: PNG }], suspiciousWorkItems: [] },
+      },
     ]);
     await settled();
     await userEvent.click(field<HTMLButtonElement>('#popup-validate-pdf')!);
-    await vi.waitFor(() => expect(document.querySelectorAll('#page-previews img')).toHaveLength(1));
+    await vi.waitFor(() => expect(document.querySelectorAll('#popup-page-previews img')).toHaveLength(2));
 
-    const preview = field<HTMLImageElement>('#page-previews img')!;
-    await userEvent.click(preview);
-    expect(field('#page-previews img')!.className).toContain('popup-img-zoomed');
+    // The second thumbnail, so the title has to say which page it is rather than always the first
+    await userEvent.click(document.querySelectorAll<HTMLImageElement>('#popup-page-previews img')[1]);
 
-    await userEvent.click(field<HTMLImageElement>('#page-previews img')!);
-    expect(field('#page-previews img')!.className).not.toContain('popup-img-zoomed');
+    const opened = await vi.waitFor(() => {
+      const found = field('#popup-page-preview-zoom');
+      expect(found).not.toBeNull();
+      return found!;
+    });
+    // Nested in the export dialog it was opened from, which is what puts it above that dialog
+    expect(field('.pdf-export-form')!.contains(opened)).toBe(true);
+    // `closest` and not `:has()`: the export dialog contains this one, so `:has()` matches them both
+    const dialog = opened.closest('.rsp-modal')!;
+    expect(dialog.querySelector('.rsp-modal-title')!.textContent).toBe('Invalid page 2 of 2');
+    // A modal dialog nested in a modal dialog, which is what puts it in the top layer ABOVE the export
+    // dialog rather than behind its backdrop
+    expect(dialog.matches(':modal')).toBe(true);
+    expect(field('.rsp-modal')!.matches(':modal')).toBe(true);
+    // Nothing to confirm about a preview: the header's close button is the only one it offers
+    expect(dialog.querySelector('.rsp-modal-close')).not.toBeNull();
+
+    await userEvent.click(opened.querySelector<HTMLImageElement>('img')!);
+    await vi.waitFor(() => expect(field('#popup-page-preview-zoom')).toBeNull());
+    // The thumbnails are still there to open again
+    expect(document.querySelectorAll('#popup-page-previews img')).toHaveLength(2);
   });
 
   it('reports a validation that could not be run at all', async () => {
@@ -771,8 +816,6 @@ describe('validating the page width', () => {
 
     await userEvent.click(field<HTMLButtonElement>('#popup-validate-pdf')!);
 
-    await vi.waitFor(() =>
-      expect(text('.notifications .alert-error')).toBe('Error occurred validating pages width: renderer unavailable'),
-    );
+    expect(await toasted('error')).toBe('Error occurred validating pages width: renderer unavailable');
   });
 });

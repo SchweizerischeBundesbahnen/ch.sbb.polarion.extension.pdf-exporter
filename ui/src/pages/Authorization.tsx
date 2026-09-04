@@ -6,9 +6,9 @@ import useRemote from '../services/useRemote';
 const AUTHORIZATION_SETTING = 'authorization';
 
 /**
- * PDF Exporter: Authorization - the shared role-checkbox page over this extension's `authorization`
- * setting. The checked roles are the ones the export is allowed for; with none checked the export is
- * unrestricted.
+ * PDF Exporter: Authorization - the shared role-selection page over this extension's `authorization`
+ * setting. Each role set is a multi-select dropdown; the selected roles are the ones the export is
+ * allowed for, and with none selected the export is unrestricted.
  */
 export default function Authorization() {
   const { sendRequest } = useRemote();

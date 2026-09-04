@@ -312,7 +312,9 @@
 /* A row taking a line of its own above the two columns, so both columns start level below it. The
    headings colour picker uses it: it is the odd one out among the page settings, and leaving it in the
    left column pushed "PDF Variant" a row higher than "Paper Size", so the four dropdowns did not line up
-   as a block. The export dialog has the same rule for the same row - see popup/export-popup.css. */
+   as a block. The export dialogs solve the same problem differently: their rows flow across a grid rather
+   than down two continuous columns, so nothing there has to be balanced by hand - see
+   export/export-form.css. */
 .style-packages-page .input-group.full-row {
   width: 100%;
 }

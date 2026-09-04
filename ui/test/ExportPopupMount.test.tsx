@@ -1,9 +1,12 @@
 import type { Root } from 'react-dom/client';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { page } from 'vitest/browser';
+import { page, userEvent } from 'vitest/browser';
 import { openExportPopup } from '../src/popup/mount';
+import { mountSidePanel } from '../src/sidepanel/mount';
 import { popupRoutes } from './exportPopupSamples';
 import { installFetchMock } from './mockFetch';
+import { sampleDependencies } from './sidePanelSamples';
+import { clearToasts } from './toasts';
 
 // How the export dialog gets onto a Polarion page: the two toolbar injectors and the report page's export
 // button import assets/export-popup.js and call openExportPopup. It appends a host of its own to the body
@@ -14,6 +17,8 @@ import { installFetchMock } from './mockFetch';
 // what is under test is the mounting: the styles that reach the root, and the location read off the page URL.
 
 const roots: Root[] = [];
+/** Side panel hosts a test mounted next to the dialog, removed with it. */
+const panes: HTMLElement[] = [];
 const origHash = window.location.hash;
 
 /** The shadow root of the host openExportPopup appended, which is the last child of the body. */
@@ -28,8 +33,33 @@ const open = (options: Parameters<typeof openExportPopup>[0] = {}) => {
   return root;
 };
 
+/** A 1x1 PNG, for the preview a validation answers with. */
+const PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFAAH/q842iQAAAABJRU5ErkJggg==';
+
+/** Opens the dialog with a page width validation that finds one page too wide. */
+const openWithValidation = () => {
+  installFetchMock([
+    ...popupRoutes(),
+    {
+      method: 'POST',
+      match: /\/validate\?/,
+      json: { invalidPages: [{ content: PNG }], suspiciousWorkItems: [] },
+    },
+  ]);
+  roots.push(openExportPopup({ location: location('LIVE_DOC') }));
+};
+
 /** The viewport the rest of the suite runs at, restored after the two tests that change it. */
 const DEFAULT_VIEWPORT = { width: 1280, height: 720 } as const;
+
+/**
+ * The columns a section of the form is laid out in, as the browser resolved them.
+ *
+ * How many there are is a container query on the form (see export/export-form.css), so this is what says
+ * whether the dialog is wide enough for two - and it is read off the computed style rather than measured,
+ * so an empty section cannot pass for a folded one.
+ */
+const columnsOf = (section: Element): string[] => getComputedStyle(section).gridTemplateColumns.split(' ');
 
 /** Everything inside the dialog that has more to show than it shows, and offers a scrollbar for it. */
 const scrollers = (shadow: ShadowRoot): string[] =>
@@ -43,8 +73,12 @@ const scrollers = (shadow: ShadowRoot): string[] =>
 
 afterEach(async () => {
   await page.viewport(DEFAULT_VIEWPORT.width, DEFAULT_VIEWPORT.height);
+  // Before the roots go: a toast outlives its host, and the next host to mount is handed everything of it
+  // that is still active.
+  clearToasts();
   // Unmount before removing the host, so the dialog's own effects run their cleanup
   roots.splice(0).forEach((root) => root.unmount());
+  panes.splice(0).forEach((pane) => pane.remove());
   document.querySelectorAll('body > div').forEach((element) => {
     if (element.shadowRoot) element.remove();
   });
@@ -72,8 +106,10 @@ describe('mounting the export dialog', () => {
     expect(styles.some((css) => css.includes('--sbb-checkbox-checked'))).toBe(true);
     // ... the base font, which nothing inside a shadow root inherits from the page ...
     expect(styles.some((css) => css.includes('--sbb-control-font-family'))).toBe(true);
-    // ... and the dialog's own two-column layout, which used to be a page stylesheet
-    expect(styles.some((css) => css.includes('.flex-column'))).toBe(true);
+    // ... the shared export form, whose layout used to be a page stylesheet ...
+    expect(styles.some((css) => css.includes('.pdf-section'))).toBe(true);
+    // ... and the dialog's own chrome, which is what is left of export-popup.css
+    expect(styles.some((css) => css.includes('.in-progress-overlay'))).toBe(true);
   });
 
   it('carries the classes the dialog CSS and the tokens are scoped to', async () => {
@@ -88,21 +124,22 @@ describe('mounting the export dialog', () => {
     open({ location: location('LIVE_DOC') });
     await loaded();
 
-    // Rules only export-popup.css states, checked as computed style: they prove the stylesheet is in effect
-    // inside the root, not merely present as text.
-    expect(getComputedStyle(shadow()!.querySelector('.property-wrapper')!).display).toBe('flex');
-    expect(getComputedStyle(shadow()!.querySelector('.flex-column')!).flexBasis).toBe('320px');
+    // Rules only this extension's stylesheets state, checked as computed style: they prove the sheets are
+    // in effect inside the root, not merely present as text.
+    expect(getComputedStyle(shadow()!.querySelector('.property-wrapper')!).display).toBe('grid');
+    // The dialog is wide enough for the form's two-column layout, which is a container query on the form
+    expect(columnsOf(shadow()!.querySelector('.pdf-section')!)).toHaveLength(2);
   });
 
   it('keeps the two settings columns side by side when a scrollbar takes width off the form', async () => {
     // Short enough that the form goes over its height cap and the content area scrolls. The scrollbar then
-    // takes about 15px off it, leaving 685px where two fixed 340px columns and their 20px gap need 700 - so
-    // a fixed width wrapped the right column underneath, which is how the dialog shipped. The columns are
-    // sized to shrink instead.
+    // takes about 15px off the form's width, and the form's own container query is what decides how many
+    // columns are left - so this is where a layout that measured the window rather than the form, or a
+    // breakpoint set too close to the dialog's width, folds the two columns into one.
     //
     // The scrollbar is a real one, which the suite can only draw because vitest.config.ts passes
     // `ignoreDefaultArgs: ['--hide-scrollbars']`. Playwright hides scrollbars in headless Chromium by
-    // default, and that is precisely why this defect reached production with every test green.
+    // default, and that is precisely why this class of defect once reached production with every test green.
     await page.viewport(900, 520);
     open({ location: location('LIVE_DOC') });
     await loaded();
@@ -111,13 +148,26 @@ describe('mounting the export dialog', () => {
     expect(content.scrollHeight).toBeGreaterThan(content.clientHeight); // it really does scroll
     expect(content.offsetWidth - content.clientWidth).toBeGreaterThan(0); // and the scrollbar takes width
 
-    const columns = Array.from(
-      shadow()!.querySelectorAll<HTMLElement>('.flex-container.group-start:has(.full-row) > .flex-column'),
-    );
-    expect(columns).toHaveLength(2);
-    const [left, right] = columns.map((column) => column.getBoundingClientRect());
-    expect(Math.round(left.top)).toBe(Math.round(right.top)); // same row, i.e. not wrapped
-    expect(Math.round(left.width)).toBe(Math.round(right.width)); // and still equal
+    const section = shadow()!.querySelector<HTMLElement>('.pdf-section')!;
+    expect(columnsOf(section)).toHaveLength(2);
+    const [first, second] = Array.from(section.children)
+      .slice(0, 2)
+      .map((row) => row.getBoundingClientRect());
+    expect(Math.round(first.top)).toBe(Math.round(second.top)); // the same line, i.e. not folded
+    expect(Math.round(first.width)).toBe(Math.round(second.width)); // and still equal
+
+    await page.viewport(DEFAULT_VIEWPORT.width, DEFAULT_VIEWPORT.height);
+  });
+
+  it('folds the form into one column where the window cannot hold two', async () => {
+    // The dialog gives way at min(732px, 100vw - 32px), so a narrow window leaves the form under the 620px
+    // its two columns need - and the rows then stack instead of being squeezed. Nothing about this is the
+    // dialog's own: the panel folds at the same width, in the properties pane, from the same rule.
+    await page.viewport(520, 900);
+    open({ location: location('LIVE_DOC') });
+    await loaded();
+
+    expect(columnsOf(shadow()!.querySelector('.pdf-section')!)).toHaveLength(1);
 
     await page.viewport(DEFAULT_VIEWPORT.width, DEFAULT_VIEWPORT.height);
   });
@@ -129,6 +179,72 @@ describe('mounting the export dialog', () => {
 
     const dialog = shadow()!.querySelector<HTMLElement>('.rsp-modal')!;
     expect(dialog.getBoundingClientRect().width).toBeGreaterThan(640);
+  });
+
+  /** Refuses an export on a field the form cannot accept, which is the shortest way to a report. */
+  const refuse = async () => {
+    // The field's space is reserved rather than filled while its switch is off, so the switch goes on first
+    shadow()!.querySelector<HTMLInputElement>('#popup-specific-chapters')!.click();
+    await userEvent.fill(shadow()!.querySelector<HTMLInputElement>('#popup-chapters')!, 'one, two');
+    shadow()!.querySelector<HTMLButtonElement>('.rsp-modal-footer .sbb-btn--primary')!.click();
+    return await vi.waitFor(() => {
+      const toast = shadow()!.querySelector<HTMLElement>('[data-sonner-toast]');
+      expect(toast).not.toBeNull();
+      return toast!;
+    });
+  };
+
+  it('reports through a toast inside the dialog, which is what the top layer paints above it', async () => {
+    // Two things at once, and both are ways this can silently stop working. The toast host has to be a
+    // descendant of the <dialog>: the dialog is in the browser's top layer, which paints above everything in
+    // the normal layer whatever its z-index, so a host outside it would report behind the dialog and under
+    // its backdrop. And sonner's stylesheet has to be INSIDE this root: sonner injects it into
+    // `document.head` when its module loads, which a shadow root sees nothing of, so the form's own
+    // stylesheet imports it (see export/export-form.css).
+    open({ location: location('LIVE_DOC') });
+    await loaded();
+
+    const toast = await refuse();
+
+    expect(shadow()!.querySelector('dialog')!.contains(toast)).toBe(true);
+    expect(getComputedStyle(shadow()!.querySelector('[data-sonner-toaster]')!).position).toBe('fixed');
+    // The close button in the corner a reader looks for it in, which sonner puts on the left for a
+    // left-to-right document and this stylesheet moves back (see export-form.css)
+    const box = toast.getBoundingClientRect();
+    const close = toast.querySelector('[data-close-button]')!.getBoundingClientRect();
+    expect(close.left).toBeGreaterThan(box.left + box.width / 2);
+    expect(close.top).toBeLessThan(box.top + box.height / 2);
+    // Measured against the window, not the dialog: the toaster is `position: fixed`, and the form it sits
+    // beside is a query container - so a host rendered inside the form would be positioned against *that*
+    // instead, halfway down a dialog.
+    expect(toast.getBoundingClientRect().top).toBeLessThan(64);
+  });
+
+  it('reports once where a side panel is on the page as well', async () => {
+    // Both surfaces mount a toast host of their own, and `toast()` broadcasts to every one of them - so
+    // without the taking-turns rule in src/components/ToastHost.tsx the editor would show every message
+    // twice, once in the dialog and once behind its backdrop. This is that page: a document open in the
+    // editor (the panel) with the toolbar's dialog over it.
+    const pane = document.createElement('div');
+    pane.id = 'pdf-exporter-panel-with-dialog';
+    pane.className = 'pdf-exporter form-wrapper';
+    document.body.appendChild(pane);
+    panes.push(pane);
+    mountSidePanel(`#${pane.id}`, sampleDependencies());
+    await vi.waitFor(() => expect(pane.shadowRoot!.querySelector('#filename')).not.toBeNull());
+
+    open({ location: location('LIVE_DOC') });
+    await loaded();
+    await refuse();
+
+    expect(pane.shadowRoot!.querySelectorAll('[data-sonner-toast]')).toHaveLength(0);
+    expect(shadow()!.querySelectorAll('[data-sonner-toast]')).toHaveLength(1);
+
+    // And what the dialog reported goes with it: the panel's host takes over the moment the dialog unmounts,
+    // and a toast outlives its host, so without the dialog clearing up the message would reappear in the
+    // pane as an echo of a dialog that is no longer there.
+    roots.splice(0).forEach((root) => root.unmount());
+    await vi.waitFor(() => expect(pane.shadowRoot!.querySelectorAll('[data-sonner-toast]')).toHaveLength(0));
   });
 
   it('may use the whole window height, not the share the shared modal allows itself', async () => {
@@ -198,9 +314,74 @@ describe('mounting the export dialog', () => {
 
     root.querySelector<HTMLInputElement>('#popup-selected-roles')!.click();
 
-    await vi.waitFor(() => expect(root.querySelector('#popup-roles-selector')).not.toBeNull());
-    await vi.waitFor(() => expect(portalsIn(dialog).length).toBe(before + 2));
+    // A longer wait than the 1s default: two SearchableSelects mount, each creates its option list in an
+    // effect of its own, and the observer moves it in a callback after that - which the container has been
+    // seen to take over a second for, under load.
+    await vi.waitFor(() => expect(root.querySelector('#popup-roles-selector')).not.toBeNull(), { timeout: 5000 });
+    await vi.waitFor(() => expect(portalsIn(dialog).length).toBe(before + 2), { timeout: 5000 });
     expect(portalsIn(root)).toEqual([]);
+  });
+
+  it('dresses the preview dialog as a finding without dressing the dialog it was opened from', async () => {
+    // A preview opens in a dialog nested inside this one, and the rules that give it its look key on the
+    // form it contains - which `:has(.preview-zoom)` alone would find in the dialog AROUND it just as
+    // readily, handing the export dialog the red header and hiding the footer its Export button is in.
+    openWithValidation();
+    await loaded();
+    const root = shadow()!;
+
+    root.querySelector<HTMLButtonElement>('#popup-validate-pdf')!.click();
+    const preview = await vi.waitFor(() => {
+      const found = root.querySelector<HTMLElement>('.validate-result-img');
+      expect(found).not.toBeNull();
+      return found!;
+    });
+    preview.click();
+
+    const zoom = await vi.waitFor(() => {
+      const found = root.querySelector<HTMLElement>('#popup-page-preview-zoom');
+      expect(found).not.toBeNull();
+      return found!.closest<HTMLElement>('.rsp-modal')!;
+    });
+    const exportDialog = root.querySelector<HTMLElement>('.rsp-modal:has(.pdf-export-form)')!;
+
+    // The preview: a red header, and no footer to confirm anything with
+    expect(getComputedStyle(zoom.querySelector(':scope > .rsp-modal-header')!).backgroundColor).toBe('rgb(162, 0, 19)');
+    expect(getComputedStyle(zoom.querySelector(':scope > .rsp-modal-footer')!).display).toBe('none');
+
+    // The dialog it came from: the shared dark header, its footer, and its own width
+    expect(getComputedStyle(exportDialog.querySelector(':scope > .rsp-modal-header')!).backgroundColor).toBe(
+      'rgb(35, 35, 60)',
+    );
+    expect(getComputedStyle(exportDialog.querySelector(':scope > .rsp-modal-footer')!).display).toBe('flex');
+    expect(Math.round(exportDialog.getBoundingClientRect().width)).toBe(732);
+  });
+
+  it('closes the preview on Escape and the dialog under it only on the next one', async () => {
+    openWithValidation();
+    await loaded();
+    const root = shadow()!;
+    const host = document.body.lastElementChild as HTMLElement;
+
+    root.querySelector<HTMLButtonElement>('#popup-validate-pdf')!.click();
+    const preview = await vi.waitFor(() => {
+      const found = root.querySelector<HTMLElement>('.validate-result-img');
+      expect(found).not.toBeNull();
+      return found!;
+    });
+    preview.click();
+    await vi.waitFor(() => expect(root.querySelector('#popup-page-preview-zoom')).not.toBeNull());
+
+    await userEvent.keyboard('{Escape}');
+
+    // The topmost dialog and nothing else: the export dialog is still there, with its form in it
+    await vi.waitFor(() => expect(root.querySelector('#popup-page-preview-zoom')).toBeNull());
+    expect(root.querySelector('.pdf-export-form')).not.toBeNull();
+    expect(host.isConnected).toBe(true);
+
+    // And the next Escape closes that one, which takes the whole host off the page
+    await userEvent.keyboard('{Escape}');
+    await vi.waitFor(() => expect(host.isConnected).toBe(false));
   });
 
   it('reads the item out of the page URL when it is not told where it is', async () => {
