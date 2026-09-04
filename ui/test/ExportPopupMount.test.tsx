@@ -33,6 +33,22 @@ const open = (options: Parameters<typeof openExportPopup>[0] = {}) => {
   return root;
 };
 
+/** A 1x1 PNG, for the preview a validation answers with. */
+const PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFAAH/q842iQAAAABJRU5ErkJggg==';
+
+/** Opens the dialog with a page width validation that finds one page too wide. */
+const openWithValidation = () => {
+  installFetchMock([
+    ...popupRoutes(),
+    {
+      method: 'POST',
+      match: /\/validate\?/,
+      json: { invalidPages: [{ content: PNG }], suspiciousWorkItems: [] },
+    },
+  ]);
+  roots.push(openExportPopup({ location: location('LIVE_DOC') }));
+};
+
 /** The viewport the rest of the suite runs at, restored after the two tests that change it. */
 const DEFAULT_VIEWPORT = { width: 1280, height: 720 } as const;
 
@@ -304,6 +320,68 @@ describe('mounting the export dialog', () => {
     await vi.waitFor(() => expect(root.querySelector('#popup-roles-selector')).not.toBeNull(), { timeout: 5000 });
     await vi.waitFor(() => expect(portalsIn(dialog).length).toBe(before + 2), { timeout: 5000 });
     expect(portalsIn(root)).toEqual([]);
+  });
+
+  it('dresses the preview dialog as a finding without dressing the dialog it was opened from', async () => {
+    // A preview opens in a dialog nested inside this one, and the rules that give it its look key on the
+    // form it contains - which `:has(.preview-zoom)` alone would find in the dialog AROUND it just as
+    // readily, handing the export dialog the red header and hiding the footer its Export button is in.
+    openWithValidation();
+    await loaded();
+    const root = shadow()!;
+
+    root.querySelector<HTMLButtonElement>('#popup-validate-pdf')!.click();
+    const preview = await vi.waitFor(() => {
+      const found = root.querySelector<HTMLElement>('.validate-result-img');
+      expect(found).not.toBeNull();
+      return found!;
+    });
+    preview.click();
+
+    const zoom = await vi.waitFor(() => {
+      const found = root.querySelector<HTMLElement>('#popup-page-preview-zoom');
+      expect(found).not.toBeNull();
+      return found!.closest<HTMLElement>('.rsp-modal')!;
+    });
+    const exportDialog = root.querySelector<HTMLElement>('.rsp-modal:has(.pdf-export-form)')!;
+
+    // The preview: a red header, and no footer to confirm anything with
+    expect(getComputedStyle(zoom.querySelector(':scope > .rsp-modal-header')!).backgroundColor).toBe('rgb(162, 0, 19)');
+    expect(getComputedStyle(zoom.querySelector(':scope > .rsp-modal-footer')!).display).toBe('none');
+
+    // The dialog it came from: the shared dark header, its footer, and its own width
+    expect(getComputedStyle(exportDialog.querySelector(':scope > .rsp-modal-header')!).backgroundColor).toBe(
+      'rgb(35, 35, 60)',
+    );
+    expect(getComputedStyle(exportDialog.querySelector(':scope > .rsp-modal-footer')!).display).toBe('flex');
+    expect(Math.round(exportDialog.getBoundingClientRect().width)).toBe(732);
+  });
+
+  it('closes the preview on Escape and the dialog under it only on the next one', async () => {
+    openWithValidation();
+    await loaded();
+    const root = shadow()!;
+    const host = document.body.lastElementChild as HTMLElement;
+
+    root.querySelector<HTMLButtonElement>('#popup-validate-pdf')!.click();
+    const preview = await vi.waitFor(() => {
+      const found = root.querySelector<HTMLElement>('.validate-result-img');
+      expect(found).not.toBeNull();
+      return found!;
+    });
+    preview.click();
+    await vi.waitFor(() => expect(root.querySelector('#popup-page-preview-zoom')).not.toBeNull());
+
+    await userEvent.keyboard('{Escape}');
+
+    // The topmost dialog and nothing else: the export dialog is still there, with its form in it
+    await vi.waitFor(() => expect(root.querySelector('#popup-page-preview-zoom')).toBeNull());
+    expect(root.querySelector('.pdf-export-form')).not.toBeNull();
+    expect(host.isConnected).toBe(true);
+
+    // And the next Escape closes that one, which takes the whole host off the page
+    await userEvent.keyboard('{Escape}');
+    await vi.waitFor(() => expect(host.isConnected).toBe(false));
   });
 
   it('reads the item out of the page URL when it is not told where it is', async () => {

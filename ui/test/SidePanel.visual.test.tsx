@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { page, userEvent } from 'vitest/browser';
 import { mountSidePanel } from '../src/sidepanel/mount';
+import { installFetchMock } from './mockFetch';
 import {
   SAMPLE_STYLE_PACKAGE,
   SAMPLE_STYLE_PACKAGE_FULL,
@@ -84,7 +85,46 @@ afterEach(() => {
   // handed everything still active - which would report one test's failure into the next one's reference.
   clearToasts();
   hosts.splice(0).forEach((host) => host.remove());
+  vi.unstubAllGlobals();
 });
+
+/**
+ * A preview the size and shape of a rendered page, drawn rather than pasted in as a base64 blob.
+ *
+ * The endpoint answers with a screenshot of a page that came out too wide, so a 1x1 pixel - which is what
+ * the behavior suites use - would say nothing about a dialog whose whole job is to show one at a readable
+ * size. Canvas rectangles rasterize exactly, so the same bytes come out of every run.
+ */
+function pagePreview(): string {
+  const canvas = document.createElement('canvas');
+  canvas.width = 620;
+  canvas.height = 877; // A4 at 75dpi, which is the shape of the real thing
+  const page = canvas.getContext('2d')!;
+  page.fillStyle = '#ffffff';
+  page.fillRect(0, 0, canvas.width, canvas.height);
+  page.fillStyle = '#c9c9c9';
+  page.fillRect(60, 48, 320, 20); // a heading
+  for (let y = 96; y < 800; y += 26) {
+    page.fillRect(60, y, y % 78 === 0 ? 380 : 500, 10);
+  }
+  // Not SBB red, whose hex a pre-commit hook reads as an internal identifier
+  page.fillStyle = '#cc0000';
+  page.fillRect(560, 96, 60, 340); // the part that overflows the page, which is why it is being previewed
+  return canvas.toDataURL('image/png').split(',')[1];
+}
+
+/** Snapshots a dialog the panel opened: it is a native <dialog> in the top layer, outside the host's box. */
+async function snapshotDialog(host: HTMLElement, name: string): Promise<void> {
+  const dialog = await vi.waitFor(() => {
+    const found = host.shadowRoot!.querySelector<HTMLElement>('.rsp-modal');
+    expect(found).not.toBeNull();
+    return found!;
+  });
+  await settleLayout();
+  await page.viewport(1280, 900);
+  await settleBeforeCapture(false);
+  await expect(page.elementLocator(dialog)).toMatchScreenshot(name);
+}
 
 describe.skipIf(!__PIXEL_REFERENCES__)('side panel visual', () => {
   it('a style package that exposes its settings', async () => {
@@ -142,6 +182,34 @@ describe.skipIf(!__PIXEL_REFERENCES__)('side panel visual', () => {
     // reference above shows the marked field and this one shows what was said about it, in the same shape
     // the dialog reports it in (test/expected/ExportPopup/popup-export-refused.png).
     await snapshotToast(host, 'panel-export-refused');
+  });
+
+  it('a page width preview opened, which is a dialog of its own', async () => {
+    // The one state of the panel that is not in the pane: a preview of a page that came out too wide, in
+    // the shared Modal - a title saying which page it is, the header's close button, and no footer, since
+    // there is nothing to confirm about a preview.
+    installFetchMock([
+      {
+        method: 'POST',
+        match: /\/validate\?/,
+        json: {
+          invalidPages: [{ content: pagePreview() }, { content: pagePreview() }],
+          suspiciousWorkItems: [],
+        },
+      },
+    ]);
+    const host = mounted({ stylePackage: SAMPLE_STYLE_PACKAGE });
+    await settled(host);
+
+    host.shadowRoot!.querySelector<HTMLButtonElement>('#validate-pdf')!.click();
+    const preview = await vi.waitFor(() => {
+      const found = host.shadowRoot!.querySelectorAll<HTMLElement>('.validate-result-img');
+      expect(found).toHaveLength(2);
+      return found[1];
+    });
+    preview.click();
+
+    await snapshotDialog(host, 'panel-page-preview');
   });
 
   // An open dropdown is deliberately not snapshotted here: its popup is a portal appended to the shadow

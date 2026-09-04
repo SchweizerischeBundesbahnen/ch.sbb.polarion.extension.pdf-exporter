@@ -163,7 +163,13 @@ suite when it was tried on the shared host.
 
 Two things stay in the form, because they describe a **state** rather than an event: the form that could not
 be loaded (a toast that came and went would leave a form that quietly does not work), and what a page width
-validation that _ran_ found, beside the Validate button where the dialog has always put it.
+validation that _ran_ found, beside the Validate button where the dialog has always put it. Clicking one of
+its thumbnails opens that page in the shared `Modal` - a title saying which page it is, the header's close
+button, Escape, and no footer, there being nothing to confirm about a preview. In the export dialog that is
+a modal `<dialog>` nested in a modal `<dialog>`, which is what puts it above the one it was opened from
+instead of behind its backdrop - and why that dialog's `onCancel` ignores a close request while a preview is
+open: `cancel` fires at the topmost dialog and React hands it to every `onCancel` up its tree, so one Escape
+would otherwise close the preview and the dialog under it in one go.
 
 Toasts in a shadow root need two things that an administration page does not.
 

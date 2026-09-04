@@ -280,6 +280,21 @@ export default function ExportPopupModal({
     }
   };
 
+  /**
+   * Closes the dialog, unless the close request belonged to the page width preview opened over it.
+   *
+   * A close request - Escape, or a click outside - fires `cancel` at the topmost dialog, and React hands
+   * that event to every `onCancel` up its tree, the shared Modal's included. The preview is a dialog nested
+   * in this one, so one Escape would close the preview and then this dialog with it. `zoomed` is what says
+   * a preview was there to take it: the preview's own handler has already asked for it to be closed, and
+   * this render's value still says it is open. The next Escape then reaches this dialog.
+   */
+  const closeUnlessPreviewTook = () => {
+    if (zoomed === null) {
+      onClose();
+    }
+  };
+
   const validatePdf = async () => {
     clearAlerts();
     const params = prepareRequest();
@@ -309,7 +324,7 @@ export default function ExportPopupModal({
       cancelText="Close"
       okDisabled={busy || !form}
       onOk={() => void exportToPdf()}
-      onCancel={onClose}
+      onCancel={closeUnlessPreviewTook}
     >
       {/* Inside the dialog on purpose: it is a native `<dialog>` in the top layer, and a toast host outside
           it would be painted behind the dialog and dimmed by its backdrop. */}

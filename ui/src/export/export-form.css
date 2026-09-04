@@ -410,25 +410,42 @@
   cursor: zoom-in;
 }
 
-/* Clicked open: as tall as the viewport allows, centred, above everything.
+/* A preview opened, in the shared Modal.
 
-   `position: fixed` is measured against the viewport from inside a shadow root, and from inside the form
-   that carries `container-type: inline-size` as well - a query container is NOT a fixed-positioning
-   containing block, which is worth stating because it reads as though it should be, and one review has
-   already been written on the assumption that it is. What WOULD move these percentages onto another box is a
-   `transform`, a `filter` or a `contain: layout` on an ancestor, so `test/SidePanelMount.test.tsx` measures
-   the opened preview against the viewport rather than trusting the rule. One rule serves the dialog and the
-   pane. */
-.validate-result-img.img-zoomed {
-  position: fixed;
-  top: 5%;
-  left: 50%;
-  transform: translateX(-50%);
-  height: 90%;
+   The dialog is wider than the 640px the library caps itself at - a page of A4 at any readable scale needs
+   more - and the image is capped by height instead, so the dialog sizes itself to the page and never has to
+   scroll. `85vh` is the library's own cap on the dialog; what is taken off it is the header and the content
+   padding.
+
+   The footer is hidden rather than given buttons: there is nothing to confirm about a preview, so the
+   header's own close button (and Escape, and the backdrop) is all it needs. That is also how the bulk
+   progress dialog drops the footer button that does not apply to it - see widget/widget.css. */
+/* `:has(> .rsp-modal-content > …)` and `> .rsp-modal-header`, not a descendant of either: this dialog is
+   opened from inside the export dialog, so a plain `:has(.preview-zoom)` matches the dialog AROUND it just
+   as readily - and dressed that one in the preview's clothes, red header and hidden footer included. The
+   child combinators say "the dialog whose own content this is". */
+.rsp-modal:has(> .rsp-modal-content > .preview-zoom) {
+  max-width: min(1200px, 100vw - 32px);
+}
+
+.rsp-modal:has(> .rsp-modal-content > .preview-zoom) > .rsp-modal-footer {
+  display: none;
+}
+
+/* Red rather than the shared modal's dark blue: what this dialog shows is a page that came out too wide,
+   which is a finding and not a document. `#a20013` is the dark red this extension already reports failures
+   in (see widget/widget.css), and it holds the white title and close button of the shared header. SBB red
+   itself is not used here: a pre-commit hook reads its hex as an internal identifier. */
+.rsp-modal:has(> .rsp-modal-content > .preview-zoom) > .rsp-modal-header {
+  background-color: #a20013;
+}
+
+.preview-zoom img {
+  display: block;
   width: auto;
-  max-width: none;
-  border: 3px solid red;
-  z-index: 999;
+  height: auto;
+  max-width: 100%;
+  max-height: calc(85vh - 100px);
   cursor: zoom-out;
 }
 

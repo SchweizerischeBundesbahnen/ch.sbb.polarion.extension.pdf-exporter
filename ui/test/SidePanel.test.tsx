@@ -585,7 +585,7 @@ describe('validating the page width', () => {
     expect(document.querySelectorAll('.validate-result-img').length).toBe(4);
   });
 
-  it('zooms a preview on click and back on a second click', async () => {
+  it('opens a preview in a dialog of its own, and closes it again', async () => {
     validation([
       {
         method: 'POST',
@@ -604,10 +604,17 @@ describe('validating the page width', () => {
     });
 
     await userEvent.click(preview);
-    expect(document.querySelector('.validate-result-img')!.className).toContain('img-zoomed');
 
-    await userEvent.click(document.querySelector<HTMLElement>('.validate-result-img')!);
-    expect(document.querySelector('.validate-result-img')!.className).not.toContain('img-zoomed');
+    const opened = await vi.waitFor(() => {
+      const found = field('#page-preview-zoom');
+      expect(found).not.toBeNull();
+      return found!;
+    });
+    expect(text('.rsp-modal-title')).toBe('Invalid page 1 of 1');
+
+    await userEvent.click(opened.querySelector<HTMLImageElement>('img')!);
+    await vi.waitFor(() => expect(field('#page-preview-zoom')).toBeNull());
+    expect(document.querySelector('.validate-result-img')).not.toBeNull();
   });
 
   it('shows why a validation failed, where a refused export is reported too', async () => {

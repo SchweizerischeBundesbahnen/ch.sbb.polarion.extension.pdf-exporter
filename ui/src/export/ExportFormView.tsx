@@ -1,5 +1,5 @@
 import { type ReactNode, type RefObject } from 'react';
-import { SearchableSelect } from '@sbb-polarion/react-sbb-polarion';
+import { Modal, SearchableSelect } from '@sbb-polarion/react-sbb-polarion';
 import type { SelectOption } from '@sbb-polarion/react-sbb-polarion';
 import validateIcon from '../assets/validate.svg';
 import {
@@ -159,6 +159,9 @@ export default function ExportFormView({
 
   const result = validation.result;
   const previews = result?.invalidPages.slice(0, MAX_PAGE_PREVIEWS) ?? [];
+  /** The preview the user opened, if any: the same page, shown at the size the window allows. */
+  const opened = validation.zoomed === null ? undefined : previews[validation.zoomed];
+  const closePreview = () => validation.onZoom(null);
 
   return (
     <div className="pdf-export-form" ref={formRef}>
@@ -715,13 +718,34 @@ export default function ExportFormView({
               <img
                 // The previews have no identity of their own beyond their position in the answer.
                 key={index}
-                className={validation.zoomed === index ? 'validate-result-img img-zoomed' : 'validate-result-img'}
+                className="validate-result-img"
                 src={`data:image/png;base64,${page.content}`}
                 alt=""
-                onClick={() => validation.onZoom(validation.zoomed === index ? null : index)}
+                onClick={() => validation.onZoom(index)}
               />
             ))}
           </div>
+          {/* A preview opened, in the shared Modal: a page of a document deserves the frame a dialog gives it
+              - a title saying which page it is, a close button in the header, Escape, and a backdrop over
+              the form it was opened from. Nested inside the export dialog where that is what opened it,
+              which a native `<dialog>` allows: the newer one joins the top layer above the older.
+
+              `onOk` is required by the Modal and there is nothing to confirm here, so it closes as well -
+              the footer it would sit in is hidden (see export-form.css), which leaves the header's own
+              close button as the only one. */}
+          {opened && (
+            <Modal
+              open
+              title={`Invalid page ${(validation.zoomed ?? 0) + 1} of ${result.invalidPages.length}`}
+              onOk={closePreview}
+              onCancel={closePreview}
+            >
+              <div className="preview-zoom" id={id('page-preview-zoom')}>
+                <img src={`data:image/png;base64,${opened.content}`} alt="" onClick={closePreview} />
+              </div>
+            </Modal>
+          )}
+
           {result.suspiciousWorkItems.length > 0 && (
             <div id={id('suspicious-wi')} className="suspicious-wi">
               Suspicious work items:

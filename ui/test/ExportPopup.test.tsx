@@ -772,20 +772,42 @@ describe('validating the page width', () => {
     expect(document.querySelectorAll('#popup-page-previews img')).toHaveLength(4);
   });
 
-  it('zooms a preview on click and back on the next one', async () => {
+  it('opens a preview in a dialog of its own, and closes it again', async () => {
     validation([
-      { method: 'POST', match: /\/validate\?/, json: { invalidPages: [{ content: PNG }], suspiciousWorkItems: [] } },
+      {
+        method: 'POST',
+        match: /\/validate\?/,
+        json: { invalidPages: [{ content: PNG }, { content: PNG }], suspiciousWorkItems: [] },
+      },
     ]);
     await settled();
     await userEvent.click(field<HTMLButtonElement>('#popup-validate-pdf')!);
-    await vi.waitFor(() => expect(document.querySelectorAll('#popup-page-previews img')).toHaveLength(1));
+    await vi.waitFor(() => expect(document.querySelectorAll('#popup-page-previews img')).toHaveLength(2));
 
-    const preview = field<HTMLImageElement>('#popup-page-previews img')!;
-    await userEvent.click(preview);
-    expect(field('#popup-page-previews img')!.className).toContain('img-zoomed');
+    // The second thumbnail, so the title has to say which page it is rather than always the first
+    await userEvent.click(document.querySelectorAll<HTMLImageElement>('#popup-page-previews img')[1]);
 
-    await userEvent.click(field<HTMLImageElement>('#popup-page-previews img')!);
-    expect(field('#popup-page-previews img')!.className).not.toContain('img-zoomed');
+    const opened = await vi.waitFor(() => {
+      const found = field('#popup-page-preview-zoom');
+      expect(found).not.toBeNull();
+      return found!;
+    });
+    // Nested in the export dialog it was opened from, which is what puts it above that dialog
+    expect(field('.pdf-export-form')!.contains(opened)).toBe(true);
+    // `closest` and not `:has()`: the export dialog contains this one, so `:has()` matches them both
+    const dialog = opened.closest('.rsp-modal')!;
+    expect(dialog.querySelector('.rsp-modal-title')!.textContent).toBe('Invalid page 2 of 2');
+    // A modal dialog nested in a modal dialog, which is what puts it in the top layer ABOVE the export
+    // dialog rather than behind its backdrop
+    expect(dialog.matches(':modal')).toBe(true);
+    expect(field('.rsp-modal')!.matches(':modal')).toBe(true);
+    // Nothing to confirm about a preview: the header's close button is the only one it offers
+    expect(dialog.querySelector('.rsp-modal-close')).not.toBeNull();
+
+    await userEvent.click(opened.querySelector<HTMLImageElement>('img')!);
+    await vi.waitFor(() => expect(field('#popup-page-preview-zoom')).toBeNull());
+    // The thumbnails are still there to open again
+    expect(document.querySelectorAll('#popup-page-previews img')).toHaveLength(2);
   });
 
   it('reports a validation that could not be run at all', async () => {

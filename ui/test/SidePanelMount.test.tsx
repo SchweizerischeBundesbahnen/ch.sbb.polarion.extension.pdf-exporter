@@ -136,23 +136,21 @@ describe('mounting the side panel', () => {
     expect(getComputedStyle(toaster).position).toBe('fixed');
   });
 
-  it('opens a page width preview against the window, not against the form it came from', async () => {
-    // A zoomed preview asks for 90% of the height, centred, and it is rendered inside the form - which is a
-    // query container (`container-type: inline-size`) in a 360px pane. A query container is NOT a
-    // fixed-positioning containing block, so those percentages are the viewport's; but that reads as though
-    // it should be the other way round, and a `transform`, a `filter` or a `contain: layout` on any ancestor
-    // WOULD make it so. Hence measured rather than assumed.
+  it('opens a page width preview in a dialog that fits the window', async () => {
+    // What the stylesheet has to do for that dialog, checked where the stylesheet is in effect: it is wider
+    // than the 640px the shared Modal caps itself at, its footer is gone (a preview has nothing to confirm,
+    // so the header's close button is the only one), and the image is capped by height rather than left to
+    // its natural size - so the dialog never has to scroll to show a whole page.
     installFetchMock([
       {
         method: 'POST',
         match: /\/validate\?/,
-        // A real image: one that does not decode has no size, and `width: auto` would have nothing to work
-        // from.
+        // A real image: one that does not decode has no size, and `max-width` would have nothing to cap.
         json: { invalidPages: [{ content: PNG }], suspiciousWorkItems: [] },
       },
     ]);
     const element = host();
-    // The width of Polarion's Document Properties pane, which is the box this must NOT be measured against.
+    // The width of Polarion's Document Properties pane, which the dialog is not confined to
     element.style.width = '360px';
     mounted(element);
     await loaded(element);
@@ -165,20 +163,24 @@ describe('mounting the side panel', () => {
     });
     preview.click();
 
-    const open = await vi.waitFor(() => {
-      const found = element.shadowRoot!.querySelector<HTMLElement>('.img-zoomed');
+    const opened = await vi.waitFor(() => {
+      const found = element.shadowRoot!.querySelector<HTMLElement>('#page-preview-zoom');
       expect(found).not.toBeNull();
       return found!;
     });
+    const dialog = opened.closest<HTMLElement>('.rsp-modal')!;
+    const image = opened.querySelector<HTMLImageElement>('img')!;
 
-    // The viewport a `position: fixed` box is measured against, which is the window less its scrollbars
-    const viewport = document.documentElement;
-    // 90% of its height, read off the computed style: the rectangle would carry the 3px border too
-    expect(parseFloat(getComputedStyle(open).height)).toBeCloseTo(viewport.clientHeight * 0.9, 0);
-    const box = open.getBoundingClientRect();
-    expect(Math.round(box.top)).toBe(Math.round(viewport.clientHeight * 0.05));
-    // And centred on the viewport, which a box measured against the pane could not be
-    expect(Math.round(box.left + box.width / 2)).toBe(Math.round(viewport.clientWidth / 2));
+    // Past the 640px the library caps itself at, so a page can be shown at a readable width
+    expect(parseFloat(getComputedStyle(dialog).maxWidth)).toBeGreaterThan(640);
+    expect(getComputedStyle(dialog.querySelector('.rsp-modal-footer')!).display).toBe('none');
+    // And a red header, this being a finding rather than a document
+    expect(getComputedStyle(dialog.querySelector('.rsp-modal-header')!).backgroundColor).toBe('rgb(162, 0, 19)');
+    // Capped by height, so the dialog sizes itself to the page instead of scrolling: 85vh (the library's
+    // own cap on the dialog) less its header and the content's padding. Read as a computed value, since the
+    // sample preview is a 1x1 image and nothing about its natural size would reach the cap.
+    const viewport = document.documentElement.clientHeight;
+    expect(parseFloat(getComputedStyle(image).maxHeight)).toBeCloseTo(viewport * 0.85 - 100, 0);
   });
 
   it('marks a field the export was refused on, outranking the shared control styling', async () => {
