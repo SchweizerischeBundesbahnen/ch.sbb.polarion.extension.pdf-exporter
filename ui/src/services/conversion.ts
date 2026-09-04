@@ -126,6 +126,121 @@ export async function convertPdf(
   }
 }
 
+/** What a merge (single-file) export needs beyond the request body: interruption polling and the job url. */
+export interface MergeOptions {
+  /** Polled around every wait so the run stops polling once the user pressed Stop. */
+  isInterrupted?: () => boolean;
+  /** Handed the job url the moment the job is accepted, so a later Stop can cancel the backend job. */
+  onJobStarted?: (jobUrl: string) => void;
+  pollInterval?: number;
+}
+
+/** Thrown by {@link convertMergePdf} when the run was stopped, so the caller can tell it from a failure. */
+export class ConversionInterrupted extends Error {
+  constructor() {
+    super('Conversion interrupted');
+    this.name = 'ConversionInterrupted';
+  }
+}
+
+/**
+ * What a finished merge warns about: the shared {@link warningOf}, plus the documents the merge service
+ * could not convert and left out of the combined PDF (its `X-Documents-Failed` header).
+ */
+function mergeWarningOf(headers: Headers): string | null {
+  const base = warningOf(headers);
+  const failed = Number.parseInt(headers.get('X-Documents-Failed') ?? '', 10);
+  if (!(failed > 0)) {
+    return base;
+  }
+  const message = `${failed} document(s) failed to convert and were excluded from the merged PDF.`;
+  return base ? `${base}\n\n${message}` : message;
+}
+
+/**
+ * Converts several documents into one merged PDF: submits the whole set as a single job and polls it until
+ * the combined file is ready, the way {@link convertPdf} polls one document.
+ *
+ * Unlike the per-item run this is one backend job, so it is cancellable: `onJobStarted` hands back the job
+ * url the moment it is known, and `isInterrupted` is checked around every wait so a Stop pressed mid-run
+ * stops the polling. A run stopped this way rejects with {@link ConversionInterrupted}, not a failure.
+ */
+export async function convertMergePdf(
+  remote: Remote,
+  requestBody: string,
+  options: MergeOptions = {},
+): Promise<ConversionResult> {
+  const isInterrupted = options.isInterrupted ?? (() => false);
+  const pollInterval = options.pollInterval ?? POLL_INTERVAL;
+
+  const submitted = await remote.sendRequest({
+    method: 'POST',
+    url: '/convert/merge/jobs',
+    contentType: 'application/json',
+    body: requestBody,
+  });
+  if (!submitted.ok) {
+    throw await failed(submitted);
+  }
+
+  const job = submitted.headers.get('Location');
+  if (!job) {
+    throw new Error('The merge conversion job was accepted without a location to poll.');
+  }
+  options.onJobStarted?.(job);
+
+  for (;;) {
+    if (isInterrupted()) {
+      throw new ConversionInterrupted();
+    }
+    await delay(pollInterval);
+    if (isInterrupted()) {
+      throw new ConversionInterrupted();
+    }
+    const polled = await remote.sendAbsoluteRequest({ method: 'GET', url: job });
+    if (polled.status === 202) {
+      continue;
+    }
+    if (!polled.ok) {
+      throw await failed(polled);
+    }
+    return {
+      blob: await polled.blob(),
+      fileName: polled.headers.get('Export-Filename'),
+      warning: mergeWarningOf(polled.headers),
+    };
+  }
+}
+
+/**
+ * Best-effort cancellation of a running conversion job by its job url - the `Location` a submit handed out.
+ * Failures are swallowed: the run has already been told to stop, and the job times out on the server anyway.
+ */
+export async function cancelJob(remote: Remote, jobUrl: string): Promise<void> {
+  if (!jobUrl) {
+    return;
+  }
+  try {
+    await remote.sendAbsoluteRequest({ method: 'POST', url: `${jobUrl}/cancel` });
+  } catch (error) {
+    console.warn('Failed to cancel export job:', error);
+  }
+}
+
+/** Whether the bulk processing (merge) service is configured and reachable, as the merge option needs it. */
+export async function isBulkProcessingAvailable(remote: Remote): Promise<boolean> {
+  try {
+    const response = await remote.sendRequest({ method: 'GET', url: '/bulk-processing/status' });
+    if (!response.ok) {
+      return false;
+    }
+    const status = (await response.json()) as { available?: boolean };
+    return !!status.available;
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Starts a download of the given blob.
  *
@@ -205,6 +320,22 @@ export interface CollectionDocument {
   fileName?: string | null;
 }
 
+/** Lists the documents of a baseline collection without converting them - what a merge run expands into. */
+export async function listCollectionDocuments(
+  remote: Remote,
+  projectId: string,
+  collectionId: string,
+): Promise<CollectionDocument[]> {
+  const listed = await remote.sendRequest({
+    method: 'GET',
+    url: `/projects/${encodeURIComponent(projectId)}/collections/${encodeURIComponent(collectionId)}/documents`,
+  });
+  if (!listed.ok) {
+    throw await failed(listed);
+  }
+  return ((await listed.json()) as CollectionDocument[] | null) ?? [];
+}
+
 /**
  * Exports every document of a baseline collection, each downloaded as it is ready.
  *
@@ -230,16 +361,8 @@ export async function convertCollectionDocuments(
   },
 ): Promise<void> {
   const download = options.download ?? downloadBlob;
-  const listed = await remote.sendRequest({
-    method: 'GET',
-    url: `/projects/${encodeURIComponent(options.projectId)}/collections/${encodeURIComponent(options.collectionId)}/documents`,
-  });
-  if (!listed.ok) {
-    throw await failed(listed);
-  }
-
-  const listedDocuments = (await listed.json()) as CollectionDocument[] | null;
-  const documents = (listedDocuments ?? []).filter(
+  const listedDocuments = await listCollectionDocuments(remote, options.projectId, options.collectionId);
+  const documents = listedDocuments.filter(
     (document) => options.exportPages || document.documentType !== 'LIVE_REPORT',
   );
   if (documents.length === 0) {

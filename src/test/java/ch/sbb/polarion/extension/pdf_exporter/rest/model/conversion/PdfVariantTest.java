@@ -31,6 +31,30 @@ class PdfVariantTest {
     }
 
     @Test
+    void testFromWeasyPrintParameterValidValues() {
+        for (PdfVariant variant : PdfVariant.values()) {
+            String param = variant.toWeasyPrintParameter();
+            PdfVariant result = PdfVariant.fromWeasyPrintParameter(param);
+            assertEquals(variant, result, "Should parse " + param + " correctly");
+        }
+    }
+
+    @Test
+    void testFromWeasyPrintParameterNull() {
+        assertNull(PdfVariant.fromWeasyPrintParameter(null), "Should return null for null input");
+    }
+
+    @Test
+    void testFromWeasyPrintParameterInvalid() {
+        assertNull(PdfVariant.fromWeasyPrintParameter("pdf/x-999"), "Should return null for unknown variant");
+    }
+
+    @Test
+    void testFromWeasyPrintParameterCaseInsensitive() {
+        assertEquals(PdfVariant.PDF_A_2B, PdfVariant.fromWeasyPrintParameter("PDF/A-2B"));
+    }
+
+    @Test
     void testToWeasyPrintParameter() {
         assertEquals("pdf/a-1a", PdfVariant.PDF_A_1A.toWeasyPrintParameter());
         assertEquals("pdf/a-1b", PdfVariant.PDF_A_1B.toWeasyPrintParameter());

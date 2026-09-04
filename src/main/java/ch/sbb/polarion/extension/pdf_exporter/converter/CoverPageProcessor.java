@@ -19,7 +19,7 @@ import com.polarion.alm.projects.model.IUniqueObject;
 import lombok.SneakyThrows;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.jetbrains.annotations.VisibleForTesting;
+
 
 public class CoverPageProcessor {
     private final PlaceholderProcessor placeholderProcessor;
@@ -89,7 +89,6 @@ public class CoverPageProcessor {
         return resultBytes;
     }
 
-    @VisibleForTesting
     String composeTitleHtml(@NotNull DocumentData<? extends IUniqueObject> documentData, @NotNull ExportParams exportParams, @Nullable PlaceholderValues overridenPlaceholderValues) {
         CoverPageModel settings = coverPageSettings.load(exportParams.getProjectId(), SettingId.fromName(exportParams.getCoverPage()));
         if (!settings.isUseCustomValues()) {

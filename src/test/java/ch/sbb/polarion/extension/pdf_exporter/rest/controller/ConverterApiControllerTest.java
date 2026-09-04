@@ -13,6 +13,7 @@ import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
+import java.util.List;
 import java.util.concurrent.Callable;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -36,8 +37,16 @@ class ConverterApiControllerTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    void shouldSetLogoutSkipProperty() {
+    void shouldSetLogoutSkipPropertyForSingleJob() {
         converterApiController.startPdfConverterJob(ExportParams.builder().build());
+        verify(requestAttributes).setAttribute(LogoutFilter.ASYNC_SKIP_LOGOUT, Boolean.TRUE, RequestAttributes.SCOPE_REQUEST);
+        verify(polarionService).callPrivileged(any(Callable.class));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void shouldSetLogoutSkipPropertyForMergeJob() {
+        converterApiController.startMergeExportJob(List.of(ExportParams.builder().build()));
         verify(requestAttributes).setAttribute(LogoutFilter.ASYNC_SKIP_LOGOUT, Boolean.TRUE, RequestAttributes.SCOPE_REQUEST);
         verify(polarionService).callPrivileged(any(Callable.class));
     }

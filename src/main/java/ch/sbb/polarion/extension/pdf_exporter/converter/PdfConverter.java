@@ -8,6 +8,8 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.ExportMetaInfoCallback;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.WorkItemRefData;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.DocumentType;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.DocumentConversionParams;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.MergeJobStartParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.DocumentData;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.css.CssModel;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.headerfooter.HeaderFooterModel;
@@ -35,8 +37,11 @@ import ch.sbb.polarion.extension.pdf_exporter.util.PdfTemplateProcessor;
 import ch.sbb.polarion.extension.pdf_exporter.util.PolarionTypes;
 import ch.sbb.polarion.extension.pdf_exporter.util.html.HtmlLinksHelper;
 import ch.sbb.polarion.extension.pdf_exporter.util.placeholder.PlaceholderProcessor;
+import ch.sbb.polarion.extension.pdf_exporter.util.placeholder.PlaceholderValues;
 import ch.sbb.polarion.extension.pdf_exporter.util.velocity.VelocityEvaluator;
+import ch.sbb.polarion.extension.pdf_exporter.weasyprint.BulkProcessingConnector;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.WeasyPrintOptions;
+import ch.sbb.polarion.extension.pdf_exporter.weasyprint.service.BulkProcessingServiceConnector;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.service.WeasyPrintServiceConnector;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.polarion.alm.projects.model.IUniqueObject;
@@ -46,6 +51,7 @@ import com.polarion.core.util.StringUtils;
 import com.polarion.core.util.logging.Logger;
 import com.polarion.platform.internal.security.UserAccountVault;
 import lombok.AllArgsConstructor;
+import lombok.Getter;
 import org.apache.commons.text.StringEscapeUtils;
 import org.glassfish.jersey.media.multipart.FormDataBodyPart;
 import org.glassfish.jersey.media.multipart.FormDataMultiPart;
@@ -64,6 +70,7 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collections;
@@ -81,10 +88,12 @@ public class PdfConverter {
 
     private final PlaceholderProcessor placeholderProcessor;
     private final VelocityEvaluator velocityEvaluator;
+    @Getter
     private final CoverPageProcessor coverPageProcessor;
     private final WeasyPrintServiceConnector weasyPrintServiceConnector;
     private final HtmlProcessor htmlProcessor;
     private final PdfTemplateProcessor pdfTemplateProcessor;
+    private final BulkProcessingConnector bulkProcessingConnector;
 
     public PdfConverter() {
         pdfExporterPolarionService = new PdfExporterPolarionService();
@@ -97,6 +106,75 @@ public class PdfConverter {
         htmlProcessor = new HtmlProcessor(fileResourceProvider, new LocalizationSettings(), new HtmlLinksHelper(fileResourceProvider));
         coverPageProcessor = new CoverPageProcessor(htmlProcessor);
         pdfTemplateProcessor = new PdfTemplateProcessor();
+        bulkProcessingConnector = new BulkProcessingServiceConnector();
+    }
+
+    public BulkProcessingConnector.MergeResult convertMergedToPdf(@NotNull List<ExportParams> documentExportParams) {
+        PdfGenerationLog generationLog = new PdfGenerationLog();
+        generationLog.log("Starting merged PDF generation for " + documentExportParams.size() + " documents");
+
+        try {
+            List<BulkProcessingConnector.MergeDocumentData> preparedDocuments = new ArrayList<>();
+
+            for (ExportParams exportParams : documentExportParams) {
+                // Stop early if the job was cancelled (interrupted) - document preparation is the slow,
+                // Polarion-side part of the pipeline and must react to cancellation promptly
+                if (Thread.currentThread().isInterrupted()) {
+                    throw new IllegalStateException("Merge export was cancelled");
+                }
+                // Full pipeline — same as convertToPdf
+                if (exportParams.isAutoSelectStylePackage()) {
+                    StylePackageModel mostSuitableStylePackageModel = pdfExporterPolarionService.getMostSuitableStylePackageModel(DocIdentifier.of(exportParams));
+                    exportParams.overwriteByStylePackage(mostSuitableStylePackageModel);
+                }
+
+                @Nullable ITrackerProject project = getTrackerProject(exportParams);
+                @NotNull final DocumentData<? extends IUniqueObject> documentData = DocumentDataFactory.getDocumentData(exportParams, true);
+                @NotNull String htmlContent = prepareHtmlContent(exportParams, project, documentData, null, generationLog);
+
+                // Preserve page placeholders for bulk processing service to resolve after conversion
+                String coverPageHtml = null;
+                if (exportParams.getCoverPage() != null) {
+                    PlaceholderValues preservedPlaceholders = PlaceholderValues.builder()
+                            .pageNumber("{{ PAGE_NUMBER }}")
+                            .pagesTotalCount("{{ PAGES_TOTAL_COUNT }}")
+                            .build();
+                    coverPageHtml = coverPageProcessor.composeTitleHtml(documentData, exportParams, preservedPlaceholders);
+                }
+
+                DocumentConversionParams docParams = DocumentConversionParams.builder()
+                        .presentationalHints(exportParams.isFollowHTMLPresentationalHints())
+                        .pdfVariant(exportParams.getPdfVariant() != null ? exportParams.getPdfVariant().toWeasyPrintParameter() : null)
+                        .scaleFactor(exportParams.getImageDensity() != null ? String.valueOf(exportParams.getImageDensity().getScale()) : null)
+                        .customMetadata(metaTagsPresent(htmlContent))
+                        .fullFonts(exportParams.isFullFonts())
+                        .build();
+
+                preparedDocuments.add(new BulkProcessingConnector.MergeDocumentData(htmlContent, coverPageHtml, docParams));
+            }
+
+            generationLog.log("All documents prepared, starting merged PDF generation");
+
+            ExportParams firstDoc = documentExportParams.get(0);
+            MergeJobStartParams mergeParams = MergeJobStartParams.builder()
+                    .pdfVariant(firstDoc.getPdfVariant() != null ? firstDoc.getPdfVariant().toWeasyPrintParameter() : null)
+                    .fileName(firstDoc.getFileName() != null ? firstDoc.getFileName() : "merged-document.pdf")
+                    .build();
+
+            BulkProcessingConnector.MergeResult mergeResult = bulkProcessingConnector.convertMergedToPdf(preparedDocuments, mergeParams);
+
+            generationLog.finish();
+            logger.info("Merged PDF has been generated within " + generationLog.getTotalDurationMs() + " milliseconds");
+            if (mergeResult.failedDocumentCount() > 0) {
+                logger.warn(String.format("%d document(s) failed to convert during merge", mergeResult.failedDocumentCount()));
+            }
+
+            return mergeResult;
+        } catch (Exception e) {
+            generationLog.finish();
+            generationLog.log("Merged PDF generation failed: " + e.getMessage());
+            throw e;
+        }
     }
 
     public byte[] convertToPdf(@NotNull ExportParams exportParams, @Nullable ExportMetaInfoCallback metaInfoCallback) {

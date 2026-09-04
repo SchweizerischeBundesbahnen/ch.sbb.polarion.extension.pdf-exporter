@@ -7,10 +7,12 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
 
+import java.util.function.Supplier;
+
 /**
- * Supplies the API key of the WeasyPrint service.
+ * Supplies the API key of a downstream service (WeasyPrint or the bulk processing service).
  * <p>
- * The key itself is never configured in {@code polarion.properties}. The property
+ * The key itself is never configured in {@code polarion.properties}. A property such as
  * {@code weasyprint.apiKeySecret} holds the <em>name</em> of a Polarion secret, and the value behind
  * that name is read here, so neither the properties file nor the About page carries the credential.
  * <p>
@@ -18,8 +20,27 @@ import org.jetbrains.annotations.VisibleForTesting;
  */
 public class ApiKeyProvider {
 
+    private final @NotNull Supplier<String> secretNameSupplier;
+    private final @NotNull String serviceLabel;
+
     /**
-     * Reads the API key configured for the WeasyPrint service.
+     * Reads the API key of the WeasyPrint service, from {@code weasyprint.apiKeySecret}.
+     */
+    public ApiKeyProvider() {
+        this(() -> PdfExporterExtensionConfiguration.getInstance().getWeasyPrintApiKeySecret(), "WeasyPrint");
+    }
+
+    /**
+     * @param secretNameSupplier reads the configured name of the Polarion secret holding the key
+     * @param serviceLabel       names the service in the user facing messages, e.g. {@code "WeasyPrint"}
+     */
+    public ApiKeyProvider(@NotNull Supplier<String> secretNameSupplier, @NotNull String serviceLabel) {
+        this.secretNameSupplier = secretNameSupplier;
+        this.serviceLabel = serviceLabel;
+    }
+
+    /**
+     * Reads the API key configured for the service.
      * <p>
      * Where a name is configured but no value can be read for it, or the value is empty, this fails
      * with a user friendly exception, so the reason survives the catch-all of the conversion paths
@@ -28,7 +49,7 @@ public class ApiKeyProvider {
      * @return the key, or {@code null} when no secret name is configured
      */
     public @Nullable String getApiKey() {
-        String configured = PdfExporterExtensionConfiguration.getInstance().getWeasyPrintApiKeySecret();
+        String configured = secretNameSupplier.get();
         String secretName = configured == null ? "" : configured.trim();
         if (secretName.isEmpty()) {
             return null;
@@ -42,10 +63,10 @@ public class ApiKeyProvider {
             // original failure: a secrets manager is free to quote the credential in its own message,
             // and a cause carries that text into every log which prints the chain.
             throw new UserFriendlyRuntimeException(String.format(
-                    "Could not read the WeasyPrint API key from the Polarion secret '%s' (%s)", secretName, e.getClass().getName()));
+                    "Could not read the %s API key from the Polarion secret '%s' (%s)", serviceLabel, secretName, e.getClass().getName()));
         }
         if (apiKey == null || apiKey.isBlank()) {
-            throw new UserFriendlyRuntimeException(String.format("The Polarion secret '%s', configured as the WeasyPrint API key, is empty or does not exist", secretName));
+            throw new UserFriendlyRuntimeException(String.format("The Polarion secret '%s', configured as the %s API key, is empty or does not exist", secretName, serviceLabel));
         }
         // Returned as stored: a credential is not ours to reshape.
         return apiKey;

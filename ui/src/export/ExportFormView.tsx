@@ -57,6 +57,15 @@ export interface PageWidthValidation {
   onZoom: (index: number | null) => void;
 }
 
+/** The bulk-only "merge into a single PDF" option, offered only when the merge service is available. */
+export interface MergeOption {
+  available: boolean;
+  into: boolean;
+  onInto: (checked: boolean) => void;
+  fileName: string;
+  onFileName: (name: string) => void;
+}
+
 export interface ExportFormViewProps {
   /**
    * What every element id in the form is prefixed with (`popup-` in the dialog, nothing in the panel).
@@ -96,6 +105,8 @@ export interface ExportFormViewProps {
    */
   loadError: string | null;
   validation: PageWidthValidation;
+  /** The bulk-only "merge into a single PDF" option; absent on the side panel, which never merges. */
+  merge?: MergeOption;
   /** The surface's own action area: the panel's "Export to PDF" button. The dialog's are its footer. */
   actions?: ReactNode;
   /** Covers the form while the surface is busy: the dialog's in-progress overlay. */
@@ -141,6 +152,7 @@ export default function ExportFormView({
   busy,
   loadError,
   validation,
+  merge,
   actions,
   overlay,
   formRef,
@@ -661,6 +673,36 @@ export default function ExportFormView({
               />
             </FieldCell>
           </FieldRow>
+        </div>
+      )}
+
+      {/* Bulk over several documents can be combined into one file, where the merge service is up. A bulk
+          export offers no plain file name (each item names its own), so this stands in its place. */}
+      {exportType === 'BULK' && merge?.available && (
+        <div className="pdf-section group-start">
+          <SwitchRow
+            id={id('merge-into-single-pdf')}
+            label="Merge all documents into a single PDF"
+            checked={merge.into}
+            onChange={merge.onInto}
+          />
+          {merge.into && (
+            <FieldRow
+              className="full-row"
+              rowId={id('merge-filename-wrapper')}
+              label="Merged file name:"
+              labelFor={id('merge-filename')}
+            >
+              <FieldCell grows>
+                <input
+                  id={id('merge-filename')}
+                  type="text"
+                  value={merge.fileName}
+                  onChange={(event) => merge.onFileName(event.target.value)}
+                />
+              </FieldCell>
+            </FieldRow>
+          )}
         </div>
       )}
 
