@@ -378,7 +378,7 @@ the same command.
 ## Production build
 
 `npm run build` emits all four entries to `ui/dist/app` with base path
-`/polarion/pdf-exporter-app/ui/app/`. The Maven build (the parent's `vite-ui` profile:
+`/polarion/pdf-exporter-app/ui/app/`. The Maven build (the parent's `ui-build-react-app` profile:
 frontend-maven-plugin + maven-resources-plugin) runs this automatically and copies the bundle into
 `src/main/resources/webapp/pdf-exporter-app/app`, where `PdfExporterAppServlet` serves it at
 `/polarion/pdf-exporter-app/ui/app/index.html`.

@@ -407,6 +407,12 @@
                 <groupId>io.github.grigoriev</groupId>
                 <artifactId>pre-commit-run-maven-plugin</artifactId>
             </plugin>
+            <!-- Opts in to the compatibility check the generic parent pom declares. -->
+            <plugin>
+                <groupId>com.intechcore</groupId>
+                <artifactId>polarion-compatibility-maven-plugin</artifactId>
+            </plugin>
+
         </plugins>
     </build>
 
