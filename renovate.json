@@ -5,7 +5,7 @@
   ],
   "packageRules": [
     {
-      "description": "tika-core stays on 3.x. Its 4.0.0 jar carries the compile-time TikaComponentProcessor class and an OSGi manifest with uses:=\"javax.annotation.processing,...\", and Polarion 2606's JakartaCompatibilityChecker rejects a class reference or a manifest value that merely contains a forbidden package prefix - javax.annotation.processing contains javax.annotation. The extension then counts as one incompatible file and Polarion refuses to start, which no CI job can see.",
+      "description": "tika-core stays on 3.x. Its 4.0.0 jar carries the compile-time TikaComponentProcessor class and an OSGi manifest with uses:=\"javax.annotation.processing,...\", and Polarion 2606's JakartaCompatibilityChecker rejects a class reference or a manifest value that merely contains a forbidden package prefix - javax.annotation.processing contains javax.annotation. The extension then counts as one incompatible file and Polarion refuses to start. polarion-compatibility-maven-plugin fails the build on it, so this pin is what keeps a tika-4 bump from becoming a red build.",
       "matchPackageNames": ["org.apache.tika:tika-core"],
       "allowedVersions": "<4"
     }
