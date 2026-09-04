@@ -1,4 +1,4 @@
-import { Toaster } from '@sbb-polarion/react-sbb-polarion';
+import ToastHost from './components/ToastHost';
 import { findFeature } from './features';
 import Landing from './pages/Landing';
 
@@ -18,9 +18,10 @@ export default function App() {
 
   return (
     <div className="app standard-admin-page">
-      {/* App-wide toast host: the shared RSP Toaster (top-center + richColors). The Authorization
-          page reports its save outcomes through it. */}
-      <Toaster />
+      {/* App-wide toast host: the shared RSP Toaster (top-center + richColors), which every page reports
+          its outcomes through. `ToastHost` rather than the Toaster itself because the export dialog brings
+          a host of its own - see components/ToastHost.tsx. */}
+      <ToastHost />
       <Page />
     </div>
   );

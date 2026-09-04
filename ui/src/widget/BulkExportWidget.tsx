@@ -305,14 +305,21 @@ export default function BulkExportWidget({ shim, deps = {} }: Props) {
       )}
 
       {exporting && (
-        <ExportPopupModal
-          document={dialogDocument}
-          exportType="BULK"
-          identifiers={identifiers}
-          onBulkExport={startBulkExport}
-          onClose={() => setExporting(null)}
-          deps={deps.popup}
-        />
+        /* `form-wrapper` is what react-sbb-polarion scopes its control system to - the text fields, the
+           colour picker, the checkboxes and their focus and hover states. The widget's own container
+           deliberately carries no such class: its markup is Polarion's own table and buttons, which that
+           system would restyle (see widget/main.tsx). The dialog, though, has to look exactly like the one a
+           toolbar button opens, so it gets the class here, around itself alone. */
+        <div className="form-wrapper">
+          <ExportPopupModal
+            document={dialogDocument}
+            exportType="BULK"
+            identifiers={identifiers}
+            onBulkExport={startBulkExport}
+            onClose={() => setExporting(null)}
+            deps={deps.popup}
+          />
+        </div>
       )}
 
       <BulkExportProgressModal state={bulk.state} onStop={bulk.stop} onClose={bulk.close} />

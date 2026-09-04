@@ -1,6 +1,7 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import rspStyles from '@sbb-polarion/react-sbb-polarion/style.css?inline';
+import formStyles from '../export/export-form.css?inline';
 import popupStyles from '../popup/export-popup.css?inline';
 import BulkExportWidget from './BulkExportWidget';
 import type { WidgetDependencies } from './BulkExportWidget';
@@ -56,9 +57,11 @@ export function mountInto(host: HTMLElement, shim: WidgetShim, deps?: WidgetDepe
   adoptPageStyles(root);
   // After the page's stylesheets, so that the widget's own rules win where both have something to say
   addStyle(root, rspStyles);
-  // The widget renders two dialogs of its own: the export parameters dialog, whose stylesheet this is, and
-  // the progress dialog, which widget.css styles. Both used to be micromodal markup in the report page's
-  // body, styled by stylesheets the widget renderer put on the page; both are inside this root now.
+  // The widget renders two dialogs of its own: the export parameters dialog, whose form and chrome these
+  // two stylesheets are, and the progress dialog, which widget.css styles. Both used to be micromodal
+  // markup in the report page's body, styled by stylesheets the widget renderer put on the page; both are
+  // inside this root now.
+  addStyle(root, formStyles);
   addStyle(root, popupStyles);
   addStyle(root, widgetStyles);
 

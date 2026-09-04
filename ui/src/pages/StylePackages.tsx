@@ -697,8 +697,9 @@ export default function StylePackages() {
             row is as tall as its taller column, so while these were three containers a short column could
             never be filled from the block below it - "Headings color" alone on the left against five rows
             on the right left a four-row hole under it. The colour picker now takes a line of its own above
-            the columns, which is what lets the four dropdowns line up as a block. Same arrangement, and
-            the same reasoning, as the export dialog: see ui/src/popup/ExportPopupModal.tsx. */}
+            the columns, which is what lets the four dropdowns line up as a block. The export dialogs had
+            the same problem and answered it with a grid whose rows flow across rather than down, which
+            needs no balancing at all: see ui/src/export/export-form.css. */}
         <div className="flex-container section">
           <div className="input-group full-row">
             <label htmlFor="headers-color">Headings color:</label>
