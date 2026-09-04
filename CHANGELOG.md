@@ -1,5 +1,20 @@
 # Changelog
 
+## [13.8.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v13.7.0...v13.8.0) (2026-09-04)
+
+
+### Features
+
+* better looking single layout shred by different components ([#1035](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/1035)) ([fdeba14](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/fdeba143450e044ee6bb1299af6bcf102411ca1d))
+* upgrade authorization settings page where roles selection is implemented as dropdowns instead of checkboxes ([#1032](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/1032)) ([3219592](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/3219592999d4aa773e85d7a4ecaad4667ba32c61))
+
+
+### Bug Fixes
+
+* **deps:** update dependency ch.sbb.polarion.extensions:ch.sbb.polarion.extension.generic to v16.1.0 ([d7b2b40](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/d7b2b40936444ffb90aa16fac943939ce76e8eed))
+* **deps:** update dependency globals to v17.12.0 ([a5981a1](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/a5981a1ce9b8a30249f7ddfe01d989279d42e9a3))
+* **deps:** update dependency typescript-eslint to v8.69.0 ([892e039](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/892e0398fbd16ef7cc368718a9d991a9e9554e6e))
+
 ## [13.7.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v13.6.1...v13.7.0) (2026-08-31)
 
 
