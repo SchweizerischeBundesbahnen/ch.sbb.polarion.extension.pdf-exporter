@@ -19,6 +19,8 @@ npm-debug.log*
 test/__diff__/
 test/__screenshots__/
 .vitest/
+# Where vitest 4 wrote them. Keep it ignored, or a leftover directory gets committed.
+.vitest-attachments/
 
 # coverage reports
 coverage/
