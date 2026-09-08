@@ -41,7 +41,6 @@ import com.polarion.subterra.base.location.ILocation;
 import com.polarion.subterra.base.location.Location;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
-import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.text.StringEscapeUtils;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.io.RandomAccessReadBuffer;
@@ -939,15 +938,29 @@ public class MediaUtils {
     /**
      * Extracts the lowercase file extension from a URL, ignoring any query string or fragment.
      * Returns an empty string when the URL has no extension.
+     * <p>
+     * The extension is read here rather than by {@code FilenameUtils.getExtension}. That method reads
+     * the string as a path of the host: on Windows it refuses a ':' standing after the last separator,
+     * which names an NTFS alternate data stream there and means nothing in a url. A url may carry one
+     * wherever it likes, and the refusal aborts the export instead of judging that url.
+     * </p>
+     * <p>
+     * Reported upstream as <a href="https://issues.apache.org/jira/browse/IO-783">IO-783</a>, which is
+     * open, and commons-io 2.22.0 still throws. Once it is fixed this method may go back to the
+     * utility: it counts the same separators and returns the same extension.
+     * </p>
      */
     @VisibleForTesting
     static String getResourceExtension(@Nullable String url) {
         if (url == null) {
             return "";
         }
-        // strip the query string and fragment, then let Commons IO extract the extension
+        // strip the query string and fragment, then read the extension of the last segment. Both slashes
+        // separate one, the way a file name utility counts them on every platform
         String path = url.split("[?#]", 2)[0];
-        return FilenameUtils.getExtension(path).toLowerCase(Locale.ROOT);
+        int lastSeparator = Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\'));
+        int lastDot = path.lastIndexOf('.');
+        return lastDot > lastSeparator ? path.substring(lastDot + 1).toLowerCase(Locale.ROOT) : "";
     }
 
     /**

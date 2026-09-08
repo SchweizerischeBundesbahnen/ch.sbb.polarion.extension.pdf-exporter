@@ -228,6 +228,18 @@ class MediaUtilsTest {
         assertEquals("", MediaUtils.getResourceExtension("/path/file."));
         assertEquals("", MediaUtils.getResourceExtension(null));
         assertEquals("", MediaUtils.getResourceExtension(""));
+        // A colon may stand after the last separator of a url. A file name utility reads that as an NTFS
+        // alternate data stream and refuses it on Windows, which would abort the export on that host.
+        // What such a segment names is no renderable extension, and that is all the callers ask
+        assertEquals("png:2", MediaUtils.getResourceExtension("/path/file.png:2"));
+        assertEquals("png) } c { color: red",
+                MediaUtils.getResourceExtension("/path/x.png) } b { url(http://host/y.png) } c { color: red"));
+        assertEquals("", MediaUtils.getResourceExtension("http://localhost:8080/imgs"));
+        assertEquals("png", MediaUtils.getResourceExtension("http://localhost:8080/img.png"));
+        // both slashes separate a segment, so a dot before either of them names no extension
+        assertEquals("", MediaUtils.getResourceExtension("/path.d/file"));
+        assertEquals("", MediaUtils.getResourceExtension("C:\\path.d\\file"));
+        assertEquals("png", MediaUtils.getResourceExtension("C:\\path\\img.PNG"));
     }
 
     private void fillImageWithColor(BufferedImage image, Color color) {
