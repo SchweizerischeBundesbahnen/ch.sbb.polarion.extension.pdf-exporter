@@ -290,7 +290,9 @@ class BulkProcessingServiceConnectorTest {
         when(apiKeyProvider.getApiKey()).thenReturn("secret");
 
         // The connector from setUp is named over http, so the key must never leave.
-        assertThatThrownBy(() -> connector.convertMergedToPdf(List.of(doc("<html></html>", null)), MergeJobStartParams.builder().build()))
+            List<MergeDocumentData> documents = List.of(doc("<html></html>", null));
+        MergeJobStartParams params = MergeJobStartParams.builder().build();
+        assertThatThrownBy(() -> connector.convertMergedToPdf(documents, params))
                 .isInstanceOf(UserFriendlyRuntimeException.class)
                 .hasMessageContaining("not sent over plain http");
     }
@@ -301,7 +303,9 @@ class BulkProcessingServiceConnectorTest {
         Response startResponse = mockResponse(401, "Unauthorized");
         when(invocationBuilder.post(any(Entity.class))).thenReturn(startResponse);
 
-        assertThatThrownBy(() -> connector.convertMergedToPdf(List.of(doc("<html></html>", null)), MergeJobStartParams.builder().build()))
+        List<MergeDocumentData> documents = List.of(doc("<html></html>", null));
+        MergeJobStartParams params = MergeJobStartParams.builder().build();
+        assertThatThrownBy(() -> connector.convertMergedToPdf(documents, params))
                 .isInstanceOf(UserFriendlyRuntimeException.class)
                 .hasMessageContaining("requires an API key");
     }
