@@ -5,10 +5,11 @@
 - **A dependency can block Polarion startup through its manifest alone.** Polarion 2606 scans every
   nested jar and rejects both a class that references a forbidden package and a `META-INF/MANIFEST.MF`
   whose attribute value *contains* one, so an OSGi `uses:="javax.annotation.processing,..."` counts as
-  `javax.annotation` and the whole extension is reported as "not Jakarta compatible" - no CI job sees
-  this, only a local deploy.
-  That is why `tika.version` stays on 3.x (`renovate.json` holds it there); tika-core 4.0.0 trips it.
-  Check a bump with a real deploy, or `unzip -p <nested>.jar META-INF/MANIFEST.MF | grep javax`.
+  `javax.annotation` and the whole extension is reported as "not Jakarta compatible".
+  `polarion-compatibility-maven-plugin` fails the build on this at `verify`, so a green build means a
+  server which boots. That is why `tika.version` stays on 3.x (`renovate.json` holds it there);
+  tika-core 4.0.0 trips it. Keep the pin: the check turns a startup refusal into a red build, it does
+  not make tika 4 usable.
 - **`ch.sbb.polarion.extension.generic`** is the parent project providing reusable infrastructure for all Polarion plugins in this org (settings framework, REST base classes, OSGi helpers, etc.). Before implementing anything cross-cutting, check if it already exists there.
 - **All administration pages are React now.** They were converted to
   [react-sbb-polarion](https://github.com/SchweizerischeBundesbahnen/react-sbb-polarion) one at a time, and
@@ -63,7 +64,7 @@
   the three injector scripts, the empty `css/starter.css` trigger and the three HTML templates the Java
   renderer reads server-side (`sidePanelContent.html`, `pdfTemplate.html`, `headerAndFooter.html`).
 - **The UI build comes from the generic parent**, activated by the presence of `ui/package.json` (its
-  `vite-ui` profile): `npm ci` + `npm run build`, the bundle copied into `webapp/pdf-exporter-app/`, and
+  `ui-build-react-app` profile): `npm ci` + `npm run build`, the bundle copied into `webapp/pdf-exporter-app/`, and
   the JS suite in the Maven `test` phase. This pom adds nothing for it beyond pinning
   `frontend-maven-plugin.version`, which the parent's profile reads. Note it also redirects
   markdown2html's output (`about.html`, `user-guide.html`, `disclaimer.html`) into
@@ -78,7 +79,7 @@
 - **Package naming**: Use `ch.sbb.polarion.extension.pdf_exporter` (underscore). Pre-v7.0.0 code used `pdf.exporter` (dot) — don't follow old patterns still present in the codebase.
 - **Maven Settings**: Builds require `.mvn/settings.xml` (JFrog, GitHub Packages, Sonatype credentials via env vars). CI passes it with `-s .mvn/settings.xml`.
 - **Polarion Dependencies**: You must extract dependencies from the Polarion installer using [polarion-artifacts-deployer](https://github.com/SchweizerischeBundesbahnen/polarion-artifacts-deployer) before the Maven build will work.
-- **Local Polarion Installation**: Requires `POLARION_HOME` environment variable. Use the `install-to-local-polarion` Maven profile: `mvn clean install -P install-to-local-polarion`
+- **Local Polarion Installation**: Requires `POLARION_HOME` environment variable. Use the `local-install-into-polarion` Maven profile: `mvn clean install -P local-install-into-polarion`
 - **After any code change**: Delete `<POLARION_HOME>/data/workspace/.config` before restarting Polarion or changes won't be picked up.
 - **Remote Debugging**: Add to Polarion's `config.sh`: `JAVA_OPTS="$JAVA_OPTS -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005"`
 - **Logging**: Polarion logs: `<POLARION_HOME>/polarion/logs/main/*.log`

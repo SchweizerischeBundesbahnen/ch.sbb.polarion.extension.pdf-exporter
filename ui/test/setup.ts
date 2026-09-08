@@ -12,6 +12,18 @@ import '@sbb-polarion/react-sbb-polarion/style.css';
 import '@testing-library/jest-dom/vitest';
 import '../src/App.css';
 
+// The visual suites gate themselves on `__PIXEL_REFERENCES__` (see vitest.config.ts), and the gate reads
+// `!__PIXEL_REFERENCES__`. A `define` that substitutes the string "false" rather than the boolean makes
+// that expression false whatever the flag says, so every visual suite runs outside the pinned Playwright
+// image and fails on the host's font metrics. Vitest 5 changed the substitution once already, so assert
+// the type here instead of trusting it.
+if (typeof __PIXEL_REFERENCES__ !== 'boolean') {
+  throw new Error(
+    `__PIXEL_REFERENCES__ must be a boolean, got ${typeof __PIXEL_REFERENCES__}. ` +
+      'Check the `define` in vitest.config.ts.',
+  );
+}
+
 // Transitions and animations are off for every capture. A screenshot taken mid-fade is a reference that
 // only sometimes reproduces, and the durations are react-sbb-polarion's, which can change them without
 // this repository noticing. Killing them removes the race instead of outrunning it with a sleep.

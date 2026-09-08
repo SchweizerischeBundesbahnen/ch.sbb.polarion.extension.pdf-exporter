@@ -79,7 +79,7 @@ mvn clean package
 ### Install to Local Polarion
 
 ```bash
-mvn clean install -P install-to-local-polarion
+mvn clean install -P local-install-into-polarion
 ```
 
 Note: This requires `POLARION_HOME` environment variable to be set correctly.

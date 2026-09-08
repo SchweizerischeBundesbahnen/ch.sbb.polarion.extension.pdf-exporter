@@ -9,7 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
  * <p>
  * The three of them are written by markdown2html into the directory
  * {@code markdown2html-maven-plugin.extensionContextAdminHtml} points at - a property whose name
- * predates the React apps: as soon as {@code ui/} exists, the generic parent's {@code vite-ui} profile
+ * predates the React apps: as soon as {@code ui/} exists, the generic parent's {@code ui-build-react-app} profile
  * redefines it to the <em>app</em> webapp. Two things then depend on that, silently:
  * <ul>
  *   <li>generic's {@code /readme}, {@code /user-guide} and {@code /disclaimer} endpoints read their

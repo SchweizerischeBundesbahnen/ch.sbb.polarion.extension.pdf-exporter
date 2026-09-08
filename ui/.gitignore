@@ -18,6 +18,8 @@ npm-debug.log*
 # vitest browser mode: transient visual-regression artifacts (committed refs live in test/expected/)
 test/__diff__/
 test/__screenshots__/
+.vitest/
+# Where vitest 4 wrote them. Keep it ignored, or a leftover directory gets committed.
 .vitest-attachments/
 
 # coverage reports

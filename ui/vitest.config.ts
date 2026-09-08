@@ -39,7 +39,7 @@ const pixelReferences = process.env.PIXEL_REFERENCES === '1';
 const NODE_TESTS = 'test/**/*.node.test.ts';
 
 export default defineConfig({
-  define: { __PIXEL_REFERENCES__: JSON.stringify(pixelReferences) },
+  define: { __PIXEL_REFERENCES__: pixelReferences },
   plugins: [react()],
   // Resolve React to this app's single instance, mirroring vite.config.js. Redundant while RSP is
   // consumed as a published tarball (React is a peer dependency there), but required the moment the
