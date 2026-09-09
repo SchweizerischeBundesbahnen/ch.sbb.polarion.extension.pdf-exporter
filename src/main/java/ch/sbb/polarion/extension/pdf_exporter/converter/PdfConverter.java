@@ -118,8 +118,10 @@ public class PdfConverter {
 
             for (ExportParams exportParams : documentExportParams) {
                 // Stop early if the job was cancelled (interrupted) - document preparation is the slow,
-                // Polarion-side part of the pipeline and must react to cancellation promptly
-                if (Thread.currentThread().isInterrupted()) {
+                // Polarion-side part of the pipeline and must react to cancellation promptly.
+                // Use Thread.interrupted() (check-and-clear) rather than isInterrupted(): the worker runs on a
+                // cached thread pool, and a stale flag left set here would falsely cancel the next reused job.
+                if (Thread.interrupted()) {
                     throw new IllegalStateException("Merge export was cancelled");
                 }
                 // Full pipeline — same as convertToPdf

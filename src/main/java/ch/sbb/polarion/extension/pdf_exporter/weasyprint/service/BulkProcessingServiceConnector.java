@@ -138,7 +138,9 @@ public class BulkProcessingServiceConnector implements BulkProcessingConnector {
     private int addDocumentsToJob(@NotNull String jobId, @NotNull List<MergeDocumentData> documents) {
         int failedCount = 0;
         for (MergeDocumentData doc : documents) {
-            if (Thread.currentThread().isInterrupted()) {
+            // Thread.interrupted() (check-and-clear), not isInterrupted(): the worker runs on a cached thread
+            // pool, so a stale flag left set here would falsely cancel the next reused job.
+            if (Thread.interrupted()) {
                 throw new IllegalStateException(String.format("Merge job '%s' was cancelled", jobId));
             }
             try {
