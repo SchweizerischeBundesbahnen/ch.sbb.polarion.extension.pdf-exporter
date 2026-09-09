@@ -258,6 +258,11 @@ An unset or empty property sends no key. The key is only sent over `https`: wher
 credential on the wire. A `401` from the service is reported apart from other errors, since it means either
 that no key is configured or that the configured key was rejected, each with a different fix.
 
+To serve the bulk processing service over `https` (required whenever an API key is used), start it with
+`TLS_CERT_FILE` and `TLS_KEY_FILE` (and `TLS_KEY_PASSWORD` where the key is encrypted), then name it with an
+`https` address in `bulk.processing.service`. See the [HTTPS section of the service's
+README](https://github.com/SchweizerischeBundesbahnen/bulk-processing-service#https) for the full setup.
+
 ### Renderable image extensions
 
 The exporter can embed certain file types as full-size images (raster formats, SVG, convertible diagrams like Visio).
