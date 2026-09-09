@@ -9,10 +9,13 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.DocumentData;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.id.LiveDocId;
 import ch.sbb.polarion.extension.pdf_exporter.settings.CssSettings;
 import ch.sbb.polarion.extension.pdf_exporter.util.MediaUtils;
+import ch.sbb.polarion.extension.pdf_exporter.util.PdfPostProcessor;
 import ch.sbb.polarion.extension.pdf_exporter.util.VeraPdfValidationUtils;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.base.BaseWeasyPrintTest;
 import com.polarion.alm.tracker.model.IModule;
 import lombok.SneakyThrows;
+import org.apache.pdfbox.io.RandomAccessReadBuffer;
+import org.apache.pdfbox.multipdf.PDFMergerUtility;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -26,6 +29,7 @@ import org.verapdf.gf.foundry.VeraGreenfieldFoundryProvider;
 import org.verapdf.pdfa.flavours.PDFAFlavour;
 import org.verapdf.pdfa.results.ValidationResult;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.net.URL;
 import java.nio.file.Path;
@@ -133,6 +137,107 @@ class PdfVariantValidationTest extends BaseWeasyPrintTest {
         ValidationResult result = VeraPdfValidationUtils.validatePdf(pdfBytesWithCoverPage, flavour);
 
         assertTrue(result.isCompliant(), String.format("PDF with cover page must be compliant with %s (VeraPDF flavour: %s). Failed rules: %s", pdfVariant, flavour, result.getTestAssertions()));
+    }
+
+    /**
+     * Simulates the bulk merge export path: multiple documents are individually converted to PDF
+     * via WeasyPrint, then merged (as the bulk-processing-service does with pypdf), and finally
+     * post-processed for PDF/A compliance (as BulkProcessingServiceConnector does).
+     * Validates the merged result with veraPDF.
+     */
+    @ParameterizedTest(name = "Test bulk merge PDF compliance for {0}")
+    @EnumSource(value = PdfVariant.class, names = {"PDF_UA_2", "PDF_A_4F"}, mode = EnumSource.Mode.EXCLUDE)
+    @SneakyThrows
+    void testBulkMergePdfVariantCompliance(PdfVariant pdfVariant) {
+        // Read and prepare two different HTML documents
+        String html1 = injectDefaultCss(readHtmlResource("pdfVariantValidation"));
+        String html2 = injectDefaultCss(readHtmlResource("pdfVariantValidationCoverPage"));
+
+        // Convert each document individually (same as bulk-processing-service /add)
+        WeasyPrintOptions options = WeasyPrintOptions.builder()
+                .pdfVariant(pdfVariant)
+                .build();
+
+        byte[] pdf1 = exportToPdf(html1, options);
+        byte[] pdf2 = exportToPdf(html2, options);
+        assertNotNull(pdf1, "First PDF should not be null");
+        assertNotNull(pdf2, "Second PDF should not be null");
+
+        // Merge PDFs (simulates what bulk-processing-service merge_pdf_files does)
+        PDFMergerUtility merger = new PDFMergerUtility();
+        merger.addSource(new RandomAccessReadBuffer(pdf1));
+        merger.addSource(new RandomAccessReadBuffer(pdf2));
+        ByteArrayOutputStream mergedOut = new ByteArrayOutputStream();
+        merger.setDestinationStream(mergedOut);
+        merger.mergeDocuments(null);
+        byte[] mergedPdf = mergedOut.toByteArray();
+
+        // Apply post-processing (same as BulkProcessingServiceConnector does after /finish)
+        PdfPostProcessor postProcessor = new PdfPostProcessor();
+        byte[] processedPdf = postProcessor.postProcess(mergedPdf, pdfVariant, null);
+
+        // Write to reports for manual inspection
+        String testName = getCurrentMethodName();
+        writeReportPdf(testName, pdfVariant.name() + "_bulk_merged", processedPdf);
+
+        // Validate with veraPDF
+        PDFAFlavour flavour = VeraPdfValidationUtils.mapPdfVariantToVeraPDFFlavour(pdfVariant);
+        ValidationResult result = VeraPdfValidationUtils.validatePdf(processedPdf, flavour);
+
+        assertTrue(result.isCompliant(), String.format(
+                "Bulk-merged PDF must be compliant with %s (VeraPDF flavour: %s). Failed rules: %s",
+                pdfVariant, flavour, result.getTestAssertions()));
+    }
+
+    /**
+     * Same as {@link #testBulkMergePdfVariantCompliance} but includes cover page replacement
+     * on the first document — simulating a bulk merge where documents have cover pages.
+     */
+    @ParameterizedTest(name = "Test bulk merge with cover page PDF compliance for {0}")
+    @EnumSource(value = PdfVariant.class, names = {"PDF_UA_2", "PDF_A_4F"}, mode = EnumSource.Mode.EXCLUDE)
+    @SneakyThrows
+    void testBulkMergeWithCoverPagePdfVariantCompliance(PdfVariant pdfVariant) {
+        String contentHtml = injectDefaultCss(readHtmlResource("pdfVariantValidation"));
+        String coverPageHtml = injectDefaultCss(readHtmlResource("pdfVariantValidationCoverPage"));
+
+        WeasyPrintOptions options = WeasyPrintOptions.builder()
+                .pdfVariant(pdfVariant)
+                .build();
+
+        // Document 1: content with cover page replacement
+        byte[] contentPdf = exportToPdf("<div style='break-after:page'>page to be removed</div>" + contentHtml, options);
+        byte[] coverPdf = exportToPdf(coverPageHtml, options);
+        byte[] doc1Pdf = MediaUtils.overwriteFirstPageWithTitle(contentPdf, coverPdf, pdfVariant);
+
+        // Document 2: simple content without cover page
+        byte[] doc2Pdf = exportToPdf(contentHtml, options);
+
+        assertNotNull(doc1Pdf);
+        assertNotNull(doc2Pdf);
+
+        // Merge (simulates bulk-processing-service)
+        PDFMergerUtility merger = new PDFMergerUtility();
+        merger.addSource(new RandomAccessReadBuffer(doc1Pdf));
+        merger.addSource(new RandomAccessReadBuffer(doc2Pdf));
+        ByteArrayOutputStream mergedOut = new ByteArrayOutputStream();
+        merger.setDestinationStream(mergedOut);
+        merger.mergeDocuments(null);
+        byte[] mergedPdf = mergedOut.toByteArray();
+
+        // Post-process
+        PdfPostProcessor postProcessor = new PdfPostProcessor();
+        byte[] processedPdf = postProcessor.postProcess(mergedPdf, pdfVariant, null);
+
+        String testName = getCurrentMethodName();
+        writeReportPdf(testName, pdfVariant.name() + "_bulk_merged_with_cover", processedPdf);
+
+        // Validate
+        PDFAFlavour flavour = VeraPdfValidationUtils.mapPdfVariantToVeraPDFFlavour(pdfVariant);
+        ValidationResult result = VeraPdfValidationUtils.validatePdf(processedPdf, flavour);
+
+        assertTrue(result.isCompliant(), String.format(
+                "Bulk-merged PDF with cover page must be compliant with %s (VeraPDF flavour: %s). Failed rules: %s",
+                pdfVariant, flavour, result.getTestAssertions()));
     }
 
     private String injectDefaultCss(String html) {

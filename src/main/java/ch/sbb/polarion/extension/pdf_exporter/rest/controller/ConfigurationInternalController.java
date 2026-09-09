@@ -7,6 +7,7 @@ import ch.sbb.polarion.extension.pdf_exporter.util.configuration.DefaultSettings
 import ch.sbb.polarion.extension.pdf_exporter.util.configuration.DleToolbarStatusProvider;
 import ch.sbb.polarion.extension.pdf_exporter.util.configuration.DocumentPropertiesPaneStatusProvider;
 import ch.sbb.polarion.extension.pdf_exporter.util.configuration.LiveReportMainHeadStatusProvider;
+import ch.sbb.polarion.extension.pdf_exporter.util.configuration.BulkProcessingStatusProvider;
 import ch.sbb.polarion.extension.pdf_exporter.util.configuration.WeasyPrintStatusProvider;
 import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
@@ -126,5 +127,22 @@ public class ConfigurationInternalController {
     )
     public @NotNull List<ConfigurationStatus> checkWeasyPrint() {
         return new WeasyPrintStatusProvider().getStatuses(ConfigurationStatusProvider.Context.builder().build());
+    }
+
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path("/configuration/bulk-processing")
+    @Operation(
+            summary = "Checks Bulk Processing Service configuration",
+            description = "Retrieves the status of the Bulk Processing Service configuration.",
+            responses = {
+                    @ApiResponse(responseCode = "200",
+                            description = "Successfully retrieved Bulk Processing Service configuration",
+                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = ConfigurationStatus.class)))
+                    )
+            }
+    )
+    public @NotNull List<ConfigurationStatus> checkBulkProcessing() {
+        return new BulkProcessingStatusProvider().getStatuses(ConfigurationStatusProvider.Context.builder().build());
     }
 }

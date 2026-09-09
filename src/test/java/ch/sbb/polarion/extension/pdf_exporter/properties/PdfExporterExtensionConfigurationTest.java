@@ -171,6 +171,7 @@ class PdfExporterExtensionConfigurationTest {
         assertTrue(properties.contains(PdfExporterExtensionConfiguration.EXTERNAL_RESOURCES_ALLOWED_ORIGINS));
         assertTrue(properties.contains(PdfExporterExtensionConfiguration.EXTERNAL_RESOURCES_MAX_SIZE_MB));
         assertTrue(properties.contains(PdfExporterExtensionConfiguration.WEASYPRINT_API_KEY_SECRET));
+        assertTrue(properties.contains(PdfExporterExtensionConfiguration.BULK_PROCESSING_SERVICE));
     }
 
     @Test
@@ -198,5 +199,22 @@ class PdfExporterExtensionConfigurationTest {
     void getWeasyPrintApiKeySecretDefaultValueNamesNoSecret() {
         // the empty default is what ApiKeyProvider reads as "this service needs no key"
         assertEquals("", configuration.getWeasyPrintApiKeySecretDefaultValue());
+    }
+
+    @Test
+    void getBulkProcessingServiceReturnsConfiguredValue() {
+        when(systemValueReader.readString(anyString(), anyString())).thenReturn("http://bulk:9070");
+        assertEquals("http://bulk:9070", configuration.getBulkProcessingService());
+    }
+
+    @Test
+    void getBulkProcessingServiceDescriptionReturnsConstant() {
+        assertEquals(PdfExporterExtensionConfiguration.BULK_PROCESSING_SERVICE_DESCRIPTION, configuration.getBulkProcessingServiceDescription());
+    }
+
+    @Test
+    void getBulkProcessingServiceDefaultValueNamesNoService() {
+        // the empty default is what disables bulk export (merge into a single PDF)
+        assertEquals("", configuration.getBulkProcessingServiceDefaultValue());
     }
 }

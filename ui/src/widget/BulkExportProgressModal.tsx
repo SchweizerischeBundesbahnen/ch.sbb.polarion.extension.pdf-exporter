@@ -40,7 +40,8 @@ export default function BulkExportProgressModal({ state, onStop, onClose }: Read
   return (
     <Modal
       open
-      title="Bulk export to PDF"
+      // A merge run says so in the title, the way the legacy dialog did: the whole selection becomes one file.
+      title={state.merge ? 'Bulk export to PDF (merging into single file)' : 'Bulk export to PDF'}
       okText="Stop"
       cancelText="Close"
       onOk={running ? onStop : onClose}

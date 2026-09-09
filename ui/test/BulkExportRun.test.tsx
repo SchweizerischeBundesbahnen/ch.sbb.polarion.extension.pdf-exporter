@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render } from 'vitest-browser-react';
 import { userEvent } from 'vitest/browser';
-import type { ConversionResult } from '../src/services/conversion';
+import type { CollectionDocument, ConversionResult, MergeOptions } from '../src/services/conversion';
 import BulkExportWidget from '../src/widget/BulkExportWidget';
 import type { WidgetDependencies } from '../src/widget/BulkExportWidget';
 import { SAMPLE_ITEMS, SAMPLE_SHIM } from '../src/widget/sampleData';
@@ -25,6 +25,15 @@ const conversions: Conversion[] = [];
 const downloads: { fileName: string }[] = [];
 const attachmentCalls: Record<string, unknown>[] = [];
 const collectionCalls: { collectionId: string; resolve: () => void; reject: (error: Error) => void }[] = [];
+const mergeConversions: {
+  request: Record<string, unknown>[];
+  resolve: (result: ConversionResult) => void;
+  reject: (error: Error) => void;
+  options?: MergeOptions;
+}[] = [];
+const cancelCalls: string[] = [];
+let collectionDocuments: CollectionDocument[] = [];
+const MERGE_JOB_URL = '/polarion/pdf-exporter/rest/internal/convert/jobs/merge-job';
 
 const pdf = (fileName: string | null = null): ConversionResult => ({
   blob: new Blob(['pdf']),
@@ -32,10 +41,16 @@ const pdf = (fileName: string | null = null): ConversionResult => ({
   warning: null,
 });
 
-/** Dependencies that hold every conversion open, so the run can be observed one item at a time. */
+/**
+ * Dependencies that hold every conversion open, so the run can be observed one item at a time. The merge
+ * service is reported available, so the dialog offers the "merge into single PDF" option to the merge tests.
+ */
 const deps = (items: BulkExportItems): WidgetDependencies => ({
   loadItems: () => Promise.resolve(items),
-  popup: popupDependencies({ stylePackage: SAMPLE_STYLE_PACKAGE_FULL }),
+  popup: {
+    ...popupDependencies({ stylePackage: SAMPLE_STYLE_PACKAGE_FULL }),
+    isBulkAvailable: () => Promise.resolve(true),
+  },
   convert: (_remote, request) =>
     new Promise<ConversionResult>((resolve, reject) => {
       conversions.push({ request: JSON.parse(request) as Record<string, unknown>, resolve, reject });
@@ -44,6 +59,18 @@ const deps = (items: BulkExportItems): WidgetDependencies => ({
     new Promise<void>((resolve, reject) => {
       collectionCalls.push({ collectionId: options.collectionId, resolve, reject });
     }),
+  convertMerge: (_remote, request, options) =>
+    new Promise<ConversionResult>((resolve, reject) => {
+      // The real convertMerge hands the job url back the moment the job is accepted; the run keeps it for a
+      // later Stop to cancel. The test double does the same synchronously so a Stop right after has it.
+      options?.onJobStarted?.(MERGE_JOB_URL);
+      mergeConversions.push({ request: JSON.parse(request) as Record<string, unknown>[], resolve, reject, options });
+    }),
+  cancel: (_remote, jobUrl) => {
+    cancelCalls.push(jobUrl);
+    return Promise.resolve();
+  },
+  listCollection: () => Promise.resolve(collectionDocuments),
   download: (_blob, fileName) => downloads.push({ fileName }),
   downloadAttachments: (_remote, options) => {
     attachmentCalls.push(options as unknown as Record<string, unknown>);
@@ -69,6 +96,7 @@ async function startExport(
   items: BulkExportItems,
   selection: number[],
   settings: () => Promise<void> = async () => {},
+  merge?: { fileName?: string },
 ) {
   render(<BulkExportWidget shim={SAMPLE_SHIM} deps={deps(items)} />);
   await vi.waitFor(() => expect(rows().length).toBe(items.items.length));
@@ -90,9 +118,24 @@ async function startExport(
   await vi.waitFor(() => expect(document.querySelector('#popup-style-package-content')).not.toBeNull());
   await settings();
 
+  // A merge run ticks the bulk-only "merge into single PDF" option, offered because the merge service is
+  // reported available, and names the merged file when the test cares which name it carries.
+  if (merge) {
+    await vi.waitFor(() => expect(document.querySelector('#popup-merge-into-single-pdf')).not.toBeNull());
+    await userEvent.click(document.querySelector<HTMLInputElement>('#popup-merge-into-single-pdf')!);
+    if (merge.fileName !== undefined) {
+      await userEvent.fill(document.querySelector<HTMLInputElement>('#popup-merge-filename')!, merge.fileName);
+    }
+  }
+
   await userEvent.click(primaryButton());
   await vi.waitFor(() => expect(progressDialog()).not.toBeNull());
 }
+
+const finishMerge = async (fileName?: string) => {
+  await vi.waitFor(() => expect(mergeConversions.length).toBeGreaterThan(0));
+  mergeConversions.shift()!.resolve(pdf(fileName ?? null));
+};
 
 const finishConversion = async (fileName?: string) => {
   await vi.waitFor(() => expect(conversions.length).toBeGreaterThan(0));
@@ -130,6 +173,9 @@ afterEach(() => {
   downloads.length = 0;
   attachmentCalls.length = 0;
   collectionCalls.length = 0;
+  mergeConversions.length = 0;
+  cancelCalls.length = 0;
+  collectionDocuments = [];
   document.cookie = 'selected-style-package=; path=/; max-age=0';
 });
 
@@ -296,5 +342,63 @@ describe('Bulk export run', () => {
 
     await vi.waitFor(() => expect(document.querySelector('.rsp-modal')).toBeNull());
     expect(conversions.length).toBe(0);
+  });
+
+  it('merges the selection into a single file when asked, submitting all documents at once', async () => {
+    await startExport(
+      withItems([documentItem('Requirements', 'Specification'), documentItem('Design', 'Overview')]),
+      [0, 1],
+      async () => {},
+      { fileName: 'release.pdf' },
+    );
+
+    // The title reflects the merge: one job for the whole set rather than one conversion per item
+    expect(document.querySelector('.rsp-modal-title')?.textContent).toBe(
+      'Bulk export to PDF (merging into single file)',
+    );
+    await vi.waitFor(() => expect(mergeConversions.length).toBe(1));
+    expect(conversions.length).toBe(0);
+    expect(mergeConversions[0].request).toHaveLength(2);
+    // The merged file name rides on the first document
+    expect(mergeConversions[0].request[0].fileName).toBe('release.pdf');
+    expect(mergeConversions[0].request[1]).toMatchObject({ locationPath: 'Design/Overview' });
+
+    await finishMerge('release.pdf');
+    await vi.waitFor(() => expect(result()).toBe('Export successfully finished'));
+    // A single merged download, not one per item
+    expect(downloads.map((download) => download.fileName)).toEqual(['release.pdf']);
+    expect(progressRows().every((row) => row.className.includes('finished'))).toBe(true);
+  });
+
+  it('expands a collection into its member documents before merging', async () => {
+    collectionDocuments = [
+      { projectId: 'elibrary', spaceId: 'Requirements', documentName: 'Specification', documentType: 'LIVE_DOC' },
+      { projectId: 'elibrary', spaceId: 'Design', documentName: 'Overview', documentType: 'LIVE_DOC' },
+    ];
+    await startExport(withItems([collectionItem('C1', 'Release 1.0')]), [0], async () => {}, {});
+
+    await vi.waitFor(() => expect(mergeConversions.length).toBe(1));
+    expect(mergeConversions[0].request).toHaveLength(2);
+    expect(mergeConversions[0].request[0]).toMatchObject({ locationPath: 'Requirements/Specification' });
+    expect(mergeConversions[0].request[1]).toMatchObject({ locationPath: 'Design/Overview' });
+  });
+
+  it('cancels the backend merge job when the user stops, and keeps the interruption', async () => {
+    await startExport(SAMPLE_ITEMS, [0, 1], async () => {}, {});
+    await vi.waitFor(() => expect(mergeConversions.length).toBe(1));
+
+    // While the run is going the progress dialog offers Stop, and only Stop
+    await userEvent.click(primaryButton());
+
+    expect(result()).toBe('Export interrupted by user');
+    expect(cancelCalls).toEqual([MERGE_JOB_URL]);
+    // In-progress rows of the single job are marked interrupted, not left spinning
+    expect(progressRows().every((row) => row.className.includes('interrupted'))).toBe(true);
+
+    // A result arriving after the stop must not download anything or rewrite the outcome
+    mergeConversions[0].resolve(pdf('release.pdf'));
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(result()).toBe('Export interrupted by user');
+    expect(downloads.length).toBe(0);
   });
 });
