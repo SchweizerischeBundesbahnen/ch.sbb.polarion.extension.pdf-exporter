@@ -40,8 +40,11 @@ async function okOrThrow(response: Response): Promise<void> {
  *
  * The calls satisfy RSP's `ConfigurationsService<T>` structurally, so the returned object can be
  * handed to `ConfigurationsPane` as it is.
+ *
+ * @param initialContent what a new configuration starts with. Without it the backend seeds its
+ *   default values. Pass a value whose identity does not change between renders.
  */
-export default function useNamedSettings<T>(feature: string) {
+export default function useNamedSettings<T>(feature: string, initialContent?: T) {
   const { sendRequest } = useRemote();
 
   const path = useCallback((suffix: string): string => `/settings/${feature}${suffix}`, [feature]);
@@ -91,15 +94,19 @@ export default function useNamedSettings<T>(feature: string) {
     [sendRequest, path],
   );
 
-  /** Creates a named configuration: an empty content PUT, which makes the backend seed the defaults. */
+  /**
+   * Creates a named configuration: a PUT of the initial content, or an empty one, which makes the
+   * backend seed its defaults.
+   */
   const createConfiguration = useCallback(
     (name: string, scope: string): Promise<void> =>
       sendRequest({
         method: 'PUT',
         url: path(`/names/${encodeURIComponent(name)}/content?scope=${encodeURIComponent(scope)}`),
         contentType: 'application/json',
+        ...(initialContent === undefined ? {} : { body: JSON.stringify(initialContent) }),
       }).then(okOrThrow),
-    [sendRequest, path],
+    [sendRequest, path, initialContent],
   );
 
   /** Renames it: POST to the current name, the new one as the body. */

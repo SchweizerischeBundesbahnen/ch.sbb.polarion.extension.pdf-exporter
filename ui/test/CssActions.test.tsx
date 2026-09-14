@@ -146,6 +146,8 @@ describe('CSS page actions', () => {
       const put = fetchMock.mock.calls.find(([u, init]) => init?.method === 'PUT' && String(u).includes('Compact'));
       expect(put).toBeDefined();
       expect(String(put![0])).toContain('/settings/css/names/Compact/content?scope=project%2Felibrary%2F');
+      // No custom CSS in a new configuration, rather than a copy of the default CSS seeded by the backend.
+      expect(JSON.parse(String(put![1]!.body))).toEqual({ css: '', disableDefaultCss: false });
     });
   });
 

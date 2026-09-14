@@ -7,8 +7,10 @@ import type { Route } from './mockFetch';
 
 // The two pages built on CustomTemplatesPage: the filename templates (one setting, no configuration
 // selector) and the header/footer cells (named configurations). What they own, and what is asserted
-// here, is the document they send: the opt-in flag plus one field per editor - and the fact that
-// switching the opt-in off clears the templates, which is what the legacy pages stored too.
+// here, is the document they send - the choice between built-in and custom templates plus one field per
+// editor, stored whatever the choice says - and what the page does around it: the custom templates
+// read-only while the built-in ones are chosen, copying and comparing the built-in ones, and the
+// questions it asks before a save that would leave the export without them.
 
 const origUrl = window.location.pathname + window.location.search;
 
@@ -23,6 +25,7 @@ const FILENAME_DEFAULTS = {
   documentNameTemplate: '$document.id',
   reportNameTemplate: '$page.id',
   testRunNameTemplate: '$testRun.id',
+  defaultHash: 'filename-hash',
 };
 
 const filenameRoutes = (overrides: Route[] = []): Route[] => [
@@ -33,21 +36,20 @@ const filenameRoutes = (overrides: Route[] = []): Route[] => [
   { method: 'GET', match: /\/settings\/filename-template\/names\/[^/]+\/revisions/, json: [] },
 ];
 
-const headerFooterRoutes = (): Route[] => [
+const HEADER_FOOTER_STORED = {
+  useCustomValues: true,
+  headerLeft: 'left',
+  headerCenter: '',
+  headerRight: '',
+  footerLeft: '',
+  footerCenter: 'page $n',
+  footerRight: '',
+};
+
+const headerFooterRoutes = (overrides: Route[] = []): Route[] => [
+  ...overrides,
   { method: 'GET', match: /\/settings\/header-footer\/names\?/, json: [{ name: 'Default', scope: '' }] },
-  {
-    method: 'GET',
-    match: /\/settings\/header-footer\/names\/[^/]+\/content/,
-    json: {
-      useCustomValues: true,
-      headerLeft: 'left',
-      headerCenter: '',
-      headerRight: '',
-      footerLeft: '',
-      footerCenter: 'page $n',
-      footerRight: '',
-    },
-  },
+  { method: 'GET', match: /\/settings\/header-footer\/names\/[^/]+\/content/, json: HEADER_FOOTER_STORED },
   {
     method: 'GET',
     match: /\/settings\/header-footer\/default-content/,
@@ -59,6 +61,7 @@ const headerFooterRoutes = (): Route[] => [
       footerLeft: '',
       footerCenter: '',
       footerRight: '',
+      defaultHash: 'header-footer-hash',
     },
   },
   { method: 'PUT', match: /\/settings\/header-footer\/names\/[^/]+\/content/, json: {} },
@@ -73,16 +76,28 @@ const open = (feature: string, routes: Route[]) => {
 };
 
 const field = (id: string) => document.querySelector<HTMLTextAreaElement>(`#${id}`)!;
+const radio = (id: string) => document.querySelector<HTMLInputElement>(`#${id}`)!;
+const clickTab = async (label: string) => {
+  await userEvent.click(
+    Array.from(document.querySelectorAll<HTMLElement>('.tabs .tab')).find((t) => t.textContent?.trim() === label)!,
+  );
+};
 const clickButton = async (label: string) => {
   const button = Array.from(document.querySelectorAll<HTMLElement>('button, .sbb-btn')).find(
     (b) => b.textContent?.trim() === label,
   )!;
   await userEvent.click(button);
 };
-const savedBody = (fetchMock: ReturnType<typeof installFetchMock>) => {
-  const put = fetchMock.mock.calls.find(([, init]) => init?.method === 'PUT')!;
-  return JSON.parse(String(put[1]!.body)) as Record<string, unknown>;
+const answerDialog = async (label: string) => {
+  await vi.waitFor(() => expect(document.querySelector('.rsp-modal')).not.toBeNull());
+  Array.from(document.querySelectorAll<HTMLButtonElement>('.rsp-modal-footer .sbb-btn'))
+    .find((b) => (b.textContent ?? '').trim() === label)!
+    .click();
 };
+const puts = (fetchMock: ReturnType<typeof installFetchMock>) =>
+  fetchMock.mock.calls.filter(([, init]) => init?.method === 'PUT');
+const savedBody = (fetchMock: ReturnType<typeof installFetchMock>) =>
+  JSON.parse(String(puts(fetchMock)[0][1]!.body)) as Record<string, unknown>;
 
 afterEach(() => {
   cleanup();
@@ -116,14 +131,14 @@ describe('Filename template page', () => {
     expect(field('default-documentNameTemplate').readOnly).toBe(true);
   });
 
-  it('saves the three templates with the opt-in flag', async () => {
+  it('saves the three templates with the choice', async () => {
     const fetchMock = open('filename', filenameRoutes());
     await vi.waitFor(() => expect(field('custom-documentNameTemplate').value).toBe('doc-$id'));
 
     await userEvent.fill(field('custom-documentNameTemplate'), '$project-$id');
     await clickButton('Save');
 
-    await vi.waitFor(() => expect(fetchMock.mock.calls.some(([, i]) => i?.method === 'PUT')).toBe(true));
+    await vi.waitFor(() => expect(puts(fetchMock).length).toBe(1));
     expect(savedBody(fetchMock)).toEqual({
       useCustomValues: true,
       documentNameTemplate: '$project-$id',
@@ -132,21 +147,73 @@ describe('Filename template page', () => {
     });
   });
 
-  it('clears the templates when the opt-in is switched off', async () => {
-    // The legacy page stored empty strings rather than keeping values nothing reads.
+  it('keeps the templates when the default ones are chosen', async () => {
+    // Choosing the built-in templates must not throw away what the administrator wrote.
     const fetchMock = open('filename', filenameRoutes());
     await vi.waitFor(() => expect(field('custom-documentNameTemplate').value).toBe('doc-$id'));
 
-    await userEvent.click(document.querySelector<HTMLInputElement>('#use-custom-values')!);
+    await userEvent.click(radio('use-default-values'));
     await clickButton('Save');
 
-    await vi.waitFor(() => expect(fetchMock.mock.calls.some(([, i]) => i?.method === 'PUT')).toBe(true));
+    await vi.waitFor(() => expect(puts(fetchMock).length).toBe(1));
     expect(savedBody(fetchMock)).toEqual({
       useCustomValues: false,
-      documentNameTemplate: '',
-      reportNameTemplate: '',
-      testRunNameTemplate: '',
+      documentNameTemplate: 'doc-$id',
+      reportNameTemplate: 'report-$id',
+      testRunNameTemplate: 'run-$id',
     });
+  });
+
+  it('opens the tab of the chosen templates, and keeps the custom ones read-only while the default ones apply', async () => {
+    open('filename', filenameRoutes());
+    await vi.waitFor(() => expect(field('custom-documentNameTemplate').value).toBe('doc-$id'));
+    expect(document.querySelector('.copy-from-default')).not.toBeNull();
+
+    await userEvent.click(radio('use-default-values'));
+    await vi.waitFor(() => expect(field('default-documentNameTemplate')).not.toBeNull());
+    expect(field('custom-documentNameTemplate')).toBeNull();
+
+    await clickTab('Custom Templates');
+    await vi.waitFor(() => expect(field('custom-documentNameTemplate').readOnly).toBe(true));
+    expect(document.querySelector('.template-actions .not-in-use')).not.toBeNull();
+    expect(document.querySelector('.copy-from-default')).toBeNull();
+    expect(document.querySelector('.compare-with-default-button')).toBeNull();
+
+    await userEvent.click(radio('use-custom-values'));
+    await vi.waitFor(() => expect(field('custom-documentNameTemplate').readOnly).toBe(false));
+    expect(document.querySelector('.copy-from-default')).not.toBeNull();
+    expect(document.querySelector('.template-actions .not-in-use')).toBeNull();
+  });
+
+  it('copies the default templates over the custom ones once the replacement is confirmed', async () => {
+    const fetchMock = open('filename', filenameRoutes());
+    await vi.waitFor(() => expect(field('custom-documentNameTemplate').value).toBe('doc-$id'));
+
+    await clickButton('Copy from default');
+    await answerDialog('OK');
+
+    await vi.waitFor(() => expect(field('custom-documentNameTemplate').value).toBe('$document.id'));
+    await clickButton('Save');
+
+    // The hash says which version of the built-in templates the custom ones started from.
+    await vi.waitFor(() => expect(puts(fetchMock).length).toBe(1));
+    expect(savedBody(fetchMock)).toEqual({
+      useCustomValues: true,
+      documentNameTemplate: '$document.id',
+      reportNameTemplate: '$page.id',
+      testRunNameTemplate: '$testRun.id',
+      defaultHash: 'filename-hash',
+    });
+  });
+
+  it('keeps the custom templates when the replacement is dismissed', async () => {
+    open('filename', filenameRoutes());
+    await vi.waitFor(() => expect(field('custom-documentNameTemplate').value).toBe('doc-$id'));
+
+    await clickButton('Copy from default');
+    await answerDialog('Cancel');
+
+    expect(field('custom-documentNameTemplate').value).toBe('doc-$id');
   });
 
   it('reports a setting it cannot read', async () => {
@@ -175,7 +242,7 @@ describe('Header and footer page', () => {
     await userEvent.fill(field('custom-footerRight'), 'page $n of $total');
     await clickButton('Save');
 
-    await vi.waitFor(() => expect(fetchMock.mock.calls.some(([, i]) => i?.method === 'PUT')).toBe(true));
+    await vi.waitFor(() => expect(puts(fetchMock).length).toBe(1));
     expect(savedBody(fetchMock)).toEqual({
       useCustomValues: true,
       headerLeft: 'left',
@@ -185,5 +252,89 @@ describe('Header and footer page', () => {
       footerCenter: 'page $n',
       footerRight: 'page $n of $total',
     });
+  });
+
+  it('asks before saving a custom header and footer with every cell empty', async () => {
+    const fetchMock = open('header-footer', headerFooterRoutes());
+    await vi.waitFor(() => expect(field('custom-headerLeft').value).toBe('left'));
+
+    await userEvent.fill(field('custom-headerLeft'), '');
+    await userEvent.fill(field('custom-footerCenter'), '');
+    await clickButton('Save');
+
+    await vi.waitFor(() => expect(document.querySelector('.rsp-modal')?.textContent).toContain('Save anyway'));
+    await answerDialog('Cancel');
+    expect(puts(fetchMock).length).toBe(0);
+
+    await clickButton('Save');
+    await answerDialog('OK');
+    await vi.waitFor(() => expect(puts(fetchMock).length).toBe(1));
+  });
+
+  it('says when the default changed and compares the custom cells with it', async () => {
+    open(
+      'header-footer',
+      headerFooterRoutes([
+        {
+          method: 'GET',
+          match: /\/settings\/header-footer\/names\/[^/]+\/content/,
+          json: { ...HEADER_FOOTER_STORED, defaultHash: 'former', defaultChanged: true },
+        },
+      ]),
+    );
+    await vi.waitFor(() => expect(field('custom-headerLeft').value).toBe('left'));
+    expect(document.querySelector('.default-changed')).not.toBeNull();
+
+    await clickButton('Compare with default');
+
+    await vi.waitFor(() => expect(document.querySelector('.compare-with-default .side-by-side')).not.toBeNull());
+    const diff = document.querySelector('.compare-with-default')!;
+    // The default on the left, the custom value on the right, facing each other in one row.
+    const row = diff.querySelector('.side-by-side tbody tr')!;
+    expect(row.querySelector('.diff-removed')!.textContent).toBe('DEFAULT LEFT');
+    expect(row.querySelector('.diff-added')!.textContent).toBe('left');
+    expect(diff.querySelector('.side-by-side thead')!.textContent).toBe('DefaultCustom');
+    expect(diff.textContent).toContain('No differences.');
+
+    await clickButton('Close');
+    await vi.waitFor(() => expect(document.querySelector('.compare-with-default .side-by-side')).toBeNull());
+  });
+
+  it('marks a changed default as reviewed, to be saved with the configuration', async () => {
+    const fetchMock = open(
+      'header-footer',
+      headerFooterRoutes([
+        {
+          method: 'GET',
+          match: /\/settings\/header-footer\/names\/[^/]+\/content/,
+          json: { ...HEADER_FOOTER_STORED, defaultHash: 'former', defaultChanged: true },
+        },
+      ]),
+    );
+    await vi.waitFor(() => expect(document.querySelector('.default-changed')).not.toBeNull());
+
+    await clickButton('Mark as reviewed');
+    await vi.waitFor(() => expect(document.querySelector('.default-changed')).toBeNull());
+    expect(puts(fetchMock).length).toBe(0);
+
+    await clickButton('Save');
+    await vi.waitFor(() => expect(puts(fetchMock).length).toBe(1));
+    expect(savedBody(fetchMock).defaultHash).toBe('header-footer-hash');
+  });
+
+  it('opens a configuration using the default templates on their tab, without the changed notice', async () => {
+    open(
+      'header-footer',
+      headerFooterRoutes([
+        {
+          method: 'GET',
+          match: /\/settings\/header-footer\/names\/[^/]+\/content/,
+          json: { ...HEADER_FOOTER_STORED, useCustomValues: false, defaultChanged: true },
+        },
+      ]),
+    );
+    await vi.waitFor(() => expect(field('default-headerLeft')?.value).toBe('DEFAULT LEFT'));
+    expect(field('custom-headerLeft')).toBeNull();
+    expect(document.querySelector('.default-changed')).toBeNull();
   });
 });

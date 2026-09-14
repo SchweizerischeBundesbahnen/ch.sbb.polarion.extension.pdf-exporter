@@ -1,4 +1,4 @@
-import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
+import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   CodeEditor,
   type CodeLanguage,
@@ -7,12 +7,14 @@ import {
   type ConfigurationsPaneHandle,
   PageLayout,
   RevisionsTable,
+  SearchableSelect,
   Tabs,
   useConfirm,
 } from '@sbb-polarion/react-sbb-polarion';
 import { toast } from 'sonner';
 import { getScope } from '../services/scope';
 import useNamedSettings from '../services/settings';
+import CompareWithDefault from './CompareWithDefault';
 
 /** One editable template of the page: which field of the settings document it edits, and how it looks. */
 export interface TemplateField {
@@ -23,8 +25,22 @@ export interface TemplateField {
   placeholder?: string;
 }
 
-/** The settings documents these pages edit all carry the opt-in flag plus one string per field. */
-export type TemplateSettings = Record<string, string | boolean> & { useCustomValues?: boolean };
+/**
+ * The settings documents these pages edit: the choice between built-in and custom values, one string per field,
+ * the hash of the built-in values the custom ones were copied from, and whether those changed since.
+ */
+export type TemplateSettings = Record<string, string | boolean | undefined> & {
+  useCustomValues?: boolean;
+  defaultHash?: string;
+  defaultChanged?: boolean;
+};
+
+/** Where "Copy" takes the templates from, for a page with more built-in templates than the default one. */
+export interface CopySources {
+  options: Array<{ id: string; name: string }>;
+  initial: string;
+  load: (id: string) => Promise<TemplateSettings>;
+}
 
 interface CustomTemplatesPageProps {
   title: string;
@@ -32,8 +48,10 @@ interface CustomTemplatesPageProps {
   feature: string;
   /** Whether the feature has named configurations (all but the filename templates do). */
   named?: boolean;
-  /** Label of the opt-in checkbox, e.g. "Use custom templates". */
-  optInLabel: string;
+  /** Label of the choice to use the built-in templates, e.g. "Use default cover page". */
+  defaultLabel: string;
+  /** Label of the choice to use the custom templates, e.g. "Use custom cover page". */
+  customLabel: string;
   customIntro: ReactNode;
   defaultIntro: ReactNode;
   fields: TemplateField[];
@@ -41,18 +59,32 @@ interface CustomTemplatesPageProps {
   footer?: ReactNode;
   /** Class on the editor grid, so a page can lay its fields out (three across, two rows of three...). */
   editorsClassName?: string;
+  /** The built-in templates to copy from; without it "Copy from default" copies the default ones. */
+  copySources?: CopySources;
+  /** Asked before saving custom templates in use which are empty. No question without it. */
+  emptyWarning?: string;
+  /** Whether the custom templates count as empty for `emptyWarning`. All fields blank without it. */
+  isEmpty?: (values: Record<string, string>) => boolean;
 }
 
 /** The single always-present setting of a feature that has no named configurations. */
 const DEFAULT_NAME = 'Default';
 
+const hashOf = (content: TemplateSettings): string | undefined =>
+  typeof content.defaultHash === 'string' ? content.defaultHash : undefined;
+
 /**
- * The shape three administration pages of this extension share: an opt-in checkbox, then two tabs -
- * the custom templates, editable, and the built-in ones read-only for reference - over one named
+ * The shape three administration pages of this extension share: the choice between the built-in and the custom
+ * templates, then two tabs - the custom templates and the built-in ones read-only for reference - over one named
  * settings document.
  *
- * Filename template, header & footer and cover page differ only in which fields they edit and in
- * their explanatory copy, so they are three thin pages around this one component rather than three
+ * The custom templates are stored whatever the choice says, and the choice alone decides which ones an export
+ * uses. While the built-in ones are chosen, the custom ones stay visible but read-only. A custom template usually
+ * starts as a copy of a built-in one, so the page copies one on request, remembers which version it copied, and
+ * compares the custom templates with the built-in ones once a newer version of the extension changed those.
+ *
+ * Filename template, header & footer and cover page differ only in which fields they edit, in their explanatory
+ * copy and in where a copy comes from, so they are three thin pages around this one component rather than three
  * copies of it. It stays here rather than in react-sbb-polarion: the shape is this extension's (and
  * docx-exporter's), not something every extension has.
  */
@@ -60,15 +92,26 @@ export default function CustomTemplatesPage({
   title,
   feature,
   named = true,
-  optInLabel,
+  defaultLabel,
+  customLabel,
   customIntro,
   defaultIntro,
   fields,
   footer,
   editorsClassName,
+  copySources,
+  emptyWarning,
+  isEmpty,
 }: Readonly<CustomTemplatesPageProps>) {
   const scope = getScope();
-  const settings = useNamedSettings<TemplateSettings>(feature);
+  // A new configuration starts with empty templates, not in use: the built-in ones apply until the administrator
+  // writes some. Keyed by the field names, since the pages hand a new `fields` array to every render.
+  const fieldKeys = fields.map((field) => field.key).join(',');
+  const initialContent = useMemo<TemplateSettings>(
+    () => ({ useCustomValues: false, ...Object.fromEntries(fieldKeys.split(',').map((key) => [key, ''])) }),
+    [fieldKeys],
+  );
+  const settings = useNamedSettings<TemplateSettings>(feature, initialContent);
   const { confirm, confirmDialog } = useConfirm();
   const paneRef = useRef<ConfigurationsPaneHandle>(null);
 
@@ -82,6 +125,10 @@ export default function CustomTemplatesPage({
   const [values, setValues] = useState<Record<string, string>>({});
   const [defaults, setDefaults] = useState<Record<string, string>>({});
   const [useCustomValues, setUseCustomValues] = useState(false);
+  const [defaultHash, setDefaultHash] = useState<string | undefined>(undefined);
+  const [defaultChanged, setDefaultChanged] = useState(false);
+  const [copySource, setCopySource] = useState(copySources?.initial ?? '');
+  const [comparison, setComparison] = useState<Record<string, string> | null>(null);
   const [selectedConfig, setSelectedConfig] = useState<string | null>(named ? null : DEFAULT_NAME);
   const [editingName, setEditingName] = useState(false);
   const [activeTab, setActiveTab] = useState<'custom' | 'default'>('custom');
@@ -105,12 +152,21 @@ export default function CustomTemplatesPage({
       latestLoad.current += 1;
       setValues(toValues(content));
       setUseCustomValues(!!content.useCustomValues);
+      // A configuration opens on the templates it uses: those are the ones an export gets.
+      setActiveTab(content.useCustomValues ? 'custom' : 'default');
+      setDefaultHash(hashOf(content));
+      setDefaultChanged(!!content.defaultChanged);
       // A load that succeeded after an earlier failure would otherwise keep the banner up over good
       // data, telling the administrator the page could not read what it is showing.
       setContentError(false);
     },
     [toValues],
   );
+
+  // The sources arrive after the page, once their list is read.
+  useEffect(() => {
+    if (copySources) setCopySource(copySources.initial);
+  }, [copySources]);
 
   // The built-in templates: the same document for every configuration, so fetched once.
   useEffect(() => {
@@ -147,15 +203,66 @@ export default function CustomTemplatesPage({
     };
   }, [named, settings, scope, applyContent]);
 
+  /** Chooses the templates an export uses, and shows them: the built-in ones to read, the custom ones to edit. */
+  const chooseTemplates = (custom: boolean) => {
+    setUseCustomValues(custom);
+    setActiveTab(custom ? 'custom' : 'default');
+  };
+
+  const hasCustomValues = fields.some((field) => (values[field.key] ?? '').trim() !== '');
+
+  const loadBuiltIn = () => (copySources ? copySources.load(copySource) : settings.loadDefaultContent());
+
+  const handleCopy = async () => {
+    if (
+      hasCustomValues &&
+      !(await confirm('Are you sure you want to replace the custom templates with the default ones?'))
+    ) {
+      return;
+    }
+    try {
+      const content = await loadBuiltIn();
+      latestLoad.current += 1;
+      setValues(toValues(content));
+      setDefaultHash(hashOf(content));
+      setDefaultChanged(false);
+    } catch {
+      toast.error('Error occurred loading the default templates.');
+    }
+  };
+
+  const handleCompare = async () => {
+    try {
+      setComparison(toValues(await loadBuiltIn()));
+    } catch {
+      toast.error('Error occurred loading the default templates.');
+    }
+  };
+
+  /** Takes the current built-in templates as the ones the custom templates are up to date with. */
+  const handleMarkReviewed = async () => {
+    try {
+      const content = await loadBuiltIn();
+      setDefaultHash(hashOf(content));
+      setDefaultChanged(false);
+      toast.success('Marked as reviewed. Remember to save the configuration.');
+    } catch {
+      toast.error('Error occurred loading the default templates.');
+    }
+  };
+
   const handleSave = async () => {
     if (!selectedConfig) return;
     toast.dismiss();
-    // Turning the opt-in off clears the templates, exactly as the legacy pages did: the stored
-    // document then says "not in use" rather than keeping values nothing reads.
+    const empty = isEmpty ? isEmpty(values) : !hasCustomValues;
+    if (useCustomValues && emptyWarning && empty && !(await confirm(emptyWarning))) return;
+    // The templates are stored whatever the choice says: switching to the built-in ones must not throw away
+    // what the administrator wrote.
     const content: TemplateSettings = { useCustomValues };
     for (const field of fields) {
-      content[field.key] = useCustomValues ? (values[field.key] ?? '') : '';
+      content[field.key] = values[field.key] ?? '';
     }
+    if (defaultHash) content.defaultHash = defaultHash;
     try {
       await settings.saveContent(selectedConfig, scope, content);
       toast.success('Data successfully saved.');
@@ -184,25 +291,29 @@ export default function CustomTemplatesPage({
     }
   };
 
-  const editors = (readOnly: boolean) => (
-    <div className={editorsClassName ? `template-editors ${editorsClassName}` : 'template-editors'}>
-      {fields.map((field) => (
-        <div className="template-editor" key={field.key}>
-          <div className="label-block">
-            <label htmlFor={`${readOnly ? 'default' : 'custom'}-${field.key}`}>{field.label}</label>
+  const editors = (readOnly: boolean) => {
+    const notInUse = !readOnly && !useCustomValues;
+    const classes = ['template-editors', editorsClassName, notInUse ? 'not-in-use' : undefined].filter(Boolean);
+    return (
+      <div className={classes.join(' ')}>
+        {fields.map((field) => (
+          <div className="template-editor" key={field.key}>
+            <div className="label-block">
+              <label htmlFor={`${readOnly ? 'default' : 'custom'}-${field.key}`}>{field.label}</label>
+            </div>
+            <CodeEditor
+              language={field.language}
+              id={`${readOnly ? 'default' : 'custom'}-${field.key}`}
+              value={(readOnly ? defaults : values)[field.key] ?? ''}
+              onChange={(value) => setValues((current) => ({ ...current, [field.key]: value }))}
+              placeholder={readOnly ? undefined : field.placeholder}
+              readOnly={readOnly || notInUse}
+            />
           </div>
-          <CodeEditor
-            language={field.language}
-            id={`${readOnly ? 'default' : 'custom'}-${field.key}`}
-            value={(readOnly ? defaults : values)[field.key] ?? ''}
-            onChange={(value) => setValues((current) => ({ ...current, [field.key]: value }))}
-            placeholder={readOnly ? undefined : field.placeholder}
-            readOnly={readOnly}
-          />
-        </div>
-      ))}
-    </div>
-  );
+        ))}
+      </div>
+    );
+  };
 
   return (
     <PageLayout title={title}>
@@ -227,17 +338,42 @@ export default function CustomTemplatesPage({
       )}
 
       <fieldset className="templates-page" disabled={editingName}>
-        <div className="checkbox input-group">
+        <div className="mode-options input-group" role="radiogroup" aria-label={title}>
+          <label htmlFor="use-default-values">
+            <input
+              id="use-default-values"
+              type="radio"
+              name={`${feature}-mode`}
+              checked={!useCustomValues}
+              onChange={() => chooseTemplates(false)}
+            />
+            {defaultLabel}
+          </label>
           <label htmlFor="use-custom-values">
             <input
               id="use-custom-values"
-              type="checkbox"
+              type="radio"
+              name={`${feature}-mode`}
               checked={useCustomValues}
-              onChange={(e) => setUseCustomValues(e.target.checked)}
+              onChange={() => chooseTemplates(true)}
             />
-            {optInLabel}
+            {customLabel}
           </label>
         </div>
+
+        {useCustomValues && defaultChanged && (
+          <div className="alert alert-warning default-changed">
+            The default templates changed since the custom ones were copied from them. Compare them to take over what
+            you need, then mark the change as reviewed.
+            <button
+              type="button"
+              className="sbb-btn sbb-btn--control mark-as-reviewed"
+              onClick={() => void handleMarkReviewed()}
+            >
+              <span>Mark as reviewed</span>
+            </button>
+          </div>
+        )}
 
         <Tabs
           items={[
@@ -252,6 +388,42 @@ export default function CustomTemplatesPage({
 
         <div className="tab-panel">
           <p>{activeTab === 'custom' ? customIntro : defaultIntro}</p>
+          {activeTab === 'custom' && (
+            <div className="template-actions">
+              {useCustomValues ? (
+                <>
+                  {copySources && (
+                    <>
+                      <label htmlFor="copy-source-select">Copy from:</label>
+                      <SearchableSelect
+                        id="copy-source-select"
+                        value={copySource}
+                        onChange={setCopySource}
+                        options={copySources.options}
+                        searchable={false}
+                      />
+                    </>
+                  )}
+                  <button
+                    type="button"
+                    className="sbb-btn sbb-btn--control copy-from-default"
+                    onClick={() => void handleCopy()}
+                  >
+                    <span>{copySources ? 'Copy' : 'Copy from default'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="sbb-btn sbb-btn--control compare-with-default-button"
+                    onClick={() => void handleCompare()}
+                  >
+                    <span>Compare with default</span>
+                  </button>
+                </>
+              ) : (
+                <span className="not-in-use">Not in use: the default templates apply.</span>
+              )}
+            </div>
+          )}
           {editors(activeTab === 'default')}
         </div>
 
@@ -274,6 +446,13 @@ export default function CustomTemplatesPage({
 
         {footer}
       </fieldset>
+      <CompareWithDefault
+        open={comparison !== null}
+        fields={fields}
+        custom={values}
+        builtIn={comparison ?? {}}
+        onClose={() => setComparison(null)}
+      />
       {confirmDialog}
     </PageLayout>
   );

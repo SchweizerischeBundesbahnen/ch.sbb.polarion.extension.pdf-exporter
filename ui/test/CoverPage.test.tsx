@@ -6,8 +6,8 @@ import { installFetchMock } from './mockFetch';
 import type { Route } from './mockFetch';
 
 // The cover page: the shared templates page over an HTML and a CSS editor, plus the one thing only
-// this page has - the predefined templates the extension ships, which an administrator can persist
-// into the current scope as a new configuration.
+// this page has - the predefined templates the extension ships, any of which an administrator copies
+// into the configuration being edited.
 
 const origUrl = window.location.pathname + window.location.search;
 
@@ -20,10 +20,19 @@ const routes = (overrides: Route[] = []): Route[] => [
   {
     method: 'GET',
     match: /\/settings\/cover-page\/default-content/,
-    json: { useCustomValues: false, templateHtml: '<h1>default</h1>', templateCss: 'h1 {}' },
+    json: {
+      useCustomValues: false,
+      templateHtml: '<h1>default</h1>',
+      templateCss: 'h1 {}',
+      defaultHash: 'default-hash',
+    },
   },
   { method: 'GET', match: /\/settings\/cover-page\/templates$/, json: ['Corporate', 'Minimal'] },
-  { method: 'POST', match: /\/settings\/cover-page\/templates\/[^/?]+/, json: {} },
+  {
+    method: 'GET',
+    match: /\/settings\/cover-page\/templates\/Minimal\/content/,
+    json: { templateHtml: '<h1>minimal</h1>', templateCss: '', defaultHash: 'minimal-hash' },
+  },
   { method: 'PUT', match: /\/settings\/cover-page\/names\/[^/]+\/content/, json: {} },
   { method: 'GET', match: /\/settings\/cover-page\/names\/[^/]+\/revisions/, json: [] },
   { method: 'DELETE', match: /\/settings\/cover-page\/names\/[^/]+\/images/, json: {} },
@@ -38,6 +47,19 @@ const open = (list: Route[] = routes()) => {
 };
 
 const html = () => document.querySelector<HTMLTextAreaElement>('#custom-templateHtml')!;
+const clickButton = async (label: string) => {
+  await userEvent.click(
+    Array.from(document.querySelectorAll<HTMLElement>('button, .sbb-btn')).find(
+      (b) => b.textContent?.trim() === label,
+    )!,
+  );
+};
+const answerDialog = async (label: string) => {
+  await vi.waitFor(() => expect(document.querySelector('.rsp-modal')).not.toBeNull());
+  Array.from(document.querySelectorAll<HTMLButtonElement>('.rsp-modal-footer .sbb-btn'))
+    .find((b) => (b.textContent ?? '').trim() === label)!
+    .click();
+};
 
 afterEach(() => {
   cleanup();
@@ -54,11 +76,7 @@ describe('Cover page', () => {
     expect(document.querySelector<HTMLTextAreaElement>('#custom-templateCss')!.value).toBe('h1 { font-size: 40px; }');
 
     await userEvent.fill(html(), '<h1>$project</h1>');
-    await userEvent.click(
-      Array.from(document.querySelectorAll<HTMLElement>('button, .sbb-btn')).find(
-        (b) => b.textContent?.trim() === 'Save',
-      )!,
-    );
+    await clickButton('Save');
 
     await vi.waitFor(() => {
       const put = fetchMock.mock.calls.find(([, init]) => init?.method === 'PUT')!;
@@ -70,28 +88,49 @@ describe('Cover page', () => {
     });
   });
 
-  it('persists a predefined template into this scope', async () => {
+  it('copies the chosen predefined template into the configuration', async () => {
     const fetchMock = open();
     await vi.waitFor(() => expect(html().value).toBe('<h1>$title</h1>'));
-    await vi.waitFor(() => expect(document.querySelector('.predefined-templates')).not.toBeNull());
+    await vi.waitFor(() => expect(document.querySelector('#copy-source-select')).not.toBeNull());
 
-    await userEvent.click(
-      Array.from(
-        document.querySelectorAll<HTMLElement>('.predefined-templates button, .predefined-templates .sbb-btn'),
-      ).find((b) => b.textContent?.trim() === 'Persist')!,
-    );
+    // No "English" among the templates here, so the first one is offered first.
+    const select = document.querySelector<HTMLSelectElement>('select#copy-source-select')!;
+    expect(select.value).toBe('Corporate');
+    select.value = 'Minimal';
+    select.dispatchEvent(new Event('change', { bubbles: true }));
 
-    await vi.waitFor(() => {
-      const post = fetchMock.mock.calls.find(([, init]) => init?.method === 'POST')!;
-      expect(String(post[0])).toContain('/settings/cover-page/templates/Corporate?scope=project%2Felibrary%2F');
-    });
+    await clickButton('Copy');
+    await answerDialog('OK');
+
+    await vi.waitFor(() => expect(html().value).toBe('<h1>minimal</h1>'));
+    expect(
+      fetchMock.mock.calls.some(([u]) => String(u).includes('/settings/cover-page/templates/Minimal/content')),
+    ).toBe(true);
+    // Copying only fills the form: nothing is written until Save.
+    expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'PUT')).toBe(false);
   });
 
-  it('hides the predefined pane when the extension ships none', async () => {
+  it('copies the default cover page when the extension ships no predefined templates', async () => {
     open(routes([{ method: 'GET', match: /\/settings\/cover-page\/templates$/, json: [] }]));
 
     await vi.waitFor(() => expect(html().value).toBe('<h1>$title</h1>'));
-    expect(document.querySelector('.predefined-templates')).toBeNull();
+    expect(document.querySelector('#copy-source-select')).toBeNull();
+
+    await clickButton('Copy from default');
+    await answerDialog('OK');
+    await vi.waitFor(() => expect(html().value).toBe('<h1>default</h1>'));
+  });
+
+  it('asks before saving a custom cover page without HTML', async () => {
+    const fetchMock = open();
+    await vi.waitFor(() => expect(html().value).toBe('<h1>$title</h1>'));
+
+    await userEvent.fill(html(), '');
+    await clickButton('Save');
+
+    await vi.waitFor(() => expect(document.querySelector('.rsp-modal')?.textContent).toContain('blank cover page'));
+    await answerDialog('Cancel');
+    expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'PUT')).toBe(false);
   });
 
   it('deletes a configuration with a single request', async () => {
@@ -106,10 +145,7 @@ describe('Cover page', () => {
         (b) => b.textContent?.trim() === 'Delete',
       )!,
     );
-    await vi.waitFor(() => expect(document.querySelector('.rsp-modal')).not.toBeNull());
-    Array.from(document.querySelectorAll<HTMLButtonElement>('.rsp-modal-footer .sbb-btn'))
-      .find((b) => (b.textContent ?? '').trim() === 'Delete')!
-      .click();
+    await answerDialog('Delete');
 
     await vi.waitFor(() => {
       const deletes = fetchMock.mock.calls.filter(([, init]) => init?.method === 'DELETE').map(([u]) => String(u));

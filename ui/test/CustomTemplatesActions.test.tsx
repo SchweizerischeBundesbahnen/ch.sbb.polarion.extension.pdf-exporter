@@ -101,6 +101,33 @@ describe('Templates page toolbar', () => {
     expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'PUT')).toBe(false);
   });
 
+  it('creates a configuration with empty templates which are not in use', async () => {
+    const fetchMock = open();
+    await vi.waitFor(() => expect(headerLeft().value).toBe('stored left'));
+
+    await clickButton('Add new');
+    await userEvent.fill(document.querySelector<HTMLInputElement>('.config-edit-row input[type="text"]')!, 'Compact');
+    await userEvent.click(
+      Array.from(document.querySelectorAll<HTMLElement>('.config-edit-row .sbb-btn')).find(
+        (b) => b.textContent?.trim() === 'Save',
+      )!,
+    );
+
+    await vi.waitFor(() => {
+      const put = fetchMock.mock.calls.find(([u, init]) => init?.method === 'PUT' && String(u).includes('Compact'));
+      expect(put).toBeDefined();
+      expect(JSON.parse(String(put![1]!.body))).toEqual({
+        useCustomValues: false,
+        headerLeft: '',
+        headerCenter: '',
+        headerRight: '',
+        footerLeft: '',
+        footerCenter: '',
+        footerRight: '',
+      });
+    });
+  });
+
   it('reports a failing save', async () => {
     open(
       routes([

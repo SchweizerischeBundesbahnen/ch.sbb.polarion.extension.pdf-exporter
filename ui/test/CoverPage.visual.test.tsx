@@ -2,8 +2,9 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup } from 'vitest-browser-react';
 import { filled, snapshotFeature } from './visualHelpers';
 
-// Docker-only snapshot of the cover page: the HTML and CSS editors side by side, and the predefined
-// templates pane below them - the part of this page no other page has.
+// Docker-only snapshot of the cover page: the choice between the default and the custom cover page, the
+// predefined template to copy from - the part of this page no other page has - and the HTML and CSS
+// editors side by side.
 
 const origUrl = window.location.pathname + window.location.search;
 
@@ -15,7 +16,7 @@ afterEach(() => {
 });
 
 describe.skipIf(!__PIXEL_REFERENCES__)('Cover page visual', () => {
-  it('custom template with the predefined templates offered below', async () => {
+  it('custom template with a predefined template to copy from', async () => {
     await snapshotFeature(
       'cover-page',
       [

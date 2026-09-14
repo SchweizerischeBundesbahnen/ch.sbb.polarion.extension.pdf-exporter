@@ -7,9 +7,11 @@ export default function HeaderFooter() {
     <CustomTemplatesPage
       title="PDF Exporter: Header and Footer"
       feature="header-footer"
-      optInLabel="Use custom header and footer"
-      customIntro="Here you can define your custom header and footer, and force them to be used instead of default ones by ticking checkbox above."
-      defaultIntro="Here are displayed default header and footer, which will be used unless checkbox above is ticked. They are displayed here only for informational purposes and can't be modified."
+      defaultLabel="Use default header and footer"
+      customLabel="Use custom header and footer"
+      customIntro="Here you can define your custom header and footer. Choose them above to use them instead of the default ones."
+      defaultIntro="Here are displayed default header and footer, which are used unless the custom ones are chosen above. They are displayed here only for informational purposes and can't be modified."
+      emptyWarning="All parts of the custom header and footer are empty, so the exported PDF gets neither. Save anyway?"
       editorsClassName="three-across"
       fields={[
         {
