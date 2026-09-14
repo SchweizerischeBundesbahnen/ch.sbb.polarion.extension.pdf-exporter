@@ -31,6 +31,7 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -44,7 +45,8 @@ public class CoverPageSettings extends GenericNamedSettings<CoverPageModel> {
     public static final String TEMPLATE_IMAGE_PLACEHOLDER = "templateImage('%s')";
     private final Collection<String> imageExtensions = Arrays.asList(".png", ".jpg", ".jpeg");
 
-    private static volatile Set<String> predefinedTemplateNames;
+    /** The predefined templates, listed once they could be: they do not change while the extension runs. */
+    private static final AtomicReference<Set<String>> PREDEFINED_TEMPLATE_NAMES = new AtomicReference<>();
 
     private final PdfExporterPolarionService pdfExporterPolarionService;
 
@@ -136,23 +138,31 @@ public class CoverPageSettings extends GenericNamedSettings<CoverPageModel> {
     }
 
     /**
-     * The predefined templates do not change while the extension runs, and finding them reads the whole jar. The
-     * default template is always among them, also where the extension does not run from a jar.
+     * Finding the predefined templates reads the whole jar, so a successful listing is kept. The default template is
+     * always among them, also where the extension does not run from a jar.
      */
     private @NotNull Set<String> predefinedTemplateNames() {
-        Set<String> names = predefinedTemplateNames;
-        if (names == null) {
-            Set<String> found = new HashSet<>();
-            found.add(DEFAULT_TEMPLATE);
-            try {
-                found.addAll(getPredefinedTemplates());
-            } catch (RuntimeException e) {
-                logger.warn("Cannot list the predefined cover page templates, only the default one is compared", e);
-            }
-            names = Set.copyOf(found);
-            predefinedTemplateNames = names;
+        Set<String> cached = PREDEFINED_TEMPLATE_NAMES.get();
+        if (cached != null) {
+            return cached;
         }
+        Set<String> found = new HashSet<>();
+        found.add(DEFAULT_TEMPLATE);
+        try {
+            found.addAll(getPredefinedTemplates());
+        } catch (RuntimeException e) {
+            // not kept: the next read lists them again rather than comparing with the default template for good
+            logger.warn("Cannot list the predefined cover page templates, only the default one is compared", e);
+            return Set.of(DEFAULT_TEMPLATE);
+        }
+        Set<String> names = Set.copyOf(found);
+        PREDEFINED_TEMPLATE_NAMES.compareAndSet(null, names);
         return names;
+    }
+
+    @VisibleForTesting
+    static void forgetPredefinedTemplateNames() {
+        PREDEFINED_TEMPLATE_NAMES.set(null);
     }
 
     public @NotNull CoverPageModel defaultValuesFor(@NotNull String template) {

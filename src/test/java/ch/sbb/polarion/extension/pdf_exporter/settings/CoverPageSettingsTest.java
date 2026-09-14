@@ -406,4 +406,25 @@ class CoverPageSettingsTest {
         assertFalse(settings.withChangedDefault(CoverPageModel.builder().useCustomValues(true).defaultHash(settings.defaultValues().getDefaultHash()).build()).isDefaultChanged());
         assertFalse(settings.withChangedDefault(CoverPageModel.builder().useCustomValues(true).build()).isDefaultChanged());
     }
+
+    @Test
+    void testFailedListingOfPredefinedTemplatesIsTriedAgain() {
+        CoverPageSettings.forgetPredefinedTemplateNames();
+        try {
+            CoverPageSettings settings = spy(new CoverPageSettings(new SettingsService(null, null, null), mockedPdfExporterPolarionService));
+            doThrow(new jakarta.ws.rs.InternalServerErrorException("jar not readable"))
+                    .doReturn(java.util.Set.of("English", "German"))
+                    .when(settings).getPredefinedTemplates();
+            String germanHash = settings.defaultValuesFor("German").getDefaultHash();
+
+            // the listing failed, so only the default template is current and a German copy looks behind it
+            assertTrue(settings.withChangedDefault(CoverPageModel.builder().useCustomValues(true).defaultHash(germanHash).build()).isDefaultChanged());
+            // the failure was not kept: the templates are listed again, and German is current
+            assertFalse(settings.withChangedDefault(CoverPageModel.builder().useCustomValues(true).defaultHash(germanHash).build()).isDefaultChanged());
+            assertFalse(settings.withChangedDefault(CoverPageModel.builder().useCustomValues(true).defaultHash(germanHash).build()).isDefaultChanged());
+            verify(settings, times(2)).getPredefinedTemplates();
+        } finally {
+            CoverPageSettings.forgetPredefinedTemplateNames();
+        }
+    }
 }
