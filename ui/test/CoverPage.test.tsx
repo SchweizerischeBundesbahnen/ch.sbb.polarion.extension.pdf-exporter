@@ -136,6 +136,80 @@ describe('Cover page', () => {
     expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'POST')).toBe(false);
   });
 
+  it('reviews the template the custom templates were copied from, not the one chosen to copy', async () => {
+    const fetchMock = open(
+      routes([
+        {
+          method: 'GET',
+          match: /\/settings\/cover-page\/names\/[^/]+\/content/,
+          json: { ...STORED, defaultHash: 'former-minimal-hash', defaultSource: 'Minimal', defaultChanged: true },
+        },
+        {
+          method: 'GET',
+          match: /\/settings\/cover-page\/templates\/Minimal\/content/,
+          json: {
+            templateHtml: '<h1>minimal</h1>',
+            templateCss: '',
+            defaultHash: 'minimal-hash',
+            defaultSource: 'Minimal',
+          },
+        },
+      ]),
+    );
+    await vi.waitFor(() => expect(document.querySelector('.default-changed')?.textContent).toContain('"Minimal"'));
+    const select = document.querySelector<HTMLSelectElement>('select#copy-source-select')!;
+    await vi.waitFor(() => expect(select.value).toBe('Minimal'));
+
+    select.value = 'Corporate';
+    select.dispatchEvent(new Event('change', { bubbles: true }));
+    await userEvent.click(document.querySelector<HTMLElement>('.mark-as-reviewed')!);
+    await vi.waitFor(() => expect(document.querySelector('.default-changed')).toBeNull());
+    await clickButton('Save');
+
+    await vi.waitFor(() => {
+      const put = fetchMock.mock.calls.find(([, init]) => init?.method === 'PUT')!;
+      expect(JSON.parse(String(put[1]!.body))).toMatchObject({ defaultHash: 'minimal-hash', defaultSource: 'Minimal' });
+    });
+  });
+
+  it('reviews the chosen template when the custom templates do not say where they were copied from', async () => {
+    const fetchMock = open(
+      routes([
+        {
+          method: 'GET',
+          match: /\/settings\/cover-page\/names\/[^/]+\/content/,
+          json: { ...STORED, defaultHash: 'former-hash', defaultChanged: true },
+        },
+        {
+          method: 'GET',
+          match: /\/settings\/cover-page\/templates\/Minimal\/content/,
+          json: {
+            templateHtml: '<h1>minimal</h1>',
+            templateCss: '',
+            defaultHash: 'minimal-hash',
+            defaultSource: 'Minimal',
+          },
+        },
+      ]),
+    );
+    await vi.waitFor(() =>
+      expect(document.querySelector('.default-changed')?.textContent).toContain('Choose it in "Copy from"'),
+    );
+    await vi.waitFor(() => expect(document.querySelector('#copy-source-select')).not.toBeNull());
+
+    const select = document.querySelector<HTMLSelectElement>('select#copy-source-select')!;
+    select.value = 'Minimal';
+    select.dispatchEvent(new Event('change', { bubbles: true }));
+    await userEvent.click(document.querySelector<HTMLElement>('.mark-as-reviewed')!);
+    await vi.waitFor(() => expect(document.querySelector('.default-changed')).toBeNull());
+    await clickButton('Save');
+
+    await vi.waitFor(() => {
+      const put = fetchMock.mock.calls.find(([, init]) => init?.method === 'PUT')!;
+      expect(JSON.parse(String(put[1]!.body))).toMatchObject({ defaultHash: 'minimal-hash', defaultSource: 'Minimal' });
+    });
+  });
+
   it('copies the default cover page when the extension ships no predefined templates', async () => {
     open(routes([{ method: 'GET', match: /\/settings\/cover-page\/templates$/, json: [] }]));
 

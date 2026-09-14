@@ -78,7 +78,8 @@
   `*.node.test.ts` - that suffix is what routes a file between the two projects.
 - **A custom setting value remembers what it was copied from.** CSS, cover page, header and footer, and filename template
   store the hash of the built-in values a custom value was copied from (`defaultHash`) and compare it with the current built-in
-  values on reading. That is how an unedited copy and a newer built-in version are recognized, so a change of
+  values on reading. A cover page also stores the predefined template it was copied from (`defaultSource`), so it is compared with that
+  template only. That is how an unedited copy and a newer built-in version are recognized, so a change of
   `dle-pdf-export.css`, a cover page template or a Java default needs nothing else. Settings stored before carry no hash:
   `src/main/resources/default/legacy-built-in-values.json` lists the built-in values shipped until then. It is frozen, never
   add a new version to it.

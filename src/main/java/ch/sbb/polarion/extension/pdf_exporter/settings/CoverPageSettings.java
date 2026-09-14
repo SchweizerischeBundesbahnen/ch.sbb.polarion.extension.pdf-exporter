@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -87,30 +88,46 @@ public class CoverPageSettings extends GenericNamedSettings<CoverPageModel> {
             model.setTemplateHtml("");
             model.setTemplateCss("");
             model.setDefaultHash(null);
+            model.setDefaultSource(null);
         }
         return model;
     }
 
     /**
      * Gives a cover page in use which is a copy of a predefined template, stored before copies remembered what they
-     * copied, the hash of that template, so a newer version of it is noticed for it too.
+     * copied, the hash of that template, so a newer version of it is noticed for it too. A copy which does not name its
+     * template gets the name of the current template it is a copy of, when there is one.
      */
     @VisibleForTesting
     @NotNull CoverPageModel withLegacyBase(@NotNull CoverPageModel model) {
         if (model.isUseCustomValues() && model.getDefaultHash() == null && isBuiltInCopy(model)) {
             model.setDefaultHash(hash(model));
         }
+        if (model.getDefaultHash() != null && model.getDefaultSource() == null) {
+            currentTemplateHashes().entrySet().stream()
+                    .filter(entry -> entry.getValue().equals(model.getDefaultHash()))
+                    .map(Map.Entry::getKey)
+                    .findFirst()
+                    .ifPresent(model::setDefaultSource);
+        }
         return model;
     }
 
     /**
-     * Tells whether the predefined template a cover page in use was copied from changed since.
+     * Tells whether the predefined template a cover page in use was copied from changed since. When the template is not
+     * known, or no longer shipped, any current template counts.
      */
     @VisibleForTesting
     @NotNull CoverPageModel withChangedDefault(@NotNull CoverPageModel model) {
-        model.setDefaultChanged(model.isUseCustomValues()
-                && model.getDefaultHash() != null
-                && !currentTemplateHashes().contains(model.getDefaultHash()));
+        if (!model.isUseCustomValues() || model.getDefaultHash() == null) {
+            model.setDefaultChanged(false);
+            return model;
+        }
+        Map<String, String> currentHashes = currentTemplateHashes();
+        String sourceHash = model.getDefaultSource() != null ? currentHashes.get(model.getDefaultSource()) : null;
+        model.setDefaultChanged(sourceHash != null
+                ? !sourceHash.equals(model.getDefaultHash())
+                : !currentHashes.containsValue(model.getDefaultHash()));
         return model;
     }
 
@@ -121,7 +138,7 @@ public class CoverPageSettings extends GenericNamedSettings<CoverPageModel> {
     private boolean isBuiltInCopy(@NotNull CoverPageModel model) {
         String hash = hash(model);
         return hash.equals(model.getDefaultHash())
-                || currentTemplateHashes().contains(hash)
+                || currentTemplateHashes().containsValue(hash)
                 || BuiltInValues.isLegacy(FEATURE_NAME, hash);
     }
 
@@ -129,10 +146,13 @@ public class CoverPageSettings extends GenericNamedSettings<CoverPageModel> {
         return BuiltInValues.hash(model.getTemplateHtml(), model.getTemplateCss());
     }
 
-    private @NotNull Set<String> currentTemplateHashes() {
-        Set<String> hashes = new HashSet<>();
+    /**
+     * @return the hash of each predefined template, by its name, in a stable order
+     */
+    private @NotNull Map<String, String> currentTemplateHashes() {
+        Map<String, String> hashes = new TreeMap<>();
         for (String template : predefinedTemplateNames()) {
-            hashes.add(defaultValuesFor(template).getDefaultHash());
+            hashes.put(template, defaultValuesFor(template).getDefaultHash());
         }
         return hashes;
     }
@@ -172,6 +192,7 @@ public class CoverPageSettings extends GenericNamedSettings<CoverPageModel> {
                 .templateHtml(html)
                 .templateCss(css)
                 .defaultHash(BuiltInValues.hash(html, css))
+                .defaultSource(template)
                 .build();
     }
 

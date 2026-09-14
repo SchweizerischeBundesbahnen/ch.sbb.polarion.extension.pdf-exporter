@@ -32,6 +32,8 @@ export interface TemplateField {
 export type TemplateSettings = Record<string, string | boolean | undefined> & {
   useCustomValues?: boolean;
   defaultHash?: string;
+  /** The built-in template the custom ones were copied from, for a page with more than one. */
+  defaultSource?: string;
   defaultChanged?: boolean;
 };
 
@@ -75,6 +77,8 @@ const DEFAULT_NAME = 'Default';
 
 const hashOf = (content: TemplateSettings): string | undefined =>
   typeof content.defaultHash === 'string' ? content.defaultHash : undefined;
+const sourceOf = (content: TemplateSettings): string | undefined =>
+  typeof content.defaultSource === 'string' ? content.defaultSource : undefined;
 
 /**
  * The shape three administration pages of this extension share: the choice between the built-in and the custom
@@ -129,6 +133,7 @@ export default function CustomTemplatesPage({
   const [defaults, setDefaults] = useState<Record<string, string>>({});
   const [useCustomValues, setUseCustomValues] = useState(false);
   const [defaultHash, setDefaultHash] = useState<string | undefined>(undefined);
+  const [defaultSource, setDefaultSource] = useState<string | undefined>(undefined);
   const [defaultChanged, setDefaultChanged] = useState(false);
   const [copySource, setCopySource] = useState(copySources?.initial ?? '');
   const [comparison, setComparison] = useState<Record<string, string> | null>(null);
@@ -158,6 +163,7 @@ export default function CustomTemplatesPage({
       // A configuration opens on the templates it uses: those are the ones an export gets.
       setActiveTab(content.useCustomValues ? 'custom' : 'default');
       setDefaultHash(hashOf(content));
+      setDefaultSource(sourceOf(content));
       setDefaultChanged(!!content.defaultChanged);
       // A load that succeeded after an earlier failure would otherwise keep the banner up over good
       // data, telling the administrator the page could not read what it is showing.
@@ -166,10 +172,14 @@ export default function CustomTemplatesPage({
     [toValues],
   );
 
-  // The sources arrive after the page, once their list is read.
+  // The template the custom templates were copied from, when it is still one of the sources.
+  const knownSource =
+    defaultSource && copySources?.options.some((option) => option.id === defaultSource) ? defaultSource : undefined;
+
+  // The sources arrive after the page, once their list is read. The one the custom templates were copied from is offered first.
   useEffect(() => {
-    if (copySources) setCopySource(copySources.initial);
-  }, [copySources]);
+    if (copySources) setCopySource(knownSource ?? copySources.initial);
+  }, [copySources, knownSource]);
 
   // The built-in templates: the same document for every configuration, so fetched once.
   useEffect(() => {
@@ -215,7 +225,8 @@ export default function CustomTemplatesPage({
   const hasCustomValues = fields.some((field) => (values[field.key] ?? '').trim() !== '');
 
   // Only a copy persists what a predefined template brings along, reading one for a comparison or a review does not.
-  const readBuiltIn = () => (copySources ? copySources.load(copySource) : settings.loadDefaultContent());
+  // A comparison and a review are against the template the custom templates were copied from, whatever "Copy from" shows.
+  const readBuiltIn = () => (copySources ? copySources.load(knownSource ?? copySource) : settings.loadDefaultContent());
   const copyBuiltIn = () =>
     copySources ? copySources.copy(copySource, selectedConfig) : settings.loadDefaultContent();
 
@@ -235,6 +246,7 @@ export default function CustomTemplatesPage({
       latestLoad.current += 1;
       setValues(toValues(content));
       setDefaultHash(hashOf(content));
+      setDefaultSource(sourceOf(content));
       setDefaultChanged(false);
     } catch {
       toast.error('Error occurred loading the default templates.');
@@ -259,11 +271,20 @@ export default function CustomTemplatesPage({
       const content = await readBuiltIn();
       if (seq !== latestLoad.current) return;
       setDefaultHash(hashOf(content));
+      setDefaultSource(sourceOf(content));
       setDefaultChanged(false);
       toast.success('Marked as reviewed. Remember to save the configuration.');
     } catch {
       toast.error('Error occurred loading the default templates.');
     }
+  };
+
+  const changedDefaultMessage = () => {
+    const review = 'Compare them to take over what you need, then mark the change as reviewed.';
+    if (!copySources) return `The default templates changed since the custom ones were copied from them. ${review}`;
+    if (knownSource)
+      return `The template "${knownSource}" changed since the custom templates were copied from it. ${review}`;
+    return `The template the custom templates were copied from changed since. Choose it in "Copy from" first. ${review}`;
   };
 
   const handleSave = async () => {
@@ -278,6 +299,7 @@ export default function CustomTemplatesPage({
       content[field.key] = values[field.key] ?? '';
     }
     if (defaultHash) content.defaultHash = defaultHash;
+    if (defaultSource) content.defaultSource = defaultSource;
     try {
       await settings.saveContent(selectedConfig, scope, content);
       toast.success('Data successfully saved.');
@@ -378,8 +400,7 @@ export default function CustomTemplatesPage({
 
         {useCustomValues && defaultChanged && (
           <div className="alert alert-warning default-changed">
-            The default templates changed since the custom ones were copied from them. Compare them to take over what
-            you need, then mark the change as reviewed.
+            {changedDefaultMessage()}
             <button
               type="button"
               className="sbb-btn sbb-btn--control mark-as-reviewed"

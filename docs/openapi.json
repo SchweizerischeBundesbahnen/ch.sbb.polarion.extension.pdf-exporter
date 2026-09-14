@@ -2194,6 +2194,9 @@
           "defaultHash": {
             "type": "string"
           },
+          "defaultSource": {
+            "type": "string"
+          },
           "templateCss": {
             "type": "string"
           },

@@ -413,7 +413,7 @@ In case if both of them specified 'existing_wi_id' has higher priority.
    and the choice above them decides which ones an export uses. `Copy from default` fills the custom values with the default ones. On the Cover page section, `Copy`
    fills them with the predefined template selected next to it. `Compare with default` shows the default and the custom values side by side, and the section tells when
    the default values changed since the custom ones were copied from them. `Mark as reviewed` takes the current default values as reviewed, to be saved
-   with the configuration. An empty custom filename template uses the default one.
+   with the configuration. A cover page remembers the predefined template it was copied from, and compares and reviews against that template. An empty custom filename template uses the default one.
    Section CSS appends the custom CSS to the default CSS, so a newer default CSS reaches every export. `Use custom CSS only` uses the custom CSS alone, and the section
    then offers to put the default CSS in front of it.
 5. To change configuration of PDF Exporter extension just edit corresponding section and press `Save` button.

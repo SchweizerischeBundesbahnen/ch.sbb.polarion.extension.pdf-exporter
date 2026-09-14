@@ -382,6 +382,7 @@ class CoverPageSettingsTest {
                 .templateHtml(builtIn.getTemplateHtml()).templateCss(builtIn.getTemplateCss()).build());
         assertEquals("", copy.getTemplateHtml());
         assertEquals("", copy.getTemplateCss());
+        assertNull(copy.getDefaultSource());
 
         // a persisted predefined template is in use and keeps what it holds
         CoverPageModel persisted = settings.withoutBuiltInCopy(CoverPageModel.builder().useCustomValues(true)
@@ -405,6 +406,76 @@ class CoverPageSettingsTest {
         assertFalse(settings.withChangedDefault(CoverPageModel.builder().useCustomValues(false).defaultHash(formerHash).build()).isDefaultChanged());
         assertFalse(settings.withChangedDefault(CoverPageModel.builder().useCustomValues(true).defaultHash(settings.defaultValues().getDefaultHash()).build()).isDefaultChanged());
         assertFalse(settings.withChangedDefault(CoverPageModel.builder().useCustomValues(true).build()).isDefaultChanged());
+    }
+
+    @Test
+    void testChangedDefaultComparesWithTheTemplateTheCopyCameFrom() {
+        CoverPageSettings.forgetPredefinedTemplateNames();
+        try {
+            CoverPageSettings settings = withEnglishAndGerman();
+            String englishHash = settings.defaultValuesFor("English").getDefaultHash();
+            String germanHash = settings.defaultValuesFor("German").getDefaultHash();
+            assertEquals("German", settings.defaultValuesFor("German").getDefaultSource());
+
+            // reviewed against English, while copied from German: German is what it follows
+            assertTrue(settings.withChangedDefault(CoverPageModel.builder().useCustomValues(true)
+                    .defaultHash(englishHash).defaultSource("German").build()).isDefaultChanged());
+            assertFalse(settings.withChangedDefault(CoverPageModel.builder().useCustomValues(true)
+                    .defaultHash(germanHash).defaultSource("German").build()).isDefaultChanged());
+            // a template which is no longer shipped: any current one counts
+            assertFalse(settings.withChangedDefault(CoverPageModel.builder().useCustomValues(true)
+                    .defaultHash(germanHash).defaultSource("Removed").build()).isDefaultChanged());
+        } finally {
+            CoverPageSettings.forgetPredefinedTemplateNames();
+        }
+    }
+
+    @Test
+    void testSourceOfACopyIsFoundByItsHash() throws Exception {
+        CoverPageSettings.forgetPredefinedTemplateNames();
+        try {
+            CoverPageSettings settings = withEnglishAndGerman();
+            CoverPageModel german = settings.defaultValuesFor("German");
+
+            CoverPageModel storedBefore = settings.withLegacyBase(CoverPageModel.builder().useCustomValues(true)
+                    .templateHtml(german.getTemplateHtml()).templateCss(german.getTemplateCss()).build());
+            assertEquals(german.getDefaultHash(), storedBefore.getDefaultHash());
+            assertEquals("German", storedBefore.getDefaultSource());
+
+            CoverPageModel edited = settings.withLegacyBase(CoverPageModel.builder().useCustomValues(true)
+                    .templateHtml("edited").templateCss("").defaultHash(german.getDefaultHash()).build());
+            assertEquals("German", edited.getDefaultSource());
+
+            java.util.Set<String> currentHashes = java.util.Set.of(settings.defaultValuesFor("English").getDefaultHash(), german.getDefaultHash());
+            String formerHash = BuiltInValuesTest.formerHash(CoverPageSettings.FEATURE_NAME, currentHashes);
+            assertNull(settings.withLegacyBase(CoverPageModel.builder().useCustomValues(true)
+                    .templateHtml("edited").templateCss("").defaultHash(formerHash).build()).getDefaultSource());
+            // a stored source is kept
+            assertEquals("English", settings.withLegacyBase(CoverPageModel.builder().useCustomValues(true)
+                    .templateHtml("edited").templateCss("").defaultHash(german.getDefaultHash()).defaultSource("English").build()).getDefaultSource());
+        } finally {
+            CoverPageSettings.forgetPredefinedTemplateNames();
+        }
+    }
+
+    @Test
+    void testSourceIsStored() {
+        CoverPageModel model = CoverPageModel.builder().useCustomValues(true).templateHtml("html").templateCss("css")
+                .defaultHash("hash").defaultSource("German").build();
+        CoverPageModel read = new CoverPageModel();
+        read.deserialize(model.serialize());
+        assertEquals("German", read.getDefaultSource());
+        assertEquals("hash", read.getDefaultHash());
+
+        CoverPageModel withoutSource = new CoverPageModel();
+        withoutSource.deserialize(CoverPageModel.builder().useCustomValues(true).templateHtml("html").build().serialize());
+        assertNull(withoutSource.getDefaultSource());
+    }
+
+    private CoverPageSettings withEnglishAndGerman() {
+        CoverPageSettings settings = spy(new CoverPageSettings(new SettingsService(null, null, null), mockedPdfExporterPolarionService));
+        doReturn(java.util.Set.of("English", "German")).when(settings).getPredefinedTemplates();
+        return settings;
     }
 
     @Test
