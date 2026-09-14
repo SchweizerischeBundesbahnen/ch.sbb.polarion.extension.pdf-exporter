@@ -104,7 +104,9 @@ export default function Css() {
 
   /** Puts the default CSS in front of the custom CSS, which keeps what the administrator wrote. */
   const insertDefaultCss = (current: string) => {
-    const builtIn = defaultCss ?? '';
+    // without the default CSS read there is nothing to insert, and no version for the custom CSS to remember
+    if (defaultCss === null) return;
+    const builtIn = defaultCss;
     setCss(current.trim() === '' ? builtIn : `${builtIn}\n\n${current}`);
     setDefaultHash(defaultCssHash);
     setDefaultChanged(false);
@@ -112,6 +114,7 @@ export default function Css() {
 
   /** Takes the current default CSS as the one the custom CSS is up to date with. */
   const markReviewed = () => {
+    if (defaultCssHash === undefined) return;
     setDefaultHash(defaultCssHash);
     setDefaultChanged(false);
     toast.success('Marked as reviewed. Remember to save the configuration.');
@@ -212,7 +215,12 @@ export default function Css() {
           <div className="alert alert-warning default-changed">
             The default CSS changed since it was copied into the custom CSS. Compare them to take over what you need,
             then mark the change as reviewed.
-            <button type="button" className="sbb-btn sbb-btn--control mark-as-reviewed" onClick={markReviewed}>
+            <button
+              type="button"
+              className="sbb-btn sbb-btn--control mark-as-reviewed"
+              disabled={defaultCssHash === undefined}
+              onClick={markReviewed}
+            >
               <span>Mark as reviewed</span>
             </button>
           </div>
@@ -243,6 +251,7 @@ export default function Css() {
                 <button
                   type="button"
                   className="sbb-btn sbb-btn--control insert-default-css"
+                  disabled={defaultCss === null}
                   onClick={() => insertDefaultCss(css)}
                 >
                   <span>Insert default CSS</span>
@@ -250,6 +259,7 @@ export default function Css() {
                 <button
                   type="button"
                   className="sbb-btn sbb-btn--control compare-with-default-button"
+                  disabled={defaultCss === null}
                   onClick={() => setComparing(true)}
                 >
                   <span>Compare with default</span>

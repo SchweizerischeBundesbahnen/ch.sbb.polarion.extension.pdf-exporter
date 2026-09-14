@@ -182,6 +182,24 @@ describe('CSS page', () => {
     );
   });
 
+  it('offers nothing from the default CSS it could not read', async () => {
+    open([
+      { method: 'GET', match: /\/settings\/css\/names\?/, json: [{ name: 'Default', scope: '' }] },
+      {
+        method: 'GET',
+        match: /\/settings\/css\/names\/[^/]+\/content/,
+        json: { css: CUSTOM, disableDefaultCss: true, defaultHash: 'former', defaultChanged: true },
+      },
+      { method: 'GET', match: /\/settings\/css\/default-content/, json: { message: 'nope' }, status: 500 },
+    ]);
+    await vi.waitFor(() => expect(document.querySelector('.default-changed')).not.toBeNull());
+
+    // Marking as reviewed would drop the version the custom CSS remembers, and nothing could be inserted.
+    expect(document.querySelector<HTMLButtonElement>('.mark-as-reviewed')!.disabled).toBe(true);
+    expect(document.querySelector<HTMLButtonElement>('.insert-default-css')!.disabled).toBe(true);
+    expect(document.querySelector<HTMLButtonElement>('.compare-with-default-button')!.disabled).toBe(true);
+  });
+
   it('reports a failing save instead of pretending it worked', async () => {
     const fetchMock = open(
       routes([

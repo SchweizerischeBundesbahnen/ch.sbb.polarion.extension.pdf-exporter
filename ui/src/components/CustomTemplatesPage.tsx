@@ -215,7 +215,10 @@ export default function CustomTemplatesPage({
   const loadBuiltIn = () =>
     copySources ? copySources.load(copySource, selectedConfig) : settings.loadDefaultContent();
 
+  // Copy, compare and review wait for a request, during which another configuration may be loaded: a result which
+  // belongs to the previous one is dropped, the way a stale load is (see latestLoad).
   const handleCopy = async () => {
+    const seq = latestLoad.current;
     if (
       hasCustomValues &&
       !(await confirm('Are you sure you want to replace the custom templates with the default ones?'))
@@ -224,6 +227,7 @@ export default function CustomTemplatesPage({
     }
     try {
       const content = await loadBuiltIn();
+      if (seq !== latestLoad.current) return;
       latestLoad.current += 1;
       setValues(toValues(content));
       setDefaultHash(hashOf(content));
@@ -234,8 +238,11 @@ export default function CustomTemplatesPage({
   };
 
   const handleCompare = async () => {
+    const seq = latestLoad.current;
     try {
-      setComparison(toValues(await loadBuiltIn()));
+      const content = await loadBuiltIn();
+      if (seq !== latestLoad.current) return;
+      setComparison(toValues(content));
     } catch {
       toast.error('Error occurred loading the default templates.');
     }
@@ -243,8 +250,10 @@ export default function CustomTemplatesPage({
 
   /** Takes the current built-in templates as the ones the custom templates are up to date with. */
   const handleMarkReviewed = async () => {
+    const seq = latestLoad.current;
     try {
       const content = await loadBuiltIn();
+      if (seq !== latestLoad.current) return;
       setDefaultHash(hashOf(content));
       setDefaultChanged(false);
       toast.success('Marked as reviewed. Remember to save the configuration.');
