@@ -33,6 +33,11 @@ const routes = (overrides: Route[] = []): Route[] => [
     match: /\/settings\/cover-page\/templates\/Minimal\/content/,
     json: { templateHtml: '<h1>minimal</h1>', templateCss: '', defaultHash: 'minimal-hash' },
   },
+  {
+    method: 'GET',
+    match: /\/settings\/cover-page\/templates\/Corporate\/content/,
+    json: { templateHtml: '<h1>corporate</h1>', templateCss: '', defaultHash: 'corporate-hash' },
+  },
   { method: 'PUT', match: /\/settings\/cover-page\/names\/[^/]+\/content/, json: {} },
   { method: 'GET', match: /\/settings\/cover-page\/names\/[^/]+\/revisions/, json: [] },
   { method: 'DELETE', match: /\/settings\/cover-page\/names\/[^/]+\/images/, json: {} },
@@ -110,6 +115,25 @@ describe('Cover page', () => {
     ).toBe(true);
     // Copying only fills the form: nothing is written until Save.
     expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'PUT')).toBe(false);
+  });
+
+  it('compares with a predefined template without persisting anything', async () => {
+    const fetchMock = open();
+    await vi.waitFor(() => expect(html().value).toBe('<h1>$title</h1>'));
+    await vi.waitFor(() => expect(document.querySelector('#copy-source-select')).not.toBeNull());
+
+    await clickButton('Compare with default');
+
+    await vi.waitFor(() => expect(document.querySelector('.compare-with-default .side-by-side')).not.toBeNull());
+    expect(document.querySelector('.compare-with-default .diff-removed')!.textContent).toBe('<h1>corporate</h1>');
+    // Reading a template for a comparison is a GET: only a copy persists the images of a template.
+    expect(
+      fetchMock.mock.calls.some(
+        ([u, init]) =>
+          (init?.method ?? 'GET') === 'GET' && String(u).includes('/settings/cover-page/templates/Corporate/content'),
+      ),
+    ).toBe(true);
+    expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'POST')).toBe(false);
   });
 
   it('copies the default cover page when the extension ships no predefined templates', async () => {

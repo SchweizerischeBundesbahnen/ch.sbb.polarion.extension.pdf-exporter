@@ -134,6 +134,20 @@ public class SettingsInternalController {
         coverPageSettings.save(scope, SettingId.fromId(uuid.toString()), templateModel);
     }
 
+    @GET
+    @Path("/settings/cover-page/templates/{template}/content")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Operation(summary = "Returns content of cover page predefined template, to read or compare it; nothing is persisted",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Template content retrieved successfully",
+                            content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = CoverPageModel.class)))
+            }
+    )
+    public CoverPageModel getCoverPageTemplateContent(@PathParam("template") String template) {
+        requirePredefinedCoverPageTemplate(template);
+        return new CoverPageSettings().defaultValuesFor(template);
+    }
+
     @POST
     @Path("/settings/cover-page/templates/{template}/content")
     @Produces(MediaType.APPLICATION_JSON)

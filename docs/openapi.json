@@ -1259,6 +1259,35 @@
       }
     },
     "/api/settings/cover-page/templates/{template}/content": {
+      "get": {
+        "operationId": "getCoverPageTemplateContent",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "template",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CoverPageModel"
+                }
+              }
+            },
+            "description": "Template content retrieved successfully"
+          }
+        },
+        "summary": "Returns content of cover page predefined template, to read or compare it; nothing is persisted",
+        "tags": [
+          "Settings"
+        ]
+      },
       "post": {
         "operationId": "copyCoverPageTemplateContent",
         "parameters": [

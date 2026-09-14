@@ -39,8 +39,10 @@ export type TemplateSettings = Record<string, string | boolean | undefined> & {
 export interface CopySources {
   options: Array<{ id: string; name: string }>;
   initial: string;
-  /** Loads one of them for the configuration it is copied into, which may carry images of its own. */
-  load: (id: string, configuration: string | null) => Promise<TemplateSettings>;
+  /** Reads one of them, to compare with or to review against: nothing is persisted. */
+  load: (id: string) => Promise<TemplateSettings>;
+  /** Copies one of them into a configuration, which gets the images the template refers to. */
+  copy: (id: string, configuration: string | null) => Promise<TemplateSettings>;
 }
 
 interface CustomTemplatesPageProps {
@@ -212,8 +214,10 @@ export default function CustomTemplatesPage({
 
   const hasCustomValues = fields.some((field) => (values[field.key] ?? '').trim() !== '');
 
-  const loadBuiltIn = () =>
-    copySources ? copySources.load(copySource, selectedConfig) : settings.loadDefaultContent();
+  // Only a copy persists what a predefined template brings along, reading one for a comparison or a review does not.
+  const readBuiltIn = () => (copySources ? copySources.load(copySource) : settings.loadDefaultContent());
+  const copyBuiltIn = () =>
+    copySources ? copySources.copy(copySource, selectedConfig) : settings.loadDefaultContent();
 
   // Copy, compare and review wait for a request, during which another configuration may be loaded: a result which
   // belongs to the previous one is dropped, the way a stale load is (see latestLoad).
@@ -226,7 +230,7 @@ export default function CustomTemplatesPage({
       return;
     }
     try {
-      const content = await loadBuiltIn();
+      const content = await copyBuiltIn();
       if (seq !== latestLoad.current) return;
       latestLoad.current += 1;
       setValues(toValues(content));
@@ -240,7 +244,7 @@ export default function CustomTemplatesPage({
   const handleCompare = async () => {
     const seq = latestLoad.current;
     try {
-      const content = await loadBuiltIn();
+      const content = await readBuiltIn();
       if (seq !== latestLoad.current) return;
       setComparison(toValues(content));
     } catch {
@@ -252,7 +256,7 @@ export default function CustomTemplatesPage({
   const handleMarkReviewed = async () => {
     const seq = latestLoad.current;
     try {
-      const content = await loadBuiltIn();
+      const content = await readBuiltIn();
       if (seq !== latestLoad.current) return;
       setDefaultHash(hashOf(content));
       setDefaultChanged(false);

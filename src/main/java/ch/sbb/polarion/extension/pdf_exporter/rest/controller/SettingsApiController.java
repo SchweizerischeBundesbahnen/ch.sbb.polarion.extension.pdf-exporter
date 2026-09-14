@@ -43,6 +43,11 @@ public class SettingsApiController extends SettingsInternalController {
     }
 
     @Override
+    public CoverPageModel getCoverPageTemplateContent(String template) {
+        return polarionService.callPrivileged(() -> super.getCoverPageTemplateContent(template));
+    }
+
+    @Override
     public CoverPageModel copyCoverPageTemplateContent(String template, String scope, String name) {
         return polarionService.callPrivileged(() -> super.copyCoverPageTemplateContent(template, scope, name));
     }

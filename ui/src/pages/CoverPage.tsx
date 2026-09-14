@@ -45,7 +45,15 @@ export default function CoverPage() {
         : {
             options: templates.map((name) => ({ id: name, name })),
             initial: templates.includes(DEFAULT_TEMPLATE) ? DEFAULT_TEMPLATE : templates[0],
-            load: async (template: string, configuration: string | null) => {
+            load: async (template: string) => {
+              const response = await sendRequest({
+                method: 'GET',
+                url: `/settings/${FEATURE}/templates/${encodeURIComponent(template)}/content`,
+              });
+              if (!response.ok) throw new Error(`Cannot read the predefined template '${template}'`);
+              return (await response.json()) as TemplateSettings;
+            },
+            copy: async (template: string, configuration: string | null) => {
               // POST: the images of the template are persisted for the configuration the template is copied into
               const query = `scope=${encodeURIComponent(scope)}${configuration ? `&name=${encodeURIComponent(configuration)}` : ''}`;
               const response = await sendRequest({
@@ -53,7 +61,7 @@ export default function CoverPage() {
                 url: `/settings/${FEATURE}/templates/${encodeURIComponent(template)}/content?${query}`,
                 contentType: 'application/json',
               });
-              if (!response.ok) throw new Error(`Cannot read the predefined template '${template}'`);
+              if (!response.ok) throw new Error(`Cannot copy the predefined template '${template}'`);
               return (await response.json()) as TemplateSettings;
             },
           },
