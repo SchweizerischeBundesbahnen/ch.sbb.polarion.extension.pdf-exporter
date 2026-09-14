@@ -68,6 +68,7 @@ public abstract class BasePdfConverterTest extends BaseWeasyPrintTest {
     protected PlaceholderProcessor placeholderProcessor;
     protected VelocityEvaluator velocityEvaluator;
     protected HtmlProcessor htmlProcessor;
+    protected FileResourceProvider fileResourceProvider;
     protected PdfConverter converter;
     protected IModule module;
 
@@ -201,7 +202,7 @@ public abstract class BasePdfConverterTest extends BaseWeasyPrintTest {
         HtmlLinksHelper htmlLinksHelper = mock(HtmlLinksHelper.class);
         when(htmlLinksHelper.internalizeLinks(anyString())).thenAnswer(invocation -> invocation.getArgument(0));
 
-        FileResourceProvider fileResourceProvider = mock(FileResourceProvider.class);
+        fileResourceProvider = mock(FileResourceProvider.class);
         htmlProcessor = new HtmlProcessor(fileResourceProvider, localizationSettings, htmlLinksHelper);
     }
 
