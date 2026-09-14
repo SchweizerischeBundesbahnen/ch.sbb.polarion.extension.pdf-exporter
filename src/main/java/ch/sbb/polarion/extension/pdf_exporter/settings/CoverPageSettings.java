@@ -13,6 +13,8 @@ import com.polarion.core.util.logging.Logger;
 import com.polarion.platform.service.repository.IRepositoryReadOnlyConnection;
 import com.polarion.subterra.base.location.ILocation;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.VisibleForTesting;
 
 import jakarta.ws.rs.InternalServerErrorException;
 import java.io.IOException;
@@ -42,6 +44,8 @@ public class CoverPageSettings extends GenericNamedSettings<CoverPageModel> {
     public static final String TEMPLATE_IMAGE_PLACEHOLDER = "templateImage('%s')";
     private final Collection<String> imageExtensions = Arrays.asList(".png", ".jpg", ".jpeg");
 
+    private static volatile Set<String> predefinedTemplateNames;
+
     private final PdfExporterPolarionService pdfExporterPolarionService;
 
     public CoverPageSettings() {
@@ -59,10 +63,105 @@ public class CoverPageSettings extends GenericNamedSettings<CoverPageModel> {
         return defaultValuesFor(DEFAULT_TEMPLATE);
     }
 
+    /**
+     * A new cover page is empty and not in use, the built-in template applies until the user writes one.
+     */
+    public @NotNull CoverPageModel initialValues() {
+        return CoverPageModel.builder().templateHtml("").templateCss("").build();
+    }
+
+    @Override
+    public @NotNull CoverPageModel read(@NotNull String scope, @NotNull SettingId id, @Nullable String revisionName) {
+        return withChangedDefault(withLegacyBase(withoutBuiltInCopy(super.read(scope, id, revisionName))));
+    }
+
+    /**
+     * Reads a copy of a predefined template nobody edited, which is not in use, as an empty template. A persisted
+     * predefined template is in use, so it keeps what it holds.
+     */
+    @VisibleForTesting
+    @NotNull CoverPageModel withoutBuiltInCopy(@NotNull CoverPageModel model) {
+        if (!model.isUseCustomValues() && isBuiltInCopy(model)) {
+            model.setTemplateHtml("");
+            model.setTemplateCss("");
+            model.setDefaultHash(null);
+        }
+        return model;
+    }
+
+    /**
+     * Gives a cover page in use which is a copy of a predefined template, stored before copies remembered what they
+     * copied, the hash of that template, so a newer version of it is noticed for it too.
+     */
+    @VisibleForTesting
+    @NotNull CoverPageModel withLegacyBase(@NotNull CoverPageModel model) {
+        if (model.isUseCustomValues() && model.getDefaultHash() == null && isBuiltInCopy(model)) {
+            model.setDefaultHash(hash(model));
+        }
+        return model;
+    }
+
+    /**
+     * Tells whether the predefined template a cover page in use was copied from changed since.
+     */
+    @VisibleForTesting
+    @NotNull CoverPageModel withChangedDefault(@NotNull CoverPageModel model) {
+        model.setDefaultChanged(model.isUseCustomValues()
+                && model.getDefaultHash() != null
+                && !currentTemplateHashes().contains(model.getDefaultHash()));
+        return model;
+    }
+
+    /**
+     * @return whether a cover page is a copy of a predefined template nobody edited: of the version it remembers, of a
+     * current one or of one shipped before copies remembered their version
+     */
+    private boolean isBuiltInCopy(@NotNull CoverPageModel model) {
+        String hash = hash(model);
+        return hash.equals(model.getDefaultHash())
+                || currentTemplateHashes().contains(hash)
+                || BuiltInValues.isLegacy(FEATURE_NAME, hash);
+    }
+
+    private static @NotNull String hash(@NotNull CoverPageModel model) {
+        return BuiltInValues.hash(model.getTemplateHtml(), model.getTemplateCss());
+    }
+
+    private @NotNull Set<String> currentTemplateHashes() {
+        Set<String> hashes = new HashSet<>();
+        for (String template : predefinedTemplateNames()) {
+            hashes.add(defaultValuesFor(template).getDefaultHash());
+        }
+        return hashes;
+    }
+
+    /**
+     * The predefined templates do not change while the extension runs, and finding them reads the whole jar. The
+     * default template is always among them, also where the extension does not run from a jar.
+     */
+    private @NotNull Set<String> predefinedTemplateNames() {
+        Set<String> names = predefinedTemplateNames;
+        if (names == null) {
+            Set<String> found = new HashSet<>();
+            found.add(DEFAULT_TEMPLATE);
+            try {
+                found.addAll(getPredefinedTemplates());
+            } catch (RuntimeException e) {
+                logger.warn("Cannot list the predefined cover page templates, only the default one is compared", e);
+            }
+            names = Set.copyOf(found);
+            predefinedTemplateNames = names;
+        }
+        return names;
+    }
+
     public @NotNull CoverPageModel defaultValuesFor(@NotNull String template) {
+        String html = ScopeUtils.getFileContent(String.format("%s/%s/template.html", TEMPLATES_JAR_PATH, template));
+        String css = ScopeUtils.getFileContent(String.format("%s/%s/template.css", TEMPLATES_JAR_PATH, template));
         return CoverPageModel.builder()
-                .templateHtml(ScopeUtils.getFileContent(String.format("%s/%s/template.html", TEMPLATES_JAR_PATH, template)))
-                .templateCss(ScopeUtils.getFileContent(String.format("%s/%s/template.css", TEMPLATES_JAR_PATH, template)))
+                .templateHtml(html)
+                .templateCss(css)
+                .defaultHash(BuiltInValues.hash(html, css))
                 .build();
     }
 

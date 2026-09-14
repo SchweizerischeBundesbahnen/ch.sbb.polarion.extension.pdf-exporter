@@ -1258,6 +1258,30 @@
         ]
       }
     },
+    "/api/settings/cover-page/templates/{template}/content": {
+      "get": {
+        "operationId": "getCoverPageTemplateContent",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "template",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Template content retrieved successfully"
+          }
+        },
+        "summary": "Returns content of cover page predefined template, to be copied into a cover page",
+        "tags": [
+          "Settings"
+        ]
+      }
+    },
     "/api/settings/localization/names/{name}/download": {
       "get": {
         "operationId": "downloadTranslations",
@@ -2102,6 +2126,31 @@
             ],
             "example": "IN_PROGRESS",
             "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "CoverPageModel": {
+        "properties": {
+          "bundleTimestamp": {
+            "description": "The bundle timestamp of the setting",
+            "type": "string"
+          },
+          "defaultChanged": {
+            "readOnly": true,
+            "type": "boolean"
+          },
+          "defaultHash": {
+            "type": "string"
+          },
+          "templateCss": {
+            "type": "string"
+          },
+          "templateHtml": {
+            "type": "string"
+          },
+          "useCustomValues": {
+            "type": "boolean"
           }
         },
         "type": "object"

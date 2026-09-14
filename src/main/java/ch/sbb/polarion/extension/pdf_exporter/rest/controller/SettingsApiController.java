@@ -3,6 +3,7 @@ package ch.sbb.polarion.extension.pdf_exporter.rest.controller;
 import ch.sbb.polarion.extension.generic.rest.filter.Secured;
 import ch.sbb.polarion.extension.generic.service.PolarionService;
 import ch.sbb.polarion.extension.generic.settings.SettingName;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.coverpage.CoverPageModel;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.stylepackage.DocIdentifier;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.stylepackage.StylePackageWeightInfo;
 import org.glassfish.jersey.media.multipart.FormDataBodyPart;
@@ -39,6 +40,11 @@ public class SettingsApiController extends SettingsInternalController {
     @Override
     public void persistCoverPageTemplate(String template, String scope) {
         polarionService.callPrivileged(() -> super.persistCoverPageTemplate(template, scope));
+    }
+
+    @Override
+    public CoverPageModel getCoverPageTemplateContent(String template) {
+        return polarionService.callPrivileged(() -> super.getCoverPageTemplateContent(template));
     }
 
     @Override

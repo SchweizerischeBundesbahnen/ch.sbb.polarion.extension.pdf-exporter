@@ -121,9 +121,7 @@ public class SettingsInternalController {
             }
     )
     public void persistCoverPageTemplate(@PathParam("template") String template, @QueryParam("scope") String scope) {
-        if (!getCoverPageTemplateNames().contains(template)) {
-            throw new NotFoundException(String.format("There's no predefined template with name '%s'", template));
-        }
+        requirePredefinedCoverPageTemplate(template);
 
         CoverPageSettings coverPageSettings = new CoverPageSettings();
         Collection<SettingName> persistedNames = coverPageSettings.readNames(scope);
@@ -134,6 +132,25 @@ public class SettingsInternalController {
         UUID uuid = UUID.randomUUID();
         coverPageSettings.processImagePaths(templateModel, template, scope, uuid);
         coverPageSettings.save(scope, SettingId.fromId(uuid.toString()), templateModel);
+    }
+
+    @GET
+    @Path("/settings/cover-page/templates/{template}/content")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Operation(summary = "Returns content of cover page predefined template, to be copied into a cover page",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Template content retrieved successfully")
+            }
+    )
+    public CoverPageModel getCoverPageTemplateContent(@PathParam("template") String template) {
+        requirePredefinedCoverPageTemplate(template);
+        return new CoverPageSettings().defaultValuesFor(template);
+    }
+
+    private void requirePredefinedCoverPageTemplate(String template) {
+        if (!getCoverPageTemplateNames().contains(template)) {
+            throw new NotFoundException(String.format("There's no predefined template with name '%s'", template));
+        }
     }
 
     @DELETE

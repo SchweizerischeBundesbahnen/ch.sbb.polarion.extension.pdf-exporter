@@ -364,4 +364,46 @@ class CoverPageSettingsTest {
         }
     }
 
+
+    @Test
+    void testInitialValuesAreEmptyAndNotInUse() {
+        CoverPageModel initial = new CoverPageSettings(new SettingsService(null, null, null), mockedPdfExporterPolarionService).initialValues();
+        assertFalse(initial.isUseCustomValues());
+        assertEquals("", initial.getTemplateHtml());
+        assertEquals("", initial.getTemplateCss());
+    }
+
+    @Test
+    void testCopyOfBuiltInTemplateIsReadAsEmptyUnlessInUse() {
+        CoverPageSettings settings = new CoverPageSettings(new SettingsService(null, null, null), mockedPdfExporterPolarionService);
+        CoverPageModel builtIn = settings.defaultValues();
+
+        CoverPageModel copy = settings.withoutBuiltInCopy(CoverPageModel.builder()
+                .templateHtml(builtIn.getTemplateHtml()).templateCss(builtIn.getTemplateCss()).build());
+        assertEquals("", copy.getTemplateHtml());
+        assertEquals("", copy.getTemplateCss());
+
+        // a persisted predefined template is in use and keeps what it holds
+        CoverPageModel persisted = settings.withoutBuiltInCopy(CoverPageModel.builder().useCustomValues(true)
+                .templateHtml(builtIn.getTemplateHtml()).templateCss(builtIn.getTemplateCss()).build());
+        assertEquals(builtIn.getTemplateHtml(), persisted.getTemplateHtml());
+        assertEquals(builtIn.getTemplateCss(), persisted.getTemplateCss());
+
+        CoverPageModel edited = settings.withoutBuiltInCopy(CoverPageModel.builder()
+                .templateHtml(builtIn.getTemplateHtml()).templateCss("edited").build());
+        assertEquals(builtIn.getTemplateHtml(), edited.getTemplateHtml());
+        assertEquals("edited", edited.getTemplateCss());
+    }
+
+    @Test
+    void testChangedDefaultOnlyForCoverPageInUse() throws Exception {
+        CoverPageSettings settings = new CoverPageSettings(new SettingsService(null, null, null), mockedPdfExporterPolarionService);
+        java.util.Set<String> currentHashes = java.util.Set.of(settings.defaultValuesFor("English").getDefaultHash(), settings.defaultValuesFor("German").getDefaultHash());
+        String formerHash = BuiltInValuesTest.formerHash(CoverPageSettings.FEATURE_NAME, currentHashes);
+
+        assertTrue(settings.withChangedDefault(CoverPageModel.builder().useCustomValues(true).defaultHash(formerHash).build()).isDefaultChanged());
+        assertFalse(settings.withChangedDefault(CoverPageModel.builder().useCustomValues(false).defaultHash(formerHash).build()).isDefaultChanged());
+        assertFalse(settings.withChangedDefault(CoverPageModel.builder().useCustomValues(true).defaultHash(settings.defaultValues().getDefaultHash()).build()).isDefaultChanged());
+        assertFalse(settings.withChangedDefault(CoverPageModel.builder().useCustomValues(true).build()).isDefaultChanged());
+    }
 }

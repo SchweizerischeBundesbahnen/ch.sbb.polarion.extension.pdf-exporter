@@ -160,4 +160,79 @@ class FileNameTemplateSettingsTest {
             assertEquals("setting_two", loadedTwoModel.getBundleTimestamp());
         }
     }
+
+    @Test
+    void testInitialValuesAreEmptyAndNotInUse() {
+        FileNameTemplateModel initial = new FileNameTemplateSettings(new SettingsService(null, null, null)).initialValues();
+        assertFalse(initial.isUseCustomValues());
+        assertEquals("", initial.getDocumentNameTemplate());
+        assertEquals("", initial.getWikiNameTemplate());
+    }
+
+    @Test
+    void testCopyOfBuiltInTemplatesIsReadAsEmptyUnlessInUse() {
+        FileNameTemplateSettings settings = new FileNameTemplateSettings(new SettingsService(null, null, null));
+        FileNameTemplateModel copy = settings.defaultValues();
+        copy.setName("Default");
+
+        FileNameTemplateModel read = settings.withoutBuiltInCopy(copy);
+        assertEquals("", read.getDocumentNameTemplate());
+        assertEquals("", read.getReportNameTemplate());
+        assertEquals("Default", read.getName());
+
+        FileNameTemplateModel inUse = settings.defaultValues();
+        inUse.setUseCustomValues(true);
+        assertEquals(FileNameTemplateSettings.DEFAULT_LIVE_DOC_NAME_TEMPLATE, settings.withoutBuiltInCopy(inUse).getDocumentNameTemplate());
+    }
+
+    @Test
+    void testChangedDefaultOnlyForTemplatesInUse() {
+        FileNameTemplateSettings settings = new FileNameTemplateSettings(new SettingsService(null, null, null));
+        String page = "$projectName $page.pageNameWithSpace.replace(\" / \", \" \")";
+        String formerHash = BuiltInValues.hash(FileNameTemplateSettings.DEFAULT_LIVE_DOC_NAME_TEMPLATE, page + " $page.revision",
+                FileNameTemplateSettings.DEFAULT_TEST_RUN_NAME_TEMPLATE, page + " $page.revision");
+
+        FileNameTemplateModel inUse = settings.initialValues();
+        inUse.setUseCustomValues(true);
+        inUse.setDefaultHash(formerHash);
+        assertTrue(settings.withChangedDefault(inUse).isDefaultChanged());
+
+        FileNameTemplateModel notInUse = settings.initialValues();
+        notInUse.setDefaultHash(formerHash);
+        assertFalse(settings.withChangedDefault(notInUse).isDefaultChanged());
+
+        inUse.setDefaultHash(settings.defaultValues().getDefaultHash());
+        assertFalse(settings.withChangedDefault(inUse).isDefaultChanged());
+    }
+
+    @Test
+    void testLegacyCopyInUseOfFormerVersionIsNoticed() {
+        FileNameTemplateSettings settings = new FileNameTemplateSettings(new SettingsService(null, null, null));
+        String page = "$projectName $page.pageNameWithSpace.replace(\" / \", \" \")";
+        FileNameTemplateModel legacyCopy = FileNameTemplateModel.builder()
+                .useCustomValues(true)
+                .documentNameTemplate(FileNameTemplateSettings.DEFAULT_LIVE_DOC_NAME_TEMPLATE)
+                .reportNameTemplate(page + " $page.revision")
+                .testRunNameTemplate(FileNameTemplateSettings.DEFAULT_TEST_RUN_NAME_TEMPLATE)
+                .wikiNameTemplate(page + " $page.revision")
+                .build();
+
+        FileNameTemplateModel read = settings.withChangedDefault(settings.withLegacyBase(legacyCopy));
+        assertNotNull(read.getDefaultHash());
+        assertTrue(read.isDefaultChanged());
+        assertEquals(page + " $page.revision", read.getReportNameTemplate());
+    }
+
+    @Test
+    void testCopyOfFormerBuiltInTemplatesIsReadAsEmpty() {
+        FileNameTemplateSettings settings = new FileNameTemplateSettings(new SettingsService(null, null, null));
+        String page = "$projectName $page.pageNameWithSpace.replace(\" / \", \" \")";
+        FileNameTemplateModel formerCopy = FileNameTemplateModel.builder()
+                .documentNameTemplate(FileNameTemplateSettings.DEFAULT_LIVE_DOC_NAME_TEMPLATE)
+                .reportNameTemplate(page + " $page.lastRevision")
+                .testRunNameTemplate(FileNameTemplateSettings.DEFAULT_TEST_RUN_NAME_TEMPLATE)
+                .wikiNameTemplate(page + " $page.lastRevision")
+                .build();
+        assertEquals("", settings.withoutBuiltInCopy(formerCopy).getReportNameTemplate());
+    }
 }

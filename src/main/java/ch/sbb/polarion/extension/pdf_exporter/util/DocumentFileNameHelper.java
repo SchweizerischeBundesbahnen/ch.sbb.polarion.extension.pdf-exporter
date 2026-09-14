@@ -39,7 +39,11 @@ public class DocumentFileNameHelper {
 
         FileNameTemplateSettings fileNameTemplateSettings = (FileNameTemplateSettings) NamedSettingsRegistry.INSTANCE.getByFeatureName(FileNameTemplateSettings.FEATURE_NAME);
         FileNameTemplateModel fileNameTemplateModel = getFileNameTemplateModel(fileNameTemplateSettings, ScopeUtils.getScopeFromProject(exportParams.getProjectId()));
-        @NotNull String fileNameTemplate = getFileNameTemplate(exportParams.getDocumentType(), fileNameTemplateModel.isUseCustomValues() ? fileNameTemplateModel : fileNameTemplateSettings.defaultValues());
+        String fileNameTemplate = fileNameTemplateModel.isUseCustomValues() ? getFileNameTemplate(exportParams.getDocumentType(), fileNameTemplateModel) : null;
+        if (fileNameTemplate == null || fileNameTemplate.isBlank()) {
+            // an empty custom template would name the file ".pdf", so the built-in one names it instead
+            fileNameTemplate = getFileNameTemplate(exportParams.getDocumentType(), fileNameTemplateSettings.defaultValues());
+        }
         fileNameTemplate = new PlaceholderProcessor().replacePlaceholders(documentData, exportParams, fileNameTemplate);
         String evaluatedFileName = evaluateVelocity(documentData, fileNameTemplate);
         return replaceIllegalFileNameSymbols(evaluatedFileName).trim();

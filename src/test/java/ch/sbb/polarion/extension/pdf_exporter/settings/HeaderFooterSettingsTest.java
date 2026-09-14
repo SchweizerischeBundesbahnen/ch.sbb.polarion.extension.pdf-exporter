@@ -171,4 +171,54 @@ class HeaderFooterSettingsTest {
                 .build();
     }
 
+
+    @Test
+    void testInitialValuesAreEmptyAndNotInUse() {
+        HeaderFooterModel initial = new HeaderFooterSettings(new SettingsService(null, null, null)).initialValues();
+        assertFalse(initial.isUseCustomValues());
+        assertEquals("", initial.getHeaderLeft());
+        assertEquals("", initial.getHeaderRight());
+        assertEquals("", initial.getFooterRight());
+    }
+
+    @Test
+    void testCopyOfBuiltInValuesIsReadAsEmptyUnlessInUse() {
+        HeaderFooterSettings settings = new HeaderFooterSettings(new SettingsService(null, null, null));
+        HeaderFooterModel copy = settings.defaultValues();
+        copy.setName("Default");
+        copy.setBundleTimestamp("stamp");
+
+        HeaderFooterModel read = settings.withoutBuiltInCopy(copy);
+        assertEquals("", read.getHeaderLeft());
+        assertEquals("", read.getHeaderRight());
+        assertEquals("", read.getFooterRight());
+        assertEquals("Default", read.getName());
+        assertEquals("stamp", read.getBundleTimestamp());
+
+        HeaderFooterModel inUse = settings.defaultValues();
+        inUse.setUseCustomValues(true);
+        assertEquals("{{ PROJECT_NAME }}", settings.withoutBuiltInCopy(inUse).getHeaderLeft());
+
+        HeaderFooterModel edited = settings.defaultValues();
+        edited.setFooterCenter("edited");
+        assertEquals("{{ PROJECT_NAME }}", settings.withoutBuiltInCopy(edited).getHeaderLeft());
+    }
+
+    @Test
+    void testChangedDefaultOnlyForHeaderAndFooterInUse() {
+        HeaderFooterSettings settings = new HeaderFooterSettings(new SettingsService(null, null, null));
+        HeaderFooterModel current = settings.initialValues();
+        current.setUseCustomValues(true);
+        current.setDefaultHash(settings.defaultValues().getDefaultHash());
+        assertFalse(settings.withChangedDefault(current).isDefaultChanged());
+
+        HeaderFooterModel former = settings.initialValues();
+        former.setUseCustomValues(true);
+        former.setDefaultHash("former");
+        assertTrue(settings.withChangedDefault(former).isDefaultChanged());
+
+        HeaderFooterModel notInUse = settings.initialValues();
+        notInUse.setDefaultHash("former");
+        assertFalse(settings.withChangedDefault(notInUse).isDefaultChanged());
+    }
 }
