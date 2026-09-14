@@ -409,8 +409,13 @@ In case if both of them specified 'existing_wi_id' has higher priority.
 2. On the administration's navigation pane select `PDF Export`. There are expandable sub-menus with different configuration options for PDF Exporter.
 3. For some of these options (Cover page, Header and Footer, Localization, Webhooks and Filename template) `Quick Help` section available with short description of appropriate option. For the rest
    (Style package, Style package weights, CSS) there's no `Quick Help` section as their content is self-evident.
-4. Sections Cover page, Header and Footer, and Filename template have possibility to use default values (can't be edited) or custom. Section CSS has different approach -
-   its area for custom values is always enabled, but default values can be enabled or disabled. Therefore, either only custom CSS is used or default CSS is combined with custom.
+4. Sections Cover page, Header and Footer, and Filename template use either the default values (can't be edited) or the custom ones. The custom values are always saved,
+   and the choice above them decides which ones an export uses. `Copy from default` fills the custom values with the default ones. On the Cover page section, `Copy`
+   fills them with the predefined template selected next to it. `Compare with default` shows the default and the custom values side by side, and the section tells when
+   the default values changed since the custom ones were copied from them. `Mark as reviewed` takes the current default values as reviewed, to be saved
+   with the configuration. An empty custom filename template uses the default one.
+   Section CSS appends the custom CSS to the default CSS, so a newer default CSS reaches every export. `Use custom CSS only` uses the custom CSS alone, and the section
+   then offers to put the default CSS in front of it.
 5. To change configuration of PDF Exporter extension just edit corresponding section and press `Save` button.
 
 ### Hiding the style packages of the global level
@@ -571,6 +576,17 @@ The `pdfuaid:rev` metadata issue (four-digit year requirement) is fixed automati
 **Workaround:** Use `pdf/ua-1` instead of `pdf/ua-2` if full PDF/UA compliance is required.
 
 ## Upgrade
+
+### Custom values of CSS, Cover page, Header and Footer, and Filename template
+
+A new setting of these sections starts with empty custom values. Before, it started with a copy of the default values.
+
+A stored copy of the default values, of the current version or of a former one, reads as empty while it is not in use. For CSS, the default CSS is then no longer
+applied twice. For the other sections, the page no longer shows a stale copy. No action is required.
+
+A copy which was edited afterwards stays as it is. Use `Compare with default` to check it against the current default values.
+
+Choosing the default values no longer erases the custom values.
 
 ### Upgrade to weasyprint-service 67.0.0
 
