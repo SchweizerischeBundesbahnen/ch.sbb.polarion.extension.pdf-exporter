@@ -39,7 +39,8 @@ export type TemplateSettings = Record<string, string | boolean | undefined> & {
 export interface CopySources {
   options: Array<{ id: string; name: string }>;
   initial: string;
-  load: (id: string) => Promise<TemplateSettings>;
+  /** Loads one of them for the configuration it is copied into, which may carry images of its own. */
+  load: (id: string, configuration: string | null) => Promise<TemplateSettings>;
 }
 
 interface CustomTemplatesPageProps {
@@ -211,7 +212,8 @@ export default function CustomTemplatesPage({
 
   const hasCustomValues = fields.some((field) => (values[field.key] ?? '').trim() !== '');
 
-  const loadBuiltIn = () => (copySources ? copySources.load(copySource) : settings.loadDefaultContent());
+  const loadBuiltIn = () =>
+    copySources ? copySources.load(copySource, selectedConfig) : settings.loadDefaultContent();
 
   const handleCopy = async () => {
     if (

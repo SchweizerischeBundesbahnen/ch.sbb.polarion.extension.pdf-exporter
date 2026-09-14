@@ -1259,8 +1259,8 @@
       }
     },
     "/api/settings/cover-page/templates/{template}/content": {
-      "get": {
-        "operationId": "getCoverPageTemplateContent",
+      "post": {
+        "operationId": "copyCoverPageTemplateContent",
         "parameters": [
           {
             "in": "path",
@@ -1269,14 +1269,36 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "in": "query",
+            "name": "scope",
+            "schema": {
+              "default": "",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "name",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
           "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CoverPageModel"
+                }
+              }
+            },
             "description": "Template content retrieved successfully"
           }
         },
-        "summary": "Returns content of cover page predefined template, to be copied into a cover page",
+        "summary": "Returns content of cover page predefined template to be copied into the specified cover page, with the images of the template persisted for that cover page",
         "tags": [
           "Settings"
         ]

@@ -29,7 +29,7 @@ const routes = (overrides: Route[] = []): Route[] => [
   },
   { method: 'GET', match: /\/settings\/cover-page\/templates$/, json: ['Corporate', 'Minimal'] },
   {
-    method: 'GET',
+    method: 'POST',
     match: /\/settings\/cover-page\/templates\/Minimal\/content/,
     json: { templateHtml: '<h1>minimal</h1>', templateCss: '', defaultHash: 'minimal-hash' },
   },
@@ -104,7 +104,9 @@ describe('Cover page', () => {
 
     await vi.waitFor(() => expect(html().value).toBe('<h1>minimal</h1>'));
     expect(
-      fetchMock.mock.calls.some(([u]) => String(u).includes('/settings/cover-page/templates/Minimal/content')),
+      fetchMock.mock.calls.some(([u]) =>
+        String(u).includes('/settings/cover-page/templates/Minimal/content?scope=project%2Felibrary%2F&name=Default'),
+      ),
     ).toBe(true);
     // Copying only fills the form: nothing is written until Save.
     expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'PUT')).toBe(false);

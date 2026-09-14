@@ -134,17 +134,35 @@ public class SettingsInternalController {
         coverPageSettings.save(scope, SettingId.fromId(uuid.toString()), templateModel);
     }
 
-    @GET
+    @POST
     @Path("/settings/cover-page/templates/{template}/content")
     @Produces(MediaType.APPLICATION_JSON)
-    @Operation(summary = "Returns content of cover page predefined template, to be copied into a cover page",
+    @Operation(summary = "Returns content of cover page predefined template to be copied into the specified cover page, with the images of the template persisted for that cover page",
             responses = {
-                    @ApiResponse(responseCode = "200", description = "Template content retrieved successfully")
+                    @ApiResponse(responseCode = "200", description = "Template content retrieved successfully",
+                            content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = CoverPageModel.class)))
             }
     )
-    public CoverPageModel getCoverPageTemplateContent(@PathParam("template") String template) {
+    public CoverPageModel copyCoverPageTemplateContent(@PathParam("template") String template,
+                                                       @QueryParam("scope") @DefaultValue("") String scope,
+                                                       @QueryParam("name") String name) {
         requirePredefinedCoverPageTemplate(template);
-        return new CoverPageSettings().defaultValuesFor(template);
+        CoverPageSettings coverPageSettings = new CoverPageSettings();
+        CoverPageModel templateModel = coverPageSettings.defaultValuesFor(template);
+        // the images of the template are persisted next to the cover page they are copied into, as for a persisted
+        // template; a cover page which is not stored yet has no id, so the images get one of their own
+        String id = name == null ? null : coverPageSettings.getIdByName(scope, true, name);
+        coverPageSettings.processImagePaths(templateModel, template, scope, imagesOwner(id));
+        return templateModel;
+    }
+
+    private static UUID imagesOwner(String settingId) {
+        try {
+            return settingId == null ? UUID.randomUUID() : UUID.fromString(settingId);
+        } catch (IllegalArgumentException e) {
+            // the Default setting is named rather than identified by a UUID
+            return UUID.randomUUID();
+        }
     }
 
     private void requirePredefinedCoverPageTemplate(String template) {

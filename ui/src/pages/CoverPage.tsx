@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import CustomTemplatesPage, { type CopySources, type TemplateSettings } from '../components/CustomTemplatesPage';
+import { getScope } from '../services/scope';
 import useRemote from '../services/useRemote';
 
 const FEATURE = 'cover-page';
@@ -15,6 +16,7 @@ const DEFAULT_TEMPLATE = 'English';
  */
 export default function CoverPage() {
   const { sendRequest } = useRemote();
+  const scope = getScope();
   const [templates, setTemplates] = useState<string[]>([]);
 
   useEffect(() => {
@@ -43,16 +45,19 @@ export default function CoverPage() {
         : {
             options: templates.map((name) => ({ id: name, name })),
             initial: templates.includes(DEFAULT_TEMPLATE) ? DEFAULT_TEMPLATE : templates[0],
-            load: async (template: string) => {
+            load: async (template: string, configuration: string | null) => {
+              // POST: the images of the template are persisted for the configuration the template is copied into
+              const query = `scope=${encodeURIComponent(scope)}${configuration ? `&name=${encodeURIComponent(configuration)}` : ''}`;
               const response = await sendRequest({
-                method: 'GET',
-                url: `/settings/${FEATURE}/templates/${encodeURIComponent(template)}/content`,
+                method: 'POST',
+                url: `/settings/${FEATURE}/templates/${encodeURIComponent(template)}/content?${query}`,
+                contentType: 'application/json',
               });
               if (!response.ok) throw new Error(`Cannot read the predefined template '${template}'`);
               return (await response.json()) as TemplateSettings;
             },
           },
-    [templates, sendRequest],
+    [templates, sendRequest, scope],
   );
 
   return (
