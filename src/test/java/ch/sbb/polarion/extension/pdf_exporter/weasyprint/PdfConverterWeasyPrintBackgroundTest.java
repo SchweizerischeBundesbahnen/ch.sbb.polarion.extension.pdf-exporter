@@ -80,7 +80,7 @@ class PdfConverterWeasyPrintBackgroundTest extends BasePdfConverterTest {
     @Test
     void testBackgroundWhichCannotBeLoaded() {
         ExportParams params = exportParams(false);
-        // nothing is loaded for the address, as for one the resource policy refuses: the export goes on without it
+        // the provider loads nothing for the address: the export goes on without it
         useCss(false, background(UNREACHABLE_BACKGROUND_URL));
 
         boolean hasDiff = compareContentUsingReferenceImages(getCurrentMethodName(), converter.convertToPdf(params, null));
