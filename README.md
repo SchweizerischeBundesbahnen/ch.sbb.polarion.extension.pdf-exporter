@@ -410,7 +410,7 @@ In case if both of them specified 'existing_wi_id' has higher priority.
 3. For some of these options (Cover page, Header and Footer, Localization, Webhooks and Filename template) `Quick Help` section available with short description of appropriate option. For the rest
    (Style package, Style package weights, CSS) there's no `Quick Help` section as their content is self-evident.
 4. Sections Cover page, Header and Footer, and Filename template use either the default values (can't be edited) or the custom ones. The custom values are always saved,
-   and the choice above them decides which ones an export uses. `Copy from default` fills the custom values with the default ones. On the Cover page section, `Copy`
+   and the choice above them decides which ones an export uses. The tab of the values not in use is disabled. `Copy from default` fills the custom values with the default ones. On the Cover page section, `Copy`
    fills them with the predefined template selected next to it. `Compare with default` shows the default and the custom values side by side, and the section tells when
    the default values changed since the custom ones were copied from them. `Mark as reviewed` takes the current default values as reviewed, to be saved
    with the configuration. A cover page remembers the predefined template it was copied from, and compares and reviews against that template. An empty custom filename template uses the default one.
