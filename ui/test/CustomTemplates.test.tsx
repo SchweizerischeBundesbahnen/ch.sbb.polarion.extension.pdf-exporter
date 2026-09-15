@@ -77,11 +77,6 @@ const open = (feature: string, routes: Route[]) => {
 
 const field = (id: string) => document.querySelector<HTMLTextAreaElement>(`#${id}`)!;
 const radio = (id: string) => document.querySelector<HTMLInputElement>(`#${id}`)!;
-const clickTab = async (label: string) => {
-  await userEvent.click(
-    Array.from(document.querySelectorAll<HTMLElement>('.tabs .tab')).find((t) => t.textContent?.trim() === label)!,
-  );
-};
 const clickButton = async (label: string) => {
   const button = Array.from(document.querySelectorAll<HTMLElement>('button, .sbb-btn')).find(
     (b) => b.textContent?.trim() === label,
@@ -119,12 +114,17 @@ describe('Filename template page', () => {
   });
 
   it('shows the built-in templates read-only on the second tab', async () => {
-    open('filename', filenameRoutes());
-    await vi.waitFor(() => expect(field('custom-documentNameTemplate').value).toBe('doc-$id'));
-
-    // Indexed rather than `.at(-1)`: that is ES2022, and tsconfig's `lib` is ES2020 for the app's sake.
-    const tabs = document.querySelectorAll<HTMLElement>('.tabs .tab');
-    await userEvent.click(tabs[tabs.length - 1]);
+    // A configuration using the built-in templates opens on their tab.
+    open(
+      'filename',
+      filenameRoutes([
+        {
+          method: 'GET',
+          match: /\/settings\/filename-template\/names\/Default\/content/,
+          json: { ...FILENAME_STORED, useCustomValues: false },
+        },
+      ]),
+    );
 
     await vi.waitFor(() => expect(field('default-documentNameTemplate')).not.toBeNull());
     expect(field('default-documentNameTemplate').value).toBe('$document.id');
@@ -164,25 +164,31 @@ describe('Filename template page', () => {
     });
   });
 
-  it('opens the tab of the chosen templates, and keeps the custom ones read-only while the default ones apply', async () => {
+  it('opens the tab of the chosen templates, and disables the tab of the other ones', async () => {
+    const tab = (label: string) =>
+      Array.from(document.querySelectorAll<HTMLLIElement>('.tabs .tab')).find((t) => t.textContent?.trim() === label)!;
+    const tabDisabled = (label: string) => tab(label).querySelector<HTMLInputElement>('input[type="radio"]')!.disabled;
+
     open('filename', filenameRoutes());
     await vi.waitFor(() => expect(field('custom-documentNameTemplate').value).toBe('doc-$id'));
     expect(document.querySelector('.copy-from-default')).not.toBeNull();
+    expect(tabDisabled('Custom Templates')).toBe(false);
+    expect(tabDisabled('Default Templates')).toBe(true);
 
     await userEvent.click(radio('use-default-values'));
     await vi.waitFor(() => expect(field('default-documentNameTemplate')).not.toBeNull());
     expect(field('custom-documentNameTemplate')).toBeNull();
+    expect(tabDisabled('Custom Templates')).toBe(true);
+    expect(tabDisabled('Default Templates')).toBe(false);
 
-    await clickTab('Custom Templates');
-    await vi.waitFor(() => expect(field('custom-documentNameTemplate').readOnly).toBe(true));
-    expect(document.querySelector('.template-actions .not-in-use')).not.toBeNull();
-    expect(document.querySelector('.copy-from-default')).toBeNull();
-    expect(document.querySelector('.compare-with-default-button')).toBeNull();
+    // The custom templates do not apply, so their tab does not open.
+    tab('Custom Templates').querySelector('label')!.click();
+    expect(field('custom-documentNameTemplate')).toBeNull();
 
     await userEvent.click(radio('use-custom-values'));
     await vi.waitFor(() => expect(field('custom-documentNameTemplate').readOnly).toBe(false));
     expect(document.querySelector('.copy-from-default')).not.toBeNull();
-    expect(document.querySelector('.template-actions .not-in-use')).toBeNull();
+    expect(tabDisabled('Default Templates')).toBe(true);
   });
 
   it('copies the default templates over the custom ones once the replacement is confirmed', async () => {

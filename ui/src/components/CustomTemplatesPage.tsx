@@ -139,7 +139,8 @@ export default function CustomTemplatesPage({
   const [comparison, setComparison] = useState<Record<string, string> | null>(null);
   const [selectedConfig, setSelectedConfig] = useState<string | null>(named ? null : DEFAULT_NAME);
   const [editingName, setEditingName] = useState(false);
-  const [activeTab, setActiveTab] = useState<'custom' | 'default'>('custom');
+  // The default templates apply until a configuration says otherwise, so their tab is the one open.
+  const [activeTab, setActiveTab] = useState<'custom' | 'default'>('default');
   const [showRevisions, setShowRevisions] = useState(false);
   const [revisionsToken, setRevisionsToken] = useState(0);
   // Two independent reads feed this page - the built-in values and the selected configuration - and a
@@ -329,8 +330,7 @@ export default function CustomTemplatesPage({
   };
 
   const editors = (readOnly: boolean) => {
-    const notInUse = !readOnly && !useCustomValues;
-    const classes = ['template-editors', editorsClassName, notInUse ? 'not-in-use' : undefined].filter(Boolean);
+    const classes = ['template-editors', editorsClassName].filter(Boolean);
     return (
       <div className={classes.join(' ')}>
         {fields.map((field) => (
@@ -344,7 +344,7 @@ export default function CustomTemplatesPage({
               value={(readOnly ? defaults : values)[field.key] ?? ''}
               onChange={(value) => setValues((current) => ({ ...current, [field.key]: value }))}
               placeholder={readOnly ? undefined : field.placeholder}
-              readOnly={readOnly || notInUse}
+              readOnly={readOnly}
             />
           </div>
         ))}
@@ -413,8 +413,9 @@ export default function CustomTemplatesPage({
 
         <Tabs
           items={[
-            { id: 'custom', label: 'Custom Templates' },
-            { id: 'default', label: 'Default Templates' },
+            // Only the tab of the templates an export uses opens: the other ones do not apply.
+            { id: 'custom', label: 'Custom Templates', disabled: !useCustomValues },
+            { id: 'default', label: 'Default Templates', disabled: useCustomValues },
           ]}
           activeId={activeTab}
           onSelect={(id) => setActiveTab(id as 'custom' | 'default')}
@@ -426,38 +427,32 @@ export default function CustomTemplatesPage({
           <p>{activeTab === 'custom' ? customIntro : defaultIntro}</p>
           {activeTab === 'custom' && (
             <div className="template-actions">
-              {useCustomValues ? (
+              {copySources && (
                 <>
-                  {copySources && (
-                    <>
-                      <label htmlFor="copy-source-select">Copy from:</label>
-                      <SearchableSelect
-                        id="copy-source-select"
-                        value={copySource}
-                        onChange={setCopySource}
-                        options={copySources.options}
-                        searchable={false}
-                      />
-                    </>
-                  )}
-                  <button
-                    type="button"
-                    className="sbb-btn sbb-btn--control copy-from-default"
-                    onClick={() => void handleCopy()}
-                  >
-                    <span>{copySources ? 'Copy' : 'Copy from default'}</span>
-                  </button>
-                  <button
-                    type="button"
-                    className="sbb-btn sbb-btn--control compare-with-default-button"
-                    onClick={() => void handleCompare()}
-                  >
-                    <span>Compare with default</span>
-                  </button>
+                  <label htmlFor="copy-source-select">Copy from:</label>
+                  <SearchableSelect
+                    id="copy-source-select"
+                    value={copySource}
+                    onChange={setCopySource}
+                    options={copySources.options}
+                    searchable={false}
+                  />
                 </>
-              ) : (
-                <span className="not-in-use">Not in use: the default templates apply.</span>
               )}
+              <button
+                type="button"
+                className="sbb-btn sbb-btn--control copy-from-default"
+                onClick={() => void handleCopy()}
+              >
+                <span>{copySources ? 'Copy' : 'Copy from default'}</span>
+              </button>
+              <button
+                type="button"
+                className="sbb-btn sbb-btn--control compare-with-default-button"
+                onClick={() => void handleCompare()}
+              >
+                <span>Compare with default</span>
+              </button>
             </div>
           )}
           {editors(activeTab === 'default')}

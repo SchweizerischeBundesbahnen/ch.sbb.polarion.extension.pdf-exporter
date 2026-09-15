@@ -191,16 +191,6 @@
   margin-bottom: 12px;
 }
 
-.template-actions .not-in-use {
-  color: #767676;
-  font-style: italic;
-}
-
-/* Custom values which are not in use stay visible, read-only and dimmed. */
-.template-editors.not-in-use .code-editor {
-  opacity: 0.6;
-}
-
 /* The comparison is two files side by side, so its dialog takes the width of the page rather than the 640px of a
    question. The dialog has no class of its own to set, hence the content it holds. */
 .rsp-modal:has(.compare-with-default) {
