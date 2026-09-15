@@ -26,6 +26,13 @@ describe('lineDiff', () => {
     expect(kinds('a\r\nb', 'a\nb')).toEqual([' a', ' b']);
   });
 
+  it('does not mark the newline at the end of one text only', () => {
+    expect(kinds('a\nb\n', 'a\nb')).toEqual([' a', ' b']);
+    expect(kinds('a\r\n', 'a')).toEqual([' a']);
+    // an empty line before it is still a line
+    expect(kinds('a\n\n', 'a')).toEqual([' a', '-']);
+  });
+
   it('handles empty texts', () => {
     expect(kinds('', '')).toEqual([]);
     expect(kinds('', 'a')).toEqual(['+a']);

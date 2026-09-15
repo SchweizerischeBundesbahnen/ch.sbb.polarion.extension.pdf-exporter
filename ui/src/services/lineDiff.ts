@@ -23,7 +23,15 @@ export interface DiffRow {
  */
 const MAX_CELLS = 4_000_000;
 
-const splitLines = (text: string): string[] => (text === '' ? [] : text.replace(/\r\n/g, '\n').split('\n'));
+/**
+ * The lines of a text. A newline at its end ends the last line rather than starting an empty one: the extension
+ * compares the values trimmed, so a copy which lost it is still a copy, and the comparison must not mark it.
+ */
+const splitLines = (text: string): string[] => {
+  const lines = text.replace(/\r\n/g, '\n').split('\n');
+  if (lines[lines.length - 1] === '') lines.pop();
+  return lines;
+};
 const line =
   (kind: DiffLine['kind']) =>
   (text: string): DiffLine => ({ kind, text });
