@@ -139,4 +139,62 @@ class CssSettingsTest {
         }
     }
 
+
+    @Test
+    void testInitialValuesHaveNoCustomCss() {
+        CssModel initial = new CssSettings(new SettingsService(null, null, null)).initialValues();
+        assertEquals("", initial.getCss());
+        assertFalse(initial.isDisableDefaultCss());
+    }
+
+    @Test
+    void testCopyOfDefaultCssIsReadAsNoCustomCss() {
+        CssSettings cssSettings = new CssSettings(new SettingsService(null, null, null));
+        String defaultCss = cssSettings.defaultValues().getCss();
+
+        assertEquals("", cssSettings.withoutBuiltInCopy(CssModel.builder().css("  " + defaultCss + "\n").build()).getCss());
+        // with the default CSS disabled the copy is the only CSS
+        assertEquals(defaultCss, cssSettings.withoutBuiltInCopy(CssModel.builder().css(defaultCss).disableDefaultCss(true).build()).getCss());
+        assertEquals("custom", cssSettings.withoutBuiltInCopy(CssModel.builder().css("custom").build()).getCss());
+    }
+
+    @Test
+    void testUneditedCopyIsRecognizedByItsStoredHash() {
+        CssSettings cssSettings = new CssSettings(new SettingsService(null, null, null));
+        // a version shipped after the legacy values were frozen: only the stored hash tells it is a copy
+        String laterVersion = "body { color: black; }";
+        CssModel copy = CssModel.builder().css(laterVersion).defaultHash(BuiltInValues.hash(laterVersion)).build();
+        assertEquals("", cssSettings.withoutBuiltInCopy(copy).getCss());
+
+        CssModel edited = CssModel.builder().css(laterVersion + " h1 {}").defaultHash(BuiltInValues.hash(laterVersion)).build();
+        assertEquals(laterVersion + " h1 {}", cssSettings.withoutBuiltInCopy(edited).getCss());
+    }
+
+    @Test
+    void testLegacyCopyInUseGetsItsBase() {
+        CssSettings cssSettings = new CssSettings(new SettingsService(null, null, null));
+        CssModel defaultCss = cssSettings.defaultValues();
+
+        CssModel legacyCopy = CssModel.builder().css(defaultCss.getCss()).disableDefaultCss(true).build();
+        assertEquals(defaultCss.getDefaultHash(), cssSettings.withLegacyBase(legacyCopy).getDefaultHash());
+        assertFalse(cssSettings.withChangedDefault(legacyCopy).isDefaultChanged());
+
+        CssModel legacyEdited = CssModel.builder().css("h1 {}").disableDefaultCss(true).build();
+        assertNull(cssSettings.withLegacyBase(legacyEdited).getDefaultHash());
+    }
+
+    @Test
+    void testChangedDefaultOnlyForCustomCssAlone() throws Exception {
+        CssSettings cssSettings = new CssSettings(new SettingsService(null, null, null));
+        String currentHash = cssSettings.defaultValues().getDefaultHash();
+        String formerHash = BuiltInValuesTest.formerHash(CssSettings.FEATURE_NAME, java.util.Set.of(currentHash));
+
+        assertTrue(cssSettings.withChangedDefault(CssModel.builder().css("x").disableDefaultCss(true).defaultHash(formerHash).build()).isDefaultChanged());
+        assertFalse(cssSettings.withChangedDefault(CssModel.builder().css("x").disableDefaultCss(true).defaultHash(currentHash).build()).isDefaultChanged());
+        // with the default CSS enabled the export applies the current one
+        assertFalse(cssSettings.withChangedDefault(CssModel.builder().css("x").defaultHash(formerHash).build()).isDefaultChanged());
+        // a copy of a version this extension does not know is behind the current one as well
+        assertTrue(cssSettings.withChangedDefault(CssModel.builder().css("x").disableDefaultCss(true).defaultHash("unknown").build()).isDefaultChanged());
+        assertFalse(cssSettings.withChangedDefault(CssModel.builder().css("x").disableDefaultCss(true).build()).isDefaultChanged());
+    }
 }

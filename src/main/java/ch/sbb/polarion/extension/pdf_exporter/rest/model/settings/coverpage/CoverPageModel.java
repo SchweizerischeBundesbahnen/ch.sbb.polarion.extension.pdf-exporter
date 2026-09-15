@@ -2,6 +2,7 @@ package ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.coverpage;
 
 import ch.sbb.polarion.extension.generic.settings.SettingsModel;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.polarion.core.util.StringUtils;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -19,6 +20,8 @@ import lombok.ToString;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class CoverPageModel extends SettingsModel {
 
+    public static final String DEFAULT_HASH_ENTRY_NAME = "DEFAULT HASH";
+    public static final String DEFAULT_SOURCE_ENTRY_NAME = "DEFAULT SOURCE";
     public static final String USE_CUSTOM_VALUES_ENTRY_NAME = "USE CUSTOM VALUES";
     public static final String TEMPLATE_HTML = "TEMPLATE_HTML";
     public static final String TEMPLATE_CSS = "TEMPLATE_CSS";
@@ -27,11 +30,29 @@ public class CoverPageModel extends SettingsModel {
     private String templateHtml;
     private String templateCss;
 
+    /**
+     * The hash of the built-in values the custom values were copied from, null when they were not copied.
+     */
+    private String defaultHash;
+
+    /**
+     * The predefined template the custom values were copied from, null when they were not copied or it is not known.
+     */
+    private String defaultSource;
+
+    /**
+     * Whether the built-in values changed since the custom values were copied from them. Computed on reading, never stored.
+     */
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+    private boolean defaultChanged;
+
     @Override
     protected String serializeModelData() {
         return serializeEntry(USE_CUSTOM_VALUES_ENTRY_NAME, useCustomValues) +
                 serializeEntry(TEMPLATE_HTML, templateHtml) +
-                serializeEntry(TEMPLATE_CSS, templateCss);
+                serializeEntry(TEMPLATE_CSS, templateCss) +
+                serializeEntry(DEFAULT_HASH_ENTRY_NAME, defaultHash) +
+                serializeEntry(DEFAULT_SOURCE_ENTRY_NAME, defaultSource);
     }
 
     @Override
@@ -44,7 +65,9 @@ public class CoverPageModel extends SettingsModel {
         }
         templateHtml = deserializeEntry(TEMPLATE_HTML, serializedString);
         templateCss = deserializeEntry(TEMPLATE_CSS, serializedString);
+        String serializedDefaultHash = deserializeEntry(DEFAULT_HASH_ENTRY_NAME, serializedString);
+        defaultHash = StringUtils.isEmptyTrimmed(serializedDefaultHash) ? null : serializedDefaultHash;
+        String serializedDefaultSource = deserializeEntry(DEFAULT_SOURCE_ENTRY_NAME, serializedString);
+        defaultSource = StringUtils.isEmptyTrimmed(serializedDefaultSource) ? null : serializedDefaultSource;
     }
-
-
 }

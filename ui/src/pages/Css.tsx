@@ -10,6 +10,7 @@ import {
   useConfirm,
 } from '@sbb-polarion/react-sbb-polarion';
 import { toast } from 'sonner';
+import CompareWithDefault from '../components/CompareWithDefault';
 import { getScope } from '../services/scope';
 import useNamedSettings from '../services/settings';
 
@@ -17,24 +18,36 @@ import useNamedSettings from '../services/settings';
 interface CssSettings {
   css: string;
   disableDefaultCss: boolean;
+  /** The hash of the default CSS the custom CSS was copied from, when it was. */
+  defaultHash?: string;
+  /** Whether the default CSS changed since, computed by the extension on reading. */
+  defaultChanged?: boolean;
 }
 
+type CssTab = 'custom' | 'default';
+
 const FEATURE = 'css';
+const COMPARED_FIELDS = [{ key: 'css', label: 'CSS:' }];
+/** A new configuration has no custom CSS: the default CSS alone applies until the administrator adds some. */
+const INITIAL_CONTENT: CssSettings = { css: '', disableDefaultCss: false };
 
 /**
- * PDF Exporter: CSS - the custom stylesheet appended to the generated PDF's, one named configuration
- * at a time.
+ * PDF Exporter: CSS - the stylesheet of the generated PDF's, one named configuration at a time.
  *
- * Two tabs, as in the JSP page it replaces: the editable custom stylesheet, and the built-in one shown
- * read-only for reference. The built-in one is fetched once and cached for the lifetime of the page -
- * it is the same document for every configuration and every scope.
+ * The default CSS comes with the extension, so a newer version of it reaches every export by itself, and the
+ * custom CSS of the configuration follows it and wins where both style the same thing. Or the custom CSS is the
+ * only CSS: then it usually starts as a copy of the default CSS, which the page offers when that choice is made,
+ * and the page says when a newer default CSS changed since.
+ *
+ * Two tabs: the editable custom stylesheet and the built-in one read-only for reference. The built-in one is fetched once and cached for the lifetime of the page - it is the
+ * same document for every configuration and every scope.
  *
  * The toolbar has no Default button: this setting's defaults are what the second tab shows, and the
  * legacy page hid the button for the same reason.
  */
 export default function Css() {
   const scope = getScope();
-  const settings = useNamedSettings<CssSettings>(FEATURE);
+  const settings = useNamedSettings<CssSettings>(FEATURE, INITIAL_CONTENT);
   const { confirm, confirmDialog } = useConfirm();
   const paneRef = useRef<ConfigurationsPaneHandle>(null);
 
@@ -43,10 +56,14 @@ export default function Css() {
 
   const [css, setCss] = useState('');
   const [disableDefaultCss, setDisableDefaultCss] = useState(false);
+  const [defaultHash, setDefaultHash] = useState<string | undefined>(undefined);
+  const [defaultChanged, setDefaultChanged] = useState(false);
   const [defaultCss, setDefaultCss] = useState<string | null>(null);
+  const [defaultCssHash, setDefaultCssHash] = useState<string | undefined>(undefined);
+  const [comparing, setComparing] = useState(false);
   const [selectedConfig, setSelectedConfig] = useState<string | null>(null);
   const [editingName, setEditingName] = useState(false);
-  const [activeTab, setActiveTab] = useState<'custom' | 'default'>('custom');
+  const [activeTab, setActiveTab] = useState<CssTab>('custom');
   const [showRevisions, setShowRevisions] = useState(false);
   const [revisionsToken, setRevisionsToken] = useState(0);
   // Two independent reads feed this page - the built-in values and the selected configuration - and a
@@ -60,6 +77,8 @@ export default function Css() {
     latestLoad.current += 1;
     setCss(content.css ?? '');
     setDisableDefaultCss(!!content.disableDefaultCss);
+    setDefaultHash(content.defaultHash);
+    setDefaultChanged(!!content.defaultChanged);
     // A load that succeeded after an earlier failure would otherwise keep the banner up over good data.
     setContentError(false);
   }, []);
@@ -72,6 +91,7 @@ export default function Css() {
       .then((content) => {
         if (cancelled) return;
         setDefaultCss(content.css ?? '');
+        setDefaultCssHash(content.defaultHash);
         setDefaultsError(false);
       })
       .catch(() => {
@@ -82,11 +102,45 @@ export default function Css() {
     };
   }, [settings]);
 
+  /** Puts the default CSS in front of the custom CSS, which keeps what the administrator wrote. */
+  const insertDefaultCss = (current: string) => {
+    // without the default CSS read there is nothing to insert, and no version for the custom CSS to remember
+    if (defaultCss === null) return;
+    const builtIn = defaultCss;
+    setCss(current.trim() === '' ? builtIn : `${builtIn}\n\n${current}`);
+    setDefaultHash(defaultCssHash);
+    setDefaultChanged(false);
+  };
+
+  /** Takes the current default CSS as the one the custom CSS is up to date with. */
+  const markReviewed = () => {
+    if (defaultCssHash === undefined) return;
+    setDefaultHash(defaultCssHash);
+    setDefaultChanged(false);
+    toast.success('Marked as reviewed. Remember to save the configuration.');
+  };
+
+  const chooseCustomCssOnly = async () => {
+    setDisableDefaultCss(true);
+    const current = css;
+    if (
+      defaultCss &&
+      !current.includes(defaultCss.trim()) &&
+      (await confirm(
+        'The custom CSS becomes the only CSS of the export. Do you want to put the default CSS in front of it, to keep the default styling?',
+      ))
+    ) {
+      insertDefaultCss(current);
+    }
+  };
+
   const handleSave = async () => {
     if (!selectedConfig) return;
     toast.dismiss();
+    const content: CssSettings = { css, disableDefaultCss };
+    if (defaultHash) content.defaultHash = defaultHash;
     try {
-      await settings.saveContent(selectedConfig, scope, { css, disableDefaultCss });
+      await settings.saveContent(selectedConfig, scope, content);
       toast.success('Data successfully saved.');
       await paneRef.current?.reloadNames();
       setRevisionsToken((t) => t + 1);
@@ -134,17 +188,43 @@ export default function Css() {
       />
 
       <fieldset className="css-page" disabled={editingName}>
-        <div className="checkbox input-group">
+        <div className="mode-options input-group" role="radiogroup" aria-label="CSS">
+          <label htmlFor="use-default-css">
+            <input
+              id="use-default-css"
+              type="radio"
+              name="css-mode"
+              checked={!disableDefaultCss}
+              onChange={() => setDisableDefaultCss(false)}
+            />
+            Use default CSS and custom CSS
+          </label>
           <label htmlFor="disable-default-css">
             <input
               id="disable-default-css"
-              type="checkbox"
+              type="radio"
+              name="css-mode"
               checked={disableDefaultCss}
-              onChange={(e) => setDisableDefaultCss(e.target.checked)}
+              onChange={() => void chooseCustomCssOnly()}
             />
-            Disable usage of default CSS
+            Use custom CSS only
           </label>
         </div>
+
+        {disableDefaultCss && defaultChanged && (
+          <div className="alert alert-warning default-changed">
+            The default CSS changed since it was copied into the custom CSS. Compare them to take over what you need,
+            then mark the change as reviewed.
+            <button
+              type="button"
+              className="sbb-btn sbb-btn--control mark-as-reviewed"
+              disabled={defaultCssHash === undefined}
+              onClick={markReviewed}
+            >
+              <span>Mark as reviewed</span>
+            </button>
+          </div>
+        )}
 
         <Tabs
           items={[
@@ -152,18 +232,40 @@ export default function Css() {
             { id: 'default', label: 'Default CSS' },
           ]}
           activeId={activeTab}
-          onSelect={(id) => setActiveTab(id as 'custom' | 'default')}
+          onSelect={(id) => setActiveTab(id as CssTab)}
           name="css-tab"
           ariaLabel="CSS"
         />
 
-        {activeTab === 'custom' ? (
+        {activeTab === 'custom' && (
           <div className="tab-panel">
             <p>
-              Here you can define your custom CSS, which will be appended to the end of resulting CSS. This means that
-              you can add additional styling to default one or even overwrite it. Also be aware that if default CSS is
-              disabled then your custom CSS is totally responsible for how resulting PDF will look like.
+              Here you can define your custom CSS. With the default CSS it is appended to the end of the default CSS, so
+              you can add styling to the default one or overwrite it, and a newer default CSS still reaches your
+              exports. With the custom CSS only, your custom CSS is totally responsible for how the resulting PDF looks.
             </p>
+            {/* With the default CSS the custom CSS only adds to it: inserting or comparing the default CSS means
+                something only once the custom CSS is the only one. */}
+            {disableDefaultCss && (
+              <div className="template-actions">
+                <button
+                  type="button"
+                  className="sbb-btn sbb-btn--control insert-default-css"
+                  disabled={defaultCss === null}
+                  onClick={() => insertDefaultCss(css)}
+                >
+                  <span>Insert default CSS</span>
+                </button>
+                <button
+                  type="button"
+                  className="sbb-btn sbb-btn--control compare-with-default-button"
+                  disabled={defaultCss === null}
+                  onClick={() => setComparing(true)}
+                >
+                  <span>Compare with default</span>
+                </button>
+              </div>
+            )}
             <CodeEditor
               language="css"
               id="custom-css-input"
@@ -173,13 +275,14 @@ export default function Css() {
               placeholder="Enter your custom CSS here"
             />
           </div>
-        ) : (
+        )}
+        {activeTab === 'default' && (
           <div className="tab-panel">
             <p>
               This is a default CSS, which covers most common cases to generate well looking PDF from Polarion
               documents, reports etc. It&apos;s not editable and shown here only for your information. If you need to
               customize something please add this using editor on &quot;Custom CSS&quot; tab. Also be aware that you can
-              totally disable default CSS clicking checkbox above.
+              use your custom CSS only, choosing it above.
             </p>
             <CodeEditor
               language="css"
@@ -209,6 +312,13 @@ export default function Css() {
           />
         )}
       </fieldset>
+      <CompareWithDefault
+        open={comparing}
+        fields={COMPARED_FIELDS}
+        custom={{ css }}
+        builtIn={{ css: defaultCss ?? '' }}
+        onClose={() => setComparing(false)}
+      />
       {confirmDialog}
     </PageLayout>
   );

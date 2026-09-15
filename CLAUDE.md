@@ -76,6 +76,13 @@
   app. Injector tests must stay in the `node` project: those scripts drive the top frame, and Vitest
   browser mode runs each file in an iframe and keeps `top` for its own runner page. Name them
   `*.node.test.ts` - that suffix is what routes a file between the two projects.
+- **A custom setting value remembers what it was copied from.** CSS, cover page, header and footer, and filename template
+  store the hash of the built-in values a custom value was copied from (`defaultHash`) and compare it with the current built-in
+  values on reading. A cover page also stores the predefined template it was copied from (`defaultSource`), so it is compared with that
+  template only. That is how an unedited copy and a newer built-in version are recognized, so a change of
+  `dle-pdf-export.css`, a cover page template or a Java default needs nothing else. Settings stored before carry no hash:
+  `src/main/resources/default/legacy-built-in-values.json` lists the built-in values shipped until then. It is frozen, never
+  add a new version to it.
 - **Package naming**: Use `ch.sbb.polarion.extension.pdf_exporter` (underscore). Pre-v7.0.0 code used `pdf.exporter` (dot) — don't follow old patterns still present in the codebase.
 - **Maven Settings**: Builds require `.mvn/settings.xml` (JFrog, GitHub Packages, Sonatype credentials via env vars). CI passes it with `-s .mvn/settings.xml`.
 - **Polarion Dependencies**: You must extract dependencies from the Polarion installer using [polarion-artifacts-deployer](https://github.com/SchweizerischeBundesbahnen/polarion-artifacts-deployer) before the Maven build will work.

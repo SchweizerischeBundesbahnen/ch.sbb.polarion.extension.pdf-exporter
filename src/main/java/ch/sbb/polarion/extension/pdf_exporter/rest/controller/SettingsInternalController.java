@@ -121,9 +121,7 @@ public class SettingsInternalController {
             }
     )
     public void persistCoverPageTemplate(@PathParam("template") String template, @QueryParam("scope") String scope) {
-        if (!getCoverPageTemplateNames().contains(template)) {
-            throw new NotFoundException(String.format("There's no predefined template with name '%s'", template));
-        }
+        requirePredefinedCoverPageTemplate(template);
 
         CoverPageSettings coverPageSettings = new CoverPageSettings();
         Collection<SettingName> persistedNames = coverPageSettings.readNames(scope);
@@ -134,6 +132,57 @@ public class SettingsInternalController {
         UUID uuid = UUID.randomUUID();
         coverPageSettings.processImagePaths(templateModel, template, scope, uuid);
         coverPageSettings.save(scope, SettingId.fromId(uuid.toString()), templateModel);
+    }
+
+    @GET
+    @Path("/settings/cover-page/templates/{template}/content")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Operation(summary = "Returns content of cover page predefined template, to read or compare it; nothing is persisted",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Template content retrieved successfully",
+                            content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = CoverPageModel.class)))
+            }
+    )
+    public CoverPageModel getCoverPageTemplateContent(@PathParam("template") String template) {
+        requirePredefinedCoverPageTemplate(template);
+        return new CoverPageSettings().defaultValuesFor(template);
+    }
+
+    @POST
+    @Path("/settings/cover-page/templates/{template}/content")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Operation(summary = "Returns content of cover page predefined template to be copied into the specified cover page, with the images of the template persisted for that cover page",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Template content retrieved successfully",
+                            content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = CoverPageModel.class)))
+            }
+    )
+    public CoverPageModel copyCoverPageTemplateContent(@PathParam("template") String template,
+                                                       @QueryParam("scope") @DefaultValue("") String scope,
+                                                       @QueryParam("name") String name) {
+        requirePredefinedCoverPageTemplate(template);
+        CoverPageSettings coverPageSettings = new CoverPageSettings();
+        CoverPageModel templateModel = coverPageSettings.defaultValuesFor(template);
+        // the images of the template are persisted next to the cover page they are copied into, as for a persisted
+        // template; a cover page which is not stored yet has no id, so the images get one of their own
+        String id = name == null ? null : coverPageSettings.getIdByName(scope, true, name);
+        coverPageSettings.processImagePaths(templateModel, template, scope, imagesOwner(id));
+        return templateModel;
+    }
+
+    private static UUID imagesOwner(String settingId) {
+        try {
+            return settingId == null ? UUID.randomUUID() : UUID.fromString(settingId);
+        } catch (IllegalArgumentException e) {
+            // the Default setting is named rather than identified by a UUID
+            return UUID.randomUUID();
+        }
+    }
+
+    private void requirePredefinedCoverPageTemplate(String template) {
+        if (!getCoverPageTemplateNames().contains(template)) {
+            throw new NotFoundException(String.format("There's no predefined template with name '%s'", template));
+        }
     }
 
     @DELETE

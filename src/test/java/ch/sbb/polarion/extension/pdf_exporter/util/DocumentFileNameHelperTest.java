@@ -119,6 +119,36 @@ class DocumentFileNameHelperTest {
         assertThat(documentFileName).endsWith(".pdf");
     }
 
+    @Test
+    void getDocumentFileNameFallsBackToBuiltInTemplateForEmptyCustomTemplate() {
+        ExportParams exportParams = ExportParams.builder()
+                .projectId("testProjectId")
+                .locationPath("testSpaceId/testDocumentId")
+                .documentType(DocumentType.LIVE_DOC)
+                .build();
+        DocumentData<IModule> documentData = DocumentData.creator(DocumentType.LIVE_DOC, mock(IModule.class))
+                .id(new LiveDocId(new DocumentProject("testProjectId", "Test Project"), "testSpaceId", "testDocumentId"))
+                .title("Test Title")
+                .lastRevision("12345")
+                .revisionPlaceholder("12345")
+                .build();
+        documentDataFactoryMockExtension.register(exportParams, documentData);
+
+        FileNameTemplateSettings fileNameTemplateSettings = new FileNameTemplateSettings();
+        FileNameTemplateSettings fileNameTemplateSettingsSpy = spy(fileNameTemplateSettings);
+        FileNameTemplateModel emptyCustomTemplates = fileNameTemplateSettings.initialValues();
+        emptyCustomTemplates.setUseCustomValues(true);
+        emptyCustomTemplates.setReportNameTemplate("custom");
+        doReturn(emptyCustomTemplates).when(fileNameTemplateSettingsSpy).read(anyString(), any(), any());
+
+        NamedSettingsRegistry.INSTANCE.getAll().clear();
+        NamedSettingsRegistry.INSTANCE.register(List.of(fileNameTemplateSettingsSpy));
+
+        when(velocityEvaluator.evaluateVelocityExpressions(eq(documentData), anyString())).thenAnswer(a -> a.getArguments()[1]);
+
+        assertThat(fileNameHelper.getDocumentFileName(exportParams)).startsWith("$projectName $document.moduleNameWithSpace");
+    }
+
 
     @Test
     void getFileNameTemplate() {
