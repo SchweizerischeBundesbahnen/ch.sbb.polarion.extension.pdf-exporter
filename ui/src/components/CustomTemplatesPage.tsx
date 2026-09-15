@@ -136,7 +136,8 @@ export default function CustomTemplatesPage({
   const [defaultSource, setDefaultSource] = useState<string | undefined>(undefined);
   const [defaultChanged, setDefaultChanged] = useState(false);
   const [copySource, setCopySource] = useState(copySources?.initial ?? '');
-  const [comparison, setComparison] = useState<Record<string, string> | null>(null);
+  // The built-in values shown in the comparison, and the predefined template they are, when the page has several.
+  const [comparison, setComparison] = useState<{ values: Record<string, string>; template?: string } | null>(null);
   const [selectedConfig, setSelectedConfig] = useState<string | null>(named ? null : DEFAULT_NAME);
   const [editingName, setEditingName] = useState(false);
   // The default templates apply until a configuration says otherwise, so their tab is the one open.
@@ -226,8 +227,9 @@ export default function CustomTemplatesPage({
   const hasCustomValues = fields.some((field) => (values[field.key] ?? '').trim() !== '');
 
   // Only a copy persists what a predefined template brings along, reading one for a comparison or a review does not.
-  // A comparison and a review are against the template the custom templates were copied from, whatever "Copy from" shows.
-  const readBuiltIn = () => (copySources ? copySources.load(knownSource ?? copySource) : settings.loadDefaultContent());
+  // A comparison is against the template chosen in "Copy from", which starts on the one the custom templates were copied
+  // from. A review is against that one whatever "Copy from" shows, since it re-bases the custom templates onto it.
+  const readBuiltIn = (template: string) => (copySources ? copySources.load(template) : settings.loadDefaultContent());
   const copyBuiltIn = () =>
     copySources ? copySources.copy(copySource, selectedConfig) : settings.loadDefaultContent();
 
@@ -256,10 +258,11 @@ export default function CustomTemplatesPage({
 
   const handleCompare = async () => {
     const seq = latestLoad.current;
+    const template = copySource;
     try {
-      const content = await readBuiltIn();
+      const content = await readBuiltIn(template);
       if (seq !== latestLoad.current) return;
-      setComparison(toValues(content));
+      setComparison({ values: toValues(content), template: copySources ? template : undefined });
     } catch {
       toast.error('Error occurred loading the default templates.');
     }
@@ -269,7 +272,7 @@ export default function CustomTemplatesPage({
   const handleMarkReviewed = async () => {
     const seq = latestLoad.current;
     try {
-      const content = await readBuiltIn();
+      const content = await readBuiltIn(knownSource ?? copySource);
       if (seq !== latestLoad.current) return;
       setDefaultHash(hashOf(content));
       setDefaultSource(sourceOf(content));
@@ -481,7 +484,8 @@ export default function CustomTemplatesPage({
         open={comparison !== null}
         fields={fields}
         custom={values}
-        builtIn={comparison ?? {}}
+        builtIn={comparison?.values ?? {}}
+        defaultLabel={comparison?.template ? `Default: ${comparison.template}` : undefined}
         onClose={() => setComparison(null)}
       />
       {confirmDialog}

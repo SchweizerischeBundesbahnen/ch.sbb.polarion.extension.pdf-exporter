@@ -126,6 +126,8 @@ describe('Cover page', () => {
 
     await vi.waitFor(() => expect(document.querySelector('.compare-with-default .side-by-side')).not.toBeNull());
     expect(document.querySelector('.compare-with-default .diff-removed')!.textContent).toBe('<h1>corporate</h1>');
+    // The column names the template the custom templates are compared with.
+    expect(document.querySelector('.compare-with-default th')!.textContent).toBe('Default: Corporate');
     // Reading a template for a comparison is a GET: only a copy persists the images of a template.
     expect(
       fetchMock.mock.calls.some(
@@ -134,6 +136,31 @@ describe('Cover page', () => {
       ),
     ).toBe(true);
     expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'POST')).toBe(false);
+  });
+
+  it('compares with the template chosen in Copy from, even when the custom templates were copied from another', async () => {
+    const fetchMock = open(
+      routes([
+        {
+          method: 'GET',
+          match: /\/settings\/cover-page\/names\/[^/]+\/content/,
+          json: { ...STORED, defaultHash: 'minimal-hash', defaultSource: 'Minimal' },
+        },
+      ]),
+    );
+    const select = () => document.querySelector<HTMLSelectElement>('select#copy-source-select')!;
+    await vi.waitFor(() => expect(select().value).toBe('Minimal'));
+
+    select().value = 'Corporate';
+    select().dispatchEvent(new Event('change', { bubbles: true }));
+    await clickButton('Compare with default');
+
+    await vi.waitFor(() =>
+      expect(document.querySelector('.compare-with-default th')?.textContent).toBe('Default: Corporate'),
+    );
+    const reads = fetchMock.mock.calls.filter(([, init]) => (init?.method ?? 'GET') === 'GET').map(([u]) => String(u));
+    expect(reads.some((u) => u.includes('/settings/cover-page/templates/Corporate/content'))).toBe(true);
+    expect(reads.some((u) => u.includes('/settings/cover-page/templates/Minimal/content'))).toBe(false);
   });
 
   it('reviews the template the custom templates were copied from, not the one chosen to copy', async () => {

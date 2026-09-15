@@ -6,6 +6,8 @@ interface CompareWithDefaultProps {
   fields: ReadonlyArray<{ key: string; label: string }>;
   custom: Record<string, string>;
   builtIn: Record<string, string>;
+  /** Heads the column of the built-in values, e.g. with the predefined template they are. "Default" without it. */
+  defaultLabel?: string;
   onClose: () => void;
 }
 
@@ -29,6 +31,7 @@ export default function CompareWithDefault({
   fields,
   custom,
   builtIn,
+  defaultLabel = 'Default',
   onClose,
 }: Readonly<CompareWithDefaultProps>) {
   return (
@@ -53,7 +56,7 @@ export default function CompareWithDefault({
                       </colgroup>
                       <thead>
                         <tr>
-                          <th colSpan={2}>Default</th>
+                          <th colSpan={2}>{defaultLabel}</th>
                           <th colSpan={2}>Custom</th>
                         </tr>
                       </thead>
