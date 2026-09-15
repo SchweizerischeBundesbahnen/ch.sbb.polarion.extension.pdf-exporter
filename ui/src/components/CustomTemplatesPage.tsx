@@ -86,7 +86,8 @@ const sourceOf = (content: TemplateSettings): string | undefined =>
  * settings document.
  *
  * The custom templates are stored whatever the choice says, and the choice alone decides which ones an export
- * uses. While the built-in ones are chosen, the custom ones stay visible but read-only. A custom template usually
+ * uses. Only the tab of the chosen templates opens, the other one is disabled; the custom templates are kept while
+ * the built-in ones are chosen, and show again once the custom ones are. A custom template usually
  * starts as a copy of a built-in one, so the page copies one on request, remembers which version it copied, and
  * compares the custom templates with the built-in ones once a newer version of the extension changed those.
  *
