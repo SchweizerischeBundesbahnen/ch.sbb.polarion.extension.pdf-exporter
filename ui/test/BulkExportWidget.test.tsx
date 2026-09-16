@@ -183,6 +183,28 @@ describe('Bulk PDF Export widget', () => {
     expect(document.querySelector('.polarion-rpw-table-query')).toBeNull();
   });
 
+  it('toggles the query from the keyboard, and reports the state it is in', async () => {
+    open();
+    await vi.waitFor(() => expect(rows().length).toBe(4));
+    const marker = () => document.querySelector<HTMLElement>('.polarion-rpw-table-show-query img')!;
+    const query = () => document.querySelector('.polarion-rpw-table-query');
+
+    expect(marker().tabIndex).toBe(0);
+    expect(marker().getAttribute('aria-expanded')).toBe('false');
+
+    marker().focus();
+    await userEvent.keyboard('{Enter}');
+    await vi.waitFor(() => expect(query()).not.toBeNull());
+    expect(marker().getAttribute('aria-expanded')).toBe('true');
+
+    // Space activates on the way up, the way a native button does, so holding it cannot auto-repeat.
+    marker().dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }));
+    expect(query()).not.toBeNull();
+    marker().dispatchEvent(new KeyboardEvent('keyup', { key: ' ', bubbles: true }));
+    await vi.waitFor(() => expect(query()).toBeNull());
+    expect(marker().getAttribute('aria-expanded')).toBe('false');
+  });
+
   it('renders an empty data set as an empty table, not as an error', async () => {
     open(SAMPLE_ITEMS_EMPTY);
 

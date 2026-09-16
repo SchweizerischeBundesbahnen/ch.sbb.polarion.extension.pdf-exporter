@@ -769,7 +769,18 @@ export default function ExportFormView({
                 tabIndex={0}
                 onClick={() => validation.onZoom(index)}
                 onKeyDown={(event) => {
-                  if (event.key === 'Enter' || event.key === ' ') {
+                  // Enter activates on keydown and Space on keyup, the way a native button does.
+                  // Activating Space here instead would auto-repeat while the key is held.
+                  if (event.key === 'Enter') {
+                    event.preventDefault();
+                    validation.onZoom(index);
+                  } else if (event.key === ' ') {
+                    // Swallow the page scroll now, activate on the way up.
+                    event.preventDefault();
+                  }
+                }}
+                onKeyUp={(event) => {
+                  if (event.key === ' ') {
                     event.preventDefault();
                     validation.onZoom(index);
                   }
