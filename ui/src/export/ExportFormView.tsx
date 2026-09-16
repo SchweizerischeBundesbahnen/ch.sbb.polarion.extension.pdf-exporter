@@ -762,8 +762,18 @@ export default function ExportFormView({
                 key={index}
                 className="validate-result-img"
                 src={`data:image/png;base64,${page.content}`}
-                alt=""
+                // A control, not a decoration: it opens the page in the zoom dialog, so it carries a
+                // name, takes focus, and answers the two keys a button answers.
+                alt={`Invalid page ${index + 1}, open it enlarged`}
+                role="button"
+                tabIndex={0}
                 onClick={() => validation.onZoom(index)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    validation.onZoom(index);
+                  }
+                }}
               />
             ))}
           </div>
@@ -783,7 +793,11 @@ export default function ExportFormView({
               onCancel={closePreview}
             >
               <div className="preview-zoom" id={id('page-preview-zoom')}>
-                <img src={`data:image/png;base64,${opened.content}`} alt="" onClick={closePreview} />
+                <img
+                  src={`data:image/png;base64,${opened.content}`}
+                  alt={`Invalid page ${(validation.zoomed ?? 0) + 1}`}
+                  onClick={closePreview}
+                />
               </div>
             </Modal>
           )}

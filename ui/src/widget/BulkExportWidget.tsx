@@ -292,7 +292,17 @@ export default function BulkExportWidget({ shim, deps = {} }: Props) {
                         height={16}
                         role="button"
                         aria-label="Show Query"
+                        aria-expanded={queryShown}
+                        tabIndex={0}
                         onClick={() => setQueryShown((shown) => !shown)}
+                        onKeyDown={(event) => {
+                          // role="button" without these is worse than no role at all: it announces a
+                          // control that nothing can reach.
+                          if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault();
+                            setQueryShown((shown) => !shown);
+                          }
+                        }}
                       />
                     </div>
                   )}
