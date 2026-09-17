@@ -772,6 +772,34 @@ describe('validating the page width', () => {
     expect(document.querySelectorAll('#popup-page-previews img')).toHaveLength(4);
   });
 
+  it('opens a preview from the keyboard, so the thumbnails are not pointer-only', async () => {
+    validation([
+      {
+        method: 'POST',
+        match: /\/validate\?/,
+        json: { invalidPages: [{ content: PNG }, { content: PNG }], suspiciousWorkItems: [] },
+      },
+    ]);
+    await settled();
+    await userEvent.click(field<HTMLButtonElement>('#popup-validate-pdf')!);
+    await vi.waitFor(() => expect(document.querySelectorAll('#popup-page-previews img')).toHaveLength(2));
+
+    const thumbnails = () => document.querySelectorAll<HTMLImageElement>('#popup-page-previews img');
+    expect(thumbnails()[1].tabIndex).toBe(0);
+    expect(thumbnails()[1].getAttribute('role')).toBe('button');
+    // The name carries the page number, since alt="" would leave the control unnamed
+    expect(thumbnails()[1].alt).toContain('2');
+
+    thumbnails()[1].focus();
+    await userEvent.keyboard('{Enter}');
+    const opened = await vi.waitFor(() => {
+      const found = field('#popup-page-preview-zoom');
+      expect(found).not.toBeNull();
+      return found!;
+    });
+    expect(opened.closest('.rsp-modal')!.querySelector('.rsp-modal-title')!.textContent).toBe('Invalid page 2 of 2');
+  });
+
   it('opens a preview in a dialog of its own, and closes it again', async () => {
     validation([
       {

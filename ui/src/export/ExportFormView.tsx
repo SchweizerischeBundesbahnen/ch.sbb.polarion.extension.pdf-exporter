@@ -762,8 +762,29 @@ export default function ExportFormView({
                 key={index}
                 className="validate-result-img"
                 src={`data:image/png;base64,${page.content}`}
-                alt=""
+                // A control, not a decoration: it opens the page in the zoom dialog, so it carries a
+                // name, takes focus, and answers the two keys a button answers.
+                alt={`Invalid page ${index + 1}, open it enlarged`}
+                role="button"
+                tabIndex={0}
                 onClick={() => validation.onZoom(index)}
+                onKeyDown={(event) => {
+                  // Enter activates on keydown and Space on keyup, the way a native button does.
+                  // Activating Space here instead would auto-repeat while the key is held.
+                  if (event.key === 'Enter') {
+                    event.preventDefault();
+                    validation.onZoom(index);
+                  } else if (event.key === ' ') {
+                    // Swallow the page scroll now, activate on the way up.
+                    event.preventDefault();
+                  }
+                }}
+                onKeyUp={(event) => {
+                  if (event.key === ' ') {
+                    event.preventDefault();
+                    validation.onZoom(index);
+                  }
+                }}
               />
             ))}
           </div>
@@ -783,7 +804,11 @@ export default function ExportFormView({
               onCancel={closePreview}
             >
               <div className="preview-zoom" id={id('page-preview-zoom')}>
-                <img src={`data:image/png;base64,${opened.content}`} alt="" onClick={closePreview} />
+                <img
+                  src={`data:image/png;base64,${opened.content}`}
+                  alt={`Invalid page ${(validation.zoomed ?? 0) + 1}`}
+                  onClick={closePreview}
+                />
               </div>
             </Modal>
           )}

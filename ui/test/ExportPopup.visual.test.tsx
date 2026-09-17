@@ -13,6 +13,8 @@ import {
   SAMPLE_TEST_RUN,
   popupDependencies,
 } from './exportPopupSamples';
+import { installFetchMock } from './mockFetch';
+import { pagePreview } from './pagePreviewSample';
 import { clearToasts } from './toasts';
 import { settleBeforeCapture } from './visualHelpers';
 
@@ -106,6 +108,9 @@ afterEach(() => {
     if (element.shadowRoot) element.remove();
   });
   document.cookie = 'selected-style-package=; path=/; max-age=0';
+  // The validation reference is the one test here that stubs fetch. Left installed it would answer every
+  // later test's request with a 404, so it goes the way the side panel suite drops its own.
+  vi.unstubAllGlobals();
 });
 
 describe.skipIf(!__PIXEL_REFERENCES__)('export dialog visual', () => {
@@ -179,6 +184,37 @@ describe.skipIf(!__PIXEL_REFERENCES__)('export dialog visual', () => {
     // The reason is a toast, which is at the top of the window rather than inside the dialog - so the
     // reference above shows the marked field and this one shows what was said about it.
     await snapshotToast(shadow, 'popup-export-refused');
+  });
+
+  it('the thumbnails a failed validation leaves in the dialog, the first of them focused', async () => {
+    // The same gallery the side panel shows (test/expected/SidePanel/panel-validation-results.png), at the
+    // other width it has: the thumbnails are flex items of a row whose width comes from a container query,
+    // so the pane's 360px and the dialog's own width lay them out differently. Both need a reference - the
+    // dialog's is this one, and both carry the focus ring, see the side panel's for why it is drawn.
+    installFetchMock([
+      {
+        method: 'POST',
+        match: /\/validate\?/,
+        json: {
+          invalidPages: [{ content: pagePreview() }, { content: pagePreview() }],
+          suspiciousWorkItems: [],
+        },
+      },
+    ]);
+    const shadow = mounted({ stylePackage: SAMPLE_STYLE_PACKAGE });
+    await settled(shadow);
+    await dropdownsUpgraded(shadow);
+
+    shadow.querySelector<HTMLButtonElement>('#popup-validate-pdf')!.click();
+    await vi.waitFor(() => expect(shadow.querySelectorAll('#popup-page-previews img')).toHaveLength(2));
+
+    // Tabbed in from the previous stop, so the ring is the real `:focus-visible` one. See the side panel's
+    // test for why a programmatic focus would not do.
+    shadow.querySelector<HTMLButtonElement>('#popup-validate-pdf')!.focus();
+    await userEvent.keyboard('{Tab}');
+    expect(shadow.activeElement).toBe(shadow.querySelectorAll('#popup-page-previews img')[0]);
+
+    await snapshot(shadow, 'popup-validation-results');
   });
 
   it('an open dropdown, which has to paint above the dialog', async () => {

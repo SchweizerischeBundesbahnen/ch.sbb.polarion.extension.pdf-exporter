@@ -292,7 +292,28 @@ export default function BulkExportWidget({ shim, deps = {} }: Props) {
                         height={16}
                         role="button"
                         aria-label="Show Query"
+                        aria-expanded={queryShown}
+                        tabIndex={0}
                         onClick={() => setQueryShown((shown) => !shown)}
+                        onKeyDown={(event) => {
+                          // role="button" without these is worse than no role at all: it announces a
+                          // control that nothing can reach. Enter activates on keydown and Space on
+                          // keyup, the way a native button does; activating Space here would
+                          // auto-repeat while the key is held.
+                          if (event.key === 'Enter') {
+                            event.preventDefault();
+                            setQueryShown((shown) => !shown);
+                          } else if (event.key === ' ') {
+                            // Swallow the page scroll now, activate on the way up.
+                            event.preventDefault();
+                          }
+                        }}
+                        onKeyUp={(event) => {
+                          if (event.key === ' ') {
+                            event.preventDefault();
+                            setQueryShown((shown) => !shown);
+                          }
+                        }}
                       />
                     </div>
                   )}
