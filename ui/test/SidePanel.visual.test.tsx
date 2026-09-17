@@ -199,13 +199,26 @@ describe.skipIf(!__PIXEL_REFERENCES__)('side panel visual', () => {
   // sizes the viewport from the host's height, so taking one before `panel-page-preview` resizes the
   // window and re-rasterizes that dialog's title - a reference that changes for no reason anyone reviewing
   // it could explain. Nothing runs after this, so its own resize reaches no other reference.
-  it('the thumbnails a failed validation leaves in the pane', async () => {
+  it('the thumbnails a failed validation leaves in the pane, the first of them focused', async () => {
     // The gallery had no reference at all: the test above renders it, then photographs the dialog it opens.
     // Its thumbnails are flex items sized against the pane (`flex: 0 1 calc(25% - 8px)` with a min and a
     // max, see export-form.css) - which is why the keyboard fix kept them <img role="button"> instead of
     // wrapping each in a <button>, a wrapper becoming the flex item in its place. Nothing pinned that, so
     // the re-layout would not have shown up anywhere.
+    //
+    // Captured with the first one focused, so the ring a keyboard user navigates by is pinned too. It is
+    // drawn by the user agent: nothing in this app styles an outline, and the one RSP rule that clears one
+    // off a [role="button"] is scoped to `.markdown-body`, which this form is not.
     const host = await validated();
+
+    // Tabbed into rather than focus()ed. The ring comes from `:focus-visible`, which follows the modality
+    // the focus arrived by, and a programmatic focus does not count as the keyboard. The validate button is
+    // the previous tab stop - the spinner and the alert between it and the gallery take no focus.
+    host.shadowRoot!.querySelector<HTMLButtonElement>('#validate-pdf')!.focus();
+    await userEvent.keyboard('{Tab}');
+    // Asserted, so a DOM change that moves the tab stop fails here rather than quietly photographing an
+    // unfocused gallery. Inside a shadow root it is the root's activeElement, not the document's.
+    expect(host.shadowRoot!.activeElement).toBe(host.shadowRoot!.querySelectorAll('.validate-result-img')[0]);
 
     await snapshot(host, 'panel-validation-results');
   });
