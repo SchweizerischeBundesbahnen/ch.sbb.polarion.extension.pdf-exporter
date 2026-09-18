@@ -866,8 +866,9 @@ class HtmlProcessorTest {
             "url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA//8AAAABCAYAAAAfFcSJ')",
             // and the namespace of an inline svg is an address by every measure but the one that counts
             "url(\"data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg'/>\")",
-            // and a value may carry one without a url term around it, a custom property for one
-            "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA//8AAAABCAYAAAAfFcSJ"
+            // and a value may carry one with neither quotes nor a url term around it, where the payload
+            // stands behind a ',' and carries whatever it carries, an '@' and an address of its own included
+            "data:text/plain,written-by:user@host,see-http://www.w3.org/2000/svg"
     })
     @SneakyThrows
     void keepADataUrlNothingAccountedForTest(String dataUrl) {

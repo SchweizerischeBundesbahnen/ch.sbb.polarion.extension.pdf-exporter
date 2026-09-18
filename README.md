@@ -324,14 +324,15 @@ reason, and the export writes it into the result of the conversion, which is wha
 an export shows. An image the policy refused becomes a transparent placeholder in the PDF.
 
 A stylesheet keeps its declarations whatever happens to its resources. An address nothing in the stylesheet
-accounts for is replaced by `about:invalid`, and an `@import` nothing accounts for is renamed, so that the
-conversion service reads neither: everything else the stylesheet says still applies. A custom property
-holding an address, `--api: https://service.example`, is such a case. Only an address written in CSS escapes
-which nothing accounts for still drops the whole stylesheet: it names no place in the text to replace.
+accounts for is replaced by `about:invalid`, so that the conversion service reads none of them: everything
+else the stylesheet says still applies. A custom property holding an address, `--api: https://service.example`,
+is such a case. Only an address written in CSS escapes which nothing accounts for still drops the whole
+stylesheet: it names no place in the text to replace.
 
-A CSS `@import` is removed, whatever it names and wherever it stands. An at-rule cannot be embedded,
-so WeasyPrint would have to load it itself, past every check above. Reference such a stylesheet
-with a `<link rel="stylesheet">` instead, the extension loads and embeds that one.
+A CSS `@import` never survives, whatever it names and wherever it stands: it is removed where the stylesheet
+was read, and renamed to an at-rule no renderer knows where it was not. An at-rule cannot be embedded, so
+WeasyPrint would have to load it itself, past every check above. Reference such a stylesheet with a
+`<link rel="stylesheet">` instead, the extension loads and embeds that one.
 
 A configured JVM proxy (`http.proxyHost` and friends) is used for these requests. A proxy resolves the
 host name itself, so a request routed through one cannot be pinned to a checked address. Such a request
