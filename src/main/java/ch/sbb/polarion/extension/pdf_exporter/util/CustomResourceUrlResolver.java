@@ -120,7 +120,9 @@ public class CustomResourceUrlResolver implements IUrlResolver {
         String attempted = null;
         try {
             URL url = URI.create(normalizeUrl(scheme + ":" + urlStr)).toURL();
-            attempted = url.toString();
+            // only what this attempt records may be taken back by the one behind it: the same address may
+            // have been refused elsewhere in the same export, and that refusal stands
+            attempted = ExportContext.isBlocked(url.toString()) ? null : url.toString();
             InputStream stream = resolveImpl(url);
             // a decision was taken, whether it produced a resource or refused one, unless the refusal
             // itself turned on the scheme: an allowed origin may name one, and then it names no other

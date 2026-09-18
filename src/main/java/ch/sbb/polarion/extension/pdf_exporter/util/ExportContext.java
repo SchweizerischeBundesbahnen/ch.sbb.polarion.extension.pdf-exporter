@@ -37,6 +37,13 @@ public class ExportContext {
     }
 
     /**
+     * @return whether this resource is already recorded as one which was not embedded
+     */
+    public static boolean isBlocked(@NotNull String url) {
+        return blockedResources.get().containsKey(url);
+    }
+
+    /**
      * Takes back what an attempt to read a resource recorded, for a resource which was read after all. A
      * reference without a scheme is tried under both, and the first attempt may be refused while the second
      * one reads it: the document gets the resource then, and the result of the export may not say otherwise.

@@ -355,6 +355,28 @@ class CustomResourceUrlResolverTest {
 
     @Test
     @SneakyThrows
+    void keepsARefusalWhichAnotherResourceEarnedTest() {
+        // the record is keyed by the address, and the same address may have been refused elsewhere in the
+        // same export: a reference which is read here takes back only what its own attempt recorded
+        ExportContext.clear();
+        respond("/img.png", "image/png", PNG_CONTENT, false);
+        String refused = "https://127.0.0.1:" + server.getAddress().getPort() + "/img.png";
+        ExportContext.addBlockedResource(refused, "it was refused where the document named it directly");
+        String origin = "http://127.0.0.1:" + server.getAddress().getPort();
+        ResourceUrlPolicy policy = new ResourceUrlPolicy(Mode.ALLOWLIST_ONLY, List.of(origin), "https://localhost", 16);
+        CustomResourceUrlResolver resolver = new CustomResourceUrlResolver(policy);
+
+        try (InputStream stream = resolver.resolve("//127.0.0.1:" + server.getAddress().getPort() + "/img.png")) {
+            assertNotNull(stream);
+        }
+
+        assertEquals(List.of(refused),
+                ExportContext.getBlockedResources().stream().map(ExportContext.BlockedResource::url).toList());
+        ExportContext.clear();
+    }
+
+    @Test
+    @SneakyThrows
     void keepsTheAnswerOfTheFirstSchemeOfANetworkPathReference() {
         // the host answered, and 404 is an answer: asking it again over the other scheme adds nothing
         status("/missing.png", 404);
