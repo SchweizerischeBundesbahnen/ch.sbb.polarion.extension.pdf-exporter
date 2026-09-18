@@ -80,8 +80,6 @@ import static ch.sbb.polarion.extension.pdf_exporter.util.TikaMimeTypeResolver.P
 
 @UtilityClass
 public class MediaUtils {
-    public static final String IMG_SRC_REGEX = "<img[^<>]*src=(\"|')(?<url>[^(\"|')]*)(\"|')";
-    public static final String URL_REGEX = "(?i)url\\(\\s*([\"'])?(?<url>.*?)\\1?\\s*\\)";
     public static final String DATA_URL_PREFIX = "data:";
     private static final String NETWORK_PATH_PREFIX = "//";
     private static final String BYTE_ORDER_MARK = "\uFEFF";
