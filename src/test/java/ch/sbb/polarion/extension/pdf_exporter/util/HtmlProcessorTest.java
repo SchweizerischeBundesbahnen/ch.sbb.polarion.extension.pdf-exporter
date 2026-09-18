@@ -865,7 +865,9 @@ class HtmlProcessorTest {
             // the '//' of a base64 payload reads as a network path reference to a scan which knows no better
             "url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA//8AAAABCAYAAAAfFcSJ')",
             // and the namespace of an inline svg is an address by every measure but the one that counts
-            "url(\"data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg'/>\")"
+            "url(\"data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg'/>\")",
+            // and a value may carry one without a url term around it, a custom property for one
+            "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA//8AAAABCAYAAAAfFcSJ"
     })
     @SneakyThrows
     void keepADataUrlNothingAccountedForTest(String dataUrl) {

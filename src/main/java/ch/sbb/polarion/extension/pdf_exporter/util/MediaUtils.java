@@ -101,6 +101,12 @@ public class MediaUtils {
      * the separators of css end a value the parser dropped before it swallows the rest of the text.
      */
     private static final String ADDRESS_TERMINATORS = "()'\"; \t\r\n\f{},";
+    /**
+     * Where a data url written outside a url term and outside quotes ends. A space ends it, and so does the
+     * block it stands in: what it may not end at is a separator of a value, because a media type and its
+     * parameters are written with those, and the payload stands behind them.
+     */
+    private static final String BARE_VALUE_TERMINATORS = "{}()'\"";
     // what a detector answers when it read the content and recognized nothing in it
     public static final String OCTET_STREAM = "application/octet-stream";
 
@@ -563,8 +569,14 @@ public class MediaUtils {
             int close = probe.indexOf(')', index);
             return close < 0 ? probe.length() : close;
         }
-        // written outside a url term and outside quotes, where css itself ends it at a space
-        return endOfToken(probe, index);
+        // written outside a url term and outside quotes, where what ends it is a space or the end of the
+        // block it stands in: the separators a value ends at stand inside every data url before its payload
+        int end = index;
+        while (end < probe.length() && !Character.isWhitespace(probe.charAt(end))
+                && BARE_VALUE_TERMINATORS.indexOf(probe.charAt(end)) < 0) {
+            end++;
+        }
+        return end;
     }
 
     /**
