@@ -604,7 +604,7 @@ public class MediaUtils {
             if (stringEnd < 0 && current == '\\') {
                 // css reads an escape as a character of the value it stands in, so an escaped quote opens
                 // no string and an escaped bracket closes no term: both are stepped over as what they are
-                index += 2;
+                index += lengthOfCssEscape(probe, index);
                 return true;
             }
             if (stringEnd < 0 && (current == '\'' || current == '"')) {
@@ -632,7 +632,7 @@ public class MediaUtils {
             while (i < probe.length()) {
                 char current = probe.charAt(i);
                 if (current == '\\') {
-                    i += 2;
+                    i += lengthOfCssEscape(probe, i);
                 } else if (current == quote) {
                     return i;
                 } else {
@@ -673,6 +673,32 @@ public class MediaUtils {
     }
 
     /**
+     * Reads an escape the way css writes one: a backslash and the character behind it, or a backslash, up to
+     * six hex digits and the one whitespace which may close them. A scan which stepped over two characters
+     * read the digits of {@code \\20 } as text of its own and ended the value at the space closing them.
+     *
+     * @return how long the escape at that position is, 1 for a backslash which escapes nothing
+     */
+    private int lengthOfCssEscape(@NotNull String probe, int index) {
+        int i = index + 1;
+        if (i >= probe.length()) {
+            return 1;
+        }
+        if (Character.digit(probe.charAt(i), 16) < 0) {
+            return 2;
+        }
+        int digits = 0;
+        while (i < probe.length() && digits < 6 && Character.digit(probe.charAt(i), 16) >= 0) {
+            i++;
+            digits++;
+        }
+        if (i < probe.length() && Character.isWhitespace(probe.charAt(i))) {
+            i++;
+        }
+        return i - index;
+    }
+
+    /**
      * Reads a url term to its end, which css puts at its closing bracket or at a space: a url written
      * without quotes may hold neither unescaped. Reading past the bracket would step over the bracket of a
      * later term and every address in between, and reading past the space would do the same. An escape is
@@ -685,7 +711,7 @@ public class MediaUtils {
         while (i < probe.length()) {
             char current = probe.charAt(i);
             if (current == '\\') {
-                i += 2;
+                i += lengthOfCssEscape(probe, i);
             } else if (current == ')' || Character.isWhitespace(current)) {
                 return i;
             } else {
