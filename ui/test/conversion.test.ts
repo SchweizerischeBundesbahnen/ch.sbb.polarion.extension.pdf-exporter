@@ -277,6 +277,41 @@ describe('convertCollectionDocuments', () => {
     expect(withPages).toHaveBeenCalledTimes(2);
   });
 
+  it('gives back what its documents were exported in spite of, once per thing', async () => {
+    // the caller is the bulk widget, whose progress dialog names it next to the collection it belongs to
+    installFetchMock([
+      {
+        method: 'GET',
+        match: /collections\/144\/documents$/,
+        json: [
+          { projectId: 'elibrary', spaceId: 'S', documentName: 'One', documentType: 'LIVE_DOC' },
+          { projectId: 'elibrary', spaceId: 'S', documentName: 'Two', documentType: 'LIVE_DOC' },
+        ],
+      },
+      {
+        method: 'POST',
+        match: /\/convert\/jobs$/,
+        respond: () => new Response(null, { status: 202, headers: { Location: JOB_URL } }),
+      },
+      {
+        method: 'GET',
+        match: /job-1$/,
+        respond: () =>
+          pdf({
+            'PDF-Variant-Compliant': 'true',
+            'Blocked-Resources-Count': '1',
+            'Blocked-Resources': 'http://host/x.png',
+          }),
+      },
+    ]);
+
+    const warning = await convertCollectionDocuments(remote, options(downloadSpy(), true));
+
+    expect(warning).toContain('http://host/x.png');
+    // both documents ran into the same thing, and it is said once
+    expect(warning?.split('http://host/x.png')).toHaveLength(2);
+  });
+
   it('warns and returns for an empty collection', async () => {
     installFetchMock(collectionRoutes([]));
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});

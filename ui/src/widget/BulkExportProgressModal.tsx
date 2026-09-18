@@ -61,6 +61,7 @@ export default function BulkExportProgressModal({ state, onStop, onClose }: Read
               <span className="name">{itemName(row.item)}</span>
             </span>
             {row.error && <div className="error-message">{row.error}</div>}
+            {row.warning && <div className="warning-message">{row.warning}</div>}
           </div>
         ))}
 
@@ -82,6 +83,8 @@ export default function BulkExportProgressModal({ state, onStop, onClose }: Read
               {resultMessage(state)}
             </span>
           )}
+          {/* A merge is one conversion for the whole selection, so what it warns about belongs to the run */}
+          {!running && state.warning && <div className="warning-message">{state.warning}</div>}
         </div>
       </div>
     </Modal>

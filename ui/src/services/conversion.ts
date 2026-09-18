@@ -368,7 +368,7 @@ export async function convertCollectionDocuments(
     download?: typeof downloadBlob;
     pollInterval?: number;
   },
-): Promise<void> {
+): Promise<string | null> {
   const download = options.download ?? downloadBlob;
   const listedDocuments = await listCollectionDocuments(remote, options.projectId, options.collectionId);
   const documents = listedDocuments.filter(
@@ -376,7 +376,7 @@ export async function convertCollectionDocuments(
   );
   if (documents.length === 0) {
     console.warn('No documents found in the collection.');
-    return;
+    return null;
   }
 
   const outcomes = await Promise.allSettled(
@@ -394,6 +394,7 @@ export async function convertCollectionDocuments(
       );
       const fallbackName = `${document.projectId}_${document.spaceId}_${document.documentName}.pdf`;
       download(result.blob, document.fileName || fallbackName);
+      return result.warning;
     }),
   );
 
@@ -401,4 +402,11 @@ export async function convertCollectionDocuments(
   if (firstFailure?.status === 'rejected') {
     throw firstFailure.reason instanceof Error ? firstFailure.reason : new Error(String(firstFailure.reason));
   }
+  // one line per thing to know about the collection, however many of its documents ran into it
+  const warnings = new Set(
+    outcomes
+      .map((outcome) => (outcome.status === 'fulfilled' ? outcome.value : null))
+      .filter((warning): warning is string => Boolean(warning)),
+  );
+  return warnings.size === 0 ? null : [...warnings].join('\n\n');
 }
