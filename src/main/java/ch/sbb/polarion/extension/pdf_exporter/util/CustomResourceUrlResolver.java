@@ -33,6 +33,7 @@ import java.net.ProxySelector;
 import java.net.URI;
 import java.net.URL;
 import java.security.cert.CertificateException;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -107,41 +108,51 @@ public class CustomResourceUrlResolver implements IUrlResolver {
         SchemeAttempt other = resolveWithScheme(otherScheme, urlStr);
         if (other.stream() == null) {
             skipped(urlStr, "neither " + preferredScheme + " nor " + otherScheme + " could read it");
-        } else if (preferred.attempted() != null) {
+        } else {
             // the reference was read under the other scheme, so what the first attempt recorded was no
             // refusal of the resource: the document gets it, and the result of the export may not say
             // that it did not
-            ExportContext.unblockResource(preferred.attempted());
+            ExportContext.unblockResources(preferred.recorded());
         }
         return other.stream();
     }
 
     private SchemeAttempt resolveWithScheme(@NotNull String scheme, @NotNull String urlStr) {
-        String attempted = null;
+        // what this attempt records is what it adds to these, whatever address it ends up recording it
+        // under: a redirect is followed past the address the attempt began with. The rest was recorded by
+        // something else, and only the attempt which recorded a refusal may take it back
+        Set<String> recordedBefore = ExportContext.blockedUrls();
         try {
             URL url = URI.create(normalizeUrl(scheme + ":" + urlStr)).toURL();
-            // only what this attempt records may be taken back by the one behind it: the same address may
-            // have been refused elsewhere in the same export, and that refusal stands
-            attempted = ExportContext.isBlocked(url.toString()) ? null : url.toString();
             InputStream stream = resolveImpl(url);
             // a decision was taken, whether it produced a resource or refused one, unless the refusal
             // itself turned on the scheme: an allowed origin may name one, and then it names no other
-            return new SchemeAttempt(stream, stream != null || !policy.isRefusalSchemeSpecific(url), attempted);
+            return new SchemeAttempt(stream, stream != null || !policy.isRefusalSchemeSpecific(url), recordedSince(recordedBefore));
         } catch (Exception e) {
             logger.debug("Failed to load resource " + scheme + ":" + urlStr + ": " + e.getMessage());
             // nothing was decided unless the peer showed a certificate which was refused
-            return new SchemeAttempt(null, isCertificateFailure(e), attempted);
+            return new SchemeAttempt(null, isCertificateFailure(e), recordedSince(recordedBefore));
         }
+    }
+
+    /**
+     * @return the addresses recorded as not embedded since that reading of them, which is what the attempt
+     * behind this one added, redirects and all
+     */
+    @NotNull
+    private Set<String> recordedSince(@NotNull Set<String> recordedBefore) {
+        Set<String> added = new HashSet<>(ExportContext.blockedUrls());
+        added.removeAll(recordedBefore);
+        return added;
     }
 
     /**
      * @param stream     what the scheme produced, null if it produced nothing
      * @param conclusive whether trying the other scheme would still answer the question
-     * @param attempted  the url this scheme was tried with, null where it could not be built at all. What a
-     *                   failed attempt recorded is named by it, so that a later one which reads the resource
-     *                   can take that record back
+     * @param recorded   the addresses this attempt recorded as not embedded, so that a later one which reads
+     *                   the resource can take back what this one recorded and nothing else
      */
-    private record SchemeAttempt(@Nullable InputStream stream, boolean conclusive, @Nullable String attempted) {
+    private record SchemeAttempt(@Nullable InputStream stream, boolean conclusive, @NotNull Set<String> recorded) {
     }
 
     /**

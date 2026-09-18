@@ -945,6 +945,20 @@ class HtmlProcessorTest {
 
     @Test
     @SneakyThrows
+    void readADataUrlOfATermWhichIsNeverClosedAsBareTest() {
+        // the term around it is never closed, so reading the data url to the end of the text would step over
+        // the address behind it and hand it to the conversion service as it stands
+        String html = "<style>a { { { background: url(data:text/plain,x ; background: url(http://169.254.169.254/x.png)"
+                + " } } } .marker { color: red }</style>";
+
+        String result = processor.replaceResourcesAsBase64Encoded(html);
+
+        assertFalse(result.contains("169.254.169.254"));
+        assertTrue(result.contains(".marker { color: red }"));
+    }
+
+    @Test
+    @SneakyThrows
     void readAnAddressBehindACharacterWhichLowercasesIntoTwoTest() {
         // 'I' with a dot above lowercases into two characters, so a text lowercased as a whole is no longer
         // as long as the stylesheet it was read from, and every position past it names the wrong character

@@ -657,8 +657,17 @@ public class MediaUtils {
             return Math.min(stringEnd, probe.length());
         }
         if (brackets > 0) {
+            // a url term ends at its bracket, and it holds no unescaped space: reading past one would step
+            // over the bracket of a later term and every address in between, or over the whole stylesheet
+            // where no bracket follows at all
             int close = probe.indexOf(')', index);
-            return close < 0 ? probe.length() : close;
+            int space = firstWhitespace(probe, index);
+            if (close >= 0 && (space < 0 || close < space)) {
+                return close;
+            }
+            if (space >= 0) {
+                return space;
+            }
         }
         // written outside a url term and outside quotes, where what ends it is a space or the end of the
         // block it stands in: the separators a value ends at stand inside every data url before its payload
@@ -668,6 +677,18 @@ public class MediaUtils {
             end++;
         }
         return end;
+    }
+
+    /**
+     * @return where the first whitespace behind that position stands, -1 where none does
+     */
+    private int firstWhitespace(@NotNull String probe, int index) {
+        for (int i = index; i < probe.length(); i++) {
+            if (Character.isWhitespace(probe.charAt(i))) {
+                return i;
+            }
+        }
+        return -1;
     }
 
     /**

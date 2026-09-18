@@ -4,9 +4,11 @@ import lombok.experimental.UtilityClass;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @UtilityClass
 public class ExportContext {
@@ -37,19 +39,23 @@ public class ExportContext {
     }
 
     /**
-     * @return whether this resource is already recorded as one which was not embedded
+     * @return the addresses recorded so far, which a caller compares with a later reading of it to learn
+     * what an attempt of its own recorded. A redirect is followed past the address the attempt began with,
+     * so what it records is not the address the caller knows.
      */
-    public static boolean isBlocked(@NotNull String url) {
-        return blockedResources.get().containsKey(url);
+    public static Set<String> blockedUrls() {
+        return Set.copyOf(blockedResources.get().keySet());
     }
 
     /**
-     * Takes back what an attempt to read a resource recorded, for a resource which was read after all. A
+     * Takes back what one attempt to read a resource recorded, for a resource which was read after all. A
      * reference without a scheme is tried under both, and the first attempt may be refused while the second
      * one reads it: the document gets the resource then, and the result of the export may not say otherwise.
+     * Only what that attempt added is taken back, so a refusal another occurrence of the same address earned
+     * is left where it is.
      */
-    public static void unblockResource(@NotNull String url) {
-        blockedResources.get().remove(url);
+    public static void unblockResources(@NotNull Collection<String> urls) {
+        urls.forEach(blockedResources.get()::remove);
     }
 
     public static List<BlockedResource> getBlockedResources() {
