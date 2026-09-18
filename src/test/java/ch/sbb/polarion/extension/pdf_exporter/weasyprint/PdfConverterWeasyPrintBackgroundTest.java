@@ -44,6 +44,16 @@ class PdfConverterWeasyPrintBackgroundTest extends BasePdfConverterTest {
     private static final String BACKGROUND_RULE = "@page { background: url('%s') no-repeat center; background-size: cover; }";
     private static final String SERVER_BACKGROUND_PATH = "/polarion/ria/images/test-background.png";
     private static final String UNREACHABLE_BACKGROUND_URL = "https://images.example.com/background.png";
+    /**
+     * A rule naming an address the extension cannot account for: the parser reads no url term here, because a
+     * url written without quotes ends at the bracket inside it. The address is taken out of the text instead,
+     * and the selector matches nothing in the document, so the pages must come out as they do without it.
+     */
+    private static final String RULE_WITH_AN_ADDRESS_NOTHING_ACCOUNTS_FOR =
+            " .no-element-carries-this { background: url(https://images.example.com/x.png?a=(b)); }";
+    /** A rule the parser cannot read at all, which makes it refuse the stylesheet it stands in. */
+    private static final String RULE_WHICH_CANNOT_BE_PARSED =
+            " .no-element-carries-this { background: url('https://images.example.com/x.png); }";
     private static final String BACKGROUND_DATA_URL = solidPngDataUrl(new Color(0xCC, 0xE5, 0xFF));
 
     @Test
@@ -94,6 +104,27 @@ class PdfConverterWeasyPrintBackgroundTest extends BasePdfConverterTest {
         useCss(true, background(BACKGROUND_DATA_URL));
 
         boolean hasDiff = compareContentUsingReferenceImages(getCurrentMethodName(), converter.convertToPdf(params, null));
+        assertFalse(hasDiff);
+    }
+
+    @Test
+    void testStylesApplyAlthoughAnAddressCouldNotBeChecked() {
+        ExportParams params = exportParams(true);
+        useCss(false, background(BACKGROUND_DATA_URL) + RULE_WITH_AN_ADDRESS_NOTHING_ACCOUNTS_FOR);
+
+        // the references of the run without that rule: the address goes and nothing else does. Such a
+        // stylesheet used to be dropped whole, which took the background and every other style with it
+        boolean hasDiff = compareContentUsingReferenceImages("testBackgroundInCssWithCoverPage", converter.convertToPdf(params, null));
+        assertFalse(hasDiff);
+    }
+
+    @Test
+    void testStylesApplyAlthoughTheStylesheetCannotBeParsed() {
+        ExportParams params = exportParams(true);
+        useCss(false, background(BACKGROUND_DATA_URL) + RULE_WHICH_CANNOT_BE_PARSED);
+
+        // the same references again: a stylesheet the parser refuses is still one the renderer reads
+        boolean hasDiff = compareContentUsingReferenceImages("testBackgroundInCssWithCoverPage", converter.convertToPdf(params, null));
         assertFalse(hasDiff);
     }
 
