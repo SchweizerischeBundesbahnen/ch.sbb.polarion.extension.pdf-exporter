@@ -145,13 +145,18 @@ describe.skipIf(!__PIXEL_REFERENCES__)('Bulk PDF Export widget visual', () => {
    * Starts a bulk run over the whole selection and returns the host plus a hold on each conversion, so a
    * reference can be taken with the run going and again once it is over.
    */
-  async function startRun(items = SAMPLE_ITEMS): Promise<{ host: HTMLElement; finish: (fail?: boolean) => void }> {
-    const pending: { resolve: () => void; reject: (error: Error) => void }[] = [];
+  async function startRun(
+    items = SAMPLE_ITEMS,
+  ): Promise<{ host: HTMLElement; finish: (fail?: boolean, warning?: string) => void }> {
+    const pending: { resolve: (warning: string | null) => void; reject: (error: Error) => void }[] = [];
     const host = mounted(items, {
       popup: popupDependencies(),
       convert: () =>
         new Promise((resolve, reject) => {
-          pending.push({ resolve: () => resolve({ blob: new Blob(['pdf']), fileName: null, warning: null }), reject });
+          pending.push({
+            resolve: (warning) => resolve({ blob: new Blob(['pdf']), fileName: null, warning }),
+            reject,
+          });
         }),
       download: () => {},
       downloadAttachments: () => Promise.resolve(),
@@ -167,10 +172,10 @@ describe.skipIf(!__PIXEL_REFERENCES__)('Bulk PDF Export widget visual', () => {
     host.shadowRoot!.querySelector<HTMLButtonElement>('.rsp-modal-footer .sbb-btn--primary')!.click();
     await vi.waitFor(() => expect(host.shadowRoot!.querySelector('.bulk-export-progress')).not.toBeNull());
 
-    const finish = (fail = false) => {
+    const finish = (fail = false, warning?: string) => {
       const next = pending.shift();
       if (fail) next?.reject(new Error('Conversion failed: the document has no content'));
-      else next?.resolve();
+      else next?.resolve(warning ?? null);
     };
     return { host, finish };
   }
@@ -225,6 +230,64 @@ describe.skipIf(!__PIXEL_REFERENCES__)('Bulk PDF Export widget visual', () => {
     await vi.waitFor(() => expect(host.shadowRoot!.querySelector('.bulk-export-outcome .result')).not.toBeNull());
 
     await dialogSnapshot(host, 'widget-progress-finished-with-errors');
+  });
+
+  it('a bulk export that finished with something to know about an item', async () => {
+    // The file was produced and something was left out of it. The other surfaces say that in a toast, and
+    // none of them is on a report page while this runs, so the row it belongs to carries it.
+    const { host, finish } = await startRun();
+    for (let index = 0; index < SAMPLE_ITEMS.items.length; index++) {
+      // one conversion runs at a time, so each has to be picked up before the next one can be finished
+      finish(
+        false,
+        index === 0
+          ? '1 resource(s) named by the document or its style sheet were not embedded: ' +
+              'http://cdn.intranet/logo.png. The Polarion log names the reason for each. Everything else was exported.'
+          : undefined,
+      );
+      await vi.waitFor(() => expect(host.shadowRoot!.querySelectorAll('.export-item.finished').length).toBe(index + 1));
+    }
+    await vi.waitFor(() => expect(host.shadowRoot!.querySelector('.bulk-export-outcome .result')).not.toBeNull());
+
+    await dialogSnapshot(host, 'widget-progress-finished-with-warning');
+  });
+
+  it('a merged bulk export with something to know about the run', async () => {
+    // A merge is one conversion for the whole selection, so what it warns about belongs to the outcome
+    let finishMerge: () => void = () => {};
+    const host = mounted(SAMPLE_ITEMS, {
+      popup: { ...popupDependencies(), isBulkAvailable: () => Promise.resolve(true) },
+      convertMerge: () =>
+        new Promise((resolve) => {
+          finishMerge = () =>
+            resolve({
+              blob: new Blob(['pdf']),
+              fileName: 'merged-document.pdf',
+              warning:
+                '2 resource(s) named by the document or its style sheet were not embedded: ' +
+                'http://cdn.intranet/logo.png, http://cdn.intranet/cover.png. ' +
+                'The Polarion log names the reason for each. Everything else was exported.',
+            });
+        }),
+      download: () => {},
+      downloadAttachments: () => Promise.resolve(),
+    });
+    await settled(host);
+
+    host.shadowRoot!.querySelectorAll<HTMLInputElement>('input.export-item').forEach((box) => box.click());
+    await vi.waitFor(() =>
+      expect(host.shadowRoot!.querySelector('#bulk-export-pdf')!.className).not.toContain('defaultCursor'),
+    );
+    host.shadowRoot!.querySelector<HTMLElement>('#bulk-export-pdf')!.click();
+    await vi.waitFor(() => expect(host.shadowRoot!.querySelector('#popup-merge-into-single-pdf')).not.toBeNull());
+    host.shadowRoot!.querySelector<HTMLInputElement>('#popup-merge-into-single-pdf')!.click();
+    host.shadowRoot!.querySelector<HTMLButtonElement>('.rsp-modal-footer .sbb-btn--primary')!.click();
+    await vi.waitFor(() => expect(host.shadowRoot!.querySelector('.bulk-export-progress')).not.toBeNull());
+
+    finishMerge();
+    await vi.waitFor(() => expect(host.shadowRoot!.querySelector('.bulk-export-outcome .result')).not.toBeNull());
+
+    await dialogSnapshot(host, 'widget-progress-merge-warning');
   });
 
   it('an endpoint that refused the descriptor', async () => {
