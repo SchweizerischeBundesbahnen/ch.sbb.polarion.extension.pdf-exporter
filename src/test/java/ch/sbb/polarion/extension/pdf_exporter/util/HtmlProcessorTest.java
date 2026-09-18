@@ -945,6 +945,33 @@ class HtmlProcessorTest {
 
     @Test
     @SneakyThrows
+    void readAHexEscapeClosedByACarriageReturnAndLineFeedTest() {
+        // css closes the digits of an escape with one whitespace, and the two characters of a line break are
+        // one: reading the return alone leaves the feed to end the term in the middle of the resource
+        String dataUrl = "url(data:text/plain,a\\20\r\nb//c)";
+        String html = "<style>a { { { background: " + dataUrl + " } } } .marker { color: red }</style>";
+
+        String result = processor.replaceResourcesAsBase64Encoded(html);
+
+        assertTrue(result.contains(dataUrl), result);
+        assertFalse(result.contains("about:invalid"));
+    }
+
+    @Test
+    @SneakyThrows
+    void readOnlyAnAsciiDigitAsADigitOfAnEscapeTest() {
+        // css writes an escape with ascii hex digits and no other, so a digit of another script escapes
+        // itself: read as a digit it would eat the space which ends the term and the address behind it
+        String html = "<style>a { { { background: url(data:text/plain,x\\\u0663 http://169.254.169.254/x.png)"
+                + " } } } .marker { color: red }</style>";
+
+        String result = processor.replaceResourcesAsBase64Encoded(html);
+
+        assertFalse(result.contains("169.254.169.254"), result);
+    }
+
+    @Test
+    @SneakyThrows
     void readAHexEscapeOfAUrlTermToItsEndTest() {
         // a hex escape is a backslash, up to six hex digits and the one space which closes them: reading two
         // characters of it leaves the digits as text and ends the term at that space
@@ -957,11 +984,19 @@ class HtmlProcessorTest {
         assertFalse(result.contains("about:invalid"));
     }
 
-    @Test
+    @ParameterizedTest
+    @ValueSource(strings = {
+            // css keeps an escaped space inside a url token, so the payload behind it belongs to the resource
+            "url(data:image/svg+xml,<svg\\ xmlns='http://www.w3.org/2000/svg'/>)",
+            // a hex escape is a backslash, up to six hex digits and the one space which closes them
+            "url(data:text/plain,a\\20 b//c)",
+            // and the two characters of a line break are that one whitespace, not two
+            "url(data:text/plain,a\\20\r\nb//c)"
+    })
     @SneakyThrows
-    void keepAnEscapedSpaceInsideADataUrlTermTest() {
-        // css keeps an escaped space inside a url token, so the payload behind it belongs to the resource
-        String dataUrl = "url(data:image/svg+xml,<svg\\ xmlns='http://www.w3.org/2000/svg'/>)";
+    void readAUrlTermToTheEndCssGivesItTest(String dataUrl) {
+        // every one of these ends the term where css ends it, which is behind the payload: ending it earlier
+        // would leave what the resource carries to be read as a stylesheet of its own
         String html = "<style>a { { { background: " + dataUrl + " } } } .marker { color: red }</style>";
 
         String result = processor.replaceResourcesAsBase64Encoded(html);

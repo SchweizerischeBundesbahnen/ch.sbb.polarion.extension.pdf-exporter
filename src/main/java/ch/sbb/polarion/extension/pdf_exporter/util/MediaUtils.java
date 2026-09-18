@@ -673,6 +673,17 @@ public class MediaUtils {
     }
 
     /**
+     * @return whether css reads this character as a digit of a hex escape, which is what an ascii hex digit
+     * is and nothing else: {@code Character.digit} answers for every digit unicode has, and css writes none
+     * of the others in an escape
+     */
+    private boolean isHexDigit(char character) {
+        return (character >= '0' && character <= '9')
+                || (character >= 'a' && character <= 'f')
+                || (character >= 'A' && character <= 'F');
+    }
+
+    /**
      * Reads an escape the way css writes one: a backslash and the character behind it, or a backslash, up to
      * six hex digits and the one whitespace which may close them. A scan which stepped over two characters
      * read the digits of {@code \\20 } as text of its own and ended the value at the space closing them.
@@ -684,16 +695,19 @@ public class MediaUtils {
         if (i >= probe.length()) {
             return 1;
         }
-        if (Character.digit(probe.charAt(i), 16) < 0) {
+        if (!isHexDigit(probe.charAt(i))) {
             return 2;
         }
         int digits = 0;
-        while (i < probe.length() && digits < 6 && Character.digit(probe.charAt(i), 16) >= 0) {
+        while (i < probe.length() && digits < 6 && isHexDigit(probe.charAt(i))) {
             i++;
             digits++;
         }
         if (i < probe.length() && Character.isWhitespace(probe.charAt(i))) {
-            i++;
+            // one whitespace closes the digits, and a carriage return with a line feed behind it is one
+            boolean carriageReturnAndLineFeed = probe.charAt(i) == '\r'
+                    && i + 1 < probe.length() && probe.charAt(i + 1) == '\n';
+            i += carriageReturnAndLineFeed ? 2 : 1;
         }
         return i - index;
     }
