@@ -112,9 +112,9 @@ class PdfConverterWeasyPrintBackgroundTest extends BasePdfConverterTest {
         ExportParams params = exportParams(true);
         useCss(false, background(BACKGROUND_DATA_URL) + RULE_WITH_AN_ADDRESS_NOTHING_ACCOUNTS_FOR);
 
-        // the references of the run without that rule: the address goes and nothing else does. Such a
-        // stylesheet used to be dropped whole, which took the background and every other style with it
-        boolean hasDiff = compareContentUsingReferenceImages("testBackgroundInCssWithCoverPage", converter.convertToPdf(params, null));
+        // the references show the pages the stylesheet describes, background and all. Such a stylesheet used
+        // to be dropped whole, which took every style with it, so the same pages came out bare
+        boolean hasDiff = compareContentUsingReferenceImages(getCurrentMethodName(), converter.convertToPdf(params, null));
         assertFalse(hasDiff);
     }
 
@@ -123,8 +123,8 @@ class PdfConverterWeasyPrintBackgroundTest extends BasePdfConverterTest {
         ExportParams params = exportParams(true);
         useCss(false, background(BACKGROUND_DATA_URL) + RULE_WHICH_CANNOT_BE_PARSED);
 
-        // the same references again: a stylesheet the parser refuses is still one the renderer reads
-        boolean hasDiff = compareContentUsingReferenceImages("testBackgroundInCssWithCoverPage", converter.convertToPdf(params, null));
+        // a stylesheet the parser refuses is still one the renderer reads, and the pages say so
+        boolean hasDiff = compareContentUsingReferenceImages(getCurrentMethodName(), converter.convertToPdf(params, null));
         assertFalse(hasDiff);
     }
 
