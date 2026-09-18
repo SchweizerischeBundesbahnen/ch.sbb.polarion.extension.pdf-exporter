@@ -312,6 +312,44 @@ describe('convertCollectionDocuments', () => {
     expect(warning?.split('http://host/x.png')).toHaveLength(2);
   });
 
+  it('says each thing once even when the documents differ in what else they warn about', async () => {
+    // the messages are deduplicated paragraph by paragraph: two documents which are both not compliant and
+    // name different resources share the compliance paragraph and nothing else
+    let call = 0;
+    installFetchMock([
+      {
+        method: 'GET',
+        match: /collections\/144\/documents$/,
+        json: [
+          { projectId: 'elibrary', spaceId: 'S', documentName: 'One', documentType: 'LIVE_DOC' },
+          { projectId: 'elibrary', spaceId: 'S', documentName: 'Two', documentType: 'LIVE_DOC' },
+        ],
+      },
+      {
+        method: 'POST',
+        match: /\/convert\/jobs$/,
+        respond: () => new Response(null, { status: 202, headers: { Location: JOB_URL } }),
+      },
+      {
+        method: 'GET',
+        match: /job-1$/,
+        respond: () =>
+          pdf({
+            'PDF-Variant-Compliant': 'false',
+            'Blocked-Resources-Count': '1',
+            'Blocked-Resources': `http://host/${(call += 1)}.png`,
+          }),
+      },
+    ]);
+
+    const warning = await convertCollectionDocuments(remote, options(downloadSpy(), true));
+
+    expect(warning).toContain('http://host/1.png');
+    expect(warning).toContain('http://host/2.png');
+    // the compliance paragraph is shared, so it is said once although both documents reported it
+    expect(warning?.split("isn't compliant")).toHaveLength(2);
+  });
+
   it('warns and returns for an empty collection', async () => {
     installFetchMock(collectionRoutes([]));
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});

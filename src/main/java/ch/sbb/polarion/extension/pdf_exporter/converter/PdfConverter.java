@@ -166,6 +166,7 @@ public class PdfConverter {
 
             BulkProcessingConnector.MergeResult mergeResult = bulkProcessingConnector.convertMergedToPdf(preparedDocuments, mergeParams);
 
+            logBlockedResources(generationLog);
             generationLog.finish();
             logger.info("Merged PDF has been generated within " + generationLog.getTotalDurationMs() + " milliseconds");
             if (mergeResult.failedDocumentCount() > 0) {

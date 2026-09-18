@@ -614,6 +614,20 @@
             },
             "description": "Conversion job result is ready",
             "headers": {
+              "Blocked-Resources": {
+                "description": "Addresses of the resources which were not embedded, the Polarion log names the reason of each",
+                "schema": {
+                  "type": "string"
+                },
+                "style": "simple"
+              },
+              "Blocked-Resources-Count": {
+                "description": "Count of resources which were not embedded into the document",
+                "schema": {
+                  "type": "string"
+                },
+                "style": "simple"
+              },
               "Content-Disposition": {
                 "description": "To inform a browser that the response is a downloadable attachment",
                 "schema": {

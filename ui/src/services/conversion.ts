@@ -402,11 +402,14 @@ export async function convertCollectionDocuments(
   if (firstFailure?.status === 'rejected') {
     throw firstFailure.reason instanceof Error ? firstFailure.reason : new Error(String(firstFailure.reason));
   }
-  // one line per thing to know about the collection, however many of its documents ran into it
+  // One paragraph per thing to know about the collection, however many of its documents ran into it. The
+  // messages are deduplicated paragraph by paragraph rather than whole: two documents which are both not
+  // compliant and name different resources share the compliance paragraph and nothing else.
   const warnings = new Set(
     outcomes
-      .map((outcome) => (outcome.status === 'fulfilled' ? outcome.value : null))
-      .filter((warning): warning is string => Boolean(warning)),
+      .flatMap((outcome) => (outcome.status === 'fulfilled' && outcome.value ? outcome.value.split('\n\n') : []))
+      .map((paragraph) => paragraph.trim())
+      .filter(Boolean),
   );
   return warnings.size === 0 ? null : [...warnings].join('\n\n');
 }

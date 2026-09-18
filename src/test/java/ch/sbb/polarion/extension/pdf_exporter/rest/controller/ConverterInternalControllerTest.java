@@ -184,6 +184,30 @@ class ConverterInternalControllerTest {
     }
 
     @Test
+    void getPdfConverterJobResult_keepsTheBlockedResourcesHeaderWithinWhatAResponseCarries() {
+        // the urls come out of a document, so nothing caps how many there are or what they carry: a line
+        // break would end the header and a long enough list would carry the response past a container's limit
+        List<ExportContext.BlockedResource> blocked = new ArrayList<>();
+        blocked.add(new ExportContext.BlockedResource("http://host/with\r\na-line-break.png", "it was refused"));
+        for (int index = 1; index < 15; index++) {
+            blocked.add(new ExportContext.BlockedResource("http://host/" + "x".repeat(300) + index + ".png", "it was refused"));
+        }
+        when(pdfConverterJobService.getJobResult("testJobId")).thenReturn(Optional.of("test pdf".getBytes()));
+        when(pdfConverterJobService.getJobContext("testJobId")).thenReturn(PdfConverterJobsService.JobContext.builder()
+                .workItemIDsWithMissingAttachment(new ArrayList<String>())
+                .blockedResources(blocked)
+                .failedDocumentCount(new java.util.concurrent.atomic.AtomicInteger())
+                .build());
+
+        Response jobResult = internalController.getPdfConverterJobResult("testJobId");
+
+        String header = jobResult.getHeaderString("Blocked-Resources");
+        assertThat(jobResult.getHeaderString("Blocked-Resources-Count")).isEqualTo("15");
+        assertThat(header).doesNotContain("\r").doesNotContain("\n").endsWith("and 5 more");
+        assertThat(header.length()).isLessThan(2500);
+    }
+
+    @Test
     void getPdfConverterJobResult_notFound() {
         when(pdfConverterJobService.getJobResult(anyString())).thenAnswer(id -> {
             throw new NoSuchElementException("Job not found: " + id);

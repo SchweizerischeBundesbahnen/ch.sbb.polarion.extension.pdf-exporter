@@ -94,6 +94,8 @@ public class MediaUtils {
      * the declaration around it stays readable and the renderer requests no address of its own.
      */
     private static final String BLOCKED_ADDRESS = "about:invalid";
+    /** What a stylesheet which is part of a document is called where an address is expected. */
+    private static final String INLINE_STYLESHEET = "<inline stylesheet>";
     /**
      * Where an address written in a stylesheet ends: a url term ends at a bracket, a quote or a space, and
      * the separators of css end a value the parser dropped before it swallows the rest of the text.
@@ -486,13 +488,15 @@ public class MediaUtils {
             edits.add(new CssEdit(range, isImport ? BLOCKED_IMPORT_RULE : BLOCKED_ADDRESS));
             Arrays.fill(unaccounted, range.start(), range.end(), ' ');
         }
-        if (namesAnAbsoluteAddress(new String(unaccounted))) {
-            // what is left names an address only once its escapes are resolved, and the text it is written
-            // with cannot be replaced by the address it means. Nothing here can make that stylesheet safe
-            logger.warn("Dropped a stylesheet: it names an address in escapes which nothing in it accounts"
-                    + " for, so a conversion service would read that address itself: " + described);
-            ExportContext.addBlockedResource(described,
-                    "the stylesheet names an address in escapes which could not be checked so all of it was dropped");
+        if (fetchesInEscapes(new String(unaccounted))) {
+            // what is left fetches something only once its escapes are resolved, and the text it is written
+            // with cannot be replaced by what it means. Nothing here can make that stylesheet safe
+            logger.warn("Dropped a stylesheet: it names in escapes something which nothing in it accounts"
+                    + " for, so a conversion service would read that itself: " + described);
+            // the url of a blocked resource is read as an address, by the header which reports it and by the
+            // message the export shows: this one names the stylesheet, and what it says goes in the reason
+            ExportContext.addBlockedResource(stylesheetUrl == null ? INLINE_STYLESHEET : stylesheetUrl,
+                    "it names in escapes something which could not be checked so all of it was dropped, " + described);
             return "";
         }
         return applyEdits(css, edits);
@@ -511,6 +515,13 @@ public class MediaUtils {
         String probe = new String(unaccounted).toLowerCase(Locale.ROOT);
         int index = 0;
         while (index < probe.length()) {
+            if (probe.startsWith(DATA_URL_PREFIX, index)) {
+                // a data url carries the resource itself and fetches nothing, and what it carries is any
+                // text at all: the '//' of a base64 payload and the namespace of an inline svg both read
+                // as an address to the scan below, which would cut the payload in half
+                index = endOfToken(probe, index);
+                continue;
+            }
             int length = unvettedLengthAt(probe, index);
             if (length > 0) {
                 ranges.add(new CssRange(index, index + length));
@@ -518,6 +529,18 @@ public class MediaUtils {
             index += Math.max(length, 1);
         }
         return ranges;
+    }
+
+    /**
+     * @return where the value standing at that position ends, which is where a url term or a quoted value
+     * ends. A data url is read to its end this way, whatever it carries between there and here.
+     */
+    private int endOfToken(@NotNull String probe, int index) {
+        int end = index;
+        while (end < probe.length() && ADDRESS_TERMINATORS.indexOf(probe.charAt(end)) < 0) {
+            end++;
+        }
+        return end;
     }
 
     /**
@@ -532,13 +555,9 @@ public class MediaUtils {
         if (!namesAnAddress) {
             return 0;
         }
-        int end = index;
         // a url term ends at a bracket, a quote or a space, and so does a value read inside quotes: a
         // separator of css ends it as well, so that a value the parser dropped is not swallowed whole
-        while (end < probe.length() && ADDRESS_TERMINATORS.indexOf(probe.charAt(end)) < 0) {
-            end++;
-        }
-        return end - index;
+        return endOfToken(probe, index) - index;
     }
 
     /**
@@ -735,6 +754,15 @@ public class MediaUtils {
         // an address of its own still has to reach the backstop, which is what judges whether anything
         // accounted for it: the payload of a data url is exempted there, by the range of the url() term
         return probe.contains("url(") || probe.contains(IMPORT_RULE) || namesAnAbsoluteAddress(probe);
+    }
+
+    /**
+     * Tells whether a text still fetches something once its escapes are resolved, which is what is left when
+     * everything the pass above could place has been taken out. An import counts whatever it names: an
+     * at-rule is never embedded, so a relative one is read by the conversion service from its own base.
+     */
+    private boolean fetchesInEscapes(@NotNull String css) {
+        return namesAnAbsoluteAddress(css) || decodeCssEscapes(css).toLowerCase(Locale.ROOT).contains(IMPORT_RULE);
     }
 
     /**
