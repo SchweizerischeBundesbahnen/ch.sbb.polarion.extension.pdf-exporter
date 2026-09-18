@@ -945,6 +945,19 @@ class HtmlProcessorTest {
 
     @Test
     @SneakyThrows
+    void keepAnEscapedSpaceInsideADataUrlTermTest() {
+        // css keeps an escaped space inside a url token, so the payload behind it belongs to the resource
+        String dataUrl = "url(data:image/svg+xml,<svg\\ xmlns='http://www.w3.org/2000/svg'/>)";
+        String html = "<style>a { { { background: " + dataUrl + " } } } .marker { color: red }</style>";
+
+        String result = processor.replaceResourcesAsBase64Encoded(html);
+
+        assertTrue(result.contains(dataUrl), result);
+        assertFalse(result.contains("about:invalid"));
+    }
+
+    @Test
+    @SneakyThrows
     void readADataUrlOfATermWhichIsNeverClosedAsBareTest() {
         // the term around it is never closed, so reading the data url to the end of the text would step over
         // the address behind it and hand it to the conversion service as it stands

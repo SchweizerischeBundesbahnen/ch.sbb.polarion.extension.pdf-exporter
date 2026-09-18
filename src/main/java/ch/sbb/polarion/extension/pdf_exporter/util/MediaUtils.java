@@ -657,16 +657,9 @@ public class MediaUtils {
             return Math.min(stringEnd, probe.length());
         }
         if (brackets > 0) {
-            // a url term ends at its bracket, and it holds no unescaped space: reading past one would step
-            // over the bracket of a later term and every address in between, or over the whole stylesheet
-            // where no bracket follows at all
-            int close = probe.indexOf(')', index);
-            int space = firstWhitespace(probe, index);
-            if (close >= 0 && (space < 0 || close < space)) {
-                return close;
-            }
-            if (space >= 0) {
-                return space;
+            int end = endOfUrlToken(probe, index);
+            if (end >= 0) {
+                return end;
             }
         }
         // written outside a url term and outside quotes, where what ends it is a space or the end of the
@@ -680,12 +673,23 @@ public class MediaUtils {
     }
 
     /**
-     * @return where the first whitespace behind that position stands, -1 where none does
+     * Reads a url term to its end, which css puts at its closing bracket or at a space: a url written
+     * without quotes may hold neither unescaped. Reading past the bracket would step over the bracket of a
+     * later term and every address in between, and reading past the space would do the same. An escape is
+     * stepped over with what it escapes, so a payload which holds one of the two that way keeps it.
+     *
+     * @return where the term ends, -1 where nothing in the text ends it
      */
-    private int firstWhitespace(@NotNull String probe, int index) {
-        for (int i = index; i < probe.length(); i++) {
-            if (Character.isWhitespace(probe.charAt(i))) {
+    private int endOfUrlToken(@NotNull String probe, int index) {
+        int i = index;
+        while (i < probe.length()) {
+            char current = probe.charAt(i);
+            if (current == '\\') {
+                i += 2;
+            } else if (current == ')' || Character.isWhitespace(current)) {
                 return i;
+            } else {
+                i++;
             }
         }
         return -1;
