@@ -65,6 +65,23 @@ describe('warningOf', () => {
     expect(warning?.split('\n\n')).toHaveLength(2);
   });
 
+  it('reports the resources which were not embedded', () => {
+    const warning = warningOf(
+      new Headers({
+        'Blocked-Resources-Count': '2',
+        'Blocked-Resources': 'http://host/a.png, http://host/b.css',
+        'PDF-Variant-Compliant': 'true',
+      }),
+    );
+    expect(warning).toContain('2 resource(s)');
+    expect(warning).toContain('http://host/a.png, http://host/b.css');
+  });
+
+  it('ignores a zero or unparseable blocked resource count', () => {
+    expect(warningOf(new Headers({ 'Blocked-Resources-Count': '0', 'PDF-Variant-Compliant': 'true' }))).toBeNull();
+    expect(warningOf(new Headers({ 'Blocked-Resources-Count': 'x', 'PDF-Variant-Compliant': 'true' }))).toBeNull();
+  });
+
   it('ignores a zero or unparseable attachment count', () => {
     expect(
       warningOf(new Headers({ 'Missing-WorkItem-Attachments-Count': '0', 'PDF-Variant-Compliant': 'true' })),
@@ -258,6 +275,79 @@ describe('convertCollectionDocuments', () => {
     const withPages = downloadSpy();
     await convertCollectionDocuments(remote, options(withPages, true));
     expect(withPages).toHaveBeenCalledTimes(2);
+  });
+
+  it('gives back what its documents were exported in spite of, once per thing', async () => {
+    // the caller is the bulk widget, whose progress dialog names it next to the collection it belongs to
+    installFetchMock([
+      {
+        method: 'GET',
+        match: /collections\/144\/documents$/,
+        json: [
+          { projectId: 'elibrary', spaceId: 'S', documentName: 'One', documentType: 'LIVE_DOC' },
+          { projectId: 'elibrary', spaceId: 'S', documentName: 'Two', documentType: 'LIVE_DOC' },
+        ],
+      },
+      {
+        method: 'POST',
+        match: /\/convert\/jobs$/,
+        respond: () => new Response(null, { status: 202, headers: { Location: JOB_URL } }),
+      },
+      {
+        method: 'GET',
+        match: /job-1$/,
+        respond: () =>
+          pdf({
+            'PDF-Variant-Compliant': 'true',
+            'Blocked-Resources-Count': '1',
+            'Blocked-Resources': 'http://host/x.png',
+          }),
+      },
+    ]);
+
+    const warning = await convertCollectionDocuments(remote, options(downloadSpy(), true));
+
+    expect(warning).toContain('http://host/x.png');
+    // both documents ran into the same thing, and it is said once
+    expect(warning?.split('http://host/x.png')).toHaveLength(2);
+  });
+
+  it('says each thing once even when the documents differ in what else they warn about', async () => {
+    // the messages are deduplicated paragraph by paragraph: two documents which are both not compliant and
+    // name different resources share the compliance paragraph and nothing else
+    let call = 0;
+    installFetchMock([
+      {
+        method: 'GET',
+        match: /collections\/144\/documents$/,
+        json: [
+          { projectId: 'elibrary', spaceId: 'S', documentName: 'One', documentType: 'LIVE_DOC' },
+          { projectId: 'elibrary', spaceId: 'S', documentName: 'Two', documentType: 'LIVE_DOC' },
+        ],
+      },
+      {
+        method: 'POST',
+        match: /\/convert\/jobs$/,
+        respond: () => new Response(null, { status: 202, headers: { Location: JOB_URL } }),
+      },
+      {
+        method: 'GET',
+        match: /job-1$/,
+        respond: () =>
+          pdf({
+            'PDF-Variant-Compliant': 'false',
+            'Blocked-Resources-Count': '1',
+            'Blocked-Resources': `http://host/${(call += 1)}.png`,
+          }),
+      },
+    ]);
+
+    const warning = await convertCollectionDocuments(remote, options(downloadSpy(), true));
+
+    expect(warning).toContain('http://host/1.png');
+    expect(warning).toContain('http://host/2.png');
+    // the compliance paragraph is shared, so it is said once although both documents reported it
+    expect(warning?.split("isn't compliant")).toHaveLength(2);
   });
 
   it('warns and returns for an empty collection', async () => {

@@ -63,6 +63,7 @@ public class PdfConverterJobsService {
         boolean isJobLogoutRequired = isJobLogoutRequired();
         final JobContext jobContext = JobContext.builder()
                 .workItemIDsWithMissingAttachment(new ArrayList<>())
+                .blockedResources(new ArrayList<>())
                 .failedDocumentCount(new java.util.concurrent.atomic.AtomicInteger())
                 .build();
         ExportParams representativeParams = documentExportParams.isEmpty() ? null : documentExportParams.get(0);
@@ -95,6 +96,7 @@ public class PdfConverterJobsService {
                 workerThread.set(null);
                 DebugDataStorage.clearCurrentJobId();
                 jobContext.workItemIDsWithMissingAttachment.addAll(ExportContext.getWorkItemIDsWithMissingAttachment());
+                jobContext.blockedResources.addAll(ExportContext.getBlockedResources());
                 ExportContext.clear();
                 if ((userSubject != null) && isJobLogoutRequired) {
                     securityService.logout(userSubject);
@@ -248,6 +250,7 @@ public class PdfConverterJobsService {
     @Builder
     public record JobContext(
             List<String> workItemIDsWithMissingAttachment,
+            List<ExportContext.BlockedResource> blockedResources,
             java.util.concurrent.atomic.AtomicInteger failedDocumentCount) {
     }
 

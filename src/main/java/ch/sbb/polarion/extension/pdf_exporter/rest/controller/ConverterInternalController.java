@@ -32,6 +32,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
 import org.springframework.http.HttpStatus;
@@ -70,6 +71,15 @@ public class ConverterInternalController {
     private static final String MISSING_WORKITEM_ATTACHMENTS_COUNT = "Missing-WorkItem-Attachments-Count";
     private static final String WORKITEM_IDS_WITH_MISSING_ATTACHMENT = "WorkItem-IDs-With-Missing-Attachment";
     private static final String PDF_VARIANT_COMPLIANT = "PDF-Variant-Compliant";
+    private static final String BLOCKED_RESOURCES_COUNT = "Blocked-Resources-Count";
+    private static final String BLOCKED_RESOURCES = "Blocked-Resources";
+    /**
+     * How many of the blocked resources the header names, and how long each of them may be. Nothing caps how
+     * many a document can name, and a container caps the size of the whole response header: a header growing
+     * with the document would fail the response which carries the PDF that was produced.
+     */
+    private static final int NAMED_BLOCKED_RESOURCES = 10;
+    private static final int LONGEST_NAMED_URL = 200;
     private static final String FAILED_DOCUMENT_COUNT = "X-Documents-Failed";
 
     private final PdfConverter pdfConverter;
@@ -138,6 +148,14 @@ public class ConverterInternalController {
                                     @Header(name = WORKITEM_IDS_WITH_MISSING_ATTACHMENT,
                                             description = "Work items contained unavailable attachments",
                                             schema = @Schema(implementation = String.class)
+                                    ),
+                                    @Header(name = BLOCKED_RESOURCES_COUNT,
+                                            description = "Count of resources which were not embedded into the document",
+                                            schema = @Schema(implementation = String.class)
+                                    ),
+                                    @Header(name = BLOCKED_RESOURCES,
+                                            description = "Addresses of the resources which were not embedded, the Polarion log names the reason of each",
+                                            schema = @Schema(implementation = String.class)
                                     )
                             }
                     )
@@ -154,6 +172,7 @@ public class ConverterInternalController {
                 .header(EXPORT_FILENAME_HEADER, fileName)
                 .header(MISSING_WORKITEM_ATTACHMENTS_COUNT, ExportContext.getWorkItemIDsWithMissingAttachment().size())
                 .header(WORKITEM_IDS_WITH_MISSING_ATTACHMENT, ExportContext.getWorkItemIDsWithMissingAttachment());
+        addBlockedResourcesHeaders(responseBuilder, ExportContext.getBlockedResources());
         if (validationResult != null) {
             responseBuilder.header(PDF_VARIANT_COMPLIANT, validationResult.isCompliant());
         }
@@ -292,6 +311,39 @@ public class ConverterInternalController {
         return Response.noContent().build();
     }
 
+    /**
+     * Names the resources the export did not embed. The document was produced without them: an image is a
+     * transparent placeholder there and a stylesheet no longer names the address, so nothing in the PDF says
+     * that something is missing unless the result of the conversion says it.
+     */
+    private void addBlockedResourcesHeaders(@NotNull Response.ResponseBuilder responseBuilder,
+                                            @NotNull List<ExportContext.BlockedResource> blockedResources) {
+        if (blockedResources.isEmpty()) {
+            return;
+        }
+        responseBuilder.header(BLOCKED_RESOURCES_COUNT, blockedResources.size());
+        // joined here rather than passed as a list: a list reaches the header inside brackets, and this value
+        // is read by a person in the message the export shows when it is done
+        String named = blockedResources.stream()
+                .limit(NAMED_BLOCKED_RESOURCES)
+                .map(resource -> headerSafe(resource.url()))
+                .collect(Collectors.joining(", "));
+        int rest = blockedResources.size() - NAMED_BLOCKED_RESOURCES;
+        responseBuilder.header(BLOCKED_RESOURCES, rest > 0 ? named + " and " + rest + " more" : named);
+    }
+
+    /**
+     * Makes a value of a document's own writing fit to stand in a response header. A url is read out of markup
+     * or a stylesheet, so it carries whatever was written there: a line break would end the header and make
+     * the rest of it a header of its own, and a long one would carry the response past the size a container
+     * allows its headers. The count header names how many there were, whatever is left out here.
+     */
+    @NotNull
+    private String headerSafe(@NotNull String url) {
+        String oneLine = url.replaceAll("\\p{Cntrl}", " ").trim();
+        return oneLine.length() <= LONGEST_NAMED_URL ? oneLine : oneLine.substring(0, LONGEST_NAMED_URL) + "…";
+    }
+
     @GET
     @Path("/convert/jobs/{id}/result")
     @Produces("application/pdf")
@@ -320,8 +372,15 @@ public class ConverterInternalController {
                                     @Header(name = WORKITEM_IDS_WITH_MISSING_ATTACHMENT,
                                             description = "Work items contained unavailable attachments",
                                             schema = @Schema(implementation = String.class)
+                                    ),
+                                    @Header(name = BLOCKED_RESOURCES_COUNT,
+                                            description = "Count of resources which were not embedded into the document",
+                                            schema = @Schema(implementation = String.class)
+                                    ),
+                                    @Header(name = BLOCKED_RESOURCES,
+                                            description = "Addresses of the resources which were not embedded, the Polarion log names the reason of each",
+                                            schema = @Schema(implementation = String.class)
                                     )
-
                             }
                     ),
                     @ApiResponse(responseCode = "204",
@@ -363,6 +422,8 @@ public class ConverterInternalController {
                     workItemIDsWithMissingAttachment
             );
         }
+
+        addBlockedResourcesHeaders(responseBuilder, pdfConverterJobService.getJobContext(jobId).blockedResources());
 
         int failedDocCount = pdfConverterJobService.getJobContext(jobId).failedDocumentCount().get();
         if (failedDocCount > 0) {

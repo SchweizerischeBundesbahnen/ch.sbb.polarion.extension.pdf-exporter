@@ -476,6 +476,8 @@ public class ResourceUrlPolicy {
     private static InetAddress[] denyAddresses(@NotNull URL url, @NotNull String reason) {
         logger.warn("Blocked the request to '" + url + "': " + reason
                 + ". See the '" + PdfExporterExtensionConfiguration.EXTERNAL_RESOURCES_POLICY + "' property.");
+        // the result of the conversion names it too: the exported document carries a placeholder there
+        ExportContext.addBlockedResource(url.toString(), reason);
         return null;
     }
 

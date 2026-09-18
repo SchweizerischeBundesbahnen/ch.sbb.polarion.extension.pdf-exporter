@@ -812,20 +812,159 @@ class HtmlProcessorTest {
         assertTrue(result.contains("color"));
     }
 
+    /**
+     * @return a stylesheet naming an address nothing accounts for, what of it may not survive the export, and
+     * whether the address can be replaced where it stands. One written in escapes cannot: the text it is
+     * written with is not the address it means, so all of the stylesheet goes, as it did before this pass
+     */
+    static Stream<Arguments> stylesheetsNamingAnAddressNothingAccountsFor() {
+        return Stream.of(
+                // a data url token which no url() holds must not hide what stands after it
+                Arguments.of("a { --x: data: } @\\69mport \"http://169.254.169.254/latest/meta-data/\";",
+                        "169.254.169.254", false),
+                // an import inside a media rule is dropped by the parser, and the renderer would read it
+                Arguments.of("@media print { @import url(http://169.254.169.254/latest/meta-data/); }",
+                        "169.254.169.254", true),
+                // the same characters read as a string in one rule, and read by nothing in the next: the
+                // string fetches nothing and stays, the at-rule which was read by nothing does not
+                Arguments.of("a { content: \"http://169.254.169.254/\" } @\\69mport \"http://169.254.169.254/\";",
+                        "mport \"http://169.254.169.254/\"", false)
+        );
+    }
+
     @ParameterizedTest
     @ValueSource(strings = {
-            // a data url token which no url() holds must not hide what stands after it
-            "a { --x: data: } @\\69mport \"http://169.254.169.254/latest/meta-data/\";",
-            // an import inside a media rule is dropped by the parser, and the renderer would read it
-            "@media print { @import url(http://169.254.169.254/latest/meta-data/); }",
-            // the same characters read as a string in one rule, and read by nothing in the next
-            "a { content: \"http://169.254.169.254/\" } @\\69mport \"http://169.254.169.254/\";"
+            // an unbalanced quote makes the parser refuse the whole text, and the renderer still reads it
+            "@page { background: url('http://169.254.169.254/x.png) } .marker { color: red }",
+            // a url the parser reads as no url of its own used to take every style of the export with it
+            ".first { background: url(http://169.254.169.254/x.png?a=(b)) } .marker { color: red }"
     })
     @SneakyThrows
-    void dropAStylesheetNamingAnAddressNothingAccountedForTest(String css) {
+    void keepTheDeclarationsOfAStylesheetWhoseUrlCannotBeReadTest(String css) {
         String result = processor.replaceResourcesAsBase64Encoded("<style>" + css + "</style>");
 
         assertFalse(result.contains("169.254.169.254"));
+        assertTrue(result.contains("about:invalid"));
+        assertTrue(result.contains(".marker { color: red }"));
+    }
+
+    @Test
+    @SneakyThrows
+    void readAUrlOfAStylesheetStartingWithAByteOrderMarkTest() {
+        // the parser reads no byte order mark, so its columns count from the character after it
+        String html = "<style>\uFEFFa { background: url(images/logo.png); }</style>";
+        when(fileResourceProvider.getResourceAsBase64String("images/logo.png")).thenReturn("data:image/png;base64,AAAA");
+
+        String result = processor.replaceResourcesAsBase64Encoded(html);
+
+        assertTrue(result.contains("url(data:image/png;base64,AAAA)"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            // the '//' of a base64 payload reads as a network path reference to a scan which knows no better
+            "url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA//8AAAABCAYAAAAfFcSJ')",
+            // and the namespace of an inline svg is an address by every measure but the one that counts
+            "url(\"data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg'/>\")",
+            // and a value may carry one with neither quotes nor a url term around it, where the payload
+            // stands behind a ',' and carries whatever it carries, an '@' and an address of its own included
+            "data:text/plain,written-by:user@host,see-http://www.w3.org/2000/svg"
+    })
+    @SneakyThrows
+    void keepADataUrlNothingAccountedForTest(String dataUrl) {
+        // a data url carries its own content and fetches nothing, and the separators of a css value are the
+        // very characters it is built of: reading an address out of what it carries would cut the resource in
+        // half. The nested braces are what leaves the declaration unaccounted for, which is where that happens
+        String html = "<style>a { { { background: " + dataUrl + " } } } .marker { color: red }</style>";
+
+        String result = processor.replaceResourcesAsBase64Encoded(html);
+
+        assertTrue(result.contains(dataUrl));
+        assertFalse(result.contains("about:invalid"));
+        // and the stylesheet is not dropped over what its own resource carries either
+        assertTrue(result.contains(".marker { color: red }"));
+    }
+
+    /**
+     * @return a stylesheet where a data url stands next to something the walk over it could take for the
+     * structure around it, and what of the stylesheet may not survive the export. Every row is text which
+     * nothing accounts for, where the walk is what decides how far a data url reaches: read one character
+     * differently from the way css reads it and the walk steps over an address instead of replacing it
+     */
+    static Stream<Arguments> stylesheetsWhereADataUrlStandsNextToSomethingElse() {
+        return Stream.of(
+                // css reads a backslash escape as a character of an ident, so an escaped quote opens no string
+                Arguments.of("a { content: \\\" data:text/plain,z ; background: url(http://169.254.169.254/x.png) \" }",
+                        "169.254.169.254"),
+                // the quote in front of this one closed a value, it opened none
+                Arguments.of("a { { { content: \"x\" data:text/plain,y; background: url(http://169.254.169.254/x.png) } } }",
+                        "169.254.169.254"),
+                // a bare data url ends where css ends the declaration it stands in, so the import behind the
+                // ';' is read by this pass rather than stepped over with the value in front of it
+                Arguments.of("@page { background: url('http://h/x.png) } a{--x:data:text/plain;@import\"theme.css\"}",
+                        "@import")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("stylesheetsWhereADataUrlStandsNextToSomethingElse")
+    @SneakyThrows
+    void readADataUrlAsFarAsCssReadsItTest(String css, String mustNotSurvive) {
+        String result = processor.replaceResourcesAsBase64Encoded("<style>" + css + "</style>");
+
+        assertFalse(result.contains(mustNotSurvive));
+    }
+
+    @Test
+    @SneakyThrows
+    void dropAStylesheetWhoseEscapedImportCannotBePlacedTest() {
+        // an at-rule is never embedded, so a relative import is read by the conversion service from its own
+        // base. Written in escapes it names no place in the text to replace, which leaves dropping it
+        String html = "<style>@\\69mport \"theme.css\"; .marker { color: red } @media (min-width: 0) {</style>";
+
+        String result = processor.replaceResourcesAsBase64Encoded(html);
+
+        assertFalse(result.contains("theme.css"));
+        assertFalse(result.contains(".marker"));
+    }
+
+    @Test
+    @SneakyThrows
+    void nameTheStylesheetRatherThanQuoteItWhenAllOfItIsDroppedTest() {
+        // the url of a blocked resource is read as an address by the header which reports it
+        ExportContext.clear();
+        String html = "<style>@\\69mport \"theme.css\"; a { color: red } @media (min-width: 0) {</style>";
+
+        processor.replaceResourcesAsBase64Encoded(html);
+
+        assertEquals(List.of("<inline stylesheet>"),
+                ExportContext.getBlockedResources().stream().map(ExportContext.BlockedResource::url).toList());
+        assertTrue(ExportContext.getBlockedResources().get(0).reason().contains("it begins with"));
+        ExportContext.clear();
+    }
+
+    @Test
+    @SneakyThrows
+    void nameTheResourcesWhichWereNotEmbeddedTest() {
+        ExportContext.clear();
+        when(fileResourceProvider.isForbidden("http://169.254.169.254/x.png")).thenReturn(true);
+
+        processor.replaceResourcesAsBase64Encoded("<style>a { background: url(http://169.254.169.254/x.png) }</style>");
+
+        assertEquals(List.of("http://169.254.169.254/x.png"),
+                ExportContext.getBlockedResources().stream().map(ExportContext.BlockedResource::url).toList());
+        ExportContext.clear();
+    }
+
+    @ParameterizedTest
+    @MethodSource("stylesheetsNamingAnAddressNothingAccountsFor")
+    @SneakyThrows
+    void neutralizeAnAddressNothingAccountedForTest(String css, String mustNotSurvive, boolean replaceable) {
+        String result = processor.replaceResourcesAsBase64Encoded("<style>" + css + "</style>");
+
+        assertFalse(result.contains(mustNotSurvive));
+        // where the address can be replaced the stylesheet stays: dropping it takes away every style with it
+        assertEquals(replaceable, result.contains("about:invalid"));
     }
 
     @ParameterizedTest

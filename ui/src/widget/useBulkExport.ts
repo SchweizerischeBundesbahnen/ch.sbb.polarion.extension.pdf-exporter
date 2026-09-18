@@ -21,6 +21,12 @@ export interface ExportRow {
   item: BulkExportItem;
   state: ExportRowState;
   error?: string;
+  /**
+   * What the export of this item produced a file in spite of: a resource the resource policy refused, an
+   * image of a work item which could not be read, a result which does not comply with the PDF variant.
+   * The other surfaces raise it as a toast; here the dialog already lists every item, so it stands with it.
+   */
+  warning?: string;
 }
 
 export interface BulkExportState {
@@ -34,6 +40,8 @@ export interface BulkExportState {
   errors: boolean;
   /** True while the selection is being converted into one merged PDF rather than one file per item. */
   merge: boolean;
+  /** What the run as a whole produced its file in spite of. A merge is one conversion, so it warns once. */
+  warning?: string;
 }
 
 const CLOSED: BulkExportState = { status: 'closed', rows: [], processed: 0, errors: false, merge: false };
@@ -148,14 +156,13 @@ export default function useBulkExport(exportPages: boolean, remote: Remote, deps
       const params = paramsFor(item, shared);
 
       if (documentType === 'BASELINE_COLLECTION') {
-        await convertCollection(remote, {
+        return await convertCollection(remote, {
           projectId: item.projectId ?? '',
           collectionId: item.id ?? '',
           exportPages,
           params,
           toRequestBody,
         });
-        return;
       }
 
       if (documentType === 'TEST_RUN' && params.attachmentsFilter !== null && !params.embedAttachments) {
@@ -172,6 +179,7 @@ export default function useBulkExport(exportPages: boolean, remote: Remote, deps
       const result = await convert(remote, toRequestBody(params));
       const fallbackName = `${item.spaceId ? `${item.spaceId}_` : ''}${item.id ?? ''}.pdf`;
       download(result.blob, result.fileName || fallbackName);
+      return result.warning;
     },
     [convert, convertCollection, download, downloadAttachments, exportPages, paramsFor, remote],
   );
@@ -249,6 +257,7 @@ export default function useBulkExport(exportPages: boolean, remote: Remote, deps
         setState((previous) => ({
           ...previous,
           status: 'finished',
+          warning: result.warning ?? undefined,
           processed: previous.rows.length,
           rows: previous.rows.map((row) => (row.state === 'in-progress' ? { ...row, state: 'finished' } : row)),
         }));
@@ -305,8 +314,8 @@ export default function useBulkExport(exportPages: boolean, remote: Remote, deps
         }
         updateRow(index, { state: 'in-progress' });
         try {
-          await exportItem(items[index], exportParams);
-          updateRow(index, { state: 'finished' });
+          const warning = await exportItem(items[index], exportParams);
+          updateRow(index, { state: 'finished', warning: warning ?? undefined });
           setState((previous) => ({ ...previous, processed: previous.processed + 1 }));
         } catch (error) {
           updateRow(index, { state: 'error', error: failureOf(error) });

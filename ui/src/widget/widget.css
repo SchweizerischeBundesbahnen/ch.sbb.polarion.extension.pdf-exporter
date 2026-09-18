@@ -370,6 +370,22 @@ input[type='checkbox']:indeterminate {
   margin-left: 26px;
 }
 
+/* An export which produced its file and has something to say about it. The other surfaces raise that as a
+   toast; this dialog lists every item already, so it reads next to the one it belongs to. It wraps and keeps
+   its line breaks: the message names one thing per line, addresses among them. */
+.bulk-export-progress .warning-message {
+  color: rgb(180 95 6 / 90%);
+  font-size: 10px;
+  font-family: monospace;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* Under the item it belongs to, lined up with its name rather than with its icon. */
+.bulk-export-progress .export-item .warning-message {
+  margin-left: 26px;
+}
+
 /* The progress bar and the outcome. They sat in the dialog footer, next to the Stop button, while that
    footer was this dialog's own markup; RSP's Modal owns its footer, so they are the last thing in the body.
    Sticky, because that is the difference that matters: a run over two dozen items scrolls the list, and a bar
@@ -381,11 +397,18 @@ input[type='checkbox']:indeterminate {
   bottom: 0;
   display: flex;
   align-items: center;
+  /* a merged run says what it was produced in spite of here, and that goes under the outcome, not beside it */
+  flex-wrap: wrap;
   margin: 0 -16px;
   padding: 10px 16px;
   min-height: 24px;
   background: #fff;
   border-top: 1px solid #aaa;
+}
+
+.bulk-export-outcome .warning-message {
+  flex-basis: 100%;
+  margin-top: 6px;
 }
 
 .bulk-export-outcome .result {

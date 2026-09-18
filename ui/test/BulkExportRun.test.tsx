@@ -24,7 +24,11 @@ interface Conversion {
 const conversions: Conversion[] = [];
 const downloads: { fileName: string }[] = [];
 const attachmentCalls: Record<string, unknown>[] = [];
-const collectionCalls: { collectionId: string; resolve: () => void; reject: (error: Error) => void }[] = [];
+const collectionCalls: {
+  collectionId: string;
+  resolve: (warning?: string | null) => void;
+  reject: (error: Error) => void;
+}[] = [];
 const mergeConversions: {
   request: Record<string, unknown>[];
   resolve: (result: ConversionResult) => void;
@@ -35,10 +39,10 @@ const cancelCalls: string[] = [];
 let collectionDocuments: CollectionDocument[] = [];
 const MERGE_JOB_URL = '/polarion/pdf-exporter/rest/internal/convert/jobs/merge-job';
 
-const pdf = (fileName: string | null = null): ConversionResult => ({
+const pdf = (fileName: string | null = null, warning: string | null = null): ConversionResult => ({
   blob: new Blob(['pdf']),
   fileName,
-  warning: null,
+  warning,
 });
 
 /**
@@ -56,8 +60,12 @@ const deps = (items: BulkExportItems): WidgetDependencies => ({
       conversions.push({ request: JSON.parse(request) as Record<string, unknown>, resolve, reject });
     }),
   convertCollection: (_remote, options) =>
-    new Promise<void>((resolve, reject) => {
-      collectionCalls.push({ collectionId: options.collectionId, resolve, reject });
+    new Promise<string | null>((resolve, reject) => {
+      collectionCalls.push({
+        collectionId: options.collectionId,
+        resolve: (warning) => resolve(warning ?? null),
+        reject,
+      });
     }),
   convertMerge: (_remote, request, options) =>
     new Promise<ConversionResult>((resolve, reject) => {
@@ -83,6 +91,7 @@ const checkboxes = () => Array.from(document.querySelectorAll<HTMLInputElement>(
 const progressDialog = () => document.querySelector('.bulk-export-progress');
 const progressRows = () => Array.from(document.querySelectorAll('.bulk-export-progress .export-item'));
 const result = () => document.querySelector('.bulk-export-outcome .result')?.textContent;
+const warningOf = (row: Element) => row.querySelector('.warning-message')?.textContent;
 const primaryButton = () => document.querySelector<HTMLButtonElement>('.rsp-modal-footer .sbb-btn--primary')!;
 const secondaryButton = () => document.querySelector<HTMLButtonElement>('.rsp-modal-footer .sbb-btn--secondary')!;
 
@@ -132,14 +141,14 @@ async function startExport(
   await vi.waitFor(() => expect(progressDialog()).not.toBeNull());
 }
 
-const finishMerge = async (fileName?: string) => {
+const finishMerge = async (fileName?: string, warning?: string) => {
   await vi.waitFor(() => expect(mergeConversions.length).toBeGreaterThan(0));
-  mergeConversions.shift()!.resolve(pdf(fileName ?? null));
+  mergeConversions.shift()!.resolve(pdf(fileName ?? null, warning ?? null));
 };
 
-const finishConversion = async (fileName?: string) => {
+const finishConversion = async (fileName?: string, warning?: string) => {
   await vi.waitFor(() => expect(conversions.length).toBeGreaterThan(0));
-  conversions.shift()!.resolve(pdf(fileName ?? null));
+  conversions.shift()!.resolve(pdf(fileName ?? null, warning ?? null));
 };
 
 const failConversion = async (message: string) => {
@@ -249,6 +258,36 @@ describe('Bulk export run', () => {
 
     collectionCalls[0].resolve();
     await vi.waitFor(() => expect(result()).toBe('Export successfully finished'));
+  });
+
+  it('says what an item was exported in spite of, and only next to that item', async () => {
+    // Nothing else on the report page shows it: the export dialog and the side panel raise such a message
+    // as a toast, and this run has neither in front of the user
+    await startExport(SAMPLE_ITEMS, [0, 1]);
+
+    await finishConversion('first.pdf', '1 resource(s) were not embedded: http://host/x.png');
+    await vi.waitFor(() => expect(progressRows()[0].className).toContain('finished'));
+    await vi.waitFor(() => expect(warningOf(progressRows()[0])).toContain('http://host/x.png'));
+    expect(warningOf(progressRows()[1])).toBeUndefined();
+
+    await finishConversion('second.pdf');
+    await vi.waitFor(() => expect(result()).toBe('Export successfully finished'));
+    // an export which warned about nothing says nothing, and the run is still a success
+    expect(warningOf(progressRows()[1])).toBeUndefined();
+  });
+
+  it('says what a merged export was produced in spite of, once for the run', async () => {
+    await startExport(
+      withItems([documentItem('Design', 'Overview'), documentItem('Design', 'Api')]),
+      [0, 1],
+      async () => {
+        await userEvent.click(document.querySelector<HTMLInputElement>('#popup-merge-into-single-pdf')!);
+      },
+    );
+
+    await finishMerge('release.pdf', '2 resource(s) were not embedded: http://host/x.png');
+    await vi.waitFor(() => expect(result()).toBe('Export successfully finished'));
+    expect(document.querySelector('.bulk-export-outcome .warning-message')?.textContent).toContain('http://host/x.png');
   });
 
   it('marks a failed item, says why, and carries on with the rest', async () => {

@@ -52,10 +52,10 @@ const failed = async (response: Response): Promise<Error> => new Error(await err
 /**
  * What a finished conversion warns about, from the headers of its result.
  *
- * Two things can be wrong with a PDF that was still produced: work item images that could not be read (the
- * renderer substitutes a placeholder), and a result that does not comply with the requested PDF/A or PDF/UA
- * variant - or could not be checked for it, which is a separate message because a missing header means the
- * validator did not run at all.
+ * Three things can be wrong with a PDF that was still produced: work item images that could not be read (the
+ * renderer substitutes a placeholder), resources the resource policy did not let the export embed, and a
+ * result that does not comply with the requested PDF/A or PDF/UA variant - or could not be checked for it,
+ * which is a separate message because a missing header means the validator did not run at all.
  *
  * The parts are joined with blank lines rather than the legacy `<br><br>`: the side panel already rewrote
  * those to newlines before rendering, and the popup - which set the message as `textContent` to keep an
@@ -70,6 +70,15 @@ export function warningOf(headers: Headers): string | null {
     warnings.push(
       `${missingAttachments} image(s) in WI(s) ${workItems} were not exported. ` +
         "They were replaced with an image containing 'This image is not accessible'.",
+    );
+  }
+
+  const blocked = Number.parseInt(headers.get('Blocked-Resources-Count') ?? '', 10);
+  if (blocked > 0) {
+    const resources = headers.get('Blocked-Resources') ?? '';
+    warnings.push(
+      `${blocked} resource(s) named by the document or its style sheet were not embedded: ${resources}. ` +
+        'The Polarion log names the reason for each. Everything else was exported.',
     );
   }
 
@@ -359,7 +368,7 @@ export async function convertCollectionDocuments(
     download?: typeof downloadBlob;
     pollInterval?: number;
   },
-): Promise<void> {
+): Promise<string | null> {
   const download = options.download ?? downloadBlob;
   const listedDocuments = await listCollectionDocuments(remote, options.projectId, options.collectionId);
   const documents = listedDocuments.filter(
@@ -367,7 +376,7 @@ export async function convertCollectionDocuments(
   );
   if (documents.length === 0) {
     console.warn('No documents found in the collection.');
-    return;
+    return null;
   }
 
   const outcomes = await Promise.allSettled(
@@ -385,6 +394,7 @@ export async function convertCollectionDocuments(
       );
       const fallbackName = `${document.projectId}_${document.spaceId}_${document.documentName}.pdf`;
       download(result.blob, document.fileName || fallbackName);
+      return result.warning;
     }),
   );
 
@@ -392,4 +402,14 @@ export async function convertCollectionDocuments(
   if (firstFailure?.status === 'rejected') {
     throw firstFailure.reason instanceof Error ? firstFailure.reason : new Error(String(firstFailure.reason));
   }
+  // One paragraph per thing to know about the collection, however many of its documents ran into it. The
+  // messages are deduplicated paragraph by paragraph rather than whole: two documents which are both not
+  // compliant and name different resources share the compliance paragraph and nothing else.
+  const warnings = new Set(
+    outcomes
+      .flatMap((outcome) => (outcome.status === 'fulfilled' && outcome.value ? outcome.value.split('\n\n') : []))
+      .map((paragraph) => paragraph.trim())
+      .filter(Boolean),
+  );
+  return warnings.size === 0 ? null : [...warnings].join('\n\n');
 }
