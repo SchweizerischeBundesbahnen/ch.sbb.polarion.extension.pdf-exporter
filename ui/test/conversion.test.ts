@@ -65,6 +65,23 @@ describe('warningOf', () => {
     expect(warning?.split('\n\n')).toHaveLength(2);
   });
 
+  it('reports the resources which were not embedded', () => {
+    const warning = warningOf(
+      new Headers({
+        'Blocked-Resources-Count': '2',
+        'Blocked-Resources': 'http://host/a.png, http://host/b.css',
+        'PDF-Variant-Compliant': 'true',
+      }),
+    );
+    expect(warning).toContain('2 resource(s)');
+    expect(warning).toContain('http://host/a.png, http://host/b.css');
+  });
+
+  it('ignores a zero or unparseable blocked resource count', () => {
+    expect(warningOf(new Headers({ 'Blocked-Resources-Count': '0', 'PDF-Variant-Compliant': 'true' }))).toBeNull();
+    expect(warningOf(new Headers({ 'Blocked-Resources-Count': 'x', 'PDF-Variant-Compliant': 'true' }))).toBeNull();
+  });
+
   it('ignores a zero or unparseable attachment count', () => {
     expect(
       warningOf(new Headers({ 'Missing-WorkItem-Attachments-Count': '0', 'PDF-Variant-Compliant': 'true' })),

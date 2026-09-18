@@ -319,10 +319,15 @@ A resource may not exceed 16 MB. To change the size limit:
 ch.sbb.polarion.extension.pdf-exporter.externalResources.maxSizeMB=32
 ```
 
-A stylesheet which names an address that nothing in it accounts for is dropped whole, and the log says
-which one. That is the fail-closed direction: such an address would be read by the conversion service
-itself. A custom property holding an address, `--api: https://service.example`, is such a case, so a
-stylesheet using one loses its styling in the export.
+A resource which is not embedded is reported, not passed on silently. The Polarion log names it with the
+reason, and the export writes it into the result of the conversion, which is what the message at the end of
+an export shows. An image the policy refused becomes a transparent placeholder in the PDF.
+
+A stylesheet keeps its declarations whatever happens to its resources. An address nothing in the stylesheet
+accounts for is replaced by `about:invalid`, and an `@import` nothing accounts for is renamed, so that the
+conversion service reads neither: everything else the stylesheet says still applies. A custom property
+holding an address, `--api: https://service.example`, is such a case. Only an address written in CSS escapes
+which nothing accounts for still drops the whole stylesheet: it names no place in the text to replace.
 
 A CSS `@import` is removed, whatever it names and wherever it stands. An at-rule cannot be embedded,
 so WeasyPrint would have to load it itself, past every check above. Reference such a stylesheet

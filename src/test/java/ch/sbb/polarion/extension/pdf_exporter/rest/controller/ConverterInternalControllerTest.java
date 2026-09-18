@@ -3,6 +3,7 @@ package ch.sbb.polarion.extension.pdf_exporter.rest.controller;
 import ch.sbb.polarion.extension.pdf_exporter.converter.PdfConverterJobsService;
 import ch.sbb.polarion.extension.pdf_exporter.converter.PdfConverterJobsService.JobState;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.DocumentType;
+import ch.sbb.polarion.extension.pdf_exporter.util.ExportContext;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.jobs.ConverterJobDetails;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.jobs.ConverterJobStatus;
@@ -159,11 +160,27 @@ class ConverterInternalControllerTest {
     @Test
     void getPdfConverterJobResult_success() {
         when(pdfConverterJobService.getJobResult("testJobId")).thenReturn(Optional.of("test pdf".getBytes()));
-        when(pdfConverterJobService.getJobContext("testJobId")).thenReturn(PdfConverterJobsService.JobContext.builder().workItemIDsWithMissingAttachment(new ArrayList<String>()).failedDocumentCount(new java.util.concurrent.atomic.AtomicInteger()).build());
+        when(pdfConverterJobService.getJobContext("testJobId")).thenReturn(PdfConverterJobsService.JobContext.builder().workItemIDsWithMissingAttachment(new ArrayList<String>()).blockedResources(new ArrayList<>()).failedDocumentCount(new java.util.concurrent.atomic.AtomicInteger()).build());
         Response jobResult = internalController.getPdfConverterJobResult("testJobId");
 
         assertThat(jobResult.getStatus()).isEqualTo(HttpStatus.OK.value());
         assertThat(jobResult.getEntity()).isEqualTo("test pdf".getBytes());
+    }
+
+    @Test
+    void getPdfConverterJobResult_namesTheResourcesWhichWereNotEmbedded() {
+        // the PDF was produced without them, and nothing in it says so: the result of the conversion does
+        when(pdfConverterJobService.getJobResult("testJobId")).thenReturn(Optional.of("test pdf".getBytes()));
+        when(pdfConverterJobService.getJobContext("testJobId")).thenReturn(PdfConverterJobsService.JobContext.builder()
+                .workItemIDsWithMissingAttachment(new ArrayList<String>())
+                .blockedResources(new ArrayList<>(List.of(new ExportContext.BlockedResource("http://host/x.png", "it was refused"))))
+                .failedDocumentCount(new java.util.concurrent.atomic.AtomicInteger())
+                .build());
+
+        Response jobResult = internalController.getPdfConverterJobResult("testJobId");
+
+        assertThat(jobResult.getHeaderString("Blocked-Resources-Count")).isEqualTo("1");
+        assertThat(jobResult.getHeaderString("Blocked-Resources")).isEqualTo("http://host/x.png");
     }
 
     @Test

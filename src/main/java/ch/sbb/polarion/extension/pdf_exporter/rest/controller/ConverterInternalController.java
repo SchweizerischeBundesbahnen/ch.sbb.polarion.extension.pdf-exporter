@@ -32,6 +32,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
 import org.springframework.http.HttpStatus;
@@ -70,6 +71,8 @@ public class ConverterInternalController {
     private static final String MISSING_WORKITEM_ATTACHMENTS_COUNT = "Missing-WorkItem-Attachments-Count";
     private static final String WORKITEM_IDS_WITH_MISSING_ATTACHMENT = "WorkItem-IDs-With-Missing-Attachment";
     private static final String PDF_VARIANT_COMPLIANT = "PDF-Variant-Compliant";
+    private static final String BLOCKED_RESOURCES_COUNT = "Blocked-Resources-Count";
+    private static final String BLOCKED_RESOURCES = "Blocked-Resources";
     private static final String FAILED_DOCUMENT_COUNT = "X-Documents-Failed";
 
     private final PdfConverter pdfConverter;
@@ -138,6 +141,14 @@ public class ConverterInternalController {
                                     @Header(name = WORKITEM_IDS_WITH_MISSING_ATTACHMENT,
                                             description = "Work items contained unavailable attachments",
                                             schema = @Schema(implementation = String.class)
+                                    ),
+                                    @Header(name = BLOCKED_RESOURCES_COUNT,
+                                            description = "Count of resources which were not embedded into the document",
+                                            schema = @Schema(implementation = String.class)
+                                    ),
+                                    @Header(name = BLOCKED_RESOURCES,
+                                            description = "Addresses of the resources which were not embedded, the Polarion log names the reason of each",
+                                            schema = @Schema(implementation = String.class)
                                     )
                             }
                     )
@@ -154,6 +165,7 @@ public class ConverterInternalController {
                 .header(EXPORT_FILENAME_HEADER, fileName)
                 .header(MISSING_WORKITEM_ATTACHMENTS_COUNT, ExportContext.getWorkItemIDsWithMissingAttachment().size())
                 .header(WORKITEM_IDS_WITH_MISSING_ATTACHMENT, ExportContext.getWorkItemIDsWithMissingAttachment());
+        addBlockedResourcesHeaders(responseBuilder, ExportContext.getBlockedResources());
         if (validationResult != null) {
             responseBuilder.header(PDF_VARIANT_COMPLIANT, validationResult.isCompliant());
         }
@@ -292,6 +304,23 @@ public class ConverterInternalController {
         return Response.noContent().build();
     }
 
+    /**
+     * Names the resources the export did not embed. The document was produced without them: an image is a
+     * transparent placeholder there and a stylesheet no longer names the address, so nothing in the PDF says
+     * that something is missing unless the result of the conversion says it.
+     */
+    private void addBlockedResourcesHeaders(@NotNull Response.ResponseBuilder responseBuilder,
+                                            @NotNull List<ExportContext.BlockedResource> blockedResources) {
+        if (blockedResources.isEmpty()) {
+            return;
+        }
+        responseBuilder.header(BLOCKED_RESOURCES_COUNT, blockedResources.size());
+        // joined here rather than passed as a list: a list reaches the header inside brackets, and this value
+        // is read by a person in the message the export shows when it is done
+        responseBuilder.header(BLOCKED_RESOURCES,
+                blockedResources.stream().map(ExportContext.BlockedResource::url).collect(Collectors.joining(", ")));
+    }
+
     @GET
     @Path("/convert/jobs/{id}/result")
     @Produces("application/pdf")
@@ -363,6 +392,8 @@ public class ConverterInternalController {
                     workItemIDsWithMissingAttachment
             );
         }
+
+        addBlockedResourcesHeaders(responseBuilder, pdfConverterJobService.getJobContext(jobId).blockedResources());
 
         int failedDocCount = pdfConverterJobService.getJobContext(jobId).failedDocumentCount().get();
         if (failedDocCount > 0) {

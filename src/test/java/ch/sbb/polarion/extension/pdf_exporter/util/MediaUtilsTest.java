@@ -29,15 +29,11 @@ import static org.mockito.Mockito.when;
 class MediaUtilsTest {
 
     @Test
-    void anUnplaceableRewriteIsNotClearedByALaterOneTest() {
-        // the flag answers "was every rewrite placed", so one that was not stands whatever follows it
+    void aRewriteCollectsWhatWasAccountedForTest() {
         MediaUtils.CssRewrite rewrite = new MediaUtils.CssRewrite();
-        assertTrue(rewrite.complete());
 
-        rewrite.missed(false);
-        rewrite.missed(true);
-
-        assertFalse(rewrite.complete());
+        assertTrue(rewrite.accounted().isEmpty());
+        assertTrue(rewrite.edits().isEmpty());
     }
 
 

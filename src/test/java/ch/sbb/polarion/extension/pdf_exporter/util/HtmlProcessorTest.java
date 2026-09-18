@@ -812,20 +812,74 @@ class HtmlProcessorTest {
         assertTrue(result.contains("color"));
     }
 
+    /**
+     * @return a stylesheet naming an address nothing accounts for, and what of it may not survive the export
+     */
+    static Stream<Arguments> stylesheetsNamingAnAddressNothingAccountsFor() {
+        return Stream.of(
+                // a data url token which no url() holds must not hide what stands after it
+                Arguments.of("a { --x: data: } @\\69mport \"http://169.254.169.254/latest/meta-data/\";",
+                        "169.254.169.254"),
+                // an import inside a media rule is dropped by the parser, and the renderer would read it
+                Arguments.of("@media print { @import url(http://169.254.169.254/latest/meta-data/); }",
+                        "169.254.169.254"),
+                // the same characters read as a string in one rule, and read by nothing in the next: the
+                // string fetches nothing and stays, the at-rule which was read by nothing does not
+                Arguments.of("a { content: \"http://169.254.169.254/\" } @\\69mport \"http://169.254.169.254/\";",
+                        "mport \"http://169.254.169.254/\"")
+        );
+    }
+
     @ParameterizedTest
     @ValueSource(strings = {
-            // a data url token which no url() holds must not hide what stands after it
-            "a { --x: data: } @\\69mport \"http://169.254.169.254/latest/meta-data/\";",
-            // an import inside a media rule is dropped by the parser, and the renderer would read it
-            "@media print { @import url(http://169.254.169.254/latest/meta-data/); }",
-            // the same characters read as a string in one rule, and read by nothing in the next
-            "a { content: \"http://169.254.169.254/\" } @\\69mport \"http://169.254.169.254/\";"
+            // an unbalanced quote makes the parser refuse the whole text, and the renderer still reads it
+            "@page { background: url('http://169.254.169.254/x.png) } .marker { color: red }",
+            // a url the parser reads as no url of its own used to take every style of the export with it
+            ".first { background: url(http://169.254.169.254/x.png?a=(b)) } .marker { color: red }"
     })
     @SneakyThrows
-    void dropAStylesheetNamingAnAddressNothingAccountedForTest(String css) {
+    void keepTheDeclarationsOfAStylesheetWhoseUrlCannotBeReadTest(String css) {
         String result = processor.replaceResourcesAsBase64Encoded("<style>" + css + "</style>");
 
         assertFalse(result.contains("169.254.169.254"));
+        assertTrue(result.contains("about:invalid"));
+        assertTrue(result.contains(".marker { color: red }"));
+    }
+
+    @Test
+    @SneakyThrows
+    void readAUrlOfAStylesheetStartingWithAByteOrderMarkTest() {
+        // the parser reads no byte order mark, so its columns count from the character after it
+        String html = "<style>\uFEFFa { background: url(images/logo.png); }</style>";
+        when(fileResourceProvider.getResourceAsBase64String("images/logo.png")).thenReturn("data:image/png;base64,AAAA");
+
+        String result = processor.replaceResourcesAsBase64Encoded(html);
+
+        assertTrue(result.contains("url(data:image/png;base64,AAAA)"));
+    }
+
+    @Test
+    @SneakyThrows
+    void nameTheResourcesWhichWereNotEmbeddedTest() {
+        ExportContext.clear();
+        when(fileResourceProvider.isForbidden("http://169.254.169.254/x.png")).thenReturn(true);
+
+        processor.replaceResourcesAsBase64Encoded("<style>a { background: url(http://169.254.169.254/x.png) }</style>");
+
+        assertEquals(List.of("http://169.254.169.254/x.png"),
+                ExportContext.getBlockedResources().stream().map(ExportContext.BlockedResource::url).toList());
+        ExportContext.clear();
+    }
+
+    @ParameterizedTest
+    @MethodSource("stylesheetsNamingAnAddressNothingAccountsFor")
+    @SneakyThrows
+    void neutralizeAnAddressNothingAccountedForTest(String css, String mustNotSurvive) {
+        String result = processor.replaceResourcesAsBase64Encoded("<style>" + css + "</style>");
+
+        assertFalse(result.contains(mustNotSurvive));
+        // the address goes and the stylesheet stays: dropping it takes away every style with it
+        assertTrue(result.contains("about:invalid"));
     }
 
     @ParameterizedTest

@@ -25,6 +25,7 @@ import ch.sbb.polarion.extension.pdf_exporter.settings.LocalizationSettings;
 import ch.sbb.polarion.extension.pdf_exporter.settings.WebhooksSettings;
 import ch.sbb.polarion.extension.pdf_exporter.util.DebugDataStorage;
 import ch.sbb.polarion.extension.pdf_exporter.util.DocumentDataFactory;
+import ch.sbb.polarion.extension.pdf_exporter.util.ExportContext;
 import ch.sbb.polarion.extension.pdf_exporter.util.DocumentLanguageResolver;
 import ch.sbb.polarion.extension.pdf_exporter.util.EnumValuesProvider;
 import ch.sbb.polarion.extension.pdf_exporter.util.HtmlLogger;
@@ -212,6 +213,8 @@ public class PdfConverter {
             // Set PDF metrics
             setPdfMetrics(generationLog, bytes, exportParams);
 
+            logBlockedResources(generationLog);
+
             // Finalize timing
             generationLog.finish();
 
@@ -284,6 +287,20 @@ public class PdfConverter {
             return generationLog.timed(stageName, supplier);
         }
         return supplier.get();
+    }
+
+    /**
+     * Writes the resources which were not embedded into the generation report, each with the reason it was
+     * refused. The response of the conversion names the addresses, and this is where the reason of each one
+     * is read back without going through the Polarion log.
+     */
+    private void logBlockedResources(@NotNull PdfGenerationLog generationLog) {
+        List<ExportContext.BlockedResource> blocked = ExportContext.getBlockedResources();
+        if (blocked.isEmpty()) {
+            return;
+        }
+        generationLog.log(blocked.size() + " resource(s) were not embedded into the document:");
+        blocked.forEach(resource -> generationLog.log("  " + resource.url() + ": " + resource.reason()));
     }
 
     @SuppressWarnings("java:S1166") // Exception intentionally ignored

@@ -106,7 +106,7 @@ public class CustomResourceUrlResolver implements IUrlResolver {
         }
         SchemeAttempt other = resolveWithScheme(otherScheme, urlStr);
         if (other.stream() == null) {
-            logger.warn(SKIPPED_RESOURCE + urlStr + ": neither " + preferredScheme + " nor " + otherScheme + " could read it");
+            skipped(urlStr, "neither " + preferredScheme + " nor " + otherScheme + " could read it");
         }
         return other.stream();
     }
@@ -195,14 +195,14 @@ public class CustomResourceUrlResolver implements IUrlResolver {
         if (!policy.isExplicitlyTrusted(url)) {
             // A proxy resolves the host name itself, so the vetted addresses would decide nothing.
             // Only a host the configuration trusts as such may be fetched that way.
-            logger.warn(SKIPPED_RESOURCE + url + ": it would go through a proxy, which resolves the host name itself."
+            skipped(url, "it would go through a proxy, which resolves the host name itself."
                     + " List the host in the allowed hosts property to fetch it anyway.");
             return false;
         }
         if (proxy.host() == null) {
             // the host is trusted, but the proxy to reach it through was not named, and a request
             // sent past the configured route is not the request the configuration asked for
-            logger.warn(SKIPPED_RESOURCE + url + ": it goes through a proxy which could not be named.");
+            skipped(url, "it goes through a proxy which could not be named.");
             return false;
         }
         return true;
@@ -237,6 +237,16 @@ public class CustomResourceUrlResolver implements IUrlResolver {
         return asked -> addresses != null && pinnedHost.equalsIgnoreCase(stripBrackets(asked))
                 ? addresses
                 : SystemDefaultDnsResolver.INSTANCE.resolve(asked);
+    }
+
+    /**
+     * Says that a resource was not read, and why. The reason goes to the log, and the url goes to the result
+     * of the conversion as well: the exported document carries a placeholder where that resource was named,
+     * which the reader of the document would otherwise have to guess at.
+     */
+    private void skipped(@NotNull Object url, @NotNull String reason) {
+        logger.warn(SKIPPED_RESOURCE + url + ": " + reason);
+        ExportContext.addBlockedResource(url.toString(), reason);
     }
 
     /**
@@ -286,13 +296,13 @@ public class CustomResourceUrlResolver implements IUrlResolver {
         Header contentTypeHeader = entity.getContentType();
         String contentType = contentTypeHeader == null ? null : contentTypeHeader.getValue();
         if (!policy.isAllowedContentType(contentType)) {
-            logger.warn(SKIPPED_RESOURCE + url + ": the content type '" + contentType + "' is not an image, a font or a stylesheet");
+            skipped(url, "the content type '" + contentType + "' is not an image, a font or a stylesheet");
             return null;
         }
 
         long maxBytes = policy.getMaxResourceBytes();
         if (entity.getContentLength() > maxBytes) {
-            logger.warn(SKIPPED_RESOURCE + url + ": it is larger than " + maxBytes + " bytes");
+            skipped(url, "it is larger than " + maxBytes + " bytes");
             return null;
         }
 
@@ -302,7 +312,7 @@ public class CustomResourceUrlResolver implements IUrlResolver {
             int read;
             while ((read = inputStream.read(buffer)) != -1) {
                 if (content.size() + read > maxBytes) {
-                    logger.warn(SKIPPED_RESOURCE + url + ": it is larger than " + maxBytes + " bytes");
+                    skipped(url, "it is larger than " + maxBytes + " bytes");
                     return null;
                 }
                 content.write(buffer, 0, read);
@@ -314,7 +324,7 @@ public class CustomResourceUrlResolver implements IUrlResolver {
         // so a service which answers a forged request cannot name its way past the check
         String sniffedType = MediaUtils.getMimeTypeUsingTikaByContent(url.toString(), bytes);
         if (policy.isRejectedContent(contentType, sniffedType)) {
-            logger.warn(SKIPPED_RESOURCE + url + ": its content is '" + sniffedType + "', not an image, a font or a stylesheet");
+            skipped(url, "its content is '" + sniffedType + "', not an image, a font or a stylesheet");
             return null;
         }
         if (sniffedType == null) {

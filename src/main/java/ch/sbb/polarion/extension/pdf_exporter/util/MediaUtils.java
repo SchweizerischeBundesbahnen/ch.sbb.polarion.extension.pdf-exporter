@@ -84,6 +84,23 @@ public class MediaUtils {
     public static final String URL_REGEX = "(?i)url\\(\\s*([\"'])?(?<url>.*?)\\1?\\s*\\)";
     public static final String DATA_URL_PREFIX = "data:";
     private static final String NETWORK_PATH_PREFIX = "//";
+    private static final String BYTE_ORDER_MARK = "\uFEFF";
+    private static final String IMPORT_RULE = "@import";
+    /**
+     * What an import nothing accounted for is renamed to. No renderer knows this at-rule, so none reads what
+     * it names, and what the rule holds stays where it is, to be read by a person looking for what went.
+     */
+    private static final String BLOCKED_IMPORT_RULE = "@blocked";
+    /**
+     * What an address nothing accounted for is replaced by. It is a valid url which resolves to nothing, so
+     * the declaration around it stays readable and the renderer requests no address of its own.
+     */
+    private static final String BLOCKED_ADDRESS = "about:invalid";
+    /**
+     * Where an address written in a stylesheet ends: a url term ends at a bracket, a quote or a space, and
+     * the separators of css end a value the parser dropped before it swallows the rest of the text.
+     */
+    private static final String ADDRESS_TERMINATORS = "()'\"; \t\r\n\f{},";
     // what a detector answers when it read the content and recognized nothing in it
     public static final String OCTET_STREAM = "application/octet-stream";
 
@@ -384,7 +401,12 @@ public class MediaUtils {
         // A url which was not inlined, whatever the reason, must not stay in the document where the
         // conversion service would read it from its own network or its own file system. A relative url
         // is left untouched, no service reads one.
-        return isReadElsewhere(decoded) ? BLOCKED_RESOURCE_PLACEHOLDER : null;
+        if (!isReadElsewhere(decoded)) {
+            return null;
+        }
+        // the step which refused it named the reason already, and this one only sees that nothing came back
+        ExportContext.addBlockedResource(rawUrl.trim(), "it could not be read or the resource policy refused it");
+        return BLOCKED_RESOURCE_PLACEHOLDER;
     }
 
     /**
@@ -412,31 +434,118 @@ public class MediaUtils {
             // style attribute of a large document is not worth a parser run for that
             return css;
         }
-        CascadingStyleSheet stylesheet = parse(css);
+        // the parser reports the position of what it read and it reads no byte order mark, so a mark left
+        // in front would move every position by one and place every rewrite beside what it had to replace
+        String stripped = css.startsWith(BYTE_ORDER_MARK) ? css.substring(1) : css;
+        CascadingStyleSheet stylesheet = parse(stripped);
         if (stylesheet == null) {
-            logger.warn("Dropped a stylesheet which cannot be parsed, so the resources it points at cannot be"
-                    + " checked: " + describe(stylesheetUrl, css));
-            return "";
+            // the rules cannot be read, so nothing in the text is accounted for and every address in it is
+            // neutralized. The declarations themselves stay: a stylesheet the parser refuses is still one
+            // the renderer reads, and dropping it takes away every style the document was written with
+            logger.warn("A stylesheet cannot be parsed, so the addresses it names are neutralized: "
+                    + describe(stylesheetUrl, css));
+            return neutralize(stripped, maskComments(stripped.toCharArray()), new ArrayList<>(), stylesheetUrl,
+                    "the stylesheet cannot be parsed so its addresses cannot be checked");
         }
 
         // The parser tells where each url and each import stands, and only those parts are rewritten.
         // Everything else keeps the formatting the document came with.
-        int[] lineStarts = lineStartsOf(css);
+        int[] lineStarts = lineStartsOf(stripped);
         CssRewrite rewrite = new CssRewrite();
-        readImports(css, stylesheet, lineStarts, rewrite);
-        readUrls(css, stylesheet, lineStarts, rewrite, fileResourceProvider, locationOf(stylesheetUrl));
+        readImports(stripped, stylesheet, lineStarts, rewrite);
+        readUrls(stripped, stylesheet, lineStarts, rewrite, fileResourceProvider, locationOf(stylesheetUrl));
 
-        if (!rewrite.complete() || namesAnAddressNothingAccountedFor(css, stylesheet, lineStarts, rewrite.accounted())) {
-            logger.warn("Dropped a stylesheet: it names an address which nothing in it accounts for, so a"
-                    + " conversion service would read that address itself: " + describe(stylesheetUrl, css));
-            return "";
-        }
-        return applyEdits(css, rewrite.edits());
+        char[] unaccounted = maskAccounted(stripped, stylesheet, lineStarts, rewrite.accounted());
+        return neutralize(stripped, unaccounted, rewrite.edits(), stylesheetUrl,
+                "nothing in the stylesheet accounts for this address so it was not checked");
     }
 
     /**
-     * @return what the log needs to name the stylesheet which was dropped: where it came from, or its
-     * first line where it is part of a document and has no url of its own
+     * Takes every address out of the parts of a stylesheet which nothing accounted for. Such a part was read
+     * by nothing here, so a conversion service would read the address itself, from its own network or its own
+     * file system. The text around it is kept: only what fetches something is replaced.
+     *
+     * @param css         the stylesheet as it came in
+     * @param unaccounted the same text with everything accounted for blanked out, of the same length, which
+     *                    is what makes a position in it a position in the stylesheet
+     * @param edits       what the parser driven pass has to write back, which this one adds to: an edit of
+     *                    that pass stands inside a range accounted for and never overlaps one of these
+     * @return the stylesheet with each such address replaced, or an empty one where an address is written in
+     * escapes, which names no place in the text that could be replaced
+     */
+    @NotNull
+    private String neutralize(@NotNull String css, char[] unaccounted, @NotNull List<CssEdit> edits,
+                              @Nullable String stylesheetUrl, @NotNull String reason) {
+        // read once: a stylesheet naming many addresses is a large text, and this walks it
+        String described = describe(stylesheetUrl, css);
+        for (CssRange range : unvettedRangesOf(unaccounted)) {
+            String named = new String(unaccounted, range.start(), range.end() - range.start());
+            boolean isImport = named.regionMatches(true, 0, IMPORT_RULE, 0, IMPORT_RULE.length());
+            if (!isImport) {
+                ExportContext.addBlockedResource(named, reason);
+                logger.warn("Blocked the resource '" + named + "': " + reason + ", " + described);
+            }
+            edits.add(new CssEdit(range, isImport ? BLOCKED_IMPORT_RULE : BLOCKED_ADDRESS));
+            Arrays.fill(unaccounted, range.start(), range.end(), ' ');
+        }
+        if (namesAnAbsoluteAddress(new String(unaccounted))) {
+            // what is left names an address only once its escapes are resolved, and the text it is written
+            // with cannot be replaced by the address it means. Nothing here can make that stylesheet safe
+            logger.warn("Dropped a stylesheet: it names an address in escapes which nothing in it accounts"
+                    + " for, so a conversion service would read that address itself: " + described);
+            ExportContext.addBlockedResource(described,
+                    "the stylesheet names an address in escapes which could not be checked so all of it was dropped");
+            return "";
+        }
+        return applyEdits(css, edits);
+    }
+
+    /**
+     * Reads the addresses out of the parts nothing accounted for, and the import rules among them. An import
+     * is named whatever it points at: an at-rule is never embedded, so its target is read by the conversion
+     * service itself, a relative one included.
+     *
+     * @return where each of them stands, in the order they stand in
+     */
+    @NotNull
+    private List<CssRange> unvettedRangesOf(char[] unaccounted) {
+        List<CssRange> ranges = new ArrayList<>();
+        String probe = new String(unaccounted).toLowerCase(Locale.ROOT);
+        int index = 0;
+        while (index < probe.length()) {
+            int length = unvettedLengthAt(probe, index);
+            if (length > 0) {
+                ranges.add(new CssRange(index, index + length));
+            }
+            index += Math.max(length, 1);
+        }
+        return ranges;
+    }
+
+    /**
+     * @return how long what stands at that position is, 0 where nothing that fetches anything stands there
+     */
+    private int unvettedLengthAt(@NotNull String probe, int index) {
+        if (probe.startsWith(IMPORT_RULE, index)) {
+            return IMPORT_RULE.length();
+        }
+        boolean namesAnAddress = probe.startsWith("http:", index) || probe.startsWith("https:", index)
+                || probe.startsWith("file:", index) || probe.startsWith(NETWORK_PATH_PREFIX, index);
+        if (!namesAnAddress) {
+            return 0;
+        }
+        int end = index;
+        // a url term ends at a bracket, a quote or a space, and so does a value read inside quotes: a
+        // separator of css ends it as well, so that a value the parser dropped is not swallowed whole
+        while (end < probe.length() && ADDRESS_TERMINATORS.indexOf(probe.charAt(end)) < 0) {
+            end++;
+        }
+        return end - index;
+    }
+
+    /**
+     * @return what the log needs to name the stylesheet it reports on: where it came from, or its first
+     * line where it is part of a document and has no url of its own
      */
     @NotNull
     private String describe(@Nullable String stylesheetUrl, @NotNull String css) {
@@ -471,13 +580,12 @@ public class MediaUtils {
                              @NotNull CssRewrite rewrite) {
         for (CSSImportRule importRule : stylesheet.getAllImportRules()) {
             CssRange range = rangeOf(lineStarts, css, importRule.getSourceLocation());
-            if (range == null) {
-                // it has to go and there is nowhere to write that, so the stylesheet goes instead
-                rewrite.missed(false);
-            } else {
+            if (range != null) {
                 rewrite.accounted().add(range);
                 rewrite.edits().add(new CssEdit(range, ""));
             }
+            // an import the parser could not place stays unaccounted for, and the pass over what nothing
+            // accounted for takes it out by its at-keyword
         }
     }
 
@@ -544,7 +652,8 @@ public class MediaUtils {
                     replacement = escapeCssUrl(resolved);
                 }
                 if (range == null) {
-                    rewrite.missed(replacement == null);
+                    // nothing can be written where the parser did not say, and an address it named there
+                    // stays unaccounted for, which is what the pass after this one reads
                     return;
                 }
                 rewrite.accounted().add(range);
@@ -557,14 +666,13 @@ public class MediaUtils {
     }
 
     /**
-     * What a run over a stylesheet collects: where the parser accounted for something, what has to be
-     * written back, and whether anything it had to rewrite could not be placed.
+     * What a run over a stylesheet collects: where the parser accounted for something, and what has to be
+     * written back there.
      */
     @VisibleForTesting
     static final class CssRewrite {
         private final List<CssRange> accounted = new ArrayList<>();
         private final List<CssEdit> edits = new ArrayList<>();
-        private boolean complete = true;
 
         List<CssRange> accounted() {
             return accounted;
@@ -572,17 +680,6 @@ public class MediaUtils {
 
         List<CssEdit> edits() {
             return edits;
-        }
-
-        boolean complete() {
-            return complete;
-        }
-
-        /**
-         * @param harmless whether what could not be placed needed no rewriting in the first place
-         */
-        void missed(boolean harmless) {
-            complete &= harmless;
         }
     }
 
@@ -639,7 +736,7 @@ public class MediaUtils {
         String probe = decodeCssEscapes(css).toLowerCase(Locale.ROOT);
         // an address of its own still has to reach the backstop, which is what judges whether anything
         // accounted for it: the payload of a data url is exempted there, by the range of the url() term
-        return probe.contains("url(") || probe.contains("@import") || namesAnAbsoluteAddress(probe);
+        return probe.contains("url(") || probe.contains(IMPORT_RULE) || namesAnAbsoluteAddress(probe);
     }
 
     /**
@@ -654,17 +751,18 @@ public class MediaUtils {
     }
 
     /**
-     * Tells whether a stylesheet names an absolute address which nothing accounted for.
+     * Blanks out everything a stylesheet accounted for, so that what is left is what nothing read.
      * <p>
-     * What is accounted for is taken out of the text first: a url and an import the parser read, a
-     * namespace rule, the selector of every rule, the strings the parser read as values, the comments
-     * and the data urls. None of those makes the renderer fetch an unchecked address. Whatever names an
-     * address after that, an escaped at-keyword, a value the parser dropped, a function it does not
-     * know, was read by nothing, and the renderer may well read it.
+     * Taken out are a url and an import the parser read, a namespace rule, the selector of every rule, the
+     * strings the parser read as values, the comments and the data urls. None of those makes the renderer
+     * fetch an unchecked address. Whatever names an address after that, an escaped at-keyword, a value the
+     * parser dropped, a function it does not know, was read by nothing, and the renderer may well read it.
      * </p>
+     *
+     * @return the text of the stylesheet, of the same length, holding only what nothing accounted for
      */
-    private boolean namesAnAddressNothingAccountedFor(@NotNull String css, @NotNull CascadingStyleSheet stylesheet,
-                                                      int[] lineStarts, @NotNull List<CssRange> accounted) {
+    private char[] maskAccounted(@NotNull String css, @NotNull CascadingStyleSheet stylesheet,
+                                 int[] lineStarts, @NotNull List<CssRange> accounted) {
         List<CssRange> ranges = new ArrayList<>(accounted);
         stylesheet.getAllNamespaceRules().stream()
                 .map(rule -> rangeOf(lineStarts, css, rule.getSourceLocation()))
@@ -683,7 +781,56 @@ public class MediaUtils {
         // each range keeps its length, so one range never moves another and an overlap changes nothing
         char[] probe = css.toCharArray();
         ranges.forEach(range -> Arrays.fill(probe, range.start(), range.end(), ' '));
-        return namesAnAbsoluteAddress(stripCssComments(new String(probe)));
+        return maskComments(probe);
+    }
+
+    /**
+     * Blanks out the comments of a stylesheet, keeping its length so that a position in the result is a
+     * position in the stylesheet. A quoted string keeps what it holds, css starts no comment in there, and
+     * an unterminated comment runs to the end, as css says it does.
+     */
+    private char[] maskComments(char[] css) {
+        int i = 0;
+        while (i < css.length) {
+            char current = css[i];
+            if (current == '"' || current == '\'') {
+                i = endOfString(css, i);
+            } else if (isCommentStart(css, i)) {
+                int end = endOfComment(css, i);
+                Arrays.fill(css, i, end, ' ');
+                i = end;
+            } else {
+                i++;
+            }
+        }
+        return css;
+    }
+
+    private boolean isCommentStart(char[] css, int index) {
+        return css[index] == '/' && index + 1 < css.length && css[index + 1] == '*';
+    }
+
+    private int endOfComment(char[] css, int index) {
+        for (int i = index + 2; i + 1 < css.length; i++) {
+            if (css[i] == '*' && css[i + 1] == '/') {
+                return i + 2;
+            }
+        }
+        return css.length;
+    }
+
+    private int endOfString(char[] css, int index) {
+        char quote = css[index];
+        int i = index + 1;
+        while (i < css.length) {
+            char current = css[i++];
+            if (current == '\\' && i < css.length) {
+                i++;
+            } else if (current == quote) {
+                break;
+            }
+        }
+        return i;
     }
 
     /**
@@ -746,53 +893,6 @@ public class MediaUtils {
         int end = offsetOf(lineStarts, css, location.getLastTokenEndLineNumber(), location.getLastTokenEndColumnNumber());
         return start < 0 || end < start || end > css.length() ? null : new CssRange(start, end);
     }
-
-    /**
-     * Removes the comments of a stylesheet, for reading it only. A quoted string keeps what it holds,
-     * css starts no comment in there, and an unterminated comment runs to the end, as css says it does.
-     */
-    private String stripCssComments(@NotNull String css) {
-        StringBuilder result = new StringBuilder(css.length());
-        int i = 0;
-        while (i < css.length()) {
-            char current = css.charAt(i);
-            if (current == '"' || current == '\'') {
-                i = appendString(css, i, result);
-            } else if (isCommentStart(css, i)) {
-                i = endOfComment(css, i);
-            } else {
-                result.append(current);
-                i++;
-            }
-        }
-        return result.toString();
-    }
-
-    private boolean isCommentStart(@NotNull String css, int index) {
-        return css.charAt(index) == '/' && index + 1 < css.length() && css.charAt(index + 1) == '*';
-    }
-
-    private int endOfComment(@NotNull String css, int index) {
-        int end = css.indexOf("*/", index + 2);
-        return end < 0 ? css.length() : end + 2;
-    }
-
-    private int appendString(@NotNull String css, int index, @NotNull StringBuilder result) {
-        char quote = css.charAt(index);
-        result.append(quote);
-        int i = index + 1;
-        while (i < css.length()) {
-            char current = css.charAt(i++);
-            result.append(current);
-            if (current == '\\' && i < css.length()) {
-                result.append(css.charAt(i++));
-            } else if (current == quote) {
-                break;
-            }
-        }
-        return i;
-    }
-
 
     /**
      * Where a conversion service reads an address out of the markup, measured against the services this

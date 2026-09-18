@@ -63,6 +63,12 @@ There can be different CSS settings created on admin pane each having its own na
 
 ![CSS](docs/user_guide/img/css.png)
 
+An image a CSS rule names, `background: url(...)` for example, is embedded into the PDF by the extension.
+The address goes through the resource policy of the server, so it is not always embedded: a host the policy
+does not allow, a resource which needs a login and a response which is not an image are all refused. The
+rest of the CSS still applies, the image becomes a transparent placeholder, and the message at the end of
+the export names every address which was not embedded. The Polarion log names the reason for each.
+
 ### Header and footer
 Settings for header/footer of generated PDF document are also grouped into named settings and can be chosen in next dropdown:
 

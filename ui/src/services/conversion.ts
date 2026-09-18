@@ -52,10 +52,10 @@ const failed = async (response: Response): Promise<Error> => new Error(await err
 /**
  * What a finished conversion warns about, from the headers of its result.
  *
- * Two things can be wrong with a PDF that was still produced: work item images that could not be read (the
- * renderer substitutes a placeholder), and a result that does not comply with the requested PDF/A or PDF/UA
- * variant - or could not be checked for it, which is a separate message because a missing header means the
- * validator did not run at all.
+ * Three things can be wrong with a PDF that was still produced: work item images that could not be read (the
+ * renderer substitutes a placeholder), resources the resource policy did not let the export embed, and a
+ * result that does not comply with the requested PDF/A or PDF/UA variant - or could not be checked for it,
+ * which is a separate message because a missing header means the validator did not run at all.
  *
  * The parts are joined with blank lines rather than the legacy `<br><br>`: the side panel already rewrote
  * those to newlines before rendering, and the popup - which set the message as `textContent` to keep an
@@ -70,6 +70,15 @@ export function warningOf(headers: Headers): string | null {
     warnings.push(
       `${missingAttachments} image(s) in WI(s) ${workItems} were not exported. ` +
         "They were replaced with an image containing 'This image is not accessible'.",
+    );
+  }
+
+  const blocked = Number.parseInt(headers.get('Blocked-Resources-Count') ?? '', 10);
+  if (blocked > 0) {
+    const resources = headers.get('Blocked-Resources') ?? '';
+    warnings.push(
+      `${blocked} resource(s) named by the document or its style sheet were not embedded: ${resources}. ` +
+        'The Polarion log names the reason for each. Everything else was exported.',
     );
   }
 
