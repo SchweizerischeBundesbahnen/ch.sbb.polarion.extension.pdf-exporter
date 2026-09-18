@@ -518,8 +518,12 @@ public class MediaUtils {
             if (probe.startsWith(DATA_URL_PREFIX, index)) {
                 // a data url carries the resource itself and fetches nothing, and what it carries is any
                 // text at all: the '//' of a base64 payload and the namespace of an inline svg both read
-                // as an address to the scan below, which would cut the payload in half
-                index = endOfToken(probe, index);
+                // as an address to the scan below, which would cut the payload in half. It is taken out of
+                // what is read here as well, for the same reason: the guard behind this pass reads what is
+                // left, and a payload left in there would have it drop a stylesheet over its own content
+                int end = endOfDataUrl(probe, index);
+                Arrays.fill(unaccounted, index, end, ' ');
+                index = end;
                 continue;
             }
             int length = unvettedLengthAt(probe, index);
@@ -533,7 +537,7 @@ public class MediaUtils {
 
     /**
      * @return where the value standing at that position ends, which is where a url term or a quoted value
-     * ends. A data url is read to its end this way, whatever it carries between there and here.
+     * ends: at a bracket, a quote, a space or a separator of css
      */
     private int endOfToken(@NotNull String probe, int index) {
         int end = index;
@@ -541,6 +545,62 @@ public class MediaUtils {
             end++;
         }
         return end;
+    }
+
+    /**
+     * Reads a data url to its end, which the rule for any other value does not: a data url carries a media
+     * type, its parameters and its payload, and the separators between them are the very characters that end
+     * every other value. What ends it is what it was opened with, so that is what this looks for.
+     *
+     * @return where the data url ends, which is the end of the text where it is not closed at all
+     */
+    private int endOfDataUrl(@NotNull String probe, int index) {
+        char opener = openerBefore(probe, index);
+        if (opener == '\'' || opener == '"') {
+            return closingQuote(probe, index, opener);
+        }
+        if (opener == '(') {
+            int close = probe.indexOf(')', index);
+            return close < 0 ? probe.length() : close;
+        }
+        // written outside a url term and outside quotes, where css itself ends it at a space
+        return endOfToken(probe, index);
+    }
+
+    /**
+     * @return the quote or the bracket the value at that position was opened with, 0 where it was opened
+     * with neither. Whitespace stands between the two in {@code url( "data:…" )}, and nothing else may.
+     */
+    private char openerBefore(@NotNull String probe, int index) {
+        for (int i = index - 1; i >= 0; i--) {
+            char current = probe.charAt(i);
+            if (current == '\'' || current == '"' || current == '(') {
+                return current;
+            }
+            if (!Character.isWhitespace(current)) {
+                return 0;
+            }
+        }
+        return 0;
+    }
+
+    /**
+     * @return where the string opened with that quote is closed, the end of the text where it is not. A
+     * backslash escapes what follows it, the closing quote among other things.
+     */
+    private int closingQuote(@NotNull String probe, int index, char quote) {
+        int i = index;
+        while (i < probe.length()) {
+            char current = probe.charAt(i);
+            if (current == '\\') {
+                i += 2;
+            } else if (current == quote) {
+                return i;
+            } else {
+                i++;
+            }
+        }
+        return probe.length();
     }
 
     /**

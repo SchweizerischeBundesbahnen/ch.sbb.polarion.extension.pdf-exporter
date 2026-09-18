@@ -868,15 +868,18 @@ class HtmlProcessorTest {
             "url(\"data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg'/>\")"
     })
     @SneakyThrows
-    void keepADataUrlOfAStylesheetWhichCannotBeParsedTest(String dataUrl) {
-        // nothing is accounted for in a stylesheet the parser refuses, and a data url carries its own content:
-        // reading an address out of what it carries would cut the resource in half
-        String html = "<style>a { background: " + dataUrl + " } .marker { color: red } @media (min-width: 0) {</style>";
+    void keepADataUrlNothingAccountedForTest(String dataUrl) {
+        // a data url carries its own content and fetches nothing, and the separators of a css value are the
+        // very characters it is built of: reading an address out of what it carries would cut the resource in
+        // half. The nested braces are what leaves the declaration unaccounted for, which is where that happens
+        String html = "<style>a { { { background: " + dataUrl + " } } } .marker { color: red }</style>";
 
         String result = processor.replaceResourcesAsBase64Encoded(html);
 
         assertTrue(result.contains(dataUrl));
         assertFalse(result.contains("about:invalid"));
+        // and the stylesheet is not dropped over what its own resource carries either
+        assertTrue(result.contains(".marker { color: red }"));
     }
 
     @Test
