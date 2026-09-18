@@ -885,28 +885,34 @@ class HtmlProcessorTest {
         assertTrue(result.contains(".marker { color: red }"));
     }
 
-    @Test
-    @SneakyThrows
-    void readADataUrlBehindAQuotedValueAsBareTest() {
-        // the quote in front of it closed a value, it opened none: reading it as an opening quote would make
-        // the data url run to wherever the next quote stands and hide every address in between
-        String html = "<style>a { { { content: \"x\" data:text/plain,y; background: url(http://169.254.169.254/x.png) } } }</style>";
-
-        String result = processor.replaceResourcesAsBase64Encoded(html);
-
-        assertFalse(result.contains("169.254.169.254"));
+    /**
+     * @return a stylesheet where a data url stands next to something the walk over it could take for the
+     * structure around it, and what of the stylesheet may not survive the export. Every row is text which
+     * nothing accounts for, where the walk is what decides how far a data url reaches: read one character
+     * differently from the way css reads it and the walk steps over an address instead of replacing it
+     */
+    static Stream<Arguments> stylesheetsWhereADataUrlStandsNextToSomethingElse() {
+        return Stream.of(
+                // css reads a backslash escape as a character of an ident, so an escaped quote opens no string
+                Arguments.of("a { content: \\\" data:text/plain,z ; background: url(http://169.254.169.254/x.png) \" }",
+                        "169.254.169.254"),
+                // the quote in front of this one closed a value, it opened none
+                Arguments.of("a { { { content: \"x\" data:text/plain,y; background: url(http://169.254.169.254/x.png) } } }",
+                        "169.254.169.254"),
+                // a bare data url ends where css ends the declaration it stands in, so the import behind the
+                // ';' is read by this pass rather than stepped over with the value in front of it
+                Arguments.of("@page { background: url('http://h/x.png) } a{--x:data:text/plain;@import\"theme.css\"}",
+                        "@import")
+        );
     }
 
-    @Test
+    @ParameterizedTest
+    @MethodSource("stylesheetsWhereADataUrlStandsNextToSomethingElse")
     @SneakyThrows
-    void doNotLetADataUrlSwallowTheImportBehindItTest() {
-        // a bare data url ends where css ends the declaration it stands in: read past the ';' and the import
-        // behind it would be taken out of what this pass reads while staying in the stylesheet
-        String html = "<style>@page { background: url('http://h/x.png) } a{--x:data:text/plain;@import\"theme.css\"}</style>";
+    void readADataUrlAsFarAsCssReadsItTest(String css, String mustNotSurvive) {
+        String result = processor.replaceResourcesAsBase64Encoded("<style>" + css + "</style>");
 
-        String result = processor.replaceResourcesAsBase64Encoded(html);
-
-        assertFalse(result.contains("@import"));
+        assertFalse(result.contains(mustNotSurvive));
     }
 
     @Test

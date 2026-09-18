@@ -595,6 +595,12 @@ public class MediaUtils {
                 index++;
                 return true;
             }
+            if (stringEnd < 0 && current == '\\') {
+                // css reads an escape as a character of the value it stands in, so an escaped quote opens
+                // no string and an escaped bracket closes no term: both are stepped over as what they are
+                index += 2;
+                return true;
+            }
             if (stringEnd < 0 && (current == '\'' || current == '"')) {
                 // a quote which closes nothing opened nothing either: the text behind it is read as it
                 // stands, rather than as the content of a string which runs to the end of the stylesheet
