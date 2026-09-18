@@ -527,24 +527,27 @@ public class MediaUtils {
     private List<CssRange> unvettedRangesOf(char[] unaccounted) {
         List<CssRange> ranges = new ArrayList<>();
         String probe = new String(unaccounted).toLowerCase(Locale.ROOT);
-        int index = 0;
-        while (index < probe.length()) {
-            if (probe.startsWith(DATA_URL_PREFIX, index)) {
+        CssWalk walk = new CssWalk(probe);
+        while (walk.index < probe.length()) {
+            if (walk.steppedOverStructure()) {
+                continue; // the walk moved itself, and what it stepped over reads nothing
+            }
+            if (probe.startsWith(DATA_URL_PREFIX, walk.index)) {
                 // a data url carries the resource itself and fetches nothing, and what it carries is any
                 // text at all: the '//' of a base64 payload and the namespace of an inline svg both read
                 // as an address to the scan below, which would cut the payload in half. It is taken out of
                 // what is read here as well, for the same reason: the guard behind this pass reads what is
                 // left, and a payload left in there would have it drop a stylesheet over its own content
-                int end = endOfDataUrl(probe, index);
-                Arrays.fill(unaccounted, index, end, ' ');
-                index = end;
-                continue;
+                int end = endOfDataUrl(probe, walk.index, walk.stringEnd, walk.brackets);
+                Arrays.fill(unaccounted, walk.index, end, ' ');
+                walk.index = end;
+            } else {
+                int length = unvettedLengthAt(probe, walk.index);
+                if (length > 0) {
+                    ranges.add(new CssRange(walk.index, walk.index + length));
+                }
+                walk.index += Math.max(length, 1);
             }
-            int length = unvettedLengthAt(probe, index);
-            if (length > 0) {
-                ranges.add(new CssRange(index, index + length));
-            }
-            index += Math.max(length, 1);
         }
         return ranges;
     }
@@ -562,18 +565,86 @@ public class MediaUtils {
     }
 
     /**
+     * Where a walk over a stylesheet stands. It goes forward and keeps what it passed, because a quote which
+     * opened a string is the same character as the one which closed it, and only the text before it tells the
+     * two apart. Reading backwards from a value cannot: it would take the quote closing the value in front of
+     * it for its own opening one.
+     */
+    private static final class CssWalk {
+        private final String probe;
+        private int index;
+        /** Where the string being walked is closed, -1 outside one. */
+        private int stringEnd = -1;
+        /** How many brackets are open here. */
+        private int brackets;
+
+        private CssWalk(@NotNull String probe) {
+            this.probe = probe;
+        }
+
+        /**
+         * Steps over what is structure rather than a value: the quotes around a string and the brackets of a
+         * term. What is between them is left to the caller, which is what reads the addresses.
+         *
+         * @return whether this moved the walk, which means there is nothing to read at the position it left
+         */
+        private boolean steppedOverStructure() {
+            char current = probe.charAt(index);
+            if (index == stringEnd) {
+                stringEnd = -1;
+                index++;
+                return true;
+            }
+            if (stringEnd < 0 && (current == '\'' || current == '"')) {
+                // a quote which closes nothing opened nothing either: the text behind it is read as it
+                // stands, rather than as the content of a string which runs to the end of the stylesheet
+                int closed = closingQuote(index + 1, current);
+                stringEnd = closed < probe.length() ? closed : -1;
+                index++;
+                return true;
+            }
+            if (stringEnd < 0 && (current == '(' || current == ')')) {
+                brackets = current == '(' ? brackets + 1 : Math.max(0, brackets - 1);
+                index++;
+                return true;
+            }
+            return false;
+        }
+
+        /**
+         * @return where the string opened with that quote is closed, the end of the text where it is not. A
+         * backslash escapes what follows it, the closing quote among other things.
+         */
+        private int closingQuote(int from, char quote) {
+            int i = from;
+            while (i < probe.length()) {
+                char current = probe.charAt(i);
+                if (current == '\\') {
+                    i += 2;
+                } else if (current == quote) {
+                    return i;
+                } else {
+                    i++;
+                }
+            }
+            return probe.length();
+        }
+    }
+
+    /**
      * Reads a data url to its end, which the rule for any other value does not: a data url carries a media
      * type, its parameters and its payload, and the separators between them are the very characters that end
-     * every other value. What ends it is what it was opened with, so that is what this looks for.
+     * every other value. What ends it is what it stands in, which the walk over the stylesheet knows.
      *
+     * @param stringEnd where the string it stands in is closed, -1 where it stands in none
+     * @param brackets  how many brackets are open around it
      * @return where the data url ends, which is the end of the text where it is not closed at all
      */
-    private int endOfDataUrl(@NotNull String probe, int index) {
-        char opener = openerBefore(probe, index);
-        if (opener == '\'' || opener == '"') {
-            return closingQuote(probe, index, opener);
+    private int endOfDataUrl(@NotNull String probe, int index, int stringEnd, int brackets) {
+        if (stringEnd >= 0) {
+            return Math.min(stringEnd, probe.length());
         }
-        if (opener == '(') {
+        if (brackets > 0) {
             int close = probe.indexOf(')', index);
             return close < 0 ? probe.length() : close;
         }
@@ -585,42 +656,6 @@ public class MediaUtils {
             end++;
         }
         return end;
-    }
-
-    /**
-     * @return the quote or the bracket the value at that position was opened with, 0 where it was opened
-     * with neither. Whitespace stands between the two in {@code url( "data:…" )}, and nothing else may.
-     */
-    private char openerBefore(@NotNull String probe, int index) {
-        for (int i = index - 1; i >= 0; i--) {
-            char current = probe.charAt(i);
-            if (current == '\'' || current == '"' || current == '(') {
-                return current;
-            }
-            if (!Character.isWhitespace(current)) {
-                return 0;
-            }
-        }
-        return 0;
-    }
-
-    /**
-     * @return where the string opened with that quote is closed, the end of the text where it is not. A
-     * backslash escapes what follows it, the closing quote among other things.
-     */
-    private int closingQuote(@NotNull String probe, int index, char quote) {
-        int i = index;
-        while (i < probe.length()) {
-            char current = probe.charAt(i);
-            if (current == '\\') {
-                i += 2;
-            } else if (current == quote) {
-                return i;
-            } else {
-                i++;
-            }
-        }
-        return probe.length();
     }
 
     /**

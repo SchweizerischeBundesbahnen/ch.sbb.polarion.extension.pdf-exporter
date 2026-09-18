@@ -887,9 +887,21 @@ class HtmlProcessorTest {
 
     @Test
     @SneakyThrows
+    void readADataUrlBehindAQuotedValueAsBareTest() {
+        // the quote in front of it closed a value, it opened none: reading it as an opening quote would make
+        // the data url run to wherever the next quote stands and hide every address in between
+        String html = "<style>a { { { content: \"x\" data:text/plain,y; background: url(http://169.254.169.254/x.png) } } }</style>";
+
+        String result = processor.replaceResourcesAsBase64Encoded(html);
+
+        assertFalse(result.contains("169.254.169.254"));
+    }
+
+    @Test
+    @SneakyThrows
     void doNotLetADataUrlSwallowTheImportBehindItTest() {
-        // a bare data url ends where css ends it, and an at-rule ends it: read past one and the import would
-        // be taken out of what this pass reads while staying in the stylesheet the conversion service gets
+        // a bare data url ends where css ends the declaration it stands in: read past the ';' and the import
+        // behind it would be taken out of what this pass reads while staying in the stylesheet
         String html = "<style>@page { background: url('http://h/x.png) } a{--x:data:text/plain;@import\"theme.css\"}</style>";
 
         String result = processor.replaceResourcesAsBase64Encoded(html);
