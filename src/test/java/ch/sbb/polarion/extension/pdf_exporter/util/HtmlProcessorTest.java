@@ -886,6 +886,18 @@ class HtmlProcessorTest {
 
     @Test
     @SneakyThrows
+    void doNotLetADataUrlSwallowTheImportBehindItTest() {
+        // a bare data url ends where css ends it, and an at-rule ends it: read past one and the import would
+        // be taken out of what this pass reads while staying in the stylesheet the conversion service gets
+        String html = "<style>@page { background: url('http://h/x.png) } a{--x:data:text/plain;@import\"theme.css\"}</style>";
+
+        String result = processor.replaceResourcesAsBase64Encoded(html);
+
+        assertFalse(result.contains("@import"));
+    }
+
+    @Test
+    @SneakyThrows
     void dropAStylesheetWhoseEscapedImportCannotBePlacedTest() {
         // an at-rule is never embedded, so a relative import is read by the conversion service from its own
         // base. Written in escapes it names no place in the text to replace, which leaves dropping it

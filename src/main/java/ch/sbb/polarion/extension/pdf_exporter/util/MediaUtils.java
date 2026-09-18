@@ -102,11 +102,13 @@ public class MediaUtils {
      */
     private static final String ADDRESS_TERMINATORS = "()'\"; \t\r\n\f{},";
     /**
-     * Where a data url written outside a url term and outside quotes ends. A space ends it, and so does the
-     * block it stands in: what it may not end at is a separator of a value, because a media type and its
-     * parameters are written with those, and the payload stands behind them.
+     * Where a data url written outside a url term and outside quotes ends. A space ends it, the block it
+     * stands in ends it, and so does an at-keyword: what it may not end at is a separator of a value, because
+     * a media type and its parameters are written with those, and the payload stands behind them. Without the
+     * at-keyword such a value would read over an import and take it out of what this pass reads, while the
+     * import stayed in the stylesheet the conversion service gets.
      */
-    private static final String BARE_VALUE_TERMINATORS = "{}()'\"";
+    private static final String BARE_VALUE_TERMINATORS = "{}()'\"@";
     // what a detector answers when it read the content and recognized nothing in it
     public static final String OCTET_STREAM = "application/octet-stream";
 
