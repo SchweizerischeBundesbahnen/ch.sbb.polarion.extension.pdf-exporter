@@ -107,29 +107,39 @@ public class CustomResourceUrlResolver implements IUrlResolver {
         SchemeAttempt other = resolveWithScheme(otherScheme, urlStr);
         if (other.stream() == null) {
             skipped(urlStr, "neither " + preferredScheme + " nor " + otherScheme + " could read it");
+        } else if (preferred.attempted() != null) {
+            // the reference was read under the other scheme, so what the first attempt recorded was no
+            // refusal of the resource: the document gets it, and the result of the export may not say
+            // that it did not
+            ExportContext.unblockResource(preferred.attempted());
         }
         return other.stream();
     }
 
     private SchemeAttempt resolveWithScheme(@NotNull String scheme, @NotNull String urlStr) {
+        String attempted = null;
         try {
             URL url = URI.create(normalizeUrl(scheme + ":" + urlStr)).toURL();
+            attempted = url.toString();
             InputStream stream = resolveImpl(url);
             // a decision was taken, whether it produced a resource or refused one, unless the refusal
             // itself turned on the scheme: an allowed origin may name one, and then it names no other
-            return new SchemeAttempt(stream, stream != null || !policy.isRefusalSchemeSpecific(url));
+            return new SchemeAttempt(stream, stream != null || !policy.isRefusalSchemeSpecific(url), attempted);
         } catch (Exception e) {
             logger.debug("Failed to load resource " + scheme + ":" + urlStr + ": " + e.getMessage());
             // nothing was decided unless the peer showed a certificate which was refused
-            return new SchemeAttempt(null, isCertificateFailure(e));
+            return new SchemeAttempt(null, isCertificateFailure(e), attempted);
         }
     }
 
     /**
      * @param stream     what the scheme produced, null if it produced nothing
      * @param conclusive whether trying the other scheme would still answer the question
+     * @param attempted  the url this scheme was tried with, null where it could not be built at all. What a
+     *                   failed attempt recorded is named by it, so that a later one which reads the resource
+     *                   can take that record back
      */
-    private record SchemeAttempt(@Nullable InputStream stream, boolean conclusive) {
+    private record SchemeAttempt(@Nullable InputStream stream, boolean conclusive, @Nullable String attempted) {
     }
 
     /**

@@ -36,6 +36,15 @@ public class ExportContext {
         blockedResources.get().putIfAbsent(url, reason);
     }
 
+    /**
+     * Takes back what an attempt to read a resource recorded, for a resource which was read after all. A
+     * reference without a scheme is tried under both, and the first attempt may be refused while the second
+     * one reads it: the document gets the resource then, and the result of the export may not say otherwise.
+     */
+    public static void unblockResource(@NotNull String url) {
+        blockedResources.get().remove(url);
+    }
+
     public static List<BlockedResource> getBlockedResources() {
         return blockedResources.get().entrySet().stream()
                 .map(entry -> new BlockedResource(entry.getKey(), entry.getValue()))

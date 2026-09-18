@@ -945,6 +945,22 @@ class HtmlProcessorTest {
 
     @Test
     @SneakyThrows
+    void readAnAddressBehindACharacterWhichLowercasesIntoTwoTest() {
+        // 'I' with a dot above lowercases into two characters, so a text lowercased as a whole is no longer
+        // as long as the stylesheet it was read from, and every position past it names the wrong character
+        String html = "<style>a { { { content: \"\u0130stanbul\"; background: url(http://169.254.169.254/x.png) } } }"
+                + " .marker { color: red }</style>";
+
+        String result = processor.replaceResourcesAsBase64Encoded(html);
+
+        assertFalse(result.contains("169.254.169.254"));
+        // the address is replaced where it stands, not one character beside it
+        assertTrue(result.contains("url(about:invalid)"), result);
+        assertTrue(result.contains(".marker { color: red }"));
+    }
+
+    @Test
+    @SneakyThrows
     void nameTheResourcesWhichWereNotEmbeddedTest() {
         ExportContext.clear();
         when(fileResourceProvider.isForbidden("http://169.254.169.254/x.png")).thenReturn(true);

@@ -526,7 +526,13 @@ public class MediaUtils {
     @NotNull
     private List<CssRange> unvettedRangesOf(char[] unaccounted) {
         List<CssRange> ranges = new ArrayList<>();
-        String probe = new String(unaccounted).toLowerCase(Locale.ROOT);
+        // lowercased character by character: String.toLowerCase applies the mappings which turn one character
+        // into several, and a position in the probe has to stay a position in the stylesheet
+        char[] lowered = new char[unaccounted.length];
+        for (int index = 0; index < unaccounted.length; index++) {
+            lowered[index] = Character.toLowerCase(unaccounted[index]);
+        }
+        String probe = new String(lowered);
         CssWalk walk = new CssWalk(probe);
         while (walk.index < probe.length()) {
             if (walk.steppedOverStructure()) {
