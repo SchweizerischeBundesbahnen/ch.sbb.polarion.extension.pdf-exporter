@@ -526,7 +526,13 @@ public class MediaUtils {
     @NotNull
     private List<CssRange> unvettedRangesOf(char[] unaccounted) {
         List<CssRange> ranges = new ArrayList<>();
-        String probe = new String(unaccounted).toLowerCase(Locale.ROOT);
+        // lowercased character by character: String.toLowerCase applies the mappings which turn one character
+        // into several, and a position in the probe has to stay a position in the stylesheet
+        char[] lowered = new char[unaccounted.length];
+        for (int index = 0; index < unaccounted.length; index++) {
+            lowered[index] = Character.toLowerCase(unaccounted[index]);
+        }
+        String probe = new String(lowered);
         CssWalk walk = new CssWalk(probe);
         while (walk.index < probe.length()) {
             if (walk.steppedOverStructure()) {
@@ -598,7 +604,7 @@ public class MediaUtils {
             if (stringEnd < 0 && current == '\\') {
                 // css reads an escape as a character of the value it stands in, so an escaped quote opens
                 // no string and an escaped bracket closes no term: both are stepped over as what they are
-                index += 2;
+                index += lengthOfCssEscape(probe, index);
                 return true;
             }
             if (stringEnd < 0 && (current == '\'' || current == '"')) {
@@ -626,7 +632,7 @@ public class MediaUtils {
             while (i < probe.length()) {
                 char current = probe.charAt(i);
                 if (current == '\\') {
-                    i += 2;
+                    i += lengthOfCssEscape(probe, i);
                 } else if (current == quote) {
                     return i;
                 } else {
@@ -651,8 +657,10 @@ public class MediaUtils {
             return Math.min(stringEnd, probe.length());
         }
         if (brackets > 0) {
-            int close = probe.indexOf(')', index);
-            return close < 0 ? probe.length() : close;
+            int end = endOfUrlToken(probe, index);
+            if (end >= 0) {
+                return end;
+            }
         }
         // written outside a url term and outside quotes, where what ends it is a space or the end of the
         // block it stands in: the separators a value ends at stand inside every data url before its payload
@@ -662,6 +670,69 @@ public class MediaUtils {
             end++;
         }
         return end;
+    }
+
+    /**
+     * @return whether css reads this character as a digit of a hex escape, which is what an ascii hex digit
+     * is and nothing else: {@code Character.digit} answers for every digit unicode has, and css writes none
+     * of the others in an escape
+     */
+    private boolean isHexDigit(char character) {
+        return (character >= '0' && character <= '9')
+                || (character >= 'a' && character <= 'f')
+                || (character >= 'A' && character <= 'F');
+    }
+
+    /**
+     * Reads an escape the way css writes one: a backslash and the character behind it, or a backslash, up to
+     * six hex digits and the one whitespace which may close them. A scan which stepped over two characters
+     * read the digits of {@code \\20 } as text of its own and ended the value at the space closing them.
+     *
+     * @return how long the escape at that position is, 1 for a backslash which escapes nothing
+     */
+    private int lengthOfCssEscape(@NotNull String probe, int index) {
+        int i = index + 1;
+        if (i >= probe.length()) {
+            return 1;
+        }
+        if (!isHexDigit(probe.charAt(i))) {
+            return 2;
+        }
+        int digits = 0;
+        while (i < probe.length() && digits < 6 && isHexDigit(probe.charAt(i))) {
+            i++;
+            digits++;
+        }
+        if (i < probe.length() && Character.isWhitespace(probe.charAt(i))) {
+            // one whitespace closes the digits, and a carriage return with a line feed behind it is one
+            boolean carriageReturnAndLineFeed = probe.charAt(i) == '\r'
+                    && i + 1 < probe.length() && probe.charAt(i + 1) == '\n';
+            i += carriageReturnAndLineFeed ? 2 : 1;
+        }
+        return i - index;
+    }
+
+    /**
+     * Reads a url term to its end, which css puts at its closing bracket or at a space: a url written
+     * without quotes may hold neither unescaped. Reading past the bracket would step over the bracket of a
+     * later term and every address in between, and reading past the space would do the same. An escape is
+     * stepped over with what it escapes, so a payload which holds one of the two that way keeps it.
+     *
+     * @return where the term ends, -1 where nothing in the text ends it
+     */
+    private int endOfUrlToken(@NotNull String probe, int index) {
+        int i = index;
+        while (i < probe.length()) {
+            char current = probe.charAt(i);
+            if (current == '\\') {
+                i += lengthOfCssEscape(probe, i);
+            } else if (current == ')' || Character.isWhitespace(current)) {
+                return i;
+            } else {
+                i++;
+            }
+        }
+        return -1;
     }
 
     /**

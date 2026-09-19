@@ -945,6 +945,98 @@ class HtmlProcessorTest {
 
     @Test
     @SneakyThrows
+    void readAHexEscapeClosedByACarriageReturnAndLineFeedTest() {
+        // css closes the digits of an escape with one whitespace, and the two characters of a line break are
+        // one: reading the return alone leaves the feed to end the term in the middle of the resource
+        String dataUrl = "url(data:text/plain,a\\20\r\nb//c)";
+        String html = "<style>a { { { background: " + dataUrl + " } } } .marker { color: red }</style>";
+
+        String result = processor.replaceResourcesAsBase64Encoded(html);
+
+        assertTrue(result.contains(dataUrl), result);
+        assertFalse(result.contains("about:invalid"));
+    }
+
+    @Test
+    @SneakyThrows
+    void readOnlyAnAsciiDigitAsADigitOfAnEscapeTest() {
+        // css writes an escape with ascii hex digits and no other, so a digit of another script escapes
+        // itself: read as a digit it would eat the space which ends the term and the address behind it
+        String html = "<style>a { { { background: url(data:text/plain,x\\\u0663 http://169.254.169.254/x.png)"
+                + " } } } .marker { color: red }</style>";
+
+        String result = processor.replaceResourcesAsBase64Encoded(html);
+
+        assertFalse(result.contains("169.254.169.254"), result);
+    }
+
+    @Test
+    @SneakyThrows
+    void readAHexEscapeOfAUrlTermToItsEndTest() {
+        // a hex escape is a backslash, up to six hex digits and the one space which closes them: reading two
+        // characters of it leaves the digits as text and ends the term at that space
+        String dataUrl = "url(data:text/plain,a\\20 b//c)";
+        String html = "<style>a { { { background: " + dataUrl + " } } } .marker { color: red }</style>";
+
+        String result = processor.replaceResourcesAsBase64Encoded(html);
+
+        assertTrue(result.contains(dataUrl), result);
+        assertFalse(result.contains("about:invalid"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            // css keeps an escaped space inside a url token, so the payload behind it belongs to the resource
+            "url(data:image/svg+xml,<svg\\ xmlns='http://www.w3.org/2000/svg'/>)",
+            // a hex escape is a backslash, up to six hex digits and the one space which closes them
+            "url(data:text/plain,a\\20 b//c)",
+            // and the two characters of a line break are that one whitespace, not two
+            "url(data:text/plain,a\\20\r\nb//c)"
+    })
+    @SneakyThrows
+    void readAUrlTermToTheEndCssGivesItTest(String dataUrl) {
+        // every one of these ends the term where css ends it, which is behind the payload: ending it earlier
+        // would leave what the resource carries to be read as a stylesheet of its own
+        String html = "<style>a { { { background: " + dataUrl + " } } } .marker { color: red }</style>";
+
+        String result = processor.replaceResourcesAsBase64Encoded(html);
+
+        assertTrue(result.contains(dataUrl), result);
+        assertFalse(result.contains("about:invalid"));
+    }
+
+    @Test
+    @SneakyThrows
+    void readADataUrlOfATermWhichIsNeverClosedAsBareTest() {
+        // the term around it is never closed, so reading the data url to the end of the text would step over
+        // the address behind it and hand it to the conversion service as it stands
+        String html = "<style>a { { { background: url(data:text/plain,x ; background: url(http://169.254.169.254/x.png)"
+                + " } } } .marker { color: red }</style>";
+
+        String result = processor.replaceResourcesAsBase64Encoded(html);
+
+        assertFalse(result.contains("169.254.169.254"));
+        assertTrue(result.contains(".marker { color: red }"));
+    }
+
+    @Test
+    @SneakyThrows
+    void readAnAddressBehindACharacterWhichLowercasesIntoTwoTest() {
+        // 'I' with a dot above lowercases into two characters, so a text lowercased as a whole is no longer
+        // as long as the stylesheet it was read from, and every position past it names the wrong character
+        String html = "<style>a { { { content: \"\u0130stanbul\"; background: url(http://169.254.169.254/x.png) } } }"
+                + " .marker { color: red }</style>";
+
+        String result = processor.replaceResourcesAsBase64Encoded(html);
+
+        assertFalse(result.contains("169.254.169.254"));
+        // the address is replaced where it stands, not one character beside it
+        assertTrue(result.contains("url(about:invalid)"), result);
+        assertTrue(result.contains(".marker { color: red }"));
+    }
+
+    @Test
+    @SneakyThrows
     void nameTheResourcesWhichWereNotEmbeddedTest() {
         ExportContext.clear();
         when(fileResourceProvider.isForbidden("http://169.254.169.254/x.png")).thenReturn(true);
