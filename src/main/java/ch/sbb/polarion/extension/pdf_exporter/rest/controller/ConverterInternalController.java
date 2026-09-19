@@ -471,6 +471,14 @@ public class ConverterInternalController {
                                     @Header(name = EXPORT_FILENAME_HEADER,
                                             description = "File name for converted PDF document",
                                             schema = @Schema(implementation = String.class)
+                                    ),
+                                    @Header(name = BLOCKED_RESOURCES_COUNT,
+                                            description = "Count of resources which were not embedded into the document",
+                                            schema = @Schema(implementation = String.class)
+                                    ),
+                                    @Header(name = BLOCKED_RESOURCES,
+                                            description = "Addresses of the resources which were not embedded, the Polarion log names the reason of each",
+                                            schema = @Schema(implementation = String.class)
                                     )
                             }
                     )
@@ -503,10 +511,13 @@ public class ConverterInternalController {
 
         byte[] pdfBytes = htmlToPdfConverter.convert(html, conversionParams);
         String headerFileName = (fileName != null) ? fileName : "document.pdf";
-        return Response.ok(pdfBytes)
+        Response.ResponseBuilder responseBuilder = Response.ok(pdfBytes)
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + headerFileName)
-                .header(EXPORT_FILENAME_HEADER, headerFileName)
-                .build();
+                .header(EXPORT_FILENAME_HEADER, headerFileName);
+        // html given to this endpoint names resources of its own, and the policy refuses them the same way:
+        // whoever sent the html has to learn what its document did not get
+        addBlockedResourcesHeaders(responseBuilder, ExportContext.getBlockedResources());
+        return responseBuilder.build();
     }
 
     @POST

@@ -323,6 +323,9 @@ A resource which is not embedded is reported, not passed on silently. The Polari
 reason, and the export writes it into the result of the conversion, which is what the message at the end of
 an export shows. An image the policy refused becomes a transparent placeholder in the PDF.
 
+Every conversion endpoint reports the same way, the one which takes raw HTML among them: the answer carries
+`Blocked-Resources-Count` and `Blocked-Resources`, and carries neither when nothing was refused.
+
 A stylesheet keeps its declarations whatever happens to its resources. An address nothing in the stylesheet
 accounts for is replaced by `about:invalid`, so that the conversion service reads none of them: everything
 else the stylesheet says still applies. A custom property holding an address, `--api: https://service.example`,

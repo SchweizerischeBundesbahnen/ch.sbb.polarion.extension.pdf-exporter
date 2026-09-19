@@ -1,5 +1,6 @@
 package ch.sbb.polarion.extension.pdf_exporter.rest.controller;
 
+import ch.sbb.polarion.extension.pdf_exporter.converter.HtmlToPdfConverter;
 import ch.sbb.polarion.extension.pdf_exporter.converter.PdfConverterJobsService;
 import ch.sbb.polarion.extension.pdf_exporter.converter.PdfConverterJobsService.JobState;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.DocumentType;
@@ -8,6 +9,7 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.jobs.ConverterJobDetails;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.jobs.ConverterJobStatus;
 import ch.sbb.polarion.extension.pdf_exporter.service.PdfExporterPolarionService;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -49,6 +51,8 @@ class ConverterInternalControllerTest {
     private UriInfo uriInfo;
     @Mock
     private PdfExporterPolarionService pdfExporterPolarionService;
+    @Mock
+    private HtmlToPdfConverter htmlToPdfConverter;
 
     @InjectMocks
     private ConverterInternalController internalController;
@@ -56,6 +60,13 @@ class ConverterInternalControllerTest {
     @BeforeEach
     void authorizeExportByDefault() {
         lenient().when(pdfExporterPolarionService.userAuthorizedForExport(nullable(String.class))).thenReturn(true);
+    }
+
+    @AfterEach
+    void clearExportContext() {
+        // the context is a thread local, and surefire hands the same thread to the next test: a case which
+        // fails between recording a blocked resource and clearing it would leave that resource behind
+        ExportContext.clear();
     }
 
     @Test
@@ -205,6 +216,21 @@ class ConverterInternalControllerTest {
         assertThat(jobResult.getHeaderString("Blocked-Resources-Count")).isEqualTo("15");
         assertThat(header).doesNotContain("\r").doesNotContain("\n").endsWith("and 5 more");
         assertThat(header.length()).isLessThan(2500);
+    }
+
+    @Test
+    void convertHtmlToPdf_namesTheResourcesWhichWereNotEmbedded() {
+        // the html sent here names resources of its own and the policy refuses them the same way it does
+        // for a document: the answer is the only place where the sender learns what the file did not get
+        when(htmlToPdfConverter.convert(anyString(), any())).thenAnswer(invocation -> {
+            ExportContext.addBlockedResource("http://host/x.png", "it was refused");
+            return "test pdf".getBytes();
+        });
+
+        Response response = internalController.convertHtmlToPdf("<html><body>text</body></html>", null, null, null, null, null);
+
+        assertThat(response.getHeaderString("Blocked-Resources-Count")).isEqualTo("1");
+        assertThat(response.getHeaderString("Blocked-Resources")).isEqualTo("http://host/x.png");
     }
 
     @Test
