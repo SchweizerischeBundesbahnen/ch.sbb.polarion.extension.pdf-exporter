@@ -32,7 +32,7 @@
                   parentNodeId="pdf-export"
                   parentNodeName="PDF Export"
                   parentNodeIconUrl="/polarion/pdf-exporter-app/ui/images/menu/30x30/_parent.svg"
-                  iconUrl="/polarion/pdf-exporter-app/ui/images/menu/16x16/about.svg"
+                  iconUrl="/polarion/pdf-exporter-app/ui/images/menu/16x16/disclaimer.svg"
                   pageUrl="/polarion/pdf-exporter-app/ui/app/index.html?feature=disclaimer&amp;embedded=true&amp;scope=$scope$"
                   projectScope="true"
                   projectGroupScope="false"
