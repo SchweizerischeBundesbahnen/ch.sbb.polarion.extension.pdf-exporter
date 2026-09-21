@@ -13,6 +13,9 @@ public class CssProp {
     public static final String MARGIN = "margin";
     public static final String MAX_HEIGHT = "max-height";
     public static final String MAX_WIDTH = "max-width";
+    public static final String BREAK_AFTER = "break-after";
+    public static final String BREAK_AUTO_VALUE = "auto";
+    public static final String BREAK_BEFORE = "break-before";
     public static final String BREAK_INSIDE = "break-inside";
     public static final String PAGE_BREAK_INSIDE = "page-break-inside";
     public static final String PAGE_BREAK_INSIDE_AVOID_VALUE = "avoid";
