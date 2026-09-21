@@ -3,6 +3,7 @@ package ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.stylepackage.StylePackageModel;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -76,6 +77,7 @@ public class ExportParams extends ConversionParams {
     private boolean cutEmptyChapters;
 
     @Schema(description = "Empty work item attributes should be removed from the document", defaultValue = "true")
+    @Builder.Default
     private boolean cutEmptyWIAttributes = true;
 
     @Schema(description = "Local Polarion URLs should be removed from the document")

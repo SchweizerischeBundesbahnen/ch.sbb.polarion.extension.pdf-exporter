@@ -24,10 +24,12 @@ public class WidthValidationResult {
 
     @Schema(description = "List of pages that failed the width validation",
             implementation = PageInfo.class)
+    @Builder.Default
     private List<PageInfo> invalidPages = new LinkedList<>();
 
     @Schema(description = "List of work items that are considered suspicious based on the validation",
             implementation = WorkItemRefData.class)
+    @Builder.Default
     private List<WorkItemRefData> suspiciousWorkItems = new LinkedList<>();
 
     @Data

@@ -25,6 +25,7 @@ import java.util.List;
 public class WebhooksModel extends SettingsModel {
     public static final String WEBHOOKS_ENTRY_NAME = "WEBHOOKS";
 
+    @Builder.Default
     private List<WebhookConfig> webhookConfigs = new ArrayList<>();
 
     @Override
