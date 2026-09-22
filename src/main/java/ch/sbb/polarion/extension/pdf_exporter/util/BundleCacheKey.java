@@ -1,6 +1,7 @@
 package ch.sbb.polarion.extension.pdf_exporter.util;
 
 import ch.sbb.polarion.extension.generic.util.VersionUtils;
+import com.polarion.core.util.logging.Logger;
 import lombok.experimental.UtilityClass;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -27,6 +28,8 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 @UtilityClass
 public class BundleCacheKey {
+
+    private static final Logger logger = Logger.getLogger(BundleCacheKey.class);
 
     /** The value for a jar without a manifest version, which is a build that did not come from Maven. */
     static final String UNKNOWN_VERSION = "0";
@@ -56,11 +59,17 @@ public class BundleCacheKey {
     private static @Nullable String hashOf(@NotNull String modulePath) {
         try (InputStream module = BundleCacheKey.class.getClassLoader().getResourceAsStream(modulePath)) {
             if (module == null) {
+                // Keyed by the version alone, a rebuild of one version would be served from the browser cache
+                // again. Once per module: the result is kept.
+                logger.warn("Module %s is not in the bundle; its cache key falls back to the version alone"
+                        .formatted(modulePath));
                 return null;
             }
             byte[] digest = MessageDigest.getInstance("SHA-256").digest(module.readAllBytes());
             return HexFormat.of().formatHex(digest).substring(0, HASH_LENGTH);
         } catch (IOException | NoSuchAlgorithmException e) {
+            logger.warn("Module %s could not be hashed; its cache key falls back to the version alone"
+                    .formatted(modulePath), e);
             return null;
         }
     }
