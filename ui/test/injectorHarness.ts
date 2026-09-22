@@ -1,5 +1,5 @@
 // Shared setup for the *.node.test.ts suites that cover the product injector scripts in
-// src/main/resources/webapp/pdf-exporter/js/ (dle-toolbar.js, live-reports.js, starter.js).
+// src/main/resources/webapp/pdf-exporter/js/ (dle-toolbar.js, live-reports.js, classic-wiki.js, starter.js).
 //
 // Those are plain IIFEs, not modules: they read `document.currentScript` and `top` at load time and
 // leave their state on `top`. So every test needs the globals in place BEFORE the import, a fresh
