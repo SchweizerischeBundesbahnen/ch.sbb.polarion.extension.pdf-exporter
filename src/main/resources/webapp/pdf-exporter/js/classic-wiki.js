@@ -44,7 +44,12 @@
 
     // The wiki's own separator, as it stands before its refresh button, followed by a replica of the
     // native wiki toolbar buttons (Edit, Extract Work Item). The wiki's own stylesheets inside the iframe
-    // give both the native look. The separator sets the button apart like on the Live Report toolbar.
+    // give both the frame and the size. The label takes the font of the Live Report toolbar instead of the
+    // wiki's Arial with its white shadow, so the button looks the same on both pages.
+    // What polarion-Button-HighlightOnHover does on the Live Report toolbar: the icon is dimmed and turns
+    // full on hover. Applied from here, since the wiki has no such rule and this script adds no stylesheet.
+    const ICON_OPACITY = '0.6';
+
     const BUTTON_HTML = `
         <table cellspacing="0" cellpadding="0" border="0"><tbody><tr>
             <td style="padding: 0 6px;"><img src="/polarion/wiki/skins/sidecar/separatorbig.gif" alt=""></td>
@@ -52,8 +57,8 @@
                 <div class="enab" role="button" tabindex="0" title="Export to PDF" style="cursor: pointer;">
                     <table cellspacing="0" cellpadding="0" border="0" class="com_polarion_reina_web_js_widgets_JSPopupButton_Button">
                         <tbody><tr>
-                            <td class="bt-icon"><img src="/polarion/ria/images/dle/operations/actionPdfExport16.svg" alt="" style="width: 16px; height: 16px;"></td>
-                            <td class="bt-icon-label">Export to PDF</td>
+                            <td class="bt-icon"><img src="/polarion/ria/images/dle/operations/actionPdfExport16.svg" alt="" style="width: 16px; height: 16px; opacity: ${ICON_OPACITY};"></td>
+                            <td class="bt-icon-label" style="font-family: 'Segoe UI', Selawik, 'Open Sans', Arial, sans-serif; text-shadow: none;">Export to PDF</td>
                         </tr></tbody>
                     </table>
                 </div>
@@ -87,6 +92,9 @@
         cell.id = MARKER_ID;
         cell.innerHTML = BUTTON_HTML;
         const button = cell.querySelector('[role="button"]');
+        const icon = button.querySelector('img');
+        button.addEventListener('mouseenter', () => { icon.style.opacity = '1'; });
+        button.addEventListener('mouseleave', () => { icon.style.opacity = ICON_OPACITY; });
         button.addEventListener('click', openPopup);
         button.addEventListener('keydown', event => {
             if (event.key === 'Enter' || event.key === ' ') {

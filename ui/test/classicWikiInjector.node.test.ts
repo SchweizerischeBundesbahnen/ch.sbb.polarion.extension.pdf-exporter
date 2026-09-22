@@ -194,6 +194,20 @@ describe('classic-wiki.js injector', () => {
     expect(injected(fake)).toBeNull();
   });
 
+  it('dims the icon and shows it in full on hover, like the Live Report toolbar', async () => {
+    const fake = fakeFrame();
+    document.body.appendChild(fake.frame);
+    await loadInjector();
+    const button = injected(fake)!.querySelector<HTMLElement>('[role="button"]')!;
+    const icon = button.querySelector<HTMLImageElement>('.bt-icon img')!;
+
+    expect(icon.style.opacity).toBe('0.6');
+    button.dispatchEvent(new window.MouseEvent('mouseenter'));
+    expect(icon.style.opacity).toBe('1');
+    button.dispatchEvent(new window.MouseEvent('mouseleave'));
+    expect(icon.style.opacity).toBe('0.6');
+  });
+
   it('opens the export dialog for a wiki page on click and on Enter', async () => {
     const fake = fakeFrame();
     document.body.appendChild(fake.frame);
