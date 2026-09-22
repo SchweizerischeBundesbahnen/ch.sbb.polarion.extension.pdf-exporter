@@ -979,9 +979,16 @@ public class HtmlProcessor {
             // The default CSS keeps the first and last rows with their neighbors ("break-after/break-before: avoid").
             // With rows that must not split, WeasyPrint 70+ honors that by moving the whole table to the next page,
             // and loses its header when the two rows do not fit a page anyway. Allow breaks between these rows.
-            CssUtils.setPropertyValue(rowStyles, CssProp.BREAK_BEFORE, CssProp.BREAK_AUTO_VALUE);
-            CssUtils.setPropertyValue(rowStyles, CssProp.BREAK_AFTER, CssProp.BREAK_AUTO_VALUE);
+            allowBreakUnlessDeclared(rowStyles, CssProp.BREAK_BEFORE, CssProp.PAGE_BREAK_BEFORE);
+            allowBreakUnlessDeclared(rowStyles, CssProp.BREAK_AFTER, CssProp.PAGE_BREAK_AFTER);
             row.attr(HtmlTagAttr.STYLE, rowStyles.getAsCSSString());
+        }
+    }
+
+    private void allowBreakUnlessDeclared(@NotNull CSSDeclarationList rowStyles, @NotNull String property, @NotNull String legacyProperty) {
+        // A break declared on the row itself already overrides the default CSS, and a forced one must stay
+        if (CssUtils.getPropertyValue(rowStyles, property).isEmpty() && CssUtils.getPropertyValue(rowStyles, legacyProperty).isEmpty()) {
+            CssUtils.setPropertyValue(rowStyles, property, CssProp.BREAK_AUTO_VALUE);
         }
     }
 

@@ -487,6 +487,26 @@ class HtmlProcessorTest {
     }
 
     @Test
+    void removePageBreakAvoidsKeepsBreaksDeclaredOnRows() {
+        String html = "<table style=\"page-break-inside:avoid\"><tbody>"
+                + "<tr><td>Plain</td></tr>"
+                + "<tr style=\"break-after:page\"><td>Forced after</td></tr>"
+                + "<tr style=\"page-break-before:always\"><td>Legacy forced before</td></tr>"
+                + "</tbody></table>";
+        Document document = JSoupUtils.parseHtml(html);
+
+        processor.removePageBreakAvoids(document);
+
+        // The serializer puts line breaks between declarations
+        List<String> rowStyles = document.select("tr").eachAttr("style").stream().map(style -> style.replaceAll("\\s", "")).toList();
+        assertEquals(List.of(
+                "break-inside:avoid;break-before:auto;break-after:auto;",
+                "break-after:page;break-inside:avoid;break-before:auto;",
+                "page-break-before:always;break-inside:avoid;break-after:auto;"
+        ), rowStyles);
+    }
+
+    @Test
     @SneakyThrows
     void fixNumberedListsTest() {
         try (InputStream isInvalidHtml = this.getClass().getResourceAsStream("/invalidNumberedLists.html");
