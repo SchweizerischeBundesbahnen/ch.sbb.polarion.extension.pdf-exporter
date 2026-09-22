@@ -85,6 +85,6 @@ repos:
     hooks:
       - id: zizmor
   - repo: https://github.com/kjanat/actionlint
-    rev: v1.17.0
+    rev: 08bb2c4f0d039744455b87aef1c647fb8b66d37b  # frozen: v1.17.0
     hooks:
       - id: actionlint
