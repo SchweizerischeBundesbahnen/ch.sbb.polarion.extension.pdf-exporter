@@ -181,6 +181,22 @@ scriptInjection.mainHead=<script src="/polarion/pdf-exporter/js/live-reports.js"
 
 Alternatively (the pre-v13.5 way, still supported), the "Export to PDF Button" widget can be embedded into the report itself: click "Edit" in the report's toolbar, add an empty region on top of the report, place the cursor there, choose "PDF Export" tag on "Widgets" sidebar on right hand side of the page, find "Export to PDF Button" widget there and click it to add to the report. Then save the report clicking 💾 in a toolbar and return to view mode clicking "Back". The widget's button opens the same popup as the toolbar button.
 
+### PDF Exporter view to open in Classic Wiki pages
+
+Classic Wiki pages can be converted to PDF too. Inject the `classic-wiki.js` script the same way as for Live Reports, in step 4 above:
+
+```properties
+scriptInjection.mainHead=<script src="/polarion/pdf-exporter/js/classic-wiki.js"></script>
+```
+
+Open a Classic Wiki page and click "Expand Tools" on top of the page. An "Export to PDF" button appears in the page's toolbar. It opens the same popup as the Live Report button.
+
+To keep the wiki toolbar always expanded, add `data-expand-tools="true"`, as for Live Reports. Both scripts share the one `scriptInjection.mainHead` value:
+
+```properties
+scriptInjection.mainHead=<script src="/polarion/pdf-exporter/js/live-reports.js" data-expand-tools="true"></script><script src="/polarion/pdf-exporter/js/classic-wiki.js" data-expand-tools="true"></script>
+```
+
 ### Configuring logs
 
 For better problem analyses extended logging can be configured in Polarion. By default, Polarion log level is set to INFO. It can be changed to debug in `log4j2.xml` file.

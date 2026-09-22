@@ -58,7 +58,7 @@ Vite would emit:
 | ------------------------- | ------------------------ | -------------------------------------------------------------------------------------- | --------------------------- |
 | `src/widget/main.tsx`     | `assets/bulk-widget.js`  | `BulkPdfExportWidgetRenderer`                                                          | `default(selector)`         |
 | `src/sidepanel/mount.tsx` | `assets/side-panel.js`   | `webapp/pdf-exporter/html/sidePanelContent.html`                                       | `mountSidePanel(selector)`  |
-| `src/popup/mount.tsx`     | `assets/export-popup.js` | `webapp/pdf-exporter/js/starter.js`, `js/live-reports.js`, `ExportToPdfButtonRenderer` | `openExportPopup(options)`  |
+| `src/popup/mount.tsx`     | `assets/export-popup.js` | `webapp/pdf-exporter/js/starter.js`, `js/live-reports.js`, `js/classic-wiki.js`, `ExportToPdfButtonRenderer` | `openExportPopup(options)`  |
 
 All three need `rollupOptions.preserveEntrySignatures: 'strict'` to keep that export, which a Vite app
 build otherwise drops. Nothing in the Vitest suites sees the built files, so
@@ -88,7 +88,7 @@ What they share is [`src/export/`](src/export/) plus two services:
 
 The last two were `webapp/pdf-exporter/js/modules/ExportContext.js` and `ExportParams.js`, loaded at
 runtime from the other webapp by whichever surface needed them. Nothing loads them any more and
-`js/modules/` is gone; what remains in that webapp is the three injector scripts, the empty
+`js/modules/` is gone; what remains in that webapp is the four injector scripts, the empty
 `css/starter.css` trigger, and the three HTML templates the Java renderer reads server-side.
 `css/pdf-exporter.css` is gone too: the injectors put no stylesheet on the page any more.
 

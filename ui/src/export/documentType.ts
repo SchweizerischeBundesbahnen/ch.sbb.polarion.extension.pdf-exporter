@@ -117,6 +117,12 @@ export const isFileNameOffered = (exportType: ExportType): boolean => exportType
 export const isPageWidthValidationOffered = (exportType: ExportType, exposePageWidthValidation: boolean): boolean =>
   exportType !== 'BULK' && exposePageWidthValidation;
 
-/** The document's own language is only read where there is one document with a `docLanguage` field. */
+/**
+ * The document's own language is only read where there is one document with a `docLanguage` field. A wiki
+ * page has no custom fields, and the endpoint answers 404 for it.
+ */
 export const isDocumentLanguageRead = (documentType: DocumentType, exportType: ExportType): boolean =>
-  exportType !== 'BULK' && documentType !== 'LIVE_REPORT' && documentType !== 'TEST_RUN';
+  exportType !== 'BULK' &&
+  documentType !== 'LIVE_REPORT' &&
+  documentType !== 'TEST_RUN' &&
+  documentType !== 'WIKI_PAGE';

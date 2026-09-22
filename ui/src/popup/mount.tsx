@@ -14,10 +14,11 @@ import popupStyle from './export-popup.css?inline';
  * Entry point for the "Export to PDF" dialog, built by Vite into a fixed-name module
  * (`assets/export-popup.js`; the Vite input key `export-popup` sets the output name).
  *
- * Three server-side surfaces import this module and call {@link openExportPopup} on click:
+ * Four server-side surfaces import this module and call {@link openExportPopup} on click:
  * `webapp/pdf-exporter/js/starter.js` (the document editor toolbar button),
- * `webapp/pdf-exporter/js/live-reports.js` (the Live Report toolbar button) and
- * `ExportToPdfButtonRenderer` (the "Export to PDF Button" report widget). The fourth caller, the Bulk PDF
+ * `webapp/pdf-exporter/js/live-reports.js` (the Live Report toolbar button),
+ * `webapp/pdf-exporter/js/classic-wiki.js` (the Classic Wiki toolbar button) and
+ * `ExportToPdfButtonRenderer` (the "Export to PDF Button" report widget). The fifth caller, the Bulk PDF
  * Export widget, is part of this app and renders `ExportPopupModal` directly instead - it has a React tree
  * of its own to render the dialog into, and a progress dialog to hand the parameters to.
  *

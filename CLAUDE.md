@@ -36,10 +36,11 @@
     Its CSS is the shared `ui/src/export/export-form.css` plus `ui/src/sidepanel/side-panel.css` for the
     pane's own chrome.
   - **"Export to PDF" dialog** - `assets/export-popup.js` exporting `openExportPopup({documentType})`,
-    imported on click by `js/starter.js` (document editor toolbar), `js/live-reports.js` (report toolbar)
-    and `ExportToPdfButtonRenderer` (the report widget button). It appends its own host to the page body and
-    mounts into a shadow root of it. The Bulk PDF Export widget is the fourth caller and renders
-    `ExportPopupModal` directly instead, being part of the same app. Its CSS is the shared
+    imported on click by `js/starter.js` (document editor toolbar), `js/live-reports.js` (report toolbar),
+    `js/classic-wiki.js` (Classic Wiki toolbar) and `ExportToPdfButtonRenderer` (the report widget button).
+    It appends its own host to the page body and mounts into a shadow root of it. The Bulk PDF Export
+    widget is the fifth caller and renders `ExportPopupModal` directly instead, being part of the same
+    app. Its CSS is the shared
     `ui/src/export/export-form.css` plus `ui/src/popup/export-popup.css` for the dialog's own chrome.
 
   Each shadow root carries its own CSS, so the extension now puts **no stylesheet on a Polarion page at
@@ -61,8 +62,14 @@
   the chrome around it, and its layout follows the width it is given through a container query),
   `ui/src/services/exportContext.ts` (the location hash) and `ui/src/services/conversion.ts` (the convert-job
   protocol). Nothing is loaded across webapps at runtime any more. What is left in `webapp/pdf-exporter` is
-  the three injector scripts, the empty `css/starter.css` trigger and the three HTML templates the Java
+  the four injector scripts, the empty `css/starter.css` trigger and the three HTML templates the Java
   renderer reads server-side (`sidePanelContent.html`, `pdfTemplate.html`, `headerAndFooter.html`).
+- **A Classic Wiki page lives in an iframe no scriptInjection reaches.** Polarion renders it server-side
+  into a same-origin `/polarion/wiki/bin/view/...` iframe, and the toolbar is inside it. So `js/classic-wiki.js`
+  runs from `mainHead` and injects into that iframe from outside: a `load` listener per iframe (Polarion reloads
+  it between wiki pages) and an observer for new ones (it is replaced when the user leaves the wiki). The click
+  handler stays a function of the main page, so the dialog reads the main page's hash, which is what addresses
+  the page.
 - **The UI build comes from the generic parent**, activated by the presence of `ui/package.json` (its
   `ui-build-react-app` profile): `npm ci` + `npm run build`, the bundle copied into `webapp/pdf-exporter-app/`, and
   the JS suite in the Maven `test` phase. This pom adds nothing for it beyond pinning

@@ -10,7 +10,7 @@
 //     import('/polarion/pdf-exporter-app/ui/app/assets/side-panel.js')
 //         .then(module => module.mountSidePanel('#pdf-exporter-panel'))
 //   webapp/pdf-exporter/js/starter.js, webapp/pdf-exporter/js/live-reports.js,
-//   ExportToPdfButtonRenderer:
+//   webapp/pdf-exporter/js/classic-wiki.js, ExportToPdfButtonRenderer:
 //     import('/polarion/pdf-exporter-app/ui/app/assets/export-popup.js')
 //         .then(module => module.openExportPopup({documentType: '...'}))
 //

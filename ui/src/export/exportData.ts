@@ -244,9 +244,9 @@ export interface PopupDataRequest {
  * Export button. That is kept - the popup is the dialog a user reaches from a toolbar button, where an empty
  * dropdown is indistinguishable from a working one.
  *
- * Three reads are skipped rather than tolerated, exactly as they were: link roles where the document type
- * has none, the document language for reports, test runs and bulk exports, and the file name for a bulk
- * export.
+ * Three reads are skipped rather than tolerated: link roles where the document type has none, the document
+ * language for reports, test runs, wiki pages and bulk exports, and the file name for a bulk export. All but
+ * the wiki page are skipped as the legacy popup skipped them; a wiki page has no `docLanguage` field.
  */
 export async function loadPopupData(sendRequest: SendRequest, request: PopupDataRequest): Promise<PopupData> {
   const { documentType, exportType, document } = request;
