@@ -101,10 +101,19 @@ export function openExportPopup(options: OpenExportPopupOptions = {}): Root {
   );
 
   // A report's own button, on a report where a Bulk PDF Export widget has rows selected, first asks which of
-  // the two is meant. Read when the button is clicked, so it is the selection the user sees.
-  const targets =
-    location.documentType === 'LIVE_REPORT' && options.exportType !== 'BULK' ? selectedBulkExportTargets() : [];
-  root.render(targets.length > 0 ? <ExportTargetChooser targets={targets} report={dialog} onClose={close} /> : dialog);
+  // the two is meant. Read when the button is clicked, so it is the selection the user sees. What the button
+  // asked for decides, not what the location resolved to: a test run page is a report page too, and carries
+  // the same buttons and widgets, but its location resolves to TEST_RUN.
+  const asked = options.documentType ?? location.documentType;
+  const targets = asked === 'LIVE_REPORT' && options.exportType !== 'BULK' ? selectedBulkExportTargets() : [];
+  const pageLabel = location.documentType === 'TEST_RUN' ? 'This test run' : 'This report';
+  root.render(
+    targets.length > 0 ? (
+      <ExportTargetChooser targets={targets} pageLabel={pageLabel} report={dialog} onClose={close} />
+    ) : (
+      dialog
+    ),
+  );
   return root;
 }
 

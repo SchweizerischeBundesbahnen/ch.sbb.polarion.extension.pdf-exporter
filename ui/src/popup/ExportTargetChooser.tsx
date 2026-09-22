@@ -6,6 +6,8 @@ import type { BulkExportTarget } from '../widget/exportTargets';
 export interface ExportTargetChooserProps {
   /** The Bulk PDF Export widgets with rows selected. The chooser is only shown when there is one at least. */
   targets: BulkExportTarget[];
+  /** What the page itself is called in the choice: a report, or the test run a test run page shows. */
+  pageLabel: string;
   /** The export dialog for the report itself, shown in place of the chooser when the report is picked. */
   report: ReactNode;
   onClose: () => void;
@@ -29,7 +31,12 @@ export function describeTarget(target: BulkExportTarget): string {
  * reason. A widget picked here opens that widget's own export dialog, so a selection is exported the same
  * way whichever button started it - with the widget's progress dialog, its stop and its merge option.
  */
-export default function ExportTargetChooser({ targets, report, onClose }: Readonly<ExportTargetChooserProps>) {
+export default function ExportTargetChooser({
+  targets,
+  pageLabel,
+  report,
+  onClose,
+}: Readonly<ExportTargetChooserProps>) {
   /** Which option is picked: the index of a widget in `targets`, or -1 for the report. */
   const [picked, setPicked] = useState(0);
   const [reportChosen, setReportChosen] = useState(false);
@@ -55,7 +62,7 @@ export default function ExportTargetChooser({ targets, report, onClose }: Readon
         <div className="export-target-options" role="radiogroup" aria-labelledby="export-target-question">
           <label>
             <input type="radio" name="export-target" checked={picked < 0} onChange={() => setPicked(-1)} />
-            This report
+            {pageLabel}
           </label>
           {targets.map((target, index) => (
             <label key={target.id}>

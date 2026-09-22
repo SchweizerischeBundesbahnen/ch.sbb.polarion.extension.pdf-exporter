@@ -154,6 +154,29 @@ describe('choosing what a report button exports', () => {
     roots.length = 0;
   });
 
+  it('asks on a test run page too, which a report button opens as a report', async () => {
+    // A test run page carries the report toolbar and report widgets, but its location resolves to TEST_RUN
+    widget('Documents', 3);
+    installFetchMock(popupRoutes());
+    roots.push(
+      openExportPopup({
+        documentType: 'LIVE_REPORT',
+        location: {
+          documentType: 'TEST_RUN',
+          scope: 'project/elibrary/',
+          projectId: 'elibrary',
+          urlQueryParameters: { id: 'run_1' },
+        },
+      }),
+    );
+
+    await vi.waitFor(() => expect(chooser()).not.toBeNull());
+    expect(options().map((label) => label.textContent?.trim())).toEqual([
+      'This test run',
+      '3 selected items from Documents',
+    ]);
+  });
+
   it('does not ask for anything but a report', async () => {
     widget('Documents', 3);
     open('LIVE_DOC');
