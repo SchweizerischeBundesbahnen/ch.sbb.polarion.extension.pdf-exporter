@@ -70,11 +70,12 @@ class ExportToPdfButtonTest {
     }
 
     @Test
-    void carriesTheBundleVersionSoAnUpdateIsNotServedFromTheBrowserCache() {
+    void carriesTheBuildSoAnUpdateIsNotServedFromTheBrowserCache() {
         try (MockedStatic<VersionUtils> versions = mockStatic(VersionUtils.class)) {
-            versions.when(VersionUtils::getVersion).thenReturn(Version.builder().bundleVersion("13.5.1").build());
+            versions.when(VersionUtils::getVersion)
+                    .thenReturn(Version.builder().bundleVersion("13.5.1").bundleBuildTimestamp("2026-09-22 14:23").build());
 
-            assertTrue(ExportToPdfButtonRenderer.onClickAction().contains("export-popup.js?v=13.5.1"));
+            assertTrue(ExportToPdfButtonRenderer.onClickAction().contains("export-popup.js?v=13.5.1-202609221423"));
         }
     }
 

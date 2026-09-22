@@ -32,7 +32,8 @@
   - **Document Properties side panel** - `PdfExporterFormExtension` emits only a fragment (an empty
     `#pdf-exporter-panel` div plus a `<link>` to `css/starter.css` whose `onload` fires the import) and
     `assets/side-panel.js` mounts React into a shadow root of it. It reads its data from the same internal
-    REST endpoints the export dialog uses; the Java side substitutes nothing but the bundle version.
+    REST endpoints the export dialog uses; the Java side substitutes nothing but the cache key
+    (`BundleCacheKey`: the version plus the build timestamp, so that a rebuild of one version is fetched anew).
     Its CSS is the shared `ui/src/export/export-form.css` plus `ui/src/sidepanel/side-panel.css` for the
     pane's own chrome.
   - **"Export to PDF" dialog** - `assets/export-popup.js` exporting `openExportPopup({documentType})`,

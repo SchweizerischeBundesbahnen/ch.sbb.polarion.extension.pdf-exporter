@@ -94,17 +94,17 @@ class PdfExporterFormExtensionTest {
     }
 
     @Test
-    void testFragmentCarriesTheBundleVersion() {
-        Version version = Version.builder().bundleVersion("13.5.1").build();
+    void testFragmentCarriesTheBuild() {
+        Version version = Version.builder().bundleVersion("13.5.1").bundleBuildTimestamp("2026-09-22 14:23").build();
         try (MockedStatic<VersionUtils> versionUtils = mockStatic(VersionUtils.class)) {
             versionUtils.when(VersionUtils::getVersion).thenReturn(version);
 
             String fragment = extension.getSidePanelFragment();
 
-            // The bundle is imported from a fixed URL, so the version is what busts the browser's cache of
-            // it when the extension is updated.
-            assertTrue(fragment.contains("side-panel.js?v=13.5.1"));
-            assertFalse(fragment.contains("{BUNDLE_VERSION}"));
+            // The bundle is imported from a fixed URL, so the build is what busts the browser's cache of it
+            // when the extension is updated or rebuilt.
+            assertTrue(fragment.contains("side-panel.js?v=13.5.1-202609221423"), fragment);
+            assertFalse(fragment.contains("{CACHE_KEY}"));
         }
     }
 
@@ -119,7 +119,7 @@ class PdfExporterFormExtensionTest {
             String fragment = extension.getSidePanelFragment();
 
             assertTrue(fragment.contains("side-panel.js?v=0"));
-            assertFalse(fragment.contains("{BUNDLE_VERSION}"));
+            assertFalse(fragment.contains("{CACHE_KEY}"));
         }
     }
 }

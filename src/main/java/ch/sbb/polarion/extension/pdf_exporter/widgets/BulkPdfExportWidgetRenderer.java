@@ -1,9 +1,9 @@
 package ch.sbb.polarion.extension.pdf_exporter.widgets;
 
-import ch.sbb.polarion.extension.generic.util.VersionUtils;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.DocumentType;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.widgets.BulkExportColumn;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.widgets.BulkExportWidgetDescriptor;
+import ch.sbb.polarion.extension.pdf_exporter.util.BundleCacheKey;
 import ch.sbb.polarion.extension.pdf_exporter.util.WidgetDescriptorSigner;
 import com.polarion.alm.server.api.model.rp.widget.AbstractWidgetRenderer;
 import com.polarion.alm.shared.api.model.PrototypeEnum;
@@ -131,7 +131,7 @@ public class BulkPdfExportWidgetRenderer extends AbstractWidgetRenderer {
         builder.tag().script().append().javaScript("""
                 import('%s?v=%s')
                     .then(module => module.default('#%s'))
-                    .catch(console.error);""".formatted(WIDGET_MODULE_URL, getBundleVersion(), panelId));
+                    .catch(console.error);""".formatted(WIDGET_MODULE_URL, BundleCacheKey.get(), panelId));
     }
 
     @VisibleForTesting
@@ -175,14 +175,5 @@ public class BulkPdfExportWidgetRenderer extends AbstractWidgetRenderer {
         }
         BaselineCollectionReference reference = dataSetParameter.getCollectionReference();
         return reference != null ? reference : context.transaction().context().contextCollection();
-    }
-
-    /**
-     * Busts the browser cache of the widget app when the extension is updated: the app is loaded from a fixed URL,
-     * as the renderer cannot know the hashed file names Vite emits for the rest of the bundle.
-     */
-    private @NotNull String getBundleVersion() {
-        String version = VersionUtils.getVersion().getBundleVersion();
-        return version == null ? "0" : version;
     }
 }

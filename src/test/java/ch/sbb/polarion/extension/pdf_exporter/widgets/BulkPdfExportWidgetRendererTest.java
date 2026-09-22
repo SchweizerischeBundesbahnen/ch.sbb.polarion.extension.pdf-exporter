@@ -131,19 +131,20 @@ class BulkPdfExportWidgetRendererTest {
     }
 
     @Test
-    void theLoaderCarriesTheBundleVersionWhenTheManifestHasOne() {
+    void theLoaderCarriesTheBuildWhenTheManifestHasOne() {
         RichPageWidgetCommonContext context = mock(RichPageWidgetCommonContext.class, RETURNS_DEEP_STUBS);
         CapturingBuilder builder = new CapturingBuilder();
 
         try (MockedStatic<VersionUtils> versions = mockStatic(VersionUtils.class)) {
-            versions.when(VersionUtils::getVersion).thenReturn(Version.builder().bundleVersion("13.5.1").build());
+            versions.when(VersionUtils::getVersion)
+                    .thenReturn(Version.builder().bundleVersion("13.5.1").bundleBuildTimestamp("2026-09-22 14:23").build());
 
             mockRenderer(context).render(builder.fragmentBuilder);
         }
 
         ArgumentCaptor<String> script = ArgumentCaptor.forClass(String.class);
         verify(builder.scriptContent, atLeastOnce()).javaScript(script.capture());
-        assertTrue(script.getValue().contains("bulk-widget.js?v=13.5.1"), script.getValue());
+        assertTrue(script.getValue().contains("bulk-widget.js?v=13.5.1-202609221423"), script.getValue());
     }
 
     @Test
