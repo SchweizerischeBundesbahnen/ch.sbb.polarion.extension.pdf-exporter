@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import type { DocIdentifier } from '../export/exportData';
 import type { ExportParamsJson } from '../export/exportParams';
 import ExportPopupModal from '../popup/ExportPopupModal';
@@ -6,6 +6,7 @@ import type { ExportPopupDependencies } from '../popup/ExportPopupModal';
 import type { DocumentIdentity } from '../services/exportContext';
 import useRemote from '../services/useRemote';
 import BulkExportProgressModal from './BulkExportProgressModal';
+import { registerBulkExportTarget } from './exportTargets';
 import type { BulkExportItem, BulkExportItems, WidgetShim } from './types';
 import useBulkExport from './useBulkExport';
 import type { BulkExportDependencies } from './useBulkExport';
@@ -107,6 +108,32 @@ export default function BulkExportWidget({ shim, deps = {} }: Props) {
     setExporting(selectedItems);
   }, [selectedItems]);
 
+  // The report's own "Export to PDF" buttons offer this selection as an alternative to the report (see
+  // exportTargets.ts). The entry is registered once and reads the latest selection through refs, so that a
+  // click on a checkbox does not replace it.
+  const targetId = useId();
+  const header = useRef<HTMLDivElement>(null);
+  const latest = useRef({ selectedCount: 0, openDialog });
+  useEffect(() => {
+    latest.current = { selectedCount: selectedItems.length, openDialog };
+  }, [selectedItems, openDialog]);
+  useEffect(
+    () =>
+      registerBulkExportTarget({
+        id: targetId,
+        title: shim.title,
+        // The shadow host in Polarion, which is what the page holds and removes; the widget itself where it
+        // is rendered without one
+        anchor: () => {
+          const root = header.current?.getRootNode();
+          return root instanceof ShadowRoot ? root.host : header.current;
+        },
+        selectedCount: () => latest.current.selectedCount,
+        startExport: () => latest.current.openDialog(),
+      }),
+    [targetId, shim.title],
+  );
+
   /**
    * The items the style packages have to suit: a bulk export is only offered the packages that apply to
    * every one of them, which is what the endpoint takes this list for.
@@ -148,7 +175,7 @@ export default function BulkExportWidget({ shim, deps = {} }: Props) {
 
   return (
     <>
-      <div className="header">
+      <div className="header" ref={header}>
         <h3>{shim.title}</h3>
         <span
           className="polarion-TestsExecutionButton-link"
