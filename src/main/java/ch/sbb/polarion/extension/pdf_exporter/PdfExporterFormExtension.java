@@ -33,6 +33,8 @@ public class PdfExporterFormExtension implements IFormExtension {
 
     @VisibleForTesting
     static final String SIDE_PANEL_FRAGMENT = "webapp/pdf-exporter/html/sidePanelContent.html";
+    /** The module the fragment imports, in the jar, which is what its cache key is a hash of. */
+    static final String SIDE_PANEL_MODULE_PATH = "webapp/pdf-exporter-app/app/assets/side-panel.js";
 
     @Override
     @Nullable
@@ -56,14 +58,14 @@ public class PdfExporterFormExtension implements IFormExtension {
     }
 
     /**
-     * The fragment, with the build put into the bundle URL. The panel is imported from a fixed URL - the fragment
-     * cannot know the hashed file names Vite emits for the rest of the bundle - so {@link BundleCacheKey} is what
-     * busts the browser's cache of it when the extension is updated or rebuilt.
+     * The fragment, with the module's cache key put into its URL. The panel is imported from a fixed URL - the
+     * fragment cannot know the hashed file names Vite emits for the rest of the bundle - so {@link BundleCacheKey}
+     * is what busts the browser's cache of it when a build changes it.
      */
     @VisibleForTesting
     @NotNull
     String getSidePanelFragment() {
-        return ScopeUtils.getFileContent(SIDE_PANEL_FRAGMENT).replace("{CACHE_KEY}", BundleCacheKey.get());
+        return ScopeUtils.getFileContent(SIDE_PANEL_FRAGMENT).replace("{CACHE_KEY}", BundleCacheKey.forModule(SIDE_PANEL_MODULE_PATH));
     }
 
     @Override

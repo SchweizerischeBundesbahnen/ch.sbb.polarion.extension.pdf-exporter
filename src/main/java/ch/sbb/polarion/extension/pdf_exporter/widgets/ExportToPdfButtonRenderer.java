@@ -19,6 +19,8 @@ import org.jetbrains.annotations.VisibleForTesting;
 public class ExportToPdfButtonRenderer extends AbstractWidgetRenderer {
 
     static final String POPUP_MODULE_URL = "/polarion/pdf-exporter-app/ui/app/assets/export-popup.js";
+    /** The same module in the jar, which is what its cache key is a hash of. */
+    static final String POPUP_MODULE_PATH = "webapp/pdf-exporter-app/app/assets/export-popup.js";
 
     public ExportToPdfButtonRenderer(@NotNull RichPageWidgetCommonContext context) {
         super(context);
@@ -47,6 +49,6 @@ public class ExportToPdfButtonRenderer extends AbstractWidgetRenderer {
         return """
                 import('%s?v=%s')
                     .then(module => module.openExportPopup({documentType: 'LIVE_REPORT'}))
-                    .catch(console.error);""".formatted(POPUP_MODULE_URL, BundleCacheKey.get());
+                    .catch(console.error);""".formatted(POPUP_MODULE_URL, BundleCacheKey.forModule(POPUP_MODULE_PATH));
     }
 }

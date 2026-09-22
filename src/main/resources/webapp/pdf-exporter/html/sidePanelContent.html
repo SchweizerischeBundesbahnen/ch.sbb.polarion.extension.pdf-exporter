@@ -8,7 +8,7 @@
   If we put javascript code just in an inline 'script' block it won't be initialized, but the attribute
   'onload' below allows to import our module. The one remaining <link> loads a tiny empty stylesheet
   (starter.css) that only fires that trigger. {CACHE_KEY} busts the browser cache of the bundle when
-  the extension is updated or rebuilt, the URL being fixed. -->
+  a build changes it, the URL being fixed. -->
 <link href='/polarion/pdf-exporter/ui/css/starter.css' rel='stylesheet'
       onload='import("/polarion/pdf-exporter-app/ui/app/assets/side-panel.js?v={CACHE_KEY}")
                 .then(module => module.mountSidePanel("#pdf-exporter-panel"))

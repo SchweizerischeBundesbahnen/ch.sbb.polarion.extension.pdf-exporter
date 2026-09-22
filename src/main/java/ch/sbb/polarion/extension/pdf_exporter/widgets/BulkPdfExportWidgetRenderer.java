@@ -41,6 +41,8 @@ import java.util.UUID;
 public class BulkPdfExportWidgetRenderer extends AbstractWidgetRenderer {
 
     private static final String WIDGET_MODULE_URL = "/polarion/pdf-exporter-app/ui/app/assets/bulk-widget.js";
+    /** The same module in the jar, which is what its cache key is a hash of. */
+    private static final String WIDGET_MODULE_PATH = "webapp/pdf-exporter-app/app/assets/bulk-widget.js";
 
     private final @NotNull DataSetParameter dataSetParameter;
     private final @NotNull DataSet dataSet;
@@ -131,7 +133,7 @@ public class BulkPdfExportWidgetRenderer extends AbstractWidgetRenderer {
         builder.tag().script().append().javaScript("""
                 import('%s?v=%s')
                     .then(module => module.default('#%s'))
-                    .catch(console.error);""".formatted(WIDGET_MODULE_URL, BundleCacheKey.get(), panelId));
+                    .catch(console.error);""".formatted(WIDGET_MODULE_URL, BundleCacheKey.forModule(WIDGET_MODULE_PATH), panelId));
     }
 
     @VisibleForTesting
