@@ -66,6 +66,7 @@ describe('classic-wiki.js injector', () => {
   beforeEach(() => {
     vi.resetModules();
     resetInjectorGlobals();
+    window.location.hash = '#/project/elibrary/wiki/Wiki';
     // jsdom without pretendToBeVisual has no requestAnimationFrame
     vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => setTimeout(() => callback(0), 0));
     const Native = window.MutationObserver;
@@ -157,6 +158,32 @@ describe('classic-wiki.js injector', () => {
     await loadInjector();
 
     expect(injected(fake)).toBeNull();
+  });
+
+  it.each([
+    ['a plan', '#/project/elibrary/plan?id=Iteration_0'],
+    ['a test run', '#/project/elibrary/testrun?id=run_1'],
+    ['a plan of a project named wiki', '#/project/wiki/plan?id=Iteration_0'],
+  ])('leaves the toolbar of %s alone, whose hash addresses no wiki page', async (_, hash) => {
+    window.location.hash = hash;
+    const fake = fakeFrame();
+    document.body.appendChild(fake.frame);
+    await loadInjector();
+
+    expect(injected(fake)).toBeNull();
+  });
+
+  it.each([
+    ['a global wiki page', '#/wiki/Wiki'],
+    ['a wiki page in a space', '#/project/elibrary/wiki/Specification/Home'],
+    ['a wiki page in a baseline', '#/baseline/1/project/elibrary/wiki/Wiki'],
+  ])('adds the button to %s', async (_, hash) => {
+    window.location.hash = hash;
+    const fake = fakeFrame();
+    document.body.appendChild(fake.frame);
+    await loadInjector();
+
+    expect(injected(fake)).not.toBeNull();
   });
 
   it('leaves a wiki view without the toolbar alone', async () => {

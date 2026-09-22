@@ -33,6 +33,10 @@
 
     const MARKER_ID = 'pdf-exporter-wiki-toolbar-injected';
     const WIKI_VIEW_PATH = '/polarion/wiki/bin/view/';
+    // The main page's hash of a wiki page, in a project, in the global repository or in a baseline. Polarion
+    // renders plan and test run pages of the Classic Wiki kind with the same toolbar, but their hash
+    // addresses no wiki page, so the dialog could not export them as one.
+    const WIKI_HASH = /^#\/(?:baseline\/[^/]+\/)?(?:project\/[^/]+\/)?wiki\//;
     // Set on each iframe this script listens to, so a second observer callback does not add a second listener.
     const WATCHED = '__pdfExporterWikiWatched';
 
@@ -70,7 +74,8 @@
         } catch {
             return; // another origin, or an iframe already removed: not a wiki page
         }
-        if (!doc || !path.startsWith(WIKI_VIEW_PATH) || doc.getElementById(MARKER_ID)) {
+        if (!doc || !path.startsWith(WIKI_VIEW_PATH) || !WIKI_HASH.test(window.location.hash)
+                || doc.getElementById(MARKER_ID)) {
             return;
         }
         // The Edit button is in the toolbar row of every wiki page view, and only there.
