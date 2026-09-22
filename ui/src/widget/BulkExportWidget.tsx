@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import type { DocIdentifier } from '../export/exportData';
 import type { ExportParamsJson } from '../export/exportParams';
 import ExportPopupModal from '../popup/ExportPopupModal';
@@ -6,6 +6,7 @@ import type { ExportPopupDependencies } from '../popup/ExportPopupModal';
 import type { DocumentIdentity } from '../services/exportContext';
 import useRemote from '../services/useRemote';
 import BulkExportProgressModal from './BulkExportProgressModal';
+import { registerBulkExportTarget } from './exportTargets';
 import type { BulkExportItem, BulkExportItems, WidgetShim } from './types';
 import useBulkExport from './useBulkExport';
 import type { BulkExportDependencies } from './useBulkExport';
@@ -106,6 +107,25 @@ export default function BulkExportWidget({ shim, deps = {} }: Props) {
     }
     setExporting(selectedItems);
   }, [selectedItems]);
+
+  // The report's own "Export to PDF" buttons offer this selection as an alternative to the report (see
+  // exportTargets.ts). The entry is registered once and reads the latest selection through refs, so that a
+  // click on a checkbox does not replace it.
+  const targetId = useId();
+  const latest = useRef({ selectedCount: 0, openDialog });
+  useEffect(() => {
+    latest.current = { selectedCount: selectedItems.length, openDialog };
+  }, [selectedItems, openDialog]);
+  useEffect(
+    () =>
+      registerBulkExportTarget({
+        id: targetId,
+        title: shim.title,
+        selectedCount: () => latest.current.selectedCount,
+        startExport: () => latest.current.openDialog(),
+      }),
+    [targetId, shim.title],
+  );
 
   /**
    * The items the style packages have to suit: a bulk export is only offered the packages that apply to

@@ -4,6 +4,7 @@ import { page, userEvent } from 'vitest/browser';
 import type { DocumentType, ExportType } from '../src/export/documentType';
 import { openExportPopup } from '../src/popup/mount';
 import type { DocumentIdentity } from '../src/services/exportContext';
+import { registerBulkExportTarget } from '../src/widget/exportTargets';
 import type { PopupSampleOptions } from './exportPopupSamples';
 import {
   SAMPLE_DOCUMENT,
@@ -150,6 +151,21 @@ describe.skipIf(!__PIXEL_REFERENCES__)('export dialog visual', () => {
     await settled(shadow);
 
     await snapshot(shadow, 'popup-live-report');
+  });
+
+  it('the choice a report button asks for where a widget on the report has rows selected', async () => {
+    const unregister = [
+      registerBulkExportTarget({ id: 'a', title: 'Documents', selectedCount: () => 3, startExport: () => {} }),
+      registerBulkExportTarget({ id: 'b', title: 'Test Runs', selectedCount: () => 1, startExport: () => {} }),
+    ];
+    try {
+      const shadow = mounted({ document: { ...SAMPLE_DOCUMENT, documentType: 'LIVE_REPORT' as DocumentType } });
+      await settled(shadow, '.export-target-chooser');
+
+      await snapshotDialog(shadow, 'popup-choose-target');
+    } finally {
+      unregister.forEach((remove) => remove());
+    }
   });
 
   it('a bulk export, which picks a style package per item', async () => {

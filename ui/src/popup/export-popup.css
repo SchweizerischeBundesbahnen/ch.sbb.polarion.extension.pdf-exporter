@@ -78,3 +78,25 @@
   width: 48px;
   height: 48px;
 }
+
+/* --- The choice before it ----------------------------------------------------------------------- */
+
+/* What a report's button asks first when a Bulk PDF Export widget on the report has rows selected (see
+   ExportTargetChooser.tsx): the report or a selection, one option per line. The radios themselves are
+   RSP's, scoped to the container's `form-wrapper`. The dialog keeps the shared modal's own width, which
+   is a dialog for a question. */
+.export-target-chooser p {
+  margin: 0 0 12px;
+}
+
+.export-target-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.export-target-options label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}

@@ -1,8 +1,10 @@
+import { act } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render } from 'vitest-browser-react';
 import { userEvent } from 'vitest/browser';
 import BulkExportWidget from '../src/widget/BulkExportWidget';
 import type { WidgetDependencies } from '../src/widget/BulkExportWidget';
+import { selectedBulkExportTargets } from '../src/widget/exportTargets';
 import { SAMPLE_ITEMS, SAMPLE_ITEMS_EMPTY, SAMPLE_ITEMS_WITH_UNREADABLE, SAMPLE_SHIM } from '../src/widget/sampleData';
 import type { BulkExportItems } from '../src/widget/types';
 import { popupDependencies } from './exportPopupSamples';
@@ -147,6 +149,41 @@ describe('Bulk PDF Export widget', () => {
 
     await vi.waitFor(() => expect(dialog()).not.toBeNull());
     expect(identifiers).toEqual([[{ projectId: 'elibrary', documentName: '0_9b RT' }]]);
+  });
+
+  // What a report's own "Export to PDF" button sees of the widget: see ExportTargetChooser.test.tsx
+  it('offers its selection to the report buttons under its title, as the selection changes', async () => {
+    open(SAMPLE_ITEMS, { popup: popupDependencies() });
+    await vi.waitFor(() => expect(rows().length).toBe(4));
+    expect(selectedBulkExportTargets()).toEqual([]);
+
+    await userEvent.click(checkboxes()[1]);
+    await userEvent.click(checkboxes()[2]);
+
+    await vi.waitFor(() => expect(selectedBulkExportTargets().map((target) => target.selectedCount())).toEqual([2]));
+    expect(selectedBulkExportTargets()[0].title).toBe('Test Runs');
+  });
+
+  it('opens its own export dialog when a report button hands the selection over', async () => {
+    open(SAMPLE_ITEMS, { popup: popupDependencies() });
+    await vi.waitFor(() => expect(rows().length).toBe(4));
+    await userEvent.click(checkboxes()[1]);
+    await vi.waitFor(() => expect(selectedBulkExportTargets()).toHaveLength(1));
+
+    act(() => selectedBulkExportTargets()[0].startExport());
+
+    await vi.waitFor(() => expect(dialog()).not.toBeNull());
+  });
+
+  it('withdraws its selection from the report buttons when it goes', async () => {
+    open(SAMPLE_ITEMS, { popup: popupDependencies() });
+    await vi.waitFor(() => expect(rows().length).toBe(4));
+    await userEvent.click(checkboxes()[1]);
+    await vi.waitFor(() => expect(selectedBulkExportTargets()).toHaveLength(1));
+
+    cleanup();
+
+    expect(selectedBulkExportTargets()).toEqual([]);
   });
 
   it('does not open the export dialog with nothing selected', async () => {
