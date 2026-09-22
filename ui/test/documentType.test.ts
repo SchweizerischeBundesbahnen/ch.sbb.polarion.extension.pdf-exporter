@@ -118,7 +118,7 @@ describe('what the dialog offers per export type', () => {
     expect(ALL_TYPES.filter(areRolesSelectable)).toEqual(['LIVE_DOC', 'BASELINE_COLLECTION']);
   });
 
-  it('reads the document language for one document, not for reports, test runs or a bulk run', () => {
+  it('reads the document language for one document, not for reports, test runs, wiki pages or a bulk run', () => {
     expect(isDocumentLanguageRead('LIVE_DOC', 'SINGLE')).toBe(true);
     expect(isDocumentLanguageRead('BASELINE_COLLECTION', 'SINGLE')).toBe(true);
     expect(isDocumentLanguageRead('WIKI_PAGE', 'SINGLE')).toBe(false);
