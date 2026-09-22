@@ -5,13 +5,13 @@ import type { DocumentType, ExportType } from '../export/documentType';
 import { documentEditorHash } from '../services/documents';
 import type { ProjectDocument } from '../services/documents';
 
-/** What the dialog can be opened for. `WIKI_PAGE` is offered too, although no toolbar opens it that way. */
+/** What the dialog can be opened for. */
 const DOCUMENT_TYPES: { id: DocumentType; name: string }[] = [
   { id: 'LIVE_DOC', name: 'LIVE_DOC (a document, as the editor toolbar opens it)' },
   { id: 'LIVE_REPORT', name: 'LIVE_REPORT (a report, as the report toolbar opens it)' },
   { id: 'TEST_RUN', name: 'TEST_RUN (offers the attachment fields)' },
   { id: 'BASELINE_COLLECTION', name: 'BASELINE_COLLECTION' },
-  { id: 'WIKI_PAGE', name: 'WIKI_PAGE' },
+  { id: 'WIKI_PAGE', name: 'WIKI_PAGE (a Classic Wiki page, as its toolbar opens it)' },
 ];
 
 const EXPORT_TYPES: { id: ExportType; name: string }[] = [
