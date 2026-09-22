@@ -15,6 +15,8 @@ import { clearToasts } from './toasts';
 
 const roots: Root[] = [];
 const unregister: (() => void)[] = [];
+/** The elements the stand-in widgets stand on, removed after each test. */
+const anchors: HTMLElement[] = [];
 
 const shadow = () => (document.body.lastElementChild as HTMLElement | null)?.shadowRoot ?? null;
 const chooser = () => shadow()?.querySelector('.export-target-chooser') ?? null;
@@ -24,9 +26,28 @@ const radio = (label: HTMLLabelElement) => label.querySelector<HTMLInputElement>
 const continueButton = () => shadow()!.querySelector<HTMLButtonElement>('.rsp-modal-footer .sbb-btn--primary')!;
 const closeButton = () => shadow()!.querySelector<HTMLButtonElement>('.rsp-modal-footer .sbb-btn--secondary')!;
 
-/** A widget with `count` rows selected, registered for the test. */
-function widget(title: string, count: number): BulkExportTarget & { startExport: ReturnType<typeof vi.fn> } {
-  const target = { id: `${title}-${count}`, title, selectedCount: () => count, startExport: vi.fn() };
+type StandIn = BulkExportTarget & { startExport: ReturnType<typeof vi.fn>; element: HTMLElement };
+
+/**
+ * A widget with `count` rows selected, registered for the test. Its element is appended to the page, or put
+ * in front of `before` where given.
+ */
+function widget(title: string, count: number, before?: HTMLElement): StandIn {
+  const element = document.createElement('div');
+  if (before) {
+    before.before(element);
+  } else {
+    document.body.appendChild(element);
+  }
+  anchors.push(element);
+  const target = {
+    id: `${title}-${count}-${anchors.length}`,
+    title,
+    element,
+    anchor: () => element,
+    selectedCount: () => count,
+    startExport: vi.fn(),
+  };
   unregister.push(registerBulkExportTarget(target));
   return target;
 }
@@ -53,6 +74,7 @@ function open(documentType: DocumentType = 'LIVE_REPORT', exportType?: 'BULK') {
 afterEach(() => {
   clearToasts();
   unregister.splice(0).forEach((remove) => remove());
+  anchors.splice(0).forEach((element) => element.remove());
   roots.splice(0).forEach((root) => root.unmount());
   document.querySelectorAll('body > div').forEach((element) => {
     if (element.shadowRoot) element.remove();
@@ -68,6 +90,26 @@ describe('the widgets a report button can offer', () => {
     widget('Test Runs', 1);
 
     expect(selectedBulkExportTargets().map((target) => target.title)).toEqual(['Documents', 'Test Runs']);
+  });
+
+  it('lists them in the order the page shows them, whatever order they registered in', () => {
+    const later = widget('Documents', 2);
+    widget('Test Runs', 1, later.element);
+
+    expect(selectedBulkExportTargets().map((target) => target.title)).toEqual(['Test Runs', 'Documents']);
+  });
+
+  it('drops a widget whose element has left the page', () => {
+    // What happens in Polarion when the user moves on to another report: the page is not reloaded and the
+    // widget's root is never unmounted, but its host goes
+    const gone = widget('Documents', 2);
+    widget('Test Runs', 1);
+    gone.element.remove();
+
+    expect(selectedBulkExportTargets().map((target) => target.title)).toEqual(['Test Runs']);
+    // For good, not only for this read: its element coming back does not bring it back
+    document.body.appendChild(gone.element);
+    expect(selectedBulkExportTargets().map((target) => target.title)).toEqual(['Test Runs']);
   });
 
   it('forgets a widget once it is removed', () => {
@@ -110,6 +152,21 @@ describe('choosing what a report button exports', () => {
       'This report',
       '1 selected item from Documents',
       '2 selected items from the Bulk PDF Export widget',
+    ]);
+  });
+
+  it('tells widgets of the same title apart by their order on the page', async () => {
+    const second = widget('Documents', 2);
+    widget('Documents', 2, second.element);
+    widget('Test Runs', 1);
+    open();
+
+    await vi.waitFor(() => expect(chooser()).not.toBeNull());
+    expect(options().map((label) => label.textContent?.trim())).toEqual([
+      'This report',
+      '2 selected items from Documents (widget 1 of 2)',
+      '2 selected items from Documents (widget 2 of 2)',
+      '1 selected item from Test Runs',
     ]);
   });
 

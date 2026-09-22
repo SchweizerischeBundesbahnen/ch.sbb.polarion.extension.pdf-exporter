@@ -12,8 +12,16 @@
 export interface BulkExportTarget {
   /** Unique on the page. A report may carry two widgets of the same title. */
   id: string;
-  /** The widget's title, which is what tells two widgets on one page apart. */
+  /**
+   * What the widget lists: "Documents", "Test Runs" and the like, from the renderer. It is the type of the
+   * items, not a name of the widget, so two widgets over the same type share it.
+   */
   title: string;
+  /**
+   * The widget's element on the page - its shadow host in Polarion - or null before it rendered. Says whether
+   * the widget is still on the page, and where.
+   */
+  anchor: () => Element | null;
   /** How many rows are selected right now. */
   selectedCount: () => number;
   /** Opens the widget's own export dialog for the selection, as its own button does. */
@@ -38,7 +46,30 @@ export function registerBulkExportTarget(target: BulkExportTarget): () => void {
   };
 }
 
-/** The widgets which have rows selected, in the order they were mounted. */
+const isOnPage = (target: BulkExportTarget): boolean => target.anchor()?.isConnected ?? false;
+
+/** Earlier on the page first. */
+function byPagePosition(first: BulkExportTarget, second: BulkExportTarget): number {
+  const position = first.anchor()!.compareDocumentPosition(second.anchor()!);
+  if (position & Node.DOCUMENT_POSITION_FOLLOWING) {
+    return -1;
+  }
+  return position & Node.DOCUMENT_POSITION_PRECEDING ? 1 : 0;
+}
+
+/**
+ * The widgets on the page which have rows selected, in the order the page shows them.
+ *
+ * A widget whose element has left the page is dropped from the list for good. Nothing unmounts a widget in
+ * Polarion - its root is simply discarded with the report when the user moves on to another one, which does
+ * not reload the page - so this is where a stale entry goes.
+ */
 export function selectedBulkExportTargets(): BulkExportTarget[] {
-  return [...targets()].filter((target) => target.selectedCount() > 0);
+  const all = targets();
+  for (const target of [...all]) {
+    if (!isOnPage(target)) {
+      all.delete(target);
+    }
+  }
+  return [...all].filter((target) => target.selectedCount() > 0).sort(byPagePosition);
 }

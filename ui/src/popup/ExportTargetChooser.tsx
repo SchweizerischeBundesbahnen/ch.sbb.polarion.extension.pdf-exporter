@@ -16,10 +16,20 @@ export interface ExportTargetChooserProps {
 /** What a widget is called in the choice. A widget configured without a title still needs a name. */
 const nameOf = (target: BulkExportTarget): string => target.title || 'the Bulk PDF Export widget';
 
-/** "3 selected items from Test Runs", with the count read when the choice opens. */
-export function describeTarget(target: BulkExportTarget): string {
-  const count = target.selectedCount();
-  return `${count} selected ${count === 1 ? 'item' : 'items'} from ${nameOf(target)}`;
+/**
+ * "3 selected items from Test Runs" per widget, with the counts read when the choice opens.
+ *
+ * The title is the type of what a widget lists, so two widgets over the same type share it. Those are told
+ * apart by their order on the page, which is the order `targets` comes in: "(widget 1 of 2)".
+ */
+export function describeTargets(targets: BulkExportTarget[]): string[] {
+  const sameName = (target: BulkExportTarget) => targets.filter((other) => nameOf(other) === nameOf(target));
+  return targets.map((target) => {
+    const count = target.selectedCount();
+    const label = `${count} selected ${count === 1 ? 'item' : 'items'} from ${nameOf(target)}`;
+    const namesakes = sameName(target);
+    return namesakes.length > 1 ? `${label} (widget ${namesakes.indexOf(target) + 1} of ${namesakes.length})` : label;
+  });
 }
 
 /**
@@ -45,6 +55,8 @@ export default function ExportTargetChooser({
     return report;
   }
 
+  const labels = describeTargets(targets);
+
   const proceed = () => {
     if (picked < 0) {
       setReportChosen(true);
@@ -67,7 +79,7 @@ export default function ExportTargetChooser({
           {targets.map((target, index) => (
             <label key={target.id}>
               <input type="radio" name="export-target" checked={picked === index} onChange={() => setPicked(index)} />
-              {describeTarget(target)}
+              {labels[index]}
             </label>
           ))}
         </div>

@@ -154,10 +154,21 @@ describe.skipIf(!__PIXEL_REFERENCES__)('export dialog visual', () => {
   });
 
   it('the choice a report button asks for where a widget on the report has rows selected', async () => {
-    const unregister = [
-      registerBulkExportTarget({ id: 'a', title: 'Documents', selectedCount: () => 3, startExport: () => {} }),
-      registerBulkExportTarget({ id: 'b', title: 'Test Runs', selectedCount: () => 1, startExport: () => {} }),
-    ];
+    const target = (id: string, title: string, count: number) => {
+      const anchor = document.body.appendChild(document.createElement('div'));
+      const remove = registerBulkExportTarget({
+        id,
+        title,
+        anchor: () => anchor,
+        selectedCount: () => count,
+        startExport: () => {},
+      });
+      return () => {
+        remove();
+        anchor.remove();
+      };
+    };
+    const unregister = [target('a', 'Documents', 3), target('b', 'Test Runs', 1)];
     try {
       const shadow = mounted({ document: { ...SAMPLE_DOCUMENT, documentType: 'LIVE_REPORT' as DocumentType } });
       await settled(shadow, '.export-target-chooser');

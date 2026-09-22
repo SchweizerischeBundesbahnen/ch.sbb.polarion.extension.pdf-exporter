@@ -112,6 +112,7 @@ export default function BulkExportWidget({ shim, deps = {} }: Props) {
   // exportTargets.ts). The entry is registered once and reads the latest selection through refs, so that a
   // click on a checkbox does not replace it.
   const targetId = useId();
+  const header = useRef<HTMLDivElement>(null);
   const latest = useRef({ selectedCount: 0, openDialog });
   useEffect(() => {
     latest.current = { selectedCount: selectedItems.length, openDialog };
@@ -121,6 +122,12 @@ export default function BulkExportWidget({ shim, deps = {} }: Props) {
       registerBulkExportTarget({
         id: targetId,
         title: shim.title,
+        // The shadow host in Polarion, which is what the page holds and removes; the widget itself where it
+        // is rendered without one
+        anchor: () => {
+          const root = header.current?.getRootNode();
+          return root instanceof ShadowRoot ? root.host : header.current;
+        },
         selectedCount: () => latest.current.selectedCount,
         startExport: () => latest.current.openDialog(),
       }),
@@ -168,7 +175,7 @@ export default function BulkExportWidget({ shim, deps = {} }: Props) {
 
   return (
     <>
-      <div className="header">
+      <div className="header" ref={header}>
         <h3>{shim.title}</h3>
         <span
           className="polarion-TestsExecutionButton-link"
