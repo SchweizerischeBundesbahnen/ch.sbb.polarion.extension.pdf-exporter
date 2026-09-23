@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { page } from 'vitest/browser';
+import { selectedBulkExportTargets } from '../src/widget/exportTargets';
 import mount, { adoptPageStyles, mountInto, readShim } from '../src/widget/main';
 import { SAMPLE_ITEMS, SAMPLE_SHIM } from '../src/widget/sampleData';
 import { SAMPLE_STYLE_PACKAGE_FULL, popupDependencies } from './exportPopupSamples';
@@ -184,6 +185,24 @@ describe('Bulk PDF Export widget mounting', () => {
     mountInto(host, readShim(host), { loadItems: loaded });
 
     expect(host.shadowRoot!.querySelectorAll('h3').length).toBe(1);
+  });
+
+  it('offers its selection to the report buttons while its host is on the page, and not after', async () => {
+    // Nothing unmounts a widget in Polarion: moving on to another report removes the host and leaves the root
+    // behind, on a page that is not reloaded. So what decides is the host, not React's unmount.
+    const host = shim();
+    mountInto(host, readShim(host), { loadItems: loaded });
+    const firstRow = await vi.waitFor(() => {
+      const checkbox = host.shadowRoot!.querySelector<HTMLInputElement>('input.export-item');
+      expect(checkbox).not.toBeNull();
+      return checkbox!;
+    });
+
+    firstRow.click();
+    await vi.waitFor(() => expect(selectedBulkExportTargets().map((target) => target.anchor())).toEqual([host]));
+
+    host.remove();
+    expect(selectedBulkExportTargets()).toEqual([]);
   });
 
   it('says so instead of throwing when the shim is gone', () => {

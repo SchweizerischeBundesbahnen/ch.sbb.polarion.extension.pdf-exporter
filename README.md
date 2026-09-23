@@ -173,6 +173,8 @@ scriptInjection.mainHead=<script src="/polarion/pdf-exporter/js/starter.js"></sc
 
 With the script injected, open a project and the Live Report you wish to export, then click "Expand Tools" on top of the page. An "Export to PDF" button appears in the report's toolbar (view mode only) — click it to open the PDF Exporter view in a popup and proceed with exporting the report. Be aware that in report's context limited set of properties are available for configuration in PDF popup, the rest of them are relevant only in Live Document context.
 
+If a Bulk PDF Export widget on the report has rows selected, the button first asks whether to export the report or the selected items. See [Bulk PDF Export](USER_GUIDE.md#bulk-pdf-export) in the user guide.
+
 Polarion collapses the report toolbar again on every page open. To keep it always expanded (so the "Export to PDF" button is permanently visible), opt in with the `data-expand-tools` attribute:
 
 ```properties

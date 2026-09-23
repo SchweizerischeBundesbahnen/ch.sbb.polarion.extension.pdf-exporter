@@ -48,6 +48,14 @@
   all**. `css/pdf-exporter.css` is deleted and the injectors call no `injectStyle`; the toolbar buttons use
   Polarion's own classes plus generic's `css/dle-toolbar.css`. See [`ui/README.md`](ui/README.md) for the
   layering.
+- **The report's own "Export to PDF" buttons see the Bulk PDF Export widgets through `window`.** Each widget
+  registers its selection in `ui/src/widget/exportTargets.ts`, and `openExportPopup` for a `LIVE_REPORT`
+  shows `ExportTargetChooser` first when one has rows selected. The list is a `window` property, not module
+  state: `bulk-widget.js?v=` and `export-popup.js?timestamp=` are imported by different URLs, so a module they
+  share is not guaranteed to be one instance. Picking a widget calls its own `startExport`, so a selection is
+  always exported through the widget's own dialog and progress run. Nothing ever unmounts a widget: moving
+  to another report removes its host and keeps the page, so the list drops an entry whose `anchor` (the
+  host) has left the page, and the widget's title is only the item type - hence "(widget 1 of 2)".
 - **A toast inside a shadow root needs its stylesheet brought in, and one host.** `sonner` (through RSP's
   `Toaster`) injects its CSS into `document.head` when its module loads, which none of the three
   shadow-mounted surfaces can see - so `ui/src/export/export-form.css` imports `sonner/dist/styles.css` and
