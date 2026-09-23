@@ -61,6 +61,7 @@
   },
   "packageManager": "npm@12.0.2",
   "allowScripts": {
-    "esbuild": true
+    "esbuild": true,
+    "fsevents": false
   }
 }

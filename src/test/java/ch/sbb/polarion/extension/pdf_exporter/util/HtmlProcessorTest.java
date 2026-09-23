@@ -1223,6 +1223,7 @@ class HtmlProcessorTest {
             // to avoid changing input html and check with regular equals
             doNothing().when(spyHtmlProcessor).adjustCellWidth(any(), any());
             exportParams.setCutEmptyChapters(false);
+            exportParams.setCutEmptyWIAttributes(false);
 
             // Spaces, new lines & nbsp symbols are removed to exclude difference in space characters
             String result = spyHtmlProcessor.processHtmlForPDF(html, exportParams, List.of());

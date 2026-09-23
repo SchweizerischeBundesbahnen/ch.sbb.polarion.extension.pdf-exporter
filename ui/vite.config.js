@@ -90,6 +90,9 @@ export default defineConfig(({ command, mode }) => {
         // scripts/check-runtime-entries.mjs guards all three after every build, since no test sees the
         // built files.
         preserveEntrySignatures: 'strict',
+        // Polarion serves /polarion/... at runtime, e.g. the fonts and images RSP's CSS references.
+        // Marking them external tells Vite to leave them as they are without a warning per URL.
+        external: [/^\/polarion\//],
         // Four entries: the admin SPA (index.html), the bulk export widget imported at runtime by the
         // widget renderer on a Polarion report page, the Document Properties side panel imported by the
         // form-extension fragment in the document editor, and the "Export to PDF" dialog imported by the

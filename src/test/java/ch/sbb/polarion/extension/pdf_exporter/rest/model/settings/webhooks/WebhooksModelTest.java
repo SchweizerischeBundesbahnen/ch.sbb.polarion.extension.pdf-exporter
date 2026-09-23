@@ -1,5 +1,6 @@
 package ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.webhooks;
 
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -72,5 +73,12 @@ class WebhooksModelTest {
         } else {
             assertEquals(expectedWebhooks, model.getWebhookConfigs());
         }
+    }
+
+    @Test
+    void hasNoWebhooksUntilSomeAreSet() {
+        // A list, not null: the callers add to what they are given
+        assertEquals(List.of(), WebhooksModel.builder().build().getWebhookConfigs());
+        assertEquals(List.of(), new WebhooksModel().getWebhookConfigs());
     }
 }
