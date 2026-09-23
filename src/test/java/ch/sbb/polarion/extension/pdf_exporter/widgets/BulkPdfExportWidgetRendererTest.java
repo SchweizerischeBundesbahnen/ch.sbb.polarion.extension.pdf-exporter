@@ -5,6 +5,7 @@ import ch.sbb.polarion.extension.generic.util.VersionUtils;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.DocumentType;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.widgets.BulkExportColumn;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.widgets.BulkExportWidgetDescriptor;
+import ch.sbb.polarion.extension.pdf_exporter.util.BundleCacheKey;
 import ch.sbb.polarion.extension.pdf_exporter.util.WidgetDescriptorSigner;
 import com.polarion.alm.shared.api.Scope;
 import com.polarion.alm.shared.api.model.PrototypeEnum;
@@ -131,19 +132,22 @@ class BulkPdfExportWidgetRendererTest {
     }
 
     @Test
-    void theLoaderCarriesTheBundleVersionWhenTheManifestHasOne() {
+    void theLoaderCarriesTheCacheKeyOfTheModule() {
         RichPageWidgetCommonContext context = mock(RichPageWidgetCommonContext.class, RETURNS_DEEP_STUBS);
         CapturingBuilder builder = new CapturingBuilder();
+        String key;
 
         try (MockedStatic<VersionUtils> versions = mockStatic(VersionUtils.class)) {
             versions.when(VersionUtils::getVersion).thenReturn(Version.builder().bundleVersion("13.5.1").build());
 
             mockRenderer(context).render(builder.fragmentBuilder);
+            key = BundleCacheKey.forModule("webapp/pdf-exporter-app/app/assets/bulk-widget.js");
         }
 
         ArgumentCaptor<String> script = ArgumentCaptor.forClass(String.class);
         verify(builder.scriptContent, atLeastOnce()).javaScript(script.capture());
-        assertTrue(script.getValue().contains("bulk-widget.js?v=13.5.1"), script.getValue());
+        assertTrue(key.startsWith("13.5.1"), key);
+        assertTrue(script.getValue().contains("bulk-widget.js?v=" + key + "')"), script.getValue());
     }
 
     @Test

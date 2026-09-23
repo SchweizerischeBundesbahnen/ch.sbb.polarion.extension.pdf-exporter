@@ -1,6 +1,6 @@
 package ch.sbb.polarion.extension.pdf_exporter.widgets;
 
-import ch.sbb.polarion.extension.generic.util.VersionUtils;
+import ch.sbb.polarion.extension.pdf_exporter.util.BundleCacheKey;
 import com.polarion.alm.server.api.model.rp.widget.AbstractWidgetRenderer;
 import com.polarion.alm.server.api.model.rp.widget.OpenInTableButtonWidgetRenderer;
 import com.polarion.alm.shared.api.model.rp.widget.RichPageWidgetCommonContext;
@@ -19,6 +19,8 @@ import org.jetbrains.annotations.VisibleForTesting;
 public class ExportToPdfButtonRenderer extends AbstractWidgetRenderer {
 
     static final String POPUP_MODULE_URL = "/polarion/pdf-exporter-app/ui/app/assets/export-popup.js";
+    /** The same module in the jar, which is what its cache key is a hash of. */
+    static final String POPUP_MODULE_PATH = "webapp/pdf-exporter-app/app/assets/export-popup.js";
 
     public ExportToPdfButtonRenderer(@NotNull RichPageWidgetCommonContext context) {
         super(context);
@@ -47,15 +49,6 @@ public class ExportToPdfButtonRenderer extends AbstractWidgetRenderer {
         return """
                 import('%s?v=%s')
                     .then(module => module.openExportPopup({documentType: 'LIVE_REPORT'}))
-                    .catch(console.error);""".formatted(POPUP_MODULE_URL, getBundleVersion());
-    }
-
-    /**
-     * Busts the browser cache of the dialog when the extension is updated: it is loaded from a fixed URL, as the
-     * renderer cannot know the hashed file names Vite emits for the rest of the bundle.
-     */
-    private static @NotNull String getBundleVersion() {
-        String version = VersionUtils.getVersion().getBundleVersion();
-        return version == null ? "0" : version;
+                    .catch(console.error);""".formatted(POPUP_MODULE_URL, BundleCacheKey.forModule(POPUP_MODULE_PATH));
     }
 }

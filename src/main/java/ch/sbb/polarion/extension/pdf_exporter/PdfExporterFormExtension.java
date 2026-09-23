@@ -2,7 +2,7 @@ package ch.sbb.polarion.extension.pdf_exporter;
 
 import ch.sbb.polarion.extension.generic.service.PolarionBaselineExecutor;
 import ch.sbb.polarion.extension.generic.util.ScopeUtils;
-import ch.sbb.polarion.extension.generic.util.VersionUtils;
+import ch.sbb.polarion.extension.pdf_exporter.util.BundleCacheKey;
 import com.polarion.alm.shared.api.SharedContext;
 import com.polarion.alm.shared.api.transaction.TransactionalExecutor;
 import com.polarion.alm.shared.api.utils.html.HtmlFragmentBuilder;
@@ -33,6 +33,8 @@ public class PdfExporterFormExtension implements IFormExtension {
 
     @VisibleForTesting
     static final String SIDE_PANEL_FRAGMENT = "webapp/pdf-exporter/html/sidePanelContent.html";
+    /** The module the fragment imports, in the jar, which is what its cache key is a hash of. */
+    static final String SIDE_PANEL_MODULE_PATH = "webapp/pdf-exporter-app/app/assets/side-panel.js";
 
     @Override
     @Nullable
@@ -56,15 +58,14 @@ public class PdfExporterFormExtension implements IFormExtension {
     }
 
     /**
-     * The fragment, with the extension version put into the bundle URL. The panel is imported from a fixed
-     * URL - the fragment cannot know the hashed file names Vite emits for the rest of the bundle - so the
-     * version is what busts the browser's cache of it when the extension is updated.
+     * The fragment, with the module's cache key put into its URL. The panel is imported from a fixed URL - the
+     * fragment cannot know the hashed file names Vite emits for the rest of the bundle - so {@link BundleCacheKey}
+     * is what busts the browser's cache of it when a build changes it.
      */
     @VisibleForTesting
     @NotNull
     String getSidePanelFragment() {
-        String version = VersionUtils.getVersion().getBundleVersion();
-        return ScopeUtils.getFileContent(SIDE_PANEL_FRAGMENT).replace("{BUNDLE_VERSION}", version == null ? "0" : version);
+        return ScopeUtils.getFileContent(SIDE_PANEL_FRAGMENT).replace("{CACHE_KEY}", BundleCacheKey.forModule(SIDE_PANEL_MODULE_PATH));
     }
 
     @Override

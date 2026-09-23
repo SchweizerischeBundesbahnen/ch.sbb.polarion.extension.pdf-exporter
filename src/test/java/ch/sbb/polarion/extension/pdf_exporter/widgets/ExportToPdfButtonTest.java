@@ -2,6 +2,7 @@ package ch.sbb.polarion.extension.pdf_exporter.widgets;
 
 import ch.sbb.polarion.extension.generic.rest.model.Version;
 import ch.sbb.polarion.extension.generic.util.VersionUtils;
+import ch.sbb.polarion.extension.pdf_exporter.util.BundleCacheKey;
 import com.polarion.alm.shared.api.SharedContext;
 import com.polarion.alm.shared.api.model.rp.parameter.ParameterFactory;
 import com.polarion.alm.shared.api.model.rp.parameter.RichPageParameter;
@@ -70,11 +71,13 @@ class ExportToPdfButtonTest {
     }
 
     @Test
-    void carriesTheBundleVersionSoAnUpdateIsNotServedFromTheBrowserCache() {
+    void carriesTheCacheKeyOfTheModuleSoAnUpdateIsNotServedFromTheBrowserCache() {
         try (MockedStatic<VersionUtils> versions = mockStatic(VersionUtils.class)) {
             versions.when(VersionUtils::getVersion).thenReturn(Version.builder().bundleVersion("13.5.1").build());
 
-            assertTrue(ExportToPdfButtonRenderer.onClickAction().contains("export-popup.js?v=13.5.1"));
+            String key = BundleCacheKey.forModule(ExportToPdfButtonRenderer.POPUP_MODULE_PATH);
+            assertTrue(key.startsWith("13.5.1"), key);
+            assertTrue(ExportToPdfButtonRenderer.onClickAction().contains("export-popup.js?v=" + key + "')"));
         }
     }
 

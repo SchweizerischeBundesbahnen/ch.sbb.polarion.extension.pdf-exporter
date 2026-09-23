@@ -7,6 +7,7 @@ import ch.sbb.polarion.extension.generic.test_extensions.PlatformContextMockExte
 import ch.sbb.polarion.extension.generic.test_extensions.TransactionalExecutorExtension;
 import ch.sbb.polarion.extension.generic.util.VersionUtils;
 import ch.sbb.polarion.extension.pdf_exporter.configuration.PdfExporterExtensionConfigurationExtension;
+import ch.sbb.polarion.extension.pdf_exporter.util.BundleCacheKey;
 import com.polarion.alm.shared.UiContext;
 import com.polarion.alm.shared.api.SharedContext;
 import com.polarion.alm.shared.api.transaction.internal.InternalWriteTransaction;
@@ -94,17 +95,19 @@ class PdfExporterFormExtensionTest {
     }
 
     @Test
-    void testFragmentCarriesTheBundleVersion() {
+    void testFragmentCarriesTheCacheKeyOfTheModule() {
         Version version = Version.builder().bundleVersion("13.5.1").build();
         try (MockedStatic<VersionUtils> versionUtils = mockStatic(VersionUtils.class)) {
             versionUtils.when(VersionUtils::getVersion).thenReturn(version);
 
             String fragment = extension.getSidePanelFragment();
 
-            // The bundle is imported from a fixed URL, so the version is what busts the browser's cache of
-            // it when the extension is updated.
-            assertTrue(fragment.contains("side-panel.js?v=13.5.1"));
-            assertFalse(fragment.contains("{BUNDLE_VERSION}"));
+            // The bundle is imported from a fixed URL, so the module's own cache key is what busts the
+            // browser's cache of it when a build changes it.
+            String key = BundleCacheKey.forModule(PdfExporterFormExtension.SIDE_PANEL_MODULE_PATH);
+            assertTrue(key.startsWith("13.5.1"), key);
+            assertTrue(fragment.contains("side-panel.js?v=" + key + "\""), fragment);
+            assertFalse(fragment.contains("{CACHE_KEY}"));
         }
     }
 
@@ -118,8 +121,8 @@ class PdfExporterFormExtensionTest {
 
             String fragment = extension.getSidePanelFragment();
 
-            assertTrue(fragment.contains("side-panel.js?v=0"));
-            assertFalse(fragment.contains("{BUNDLE_VERSION}"));
+            assertTrue(fragment.contains("side-panel.js?v=0"), fragment);
+            assertFalse(fragment.contains("{CACHE_KEY}"));
         }
     }
 }

@@ -102,8 +102,8 @@ export default defineConfig(({ command, mode }) => {
         },
         output: {
           // These three file names must stay predictable: their importers name them by URL and cannot know
-          // the hash Vite would append. They append the extension version instead, which is what busts
-          // the browser cache on an update.
+          // the hash Vite would append. They append a cache key instead: the Java renderers the extension
+          // version and a hash of the module (BundleCacheKey), the toolbar injectors a per-page-load timestamp.
           entryFileNames: (chunk) =>
             ['bulk-widget', 'side-panel', 'export-popup'].includes(chunk.name)
               ? `assets/${chunk.name}.js`
