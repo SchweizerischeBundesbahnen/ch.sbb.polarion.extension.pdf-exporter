@@ -147,4 +147,12 @@ class ExportParamsTest {
 
         assertNull(params.getUrlQueryParameters());
     }
+
+    @Test
+    void cutsEmptyWorkItemAttributesUnlessToldOtherwise() {
+        // The default the @Schema declares, which @Builder ignored until it was marked @Builder.Default
+        assertTrue(ExportParams.builder().build().isCutEmptyWIAttributes());
+        assertTrue(new ExportParams().isCutEmptyWIAttributes());
+        assertFalse(ExportParams.builder().cutEmptyWIAttributes(false).build().isCutEmptyWIAttributes());
+    }
 }
