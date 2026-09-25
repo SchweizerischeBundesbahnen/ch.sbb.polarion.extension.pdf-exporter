@@ -1,3 +1,4 @@
+import { pageViolations } from '@sbb-polarion/react-sbb-polarion/testing';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render } from 'vitest-browser-react';
 import { userEvent } from 'vitest/browser';
@@ -83,5 +84,23 @@ describe('Style Package Weights page', () => {
     open();
 
     await vi.waitFor(() => expect(document.querySelector('.alert-error')).not.toBeNull());
+  });
+});
+
+describe('Style Package Weights page, accessibility', () => {
+  it('has no WCAG A/AA violations with own and inherited packages listed', async () => {
+    installFetchMock(routes());
+    open();
+    await vi.waitFor(() => expect(rows().length).toBe(3));
+    expect(await pageViolations()).toEqual([]);
+  });
+
+  it('has no WCAG A/AA violations with a load error shown', async () => {
+    installFetchMock([
+      { method: 'GET', match: /\/settings\/style-package\/weights\?/, json: { message: 'nope' }, status: 400 },
+    ]);
+    open();
+    await vi.waitFor(() => expect(document.querySelector('.alert-error')).not.toBeNull());
+    expect(await pageViolations()).toEqual([]);
   });
 });

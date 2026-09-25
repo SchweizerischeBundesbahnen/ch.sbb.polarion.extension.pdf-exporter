@@ -623,6 +623,7 @@ export default function StylePackages() {
               {form.coverPageEnabled && (
                 <SearchableSelect
                   id="cover-page-select"
+                  ariaLabel="Cover page"
                   options={childNames['cover-page']}
                   loading={childNamesLoading}
                   value={childValue('cover-page', form.coverPage)}
@@ -681,6 +682,7 @@ export default function StylePackages() {
                 {form.webhooksEnabled && (
                   <SearchableSelect
                     id="webhooks-select"
+                    ariaLabel="Webhooks"
                     options={childNames.webhooks}
                     loading={childNamesLoading}
                     value={childValue('webhooks', form.webhooks)}
@@ -766,6 +768,7 @@ export default function StylePackages() {
               <span className={form.renderCommentsEnabled ? 'render-comments-select' : 'render-comments-select hidden'}>
                 <SearchableSelect
                   id="render-comments-select"
+                  ariaLabel="Comments rendering"
                   options={COMMENTS_RENDER_TYPES}
                   disabled={!form.renderCommentsEnabled}
                   value={form.renderComments}
@@ -972,6 +975,7 @@ export default function StylePackages() {
               <span className={form.localizeEnums ? 'language-select' : 'language-select hidden'}>
                 <SearchableSelect
                   id="language-select"
+                  ariaLabel="Language"
                   options={LANGUAGES}
                   disabled={!form.localizeEnums}
                   value={form.language}
@@ -994,6 +998,7 @@ export default function StylePackages() {
                   <div className="roles-select">
                     <SearchableSelect
                       id="roles-select"
+                      ariaLabel="Workitem roles"
                       multiple
                       options={roleOptions}
                       loading={rolesLoading}
@@ -1004,6 +1009,7 @@ export default function StylePackages() {
                   <div className="roles-select">
                     <SearchableSelect
                       id="roles-direction-select"
+                      ariaLabel="Link role direction"
                       options={LINK_ROLE_DIRECTIONS}
                       value={form.linkRoleDirection}
                       onChange={(value) => patch({ linkRoleDirection: value })}

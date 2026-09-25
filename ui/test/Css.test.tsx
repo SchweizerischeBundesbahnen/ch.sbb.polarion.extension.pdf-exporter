@@ -1,9 +1,11 @@
+import { pageViolations } from '@sbb-polarion/react-sbb-polarion/testing';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render } from 'vitest-browser-react';
 import { userEvent } from 'vitest/browser';
 import App from '../src/App';
 import { installFetchMock } from './mockFetch';
 import type { Route } from './mockFetch';
+import { dropdownsUpgraded } from './visualHelpers';
 
 // The CSS settings page: one named configuration at a time, the custom stylesheet on one tab and the
 // built-in one read-only on the other. The named-configuration selector,
@@ -226,5 +228,75 @@ describe('CSS page', () => {
     ]);
 
     await vi.waitFor(() => expect(document.querySelector('.notifications .alert-error')).not.toBeNull());
+  });
+});
+
+describe('CSS page, accessibility', () => {
+  const loaded = async () => {
+    await vi.waitFor(() => expect(editor('custom-css-input').value).toBe(CUSTOM));
+    await vi.waitFor(() => expect(dropdownsUpgraded()).toBe(true));
+  };
+
+  it('has no WCAG A/AA violations with a configuration loaded', async () => {
+    open();
+    await loaded();
+    expect(await pageViolations()).toEqual([]);
+  });
+
+  // axe accepts the placeholder as a name, so the custom editor passes it unnamed.
+  it('names both editors', async () => {
+    open();
+    await loaded();
+    expect(editor('custom-css-input')).toHaveAccessibleName('Custom CSS');
+    await clickTab('Default CSS');
+    await vi.waitFor(() => expect(editor('default-css-input')).not.toBeNull());
+    expect(editor('default-css-input')).toHaveAccessibleName('Default CSS');
+  });
+
+  it('has no WCAG A/AA violations on the built-in stylesheet tab', async () => {
+    open();
+    await loaded();
+    await clickTab('Default CSS');
+    await vi.waitFor(() => expect(editor('default-css-input')).not.toBeNull());
+    expect(await pageViolations()).toEqual([]);
+  });
+
+  it('has no WCAG A/AA violations while asking whether to drop the default CSS', async () => {
+    open();
+    await loaded();
+    await userEvent.click(document.querySelector<HTMLInputElement>('#disable-default-css')!);
+    await vi.waitFor(() => expect(document.querySelector('.rsp-modal')).not.toBeNull());
+    expect(await pageViolations()).toEqual([]);
+  });
+
+  it('has no WCAG A/AA violations with a changed default CSS compared', async () => {
+    open(
+      routes([
+        {
+          method: 'GET',
+          match: /\/settings\/css\/names\/[^/]+\/content/,
+          json: { css: CUSTOM, disableDefaultCss: true, defaultHash: 'former', defaultChanged: true },
+        },
+      ]),
+    );
+    await loaded();
+    await clickButton('Compare with default');
+    await vi.waitFor(() => expect(document.querySelector('.compare-with-default .diff-removed')).not.toBeNull());
+    expect(await pageViolations()).toEqual([]);
+  });
+
+  it('has no WCAG A/AA violations with a load error shown', async () => {
+    open([
+      { method: 'GET', match: /\/settings\/css\/names\?/, json: [{ name: 'Default', scope: '' }] },
+      {
+        method: 'GET',
+        match: /\/settings\/css\/names\/[^/]+\/content/,
+        json: { css: CUSTOM, disableDefaultCss: false },
+      },
+      { method: 'GET', match: /\/settings\/css\/default-content/, json: { message: 'nope' }, status: 500 },
+    ]);
+    await vi.waitFor(() => expect(document.querySelector('.notifications .alert-error')).not.toBeNull());
+    await vi.waitFor(() => expect(dropdownsUpgraded()).toBe(true));
+    expect(await pageViolations()).toEqual([]);
   });
 });

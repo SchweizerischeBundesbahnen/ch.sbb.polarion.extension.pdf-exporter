@@ -269,6 +269,7 @@ export default function Css() {
             <CodeEditor
               language="css"
               id="custom-css-input"
+              ariaLabel="Custom CSS"
               className="css-editor"
               value={css}
               onChange={setCss}
@@ -287,6 +288,7 @@ export default function Css() {
             <CodeEditor
               language="css"
               id="default-css-input"
+              ariaLabel="Default CSS"
               className="css-editor"
               value={defaultCss ?? ''}
               onChange={() => {}}

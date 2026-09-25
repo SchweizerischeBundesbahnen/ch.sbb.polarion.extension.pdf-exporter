@@ -1,3 +1,4 @@
+import { a11yViolations } from '@sbb-polarion/react-sbb-polarion/testing';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { page } from 'vitest/browser';
 import { selectedBulkExportTargets } from '../src/widget/exportTargets';
@@ -239,5 +240,24 @@ describe('Bulk PDF Export widget mounting', () => {
     await vi.waitFor(() => expect(root.querySelector('.bulk-export-progress')).not.toBeNull());
 
     expect(scrollers(root)).not.toContain('rsp-modal');
+  });
+});
+
+describe('accessibility', () => {
+  // Mounted the way the report page mounts it, with the page stylesheets and the dialog in its own root.
+  it('has no WCAG A/AA violations in its shadow root, with the export dialog open', async () => {
+    const host = shim();
+    mountInto(host, readShim(host), {
+      loadItems: loaded,
+      popup: popupDependencies({ stylePackage: SAMPLE_STYLE_PACKAGE_FULL }),
+    });
+    const root = host.shadowRoot!;
+    await vi.waitFor(() => expect(root.querySelector('.polarion-rpw-table-counts')).not.toBeNull());
+    expect(await a11yViolations(host)).toEqual([]);
+
+    root.querySelectorAll<HTMLInputElement>('input.export-item').forEach((box) => box.click());
+    root.querySelector<HTMLElement>('#bulk-export-pdf')!.click();
+    await vi.waitFor(() => expect(root.querySelector('#popup-style-package-content')).not.toBeNull());
+    expect(await a11yViolations(host)).toEqual([]);
   });
 });

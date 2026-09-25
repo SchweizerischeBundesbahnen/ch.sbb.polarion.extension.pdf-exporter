@@ -1,9 +1,11 @@
+import { pageViolations } from '@sbb-polarion/react-sbb-polarion/testing';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render } from 'vitest-browser-react';
 import { userEvent } from 'vitest/browser';
 import App from '../src/App';
 import { installFetchMock, jsonResponse } from './mockFetch';
 import type { FetchMock, Route } from './mockFetch';
+import { dropdownsUpgraded } from './visualHelpers';
 
 // The Style Packages page: the four child settings a package points at, the ~30 switches it carries,
 // and what each of them writes into the stored document.
@@ -802,5 +804,71 @@ describe('Style Packages page', () => {
     await clickButton('Save');
 
     expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'PUT')).toBe(false);
+  });
+});
+
+describe('Style Packages page, accessibility', () => {
+  const settled = async () => {
+    await loaded();
+    await vi.waitFor(() => expect(dropdownsUpgraded()).toBe(true));
+  };
+
+  it('has no WCAG A/AA violations with every section on screen', async () => {
+    open();
+    await settled();
+    expect(await pageViolations()).toEqual([]);
+  });
+
+  // A select beside a switch has no label of its own: the switch's label names the checkbox. axe would
+  // accept a name on the hidden native <select> alone, so the visible triggers are asked directly.
+  it('names the selects that sit beside a switch', async () => {
+    open();
+    await settled();
+    const trigger = (id: string) =>
+      document.querySelector(`#${id} + .searchable-dropdown :is(.sd-trigger, .sd-trigger-multi)`);
+    expect(trigger('cover-page-select')).toHaveAccessibleName('Cover page');
+    expect(trigger('webhooks-select')).toHaveAccessibleName('Webhooks');
+    expect(trigger('language-select')).toHaveAccessibleName('Language');
+    expect(trigger('render-comments-select')).toHaveAccessibleName('Comments rendering');
+    expect(trigger('roles-select')).toHaveAccessibleName('Workitem roles');
+    expect(trigger('roles-direction-select')).toHaveAccessibleName('Link role direction');
+  });
+
+  it('has no WCAG A/AA violations with the switches off', async () => {
+    open();
+    await settled();
+    for (const id of ['specific-chapters', 'selected-roles', 'download-attachments', 'localization']) {
+      await userEvent.click(input(id));
+    }
+    await vi.waitFor(() => expect(select('roles-select')).toBeNull());
+    expect(await pageViolations()).toEqual([]);
+  });
+
+  it('has no WCAG A/AA violations for the Default style package', async () => {
+    open();
+    await settled();
+    await selectPackage('Default');
+    await vi.waitFor(() => expect(field('#matching-query-container')).toBeNull());
+    await vi.waitFor(() => expect(dropdownsUpgraded()).toBe(true));
+    expect(await pageViolations()).toEqual([]);
+  });
+
+  it('has no WCAG A/AA violations with the visibility dialog open', async () => {
+    open();
+    await settled();
+    await openVisibilityDialog();
+    expect(await pageViolations()).toEqual([]);
+  });
+
+  it('has no WCAG A/AA violations when the child configurations cannot be read', async () => {
+    open(routesWith({ method: 'GET', match: /\/settings\/css\/names\?/, json: {}, status: 500 }));
+    await vi.waitFor(() =>
+      expect(document.body.textContent).toContain('error loading names of children configurations'),
+    );
+    // The CSS dropdown has no options to show, so only the upgrade itself is waited for.
+    await vi.waitFor(() =>
+      expect(document.querySelectorAll('.searchable-dropdown').length).toBe(document.querySelectorAll('select').length),
+    );
+    expect(await pageViolations()).toEqual([]);
   });
 });

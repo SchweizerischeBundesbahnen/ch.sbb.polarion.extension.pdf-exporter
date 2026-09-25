@@ -1,9 +1,11 @@
+import { pageViolations } from '@sbb-polarion/react-sbb-polarion/testing';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render } from 'vitest-browser-react';
 import { userEvent } from 'vitest/browser';
 import App from '../src/App';
 import { installFetchMock } from './mockFetch';
 import type { Route } from './mockFetch';
+import { dropdownsUpgraded } from './visualHelpers';
 
 // The cover page: the shared templates page over an HTML and a CSS editor, plus the one thing only
 // this page has - the predefined templates the extension ships, any of which an administrator copies
@@ -290,5 +292,46 @@ describe('Cover page', () => {
     await vi.waitFor(() =>
       expect(document.body.textContent).toContain('Error occurred loading the list of predefined'),
     );
+  });
+});
+
+describe('Cover page, accessibility', () => {
+  const loaded = async () => {
+    await vi.waitFor(() => expect(html().value).toBe('<h1>$title</h1>'));
+    await vi.waitFor(() => expect(document.querySelector('#copy-source-select')).not.toBeNull());
+    await vi.waitFor(() => expect(dropdownsUpgraded()).toBe(true));
+  };
+
+  it('has no WCAG A/AA violations with the custom templates and a template to copy from', async () => {
+    open();
+    await loaded();
+    expect(await pageViolations()).toEqual([]);
+  });
+
+  it('has no WCAG A/AA violations while a copy is confirmed', async () => {
+    open();
+    await loaded();
+    await clickButton('Copy');
+    await vi.waitFor(() => expect(document.querySelector('.rsp-modal')).not.toBeNull());
+    expect(await pageViolations()).toEqual([]);
+  });
+
+  it('has no WCAG A/AA violations with a predefined template compared', async () => {
+    open();
+    await loaded();
+    await clickButton('Compare with default');
+    await vi.waitFor(() => expect(document.querySelector('.compare-with-default .side-by-side')).not.toBeNull());
+    expect(await pageViolations()).toEqual([]);
+  });
+
+  it('has no WCAG A/AA violations when the predefined templates cannot be read', async () => {
+    open(
+      routes([{ method: 'GET', match: /\/settings\/cover-page\/templates$/, json: { message: 'nope' }, status: 500 }]),
+    );
+    await vi.waitFor(() =>
+      expect(document.body.textContent).toContain('Error occurred loading the list of predefined'),
+    );
+    await vi.waitFor(() => expect(dropdownsUpgraded()).toBe(true));
+    expect(await pageViolations()).toEqual([]);
   });
 });

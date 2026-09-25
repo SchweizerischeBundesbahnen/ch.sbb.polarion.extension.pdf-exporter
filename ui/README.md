@@ -78,7 +78,9 @@ this app supplies only its data.
   record per h2/h3 with the heading id the article carries, before every build (`prebuild`, where a missing
   article fails the build), dev server (`predev`), typecheck (`pretypecheck`) and test run (Vitest
   `globalSetup`). Without rendered articles it writes an empty index, and the search box is simply hidden -
-  run the Maven build once to get the articles, and with them the search, into `npm run dev`.
+  run the Maven build once to get the articles, and with them the search, into `npm run dev`. A plain
+  `npm test` has no rendered articles either, so `test/Documentation.test.tsx` mocks the index to reach the
+  search.
 
 ## The four entries
 
@@ -412,6 +414,30 @@ lint finding.
 The dockerized suite is the slow one: it needs Docker running and adds 30-60s+ to a UI commit. That is
 the price of catching a broken suite or a coverage drop before the push rather than in CI, which runs
 the same command.
+
+## Accessibility checks
+
+Two gates, both from react-sbb-polarion; its README section "Accessibility checks for the extensions" is the
+reference.
+
+- **Lint.** [`eslint.config.js`](eslint.config.js) is RSP's shared `polarionEslintConfig`, which adds
+  `eslint-plugin-jsx-a11y`'s recommended rules for `src/`. The `overrides` entry for that plugin in
+  `package.json` lets it install next to ESLint 10, which its peer range does not include yet. Remove the
+  entry once [jsx-a11y supports ESLint 10](https://github.com/jsx-eslint/eslint-plugin-jsx-a11y/issues/1075).
+- **axe.** Each page's own test file has an `accessibility` block that scans the rendered page with
+  `pageViolations()` (WCAG 2.0-2.2 A/AA; `color-contrast` and `target-size` are off in RSP). A surface in a
+  shadow root is scanned through its host with `a11yViolations(host)`, as in the `*Mount.test.tsx` files. Do
+  not collect the cases in a separate file.
+
+A new page, dialog or state needs its own case:
+
+1. Mount it with the file's own helper and bring it into the state to check.
+2. Wait until it has rendered, dropdowns included. A scan before that returns `[]` and proves nothing.
+3. Assert `expect(await pageViolations()).toEqual([])`.
+
+axe accepts a placeholder, or a name on the hidden native `<select>` behind a dropdown, as the accessible
+name. Where a control's name matters, add a `toHaveAccessibleName` test on the visible control, like the
+`names ...` cases in `Css.test.tsx`, `SidePanel.test.tsx`, `StylePackages.test.tsx` and `Webhooks.test.tsx`.
 
 ## Production build
 
