@@ -7,27 +7,28 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 /**
  * Pins where the build-generated help articles land.
  * <p>
- * The three of them are written by markdown2html into the directory
- * {@code markdown2html-maven-plugin.extensionContextAdminHtml} points at - a property whose name
- * predates the React apps: as soon as {@code ui/} exists, the generic parent's {@code ui-build-react-app} profile
- * redefines it to the <em>app</em> webapp. Two things then depend on that, silently:
+ * markdown2html writes all seven of them into the app webapp's {@code html/} directory, the one
+ * {@code markdown2html-maven-plugin.extensionContextAdminHtml} points at - a property whose name predates the
+ * React apps and which the generic parent points at the <em>app</em> webapp. The pages read them in two ways, and
+ * both depend on that directory silently:
  * <ul>
- *   <li>generic's {@code /readme}, {@code /user-guide} and {@code /disclaimer} endpoints read their
- *       article from the classpath, searching {@code -app} before {@code -admin};</li>
- *   <li>each answers with an empty body when its article is absent, which the pages render as their
- *       "not generated" message.</li>
+ *   <li>{@code about.html} and {@code disclaimer.html} are read from the classpath by generic's {@code /readme}
+ *       and {@code /disclaimer} endpoints, which answer with an empty body when the article is absent;</li>
+ *   <li>the five documentation-site articles are no REST resource at all: the app fetches each as the static file
+ *       {@code html/<id>.html} next to its bundle, and the build indexes the same files for the documentation
+ *       search.</li>
  * </ul>
- * A build that stops generating the articles is therefore silent - every page keeps loading and just
- * shows nothing. This test is what turns that into a red build instead. It is deterministic: since markdown2html 1.7.x the
- * markdown is rendered locally, with no GitHub API call and no token.
+ * Either way a missing article is not an error at runtime - the page just renders its "not generated" message.
+ * This test is what turns a build that stops generating one into a red build instead. It is deterministic: since
+ * markdown2html 1.7.x the markdown is rendered locally, with no GitHub API call and no token.
  */
 class GeneratedHelpArticlesTest {
 
     private void assertArticleGenerated(String fileName) {
         String resource = "/webapp/pdf-exporter-app/html/" + fileName;
         assertNotNull(getClass().getResource(resource),
-                resource + " is missing: markdown2html no longer writes the generated articles into the app webapp, "
-                        + "so the About, User Guide and Usage Disclaimer pages render their 'not generated' message");
+                resource + " is missing: markdown2html no longer writes this article into the app webapp, "
+                        + "so the page that shows it renders its 'not generated' message");
     }
 
     @Test
@@ -36,27 +37,25 @@ class GeneratedHelpArticlesTest {
     }
 
     @Test
+    void disclaimerArticleIsGeneratedIntoTheAppWebapp() {
+        assertArticleGenerated("disclaimer.html");
+    }
+
+    // The documentation-site articles of ui/src/docs/docs.config.json, in its reading order.
+
+    @Test
+    void quickStartArticleIsGeneratedIntoTheAppWebapp() {
+        assertArticleGenerated("quick-start.html");
+    }
+
+    @Test
     void userGuideArticleIsGeneratedIntoTheAppWebapp() {
         assertArticleGenerated("user-guide.html");
     }
 
     @Test
-    void disclaimerArticleIsGeneratedIntoTheAppWebapp() {
-        assertArticleGenerated("disclaimer.html");
-    }
-
-    // The README was split into these standalone articles; each is rendered by its own admin feature
-    // (DocArticle) and reached through the cross-document links inside the About/User Guide articles.
-    // A build that stops generating one leaves that feature showing its "not generated" message.
-
-    @Test
     void configurationArticleIsGeneratedIntoTheAppWebapp() {
         assertArticleGenerated("configuration.html");
-    }
-
-    @Test
-    void upgradeArticleIsGeneratedIntoTheAppWebapp() {
-        assertArticleGenerated("upgrade.html");
     }
 
     @Test
@@ -65,8 +64,8 @@ class GeneratedHelpArticlesTest {
     }
 
     @Test
-    void quickStartArticleIsGeneratedIntoTheAppWebapp() {
-        assertArticleGenerated("quick-start.html");
+    void upgradeArticleIsGeneratedIntoTheAppWebapp() {
+        assertArticleGenerated("upgrade.html");
     }
 
 }

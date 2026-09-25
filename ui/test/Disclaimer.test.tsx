@@ -37,7 +37,10 @@ describe('Disclaimer', () => {
 
     await vi.waitFor(() => expect(document.body.textContent).toContain('No disclaimer has been generated'));
     const link = document.querySelector<HTMLAnchorElement>('a[target="_blank"]');
-    expect(link?.href).toContain('/DISCLAIMER.md');
+    // A GitHub file link needs the blob/<ref> segment; the repository root plus the file name answers 404.
+    expect(link?.href).toBe(
+      'https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/blob/main/DISCLAIMER.md',
+    );
   });
 
   it('treats a blank article as missing rather than rendering an empty page', async () => {

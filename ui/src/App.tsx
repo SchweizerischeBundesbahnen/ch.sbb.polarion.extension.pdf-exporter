@@ -8,13 +8,10 @@ import {
 import ToastHost from './components/ToastHost';
 import { DOC_ORDER } from './docs/manifest';
 import searchIndex from './docs/search-index.json';
+import { SOURCE_BASE_URL } from './docs/source';
 import { FEATURES } from './features';
 import Landing from './pages/Landing';
 import { switchToFeatureNode } from './services/adminNav';
-
-/** The extension's sources on GitHub; used for the "article not generated" fallback link. */
-const SOURCE_BASE_URL =
-  'https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/blob/main';
 
 /**
  * Documentation-site configuration for the shared components (@sbb-polarion/react-sbb-polarion): the article
