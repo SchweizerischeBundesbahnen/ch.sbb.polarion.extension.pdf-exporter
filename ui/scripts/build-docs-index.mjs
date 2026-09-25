@@ -22,10 +22,10 @@
 //
 // The article directory defaults to the shipped webapp html (src/main/resources/webapp/pdf-exporter-app/html,
 // where markdown2html renders the articles in generate-sources); override it with DOCS_SECTION_INDEX_DIR.
+import { parse } from 'node-html-parser';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { parse } from 'node-html-parser';
 
 const scriptDir = dirname(fileURLToPath(import.meta.url));
 const uiDir = resolve(scriptDir, '..');
@@ -37,18 +37,21 @@ const indexDir = process.env.DOCS_SECTION_INDEX_DIR
   : resolve(repoRoot, 'src/main/resources/webapp/pdf-exporter-app/html');
 const outFile = resolve(uiDir, 'src/docs/search-index.json');
 
-const MAX_TEXT = 400; // enough to search on; keeps the bundled index small
-
 /** Collapse runs of whitespace and trim. */
 const clean = (text) => text.replace(/\s+/g, ' ').trim();
-/** Slice by code point, so a cap never splits a surrogate pair. */
-const capText = (text) => [...text].slice(0, MAX_TEXT).join('');
 
-/** One record per h2/h3 heading: its anchor id, title, and the plain text beneath it up to the next heading. */
+/**
+ * One record per h2/h3 heading: its anchor id, title, and the plain text beneath it up to the next heading.
+ * The text is kept whole: the search matches on it and never displays it (results show the titles), so a cap
+ * would only hide terms further down a section. All articles together are some 60 KB of text.
+ */
 function sectionsOf(html) {
-  // Parse <pre>/<code> into elements (default treats <pre> as raw text, which would leak the syntax-highlight
-  // <span> markup into `.text`); keep the real raw-text elements raw.
-  const root = parse(html, { blockTextElements: { script: true, style: true, noscript: true, pre: false } });
+  // `blockTextElements` lists the elements whose content is raw text rather than markup. Name only the real
+  // raw-text elements: every key counts, whatever its value - `true` keeps the content as one text node,
+  // `false` DISCARDS it - so `pre` must be absent, not false, or no code block (property keys, CSS, config
+  // snippets) would reach the index. Absent, <pre>/<code> parse as elements and `.text` drops their
+  // syntax-highlighting <span>s.
+  const root = parse(html, { blockTextElements: { script: true, style: true, noscript: true } });
   const elements = root.childNodes.filter((node) => node.nodeType === 1);
   const sections = [];
   let current = null;
@@ -66,7 +69,7 @@ function sectionsOf(html) {
   return sections.map((section) => ({
     anchor: section.anchor,
     title: section.title,
-    text: capText(clean(section.body.join(' '))),
+    text: clean(section.body.join(' ')),
   }));
 }
 
@@ -88,7 +91,13 @@ const records = [];
 for (const item of config.items) {
   const html = readFileSync(resolve(indexDir, `${item.id}.html`), 'utf8');
   for (const section of sectionsOf(html)) {
-    records.push({ doc: item.id, docTitle: item.title, anchor: section.anchor, title: section.title, text: section.text });
+    records.push({
+      doc: item.id,
+      docTitle: item.title,
+      anchor: section.anchor,
+      title: section.title,
+      text: section.text,
+    });
   }
 }
 

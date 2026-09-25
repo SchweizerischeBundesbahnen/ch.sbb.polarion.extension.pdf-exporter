@@ -65,7 +65,8 @@ this app supplies only its data.
   markdown2html execution in the pom; nothing in `src/` changes.
 - **The articles** are rendered by the Maven build (markdown2html, in `generate-sources`) into
   `src/main/resources/webapp/pdf-exporter-app/html/`, and `DocPage` fetches `../../html/<id>.html` from
-  there. Their relative links stay relative: `DocLinkInterceptor` (wrapping the whole app in
+  there. `npm run dev` serves that same directory at `/html/` (a plugin in `vite.config.js`), since Vite's SPA
+  fallback would otherwise answer every article with `index.html`. Their relative links stay relative: `DocLinkInterceptor` (wrapping the whole app in
   [`App.tsx`](src/App.tsx)) turns a `.md`/`.html` link to another article into a `?feature=` switch and opens
   any other relative link, e.g. `docs/openapi.json`, on GitHub.
 - **Admin-shell sync.** A link that leaves the page's admin node (an article linking to the README, which is
@@ -336,8 +337,10 @@ REST calls are proxied to the Polarion instance in `VITE_BASE_URL`; a personal a
 ones.
 
 The documentation articles and their search come from the Maven build, see
-[The documentation site](#the-documentation-site): until it has run once, the article pages show their "not
-generated" message and there is no search box.
+[The documentation site](#the-documentation-site): the dev server serves the articles it rendered, and until
+it has run once the article pages show their "not generated" message and there is no search box. After
+editing a markdown file, render it again (a Maven build, or its markdown2html execution alone) and restart
+`npm run dev` for the search to follow.
 
 > **Stop the dev server before running a Maven build.** The build runs `npm ci`, which starts by
 > deleting `node_modules`, and on Windows that fails with `EPERM (-4048)` while `vite` holds files

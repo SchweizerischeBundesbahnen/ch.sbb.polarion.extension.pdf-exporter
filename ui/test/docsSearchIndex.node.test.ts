@@ -42,4 +42,17 @@ describe.skipIf(RECORDS.length === 0)('documentation search index', () => {
       expect(record.anchor).toMatch(/^[a-z0-9]+(?:-[a-z0-9]+)*$/);
     }
   });
+
+  it('carries the text of code blocks', () => {
+    // A properties line exists only inside a <pre> of the articles. A parser setting that treated <pre> as
+    // block text would drop every code block, and with them the property keys a reader searches for.
+    const configuration = RECORDS.filter((r) => r.doc === 'configuration').map((r) => r.text);
+    expect(configuration.some((text) => text.includes('pdf-exporter.weasyprint.service=http'))).toBe(true);
+  });
+
+  it('keeps the whole text of long sections', () => {
+    // No section is cut short: a term further down a long section must stay searchable. Several sections of
+    // the configuration reference run to thousands of characters; the former 400-character cap stayed below this.
+    expect(Math.max(...RECORDS.map((r) => r.text.length))).toBeGreaterThan(1000);
+  });
 });
