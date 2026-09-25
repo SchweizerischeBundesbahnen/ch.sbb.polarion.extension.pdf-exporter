@@ -1,0 +1,10 @@
+{
+  "comment": "Canonical documentation-site manifest, shared by manifest.ts (the React side) and scripts/build-docs-index.mjs (the build-time search index). Each item id must equal a feature id in features.tsx and the generated html basename (<id>.html); source is the markdown file at the repo root the article is generated from. Order is the reading order used for the sidebar and prev/next.",
+  "items": [
+    { "id": "quick-start", "title": "Quick Start", "source": "QUICK_START.md" },
+    { "id": "user-guide", "title": "User Guide", "source": "USER_GUIDE.md" },
+    { "id": "configuration", "title": "Configuration", "source": "CONFIGURATION.md" },
+    { "id": "limitations", "title": "Limitations", "source": "LIMITATIONS.md" },
+    { "id": "upgrade", "title": "Upgrade", "source": "UPGRADE.md" }
+  ]
+}

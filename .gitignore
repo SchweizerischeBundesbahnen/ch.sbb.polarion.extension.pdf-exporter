@@ -38,10 +38,15 @@ target/
 *.iml
 dependency-reduced-pom.xml
 
-src/main/resources/webapp/*-app/html/about.html
-src/main/resources/webapp/*-app/html/user-guide.html
-src/main/resources/webapp/*-app/html/disclaimer.html
+# Generated into the app webapp by the build: the Vite bundle under app/ and the markdown2html articles
+# under html/. Everything else there - WEB-INF/web.xml, the menu icons under images/, html/.gitkeep - is
+# source and committed, so only these two are ignored (ignoring the whole webapp would silently drop a newly
+# added icon from git).
 src/main/resources/webapp/pdf-exporter-app/app/
+src/main/resources/webapp/pdf-exporter-app/html/*.html
+# The documentation search index, built from those articles by ui/scripts/build-docs-index.mjs before every
+# build, dev server, typecheck and test run.
+ui/src/docs/search-index.json
 README.html
 
 node/

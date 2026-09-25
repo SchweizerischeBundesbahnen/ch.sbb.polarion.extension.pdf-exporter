@@ -20,43 +20,43 @@ import java.util.stream.Collectors;
 @Discoverable
 public class PdfExporterExtensionConfiguration extends ExtensionConfiguration {
 
-    public static final String DEBUG_DESCRIPTION = "Enable <a href='#debug-option'>debug mode</a>";
+    public static final String DEBUG_DESCRIPTION = "Enable <a href='configuration.html#debug-option'>debug mode</a>";
 
     public static final String WEASYPRINT_SERVICE = "weasyprint.service";
-    public static final String WEASYPRINT_SERVICE_DESCRIPTION = "The URL of the <a href='#weasyprint-configuration'>WeasyPrint service</a>";
+    public static final String WEASYPRINT_SERVICE_DESCRIPTION = "The URL of the <a href='configuration.html#weasyprint-configuration'>WeasyPrint service</a>";
     public static final String WEASYPRINT_SERVICE_DEFAULT_VALUE = "http://localhost:9080";
 
     public static final String BULK_PROCESSING_SERVICE = "bulk.processing.service";
     public static final String BULK_PROCESSING_SERVICE_DESCRIPTION = "The URL of the bulk processing service used for merging multiple documents into a single PDF. Leave blank to disable bulk export.";
     public static final String BULK_PROCESSING_SERVICE_DEFAULT_VALUE = "";
     public static final String WEASYPRINT_API_KEY_SECRET = "weasyprint.apiKeySecret";
-    public static final String WEASYPRINT_API_KEY_SECRET_DESCRIPTION = "Name of the Polarion secret holding the <a href='#weasyprint-api-key'>API key of the WeasyPrint service</a>";
+    public static final String WEASYPRINT_API_KEY_SECRET_DESCRIPTION = "Name of the Polarion secret holding the <a href='configuration.html#weasyprint-api-key'>API key of the WeasyPrint service</a>";
     public static final String WEASYPRINT_API_KEY_SECRET_DEFAULT_VALUE = "";
 
     public static final String BULK_PROCESSING_API_KEY_SECRET = "bulk.processing.apiKeySecret";
-    public static final String BULK_PROCESSING_API_KEY_SECRET_DESCRIPTION = "Name of the Polarion secret holding the <a href='#bulk-processing-api-key'>API key of the bulk processing service</a>";
+    public static final String BULK_PROCESSING_API_KEY_SECRET_DESCRIPTION = "Name of the Polarion secret holding the <a href='configuration.html#bulk-processing-api-key'>API key of the bulk processing service</a>";
     public static final String BULK_PROCESSING_API_KEY_SECRET_DEFAULT_VALUE = "";
 
     public static final String WEBHOOKS_ENABLED = "webhooks.enabled";
-    public static final String WEBHOOKS_ENABLED_DESCRIPTION = "Enable <a href='#enabling-webhooks'>webhooks</a>";
+    public static final String WEBHOOKS_ENABLED_DESCRIPTION = "Enable <a href='configuration.html#enabling-webhooks'>webhooks</a>";
     public static final Boolean WEBHOOKS_ENABLED_DEFAULT_VALUE = false;
 
     public static final String RENDERABLE_IMAGE_EXTENSIONS = "renderable.image.extensions";
-    public static final String RENDERABLE_IMAGE_EXTENSIONS_DESCRIPTION = "Comma-separated <a href='#renderable-image-extensions'>list of file extensions the exporter can embed as a full-size image</a>";
+    public static final String RENDERABLE_IMAGE_EXTENSIONS_DESCRIPTION = "Comma-separated <a href='configuration.html#renderable-image-extensions'>list of file extensions the exporter can embed as a full-size image</a>";
     protected static final Set<String> RENDERABLE_IMAGE_EXTENSIONS_DEFAULT_VALUE = new LinkedHashSet<>(List.of(
             "png", "jpg", "jpeg", "gif", "bmp", "svg", "webp", "avif", "ico", "cur", "tif", "tiff", "vsdx"
     ));
 
     public static final String EXTERNAL_RESOURCES_POLICY = "externalResources.policy";
-    public static final String EXTERNAL_RESOURCES_POLICY_DESCRIPTION = "BLOCK_INTERNAL, ALLOWLIST_ONLY or ALLOW_ALL: where a document may load <a href='#external-resources'>images, fonts and stylesheets</a> from";
+    public static final String EXTERNAL_RESOURCES_POLICY_DESCRIPTION = "BLOCK_INTERNAL, ALLOWLIST_ONLY or ALLOW_ALL: where a document may load <a href='configuration.html#external-resources'>images, fonts and stylesheets</a> from";
     public static final String EXTERNAL_RESOURCES_POLICY_DEFAULT_VALUE = "BLOCK_INTERNAL";
 
     public static final String EXTERNAL_RESOURCES_ALLOWED_ORIGINS = "externalResources.allowedOrigins";
-    public static final String EXTERNAL_RESOURCES_ALLOWED_ORIGINS_DESCRIPTION = "Comma separated origins, [scheme://]host[:port], which are always allowed as a source of <a href='#external-resources'>external resources</a>";
+    public static final String EXTERNAL_RESOURCES_ALLOWED_ORIGINS_DESCRIPTION = "Comma separated origins, [scheme://]host[:port], which are always allowed as a source of <a href='configuration.html#external-resources'>external resources</a>";
     public static final String EXTERNAL_RESOURCES_ALLOWED_ORIGINS_DEFAULT_VALUE = "";
 
     public static final String EXTERNAL_RESOURCES_MAX_SIZE_MB = "externalResources.maxSizeMB";
-    public static final String EXTERNAL_RESOURCES_MAX_SIZE_MB_DESCRIPTION = "Size in MB a single loaded <a href='#external-resources'>external resource</a> may reach";
+    public static final String EXTERNAL_RESOURCES_MAX_SIZE_MB_DESCRIPTION = "Size in MB a single loaded <a href='configuration.html#external-resources'>external resource</a> may reach";
     public static final int EXTERNAL_RESOURCES_MAX_SIZE_MB_DEFAULT_VALUE = 16;
 
     @Override

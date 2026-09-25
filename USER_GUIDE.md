@@ -1,3 +1,7 @@
+# User Guide
+
+## Table of contents
+
 * [Export panel layout](#export-panel-layout)
 * [Style packages](#style-packages)
 * [Options](#options)

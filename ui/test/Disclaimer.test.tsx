@@ -6,7 +6,7 @@ import { installFetchMock } from './mockFetch';
 // The Usage Disclaimer page reads generic's /disclaimer endpoint, like About and User Guide read
 // theirs. What the tests pin is that it goes through the REST base and what happens when the
 // extension ships no disclaimer - the endpoint answers empty, and the page then links to GitHub the
-// way the JSP page it replaces did.
+// way the JSP page it replaces did. A failed request is an error, not a missing disclaimer.
 
 afterEach(() => {
   cleanup();
@@ -37,7 +37,10 @@ describe('Disclaimer', () => {
 
     await vi.waitFor(() => expect(document.body.textContent).toContain('No disclaimer has been generated'));
     const link = document.querySelector<HTMLAnchorElement>('a[target="_blank"]');
-    expect(link?.href).toContain('/DISCLAIMER.md');
+    // A GitHub file link needs the blob/<ref> segment; the repository root plus the file name answers 404.
+    expect(link?.href).toBe(
+      'https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/blob/main/DISCLAIMER.md',
+    );
   });
 
   it('treats a blank article as missing rather than rendering an empty page', async () => {
@@ -47,20 +50,24 @@ describe('Disclaimer', () => {
     await vi.waitFor(() => expect(document.body.textContent).toContain('No disclaimer has been generated'));
   });
 
-  it('treats a non-OK response as missing', async () => {
-    installFetchMock([article('<p>ignored</p>', 404)]);
+  it('reports a non-OK response as an error, not as a missing disclaimer', async () => {
+    installFetchMock([article('<p>ignored</p>', 500)]);
     render(<Disclaimer />);
 
-    await vi.waitFor(() => expect(document.body.textContent).toContain('No disclaimer has been generated'));
+    await vi.waitFor(() => expect(document.querySelector('.alert.alert-error')?.textContent).toContain('HTTP 500'));
+    expect(document.body.textContent).not.toContain('No disclaimer has been generated');
   });
 
-  it('survives a failing request', async () => {
+  it('reports a failing request as an error', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn(() => Promise.reject(new Error('network down'))),
     );
     render(<Disclaimer />);
 
-    await vi.waitFor(() => expect(document.body.textContent).toContain('No disclaimer has been generated'));
+    await vi.waitFor(() =>
+      expect(document.querySelector('.alert.alert-error')?.textContent).toContain('Failed to load the disclaimer'),
+    );
+    expect(document.body.textContent).not.toContain('No disclaimer has been generated');
   });
 });

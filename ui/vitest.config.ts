@@ -62,6 +62,8 @@ export default defineConfig({
     ],
   },
   test: {
+    // Generates the (uncommitted) documentation search index before any test file imports it.
+    globalSetup: ['./scripts/vitest-global-setup.mjs'],
     // `extends: true` on both projects: they inherit the Vite config above (plugins, resolve,
     // optimizeDeps, define) and override only what differs.
     projects: [

@@ -13,10 +13,13 @@ There is one `index.html` / bundle. The page to render is chosen from the `featu
 
 - `/` (no param) renders a development landing page listing every feature.
 - `/?feature=about` - About (RSP's shared `About`).
-- `/?feature=disclaimer` - Usage Disclaimer. Reads the build-generated DISCLAIMER article from
-  generic's `/disclaimer` endpoint, the same way About and User Guide read theirs. An empty response
-  means the extension ships no disclaimer; the page then links to the online source.
-- `/?feature=user-guide` - User Guide (RSP's shared `UserGuide`).
+- `/?feature=disclaimer` - Usage Disclaimer (RSP's shared `Disclaimer`). Reads the build-generated
+  DISCLAIMER article from generic's `/disclaimer` endpoint, the same way About reads its own. An empty
+  response means the extension ships no disclaimer; the page then links to the online source. A failed
+  request is shown as an error.
+- `/?feature=quick-start`, `user-guide`, `configuration`, `limitations`, `upgrade` - the articles of the
+  [documentation site](#the-documentation-site), one per entry of `src/docs/docs.config.json`. The single
+  `documentation` admin node opens `quick-start`; the others have no menu entry of their own.
 - `/?feature=css` - CSS, `/?feature=cover-page` - Cover Page, `/?feature=header-footer` - Header and
   Footer, `/?feature=filename` - Filename template. The four editor pages: RSP's `CodeEditor` over the
   named settings, with the built-in values shown read-only on a second tab. The last three share
@@ -47,6 +50,35 @@ Features are declared in [`src/features.tsx`](src/features.tsx). Add a page comp
 `src/pages/`, register it there, and it appears on the landing page automatically. The ids must stay
 in sync with the `pageUrl`s in `src/main/resources/META-INF/hivemodule.xml` — a mismatch shows up as a
 blank page in Polarion and no test catches it.
+
+## The documentation site
+
+Quick Start, User Guide, Configuration, Limitations and Upgrade are the markdown files at the repository
+root, rendered as one documentation site: a sidebar, a search, a breadcrumb, prev/next and an "on this
+page" rail. The components are RSP's (`DocsProvider`, `DocPage`, `DocLinkInterceptor`, `createAdminNav`);
+this app supplies only its data.
+
+- **The manifest** is [`src/docs/docs.config.json`](src/docs/docs.config.json): one entry per article, in
+  reading order - the sidebar and prev/next follow it. Each `id` is the feature id, the basename of the
+  rendered `<id>.html` and the `source` markdown file. [`src/features.tsx`](src/features.tsx) builds one
+  `DocPage` feature per entry, so adding an article is a manifest entry, its markdown and its
+  markdown2html execution in the pom; nothing in `src/` changes.
+- **The articles** are rendered by the Maven build (markdown2html, in `generate-sources`) into
+  `src/main/resources/webapp/pdf-exporter-app/html/`, and `DocPage` fetches `../../html/<id>.html` from
+  there. `npm run dev` serves that same directory at `/html/` (a plugin in `vite.config.js`), since Vite's SPA
+  fallback would otherwise answer every article with `index.html`. Their relative links stay relative: `DocLinkInterceptor` (wrapping the whole app in
+  [`App.tsx`](src/App.tsx)) turns a `.md`/`.html` link to another article into a `?feature=` switch and opens
+  any other relative link, e.g. `docs/openapi.json`, on GitHub.
+- **Admin-shell sync.** A link that leaves the page's admin node (an article linking to the README, which is
+  the About page, or the About page linking to Configuration) switches Polarion's own node too, so its breadcrumb and left menu
+  follow: [`src/services/adminNav.ts`](src/services/adminNav.ts) maps each feature to its node, and
+  [`src/main.tsx`](src/main.tsx) resumes the stashed target before the first render.
+- **The search index** `src/docs/search-index.json` is a build artifact and is **not committed**.
+  [`scripts/build-docs-index.mjs`](scripts/build-docs-index.mjs) builds it from the rendered articles, one
+  record per h2/h3 with the heading id the article carries, before every build (`prebuild`, where a missing
+  article fails the build), dev server (`predev`), typecheck (`pretypecheck`) and test run (Vitest
+  `globalSetup`). Without rendered articles it writes an empty index, and the search box is simply hidden -
+  run the Maven build once to get the articles, and with them the search, into `npm run dev`.
 
 ## The four entries
 
@@ -304,6 +336,12 @@ REST calls are proxied to the Polarion instance in `VITE_BASE_URL`; a personal a
 `VITE_BEARER_TOKEN` switches `useRemote` from the session `/internal` endpoints to the token `/api`
 ones.
 
+The documentation articles and their search come from the Maven build, see
+[The documentation site](#the-documentation-site): the dev server serves the articles it rendered, and until
+it has run once the article pages show their "not generated" message and there is no search box. After
+editing a markdown file, render it again (a Maven build, or its markdown2html execution alone) and restart
+`npm run dev` for the search to follow.
+
 > **Stop the dev server before running a Maven build.** The build runs `npm ci`, which starts by
 > deleting `node_modules`, and on Windows that fails with `EPERM (-4048)` while `vite` holds files
 > there — leaving `node_modules` half-deleted, so the dev server and the next build both break until
@@ -378,7 +416,8 @@ the same command.
 ## Production build
 
 `npm run build` emits all four entries to `ui/dist/app` with base path
-`/polarion/pdf-exporter-app/ui/app/`. The Maven build (the parent's `ui-build-react-app` profile:
+`/polarion/pdf-exporter-app/ui/app/`. It first builds the documentation search index from the rendered
+articles and fails when one is missing, so a production bundle never ships a stale or empty search. The Maven build (the parent's `ui-build-react-app` profile:
 frontend-maven-plugin + maven-resources-plugin) runs this automatically and copies the bundle into
 `src/main/resources/webapp/pdf-exporter-app/app`, where `PdfExporterAppServlet` serves it at
 `/polarion/pdf-exporter-app/ui/app/index.html`.
