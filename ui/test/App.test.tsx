@@ -57,7 +57,13 @@ describe('App router', () => {
     expect(links).toEqual([
       '?feature=about',
       '?feature=disclaimer',
+      // The documentation site, in manifest reading order; reached from the documentation node and the
+      // articles' cross-links, no admin menu entry of their own
+      '?feature=quick-start',
       '?feature=user-guide',
+      '?feature=configuration',
+      '?feature=limitations',
+      '?feature=upgrade',
       '?feature=css',
       '?feature=cover-page',
       '?feature=header-footer',
@@ -106,4 +112,22 @@ describe('App router', () => {
     expect(document.body.textContent).toContain('PDF Exporter');
     expect(document.querySelector('.about-page .app-icon')).not.toBeNull();
   });
+});
+
+describe('documentation articles', () => {
+  it('renders the generated article a DocArticle feature points at', async () => {
+    installFetchMock([
+      {
+        method: 'GET',
+        match: /configuration\.html$/,
+        respond: () => new Response('<h1>Config</h1><p>Body</p>', { status: 200 }),
+      },
+    ]);
+    window.history.replaceState({}, '', '?feature=configuration&embedded=true');
+    render(<App />);
+    await vi.waitFor(() => expect(document.querySelector('.markdown-body')).not.toBeNull());
+    expect(document.body.textContent).toContain('Config');
+  });
+  // The link-resolution helper (docLinkTarget) is RSP-internal and unit-tested there (docsNav.test); the
+  // interceptor behaviour reaches this app through DocLinkInterceptor, exercised via the render above.
 });

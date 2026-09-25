@@ -73,16 +73,24 @@ async function toggleRole(kind: 'global' | 'project', role: string) {
 }
 
 describe('User Guide page', () => {
-  it('renders the article generic serves', async () => {
+  it('renders the generated article and shows the documentation-site frame', async () => {
+    // User Guide is now part of the documentation site: DocArticle fetches the static user-guide.html
+    // served next to the app bundle, wrapped in DocLayout (sidebar + on-this-page + prev/next).
     const fetchMock = installFetchMock([
-      { method: 'GET', match: /\/user-guide$/, respond: () => new Response('<h1>User Guide</h1><p>How to.</p>') },
+      {
+        method: 'GET',
+        match: /\/html\/user-guide\.html$/,
+        respond: () => new Response('<h1>User Guide</h1><h2 id="how-to">How to</h2><p>Steps.</p>'),
+      },
     ]);
     window.history.replaceState({}, '', '?feature=user-guide&embedded=true');
     render(<App />);
 
     await vi.waitFor(() => expect(document.querySelector('article.markdown-body')).not.toBeNull());
-    expect(document.body.textContent).toContain('How to.');
-    expect(String(fetchMock.mock.calls[0][0])).toBe('/polarion/pdf-exporter/rest/internal/user-guide');
+    expect(document.body.textContent).toContain('Steps.');
+    // the docs-site chrome is present and this article is the active sidebar entry
+    expect(document.querySelector('.docs-nav-link-active')?.textContent).toBe('User Guide');
+    expect(String(fetchMock.mock.calls[0][0])).toMatch(/\/html\/user-guide\.html$/);
   });
 });
 

@@ -45,4 +45,28 @@ class GeneratedHelpArticlesTest {
         assertArticleGenerated("disclaimer.html");
     }
 
+    // The README was split into these standalone articles; each is rendered by its own admin feature
+    // (DocArticle) and reached through the cross-document links inside the About/User Guide articles.
+    // A build that stops generating one leaves that feature showing its "not generated" message.
+
+    @Test
+    void configurationArticleIsGeneratedIntoTheAppWebapp() {
+        assertArticleGenerated("configuration.html");
+    }
+
+    @Test
+    void upgradeArticleIsGeneratedIntoTheAppWebapp() {
+        assertArticleGenerated("upgrade.html");
+    }
+
+    @Test
+    void limitationsArticleIsGeneratedIntoTheAppWebapp() {
+        assertArticleGenerated("limitations.html");
+    }
+
+    @Test
+    void quickStartArticleIsGeneratedIntoTheAppWebapp() {
+        assertArticleGenerated("quick-start.html");
+    }
+
 }

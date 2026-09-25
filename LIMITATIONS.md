@@ -9,8 +9,6 @@ These are kept out of the defaults on purpose: the right behaviour depends on th
 (its columns, content and language), and changing a global default would affect every export and could
 regress other documents.
 
-> For PDF/A and PDF/UA compliance limitations, see the [Limitations](README.md#limitations) section of the README.
-
 ## Table column sizing in wide tables
 
 ### Behavior (by design)
@@ -83,8 +81,8 @@ preserved.
   sent to the WeasyPrint service; see the
   [webhook samples repository](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter.webhook-samples)
   for an example. Note that webhooks are disabled by default and must first be enabled with
-  `ch.sbb.polarion.extension.pdf-exporter.webhooks.enabled=true` in `polarion.properties` (see the README's
-  [Enabling webhooks](README.md#enabling-webhooks) section).
+  `ch.sbb.polarion.extension.pdf-exporter.webhooks.enabled=true` in `polarion.properties` (see the
+  [Enabling webhooks](CONFIGURATION.md#enabling-webhooks) section of the configuration reference).
 
 See discussion [#30](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/discussions/30).
 
@@ -109,3 +107,46 @@ reporter confirmed that removing the brackets renders the title correctly. As th
 XWiki engine, it is worth reporting to Siemens as a Polarion platform bug.
 
 See issue [#739](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/739).
+
+## PDF/A-*A variants with icon fonts (FontAwesome)
+
+PDF/A "A" (accessible) variants require that characters from Unicode Private Use Area (PUA) have `ActualText` entries for accessibility.
+Icon fonts like FontAwesome use PUA codepoints, which causes validation failures with VeraPDF for:
+- `pdf/a-1a`
+- `pdf/a-2a`
+- `pdf/a-3a`
+
+**Workaround:** If your documents contain icon fonts (e.g., FontAwesome icons from Polarion), use "B" or "U" variants instead:
+- `pdf/a-1b` instead of `pdf/a-1a`
+- `pdf/a-2b` or `pdf/a-2u` instead of `pdf/a-2a`
+- `pdf/a-3b` or `pdf/a-3u` instead of `pdf/a-3a`
+
+## Native PDF annotations (sticky notes) incompatible with PDF/A
+
+When exporting documents with comments rendered as native PDF annotations (sticky notes), the resulting PDF will fail PDF/A validation. This affects all PDF/A variants (`pdf/a-1*`, `pdf/a-2*`, `pdf/a-3*`, `pdf/a-4*`).
+
+VeraPDF reports the following errors for PDF/A-2b:
+- `6.2.10-2` - Annotation appearance stream missing
+- `6.1.3-1` - Info dictionary issues
+- `6.2.4.3-2` - OutputIntent issues
+- `6.3.2-1` - Font embedding issues
+- `6.6.2.1-1` - Annotation flags issues
+
+This happens because PDF/A standards require all annotations to have complete appearance streams (AP entry with N key), which WeasyPrint-generated sticky notes do not provide.
+
+**Workaround:** If you need PDF/A-compliant documents with comments, use inline comment rendering (disable "as sticky notes" option). Inline comments are rendered as regular HTML content and do not affect PDF/A compliance.
+
+## PDF/UA-2 incomplete support
+
+WeasyPrint 67.0 has incomplete support for PDF/UA-2 (ISO 14289-2:2024). The following issues are known:
+
+| Issue | Description | Status |
+|-------|-------------|--------|
+| Structure destinations | Internal links must use structure destinations instead of page destinations (clause 8.8) | Requires WeasyPrint fix |
+| PDF 2.0 namespace | Document element requires PDF 2.0 namespace (clause 8.2.5.2) | Requires WeasyPrint fix |
+| Document-Span restriction | Document shall not contain Span directly (ISO 32005:2023) | Requires WeasyPrint fix |
+| ListNumbering attribute | Lists with Lbl elements require ListNumbering attribute (clause 8.2.5.25) | Requires WeasyPrint fix |
+
+The `pdfuaid:rev` metadata issue (four-digit year requirement) is fixed automatically via post-processing.
+
+**Workaround:** Use `pdf/ua-1` instead of `pdf/ua-2` if full PDF/UA compliance is required.

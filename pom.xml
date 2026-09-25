@@ -84,13 +84,6 @@
         -->
         <maven-jar-plugin.Require-Bundle.extension>com.polarion.alm.wiki,org.jsoup,net.bytebuddy.byte-buddy,org.apache.tika.patched;resolution:=optional,org.apache.tika;resolution:=optional,org.apache.httpcomponents.httpclient,org.apache.httpcomponents.httpcore</maven-jar-plugin.Require-Bundle.extension>
         <maven-jar-plugin.Require-Bundle>${maven-jar-plugin.Require-Bundle.common},${maven-jar-plugin.Require-Bundle.extension}</maven-jar-plugin.Require-Bundle>
-
-        <markdown2html-maven-plugin.user-guide.inputFile>${project.basedir}/USER_GUIDE.md</markdown2html-maven-plugin.user-guide.inputFile>
-        <markdown2html-maven-plugin.user-guide.outputFileName>user-guide.html</markdown2html-maven-plugin.user-guide.outputFileName>
-        <markdown2html-maven-plugin.user-guide.outputFile>${markdown2html-maven-plugin.extensionContextAdminHtml}/${markdown2html-maven-plugin.user-guide.outputFileName}</markdown2html-maven-plugin.user-guide.outputFile>
-        <markdown2html-maven-plugin.disclaimer.inputFile>${project.basedir}/DISCLAIMER.md</markdown2html-maven-plugin.disclaimer.inputFile>
-        <markdown2html-maven-plugin.disclaimer.outputFileName>disclaimer.html</markdown2html-maven-plugin.disclaimer.outputFileName>
-        <markdown2html-maven-plugin.disclaimer.outputFile>${markdown2html-maven-plugin.extensionContextAdminHtml}/${markdown2html-maven-plugin.disclaimer.outputFileName}</markdown2html-maven-plugin.disclaimer.outputFile>
     </properties>
 
 
@@ -281,11 +274,11 @@
                 <configuration>
                     <filesets>
                         <fileset>
+                            <!-- Everything markdown2html renders below (the parent only knows about.html);
+                                 the same files .gitignore keeps out of git. -->
                             <directory>${markdown2html-maven-plugin.extensionContextAdminHtml}</directory>
                             <includes>
-                                <include>${markdown2html-maven-plugin.disclaimer.outputFileName}</include>
-                                <include>${markdown2html-maven-plugin.user-guide.outputFileName}</include>
-                                <include>${markdown2html-maven-plugin.outputFileName}</include>
+                                <include>*.html</include>
                             </includes>
                             <followSymlinks>false</followSymlinks>
                         </fileset>
@@ -296,44 +289,123 @@
             <plugin>
                 <groupId>ch.sbb.maven.plugins</groupId>
                 <artifactId>markdown2html-maven-plugin</artifactId>
+                <!--
+                    Renders the About page (README.md), the Usage Disclaimer and the documentation-site articles
+                    of ui/src/docs/docs.config.json into the app webapp's html/, which the app fetches them from.
+
+                    The plugin-level configuration is shared by every execution: the parent's (failOnError,
+                    generateHeadingIds, openExternalLinksInNewTab, its excludeChapters and removeLinesWithStrings)
+                    plus the two below. An execution only names its input and output, and replaces the parent's
+                    excludeChapters where it lists its own.
+
+                    Every execution runs in generate-sources, one phase before the frontend build in
+                    generate-resources: build-docs-index.mjs (npm `prebuild`) builds the documentation search
+                    index from this very HTML, using the heading ids generateHeadingIds stamps on it, and fails
+                    the build when an article is missing. An article added to the manifest needs an execution here.
+                -->
+                <configuration>
+                    <!-- Keep relative links relative: the app's DocLinkInterceptor turns a link to another
+                         article into in-app navigation, and any other one (docs/openapi.json) into a GitHub link.
+                         combine.self=override is required: an empty element alone does not override the
+                         parent's ${project.scm.url}, Maven keeps the inherited value on an empty merge. -->
+                    <relativeLinkPrefix combine.self="override"></relativeLinkPrefix>
+                    <!-- The articles are fetched as single files, so their images travel inside them. -->
+                    <imageProcessingType>EMBED</imageProcessingType>
+                </configuration>
                 <executions>
                     <execution>
                         <id>readme.md-to-about.html</id>
-                        <phase>generate-resources</phase>
-                        <goals>
-                            <goal>convert</goal>
-                        </goals>
-                    </execution>
-                    <execution>
-                        <id>user_guide.md-to-user-guide.html</id>
-                        <phase>generate-resources</phase>
+                        <phase>generate-sources</phase>
                         <goals>
                             <goal>convert</goal>
                         </goals>
                         <configuration>
-                            <inputFile>USER_GUIDE.md</inputFile>
-                            <outputFile>${markdown2html-maven-plugin.user-guide.outputFile}</outputFile>
-                            <failOnError>${markdown2html-maven-plugin.failOnError}</failOnError>
-                            <generateHeadingIds>${markdown2html-maven-plugin.generateHeadingIds}</generateHeadingIds>
-                            <relativeLinkPrefix>${project.scm.url}</relativeLinkPrefix>
-                            <openExternalLinksInNewTab>true</openExternalLinksInNewTab>
-                            <imageProcessingType>EMBED</imageProcessingType>
+                            <!-- The README's documentation table keeps a REST API row for GitHub, where the
+                                 relative docs/openapi.json link resolves; drop that row from the generated About
+                                 page, where the OpenAPI spec is already reachable from the REST API section below.
+                                 combine.children=append keeps the parent's list (which strips the SonarCloud
+                                 badges): without it this list would replace the inherited one and the badges would
+                                 leak onto the About page. -->
+                            <removeLinesWithStrings combine.children="append">
+                                <removeLinesWithString>[REST API](docs/openapi.json)</removeLinesWithString>
+                            </removeLinesWithStrings>
                         </configuration>
                     </execution>
                     <execution>
                         <id>disclaimer.md-to-disclaimer.html</id>
-                        <phase>generate-resources</phase>
+                        <phase>generate-sources</phase>
                         <goals>
                             <goal>convert</goal>
                         </goals>
                         <configuration>
-                            <inputFile>DISCLAIMER.md</inputFile>
-                            <outputFile>${markdown2html-maven-plugin.disclaimer.outputFile}</outputFile>
-                            <failOnError>${markdown2html-maven-plugin.failOnError}</failOnError>
-                            <generateHeadingIds>${markdown2html-maven-plugin.generateHeadingIds}</generateHeadingIds>
-                            <relativeLinkPrefix>${project.scm.url}</relativeLinkPrefix>
-                            <openExternalLinksInNewTab>true</openExternalLinksInNewTab>
-                            <imageProcessingType>EMBED</imageProcessingType>
+                            <inputFile>${project.basedir}/DISCLAIMER.md</inputFile>
+                            <outputFile>${markdown2html-maven-plugin.extensionContextAdminHtml}/disclaimer.html</outputFile>
+                        </configuration>
+                    </execution>
+                    <!-- The documentation-site articles, in the reading order of ui/src/docs/docs.config.json. -->
+                    <execution>
+                        <id>quick_start.md-to-quick-start.html</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>convert</goal>
+                        </goals>
+                        <configuration>
+                            <inputFile>${project.basedir}/QUICK_START.md</inputFile>
+                            <outputFile>${markdown2html-maven-plugin.extensionContextAdminHtml}/quick-start.html</outputFile>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>user_guide.md-to-user-guide.html</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>convert</goal>
+                        </goals>
+                        <configuration>
+                            <inputFile>${project.basedir}/USER_GUIDE.md</inputFile>
+                            <outputFile>${markdown2html-maven-plugin.extensionContextAdminHtml}/user-guide.html</outputFile>
+                            <!-- The markdown keeps a Table of contents for GitHub; the sidebar and "On this page"
+                                 of the documentation site provide that navigation, so drop it here. -->
+                            <excludeChapters>
+                                <excludeChapter>## Table of contents</excludeChapter>
+                            </excludeChapters>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>configuration.md-to-configuration.html</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>convert</goal>
+                        </goals>
+                        <configuration>
+                            <inputFile>${project.basedir}/CONFIGURATION.md</inputFile>
+                            <outputFile>${markdown2html-maven-plugin.extensionContextAdminHtml}/configuration.html</outputFile>
+                            <!-- The markdown keeps a Table of contents for GitHub; the sidebar and "On this page"
+                                 of the documentation site provide that navigation, so drop it here. -->
+                            <excludeChapters>
+                                <excludeChapter>## Table of contents</excludeChapter>
+                            </excludeChapters>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>limitations.md-to-limitations.html</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>convert</goal>
+                        </goals>
+                        <configuration>
+                            <inputFile>${project.basedir}/LIMITATIONS.md</inputFile>
+                            <outputFile>${markdown2html-maven-plugin.extensionContextAdminHtml}/limitations.html</outputFile>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>upgrade.md-to-upgrade.html</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>convert</goal>
+                        </goals>
+                        <configuration>
+                            <inputFile>${project.basedir}/UPGRADE.md</inputFile>
+                            <outputFile>${markdown2html-maven-plugin.extensionContextAdminHtml}/upgrade.html</outputFile>
                         </configuration>
                     </execution>
                 </executions>

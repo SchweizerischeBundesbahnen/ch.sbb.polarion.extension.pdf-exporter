@@ -83,8 +83,13 @@
   `ui-build-react-app` profile): `npm ci` + `npm run build`, the bundle copied into `webapp/pdf-exporter-app/`, and
   the JS suite in the Maven `test` phase. This pom adds nothing for it beyond pinning
   `frontend-maven-plugin.version`, which the parent's profile reads. Note it also redirects
-  markdown2html's output (`about.html`, `user-guide.html`, `disclaimer.html`) into
-  `webapp/pdf-exporter-app/html/`.
+  markdown2html's output into `webapp/pdf-exporter-app/html/` - `about.html` and `disclaimer.html`, plus one
+  `<id>.html` per documentation-site article of `ui/src/docs/docs.config.json` (Quick Start, User Guide,
+  Configuration, Limitations, Upgrade) - and renders it all in `generate-sources`, one phase before the
+  frontend build, because `npm run build` builds the documentation search index from that HTML and fails
+  when an article is missing. The index (`ui/src/docs/search-index.json`) is generated, not committed. An
+  article added to the manifest needs its own markdown2html execution in the pom, or the build fails. See
+  [`ui/README.md`](ui/README.md#the-documentation-site).
 - **There is one JS toolchain, and it lives in `ui/`.** The root `package.json`, `package-lock.json`,
   `node/`, `node_modules/`, `src/test/js/` and this pom's own `frontend-maven-plugin` block are gone. The
   mocha suite that tested the toolbar injectors is now `ui/test/liveReportsInjector.node.test.ts`, run by

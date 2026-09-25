@@ -4,8 +4,12 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
+    "docs:index": "node scripts/build-docs-index.mjs",
+    "predev": "npm run docs:index",
     "dev": "vite",
+    "pretypecheck": "npm run docs:index",
     "typecheck": "tsc --noEmit",
+    "prebuild": "node scripts/build-docs-index.mjs --require",
     "build": "npm run typecheck && vite build && node scripts/check-runtime-entries.mjs",
     "preview": "vite preview",
     "test": "vitest run",
@@ -22,7 +26,7 @@
     "lint:fix": "eslint . --fix"
   },
   "dependencies": {
-    "@sbb-polarion/react-sbb-polarion": "^2.4.0",
+    "@sbb-polarion/react-sbb-polarion": "^2.5.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "sonner": "^2.0.7"
@@ -42,6 +46,7 @@
     "eslint-plugin-react-hooks": "7.1.1",
     "globals": "17.12.0",
     "jsdom": "30.1.0",
+    "node-html-parser": "^9.0.4",
     "playwright": "1.63.0",
     "prettier": "3.9.8",
     "typescript": "6.0.3",

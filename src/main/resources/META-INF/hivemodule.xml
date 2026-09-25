@@ -38,11 +38,14 @@
                   projectGroupScope="false"
                   repositoryScope="true"/>
 
-        <extender id="user-guide"
-                  name="User Guide"
+        <!-- Single entry point to the documentation site (Quick Start, User Guide, Configuration,
+             Limitations, Upgrade). It lands on Quick Start; the in-page sidebar navigates to the rest,
+             so those articles need no menu entry of their own. -->
+        <extender id="documentation"
+                  name="Documentation"
                   parentNodeId="pdf-export"
                   iconUrl="/polarion/pdf-exporter-app/ui/images/menu/16x16/user_guide.svg"
-                  pageUrl="/polarion/pdf-exporter-app/ui/app/index.html?feature=user-guide&amp;embedded=true&amp;scope=$scope$"
+                  pageUrl="/polarion/pdf-exporter-app/ui/app/index.html?feature=quick-start&amp;embedded=true&amp;scope=$scope$"
                   projectScope="true"
                   projectGroupScope="false"
                   repositoryScope="true"/>
