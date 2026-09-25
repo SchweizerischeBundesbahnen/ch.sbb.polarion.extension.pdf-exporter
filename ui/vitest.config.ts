@@ -59,6 +59,8 @@ export default defineConfig({
       'vitest-browser-react',
       'sonner',
       '@sbb-polarion/react-sbb-polarion',
+      '@sbb-polarion/react-sbb-polarion/testing',
+      'axe-core',
     ],
   },
   test: {

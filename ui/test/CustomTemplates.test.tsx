@@ -1,9 +1,11 @@
+import { pageViolations } from '@sbb-polarion/react-sbb-polarion/testing';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render } from 'vitest-browser-react';
 import { userEvent } from 'vitest/browser';
 import App from '../src/App';
 import { installFetchMock } from './mockFetch';
 import type { Route } from './mockFetch';
+import { dropdownsUpgraded } from './visualHelpers';
 
 // The two pages built on CustomTemplatesPage: the filename templates (one setting, no configuration
 // selector) and the header/footer cells (named configurations). What they own, and what is asserted
@@ -342,5 +344,89 @@ describe('Header and footer page', () => {
     await vi.waitFor(() => expect(field('default-headerLeft')?.value).toBe('DEFAULT LEFT'));
     expect(field('custom-headerLeft')).toBeNull();
     expect(document.querySelector('.default-changed')).toBeNull();
+  });
+});
+
+describe('Filename template page, accessibility', () => {
+  const loaded = async () => {
+    await vi.waitFor(() => expect(field('custom-documentNameTemplate').value).toBe('doc-$id'));
+    await vi.waitFor(() => expect(dropdownsUpgraded()).toBe(true));
+  };
+
+  it('has no WCAG A/AA violations with the custom templates chosen', async () => {
+    open('filename', filenameRoutes());
+    await loaded();
+    expect(await pageViolations()).toEqual([]);
+  });
+
+  it('has no WCAG A/AA violations with the built-in templates chosen', async () => {
+    open('filename', filenameRoutes());
+    await loaded();
+    await userEvent.click(radio('use-default-values'));
+    await vi.waitFor(() => expect(field('default-documentNameTemplate')).not.toBeNull());
+    expect(await pageViolations()).toEqual([]);
+  });
+
+  it('has no WCAG A/AA violations while a copy of the built-in templates is confirmed', async () => {
+    open('filename', filenameRoutes());
+    await loaded();
+    await clickButton('Copy from default');
+    await vi.waitFor(() => expect(document.querySelector('.rsp-modal')).not.toBeNull());
+    expect(await pageViolations()).toEqual([]);
+  });
+
+  it('has no WCAG A/AA violations with a setting it cannot read', async () => {
+    open('filename', [
+      {
+        method: 'GET',
+        match: /\/settings\/filename-template\/names\/Default\/content/,
+        json: { message: 'nope' },
+        status: 500,
+      },
+      { method: 'GET', match: /\/settings\/filename-template\/default-content/, json: FILENAME_DEFAULTS },
+    ]);
+    await vi.waitFor(() => expect(document.querySelector('.notifications .alert-error')).not.toBeNull());
+    await vi.waitFor(() => expect(dropdownsUpgraded()).toBe(true));
+    expect(await pageViolations()).toEqual([]);
+  });
+});
+
+describe('Header and footer page, accessibility', () => {
+  const changedDefault = () =>
+    headerFooterRoutes([
+      {
+        method: 'GET',
+        match: /\/settings\/header-footer\/names\/[^/]+\/content/,
+        json: { ...HEADER_FOOTER_STORED, defaultHash: 'former', defaultChanged: true },
+      },
+    ]);
+  const loaded = async () => {
+    await vi.waitFor(() => expect(field('custom-headerLeft').value).toBe('left'));
+    await vi.waitFor(() => expect(dropdownsUpgraded()).toBe(true));
+  };
+
+  it('has no WCAG A/AA violations with six custom cells', async () => {
+    open('header-footer', headerFooterRoutes());
+    await loaded();
+    expect(await pageViolations()).toEqual([]);
+  });
+
+  it('has no WCAG A/AA violations with a changed default compared', async () => {
+    open('header-footer', changedDefault());
+    await loaded();
+    expect(document.querySelector('.default-changed')).not.toBeNull();
+    await clickButton('Compare with default');
+    await vi.waitFor(() => expect(document.querySelector('.compare-with-default .side-by-side')).not.toBeNull());
+    expect(await pageViolations()).toEqual([]);
+  });
+
+  it('has no WCAG A/AA violations while a save with every cell empty is confirmed', async () => {
+    open('header-footer', headerFooterRoutes());
+    await loaded();
+    await userEvent.fill(field('custom-headerLeft'), '');
+    await userEvent.fill(field('custom-footerCenter'), '');
+    await clickButton('Save');
+    await vi.waitFor(() => expect(document.querySelector('.rsp-modal')?.textContent).toContain('Save anyway'));
+    expect(await pageViolations()).toEqual([]);
   });
 });

@@ -202,13 +202,11 @@ describe.skipIf(!__PIXEL_REFERENCES__)('side panel visual', () => {
   it('the thumbnails a failed validation leaves in the pane, the first of them focused', async () => {
     // The gallery had no reference at all: the test above renders it, then photographs the dialog it opens.
     // Its thumbnails are flex items sized against the pane (`flex: 0 1 calc(25% - 8px)` with a min and a
-    // max, see export-form.css) - which is why the keyboard fix kept them <img role="button"> instead of
-    // wrapping each in a <button>, a wrapper becoming the flex item in its place. Nothing pinned that, so
-    // the re-layout would not have shown up anywhere.
+    // max, see export-form.css). Each is a <button> around its image, and the button carries that sizing:
+    // a wrapper that did not would become the flex item in the image's place and re-lay the gallery.
     //
     // Captured with the first one focused, so the ring a keyboard user navigates by is pinned too. It is
-    // drawn by the user agent: nothing in this app styles an outline, and the one RSP rule that clears one
-    // off a [role="button"] is scoped to `.markdown-body`, which this form is not.
+    // drawn by the user agent: nothing in this app styles an outline.
     const host = await validated();
 
     // Tabbed into rather than focus()ed. The ring comes from `:focus-visible`, which follows the modality

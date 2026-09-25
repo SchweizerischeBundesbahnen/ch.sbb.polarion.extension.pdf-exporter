@@ -1,9 +1,11 @@
+import { pageViolations } from '@sbb-polarion/react-sbb-polarion/testing';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render } from 'vitest-browser-react';
 import { userEvent } from 'vitest/browser';
 import App from '../src/App';
 import { installFetchMock } from './mockFetch';
 import type { Route } from './mockFetch';
+import { dropdownsUpgraded } from './visualHelpers';
 
 // The Webhooks page: the installation-wide switch that decides whether it exists at all, the table of
 // endpoints it stores, and the auth block each row can carry.
@@ -303,5 +305,48 @@ describe('Webhooks page', () => {
 
     expect(rows().length).toBe(0);
     expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'PUT')).toBe(false);
+  });
+});
+
+describe('Webhooks page, accessibility', () => {
+  const settled = async () => {
+    await loaded();
+    await vi.waitFor(() => expect(dropdownsUpgraded()).toBe(true));
+  };
+
+  it('has no WCAG A/AA violations with a row with auth and one without', async () => {
+    open();
+    await settled();
+    expect(await pageViolations()).toEqual([]);
+  });
+
+  // The auth type sits in a table cell with no label of its own, and axe would accept a name on the hidden
+  // native <select> alone.
+  it('names the auth type of a row', async () => {
+    open();
+    await settled();
+    expect(rows()[0].querySelector('.webhook-auth-type .sd-trigger')).toHaveAccessibleName('Authentication type');
+  });
+
+  it('has no WCAG A/AA violations with an invalid URL warned about', async () => {
+    open();
+    await settled();
+    await userEvent.fill(urlInput(1), 'my.domain.com/plain');
+    await vi.waitFor(() => expect(document.querySelector('.invalid-webhook')).not.toBeNull());
+    expect(await pageViolations()).toEqual([]);
+  });
+
+  it('has no WCAG A/AA violations with the feature off', async () => {
+    open(routesWith({ method: 'GET', match: /\/webhooks\/status/, json: { enabled: false } }));
+    await vi.waitFor(() => expect(document.querySelector('.webhooks-disabled')).not.toBeNull());
+    await vi.waitFor(() => expect(dropdownsUpgraded()).toBe(true));
+    expect(await pageViolations()).toEqual([]);
+  });
+
+  it('has no WCAG A/AA violations when the status cannot be read', async () => {
+    open(routesWith({ method: 'GET', match: /\/webhooks\/status/, json: {}, status: 500 }));
+    await vi.waitFor(() => expect(document.querySelector('.notifications .alert-error')).not.toBeNull());
+    await vi.waitFor(() => expect(dropdownsUpgraded()).toBe(true));
+    expect(await pageViolations()).toEqual([]);
   });
 });

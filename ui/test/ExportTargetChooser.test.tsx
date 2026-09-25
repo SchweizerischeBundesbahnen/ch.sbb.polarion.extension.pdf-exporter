@@ -1,4 +1,5 @@
 import type { Root } from 'react-dom/client';
+import { a11yViolations } from '@sbb-polarion/react-sbb-polarion/testing';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { DocumentType } from '../src/export/documentType';
 import { openExportPopup } from '../src/popup/mount';
@@ -248,5 +249,18 @@ describe('choosing what a report button exports', () => {
 
     await vi.waitFor(() => expect(form()).not.toBeNull());
     expect(chooser()).toBeNull();
+  });
+});
+
+describe('accessibility', () => {
+  // The dialog is mounted in a shadow root of a host appended to the body, so it is scanned through that host.
+  const host = () => document.body.lastElementChild as HTMLElement;
+
+  it('has no WCAG A/AA violations while asking what a report button exports', async () => {
+    widget('Documents', 3);
+    widget('Test Runs', 1);
+    open();
+    await vi.waitFor(() => expect(chooser()).not.toBeNull());
+    expect(await a11yViolations(host())).toEqual([]);
   });
 });

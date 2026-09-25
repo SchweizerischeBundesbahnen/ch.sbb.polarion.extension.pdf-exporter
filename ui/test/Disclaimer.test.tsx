@@ -1,10 +1,10 @@
+import { pageViolations } from '@sbb-polarion/react-sbb-polarion/testing';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render } from 'vitest-browser-react';
 import Disclaimer from '../src/pages/Disclaimer';
 import { installFetchMock } from './mockFetch';
 
-// The Usage Disclaimer page reads generic's /disclaimer endpoint, like About and User Guide read
-// theirs. What the tests pin is that it goes through the REST base and what happens when the
+// The Usage Disclaimer page reads generic's /disclaimer endpoint, like About reads its own. What the tests pin is that it goes through the REST base and what happens when the
 // extension ships no disclaimer - the endpoint answers empty, and the page then links to GitHub the
 // way the JSP page it replaces did. A failed request is an error, not a missing disclaimer.
 
@@ -69,5 +69,28 @@ describe('Disclaimer', () => {
       expect(document.querySelector('.alert.alert-error')?.textContent).toContain('Failed to load the disclaimer'),
     );
     expect(document.body.textContent).not.toContain('No disclaimer has been generated');
+  });
+});
+
+describe('Disclaimer, accessibility', () => {
+  it('has no WCAG A/AA violations with the article', async () => {
+    installFetchMock([article('<h1>Usage Disclaimer</h1><p>Provided as is.</p>')]);
+    render(<Disclaimer />);
+    await vi.waitFor(() => expect(document.querySelector('article.markdown-body')).not.toBeNull());
+    expect(await pageViolations()).toEqual([]);
+  });
+
+  it('has no WCAG A/AA violations with the link to the online source', async () => {
+    installFetchMock([article('')]);
+    render(<Disclaimer />);
+    await vi.waitFor(() => expect(document.body.textContent).toContain('No disclaimer has been generated'));
+    expect(await pageViolations()).toEqual([]);
+  });
+
+  it('has no WCAG A/AA violations with the error of a failed request', async () => {
+    installFetchMock([article('<p>ignored</p>', 500)]);
+    render(<Disclaimer />);
+    await vi.waitFor(() => expect(document.querySelector('.alert.alert-error')).not.toBeNull());
+    expect(await pageViolations()).toEqual([]);
   });
 });

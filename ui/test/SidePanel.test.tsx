@@ -1,3 +1,4 @@
+import { pageViolations } from '@sbb-polarion/react-sbb-polarion/testing';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render } from 'vitest-browser-react';
 import { userEvent } from 'vitest/browser';
@@ -6,6 +7,7 @@ import SidePanel from '../src/sidepanel/SidePanel';
 import type { SidePanelDependencies } from '../src/sidepanel/SidePanel';
 import { installFetchMock } from './mockFetch';
 import type { Route } from './mockFetch';
+import { pagePreview } from './pagePreviewSample';
 import {
   SAMPLE_PANEL_DATA,
   SAMPLE_STYLE_PACKAGE,
@@ -639,5 +641,106 @@ describe('validating the page width', () => {
 
     await vi.waitFor(() => expect(fetchMock).toHaveBeenCalled());
     expect(String(fetchMock.mock.calls[0][0])).toContain('max-results=5');
+  });
+});
+
+describe('accessibility', () => {
+  /** Waits for the panel and for every dropdown in it to be upgraded, so the scan sees the real triggers. */
+  const ready = async () => {
+    await settled();
+    await vi.waitFor(() =>
+      expect(document.querySelectorAll('.searchable-dropdown').length).toBe(document.querySelectorAll('select').length),
+    );
+  };
+
+  const validated = async () => {
+    installFetchMock([
+      {
+        method: 'POST',
+        match: /\/validate\?/,
+        json: {
+          invalidPages: [{ content: pagePreview() }, { content: pagePreview() }],
+          suspiciousWorkItems: [{ id: 'EL-1', link: '/polarion/#/project/elibrary/workitem?id=EL-1' }],
+        },
+      },
+    ]);
+    open(sampleDependencies({ stylePackage: SAMPLE_STYLE_PACKAGE }));
+    await ready();
+    await userEvent.click(field<HTMLButtonElement>('#validate-pdf')!);
+    await vi.waitFor(() => expect(document.querySelectorAll('.validate-result-img')).toHaveLength(2));
+  };
+
+  it('has no WCAG A/AA violations for a style package that exposes its settings', async () => {
+    open(sampleDependencies({ stylePackage: SAMPLE_STYLE_PACKAGE }));
+    await ready();
+    expect(await pageViolations()).toEqual([]);
+  });
+
+  it('has no WCAG A/AA violations with every optional setting switched on', async () => {
+    open(sampleDependencies({ stylePackage: SAMPLE_STYLE_PACKAGE_FULL, data: { webhooksEnabled: true } }));
+    await ready();
+    expect(await pageViolations()).toEqual([]);
+  });
+
+  // A select beside a switch has no label of its own: the switch's label names the checkbox. axe would
+  // accept a name on the hidden native <select> alone, so the visible triggers are asked directly.
+  it('names the selects that sit beside a switch', async () => {
+    open(sampleDependencies({ stylePackage: SAMPLE_STYLE_PACKAGE_FULL, data: { webhooksEnabled: true } }));
+    await ready();
+    const trigger = (id: string) =>
+      document.querySelector(`#${id} + .searchable-dropdown :is(.sd-trigger, .sd-trigger-multi)`);
+    expect(trigger('cover-page-selector')).toHaveAccessibleName('Cover page');
+    expect(trigger('webhooks-selector')).toHaveAccessibleName('Webhooks');
+    expect(trigger('language')).toHaveAccessibleName('Language');
+    expect(trigger('render-comments-selector')).toHaveAccessibleName('Comments rendering');
+    expect(trigger('roles-selector')).toHaveAccessibleName('Workitem roles');
+    expect(trigger('roles-direction-selector')).toHaveAccessibleName('Link role direction');
+  });
+
+  it('has no WCAG A/AA violations for a style package that keeps its settings to itself', async () => {
+    open(sampleDependencies({ stylePackage: SAMPLE_STYLE_PACKAGE_HIDDEN }));
+    await ready();
+    expect(await pageViolations()).toEqual([]);
+  });
+
+  it('has no WCAG A/AA violations for a user who may not export', async () => {
+    open(sampleDependencies({ data: { exportPermission: 'denied' } }));
+    await ready();
+    expect(await pageViolations()).toEqual([]);
+  });
+
+  it('has no WCAG A/AA violations while an export runs', async () => {
+    open(sampleDependencies());
+    await ready();
+    await userEvent.click(field<HTMLButtonElement>('#export-pdf')!);
+    await vi.waitFor(() => expect(field('#filename')!.matches(':disabled')).toBe(true));
+    expect(await pageViolations()).toEqual([]);
+  });
+
+  it('has no WCAG A/AA violations with a field the export was refused on', async () => {
+    open(sampleDependencies({ stylePackage: SAMPLE_STYLE_PACKAGE_FULL }));
+    await ready();
+    await userEvent.fill(field<HTMLInputElement>('#chapters')!, 'one, two');
+    await userEvent.click(field<HTMLButtonElement>('#export-pdf')!);
+    await toasted('error');
+    expect(await pageViolations()).toEqual([]);
+  });
+
+  it('has no WCAG A/AA violations with a style package it cannot read', async () => {
+    open({ ...sampleDependencies(), loadPackage: () => Promise.reject(new Error('HTTP 500')) });
+    await vi.waitFor(() => expect(text('#load-error')).toContain('error loading style package settings'));
+    expect(await pageViolations()).toEqual([]);
+  });
+
+  it('has no WCAG A/AA violations with a failed validation, its thumbnails and suspicious work items', async () => {
+    await validated();
+    expect(await pageViolations()).toEqual([]);
+  });
+
+  it('has no WCAG A/AA violations with a page width preview opened', async () => {
+    await validated();
+    await userEvent.click(document.querySelector<HTMLElement>('.validate-result-img')!);
+    await vi.waitFor(() => expect(field('#page-preview-zoom')).not.toBeNull());
+    expect(await pageViolations()).toEqual([]);
   });
 });

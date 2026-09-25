@@ -259,6 +259,7 @@ export default function Webhooks() {
                       {row.auth && (
                         <SearchableSelect
                           id={`webhook-auth-type-${row.id}`}
+                          ariaLabel="Authentication type"
                           options={AUTH_TYPES}
                           value={row.authType}
                           onChange={(value) => patchRow(row.id, { authType: value as AuthType })}
