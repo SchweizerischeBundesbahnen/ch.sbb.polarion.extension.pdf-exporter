@@ -9,7 +9,7 @@
     </parent>
 
     <artifactId>ch.sbb.polarion.extension.pdf-exporter</artifactId>
-    <version>13.8.1-SNAPSHOT</version>
+    <version>13.9.0</version>
     <packaging>jar</packaging>
 
     <name>Polarion ALM extension to convert Documents to PDF files</name>
@@ -308,7 +308,7 @@
                          article into in-app navigation, and any other one (docs/openapi.json) into a GitHub link.
                          combine.self=override is required: an empty element alone does not override the
                          parent's ${project.scm.url}, Maven keeps the inherited value on an empty merge. -->
-                    <relativeLinkPrefix combine.self="override"></relativeLinkPrefix>
+                    <relativeLinkPrefix combine.self="override"/>
                     <!-- The articles are fetched as single files, so their images travel inside them. -->
                     <imageProcessingType>EMBED</imageProcessingType>
                 </configuration>
