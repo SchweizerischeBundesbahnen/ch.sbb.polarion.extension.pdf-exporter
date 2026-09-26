@@ -1,5 +1,23 @@
 # Changelog
 
+## [13.9.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v13.8.0...v13.9.0) (2026-09-26)
+
+
+### Features
+
+* documentation site over the shared RSP components ([#1067](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/1067)) ([4be394c](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/4be394cc2e29aa8cffd3cc5a4dffff04d108aa81)), closes [#1044](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/1044)
+
+
+### Bug Fixes
+
+* **deps:** pin dependency node-html-parser to 9.0.4 ([4a68671](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/4a68671b1e8ebb9bf45c786a3c56d964e0a0e63c))
+* **deps:** update dependency jsdom to v30.1.1 ([9695456](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/96954563561c52ed973252c4007980fdc8c4eb77))
+* **deps:** update dependency org.slf4j:slf4j-api to v2.0.20 ([96644b0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/96644b0e10dc5e2d8647b210d2b5d58cb2f990ee))
+* **deps:** update dependency prettier to v3.9.9 ([bbfc6e8](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/bbfc6e8506d9537f5377a81c62aaf3c769feb4e1))
+* **deps:** update dependency typescript-eslint to v8.70.1 ([9edb6b5](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/9edb6b5d6cf2f9bee24d46f7e0b82bffdecc5d78))
+* **deps:** update npm to v12.1.0 ([460817b](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/460817b5d2ccf7ef42d809dbbda4680194ea4392))
+* keep field initializers in lombok builders ([#1065](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/1065)) ([f7b7054](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/f7b70540a318e2877c710d538e388391420d27d7)), closes [#1064](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/1064)
+
 ## [13.8.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v13.7.0...v13.8.0) (2026-09-23)
 
 
