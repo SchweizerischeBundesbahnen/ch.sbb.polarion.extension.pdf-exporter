@@ -207,7 +207,7 @@ class HtmlProcessorTest {
     }
 
     @Test
-    void cutEmptyChaptersKeepsAChapterHoldingATableOfContents() {
+    void cutEmptyChaptersKeepsAChapterHoldingATable() {
         // The tables of contents, figures and tables are built after the empty chapters are cut, so at this
         // point each is an empty placeholder. Taken for an empty chapter, the heading went and took the
         // table with it: reported in #1072, where a heading above a table made both disappear.
@@ -216,7 +216,9 @@ class HtmlProcessorTest {
                 <h1>Table of figures</h1><div id="polarion_wiki macro name=tof" data-sequence="Figure"></div>
                 <h1>Table of tables</h1><div id="polarion_wiki macro name=tof" data-sequence="Table"></div>
                 <h1>Truly empty</h1>
-                <h1>Chapter</h1><p>text</p>""");
+                <h1>Chapter</h1>
+                <p class="polarion-rte-caption-paragraph"><span class="polarion-rte-caption" data-sequence="Figure">#</span></p>
+                <p class="polarion-rte-caption-paragraph"><span class="polarion-rte-caption" data-sequence="Table">#</span></p>""");
 
         processor.cutEmptyChapters(document);
 
@@ -228,6 +230,23 @@ class HtmlProcessorTest {
         assertEquals(2, document.select(JSoupUtils.TOF_PLACEHOLDER_SELECTOR).size(), html);
         // and a chapter which really holds nothing still goes
         assertFalse(html.contains("Truly empty"), html);
+    }
+
+    @Test
+    void cutEmptyChaptersCutsAChapterWhoseTableStaysEmpty() {
+        // A table nothing feeds is an empty list once it is built, and a chapter holding nothing but that
+        // was cut before these placeholders were kept at all. It still is.
+        Document document = JSoupUtils.parseHtml("""
+                <h1>Table of figures</h1><div id="polarion_wiki macro name=tof" data-sequence="Figure"></div>
+                <h1>Chapter</h1>
+                <p class="polarion-rte-caption-paragraph"><span class="polarion-rte-caption" data-sequence="Table">#</span></p>""");
+
+        processor.cutEmptyChapters(document);
+
+        String html = document.body().html();
+        assertFalse(html.contains("Table of figures"), html);
+        assertEquals(0, document.select(JSoupUtils.TOF_PLACEHOLDER_SELECTOR).size(), html);
+        assertTrue(html.contains("Chapter"), html);
     }
 
     @Test

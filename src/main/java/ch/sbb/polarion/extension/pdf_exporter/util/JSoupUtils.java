@@ -73,7 +73,7 @@ public class JSoupUtils {
         // A table of contents, of figures or of tables is a placeholder at this point: the tables are built
         // later in the pipeline, after the empty chapters are cut. Counted as empty, such a placeholder takes
         // the chapter holding it with it - and the table with the chapter.
-        if (isTablePlaceholder(element)) {
+        if (holdsTableWithEntries(element)) {
             return false;
         }
 
@@ -92,9 +92,30 @@ public class JSoupUtils {
         return true;
     }
 
-    /** Whether the element stands for a table this pipeline builds later. */
-    public boolean isTablePlaceholder(@NotNull Element element) {
-        return TOC_PLACEHOLDER_TAG.equals(element.tagName()) || element.is(TOF_PLACEHOLDER_SELECTOR);
+    /**
+     * Whether the element stands for a table this pipeline builds later, and that table will have entries.
+     * <p>
+     * A placeholder whose table stays empty is left to count as empty content: the chapter holding nothing but
+     * an empty list is cut, which is what happened before these tables were kept at all.
+     * </p>
+     */
+    public boolean holdsTableWithEntries(@NotNull Element element) {
+        Document document = element.ownerDocument();
+        if (document == null) {
+            return false;
+        }
+        if (TOC_PLACEHOLDER_TAG.equals(element.tagName())) {
+            // the table of contents lists the headings which survive the cut, and there is at least one
+            // wherever a heading holds this placeholder
+            return !document.select("h1, h2, h3, h4, h5, h6").isEmpty();
+        }
+        if (element.is(TOF_PLACEHOLDER_SELECTOR)) {
+            String sequence = element.dataset().get("sequence");
+            // compared rather than selected: a sequence is a label of the document and may carry anything
+            return document.select("p.polarion-rte-caption-paragraph span.polarion-rte-caption[data-sequence]").stream()
+                    .anyMatch(caption -> caption.dataset().get("sequence").equals(sequence));
+        }
+        return false;
     }
 
     public List<Element> selectEmptyHeadings(@NotNull Document document, int headingLevel) {
