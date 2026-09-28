@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import CustomTemplatesPage, { type CopySources, type TemplateSettings } from '../components/CustomTemplatesPage';
+import TemplateQuickHelp, { SubstitutionRules } from '../components/TemplateQuickHelp';
 import { getScope } from '../services/scope';
 import useRemote from '../services/useRemote';
 
@@ -94,6 +95,18 @@ export default function CoverPage() {
           placeholder: 'Enter CSS part of cover page template here',
         },
       ]}
+      footer={
+        <TemplateQuickHelp title="How-to configure PDF cover page">
+          <p>
+            PDF cover page can be configured using HTML and CSS where you can insert special variables (upper case,
+            exactly like in table below) and document&apos;s custom fields (case-sensitive custom field ID, exactly how
+            it&apos;s configured in administration pane), both enclosed in double curly brackets, eg.:{' '}
+            <span className="monospace">{'{{ DOCUMENT_TITLE }}'}</span> for special variables or{' '}
+            <span className="monospace">{'{{ docRevision }}'}</span> for document&apos;s custom fields.
+          </p>
+          <SubstitutionRules subject="Cover page" />
+        </TemplateQuickHelp>
+      }
     />
   );
 }

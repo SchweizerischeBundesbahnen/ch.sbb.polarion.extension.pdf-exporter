@@ -115,6 +115,20 @@ describe('Filename template page', () => {
     expect(document.body.textContent).toContain('Supported special variables');
   });
 
+  it('explains the placeholders and the Velocity expressions the templates understand', async () => {
+    // The Quick Help the JSP pages carried, lost when they were converted to React and asked for
+    // again in #1070.
+    open('filename', filenameRoutes());
+
+    await vi.waitFor(() => expect(field('custom-documentNameTemplate').value).toBe('doc-$id'));
+    const help = document.querySelector('.quick-help')!;
+    expect(help.querySelector('h2')!.textContent).toBe('Quick Help');
+    expect(help.textContent).toContain('How to configure Filename template');
+    expect(help.textContent).toContain('Velocity expressions that are dynamically evaluated');
+    expect(help.textContent).toContain('$page.spaceId $page.titleOrName $page.lastRevision');
+    expect(help.textContent).toContain('Supported special variables');
+  });
+
   it('shows the built-in templates read-only on the second tab', async () => {
     // A configuration using the built-in templates opens on their tab.
     open(
@@ -260,6 +274,18 @@ describe('Header and footer page', () => {
       footerCenter: 'page $n',
       footerRight: 'page $n of $total',
     });
+  });
+
+  it('explains the variables, the custom fields and the Velocity expressions of the cells', async () => {
+    open('header-footer', headerFooterRoutes());
+
+    await vi.waitFor(() => expect(field('custom-headerLeft').value).toBe('left'));
+    const help = document.querySelector('.quick-help')!;
+    expect(help.textContent).toContain('How-to configure PDF header and footer');
+    expect(help.textContent).toContain("document's custom fields");
+    expect(help.textContent).toContain('{{ docRevision }}');
+    expect(help.textContent).toContain('Header and footer parts can contain velocity expressions');
+    expect(help.textContent).toContain('Supported special variables');
   });
 
   it('asks before saving a custom header and footer with every cell empty', async () => {

@@ -478,9 +478,10 @@ export default function CustomTemplatesPage({
             onRevert={(revision) => void reload(revision.name)}
           />
         )}
-
-        {footer}
       </fieldset>
+      {/* Outside the fieldset: the help is there to be read while a configuration is renamed too, and the
+          other pages carry their own outside theirs. */}
+      {footer}
       <CompareWithDefault
         open={comparison !== null}
         fields={fields}

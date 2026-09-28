@@ -1,5 +1,5 @@
 import CustomTemplatesPage from '../components/CustomTemplatesPage';
-import Placeholders from '../components/Placeholders';
+import TemplateQuickHelp from '../components/TemplateQuickHelp';
 
 /**
  * PDF Exporter: Filename template - the templates the exported file is named after. One setting, no
@@ -36,7 +36,18 @@ export default function FilenameTemplate() {
           placeholder: 'Enter file name template for exported Test Run, or leave empty for the default one',
         },
       ]}
-      footer={<Placeholders />}
+      footer={
+        <TemplateQuickHelp title="How to configure Filename template">
+          <p>
+            Filenames can be made scriptable by incorporating placeholders and velocity code. These filenames can
+            contain Velocity expressions that are dynamically evaluated, allowing for the inclusion of dynamic values.
+          </p>
+          <p>
+            For example:{' '}
+            <span className="monospace">{'{{ PROJECT_NAME }} $page.spaceId $page.titleOrName $page.lastRevision'}</span>
+          </p>
+        </TemplateQuickHelp>
+      }
     />
   );
 }

@@ -95,6 +95,20 @@ describe('Cover page', () => {
     });
   });
 
+  it('explains the variables, the custom fields and the Velocity expressions of the cover page', async () => {
+    // The page lost both the Quick Help and the variables table when it was converted to React; #1070.
+    open();
+
+    await vi.waitFor(() => expect(html().value).toBe('<h1>$title</h1>'));
+    const help = document.querySelector('.quick-help')!;
+    expect(help.querySelector('h2')!.textContent).toBe('Quick Help');
+    expect(help.textContent).toContain('How-to configure PDF cover page');
+    expect(help.textContent).toContain('{{ DOCUMENT_TITLE }}');
+    expect(help.textContent).toContain('Cover page can contain velocity expressions');
+    expect(help.textContent).toContain('Supported special variables');
+    expect(help.textContent).toContain('{{ PAGES_TOTAL_COUNT }}');
+  });
+
   it('copies the chosen predefined template into the configuration', async () => {
     const fetchMock = open();
     await vi.waitFor(() => expect(html().value).toBe('<h1>$title</h1>'));
