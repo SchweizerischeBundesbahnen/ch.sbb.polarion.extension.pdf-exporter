@@ -7,8 +7,11 @@ import org.junit.jupiter.api.Test;
 
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class LiveDocTOCGeneratorTest {
 
@@ -54,6 +57,21 @@ class LiveDocTOCGeneratorTest {
             // Spaces and new lines are removed to exclude difference in space characters
             assertEquals(TestStringUtils.removeNonsensicalSymbols(expectedHtml), TestStringUtils.removeNonsensicalSymbols(processedHtml));
         }
+    }
+
+    @Test
+    void tableOfContentOverLevelsTheDocumentNames() {
+        // The levels come from the document and may carry anything. A huge one built its heading selector
+        // over the whole integer range, which never ended, and an unreadable one failed the export.
+        Document document = JSoupUtils.parseHtml("""
+                <pd4ml:toc tocInit="none" tocMax="2147483647"></pd4ml:toc>
+                <h1><a id="chapter"></a>1 Chapter</h1>""");
+
+        assertTimeoutPreemptively(Duration.ofSeconds(10), () -> new LiveDocTOCGenerator().addTableOfContent(document));
+
+        String processedHtml = document.body().html();
+        assertTrue(processedHtml.contains("<ul class=\"toc\">"), processedHtml);
+        assertTrue(processedHtml.contains("#chapter"), processedHtml);
     }
 
     @Test

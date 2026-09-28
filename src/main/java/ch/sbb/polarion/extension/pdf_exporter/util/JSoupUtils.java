@@ -30,9 +30,9 @@ public class JSoupUtils {
     /** The caption spans a table of figures or of tables is built over. Add the sequence of a table to it. */
     public static final String CAPTION_SELECTOR = "p.polarion-rte-caption-paragraph span.polarion-rte-caption";
 
-    /** The heading levels a table of contents lists where its placeholder names none. */
-    private static final int TOC_DEFAULT_START_LEVEL = 1;
-    private static final int TOC_DEFAULT_MAX_LEVEL = 6;
+    /** The heading levels HTML has, and the ones a table of contents lists where its placeholder names none. */
+    private static final int MIN_HEADING_LEVEL = 1;
+    private static final int MAX_HEADING_LEVEL = 6;
 
     private static final List<String> WITHOUT_TEXT_BUT_VISIBLE = List.of(
             HtmlTag.BUTTON,
@@ -148,23 +148,27 @@ public class JSoupUtils {
 
     /** The first heading level the table of contents at this placeholder lists. */
     public int tocStartLevel(@NotNull Element tocPlaceholder) {
-        return tocLevel(tocPlaceholder, "tocInit", TOC_DEFAULT_START_LEVEL);
+        return tocLevel(tocPlaceholder, "tocInit", MIN_HEADING_LEVEL);
     }
 
     /** The last heading level the table of contents at this placeholder lists. */
     public int tocMaxLevel(@NotNull Element tocPlaceholder) {
-        return tocLevel(tocPlaceholder, "tocMax", TOC_DEFAULT_MAX_LEVEL);
+        return tocLevel(tocPlaceholder, "tocMax", MAX_HEADING_LEVEL);
     }
 
+    /**
+     * A heading level of the placeholder, held to h1-h6: the value comes from the document and may carry
+     * anything, while a level outside that range names no heading and a huge one takes a walk over the
+     * integers with it.
+     */
     private int tocLevel(@NotNull Element tocPlaceholder, @NotNull String attribute, int defaultLevel) {
         String level = tocPlaceholder.attr(attribute).trim();
         if (level.isEmpty()) {
             return defaultLevel;
         }
         try {
-            return Integer.parseInt(level);
+            return Math.clamp(Integer.parseInt(level), MIN_HEADING_LEVEL, MAX_HEADING_LEVEL);
         } catch (NumberFormatException e) {
-            // the value comes from the document and may carry anything; the table then lists the default levels
             return defaultLevel;
         }
     }
