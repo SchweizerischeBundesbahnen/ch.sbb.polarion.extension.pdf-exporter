@@ -15,7 +15,7 @@ public abstract class AbstractTOCGenerator implements DocumentTOCGenerator {
     @Override
     public void addTableOfContent(@NotNull Document document) {
         // find <pd4ml:toc> and replace
-        Element tocPlaceholder = document.getElementsByTag("pd4ml:toc").first();
+        Element tocPlaceholder = document.getElementsByTag(JSoupUtils.TOC_PLACEHOLDER_TAG).first();
         if (tocPlaceholder != null) {
             int startLevel = tocPlaceholder.hasAttr("tocInit") ? Integer.parseInt(tocPlaceholder.attr("tocInit")) : START_DEFAULT_NODE_NESTING;
             int maxLevel = tocPlaceholder.hasAttr("tocMax") ? Integer.parseInt(tocPlaceholder.attr("tocMax")) : MAX_DEFAULT_NODE_NESTING;

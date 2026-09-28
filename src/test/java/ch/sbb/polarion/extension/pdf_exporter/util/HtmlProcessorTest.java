@@ -207,6 +207,30 @@ class HtmlProcessorTest {
     }
 
     @Test
+    void cutEmptyChaptersKeepsAChapterHoldingATableOfContents() {
+        // The tables of contents, figures and tables are built after the empty chapters are cut, so at this
+        // point each is an empty placeholder. Taken for an empty chapter, the heading went and took the
+        // table with it: reported in #1072, where a heading above a table made both disappear.
+        Document document = JSoupUtils.parseHtml("""
+                <h1>Table of contents</h1><pd4ml:toc></pd4ml:toc>
+                <h1>Table of figures</h1><div id="polarion_wiki macro name=tof" data-sequence="Figure"></div>
+                <h1>Table of tables</h1><div id="polarion_wiki macro name=tof" data-sequence="Table"></div>
+                <h1>Truly empty</h1>
+                <h1>Chapter</h1><p>text</p>""");
+
+        processor.cutEmptyChapters(document);
+
+        String html = document.body().html();
+        assertTrue(html.contains("Table of contents"), html);
+        assertTrue(html.contains("Table of figures"), html);
+        assertTrue(html.contains("Table of tables"), html);
+        assertTrue(html.contains("<pd4ml:toc>"), html);
+        assertEquals(2, document.select(JSoupUtils.TOF_PLACEHOLDER_SELECTOR).size(), html);
+        // and a chapter which really holds nothing still goes
+        assertFalse(html.contains("Truly empty"), html);
+    }
+
+    @Test
     @SneakyThrows
     void cutEmptyWIAttributesTest() {
         try (InputStream isInvalidHtml = this.getClass().getResourceAsStream("/emptyWIAttributesBeforeProcessing.html");

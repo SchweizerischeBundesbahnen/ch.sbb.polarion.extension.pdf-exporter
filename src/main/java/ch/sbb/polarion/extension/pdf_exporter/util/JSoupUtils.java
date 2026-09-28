@@ -19,6 +19,12 @@ import java.util.List;
 @UtilityClass
 public class JSoupUtils {
 
+    /** The tag Polarion leaves where a table of contents goes; {@link AbstractTOCGenerator} builds the table over it. */
+    public static final String TOC_PLACEHOLDER_TAG = "pd4ml:toc";
+
+    /** The element Polarion leaves where a table of figures or of tables goes; {@code HtmlProcessor.addTableOfFigures} builds it. */
+    public static final String TOF_PLACEHOLDER_SELECTOR = "div[id*=macro name=tof][data-sequence]";
+
     private static final List<String> WITHOUT_TEXT_BUT_VISIBLE = List.of(
             HtmlTag.BUTTON,
             HtmlTag.CANVAS,
@@ -64,6 +70,13 @@ public class JSoupUtils {
             return false;
         }
 
+        // A table of contents, of figures or of tables is a placeholder at this point: the tables are built
+        // later in the pipeline, after the empty chapters are cut. Counted as empty, such a placeholder takes
+        // the chapter holding it with it - and the table with the chapter.
+        if (isTablePlaceholder(element)) {
+            return false;
+        }
+
         // Any element which contains any text inside is not empty
         if (!element.text().trim().isEmpty()) {
             return false;
@@ -77,6 +90,11 @@ public class JSoupUtils {
         }
 
         return true;
+    }
+
+    /** Whether the element stands for a table this pipeline builds later. */
+    public boolean isTablePlaceholder(@NotNull Element element) {
+        return TOC_PLACEHOLDER_TAG.equals(element.tagName()) || element.is(TOF_PLACEHOLDER_SELECTOR);
     }
 
     public List<Element> selectEmptyHeadings(@NotNull Document document, int headingLevel) {

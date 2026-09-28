@@ -1170,7 +1170,7 @@ public class HtmlProcessor {
 
     @VisibleForTesting
     void addTableOfFigures(@NotNull Document document) {
-        for (Element tofPlaceholder : document.select("div[id*=macro name=tof][data-sequence]")) {
+        for (Element tofPlaceholder : document.select(JSoupUtils.TOF_PLACEHOLDER_SELECTOR)) {
             String label = tofPlaceholder.dataset().get("sequence");
             Element tof = generateTableOfFigures(document, label);
             tofPlaceholder.before(tof);
