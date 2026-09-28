@@ -6,6 +6,7 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.id.DocumentId;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.id.DocumentProject;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.id.TestRuntId;
+import ch.sbb.polarion.extension.pdf_exporter.util.TestRunAttachmentUtils;
 import com.polarion.alm.projects.model.IUniqueObject;
 import com.polarion.alm.server.api.model.tr.ProxyTestRun;
 import com.polarion.alm.shared.api.transaction.ReadOnlyTransaction;
@@ -73,7 +74,9 @@ public class TestRunAdapter extends CommonUniqueObjectAdapter {
     public @Nullable List<Path> getAttachmentFiles(@NotNull ExportParams exportParams) throws IOException {
         if (exportParams.isEmbedAttachments()) {
             List<Path> attachmentFiles = new ArrayList<>();
-            for (IAttachmentBase attachment : testRun.getAttachments()) {
+            // The same attachments the export downloads next to the PDF when they are not embedded into it:
+            // the mask and the test case field say which ones either way.
+            for (IAttachmentBase attachment : TestRunAttachmentUtils.selectAttachments(testRun, exportParams.getAttachmentsFilter(), exportParams.getTestcaseFieldId())) {
                 attachmentFiles.add(createAttachmentTempFile(attachment));
             }
             return attachmentFiles;

@@ -20,7 +20,7 @@ import com.polarion.alm.shared.api.transaction.internal.InternalReadOnlyTransact
 import com.polarion.alm.shared.rpe.RpeModelAspect;
 import com.polarion.alm.shared.rpe.RpeRenderer;
 import com.polarion.alm.tracker.ITrackerService;
-import com.polarion.alm.tracker.model.IAttachmentBase;
+import com.polarion.alm.tracker.model.ITestRunAttachment;
 import com.polarion.alm.tracker.model.IBaseline;
 import com.polarion.alm.tracker.model.IModule;
 import com.polarion.alm.tracker.model.IRichPage;
@@ -255,7 +255,8 @@ class DocumentDataTest {
         when(testRun.getProject()).thenReturn(project);
         when(testRun.getLabel()).thenReturn("test run title");
 
-        IAttachmentBase attachment = mock(IAttachmentBase.class);
+        // A test run carries ITestRunAttachment, which is what the export reads to apply the file name mask
+        ITestRunAttachment attachment = mock(ITestRunAttachment.class);
         when(attachment.getFileName()).thenReturn("attachment.ext");
         when(attachment.getDataStream()).thenReturn(new ByteArrayInputStream("test content".getBytes(StandardCharsets.UTF_8)));
         IPObjectList attachments = new PObjectList(mock(IDataService.class), List.of(attachment));
