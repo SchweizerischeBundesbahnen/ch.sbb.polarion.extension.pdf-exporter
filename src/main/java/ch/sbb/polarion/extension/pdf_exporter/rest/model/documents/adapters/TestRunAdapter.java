@@ -17,6 +17,7 @@ import com.polarion.alm.shared.rpe.RpeModelAspect;
 import com.polarion.alm.shared.rpe.RpeRenderer;
 import com.polarion.alm.tracker.model.IAttachmentBase;
 import com.polarion.alm.tracker.model.ITestRun;
+import com.polarion.core.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -28,6 +29,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class TestRunAdapter extends CommonUniqueObjectAdapter {
+    private static final Logger logger = Logger.getLogger(TestRunAdapter.class);
+
     private final @NotNull ITestRun testRun;
 
     public TestRunAdapter(@NotNull ITestRun testRun) {
@@ -78,6 +81,11 @@ public class TestRunAdapter extends CommonUniqueObjectAdapter {
             // the mask and the test case field say which ones either way.
             for (IAttachmentBase attachment : TestRunAttachmentUtils.selectAttachments(testRun, exportParams.getAttachmentsFilter(), exportParams.getTestcaseFieldId())) {
                 attachmentFiles.add(createAttachmentTempFile(attachment));
+            }
+            if (attachmentFiles.isEmpty()) {
+                // Said plainly, because the PDF then carries no embedded file and the variant pdf/a-4f asks for one
+                logger.warn("Test run %s has no attachment to embed which matches the filter '%s'"
+                        .formatted(testRun.getId(), exportParams.getAttachmentsFilter()));
             }
             return attachmentFiles;
         } else {

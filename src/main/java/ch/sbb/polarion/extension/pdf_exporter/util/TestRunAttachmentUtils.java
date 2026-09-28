@@ -23,16 +23,10 @@ import java.util.Objects;
 public class TestRunAttachmentUtils {
 
     public @NotNull List<ITestRunAttachment> selectAttachments(@NotNull ITestRun testRun, @Nullable String filter, @Nullable String testCaseFilterFieldId) {
-        Boolean testRunFieldValue;
-        if (testCaseFilterFieldId != null) {
-            Object testRunFieldObj = testRun.getValue(testCaseFilterFieldId);
-            testRunFieldValue = testRunFieldObj instanceof Boolean b && b;
-        } else {
-            testRunFieldValue = false;
-        }
-
         List<ITestRunAttachment> attachments = new ArrayList<>(testRun.getAttachments()); // initially take all attachments
         if (!StringUtils.isEmpty(testCaseFilterFieldId)) {
+            // the value of the test run itself, which a test case leaving the field empty inherits
+            boolean testRunFieldValue = testRun.getValue(testCaseFilterFieldId) instanceof Boolean b && b;
             // filter out attachments from test records that do not match the test case filter
             testRun.getAllRecords().stream()
                     .filter(testRecord -> testRecord.getTestCase() != null)
