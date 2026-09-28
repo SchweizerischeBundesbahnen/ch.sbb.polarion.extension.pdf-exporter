@@ -228,6 +228,16 @@ describe('Style Packages page', () => {
     expect(input('expose-page-width-validation').checked).toBe(true);
   });
 
+  it('says the attachments options belong to a Test Run', async () => {
+    // Without it an administrator reasonably expects them to work for a Live Document too; #1071.
+    open();
+
+    await vi.waitFor(() => expect(input('embed-attachments')).not.toBeNull());
+    const text = document.body.textContent ?? '';
+    expect(text).toContain('Test Run attachments');
+    expect(text).toContain('apply to the export of a Test Run only');
+  });
+
   it('marks the child configurations that come from a parent scope', async () => {
     open();
     await loaded();

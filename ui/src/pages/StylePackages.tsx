@@ -1047,7 +1047,13 @@ export default function StylePackages() {
           </div>
         </div>
 
-        {/* Attachments of the exported work items. */}
+        {/* A test run's own attachments. No other document type is exported with any. */}
+        <h2 className="align-left">Test Run attachments</h2>
+        <p>
+          These options apply to the export of a Test Run only. Its attachments are downloaded next to the PDF, or
+          embedded into it, and the mask and the test case field below say which of them. An export of a Live Document,
+          a Live Report or a Wiki page carries no attachments, whatever is chosen here.
+        </p>
         <div className="flex-container section">
           <div className="flex-column">
             <div className="checkbox input-group">
