@@ -71,13 +71,15 @@ public class TocLeaf {
             pageNumberLink.addClass("page-number");
             tocItem.appendChild(pageNumberLink);
 
-            items.add(tocItem);
-
             if (!children.isEmpty()) {
+                // Inside the item, where a nested list belongs: a <ul> beside an <li> is no list at all, so it
+                // took neither the indent of its level nor the line height of the table
                 Element nestedList = new Element(HtmlTag.UL);
                 nestedList.appendChildren(children);
-                items.add(nestedList);
+                tocItem.appendChild(nestedList);
             }
+
+            items.add(tocItem);
 
             return items;
         } else {
