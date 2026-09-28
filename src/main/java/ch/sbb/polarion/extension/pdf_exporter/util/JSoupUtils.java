@@ -15,6 +15,8 @@ import org.jsoup.select.Elements;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.IntStream;
 
 @UtilityClass
 public class JSoupUtils {
@@ -24,6 +26,13 @@ public class JSoupUtils {
 
     /** The element Polarion leaves where a table of figures or of tables goes; {@code HtmlProcessor.addTableOfFigures} builds it. */
     public static final String TOF_PLACEHOLDER_SELECTOR = "div[id*=macro name=tof][data-sequence]";
+
+    /** The caption spans a table of figures or of tables is built over. Add the sequence of a table to it. */
+    public static final String CAPTION_SELECTOR = "p.polarion-rte-caption-paragraph span.polarion-rte-caption";
+
+    /** The heading levels a table of contents lists where its placeholder names none. */
+    private static final int TOC_DEFAULT_START_LEVEL = 1;
+    private static final int TOC_DEFAULT_MAX_LEVEL = 6;
 
     private static final List<String> WITHOUT_TEXT_BUT_VISIBLE = List.of(
             HtmlTag.BUTTON,
@@ -105,17 +114,50 @@ public class JSoupUtils {
             return false;
         }
         if (TOC_PLACEHOLDER_TAG.equals(element.tagName())) {
-            // the table of contents lists the headings which survive the cut, and there is at least one
-            // wherever a heading holds this placeholder
-            return !document.select("h1, h2, h3, h4, h5, h6").isEmpty();
+            // a table of contents lists the headings of its own levels only, so a document without one of those
+            // gets an empty table
+            return IntStream.rangeClosed(tocStartLevel(element), tocMaxLevel(element))
+                    .anyMatch(level -> !document.select("h" + level).isEmpty());
         }
         if (element.is(TOF_PLACEHOLDER_SELECTOR)) {
             String sequence = element.dataset().get("sequence");
-            // compared rather than selected: a sequence is a label of the document and may carry anything
-            return document.select("p.polarion-rte-caption-paragraph span.polarion-rte-caption[data-sequence]").stream()
-                    .anyMatch(caption -> caption.dataset().get("sequence").equals(sequence));
+            return document.select(CAPTION_SELECTOR + "[data-sequence]").stream()
+                    // compared rather than selected: a sequence is a label of the document and may carry anything
+                    .filter(caption -> Objects.equals(sequence, caption.dataset().get("sequence")))
+                    .anyMatch(caption -> readCaptionEntry(caption) != null);
         }
         return false;
+    }
+
+    /** The number and the title of a caption, as a table of figures or of tables lists them. */
+    public record CaptionEntry(@NotNull String number, @NotNull String title) {
+    }
+
+    /**
+     * The entry this caption gives a table of figures or of tables, or null where it gives none: Polarion writes
+     * the number into the span and the title after it, and a caption missing either one is left out of the table.
+     */
+    public @Nullable CaptionEntry readCaptionEntry(@NotNull Element captionSpan) {
+        Node numberNode = captionSpan.childNodes().stream().filter(TextNode.class::isInstance).findFirst().orElse(null);
+        Node titleNode = captionSpan.nextSibling();
+        if (numberNode instanceof TextNode number && titleNode instanceof TextNode title) {
+            return new CaptionEntry(number.text(), title.text());
+        }
+        return null;
+    }
+
+    /** The first heading level the table of contents at this placeholder lists. */
+    public int tocStartLevel(@NotNull Element tocPlaceholder) {
+        return tocLevel(tocPlaceholder, "tocInit", TOC_DEFAULT_START_LEVEL);
+    }
+
+    /** The last heading level the table of contents at this placeholder lists. */
+    public int tocMaxLevel(@NotNull Element tocPlaceholder) {
+        return tocLevel(tocPlaceholder, "tocMax", TOC_DEFAULT_MAX_LEVEL);
+    }
+
+    private int tocLevel(@NotNull Element tocPlaceholder, @NotNull String attribute, int defaultLevel) {
+        return tocPlaceholder.hasAttr(attribute) ? Integer.parseInt(tocPlaceholder.attr(attribute)) : defaultLevel;
     }
 
     public List<Element> selectEmptyHeadings(@NotNull Document document, int headingLevel) {

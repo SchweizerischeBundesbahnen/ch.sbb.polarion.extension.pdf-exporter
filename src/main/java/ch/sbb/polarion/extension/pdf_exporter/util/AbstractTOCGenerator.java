@@ -9,16 +9,14 @@ import org.jsoup.select.Elements;
 import java.util.concurrent.atomic.AtomicReference;
 
 public abstract class AbstractTOCGenerator implements DocumentTOCGenerator {
-    protected static final int START_DEFAULT_NODE_NESTING = 1;
-    protected static final int MAX_DEFAULT_NODE_NESTING = 6;
 
     @Override
     public void addTableOfContent(@NotNull Document document) {
         // find <pd4ml:toc> and replace
         Element tocPlaceholder = document.getElementsByTag(JSoupUtils.TOC_PLACEHOLDER_TAG).first();
         if (tocPlaceholder != null) {
-            int startLevel = tocPlaceholder.hasAttr("tocInit") ? Integer.parseInt(tocPlaceholder.attr("tocInit")) : START_DEFAULT_NODE_NESTING;
-            int maxLevel = tocPlaceholder.hasAttr("tocMax") ? Integer.parseInt(tocPlaceholder.attr("tocMax")) : MAX_DEFAULT_NODE_NESTING;
+            int startLevel = JSoupUtils.tocStartLevel(tocPlaceholder);
+            int maxLevel = JSoupUtils.tocMaxLevel(tocPlaceholder);
             Element tocElement = generateTableOfContent(document, startLevel, maxLevel); // support h1-h6
 
             tocPlaceholder.before(tocElement);

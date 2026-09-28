@@ -217,8 +217,8 @@ class HtmlProcessorTest {
                 <h1>Table of tables</h1><div id="polarion_wiki macro name=tof" data-sequence="Table"></div>
                 <h1>Truly empty</h1>
                 <h1>Chapter</h1>
-                <p class="polarion-rte-caption-paragraph"><span class="polarion-rte-caption" data-sequence="Figure">#</span></p>
-                <p class="polarion-rte-caption-paragraph"><span class="polarion-rte-caption" data-sequence="Table">#</span></p>""");
+                <p class="polarion-rte-caption-paragraph"><span class="polarion-rte-caption" data-sequence="Figure">1</span> a figure</p>
+                <p class="polarion-rte-caption-paragraph"><span class="polarion-rte-caption" data-sequence="Table">1</span> a table</p>""");
 
         processor.cutEmptyChapters(document);
 
@@ -239,13 +239,44 @@ class HtmlProcessorTest {
         Document document = JSoupUtils.parseHtml("""
                 <h1>Table of figures</h1><div id="polarion_wiki macro name=tof" data-sequence="Figure"></div>
                 <h1>Chapter</h1>
-                <p class="polarion-rte-caption-paragraph"><span class="polarion-rte-caption" data-sequence="Table">#</span></p>""");
+                <p class="polarion-rte-caption-paragraph"><span class="polarion-rte-caption" data-sequence="Table">1</span> a table</p>""");
 
         processor.cutEmptyChapters(document);
 
         String html = document.body().html();
         assertFalse(html.contains("Table of figures"), html);
         assertEquals(0, document.select(JSoupUtils.TOF_PLACEHOLDER_SELECTOR).size(), html);
+        assertTrue(html.contains("Chapter"), html);
+    }
+
+    @Test
+    void cutEmptyChaptersCutsAChapterWhoseCaptionsGiveNoEntry() {
+        // A caption gives an entry only where it carries a number and a title after it. Without one of those
+        // generateTableOfFigures leaves it out, so the table it feeds stays empty.
+        Document document = JSoupUtils.parseHtml("""
+                <h1>Table of figures</h1><div id="polarion_wiki macro name=tof" data-sequence="Figure"></div>
+                <h1>Chapter</h1>
+                <p class="polarion-rte-caption-paragraph"><span class="polarion-rte-caption" data-sequence="Figure">1</span></p>""");
+
+        processor.cutEmptyChapters(document);
+
+        String html = document.body().html();
+        assertFalse(html.contains("Table of figures"), html);
+        assertEquals(0, document.select(JSoupUtils.TOF_PLACEHOLDER_SELECTOR).size(), html);
+    }
+
+    @Test
+    void cutEmptyChaptersCutsAChapterWhoseTableOfContentsListsNoLevel() {
+        // A table of contents lists the heading levels of its own placeholder. This one lists h3 and deeper,
+        // and the document has none, so its table stays empty and its chapter goes.
+        Document document = JSoupUtils.parseHtml("""
+                <h1>Table of contents</h1><pd4ml:toc tocInit="3" tocMax="6"></pd4ml:toc>
+                <h1>Chapter</h1><p>text</p>""");
+
+        processor.cutEmptyChapters(document);
+
+        String html = document.body().html();
+        assertFalse(html.contains("Table of contents"), html);
         assertTrue(html.contains("Chapter"), html);
     }
 
