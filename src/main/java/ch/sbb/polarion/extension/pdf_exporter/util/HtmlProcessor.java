@@ -1152,7 +1152,7 @@ public class HtmlProcessor {
     void renumberCaptions(@NotNull Document document) {
         Map<String, Integer> sequenceCounters = new HashMap<>();
         // Scope must match generateTableOfFigures so the numbers stay consistent with the generated list.
-        for (Element captionSpan : document.select("p.polarion-rte-caption-paragraph span.polarion-rte-caption[data-sequence]")) {
+        for (Element captionSpan : document.select(JSoupUtils.CAPTION_SELECTOR + "[data-sequence]")) {
             String sequence = captionSpan.dataset().get("sequence");
             if (StringUtils.isEmpty(sequence)) {
                 continue;
@@ -1170,7 +1170,7 @@ public class HtmlProcessor {
 
     @VisibleForTesting
     void addTableOfFigures(@NotNull Document document) {
-        for (Element tofPlaceholder : document.select("div[id*=macro name=tof][data-sequence]")) {
+        for (Element tofPlaceholder : document.select(JSoupUtils.TOF_PLACEHOLDER_SELECTOR)) {
             String label = tofPlaceholder.dataset().get("sequence");
             Element tof = generateTableOfFigures(document, label);
             tofPlaceholder.before(tof);
@@ -1184,7 +1184,7 @@ public class HtmlProcessor {
         int generatedAnchorIndex = 0;
 
         // Find all caption spans with the specified data-sequence, regardless of whether they have anchors
-        for (Element captionSpan : document.select(String.format("p.polarion-rte-caption-paragraph span.polarion-rte-caption[data-sequence=%s]",
+        for (Element captionSpan : document.select(String.format(JSoupUtils.CAPTION_SELECTOR + "[data-sequence=%s]",
                 escapeCssSelectorValue(label)))) {
 
             // Check if anchor already exists inside the span
@@ -1203,14 +1203,14 @@ public class HtmlProcessor {
                 captionSpan.appendChild(newAnchor);
             }
 
-            Node numberNode = captionSpan.childNodes().stream().filter(TextNode.class::isInstance).findFirst().orElse(null);
-            String number = numberNode instanceof TextNode numberTextNode ? numberTextNode.text() : null;
-            Node captionNode = captionSpan.nextSibling();
-            String caption = captionNode instanceof TextNode captionTextNode ? captionTextNode.text() : null;
-
-            if (StringUtils.isEmpty(anchorId) || number == null || caption == null) {
+            // The rule which says what becomes an entry is shared with JSoupUtils.holdsTableWithEntries, which
+            // keeps the chapter of a table only where that table has entries.
+            JSoupUtils.CaptionEntry entry = JSoupUtils.readCaptionEntry(captionSpan);
+            if (StringUtils.isEmpty(anchorId) || entry == null) {
                 continue;
             }
+            String number = entry.number();
+            String caption = entry.title();
 
             while (caption.contains(COMMENT_START)) {
                 StringBuilder captionBuf = new StringBuilder(caption);

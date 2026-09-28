@@ -15,9 +15,24 @@ import org.jsoup.select.Elements;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.IntStream;
 
 @UtilityClass
 public class JSoupUtils {
+
+    /** The tag Polarion leaves where a table of contents goes; {@link AbstractTOCGenerator} builds the table over it. */
+    public static final String TOC_PLACEHOLDER_TAG = "pd4ml:toc";
+
+    /** The element Polarion leaves where a table of figures or of tables goes; {@code HtmlProcessor.addTableOfFigures} builds it. */
+    public static final String TOF_PLACEHOLDER_SELECTOR = "div[id*=macro name=tof][data-sequence]";
+
+    /** The caption spans a table of figures or of tables is built over. Add the sequence of a table to it. */
+    public static final String CAPTION_SELECTOR = "p.polarion-rte-caption-paragraph span.polarion-rte-caption";
+
+    /** The heading levels HTML has, and the ones a table of contents lists where its placeholder names none. */
+    private static final int MIN_HEADING_LEVEL = 1;
+    private static final int MAX_HEADING_LEVEL = 6;
 
     private static final List<String> WITHOUT_TEXT_BUT_VISIBLE = List.of(
             HtmlTag.BUTTON,
@@ -64,6 +79,13 @@ public class JSoupUtils {
             return false;
         }
 
+        // A table of contents, of figures or of tables is a placeholder at this point: the tables are built
+        // later in the pipeline, after the empty chapters are cut. Counted as empty, such a placeholder takes
+        // the chapter holding it with it - and the table with the chapter.
+        if (holdsTableWithEntries(element)) {
+            return false;
+        }
+
         // Any element which contains any text inside is not empty
         if (!element.text().trim().isEmpty()) {
             return false;
@@ -77,6 +99,78 @@ public class JSoupUtils {
         }
 
         return true;
+    }
+
+    /**
+     * Whether the element stands for a table this pipeline builds later, and that table will have entries.
+     * <p>
+     * A placeholder whose table stays empty is left to count as empty content: the chapter holding nothing but
+     * an empty list is cut, which is what happened before these tables were kept at all.
+     * </p>
+     */
+    public boolean holdsTableWithEntries(@NotNull Element element) {
+        Document document = element.ownerDocument();
+        if (document == null) {
+            return false;
+        }
+        if (TOC_PLACEHOLDER_TAG.equals(element.tagName())) {
+            // a table of contents lists the headings of its own levels only, so a document without one of those
+            // gets an empty table
+            return IntStream.rangeClosed(tocStartLevel(element), tocMaxLevel(element))
+                    .anyMatch(level -> !document.select("h" + level).isEmpty());
+        }
+        if (element.is(TOF_PLACEHOLDER_SELECTOR)) {
+            String sequence = element.dataset().get("sequence");
+            return document.select(CAPTION_SELECTOR + "[data-sequence]").stream()
+                    // compared rather than selected: a sequence is a label of the document and may carry anything
+                    .filter(caption -> Objects.equals(sequence, caption.dataset().get("sequence")))
+                    .anyMatch(caption -> readCaptionEntry(caption) != null);
+        }
+        return false;
+    }
+
+    /** The number and the title of a caption, as a table of figures or of tables lists them. */
+    public record CaptionEntry(@NotNull String number, @NotNull String title) {
+    }
+
+    /**
+     * The entry this caption gives a table of figures or of tables, or null where it gives none: Polarion writes
+     * the number into the span and the title after it, and a caption missing either one is left out of the table.
+     */
+    public @Nullable CaptionEntry readCaptionEntry(@NotNull Element captionSpan) {
+        Node numberNode = captionSpan.childNodes().stream().filter(TextNode.class::isInstance).findFirst().orElse(null);
+        Node titleNode = captionSpan.nextSibling();
+        if (numberNode instanceof TextNode number && titleNode instanceof TextNode title) {
+            return new CaptionEntry(number.text(), title.text());
+        }
+        return null;
+    }
+
+    /** The first heading level the table of contents at this placeholder lists. */
+    public int tocStartLevel(@NotNull Element tocPlaceholder) {
+        return tocLevel(tocPlaceholder, "tocInit", MIN_HEADING_LEVEL);
+    }
+
+    /** The last heading level the table of contents at this placeholder lists. */
+    public int tocMaxLevel(@NotNull Element tocPlaceholder) {
+        return tocLevel(tocPlaceholder, "tocMax", MAX_HEADING_LEVEL);
+    }
+
+    /**
+     * A heading level of the placeholder, held to h1-h6: the value comes from the document and may carry
+     * anything, while a level outside that range names no heading and a huge one takes a walk over the
+     * integers with it.
+     */
+    private int tocLevel(@NotNull Element tocPlaceholder, @NotNull String attribute, int defaultLevel) {
+        String level = tocPlaceholder.attr(attribute).trim();
+        if (level.isEmpty()) {
+            return defaultLevel;
+        }
+        try {
+            return Math.clamp(Integer.parseInt(level), MIN_HEADING_LEVEL, MAX_HEADING_LEVEL);
+        } catch (NumberFormatException e) {
+            return defaultLevel;
+        }
     }
 
     public List<Element> selectEmptyHeadings(@NotNull Document document, int headingLevel) {
