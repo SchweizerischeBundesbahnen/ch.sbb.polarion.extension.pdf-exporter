@@ -1,5 +1,5 @@
 import CustomTemplatesPage from '../components/CustomTemplatesPage';
-import Placeholders from '../components/Placeholders';
+import TemplateQuickHelp, { SubstitutionRules } from '../components/TemplateQuickHelp';
 
 /** PDF Exporter: Header and footer - the six cells printed on every page of the exported PDF. */
 export default function HeaderFooter() {
@@ -51,7 +51,19 @@ export default function HeaderFooter() {
           placeholder: "Enter template of footer's right part here",
         },
       ]}
-      footer={<Placeholders />}
+      footer={
+        <TemplateQuickHelp title="How-to configure PDF header and footer">
+          <p>
+            Header and footer divided into 3 parts: left, center and right sections. Each section can be configured
+            using HTML, where you can insert special variables (upper case, exactly like in table below) and
+            document&apos;s custom fields (case-sensitive custom field ID, exactly how it&apos;s configured in
+            administration pane), both enclosed in double curly brackets, eg.:{' '}
+            <span className="monospace">{'{{ DOCUMENT_TITLE }}'}</span> for special variables or{' '}
+            <span className="monospace">{'{{ docRevision }}'}</span> for document&apos;s custom fields.
+          </p>
+          <SubstitutionRules subject="Header and footer parts" />
+        </TemplateQuickHelp>
+      }
     />
   );
 }
