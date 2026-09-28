@@ -157,7 +157,16 @@ public class JSoupUtils {
     }
 
     private int tocLevel(@NotNull Element tocPlaceholder, @NotNull String attribute, int defaultLevel) {
-        return tocPlaceholder.hasAttr(attribute) ? Integer.parseInt(tocPlaceholder.attr(attribute)) : defaultLevel;
+        String level = tocPlaceholder.attr(attribute).trim();
+        if (level.isEmpty()) {
+            return defaultLevel;
+        }
+        try {
+            return Integer.parseInt(level);
+        } catch (NumberFormatException e) {
+            // the value comes from the document and may carry anything; the table then lists the default levels
+            return defaultLevel;
+        }
     }
 
     public List<Element> selectEmptyHeadings(@NotNull Document document, int headingLevel) {

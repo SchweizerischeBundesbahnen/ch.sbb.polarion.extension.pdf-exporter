@@ -266,6 +266,20 @@ class HtmlProcessorTest {
     }
 
     @Test
+    void cutEmptyChaptersReadsTheDefaultLevelsWhereTheTableOfContentsNamesNoneItCanRead() {
+        // The levels come from the document and may carry anything. Such a value leaves the table on h1-h6,
+        // the levels it lists where its placeholder names none - the export is not worth failing over it.
+        Document document = JSoupUtils.parseHtml("""
+                <h1>Table of contents</h1><pd4ml:toc tocInit="none"></pd4ml:toc>
+                <h1>Chapter</h1><p>text</p>""");
+
+        processor.cutEmptyChapters(document);
+
+        String html = document.body().html();
+        assertTrue(html.contains("Table of contents"), html);
+    }
+
+    @Test
     void cutEmptyChaptersCutsAChapterWhoseTableOfContentsListsNoLevel() {
         // A table of contents lists the heading levels of its own placeholder. This one lists h3 and deeper,
         // and the document has none, so its table stays empty and its chapter goes.
