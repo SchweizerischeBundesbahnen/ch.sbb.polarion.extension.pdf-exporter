@@ -43,7 +43,12 @@ export default function FilenameTemplate() {
             contain Velocity expressions that are dynamically evaluated, allowing for the inclusion of dynamic values.
           </p>
           <p>
-            For example:{' '}
+            Each template gets the object it names: <span className="monospace">$document</span> for a Live Document,{' '}
+            <span className="monospace">$page</span> for a Live Report and <span className="monospace">$testrun</span>{' '}
+            for a Test Run. <span className="monospace">$projectName</span> is there for all three.
+          </p>
+          <p>
+            For example, in the report template:{' '}
             <span className="monospace">{'{{ PROJECT_NAME }} $page.spaceId $page.titleOrName $page.lastRevision'}</span>
           </p>
         </TemplateQuickHelp>

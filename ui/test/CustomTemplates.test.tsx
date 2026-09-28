@@ -126,6 +126,9 @@ describe('Filename template page', () => {
     expect(help.textContent).toContain('How to configure Filename template');
     expect(help.textContent).toContain('Velocity expressions that are dynamically evaluated');
     expect(help.textContent).toContain('$page.spaceId $page.titleOrName $page.lastRevision');
+    // Each editor gets its own object, so one example is not enough: $page is a report's
+    expect(help.textContent).toContain('$document');
+    expect(help.textContent).toContain('$testrun');
     expect(help.textContent).toContain('Supported special variables');
   });
 
