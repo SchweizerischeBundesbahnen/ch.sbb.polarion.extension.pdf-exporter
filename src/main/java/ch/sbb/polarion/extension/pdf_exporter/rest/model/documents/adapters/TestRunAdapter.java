@@ -84,8 +84,8 @@ public class TestRunAdapter extends CommonUniqueObjectAdapter {
             }
             if (attachmentFiles.isEmpty()) {
                 // Said plainly, because the PDF then carries no embedded file and the variant pdf/a-4f asks for one
-                logger.warn("Test run %s has no attachment to embed which matches the filter '%s'"
-                        .formatted(testRun.getId(), exportParams.getAttachmentsFilter()));
+                logger.warn("Test run %s has no attachment to embed: none is left by the filter '%s' and the test case field '%s'"
+                        .formatted(testRun.getId(), exportParams.getAttachmentsFilter(), exportParams.getTestcaseFieldId()));
             }
             return attachmentFiles;
         } else {
