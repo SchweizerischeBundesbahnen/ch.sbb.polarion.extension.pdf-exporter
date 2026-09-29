@@ -75,14 +75,33 @@ public class TableAnalyzer {
         return new Font(Font.SANS_SERIF, Font.PLAIN, 12);
     }
 
+    /**
+     * The width of every column of the table, and the height its header takes.
+     *
+     * @param columnWidths the width of each column, proportionally adjusted to the width of a page
+     * @param headerHeight the height of the rows the table repeats on every page it spans
+     */
+    public record TableMetrics(@NotNull Map<Integer, Integer> columnWidths, int headerHeight) {
+    }
+
     public Map<Integer, Integer> getColumnWidths(@NotNull Element tableElement, int pageWidth) {
+        return analyze(tableElement, pageWidth).columnWidths();
+    }
+
+    public TableMetrics analyze(@NotNull Element tableElement, int pageWidth) {
         Map<Integer, Integer> columnWidths = new HashMap<>();
+        HeaderHeight headerHeight = new HeaderHeight();
 
         Document doc = toSelfDocument(tableElement);
         Box rootBox = render(doc, pageWidth);
-        findTableAndAnalyze(rootBox, columnWidths);
+        findTableAndAnalyze(rootBox, columnWidths, headerHeight);
 
-        return adjustWidths(columnWidths, pageWidth);
+        return new TableMetrics(adjustWidths(columnWidths, pageWidth), headerHeight.value);
+    }
+
+    /** The height the header rows take, gathered while the rendered table is walked. */
+    private static class HeaderHeight {
+        private int value;
     }
 
     private Document toSelfDocument(@NotNull Element tableElement) {
@@ -121,36 +140,40 @@ public class TableAnalyzer {
         }
     }
 
-    private void findTableAndAnalyze(Box box, Map<Integer, Integer> columnWidths) {
+    private void findTableAndAnalyze(Box box, Map<Integer, Integer> columnWidths, HeaderHeight headerHeight) {
         if (box == null) {
             return;
         }
 
         // Check if this is a table box
         if (box.getElement() != null && TABLE.equalsIgnoreCase(box.getElement().getNodeName())) {
-            gatherColumnWidths(box, columnWidths);
+            gatherColumnWidths(box, columnWidths, headerHeight);
             return; // Found and analyzed, no need to go deeper
         }
 
         // Recursively search children
         if (box instanceof LineBox lineBox) {
             for (Box inlinedBox : lineBox.getNonFlowContent()) {
-                findTableAndAnalyze(inlinedBox, columnWidths);
+                findTableAndAnalyze(inlinedBox, columnWidths, headerHeight);
             }
         } else {
             for (int i = 0; i < box.getChildCount(); i++) {
-                findTableAndAnalyze(box.getChild(i), columnWidths);
+                findTableAndAnalyze(box.getChild(i), columnWidths, headerHeight);
             }
         }
     }
 
-    private void gatherColumnWidths(@NotNull Box tableBox, @NotNull Map<Integer, Integer> columnWidths) {
+    private void gatherColumnWidths(@NotNull Box tableBox, @NotNull Map<Integer, Integer> columnWidths, @NotNull HeaderHeight headerHeight) {
         List<Box> tbody = findChildrenByTag(tableBox, TBODY);
         List<Box> rows = findChildrenByTag(!tbody.isEmpty() ? tbody.getFirst() : tableBox, TR);
 
         // Analyze all rows to properly handle colspan
         for (Box row : rows) {
             List<Box> cells = findChildrenByTag(row, TD, TH);
+            if (!cells.isEmpty() && cells.stream().allMatch(cell -> TH.equalsIgnoreCase(cell.getElement().getNodeName()))) {
+                // A row of header cells is repeated on every page the table spans, so it takes its height there
+                headerHeight.value += row.getHeight();
+            }
             int columnIndex = 0;
 
             for (Box cell : cells) {

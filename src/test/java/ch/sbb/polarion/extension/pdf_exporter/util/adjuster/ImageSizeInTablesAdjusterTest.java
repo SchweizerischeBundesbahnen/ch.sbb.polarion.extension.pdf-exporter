@@ -94,8 +94,8 @@ class ImageSizeInTablesAdjusterTest {
 
         // Mock TableAnalyzer.getColumnWidths to return an empty map
         try (var mockedTableAnalyzer = mockStatic(TableAnalyzer.class)) {
-            mockedTableAnalyzer.when(() -> TableAnalyzer.getColumnWidths(any(Element.class), anyInt()))
-                    .thenReturn(Collections.emptyMap());
+            mockedTableAnalyzer.when(() -> TableAnalyzer.analyze(any(Element.class), anyInt()))
+                    .thenReturn(new TableAnalyzer.TableMetrics(Collections.emptyMap(), 0));
 
             ImageSizeInTablesAdjuster adjuster = new ImageSizeInTablesAdjuster(doc, ConversionParams.builder().build());
             adjuster.execute();

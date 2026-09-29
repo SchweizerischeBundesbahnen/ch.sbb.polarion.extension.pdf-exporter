@@ -36,7 +36,10 @@ public class ImageSizeAdjuster extends AbstractAdjuster {
         CSSDeclarationList cssStyles = CssUtils.parseDeclarations(style);
 
         // As a fallback we always restrict max height for the cases when image doesn't have any explicit width/height attributes
-        CssUtils.setPropertyValue(cssStyles, CssProp.MAX_HEIGHT, (int) maxHeight + Measure.PX);
+        if (CssUtils.getPropertyValue(cssStyles, CssProp.MAX_HEIGHT).isEmpty()) {
+            // A table limits the image it holds to less than a page, leaving room for the header it repeats
+            CssUtils.setPropertyValue(cssStyles, CssProp.MAX_HEIGHT, (int) maxHeight + Measure.PX);
+        }
         if (!statesHeight(img, cssStyles) && CssUtils.getPropertyValue(cssStyles, CssProp.OBJECT_FIT).isEmpty()) {
             // That clamp shortens the height alone, the width being the one given: the image is then stretched.
             // Only the drawing follows this property, so an image which states its own height keeps what it states,

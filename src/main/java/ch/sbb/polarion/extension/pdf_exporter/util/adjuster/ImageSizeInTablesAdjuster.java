@@ -20,6 +20,12 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
 
     private static final String TD_TH_SELECTOR = String.format("%s, %s", HtmlTag.TD, HtmlTag.TH);
 
+    /** What a cell adds around the image it holds: the padding Polarion writes and the border of the cell. */
+    private static final int CELL_CHROME_PX = 16;
+
+    /** However tall a header grows, an image is still worth seeing. */
+    private static final int MIN_IMAGE_HEIGHT_PX = 100;
+
     public ImageSizeInTablesAdjuster(@NotNull Document document, @NotNull ConversionParams conversionParams) {
         super(document, conversionParams);
     }
@@ -35,9 +41,12 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
             }
 
             // Pre-render table and get rendered column widths proportionally adjusted to page width
-            Map<Integer, Integer> columnWidths = TableAnalyzer.getColumnWidths(table, PaperSizeUtils.getMaxWidth(conversionParams));
+            TableAnalyzer.TableMetrics metrics = TableAnalyzer.analyze(table, PaperSizeUtils.getMaxWidth(conversionParams));
+            Map<Integer, Integer> columnWidths = metrics.columnWidths();
 
             for (Element img : images) {
+                limitHeight(img, metrics.headerHeight());
+
                 float cssWidth = extractWidth(img, CssProp.WIDTH);
                 float cssMaxWidth = extractWidth(img, CssProp.MAX_WIDTH);
 
@@ -51,6 +60,23 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
                 }
             }
         }
+    }
+
+    /**
+     * A row which fills the page to its last pixel cannot carry the header of its table: the header is then
+     * left on the page before, above nothing, or dropped altogether. The image gives that height up.
+     */
+    private void limitHeight(Element img, int headerHeight) {
+        if (!img.hasAttr(HtmlTagAttr.STYLE)) {
+            // An image which states nothing about its size is left as it is, the way the page-wide clamp leaves it
+            return;
+        }
+
+        int allowedHeight = Math.max(PaperSizeUtils.getMaxHeight(conversionParams) - headerHeight - CELL_CHROME_PX, MIN_IMAGE_HEIGHT_PX);
+
+        CSSDeclarationList cssStyles = CssUtils.parseDeclarations(img.attr(HtmlTagAttr.STYLE));
+        CssUtils.setPropertyValue(cssStyles, CssProp.MAX_HEIGHT, allowedHeight + Measure.PX);
+        img.attr(HtmlTagAttr.STYLE, cssStyles.getAsCSSString());
     }
 
     private float extractWidth(Element img, String property) {
