@@ -77,7 +77,7 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
         }
 
         CssUtils.setPropertyValue(cssStyles, CssProp.MAX_HEIGHT, allowedHeight + Measure.PX);
-        if (statedSize(img, cssStyles, CssProp.HEIGHT) > allowedHeight) {
+        if (statedSize(img, cssStyles, CssProp.HEIGHT) > allowedHeight && CssUtils.getPropertyValue(cssStyles, CssProp.OBJECT_FIT).isEmpty()) {
             // The limit cuts into the height the image states, and a height cut alone squashes the drawing
             CssUtils.setPropertyValue(cssStyles, CssProp.OBJECT_FIT, CssProp.OBJECT_FIT_CONTAIN_VALUE);
         }

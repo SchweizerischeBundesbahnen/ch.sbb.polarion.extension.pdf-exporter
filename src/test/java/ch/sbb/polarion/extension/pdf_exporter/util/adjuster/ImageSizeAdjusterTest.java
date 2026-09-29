@@ -53,11 +53,22 @@ class ImageSizeAdjusterTest {
     }
 
     @Test
-    void leavesALimitStatedInAUnitItDoesNotRead() {
-        Document document = Jsoup.parse("<img id='test' style='max-height: 5cm;'/>");
+    void readsALimitStatedInAUnitOfItsOwn() {
+        Document shortEnough = Jsoup.parse("<img id='test' style='max-height: 5cm;'/>");
+        new ImageSizeAdjuster(shortEnough, ConversionParams.builder().build()).execute();
+        assertEquals("5cm", propertyOf(shortEnough, CssProp.MAX_HEIGHT), "5 cm is 189 px, which the page holds");
+
+        Document tooTall = Jsoup.parse("<img id='test' style='max-height: 100cm;'/>");
+        new ImageSizeAdjuster(tooTall, ConversionParams.builder().build()).execute();
+        assertEquals("874px", propertyOf(tooTall, CssProp.MAX_HEIGHT), "100 cm is taller than the page it is printed on");
+    }
+
+    @Test
+    void leavesALimitWhichCannotBeReadWithoutTheElementItSitsOn() {
+        Document document = Jsoup.parse("<img id='test' style='max-height: 50%;'/>");
         new ImageSizeAdjuster(document, ConversionParams.builder().build()).execute();
 
-        assertEquals("5cm", propertyOf(document, CssProp.MAX_HEIGHT), "What the document wrote stands where it cannot be read as pixels");
+        assertEquals("50%", propertyOf(document, CssProp.MAX_HEIGHT), "Half of what the image sits in is not a length this reads");
     }
 
     @Test
