@@ -61,8 +61,8 @@ class LiveDocTOCGeneratorTest {
 
     @Test
     void tableOfContentNestsALevelInsideItsItem() {
-        // A <ul> beside an <li> is no list: the level took neither its indent nor the line height of the
-        // table, which is the uneven spacing of #1075.
+        // A <ul> directly inside a <ul> is invalid markup, forgiven by the browsers rather than correct.
+        // The uneven spacing of #1075 came from the margin of the nested list, not from this.
         Document document = JSoupUtils.parseHtml("""
                 <pd4ml:toc></pd4ml:toc>
                 <h1><a id="one"></a>1 One</h1>
@@ -91,6 +91,20 @@ class LiveDocTOCGeneratorTest {
         assertTrue(html.contains("</ul><p id=\"after\">"), html);
         // and a line break which belongs to the content stays
         assertEquals(1, document.select("p#after br").size(), html);
+    }
+
+    @Test
+    void tableOfContentDropsTheLineBreakNestedInASelfClosedPlaceholder() {
+        // jsoup 1.21.2+ reads a self-closing unknown tag as an opening one, so what follows becomes its
+        // children - which is the shape every document of Polarion has.
+        Document document = JSoupUtils.parseHtml("""
+                <pd4ml:toc numlen="4" /><br/><p id="after">text</p>
+                <h1><a id="one"></a>1 One</h1>""");
+
+        new LiveDocTOCGenerator().addTableOfContent(document);
+
+        String html = document.body().html();
+        assertTrue(html.contains("</ul><p id=\"after\">"), html);
     }
 
     @Test
