@@ -7,6 +7,7 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ConversionPa
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.Orientation;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PaperSize;
 import ch.sbb.polarion.extension.pdf_exporter.util.CssUtils;
+import ch.sbb.polarion.extension.pdf_exporter.util.PaperSizeUtils;
 import com.helger.css.decl.CSSDeclarationList;
 import com.helger.css.reader.CSSReaderDeclarationList;
 import org.jsoup.Jsoup;
@@ -188,6 +189,50 @@ class ImageSizeInTablesAdjusterTest {
 
         CSSDeclarationList cssStyles = parseCss(doc.getElementById("test-img").attr(HtmlTagAttr.STYLE));
         assertEquals("", CssUtils.getPropertyValue(cssStyles, CssProp.HEIGHT), "A height stated for a width the image no longer has would distort it");
+    }
+
+    @Test
+    void testImageInATableIsLimitedToThePageLessItsHeader() {
+        String html = """
+                <table>
+                    <tr><th>Diagram</th><th>Note</th></tr>
+                    <tr><td><img id='test-img' src='tall.svg'/></td><td>Taller than a page</td></tr>
+                </table>
+                """;
+
+        Document doc = Jsoup.parse(html);
+        new ImageSizeInTablesAdjuster(doc, ConversionParams.builder().build()).execute();
+
+        CSSDeclarationList cssStyles = parseCss(doc.getElementById("test-img").attr(HtmlTagAttr.STYLE));
+        float limit = pixelsOf(cssStyles, CssProp.MAX_HEIGHT);
+        assertTrue(limit > 0 && limit < PaperSizeUtils.getMaxHeight(ConversionParams.builder().build()),
+                "The page less the height of the header is what the image is given, and it states no size of its own");
+    }
+
+    @Test
+    void testImageWhichAsksForLessThanThePageKeepsWhatItAsksFor() {
+        String html = """
+                <table>
+                    <tr><th>Diagram</th><th>Note</th></tr>
+                    <tr><td><img id='test-img' src='tall.svg' style='max-height: 200px;'/></td><td>Note</td></tr>
+                </table>
+                """;
+
+        Document doc = Jsoup.parse(html);
+        new ImageSizeInTablesAdjuster(doc, ConversionParams.builder().build()).execute();
+
+        CSSDeclarationList cssStyles = parseCss(doc.getElementById("test-img").attr(HtmlTagAttr.STYLE));
+        assertEquals(200f, pixelsOf(cssStyles, CssProp.MAX_HEIGHT), "A limit the document states is smaller than the page, so it stands");
+    }
+
+    private float pixelsOf(CSSDeclarationList cssStyles, String property) {
+        String value = CssUtils.getPropertyValue(cssStyles, property);
+        assertTrue(value.endsWith(Measure.PX), property + " is stated in pixels, and reads '" + value + "'");
+        try {
+            return Float.parseFloat(value.replace(Measure.PX, ""));
+        } catch (NumberFormatException e) {
+            return fail(property + " reads '" + value + "', which is no number");
+        }
     }
 
     private CSSDeclarationList parseCss(String style) {

@@ -67,14 +67,15 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
      * left on the page before, above nothing, or dropped altogether. The image gives that height up.
      */
     private void limitHeight(Element img, int headerHeight) {
-        if (!img.hasAttr(HtmlTagAttr.STYLE)) {
-            // An image which states nothing about its size is left as it is, the way the page-wide clamp leaves it
-            return;
-        }
-
         int allowedHeight = Math.max(PaperSizeUtils.getMaxHeight(conversionParams) - headerHeight - CELL_CHROME_PX, MIN_IMAGE_HEIGHT_PX);
 
         CSSDeclarationList cssStyles = CssUtils.parseDeclarations(img.attr(HtmlTagAttr.STYLE));
+        float statedHeight = extractPixels(CssUtils.getPropertyValue(cssStyles, CssProp.MAX_HEIGHT));
+        if (statedHeight > 0 && statedHeight <= allowedHeight) {
+            // The image asks for less than the page leaves it, and what it asks for is what it keeps
+            return;
+        }
+
         CssUtils.setPropertyValue(cssStyles, CssProp.MAX_HEIGHT, allowedHeight + Measure.PX);
         img.attr(HtmlTagAttr.STYLE, cssStyles.getAsCSSString());
     }

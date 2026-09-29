@@ -37,6 +37,22 @@ class ImageSizeAdjusterTest {
     }
 
     @Test
+    void keepsALimitSmallerThanThePage() {
+        Document document = Jsoup.parse("<img id='test' style='max-height: 200px;'/>");
+        new ImageSizeAdjuster(document, ConversionParams.builder().build()).execute();
+
+        assertEquals("200px", propertyOf(document, CssProp.MAX_HEIGHT), "A table leaves room for its header this way, and a document may ask for less too");
+    }
+
+    @Test
+    void bringsALimitLargerThanThePageBackToIt() {
+        Document document = Jsoup.parse("<img id='test' style='max-height: 2000px;'/>");
+        new ImageSizeAdjuster(document, ConversionParams.builder().build()).execute();
+
+        assertEquals("874px", propertyOf(document, CssProp.MAX_HEIGHT), "Nothing is taller than the page it is printed on");
+    }
+
+    @Test
     void restrictsTheHeightOfEveryImage() {
         Document document = Jsoup.parse("<img id='test' style='width: 592px;'/>");
         new ImageSizeAdjuster(document, ConversionParams.builder().build()).execute();
