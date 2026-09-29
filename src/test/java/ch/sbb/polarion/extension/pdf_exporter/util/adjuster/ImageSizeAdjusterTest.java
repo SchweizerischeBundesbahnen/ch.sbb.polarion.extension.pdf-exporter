@@ -53,6 +53,14 @@ class ImageSizeAdjusterTest {
     }
 
     @Test
+    void leavesALimitStatedInAUnitItDoesNotRead() {
+        Document document = Jsoup.parse("<img id='test' style='max-height: 5cm;'/>");
+        new ImageSizeAdjuster(document, ConversionParams.builder().build()).execute();
+
+        assertEquals("5cm", propertyOf(document, CssProp.MAX_HEIGHT), "What the document wrote stands where it cannot be read as pixels");
+    }
+
+    @Test
     void restrictsTheHeightOfEveryImage() {
         Document document = Jsoup.parse("<img id='test' style='width: 592px;'/>");
         new ImageSizeAdjuster(document, ConversionParams.builder().build()).execute();

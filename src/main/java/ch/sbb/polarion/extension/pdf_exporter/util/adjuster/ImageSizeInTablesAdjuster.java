@@ -77,7 +77,17 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
         }
 
         CssUtils.setPropertyValue(cssStyles, CssProp.MAX_HEIGHT, allowedHeight + Measure.PX);
+        if (statedSize(img, cssStyles, CssProp.HEIGHT) > allowedHeight) {
+            // The limit cuts into the height the image states, and a height cut alone squashes the drawing
+            CssUtils.setPropertyValue(cssStyles, CssProp.OBJECT_FIT, CssProp.OBJECT_FIT_CONTAIN_VALUE);
+        }
         img.attr(HtmlTagAttr.STYLE, cssStyles.getAsCSSString());
+    }
+
+    /** The size the image states in pixels, from its style or from its attribute. */
+    private float statedSize(Element img, CSSDeclarationList cssStyles, String property) {
+        String value = CssUtils.getPropertyValue(cssStyles, property);
+        return value.isEmpty() ? parseNumber(img.attr(property)) : extractPixels(value);
     }
 
     private float extractWidth(Element img, String property) {

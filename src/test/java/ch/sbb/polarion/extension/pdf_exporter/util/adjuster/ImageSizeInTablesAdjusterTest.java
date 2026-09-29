@@ -225,6 +225,23 @@ class ImageSizeInTablesAdjusterTest {
         assertEquals(200f, pixelsOf(cssStyles, CssProp.MAX_HEIGHT), "A limit the document states is smaller than the page, so it stands");
     }
 
+    @Test
+    void testImageCutByTheLimitKeepsItsShape() {
+        String html = """
+                <table>
+                    <tr><th>Diagram</th><th>Note</th></tr>
+                    <tr><td><img id='test-img' src='tall.jpg' width='300' height='3000'/></td><td>Note</td></tr>
+                </table>
+                """;
+
+        Document doc = Jsoup.parse(html);
+        new ImageSizeInTablesAdjuster(doc, ConversionParams.builder().build()).execute();
+
+        CSSDeclarationList cssStyles = parseCss(doc.getElementById("test-img").attr(HtmlTagAttr.STYLE));
+        assertEquals(CssProp.OBJECT_FIT_CONTAIN_VALUE, CssUtils.getPropertyValue(cssStyles, CssProp.OBJECT_FIT),
+                "The limit cuts into the 3000 px the image states, and a height cut alone squashes the drawing");
+    }
+
     private float pixelsOf(CSSDeclarationList cssStyles, String property) {
         String value = CssUtils.getPropertyValue(cssStyles, property);
         assertTrue(value.endsWith(Measure.PX), property + " is stated in pixels, and reads '" + value + "'");
