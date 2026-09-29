@@ -55,9 +55,6 @@ class ImageSizeTest extends BaseWeasyPrintTest {
     /** A diagram of the system test's own document, 81x1521 px, taller than a page. */
     private static final String TALL_SVG = readImageResource("diagram_20251002-1153.37186.mxg.svg");
 
-    /** A diagram of the system test's own document, 1361x81 px, wider than a page. */
-    private static final String WIDE_SVG = readImageResource("diagram_20251001-1814.45899.mxg.svg");
-
     /** The pages the document of the fit to page system test runs to. */
     private static final int DOCUMENT_PAGES = 6;
 
