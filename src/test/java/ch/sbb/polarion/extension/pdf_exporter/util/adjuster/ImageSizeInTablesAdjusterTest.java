@@ -134,6 +134,24 @@ class ImageSizeInTablesAdjusterTest {
         assertNotEquals("", CssUtils.getPropertyValue(cssStyles, CssProp.MAX_WIDTH), "The column is what limits the image");
     }
 
+    @Test
+    void testImageWhichStatesItsWidthAsAnAttributeIsFittedToTheColumn() {
+        String html = """
+                <table>
+                    <tr>
+                        <td><img id='test-img' src='wide.jpg' width='800' style='max-width: 900px;'/></td>
+                        <td><img src='placeholder.jpg' width='100' height='100' style='width:100px;'/></td>
+                    </tr>
+                </table>
+                """;
+
+        Document doc = Jsoup.parse(html);
+        new ImageSizeInTablesAdjuster(doc, ConversionParams.builder().build()).execute();
+
+        CSSDeclarationList cssStyles = parseCss(doc.getElementById("test-img").attr(HtmlTagAttr.STYLE));
+        assertNotEquals("", CssUtils.getPropertyValue(cssStyles, CssProp.WIDTH), "The width the attribute stated is removed, so the style must carry it");
+    }
+
     private CSSDeclarationList parseCss(String style) {
         return Optional.ofNullable(CSSReaderDeclarationList.readFromString(style)).orElse(new CSSDeclarationList());
     }

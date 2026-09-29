@@ -62,7 +62,7 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
             return 0;
         }
 
-        if (value.equals("auto")) {
+        if (value.equals(CssProp.AUTO_VALUE)) {
             return Float.MAX_VALUE;
         }
 
@@ -98,15 +98,16 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
     }
 
     private void adjustImageStyle(Element img, float maxWidth) {
+        String style = img.attr(HtmlTagAttr.STYLE);
+        CSSDeclarationList cssStyles = CssUtils.parseDeclarations(style);
+        boolean statesWidth = !CssUtils.getPropertyValue(cssStyles, CssProp.WIDTH).isEmpty() || img.hasAttr(CssProp.WIDTH);
+
         img.removeAttr(CssProp.WIDTH);
         img.removeAttr(CssProp.HEIGHT);
 
-        String style = img.attr(HtmlTagAttr.STYLE);
-        CSSDeclarationList cssStyles = CssUtils.parseDeclarations(style);
-
         CssUtils.removeProperty(cssStyles, CssProp.HEIGHT); //remove height completely in order to keep image ratio
 
-        if (!CssUtils.getPropertyValue(cssStyles, CssProp.WIDTH).isEmpty()) {
+        if (statesWidth) {
             // A width the image never had would enlarge it to the column, the column being wider than the image
             CssUtils.setPropertyValue(cssStyles, CssProp.WIDTH, ((int) maxWidth) + Measure.PX);
         }

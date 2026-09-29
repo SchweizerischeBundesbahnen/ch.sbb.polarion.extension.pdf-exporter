@@ -20,9 +20,20 @@ class ImageSizeAdjusterTest {
     }
 
     @Test
+    void readsAnAutoHeightAsNoHeight() {
+        // The height follows the width there too, so the clamp stretches the image just the same
+        assertEquals("contain", objectFitOf("<img id='test' style='width: 592px; height: auto;'/>"));
+    }
+
+    @Test
     void leavesAnImageWhichStatesItsOwnHeight() {
         assertEquals("", objectFitOf("<img id='test' style='width: 592px; height: 75px;'/>"));
         assertEquals("", objectFitOf("<img id='test' height='75' style='width: 592px;'/>"));
+    }
+
+    @Test
+    void leavesAnImageWhichStatesHowItIsDrawn() {
+        assertEquals("cover", objectFitOf("<img id='test' style='width: 592px; object-fit: cover;'/>"));
     }
 
     @Test
