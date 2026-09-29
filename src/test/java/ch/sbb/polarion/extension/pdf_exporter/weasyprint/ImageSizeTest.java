@@ -1,5 +1,7 @@
 package ch.sbb.polarion.extension.pdf_exporter.weasyprint;
 
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ConversionParams;
+import ch.sbb.polarion.extension.pdf_exporter.util.adjuster.PageWidthAdjuster;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.base.BaseWeasyPrintTest;
 import lombok.SneakyThrows;
 import org.apache.pdfbox.Loader;
@@ -36,6 +38,15 @@ class ImageSizeTest extends BaseWeasyPrintTest {
               <circle cx="60" cy="50" r="24" fill="#1a73e8"/>
             </svg>""";
 
+    /** A diagram of its own 81x1521 px, which is taller than a page. */
+    private static final String TALL_SVG = """
+            <svg xmlns="http://www.w3.org/2000/svg" width="81" height="1521" viewBox="0 0 81 1521">
+              <rect x="2" y="2" width="77" height="1517" fill="#e8f0fe" stroke="#1a73e8" stroke-width="3"/>
+            </svg>""";
+
+    /** The height of a portrait A4 page, which is what fit to page allows an image. */
+    private static final int PAGE_HEIGHT = 874;
+
     private static final int OWN_WIDTH = 200;
     private static final int OWN_HEIGHT = 100;
 
@@ -55,6 +66,25 @@ class ImageSizeTest extends BaseWeasyPrintTest {
 
         // its own size where the document gives none, then half of it, twice it, and a width with a height
         assertEquals(List.of(size(OWN_WIDTH, OWN_HEIGHT), size(100, 50), size(400, 200), size(300, 150)), imageSizesInPx(pdf));
+    }
+
+    @Test
+    @SneakyThrows
+    void keepsTheRatioOfADiagramWhichIsTallerThanThePage() {
+        String source = "data:image/svg+xml;base64," + Base64.getEncoder().encodeToString(TALL_SVG.getBytes());
+        String html = """
+                <html><body><p><img src="%s" style="max-width: 650px;"/></p></body></html>""".formatted(source);
+
+        String adjusted = new PageWidthAdjuster(html, ConversionParams.builder().build())
+                .adjustImageSizeInTables()
+                .adjustImageSize()
+                .adjustTableSize()
+                .toHTML();
+
+        byte[] pdf = exportToPdf("<html><body>%s</body></html>".formatted(adjusted), WeasyPrintOptions.builder().build());
+
+        // Fit to page shortens it to the height of a page, and the width follows: 81 * 874 / 1521
+        assertEquals(List.of(size(47, PAGE_HEIGHT)), imageSizesInPx(pdf));
     }
 
     private static @NotNull List<Integer> size(int width, int height) {

@@ -115,6 +115,25 @@ class ImageSizeInTablesAdjusterTest {
         }
     }
 
+    @Test
+    void testImageWhichStatesNoWidthIsNotEnlargedToTheColumn() {
+        String html = """
+                <table>
+                    <tr>
+                        <td><img id='test-img' src='tall.svg' style='max-width: 650px;'/></td>
+                        <td><img src='placeholder.jpg' width='100' height='100' style='width:100px;'/></td>
+                    </tr>
+                </table>
+                """;
+
+        Document doc = Jsoup.parse(html);
+        new ImageSizeInTablesAdjuster(doc, ConversionParams.builder().build()).execute();
+
+        CSSDeclarationList cssStyles = parseCss(doc.getElementById("test-img").attr(HtmlTagAttr.STYLE));
+        assertEquals("", CssUtils.getPropertyValue(cssStyles, CssProp.WIDTH), "A width the image never had would enlarge a narrow image to the column");
+        assertNotEquals("", CssUtils.getPropertyValue(cssStyles, CssProp.MAX_WIDTH), "The column is what limits the image");
+    }
+
     private CSSDeclarationList parseCss(String style) {
         return Optional.ofNullable(CSSReaderDeclarationList.readFromString(style)).orElse(new CSSDeclarationList());
     }

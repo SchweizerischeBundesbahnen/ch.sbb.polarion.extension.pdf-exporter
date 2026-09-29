@@ -106,7 +106,10 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
 
         CssUtils.removeProperty(cssStyles, CssProp.HEIGHT); //remove height completely in order to keep image ratio
 
-        CssUtils.setPropertyValue(cssStyles, CssProp.WIDTH, ((int) maxWidth) + Measure.PX);
+        if (!CssUtils.getPropertyValue(cssStyles, CssProp.WIDTH).isEmpty()) {
+            // A width the image never had would enlarge it to the column, the column being wider than the image
+            CssUtils.setPropertyValue(cssStyles, CssProp.WIDTH, ((int) maxWidth) + Measure.PX);
+        }
         // For svg-images in tables width attribute is not enough, WeasyPrint needs max-width as well
         CssUtils.setPropertyValue(cssStyles, CssProp.MAX_WIDTH, ((int) maxWidth) + Measure.PX);
 

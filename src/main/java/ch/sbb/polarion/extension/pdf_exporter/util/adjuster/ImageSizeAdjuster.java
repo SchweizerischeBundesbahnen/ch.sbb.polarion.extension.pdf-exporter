@@ -37,6 +37,11 @@ public class ImageSizeAdjuster extends AbstractAdjuster {
 
         // As a fallback we always restrict max height for the cases when image doesn't have any explicit width/height attributes
         CssUtils.setPropertyValue(cssStyles, CssProp.MAX_HEIGHT, (int) maxHeight + Measure.PX);
+        if (!hasExplicitHeight(img, cssStyles)) {
+            // That clamp shortens the height alone, the width being the one given: the image is then stretched.
+            // Only the drawing follows this property, so an image which states its own height keeps what it states.
+            CssUtils.setPropertyValue(cssStyles, CssProp.OBJECT_FIT, CssProp.OBJECT_FIT_CONTAIN_VALUE);
+        }
         img.attr(HtmlTagAttr.STYLE, cssStyles.getAsCSSString());
 
         float cssWidth = extractDimension(cssStyles, CssProp.WIDTH);
@@ -78,6 +83,10 @@ public class ImageSizeAdjuster extends AbstractAdjuster {
         }
 
         img.attr(HtmlTagAttr.STYLE, cssStyles.getAsCSSString());
+    }
+
+    private boolean hasExplicitHeight(@NotNull Element img, CSSDeclarationList cssStyles) {
+        return !CssUtils.getPropertyValue(cssStyles, CssProp.HEIGHT).isEmpty() || img.hasAttr(CssProp.HEIGHT);
     }
 
     private float extractDimension(CSSDeclarationList cssStyles, String property) {
