@@ -233,7 +233,11 @@ class ImageSizeInTablesAdjusterTest {
     private float pixelsOf(CSSDeclarationList cssStyles, String property) {
         String value = CssUtils.getPropertyValue(cssStyles, property);
         assertTrue(value.endsWith(Measure.PX), property + " is stated in pixels, and reads '" + value + "'");
-        return Float.parseFloat(value.replace(Measure.PX, ""));
+        try {
+            return Float.parseFloat(value.replace(Measure.PX, ""));
+        } catch (NumberFormatException e) {
+            return fail(property + " reads '" + value + "', which is no number");
+        }
     }
 
     private CSSDeclarationList parseCss(String style) {
