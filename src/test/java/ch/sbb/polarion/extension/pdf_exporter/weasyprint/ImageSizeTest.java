@@ -1,5 +1,7 @@
 package ch.sbb.polarion.extension.pdf_exporter.weasyprint;
 
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ConversionParams;
+import ch.sbb.polarion.extension.pdf_exporter.util.adjuster.PageWidthAdjuster;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.base.BaseWeasyPrintTest;
 import lombok.SneakyThrows;
 import org.apache.pdfbox.Loader;
@@ -12,12 +14,19 @@ import org.apache.pdfbox.util.Matrix;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 
+import javax.imageio.ImageIO;
+import java.awt.Color;
+import java.awt.Graphics2D;
 import java.awt.geom.Point2D;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * The size an image is given in the document is the size it has in the PDF.
@@ -35,6 +44,15 @@ class ImageSizeTest extends BaseWeasyPrintTest {
               <rect x="2" y="2" width="196" height="96" fill="#e8f0fe" stroke="#1a73e8" stroke-width="3"/>
               <circle cx="60" cy="50" r="24" fill="#1a73e8"/>
             </svg>""";
+
+    /** A diagram of its own 81x1521 px, which is taller than a page. */
+    private static final String TALL_SVG = """
+            <svg xmlns="http://www.w3.org/2000/svg" width="81" height="1521" viewBox="0 0 81 1521">
+              <rect x="2" y="2" width="77" height="1517" fill="#e8f0fe" stroke="#1a73e8" stroke-width="3"/>
+            </svg>""";
+
+    /** The height of a portrait A4 page, which is what fit to page allows an image. */
+    private static final int PAGE_HEIGHT = 874;
 
     private static final int OWN_WIDTH = 200;
     private static final int OWN_HEIGHT = 100;
@@ -55,6 +73,78 @@ class ImageSizeTest extends BaseWeasyPrintTest {
 
         // its own size where the document gives none, then half of it, twice it, and a width with a height
         assertEquals(List.of(size(OWN_WIDTH, OWN_HEIGHT), size(100, 50), size(400, 200), size(300, 150)), imageSizesInPx(pdf));
+        assertFalse(compareContentUsingReferenceImages(getCurrentMethodName(), pdf), "The pages differ from the reference images");
+    }
+
+    @Test
+    @SneakyThrows
+    void keepsTheRatioOfADiagramWhichIsTallerThanThePage() {
+        String source = "data:image/svg+xml;base64," + Base64.getEncoder().encodeToString(TALL_SVG.getBytes());
+        String html = """
+                <html><body><p><img src="%s" style="max-width: 650px;"/></p></body></html>""".formatted(source);
+
+        String adjusted = new PageWidthAdjuster(html, ConversionParams.builder().build())
+                .adjustImageSizeInTables()
+                .adjustImageSize()
+                .adjustTableSize()
+                .toHTML();
+
+        byte[] pdf = exportToPdf("<html><body>%s</body></html>".formatted(adjusted), WeasyPrintOptions.builder().build());
+
+        // Fit to page shortens it to the height of a page, and the width follows: 81 * 874 / 1521
+        assertEquals(List.of(size(47, PAGE_HEIGHT)), imageSizesInPx(pdf));
+        assertFalse(compareContentUsingReferenceImages(getCurrentMethodName(), pdf), "The pages differ from the reference images");
+    }
+
+    @Test
+    @SneakyThrows
+    void keepsTheShapeTheDocumentGivesAnImageInATable() {
+        String html = """
+                <html><body><table>
+                  <tr>
+                    <td><img src="%s" width="800" height="300"/></td>
+                    <td>A cell which leaves the image a column narrower than the width it states</td>
+                  </tr>
+                </table></body></html>""".formatted(rasterSource());
+
+        String adjusted = new PageWidthAdjuster(html, ConversionParams.builder().build())
+                .adjustImageSizeInTables()
+                .adjustImageSize()
+                .adjustTableSize()
+                .toHTML();
+
+        byte[] pdf = exportToPdf("<html><body>%s</body></html>".formatted(adjusted), WeasyPrintOptions.builder().build());
+
+        List<List<Integer>> sizes = imageSizesInPx(pdf);
+        assertEquals(1, sizes.size(), "The document holds one image");
+
+        int width = sizes.getFirst().getFirst();
+        int height = sizes.getFirst().getLast();
+        assertTrue(width < 800, "The column is narrower than the width the image states, so it limits the image");
+        // The shape the document asks for, 300 / 800, and not the shape of the file, 100 / 200
+        assertEquals(300d / 800d, (double) height / width, 0.02d);
+        // A raster follows the box it is given, where an SVG would centre itself in it and keep its own shape
+        assertFalse(compareContentUsingReferenceImages(getCurrentMethodName(), pdf), "The pages differ from the reference images");
+    }
+
+    /** A raster of its own 200x100 px: unlike an SVG, its drawing follows the box the document gives it. */
+    @SneakyThrows
+    private static @NotNull String rasterSource() {
+        BufferedImage image = new BufferedImage(OWN_WIDTH, OWN_HEIGHT, BufferedImage.TYPE_INT_RGB);
+        Graphics2D graphics = image.createGraphics();
+        try {
+            graphics.setColor(new Color(0xe8f0fe));
+            graphics.fillRect(0, 0, OWN_WIDTH, OWN_HEIGHT);
+            graphics.setColor(new Color(0x1a73e8));
+            graphics.drawRect(1, 1, OWN_WIDTH - 3, OWN_HEIGHT - 3);
+            graphics.fillOval(36, 26, 48, 48);
+        } finally {
+            graphics.dispose();
+        }
+
+        ByteArrayOutputStream png = new ByteArrayOutputStream();
+        ImageIO.write(image, "png", png);
+        return "data:image/png;base64," + Base64.getEncoder().encodeToString(png.toByteArray());
     }
 
     private static @NotNull List<Integer> size(int width, int height) {

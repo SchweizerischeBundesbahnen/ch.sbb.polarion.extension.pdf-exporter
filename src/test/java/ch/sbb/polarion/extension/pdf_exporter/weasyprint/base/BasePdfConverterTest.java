@@ -14,7 +14,6 @@ import ch.sbb.polarion.extension.pdf_exporter.settings.LocalizationSettings;
 import ch.sbb.polarion.extension.pdf_exporter.util.DocumentDataFactory;
 import ch.sbb.polarion.extension.pdf_exporter.util.FileResourceProvider;
 import ch.sbb.polarion.extension.pdf_exporter.util.HtmlProcessor;
-import ch.sbb.polarion.extension.pdf_exporter.util.MediaUtils;
 import ch.sbb.polarion.extension.pdf_exporter.util.PdfTemplateProcessor;
 import ch.sbb.polarion.extension.pdf_exporter.util.html.HtmlLinksHelper;
 import ch.sbb.polarion.extension.pdf_exporter.util.placeholder.PlaceholderProcessor;
@@ -36,10 +35,6 @@ import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.stubbing.Answer;
 
-import javax.imageio.ImageIO;
-import java.awt.*;
-import java.awt.image.BufferedImage;
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 
@@ -231,32 +226,6 @@ public abstract class BasePdfConverterTest extends BaseWeasyPrintTest {
                 new PdfTemplateProcessor(),
                 null
         );
-    }
-
-    /**
-     * Compares PDF content with reference images.
-     * Writes report PDFs and images for debugging when tests fail.
-     *
-     * @return true if there were differences, false otherwise
-     */
-    @SneakyThrows
-    protected boolean compareContentUsingReferenceImages(String testName, byte[] pdf) {
-        writeReportPdf(testName, "generated", pdf);
-        // NOTE: if something changes in the future and the images are no longer identical,
-        // simply copy & replace the reference resource images with the new ones from the reports folder
-        List<BufferedImage> resultImages = getAllPagesAsImagesAndLogAsReports(testName, pdf);
-        boolean hasDiff = false;
-        for (int i = 0; i < resultImages.size(); i++) {
-            BufferedImage expectedImage = ImageIO.read(readPngResource(testName + PAGE_SUFFIX + i));
-            BufferedImage resultImage = resultImages.get(i);
-            List<Point> diffPoints = MediaUtils.diffImages(expectedImage, resultImage);
-            if (!diffPoints.isEmpty()) {
-                MediaUtils.fillImagePoints(resultImage, diffPoints, Color.BLUE.getRGB());
-                writeReportImage(String.format("%s%s%d_diff", testName, PAGE_SUFFIX, i), resultImage);
-                hasDiff = true;
-            }
-        }
-        return hasDiff;
     }
 
 }

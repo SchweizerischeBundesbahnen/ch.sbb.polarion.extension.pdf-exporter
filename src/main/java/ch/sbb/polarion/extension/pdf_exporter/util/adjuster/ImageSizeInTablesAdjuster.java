@@ -47,7 +47,7 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
                 float maxWidth = getMaxWidth(img, columnWidths, columnCountBasedWidth, paramsBasedWidth);
 
                 if (cssWidth > maxWidth || cssMaxWidth > maxWidth) {
-                    adjustImageStyle(img, maxWidth);
+                    adjustImageStyle(img, maxWidth, cssWidth);
                 }
             }
         }
@@ -59,20 +59,44 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
 
         String value = CssUtils.getPropertyValue(cssStyles, property);
         if (value.isEmpty()) {
-            return 0;
+            // An attribute states a width in pixels, and it is a width like any other
+            return CssProp.WIDTH.equals(property) ? parseNumber(img.attr(CssProp.WIDTH)) : 0;
         }
 
-        if (value.equals("auto")) {
+        if (value.equals(CssProp.AUTO_VALUE)) {
             return Float.MAX_VALUE;
         }
 
+        if (value.endsWith(Measure.PERCENT)) {
+            return PaperSizeUtils.getMaxWidthInTables(conversionParams) * parseNumber(value.replace(Measure.PERCENT, ""));
+        }
+        return extractPixels(value);
+    }
+
+    /**
+     * The size the image states in pixels, from its style or from its attribute. A size stated as a percentage
+     * or as "auto" is no such size: it says nothing about the shape of the image, so it reads as none.
+     */
+    private float extractAbsoluteSize(Element img, CSSDeclarationList cssStyles, String property) {
+        String value = CssUtils.getPropertyValue(cssStyles, property);
+        return value.isEmpty() ? parseNumber(img.attr(property)) : extractPixels(value);
+    }
+
+    private float extractPixels(String value) {
         if (value.endsWith(Measure.EX)) {
-            return Float.parseFloat(value.replace(Measure.EX, "")) * Measure.EX_TO_PX_RATIO;
+            return parseNumber(value.replace(Measure.EX, "")) * Measure.EX_TO_PX_RATIO;
         } else if (value.endsWith(Measure.PX)) {
-            return Float.parseFloat(value.replace(Measure.PX, ""));
-        } else if (value.endsWith(Measure.PERCENT)) {
-            return PaperSizeUtils.getMaxWidthInTables(conversionParams) * Float.parseFloat(value.replace(Measure.PERCENT, ""));
+            return parseNumber(value.replace(Measure.PX, ""));
         } else {
+            return 0;
+        }
+    }
+
+    private float parseNumber(String value) {
+        try {
+            return Float.parseFloat(value);
+        } catch (NumberFormatException e) {
+            // Nothing or a malformed value: the image states no size we can read
             return 0;
         }
     }
@@ -97,16 +121,28 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
         return maxWidth;
     }
 
-    private void adjustImageStyle(Element img, float maxWidth) {
+    private void adjustImageStyle(Element img, float maxWidth, float statedWidth) {
+        String style = img.attr(HtmlTagAttr.STYLE);
+        CSSDeclarationList cssStyles = CssUtils.parseDeclarations(style);
+        float statedHeight = extractAbsoluteSize(img, cssStyles, CssProp.HEIGHT);
+        float absoluteWidth = extractAbsoluteSize(img, cssStyles, CssProp.WIDTH);
+
         img.removeAttr(CssProp.WIDTH);
         img.removeAttr(CssProp.HEIGHT);
 
-        String style = img.attr(HtmlTagAttr.STYLE);
-        CSSDeclarationList cssStyles = CssUtils.parseDeclarations(style);
-
         CssUtils.removeProperty(cssStyles, CssProp.HEIGHT); //remove height completely in order to keep image ratio
 
-        CssUtils.setPropertyValue(cssStyles, CssProp.WIDTH, ((int) maxWidth) + Measure.PX);
+        if (statedWidth > 0) {
+            // The column is what limits the image, it never enlarges one: an image which states no width keeps none
+            float adjustedWidth = Math.min(statedWidth, maxWidth);
+            CssUtils.setPropertyValue(cssStyles, CssProp.WIDTH, ((int) adjustedWidth) + Measure.PX);
+            if (statedHeight > 0 && absoluteWidth > 0) {
+                // The shape the document gave the image is kept: the height follows the width the image is given.
+                // A height of zero would hide the image, so the shortest it gets is one pixel.
+                int adjustedHeight = Math.max(1, Math.round(statedHeight * adjustedWidth / absoluteWidth));
+                CssUtils.setPropertyValue(cssStyles, CssProp.HEIGHT, adjustedHeight + Measure.PX);
+            }
+        }
         // For svg-images in tables width attribute is not enough, WeasyPrint needs max-width as well
         CssUtils.setPropertyValue(cssStyles, CssProp.MAX_WIDTH, ((int) maxWidth) + Measure.PX);
 
