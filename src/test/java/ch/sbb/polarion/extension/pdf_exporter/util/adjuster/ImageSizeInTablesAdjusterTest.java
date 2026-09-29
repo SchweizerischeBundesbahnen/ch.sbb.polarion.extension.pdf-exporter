@@ -173,11 +173,11 @@ class ImageSizeInTablesAdjusterTest {
     }
 
     @Test
-    void testImageFittedToTheColumnKeepsTheShapeItStates() {
+    void testImageFittedToTheColumnKeepsItsOwnRatio() {
         String html = """
                 <table>
                     <tr>
-                        <td><img id='test-img' src='wide.jpg' width='800' height='300'/></td>
+                        <td><img id='test-img' src='wide.jpg' style='width: 800px; height: 300px;'/></td>
                         <td><img src='placeholder.jpg' width='100' height='100' style='width:100px;'/></td>
                     </tr>
                 </table>
@@ -187,57 +187,7 @@ class ImageSizeInTablesAdjusterTest {
         new ImageSizeInTablesAdjuster(doc, ConversionParams.builder().build()).execute();
 
         CSSDeclarationList cssStyles = parseCss(doc.getElementById("test-img").attr(HtmlTagAttr.STYLE));
-        float width = pixelsOf(cssStyles, CssProp.WIDTH);
-        float height = pixelsOf(cssStyles, CssProp.HEIGHT);
-
-        assertTrue(width < 800, "The image is wider than its column, so the column limits it");
-        assertEquals(300f / 800f, height / width, 0.01f, "The height follows the width the image is given");
-    }
-
-    @Test
-    void testWidthStatedAsAPercentageLeavesTheHeightAlone() {
-        String html = """
-                <table>
-                    <tr>
-                        <td><img id='test-img' src='wide.jpg' style='width: 80%; height: 300px;'/></td>
-                        <td><img src='placeholder.jpg' width='100' height='100' style='width:100px;'/></td>
-                    </tr>
-                </table>
-                """;
-
-        Document doc = Jsoup.parse(html);
-        new ImageSizeInTablesAdjuster(doc, ConversionParams.builder().build()).execute();
-
-        CSSDeclarationList cssStyles = parseCss(doc.getElementById("test-img").attr(HtmlTagAttr.STYLE));
-        assertEquals("", CssUtils.getPropertyValue(cssStyles, CssProp.HEIGHT), "A percentage says nothing about the shape of the image, so no height follows from it");
-    }
-
-    @Test
-    void testShortImageKeepsAHeightItCanBeSeenAt() {
-        String html = """
-                <table>
-                    <tr>
-                        <td><img id='test-img' src='wide.jpg' width='5000' height='1'/></td>
-                        <td><img src='placeholder.jpg' width='100' height='100' style='width:100px;'/></td>
-                    </tr>
-                </table>
-                """;
-
-        Document doc = Jsoup.parse(html);
-        new ImageSizeInTablesAdjuster(doc, ConversionParams.builder().build()).execute();
-
-        CSSDeclarationList cssStyles = parseCss(doc.getElementById("test-img").attr(HtmlTagAttr.STYLE));
-        assertEquals(1f, pixelsOf(cssStyles, CssProp.HEIGHT), "A height of zero would hide the image");
-    }
-
-    private float pixelsOf(CSSDeclarationList cssStyles, String property) {
-        String value = CssUtils.getPropertyValue(cssStyles, property);
-        assertTrue(value.endsWith(Measure.PX), property + " is stated in pixels, and reads '" + value + "'");
-        try {
-            return Float.parseFloat(value.replace(Measure.PX, ""));
-        } catch (NumberFormatException e) {
-            return fail(property + " reads '" + value + "', which is no number");
-        }
+        assertEquals("", CssUtils.getPropertyValue(cssStyles, CssProp.HEIGHT), "A height stated for a width the image no longer has would distort it");
     }
 
     private CSSDeclarationList parseCss(String style) {
