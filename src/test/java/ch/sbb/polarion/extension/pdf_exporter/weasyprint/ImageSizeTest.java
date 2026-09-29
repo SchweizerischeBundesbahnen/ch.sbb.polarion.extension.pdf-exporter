@@ -15,14 +15,21 @@ import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 
 import javax.imageio.ImageIO;
+import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Graphics2D;
+import java.awt.RenderingHints;
 import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
+import java.util.Objects;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -45,11 +52,11 @@ class ImageSizeTest extends BaseWeasyPrintTest {
               <circle cx="60" cy="50" r="24" fill="#1a73e8"/>
             </svg>""";
 
-    /** A diagram of its own 81x1521 px, which is taller than a page. */
-    private static final String TALL_SVG = """
-            <svg xmlns="http://www.w3.org/2000/svg" width="81" height="1521" viewBox="0 0 81 1521">
-              <rect x="2" y="2" width="77" height="1517" fill="#e8f0fe" stroke="#1a73e8" stroke-width="3"/>
-            </svg>""";
+    /** A diagram of the system test's own document, 81x1521 px, taller than a page. */
+    private static final String TALL_SVG = readImageResource("diagram_20251002-1153.37186.mxg.svg");
+
+    /** The pages the document of the fit to page system test runs to. */
+    private static final int DOCUMENT_PAGES = 6;
 
     /** The height of a portrait A4 page, which is what fit to page allows an image. */
     private static final int PAGE_HEIGHT = 874;
@@ -98,11 +105,11 @@ class ImageSizeTest extends BaseWeasyPrintTest {
 
     @Test
     @SneakyThrows
-    void keepsTheShapeTheDocumentGivesAnImageInATable() {
+    void keepsTheRatioOfAnImageFittedToItsColumn() {
         String html = """
                 <html><body><table>
                   <tr>
-                    <td><img src="%s" width="800" height="300"/></td>
+                    <td><img src="%s" style="width: 800px; height: 300px;"/></td>
                     <td>A cell which leaves the image a column narrower than the width it states</td>
                   </tr>
                 </table></body></html>""".formatted(rasterSource());
@@ -121,23 +128,73 @@ class ImageSizeTest extends BaseWeasyPrintTest {
         int width = sizes.getFirst().getFirst();
         int height = sizes.getFirst().getLast();
         assertTrue(width < 800, "The column is narrower than the width the image states, so it limits the image");
-        // The shape the document asks for, 300 / 800, and not the shape of the file, 100 / 200
-        assertEquals(300d / 800d, (double) height / width, 0.02d);
-        // A raster follows the box it is given, where an SVG would centre itself in it and keep its own shape
+        // The image keeps its own shape, 100 / 200: a height stated for the width it no longer has would distort it
+        assertEquals(100d / 200d, (double) height / width, 0.02d);
         assertFalse(compareContentUsingReferenceImages(getCurrentMethodName(), pdf), "The pages differ from the reference images");
     }
 
-    /** A raster of its own 200x100 px: unlike an SVG, its drawing follows the box the document gives it. */
+    /**
+     * The document of the fit to page system test, page by page. It holds the shapes a document states for an
+     * image: a size larger than a column, a diagram taller than a page, a wider one, and a height a drag of a
+     * handle in the editor left behind.
+     */
+    @Test
+    @SneakyThrows
+    void fitsTheImagesOfADocumentToThePage() {
+        String html = withAttachments(readHtmlResource("imagesTest"));
+
+        String adjusted = new PageWidthAdjuster(html, ConversionParams.builder().build())
+                .adjustImageSizeInTables()
+                .adjustImageSize()
+                .adjustTableSize()
+                .toHTML();
+
+        byte[] pdf = exportToPdf("<html><body>%s</body></html>".formatted(adjusted), WeasyPrintOptions.builder().build());
+
+        assertEquals(DOCUMENT_PAGES, pageCount(pdf), "The document runs to a page count of its own, and a page which never arrives is compared with nothing");
+        assertFalse(compareContentUsingReferenceImages(getCurrentMethodName(), pdf), "The pages differ from the reference images");
+    }
+
+    /** Reads every attachment the document names out of the test resources, as an export reads them from Polarion. */
+    private @NotNull String withAttachments(@NotNull String html) {
+        Matcher attachments = Pattern.compile("attachment:([^\"]+)").matcher(html);
+        StringBuilder result = new StringBuilder();
+        while (attachments.find()) {
+            String name = attachments.group(1);
+            String type = name.endsWith(".svg") ? "image/svg+xml" : "image/jpeg";
+            String source = "data:%s;base64,%s".formatted(type, Base64.getEncoder().encodeToString(readImageResource(name).getBytes(StandardCharsets.ISO_8859_1)));
+            attachments.appendReplacement(result, Matcher.quoteReplacement(source));
+        }
+        attachments.appendTail(result);
+        return result.toString();
+    }
+
+    @SneakyThrows
+    private static @NotNull String readImageResource(@NotNull String name) {
+        try (InputStream resource = ImageSizeTest.class.getResourceAsStream("/weasyprint/img/" + name)) {
+            return new String(Objects.requireNonNull(resource, name).readAllBytes(), StandardCharsets.ISO_8859_1);
+        }
+    }
+
+    /** The same diagram as a raster: unlike an SVG, its drawing follows the box the document gives it. */
     @SneakyThrows
     private static @NotNull String rasterSource() {
         BufferedImage image = new BufferedImage(OWN_WIDTH, OWN_HEIGHT, BufferedImage.TYPE_INT_RGB);
         Graphics2D graphics = image.createGraphics();
         try {
-            graphics.setColor(new Color(0xe8f0fe));
+            graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            graphics.setColor(Color.WHITE);
             graphics.fillRect(0, 0, OWN_WIDTH, OWN_HEIGHT);
-            graphics.setColor(new Color(0x1a73e8));
-            graphics.drawRect(1, 1, OWN_WIDTH - 3, OWN_HEIGHT - 3);
-            graphics.fillOval(36, 26, 48, 48);
+            graphics.setStroke(new BasicStroke(3));
+            for (int i = 0; i < 2; i++) {
+                // A box is kept clear of the edge, where the raster would cut its stroke in half
+                int x = 10 + i * 100;
+                graphics.setColor(new Color(0xe8f0fe));
+                graphics.fillRect(x, 25, 80, 50);
+                graphics.setColor(new Color(0x1a73e8));
+                graphics.drawRect(x, 25, 80, 50);
+            }
+            graphics.drawLine(90, 50, 110, 50);
         } finally {
             graphics.dispose();
         }
@@ -149,6 +206,13 @@ class ImageSizeTest extends BaseWeasyPrintTest {
 
     private static @NotNull List<Integer> size(int width, int height) {
         return List.of(width, height);
+    }
+
+    @SneakyThrows
+    private int pageCount(byte @NotNull [] pdf) {
+        try (PDDocument document = Loader.loadPDF(pdf)) {
+            return document.getNumberOfPages();
+        }
     }
 
     /** The size of every image drawn in the document, in CSS pixels, in the order they are drawn. */
