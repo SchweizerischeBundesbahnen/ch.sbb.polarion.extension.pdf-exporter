@@ -8,6 +8,7 @@ import org.apache.pdfbox.cos.COSName;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.graphics.image.PDImage;
+import org.apache.pdfbox.util.Matrix;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 
@@ -36,6 +37,7 @@ class ImageSizeTest extends BaseWeasyPrintTest {
             </svg>""";
 
     private static final int OWN_WIDTH = 200;
+    private static final int OWN_HEIGHT = 100;
 
     @Test
     @SneakyThrows
@@ -52,37 +54,42 @@ class ImageSizeTest extends BaseWeasyPrintTest {
         byte[] pdf = exportToPdf(html, WeasyPrintOptions.builder().build());
 
         // its own size where the document gives none, then half of it, twice it, and a width with a height
-        assertEquals(List.of(OWN_WIDTH, 100, 400, 300), imageWidthsInPx(pdf));
+        assertEquals(List.of(size(OWN_WIDTH, OWN_HEIGHT), size(100, 50), size(400, 200), size(300, 150)), imageSizesInPx(pdf));
     }
 
-    /** The width of every image drawn in the document, in CSS pixels, in the order they are drawn. */
+    private static @NotNull List<Integer> size(int width, int height) {
+        return List.of(width, height);
+    }
+
+    /** The size of every image drawn in the document, in CSS pixels, in the order they are drawn. */
     @SneakyThrows
-    private @NotNull List<Integer> imageWidthsInPx(byte @NotNull [] pdf) {
-        List<Integer> widths = new ArrayList<>();
+    private @NotNull List<List<Integer>> imageSizesInPx(byte @NotNull [] pdf) {
+        List<List<Integer>> sizes = new ArrayList<>();
         try (PDDocument document = Loader.loadPDF(pdf)) {
             for (PDPage page : document.getPages()) {
-                new ImageWidthCollector(page, widths).processPage(page);
+                new ImageSizeCollector(page, sizes).processPage(page);
             }
         }
-        return widths;
+        return sizes;
     }
 
-    /** Reads the width each image is drawn at, which is the horizontal scale of the matrix in force. */
-    private static class ImageWidthCollector extends PDFGraphicsStreamEngine {
+    /** Reads the size each image is drawn at, which is the scale of the matrix in force. */
+    private static class ImageSizeCollector extends PDFGraphicsStreamEngine {
 
         /** A CSS pixel is 0.75 pt, the unit a PDF is laid out in. */
         private static final float PT_PER_PX = 0.75f;
 
-        private final List<Integer> widths;
+        private final List<List<Integer>> sizes;
 
-        ImageWidthCollector(@NotNull PDPage page, @NotNull List<Integer> widths) {
+        ImageSizeCollector(@NotNull PDPage page, @NotNull List<List<Integer>> sizes) {
             super(page);
-            this.widths = widths;
+            this.sizes = sizes;
         }
 
         @Override
         public void drawImage(@NotNull PDImage image) {
-            widths.add(Math.round(getGraphicsState().getCurrentTransformationMatrix().getScalingFactorX() / PT_PER_PX));
+            Matrix matrix = getGraphicsState().getCurrentTransformationMatrix();
+            sizes.add(size(Math.round(matrix.getScalingFactorX() / PT_PER_PX), Math.round(matrix.getScalingFactorY() / PT_PER_PX)));
         }
 
         // The rest of the drawing operations say nothing about an image, so they are read and dropped.
