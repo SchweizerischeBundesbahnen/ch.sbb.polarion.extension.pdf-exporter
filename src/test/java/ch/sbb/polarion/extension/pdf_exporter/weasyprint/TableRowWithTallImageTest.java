@@ -10,6 +10,8 @@ import ch.sbb.polarion.extension.pdf_exporter.util.DocumentDataFactory;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.base.BasePdfConverterTest;
 import com.polarion.alm.tracker.model.IModule;
 import lombok.SneakyThrows;
+import org.apache.pdfbox.Loader;
+import org.apache.pdfbox.pdmodel.PDDocument;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 
@@ -18,6 +20,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Objects;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.eq;
@@ -33,6 +36,9 @@ class TableRowWithTallImageTest extends BasePdfConverterTest {
 
     /** A diagram of its own 300x3000 px, which fit to page shortens to the height of a page. */
     private static final String DIAGRAM = "/weasyprint/img/tall-chain.svg";
+
+    /** The text fills the first page, and the table takes the second one whole. */
+    private static final int DOCUMENT_PAGES = 2;
 
     @Test
     void keepsATableRowWhichHoldsAnImageWhole() {
@@ -68,8 +74,17 @@ class TableRowWithTallImageTest extends BasePdfConverterTest {
                 .build();
         documentDataFactoryMockedStatic.when(() -> DocumentDataFactory.getDocumentData(eq(params), anyBoolean())).thenReturn(liveDoc);
 
-        assertFalse(compareContentUsingReferenceImages(testName, converter.convertToPdf(params, null)),
-                "The pages differ from the reference images");
+        byte[] pdf = converter.convertToPdf(params, null);
+
+        assertEquals(DOCUMENT_PAGES, pageCount(pdf), "The text fills the first page and the table takes the second, whole");
+        assertFalse(compareContentUsingReferenceImages(testName, pdf), "The pages differ from the reference images");
+    }
+
+    @SneakyThrows
+    private int pageCount(byte @NotNull [] pdf) {
+        try (PDDocument document = Loader.loadPDF(pdf)) {
+            return document.getNumberOfPages();
+        }
     }
 
     @SneakyThrows
