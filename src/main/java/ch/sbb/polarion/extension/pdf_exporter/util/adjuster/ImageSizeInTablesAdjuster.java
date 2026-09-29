@@ -47,7 +47,7 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
                 float maxWidth = getMaxWidth(img, columnWidths, columnCountBasedWidth, paramsBasedWidth);
 
                 if (cssWidth > maxWidth || cssMaxWidth > maxWidth) {
-                    adjustImageStyle(img, maxWidth);
+                    adjustImageStyle(img, maxWidth, cssWidth);
                 }
             }
         }
@@ -59,7 +59,8 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
 
         String value = CssUtils.getPropertyValue(cssStyles, property);
         if (value.isEmpty()) {
-            return 0;
+            // An attribute states a width in pixels, and it is a width like any other
+            return CssProp.WIDTH.equals(property) ? extractAttributeWidth(img) : 0;
         }
 
         if (value.equals(CssProp.AUTO_VALUE)) {
@@ -73,6 +74,15 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
         } else if (value.endsWith(Measure.PERCENT)) {
             return PaperSizeUtils.getMaxWidthInTables(conversionParams) * Float.parseFloat(value.replace(Measure.PERCENT, ""));
         } else {
+            return 0;
+        }
+    }
+
+    private float extractAttributeWidth(Element img) {
+        try {
+            return Float.parseFloat(img.attr(CssProp.WIDTH));
+        } catch (NumberFormatException e) {
+            // Nothing or a malformed value: the image states no width we can read
             return 0;
         }
     }
@@ -97,19 +107,18 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
         return maxWidth;
     }
 
-    private void adjustImageStyle(Element img, float maxWidth) {
+    private void adjustImageStyle(Element img, float maxWidth, float statedWidth) {
         String style = img.attr(HtmlTagAttr.STYLE);
         CSSDeclarationList cssStyles = CssUtils.parseDeclarations(style);
-        boolean statesWidth = !CssUtils.getPropertyValue(cssStyles, CssProp.WIDTH).isEmpty() || img.hasAttr(CssProp.WIDTH);
 
         img.removeAttr(CssProp.WIDTH);
         img.removeAttr(CssProp.HEIGHT);
 
         CssUtils.removeProperty(cssStyles, CssProp.HEIGHT); //remove height completely in order to keep image ratio
 
-        if (statesWidth) {
-            // A width the image never had would enlarge it to the column, the column being wider than the image
-            CssUtils.setPropertyValue(cssStyles, CssProp.WIDTH, ((int) maxWidth) + Measure.PX);
+        if (statedWidth > 0) {
+            // The column is what limits the image, it never enlarges one: an image which states no width keeps none
+            CssUtils.setPropertyValue(cssStyles, CssProp.WIDTH, ((int) Math.min(statedWidth, maxWidth)) + Measure.PX);
         }
         // For svg-images in tables width attribute is not enough, WeasyPrint needs max-width as well
         CssUtils.setPropertyValue(cssStyles, CssProp.MAX_WIDTH, ((int) maxWidth) + Measure.PX);

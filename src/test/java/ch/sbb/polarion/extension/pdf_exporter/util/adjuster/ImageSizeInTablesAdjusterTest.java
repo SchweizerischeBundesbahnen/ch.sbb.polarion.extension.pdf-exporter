@@ -149,7 +149,27 @@ class ImageSizeInTablesAdjusterTest {
         new ImageSizeInTablesAdjuster(doc, ConversionParams.builder().build()).execute();
 
         CSSDeclarationList cssStyles = parseCss(doc.getElementById("test-img").attr(HtmlTagAttr.STYLE));
-        assertNotEquals("", CssUtils.getPropertyValue(cssStyles, CssProp.WIDTH), "The width the attribute stated is removed, so the style must carry it");
+        String width = CssUtils.getPropertyValue(cssStyles, CssProp.WIDTH);
+        assertNotEquals("", width, "The width the attribute stated is removed, so the style must carry it");
+        assertEquals(CssUtils.getPropertyValue(cssStyles, CssProp.MAX_WIDTH), width, "A width wider than the column is the column's");
+    }
+
+    @Test
+    void testImageWhichFitsTheColumnKeepsTheWidthItStates() {
+        String html = """
+                <table>
+                    <tr>
+                        <td><img id='test-img' src='small.jpg' width='100' style='max-width: 900px;'/></td>
+                        <td><img src='placeholder.jpg' width='100' height='100' style='width:100px;'/></td>
+                    </tr>
+                </table>
+                """;
+
+        Document doc = Jsoup.parse(html);
+        new ImageSizeInTablesAdjuster(doc, ConversionParams.builder().build()).execute();
+
+        CSSDeclarationList cssStyles = parseCss(doc.getElementById("test-img").attr(HtmlTagAttr.STYLE));
+        assertEquals("100px", CssUtils.getPropertyValue(cssStyles, CssProp.WIDTH), "The column limits an image, it never enlarges one");
     }
 
     private CSSDeclarationList parseCss(String style) {
