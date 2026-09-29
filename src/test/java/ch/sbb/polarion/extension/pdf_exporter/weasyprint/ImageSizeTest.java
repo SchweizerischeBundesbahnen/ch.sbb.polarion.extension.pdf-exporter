@@ -20,6 +20,7 @@ import java.util.Base64;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * The size an image is given in the document is the size it has in the PDF.
@@ -85,6 +86,36 @@ class ImageSizeTest extends BaseWeasyPrintTest {
 
         // Fit to page shortens it to the height of a page, and the width follows: 81 * 874 / 1521
         assertEquals(List.of(size(47, PAGE_HEIGHT)), imageSizesInPx(pdf));
+    }
+
+    @Test
+    @SneakyThrows
+    void keepsTheShapeTheDocumentGivesAnImageInATable() {
+        String source = "data:image/svg+xml;base64," + Base64.getEncoder().encodeToString(SVG.getBytes());
+        String html = """
+                <html><body><table>
+                  <tr>
+                    <td><img src="%s" width="800" height="300"/></td>
+                    <td>A cell which leaves the image a column narrower than the width it states</td>
+                  </tr>
+                </table></body></html>""".formatted(source);
+
+        String adjusted = new PageWidthAdjuster(html, ConversionParams.builder().build())
+                .adjustImageSizeInTables()
+                .adjustImageSize()
+                .adjustTableSize()
+                .toHTML();
+
+        byte[] pdf = exportToPdf("<html><body>%s</body></html>".formatted(adjusted), WeasyPrintOptions.builder().build());
+
+        List<List<Integer>> sizes = imageSizesInPx(pdf);
+        assertEquals(1, sizes.size(), "The document holds one image");
+
+        int width = sizes.getFirst().getFirst();
+        int height = sizes.getFirst().getLast();
+        assertTrue(width < 800, "The column is narrower than the width the image states, so it limits the image");
+        // The shape the document asks for, 300 / 800, and not the shape of the file, 100 / 200
+        assertEquals(300d / 800d, (double) height / width, 0.02d);
     }
 
     private static @NotNull List<Integer> size(int width, int height) {
