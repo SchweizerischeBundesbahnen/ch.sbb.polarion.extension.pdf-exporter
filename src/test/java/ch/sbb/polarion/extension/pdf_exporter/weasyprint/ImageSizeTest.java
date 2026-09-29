@@ -58,6 +58,9 @@ class ImageSizeTest extends BaseWeasyPrintTest {
     /** A diagram of the system test's own document, 1361x81 px, wider than a page. */
     private static final String WIDE_SVG = readImageResource("diagram_20251001-1814.45899.mxg.svg");
 
+    /** The pages the document of the fit to page system test runs to. */
+    private static final int DOCUMENT_PAGES = 6;
+
     /** The height of a portrait A4 page, which is what fit to page allows an image. */
     private static final int PAGE_HEIGHT = 874;
 
@@ -151,6 +154,7 @@ class ImageSizeTest extends BaseWeasyPrintTest {
 
         byte[] pdf = exportToPdf("<html><body>%s</body></html>".formatted(adjusted), WeasyPrintOptions.builder().build());
 
+        assertEquals(DOCUMENT_PAGES, pageCount(pdf), "The document runs to a page count of its own, and a page which never arrives is compared with nothing");
         assertFalse(compareContentUsingReferenceImages(getCurrentMethodName(), pdf), "The pages differ from the reference images");
     }
 
@@ -205,6 +209,13 @@ class ImageSizeTest extends BaseWeasyPrintTest {
 
     private static @NotNull List<Integer> size(int width, int height) {
         return List.of(width, height);
+    }
+
+    @SneakyThrows
+    private int pageCount(byte @NotNull [] pdf) {
+        try (PDDocument document = Loader.loadPDF(pdf)) {
+            return document.getNumberOfPages();
+        }
     }
 
     /** The size of every image drawn in the document, in CSS pixels, in the order they are drawn. */
