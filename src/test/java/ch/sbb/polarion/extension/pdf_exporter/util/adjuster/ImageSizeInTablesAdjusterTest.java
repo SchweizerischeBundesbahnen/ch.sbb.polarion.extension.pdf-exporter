@@ -242,6 +242,26 @@ class ImageSizeInTablesAdjusterTest {
                 "The limit cuts into the 3000 px the image states, and a height cut alone squashes the drawing");
     }
 
+    @Test
+    void testRowOfAnImageWhichStatesNoSizeIsKeptWhole() {
+        String html = """
+                <table>
+                    <tr><th>Diagram</th><th>Note</th></tr>
+                    <tr id='tall-row'><td><img src='tall.svg' style='max-width: 650px;'/></td><td>Taller than a page</td></tr>
+                    <tr id='small-row'><td><img src='icon.gif' style='width: 16px;height: 16px;'/></td><td>An icon</td></tr>
+                </table>
+                """;
+
+        Document doc = Jsoup.parse(html);
+        new ImageSizeInTablesAdjuster(doc, ConversionParams.builder().build()).execute();
+
+        assertEquals(CssProp.PAGE_BREAK_INSIDE_AVOID_VALUE,
+                CssUtils.getPropertyValue(parseCss(doc.getElementById("tall-row").attr(HtmlTagAttr.STYLE)), CssProp.BREAK_INSIDE),
+                "The image states no size, so it can fill the page and the row must carry its header with it");
+        assertEquals("", CssUtils.getPropertyValue(parseCss(doc.getElementById("small-row").attr(HtmlTagAttr.STYLE)), CssProp.BREAK_INSIDE),
+                "An icon leaves the row free to break where a row of text would");
+    }
+
     private float pixelsOf(CSSDeclarationList cssStyles, String property) {
         String value = CssUtils.getPropertyValue(cssStyles, property);
         assertTrue(value.endsWith(Measure.PX), property + " is stated in pixels, and reads '" + value + "'");

@@ -432,9 +432,6 @@ ul.tof li > a.page-number::after {
         break-before: avoid;
     }
 
-    tr:has(img) { /* A split row leaves its image on the next page, under a header which heads nothing on this one */
-        break-inside: avoid;
-    }
 
     .polarion-dle-workitem-title {
         break-after: avoid;

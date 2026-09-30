@@ -64,8 +64,29 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
 
                 if (cssWidth > maxWidth || cssMaxWidth > maxWidth) {
                     adjustImageStyle(img, maxWidth, cssWidth);
+                    keepTheRowWhole(img);
                 }
             }
+        }
+    }
+
+    /**
+     * An image wider than its column which states no size of its own takes the size of the file it comes
+     * from, which can be a page tall. Such a row is kept whole: split, it leaves the image on the next page
+     * and the header of its table on this one, above a row which shows nothing. A row holding an icon, or an
+     * image of a stated size, still breaks where it must, as any row of text does.
+     */
+    private void keepTheRowWhole(Element img) {
+        if (statedSize(img, CssUtils.parseDeclarations(img.attr(HtmlTagAttr.STYLE)), CssProp.WIDTH) > 0
+                || statedSize(img, CssUtils.parseDeclarations(img.attr(HtmlTagAttr.STYLE)), CssProp.HEIGHT) > 0) {
+            return;
+        }
+
+        Element row = img.closest(HtmlTag.TR);
+        if (row != null) {
+            CSSDeclarationList rowStyles = CssUtils.parseDeclarations(row.attr(HtmlTagAttr.STYLE));
+            CssUtils.setPropertyValue(rowStyles, CssProp.BREAK_INSIDE, CssProp.PAGE_BREAK_INSIDE_AVOID_VALUE);
+            row.attr(HtmlTagAttr.STYLE, rowStyles.getAsCSSString());
         }
     }
 
