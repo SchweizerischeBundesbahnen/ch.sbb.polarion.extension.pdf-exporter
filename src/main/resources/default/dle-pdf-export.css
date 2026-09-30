@@ -54,6 +54,10 @@ body {
     font-size: 10pt;
     font-family: Arial, "Open Sans", sans-serif !important;
     box-sizing: border-box;
+    /* The 8px a browser gives the body above and below reached only the first and the last page,
+       so the content of the first page started lower than on every other one. */
+    margin-top: 0;
+    margin-bottom: 0;
 }
 
 /* required for PDF generation with images to be conform to PDF/A */
