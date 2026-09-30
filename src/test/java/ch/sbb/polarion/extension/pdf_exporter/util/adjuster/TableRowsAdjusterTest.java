@@ -74,6 +74,19 @@ class TableRowsAdjusterTest {
     }
 
     @Test
+    void keepsARowWithAnIconMarkedBeforeItWasEmbeddedWhole() {
+        Document document = Jsoup.parse("<table><tbody><tr><td><img src=\"/polarion/ria/images/types/requirement.gif\"/>Patron</td></tr></tbody></table>");
+        TableRowsAdjuster.markIcons(document);
+        Element icon = document.selectFirst("img");
+        icon.attr("src", "data:image/gif;base64,R0lGODlhAQABAAAAACw=");
+
+        new TableRowsAdjuster(document, A4_PORTRAIT).execute();
+
+        assertThat(document.selectFirst("tr").attr("style")).isEqualTo("break-inside:avoid;");
+        assertThat(icon.hasAttr("data-icon")).as("The mark is gone once the rows are measured").isFalse();
+    }
+
+    @Test
     void leavesARowWhichStatesHowItBreaksAsItIs() {
         Document document = Jsoup.parse("""
                 <table><tbody><tr style="break-inside: auto"><td>Stated</td></tr>

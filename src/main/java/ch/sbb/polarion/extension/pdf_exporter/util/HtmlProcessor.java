@@ -210,6 +210,9 @@ public class HtmlProcessor {
         // in the block it is in, so its rows are measured there (see BOOKMARK 2 below)
         if (!(exportParams.isFitToPage() && customPageBreaks)) {
             timedIfNotNull(generationLog, "Keep table rows whole", () -> keepTableRowsWhole(document, exportParams, customPageBreaks));
+        } else {
+            // By then an embedded icon is no longer known by its address
+            TableRowsAdjuster.markIcons(document);
         }
 
         html = document.body().html();
@@ -735,7 +738,10 @@ public class HtmlProcessor {
 
                 if (exportParams.isFitToPage()) { //here we can make additional areas processing if needed
                     area = adjustContentToFitPage(area, exportParams);
-                    area = keepTableRowsWhole(area, exportParams);
+                    area = keepTableRowsWhole(area, ConversionParams.builder()
+                            .paperSize(exportParams.getPaperSize())
+                            .orientation(landscape ? Orientation.LANDSCAPE : Orientation.PORTRAIT)
+                            .build());
                 }
 
                 String orientationClass = (landscape ? "land" : "port") + exportParams.getPaperSize();
@@ -1120,10 +1126,10 @@ public class HtmlProcessor {
         new TableRowsAdjuster(document, page, pageHeight).execute();
     }
 
-    /** Keeps each short table row of a block between page breaks on one page, measured against the lower of the two pages. */
+    /** Keeps each short table row of a block between page breaks on one page, measured on the page of the block. */
     @NotNull String keepTableRowsWhole(@NotNull String html, @NotNull ConversionParams conversionParams) {
         PageWidthAdjuster block = new PageWidthAdjuster(html, conversionParams);
-        keepTableRowsWhole(block.getDocument(), conversionParams, true);
+        keepTableRowsWhole(block.getDocument(), conversionParams, false);
         return block.toHTML();
     }
 

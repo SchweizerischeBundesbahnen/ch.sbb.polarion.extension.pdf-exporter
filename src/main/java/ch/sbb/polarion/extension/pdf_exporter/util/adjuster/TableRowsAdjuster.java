@@ -41,8 +41,16 @@ public class TableRowsAdjuster extends AbstractAdjuster {
      */
     private static final String EMBEDDED_CONTENT = "svg, object, iframe";
 
-    /** The icons Polarion draws in a line of text: of a link, of an enum value, or one of its own image folders. */
-    private static final String ICON = "img.polarion-Icons, .polarion-JSEnumOption img, img[src*=/icons/], img[src*=/ria/images/]";
+    /**
+     * Marks an icon whose rows are measured once the images are embedded, when its address no longer says it is one.
+     */
+    private static final String ICON_MARK = "data-icon";
+
+    /**
+     * The icons Polarion draws in a line of text: of a link, of an enum value, or one of its own image folders. Or one
+     * marked as an icon before its address was replaced.
+     */
+    private static final String ICON = "img.polarion-Icons, .polarion-JSEnumOption img, img[src*=/icons/], img[src*=/ria/images/], img[" + ICON_MARK + "]";
 
     private static final String ROWS_OF_THE_TABLE = "> tr, > thead > tr, > tbody > tr, > tfoot > tr";
 
@@ -90,6 +98,15 @@ public class TableRowsAdjuster extends AbstractAdjuster {
                 }
             }
         }
+        document.select("img[" + ICON_MARK + "]").removeAttr(ICON_MARK);
+    }
+
+    /**
+     * Marks the icons of a document whose rows are measured once its images are embedded, which replaces the address
+     * an icon is known by. Measured, the rows lose the marks.
+     */
+    public static void markIcons(@NotNull Document document) {
+        document.select(ICON).attr(ICON_MARK, "");
     }
 
     /**
