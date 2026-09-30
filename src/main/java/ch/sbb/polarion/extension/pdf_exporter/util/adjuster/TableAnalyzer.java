@@ -6,6 +6,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jsoup.helper.W3CDom;
 import org.jsoup.nodes.Element;
 import org.w3c.dom.Document;
+import org.xhtmlrenderer.context.AWTFontResolver;
 import org.xhtmlrenderer.extend.ReplacedElement;
 import org.xhtmlrenderer.extend.ReplacedElementFactory;
 import org.xhtmlrenderer.extend.UserAgentCallback;
@@ -55,6 +56,13 @@ public class TableAnalyzer {
     // Doesn't really matter, our concern here are widths
     private static final int PAGE_HEIGHT = 1000;
     private static final String EMBEDDED_FONT_PATH = "/fonts/DejaVuSans.ttf";
+
+    /**
+     * The name the measurement gives the font it ships with. A name of its own, because a machine which has a
+     * font of the same name installed lends its own file to the layout: its bold face is not the one shipped
+     * here, the text then takes a line more or less, and the same document comes out laid out differently.
+     */
+    private static final String MEASUREMENT_FONT_FAMILY = "PdfExporterTableMeasurement";
     private static final Font EMBEDDED_FONT = loadEmbeddedFont();
 
     private static Font loadEmbeddedFont() {
@@ -107,8 +115,7 @@ public class TableAnalyzer {
     private Document toSelfDocument(@NotNull Element tableElement) {
         org.jsoup.nodes.Document tempDoc = org.jsoup.nodes.Document.createShell("");
         // Inject CSS to force the embedded font for consistent column width calculation across platforms
-        String fontFamily = EMBEDDED_FONT.getFamily(Locale.ROOT);
-        tempDoc.head().appendElement("style").text("* { font-family: '" + fontFamily + "', sans-serif !important; }");
+        tempDoc.head().appendElement("style").text("* { font-family: '" + MEASUREMENT_FONT_FAMILY + "', sans-serif !important; }");
         tempDoc.body().appendChild(tableElement.clone());
         return new W3CDom().fromJsoup(tempDoc);
     }
@@ -124,6 +131,12 @@ public class TableAnalyzer {
         // their intrinsic width to the measurement. Must be set before layout().
         ReplacedElementFactory defaultFactory = renderer.getSharedContext().getReplacedElementFactory();
         renderer.getSharedContext().setReplacedElementFactory(new SourceAwareReplacedElementFactory(defaultFactory));
+
+        // The font the measurement ships with is handed to the layout by name, so the file a machine happens to
+        // have installed under the name of that font is never the one which lays the table out
+        if (renderer.getSharedContext().getFontResolver() instanceof AWTFontResolver fontResolver) {
+            fontResolver.setFontMapping(MEASUREMENT_FONT_FAMILY, EMBEDDED_FONT);
+        }
 
         BufferedImage image = new BufferedImage(pageWidth, PAGE_HEIGHT, BufferedImage.TYPE_BYTE_GRAY);
         Graphics2D g2d = image.createGraphics();

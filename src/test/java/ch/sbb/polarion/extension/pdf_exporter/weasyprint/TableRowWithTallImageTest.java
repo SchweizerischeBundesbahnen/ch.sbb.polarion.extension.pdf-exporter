@@ -59,9 +59,7 @@ class TableRowWithTallImageTest extends BasePdfConverterTest {
     /** A header of one row can still take three lines of it, and the image gives up that height too. */
     @Test
     void keepsATableRowUnderAWrappedHeader() {
-        // The height of such a header is measured by laying the table out, and a font is a pixel taller on one
-        // machine than on another, which moves the image on the page. What the pages hold is what is read here.
-        export("tableRowWithTallImageUnderAWrappedHeader", getCurrentMethodName(), "A header which states", false);
+        export("tableRowWithTallImageUnderAWrappedHeader", getCurrentMethodName(), "A header which states", true);
     }
 
     private void export(@NotNull String resource, @NotNull String testName, @NotNull String headerWords, boolean compareWithReferences) {

@@ -26,12 +26,6 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
     /** However tall a header grows, an image is still worth seeing. */
     private static final int MIN_IMAGE_HEIGHT_PX = 100;
 
-    /**
-     * The step the height a header takes is rounded up to. The height is measured by laying the table out,
-     * and a font renders a pixel taller on one machine than on another; a step keeps the same document the
-     * same size wherever it is exported.
-     */
-    private static final int HEADER_HEIGHT_STEP_PX = 25;
 
     public ImageSizeInTablesAdjuster(@NotNull Document document, @NotNull ConversionParams conversionParams) {
         super(document, conversionParams);
@@ -95,8 +89,7 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
      * left on the page before, above nothing, or dropped altogether. The image gives that height up.
      */
     private void limitHeight(Element img, int headerHeight) {
-        int roundedHeader = (int) (Math.ceil((double) headerHeight / HEADER_HEIGHT_STEP_PX) * HEADER_HEIGHT_STEP_PX);
-        int allowedHeight = Math.max(PaperSizeUtils.getMaxHeight(conversionParams) - roundedHeader - CELL_CHROME_PX, MIN_IMAGE_HEIGHT_PX);
+        int allowedHeight = Math.max(PaperSizeUtils.getMaxHeight(conversionParams) - headerHeight - CELL_CHROME_PX, MIN_IMAGE_HEIGHT_PX);
 
         CSSDeclarationList cssStyles = CssUtils.parseDeclarations(img.attr(HtmlTagAttr.STYLE));
         float statedHeight = extractPixels(CssUtils.getPropertyValue(cssStyles, CssProp.MAX_HEIGHT));
