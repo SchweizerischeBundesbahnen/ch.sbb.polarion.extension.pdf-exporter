@@ -83,7 +83,16 @@ class TableRowsAdjusterTest {
         new TableRowsAdjuster(document, A4_PORTRAIT).execute();
 
         assertThat(document.selectFirst("tr").attr("style")).isEqualTo("break-inside:avoid;");
-        assertThat(icon.hasAttr("data-icon")).as("The mark is gone once the rows are measured").isFalse();
+        assertThat(icon.hasAttr("data-pdf-exporter-icon")).as("The mark is gone once the rows are measured").isFalse();
+    }
+
+    @Test
+    void leavesTheAttributesOfAnIconAsTheDocumentStatesThem() {
+        Document document = Jsoup.parse("<table><tbody><tr><td><img class=\"polarion-Icons\" data-icon=\"status\" src=\"/polarion/icons/draft.gif\"/>Draft</td></tr></tbody></table>");
+
+        new TableRowsAdjuster(document, A4_PORTRAIT).execute();
+
+        assertThat(document.selectFirst("img").attr("data-icon")).isEqualTo("status");
     }
 
     @Test

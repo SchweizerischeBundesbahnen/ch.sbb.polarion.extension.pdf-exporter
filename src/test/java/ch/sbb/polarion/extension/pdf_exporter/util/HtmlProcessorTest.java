@@ -1382,7 +1382,7 @@ class HtmlProcessorTest {
         Document document = JSoupUtils.parseHtml(result);
         assertEquals("data:image/gif;base64,R0lGODlhAQABAAAAACw=", document.selectFirst("img").attr("src"));
         assertEquals("break-inside:avoid;", document.selectFirst("tr").attr("style"));
-        assertFalse(document.selectFirst("img").hasAttr("data-icon"), "The mark is gone once the rows are measured");
+        assertFalse(document.selectFirst("img").hasAttr("data-pdf-exporter-icon"), "The mark is gone once the rows are measured");
     }
 
     @Test

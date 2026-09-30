@@ -44,7 +44,7 @@ public class TableRowsAdjuster extends AbstractAdjuster {
     /**
      * Marks an icon whose rows are measured once the images are embedded, when its address no longer says it is one.
      */
-    private static final String ICON_MARK = "data-icon";
+    private static final String ICON_MARK = "data-pdf-exporter-icon";
 
     /**
      * The icons Polarion draws in a line of text: of a link, of an enum value, or one of its own image folders. Or one
