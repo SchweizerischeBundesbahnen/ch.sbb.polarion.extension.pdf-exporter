@@ -85,7 +85,8 @@ class TableRowsAdjusterTest {
     }
 
     @Test
-    void keepsTheRowsOfANestedTableAndOfTheTableAroundIt() {
+    void measuresANestedTableWithTheRowWhichHoldsIt() {
+        // Measured by itself, the inner table would get the width of the page rather than the one of its cell
         Document document = Jsoup.parse("""
                 <table><tbody><tr><td>Outer
                 <table><tbody><tr><td>Inner</td></tr></tbody></table>
@@ -93,7 +94,22 @@ class TableRowsAdjusterTest {
 
         new TableRowsAdjuster(document, A4_PORTRAIT).execute();
 
-        assertThat(document.select("tr").eachAttr("style")).containsExactly("break-inside:avoid;", "break-inside:avoid;");
+        List<Element> rows = document.select("tr");
+        assertThat(rows.get(0).attr("style")).isEqualTo("break-inside:avoid;");
+        assertThat(rows.get(1).hasAttr("style")).isFalse();
+    }
+
+    @Test
+    void measuresARowInTheFontItInheritsFromAroundTheTable() {
+        String table = "<table><tbody><tr><td>" + "A line of a cell.<br/>".repeat(6) + "</td></tr></tbody></table>";
+        Document plain = Jsoup.parse(table);
+        Document large = Jsoup.parse("<div style=\"font-size: 40px; line-height: 1.5\">" + table + "</div>");
+
+        new TableRowsAdjuster(plain, A4_PORTRAIT).execute();
+        new TableRowsAdjuster(large, A4_PORTRAIT).execute();
+
+        assertThat(plain.selectFirst("tr").attr("style")).as("Six lines of the default font are a short row").isEqualTo("break-inside:avoid;");
+        assertThat(large.selectFirst("tr").hasAttr("style")).as("Six lines of a font of 40px are more than a quarter of a page").isFalse();
     }
 
     @Test

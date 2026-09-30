@@ -45,6 +45,8 @@ import static ch.sbb.polarion.extension.pdf_exporter.util.exporter.Constants.*;
 public class HtmlProcessor {
 
     private static final String DIV_START_TAG = "<div>";
+    /** The class of a section a page break makes, in the orientation of its pages. */
+    private static final String PAGE_BREAK_SECTION_CLASS = "sbb_page_break";
     private static final String DIV_END_TAG = "</div>";
     private static final String SPAN_END_TAG = "</span>";
     private static final String COMMENT_START = "[span";
@@ -1098,17 +1100,17 @@ public class HtmlProcessor {
     }
 
     /**
-     * Keeps each table row which fits a page on one page. A document with page breaks which turn the page may lay a table
-     * out in either orientation, so its rows are measured against the lower of the two pages.
+     * Keeps each short table row on one page. A document with page breaks which may turn the page, marked in its HTML or
+     * already made sections of their own as the page break widget of a Live Report makes them, may lay a table out in
+     * either orientation, so its rows are measured against the lower of the two pages.
      */
-    @VisibleForTesting
-    void keepTableRowsWhole(@NotNull Document document, @NotNull ConversionParams conversionParams, boolean customPageBreaks) {
+    public void keepTableRowsWhole(@NotNull Document document, @NotNull ConversionParams conversionParams, boolean customPageBreaks) {
         // An export which names no paper size or orientation is laid out on a portrait A4, and measured on one
         ConversionParams page = ConversionParams.builder()
                 .paperSize(conversionParams.getPaperSize() != null ? conversionParams.getPaperSize() : PaperSize.A4)
                 .orientation(conversionParams.getOrientation() != null ? conversionParams.getOrientation() : Orientation.PORTRAIT)
                 .build();
-        int pageHeight = customPageBreaks
+        int pageHeight = customPageBreaks || !document.select("div." + PAGE_BREAK_SECTION_CLASS).isEmpty()
                 ? Math.min(PaperSizeUtils.MAX_PORTRAIT_HEIGHTS.get(page.getPaperSize()), PaperSizeUtils.MAX_LANDSCAPE_HEIGHTS.get(page.getPaperSize()))
                 : PaperSizeUtils.getMaxHeight(page);
         new TableRowsAdjuster(document, page, pageHeight).execute();
@@ -1381,7 +1383,7 @@ public class HtmlProcessor {
     @NotNull
     private Element buildPageBreakSection(boolean landscape, @NotNull PaperSize paperSize, @NotNull Element anchor, @NotNull List<Node> sectionNodes) {
         Element wrapper = new Element(HtmlTag.DIV);
-        wrapper.addClass("sbb_page_break");
+        wrapper.addClass(PAGE_BREAK_SECTION_CLASS);
         wrapper.addClass((landscape ? "land" : "port") + paperSize);
         anchor.after(wrapper);
         for (Node node : sectionNodes) {

@@ -37,6 +37,19 @@ class HtmlToPdfConverterTest {
     private HtmlToPdfConverter htmlToPdfConverter;
 
     @Test
+    void shouldKeepShortTableRowsWholeInAPreparedHtml() {
+        when(pdfTemplateProcessor.buildBaseUrlHeader()).thenReturn("");
+        when(pdfTemplateProcessor.buildSizeCss(Orientation.PORTRAIT, PaperSize.A4)).thenReturn("");
+        when(htmlProcessor.replaceResourcesAsBase64Encoded(anyString())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(htmlProcessor.internalizeLinks(anyString())).thenAnswer(a -> a.getArgument(0));
+        ConversionParams conversionParams = ConversionParams.builder().build();
+
+        htmlToPdfConverter.preprocessHtml("<html><body><table><tr><td>Patron</td></tr></table></body></html>", conversionParams);
+
+        verify(htmlProcessor).keepTableRowsWhole(any(), eq(conversionParams), eq(false));
+    }
+
+    @Test
     void shouldInjectHeadAndStyle() {
         String html = """
                 <html>

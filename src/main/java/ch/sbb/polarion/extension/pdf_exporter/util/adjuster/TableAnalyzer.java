@@ -1,5 +1,6 @@
 package ch.sbb.polarion.extension.pdf_exporter.util.adjuster;
 
+import ch.sbb.polarion.extension.pdf_exporter.util.CssUtils;
 import com.polarion.core.util.logging.Logger;
 import lombok.experimental.UtilityClass;
 import org.jetbrains.annotations.NotNull;
@@ -52,6 +53,9 @@ public class TableAnalyzer {
     private static final String TR = "tr";
     private static final String TD = "td";
     private static final String TH = "th";
+
+    /** The text styles which decide how tall a line of a cell is, and which a table inherits from around it. */
+    private static final List<String> INHERITED_TEXT_PROPERTIES = List.of("font-size", "line-height", "font-weight", "letter-spacing");
 
     // Doesn't really matter, our concern here are widths
     private static final int PAGE_HEIGHT = 1000;
@@ -118,8 +122,26 @@ public class TableAnalyzer {
         org.jsoup.nodes.Document tempDoc = org.jsoup.nodes.Document.createShell("");
         // Inject CSS to force the embedded font for consistent column width calculation across platforms
         tempDoc.head().appendElement("style").text("* { font-family: '" + MEASUREMENT_FONT_FAMILY + "', sans-serif !important; }");
-        tempDoc.body().appendChild(tableElement.clone());
+        tempDoc.body().appendElement("div").attr("style", inheritedTextStyle(tableElement)).appendChild(tableElement.clone());
         return new W3CDom().fromJsoup(tempDoc);
+    }
+
+    /**
+     * The text styles the table inherits from the elements around it, which the measure would otherwise lay it out without:
+     * of each, the one stated on the nearest of them.
+     */
+    private String inheritedTextStyle(@NotNull Element tableElement) {
+        StringBuilder style = new StringBuilder();
+        for (String property : INHERITED_TEXT_PROPERTIES) {
+            for (Element ancestor : tableElement.parents()) {
+                String value = CssUtils.getPropertyValue(CssUtils.parseDeclarations(ancestor.attr("style")), property);
+                if (!value.isEmpty()) {
+                    style.append(property).append(": ").append(value).append("; ");
+                    break;
+                }
+            }
+        }
+        return style.toString().trim();
     }
 
     private Box render(@NotNull Document doc, int pageWidth) {

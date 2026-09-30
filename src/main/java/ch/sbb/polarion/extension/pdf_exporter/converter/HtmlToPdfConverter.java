@@ -82,6 +82,7 @@ public class HtmlToPdfConverter {
             head.appendElement(HtmlTag.STYLE).text(additionalCss);
         }
 
+        htmlProcessor.keepTableRowsWhole(document, conversionParams, false);
         if (conversionParams.isFitToPage()) {
             htmlProcessor.adjustContentToFitPage(document, conversionParams);
         }

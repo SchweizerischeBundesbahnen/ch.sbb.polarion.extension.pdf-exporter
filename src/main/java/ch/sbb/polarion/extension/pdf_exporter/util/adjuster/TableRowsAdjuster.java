@@ -63,7 +63,8 @@ public class TableRowsAdjuster extends AbstractAdjuster {
     public void execute() {
         for (Element table : document.select(HtmlTag.TABLE)) {
             Elements rows = table.select(ROWS_OF_THE_TABLE);
-            if (rows.isEmpty()) {
+            // A nested table is measured with the row which holds it, at the width of its cell: that row is kept whole or not
+            if (rows.isEmpty() || table.parents().stream().anyMatch(ancestor -> ancestor.nameIs(HtmlTag.TABLE))) {
                 continue;
             }
             TableAnalyzer.TableMetrics metrics = TableAnalyzer.analyze(table, PaperSizeUtils.getMaxWidth(conversionParams));

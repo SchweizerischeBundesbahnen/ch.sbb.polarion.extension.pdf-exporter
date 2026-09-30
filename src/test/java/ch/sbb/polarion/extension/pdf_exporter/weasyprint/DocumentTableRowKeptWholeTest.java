@@ -59,6 +59,8 @@ class DocumentTableRowKeptWholeTest extends BasePdfConverterTest {
         List<String> pages = pageTexts(pdf);
 
         assertThat(pages).hasSize(2);
+        assertThat(pageOf(pages, "Patron")).as("The account type is printed").isNotNegative();
+        assertThat(pageOf(pages, "reserve, and purchase.")).as("What the account may do is printed").isNotNegative();
         assertThat(pageOf(pages, "Patron")).as("The account type and what it may do are on one page")
                 .isEqualTo(pageOf(pages, "reserve, and purchase."));
         assertFalse(compareContentUsingReferenceImages(getCurrentMethodName(), pdf), "The pages differ from the reference images");

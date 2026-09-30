@@ -1318,6 +1318,21 @@ class HtmlProcessorTest {
     }
 
     @Test
+    void measuresTableRowsAgainstTheLowerPageWhereASectionTurnsIt() {
+        // Nine lines: within a quarter of a portrait page, but more than a quarter of a landscape one
+        String table = "<table><tbody><tr><td>" + "A line of a cell.<br/>".repeat(9) + "</td></tr></tbody></table>";
+        Document portrait = JSoupUtils.parseHtml(table);
+        Document withSection = JSoupUtils.parseHtml(table + "<div class=\"sbb_page_break landA4\"><p>Landscape</p></div>");
+        ConversionParams a4 = ConversionParams.builder().paperSize(PaperSize.A4).orientation(Orientation.PORTRAIT).build();
+
+        processor.keepTableRowsWhole(portrait, a4, false);
+        processor.keepTableRowsWhole(withSection, a4, false);
+
+        assertEquals("break-inside:avoid;", portrait.selectFirst("tr").attr("style"));
+        assertFalse(withSection.selectFirst("tr").hasAttr("style"));
+    }
+
+    @Test
     void keepsTableRowsWholeInAnExportWhichNamesNoPageSize() {
         Document document = JSoupUtils.parseHtml("<table><tbody><tr><td>Patron</td><td>Can access the library.</td></tr></tbody></table>");
         ConversionParams noPageSize = ConversionParams.builder().paperSize(null).orientation(null).build();
