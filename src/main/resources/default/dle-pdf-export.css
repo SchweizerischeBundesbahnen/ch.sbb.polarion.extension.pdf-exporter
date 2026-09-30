@@ -428,6 +428,14 @@ ul.tof li > a.page-number::after {
         break-inside: avoid;
     }
 
+    /* A row of a work items table in a Live Report, split by a page break, leaves the icon and the ID on one page
+       and the title on the next. Only these rows: a row of a document table may be taller than a page, and one
+       kept whole moves to a page of its own and leaves the page before it empty. */
+    table.polarion-rpw-table-content tr {
+        page-break-inside: avoid;
+        break-inside: avoid;
+    }
+
     tr:first-child:not(:last-child) {
         break-after: avoid;
     }
