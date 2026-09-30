@@ -30,11 +30,24 @@ import static org.mockito.ArgumentMatchers.eq;
  */
 class PageBreakAtTheEndTest extends BasePdfConverterTest {
 
-    /** The chapters of the document, and nothing after the break which follows them. */
-    private static final int DOCUMENT_PAGES = 1;
-
     @Test
     void leavesNoPageAfterThePageBreakADocumentEndsWith() {
+        export("pageBreakAtTheEnd", getCurrentMethodName(), 1);
+    }
+
+    /** A break between two chapters is what a break is for, and it is untouched. */
+    @Test
+    void givesAPageToEachChapterAPageBreakSeparates() {
+        export("pageBreakInTheMiddle", getCurrentMethodName(), 2);
+    }
+
+    /** Two breaks in a row leave a page blank between two chapters, which is the page the document asks for. */
+    @Test
+    void keepsThePageTwoBreaksInARowLeaveBlank() {
+        export("pageBreakLeavingAPageEmpty", getCurrentMethodName(), 3);
+    }
+
+    private void export(@NotNull String resource, @NotNull String testName, int expectedPages) {
         ExportParams params = ExportParams.builder()
                 .projectId("test")
                 .locationPath("testLocation")
@@ -45,7 +58,7 @@ class PageBreakAtTheEndTest extends BasePdfConverterTest {
         DocumentData<IModule> liveDoc = DocumentData.creator(DocumentType.LIVE_DOC, module)
                 .id(LiveDocId.from("testProjectId", "_default", "testDocumentId"))
                 .title("A page break at the end")
-                .content(readHtmlResource("pageBreakAtTheEnd"))
+                .content(readHtmlResource(resource))
                 .lastRevision("42")
                 .revisionPlaceholder("42")
                 .build();
@@ -53,8 +66,8 @@ class PageBreakAtTheEndTest extends BasePdfConverterTest {
 
         byte[] pdf = converter.convertToPdf(params, null);
 
-        assertEquals(DOCUMENT_PAGES, pageCount(pdf), "The break at the end has nothing to put on a page of its own");
-        assertFalse(compareContentUsingReferenceImages(getCurrentMethodName(), pdf), "The pages differ from the reference images");
+        assertEquals(expectedPages, pageCount(pdf), "The pages a document of breaks runs to");
+        assertFalse(compareContentUsingReferenceImages(testName, pdf), "The pages differ from the reference images");
     }
 
     @SneakyThrows
