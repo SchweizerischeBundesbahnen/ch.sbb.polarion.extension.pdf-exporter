@@ -7,6 +7,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 class HeaderFooterModelTest {
 
@@ -94,5 +95,6 @@ class HeaderFooterModelTest {
         assertEquals(expectedFooterLeft, model.getFooterLeft());
         assertEquals(expectedFooterCenter, model.getFooterCenter());
         assertEquals(expectedFooterRight, model.getFooterRight());
+        assertFalse(model.isDifferentFirstPage(), "A header and footer stored before the first page parts existed has no different first page");
     }
 }

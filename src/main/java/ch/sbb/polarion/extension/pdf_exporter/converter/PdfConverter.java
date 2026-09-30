@@ -262,7 +262,7 @@ public class PdfConverter {
     }
 
     private @NotNull String prepareHtmlContent(@NotNull ExportParams exportParams, @Nullable ITrackerProject project, @NotNull DocumentData<? extends IUniqueObject> documentData, @Nullable ExportMetaInfoCallback metaInfoCallback, @Nullable PdfGenerationLog generationLog) {
-        String cssContent = timedIfNotNull(generationLog, "Get CSS content", () -> getCssContent(documentData, exportParams));
+        String cssContent = timedIfNotNull(generationLog, "Get CSS content", () -> getFirstPageHeaderFooterCss(exportParams) + getCssContent(documentData, exportParams));
         String preparedDocumentContent = postProcessDocumentContent(exportParams, project, documentData.getContent(), generationLog);
         String headerFooterContent = timedIfNotNull(generationLog, "Get header/footer content", () -> getHeaderFooterContent(documentData, exportParams));
 
@@ -481,29 +481,53 @@ public class PdfConverter {
     String getHeaderFooterContent(
             @NotNull DocumentData<? extends IUniqueObject> documentData,
             @NotNull ExportParams exportParams) {
-        String headerFooterSettingsName = exportParams.getHeaderFooter() != null ? exportParams.getHeaderFooter() : NamedSettings.DEFAULT_NAME;
-        HeaderFooterModel headerFooter = headerFooterSettings.load(exportParams.getProjectId(), SettingId.fromName(headerFooterSettingsName));
-        if (!headerFooter.isUseCustomValues()) {
-            headerFooter = headerFooterSettings.defaultValues();
-        }
+        HeaderFooterModel headerFooter = loadHeaderFooter(exportParams);
 
-        List<String> headersFooters = Arrays.asList(
+        String headerFooterContent = fillHeaderFooterTemplate(documentData, exportParams, "webapp/pdf-exporter/html/headerAndFooter.html", Arrays.asList(
                 headerFooter.getHeaderLeft(),
                 headerFooter.getHeaderCenter(),
                 headerFooter.getHeaderRight(),
                 headerFooter.getFooterLeft(),
                 headerFooter.getFooterCenter(),
-                headerFooter.getFooterRight());
+                headerFooter.getFooterRight()));
+        if (headerFooter.isDifferentFirstPage()) {
+            headerFooterContent += fillHeaderFooterTemplate(documentData, exportParams, "webapp/pdf-exporter/html/headerAndFooterFirstPage.html", Arrays.asList(
+                    headerFooter.getFirstPageHeaderLeft(),
+                    headerFooter.getFirstPageHeaderCenter(),
+                    headerFooter.getFirstPageHeaderRight(),
+                    headerFooter.getFirstPageFooterLeft(),
+                    headerFooter.getFirstPageFooterCenter(),
+                    headerFooter.getFirstPageFooterRight()));
+        }
+        return htmlProcessor.replaceResourcesAsBase64Encoded(headerFooterContent);
+    }
 
-        List<String> headerFooterContents = placeholderProcessor.replacePlaceholders(documentData, exportParams, headersFooters);
+    /**
+     * @return the CSS which puts the first page parts of the header and footer on the first page, empty when it has none
+     */
+    @VisibleForTesting
+    @NotNull String getFirstPageHeaderFooterCss(@NotNull ExportParams exportParams) {
+        return loadHeaderFooter(exportParams).isDifferentFirstPage() ? ScopeUtils.getFileContent("default/first-page-header-footer.css") : "";
+    }
 
-        List<String> nonNullHeaderFooterContents = headerFooterContents.stream()
+    private @NotNull HeaderFooterModel loadHeaderFooter(@NotNull ExportParams exportParams) {
+        String headerFooterSettingsName = exportParams.getHeaderFooter() != null ? exportParams.getHeaderFooter() : NamedSettings.DEFAULT_NAME;
+        HeaderFooterModel headerFooter = headerFooterSettings.load(exportParams.getProjectId(), SettingId.fromName(headerFooterSettingsName));
+        return headerFooter.isUseCustomValues() ? headerFooter : headerFooterSettings.defaultValues();
+    }
+
+    private @NotNull String fillHeaderFooterTemplate(
+            @NotNull DocumentData<? extends IUniqueObject> documentData,
+            @NotNull ExportParams exportParams,
+            @NotNull String template,
+            @NotNull List<String> parts) {
+        // A part nobody wrote is null, the first page parts of a header and footer stored without them above all
+        List<String> nonNullParts = parts.stream().map(c -> (c == null) ? "" : c).toList();
+        List<String> nonNullContents = placeholderProcessor.replacePlaceholders(documentData, exportParams, nonNullParts).stream()
                 .map(c -> (c == null) ? "" : c)
                 .map(c -> velocityEvaluator.evaluateVelocityExpressions(documentData, c))
                 .toList();
-
-        String headerFooterContent = String.format(ScopeUtils.getFileContent("webapp/pdf-exporter/html/headerAndFooter.html"), nonNullHeaderFooterContents.toArray());
-        return htmlProcessor.replaceResourcesAsBase64Encoded(headerFooterContent);
+        return String.format(ScopeUtils.getFileContent(template), nonNullContents.toArray());
     }
 
     private String appendWikiCss(String css) {

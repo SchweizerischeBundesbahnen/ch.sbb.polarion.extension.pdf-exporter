@@ -107,7 +107,17 @@ public class HeaderFooterSettings extends GenericNamedSettings<HeaderFooterModel
                 || BuiltInValues.isLegacy(FEATURE_NAME, hash);
     }
 
+    /**
+     * The first page parts count only while they are in use, so the hash of a header and footer without them stays the one
+     * it had before they existed.
+     */
     private static @NotNull String hash(@NotNull HeaderFooterModel model) {
+        if (model.isDifferentFirstPage()) {
+            return BuiltInValues.hash(model.getHeaderLeft(), model.getHeaderCenter(), model.getHeaderRight(),
+                    model.getFooterLeft(), model.getFooterCenter(), model.getFooterRight(),
+                    model.getFirstPageHeaderLeft(), model.getFirstPageHeaderCenter(), model.getFirstPageHeaderRight(),
+                    model.getFirstPageFooterLeft(), model.getFirstPageFooterCenter(), model.getFirstPageFooterRight());
+        }
         return BuiltInValues.hash(model.getHeaderLeft(), model.getHeaderCenter(), model.getHeaderRight(),
                 model.getFooterLeft(), model.getFooterCenter(), model.getFooterRight());
     }

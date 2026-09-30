@@ -1,0 +1,59 @@
+/* Added in front of the CSS only when a header and footer has a different first page, so the CSS after it can restyle it.
+   The margin boxes of :first win over the ones of :left and :right, as a :first page selector is more specific. */
+.header .first-page-top-center, .footer .first-page-bottom-center {
+    text-align: center;
+}
+
+@media print {
+    .header .first-page-top-left {
+        position: running(first-page-top-left);
+    }
+
+    .header .first-page-top-center {
+        position: running(first-page-top-center);
+    }
+
+    .header .first-page-top-right {
+        position: running(first-page-top-right);
+    }
+
+    .footer .first-page-bottom-left {
+        position: running(first-page-bottom-left);
+        margin-bottom: 40px;
+    }
+
+    .footer .first-page-bottom-center {
+        position: running(first-page-bottom-center);
+        margin-bottom: 40px;
+    }
+
+    .footer .first-page-bottom-right {
+        position: running(first-page-bottom-right);
+        margin-bottom: 40px;
+    }
+}
+
+@page :first {
+    @top-left {
+        content: element(first-page-top-left);
+        text-align: left;
+    }
+    @top-center {
+        content: element(first-page-top-center);
+    }
+    @top-right {
+        content: element(first-page-top-right);
+        text-align: right;
+    }
+    @bottom-left {
+        content: element(first-page-bottom-left);
+        text-align: left;
+    }
+    @bottom-center {
+        content: element(first-page-bottom-center);
+    }
+    @bottom-right {
+        content: element(first-page-bottom-right);
+        text-align: right;
+    }
+}
