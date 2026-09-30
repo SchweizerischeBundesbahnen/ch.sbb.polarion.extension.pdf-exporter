@@ -15,21 +15,31 @@ import org.jsoup.select.Elements;
 import java.util.List;
 
 /**
- * Keeps a table row on one page where it fits one.
+ * Keeps a short table row on one page.
  * <p>
- * Split by the end of a page, a row leaves its first cells on one page and the rest of it on the next: an ID above
- * nothing, and a title below no ID. CSS can ask for every row to stay whole, but a row taller than a page then moves
- * to a page of its own and leaves the page before it empty. So each table is measured, and only the rows which fit a
- * page, under the header the table repeats there, are kept whole. A taller one still breaks where the page ends.
+ * Split by the end of a page, a short row leaves its first cells on one page and the rest of it on the next: an ID above
+ * nothing, and a title below no ID. CSS can ask for every row to stay whole, but a row kept whole moves to the next page
+ * and leaves the rest of this one empty, a whole page for a row taller than a page. So each table is measured, and only
+ * the rows short enough to leave little empty are kept whole. A taller row breaks where the page ends, with plenty of
+ * it on either side.
  * </p>
  */
 public class TableRowsAdjuster extends AbstractAdjuster {
 
     /**
-     * The share of a page a row may take and still be kept whole. The measure lays the table out in a font of its own,
-     * not the one of the PDF, so a row near the height of a page is left free to break rather than risk a page of its own.
+     * The share of a page a row may take and still be kept whole: moved to the next page, it leaves no more than that
+     * empty on this one.
      */
-    private static final float SHARE_OF_PAGE = 0.9f;
+    private static final float SHARE_OF_PAGE = 0.25f;
+
+    /**
+     * What the measure cannot size: an image is not in the document yet, only the address it comes from. Icons are the
+     * exception, a line high whatever they show.
+     */
+    private static final String EMBEDDED_CONTENT = "svg, object, iframe";
+
+    /** The icons Polarion draws in a line of text: of a link, of an enum value, or one of its own image folders. */
+    private static final String ICON = "img.polarion-Icons, .polarion-JSEnumOption img, img[src*=/icons/], img[src*=/ria/images/]";
 
     private static final String ROWS_OF_THE_TABLE = "> tr, > thead > tr, > tbody > tr, > tfoot > tr";
 
@@ -64,11 +74,17 @@ public class TableRowsAdjuster extends AbstractAdjuster {
             }
             float allowedHeight = (pageHeight - metrics.headerHeight()) * SHARE_OF_PAGE;
             for (int index = 0; index < rows.size(); index++) {
-                if (rowHeights.get(index) <= allowedHeight) {
-                    keepWhole(rows.get(index));
+                Element row = rows.get(index);
+                if (rowHeights.get(index) <= allowedHeight && isMeasured(row)) {
+                    keepWhole(row);
                 }
             }
         }
+    }
+
+    /** Whether the measure knows the height of the row: no content it cannot size, and no image but icons. */
+    private static boolean isMeasured(@NotNull Element row) {
+        return row.select(EMBEDDED_CONTENT).isEmpty() && row.select(HtmlTag.IMG).size() == row.select(ICON).size();
     }
 
     /** A row which states how it breaks itself is left as it is. */

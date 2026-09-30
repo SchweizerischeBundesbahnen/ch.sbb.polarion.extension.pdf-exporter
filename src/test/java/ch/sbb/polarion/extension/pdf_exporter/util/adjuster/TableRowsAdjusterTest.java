@@ -43,6 +43,37 @@ class TableRowsAdjusterTest {
     }
 
     @Test
+    void leavesARowOfHalfAPageFreeToBreak() {
+        // Kept whole, it would move to the next page and leave up to half of this one empty
+        Document document = Jsoup.parse("<table><tbody><tr><td>" + "A line of a cell.<br/>".repeat(25) + "</td></tr></tbody></table>");
+
+        new TableRowsAdjuster(document, A4_PORTRAIT).execute();
+
+        assertThat(document.selectFirst("tr").hasAttr("style")).isFalse();
+    }
+
+    @Test
+    void leavesARowWithAnImageToTheImageAdjusters() {
+        // The image is an address the measure cannot load yet, so the height of its row is not known
+        Document document = Jsoup.parse("<table><tbody><tr><td><img src=\"/polarion/diagram.png\"/></td></tr></tbody></table>");
+
+        new TableRowsAdjuster(document, A4_PORTRAIT).execute();
+
+        assertThat(document.selectFirst("tr").hasAttr("style")).isFalse();
+    }
+
+    @Test
+    void keepsARowWithAnIconWhole() {
+        Document document = Jsoup.parse("""
+                <table><tbody><tr><td>Status</td><td><span class="polarion-JSEnumOption" title="Draft">\
+                <img src="/polarion/icons/default/enums/req_status_draft.gif"/>Draft</span></td></tr></tbody></table>""");
+
+        new TableRowsAdjuster(document, A4_PORTRAIT).execute();
+
+        assertThat(document.selectFirst("tr").attr("style")).isEqualTo("break-inside:avoid;");
+    }
+
+    @Test
     void leavesARowWhichStatesHowItBreaksAsItIs() {
         Document document = Jsoup.parse("""
                 <table><tbody><tr style="break-inside: auto"><td>Stated</td></tr>

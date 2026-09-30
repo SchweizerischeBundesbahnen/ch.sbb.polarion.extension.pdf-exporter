@@ -1103,10 +1103,15 @@ public class HtmlProcessor {
      */
     @VisibleForTesting
     void keepTableRowsWhole(@NotNull Document document, @NotNull ConversionParams conversionParams, boolean customPageBreaks) {
+        // An export which names no paper size or orientation is laid out on a portrait A4, and measured on one
+        ConversionParams page = ConversionParams.builder()
+                .paperSize(conversionParams.getPaperSize() != null ? conversionParams.getPaperSize() : PaperSize.A4)
+                .orientation(conversionParams.getOrientation() != null ? conversionParams.getOrientation() : Orientation.PORTRAIT)
+                .build();
         int pageHeight = customPageBreaks
-                ? Math.min(PaperSizeUtils.MAX_PORTRAIT_HEIGHTS.get(conversionParams.getPaperSize()), PaperSizeUtils.MAX_LANDSCAPE_HEIGHTS.get(conversionParams.getPaperSize()))
-                : PaperSizeUtils.getMaxHeight(conversionParams);
-        new TableRowsAdjuster(document, conversionParams, pageHeight).execute();
+                ? Math.min(PaperSizeUtils.MAX_PORTRAIT_HEIGHTS.get(page.getPaperSize()), PaperSizeUtils.MAX_LANDSCAPE_HEIGHTS.get(page.getPaperSize()))
+                : PaperSizeUtils.getMaxHeight(page);
+        new TableRowsAdjuster(document, page, pageHeight).execute();
     }
 
     public void adjustContentToFitPage(@NotNull Document document, @NotNull ConversionParams conversionParams) {

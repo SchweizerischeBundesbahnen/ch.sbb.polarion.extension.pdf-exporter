@@ -1318,6 +1318,15 @@ class HtmlProcessorTest {
     }
 
     @Test
+    void keepsTableRowsWholeInAnExportWhichNamesNoPageSize() {
+        Document document = JSoupUtils.parseHtml("<table><tbody><tr><td>Patron</td><td>Can access the library.</td></tr></tbody></table>");
+        ConversionParams noPageSize = ConversionParams.builder().paperSize(null).orientation(null).build();
+
+        assertDoesNotThrow(() -> processor.keepTableRowsWhole(document, noPageSize, false));
+        assertEquals("break-inside:avoid;", document.selectFirst("tr").attr("style"));
+    }
+
+    @Test
     @SneakyThrows
     void processHtmlForPDFTestCutEmptyWorkItemAttributesDisabled() {
         try (InputStream isHtml = this.getClass().getResourceAsStream("/emptyWIAttributesBeforeProcessing.html")) {
