@@ -43,6 +43,9 @@ class TableRowWithTallImageTest extends BasePdfConverterTest {
     /** The text fills the first page, and the table takes the second one whole. */
     private static final int DOCUMENT_PAGES = 2;
 
+    /** The shape of the diagram, 300 x 3000 px, which it keeps however short a header leaves it. */
+    private static final double DIAGRAM_RATIO = 300d / 3000d;
+
     @Test
     void keepsATableRowWhichHoldsAnImageWhole() {
         export("tableRowWithTallImage", getCurrentMethodName(), "Diagram 1", true);
@@ -84,6 +87,10 @@ class TableRowWithTallImageTest extends BasePdfConverterTest {
         assertEquals(DOCUMENT_PAGES, pageCount(pdf), "The text fills the first page and the table takes the second, whole");
         assertEquals(List.of(DOCUMENT_PAGES - 1), pagesWhichCarry(pdf, headerWords),
                 "The header belongs to the page its row is on, and a header left on the page before heads nothing there");
+        List<List<Integer>> drawn = DrawnImages.sizesIn(pdf);
+        assertEquals(1, drawn.size(), "The document draws the diagram once");
+        assertEquals(DIAGRAM_RATIO, (double) drawn.getFirst().getFirst() / drawn.getFirst().getLast(), 0.01d,
+                "The diagram is drawn whole, in the shape of the file it comes from");
         if (compareWithReferences) {
             assertFalse(compareContentUsingReferenceImages(testName, pdf), "The pages differ from the reference images");
         }

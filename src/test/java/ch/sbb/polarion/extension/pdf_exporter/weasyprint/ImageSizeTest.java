@@ -5,12 +5,7 @@ import ch.sbb.polarion.extension.pdf_exporter.util.adjuster.PageWidthAdjuster;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.base.BaseWeasyPrintTest;
 import lombok.SneakyThrows;
 import org.apache.pdfbox.Loader;
-import org.apache.pdfbox.contentstream.PDFGraphicsStreamEngine;
-import org.apache.pdfbox.cos.COSName;
 import org.apache.pdfbox.pdmodel.PDDocument;
-import org.apache.pdfbox.pdmodel.PDPage;
-import org.apache.pdfbox.pdmodel.graphics.image.PDImage;
-import org.apache.pdfbox.util.Matrix;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 
@@ -19,12 +14,10 @@ import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
-import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.Objects;
@@ -79,7 +72,7 @@ class ImageSizeTest extends BaseWeasyPrintTest {
         byte[] pdf = exportToPdf(html, WeasyPrintOptions.builder().build());
 
         // its own size where the document gives none, then half of it, twice it, and a width with a height
-        assertEquals(List.of(size(OWN_WIDTH, OWN_HEIGHT), size(100, 50), size(400, 200), size(300, 150)), imageSizesInPx(pdf));
+        assertEquals(List.of(DrawnImages.size(OWN_WIDTH, OWN_HEIGHT), DrawnImages.size(100, 50), DrawnImages.size(400, 200), DrawnImages.size(300, 150)), DrawnImages.sizesIn(pdf));
         assertFalse(compareContentUsingReferenceImages(getCurrentMethodName(), pdf), "The pages differ from the reference images");
     }
 
@@ -99,7 +92,7 @@ class ImageSizeTest extends BaseWeasyPrintTest {
         byte[] pdf = exportToPdf("<html><body>%s</body></html>".formatted(adjusted), WeasyPrintOptions.builder().build());
 
         // Fit to page shortens it to the height of a page, and the width follows: 81 * 874 / 1521
-        assertEquals(List.of(size(47, PAGE_HEIGHT)), imageSizesInPx(pdf));
+        assertEquals(List.of(DrawnImages.size(47, PAGE_HEIGHT)), DrawnImages.sizesIn(pdf));
         assertFalse(compareContentUsingReferenceImages(getCurrentMethodName(), pdf), "The pages differ from the reference images");
     }
 
@@ -122,7 +115,7 @@ class ImageSizeTest extends BaseWeasyPrintTest {
 
         byte[] pdf = exportToPdf("<html><body>%s</body></html>".formatted(adjusted), WeasyPrintOptions.builder().build());
 
-        List<List<Integer>> sizes = imageSizesInPx(pdf);
+        List<List<Integer>> sizes = DrawnImages.sizesIn(pdf);
         assertEquals(1, sizes.size(), "The document holds one image");
 
         int width = sizes.getFirst().getFirst();
@@ -204,10 +197,6 @@ class ImageSizeTest extends BaseWeasyPrintTest {
         return "data:image/png;base64," + Base64.getEncoder().encodeToString(png.toByteArray());
     }
 
-    private static @NotNull List<Integer> size(int width, int height) {
-        return List.of(width, height);
-    }
-
     @SneakyThrows
     private int pageCount(byte @NotNull [] pdf) {
         try (PDDocument document = Loader.loadPDF(pdf)) {
@@ -215,97 +204,4 @@ class ImageSizeTest extends BaseWeasyPrintTest {
         }
     }
 
-    /** The size of every image drawn in the document, in CSS pixels, in the order they are drawn. */
-    @SneakyThrows
-    private @NotNull List<List<Integer>> imageSizesInPx(byte @NotNull [] pdf) {
-        List<List<Integer>> sizes = new ArrayList<>();
-        try (PDDocument document = Loader.loadPDF(pdf)) {
-            for (PDPage page : document.getPages()) {
-                new ImageSizeCollector(page, sizes).processPage(page);
-            }
-        }
-        return sizes;
-    }
-
-    /** Reads the size each image is drawn at, which is the scale of the matrix in force. */
-    private static class ImageSizeCollector extends PDFGraphicsStreamEngine {
-
-        /** A CSS pixel is 0.75 pt, the unit a PDF is laid out in. */
-        private static final float PT_PER_PX = 0.75f;
-
-        private final List<List<Integer>> sizes;
-
-        ImageSizeCollector(@NotNull PDPage page, @NotNull List<List<Integer>> sizes) {
-            super(page);
-            this.sizes = sizes;
-        }
-
-        @Override
-        public void drawImage(@NotNull PDImage image) {
-            Matrix matrix = getGraphicsState().getCurrentTransformationMatrix();
-            sizes.add(size(Math.round(matrix.getScalingFactorX() / PT_PER_PX), Math.round(matrix.getScalingFactorY() / PT_PER_PX)));
-        }
-
-        // The rest of the drawing operations say nothing about an image, so they are read and dropped.
-
-        @Override
-        public void appendRectangle(Point2D p0, Point2D p1, Point2D p2, Point2D p3) {
-            // see above
-        }
-
-        @Override
-        public void clip(int windingRule) {
-            // see above
-        }
-
-        @Override
-        public void moveTo(float x, float y) {
-            // see above
-        }
-
-        @Override
-        public void lineTo(float x, float y) {
-            // see above
-        }
-
-        @Override
-        public void curveTo(float x1, float y1, float x2, float y2, float x3, float y3) {
-            // see above
-        }
-
-        @Override
-        public Point2D getCurrentPoint() {
-            return new Point2D.Float();
-        }
-
-        @Override
-        public void closePath() {
-            // see above
-        }
-
-        @Override
-        public void endPath() {
-            // see above
-        }
-
-        @Override
-        public void strokePath() {
-            // see above
-        }
-
-        @Override
-        public void fillPath(int windingRule) {
-            // see above
-        }
-
-        @Override
-        public void fillAndStrokePath(int windingRule) {
-            // see above
-        }
-
-        @Override
-        public void shadingFill(COSName shadingName) {
-            // see above
-        }
-    }
 }
