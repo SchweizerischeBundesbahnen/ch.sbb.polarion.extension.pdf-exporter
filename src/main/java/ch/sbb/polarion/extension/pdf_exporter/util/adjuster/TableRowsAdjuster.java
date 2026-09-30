@@ -8,11 +8,14 @@ import ch.sbb.polarion.extension.pdf_exporter.util.CssUtils;
 import ch.sbb.polarion.extension.pdf_exporter.util.PaperSizeUtils;
 import com.helger.css.decl.CSSDeclarationList;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
+import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Keeps a short table row on one page.
@@ -43,6 +46,8 @@ public class TableRowsAdjuster extends AbstractAdjuster {
 
     private static final String ROWS_OF_THE_TABLE = "> tr, > thead > tr, > tbody > tr, > tfoot > tr";
 
+    private static final String CELL = "td, th";
+
     /** The height of the page the rows are measured against. */
     private final int pageHeight;
 
@@ -61,13 +66,17 @@ public class TableRowsAdjuster extends AbstractAdjuster {
 
     @Override
     public void execute() {
+        int pageWidth = PaperSizeUtils.getMaxWidth(conversionParams);
+        // The tables come in document order, so a table around another one is measured before it
+        Map<Element, TableAnalyzer.TableMetrics> measured = new IdentityHashMap<>();
         for (Element table : document.select(HtmlTag.TABLE)) {
             Elements rows = table.select(ROWS_OF_THE_TABLE);
-            // A nested table is measured with the row which holds it, at the width of its cell: that row is kept whole or not
-            if (rows.isEmpty() || table.parents().stream().anyMatch(ancestor -> ancestor.nameIs(HtmlTag.TABLE))) {
+            Integer width = widthOf(table, measured, pageWidth);
+            if (rows.isEmpty() || width == null) {
                 continue;
             }
-            TableAnalyzer.TableMetrics metrics = TableAnalyzer.analyze(table, PaperSizeUtils.getMaxWidth(conversionParams));
+            TableAnalyzer.TableMetrics metrics = TableAnalyzer.analyze(table, width);
+            measured.put(table, metrics);
             List<Integer> rowHeights = metrics.rowHeights();
             if (rowHeights.size() != rows.size()) {
                 // The measure saw another table than the document holds, so it says nothing about these rows
@@ -80,6 +89,43 @@ public class TableRowsAdjuster extends AbstractAdjuster {
                     keepWhole(row);
                 }
             }
+        }
+    }
+
+    /**
+     * The width a table is laid out at: the page for a table of its own, the column of its cell for a nested one. Null
+     * when the width of that column is not known, the table around it not measured.
+     */
+    private static @Nullable Integer widthOf(@NotNull Element table, @NotNull Map<Element, TableAnalyzer.TableMetrics> measured, int pageWidth) {
+        Element cell = table.parent() != null ? table.parent().closest(CELL) : null;
+        if (cell == null) {
+            return pageWidth;
+        }
+        Element outerTable = cell.closest(HtmlTag.TABLE);
+        TableAnalyzer.TableMetrics outer = outerTable != null ? measured.get(outerTable) : null;
+        if (outer == null) {
+            return null;
+        }
+        int column = 0;
+        for (Element before = cell.previousElementSibling(); before != null; before = before.previousElementSibling()) {
+            column += span(before);
+        }
+        int width = 0;
+        for (int index = column; index < column + span(cell); index++) {
+            Integer columnWidth = outer.columnWidths().get(index);
+            if (columnWidth == null) {
+                return null;
+            }
+            width += columnWidth;
+        }
+        return width > 0 ? width : null;
+    }
+
+    private static int span(@NotNull Element cell) {
+        try {
+            return Math.max(1, Integer.parseInt(cell.attr("colspan").trim()));
+        } catch (NumberFormatException e) {
+            return 1; // A cell without a readable colspan takes one column
         }
     }
 

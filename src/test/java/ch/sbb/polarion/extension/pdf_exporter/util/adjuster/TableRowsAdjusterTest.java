@@ -85,18 +85,28 @@ class TableRowsAdjusterTest {
     }
 
     @Test
-    void measuresANestedTableWithTheRowWhichHoldsIt() {
-        // Measured by itself, the inner table would get the width of the page rather than the one of its cell
-        Document document = Jsoup.parse("""
-                <table><tbody><tr><td>Outer
-                <table><tbody><tr><td>Inner</td></tr></tbody></table>
-                </td></tr></tbody></table>""");
+    void keepsTheShortRowsOfANestedTableInARowTooTallToKeep() {
+        // The row around is free to break, so the short rows of the table in it are kept whole on their own
+        Document document = Jsoup.parse("<table><tbody><tr><td>" + TALLER_THAN_A_PAGE
+                + "<table><tbody><tr><td>Patron</td><td>Can access the library.</td></tr></tbody></table></td></tr></tbody></table>");
 
         new TableRowsAdjuster(document, A4_PORTRAIT).execute();
 
         List<Element> rows = document.select("tr");
-        assertThat(rows.get(0).attr("style")).isEqualTo("break-inside:avoid;");
-        assertThat(rows.get(1).hasAttr("style")).isFalse();
+        assertThat(rows.get(0).hasAttr("style")).as("The row around is taller than a page").isFalse();
+        assertThat(rows.get(1).attr("style")).isEqualTo("break-inside:avoid;");
+    }
+
+    @Test
+    void measuresANestedTableAtTheWidthOfItsCell() {
+        // Forty words make two lines across the page, but some forty lines in a column of 60px
+        String words = "word ".repeat(40);
+        Document document = Jsoup.parse("<table><tbody><tr><td style=\"width: 60px\"><table><tbody><tr><td>" + words
+                + "</td></tr></tbody></table></td><td>" + "A cell which takes the rest of the width. ".repeat(10) + "</td></tr></tbody></table>");
+
+        new TableRowsAdjuster(document, A4_PORTRAIT).execute();
+
+        assertThat(document.select("tr").get(1).hasAttr("style")).as("Measured in its cell, the inner row is far taller than a quarter of a page").isFalse();
     }
 
     @Test

@@ -23,6 +23,7 @@ import org.jsoup.nodes.TextNode;
 import org.jsoup.select.Elements;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.InOrder;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -1330,6 +1331,28 @@ class HtmlProcessorTest {
 
         assertEquals("break-inside:avoid;", portrait.selectFirst("tr").attr("style"));
         assertFalse(withSection.selectFirst("tr").hasAttr("style"));
+    }
+
+    @Test
+    void keepsTheTableRowsOfABlockBetweenPageBreaks() {
+        String block = processor.keepTableRowsWhole("<table><tbody><tr><td>Patron</td><td>Can access the library.</td></tr></tbody></table>",
+                ConversionParams.builder().paperSize(PaperSize.A4).orientation(Orientation.PORTRAIT).build());
+
+        assertTrue(block.replace(" ", "").contains("<trstyle=\"break-inside:avoid;\">"), block);
+    }
+
+    @Test
+    @SneakyThrows
+    void measuresTableRowsOnceTheTablesAreFittedToThePage() {
+        HtmlProcessor spyHtmlProcessor = spy(processor);
+        ExportParams exportParams = getExportParams();
+        exportParams.setFitToPage(true);
+
+        spyHtmlProcessor.processHtmlForPDF("<table><tbody><tr><td>Patron</td></tr></tbody></table>", exportParams, List.of());
+
+        InOrder inOrder = inOrder(spyHtmlProcessor);
+        inOrder.verify(spyHtmlProcessor).adjustContentToFitPage(any(Document.class), eq(exportParams));
+        inOrder.verify(spyHtmlProcessor).keepTableRowsWhole(any(Document.class), eq(exportParams), eq(false));
     }
 
     @Test

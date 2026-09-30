@@ -199,14 +199,17 @@ public class HtmlProcessor {
         timedIfNotNull(generationLog, "Generate table of content", () -> getTocGenerator(exportParams.getDocumentType()).addTableOfContent(document));
 
         boolean customPageBreaks = hasCustomPageBreaks(html);
-        timedIfNotNull(generationLog, "Keep table rows whole", () -> keepTableRowsWhole(document, exportParams, customPageBreaks));
-
-        if (exportParams.isFitToPage() && !hasCustomPageBreaks(html)) {
+        if (exportParams.isFitToPage() && !customPageBreaks) {
             // ---- BOOKMARK 1
             // In case of custom page breaks adjustContentToFitPage() will be called separately for each HTML block between
             // page breaks separately (see BOOKMARK 2 below), as paper orientation can be changed by page break
             timedIfNotNull(generationLog, "Adjust content to fit page", () -> adjustContentToFitPage(document, exportParams));
             // ----
+        }
+        // The rows are measured at the widths their tables end up with. Fitted between page breaks, a table gets its width
+        // in the block it is in, so its rows are measured there (see BOOKMARK 2 below)
+        if (!(exportParams.isFitToPage() && customPageBreaks)) {
+            timedIfNotNull(generationLog, "Keep table rows whole", () -> keepTableRowsWhole(document, exportParams, customPageBreaks));
         }
 
         html = document.body().html();
@@ -732,6 +735,7 @@ public class HtmlProcessor {
 
                 if (exportParams.isFitToPage()) { //here we can make additional areas processing if needed
                     area = adjustContentToFitPage(area, exportParams);
+                    area = keepTableRowsWhole(area, exportParams);
                 }
 
                 String orientationClass = (landscape ? "land" : "port") + exportParams.getPaperSize();
@@ -1114,6 +1118,13 @@ public class HtmlProcessor {
                 ? Math.min(PaperSizeUtils.MAX_PORTRAIT_HEIGHTS.get(page.getPaperSize()), PaperSizeUtils.MAX_LANDSCAPE_HEIGHTS.get(page.getPaperSize()))
                 : PaperSizeUtils.getMaxHeight(page);
         new TableRowsAdjuster(document, page, pageHeight).execute();
+    }
+
+    /** Keeps each short table row of a block between page breaks on one page, measured against the lower of the two pages. */
+    @NotNull String keepTableRowsWhole(@NotNull String html, @NotNull ConversionParams conversionParams) {
+        PageWidthAdjuster block = new PageWidthAdjuster(html, conversionParams);
+        keepTableRowsWhole(block.getDocument(), conversionParams, true);
+        return block.toHTML();
     }
 
     public void adjustContentToFitPage(@NotNull Document document, @NotNull ConversionParams conversionParams) {
