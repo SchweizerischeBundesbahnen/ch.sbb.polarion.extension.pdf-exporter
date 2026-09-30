@@ -1,3 +1,4 @@
+import { pageViolations } from '@sbb-polarion/react-sbb-polarion/testing';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render } from 'vitest-browser-react';
 import { userEvent } from 'vitest/browser';
@@ -132,5 +133,32 @@ describe('Bulk export progress dialog', () => {
     expect(document.querySelector('.result')?.textContent).toBe('Export interrupted by user');
     expect(document.querySelector('.result')?.className).toBe('result interrupted');
     expect(items().filter((item) => item.classList.contains('interrupted')).length).toBe(2);
+  });
+});
+
+describe('Bulk export progress dialog, accessibility', () => {
+  it('has no WCAG A/AA violations while a run is going', async () => {
+    await open(state());
+    expect(await pageViolations()).toEqual([]);
+  });
+
+  it('has no WCAG A/AA violations for a run that finished with failures', async () => {
+    await open(
+      state({
+        status: 'finished',
+        rows: [
+          { item: SAMPLE_ITEMS.items[0], state: 'finished' },
+          { item: SAMPLE_ITEMS.items[1], state: 'error', error: 'Document has no content' },
+        ],
+        processed: 2,
+        errors: true,
+      }),
+    );
+    expect(await pageViolations()).toEqual([]);
+  });
+
+  it('has no WCAG A/AA violations for a run the user stopped', async () => {
+    await open(state({ status: 'interrupted', rows: rowsWith('finished', 'interrupted', 'interrupted') }));
+    expect(await pageViolations()).toEqual([]);
   });
 });

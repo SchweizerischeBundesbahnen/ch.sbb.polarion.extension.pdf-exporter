@@ -221,6 +221,7 @@ export default function ExportFormView({
               <FieldCell shown={form.coverPageEnabled}>
                 <SearchableSelect
                   id={id('cover-page-selector')}
+                  ariaLabel="Cover page"
                   options={childOptions('cover-page')}
                   value={childValue(childOptions('cover-page'), form.coverPage)}
                   onChange={(value) => onPatch({ coverPage: value })}
@@ -271,6 +272,7 @@ export default function ExportFormView({
                 <FieldCell shown={form.webhooksEnabled}>
                   <SearchableSelect
                     id={id('webhooks-selector')}
+                    ariaLabel="Webhooks"
                     options={childOptions('webhooks')}
                     value={childValue(childOptions('webhooks'), form.webhooks)}
                     onChange={(value) => onPatch({ webhooks: value })}
@@ -438,6 +440,7 @@ export default function ExportFormView({
                 <FieldCell shown={form.localizeEnums}>
                   <SearchableSelect
                     id={id('language')}
+                    ariaLabel="Language"
                     options={LANGUAGES}
                     value={form.language}
                     onChange={(value) => onPatch({ language: value })}
@@ -462,6 +465,7 @@ export default function ExportFormView({
                 <FieldCell shown={form.renderCommentsEnabled}>
                   <SearchableSelect
                     id={id('render-comments-selector')}
+                    ariaLabel="Comments rendering"
                     options={COMMENTS_RENDER_TYPES}
                     value={form.renderComments}
                     onChange={(value) => onPatch({ renderComments: value })}
@@ -585,6 +589,7 @@ export default function ExportFormView({
                     <div className="option-pair">
                       <SearchableSelect
                         id={id('roles-selector')}
+                        ariaLabel="Workitem roles"
                         multiple
                         options={data.roles}
                         value={form.linkedWorkitemRoles}
@@ -593,6 +598,7 @@ export default function ExportFormView({
                       />
                       <SearchableSelect
                         id={id('roles-direction-selector')}
+                        ariaLabel="Link role direction"
                         options={LINK_ROLE_DIRECTIONS}
                         value={form.linkRoleDirection}
                         onChange={(value) => onPatch({ linkRoleDirection: value })}
@@ -757,35 +763,18 @@ export default function ExportFormView({
         <>
           <div id={id('page-previews')} className="preview">
             {previews.map((page, index) => (
-              <img
+              <button
                 // The previews have no identity of their own beyond their position in the answer.
                 key={index}
+                type="button"
                 className="validate-result-img"
-                src={`data:image/png;base64,${page.content}`}
-                // A control, not a decoration: it opens the page in the zoom dialog, so it carries a
-                // name, takes focus, and answers the two keys a button answers.
-                alt={`Invalid page ${index + 1}, open it enlarged`}
-                role="button"
-                tabIndex={0}
                 onClick={() => validation.onZoom(index)}
-                onKeyDown={(event) => {
-                  // Enter activates on keydown and Space on keyup, the way a native button does.
-                  // Activating Space here instead would auto-repeat while the key is held.
-                  if (event.key === 'Enter') {
-                    event.preventDefault();
-                    validation.onZoom(index);
-                  } else if (event.key === ' ') {
-                    // Swallow the page scroll now, activate on the way up.
-                    event.preventDefault();
-                  }
-                }}
-                onKeyUp={(event) => {
-                  if (event.key === ' ') {
-                    event.preventDefault();
-                    validation.onZoom(index);
-                  }
-                }}
-              />
+              >
+                <img
+                  src={`data:image/png;base64,${page.content}`}
+                  alt={`Invalid page ${index + 1}, open it enlarged`}
+                />
+              </button>
             ))}
           </div>
           {/* A preview opened, in the shared Modal: a page of a document deserves the frame a dialog gives it
@@ -803,11 +792,11 @@ export default function ExportFormView({
               onOk={closePreview}
               onCancel={closePreview}
             >
-              <div className="preview-zoom" id={id('page-preview-zoom')}>
+              {/* A mouse shortcut only: the header's close button and Escape close it from the keyboard. */}
+              <div className="preview-zoom" id={id('page-preview-zoom')} role="presentation" onClick={closePreview}>
                 <img
                   src={`data:image/png;base64,${opened.content}`}
                   alt={`Invalid page ${(validation.zoomed ?? 0) + 1}`}
-                  onClick={closePreview}
                 />
               </div>
             </Modal>

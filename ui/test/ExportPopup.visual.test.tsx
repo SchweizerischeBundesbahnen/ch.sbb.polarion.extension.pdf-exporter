@@ -239,7 +239,7 @@ describe.skipIf(!__PIXEL_REFERENCES__)('export dialog visual', () => {
     // test for why a programmatic focus would not do.
     shadow.querySelector<HTMLButtonElement>('#popup-validate-pdf')!.focus();
     await userEvent.keyboard('{Tab}');
-    expect(shadow.activeElement).toBe(shadow.querySelectorAll('#popup-page-previews img')[0]);
+    expect(shadow.activeElement).toBe(shadow.querySelectorAll('#popup-page-previews button')[0]);
 
     await snapshot(shadow, 'popup-validation-results');
   });

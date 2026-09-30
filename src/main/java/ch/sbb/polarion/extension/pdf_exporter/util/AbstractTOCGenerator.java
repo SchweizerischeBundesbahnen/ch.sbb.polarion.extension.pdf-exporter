@@ -2,30 +2,50 @@ package ch.sbb.polarion.extension.pdf_exporter.util;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import ch.sbb.polarion.extension.pdf_exporter.constants.HtmlTag;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
+import org.jsoup.nodes.Node;
+import org.jsoup.nodes.TextNode;
 import org.jsoup.select.Elements;
 
 import java.util.concurrent.atomic.AtomicReference;
 
 public abstract class AbstractTOCGenerator implements DocumentTOCGenerator {
-    protected static final int START_DEFAULT_NODE_NESTING = 1;
-    protected static final int MAX_DEFAULT_NODE_NESTING = 6;
 
     @Override
     public void addTableOfContent(@NotNull Document document) {
         // find <pd4ml:toc> and replace
-        Element tocPlaceholder = document.getElementsByTag("pd4ml:toc").first();
+        Element tocPlaceholder = document.getElementsByTag(JSoupUtils.TOC_PLACEHOLDER_TAG).first();
         if (tocPlaceholder != null) {
-            int startLevel = tocPlaceholder.hasAttr("tocInit") ? Integer.parseInt(tocPlaceholder.attr("tocInit")) : START_DEFAULT_NODE_NESTING;
-            int maxLevel = tocPlaceholder.hasAttr("tocMax") ? Integer.parseInt(tocPlaceholder.attr("tocMax")) : MAX_DEFAULT_NODE_NESTING;
+            int startLevel = JSoupUtils.tocStartLevel(tocPlaceholder);
+            int maxLevel = JSoupUtils.tocMaxLevel(tocPlaceholder);
             Element tocElement = generateTableOfContent(document, startLevel, maxLevel); // support h1-h6
 
             tocPlaceholder.before(tocElement);
+            removeLineBreakAfterTable(tocPlaceholder);
             // unwrap() instead of remove(): jsoup 1.21.2+ treats self-closing unknown elements
             // (like <pd4ml:toc/>) as opening tags, nesting subsequent content as children.
             // unwrap() removes the tag but keeps its children in place.
             tocPlaceholder.unwrap();
+        }
+    }
+
+    /**
+     * Drops the line break Polarion writes behind the table of contents, which prints as a blank line.
+     * <p>
+     * The tables of figures and of tables carry none, and the editor shows no gap after any of the three, so
+     * the exported document gets none either. Reported in #1076.
+     * </p>
+     */
+    private void removeLineBreakAfterTable(@NotNull Element tocPlaceholder) {
+        // The break follows the placeholder, or sits inside it where jsoup nested what came after a self-closing tag
+        Node next = tocPlaceholder.childNodeSize() > 0 ? tocPlaceholder.childNode(0) : tocPlaceholder.nextSibling();
+        while (next instanceof TextNode textNode && textNode.isBlank()) {
+            next = next.nextSibling();
+        }
+        if (next instanceof Element element && HtmlTag.BR.equals(element.tagName())) {
+            element.remove();
         }
     }
 

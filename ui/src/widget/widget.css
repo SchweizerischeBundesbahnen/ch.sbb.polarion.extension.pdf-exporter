@@ -215,6 +215,19 @@
   opacity: 1;
 }
 
+/* widget rule: the icon is wrapped in a native button, which must add nothing around it */
+.polarion-rpw-table-show-query > button {
+  display: block;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+.polarion-rpw-table-show-query > button > img {
+  display: block;
+}
+
 /* Departs from Polarion twice, both deliberate.
    `display`: Polarion's rule is `display: none` and its widget toggles the element's inline style, while
    this one renders the block only while it is shown - stating it back is what keeps the block visible on

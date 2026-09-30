@@ -1,14 +1,16 @@
+import { pageViolations } from '@sbb-polarion/react-sbb-polarion/testing';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render } from 'vitest-browser-react';
 import { userEvent } from 'vitest/browser';
 import App from '../src/App';
 import { installFetchMock } from './mockFetch';
 
-// The two pages this app wires from shared components: the User Guide (RSP `UserGuide` over generic's
-// /user-guide endpoint) and Authorization (RSP `AuthorizationSettings` over this extension's
-// `authorization` setting, each role set a multi-select dropdown). What is worth asserting here is the
-// wiring - which endpoints are called and with which setting name - since the components themselves are
-// covered in the library.
+// The two pages this app wires from shared components: the User Guide (an RSP `DocPage` article of the
+// documentation site, fetched as the static user-guide.html) and Authorization (RSP `AuthorizationSettings`
+// over this extension's `authorization` setting, each role set a multi-select dropdown). What is worth
+// asserting here is the wiring - which resources are fetched and with which setting name - since the
+// components themselves are covered in the library. The documentation site as a whole is
+// Documentation.test.tsx.
 
 const origUrl = window.location.pathname + window.location.search;
 
@@ -138,5 +140,40 @@ describe('Authorization page', () => {
     render(<App />);
 
     await vi.waitFor(() => expect(document.querySelector('.alert-error, .alert')).not.toBeNull());
+  });
+});
+
+// The documentation site's articles are scanned in Documentation.test.tsx, which supplies a search index.
+describe('Authorization page, accessibility', () => {
+  const openAuthorization = async () => {
+    installFetchMock(authorizationRoutes(['admin', 'developer'], ['project_admin'], ['admin']));
+    window.history.replaceState({}, '', '?feature=authorization&embedded=true&scope=project/elibrary/');
+    render(<App />);
+    await vi.waitFor(() => expect(document.querySelectorAll('.roles-group .sd-trigger-multi')).toHaveLength(2));
+    await vi.waitFor(() => expect(granted('global')).toEqual(['admin']));
+  };
+
+  it('has no WCAG A/AA violations on the Authorization page', async () => {
+    await openAuthorization();
+    expect(await pageViolations()).toEqual([]);
+  });
+
+  it('has no WCAG A/AA violations with a role list open', async () => {
+    await openAuthorization();
+    mousedown(trigger('global'));
+    await vi.waitFor(() =>
+      expect(
+        document.getElementById(trigger('global').getAttribute('aria-controls')!)!.querySelector('.option'),
+      ).not.toBeNull(),
+    );
+    expect(await pageViolations()).toEqual([]);
+  });
+
+  it('has no WCAG A/AA violations when the roles cannot be read', async () => {
+    installFetchMock([{ method: 'GET', match: /\/roles\?/, json: { message: 'no such scope' }, status: 400 }]);
+    window.history.replaceState({}, '', '?feature=authorization&embedded=true');
+    render(<App />);
+    await vi.waitFor(() => expect(document.querySelector('.alert-error, .alert')).not.toBeNull());
+    expect(await pageViolations()).toEqual([]);
   });
 });

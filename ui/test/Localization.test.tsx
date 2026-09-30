@@ -1,9 +1,11 @@
+import { pageViolations } from '@sbb-polarion/react-sbb-polarion/testing';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render } from 'vitest-browser-react';
 import { userEvent } from 'vitest/browser';
 import App from '../src/App';
 import { installFetchMock } from './mockFetch';
 import type { Route } from './mockFetch';
+import { dropdownsUpgraded } from './visualHelpers';
 
 // The Localization page: the translation table it saves, the rows an administrator adds and removes,
 // and the XLIFF export/import - the one part of this page that is not the generic named-settings shape,
@@ -480,5 +482,57 @@ describe('Localization page', () => {
     expect(rows().length).toBe(0);
     expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'PUT')).toBe(false);
     expect(fetchMock.mock.calls.some(([u]) => String(u).includes('/download'))).toBe(false);
+  });
+});
+
+describe('Localization page, accessibility', () => {
+  const settled = async (count = 2) => {
+    await vi.waitFor(() => expect(rows().length).toBe(count));
+    await vi.waitFor(() => expect(dropdownsUpgraded()).toBe(true));
+  };
+
+  it('has no WCAG A/AA violations with the translations on screen', async () => {
+    open();
+    await settled();
+    expect(await pageViolations()).toEqual([]);
+  });
+
+  it('has no WCAG A/AA violations with a missing translation flagged and a row added', async () => {
+    open(
+      routesWith({
+        method: 'GET',
+        match: /\/settings\/localization\/names\/[^/]+\/content/,
+        json: { translations: { Draft: [{ language: 'de', value: 'Entwurf' }] } },
+      }),
+    );
+    await settled(1);
+    await userEvent.click(document.querySelector<HTMLElement>('[aria-label="Add a translation"]')!);
+    await vi.waitFor(() => expect(rows().length).toBe(2));
+    expect(await pageViolations()).toEqual([]);
+  });
+
+  it('has no WCAG A/AA violations while reverting to the default is confirmed', async () => {
+    open();
+    await settled();
+    await clickButton('Default');
+    await vi.waitFor(() => expect(document.querySelector('.rsp-modal')).not.toBeNull());
+    expect(await pageViolations()).toEqual([]);
+  });
+
+  it('has no WCAG A/AA violations with a rejected import reported', async () => {
+    open(
+      routesWith({
+        method: 'POST',
+        match: /\/settings\/localization\/upload/,
+        json: { message: 'not XLIFF' },
+        status: 400,
+      }),
+    );
+    await settled();
+    pickFile('file-it', new File(['nonsense'], 'it.xlf', { type: 'application/xml' }));
+    await vi.waitFor(() =>
+      expect(document.body.textContent).toContain('Error occurred while uploading translation file for language it'),
+    );
+    expect(await pageViolations()).toEqual([]);
   });
 });

@@ -1,4 +1,5 @@
 import type { Root } from 'react-dom/client';
+import { a11yViolations } from '@sbb-polarion/react-sbb-polarion/testing';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { page, userEvent } from 'vitest/browser';
 import { openExportPopup } from '../src/popup/mount';
@@ -459,3 +460,21 @@ function location(documentType: 'LIVE_DOC') {
     urlQueryParameters: {},
   };
 }
+
+describe('accessibility', () => {
+  // Mounted the way a toolbar button mounts it, so the scan also sees the option list moved into the dialog.
+  it('has no WCAG A/AA violations in its shadow root, with a dropdown open', async () => {
+    open({ location: location('LIVE_DOC') });
+    await loaded();
+    const host = document.body.lastElementChild as HTMLElement;
+    expect(await a11yViolations(host)).toEqual([]);
+
+    const trigger = shadow()!
+      .querySelector('#popup-style-package-select')!
+      .closest('.property-wrapper')!
+      .querySelector<HTMLElement>('.sd-trigger')!;
+    trigger.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+    await vi.waitFor(() => expect(shadow()!.querySelector('.sd-portal[style*="block"] .option')).not.toBeNull());
+    expect(await a11yViolations(host)).toEqual([]);
+  });
+});

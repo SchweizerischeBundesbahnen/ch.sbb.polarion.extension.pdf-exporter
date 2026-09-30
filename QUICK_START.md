@@ -4,7 +4,7 @@
 
 Start WeasyPrint as a REST service within a Docker container, as described [here](https://github.com/SchweizerischeBundesbahnen/weasyprint-service).
 
-> **Note:** Recommended version is weasyprint-service 67.0.0 or later.
+> **Note:** Recommended version is weasyprint-service 70.0.1 or later. An earlier one exports a diagram at the size of its SVG rather than the size the document gives it.
 
 ## Deploy PDF Exporter to Polarion
 

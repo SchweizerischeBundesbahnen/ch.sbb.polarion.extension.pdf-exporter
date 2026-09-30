@@ -131,8 +131,11 @@ ul.toc, ul.toc ul {
     list-style-type: none;
 }
 
+/* A level of its own, indented, and without the margin `p, ul, ol` gives a list: that margin lands
+   between the entries of two levels and makes the spacing of the table uneven. */
 ul.toc ul {
     padding-left: .6em;
+    margin: 0;
 }
 
 ul.toc li {
@@ -428,6 +431,7 @@ ul.tof li > a.page-number::after {
     tr:last-child:not(:first-child) {
         break-before: avoid;
     }
+
 
     .polarion-dle-workitem-title {
         break-after: avoid;

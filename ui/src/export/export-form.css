@@ -402,12 +402,22 @@
   margin-top: 8px;
 }
 
+/* The button is the flex item, so the thumbnails size against the row as the images did before.
+   `content-box` undoes the user agent's `border-box` for buttons, which would take the border off the width. */
 .validate-result-img {
+  box-sizing: content-box;
   flex: 0 1 calc(25% - 8px);
   min-width: 120px;
   max-width: 200px;
+  padding: 0;
   border: solid 1px red;
+  background: none;
   cursor: zoom-in;
+}
+
+.validate-result-img img {
+  display: block;
+  width: 100%;
 }
 
 /* A preview opened, in the shared Modal.

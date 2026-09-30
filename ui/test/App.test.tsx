@@ -1,3 +1,4 @@
+import { pageViolations } from '@sbb-polarion/react-sbb-polarion/testing';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render } from 'vitest-browser-react';
 import App from '../src/App';
@@ -6,7 +7,7 @@ import { installFetchMock, jsonResponse } from './mockFetch';
 
 // The top-level feature router: `?feature=<id>` selects a page, anything unmatched (incl. bare `/`)
 // renders the dev Landing stub. Also covers the About wrapper (feeds the shared RSP About component
-// this app's endpoints) and the findFeature lookup.
+// this app's endpoints), a documentation article routed by its feature id, and the findFeature lookup.
 
 const origUrl = window.location.pathname + window.location.search;
 
@@ -130,4 +131,50 @@ describe('documentation articles', () => {
   });
   // The link-resolution helper (docLinkTarget) is RSP-internal and unit-tested there (docsNav.test); the
   // interceptor behaviour reaches this app through DocLinkInterceptor, exercised via the render above.
+});
+
+describe('About page and Landing, accessibility', () => {
+  it('has no WCAG A/AA violations on the About page with its tables filled', async () => {
+    installFetchMock([
+      {
+        method: 'GET',
+        match: /\/configuration-properties$/,
+        json: {
+          properties: [{ key: 'some.property', value: 'value', defaultValue: 'default', description: 'A property' }],
+          obsoleteProperties: [],
+        },
+      },
+      {
+        method: 'GET',
+        match: /\/configuration-status/,
+        json: [{ name: 'PDF Exporter', status: 'OK', details: 'ready' }],
+      },
+      ...aboutRoutes(),
+    ]);
+    window.history.replaceState({}, '', '?feature=about&embedded=true');
+    render(<App />);
+    await vi.waitFor(() => expect(document.querySelector('.about-table')).not.toBeNull());
+    await vi.waitFor(() => expect(document.body.textContent).toContain('Readme'));
+    await vi.waitFor(() => expect(document.body.textContent).toContain('some.property'));
+    expect(await pageViolations()).toEqual([]);
+  });
+
+  it('has no WCAG A/AA violations on the Landing stub', async () => {
+    installFetchMock([{ method: 'GET', match: /\/polarion\/rest\/v1\/projects/, json: PROJECTS }]);
+    window.history.replaceState({}, '', '?');
+    render(<App />);
+    await vi.waitFor(() => expect(document.querySelector('.landing .searchable-dropdown')).not.toBeNull());
+    expect(await pageViolations()).toEqual([]);
+  });
+
+  it('has no WCAG A/AA violations on the Landing stub with its load error', async () => {
+    installFetchMock([
+      { method: 'GET', match: /\/polarion\/rest\/v1\/projects/, respond: () => jsonResponse({}, 401) },
+    ]);
+    window.history.replaceState({}, '', '?');
+    render(<App />);
+    await vi.waitFor(() => expect(document.querySelector('.landing .alert-error')).not.toBeNull());
+    await vi.waitFor(() => expect(document.querySelector('.landing .searchable-dropdown')).not.toBeNull());
+    expect(await pageViolations()).toEqual([]);
+  });
 });

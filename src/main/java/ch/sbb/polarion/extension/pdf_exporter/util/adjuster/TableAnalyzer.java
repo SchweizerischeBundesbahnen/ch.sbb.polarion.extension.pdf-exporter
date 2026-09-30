@@ -6,6 +6,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jsoup.helper.W3CDom;
 import org.jsoup.nodes.Element;
 import org.w3c.dom.Document;
+import org.xhtmlrenderer.context.AWTFontResolver;
 import org.xhtmlrenderer.extend.ReplacedElement;
 import org.xhtmlrenderer.extend.ReplacedElementFactory;
 import org.xhtmlrenderer.extend.UserAgentCallback;
@@ -55,6 +56,13 @@ public class TableAnalyzer {
     // Doesn't really matter, our concern here are widths
     private static final int PAGE_HEIGHT = 1000;
     private static final String EMBEDDED_FONT_PATH = "/fonts/DejaVuSans.ttf";
+
+    /**
+     * The name the measurement gives the font it ships with. A name of its own, because a machine which has a
+     * font of the same name installed lends its own file to the layout: its bold face is not the one shipped
+     * here, the text then takes a line more or less, and the same document comes out laid out differently.
+     */
+    private static final String MEASUREMENT_FONT_FAMILY = "PdfExporterTableMeasurement";
     private static final Font EMBEDDED_FONT = loadEmbeddedFont();
 
     private static Font loadEmbeddedFont() {
@@ -75,21 +83,39 @@ public class TableAnalyzer {
         return new Font(Font.SANS_SERIF, Font.PLAIN, 12);
     }
 
+    /**
+     * The width of every column of the table, and the height its header takes.
+     *
+     * @param columnWidths the width of each column, proportionally adjusted to the width of a page
+     * @param headerHeight the height of the rows the table repeats on every page it spans
+     */
+    public record TableMetrics(@NotNull Map<Integer, Integer> columnWidths, int headerHeight) {
+    }
+
     public Map<Integer, Integer> getColumnWidths(@NotNull Element tableElement, int pageWidth) {
+        return analyze(tableElement, pageWidth).columnWidths();
+    }
+
+    public TableMetrics analyze(@NotNull Element tableElement, int pageWidth) {
         Map<Integer, Integer> columnWidths = new HashMap<>();
+        HeaderHeight headerHeight = new HeaderHeight();
 
         Document doc = toSelfDocument(tableElement);
         Box rootBox = render(doc, pageWidth);
-        findTableAndAnalyze(rootBox, columnWidths);
+        findTableAndAnalyze(rootBox, columnWidths, headerHeight);
 
-        return adjustWidths(columnWidths, pageWidth);
+        return new TableMetrics(adjustWidths(columnWidths, pageWidth), headerHeight.value);
+    }
+
+    /** The height the header rows take, gathered while the rendered table is walked. */
+    private static class HeaderHeight {
+        private int value;
     }
 
     private Document toSelfDocument(@NotNull Element tableElement) {
         org.jsoup.nodes.Document tempDoc = org.jsoup.nodes.Document.createShell("");
         // Inject CSS to force the embedded font for consistent column width calculation across platforms
-        String fontFamily = EMBEDDED_FONT.getFamily(Locale.ROOT);
-        tempDoc.head().appendElement("style").text("* { font-family: '" + fontFamily + "', sans-serif !important; }");
+        tempDoc.head().appendElement("style").text("* { font-family: '" + MEASUREMENT_FONT_FAMILY + "', sans-serif !important; }");
         tempDoc.body().appendChild(tableElement.clone());
         return new W3CDom().fromJsoup(tempDoc);
     }
@@ -106,6 +132,12 @@ public class TableAnalyzer {
         ReplacedElementFactory defaultFactory = renderer.getSharedContext().getReplacedElementFactory();
         renderer.getSharedContext().setReplacedElementFactory(new SourceAwareReplacedElementFactory(defaultFactory));
 
+        // The font the measurement ships with is handed to the layout by name, so the file a machine happens to
+        // have installed under the name of that font is never the one which lays the table out
+        if (renderer.getSharedContext().getFontResolver() instanceof AWTFontResolver fontResolver) {
+            fontResolver.setFontMapping(MEASUREMENT_FONT_FAMILY, EMBEDDED_FONT);
+        }
+
         BufferedImage image = new BufferedImage(pageWidth, PAGE_HEIGHT, BufferedImage.TYPE_BYTE_GRAY);
         Graphics2D g2d = image.createGraphics();
         try {
@@ -121,36 +153,40 @@ public class TableAnalyzer {
         }
     }
 
-    private void findTableAndAnalyze(Box box, Map<Integer, Integer> columnWidths) {
+    private void findTableAndAnalyze(Box box, Map<Integer, Integer> columnWidths, HeaderHeight headerHeight) {
         if (box == null) {
             return;
         }
 
         // Check if this is a table box
         if (box.getElement() != null && TABLE.equalsIgnoreCase(box.getElement().getNodeName())) {
-            gatherColumnWidths(box, columnWidths);
+            gatherColumnWidths(box, columnWidths, headerHeight);
             return; // Found and analyzed, no need to go deeper
         }
 
         // Recursively search children
         if (box instanceof LineBox lineBox) {
             for (Box inlinedBox : lineBox.getNonFlowContent()) {
-                findTableAndAnalyze(inlinedBox, columnWidths);
+                findTableAndAnalyze(inlinedBox, columnWidths, headerHeight);
             }
         } else {
             for (int i = 0; i < box.getChildCount(); i++) {
-                findTableAndAnalyze(box.getChild(i), columnWidths);
+                findTableAndAnalyze(box.getChild(i), columnWidths, headerHeight);
             }
         }
     }
 
-    private void gatherColumnWidths(@NotNull Box tableBox, @NotNull Map<Integer, Integer> columnWidths) {
+    private void gatherColumnWidths(@NotNull Box tableBox, @NotNull Map<Integer, Integer> columnWidths, @NotNull HeaderHeight headerHeight) {
         List<Box> tbody = findChildrenByTag(tableBox, TBODY);
         List<Box> rows = findChildrenByTag(!tbody.isEmpty() ? tbody.getFirst() : tableBox, TR);
 
         // Analyze all rows to properly handle colspan
         for (Box row : rows) {
             List<Box> cells = findChildrenByTag(row, TD, TH);
+            if (!cells.isEmpty() && cells.stream().allMatch(cell -> TH.equalsIgnoreCase(cell.getElement().getNodeName()))) {
+                // A row of header cells is repeated on every page the table spans, so it takes its height there
+                headerHeight.value += row.getHeight();
+            }
             int columnIndex = 0;
 
             for (Box cell : cells) {

@@ -20,6 +20,13 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
 
     private static final String TD_TH_SELECTOR = String.format("%s, %s", HtmlTag.TD, HtmlTag.TH);
 
+    /** What a cell adds around the image it holds: the padding Polarion writes and the border of the cell. */
+    private static final int CELL_CHROME_PX = 16;
+
+    /** However tall a header grows, an image is still worth seeing. */
+    private static final int MIN_IMAGE_HEIGHT_PX = 100;
+
+
     public ImageSizeInTablesAdjuster(@NotNull Document document, @NotNull ConversionParams conversionParams) {
         super(document, conversionParams);
     }
@@ -35,9 +42,12 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
             }
 
             // Pre-render table and get rendered column widths proportionally adjusted to page width
-            Map<Integer, Integer> columnWidths = TableAnalyzer.getColumnWidths(table, PaperSizeUtils.getMaxWidth(conversionParams));
+            TableAnalyzer.TableMetrics metrics = TableAnalyzer.analyze(table, PaperSizeUtils.getMaxWidth(conversionParams));
+            Map<Integer, Integer> columnWidths = metrics.columnWidths();
 
             for (Element img : images) {
+                limitHeight(img, metrics.headerHeight());
+
                 float cssWidth = extractWidth(img, CssProp.WIDTH);
                 float cssMaxWidth = extractWidth(img, CssProp.MAX_WIDTH);
 
@@ -47,10 +57,59 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
                 float maxWidth = getMaxWidth(img, columnWidths, columnCountBasedWidth, paramsBasedWidth);
 
                 if (cssWidth > maxWidth || cssMaxWidth > maxWidth) {
-                    adjustImageStyle(img, maxWidth);
+                    adjustImageStyle(img, maxWidth, cssWidth);
+                    keepTheRowWhole(img);
                 }
             }
         }
+    }
+
+    /**
+     * An image wider than its column which states no size of its own takes the size of the file it comes
+     * from, which can be a page tall. Such a row is kept whole: split, it leaves the image on the next page
+     * and the header of its table on this one, above a row which shows nothing. A row holding an icon, or an
+     * image of a stated size, still breaks where it must, as any row of text does.
+     */
+    private void keepTheRowWhole(Element img) {
+        if (statedSize(img, CssUtils.parseDeclarations(img.attr(HtmlTagAttr.STYLE)), CssProp.WIDTH) > 0
+                || statedSize(img, CssUtils.parseDeclarations(img.attr(HtmlTagAttr.STYLE)), CssProp.HEIGHT) > 0) {
+            return;
+        }
+
+        Element row = img.closest(HtmlTag.TR);
+        if (row != null) {
+            CSSDeclarationList rowStyles = CssUtils.parseDeclarations(row.attr(HtmlTagAttr.STYLE));
+            CssUtils.setPropertyValue(rowStyles, CssProp.BREAK_INSIDE, CssProp.PAGE_BREAK_INSIDE_AVOID_VALUE);
+            row.attr(HtmlTagAttr.STYLE, rowStyles.getAsCSSString());
+        }
+    }
+
+    /**
+     * A row which fills the page to its last pixel cannot carry the header of its table: the header is then
+     * left on the page before, above nothing, or dropped altogether. The image gives that height up.
+     */
+    private void limitHeight(Element img, int headerHeight) {
+        int allowedHeight = Math.max(PaperSizeUtils.getMaxHeight(conversionParams) - headerHeight - CELL_CHROME_PX, MIN_IMAGE_HEIGHT_PX);
+
+        CSSDeclarationList cssStyles = CssUtils.parseDeclarations(img.attr(HtmlTagAttr.STYLE));
+        float statedHeight = extractPixels(CssUtils.getPropertyValue(cssStyles, CssProp.MAX_HEIGHT));
+        if (statedHeight > 0 && statedHeight <= allowedHeight) {
+            // The image asks for less than the page leaves it, and what it asks for is what it keeps
+            return;
+        }
+
+        CssUtils.setPropertyValue(cssStyles, CssProp.MAX_HEIGHT, allowedHeight + Measure.PX);
+        if (statedSize(img, cssStyles, CssProp.HEIGHT) > allowedHeight && CssUtils.getPropertyValue(cssStyles, CssProp.OBJECT_FIT).isEmpty()) {
+            // The limit cuts into the height the image states, and a height cut alone squashes the drawing
+            CssUtils.setPropertyValue(cssStyles, CssProp.OBJECT_FIT, CssProp.OBJECT_FIT_CONTAIN_VALUE);
+        }
+        img.attr(HtmlTagAttr.STYLE, cssStyles.getAsCSSString());
+    }
+
+    /** The size the image states in pixels, from its style or from its attribute. */
+    private float statedSize(Element img, CSSDeclarationList cssStyles, String property) {
+        String value = CssUtils.getPropertyValue(cssStyles, property);
+        return value.isEmpty() ? parseNumber(img.attr(property)) : extractPixels(value);
     }
 
     private float extractWidth(Element img, String property) {
@@ -59,20 +118,35 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
 
         String value = CssUtils.getPropertyValue(cssStyles, property);
         if (value.isEmpty()) {
-            return 0;
+            // An attribute states a width in pixels, and it is a width like any other
+            return CssProp.WIDTH.equals(property) ? parseNumber(img.attr(CssProp.WIDTH)) : 0;
         }
 
-        if (value.equals("auto")) {
+        if (value.equals(CssProp.AUTO_VALUE)) {
             return Float.MAX_VALUE;
         }
 
+        if (value.endsWith(Measure.PERCENT)) {
+            return PaperSizeUtils.getMaxWidthInTables(conversionParams) * parseNumber(value.replace(Measure.PERCENT, ""));
+        }
+        return extractPixels(value);
+    }
+
+    private float extractPixels(String value) {
         if (value.endsWith(Measure.EX)) {
-            return Float.parseFloat(value.replace(Measure.EX, "")) * Measure.EX_TO_PX_RATIO;
+            return parseNumber(value.replace(Measure.EX, "")) * Measure.EX_TO_PX_RATIO;
         } else if (value.endsWith(Measure.PX)) {
-            return Float.parseFloat(value.replace(Measure.PX, ""));
-        } else if (value.endsWith(Measure.PERCENT)) {
-            return PaperSizeUtils.getMaxWidthInTables(conversionParams) * Float.parseFloat(value.replace(Measure.PERCENT, ""));
+            return parseNumber(value.replace(Measure.PX, ""));
         } else {
+            return 0;
+        }
+    }
+
+    private float parseNumber(String value) {
+        try {
+            return Float.parseFloat(value);
+        } catch (NumberFormatException e) {
+            // Nothing or a malformed value: the image states no size we can read
             return 0;
         }
     }
@@ -97,16 +171,23 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
         return maxWidth;
     }
 
-    private void adjustImageStyle(Element img, float maxWidth) {
-        img.removeAttr(CssProp.WIDTH);
-        img.removeAttr(CssProp.HEIGHT);
-
+    private void adjustImageStyle(Element img, float maxWidth, float statedWidth) {
         String style = img.attr(HtmlTagAttr.STYLE);
         CSSDeclarationList cssStyles = CssUtils.parseDeclarations(style);
 
-        CssUtils.removeProperty(cssStyles, CssProp.HEIGHT); //remove height completely in order to keep image ratio
+        img.removeAttr(CssProp.WIDTH);
+        img.removeAttr(CssProp.HEIGHT);
 
-        CssUtils.setPropertyValue(cssStyles, CssProp.WIDTH, ((int) maxWidth) + Measure.PX);
+        // The column shrinks the width, and a height stated for the width the image no longer has would
+        // distort it. The image keeps its own ratio instead: a document states such a height by a drag of a
+        // handle in the editor, and honouring one smears an image across a page of its own.
+        CssUtils.removeProperty(cssStyles, CssProp.HEIGHT);
+
+        if (statedWidth > 0) {
+            // The column is what limits the image, it never enlarges one: an image which states no width keeps none
+            float adjustedWidth = Math.min(statedWidth, maxWidth);
+            CssUtils.setPropertyValue(cssStyles, CssProp.WIDTH, ((int) adjustedWidth) + Measure.PX);
+        }
         // For svg-images in tables width attribute is not enough, WeasyPrint needs max-width as well
         CssUtils.setPropertyValue(cssStyles, CssProp.MAX_WIDTH, ((int) maxWidth) + Measure.PX);
 

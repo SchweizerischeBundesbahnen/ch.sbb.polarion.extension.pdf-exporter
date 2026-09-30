@@ -17,6 +17,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
 
+import javax.imageio.ImageIO;
+import java.awt.Color;
+import java.awt.Point;
 import java.awt.image.BufferedImage;
 import java.io.FileOutputStream;
 import java.io.InputStream;
@@ -151,6 +154,32 @@ public abstract class BaseWeasyPrintTest {
         try (FileOutputStream fileOutputStream = new FileOutputStream(REPORTS_FOLDER_PATH + resourceName + EXT_PNG)) {
             fileOutputStream.write(MediaUtils.toPng(image));
         }
+    }
+
+    /**
+     * Compares each page of the pdf with the reference image of the same name, and writes what differs into
+     * the reports folder.
+     * <p>
+     * NOTE: if something changes in the future and the images are no longer identical,
+     * simply copy &amp; replace the reference resource images with the new ones from the reports folder.
+     * </p>
+     */
+    @SneakyThrows
+    protected boolean compareContentUsingReferenceImages(String testName, byte[] pdf) {
+        writeReportPdf(testName, "generated", pdf);
+        List<BufferedImage> resultImages = getAllPagesAsImagesAndLogAsReports(testName, pdf);
+        boolean hasDiff = false;
+        for (int i = 0; i < resultImages.size(); i++) {
+            BufferedImage expectedImage = ImageIO.read(readPngResource(testName + PAGE_SUFFIX + i));
+            BufferedImage resultImage = resultImages.get(i);
+            List<Point> diffPoints = MediaUtils.diffImages(expectedImage, resultImage);
+            if (!diffPoints.isEmpty()) {
+                MediaUtils.fillImagePoints(resultImage, diffPoints, Color.BLUE.getRGB());
+                writeReportImage(String.format("%s%s%d_diff", testName, PAGE_SUFFIX, i), resultImage);
+                hasDiff = true;
+            }
+        }
+        return hasDiff;
     }
 
     @SneakyThrows

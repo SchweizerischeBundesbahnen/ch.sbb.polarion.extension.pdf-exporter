@@ -71,13 +71,15 @@ public class TocLeaf {
             pageNumberLink.addClass("page-number");
             tocItem.appendChild(pageNumberLink);
 
-            items.add(tocItem);
-
             if (!children.isEmpty()) {
+                // Inside the item, where a nested list belongs: a <ul> directly inside a <ul> is invalid
+                // markup. It rendered the same either way, the browsers being forgiving about it.
                 Element nestedList = new Element(HtmlTag.UL);
                 nestedList.appendChildren(children);
-                items.add(nestedList);
+                tocItem.appendChild(nestedList);
             }
+
+            items.add(tocItem);
 
             return items;
         } else {

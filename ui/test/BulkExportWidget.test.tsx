@@ -1,11 +1,18 @@
 import { act } from 'react';
+import { pageViolations } from '@sbb-polarion/react-sbb-polarion/testing';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render } from 'vitest-browser-react';
 import { userEvent } from 'vitest/browser';
 import BulkExportWidget from '../src/widget/BulkExportWidget';
 import type { WidgetDependencies } from '../src/widget/BulkExportWidget';
 import { selectedBulkExportTargets } from '../src/widget/exportTargets';
-import { SAMPLE_ITEMS, SAMPLE_ITEMS_EMPTY, SAMPLE_ITEMS_WITH_UNREADABLE, SAMPLE_SHIM } from '../src/widget/sampleData';
+import {
+  SAMPLE_ITEMS,
+  SAMPLE_ITEMS_EMPTY,
+  SAMPLE_ITEMS_TRUNCATED,
+  SAMPLE_ITEMS_WITH_UNREADABLE,
+  SAMPLE_SHIM,
+} from '../src/widget/sampleData';
 import type { BulkExportItems } from '../src/widget/types';
 import { popupDependencies } from './exportPopupSamples';
 import { installFetchMock } from './mockFetch';
@@ -223,10 +230,10 @@ describe('Bulk PDF Export widget', () => {
   it('toggles the query from the keyboard, and reports the state it is in', async () => {
     open();
     await vi.waitFor(() => expect(rows().length).toBe(4));
-    const marker = () => document.querySelector<HTMLElement>('.polarion-rpw-table-show-query img')!;
+    const marker = () => document.querySelector<HTMLButtonElement>('.polarion-rpw-table-show-query button')!;
     const query = () => document.querySelector('.polarion-rpw-table-query');
 
-    expect(marker().tabIndex).toBe(0);
+    expect(marker()).toHaveAccessibleName('Show Query');
     expect(marker().getAttribute('aria-expanded')).toBe('false');
 
     marker().focus();
@@ -234,10 +241,7 @@ describe('Bulk PDF Export widget', () => {
     await vi.waitFor(() => expect(query()).not.toBeNull());
     expect(marker().getAttribute('aria-expanded')).toBe('true');
 
-    // Space activates on the way up, the way a native button does, so holding it cannot auto-repeat.
-    marker().dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }));
-    expect(query()).not.toBeNull();
-    marker().dispatchEvent(new KeyboardEvent('keyup', { key: ' ', bubbles: true }));
+    await userEvent.keyboard(' ');
     await vi.waitFor(() => expect(query()).toBeNull());
     expect(marker().getAttribute('aria-expanded')).toBe('false');
   });
@@ -267,5 +271,63 @@ describe('Bulk PDF Export widget', () => {
     await vi.waitFor(() => expect(document.querySelector('.widget-error')).not.toBeNull());
     expect(document.querySelector('.widget-error')?.textContent).toContain('Reload the page');
     expect(document.querySelector('.export-items')).toBeNull();
+  });
+});
+
+describe('accessibility', () => {
+  const loaded = async (count = 4) => {
+    await vi.waitFor(() => expect(rows().length).toBe(count));
+  };
+
+  it('has no WCAG A/AA violations with the table loaded and nothing selected', async () => {
+    open();
+    await loaded();
+    expect(await pageViolations()).toEqual([]);
+  });
+
+  it('has no WCAG A/AA violations with a selection and the query shown', async () => {
+    open();
+    await loaded();
+    await userEvent.click(checkboxes()[1]);
+    await vi.waitFor(() => expect(isDisabled()).toBe(false));
+    await userEvent.click(document.querySelector<HTMLElement>('.polarion-rpw-table-show-query button')!);
+    await vi.waitFor(() => expect(document.querySelector('.polarion-rpw-table-query')).not.toBeNull());
+    expect(await pageViolations()).toEqual([]);
+  });
+
+  it('has no WCAG A/AA violations with a row the user may not read', async () => {
+    open(SAMPLE_ITEMS_WITH_UNREADABLE);
+    await vi.waitFor(() => expect(document.querySelector('.polarion-rpw-table-not-readable-cell')).not.toBeNull());
+    expect(await pageViolations()).toEqual([]);
+  });
+
+  it('has no WCAG A/AA violations with more items found than the widget shows', async () => {
+    open(SAMPLE_ITEMS_TRUNCATED);
+    await vi.waitFor(() => expect(document.querySelector('.polarion-rpw-table-counts')).not.toBeNull());
+    expect(await pageViolations()).toEqual([]);
+  });
+
+  it('has no WCAG A/AA violations for a data set that found nothing', async () => {
+    open(SAMPLE_ITEMS_EMPTY);
+    await vi.waitFor(() =>
+      expect(document.querySelector('.polarion-rpw-table-counts')?.textContent).toBe('0 items found'),
+    );
+    expect(await pageViolations()).toEqual([]);
+  });
+
+  it('has no WCAG A/AA violations with the export dialog open for the selection', async () => {
+    open(SAMPLE_ITEMS, { popup: popupDependencies() });
+    await loaded();
+    await userEvent.click(selectAll());
+    await userEvent.click(exportButton());
+    await vi.waitFor(() => expect(document.querySelector('#popup-style-package-select')).not.toBeNull());
+    expect(await pageViolations()).toEqual([]);
+  });
+
+  it('has no WCAG A/AA violations when the endpoint refuses the descriptor', async () => {
+    installFetchMock([{ method: 'POST', match: ITEMS_ROUTE, status: 400, json: { message: 'Reload the page.' } }]);
+    render(<BulkExportWidget shim={SAMPLE_SHIM} />);
+    await vi.waitFor(() => expect(document.querySelector('.widget-error')).not.toBeNull());
+    expect(await pageViolations()).toEqual([]);
   });
 });

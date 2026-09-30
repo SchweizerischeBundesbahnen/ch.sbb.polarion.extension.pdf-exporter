@@ -1,3 +1,4 @@
+import { pageViolations } from '@sbb-polarion/react-sbb-polarion/testing';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render } from 'vitest-browser-react';
 import SidePanelPreview from '../src/pages/SidePanelPreview';
@@ -177,5 +178,23 @@ describe('the side panel development harness', () => {
     ]);
 
     await vi.waitFor(() => expect(text()).toContain('the list was cut off there'));
+  });
+});
+
+describe('the side panel development harness, accessibility', () => {
+  it('has no WCAG A/AA violations with the documents of the project offered', async () => {
+    open();
+    await documentsLoaded();
+    expect(await pageViolations()).toEqual([]);
+  });
+
+  it('has no WCAG A/AA violations with the real panel mounted for a picked document', async () => {
+    open();
+    await documentsLoaded();
+    pick('Default Space/Cross Link Issue');
+    await vi.waitFor(() =>
+      expect(document.querySelector('#side-panel-preview-host')?.shadowRoot?.querySelector('#filename')).toBeTruthy(),
+    );
+    expect(await pageViolations()).toEqual([]);
   });
 });

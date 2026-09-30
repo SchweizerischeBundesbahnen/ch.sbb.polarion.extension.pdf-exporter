@@ -499,6 +499,25 @@ This can be achieved (since version 8.1.0) by CSS modification. Let us give you 
 As a result blocks in header and footer which in normal case are displayed at right side of the header/footer will be displayed at left side and vice versa.
 This is only an example to illustrate an idea, if your use case is different feel free to modify this code according to your requirements.
 
+### Different header and footer on the first page
+
+A document which carries its own title page often needs another header and footer there, or none. Section Header and Footer
+offers this without CSS:
+
+1. Choose `Use custom header and footer`.
+2. Tick `Different first page` below it. The tab `First Page Templates` opens with six parts for the first page.
+3. Fill them like the other parts. Placeholders and Velocity expressions work the same way.
+4. Leave a part empty to print nothing there. Leave all six empty for a first page without header and footer.
+5. Press `Save`.
+
+The checkbox is disabled while the default header and footer is chosen, as the default has no first page of its own.
+The first page parts stay stored while the checkbox is off. `Copy from default` replaces only the other parts.
+
+The first page parts replace the other ones on the first page only. The other pages keep the other parts.
+The PDF gets them through a CSS rule `@page :first`, added only while the first page is different.
+The cover page of a style package is a separate page, so the first page is then the one after the cover page.
+The first page parts carry the classes `first-page-top-left` to `first-page-bottom-right`, for a custom CSS to restyle them.
+
 ## Advanced configuration
 
 ### Asynchronous PDF Export: export jobs timeout

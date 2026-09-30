@@ -1,9 +1,11 @@
+import { pageViolations } from '@sbb-polarion/react-sbb-polarion/testing';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render } from 'vitest-browser-react';
 import { userEvent } from 'vitest/browser';
 import App from '../src/App';
 import { installFetchMock } from './mockFetch';
 import type { Route } from './mockFetch';
+import { dropdownsUpgraded } from './visualHelpers';
 
 // The rest of the CSS page's toolbar: Cancel (with its confirmation), the revisions list and
 // reverting to one, plus the named-configuration operations this page hands to the shared pane -
@@ -163,5 +165,38 @@ describe('CSS page actions', () => {
       expect(del).toBeDefined();
       expect(String(del![0])).toContain('/settings/css/names/Default?scope=project%2Felibrary%2F');
     });
+  });
+});
+
+// The shared configuration pane and toolbar are the same on every settings page, so their states are
+// checked on this one.
+describe('CSS page actions, accessibility', () => {
+  const loaded = async () => {
+    await vi.waitFor(() => expect(editor().value).toBe(STORED));
+    await vi.waitFor(() => expect(dropdownsUpgraded()).toBe(true));
+  };
+
+  it('has no WCAG A/AA violations with the revisions listed', async () => {
+    open();
+    await loaded();
+    await clickButton('Revisions');
+    await vi.waitFor(() => expect(document.querySelector('.revision-number')).not.toBeNull());
+    expect(await pageViolations()).toEqual([]);
+  });
+
+  it('has no WCAG A/AA violations while a new configuration is named', async () => {
+    open();
+    await loaded();
+    await clickButton('Add new');
+    await vi.waitFor(() => expect(document.querySelector('.config-edit-row input[type="text"]')).not.toBeNull());
+    expect(await pageViolations()).toEqual([]);
+  });
+
+  it('has no WCAG A/AA violations while a deletion is confirmed', async () => {
+    open();
+    await loaded();
+    await clickButton('Delete');
+    await vi.waitFor(() => expect(document.querySelector('.rsp-modal')).not.toBeNull());
+    expect(await pageViolations()).toEqual([]);
   });
 });

@@ -6,6 +6,7 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.id.DocumentId;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.id.DocumentProject;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.id.TestRuntId;
+import ch.sbb.polarion.extension.pdf_exporter.util.TestRunAttachmentUtils;
 import com.polarion.alm.projects.model.IUniqueObject;
 import com.polarion.alm.server.api.model.tr.ProxyTestRun;
 import com.polarion.alm.shared.api.transaction.ReadOnlyTransaction;
@@ -16,6 +17,7 @@ import com.polarion.alm.shared.rpe.RpeModelAspect;
 import com.polarion.alm.shared.rpe.RpeRenderer;
 import com.polarion.alm.tracker.model.IAttachmentBase;
 import com.polarion.alm.tracker.model.ITestRun;
+import com.polarion.core.util.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -27,6 +29,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class TestRunAdapter extends CommonUniqueObjectAdapter {
+    private static final Logger logger = Logger.getLogger(TestRunAdapter.class);
+
     private final @NotNull ITestRun testRun;
 
     public TestRunAdapter(@NotNull ITestRun testRun) {
@@ -73,8 +77,15 @@ public class TestRunAdapter extends CommonUniqueObjectAdapter {
     public @Nullable List<Path> getAttachmentFiles(@NotNull ExportParams exportParams) throws IOException {
         if (exportParams.isEmbedAttachments()) {
             List<Path> attachmentFiles = new ArrayList<>();
-            for (IAttachmentBase attachment : testRun.getAttachments()) {
+            // The same attachments the export downloads next to the PDF when they are not embedded into it:
+            // the mask and the test case field say which ones either way.
+            for (IAttachmentBase attachment : TestRunAttachmentUtils.selectAttachments(testRun, exportParams.getAttachmentsFilter(), exportParams.getTestcaseFieldId())) {
                 attachmentFiles.add(createAttachmentTempFile(attachment));
+            }
+            if (attachmentFiles.isEmpty()) {
+                // Said plainly, because the PDF then carries no embedded file and the variant pdf/a-4f asks for one
+                logger.warn("Test run %s has no attachment to embed: none is left by the filter '%s' and the test case field '%s'"
+                        .formatted(testRun.getId(), exportParams.getAttachmentsFilter(), exportParams.getTestcaseFieldId()));
             }
             return attachmentFiles;
         } else {

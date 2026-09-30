@@ -1,9 +1,11 @@
+import { pageViolations } from '@sbb-polarion/react-sbb-polarion/testing';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render } from 'vitest-browser-react';
 import { userEvent } from 'vitest/browser';
 import App from '../src/App';
 import { installFetchMock } from './mockFetch';
 import type { Route } from './mockFetch';
+import { dropdownsUpgraded } from './visualHelpers';
 
 // The two pages built on CustomTemplatesPage: the filename templates (one setting, no configuration
 // selector) and the header/footer cells (named configurations). What they own, and what is asserted
@@ -111,6 +113,23 @@ describe('Filename template page', () => {
     // No named configurations for this feature, so no pane.
     expect(document.querySelector('.configurations-pane')).toBeNull();
     expect(document.body.textContent).toContain('Supported special variables');
+  });
+
+  it('explains the placeholders and the Velocity expressions the templates understand', async () => {
+    // The Quick Help the JSP pages carried, lost when they were converted to React and asked for
+    // again in #1070.
+    open('filename', filenameRoutes());
+
+    await vi.waitFor(() => expect(field('custom-documentNameTemplate').value).toBe('doc-$id'));
+    const help = document.querySelector('.quick-help')!;
+    expect(help.querySelector('h2')!.textContent).toBe('Quick Help');
+    expect(help.textContent).toContain('How to configure Filename template');
+    expect(help.textContent).toContain('Velocity expressions that are dynamically evaluated');
+    expect(help.textContent).toContain('$page.spaceId $page.titleOrName $page.lastRevision');
+    // Each editor gets its own object, so one example is not enough: $page is a report's
+    expect(help.textContent).toContain('$document');
+    expect(help.textContent).toContain('$testrun');
+    expect(help.textContent).toContain('Supported special variables');
   });
 
   it('shows the built-in templates read-only on the second tab', async () => {
@@ -257,7 +276,139 @@ describe('Header and footer page', () => {
       footerLeft: '',
       footerCenter: 'page $n',
       footerRight: 'page $n of $total',
+      differentFirstPage: false,
+      firstPageHeaderLeft: '',
+      firstPageHeaderCenter: '',
+      firstPageHeaderRight: '',
+      firstPageFooterLeft: '',
+      firstPageFooterCenter: '',
+      firstPageFooterRight: '',
     });
+  });
+
+  it('opens a tab of the first page parts once the first page is different', async () => {
+    const tab = (label: string) =>
+      Array.from(document.querySelectorAll<HTMLLIElement>('.tabs .tab')).find((t) => t.textContent?.trim() === label)!;
+    const tabDisabled = (label: string) => tab(label).querySelector<HTMLInputElement>('input[type="radio"]')!.disabled;
+    const fetchMock = open('header-footer', headerFooterRoutes());
+    await vi.waitFor(() => expect(field('custom-headerLeft').value).toBe('left'));
+    const checkbox = radio('custom-differentFirstPage');
+    expect(checkbox.checked).toBe(false);
+    expect(tabDisabled('First Page Templates')).toBe(true);
+
+    await userEvent.click(checkbox);
+    await vi.waitFor(() => expect(field('custom-firstPageHeaderLeft')).not.toBeNull());
+    expect(tabDisabled('First Page Templates')).toBe(false);
+    // The first page parts have no default to copy or compare with, and the other parts wait on their own tab.
+    expect(document.querySelector('.copy-from-default')).toBeNull();
+    expect(field('custom-headerLeft')).toBeNull();
+    expect(document.querySelectorAll('.template-editor').length).toBe(6);
+
+    await userEvent.fill(field('custom-firstPageHeaderCenter'), 'Title');
+    await clickButton('Save');
+
+    await vi.waitFor(() => expect(puts(fetchMock).length).toBe(1));
+    expect(savedBody(fetchMock)).toMatchObject({
+      headerLeft: 'left',
+      differentFirstPage: true,
+      firstPageHeaderLeft: '',
+      firstPageHeaderCenter: 'Title',
+    });
+  });
+
+  it('keeps the first page parts while the first page is not different', async () => {
+    const fetchMock = open(
+      'header-footer',
+      headerFooterRoutes([
+        {
+          method: 'GET',
+          match: /\/settings\/header-footer\/names\/[^/]+\/content/,
+          json: { ...HEADER_FOOTER_STORED, differentFirstPage: true, firstPageFooterRight: 'kept' },
+        },
+      ]),
+    );
+    await vi.waitFor(() => expect(field('custom-headerLeft').value).toBe('left'));
+    await userEvent.click(radio('custom-differentFirstPage'));
+    await userEvent.click(radio('custom-differentFirstPage'));
+    await vi.waitFor(() => expect(field('custom-firstPageFooterRight').value).toBe('kept'));
+
+    // Off again: back on the custom parts, and the first page parts are kept for later.
+    await userEvent.click(radio('custom-differentFirstPage'));
+    await vi.waitFor(() => expect(field('custom-headerLeft')).not.toBeNull());
+    await clickButton('Save');
+
+    await vi.waitFor(() => expect(puts(fetchMock).length).toBe(1));
+    expect(savedBody(fetchMock)).toMatchObject({ differentFirstPage: false, firstPageFooterRight: 'kept' });
+  });
+
+  it('copies the default parts without touching the first page', async () => {
+    const fetchMock = open(
+      'header-footer',
+      headerFooterRoutes([
+        {
+          method: 'GET',
+          match: /\/settings\/header-footer\/names\/[^/]+\/content/,
+          json: { ...HEADER_FOOTER_STORED, differentFirstPage: true, firstPageHeaderLeft: 'title' },
+        },
+      ]),
+    );
+    await vi.waitFor(() => expect(field('custom-headerLeft').value).toBe('left'));
+
+    await clickButton('Copy from default');
+    await answerDialog('OK');
+    await vi.waitFor(() => expect(field('custom-headerLeft').value).toBe('DEFAULT LEFT'));
+    await clickButton('Save');
+
+    await vi.waitFor(() => expect(puts(fetchMock).length).toBe(1));
+    expect(savedBody(fetchMock)).toMatchObject({
+      headerLeft: 'DEFAULT LEFT',
+      differentFirstPage: true,
+      firstPageHeaderLeft: 'title',
+    });
+  });
+
+  it('offers the first page only with the custom header and footer', async () => {
+    open('header-footer', headerFooterRoutes());
+    await vi.waitFor(() => expect(field('custom-headerLeft').value).toBe('left'));
+
+    await userEvent.click(radio('use-default-values'));
+
+    await vi.waitFor(() => expect(radio('custom-differentFirstPage').disabled).toBe(true));
+  });
+
+  it('shows no different first page with the default header and footer, and keeps the stored one', async () => {
+    const fetchMock = open(
+      'header-footer',
+      headerFooterRoutes([
+        {
+          method: 'GET',
+          match: /\/settings\/header-footer\/names\/[^/]+\/content/,
+          json: { ...HEADER_FOOTER_STORED, useCustomValues: false, differentFirstPage: true },
+        },
+      ]),
+    );
+    await vi.waitFor(() => expect(field('default-headerLeft').value).toBe('DEFAULT LEFT'));
+    expect(radio('custom-differentFirstPage').checked).toBe(false);
+    expect(radio('custom-differentFirstPage').disabled).toBe(true);
+
+    await clickButton('Save');
+    await vi.waitFor(() => expect(puts(fetchMock).length).toBe(1));
+    expect(savedBody(fetchMock)).toMatchObject({ useCustomValues: false, differentFirstPage: true });
+
+    await userEvent.click(radio('use-custom-values'));
+    await vi.waitFor(() => expect(radio('custom-differentFirstPage').checked).toBe(true));
+  });
+
+  it('explains the variables, the custom fields and the Velocity expressions of the cells', async () => {
+    open('header-footer', headerFooterRoutes());
+
+    await vi.waitFor(() => expect(field('custom-headerLeft').value).toBe('left'));
+    const help = document.querySelector('.quick-help')!;
+    expect(help.textContent).toContain('How-to configure PDF header and footer');
+    expect(help.textContent).toContain("document's custom fields");
+    expect(help.textContent).toContain('{{ docRevision }}');
+    expect(help.textContent).toContain('Header and footer parts can contain velocity expressions');
+    expect(help.textContent).toContain('Supported special variables');
   });
 
   it('asks before saving a custom header and footer with every cell empty', async () => {
@@ -342,5 +493,89 @@ describe('Header and footer page', () => {
     await vi.waitFor(() => expect(field('default-headerLeft')?.value).toBe('DEFAULT LEFT'));
     expect(field('custom-headerLeft')).toBeNull();
     expect(document.querySelector('.default-changed')).toBeNull();
+  });
+});
+
+describe('Filename template page, accessibility', () => {
+  const loaded = async () => {
+    await vi.waitFor(() => expect(field('custom-documentNameTemplate').value).toBe('doc-$id'));
+    await vi.waitFor(() => expect(dropdownsUpgraded()).toBe(true));
+  };
+
+  it('has no WCAG A/AA violations with the custom templates chosen', async () => {
+    open('filename', filenameRoutes());
+    await loaded();
+    expect(await pageViolations()).toEqual([]);
+  });
+
+  it('has no WCAG A/AA violations with the built-in templates chosen', async () => {
+    open('filename', filenameRoutes());
+    await loaded();
+    await userEvent.click(radio('use-default-values'));
+    await vi.waitFor(() => expect(field('default-documentNameTemplate')).not.toBeNull());
+    expect(await pageViolations()).toEqual([]);
+  });
+
+  it('has no WCAG A/AA violations while a copy of the built-in templates is confirmed', async () => {
+    open('filename', filenameRoutes());
+    await loaded();
+    await clickButton('Copy from default');
+    await vi.waitFor(() => expect(document.querySelector('.rsp-modal')).not.toBeNull());
+    expect(await pageViolations()).toEqual([]);
+  });
+
+  it('has no WCAG A/AA violations with a setting it cannot read', async () => {
+    open('filename', [
+      {
+        method: 'GET',
+        match: /\/settings\/filename-template\/names\/Default\/content/,
+        json: { message: 'nope' },
+        status: 500,
+      },
+      { method: 'GET', match: /\/settings\/filename-template\/default-content/, json: FILENAME_DEFAULTS },
+    ]);
+    await vi.waitFor(() => expect(document.querySelector('.notifications .alert-error')).not.toBeNull());
+    await vi.waitFor(() => expect(dropdownsUpgraded()).toBe(true));
+    expect(await pageViolations()).toEqual([]);
+  });
+});
+
+describe('Header and footer page, accessibility', () => {
+  const changedDefault = () =>
+    headerFooterRoutes([
+      {
+        method: 'GET',
+        match: /\/settings\/header-footer\/names\/[^/]+\/content/,
+        json: { ...HEADER_FOOTER_STORED, defaultHash: 'former', defaultChanged: true },
+      },
+    ]);
+  const loaded = async () => {
+    await vi.waitFor(() => expect(field('custom-headerLeft').value).toBe('left'));
+    await vi.waitFor(() => expect(dropdownsUpgraded()).toBe(true));
+  };
+
+  it('has no WCAG A/AA violations with six custom cells', async () => {
+    open('header-footer', headerFooterRoutes());
+    await loaded();
+    expect(await pageViolations()).toEqual([]);
+  });
+
+  it('has no WCAG A/AA violations with a changed default compared', async () => {
+    open('header-footer', changedDefault());
+    await loaded();
+    expect(document.querySelector('.default-changed')).not.toBeNull();
+    await clickButton('Compare with default');
+    await vi.waitFor(() => expect(document.querySelector('.compare-with-default .side-by-side')).not.toBeNull());
+    expect(await pageViolations()).toEqual([]);
+  });
+
+  it('has no WCAG A/AA violations while a save with every cell empty is confirmed', async () => {
+    open('header-footer', headerFooterRoutes());
+    await loaded();
+    await userEvent.fill(field('custom-headerLeft'), '');
+    await userEvent.fill(field('custom-footerCenter'), '');
+    await clickButton('Save');
+    await vi.waitFor(() => expect(document.querySelector('.rsp-modal')?.textContent).toContain('Save anyway'));
+    expect(await pageViolations()).toEqual([]);
   });
 });

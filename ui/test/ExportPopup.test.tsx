@@ -1,3 +1,4 @@
+import { pageViolations } from '@sbb-polarion/react-sbb-polarion/testing';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render } from 'vitest-browser-react';
 import { userEvent } from 'vitest/browser';
@@ -18,6 +19,7 @@ import {
 } from './exportPopupSamples';
 import { installFetchMock } from './mockFetch';
 import type { Route } from './mockFetch';
+import { pagePreview } from './pagePreviewSample';
 import { clearToasts, toastText, toasted, untoasted } from './toasts';
 
 // The "Export to PDF" dialog the toolbar buttons open: which rows the item being exported puts on screen,
@@ -784,14 +786,12 @@ describe('validating the page width', () => {
     await userEvent.click(field<HTMLButtonElement>('#popup-validate-pdf')!);
     await vi.waitFor(() => expect(document.querySelectorAll('#popup-page-previews img')).toHaveLength(2));
 
-    const thumbnails = () => document.querySelectorAll<HTMLImageElement>('#popup-page-previews img');
-    expect(thumbnails()[1].tabIndex).toBe(0);
-    expect(thumbnails()[1].getAttribute('role')).toBe('button');
+    const thumbnails = () => document.querySelectorAll<HTMLButtonElement>('#popup-page-previews button');
     // The name carries the page number, since alt="" would leave the control unnamed
-    expect(thumbnails()[1].alt).toContain('2');
+    expect(thumbnails()[1]).toHaveAccessibleName('Invalid page 2, open it enlarged');
 
     thumbnails()[1].focus();
-    await userEvent.keyboard('{Enter}');
+    await userEvent.keyboard(' ');
     const opened = await vi.waitFor(() => {
       const found = field('#popup-page-preview-zoom');
       expect(found).not.toBeNull();
@@ -845,5 +845,99 @@ describe('validating the page width', () => {
     await userEvent.click(field<HTMLButtonElement>('#popup-validate-pdf')!);
 
     expect(await toasted('error')).toBe('Error occurred validating pages width: renderer unavailable');
+  });
+});
+
+describe('accessibility', () => {
+  /** Waits for the dialog and for every dropdown in it to be upgraded, so the scan sees the real triggers. */
+  const ready = async (content = '#popup-style-package-select') => {
+    await vi.waitFor(() => expect(field(content)).not.toBeNull());
+    await vi.waitFor(() =>
+      expect(document.querySelectorAll('.searchable-dropdown').length).toBe(document.querySelectorAll('select').length),
+    );
+  };
+  const full = () => popupDependencies({ stylePackage: SAMPLE_STYLE_PACKAGE_FULL, data: { webhooksEnabled: true } });
+
+  it('has no WCAG A/AA violations for a Live Document', async () => {
+    open({ deps: popupDependencies({ stylePackage: SAMPLE_STYLE_PACKAGE }) });
+    await ready();
+    expect(await pageViolations()).toEqual([]);
+  });
+
+  it('has no WCAG A/AA violations with every optional setting switched on', async () => {
+    open({ deps: full() });
+    await ready('#popup-style-package-content');
+    expect(await pageViolations()).toEqual([]);
+  });
+
+  it('has no WCAG A/AA violations for a style package that keeps its settings to itself', async () => {
+    open({ deps: popupDependencies({ stylePackage: SAMPLE_STYLE_PACKAGE_HIDDEN }) });
+    await ready();
+    expect(await pageViolations()).toEqual([]);
+  });
+
+  it.each([
+    ['a test run', SAMPLE_TEST_RUN],
+    ['a report', documentOfType('LIVE_REPORT')],
+    ['a baseline collection', documentOfType('BASELINE_COLLECTION')],
+  ])('has no WCAG A/AA violations for %s', async (_name, document) => {
+    open({ document, deps: full() });
+    await ready('#popup-style-package-content');
+    expect(await pageViolations()).toEqual([]);
+  });
+
+  it('has no WCAG A/AA violations for a bulk export, with the automatic pick on and off', async () => {
+    open({ exportType: 'BULK', document: documentOfType('LIVE_DOC'), deps: full() });
+    await ready('#popup-auto-select-style-package');
+    expect(await pageViolations()).toEqual([]);
+
+    await userEvent.click(checkbox('popup-auto-select-style-package'));
+    await ready('#popup-style-package-content');
+    expect(await pageViolations()).toEqual([]);
+  });
+
+  it('has no WCAG A/AA violations while an export runs', async () => {
+    open();
+    await ready();
+    await userEvent.click(exportButton());
+    await vi.waitFor(() => expect(field('.in-progress-overlay.show')).not.toBeNull());
+    expect(await pageViolations()).toEqual([]);
+  });
+
+  it('has no WCAG A/AA violations with a field the export was refused on', async () => {
+    open({ deps: full() });
+    await ready('#popup-style-package-content');
+    await userEvent.fill(field<HTMLInputElement>('#popup-chapters')!, 'one, two');
+    await userEvent.click(exportButton());
+    await toasted('error');
+    expect(await pageViolations()).toEqual([]);
+  });
+
+  it('has no WCAG A/AA violations with the data it could not read', async () => {
+    open({ deps: popupDependencies({ loadError: new Error("No 'css' configurations in scope 'project/elibrary/'") }) });
+    await vi.waitFor(() => expect(text('#popup-load-error')).toContain('Error occurred loading form data'));
+    expect(await pageViolations()).toEqual([]);
+  });
+
+  it('has no WCAG A/AA violations with a failed validation and a page width preview opened from it', async () => {
+    installFetchMock([
+      {
+        method: 'POST',
+        match: /\/validate\?/,
+        json: {
+          invalidPages: [{ content: pagePreview() }, { content: pagePreview() }],
+          suspiciousWorkItems: [{ id: 'EL-1', link: '/polarion/#/project/elibrary/workitem?id=EL-1' }],
+        },
+      },
+    ]);
+    open({ deps: popupDependencies({ stylePackage: SAMPLE_STYLE_PACKAGE }) });
+    await ready();
+    await userEvent.click(field<HTMLButtonElement>('#popup-validate-pdf')!);
+    await vi.waitFor(() => expect(document.querySelectorAll('#popup-page-previews button')).toHaveLength(2));
+    expect(await pageViolations()).toEqual([]);
+
+    await userEvent.click(document.querySelectorAll<HTMLElement>('#popup-page-previews button')[0]);
+    await vi.waitFor(() => expect(field('#popup-page-preview-zoom')).not.toBeNull());
+    expect(await pageViolations()).toEqual([]);
   });
 });

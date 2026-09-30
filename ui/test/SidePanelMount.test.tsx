@@ -1,3 +1,4 @@
+import { a11yViolations } from '@sbb-polarion/react-sbb-polarion/testing';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { mountSidePanel } from '../src/sidepanel/mount';
 import { installFetchMock } from './mockFetch';
@@ -222,5 +223,29 @@ describe('mounting the side panel', () => {
     expect(error).toHaveBeenCalledWith(expect.stringContaining('#no-such-panel'));
 
     error.mockRestore();
+  });
+});
+
+describe('accessibility', () => {
+  // Mounted the way the editor mounts it, so the scan also sees the shadow root, its toast host and the
+  // preview dialog in the top layer.
+  it('has no WCAG A/AA violations in its shadow root, with a page width preview open', async () => {
+    installFetchMock([
+      { method: 'POST', match: /\/validate\?/, json: { invalidPages: [{ content: PNG }], suspiciousWorkItems: [] } },
+    ]);
+    const element = host();
+    mountSidePanel(`#${element.id}`, sampleDependencies({ data: { webhooksEnabled: true } }));
+    await loaded(element);
+    expect(await a11yViolations(element)).toEqual([]);
+
+    element.shadowRoot!.querySelector<HTMLButtonElement>('#validate-pdf')!.click();
+    const preview = await vi.waitFor(() => {
+      const found = element.shadowRoot!.querySelector<HTMLElement>('.validate-result-img');
+      expect(found).not.toBeNull();
+      return found!;
+    });
+    preview.click();
+    await vi.waitFor(() => expect(element.shadowRoot!.querySelector('#page-preview-zoom')).not.toBeNull());
+    expect(await a11yViolations(element)).toEqual([]);
   });
 });

@@ -181,29 +181,27 @@ export default function BulkExportWidget({ shim, deps = {} }: Props) {
           className="polarion-TestsExecutionButton-link"
           title={exportDisabled ? 'Please, select at least one item to be exported first' : undefined}
         >
-          <a>
-            <div
-              id="bulk-export-pdf"
-              role="button"
-              tabIndex={0}
-              aria-disabled={exportDisabled}
-              className={`polarion-TestsExecutionButton-buttons${
-                exportDisabled ? ' polarion-TestsExecutionButton-buttons-defaultCursor' : ''
-              }`}
-              onClick={openDialog}
-              onKeyDown={(event) => (event.key === 'Enter' || event.key === ' ') && openDialog()}
-            >
-              <table className="polarion-TestsExecutionButton-buttons-content">
-                <tbody>
-                  <tr>
-                    <td className="polarion-TestsExecutionButton-buttons-content-labelCell">
-                      <div className="polarion-TestsExecutionButton-labelTextNew">Export to PDF</div>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </a>
+          <div
+            id="bulk-export-pdf"
+            role="button"
+            tabIndex={0}
+            aria-disabled={exportDisabled}
+            className={`polarion-TestsExecutionButton-buttons${
+              exportDisabled ? ' polarion-TestsExecutionButton-buttons-defaultCursor' : ''
+            }`}
+            onClick={openDialog}
+            onKeyDown={(event) => (event.key === 'Enter' || event.key === ' ') && openDialog()}
+          >
+            <table className="polarion-TestsExecutionButton-buttons-content">
+              <tbody>
+                <tr>
+                  <td className="polarion-TestsExecutionButton-buttons-content-labelCell">
+                    <div className="polarion-TestsExecutionButton-labelTextNew">Export to PDF</div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </span>
         <div>
           <p>Please select {shim.title} below which you want to export and click button above</p>
@@ -311,37 +309,15 @@ export default function BulkExportWidget({ shim, deps = {} }: Props) {
                   )}
                   {data.query && (
                     <div className="polarion-rpw-table-show-query">
-                      <img
-                        src="/polarion/ria/images/portlet/info.png"
+                      <button
+                        type="button"
                         title="Show Query"
-                        alt=""
-                        width={16}
-                        height={16}
-                        role="button"
                         aria-label="Show Query"
                         aria-expanded={queryShown}
-                        tabIndex={0}
                         onClick={() => setQueryShown((shown) => !shown)}
-                        onKeyDown={(event) => {
-                          // role="button" without these is worse than no role at all: it announces a
-                          // control that nothing can reach. Enter activates on keydown and Space on
-                          // keyup, the way a native button does; activating Space here would
-                          // auto-repeat while the key is held.
-                          if (event.key === 'Enter') {
-                            event.preventDefault();
-                            setQueryShown((shown) => !shown);
-                          } else if (event.key === ' ') {
-                            // Swallow the page scroll now, activate on the way up.
-                            event.preventDefault();
-                          }
-                        }}
-                        onKeyUp={(event) => {
-                          if (event.key === ' ') {
-                            event.preventDefault();
-                            setQueryShown((shown) => !shown);
-                          }
-                        }}
-                      />
+                      >
+                        <img src="/polarion/ria/images/portlet/info.png" alt="" width={16} height={16} />
+                      </button>
                     </div>
                   )}
                   {data.query && queryShown && <div className="polarion-rpw-table-query">{data.query}</div>}

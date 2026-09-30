@@ -12,6 +12,7 @@ import type { Route } from './mockFetch';
  *
  * The caller's `settled` says the page's own content has arrived; every dropdown being painted is
  * waited for on top of it, for every page, so a new suite cannot forget it (see `dropdownsUpgraded`).
+ * The optional `prepare` then brings the page into the state to capture, e.g. with a click.
  */
 export async function snapshotFeature(
   feature: string,
@@ -19,12 +20,14 @@ export async function snapshotFeature(
   settled: () => boolean,
   name: string,
   scope = 'project/elibrary/',
+  prepare?: () => Promise<void>,
 ): Promise<void> {
   installFetchMock(routes);
   window.history.replaceState({}, '', `?feature=${feature}&embedded=true&scope=${scope}`);
   render(<App />);
 
   await vi.waitFor(() => expect(settled() && dropdownsUpgraded()).toBe(true));
+  if (prepare) await prepare();
   await settleLayout();
   const app = document.querySelector('.app') as HTMLElement;
   await page.viewport(1280, Math.ceil(app.scrollHeight) + 40);

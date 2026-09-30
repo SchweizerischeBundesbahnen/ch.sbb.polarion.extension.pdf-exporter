@@ -221,4 +221,42 @@ class HeaderFooterSettingsTest {
         notInUse.setDefaultHash("former");
         assertFalse(settings.withChangedDefault(notInUse).isDefaultChanged());
     }
+
+    @Test
+    void testFirstPagePartsCountForACopyOnlyWhileInUse() {
+        HeaderFooterSettings settings = new HeaderFooterSettings(new SettingsService(null, null, null));
+
+        HeaderFooterModel unused = settings.defaultValues();
+        unused.setFirstPageHeaderLeft("kept aside");
+        assertEquals("", settings.withoutBuiltInCopy(unused).getHeaderLeft(), "First page parts not in use leave a copy unedited");
+
+        HeaderFooterModel differentFirstPage = settings.defaultValues();
+        differentFirstPage.setDifferentFirstPage(true);
+        differentFirstPage.setFirstPageHeaderLeft("title");
+        assertEquals("{{ PROJECT_NAME }}", settings.withoutBuiltInCopy(differentFirstPage).getHeaderLeft(), "A different first page edits a copy");
+    }
+
+    @Test
+    void testFirstPagePartsSurviveSerialization() {
+        HeaderFooterModel model = HeaderFooterModel.builder()
+                .differentFirstPage(true)
+                .firstPageHeaderLeft("hl")
+                .firstPageHeaderCenter("hc")
+                .firstPageHeaderRight("hr")
+                .firstPageFooterLeft("fl")
+                .firstPageFooterCenter("fc")
+                .firstPageFooterRight("fr")
+                .build();
+
+        HeaderFooterModel read = new HeaderFooterModel();
+        read.deserialize(model.serialize());
+
+        assertTrue(read.isDifferentFirstPage());
+        assertEquals("hl", read.getFirstPageHeaderLeft());
+        assertEquals("hc", read.getFirstPageHeaderCenter());
+        assertEquals("hr", read.getFirstPageHeaderRight());
+        assertEquals("fl", read.getFirstPageFooterLeft());
+        assertEquals("fc", read.getFirstPageFooterCenter());
+        assertEquals("fr", read.getFirstPageFooterRight());
+    }
 }

@@ -623,6 +623,7 @@ export default function StylePackages() {
               {form.coverPageEnabled && (
                 <SearchableSelect
                   id="cover-page-select"
+                  ariaLabel="Cover page"
                   options={childNames['cover-page']}
                   loading={childNamesLoading}
                   value={childValue('cover-page', form.coverPage)}
@@ -681,6 +682,7 @@ export default function StylePackages() {
                 {form.webhooksEnabled && (
                   <SearchableSelect
                     id="webhooks-select"
+                    ariaLabel="Webhooks"
                     options={childNames.webhooks}
                     loading={childNamesLoading}
                     value={childValue('webhooks', form.webhooks)}
@@ -766,6 +768,7 @@ export default function StylePackages() {
               <span className={form.renderCommentsEnabled ? 'render-comments-select' : 'render-comments-select hidden'}>
                 <SearchableSelect
                   id="render-comments-select"
+                  ariaLabel="Comments rendering"
                   options={COMMENTS_RENDER_TYPES}
                   disabled={!form.renderCommentsEnabled}
                   value={form.renderComments}
@@ -972,6 +975,7 @@ export default function StylePackages() {
               <span className={form.localizeEnums ? 'language-select' : 'language-select hidden'}>
                 <SearchableSelect
                   id="language-select"
+                  ariaLabel="Language"
                   options={LANGUAGES}
                   disabled={!form.localizeEnums}
                   value={form.language}
@@ -994,6 +998,7 @@ export default function StylePackages() {
                   <div className="roles-select">
                     <SearchableSelect
                       id="roles-select"
+                      ariaLabel="Workitem roles"
                       multiple
                       options={roleOptions}
                       loading={rolesLoading}
@@ -1004,6 +1009,7 @@ export default function StylePackages() {
                   <div className="roles-select">
                     <SearchableSelect
                       id="roles-direction-select"
+                      ariaLabel="Link role direction"
                       options={LINK_ROLE_DIRECTIONS}
                       value={form.linkRoleDirection}
                       onChange={(value) => patch({ linkRoleDirection: value })}
@@ -1041,7 +1047,13 @@ export default function StylePackages() {
           </div>
         </div>
 
-        {/* Attachments of the exported work items. */}
+        {/* A test run's own attachments. No other document type is exported with any. */}
+        <h2 className="align-left">Test Run attachments</h2>
+        <p>
+          These options apply to the export of a Test Run only. Its attachments are downloaded next to the PDF, or
+          embedded into it, and the mask and the test case field below say which of them. An export of a Live Document,
+          a Live Report or a Wiki page carries no attachments, whatever is chosen here.
+        </p>
         <div className="flex-container section">
           <div className="flex-column">
             <div className="checkbox input-group">

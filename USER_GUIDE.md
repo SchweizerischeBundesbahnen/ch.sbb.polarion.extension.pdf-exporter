@@ -137,7 +137,7 @@ The default value is `pdf/a-2b`.
 
 - **Sticky notes (native PDF annotations) are not compatible with PDF/A.** If you need PDF/A-compliant documents with comments, use inline comment rendering instead of "as sticky notes" option.
 
-- **pdf/a-4f** requires documents to have attachments (embedded files) per ISO 19005-4:2020. Use the "Embed attachments into resulted PDF" option or ensure your document has attachments.
+- **pdf/a-4f** requires documents to have attachments (embedded files) per ISO 19005-4:2020. Only an export of a Test Run embeds any, through the "Embed attachments into resulted PDF" option, so this variant fits a Test Run which has attachments.
 
 - **pdf/ua-2** has incomplete support in WeasyPrint 67.0. Known issues include:
   - Structure destinations required for internal links
@@ -368,6 +368,10 @@ Note that the pre-generated value can be defined on the 'Filename' administratio
 ![File name templates](docs/user_guide/img/filename_templates.png)
 
 ### Download attachments
+Both options below belong to the export of a **Test Run**, the only document type exported with its attachments.
+They are shown in the export dialog of a Test Run alone, and an export of a Live Document, a Live Report or a Wiki
+page carries no attachments, whatever a style package says.
+
 Downloads attachments based on the custom boolean field. A test case value overrides the test-run setting.
 
 ![Download attachments](docs/user_guide/img/download_attachments.png)
@@ -377,7 +381,9 @@ By selecting this checkbox, you can:
   * enter a boolean testcase field ID - attachments will be downloaded only from the testcases which have True value in the provided field
 
 ### Embed attachments into resulted PDF
-By selecting this checkbox, all attachments of the current document will be embedded into the resulted PDF file as embedded files. You can also specify a mask for attachment file names that will be embedded into the PDF file.
+By selecting this checkbox, the attachments of the current Test Run are embedded into the resulted PDF file as
+embedded files instead of being downloaded next to it. The mask and the testcase field ID above say which
+attachments are taken, exactly as they do for the download.
 
 ![Embed attachments](docs/user_guide/img/embed_attachments.png)
 
