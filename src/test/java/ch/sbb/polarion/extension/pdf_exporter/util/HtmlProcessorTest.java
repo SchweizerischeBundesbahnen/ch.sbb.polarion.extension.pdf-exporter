@@ -190,6 +190,24 @@ class HtmlProcessorTest {
     }
 
     @Test
+    void dropsThePageAPageBreakAtTheEndWouldLeaveEmpty() {
+        String html = "<h2>Chapter 1</h2><p>Some content.</p><!--PAGE_BREAK--><!--LANDSCAPE_ABOVE-->";
+
+        String processed = processor.processPageBrakes(html, new ExportParams());
+
+        assertFalse(processed.contains("sbb_page_break"), "A break the document ends with leaves nothing to put on a page of its own");
+    }
+
+    @Test
+    void keepsAPageWhichAPageBreakLeavesEmptyInTheMiddle() {
+        String html = "<h2>Chapter 1</h2><!--PAGE_BREAK--><!--LANDSCAPE_ABOVE--><!--PAGE_BREAK--><!--PORTRAIT_ABOVE--><h2>Chapter 2</h2>";
+
+        String processed = processor.processPageBrakes(html, new ExportParams());
+
+        assertEquals(2, processed.split("sbb_page_break", -1).length - 1, "A page left empty between two others is one the document asks for");
+    }
+
+    @Test
     @SneakyThrows
     void cutEmptyChaptersTest() {
         try (InputStream isInvalidHtml = this.getClass().getResourceAsStream("/emptyChaptersBeforeProcessing.html");

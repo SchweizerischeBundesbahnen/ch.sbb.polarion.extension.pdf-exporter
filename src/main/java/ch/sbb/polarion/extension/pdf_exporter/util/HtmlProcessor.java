@@ -704,7 +704,10 @@ public class HtmlProcessor {
                 }
             }
 
-            if (!(skipEmptyAreas && com.polarion.alm.shared.util.HtmlUtils.isHtmlEmpty(area, true))) {
+            // A page break the document ends with leaves an area with nothing in it, and nothing is worth a page
+            boolean lastArea = areas.isEmpty();
+            boolean emptyArea = com.polarion.alm.shared.util.HtmlUtils.isHtmlEmpty(area, true);
+            if (!(emptyArea && (skipEmptyAreas || (lastArea && !firstArea)))) {
                 boolean startsWithWikiBlock = area.startsWith(ROTATE_BELOW_MARK) || area.startsWith(RESET_BELOW_MARK) || area.startsWith(BREAK_BELOW_MARK);
                 boolean endsWithWikiBlock = nextArea != null && (nextArea.startsWith(ROTATE_BELOW_MARK) || nextArea.startsWith(RESET_BELOW_MARK) || nextArea.startsWith(BREAK_BELOW_MARK));
 
