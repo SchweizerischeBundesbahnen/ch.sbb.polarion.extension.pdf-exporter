@@ -182,6 +182,15 @@
   width: auto;
 }
 
+/* A choice among the custom templates, indented under the choice of them. Not a radio, so outside their group. */
+.optional-choice {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  margin: -6px 0 12px 22px;
+}
+
 /* Copy and compare, above the editors of the custom values. */
 .template-actions {
   display: flex;
