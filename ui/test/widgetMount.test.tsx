@@ -245,7 +245,8 @@ describe('Bulk PDF Export widget mounting', () => {
   it('keeps Export disabled until the style package is read, and starts the run once it is', async () => {
     // The form shows before its style package arrives. A click in between lands on a disabled button and
     // starts nothing, which is the race the visual tests of the widget lost now and then.
-    let release: (() => void) | null = null;
+    // A field rather than a variable assigned in the callback, so the release it holds can be called without a doubt
+    const held: { release?: () => void } = {};
     const host = shim();
     mountInto(host, readShim(host), {
       loadItems: loaded,
@@ -253,7 +254,7 @@ describe('Bulk PDF Export widget mounting', () => {
         ...popupDependencies(),
         loadPackage: () =>
           new Promise((resolve) => {
-            release = () => resolve(SAMPLE_STYLE_PACKAGE_FULL);
+            held.release = () => resolve(SAMPLE_STYLE_PACKAGE_FULL);
           }),
       },
       convert: () => new Promise(() => {}),
@@ -264,7 +265,7 @@ describe('Bulk PDF Export widget mounting', () => {
     root.querySelector<HTMLElement>('#bulk-export-pdf')!.click();
     await vi.waitFor(() => expect(root.querySelector('.pdf-export-form')).not.toBeNull());
     // The package is asked for once the rest of the form has arrived, so the check starts with the request out
-    await vi.waitFor(() => expect(release).not.toBeNull());
+    await vi.waitFor(() => expect(held.release).toBeDefined());
     const exportButton = () => root.querySelector<HTMLButtonElement>('.rsp-modal-footer .sbb-btn--primary')!;
 
     expect(exportButton().disabled).toBe(true);
@@ -273,7 +274,7 @@ describe('Bulk PDF Export widget mounting', () => {
     await new Promise((resolve) => setTimeout(resolve, 100));
     expect(root.querySelector('.bulk-export-progress')).toBeNull();
 
-    release!();
+    held.release?.();
     await vi.waitFor(() => expect(exportButton().disabled).toBe(false));
     exportButton().click();
     await vi.waitFor(() => expect(root.querySelector('.bulk-export-progress')).not.toBeNull());
