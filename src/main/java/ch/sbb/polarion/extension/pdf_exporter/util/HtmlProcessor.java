@@ -14,6 +14,7 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.Orientation;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PaperSize;
 import ch.sbb.polarion.extension.pdf_exporter.settings.LocalizationSettings;
 import ch.sbb.polarion.extension.pdf_exporter.util.adjuster.PageWidthAdjuster;
+import ch.sbb.polarion.extension.pdf_exporter.util.adjuster.TableRowsAdjuster;
 import ch.sbb.polarion.extension.pdf_exporter.util.html.HtmlLinksHelper;
 import com.helger.css.decl.CSSDeclarationList;
 import com.polarion.alm.shared.util.StringUtils;
@@ -194,6 +195,9 @@ public class HtmlProcessor {
         // ----
 
         timedIfNotNull(generationLog, "Generate table of content", () -> getTocGenerator(exportParams.getDocumentType()).addTableOfContent(document));
+
+        boolean customPageBreaks = hasCustomPageBreaks(html);
+        timedIfNotNull(generationLog, "Keep table rows whole", () -> keepTableRowsWhole(document, exportParams, customPageBreaks));
 
         if (exportParams.isFitToPage() && !hasCustomPageBreaks(html)) {
             // ---- BOOKMARK 1
@@ -1091,6 +1095,18 @@ public class HtmlProcessor {
         if (!replaced) {
             enumElement.appendText(replacement);
         }
+    }
+
+    /**
+     * Keeps each table row which fits a page on one page. A document with page breaks which turn the page may lay a table
+     * out in either orientation, so its rows are measured against the lower of the two pages.
+     */
+    @VisibleForTesting
+    void keepTableRowsWhole(@NotNull Document document, @NotNull ConversionParams conversionParams, boolean customPageBreaks) {
+        int pageHeight = customPageBreaks
+                ? Math.min(PaperSizeUtils.MAX_PORTRAIT_HEIGHTS.get(conversionParams.getPaperSize()), PaperSizeUtils.MAX_LANDSCAPE_HEIGHTS.get(conversionParams.getPaperSize()))
+                : PaperSizeUtils.getMaxHeight(conversionParams);
+        new TableRowsAdjuster(document, conversionParams, pageHeight).execute();
     }
 
     public void adjustContentToFitPage(@NotNull Document document, @NotNull ConversionParams conversionParams) {

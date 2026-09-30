@@ -1328,6 +1328,7 @@ class HtmlProcessorTest {
             ExportParams exportParams = getExportParams();
             // to avoid changing input html and check with regular equals
             doNothing().when(spyHtmlProcessor).adjustCellWidth(any(), any());
+            doNothing().when(spyHtmlProcessor).keepTableRowsWhole(any(), any(), anyBoolean());
             exportParams.setCutEmptyChapters(false);
             exportParams.setCutEmptyWIAttributes(false);
 

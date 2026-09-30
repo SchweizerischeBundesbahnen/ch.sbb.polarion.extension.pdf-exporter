@@ -16,6 +16,7 @@ import org.jsoup.nodes.Element;
 import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -96,7 +97,7 @@ class ImageSizeInTablesAdjusterTest {
         // Mock TableAnalyzer.getColumnWidths to return an empty map
         try (var mockedTableAnalyzer = mockStatic(TableAnalyzer.class)) {
             mockedTableAnalyzer.when(() -> TableAnalyzer.analyze(any(Element.class), anyInt()))
-                    .thenReturn(new TableAnalyzer.TableMetrics(Collections.emptyMap(), 0));
+                    .thenReturn(new TableAnalyzer.TableMetrics(Collections.emptyMap(), 0, List.of()));
 
             ImageSizeInTablesAdjuster adjuster = new ImageSizeInTablesAdjuster(doc, ConversionParams.builder().build());
             adjuster.execute();
