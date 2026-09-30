@@ -347,6 +347,7 @@ describe('Style Packages page', () => {
       coverPage: 'Fancy cover',
       css: 'Default',
       headerFooter: 'Default',
+      firstPageHeaderFooter: null,
       localization: 'Default',
       webhooks: 'Rewriter',
       headersColor: '#004d73',
@@ -459,6 +460,24 @@ describe('Style Packages page', () => {
     });
   });
 
+  it('offers the header and footer of the first page, and stores none once it is switched off', async () => {
+    const fetchMock = open(
+      routesWith({
+        method: 'GET',
+        match: /\/settings\/style-package\/names\/[^/]+\/content/,
+        json: { weight: 50, firstPageHeaderFooter: 'Default' },
+      }),
+    );
+    await vi.waitFor(() => expect(input('first-page-header-footer-checkbox').checked).toBe(true));
+    expect(field('#first-page-header-footer-select')).not.toBeNull();
+
+    await userEvent.click(input('first-page-header-footer-checkbox'));
+    await vi.waitFor(() => expect(field('#first-page-header-footer-select')).toBeNull());
+    await clickButton('Save');
+
+    expect(await savedBody(fetchMock)).toMatchObject({ headerFooter: 'Default', firstPageHeaderFooter: null });
+  });
+
   it('carries every control of a style package built from scratch into the stored document', async () => {
     // Nothing but the weight is stored, so every switch starts off and every sub-control is hidden.
     const fetchMock = open(
@@ -469,6 +488,7 @@ describe('Style Packages page', () => {
     for (const id of [
       'exposeSettings',
       'cover-page-checkbox',
+      'first-page-header-footer-checkbox',
       'webhooks-checkbox',
       'full-fonts',
       'fit-to-page',
@@ -521,6 +541,7 @@ describe('Style Packages page', () => {
       coverPage: 'Default',
       css: 'Default',
       headerFooter: 'Default',
+      firstPageHeaderFooter: 'Default',
       localization: 'Default',
       webhooks: 'Default',
       headersColor: '#ff0000',

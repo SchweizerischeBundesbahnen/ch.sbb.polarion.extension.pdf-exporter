@@ -1,27 +1,7 @@
 import CustomTemplatesPage from '../components/CustomTemplatesPage';
 import TemplateQuickHelp, { SubstitutionRules } from '../components/TemplateQuickHelp';
 
-/** The six parts of the first page, which replace the other ones there once the first page is different. */
-const FIRST_PAGE = {
-  key: 'differentFirstPage',
-  label: 'Different first page',
-  tabLabel: 'First Page Templates',
-  intro:
-    'Here you can define the header and footer of the first page. They replace the custom ones there, and an empty part prints nothing.',
-  fields: (['header', 'footer'] as const).flatMap((row) =>
-    (['Left', 'Center', 'Right'] as const).map((column) => ({
-      key: `firstPage${row === 'header' ? 'Header' : 'Footer'}${column}`,
-      label: `First page ${row}'s ${column.toLowerCase()} part:`,
-      language: 'velocity' as const,
-      placeholder: `Enter template of first page ${row}'s ${column.toLowerCase()} part here`,
-    })),
-  ),
-};
-
-/**
- * PDF Exporter: Header and footer - the six cells printed on every page of the exported PDF, and six more for the
- * first page when it is different.
- */
+/** PDF Exporter: Header and footer - the six cells printed on every page of the exported PDF. */
 export default function HeaderFooter() {
   return (
     <CustomTemplatesPage
@@ -33,7 +13,6 @@ export default function HeaderFooter() {
       defaultIntro="Here are displayed default header and footer, which are used unless the custom ones are chosen above. They are displayed here only for informational purposes and can't be modified."
       emptyWarning="All parts of the custom header and footer are empty, so the exported PDF gets neither. Save anyway?"
       editorsClassName="three-across"
-      optionalTemplates={FIRST_PAGE}
       fields={[
         {
           key: 'headerLeft',
@@ -81,12 +60,6 @@ export default function HeaderFooter() {
             administration pane), both enclosed in double curly brackets, eg.:{' '}
             <span className="monospace">{'{{ DOCUMENT_TITLE }}'}</span> for special variables or{' '}
             <span className="monospace">{'{{ docRevision }}'}</span> for document&apos;s custom fields.
-          </p>
-          <p>
-            Check <b>Different first page</b> under the custom header and footer to give the first page a header and
-            footer of its own, on the tab <b>First Page Templates</b>. Its six parts replace the other ones on the first
-            page, which gets no header or footer where they are empty. A cover page is a page of its own, so the first
-            page is then the one after it.
           </p>
           <SubstitutionRules subject="Header and footer parts" />
         </TemplateQuickHelp>

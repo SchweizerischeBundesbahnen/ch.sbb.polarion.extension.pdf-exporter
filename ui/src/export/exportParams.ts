@@ -24,6 +24,8 @@ export interface ExportParamsJson {
   coverPage?: string | null;
   css?: string;
   headerFooter?: string;
+  /** The header and footer of the first page, null when it has the one of the other pages. */
+  firstPageHeaderFooter?: string | null;
   localization?: string;
   webhooks?: string | null;
   headersColor?: string;
@@ -140,6 +142,7 @@ export function buildExportParams(form: ExportForm, context: DocumentContext, ta
       coverPage: form.coverPageEnabled ? form.coverPage : null,
       css: form.css,
       headerFooter: form.headerFooter,
+      firstPageHeaderFooter: form.firstPageHeaderFooterEnabled ? form.firstPageHeaderFooter : null,
       localization: form.localization,
       webhooks: form.webhooksEnabled ? form.webhooks : null,
       headersColor: form.headersColor,

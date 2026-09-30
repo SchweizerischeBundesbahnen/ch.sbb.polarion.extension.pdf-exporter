@@ -27,6 +27,8 @@ export interface ExportForm {
   coverPage: string;
   css: string;
   headerFooter: string;
+  firstPageHeaderFooterEnabled: boolean;
+  firstPageHeaderFooter: string;
   localization: string;
   webhooksEnabled: boolean;
   webhooks: string;
@@ -113,6 +115,8 @@ export function toExportForm(content: StylePackageSettings, context: ExportFormC
     coverPage: content.coverPage ?? DEFAULT_NAME,
     css: content.css ?? DEFAULT_NAME,
     headerFooter: content.headerFooter ?? DEFAULT_NAME,
+    firstPageHeaderFooterEnabled: !!content.firstPageHeaderFooter,
+    firstPageHeaderFooter: content.firstPageHeaderFooter ?? DEFAULT_NAME,
     localization: content.localization ?? DEFAULT_NAME,
     webhooksEnabled: !!content.webhooks,
     webhooks: content.webhooks ?? DEFAULT_NAME,

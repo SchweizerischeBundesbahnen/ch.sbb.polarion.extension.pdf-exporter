@@ -124,13 +124,6 @@ describe('Templates page toolbar', () => {
         footerLeft: '',
         footerCenter: '',
         footerRight: '',
-        differentFirstPage: false,
-        firstPageHeaderLeft: '',
-        firstPageHeaderCenter: '',
-        firstPageHeaderRight: '',
-        firstPageFooterLeft: '',
-        firstPageFooterCenter: '',
-        firstPageFooterRight: '',
       });
     });
   });
