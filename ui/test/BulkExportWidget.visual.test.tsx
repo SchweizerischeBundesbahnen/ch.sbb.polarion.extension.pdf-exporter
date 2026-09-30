@@ -50,6 +50,16 @@ async function snapshot(host: HTMLElement, name: string): Promise<void> {
 const settled = (host: HTMLElement, selector = '.polarion-rpw-table-counts') =>
   vi.waitFor(() => expect(host.shadowRoot!.querySelector(selector)).not.toBeNull());
 
+/**
+ * Presses Export once the dialog can take it. The form shows before its style package is read, and until then the
+ * button is disabled: a click lands on nothing, so how fast the package arrived decided whether the run started.
+ */
+async function pressExport(host: HTMLElement): Promise<void> {
+  const button = () => host.shadowRoot!.querySelector<HTMLButtonElement>('.rsp-modal-footer .sbb-btn--primary');
+  await vi.waitFor(() => expect(button()?.disabled).toBe(false));
+  button()!.click();
+}
+
 afterEach(() => {
   hosts.splice(0).forEach((host) => host.remove());
 });
@@ -169,7 +179,7 @@ describe.skipIf(!__PIXEL_REFERENCES__)('Bulk PDF Export widget visual', () => {
     );
     host.shadowRoot!.querySelector<HTMLElement>('#bulk-export-pdf')!.click();
     await vi.waitFor(() => expect(host.shadowRoot!.querySelector('.pdf-export-form')).not.toBeNull());
-    host.shadowRoot!.querySelector<HTMLButtonElement>('.rsp-modal-footer .sbb-btn--primary')!.click();
+    await pressExport(host);
     await vi.waitFor(() => expect(host.shadowRoot!.querySelector('.bulk-export-progress')).not.toBeNull());
 
     const finish = (fail = false, warning?: string) => {
@@ -281,7 +291,7 @@ describe.skipIf(!__PIXEL_REFERENCES__)('Bulk PDF Export widget visual', () => {
     host.shadowRoot!.querySelector<HTMLElement>('#bulk-export-pdf')!.click();
     await vi.waitFor(() => expect(host.shadowRoot!.querySelector('#popup-merge-into-single-pdf')).not.toBeNull());
     host.shadowRoot!.querySelector<HTMLInputElement>('#popup-merge-into-single-pdf')!.click();
-    host.shadowRoot!.querySelector<HTMLButtonElement>('.rsp-modal-footer .sbb-btn--primary')!.click();
+    await pressExport(host);
     await vi.waitFor(() => expect(host.shadowRoot!.querySelector('.bulk-export-progress')).not.toBeNull());
 
     finishMerge();
