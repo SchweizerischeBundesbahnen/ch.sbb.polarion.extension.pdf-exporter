@@ -241,6 +241,41 @@ describe('Bulk PDF Export widget mounting', () => {
 
     expect(scrollers(root)).not.toContain('rsp-modal');
   });
+
+  it('keeps Export disabled until the style package is read, and starts the run once it is', async () => {
+    // The form shows before its style package arrives. A click in between lands on a disabled button and
+    // starts nothing, which is the race the visual tests of the widget lost now and then.
+    let release = () => {};
+    const host = shim();
+    mountInto(host, readShim(host), {
+      loadItems: loaded,
+      popup: {
+        ...popupDependencies(),
+        loadPackage: () =>
+          new Promise((resolve) => {
+            release = () => resolve(SAMPLE_STYLE_PACKAGE_FULL);
+          }),
+      },
+      convert: () => new Promise(() => {}),
+    });
+    const root = host.shadowRoot!;
+    await vi.waitFor(() => expect(root.querySelector('.polarion-rpw-table-counts')).not.toBeNull());
+    root.querySelectorAll<HTMLInputElement>('input.export-item').forEach((box) => box.click());
+    root.querySelector<HTMLElement>('#bulk-export-pdf')!.click();
+    await vi.waitFor(() => expect(root.querySelector('.pdf-export-form')).not.toBeNull());
+    const exportButton = () => root.querySelector<HTMLButtonElement>('.rsp-modal-footer .sbb-btn--primary')!;
+
+    expect(exportButton().disabled).toBe(true);
+    exportButton().click();
+    // Nothing to wait for when nothing happens, so the run is given a moment to show up if it had started
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    expect(root.querySelector('.bulk-export-progress')).toBeNull();
+
+    release();
+    await vi.waitFor(() => expect(exportButton().disabled).toBe(false));
+    exportButton().click();
+    await vi.waitFor(() => expect(root.querySelector('.bulk-export-progress')).not.toBeNull());
+  });
 });
 
 describe('accessibility', () => {
