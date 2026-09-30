@@ -1,7 +1,7 @@
 package ch.sbb.polarion.extension.pdf_exporter.rest.controller;
 
-import ch.sbb.polarion.extension.generic.rest.filter.LogoutFilter;
 import ch.sbb.polarion.extension.generic.rest.filter.Secured;
+import ch.sbb.polarion.extension.generic.util.RequestContextUtil;
 import ch.sbb.polarion.extension.pdf_exporter.converter.HtmlToPdfConverter;
 import ch.sbb.polarion.extension.pdf_exporter.converter.PdfConverter;
 import ch.sbb.polarion.extension.pdf_exporter.converter.PdfConverterJobsService;
@@ -14,8 +14,6 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PdfVariant;
 import ch.sbb.polarion.extension.pdf_exporter.service.PdfExporterPolarionService;
 import ch.sbb.polarion.extension.pdf_exporter.util.PdfWidthValidationService;
 import org.jetbrains.annotations.VisibleForTesting;
-import org.springframework.web.context.request.RequestAttributes;
-import org.springframework.web.context.request.RequestContextHolder;
 
 import java.util.List;
 
@@ -57,15 +55,27 @@ public class ConverterApiController extends ConverterInternalController {
     @Override
     @RolesRestricted
     public Response startPdfConverterJob(ExportParams exportParams) {
-        deactivateLogoutFilter();
-        return polarionService.callPrivileged(() -> super.startPdfConverterJob(exportParams));
+        // The job runs after this response and ends the session itself; a start which fails gives it back.
+        RequestContextUtil.keepSessionAlive();
+        try {
+            return polarionService.callPrivileged(() -> super.startPdfConverterJob(exportParams));
+        } catch (RuntimeException e) {
+            RequestContextUtil.releaseSession();
+            throw e;
+        }
     }
 
     @Override
     @RolesRestricted
     public Response startMergeExportJob(List<ExportParams> exportParamsList) {
-        deactivateLogoutFilter();
-        return polarionService.callPrivileged(() -> super.startMergeExportJob(exportParamsList));
+        // The job runs after this response and ends the session itself; a start which fails gives it back.
+        RequestContextUtil.keepSessionAlive();
+        try {
+            return polarionService.callPrivileged(() -> super.startMergeExportJob(exportParamsList));
+        } catch (RuntimeException e) {
+            RequestContextUtil.releaseSession();
+            throw e;
+        }
     }
 
     @Override
@@ -99,12 +109,5 @@ public class ConverterApiController extends ConverterInternalController {
         return polarionService.callPrivileged(() -> super.getExportPermission(projectId));
     }
 
-    private void deactivateLogoutFilter() {
-        RequestAttributes requestAttributes = RequestContextHolder.getRequestAttributes();
-        if (requestAttributes != null) {
-            requestAttributes.setAttribute(LogoutFilter.ASYNC_SKIP_LOGOUT, Boolean.TRUE, RequestAttributes.SCOPE_REQUEST);
-            RequestContextHolder.setRequestAttributes(requestAttributes);
-        }
-    }
 
 }

@@ -50,6 +50,13 @@ async function snapshot(host: HTMLElement, name: string): Promise<void> {
 const settled = (host: HTMLElement, selector = '.polarion-rpw-table-counts') =>
   vi.waitFor(() => expect(host.shadowRoot!.querySelector(selector)).not.toBeNull());
 
+/**
+ * The export dialog has loaded the settings of its style package. Export ignores a click before that, since
+ * there is no form yet to build the request from - and the dialog frame shows well before the form does.
+ */
+const formLoaded = (host: HTMLElement) =>
+  vi.waitFor(() => expect(host.shadowRoot!.querySelector('#popup-style-package-content')).not.toBeNull());
+
 afterEach(() => {
   hosts.splice(0).forEach((host) => host.remove());
 });
@@ -168,7 +175,7 @@ describe.skipIf(!__PIXEL_REFERENCES__)('Bulk PDF Export widget visual', () => {
       expect(host.shadowRoot!.querySelector('#bulk-export-pdf')!.className).not.toContain('defaultCursor'),
     );
     host.shadowRoot!.querySelector<HTMLElement>('#bulk-export-pdf')!.click();
-    await vi.waitFor(() => expect(host.shadowRoot!.querySelector('.pdf-export-form')).not.toBeNull());
+    await formLoaded(host);
     host.shadowRoot!.querySelector<HTMLButtonElement>('.rsp-modal-footer .sbb-btn--primary')!.click();
     await vi.waitFor(() => expect(host.shadowRoot!.querySelector('.bulk-export-progress')).not.toBeNull());
 
@@ -281,6 +288,7 @@ describe.skipIf(!__PIXEL_REFERENCES__)('Bulk PDF Export widget visual', () => {
     host.shadowRoot!.querySelector<HTMLElement>('#bulk-export-pdf')!.click();
     await vi.waitFor(() => expect(host.shadowRoot!.querySelector('#popup-merge-into-single-pdf')).not.toBeNull());
     host.shadowRoot!.querySelector<HTMLInputElement>('#popup-merge-into-single-pdf')!.click();
+    await formLoaded(host);
     host.shadowRoot!.querySelector<HTMLButtonElement>('.rsp-modal-footer .sbb-btn--primary')!.click();
     await vi.waitFor(() => expect(host.shadowRoot!.querySelector('.bulk-export-progress')).not.toBeNull());
 

@@ -3,9 +3,8 @@ package ch.sbb.polarion.extension.pdf_exporter;
 import ch.sbb.polarion.extension.generic.context.CurrentContextExtension;
 import ch.sbb.polarion.extension.generic.test_extensions.PlatformContextMockExtension;
 import ch.sbb.polarion.extension.pdf_exporter.configuration.PdfExporterExtensionConfigurationExtension;
-import ch.sbb.polarion.extension.pdf_exporter.converter.PdfConverterJobsCleaner;
+import ch.sbb.polarion.extension.pdf_exporter.converter.PdfConverterJobsService;
 import ch.sbb.polarion.extension.pdf_exporter.settings.CssSettings;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.MockedConstruction;
@@ -21,11 +20,6 @@ import static org.mockito.Mockito.mockStatic;
 
 @ExtendWith({MockitoExtension.class, CurrentContextExtension.class, PdfExporterExtensionConfigurationExtension.class, PlatformContextMockExtension.class})
 class ExtensionBundleActivatorTest {
-
-    @AfterEach
-    void tearDown() {
-        PdfConverterJobsCleaner.stopCleaningJob();
-    }
 
     @Test
     void testBundleActivator() {
@@ -54,14 +48,26 @@ class ExtensionBundleActivatorTest {
 
     @Test
     void testCleaningJobExceptionIsCaught() {
-        try (MockedStatic<PdfConverterJobsCleaner> mockedCleaner = mockStatic(PdfConverterJobsCleaner.class)) {
-            mockedCleaner.when(PdfConverterJobsCleaner::startCleaningJob)
+        try (MockedStatic<PdfConverterJobsService> mockedJobsService = mockStatic(PdfConverterJobsService.class)) {
+            mockedJobsService.when(PdfConverterJobsService::startCleaner)
                     .thenThrow(new RuntimeException("Simulated cleaning job failure"));
 
             ExtensionBundleActivator bundleActivator = new ExtensionBundleActivator();
             BundleContext bundleContext = mock(BundleContext.class);
 
             assertDoesNotThrow(() -> bundleActivator.start(bundleContext));
+        }
+    }
+
+    /**
+     * The conversion threads and the cleaner of finished conversions stop with the bundle.
+     */
+    @Test
+    void testTheConversionJobsStopWithTheBundle() {
+        try (MockedStatic<PdfConverterJobsService> mockedJobsService = mockStatic(PdfConverterJobsService.class)) {
+            new ExtensionBundleActivator().stop(mock(BundleContext.class));
+
+            mockedJobsService.verify(PdfConverterJobsService::shutdown);
         }
     }
 
