@@ -2,7 +2,7 @@ package ch.sbb.polarion.extension.pdf_exporter;
 
 import ch.sbb.polarion.extension.generic.GenericBundleActivator;
 import ch.sbb.polarion.extension.generic.settings.NamedSettingsRegistry;
-import ch.sbb.polarion.extension.pdf_exporter.converter.PdfConverterJobsCleaner;
+import ch.sbb.polarion.extension.pdf_exporter.converter.PdfConverterJobsService;
 import ch.sbb.polarion.extension.pdf_exporter.settings.AuthorizationSettings;
 import ch.sbb.polarion.extension.pdf_exporter.settings.CoverPageSettings;
 import ch.sbb.polarion.extension.pdf_exporter.settings.CssSettings;
@@ -35,7 +35,7 @@ public class ExtensionBundleActivator extends GenericBundleActivator {
 
     @Override
     public void stop(BundleContext context) {
-        PdfConverterJobsCleaner.stopCleaningJob();
+        PdfConverterJobsService.shutdown();
         super.stop(context);
     }
 
@@ -59,7 +59,7 @@ public class ExtensionBundleActivator extends GenericBundleActivator {
         }
 
         try {
-            PdfConverterJobsCleaner.startCleaningJob();
+            PdfConverterJobsService.startCleaner();
         } catch (Exception e) {
             logger.error("Error during starting of clearing job", e);
         }
