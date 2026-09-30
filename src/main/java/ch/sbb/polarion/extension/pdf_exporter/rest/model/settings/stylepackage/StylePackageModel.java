@@ -32,6 +32,7 @@ public class StylePackageModel extends SettingsModel {
     private static final String EXPOSE_SETTINGS_ENTRY_NAME = "EXPOSE SETTINGS";
     private static final String COVER_PAGE_ENTRY_NAME = "COVER PAGE";
     private static final String HEADER_FOOTER_ENTRY_NAME = "HEADER FOOTER";
+    private static final String FIRST_PAGE_HEADER_FOOTER_ENTRY_NAME = "FIRST PAGE HEADER FOOTER";
     private static final String CSS_ENTRY_NAME = "CSS";
     private static final String LOCALIZATION_ENTRY_NAME = "LOCALIZATION";
     private static final String WEBHOOKS_ENTRY_NAME = "WEBHOOKS";
@@ -69,6 +70,10 @@ public class StylePackageModel extends SettingsModel {
     private boolean exposeSettings;
     private String coverPage;
     private String headerFooter;
+    /**
+     * The header and footer of the first page, null when the first page has the one of the other pages.
+     */
+    private String firstPageHeaderFooter;
     private String css;
     private String localization;
     private String webhooks;
@@ -108,6 +113,7 @@ public class StylePackageModel extends SettingsModel {
                 serializeEntry(EXPOSE_SETTINGS_ENTRY_NAME, exposeSettings) +
                 serializeEntry(COVER_PAGE_ENTRY_NAME, coverPage) +
                 serializeEntry(HEADER_FOOTER_ENTRY_NAME, headerFooter) +
+                serializeEntry(FIRST_PAGE_HEADER_FOOTER_ENTRY_NAME, firstPageHeaderFooter) +
                 serializeEntry(CSS_ENTRY_NAME, css) +
                 serializeEntry(LOCALIZATION_ENTRY_NAME, localization) +
                 serializeEntry(WEBHOOKS_ENTRY_NAME, webhooks) +
@@ -149,6 +155,7 @@ public class StylePackageModel extends SettingsModel {
         exposeSettings = Boolean.parseBoolean(deserializeEntry(EXPOSE_SETTINGS_ENTRY_NAME, serializedString));
         coverPage = deserializeEntry(COVER_PAGE_ENTRY_NAME, serializedString);
         headerFooter = deserializeEntry(HEADER_FOOTER_ENTRY_NAME, serializedString);
+        firstPageHeaderFooter = deserializeEntry(FIRST_PAGE_HEADER_FOOTER_ENTRY_NAME, serializedString);
         css = deserializeEntry(CSS_ENTRY_NAME, serializedString);
         localization = deserializeEntry(LOCALIZATION_ENTRY_NAME, serializedString);
         webhooks = deserializeEntry(WEBHOOKS_ENTRY_NAME, serializedString);

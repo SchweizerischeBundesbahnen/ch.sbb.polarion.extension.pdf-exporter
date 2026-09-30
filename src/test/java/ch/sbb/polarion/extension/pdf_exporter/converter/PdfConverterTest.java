@@ -245,22 +245,22 @@ class PdfConverterTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    void shouldAddTheFirstPagePartsWhenTheFirstPageIsDifferent() {
+    void shouldAddTheFirstPagePartsFromTheHeaderAndFooterOfTheFirstPage() {
         DocumentData<IModule> documentData = DocumentData.creator(DocumentType.LIVE_DOC, module)
                 .id(LiveDocId.from("testProjectId", "_default", "testDocumentId"))
                 .title("testDocumentTitle")
                 .lastRevision("12345")
                 .revisionPlaceholder("12345")
                 .build();
-        ExportParams exportParams = ExportParams.builder().projectId("testProjectId").build();
+        ExportParams exportParams = ExportParams.builder().projectId("testProjectId").headerFooter("running").firstPageHeaderFooter("title").build();
 
-        HeaderFooterModel headerFooterModel = HeaderFooterModel.builder()
+        when(headerFooterSettings.load("testProjectId", SettingId.fromName("running"))).thenReturn(HeaderFooterModel.builder()
                 .useCustomValues(true)
-                .headerLeft("-header-left-")
-                .differentFirstPage(true)
-                .firstPageHeaderLeft("-first-header-left-")
-                .firstPageFooterRight("-first-footer-right-").build();
-        when(headerFooterSettings.load("testProjectId", SettingId.fromName("Default"))).thenReturn(headerFooterModel);
+                .headerLeft("-header-left-").build());
+        when(headerFooterSettings.load("testProjectId", SettingId.fromName("title"))).thenReturn(HeaderFooterModel.builder()
+                .useCustomValues(true)
+                .headerLeft("-first-header-left-")
+                .footerRight("-first-footer-right-").build());
         when(placeholderProcessor.replacePlaceholders(eq(documentData), eq(exportParams), any(List.class))).thenAnswer(a -> a.getArgument(2));
         when(velocityEvaluator.evaluateVelocityExpressions(eq(documentData), anyString())).thenAnswer(a -> a.getArguments()[1]);
         when(htmlProcessor.replaceResourcesAsBase64Encoded(anyString())).thenAnswer(a -> a.getArgument(0));
@@ -278,10 +278,7 @@ class PdfConverterTest {
 
     @Test
     void shouldPutTheFirstPagePartsOnThePageAfterTheCoverPage() {
-        ExportParams exportParams = ExportParams.builder().projectId("testProjectId").coverPage("cover").build();
-        when(headerFooterSettings.load("testProjectId", SettingId.fromName("Default"))).thenReturn(HeaderFooterModel.builder()
-                .useCustomValues(true)
-                .differentFirstPage(true).build());
+        ExportParams exportParams = ExportParams.builder().projectId("testProjectId").coverPage("cover").firstPageHeaderFooter("title").build();
 
         PdfConverter pdfConverter = new PdfConverter(null, headerFooterSettings, null, placeholderProcessor, velocityEvaluator, null, null, htmlProcessor, null, bulkProcessingConnector);
 
@@ -289,28 +286,54 @@ class PdfConverterTest {
     }
 
     @Test
-    void shouldAddNoFirstPagePartsWhenTheFirstPageIsNotDifferent() {
+    @SuppressWarnings("unchecked")
+    void shouldAddNoFirstPagePartsWithoutAHeaderAndFooterOfTheFirstPage() {
+        DocumentData<IModule> documentData = DocumentData.creator(DocumentType.LIVE_DOC, module)
+                .id(LiveDocId.from("testProjectId", "_default", "testDocumentId"))
+                .title("testDocumentTitle")
+                .lastRevision("12345")
+                .revisionPlaceholder("12345")
+                .build();
         ExportParams exportParams = ExportParams.builder().projectId("testProjectId").headerFooter("custom").build();
         when(headerFooterSettings.load("testProjectId", SettingId.fromName("custom"))).thenReturn(HeaderFooterModel.builder()
                 .useCustomValues(true)
-                .firstPageHeaderLeft("-first-header-left-").build());
+                .headerLeft("-header-left-").build());
+        when(placeholderProcessor.replacePlaceholders(eq(documentData), eq(exportParams), any(List.class))).thenAnswer(a -> a.getArgument(2));
+        when(velocityEvaluator.evaluateVelocityExpressions(eq(documentData), anyString())).thenAnswer(a -> a.getArguments()[1]);
+        when(htmlProcessor.replaceResourcesAsBase64Encoded(anyString())).thenAnswer(a -> a.getArgument(0));
 
         PdfConverter pdfConverter = new PdfConverter(null, headerFooterSettings, null, placeholderProcessor, velocityEvaluator, null, null, htmlProcessor, null, bulkProcessingConnector);
 
+        assertThat(pdfConverter.getHeaderFooterContent(documentData, exportParams)).doesNotContain("first-page");
         assertThat(pdfConverter.getFirstPageHeaderFooterCss(exportParams)).isEmpty();
     }
 
     @Test
-    void shouldTakeTheFirstPageFromTheBuiltInValuesWhenTheCustomOnesAreNotInUse() {
-        ExportParams exportParams = ExportParams.builder().projectId("testProjectId").build();
+    @SuppressWarnings("unchecked")
+    void shouldTakeTheFirstPageFromTheBuiltInValuesWhenItsCustomOnesAreNotInUse() {
+        DocumentData<IModule> documentData = DocumentData.creator(DocumentType.LIVE_DOC, module)
+                .id(LiveDocId.from("testProjectId", "_default", "testDocumentId"))
+                .title("testDocumentTitle")
+                .lastRevision("12345")
+                .revisionPlaceholder("12345")
+                .build();
+        ExportParams exportParams = ExportParams.builder().projectId("testProjectId").firstPageHeaderFooter("title").build();
         when(headerFooterSettings.load("testProjectId", SettingId.fromName("Default"))).thenReturn(HeaderFooterModel.builder()
+                .useCustomValues(true)
+                .headerLeft("-header-left-").build());
+        when(headerFooterSettings.load("testProjectId", SettingId.fromName("title"))).thenReturn(HeaderFooterModel.builder()
                 .useCustomValues(false)
-                .differentFirstPage(true).build());
-        when(headerFooterSettings.defaultValues()).thenReturn(HeaderFooterModel.builder().build());
+                .headerLeft("-unused-").build());
+        when(headerFooterSettings.defaultValues()).thenReturn(HeaderFooterModel.builder().headerLeft("-built-in-").build());
+        when(placeholderProcessor.replacePlaceholders(eq(documentData), eq(exportParams), any(List.class))).thenAnswer(a -> a.getArgument(2));
+        when(velocityEvaluator.evaluateVelocityExpressions(eq(documentData), anyString())).thenAnswer(a -> a.getArguments()[1]);
+        when(htmlProcessor.replaceResourcesAsBase64Encoded(anyString())).thenAnswer(a -> a.getArgument(0));
 
         PdfConverter pdfConverter = new PdfConverter(null, headerFooterSettings, null, placeholderProcessor, velocityEvaluator, null, null, htmlProcessor, null, bulkProcessingConnector);
 
-        assertThat(pdfConverter.getFirstPageHeaderFooterCss(exportParams)).isEmpty();
+        assertThat(TestStringUtils.removeNonsensicalSymbols(pdfConverter.getHeaderFooterContent(documentData, exportParams)))
+                .contains("<divclass='first-page-top-left'>-built-in-</div>")
+                .doesNotContain("-unused-");
     }
 
     private static Stream<Arguments> paramsForHeaderFooterContent() {

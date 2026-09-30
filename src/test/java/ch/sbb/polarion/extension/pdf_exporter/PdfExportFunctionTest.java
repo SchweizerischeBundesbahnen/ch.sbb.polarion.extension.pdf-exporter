@@ -117,6 +117,18 @@ class PdfExportFunctionTest {
     }
 
     @Test
+    void testFirstPageHeaderFooterFromStylePackageIsPropagated() {
+        IArguments args = new Arguments(Map.of());
+        StylePackageSettings stylePackageSettings = spy(new StylePackageSettings(settingsService));
+        StylePackageModel withFirstPage = stylePackageSettings.defaultValues();
+        withFirstPage.setFirstPageHeaderFooter("Title page");
+        doReturn(withFirstPage).when(stylePackageSettings).read(any(), any(), any());
+        NamedSettingsRegistry.INSTANCE.register(List.of(stylePackageSettings));
+
+        assertEquals("Title page", pdfExportFunction.getExportParams(module, args).getFirstPageHeaderFooter());
+    }
+
+    @Test
     void testEmptyWorkItemsQueryYieldsNullUrlQueryParameters() {
         IArguments args = new Arguments(Map.of());
         StylePackageSettings stylePackageSettings = spy(new StylePackageSettings(settingsService));

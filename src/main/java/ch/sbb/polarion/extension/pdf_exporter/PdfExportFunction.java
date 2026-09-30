@@ -119,6 +119,7 @@ public class PdfExportFunction implements IFunction<IModule> {
                 .coverPage(stylePackage.getCoverPage())
                 .css(stylePackage.getCss())
                 .headerFooter(stylePackage.getHeaderFooter())
+                .firstPageHeaderFooter(stylePackage.getFirstPageHeaderFooter())
                 .localization(stylePackage.getLocalization())
                 .webhooks(stylePackage.getWebhooks())
                 .headersColor(stylePackage.getHeadersColor())

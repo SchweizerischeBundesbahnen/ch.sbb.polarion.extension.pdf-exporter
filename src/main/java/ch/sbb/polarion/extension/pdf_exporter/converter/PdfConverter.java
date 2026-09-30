@@ -481,44 +481,42 @@ public class PdfConverter {
     String getHeaderFooterContent(
             @NotNull DocumentData<? extends IUniqueObject> documentData,
             @NotNull ExportParams exportParams) {
-        HeaderFooterModel headerFooter = loadHeaderFooter(exportParams);
-
-        String headerFooterContent = fillHeaderFooterTemplate(documentData, exportParams, "webapp/pdf-exporter/html/headerAndFooter.html", Arrays.asList(
-                headerFooter.getHeaderLeft(),
-                headerFooter.getHeaderCenter(),
-                headerFooter.getHeaderRight(),
-                headerFooter.getFooterLeft(),
-                headerFooter.getFooterCenter(),
-                headerFooter.getFooterRight()));
-        if (headerFooter.isDifferentFirstPage()) {
-            headerFooterContent += fillHeaderFooterTemplate(documentData, exportParams, "webapp/pdf-exporter/html/headerAndFooterFirstPage.html", Arrays.asList(
-                    headerFooter.getFirstPageHeaderLeft(),
-                    headerFooter.getFirstPageHeaderCenter(),
-                    headerFooter.getFirstPageHeaderRight(),
-                    headerFooter.getFirstPageFooterLeft(),
-                    headerFooter.getFirstPageFooterCenter(),
-                    headerFooter.getFirstPageFooterRight()));
+        String headerFooterContent = fillHeaderFooterTemplate(documentData, exportParams, "webapp/pdf-exporter/html/headerAndFooter.html",
+                parts(loadHeaderFooter(exportParams, exportParams.getHeaderFooter())));
+        if (exportParams.getFirstPageHeaderFooter() != null) {
+            headerFooterContent += fillHeaderFooterTemplate(documentData, exportParams, "webapp/pdf-exporter/html/headerAndFooterFirstPage.html",
+                    parts(loadHeaderFooter(exportParams, exportParams.getFirstPageHeaderFooter())));
         }
         return htmlProcessor.replaceResourcesAsBase64Encoded(headerFooterContent);
     }
 
     /**
-     * @return the CSS which puts the first page parts of the header and footer on the first page of the document, empty
-     * when it has none. With a cover page that is the second page: the first one is rendered to be replaced by the cover.
+     * @return the CSS which puts the header and footer of the first page on the first page of the document, empty when
+     * the first page has none of its own. With a cover page that is the second page: the first one is rendered to be
+     * replaced by the cover.
      */
     @VisibleForTesting
     @NotNull String getFirstPageHeaderFooterCss(@NotNull ExportParams exportParams) {
-        if (!loadHeaderFooter(exportParams).isDifferentFirstPage()) {
+        if (exportParams.getFirstPageHeaderFooter() == null) {
             return "";
         }
         String css = ScopeUtils.getFileContent("default/first-page-header-footer.css");
         return exportParams.getCoverPage() != null ? css.replace("@page :first", "@page :nth(2)") : css;
     }
 
-    private @NotNull HeaderFooterModel loadHeaderFooter(@NotNull ExportParams exportParams) {
-        String headerFooterSettingsName = exportParams.getHeaderFooter() != null ? exportParams.getHeaderFooter() : NamedSettings.DEFAULT_NAME;
-        HeaderFooterModel headerFooter = headerFooterSettings.load(exportParams.getProjectId(), SettingId.fromName(headerFooterSettingsName));
+    private @NotNull HeaderFooterModel loadHeaderFooter(@NotNull ExportParams exportParams, @Nullable String name) {
+        HeaderFooterModel headerFooter = headerFooterSettings.load(exportParams.getProjectId(), SettingId.fromName(name != null ? name : NamedSettings.DEFAULT_NAME));
         return headerFooter.isUseCustomValues() ? headerFooter : headerFooterSettings.defaultValues();
+    }
+
+    private static @NotNull List<String> parts(@NotNull HeaderFooterModel headerFooter) {
+        return Arrays.asList(
+                headerFooter.getHeaderLeft(),
+                headerFooter.getHeaderCenter(),
+                headerFooter.getHeaderRight(),
+                headerFooter.getFooterLeft(),
+                headerFooter.getFooterCenter(),
+                headerFooter.getFooterRight());
     }
 
     private @NotNull String fillHeaderFooterTemplate(
@@ -526,7 +524,7 @@ public class PdfConverter {
             @NotNull ExportParams exportParams,
             @NotNull String template,
             @NotNull List<String> parts) {
-        // A part nobody wrote is null, the first page parts of a header and footer stored without them above all
+        // A part nobody wrote is null
         List<String> nonNullParts = parts.stream().map(c -> (c == null) ? "" : c).toList();
         List<String> nonNullContents = placeholderProcessor.replacePlaceholders(documentData, exportParams, nonNullParts).stream()
                 .map(c -> (c == null) ? "" : c)

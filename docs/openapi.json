@@ -2349,6 +2349,10 @@
             "description": "Target file name of exported document",
             "type": "string"
           },
+          "firstPageHeaderFooter": {
+            "description": "Header/Footer settings name of the first page. Not set, the first page has the header and footer of the other pages",
+            "type": "string"
+          },
           "fitToPage": {
             "default": true,
             "description": "Content should be scaled to fit the page",

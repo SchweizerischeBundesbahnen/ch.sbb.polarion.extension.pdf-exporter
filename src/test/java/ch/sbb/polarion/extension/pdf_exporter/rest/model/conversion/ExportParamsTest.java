@@ -17,6 +17,7 @@ class ExportParamsTest {
         ExportParams params = ExportParams.builder()
                 .coverPage("coverPage1")
                 .headerFooter("headerFooter1")
+                .firstPageHeaderFooter("firstPageHeaderFooter1")
                 .css("css1")
                 .localization("localization1")
                 .webhooks("webhooks1")
@@ -47,6 +48,7 @@ class ExportParamsTest {
         StylePackageModel stylePackageModel = StylePackageModel.builder()
                 .coverPage("coverPage2")
                 .headerFooter("headerFooter2")
+                .firstPageHeaderFooter("firstPageHeaderFooter2")
                 .css("css2")
                 .localization("localization2")
                 .webhooks("webhooks2")
@@ -70,6 +72,7 @@ class ExportParamsTest {
 
         assertEquals("coverPage2", params.getCoverPage());
         assertEquals("headerFooter2", params.getHeaderFooter());
+        assertEquals("firstPageHeaderFooter2", params.getFirstPageHeaderFooter());
         assertEquals("css2", params.getCss());
         assertEquals("localization2", params.getLocalization());
         assertEquals("webhooks2", params.getWebhooks());
