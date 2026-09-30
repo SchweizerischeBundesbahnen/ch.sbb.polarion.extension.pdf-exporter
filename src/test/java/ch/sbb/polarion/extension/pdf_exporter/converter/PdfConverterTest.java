@@ -277,6 +277,18 @@ class PdfConverterTest {
     }
 
     @Test
+    void shouldPutTheFirstPagePartsOnThePageAfterTheCoverPage() {
+        ExportParams exportParams = ExportParams.builder().projectId("testProjectId").coverPage("cover").build();
+        when(headerFooterSettings.load("testProjectId", SettingId.fromName("Default"))).thenReturn(HeaderFooterModel.builder()
+                .useCustomValues(true)
+                .differentFirstPage(true).build());
+
+        PdfConverter pdfConverter = new PdfConverter(null, headerFooterSettings, null, placeholderProcessor, velocityEvaluator, null, null, htmlProcessor, null, bulkProcessingConnector);
+
+        assertThat(pdfConverter.getFirstPageHeaderFooterCss(exportParams)).contains("@page :nth(2)").doesNotContain("@page :first");
+    }
+
+    @Test
     void shouldAddNoFirstPagePartsWhenTheFirstPageIsNotDifferent() {
         ExportParams exportParams = ExportParams.builder().projectId("testProjectId").headerFooter("custom").build();
         when(headerFooterSettings.load("testProjectId", SettingId.fromName("custom"))).thenReturn(HeaderFooterModel.builder()

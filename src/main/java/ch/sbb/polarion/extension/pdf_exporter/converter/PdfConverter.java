@@ -503,11 +503,16 @@ public class PdfConverter {
     }
 
     /**
-     * @return the CSS which puts the first page parts of the header and footer on the first page, empty when it has none
+     * @return the CSS which puts the first page parts of the header and footer on the first page of the document, empty
+     * when it has none. With a cover page that is the second page: the first one is rendered to be replaced by the cover.
      */
     @VisibleForTesting
     @NotNull String getFirstPageHeaderFooterCss(@NotNull ExportParams exportParams) {
-        return loadHeaderFooter(exportParams).isDifferentFirstPage() ? ScopeUtils.getFileContent("default/first-page-header-footer.css") : "";
+        if (!loadHeaderFooter(exportParams).isDifferentFirstPage()) {
+            return "";
+        }
+        String css = ScopeUtils.getFileContent("default/first-page-header-footer.css");
+        return exportParams.getCoverPage() != null ? css.replace("@page :first", "@page :nth(2)") : css;
     }
 
     private @NotNull HeaderFooterModel loadHeaderFooter(@NotNull ExportParams exportParams) {

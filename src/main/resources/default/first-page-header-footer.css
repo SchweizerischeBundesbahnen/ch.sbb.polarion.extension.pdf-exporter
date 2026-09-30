@@ -1,5 +1,6 @@
 /* Added in front of the CSS only when a header and footer has a different first page, so the CSS after it can restyle it.
-   The margin boxes of :first win over the ones of :left and :right, as a :first page selector is more specific. */
+   The margin boxes of :first win over the ones of :left and :right, as a :first page selector is more specific.
+   With a cover page the converter targets :nth(2) instead, the first page being the one the cover replaces. */
 .header .first-page-top-center, .footer .first-page-bottom-center {
     text-align: center;
 }

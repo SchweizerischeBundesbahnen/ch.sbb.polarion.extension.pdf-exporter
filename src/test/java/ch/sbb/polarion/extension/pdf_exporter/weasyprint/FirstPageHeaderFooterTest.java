@@ -15,6 +15,7 @@ import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -60,6 +61,30 @@ class FirstPageHeaderFooterTest extends BasePdfConverterTest {
         }
     }
 
+    /** A cover page takes the place of a page rendered before the document, so the first page is the one after it. */
+    @Test
+    void printsTheFirstPagePartsOnThePageAfterTheCoverPage() {
+        mockHeaderFooter(HeaderFooterModel.builder()
+                .useCustomValues(true)
+                .headerLeft("Running left").headerCenter("Running center").headerRight("Running right")
+                .footerLeft("Running foot left").footerCenter("Running foot center").footerRight("Running foot right")
+                .differentFirstPage(true)
+                .firstPageHeaderLeft("Title left").firstPageHeaderCenter("Title center").firstPageHeaderRight("Title right")
+                .firstPageFooterLeft("Title foot left").firstPageFooterCenter("Title foot center").firstPageFooterRight("Title foot right")
+                .build());
+
+        List<String> pages = pageTexts(export("test"));
+
+        assertThat(pages).hasSize(4);
+        assertThat(pages.getFirst()).contains("Cover Page Title").doesNotContain("Running", "Title left");
+        assertThat(pages.get(1)).contains("Page one", "Title left", "Title center", "Title right", "Title foot left", "Title foot center", "Title foot right")
+                .doesNotContain("Running");
+        for (int page = 2; page < pages.size(); page++) {
+            assertThat(pages.get(page)).contains("Running left", "Running center", "Running right", "Running foot left", "Running foot center", "Running foot right")
+                    .doesNotContain("Title");
+        }
+    }
+
     @Test
     void leavesTheFirstPageBareWhenItsPartsAreEmpty() {
         mockHeaderFooter(HeaderFooterModel.builder()
@@ -95,8 +120,13 @@ class FirstPageHeaderFooterTest extends BasePdfConverterTest {
     }
 
     private byte @NotNull [] export() {
+        return export(null);
+    }
+
+    private byte @NotNull [] export(@Nullable String coverPage) {
         ExportParams params = ExportParams.builder()
                 .projectId("test")
+                .coverPage(coverPage)
                 .locationPath("testLocation")
                 .orientation(Orientation.PORTRAIT)
                 .paperSize(PaperSize.A4)
