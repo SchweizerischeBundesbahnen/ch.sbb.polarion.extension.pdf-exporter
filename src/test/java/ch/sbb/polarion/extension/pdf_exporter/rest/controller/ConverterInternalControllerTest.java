@@ -2,13 +2,13 @@ package ch.sbb.polarion.extension.pdf_exporter.rest.controller;
 
 import ch.sbb.polarion.extension.pdf_exporter.converter.HtmlToPdfConverter;
 import ch.sbb.polarion.extension.pdf_exporter.converter.PdfConverterJobsService;
-import ch.sbb.polarion.extension.pdf_exporter.converter.PdfConverterJobsService.JobState;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.DocumentType;
 import ch.sbb.polarion.extension.pdf_exporter.util.ExportContext;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
-import ch.sbb.polarion.extension.pdf_exporter.rest.model.jobs.ConverterJobDetails;
-import ch.sbb.polarion.extension.pdf_exporter.rest.model.jobs.ConverterJobStatus;
 import ch.sbb.polarion.extension.pdf_exporter.service.PdfExporterPolarionService;
+import ch.sbb.polarion.extension.generic.jobs.JobState;
+import ch.sbb.polarion.extension.generic.rest.model.jobs.JobDetails;
+import ch.sbb.polarion.extension.generic.rest.model.jobs.JobStatus;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -129,7 +129,7 @@ class ConverterInternalControllerTest {
     @MethodSource("getStatusParams")
     void getPdfConverterJobStatus_success(JobState jobState,
                                           HttpStatus expectedHttpStatus,
-                                          ConverterJobStatus expectedJobStatus,
+                                          JobStatus expectedJobStatus,
                                           String expectedLocationUrl,
                                           String expectedErrorMessage) {
         if (expectedLocationUrl != null) {
@@ -138,12 +138,12 @@ class ConverterInternalControllerTest {
         when(pdfConverterJobService.getJobState("testJobId")).thenReturn(jobState);
         try (Response response = internalController.getPdfConverterJobStatus("testJobId")) {
             assertThat(response.getStatus()).isEqualTo(expectedHttpStatus.value());
-            assertThat(response.getEntity()).isInstanceOf(ConverterJobDetails.class);
-            assertThat(((ConverterJobDetails) response.getEntity()).getStatus()).isEqualTo(expectedJobStatus);
+            assertThat(response.getEntity()).isInstanceOf(JobDetails.class);
+            assertThat(((JobDetails) response.getEntity()).getStatus()).isEqualTo(expectedJobStatus);
             if (expectedErrorMessage != null) {
-                assertThat(((ConverterJobDetails) response.getEntity()).getErrorMessage()).contains(expectedErrorMessage);
+                assertThat(((JobDetails) response.getEntity()).getErrorMessage()).contains(expectedErrorMessage);
             } else {
-                assertThat(((ConverterJobDetails) response.getEntity()).getErrorMessage()).isNull();
+                assertThat(((JobDetails) response.getEntity()).getErrorMessage()).isNull();
             }
             assertThat(response.getHeaderString(HttpHeaders.LOCATION)).isEqualTo(expectedLocationUrl);
         }
@@ -151,10 +151,10 @@ class ConverterInternalControllerTest {
 
     static Stream<Arguments> getStatusParams() {
         return Stream.of(
-                Arguments.of(new JobState(false, false, false, null), HttpStatus.ACCEPTED, ConverterJobStatus.IN_PROGRESS, null, null),
-                Arguments.of(new JobState(true, false, false, null), HttpStatus.SEE_OTHER, ConverterJobStatus.SUCCESSFULLY_FINISHED, "/polarion/pdf-exporter/rest/api/convert/jobs/testJobId/result", null),
-                Arguments.of(new JobState(true, false, true, null), HttpStatus.CONFLICT, ConverterJobStatus.CANCELLED, null, null),
-                Arguments.of(new JobState(true, true, false, "test error"), HttpStatus.CONFLICT, ConverterJobStatus.FAILED, null, "test error")
+                Arguments.of(new JobState(false, false, false, null, null), HttpStatus.ACCEPTED, JobStatus.IN_PROGRESS, null, null),
+                Arguments.of(new JobState(true, false, false, null, null), HttpStatus.SEE_OTHER, JobStatus.SUCCESSFULLY_FINISHED, "/polarion/pdf-exporter/rest/api/convert/jobs/testJobId/result", null),
+                Arguments.of(new JobState(true, false, true, null, null), HttpStatus.CONFLICT, JobStatus.CANCELLED, null, null),
+                Arguments.of(new JobState(true, true, false, null, "test error"), HttpStatus.CONFLICT, JobStatus.FAILED, null, "test error")
         );
     }
 
@@ -256,9 +256,9 @@ class ConverterInternalControllerTest {
     void getAllPdfConverterJobs() {
         when(pdfConverterJobService.getAllJobsStates()).thenReturn(
                 Map.of(
-                        "testJobId1", new JobState(true, false, false, null),
-                        "testJobId2", new JobState(false, false, false, null),
-                        "testJobId3", new JobState(true, true, false, "test error")
+                        "testJobId1", new JobState(true, false, false, null, null),
+                        "testJobId2", new JobState(false, false, false, null, null),
+                        "testJobId3", new JobState(true, true, false, null, "test error")
                 )
         );
 
@@ -266,9 +266,9 @@ class ConverterInternalControllerTest {
         assertThat(response.getStatus()).isEqualTo(HttpStatus.OK.value());
         assertThat(response.getEntity()).isEqualTo(
                 Map.of(
-                        "testJobId1", ConverterJobDetails.builder().status(ConverterJobStatus.SUCCESSFULLY_FINISHED).build(),
-                        "testJobId2", ConverterJobDetails.builder().status(ConverterJobStatus.IN_PROGRESS).build(),
-                        "testJobId3", ConverterJobDetails.builder().status(ConverterJobStatus.FAILED).errorMessage("test error").build()
+                        "testJobId1", JobDetails.builder().status(JobStatus.SUCCESSFULLY_FINISHED).build(),
+                        "testJobId2", JobDetails.builder().status(JobStatus.IN_PROGRESS).build(),
+                        "testJobId3", JobDetails.builder().status(JobStatus.FAILED).errorMessage("test error").build()
                 )
         );
     }

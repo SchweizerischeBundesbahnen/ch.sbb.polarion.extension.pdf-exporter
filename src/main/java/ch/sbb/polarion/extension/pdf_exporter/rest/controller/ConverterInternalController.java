@@ -3,8 +3,6 @@ package ch.sbb.polarion.extension.pdf_exporter.rest.controller;
 import ch.sbb.polarion.extension.pdf_exporter.converter.HtmlToPdfConverter;
 import ch.sbb.polarion.extension.pdf_exporter.converter.PdfConverter;
 import ch.sbb.polarion.extension.pdf_exporter.converter.PdfConverterJobsService;
-import ch.sbb.polarion.extension.pdf_exporter.converter.PdfConverterJobsService.JobState;
-import ch.sbb.polarion.extension.pdf_exporter.converter.PropertiesUtility;
 import ch.sbb.polarion.extension.pdf_exporter.rest.filter.RolesRestricted;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.WidthValidationResult;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ConversionParams;
@@ -13,13 +11,14 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.Orientation;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PaperSize;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PdfVariant;
-import ch.sbb.polarion.extension.pdf_exporter.rest.model.jobs.ConverterJobDetails;
-import ch.sbb.polarion.extension.pdf_exporter.rest.model.jobs.ConverterJobStatus;
 import ch.sbb.polarion.extension.pdf_exporter.service.PdfExporterPolarionService;
 import ch.sbb.polarion.extension.pdf_exporter.util.DocumentFileNameHelper;
 import ch.sbb.polarion.extension.pdf_exporter.util.ExportContext;
 import ch.sbb.polarion.extension.pdf_exporter.util.PdfWidthValidationService;
 import ch.sbb.polarion.extension.pdf_exporter.util.VeraPdfValidationUtils;
+import ch.sbb.polarion.extension.generic.jobs.JobsProperties;
+import ch.sbb.polarion.extension.generic.rest.JobResponses;
+import ch.sbb.polarion.extension.generic.rest.model.jobs.JobDetails;
 import com.polarion.core.util.StringUtils;
 import com.polarion.platform.core.PlatformContext;
 import com.polarion.platform.security.ISecurityService;
@@ -85,7 +84,7 @@ public class ConverterInternalController {
     private final PdfConverter pdfConverter;
     private final PdfWidthValidationService pdfWidthValidationService;
     private final PdfConverterJobsService pdfConverterJobService;
-    private final PropertiesUtility propertiesUtility;
+    private final JobsProperties jobsProperties;
     private final HtmlToPdfConverter htmlToPdfConverter;
     private final PdfExporterPolarionService pdfExporterPolarionService;
 
@@ -97,7 +96,7 @@ public class ConverterInternalController {
         this.pdfWidthValidationService = new PdfWidthValidationService(pdfConverter);
         ISecurityService securityService = PlatformContext.getPlatform().lookupService(ISecurityService.class);
         this.pdfConverterJobService = new PdfConverterJobsService(pdfConverter, securityService);
-        this.propertiesUtility = new PropertiesUtility();
+        this.jobsProperties = PdfConverterJobsService.jobsProperties();
         this.htmlToPdfConverter = new HtmlToPdfConverter();
         this.pdfExporterPolarionService = new PdfExporterPolarionService();
     }
@@ -108,7 +107,7 @@ public class ConverterInternalController {
         this.pdfWidthValidationService = pdfWidthValidationService;
         this.pdfConverterJobService = pdfConverterJobService;
         this.uriInfo = uriInfo;
-        this.propertiesUtility = new PropertiesUtility();
+        this.jobsProperties = PdfConverterJobsService.jobsProperties();
         this.htmlToPdfConverter = htmlToPdfConverter;
         this.pdfExporterPolarionService = pdfExporterPolarionService;
     }
@@ -222,7 +221,7 @@ public class ConverterInternalController {
     public Response startPdfConverterJob(ExportParams exportParams) {
         validateExportParameters(exportParams);
 
-        String jobId = pdfConverterJobService.startJob(exportParams, propertiesUtility.getInProgressJobTimeout());
+        String jobId = pdfConverterJobService.startJob(exportParams, jobsProperties.getInProgressJobTimeout());
 
         URI jobUri = UriBuilder.fromUri(uriInfo.getRequestUri().getPath()).path(jobId).build();
         return Response.accepted().location(jobUri).build();
@@ -247,7 +246,7 @@ public class ConverterInternalController {
             validateExportParameters(doc);
         }
 
-        String jobId = pdfConverterJobService.startJob(exportParamsList, propertiesUtility.getInProgressJobTimeout());
+        String jobId = pdfConverterJobService.startJob(exportParamsList, jobsProperties.getInProgressJobTimeout());
 
         URI jobUri = UriBuilder.fromUri(uriInfo.getRequestUri().resolve("../jobs/" + jobId)).build();
         return Response.accepted().location(jobUri).build();
@@ -261,11 +260,11 @@ public class ConverterInternalController {
                     // OpenAPI response MediaTypes for 303 and 202 response codes are generic to satisfy automatic redirect in SwaggerUI
                     @ApiResponse(responseCode = "303",
                             description = "Conversion job is finished successfully, Location header contains result URL",
-                            content = {@Content(mediaType = "application/*", schema = @Schema(implementation = ConverterJobDetails.class))}
+                            content = {@Content(mediaType = "application/*", schema = @Schema(implementation = JobDetails.class))}
                     ),
                     @ApiResponse(responseCode = "202",
                             description = "Conversion job is still in progress",
-                            content = {@Content(mediaType = "application/*", schema = @Schema(implementation = ConverterJobDetails.class))}
+                            content = {@Content(mediaType = "application/*", schema = @Schema(implementation = JobDetails.class))}
                     ),
                     @ApiResponse(responseCode = "409",
                             description = "Conversion job is failed or cancelled"
@@ -275,23 +274,7 @@ public class ConverterInternalController {
                     )
             })
     public Response getPdfConverterJobStatus(@PathParam("id") String jobId) {
-        JobState jobState = pdfConverterJobService.getJobState(jobId);
-
-        ConverterJobStatus converterJobStatus = convertToJobStatus(jobState);
-        ConverterJobDetails jobDetails = ConverterJobDetails.builder()
-                .status(converterJobStatus)
-                .errorMessage(jobState.errorMessage()).build();
-
-        Response.ResponseBuilder responseBuilder;
-        switch (converterJobStatus) {
-            case IN_PROGRESS -> responseBuilder = Response.accepted();
-            case SUCCESSFULLY_FINISHED -> {
-                URI jobUri = UriBuilder.fromUri(uriInfo.getRequestUri().getPath()).path("result").build();
-                responseBuilder = Response.status(HttpStatus.SEE_OTHER.value()).location(jobUri);
-            }
-            default -> responseBuilder = Response.status(HttpStatus.CONFLICT.value());
-        }
-        return responseBuilder.entity(jobDetails).build();
+        return JobResponses.jobStatus(JobDetails.from(pdfConverterJobService.getJobState(jobId)), uriInfo);
     }
 
     @POST
@@ -444,13 +427,8 @@ public class ConverterInternalController {
                     )
             })
     public Response getAllPdfConverterJobs() {
-        Map<String, JobState> jobsStates = pdfConverterJobService.getAllJobsStates();
-        Map<String, ConverterJobDetails> jobsDetails = jobsStates.entrySet().stream()
-                .collect(Collectors.toMap(Map.Entry::getKey, entry ->
-                        ConverterJobDetails.builder()
-                                .status(convertToJobStatus(entry.getValue()))
-                                .errorMessage(entry.getValue().errorMessage())
-                                .build()));
+        Map<String, JobDetails> jobsDetails = pdfConverterJobService.getAllJobsStates().entrySet().stream()
+                .collect(Collectors.toMap(Map.Entry::getKey, entry -> JobDetails.from(entry.getValue())));
         return Response.ok(jobsDetails).build();
     }
 
@@ -578,18 +556,6 @@ public class ConverterInternalController {
                     : exportParams.getFileName();
         } else {
             return "document.pdf";
-        }
-    }
-
-    private ConverterJobStatus convertToJobStatus(JobState jobState) {
-        if (!jobState.isDone()) {
-            return ConverterJobStatus.IN_PROGRESS;
-        } else if (!jobState.isCancelled() && !jobState.isCompletedExceptionally()) {
-            return ConverterJobStatus.SUCCESSFULLY_FINISHED;
-        } else if (jobState.isCancelled()) {
-            return ConverterJobStatus.CANCELLED;
-        } else {
-            return ConverterJobStatus.FAILED;
         }
     }
 }
