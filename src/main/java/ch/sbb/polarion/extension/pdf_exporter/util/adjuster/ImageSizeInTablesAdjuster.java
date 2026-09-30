@@ -67,9 +67,8 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
     /**
      * An image wider than its column which states no size of its own takes the size of the file it comes
      * from, which can be a page tall. Such a row is kept whole: split, it leaves the image on the next page
-     * and the header of its table on this one, above a row which shows nothing. It is kept whole here, and not
-     * only by the default CSS, so a custom CSS used alone cannot split it. A row holding an icon, or an image
-     * of a stated size, is left to the CSS, as any row of text is.
+     * and the header of its table on this one, above a row which shows nothing. A row holding an icon, or an
+     * image of a stated size, still breaks where it must, as any row of text does.
      */
     private void keepTheRowWhole(Element img) {
         if (statedSize(img, CssUtils.parseDeclarations(img.attr(HtmlTagAttr.STYLE)), CssProp.WIDTH) > 0

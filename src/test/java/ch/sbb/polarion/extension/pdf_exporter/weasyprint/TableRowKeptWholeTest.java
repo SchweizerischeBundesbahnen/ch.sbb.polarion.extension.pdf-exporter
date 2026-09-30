@@ -29,42 +29,32 @@ import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.eq;
 
 /**
- * A table row is not split across pages.
+ * A row of a work items table in a Live Report is not split across pages, and a row of a document table still is.
  * <p>
- * Split, a row leaves its first cells on one page and the rest of it on the next: an ID above nothing, and a title
- * below no ID. The table here has enough rows of two lines that one of them meets the end of a page.
+ * Split, a row of work items leaves its first cells on one page and the rest of it on the next: an ID above nothing,
+ * and a title below no ID. The table here has enough rows of two lines that one of them meets the end of a page.
  * </p>
  */
 class TableRowKeptWholeTest extends BasePdfConverterTest {
 
     private static final int ROWS = 40;
 
+    /** A border around each cell, so the pages show where a row ends and whether it was split. */
+    private static final String CELL = "<td style=\"border: 1px solid #999;\">";
+
+    /** Enough sentences for a title more than two pages tall. */
+    private static final int LONG_ROW_SENTENCES = 150;
+
     /** The icon of a work item type, 16 pixels square as Polarion draws it. */
     private static final String ICON = "data:image/svg+xml;base64," + Base64.getEncoder().encodeToString(
             "<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16'><rect width='16' height='16' fill='#c00'/></svg>".getBytes(StandardCharsets.UTF_8));
 
     /** Room above the table, as much as it takes for the end of the first page to fall inside a row. */
-    private static final String PREFACE = "<div style=\"height: 3px\"></div>";
+    private static final String PREFACE = "<div style=\"height: 18px\"></div>";
 
     @Test
-    void keepsEveryRowOfATableOnOnePage() {
-        ExportParams params = ExportParams.builder()
-                .projectId("test")
-                .locationPath("testLocation")
-                .orientation(Orientation.PORTRAIT)
-                .paperSize(PaperSize.A4)
-                .build();
-
-        DocumentData<IModule> liveDoc = DocumentData.creator(DocumentType.LIVE_DOC, module)
-                .id(LiveDocId.from("testProjectId", "_default", "testDocumentId"))
-                .title("A table of rows which take two lines each")
-                .content(content())
-                .lastRevision("42")
-                .revisionPlaceholder("42")
-                .build();
-        documentDataFactoryMockedStatic.when(() -> DocumentDataFactory.getDocumentData(eq(params), anyBoolean())).thenReturn(liveDoc);
-
-        byte[] pdf = converter.convertToPdf(params, null);
+    void keepsEveryRowOfAWorkItemsTableOnOnePage() {
+        byte[] pdf = export(content());
         List<String> pages = pageTexts(pdf);
 
         assertThat(pages).hasSize(2);
@@ -75,6 +65,55 @@ class TableRowKeptWholeTest extends BasePdfConverterTest {
     }
 
     /**
+     * A table of a document is not a table of work items: its row may be taller than a page, and it breaks where the
+     * page ends. Kept whole, it would move to a page of its own and leave the page before it empty.
+     */
+    @Test
+    void breaksARowOfADocumentTableWhereThePageEnds() {
+        String sentences = IntStream.rangeClosed(1, LONG_ROW_SENTENCES)
+                .mapToObj(sentence -> "Sentence L" + sentence + "L of a title which no page can hold whole.")
+                .collect(Collectors.joining(" "));
+        byte[] pdf = export(PREFACE + "<table style=\"border-collapse: collapse;\"><tbody>"
+                + "<tr>" + CELL + "S1S</td>" + CELL + "A row above the tall one E1E</td></tr>"
+                + "<tr>" + CELL + "S2S</td>" + CELL + sentences + "</td></tr>"
+                + "<tr>" + CELL + "S3S</td>" + CELL + "A row below the tall one E3E</td></tr>"
+                + "</tbody></table>");
+        List<String> pages = pageTexts(pdf);
+
+        assertThat(pages).hasSize(3);
+        assertThat(pageOf(pages, "L1L")).as("The tall row starts on the first page, under the row above it").isZero();
+        int previousPage = 0;
+        for (int sentence = 1; sentence <= LONG_ROW_SENTENCES; sentence++) {
+            int page = pageOf(pages, "L" + sentence + "L");
+            assertThat(page).as("Sentence %d of the tall row is printed", sentence).isNotNegative();
+            assertThat(page).as("Sentence %d follows the one before it", sentence).isGreaterThanOrEqualTo(previousPage);
+            previousPage = page;
+        }
+        assertThat(pageOf(pages, "E3E")).as("The row below the tall one is printed").isNotNegative();
+        assertFalse(compareContentUsingReferenceImages(getCurrentMethodName(), pdf), "The pages differ from the reference images");
+    }
+
+    private byte @NotNull [] export(@NotNull String content) {
+        ExportParams params = ExportParams.builder()
+                .projectId("test")
+                .locationPath("testLocation")
+                .orientation(Orientation.PORTRAIT)
+                .paperSize(PaperSize.A4)
+                .build();
+
+        DocumentData<IModule> liveDoc = DocumentData.creator(DocumentType.LIVE_DOC, module)
+                .id(LiveDocId.from("testProjectId", "_default", "testDocumentId"))
+                .title("A table of work items")
+                .content(content)
+                .lastRevision("42")
+                .revisionPlaceholder("42")
+                .build();
+        documentDataFactoryMockedStatic.when(() -> DocumentDataFactory.getDocumentData(eq(params), anyBoolean())).thenReturn(liveDoc);
+
+        return converter.convertToPdf(params, null);
+    }
+
+    /**
      * The table of a Live Report, as Polarion renders a query of work items: the ID cell holds an inline block with
      * the icon of the type, the title cell plain text which takes two lines.
      */
@@ -82,17 +121,17 @@ class TableRowKeptWholeTest extends BasePdfConverterTest {
         String rows = IntStream.rangeClosed(1, ROWS)
                 .mapToObj(row -> """
                         <tr class="polarion-rpw-table-content-row">
-                          <td>
+                          %s
                             <div style="display:inline-block;white-space:nowrap;">
                               <span class="polarion-no-style-cleanup" style="white-space:nowrap;"><a style="font-size:1em;" class="polarion-Hyperlink" href="#"><span style="white-space:nowrap;"><img src="%s" class="polarion-Icons" style="max-height:837px;
                         object-fit:contain;" /></span><span style="color:#000000;">S%dS</span></a></span>
                             </div>
                           </td>
-                          <td>A title long enough to take a second line in the column it is given, which is where a page break could fall E%dE</td>
+                          %sA title long enough to take a second line in the column it is given, which is where a page break could fall E%dE</td>
                         </tr>
-                        """.formatted(ICON, row, row))
+                        """.formatted(CELL, ICON, row, CELL, row))
                 .collect(Collectors.joining());
-        return PREFACE + "<table class=\"polarion-rpw-table-content\"><tbody>" + rows + "</tbody></table>";
+        return PREFACE + "<table class=\"polarion-rpw-table-content\" style=\"border-collapse: collapse;\"><tbody>" + rows + "</tbody></table>";
     }
 
     /** The page, counted from zero, whose text holds the given mark, however the column wrapped it. */
