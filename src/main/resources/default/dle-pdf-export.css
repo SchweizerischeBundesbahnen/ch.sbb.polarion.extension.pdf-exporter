@@ -423,7 +423,9 @@ ul.tof li > a.page-number::after {
         float: none !important; /* Fixes content inside of table breaking bug */
     }
 
-    table.polarion-dle-workitem-fields-end-table tr { /* Fixes breaking of work item custom field tables */
+    /* A row split by a page break leaves its first cells on one page and the rest of it on the next, an ID
+       above nothing and a title below no ID. A row taller than a page still breaks, as it must. */
+    tr {
         page-break-inside: avoid;
         break-inside: avoid;
     }
