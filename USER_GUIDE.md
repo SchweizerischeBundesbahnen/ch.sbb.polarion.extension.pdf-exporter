@@ -78,6 +78,9 @@ Settings for header/footer of generated PDF document are also grouped into named
 
 ![Header/Footer](docs/user_guide/img/header_footer.png)
 
+Tick "First page header/footer" below it to give the first page a header and footer of its own, chosen in the dropdown next to it.
+The other pages keep the header and footer above. See [Configuration](CONFIGURATION.md#different-header-and-footer-on-the-first-page).
+
 ### Localization
 The same relates to localization settings. The one to use during PDF generation can be selected in the next dropdown:
 
