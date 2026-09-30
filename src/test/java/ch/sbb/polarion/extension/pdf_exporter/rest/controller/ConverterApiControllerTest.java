@@ -60,8 +60,9 @@ class ConverterApiControllerTest {
     @SuppressWarnings("unchecked")
     void shouldReleaseSessionWhenStartFails() {
         when(polarionService.callPrivileged(any(Callable.class))).thenThrow(new IllegalStateException("start failed"));
+        ExportParams exportParams = ExportParams.builder().build();
 
-        assertThrows(IllegalStateException.class, () -> converterApiController.startPdfConverterJob(ExportParams.builder().build()));
+        assertThrows(IllegalStateException.class, () -> converterApiController.startPdfConverterJob(exportParams));
 
         verify(requestAttributes).setAttribute(LogoutFilter.ASYNC_SKIP_LOGOUT, Boolean.TRUE, RequestAttributes.SCOPE_REQUEST);
         verify(requestAttributes).removeAttribute(LogoutFilter.ASYNC_SKIP_LOGOUT, RequestAttributes.SCOPE_REQUEST);
