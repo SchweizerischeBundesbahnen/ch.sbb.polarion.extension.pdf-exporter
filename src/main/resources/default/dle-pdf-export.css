@@ -432,6 +432,7 @@ ul.tof li > a.page-number::after {
         break-before: avoid;
     }
 
+
     .polarion-dle-workitem-title {
         break-after: avoid;
     }

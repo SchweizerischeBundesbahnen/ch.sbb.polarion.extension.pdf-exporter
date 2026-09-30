@@ -8,6 +8,8 @@ import ch.sbb.polarion.extension.pdf_exporter.util.PaperSizeUtils;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ConversionParams;
 import com.helger.css.decl.CSSDeclarationList;
 
+import java.util.Map;
+
 import org.jetbrains.annotations.NotNull;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -36,7 +38,15 @@ public class ImageSizeAdjuster extends AbstractAdjuster {
         CSSDeclarationList cssStyles = CssUtils.parseDeclarations(style);
 
         // As a fallback we always restrict max height for the cases when image doesn't have any explicit width/height attributes
-        CssUtils.setPropertyValue(cssStyles, CssProp.MAX_HEIGHT, (int) maxHeight + Measure.PX);
+        // A limit smaller than the page is kept: a table sets one, leaving room for the header it repeats,
+        // and a document may state one of its own. Anything larger than the page is the page. A limit which
+        // cannot be read as a length, a percentage of a cell for one, is left as the document wrote it.
+        String statedLimit = CssUtils.getPropertyValue(cssStyles, CssProp.MAX_HEIGHT);
+        float limitInPx = extractDimension(cssStyles, CssProp.MAX_HEIGHT);
+        boolean unreadableLimit = !statedLimit.isEmpty() && limitInPx == 0;
+        if (!unreadableLimit && (statedLimit.isEmpty() || limitInPx > maxHeight)) {
+            CssUtils.setPropertyValue(cssStyles, CssProp.MAX_HEIGHT, (int) maxHeight + Measure.PX);
+        }
         if (!statesHeight(img, cssStyles) && CssUtils.getPropertyValue(cssStyles, CssProp.OBJECT_FIT).isEmpty()) {
             // That clamp shortens the height alone, the width being the one given: the image is then stretched.
             // Only the drawing follows this property, so an image which states its own height keeps what it states,
@@ -92,22 +102,23 @@ public class ImageSizeAdjuster extends AbstractAdjuster {
         return (!height.isEmpty() && !CssProp.AUTO_VALUE.equalsIgnoreCase(height)) || img.hasAttr(CssProp.HEIGHT);
     }
 
+    /**
+     * The length in pixels, where the unit it is stated in says how long it is on its own. A length stated in
+     * a unit which depends on the element it sits on, such as a percentage, reads as none.
+     */
     private float extractDimension(CSSDeclarationList cssStyles, String property) {
         String value = CssUtils.getPropertyValue(cssStyles, property);
 
-        if (value.isEmpty()) {
-            return 0;
+        for (Map.Entry<String, Float> unit : Measure.ABSOLUTE_UNITS_IN_PX.entrySet()) {
+            if (value.endsWith(unit.getKey())) {
+                try {
+                    return Float.parseFloat(value.substring(0, value.length() - unit.getKey().length()).trim()) * unit.getValue();
+                } catch (NumberFormatException e) {
+                    return 0; // A length which is no number says nothing about the size of the image
+                }
+            }
         }
-
-        if (value.endsWith(Measure.EX)) {
-            return Float.parseFloat(value.replace(Measure.EX, "")) * Measure.EX_TO_PX_RATIO;
-        } else if (value.endsWith(Measure.PX)) {
-            return Float.parseFloat(value.replace(Measure.PX, ""));
-        } else if (value.endsWith(Measure.PERCENT)) {
-            return 0;
-        } else {
-            return 0;
-        }
+        return 0;
     }
 
     private float divide(float value, float divisor) {
