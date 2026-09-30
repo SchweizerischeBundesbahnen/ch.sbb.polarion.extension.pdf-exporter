@@ -937,9 +937,15 @@ tr:hover {
     word-wrap: normal;
 }
 
+/* An icon stays in the middle of its line, whatever height the CSS gives the line. */
 .polarion-Icons {
-    vertical-align: bottom;
+    vertical-align: middle;
     margin-right: 2px;
+}
+
+/* Polarion writes "vertical-align: bottom" into the icon of an enum value, so only !important overrides it. */
+.polarion-JSEnumOption img {
+    vertical-align: middle !important;
 }
 
 li span {

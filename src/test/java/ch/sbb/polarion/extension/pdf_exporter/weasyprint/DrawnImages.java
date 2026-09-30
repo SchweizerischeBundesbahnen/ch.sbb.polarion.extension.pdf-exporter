@@ -39,6 +39,38 @@ final class DrawnImages {
         return List.of(width, height);
     }
 
+    /**
+     * Where an image is drawn: the page counted from zero, and its box in points, measured from the top left corner
+     * of the page as text positions are.
+     */
+    record Box(int page, float left, float top, float width, float height) {
+        float middle() {
+            return top + height / 2;
+        }
+    }
+
+    /** The box of every image drawn in the document, in the order they are drawn. */
+    @SneakyThrows
+    static @NotNull List<Box> boxesIn(byte @NotNull [] pdf) {
+        List<Box> boxes = new ArrayList<>();
+        try (PDDocument document = Loader.loadPDF(pdf)) {
+            for (int index = 0; index < document.getNumberOfPages(); index++) {
+                PDPage page = document.getPage(index);
+                int pageIndex = index;
+                float pageHeight = page.getMediaBox().getHeight();
+                new Collector(page, new ArrayList<>()) {
+                    @Override
+                    public void drawImage(@NotNull PDImage image) {
+                        Matrix matrix = getGraphicsState().getCurrentTransformationMatrix();
+                        float height = matrix.getScalingFactorY();
+                        boxes.add(new Box(pageIndex, matrix.getTranslateX(), pageHeight - matrix.getTranslateY() - height, matrix.getScalingFactorX(), height));
+                    }
+                }.processPage(page);
+            }
+        }
+        return boxes;
+    }
+
     /** Reads the size each image is drawn at, which is the scale of the matrix in force. */
     private static class Collector extends PDFGraphicsStreamEngine {
 
