@@ -1,5 +1,6 @@
 package ch.sbb.polarion.extension.pdf_exporter.util.adjuster;
 
+import ch.sbb.polarion.extension.pdf_exporter.constants.HtmlTagAttr;
 import ch.sbb.polarion.extension.pdf_exporter.util.CssUtils;
 import com.polarion.core.util.logging.Logger;
 import lombok.experimental.UtilityClass;
@@ -122,7 +123,7 @@ public class TableAnalyzer {
         org.jsoup.nodes.Document tempDoc = org.jsoup.nodes.Document.createShell("");
         // Inject CSS to force the embedded font for consistent column width calculation across platforms
         tempDoc.head().appendElement("style").text("* { font-family: '" + MEASUREMENT_FONT_FAMILY + "', sans-serif !important; }");
-        tempDoc.body().appendElement("div").attr("style", inheritedTextStyle(tableElement)).appendChild(tableElement.clone());
+        tempDoc.body().appendElement("div").attr(HtmlTagAttr.STYLE, inheritedTextStyle(tableElement)).appendChild(tableElement.clone());
         return new W3CDom().fromJsoup(tempDoc);
     }
 
@@ -134,7 +135,7 @@ public class TableAnalyzer {
         StringBuilder style = new StringBuilder();
         for (String property : INHERITED_TEXT_PROPERTIES) {
             for (Element ancestor : tableElement.parents()) {
-                String value = CssUtils.getPropertyValue(CssUtils.parseDeclarations(ancestor.attr("style")), property);
+                String value = CssUtils.getPropertyValue(CssUtils.parseDeclarations(ancestor.attr(HtmlTagAttr.STYLE)), property);
                 if (!value.isEmpty()) {
                     style.append(property).append(": ").append(value).append("; ");
                     break;

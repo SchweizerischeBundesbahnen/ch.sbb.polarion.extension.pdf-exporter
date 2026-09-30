@@ -206,14 +206,7 @@ public class HtmlProcessor {
             timedIfNotNull(generationLog, "Adjust content to fit page", () -> adjustContentToFitPage(document, exportParams));
             // ----
         }
-        // The rows are measured at the widths their tables end up with. Fitted between page breaks, a table gets its width
-        // in the block it is in, so its rows are measured there (see BOOKMARK 2 below)
-        if (!(exportParams.isFitToPage() && customPageBreaks)) {
-            timedIfNotNull(generationLog, "Keep table rows whole", () -> keepTableRowsWhole(document, exportParams, customPageBreaks));
-        } else {
-            // By then an embedded icon is no longer known by its address
-            TableRowsAdjuster.markIcons(document);
-        }
+        timedIfNotNull(generationLog, "Keep table rows whole", () -> keepTableRowsWholeUnlessFittedBetweenPageBreaks(document, exportParams, customPageBreaks));
 
         html = document.body().html();
 
@@ -1106,6 +1099,19 @@ public class HtmlProcessor {
         }
         if (!replaced) {
             enumElement.appendText(replacement);
+        }
+    }
+
+    /**
+     * The rows are measured at the widths their tables end up with. Fitted between page breaks, a table gets its width in
+     * the block it is in, so its rows are measured there (see BOOKMARK 2), once its images are embedded.
+     */
+    private void keepTableRowsWholeUnlessFittedBetweenPageBreaks(@NotNull Document document, @NotNull ExportParams exportParams, boolean customPageBreaks) {
+        if (exportParams.isFitToPage() && customPageBreaks) {
+            // By then an embedded icon is no longer known by its address
+            TableRowsAdjuster.markIcons(document);
+        } else {
+            keepTableRowsWhole(document, exportParams, customPageBreaks);
         }
     }
 

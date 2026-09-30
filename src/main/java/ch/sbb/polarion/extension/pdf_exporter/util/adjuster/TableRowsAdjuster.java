@@ -80,22 +80,10 @@ public class TableRowsAdjuster extends AbstractAdjuster {
         for (Element table : document.select(HtmlTag.TABLE)) {
             Elements rows = table.select(ROWS_OF_THE_TABLE);
             Integer width = widthOf(table, measured, pageWidth);
-            if (rows.isEmpty() || width == null) {
-                continue;
-            }
-            TableAnalyzer.TableMetrics metrics = TableAnalyzer.analyze(table, width);
-            measured.put(table, metrics);
-            List<Integer> rowHeights = metrics.rowHeights();
-            if (rowHeights.size() != rows.size()) {
-                // The measure saw another table than the document holds, so it says nothing about these rows
-                continue;
-            }
-            float allowedHeight = (pageHeight - metrics.headerHeight()) * SHARE_OF_PAGE;
-            for (int index = 0; index < rows.size(); index++) {
-                Element row = rows.get(index);
-                if (rowHeights.get(index) <= allowedHeight && isMeasured(row)) {
-                    keepWhole(row);
-                }
+            if (!rows.isEmpty() && width != null) {
+                TableAnalyzer.TableMetrics metrics = TableAnalyzer.analyze(table, width);
+                measured.put(table, metrics);
+                keepShortRowsWhole(rows, metrics);
             }
         }
         document.select("img[" + ICON_MARK + "]").removeAttr(ICON_MARK);
@@ -107,6 +95,21 @@ public class TableRowsAdjuster extends AbstractAdjuster {
      */
     public static void markIcons(@NotNull Document document) {
         document.select(ICON).attr(ICON_MARK, "");
+    }
+
+    private void keepShortRowsWhole(@NotNull Elements rows, @NotNull TableAnalyzer.TableMetrics metrics) {
+        List<Integer> rowHeights = metrics.rowHeights();
+        if (rowHeights.size() != rows.size()) {
+            // The measure saw another table than the document holds, so it says nothing about these rows
+            return;
+        }
+        float allowedHeight = (pageHeight - metrics.headerHeight()) * SHARE_OF_PAGE;
+        for (int index = 0; index < rows.size(); index++) {
+            Element row = rows.get(index);
+            if (rowHeights.get(index) <= allowedHeight && isMeasured(row)) {
+                keepWhole(row);
+            }
+        }
     }
 
     /**
