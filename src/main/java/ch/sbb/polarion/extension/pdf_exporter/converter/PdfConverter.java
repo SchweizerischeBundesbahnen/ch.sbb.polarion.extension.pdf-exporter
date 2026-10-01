@@ -76,11 +76,16 @@ import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.List;
+import java.util.regex.Pattern;
 
 @AllArgsConstructor
 @SuppressWarnings("java:S1200")
 public class PdfConverter {
     public static final String CUSTOM_METADATA_TAG = "CUSTOM_METADATA";
+
+    /** A declaration which turns automatic hyphenation off. */
+    private static final Pattern NO_HYPHENATION = Pattern.compile("hyphens\\s*:\\s*(none|manual)", Pattern.CASE_INSENSITIVE);
+
     private final Logger logger = Logger.getLogger(PdfConverter.class);
     private final PdfExporterPolarionService pdfExporterPolarionService;
 
@@ -264,7 +269,8 @@ public class PdfConverter {
     private @NotNull String prepareHtmlContent(@NotNull ExportParams exportParams, @Nullable ITrackerProject project, @NotNull DocumentData<? extends IUniqueObject> documentData, @Nullable ExportMetaInfoCallback metaInfoCallback, @Nullable PdfGenerationLog generationLog) {
         String cssContent = timedIfNotNull(generationLog, "Get CSS content", () -> getFirstPageHeaderFooterCss(exportParams) + getCssContent(documentData, exportParams));
         String documentLanguage = resolveDocumentLanguage(documentData, exportParams);
-        String preparedDocumentContent = postProcessDocumentContent(exportParams, project, documentData.getContent(), documentLanguage, generationLog);
+        String hyphenationLanguage = hyphenates(cssContent) ? documentLanguage : null;
+        String preparedDocumentContent = postProcessDocumentContent(exportParams, project, documentData.getContent(), hyphenationLanguage, generationLog);
         String headerFooterContent = timedIfNotNull(generationLog, "Get header/footer content", () -> getHeaderFooterContent(documentData, exportParams));
 
         HtmlData htmlData = new HtmlData(cssContent, preparedDocumentContent, headerFooterContent);
@@ -444,6 +450,15 @@ public class PdfConverter {
         String content = htmlData.headerFooterContent
                 + "<div class='content'>" + htmlData.documentContent + "</div>";
         return pdfTemplateProcessor.processUsing(exportParams, documentName, htmlData.cssContent, content, metaTags, documentLanguage);
+    }
+
+    /**
+     * Whether the CSS of the export lets the words of tables hyphenate: a stylesheet which turns hyphenation off, anywhere,
+     * keeps them to their break points.
+     */
+    @VisibleForTesting
+    static boolean hyphenates(@NotNull String css) {
+        return !NO_HYPHENATION.matcher(css).find();
     }
 
     @Nullable

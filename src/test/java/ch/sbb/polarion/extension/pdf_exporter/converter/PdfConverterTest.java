@@ -791,4 +791,12 @@ class PdfConverterTest {
 
         assertThat(newPdfConverter().resolveDocumentLanguage(languageTestDocumentData(), exportParams)).isNull();
     }
+
+    @Test
+    void letsTheWordsOfTablesHyphenateUnlessTheCssTurnsHyphenationOff() {
+        assertThat(PdfConverter.hyphenates(".content { hyphens: auto; }")).isTrue();
+        assertThat(PdfConverter.hyphenates("table { width: 100%; }")).isTrue();
+        assertThat(PdfConverter.hyphenates("td { hyphens: none; }")).isFalse();
+        assertThat(PdfConverter.hyphenates("body { -webkit-hyphens:manual }")).isFalse();
+    }
 }

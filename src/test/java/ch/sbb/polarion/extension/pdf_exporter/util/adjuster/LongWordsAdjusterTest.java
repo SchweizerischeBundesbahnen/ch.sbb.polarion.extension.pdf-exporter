@@ -166,7 +166,7 @@ class LongWordsAdjusterTest {
 
         assertThat(document.selectFirst("table").attr("lang")).isEqualTo("fr");
         assertThat(document.selectFirst("td").attr("style")).isEqualTo("hyphens: manual");
-        assertThat(document.select("wbr")).isEmpty();
+        assertThat(document.select("wbr")).as("A cell which hyphenates by hand keeps the break points of its words").isNotEmpty();
     }
 
     @Test
@@ -183,6 +183,17 @@ class LongWordsAdjusterTest {
     }
 
     @Test
+    void keepsTheBreakPointsOfANameOfCodeInADocumentWithALanguage() {
+        // A hyphen in a class name would read as a part of it
+        Document document = Jsoup.parse("<table><tr><td>SuperLongUnbreakableWordThatWillNotWrapInsideTheTableCell</td></tr></table>");
+
+        LongWordsAdjuster.addBreakPoints(document, "en");
+
+        assertThat(document.select("wbr")).hasSize(2);
+        assertThat(document.selectFirst("td").hasAttr("style")).isFalse();
+    }
+
+    @Test
     void hyphenatesTheWordsANoBreakSpaceJoins() {
         // Polarion writes a no-break space after a short word, which joins it to the next one
         Document document = Jsoup.parse("<table><tr><td>von der&nbsp;Rechtsschutzversicherungsgesellschaft geprüft</td></tr></table>");
@@ -192,6 +203,38 @@ class LongWordsAdjusterTest {
 
         assertThat(document.select("wbr")).isEmpty();
         assertThat(document.selectFirst("td").attr("style")).isEqualTo("hyphens:auto;");
+    }
+
+    @Test
+    void hyphenatesATableInTheLanguageItInherits() {
+        Document document = Jsoup.parse("<div lang=\"fr\"><table><tr><td>" + "anticonstitutionnellement".repeat(2) + "</td></tr></table></div>");
+
+        LongWordsAdjuster.addBreakPoints(document, "de");
+
+        assertThat(document.selectFirst("table").hasAttr("lang")).as("The table keeps the language of its section").isFalse();
+        assertThat(document.select("wbr")).isEmpty();
+        assertThat(document.selectFirst("td").attr("style")).isEqualTo("hyphens:auto;");
+    }
+
+    @Test
+    void keepsTheBreakPointsOfAWordInALanguageWithNoDictionary() {
+        // WeasyPrint has no dictionary to hyphenate Japanese, so the word would not break at all
+        Document document = Jsoup.parse("<table><tr><td>" + "ABCDEFGHIJ".repeat(5) + "</td></tr></table>");
+
+        LongWordsAdjuster.addBreakPoints(document, "ja");
+
+        assertThat(document.select("wbr")).hasSize(2);
+        assertThat(document.selectFirst("td").hasAttr("style")).isFalse();
+    }
+
+    @Test
+    void keepsTheBreakPointsOfAWordWhereAnElementAroundTurnsHyphenationOff() {
+        Document document = Jsoup.parse("<div style=\"hyphens: none\"><table><tr><td>" + "ABCDEFGHIJ".repeat(5) + "</td></tr></table></div>");
+
+        LongWordsAdjuster.addBreakPoints(document, "de");
+
+        assertThat(document.select("wbr")).as("A word which may not hyphenate breaks at its break points").hasSize(2);
+        assertThat(document.selectFirst("td").hasAttr("style")).isFalse();
     }
 
     @Test

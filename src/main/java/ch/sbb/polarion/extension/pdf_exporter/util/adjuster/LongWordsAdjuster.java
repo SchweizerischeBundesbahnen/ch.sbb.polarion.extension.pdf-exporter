@@ -15,6 +15,8 @@ import org.jsoup.nodes.TextNode;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 
 /**
  * Gives the long words of table cells, a URL or an ID, places where a line may break.
@@ -54,6 +56,14 @@ public class LongWordsAdjuster {
 
     private static final String LANG = "lang";
 
+    private static final String IN_A_LANGUAGE = "[lang]";
+
+    /** The languages WeasyPrint hyphenates, by the dictionaries of pyphen it ships with, as primary language subtags. */
+    private static final Set<String> HYPHENATION_DICTIONARIES = Set.of(
+            "af", "as", "be", "bg", "ca", "cs", "da", "de", "el", "en", "eo", "es", "et", "eu", "fr", "gl", "hr", "hu", "id", "is",
+            "it", "kn", "lt", "lv", "mn", "mr", "nb", "nl", "nn", "or", "pa", "pl", "pt", "ro", "ru", "sa", "sk", "sl", "sq", "sr",
+            "sv", "te", "th", "uk", "zu");
+
     /** A character which joins no word: the text of the next block, or of a table inside the cell, starts anew. */
     private static final char BOUNDARY = '\n';
 
@@ -74,13 +84,13 @@ public class LongWordsAdjuster {
     }
 
     /**
-     * @param language the language of the document, which its tables are then marked to be in, so that they hyphenate
-     *                 their long words of letters wherever they are laid out
+     * @param language the language of the document, which its tables are then marked to be in, unless they are in one
+     *                 of their own, so that they hyphenate their long words of letters wherever they are laid out
      */
     public static void addBreakPoints(@NotNull Document document, @Nullable String language) {
         if (language != null) {
             for (Element table : document.select(TABLE)) {
-                if (!table.hasAttr(LANG)) {
+                if (table.closest(IN_A_LANGUAGE) == null) {
                     table.attr(LANG, language);
                 }
             }
@@ -112,7 +122,7 @@ public class LongWordsAdjuster {
 
     private static void breakWordsOf(@NotNull Element cell, @NotNull Rule rule) {
         CellText cellText = collect(cell);
-        Breaks breaks = breakPoints(cellText.text(), rule, inALanguage(cell));
+        Breaks breaks = breakPoints(cellText.text(), rule, hyphenates(cell));
         if (!breaks.points().isEmpty()) {
             insert(cellText, breaks.points());
         }
@@ -121,9 +131,22 @@ public class LongWordsAdjuster {
         }
     }
 
-    private static boolean inALanguage(@NotNull Element cell) {
-        Element table = cell.closest(TABLE);
-        return table != null && !table.attr(LANG).isBlank();
+    /**
+     * Whether a cell can hyphenate its words: it is in a language WeasyPrint has a dictionary for, and neither it nor an
+     * element around it states another hyphenation than {@code auto}. Where it cannot, a word keeps its break points.
+     */
+    private static boolean hyphenates(@NotNull Element cell) {
+        Element inALanguage = cell.closest(IN_A_LANGUAGE);
+        if (inALanguage == null || !HYPHENATION_DICTIONARIES.contains(inALanguage.attr(LANG).split("[-_]")[0].toLowerCase(Locale.ROOT))) {
+            return false;
+        }
+        for (Element element = cell; element != null; element = element.parent()) {
+            String hyphens = CssUtils.getPropertyValue(CssUtils.parseDeclarations(element.attr(HtmlTagAttr.STYLE)), CssProp.HYPHENS);
+            if (!hyphens.isEmpty()) {
+                return CssProp.HYPHENS_AUTO_VALUE.equals(hyphens);
+            }
+        }
+        return true;
     }
 
     /** Lets a cell break its words at a syllable, unless the document states how it hyphenates. */
@@ -167,14 +190,14 @@ public class LongWordsAdjuster {
     }
 
     /** The places, as offsets into the text, where its long words may break. */
-    private static @NotNull Breaks breakPoints(@NotNull String text, @NotNull Rule rule, boolean inALanguage) {
+    private static @NotNull Breaks breakPoints(@NotNull String text, @NotNull Rule rule, boolean canHyphenate) {
         List<Integer> breaks = new ArrayList<>();
         boolean hyphenates = false;
         int index = 0;
         while (index < text.length()) {
             int start = skipSpaces(text, index);
             int end = endOfWord(text, start);
-            if (inALanguage && text.codePointCount(start, end) > rule.partsFrom() && isAWordOfALanguage(text, start, end)) {
+            if (canHyphenate && text.codePointCount(start, end) > rule.partsFrom() && isAWordOfALanguage(text, start, end)) {
                 hyphenates = true;
             } else {
                 addWordBreakPoints(text, start, end, rule, breaks);
@@ -185,9 +208,9 @@ public class LongWordsAdjuster {
     }
 
     /**
-     * A word of letters alone, which a dictionary of the language can hyphenate, unlike an ID or a path. The punctuation
-     * around it, as a full stop or a closing bracket, makes it no less a word, and words a no-break space joins, as in
-     * "der&nbsp;Rechtsschutzversicherungsgesellschaft", are words each.
+     * A word of letters alone, which a dictionary of the language can hyphenate, unlike an ID, a path or a name of code.
+     * The punctuation around it, as a full stop or a closing bracket, makes it no less a word, and words a no-break space
+     * joins, as in "der&nbsp;Rechtsschutzversicherungsgesellschaft", are words each.
      */
     private static boolean isAWordOfALanguage(@NotNull String text, int start, int end) {
         int[] codePoints = text.substring(start, end).codePoints().toArray();
@@ -212,7 +235,19 @@ public class LongWordsAdjuster {
         while (last > first && isPunctuation(codePoints[last - 1])) {
             last--;
         }
-        return first < last && Arrays.stream(codePoints, first, last).allMatch(codePoint -> Character.isLetter(codePoint) || Character.getType(codePoint) == Character.NON_SPACING_MARK);
+        return first < last
+                && Arrays.stream(codePoints, first, last).allMatch(codePoint -> Character.isLetter(codePoint) || Character.getType(codePoint) == Character.NON_SPACING_MARK)
+                && !isCamelCase(codePoints, first, last);
+    }
+
+    /** A capital after a small letter, as in a class name, makes a name of code, which a hyphen would change. */
+    private static boolean isCamelCase(int @NotNull [] codePoints, int start, int end) {
+        for (int index = start + 1; index < end; index++) {
+            if (Character.isUpperCase(codePoints[index]) && Character.isLowerCase(codePoints[index - 1])) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static boolean isPunctuation(int codePoint) {
