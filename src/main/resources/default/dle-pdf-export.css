@@ -948,6 +948,12 @@ tr:hover {
     vertical-align: middle !important;
 }
 
+/* Centered, an icon reaches below the text of a 10pt line and makes it higher. A pixel less above and below keeps its height. */
+.polarion-Icons, .polarion-JSEnumOption img {
+    margin-top: -1px;
+    margin-bottom: -1px;
+}
+
 li span {
     line-height: 1em !important;
 }
