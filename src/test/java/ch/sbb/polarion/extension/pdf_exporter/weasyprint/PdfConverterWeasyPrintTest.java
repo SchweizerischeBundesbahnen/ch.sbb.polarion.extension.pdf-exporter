@@ -10,7 +10,6 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.id.DocumentPr
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.id.LiveDocId;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.id.WikiPageId;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.coverpage.CoverPageModel;
-import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.css.CssModel;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.headerfooter.HeaderFooterModel;
 import ch.sbb.polarion.extension.pdf_exporter.util.DocumentDataFactory;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.base.BasePdfConverterTest;
