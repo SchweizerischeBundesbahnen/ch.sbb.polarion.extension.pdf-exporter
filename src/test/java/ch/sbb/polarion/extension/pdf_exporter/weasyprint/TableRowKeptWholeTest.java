@@ -62,6 +62,7 @@ class TableRowKeptWholeTest extends BasePdfConverterTest {
 
         assertThat(pages).hasSize(2);
         for (int row = 1; row <= ROWS; row++) {
+            assertThat(pageOf(pages, "S" + row + "S")).as("Row %d is printed", row).isNotNegative();
             assertThat(pageOf(pages, "S" + row + "S")).as("Row %d starts and ends on one page", row).isEqualTo(pageOf(pages, "E" + row + "E"));
         }
         assertFalse(compareContentUsingReferenceImages(getCurrentMethodName(), pdf), "The pages differ from the reference images");

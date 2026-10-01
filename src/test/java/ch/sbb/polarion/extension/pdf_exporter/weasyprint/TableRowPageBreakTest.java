@@ -55,8 +55,11 @@ class TableRowPageBreakTest extends BasePdfConverterTest {
         byte[] pdf = export();
         List<String> pages = pageTexts(pdf);
 
+        assertThat(pages).as("The table runs onto a second page").hasSize(2);
         assertThat(pageOf(pages, "REQ-001")).as("The table starts on the first page, not moved whole to the next").isZero();
         for (List<String> row : ROWS) {
+            assertThat(pageOf(pages, row.get(0))).as("%s is printed", row.get(0)).isNotNegative();
+            assertThat(pageOf(pages, row.get(1))).as("The end of %s is printed", row.get(0)).isNotNegative();
             assertThat(pageOf(pages, row.get(0))).as("%s starts and ends on one page", row.get(0)).isEqualTo(pageOf(pages, row.get(1)));
         }
         assertFalse(compareContentUsingReferenceImages(getCurrentMethodName(), pdf), "The pages differ from the reference images");
