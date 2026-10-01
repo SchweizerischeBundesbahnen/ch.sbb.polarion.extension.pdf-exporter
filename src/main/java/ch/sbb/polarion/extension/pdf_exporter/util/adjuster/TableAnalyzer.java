@@ -1,5 +1,7 @@
 package ch.sbb.polarion.extension.pdf_exporter.util.adjuster;
 
+import ch.sbb.polarion.extension.pdf_exporter.constants.HtmlTagAttr;
+import ch.sbb.polarion.extension.pdf_exporter.util.CssUtils;
 import com.polarion.core.util.logging.Logger;
 import lombok.experimental.UtilityClass;
 import org.jetbrains.annotations.NotNull;
@@ -53,6 +55,9 @@ public class TableAnalyzer {
     private static final String TD = "td";
     private static final String TH = "th";
 
+    /** The text styles which decide how tall a line of a cell is, and which a table inherits from around it. */
+    private static final List<String> INHERITED_TEXT_PROPERTIES = List.of("font-size", "line-height", "font-weight", "letter-spacing");
+
     // Doesn't really matter, our concern here are widths
     private static final int PAGE_HEIGHT = 1000;
     private static final String EMBEDDED_FONT_PATH = "/fonts/DejaVuSans.ttf";
@@ -84,12 +89,13 @@ public class TableAnalyzer {
     }
 
     /**
-     * The width of every column of the table, and the height its header takes.
+     * The width of every column of the table, the height its header takes and the height of each of its rows.
      *
      * @param columnWidths the width of each column, proportionally adjusted to the width of a page
      * @param headerHeight the height of the rows the table repeats on every page it spans
+     * @param rowHeights   the height of each row of the table itself, not of the tables nested in it, in document order
      */
-    public record TableMetrics(@NotNull Map<Integer, Integer> columnWidths, int headerHeight) {
+    public record TableMetrics(@NotNull Map<Integer, Integer> columnWidths, int headerHeight, @NotNull List<Integer> rowHeights) {
     }
 
     public Map<Integer, Integer> getColumnWidths(@NotNull Element tableElement, int pageWidth) {
@@ -99,12 +105,13 @@ public class TableAnalyzer {
     public TableMetrics analyze(@NotNull Element tableElement, int pageWidth) {
         Map<Integer, Integer> columnWidths = new HashMap<>();
         HeaderHeight headerHeight = new HeaderHeight();
+        List<Integer> rowHeights = new ArrayList<>();
 
         Document doc = toSelfDocument(tableElement);
         Box rootBox = render(doc, pageWidth);
-        findTableAndAnalyze(rootBox, columnWidths, headerHeight);
+        findTableAndAnalyze(rootBox, columnWidths, headerHeight, rowHeights);
 
-        return new TableMetrics(adjustWidths(columnWidths, pageWidth), headerHeight.value);
+        return new TableMetrics(adjustWidths(columnWidths, pageWidth), headerHeight.value, rowHeights);
     }
 
     /** The height the header rows take, gathered while the rendered table is walked. */
@@ -116,8 +123,26 @@ public class TableAnalyzer {
         org.jsoup.nodes.Document tempDoc = org.jsoup.nodes.Document.createShell("");
         // Inject CSS to force the embedded font for consistent column width calculation across platforms
         tempDoc.head().appendElement("style").text("* { font-family: '" + MEASUREMENT_FONT_FAMILY + "', sans-serif !important; }");
-        tempDoc.body().appendChild(tableElement.clone());
+        tempDoc.body().appendElement("div").attr(HtmlTagAttr.STYLE, inheritedTextStyle(tableElement)).appendChild(tableElement.clone());
         return new W3CDom().fromJsoup(tempDoc);
+    }
+
+    /**
+     * The text styles the table inherits from the elements around it, which the measure would otherwise lay it out without:
+     * of each, the one stated on the nearest of them.
+     */
+    private String inheritedTextStyle(@NotNull Element tableElement) {
+        StringBuilder style = new StringBuilder();
+        for (String property : INHERITED_TEXT_PROPERTIES) {
+            for (Element ancestor : tableElement.parents()) {
+                String value = CssUtils.getPropertyValue(CssUtils.parseDeclarations(ancestor.attr(HtmlTagAttr.STYLE)), property);
+                if (!value.isEmpty()) {
+                    style.append(property).append(": ").append(value).append("; ");
+                    break;
+                }
+            }
+        }
+        return style.toString().trim();
     }
 
     private Box render(@NotNull Document doc, int pageWidth) {
@@ -153,35 +178,36 @@ public class TableAnalyzer {
         }
     }
 
-    private void findTableAndAnalyze(Box box, Map<Integer, Integer> columnWidths, HeaderHeight headerHeight) {
+    private void findTableAndAnalyze(Box box, Map<Integer, Integer> columnWidths, HeaderHeight headerHeight, List<Integer> rowHeights) {
         if (box == null) {
             return;
         }
 
         // Check if this is a table box
         if (box.getElement() != null && TABLE.equalsIgnoreCase(box.getElement().getNodeName())) {
-            gatherColumnWidths(box, columnWidths, headerHeight);
+            gatherColumnWidths(box, columnWidths, headerHeight, rowHeights);
             return; // Found and analyzed, no need to go deeper
         }
 
         // Recursively search children
         if (box instanceof LineBox lineBox) {
             for (Box inlinedBox : lineBox.getNonFlowContent()) {
-                findTableAndAnalyze(inlinedBox, columnWidths, headerHeight);
+                findTableAndAnalyze(inlinedBox, columnWidths, headerHeight, rowHeights);
             }
         } else {
             for (int i = 0; i < box.getChildCount(); i++) {
-                findTableAndAnalyze(box.getChild(i), columnWidths, headerHeight);
+                findTableAndAnalyze(box.getChild(i), columnWidths, headerHeight, rowHeights);
             }
         }
     }
 
-    private void gatherColumnWidths(@NotNull Box tableBox, @NotNull Map<Integer, Integer> columnWidths, @NotNull HeaderHeight headerHeight) {
+    private void gatherColumnWidths(@NotNull Box tableBox, @NotNull Map<Integer, Integer> columnWidths, @NotNull HeaderHeight headerHeight, @NotNull List<Integer> rowHeights) {
         List<Box> tbody = findChildrenByTag(tableBox, TBODY);
         List<Box> rows = findChildrenByTag(!tbody.isEmpty() ? tbody.getFirst() : tableBox, TR);
 
         // Analyze all rows to properly handle colspan
         for (Box row : rows) {
+            rowHeights.add(row.getHeight());
             List<Box> cells = findChildrenByTag(row, TD, TH);
             if (!cells.isEmpty() && cells.stream().allMatch(cell -> TH.equalsIgnoreCase(cell.getElement().getNodeName()))) {
                 // A row of header cells is repeated on every page the table spans, so it takes its height there

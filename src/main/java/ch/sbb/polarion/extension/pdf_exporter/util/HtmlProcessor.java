@@ -14,6 +14,7 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.Orientation;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PaperSize;
 import ch.sbb.polarion.extension.pdf_exporter.settings.LocalizationSettings;
 import ch.sbb.polarion.extension.pdf_exporter.util.adjuster.PageWidthAdjuster;
+import ch.sbb.polarion.extension.pdf_exporter.util.adjuster.TableRowsAdjuster;
 import ch.sbb.polarion.extension.pdf_exporter.util.html.HtmlLinksHelper;
 import com.helger.css.decl.CSSDeclarationList;
 import com.polarion.alm.shared.util.StringUtils;
@@ -44,6 +45,8 @@ import static ch.sbb.polarion.extension.pdf_exporter.util.exporter.Constants.*;
 public class HtmlProcessor {
 
     private static final String DIV_START_TAG = "<div>";
+    /** The class of a section a page break makes, in the orientation of its pages. */
+    private static final String PAGE_BREAK_SECTION_CLASS = "sbb_page_break";
     private static final String DIV_END_TAG = "</div>";
     private static final String SPAN_END_TAG = "</span>";
     private static final String COMMENT_START = "[span";
@@ -195,13 +198,15 @@ public class HtmlProcessor {
 
         timedIfNotNull(generationLog, "Generate table of content", () -> getTocGenerator(exportParams.getDocumentType()).addTableOfContent(document));
 
-        if (exportParams.isFitToPage() && !hasCustomPageBreaks(html)) {
+        boolean customPageBreaks = hasCustomPageBreaks(html);
+        if (exportParams.isFitToPage() && !customPageBreaks) {
             // ---- BOOKMARK 1
             // In case of custom page breaks adjustContentToFitPage() will be called separately for each HTML block between
             // page breaks separately (see BOOKMARK 2 below), as paper orientation can be changed by page break
             timedIfNotNull(generationLog, "Adjust content to fit page", () -> adjustContentToFitPage(document, exportParams));
             // ----
         }
+        timedIfNotNull(generationLog, "Keep table rows whole", () -> keepTableRowsWholeUnlessFittedBetweenPageBreaks(document, exportParams, customPageBreaks));
 
         html = document.body().html();
 
@@ -726,6 +731,10 @@ public class HtmlProcessor {
 
                 if (exportParams.isFitToPage()) { //here we can make additional areas processing if needed
                     area = adjustContentToFitPage(area, exportParams);
+                    area = keepTableRowsWhole(area, ConversionParams.builder()
+                            .paperSize(exportParams.getPaperSize())
+                            .orientation(landscape ? Orientation.LANDSCAPE : Orientation.PORTRAIT)
+                            .build());
                 }
 
                 String orientationClass = (landscape ? "land" : "port") + exportParams.getPaperSize();
@@ -1093,6 +1102,43 @@ public class HtmlProcessor {
         }
     }
 
+    /**
+     * The rows are measured at the widths their tables end up with. Fitted between page breaks, a table gets its width in
+     * the block it is in, so its rows are measured there (see BOOKMARK 2), once its images are embedded.
+     */
+    private void keepTableRowsWholeUnlessFittedBetweenPageBreaks(@NotNull Document document, @NotNull ExportParams exportParams, boolean customPageBreaks) {
+        if (exportParams.isFitToPage() && customPageBreaks) {
+            // By then an embedded icon is no longer known by its address
+            TableRowsAdjuster.markIcons(document);
+        } else {
+            keepTableRowsWhole(document, exportParams, customPageBreaks);
+        }
+    }
+
+    /**
+     * Keeps each short table row on one page. A document with page breaks which may turn the page, marked in its HTML or
+     * already made sections of their own as the page break widget of a Live Report makes them, may lay a table out in
+     * either orientation, so its rows are measured against the lower of the two pages.
+     */
+    public void keepTableRowsWhole(@NotNull Document document, @NotNull ConversionParams conversionParams, boolean customPageBreaks) {
+        // An export which names no paper size or orientation is laid out on a portrait A4, and measured on one
+        ConversionParams page = ConversionParams.builder()
+                .paperSize(conversionParams.getPaperSize() != null ? conversionParams.getPaperSize() : PaperSize.A4)
+                .orientation(conversionParams.getOrientation() != null ? conversionParams.getOrientation() : Orientation.PORTRAIT)
+                .build();
+        int pageHeight = customPageBreaks || !document.select("div." + PAGE_BREAK_SECTION_CLASS).isEmpty()
+                ? Math.min(PaperSizeUtils.MAX_PORTRAIT_HEIGHTS.get(page.getPaperSize()), PaperSizeUtils.MAX_LANDSCAPE_HEIGHTS.get(page.getPaperSize()))
+                : PaperSizeUtils.getMaxHeight(page);
+        new TableRowsAdjuster(document, page, pageHeight).execute();
+    }
+
+    /** Keeps each short table row of a block between page breaks on one page, measured on the page of the block. */
+    @NotNull String keepTableRowsWhole(@NotNull String html, @NotNull ConversionParams conversionParams) {
+        PageWidthAdjuster block = new PageWidthAdjuster(html, conversionParams);
+        keepTableRowsWhole(block.getDocument(), conversionParams, false);
+        return block.toHTML();
+    }
+
     public void adjustContentToFitPage(@NotNull Document document, @NotNull ConversionParams conversionParams) {
         new PageWidthAdjuster(document, conversionParams)
                 .adjustImageSizeInTables()
@@ -1360,7 +1406,7 @@ public class HtmlProcessor {
     @NotNull
     private Element buildPageBreakSection(boolean landscape, @NotNull PaperSize paperSize, @NotNull Element anchor, @NotNull List<Node> sectionNodes) {
         Element wrapper = new Element(HtmlTag.DIV);
-        wrapper.addClass("sbb_page_break");
+        wrapper.addClass(PAGE_BREAK_SECTION_CLASS);
         wrapper.addClass((landscape ? "land" : "port") + paperSize);
         anchor.after(wrapper);
         for (Node node : sectionNodes) {

@@ -85,6 +85,8 @@ public class HtmlToPdfConverter {
         if (conversionParams.isFitToPage()) {
             htmlProcessor.adjustContentToFitPage(document, conversionParams);
         }
+        // Measured at the widths the tables end up with
+        htmlProcessor.keepTableRowsWhole(document, conversionParams, false);
 
         String processedHtml = htmlProcessor.replaceResourcesAsBase64Encoded(document.html());
         processedHtml = htmlProcessor.internalizeLinks(processedHtml);

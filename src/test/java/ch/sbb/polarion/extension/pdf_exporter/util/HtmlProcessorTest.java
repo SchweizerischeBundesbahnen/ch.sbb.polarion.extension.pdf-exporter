@@ -23,6 +23,7 @@ import org.jsoup.nodes.TextNode;
 import org.jsoup.select.Elements;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.InOrder;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -1318,6 +1319,82 @@ class HtmlProcessorTest {
     }
 
     @Test
+    void measuresTableRowsAgainstTheLowerPageWhereASectionTurnsIt() {
+        // Nine lines: within a quarter of a portrait page, but more than a quarter of a landscape one
+        String table = "<table><tbody><tr><td>" + "A line of a cell.<br/>".repeat(9) + "</td></tr></tbody></table>";
+        Document portrait = JSoupUtils.parseHtml(table);
+        Document withSection = JSoupUtils.parseHtml(table + "<div class=\"sbb_page_break landA4\"><p>Landscape</p></div>");
+        ConversionParams a4 = ConversionParams.builder().paperSize(PaperSize.A4).orientation(Orientation.PORTRAIT).build();
+
+        processor.keepTableRowsWhole(portrait, a4, false);
+        processor.keepTableRowsWhole(withSection, a4, false);
+
+        assertEquals("break-inside:avoid;", portrait.selectFirst("tr").attr("style"));
+        assertFalse(withSection.selectFirst("tr").hasAttr("style"));
+    }
+
+    @Test
+    void keepsTheTableRowsOfABlockBetweenPageBreaks() {
+        String block = processor.keepTableRowsWhole("<table><tbody><tr><td>Patron</td><td>Can access the library.</td></tr></tbody></table>",
+                ConversionParams.builder().paperSize(PaperSize.A4).orientation(Orientation.PORTRAIT).build());
+
+        assertTrue(block.replace(" ", "").contains("<trstyle=\"break-inside:avoid;\">"), block);
+    }
+
+    @Test
+    @SneakyThrows
+    void measuresTableRowsOnceTheTablesAreFittedToThePage() {
+        HtmlProcessor spyHtmlProcessor = spy(processor);
+        ExportParams exportParams = getExportParams();
+        exportParams.setFitToPage(true);
+
+        spyHtmlProcessor.processHtmlForPDF("<table><tbody><tr><td>Patron</td></tr></tbody></table>", exportParams, List.of());
+
+        InOrder inOrder = inOrder(spyHtmlProcessor);
+        inOrder.verify(spyHtmlProcessor).adjustContentToFitPage(any(Document.class), eq(exportParams));
+        inOrder.verify(spyHtmlProcessor).keepTableRowsWhole(any(Document.class), eq(exportParams), eq(false));
+    }
+
+    @Test
+    void measuresTheTableRowsOfABlockOnThePageOfItsOrientation() {
+        HtmlProcessor spyHtmlProcessor = spy(processor);
+        ExportParams exportParams = getExportParams();
+        exportParams.setFitToPage(true);
+
+        spyHtmlProcessor.processPageBrakes("<table><tbody><tr><td>Landscape</td></tr></tbody></table><!--PAGE_BREAK--><!--LANDSCAPE_ABOVE-->"
+                + "<table><tbody><tr><td>Portrait</td></tr></tbody></table>", exportParams);
+
+        InOrder inOrder = inOrder(spyHtmlProcessor);
+        inOrder.verify(spyHtmlProcessor).keepTableRowsWhole(anyString(), argThat(page -> page.getOrientation() == Orientation.LANDSCAPE));
+        inOrder.verify(spyHtmlProcessor).keepTableRowsWhole(anyString(), argThat(page -> page.getOrientation() == Orientation.PORTRAIT));
+    }
+
+    @Test
+    @SneakyThrows
+    void keepsARowWithAnIconWholeOnceTheIconIsEmbeddedBetweenPageBreaks() {
+        when(fileResourceProvider.getResourceAsBase64String(anyString())).thenReturn("data:image/gif;base64,R0lGODlhAQABAAAAACw=");
+        ExportParams exportParams = getExportParams();
+        exportParams.setFitToPage(true);
+
+        String result = processor.processHtmlForPDF("<p>Before</p><!--PAGE_BREAK--><!--LANDSCAPE_ABOVE-->"
+                + "<table><tbody><tr><td><img src=\"/polarion/icons/default/enums/status_draft.gif\"/>Draft</td></tr></tbody></table>", exportParams, List.of());
+
+        Document document = JSoupUtils.parseHtml(result);
+        assertEquals("data:image/gif;base64,R0lGODlhAQABAAAAACw=", document.selectFirst("img").attr("src"));
+        assertEquals("break-inside:avoid;", document.selectFirst("tr").attr("style"));
+        assertFalse(document.selectFirst("img").hasAttr("data-pdf-exporter-icon"), "The mark is gone once the rows are measured");
+    }
+
+    @Test
+    void keepsTableRowsWholeInAnExportWhichNamesNoPageSize() {
+        Document document = JSoupUtils.parseHtml("<table><tbody><tr><td>Patron</td><td>Can access the library.</td></tr></tbody></table>");
+        ConversionParams noPageSize = ConversionParams.builder().paperSize(null).orientation(null).build();
+
+        assertDoesNotThrow(() -> processor.keepTableRowsWhole(document, noPageSize, false));
+        assertEquals("break-inside:avoid;", document.selectFirst("tr").attr("style"));
+    }
+
+    @Test
     @SneakyThrows
     void processHtmlForPDFTestCutEmptyWorkItemAttributesDisabled() {
         try (InputStream isHtml = this.getClass().getResourceAsStream("/emptyWIAttributesBeforeProcessing.html")) {
@@ -1328,6 +1405,7 @@ class HtmlProcessorTest {
             ExportParams exportParams = getExportParams();
             // to avoid changing input html and check with regular equals
             doNothing().when(spyHtmlProcessor).adjustCellWidth(any(), any());
+            doNothing().when(spyHtmlProcessor).keepTableRowsWhole(any(), any(), anyBoolean());
             exportParams.setCutEmptyChapters(false);
             exportParams.setCutEmptyWIAttributes(false);
 

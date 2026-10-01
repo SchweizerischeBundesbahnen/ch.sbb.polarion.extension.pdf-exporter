@@ -10,8 +10,10 @@ import ch.sbb.polarion.extension.pdf_exporter.util.PdfTemplateProcessor;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.WeasyPrintOptions;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.service.WeasyPrintServiceConnector;
 import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -19,6 +21,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -35,6 +38,22 @@ class HtmlToPdfConverterTest {
 
     @InjectMocks
     private HtmlToPdfConverter htmlToPdfConverter;
+
+    @Test
+    void shouldKeepShortTableRowsWholeInAPreparedHtml() {
+        when(pdfTemplateProcessor.buildBaseUrlHeader()).thenReturn("");
+        when(pdfTemplateProcessor.buildSizeCss(Orientation.PORTRAIT, PaperSize.A4)).thenReturn("");
+        when(htmlProcessor.replaceResourcesAsBase64Encoded(anyString())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(htmlProcessor.internalizeLinks(anyString())).thenAnswer(a -> a.getArgument(0));
+        ConversionParams conversionParams = ConversionParams.builder().fitToPage(true).build();
+
+        htmlToPdfConverter.preprocessHtml("<html><body><table><tr><td>Patron</td></tr></table></body></html>", conversionParams);
+
+        // Measured once the tables are fitted to the page, at the widths they end up with
+        InOrder inOrder = inOrder(htmlProcessor);
+        inOrder.verify(htmlProcessor).adjustContentToFitPage(any(Document.class), eq(conversionParams));
+        inOrder.verify(htmlProcessor).keepTableRowsWhole(any(), eq(conversionParams), eq(false));
+    }
 
     @Test
     void shouldInjectHeadAndStyle() {
