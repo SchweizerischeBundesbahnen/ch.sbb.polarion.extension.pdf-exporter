@@ -85,8 +85,8 @@ public class HtmlToPdfConverter {
         if (conversionParams.isFitToPage()) {
             htmlProcessor.adjustContentToFitPage(document, conversionParams);
         }
-        // Measured at the widths the tables end up with
-        htmlProcessor.keepTableRowsWhole(document, conversionParams, false);
+        // The rows of a prepared HTML are not kept whole: it comes without the default CSS, so nothing keeps a header row
+        // or a title with what follows it, and a row moved to the next page would leave them alone at the end of a page
 
         String processedHtml = htmlProcessor.replaceResourcesAsBase64Encoded(document.html());
         processedHtml = htmlProcessor.internalizeLinks(processedHtml);
