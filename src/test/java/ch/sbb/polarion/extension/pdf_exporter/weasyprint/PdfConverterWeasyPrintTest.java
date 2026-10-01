@@ -44,24 +44,14 @@ class PdfConverterWeasyPrintTest extends BasePdfConverterTest {
     }
 
     @Override
-    protected void setupCssSettings() {
-        String basicCss = readCssResource(CSS_BASIC, FONT_REGULAR);
-        when(cssSettings.defaultValues()).thenCallRealMethod();
-        when(cssSettings.load(any(), any())).thenReturn(CssModel.builder()
-                .disableDefaultCss(false)
-                .css(basicCss)
-                .build());
-    }
-
-    @Override
     protected void setupCoverPageSettings() {
-        String basicCss = readCssResource(CSS_BASIC, FONT_REGULAR);
+        String openSansCss = readCssResource(CSS_OPEN_SANS, FONT_REGULAR);
         // Check "testFieldKey" custom field substitution in the title
         // Additionally check PAGE_NUMBER and PAGES_TOTAL_COUNT supported on cover page
         lenient().when(coverPageSettings.load(any(), any())).thenReturn(CoverPageModel.builder()
                 .useCustomValues(true)
                 .templateHtml("<div>TITLE {{ testFieldKey }} </div> <div>PAGE_NUMBER = {{ PAGE_NUMBER }} and PAGES_TOTAL_COUNT = {{ PAGES_TOTAL_COUNT }}</div>")
-                .templateCss(basicCss)
+                .templateCss(openSansCss)
                 .build());
         lenient().when(coverPageSettings.processImagePlaceholders(any())).thenAnswer(invocation -> invocation.getArgument(0));
     }

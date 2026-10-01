@@ -18,9 +18,7 @@ import org.apache.pdfbox.text.TextPosition;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.List;
@@ -46,12 +44,17 @@ class IconAlignmentTest extends BasePdfConverterTest {
     /** The words each icon of the document stands before: a link to a document, a severity, a status, a status in a table. */
     private static final List<String> WORDS_AFTER_ICONS = List.of("Product", "Should", "Reviewed", "Draft");
 
-    /** A square icon of 16 pixels, as Polarion draws them. */
-    private static final String ICON = "data:image/svg+xml;base64," + Base64.getEncoder().encodeToString(
-            "<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16'><rect width='16' height='16' fill='#c00'/></svg>".getBytes(StandardCharsets.UTF_8));
+    /**
+     * A square icon of 16 pixels, as Polarion draws them. A PNG, as Polarion's icons are bitmaps: the conversion service turns every SVG into a PNG first, which
+     * takes it about half a second an image.
+     */
+    private static final String ICON = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAAF0lEQVR4nGM4w8BAEiJN9aiGUQ1DSgMAQWfMAdovJBMAAAAASUVORK5CYII=";
 
-    /** The font size of the default CSS, at which a line is barely higher than an icon. */
-    private static final String DEFAULT_FONT_SIZE = "* { font-size: 10pt; }";
+    /**
+     * No CSS but the default one, so the lines take the height of the font an export is laid out in. Open Sans makes
+     * a line higher than an icon, so the lines would not show what an icon does to them. Only sizes are compared here.
+     */
+    private static final String IN_THE_FONT_OF_AN_EXPORT = "";
 
     /** Each kind of lines starts a page of its own, so that none of them is split between two pages. */
     private static final String PAGE_BREAK = "<div style=\"break-before: page;\"></div>";
@@ -61,6 +64,9 @@ class IconAlignmentTest extends BasePdfConverterTest {
 
     /** How much higher a work item with an icon may be than one without. */
     private static final float LINE_TOLERANCE_PT = 0.25f;
+
+    /** The room between the icons of two lines of a list: a pixel above each and below each. */
+    private static final float MIN_ROOM_BETWEEN_ICONS_PT = 1.5f;
 
     /** How far the middle of an icon may be from the middle of its text: the icon is drawn by whole pixels. */
     private static final float TOLERANCE_PT = 1.5f;
@@ -97,15 +103,35 @@ class IconAlignmentTest extends BasePdfConverterTest {
             content.append(workItem("P" + line + "P", "<span>Should Have</span>"));
         }
 
-        byte[] pdf = export(content.toString(), DEFAULT_FONT_SIZE);
+        byte[] pdf = export(content.toString(), IN_THE_FONT_OF_AN_EXPORT);
 
         float plain = lineHeight(pdf, "P");
         assertThat(lineHeight(pdf, "L")).as("A line with the icon of a link is as high as a line of text").isCloseTo(plain, within(LINE_TOLERANCE_PT));
         assertThat(lineHeight(pdf, "S")).as("A line with the icon of an enum value is as high as a line of text").isCloseTo(plain, within(LINE_TOLERANCE_PT));
     }
 
+    /**
+     * A list keeps its lines as high as their text, lower than an icon, so the icons of a list of links to documents
+     * stood one on another with no room between them.
+     */
+    @Test
+    void leavesRoomBetweenTheIconsOfAList() {
+        String item = "<li><span class=\"polarion-rte-link\"><a class=\"polarion-Hyperlink\" href=\"#\"><span style=\"white-space:nowrap;\">"
+                + "<img src=\"" + ICON + "\" class=\"polarion-Icons\"/></span>Specification</a></span></li>";
+
+        byte[] pdf = export("<ul>" + item.repeat(3) + "</ul>", IN_THE_FONT_OF_AN_EXPORT);
+
+        List<DrawnImages.Box> icons = DrawnImages.boxesIn(pdf);
+        assertThat(icons).hasSize(3);
+        for (int icon = 1; icon < icons.size(); icon++) {
+            DrawnImages.Box above = icons.get(icon - 1);
+            assertThat(icons.get(icon).top() - (above.top() + above.height())).as("Room between icon %d and the one above it", icon + 1)
+                    .isGreaterThanOrEqualTo(MIN_ROOM_BETWEEN_ICONS_PT);
+        }
+    }
+
     private void assertIconsInTheMiddleOfTheirLines(@NotNull String testName, @NotNull String customCss) {
-        byte[] pdf = export(readHtmlResource("iconsInLine"), customCss);
+        byte[] pdf = export(readHtmlResource("iconsInLine"), readCssResource(CSS_OPEN_SANS, FONT_REGULAR) + customCss);
 
         List<DrawnImages.Box> icons = DrawnImages.boxesIn(pdf);
         assertThat(icons).hasSize(WORDS_AFTER_ICONS.size());
@@ -119,10 +145,11 @@ class IconAlignmentTest extends BasePdfConverterTest {
         assertFalse(compareContentUsingReferenceImages(testName, pdf), "The pages differ from the reference images");
     }
 
-    private byte @NotNull [] export(@NotNull String content, @NotNull String customCss) {
+    /** Exports the content with the default CSS and the given CSS after it. */
+    private byte @NotNull [] export(@NotNull String content, @NotNull String css) {
         when(cssSettings.load(any(), any())).thenReturn(CssModel.builder()
                 .disableDefaultCss(false)
-                .css(readCssResource(CSS_BASIC, FONT_REGULAR) + customCss)
+                .css(css)
                 .build());
         ExportParams params = ExportParams.builder()
                 .projectId("test")

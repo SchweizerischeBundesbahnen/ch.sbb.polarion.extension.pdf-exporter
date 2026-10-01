@@ -948,10 +948,16 @@ tr:hover {
     vertical-align: middle !important;
 }
 
-/* Centered, an icon reaches below the text of a 10pt line and makes it higher. A pixel less above and below keeps its height. */
+/* Centered, an icon reaches below the text of a 10pt line and makes it higher. Two pixels less above and below keep its height. */
 .polarion-Icons, .polarion-JSEnumOption img {
-    margin-top: -1px;
-    margin-bottom: -1px;
+    margin-top: -2px;
+    margin-bottom: -2px;
+}
+
+/* A list keeps its lines as high as their text, lower than an icon, so a pixel above and below keeps its icons apart. */
+li .polarion-Icons, li .polarion-JSEnumOption img {
+    margin-top: 1px;
+    margin-bottom: 1px;
 }
 
 li span {

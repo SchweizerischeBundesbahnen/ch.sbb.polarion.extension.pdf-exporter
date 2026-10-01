@@ -41,7 +41,8 @@ public abstract class BaseWeasyPrintTest {
     public static final String WEASYPRINT_TEST_CSS_RESOURCES_FOLDER = "/weasyprint/css/";
     public static final String WEASYPRINT_TEST_FONT_RESOURCES_FOLDER = "/weasyprint/font/";
     public static final String FONT_BASE64_REPLACE_PARAM = "{FONT_BASE64}";
-    public static final String CSS_BASIC = "basic";
+    /** Embeds Open Sans and puts it on every element, so text is laid out the same wherever WeasyPrint runs. */
+    public static final String CSS_OPEN_SANS = "openSans";
     public static final String FONT_REGULAR = "OpenSans-Regular";
 
     protected static final String REPORTS_FOLDER_PATH = "target/surefire-reports/";
