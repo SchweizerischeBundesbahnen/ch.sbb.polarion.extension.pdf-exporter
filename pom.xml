@@ -48,6 +48,9 @@
         <okapi.xliff.version>1.48.0</okapi.xliff.version>
         <flying-saucer.version>10.5.0</flying-saucer.version>
 
+        <!-- Performance tests run in a profile of their own: they take minutes and measure time, not looks -->
+        <excludedGroups>performance</excludedGroups>
+
         <slf4j.version>2.0.20</slf4j.version>
         <testcontainers.version>2.0.5</testcontainers.version>
 
@@ -104,6 +107,34 @@
                             <forkCount>1</forkCount>
                             <reuseForks>true</reuseForks>
                             <!-- Run tests sequentially to ensure container is shared -->
+                            <parallel>none</parallel>
+                            <systemPropertyVariables>
+                                <wpExporterImpl>docker</wpExporterImpl>
+                            </systemPropertyVariables>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <!-- The exports of large documents, timed against a budget: mvn verify -P performance-tests -->
+            <id>performance-tests</id>
+
+            <properties>
+                <groups>performance</groups>
+                <excludedGroups/>
+            </properties>
+
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <version>${maven-surefire-plugin.version}</version>
+                        <configuration>
+                            <redirectTestOutputToFile>true</redirectTestOutputToFile>
+                            <forkCount>1</forkCount>
+                            <reuseForks>true</reuseForks>
                             <parallel>none</parallel>
                             <systemPropertyVariables>
                                 <wpExporterImpl>docker</wpExporterImpl>

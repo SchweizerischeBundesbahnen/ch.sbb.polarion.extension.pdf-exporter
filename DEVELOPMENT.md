@@ -128,6 +128,27 @@ Docker-less run of the behavior tests:
 mvn clean install -DjsTestsNoDocker -DinstallPlaywrightNoDeps -DskipVisualJsTests
 ```
 
+### Performance Tests
+
+The performance tests export documents of a known shape and fail when an export takes far longer than it does today.
+They are tagged `performance` and run in a profile of their own, not in the regular build:
+
+```bash
+mvn verify -P performance-tests -DskipJsTests
+```
+
+Pass `-Dweasyprint.service.url=http://localhost:9080` to use a running WeasyPrint service instead of a container.
+
+- `ExportPerformanceTest` exports one shape each: a large table, cells running across pages, many images, many work
+  items, sections which page breaks turn landscape, tables whose words leave them no room, and hyphenated tables.
+- `FeatureDocumentTest` exports one document with every feature and every option of a style package, and compares its
+  pages with reference images, so that one export shows whether any of it broke.
+
+Each test has a budget for the exporter and one for WeasyPrint, read from the generation log, so a failure names the
+slow side. The budgets are about ten times today's times on an arm64 Mac. They are scaled by how much slower the
+machine of the run exports a small reference document, so a slower CI runner does not fail them. The timing report of
+each export is written to `target/surefire-reports/performance-*.txt`.
+
 ## Debugging
 
 ### Remote Debugging
