@@ -203,7 +203,7 @@ class PdfConverterWeasyPrintBackgroundTest extends BasePdfConverterTest {
     private void useCss(boolean customCssOnly, String rule) {
         when(cssSettings.load(any(), any())).thenReturn(CssModel.builder()
                 .disableDefaultCss(customCssOnly)
-                .css(readCssResource(CSS_BASIC, FONT_REGULAR) + rule)
+                .css(readFontCss() + rule)
                 .build());
     }
 
@@ -215,7 +215,7 @@ class PdfConverterWeasyPrintBackgroundTest extends BasePdfConverterTest {
         lenient().when(coverPageSettings.load(any(), any())).thenReturn(CoverPageModel.builder()
                 .useCustomValues(true)
                 .templateHtml(html)
-                .templateCss(readCssResource(CSS_BASIC, FONT_REGULAR) + rule)
+                .templateCss(readFontCss() + rule)
                 .build());
     }
 

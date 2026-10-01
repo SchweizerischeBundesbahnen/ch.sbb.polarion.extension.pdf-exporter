@@ -16,9 +16,7 @@ import org.apache.pdfbox.text.PDFTextStripper;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -37,20 +35,25 @@ import static org.mockito.ArgumentMatchers.eq;
  */
 class TableRowKeptWholeTest extends BasePdfConverterTest {
 
-    private static final int ROWS = 40;
+    private static final int ROWS = 28;
 
     /** A border around each cell, so the pages show where a row ends and whether it was split. */
     private static final String CELL = "<td style=\"border: 1px solid #999;\">";
 
-    /** Enough sentences for a title more than two pages tall. */
-    private static final int LONG_ROW_SENTENCES = 150;
+    /**
+     * Enough lines for a title more than two pages tall. Short lines, as a cell of long text takes WeasyPrint minutes to
+     * lay out across pages.
+     */
+    private static final int LONG_ROW_LINES = 120;
 
-    /** The icon of a work item type, 16 pixels square as Polarion draws it. */
-    private static final String ICON = "data:image/svg+xml;base64," + Base64.getEncoder().encodeToString(
-            "<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16'><rect width='16' height='16' fill='#c00'/></svg>".getBytes(StandardCharsets.UTF_8));
+    /**
+     * The icon of a work item type, 16 pixels square as Polarion draws it. A PNG, as Polarion's icons are bitmaps: the conversion service turns every SVG into a PNG first, which
+     * takes it about half a second an image.
+     */
+    private static final String ICON = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAAF0lEQVR4nGM4w8BAEiJN9aiGUQ1DSgMAQWfMAdovJBMAAAAASUVORK5CYII=";
 
     /** Room above the table, as much as it takes for the end of the first page to fall inside a row. */
-    private static final String PREFACE = "<div style=\"height: 18px\"></div>";
+    private static final String PREFACE = "<div style=\"height: 33px\"></div>";
 
     @Test
     void keepsEveryRowOfAWorkItemsTableOnOnePage() {
@@ -59,6 +62,7 @@ class TableRowKeptWholeTest extends BasePdfConverterTest {
 
         assertThat(pages).hasSize(2);
         for (int row = 1; row <= ROWS; row++) {
+            assertThat(pageOf(pages, "S" + row + "S")).as("Row %d is printed", row).isNotNegative();
             assertThat(pageOf(pages, "S" + row + "S")).as("Row %d starts and ends on one page", row).isEqualTo(pageOf(pages, "E" + row + "E"));
         }
         assertFalse(compareContentUsingReferenceImages(getCurrentMethodName(), pdf), "The pages differ from the reference images");
@@ -70,12 +74,12 @@ class TableRowKeptWholeTest extends BasePdfConverterTest {
      */
     @Test
     void breaksARowOfADocumentTableWhereThePageEnds() {
-        String sentences = IntStream.rangeClosed(1, LONG_ROW_SENTENCES)
-                .mapToObj(sentence -> "Sentence L" + sentence + "L of a title which no page can hold whole.")
-                .collect(Collectors.joining(" "));
+        String lines = IntStream.rangeClosed(1, LONG_ROW_LINES)
+                .mapToObj(line -> "Line L" + line + "L")
+                .collect(Collectors.joining("<br/>"));
         byte[] pdf = export(PREFACE + "<table style=\"border-collapse: collapse;\"><tbody>"
                 + "<tr>" + CELL + "S1S</td>" + CELL + "A row above the tall one E1E</td></tr>"
-                + "<tr>" + CELL + "S2S</td>" + CELL + sentences + "</td></tr>"
+                + "<tr>" + CELL + "S2S</td>" + CELL + lines + "</td></tr>"
                 + "<tr>" + CELL + "S3S</td>" + CELL + "A row below the tall one E3E</td></tr>"
                 + "</tbody></table>");
         List<String> pages = pageTexts(pdf);
@@ -83,10 +87,10 @@ class TableRowKeptWholeTest extends BasePdfConverterTest {
         assertThat(pages).hasSize(3);
         assertThat(pageOf(pages, "L1L")).as("The tall row starts on the first page, under the row above it").isZero();
         int previousPage = 0;
-        for (int sentence = 1; sentence <= LONG_ROW_SENTENCES; sentence++) {
-            int page = pageOf(pages, "L" + sentence + "L");
-            assertThat(page).as("Sentence %d of the tall row is printed", sentence).isNotNegative();
-            assertThat(page).as("Sentence %d follows the one before it", sentence).isGreaterThanOrEqualTo(previousPage);
+        for (int line = 1; line <= LONG_ROW_LINES; line++) {
+            int page = pageOf(pages, "L" + line + "L");
+            assertThat(page).as("Line %d of the tall row is printed", line).isNotNegative();
+            assertThat(page).as("Line %d follows the one before it", line).isGreaterThanOrEqualTo(previousPage);
             previousPage = page;
         }
         assertThat(pageOf(pages, "E3E")).as("The row below the tall one is printed").isNotNegative();

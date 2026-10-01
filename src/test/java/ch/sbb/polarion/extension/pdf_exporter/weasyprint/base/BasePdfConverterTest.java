@@ -162,13 +162,13 @@ public abstract class BasePdfConverterTest extends BaseWeasyPrintTest {
     }
 
     /**
-     * Setup CSS settings. Override in subclasses for custom CSS.
+     * Setup CSS settings: the default CSS, as an export without a custom CSS gets it, so the reference images show what a
+     * change of the default CSS does, in Open Sans. Override in subclasses for custom CSS.
      */
     protected void setupCssSettings() {
-        String basicCss = readCssResource(CSS_BASIC, FONT_REGULAR);
         when(cssSettings.load(any(), any())).thenReturn(CssModel.builder()
                 .disableDefaultCss(false)
-                .css(basicCss)
+                .css(readFontCss())
                 .build());
     }
 
@@ -176,11 +176,11 @@ public abstract class BasePdfConverterTest extends BaseWeasyPrintTest {
      * Setup cover page settings. Override in subclasses for custom cover pages.
      */
     protected void setupCoverPageSettings() {
-        String basicCss = readCssResource(CSS_BASIC, FONT_REGULAR);
+        String fontCss = readFontCss();
         lenient().when(coverPageSettings.load(any(), any())).thenReturn(CoverPageModel.builder()
                 .useCustomValues(true)
                 .templateHtml("<div>Cover Page Title</div>")
-                .templateCss(basicCss)
+                .templateCss(fontCss)
                 .build());
         lenient().when(coverPageSettings.processImagePlaceholders(any())).thenAnswer(invocation -> invocation.getArgument(0));
     }

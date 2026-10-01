@@ -1,8 +1,0 @@
-@font-face {
-  font-family: Custom Font;
-  src: url(data:application/font-woff;base64,{FONT_BASE64}) format('woff');
-}
-* {
-  font-family: Custom Font !important;
-  font-size: 11pt;
-}
