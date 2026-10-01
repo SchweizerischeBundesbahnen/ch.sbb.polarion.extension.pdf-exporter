@@ -34,6 +34,7 @@
     * [Download attachments](#download-attachments)
     * [Embed attachments into resulted PDF](#embed-attachments-into-resulted-pdf)
 * [Page breaks on Live Report page](#page-breaks-on-live-report-page)
+* [No Page Break of a work item](#no-page-break-of-a-work-item)
 * [Bulk PDF Export](#bulk-pdf-export)
 
 ## Export panel layout
@@ -398,6 +399,19 @@ It is possible to insert page breaks into Live Report pages using `Page Break` w
 Also, there is a configuration for the cases when landscape page more required (**Note**: this configuration will be applied for the pages exported by `Pdf-Exporter` only):
 
 ![Page Break Configuration](docs/user_guide/img/page_break_configuration.png)
+
+## No Page Break of a work item
+The presentation of a work item in a Live Document can ask for **No Page Break**, in the Configure Work Item
+Presentation dialog of the document:
+
+![No Page Break](docs/user_guide/img/no_page_break.png)
+
+The exported PDF keeps such a work item on one page: it moves to the next page whole rather than being split.
+
+A work item with a table of its own is the exception. Its table may run across pages, repeating its header, and each
+row of it is kept on one page instead.
+
+A work item taller than a page is split where the page ends, as nothing can keep it on one.
 
 ## Bulk PDF Export
 There is a possibility to export multiple documents in one run. This can be achieved with the help of a special widget:
