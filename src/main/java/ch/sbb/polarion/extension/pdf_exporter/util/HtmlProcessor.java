@@ -25,6 +25,7 @@ import org.jetbrains.annotations.VisibleForTesting;
 import org.jsoup.nodes.Comment;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
+import org.jsoup.nodes.Entities;
 import org.jsoup.nodes.Node;
 import org.jsoup.nodes.TextNode;
 import org.jsoup.select.Elements;
@@ -38,6 +39,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.DocumentType.*;
 import static ch.sbb.polarion.extension.pdf_exporter.util.exporter.Constants.*;
@@ -206,6 +209,7 @@ public class HtmlProcessor {
             timedIfNotNull(generationLog, "Adjust content to fit page", () -> adjustContentToFitPage(document, exportParams));
             // ----
         }
+        timedIfNotNull(generationLog, "Break long words in table cells", () -> breakLongWordsInTableCells(document));
         timedIfNotNull(generationLog, "Keep table rows whole", () -> keepTableRowsWholeUnlessFittedBetweenPageBreaks(document, exportParams, customPageBreaks));
 
         html = document.body().html();
@@ -1125,6 +1129,66 @@ public class HtmlProcessor {
      * The rows are measured at the widths their tables end up with. Fitted between page breaks, a table gets its width in
      * the block it is in, so its rows are measured there (see BOOKMARK 2), once its images are embedded.
      */
+    /** A word of a table cell longer than this, a URL or an ID, gets places where a line may break inside it. */
+    private static final int LONG_WORD_LENGTH = 20;
+
+    /** The characters a long word may break after, as a URL or an ID is read in parts. */
+    private static final String BREAK_AFTER = "/_-.?&=";
+
+    /**
+     * A run of text no line may break inside unless it gets a place to: characters up to a space, and the words after it
+     * which start with a closing bracket, a punctuation mark or a slash, as Unicode allows no break before those even
+     * after a space. So "/-123 /-123 /-123" is one run.
+     */
+    private static final Pattern UNBREAKABLE_RUN = Pattern.compile("\\S+(?:\\s+[)\\]}!?,.;:/]\\S*)*");
+
+    /**
+     * Gives the long words of table cells, a URL or an ID, places where a line may break: after a slash, an underscore,
+     * a hyphen, a dot and the like, and every {@value #LONG_WORD_LENGTH} characters. The default CSS lets a cell break a
+     * word nowhere else, so a long word still fits its column, a short one is never split, and WeasyPrint need not work
+     * out a width for every character of a cell, which takes it minutes for a cell of long text.
+     */
+    @VisibleForTesting
+    void breakLongWordsInTableCells(@NotNull Document document) {
+        for (Element element : document.select("td, th, td *, th *")) {
+            for (TextNode text : element.textNodes()) {
+                String value = text.getWholeText();
+                Matcher matcher = UNBREAKABLE_RUN.matcher(value);
+                StringBuilder html = new StringBuilder();
+                int last = 0;
+                boolean changed = false;
+                while (matcher.find()) {
+                    if (matcher.group().length() > LONG_WORD_LENGTH) {
+                        html.append(Entities.escape(value.substring(last, matcher.start()))).append(withBreakPoints(matcher.group()));
+                        last = matcher.end();
+                        changed = true;
+                    }
+                }
+                if (changed) {
+                    html.append(Entities.escape(value.substring(last)));
+                    text.before(html.toString());
+                    text.remove();
+                }
+            }
+        }
+    }
+
+    private static String withBreakPoints(@NotNull String word) {
+        StringBuilder result = new StringBuilder();
+        int sinceBreak = 0;
+        for (int index = 0; index < word.length(); index++) {
+            char character = word.charAt(index);
+            result.append(Entities.escape(String.valueOf(character)));
+            sinceBreak++;
+            boolean more = index < word.length() - 1;
+            if (more && (BREAK_AFTER.indexOf(character) >= 0 || sinceBreak >= LONG_WORD_LENGTH)) {
+                result.append("<wbr>");
+                sinceBreak = 0;
+            }
+        }
+        return result.toString();
+    }
+
     private void keepTableRowsWholeUnlessFittedBetweenPageBreaks(@NotNull Document document, @NotNull ExportParams exportParams, boolean customPageBreaks) {
         if (exportParams.isFitToPage() && customPageBreaks) {
             // By then an embedded icon is no longer known by its address

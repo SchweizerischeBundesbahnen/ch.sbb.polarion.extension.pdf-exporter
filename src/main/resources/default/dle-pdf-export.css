@@ -461,7 +461,7 @@ ul.tof li > a.page-number::after {
 }
 
 table tr th, table tr td {
-    overflow-wrap: anywhere;
+    overflow-wrap: break-word;
     white-space: normal;
 }
 
