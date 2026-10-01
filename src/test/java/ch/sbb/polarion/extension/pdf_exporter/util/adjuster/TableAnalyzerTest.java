@@ -4,6 +4,7 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ConversionPa
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.Orientation;
 import ch.sbb.polarion.extension.pdf_exporter.util.PaperSizeUtils;
 import lombok.SneakyThrows;
+import org.jsoup.Jsoup;
 import org.jsoup.nodes.Element;
 import org.jsoup.parser.Tag;
 import org.junit.jupiter.api.Test;
@@ -545,6 +546,17 @@ class TableAnalyzerTest {
             assertTrue(columnWidths.containsKey(i), "Column " + i + " should have a width");
             assertTrue(columnWidths.get(i) >= 130 && columnWidths.get(i) <= 180, "Column " + i + " width should be certain range, but was " + columnWidths.get(i));
         }
+    }
+
+    @Test
+    void measuresAFontSizeInPointsAsCssDoes() {
+        // CSS counts 96 pixels to an inch, so 9pt is 12px. At the 72 dpi of a headless server it was 9px, and a table too
+        // wide for its page measured as one which fits
+        String words = "Sicherheitsanforderungen ".repeat(8);
+        int inPoints = TableAnalyzer.analyze(Jsoup.parse("<table><tr><td style=\"font-size: 9pt\">" + words + "</td></tr></table>").selectFirst("table"), 2000).tableWidth();
+        int inPixels = TableAnalyzer.analyze(Jsoup.parse("<table><tr><td style=\"font-size: 12px\">" + words + "</td></tr></table>").selectFirst("table"), 2000).tableWidth();
+
+        assertEquals(inPixels, inPoints);
     }
 
 }

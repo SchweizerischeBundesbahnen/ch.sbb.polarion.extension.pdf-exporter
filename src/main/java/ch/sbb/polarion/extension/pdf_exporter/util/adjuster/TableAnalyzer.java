@@ -80,6 +80,9 @@ public class TableAnalyzer {
      * font of the same name installed lends its own file to the layout: its bold face is not the one shipped
      * here, the text then takes a line more or less, and the same document comes out laid out differently.
      */
+    /** The pixels CSS counts to an inch, which turns a font size in points into the pixels WeasyPrint lays it out in. */
+    private static final float CSS_DPI = 96f;
+
     private static final String MEASUREMENT_FONT_FAMILY = "PdfExporterTableMeasurement";
     private static final Font EMBEDDED_FONT = loadEmbeddedFont();
     private static final Font EMBEDDED_BOLD_FONT = loadFontFromPath(EMBEDDED_BOLD_FONT_PATH);
@@ -180,6 +183,9 @@ public class TableAnalyzer {
         renderer.getSharedContext().setReplacedElementFactory(new SourceAwareReplacedElementFactory(defaultFactory));
 
         useMeasurementFont(renderer.getSharedContext());
+        // A size in points becomes pixels at the resolution of the screen, which is 72 dpi on a headless server and
+        // anything on a desktop. WeasyPrint, as CSS, counts 96 pixels to an inch.
+        renderer.getSharedContext().setDPI(CSS_DPI);
 
         BufferedImage image = new BufferedImage(pageWidth, PAGE_HEIGHT, BufferedImage.TYPE_BYTE_GRAY);
         Graphics2D g2d = image.createGraphics();
