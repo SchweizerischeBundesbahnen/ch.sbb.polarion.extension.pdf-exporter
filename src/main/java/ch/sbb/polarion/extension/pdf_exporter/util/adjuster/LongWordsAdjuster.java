@@ -27,8 +27,8 @@ public class LongWordsAdjuster {
     /** A word longer than this, as no word of a language is, may break anywhere, every {@value #LONG_WORD} characters. */
     static final int VERY_LONG_WORD = 40;
 
-    /** The characters a long word may break after, as a URL or an ID is read in parts. */
-    private static final String BREAK_AFTER = "/_-.?&=";
+    /** The characters a long word may break after, as a URL, a path, an address or an ID is read in parts. */
+    private static final String BREAK_AFTER = "/\\_-.?&=@";
 
     /** The characters Unicode allows no break before, even after a space: a closing bracket, a punctuation mark, a slash. */
     private static final String NO_BREAK_BEFORE = ")]}!?,.;:/";
@@ -184,10 +184,12 @@ public class LongWordsAdjuster {
         if (from < value.length()) {
             parts.add(new TextNode(value.substring(from)));
         }
-        for (Node part : parts) {
-            textNode.before(part);
-        }
+        // One insertion for all parts: an insertion renumbers the siblings after it, so one per part takes time growing
+        // with the square of their count
+        Element parent = (Element) textNode.parent();
+        int index = textNode.siblingIndex();
         textNode.remove();
+        parent.insertChildren(index, parts);
         return next;
     }
 }
