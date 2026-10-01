@@ -32,7 +32,9 @@ import static org.mockito.ArgumentMatchers.eq;
  * A budget is set for the exporter and for WeasyPrint apart, read from the timings of the generation log, so a failure
  * says which side became slow. The budgets are some ten times what an export takes on the machine they were set on.
  * They are scaled by how much slower the machine of the run exports a small reference document, so a slower machine
- * is not taken for a slower export, while an export grown an order of magnitude slower still fails.
+ * is not taken for a slower export, while an export grown an order of magnitude slower still fails. The reference export
+ * has a limit of its own, three times its time on that machine: a change which slows every export slows the reference
+ * too, and would otherwise raise every budget with it.
  * </p>
  */
 @Tag("performance")
@@ -41,13 +43,18 @@ public abstract class BasePerformanceTest extends BasePdfConverterTest {
     /** What the reference document takes to export on the machine the budgets were set on, an arm64 Mac, in ms. */
     private static final long REFERENCE_MS = 850;
 
+    /** How much slower the reference export may be, for a slower machine, before it counts as a slower exporter. */
+    private static final double MAX_SLOWDOWN = 3;
+
     private static final String WEASYPRINT_STAGE = "WeasyPrint conversion";
+
+    private static final String REFERENCE = "reference";
 
     /** How much slower than the machine of the budgets this one exports, measured once per run. */
     private static Double slowdown;
 
     /** An export and how long its parts took. */
-    protected record Timing(byte @NotNull [] pdf, long totalMs, long weasyPrintMs, @NotNull String report) {
+    protected record Timing(@NotNull String name, byte @NotNull [] pdf, long totalMs, long weasyPrintMs, @NotNull String report) {
         long exporterMs() {
             return totalMs - weasyPrintMs;
         }
@@ -61,8 +68,15 @@ public abstract class BasePerformanceTest extends BasePdfConverterTest {
                 .paperSize(PaperSize.A4);
     }
 
-    /** Exports the content as a LiveDoc and times its stages. */
-    protected @NotNull Timing export(@NotNull String title, @NotNull String content, @NotNull ExportParams params) {
+    /**
+     * Exports the content as a LiveDoc and times its stages. The speed of the machine is measured before the first
+     * export, so that no export of a test pays for a cold JVM or a cold service, and the timing report is written to the
+     * reports folder at once, so that it is there whichever check fails.
+     */
+    protected @NotNull Timing export(@NotNull String name, @NotNull String title, @NotNull String content, @NotNull ExportParams params) {
+        if (!REFERENCE.equals(name)) {
+            slowdown();
+        }
         DocumentData<IModule> liveDoc = DocumentData.creator(DocumentType.LIVE_DOC, module)
                 .id(LiveDocId.from("testProjectId", "_default", "testDocumentId"))
                 .title(title)
@@ -78,21 +92,27 @@ public abstract class BasePerformanceTest extends BasePdfConverterTest {
                 .filter(entry -> entry.stageName().startsWith(WEASYPRINT_STAGE))
                 .mapToLong(ExecutionProfiler.TimingEntry::durationMs)
                 .sum();
-        return new Timing(pdf, log.getTotalDurationMs(), weasyPrintMs, log.generateTimingReport(title));
+        Timing timing = new Timing(name, pdf, log.getTotalDurationMs(), weasyPrintMs, log.generateTimingReport(title));
+        writeReport(timing, "%s: exporter %d ms, WeasyPrint %d ms".formatted(name, timing.exporterMs(), timing.weasyPrintMs()));
+        return timing;
+    }
+
+    @SneakyThrows
+    private static void writeReport(@NotNull Timing timing, @NotNull String summary) {
+        Files.writeString(Path.of(REPORTS_FOLDER_PATH, "performance-" + timing.name() + ".txt"), summary + System.lineSeparator() + timing.report(), StandardCharsets.UTF_8);
     }
 
     /**
      * Fails when the exporter or WeasyPrint took longer than its budget, scaled to this machine. The timing report of the
      * export is written to the reports folder either way.
      */
-    @SneakyThrows
-    protected void assertWithinBudget(@NotNull String name, @NotNull Timing timing, long exporterBudgetMs, long weasyPrintBudgetMs) {
+    protected void assertWithinBudget(@NotNull Timing timing, long exporterBudgetMs, long weasyPrintBudgetMs) {
         double scale = slowdown();
         long exporterLimit = Math.round(exporterBudgetMs * scale);
         long weasyPrintLimit = Math.round(weasyPrintBudgetMs * scale);
         String summary = "%s: exporter %d ms of %d, WeasyPrint %d ms of %d, budgets scaled by %.2f".formatted(
-                name, timing.exporterMs(), exporterLimit, timing.weasyPrintMs(), weasyPrintLimit, scale);
-        Files.writeString(Path.of(REPORTS_FOLDER_PATH, "performance-" + name + ".txt"), summary + System.lineSeparator() + timing.report(), StandardCharsets.UTF_8);
+                timing.name(), timing.exporterMs(), exporterLimit, timing.weasyPrintMs(), weasyPrintLimit, scale);
+        writeReport(timing, summary);
 
         assertThat(timing.exporterMs()).as("The exporter is within its budget. %s%n%s", summary, timing.report()).isLessThanOrEqualTo(exporterLimit);
         assertThat(timing.weasyPrintMs()).as("WeasyPrint is within its budget. %s%n%s", summary, timing.report()).isLessThanOrEqualTo(weasyPrintLimit);
@@ -104,11 +124,14 @@ public abstract class BasePerformanceTest extends BasePdfConverterTest {
             String reference = readHtmlResource("performance/reference");
             ExportParams params = portraitA4().build();
             // The first export warms the JVM and the service up, the best of the next three is the time of the machine
-            export("Reference", reference, params);
+            export(REFERENCE, "Reference", reference, params);
             long best = Long.MAX_VALUE;
             for (int run = 0; run < 3; run++) {
-                best = Math.min(best, export("Reference", reference, params).totalMs());
+                best = Math.min(best, export(REFERENCE, "Reference", reference, params).totalMs());
             }
+            assertThat(best)
+                    .as("The reference document takes %d ms, against %d ms on the machine of the budgets: the machine is far slower, or every export became slower", best, REFERENCE_MS)
+                    .isLessThanOrEqualTo(Math.round(REFERENCE_MS * MAX_SLOWDOWN));
             slowdown = Math.max(1d, (double) best / REFERENCE_MS);
         }
         return slowdown;

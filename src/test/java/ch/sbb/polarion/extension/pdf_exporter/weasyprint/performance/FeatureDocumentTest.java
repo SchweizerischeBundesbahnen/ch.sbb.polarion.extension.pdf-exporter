@@ -53,11 +53,11 @@ class FeatureDocumentTest extends BasePerformanceTest {
                 .fitToPage(true)
                 .build();
 
-        Timing timing = export("Every feature of an export", readHtmlResource("performance/featureDocument"), params);
-        boolean differ = compareContentUsingReferenceImages("featureDocument", timing.pdf());
+        Timing timing = export("featureDocument", "Every feature of an export", readHtmlResource("performance/featureDocument"), params);
 
+        // Counted first, as a page which no reference image has stops the comparison
         assertThat(pageCount(timing.pdf())).as("The pages the document runs to").isEqualTo(PAGES);
-        assertFalse(differ, "The pages differ from the reference images");
-        assertWithinBudget("featureDocument", timing, 20_000, 22_000);
+        assertFalse(compareContentUsingReferenceImages("featureDocument", timing.pdf()), "The pages differ from the reference images");
+        assertWithinBudget(timing, 20_000, 22_000);
     }
 }

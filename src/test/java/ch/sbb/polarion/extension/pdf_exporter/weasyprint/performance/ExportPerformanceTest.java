@@ -19,50 +19,50 @@ class ExportPerformanceTest extends BasePerformanceTest {
 
     @Test
     void exportsALargeTable() {
-        Timing timing = export("A large table", Documents.largeTable(400), portraitA4().fitToPage(true).build());
+        Timing timing = export("largeTable", "A large table", Documents.largeTable(400), portraitA4().fitToPage(true).build());
 
         assertThat(pageCount(timing.pdf())).isGreaterThan(10);
-        assertWithinBudget("largeTable", timing, 7_000, 45_000);
+        assertWithinBudget(timing, 7_000, 45_000);
     }
 
     @Test
     void exportsCellsRunningAcrossPages() {
-        Timing timing = export("Long cells", Documents.longCells(3, 10_000), portraitA4().fitToPage(true).build());
+        Timing timing = export("longCells", "Long cells", Documents.longCells(3, 10_000), portraitA4().fitToPage(true).build());
 
         assertThat(pageCount(timing.pdf())).isGreaterThan(5);
-        assertWithinBudget("longCells", timing, 5_000, 10_000);
+        assertWithinBudget(timing, 5_000, 10_000);
     }
 
     @Test
     void exportsManyImages() {
-        Timing timing = export("Many images", Documents.manyImages(80), portraitA4().fitToPage(true).build());
+        Timing timing = export("manyImages", "Many images", Documents.manyImages(80), portraitA4().fitToPage(true).build());
 
         assertThat(pageCount(timing.pdf())).isGreaterThan(5);
-        assertWithinBudget("manyImages", timing, 8_000, 7_000);
+        assertWithinBudget(timing, 8_000, 7_000);
     }
 
     @Test
     void exportsManyWorkItems() {
-        Timing timing = export("Many work items", Documents.manyWorkItems(300), portraitA4().fitToPage(true).build());
+        Timing timing = export("manyWorkItems", "Many work items", Documents.manyWorkItems(300), portraitA4().fitToPage(true).build());
 
         assertThat(pageCount(timing.pdf())).isGreaterThan(20);
-        assertWithinBudget("manyWorkItems", timing, 7_000, 21_000);
+        assertWithinBudget(timing, 7_000, 21_000);
     }
 
     @Test
     void exportsSectionsWhichPageBreaksTurn() {
-        Timing timing = export("Page breaks", Documents.pageBreakSections(40), portraitA4().fitToPage(true).build());
+        Timing timing = export("pageBreakSections", "Page breaks", Documents.pageBreakSections(40), portraitA4().fitToPage(true).build());
 
         assertThat(pageCount(timing.pdf())).isGreaterThanOrEqualTo(40);
-        assertWithinBudget("pageBreakSections", timing, 7_000, 48_000);
+        assertWithinBudget(timing, 7_000, 48_000);
     }
 
     @Test
     void exportsCrampedTables() {
-        Timing timing = export("Cramped tables", Documents.crampedTables(30), portraitA4().fitToPage(true).build());
+        Timing timing = export("crampedTables", "Cramped tables", Documents.crampedTables(30), portraitA4().fitToPage(true).build());
 
         assertThat(pageCount(timing.pdf())).isGreaterThan(5);
-        assertWithinBudget("crampedTables", timing, 15_000, 43_000);
+        assertWithinBudget(timing, 15_000, 43_000);
     }
 
     @Test
@@ -70,9 +70,9 @@ class ExportPerformanceTest extends BasePerformanceTest {
         lenient().when(module.getCustomField(LANGUAGE_FIELD)).thenReturn("de");
         ExportParams params = portraitA4().fitToPage(true).languageCustomField(LANGUAGE_FIELD).build();
 
-        Timing timing = export("Silbentrennung", Documents.hyphenatedTables(30), params);
+        Timing timing = export("hyphenatedTables", "Silbentrennung", Documents.hyphenatedTables(30), params);
 
         assertThat(pageCount(timing.pdf())).isGreaterThan(5);
-        assertWithinBudget("hyphenatedTables", timing, 5_000, 13_000);
+        assertWithinBudget(timing, 5_000, 13_000);
     }
 }
