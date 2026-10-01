@@ -145,6 +145,27 @@ class TableRowsAdjusterTest {
     }
 
     @Test
+    void letsTheCellsOfATableWhichShortWordsLeaveNoRoomBreakAnywhere() {
+        // Thirty columns of a word shorter than any part a word breaks into need more than a page
+        String row = "<tr>" + "<td>Approved</td>".repeat(30) + "</tr>";
+        Document document = Jsoup.parse("<table><tbody>" + row + row + "</tbody></table>");
+
+        new TableRowsAdjuster(document, A4_PORTRAIT).execute();
+
+        assertThat(document.select("td").eachAttr("style")).containsOnly("overflow-wrap:anywhere;").hasSize(60);
+    }
+
+    @Test
+    void leavesTheCellsOfATableWhichFitsAsTheyAre() {
+        String row = "<tr>" + "<td>Approved</td>".repeat(4) + "</tr>";
+        Document document = Jsoup.parse("<table><tbody>" + row + "</tbody></table>");
+
+        new TableRowsAdjuster(document, A4_PORTRAIT).execute();
+
+        assertThat(document.select("td").eachAttr("style")).isEmpty();
+    }
+
+    @Test
     void measuresEveryRowOfTheTableInOrder() {
         Element table = Jsoup.parse("""
                 <table><thead><tr><th>Head</th></tr></thead>

@@ -15,12 +15,14 @@ regress other documents.
 
 A table cell breaks a word only where it is long. A word longer than 20 characters, such as a URL or an ID, may
 break after a slash, an underscore, a hyphen, a dot, `?`, `&` or `=`. A word longer than 40 characters, as no word
-of a language is, also breaks into even parts of up to 20 characters. A shorter word is never split, so a column is
+of a language is, also breaks into even parts of up to 20 characters. So does a word longer than 20 characters with a
+digit in it, such as an ID. A shorter word is never split, so a column is
 at least as wide as its longest short word.
 
 In a wide table with many columns, the columns can therefore together need more room than the page has. The export
 measures such a table before it renders it. When its words leave it wider than the page, they break into even parts
-of up to 20, then 15, then 10 characters, until the table fits. Such a break has no hyphen.
+of up to 20, then 15, then 10 characters, until the table fits. Such a break has no hyphen. Should its short words
+still leave it no room, its cells break a word at any character.
 
 ### Workaround
 

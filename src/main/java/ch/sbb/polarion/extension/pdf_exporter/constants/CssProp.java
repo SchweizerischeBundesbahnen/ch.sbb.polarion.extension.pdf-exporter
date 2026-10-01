@@ -16,6 +16,8 @@ public class CssProp {
     public static final String MAX_WIDTH = "max-width";
     public static final String OBJECT_FIT = "object-fit";
     public static final String OBJECT_FIT_CONTAIN_VALUE = "contain";
+    public static final String OVERFLOW_WRAP = "overflow-wrap";
+    public static final String OVERFLOW_WRAP_ANYWHERE_VALUE = "anywhere";
     public static final String BREAK_AFTER = "break-after";
     public static final String BREAK_AUTO_VALUE = "auto";
     public static final String BREAK_BEFORE = "break-before";

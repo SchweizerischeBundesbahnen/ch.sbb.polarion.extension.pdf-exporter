@@ -54,6 +54,16 @@ class LongWordsAdjusterTest {
     }
 
     @Test
+    void breaksALongIdWithADigitIntoEvenParts() {
+        // A digit makes it an ID, not a word of a language, so it breaks even though it is shorter than a very long word
+        Document document = Jsoup.parse("<table><tr><td>REQUIREMENT2026ABCDEFGHIJKLMNOP</td></tr></table>");
+
+        LongWordsAdjuster.addBreakPoints(document);
+
+        assertThat(document.selectFirst("td").html()).isEqualTo("REQUIREMENT2026<wbr>ABCDEFGHIJKLMNOP");
+    }
+
+    @Test
     void treatsWordsWhichNoLineMayBreakBetweenAsOneWord() {
         // Unicode allows no break before a slash, even after a space
         Document document = Jsoup.parse("<table><tr><td>/-123 /-123 /-123 /-123</td></tr></table>");

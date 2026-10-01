@@ -109,7 +109,8 @@ public class TableRowsAdjuster extends AbstractAdjuster {
 
     /**
      * Gives the words of a table more places to break, as they leave it wider than the room it has: they break into
-     * shorter and shorter parts until the table fits.
+     * shorter and shorter parts until the table fits. Should its short words still leave it no room, its cells break
+     * anywhere, as every cell did before.
      *
      * @return the measure of the table as it is laid out now
      */
@@ -120,7 +121,19 @@ public class TableRowsAdjuster extends AbstractAdjuster {
             LongWordsAdjuster.addBreakPointsToFit(table, LongWordsAdjuster.CRAMPED_PARTS.get(step++));
             metrics = TableAnalyzer.analyze(table, width);
         } while (metrics.tableWidth() > width && step < LongWordsAdjuster.CRAMPED_PARTS.size());
+        if (metrics.tableWidth() > width * TOO_WIDE) {
+            breakAnywhere(table);
+        }
         return metrics;
+    }
+
+    /** Lets the cells of a table break a word at any character. Only a table of this kind pays for the slow layout. */
+    private static void breakAnywhere(@NotNull Element table) {
+        for (Element cell : table.select(CELL)) {
+            CSSDeclarationList style = CssUtils.parseDeclarations(cell.attr(HtmlTagAttr.STYLE));
+            CssUtils.setPropertyValue(style, CssProp.OVERFLOW_WRAP, CssProp.OVERFLOW_WRAP_ANYWHERE_VALUE);
+            cell.attr(HtmlTagAttr.STYLE, style.getAsCSSString());
+        }
     }
 
     private void keepShortRowsWhole(@NotNull Elements rows, @NotNull TableAnalyzer.TableMetrics metrics) {

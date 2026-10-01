@@ -24,7 +24,10 @@ public class LongWordsAdjuster {
     /** A word longer than this may break after a slash, an underscore, a hyphen, a dot and the like. */
     static final int LONG_WORD = 20;
 
-    /** A word longer than this, as no word of a language is, breaks into parts of {@value #LONG_WORD} characters at most. */
+    /**
+     * A word longer than this, as no word of a language is, breaks into parts of {@value #LONG_WORD} characters at most.
+     * So does a long word with a digit in it, an ID, which no word of a language is either.
+     */
     static final int VERY_LONG_WORD = 40;
 
     /** The characters a long word may break after, as a URL, a path, an address or an ID is read in parts. */
@@ -161,7 +164,7 @@ public class LongWordsAdjuster {
         if (length <= rule.separatorsFrom()) {
             return;
         }
-        boolean intoParts = length > rule.partsFrom();
+        boolean intoParts = length > rule.partsFrom() || hasDigit(text, start, end);
         int partStart = start;
         int position = start;
         while (position < end) {
@@ -178,6 +181,10 @@ public class LongWordsAdjuster {
         if (intoParts) {
             addPartBreakPoints(text, partStart, end, rule.part(), breaks);
         }
+    }
+
+    private static boolean hasDigit(@NotNull String text, int start, int end) {
+        return text.substring(start, end).codePoints().anyMatch(Character::isDigit);
     }
 
     /** Breaks a stretch of a word with no separator into parts of the given length at most, as even as they can be. */
