@@ -49,6 +49,10 @@ public class TableAnalyzer {
         // system properties at init, and TableAnalyzer is this project's only flying-saucer entry point) so the
         // desktop-hints path - and its noise - is never reached, keeping anti-aliasing deterministic too.
         System.setProperty("xr.text.aa-rendering-hint", "java.awt.RenderingHints.VALUE_TEXT_ANTIALIAS_ON");
+        // Without fractional metrics each glyph is as wide as the rasterizer of the platform hints it, rounded to a
+        // pixel: the same font measures narrower on Linux than on macOS. Fractional metrics take the widths of the
+        // font itself, as WeasyPrint does.
+        System.setProperty("xr.text.fractional-font-metrics", "true");
     }
 
     private static final String TABLE = "table";
