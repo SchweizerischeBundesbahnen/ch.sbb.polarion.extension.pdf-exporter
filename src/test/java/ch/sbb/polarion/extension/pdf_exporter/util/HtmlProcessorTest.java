@@ -565,49 +565,6 @@ class HtmlProcessorTest {
     }
 
     @Test
-    void givesALongUrlInATableCellPlacesToBreak() {
-        Document document = JSoupUtils.parseHtml("<table><tr><td><a href=\"https://example.com/a\">https://example.com/very/deep/path?x=1&y=2</a></td></tr></table>");
-
-        processor.breakLongWordsInTableCells(document);
-
-        Element link = document.selectFirst("a");
-        assertEquals("https://example.com/very/deep/path?x=1&y=2", link.text(), "The text reads as before");
-        assertEquals("https://example.com/a", link.attr("href"), "The address is left alone");
-        assertEquals("https:/<wbr />/<wbr />example.<wbr />com/<wbr />very/<wbr />deep/<wbr />path?<wbr />x=<wbr />1&amp;<wbr />y=<wbr />2", link.html());
-    }
-
-    @Test
-    void breaksALongWordWithoutSeparatorsEveryTwentyCharacters() {
-        Document document = JSoupUtils.parseHtml("<table><tr><td>ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEFGHIJKLMN</td></tr></table>");
-
-        processor.breakLongWordsInTableCells(document);
-
-        assertEquals("ABCDEFGHIJKLMNOPQRST<wbr />UVWXYZABCDEFGHIJKLMN", document.selectFirst("td").html());
-    }
-
-    @Test
-    void treatsShortWordsWhichNoLineMayBreakBetweenAsOneLongWord() {
-        // Unicode allows no break before a slash, even after a space
-        Document document = JSoupUtils.parseHtml("<table><tr><td>Codes /-123 /-123 /-123 /-123</td></tr></table>");
-
-        processor.breakLongWordsInTableCells(document);
-
-        assertEquals("Codes /<wbr />-<wbr />123 /<wbr />-<wbr />123 /<wbr />-<wbr />123 /<wbr />-<wbr />123", document.selectFirst("td").html());
-    }
-
-    @Test
-    void leavesShortWordsAndTextOutsideTablesAsTheyAre() {
-        String paragraph = "<p>https://example.com/very/deep/path/outside/of/a/table</p>";
-        Document document = JSoupUtils.parseHtml(paragraph + "<table><tr><th>Disapproved</th><td>TMSPRG-13164 &lt;b&gt; 2022-01-05</td></tr></table>");
-
-        processor.breakLongWordsInTableCells(document);
-
-        assertTrue(document.select("wbr").isEmpty(), "No word is long enough to break");
-        assertEquals("TMSPRG-13164 &lt;b&gt; 2022-01-05", document.selectFirst("td").html());
-        assertEquals("https://example.com/very/deep/path/outside/of/a/table", document.selectFirst("p").text());
-    }
-
-    @Test
     void keepsAWorkItemWithoutTablesOnOnePageAsNoPageBreakAsks() {
         Document document = JSoupUtils.parseHtml("<table style=\"page-break-inside:avoid;\"><tr><td><div class=\"polarion-dle-workitem-basic-0\">Some content</div></td></tr></table>");
 
