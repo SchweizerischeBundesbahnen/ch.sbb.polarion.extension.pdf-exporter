@@ -52,6 +52,16 @@ public class TableRowsAdjuster extends AbstractAdjuster {
      */
     private static final String ICON = "img.polarion-Icons, .polarion-JSEnumOption img, img[src*=/icons/], img[src*=/ria/images/], img[" + ICON_MARK + "]";
 
+    /**
+     * How much wider than its room the measure may find a table before its words get more places to break. The measure
+     * lays text out with no kerning, so a table whose words just fit measures a few percent wider than it prints. Once
+     * they get them, they get as many as it takes for the measure to find the table no wider than its room.
+     */
+    private static final float TOO_WIDE = 1.05f;
+
+    /** A cell of no more text than this may break a word anywhere, should the table have no room otherwise. */
+    private static final int SHORT_CELL = 100;
+
     private static final String ROWS_OF_THE_TABLE = "> tr, > thead > tr, > tbody > tr, > tfoot > tr";
 
     private static final String CELL = "td, th";
@@ -82,6 +92,9 @@ public class TableRowsAdjuster extends AbstractAdjuster {
             Integer width = widthOf(table, measured, pageWidth);
             if (!rows.isEmpty() && width != null) {
                 TableAnalyzer.TableMetrics metrics = TableAnalyzer.analyze(table, width);
+                if (metrics.tableWidth() > width * TOO_WIDE) {
+                    metrics = breakWordsToFit(table, width);
+                }
                 measured.put(table, metrics);
                 keepShortRowsWhole(rows, metrics);
             }
@@ -95,6 +108,42 @@ public class TableRowsAdjuster extends AbstractAdjuster {
      */
     public static void markIcons(@NotNull Document document) {
         document.select(ICON).attr(ICON_MARK, "");
+    }
+
+    /**
+     * Gives the words of a table more places to break, as they leave it wider than the room it has: they break into
+     * shorter and shorter parts until the table fits. Should its short words still leave it no room, its cells break
+     * anywhere, as every cell did before.
+     *
+     * @return the measure of the table as it is laid out now
+     */
+    private static @NotNull TableAnalyzer.TableMetrics breakWordsToFit(@NotNull Element table, int width) {
+        TableAnalyzer.TableMetrics metrics;
+        int step = 0;
+        do {
+            LongWordsAdjuster.addBreakPointsToFit(table, LongWordsAdjuster.CRAMPED_PARTS.get(step++));
+            metrics = TableAnalyzer.analyze(table, width);
+        } while (metrics.tableWidth() > width && step < LongWordsAdjuster.CRAMPED_PARTS.size());
+        if (metrics.tableWidth() > width * TOO_WIDE) {
+            breakAnywhere(table);
+            metrics = TableAnalyzer.analyze(table, width);
+        }
+        return metrics;
+    }
+
+    /**
+     * Lets the short cells of a table break a word at any character. The layout then works out a width for every character
+     * of a cell, which costs a long cell minutes, while the words of a long cell already break into parts.
+     */
+    private static void breakAnywhere(@NotNull Element table) {
+        for (Element cell : table.select(CELL)) {
+            if (cell.text().length() > SHORT_CELL) {
+                continue;
+            }
+            CSSDeclarationList style = CssUtils.parseDeclarations(cell.attr(HtmlTagAttr.STYLE));
+            CssUtils.setPropertyValue(style, CssProp.OVERFLOW_WRAP, CssProp.OVERFLOW_WRAP_ANYWHERE_VALUE);
+            cell.attr(HtmlTagAttr.STYLE, style.getAsCSSString());
+        }
     }
 
     private void keepShortRowsWhole(@NotNull Elements rows, @NotNull TableAnalyzer.TableMetrics metrics) {

@@ -1,8 +1,9 @@
 package ch.sbb.polarion.extension.pdf_exporter.weasyprint;
 
-import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ConversionParams;
-import ch.sbb.polarion.extension.pdf_exporter.util.adjuster.PageWidthAdjuster;
-import ch.sbb.polarion.extension.pdf_exporter.weasyprint.base.BaseWeasyPrintTest;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.Orientation;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PaperSize;
+import ch.sbb.polarion.extension.pdf_exporter.weasyprint.base.BasePdfConverterTest;
 import lombok.SneakyThrows;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -36,7 +37,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * reported in #1077 and fixed in weasyprint-service (#375).
  * </p>
  */
-class ImageSizeTest extends BaseWeasyPrintTest {
+class ImageSizeTest extends BasePdfConverterTest {
 
     /** A diagram of its own 200x100 px, drawn so that its edges are visible in a rendered page. */
     private static final String SVG = """
@@ -49,7 +50,7 @@ class ImageSizeTest extends BaseWeasyPrintTest {
     private static final String TALL_SVG = readImageResource("diagram_20251002-1153.37186.mxg.svg");
 
     /** The pages the document of the fit to page system test runs to. */
-    private static final int DOCUMENT_PAGES = 6;
+    private static final int DOCUMENT_PAGES = 7;
 
     /** The height of a portrait A4 page, which is what fit to page allows an image. */
     private static final int PAGE_HEIGHT = 874;
@@ -62,14 +63,12 @@ class ImageSizeTest extends BaseWeasyPrintTest {
     void keepsTheSizeTheDocumentGivesAnSvg() {
         String source = "data:image/svg+xml;base64," + Base64.getEncoder().encodeToString(SVG.getBytes());
         String html = """
-                <html><body>
-                  <p><img src="%1$s" style="max-width: 650px;"/></p>
-                  <p><img src="%1$s" style="max-width: 650px; width: 100px;"/></p>
-                  <p><img src="%1$s" style="max-width: 650px; width: 400px;"/></p>
-                  <p><img src="%1$s" style="width: 300px; height: 150px;"/></p>
-                </body></html>""".formatted(source);
+                <p><img src="%1$s" style="max-width: 650px;"/></p>
+                <p><img src="%1$s" style="max-width: 650px; width: 100px;"/></p>
+                <p><img src="%1$s" style="max-width: 650px; width: 400px;"/></p>
+                <p><img src="%1$s" style="width: 300px; height: 150px;"/></p>""".formatted(source);
 
-        byte[] pdf = exportToPdf(html, WeasyPrintOptions.builder().build());
+        byte[] pdf = export(html, false);
 
         // its own size where the document gives none, then half of it, twice it, and a width with a height
         assertEquals(List.of(DrawnImages.size(OWN_WIDTH, OWN_HEIGHT), DrawnImages.size(100, 50), DrawnImages.size(400, 200), DrawnImages.size(300, 150)), DrawnImages.sizesIn(pdf));
@@ -81,15 +80,9 @@ class ImageSizeTest extends BaseWeasyPrintTest {
     void keepsTheRatioOfADiagramWhichIsTallerThanThePage() {
         String source = "data:image/svg+xml;base64," + Base64.getEncoder().encodeToString(TALL_SVG.getBytes());
         String html = """
-                <html><body><p><img src="%s" style="max-width: 650px;"/></p></body></html>""".formatted(source);
+                <p><img src="%s" style="max-width: 650px;"/></p>""".formatted(source);
 
-        String adjusted = new PageWidthAdjuster(html, ConversionParams.builder().build())
-                .adjustImageSizeInTables()
-                .adjustImageSize()
-                .adjustTableSize()
-                .toHTML();
-
-        byte[] pdf = exportToPdf("<html><body>%s</body></html>".formatted(adjusted), WeasyPrintOptions.builder().build());
+        byte[] pdf = export(html, true);
 
         // Fit to page shortens it to the height of a page, and the width follows: 81 * 874 / 1521
         assertEquals(List.of(DrawnImages.size(47, PAGE_HEIGHT)), DrawnImages.sizesIn(pdf));
@@ -100,20 +93,14 @@ class ImageSizeTest extends BaseWeasyPrintTest {
     @SneakyThrows
     void keepsTheRatioOfAnImageFittedToItsColumn() {
         String html = """
-                <html><body><table>
+                <table>
                   <tr>
                     <td><img src="%s" style="width: 800px; height: 300px;"/></td>
                     <td>A cell which leaves the image a column narrower than the width it states</td>
                   </tr>
-                </table></body></html>""".formatted(rasterSource());
+                </table>""".formatted(rasterSource());
 
-        String adjusted = new PageWidthAdjuster(html, ConversionParams.builder().build())
-                .adjustImageSizeInTables()
-                .adjustImageSize()
-                .adjustTableSize()
-                .toHTML();
-
-        byte[] pdf = exportToPdf("<html><body>%s</body></html>".formatted(adjusted), WeasyPrintOptions.builder().build());
+        byte[] pdf = export(html, true);
 
         List<List<Integer>> sizes = DrawnImages.sizesIn(pdf);
         assertEquals(1, sizes.size(), "The document holds one image");
@@ -136,16 +123,22 @@ class ImageSizeTest extends BaseWeasyPrintTest {
     void fitsTheImagesOfADocumentToThePage() {
         String html = withAttachments(readHtmlResource("imagesTest"));
 
-        String adjusted = new PageWidthAdjuster(html, ConversionParams.builder().build())
-                .adjustImageSizeInTables()
-                .adjustImageSize()
-                .adjustTableSize()
-                .toHTML();
-
-        byte[] pdf = exportToPdf("<html><body>%s</body></html>".formatted(adjusted), WeasyPrintOptions.builder().build());
+        byte[] pdf = export(html, true);
 
         assertEquals(DOCUMENT_PAGES, pageCount(pdf), "The document runs to a page count of its own, and a page which never arrives is compared with nothing");
         assertFalse(compareContentUsingReferenceImages(getCurrentMethodName(), pdf), "The pages differ from the reference images");
+    }
+
+    /** Exports the content as a document, fitted to the page or not. */
+    private byte @NotNull [] export(@NotNull String content, boolean fitToPage) {
+        ExportParams params = ExportParams.builder()
+                .projectId("test")
+                .locationPath("testLocation")
+                .orientation(Orientation.PORTRAIT)
+                .paperSize(PaperSize.A4)
+                .fitToPage(fitToPage)
+                .build();
+        return exportLiveDoc("Images", content, params);
     }
 
     /** Reads every attachment the document names out of the test resources, as an export reads them from Polarion. */

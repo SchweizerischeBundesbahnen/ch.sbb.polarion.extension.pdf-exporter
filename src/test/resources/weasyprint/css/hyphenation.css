@@ -1,0 +1,7 @@
+/* What a user adds to the default CSS for hyphenation: long words in narrow, justified columns */
+body { hyphens: auto; -webkit-hyphens: auto; font-size: 12px; }
+/* The widths keep the hyphenation the reference images showed in DejaVu Sans, now in the narrower Liberation Sans */
+p.col { width: 3.49cm; text-align: justify; }
+p.col.long { width: 3.46cm; }
+table { border-collapse: collapse; }
+table tr th, table tr td { border: 1px solid #333; padding: 4px; width: 3.49cm; text-align: justify; vertical-align: top; }

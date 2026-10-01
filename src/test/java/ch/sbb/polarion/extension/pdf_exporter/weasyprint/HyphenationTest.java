@@ -1,70 +1,96 @@
 package ch.sbb.polarion.extension.pdf_exporter.weasyprint;
 
-import ch.sbb.polarion.extension.pdf_exporter.util.MediaUtils;
-import ch.sbb.polarion.extension.pdf_exporter.weasyprint.base.BaseWeasyPrintTest;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.Orientation;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PaperSize;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.css.CssModel;
+import ch.sbb.polarion.extension.pdf_exporter.weasyprint.base.BasePdfConverterTest;
 import lombok.SneakyThrows;
+import org.apache.pdfbox.Loader;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 
-import javax.imageio.ImageIO;
-import java.awt.*;
-import java.awt.image.BufferedImage;
-import java.util.List;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.Objects;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.when;
 
 /**
- * Integration test for the document-language feature (#983): the language injected into the {@code <html lang>}
- * attribute drives WeasyPrint's hyphenation.
+ * Integration test for the document-language feature (#983): the language a document states in its custom field is
+ * injected into the {@code <html lang>} attribute and drives WeasyPrint's hyphenation.
  * <p>
- * Each fixture contains long words in a narrow, justified column - {@code hyphenationDe} and
- * {@code hyphenationDeLongWords} declare {@code de}, {@code hyphenationEn} declares {@code en} and
- * {@code hyphenationIt} declares {@code it}; the {@code hyphenationDe}/{@code hyphenationEn} fixtures additionally
- * exercise narrow table cells. With {@code hyphens: auto}, WeasyPrint hyphenates at the syllable boundaries of the
- * declared language, so the rendered pages must match language-specific reference images pixel-for-pixel
- * ({@link MediaUtils#diffImages}). This proves the injected {@code lang} value actually reaches WeasyPrint and is
- * honored per language.
+ * Each fixture contains long words in a narrow, justified column, and the custom CSS asks for {@code hyphens: auto}; the
+ * {@code hyphenationDe}/{@code hyphenationEn} fixtures additionally exercise narrow table cells. WeasyPrint
+ * hyphenates at the syllable boundaries of the document's language, so the rendered pages must match
+ * language-specific reference images. This proves the language field actually reaches WeasyPrint and is honored per
+ * language.
  */
-class HyphenationTest extends BaseWeasyPrintTest {
+class HyphenationTest extends BasePdfConverterTest {
+
+    private static final String LANGUAGE_FIELD = "docLanguage";
+
+    /** The default CSS, with the hyphenation and the narrow columns a user adds to it. */
+    @Override
+    protected void setupCssSettings() {
+        when(cssSettings.load(any(), any())).thenReturn(CssModel.builder()
+                .disableDefaultCss(false)
+                .css(readFontCss() + readCss("hyphenation"))
+                .build());
+    }
 
     @Test
     void germanHyphenationMatchesReference() {
-        assertMatchesReference("hyphenationDe");
+        assertMatchesReference("hyphenationDe", "de");
     }
 
     @Test
     void englishHyphenationMatchesReference() {
-        assertMatchesReference("hyphenationEn");
+        assertMatchesReference("hyphenationEn", "en");
     }
 
     @Test
     void germanLongCompoundHyphenationMatchesReference() {
-        assertMatchesReference("hyphenationDeLongWords");
+        assertMatchesReference("hyphenationDeLongWords", "de");
     }
 
     @Test
     void italianHyphenationMatchesReference() {
-        assertMatchesReference("hyphenationIt");
+        assertMatchesReference("hyphenationIt", "it");
+    }
+
+    private void assertMatchesReference(String testName, String language) {
+        lenient().when(module.getCustomField(LANGUAGE_FIELD)).thenReturn(language);
+        ExportParams params = ExportParams.builder()
+                .projectId("test")
+                .locationPath("testLocation")
+                .orientation(Orientation.PORTRAIT)
+                .paperSize(PaperSize.A4)
+                .languageCustomField(LANGUAGE_FIELD)
+                .build();
+
+        byte[] pdf = exportLiveDoc("Hyphenation", readHtmlResource(testName), params);
+
+        assertEquals(1, pageCount(pdf), "Hyphenation export should produce a single page");
+        assertFalse(compareContentUsingReferenceImages(testName, pdf), "Generated PDF should match reference image (differences highlighted in blue in reports folder)");
     }
 
     @SneakyThrows
-    private void assertMatchesReference(String testName) {
-        List<BufferedImage> pages = exportAndGetAsImages(testName, readHtmlResource(testName));
-
-        assertThat(pages)
-                .as("Hyphenation export should produce a single page")
-                .hasSize(1);
-
-        BufferedImage resultImage = pages.getFirst();
-        BufferedImage expectedImage = ImageIO.read(readPngResource(testName + PAGE_SUFFIX + 0));
-
-        List<Point> diffPoints = MediaUtils.diffImages(expectedImage, resultImage);
-        if (!diffPoints.isEmpty()) {
-            MediaUtils.fillImagePoints(resultImage, diffPoints, Color.BLUE.getRGB());
-            writeReportImage(testName + PAGE_SUFFIX + "0_diff", resultImage);
+    private static @NotNull String readCss(@NotNull String name) {
+        try (InputStream css = HyphenationTest.class.getResourceAsStream(WEASYPRINT_TEST_CSS_RESOURCES_FOLDER + name + EXT_CSS)) {
+            return new String(Objects.requireNonNull(css, name).readAllBytes(), StandardCharsets.UTF_8);
         }
+    }
 
-        assertThat(diffPoints)
-                .as("Generated PDF should match reference image (differences highlighted in blue in reports folder)")
-                .isEmpty();
+    @SneakyThrows
+    private static int pageCount(byte @NotNull [] pdf) {
+        try (PDDocument document = Loader.loadPDF(pdf)) {
+            return document.getNumberOfPages();
+        }
     }
 }

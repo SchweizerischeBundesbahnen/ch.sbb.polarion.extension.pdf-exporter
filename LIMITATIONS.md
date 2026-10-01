@@ -13,56 +13,35 @@ regress other documents.
 
 ### Behavior (by design)
 
-In a wide table, a column that holds a lot of text (a long URL or description) takes most of the
-width, and the remaining columns are squeezed so narrow that their headers, IDs and dates are broken
-**character by character** — for example `Disappro/ved`, `Gültig/ab`, `TMSPRG-1/3164`, `2022-01-/05`.
+A table cell breaks a word only where it is long. A word longer than 20 characters, such as a URL or an ID, may
+break after a slash, an underscore, a hyphen, a dot, `?`, `&` or `=`. A word longer than 40 characters, as no word
+of a language is, also breaks into even parts of up to 20 characters. So does a word longer than 20 characters with a
+digit in it, such as an ID. A shorter word is never split, so a column is
+at least as wide as its longest short word.
 
-This is because the default export CSS lets any table cell break a word at any character so that long
-tokens (such as URLs) never overflow the page:
-
-```css
-table tr th, table tr td {
-    overflow-wrap: anywhere;
-    white-space: normal;
-}
-```
-
-As a side effect, `overflow-wrap: anywhere` also lets a cell shrink to about one character wide, so the
-table auto-layout can collapse the narrow columns and break their short text arbitrarily.
+In a wide table with many columns, the columns can therefore together need more room than the page has. The export
+measures such a table before it renders it. When its words leave it wider than the page, they break into even parts
+of up to 20, then 15, then 10 characters, until the table fits. Such a break has no hyphen. Should its short words
+still leave it no room, its cells of up to 100 characters break a word at any character.
 
 ### Workaround
 
-Keep the table **headers** from being split character by character. This also gives each column at
-least the width of its header, so the narrow columns stop collapsing:
+Let the words of such a table break at syllables, with a real hyphen, by setting the language of the
+document: enter the ID of the LiveDoc custom field holding the language in the style package's **Document Language
+custom field** setting, and set that field on the document. See
+[Document language custom field (hyphenation)](USER_GUIDE.md#document-language-custom-field-hyphenation).
+
+If a column must stay narrow whatever its words, let its cells break anywhere with your own CSS, for example the
+first column of the document tables:
 
 ```css
-/* Use "table tr th" (not just "th"): a plain "th { ... }" will NOT override the default
-   "table tr th, table tr td { overflow-wrap: anywhere }" because it has lower specificity. */
-table tr th {
-    overflow-wrap: normal;   /* never break a header word at an arbitrary character */
-    word-break: normal;
-    hyphens: auto;           /* a long single-word header breaks at syllables, with a real hyphen */
+table.polarion-Document-table tr td:first-child {
+    overflow-wrap: anywhere;
 }
 ```
 
-Notes:
-
-- **Specificity matters.** The selector must be `table tr th`, otherwise it does not win against the
-  default rule and nothing changes.
-- `hyphens: auto` only takes effect when the **document language** is set, and that is opt-in: enter the ID of the
-  LiveDoc custom field holding the language in the style package's **Document Language custom field** setting, and
-  set that field on the document — see
-  [Document language custom field (hyphenation)](USER_GUIDE.md#document-language-custom-field-hyphenation).
-  Without a language the header is simply not hyphenated (the column may then be as wide as the longest header
-  word), but the text is still never broken mid-character. A long single-word header (e.g.
-  `Verantwortlichkeitsbereich`) needs the language to break at syllables so that a "long header / short content"
-  column does not stay wide.
-- If a **body** cell with a long identifier (not a link) still breaks, protect that column too by giving
-  its cells `white-space: nowrap`.
-
-Verified against the WeasyPrint engine used by the extension: with the workaround, headers, IDs and
-dates stay intact, long single-word headers hyphenate so their column adapts to the content, and long
-link URLs still wrap.
+`overflow-wrap: anywhere` on a cell of long text makes the export slow: the layout then works out a width for
+every character of the cell. Keep it to the cells which need it.
 
 ## Fit-to-page does not preserve Polarion-defined table cell widths
 

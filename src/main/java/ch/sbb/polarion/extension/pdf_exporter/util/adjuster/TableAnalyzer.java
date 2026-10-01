@@ -1,7 +1,9 @@
 package ch.sbb.polarion.extension.pdf_exporter.util.adjuster;
 
+import ch.sbb.polarion.extension.pdf_exporter.constants.CssProp;
 import ch.sbb.polarion.extension.pdf_exporter.constants.HtmlTagAttr;
 import ch.sbb.polarion.extension.pdf_exporter.util.CssUtils;
+import com.helger.css.decl.CSSDeclarationList;
 import com.polarion.core.util.logging.Logger;
 import lombok.experimental.UtilityClass;
 import org.jetbrains.annotations.NotNull;
@@ -9,10 +11,12 @@ import org.jsoup.helper.W3CDom;
 import org.jsoup.nodes.Element;
 import org.w3c.dom.Document;
 import org.xhtmlrenderer.context.AWTFontResolver;
+import org.xhtmlrenderer.css.constants.IdentValue;
 import org.xhtmlrenderer.extend.ReplacedElement;
 import org.xhtmlrenderer.extend.ReplacedElementFactory;
 import org.xhtmlrenderer.extend.UserAgentCallback;
 import org.xhtmlrenderer.layout.LayoutContext;
+import org.xhtmlrenderer.layout.SharedContext;
 import org.xhtmlrenderer.newtable.TableSectionBox;
 import org.xhtmlrenderer.render.BlockBox;
 import org.xhtmlrenderer.render.Box;
@@ -47,6 +51,10 @@ public class TableAnalyzer {
         // system properties at init, and TableAnalyzer is this project's only flying-saucer entry point) so the
         // desktop-hints path - and its noise - is never reached, keeping anti-aliasing deterministic too.
         System.setProperty("xr.text.aa-rendering-hint", "java.awt.RenderingHints.VALUE_TEXT_ANTIALIAS_ON");
+        // Without fractional metrics each glyph is as wide as the rasterizer of the platform hints it, rounded to a
+        // pixel: the same font measures narrower on Linux than on macOS. Fractional metrics take the widths of the
+        // font itself, as WeasyPrint does.
+        System.setProperty("xr.text.fractional-font-metrics", "true");
     }
 
     private static final String TABLE = "table";
@@ -60,7 +68,17 @@ public class TableAnalyzer {
 
     // Doesn't really matter, our concern here are widths
     private static final int PAGE_HEIGHT = 1000;
-    private static final String EMBEDDED_FONT_PATH = "/fonts/DejaVuSans.ttf";
+    /**
+     * The font an export is laid out in: the default CSS asks for Arial, and the WeasyPrint service lays it out in
+     * Liberation Sans, which has the metrics of Arial. Measured in it, a table takes the widths it takes in the PDF.
+     */
+    private static final String EMBEDDED_FONT_PATH = "/fonts/LiberationSans-Regular.ttf";
+    private static final String EMBEDDED_BOLD_FONT_PATH = "/fonts/LiberationSans-Bold.ttf";
+    private static final String EMBEDDED_ITALIC_FONT_PATH = "/fonts/LiberationSans-Italic.ttf";
+    private static final String EMBEDDED_BOLD_ITALIC_FONT_PATH = "/fonts/LiberationSans-BoldItalic.ttf";
+
+    /** The pixels CSS counts to an inch, which turns a font size in points into the pixels WeasyPrint lays it out in. */
+    private static final float CSS_DPI = 96f;
 
     /**
      * The name the measurement gives the font it ships with. A name of its own, because a machine which has a
@@ -69,6 +87,9 @@ public class TableAnalyzer {
      */
     private static final String MEASUREMENT_FONT_FAMILY = "PdfExporterTableMeasurement";
     private static final Font EMBEDDED_FONT = loadEmbeddedFont();
+    private static final Font EMBEDDED_BOLD_FONT = loadFontFromPath(EMBEDDED_BOLD_FONT_PATH);
+    private static final Font EMBEDDED_ITALIC_FONT = loadFontFromPath(EMBEDDED_ITALIC_FONT_PATH);
+    private static final Font EMBEDDED_BOLD_ITALIC_FONT = loadFontFromPath(EMBEDDED_BOLD_ITALIC_FONT_PATH);
 
     private static Font loadEmbeddedFont() {
         return loadFontFromPath(EMBEDDED_FONT_PATH);
@@ -94,8 +115,13 @@ public class TableAnalyzer {
      * @param columnWidths the width of each column, proportionally adjusted to the width of a page
      * @param headerHeight the height of the rows the table repeats on every page it spans
      * @param rowHeights   the height of each row of the table itself, not of the tables nested in it, in document order
+     * @param tableWidth   the width the table takes, wider than the page where its words cannot break to fit it
      */
-    public record TableMetrics(@NotNull Map<Integer, Integer> columnWidths, int headerHeight, @NotNull List<Integer> rowHeights) {
+    public record TableMetrics(@NotNull Map<Integer, Integer> columnWidths, int headerHeight, @NotNull List<Integer> rowHeights, int tableWidth) {
+
+        public TableMetrics(@NotNull Map<Integer, Integer> columnWidths, int headerHeight, @NotNull List<Integer> rowHeights) {
+            this(columnWidths, headerHeight, rowHeights, 0);
+        }
     }
 
     public Map<Integer, Integer> getColumnWidths(@NotNull Element tableElement, int pageWidth) {
@@ -104,27 +130,44 @@ public class TableAnalyzer {
 
     public TableMetrics analyze(@NotNull Element tableElement, int pageWidth) {
         Map<Integer, Integer> columnWidths = new HashMap<>();
-        HeaderHeight headerHeight = new HeaderHeight();
+        Gathered gathered = new Gathered();
         List<Integer> rowHeights = new ArrayList<>();
 
         Document doc = toSelfDocument(tableElement);
         Box rootBox = render(doc, pageWidth);
-        findTableAndAnalyze(rootBox, columnWidths, headerHeight, rowHeights);
+        findTableAndAnalyze(rootBox, columnWidths, gathered, rowHeights);
 
-        return new TableMetrics(adjustWidths(columnWidths, pageWidth), headerHeight.value, rowHeights);
+        return new TableMetrics(adjustWidths(columnWidths, pageWidth), gathered.headerHeight, rowHeights, gathered.tableWidth);
     }
 
-    /** The height the header rows take, gathered while the rendered table is walked. */
-    private static class HeaderHeight {
-        private int value;
+    /** What a walk over the rendered table gathers: the height its header rows take, and the width of the table. */
+    private static class Gathered {
+        private int headerHeight;
+        private int tableWidth;
     }
 
     private Document toSelfDocument(@NotNull Element tableElement) {
         org.jsoup.nodes.Document tempDoc = org.jsoup.nodes.Document.createShell("");
         // Inject CSS to force the embedded font for consistent column width calculation across platforms
         tempDoc.head().appendElement("style").text("* { font-family: '" + MEASUREMENT_FONT_FAMILY + "', sans-serif !important; }");
-        tempDoc.body().appendElement("div").attr(HtmlTagAttr.STYLE, inheritedTextStyle(tableElement)).appendChild(tableElement.clone());
+        Element table = tableElement.clone();
+        measureBreakAnywhere(table);
+        tempDoc.body().appendElement("div").attr(HtmlTagAttr.STYLE, inheritedTextStyle(tableElement)).appendChild(table);
         return new W3CDom().fromJsoup(tempDoc);
+    }
+
+    /**
+     * Lets the measure break a word anywhere where the document does. The measure knows no {@code overflow-wrap}, only its
+     * older name, {@code word-wrap}, and lays out its {@code break-word} as CSS lays out {@code anywhere}.
+     */
+    private static void measureBreakAnywhere(@NotNull Element table) {
+        for (Element element : table.select("[style]")) {
+            CSSDeclarationList style = CssUtils.parseDeclarations(element.attr(HtmlTagAttr.STYLE));
+            if (CssProp.OVERFLOW_WRAP_ANYWHERE_VALUE.equals(CssUtils.getPropertyValue(style, CssProp.OVERFLOW_WRAP))) {
+                CssUtils.setPropertyValue(style, CssProp.WORD_WRAP, CssProp.WORD_WRAP_BREAK_WORD_VALUE);
+                element.attr(HtmlTagAttr.STYLE, style.getAsCSSString());
+            }
+        }
     }
 
     /**
@@ -157,11 +200,10 @@ public class TableAnalyzer {
         ReplacedElementFactory defaultFactory = renderer.getSharedContext().getReplacedElementFactory();
         renderer.getSharedContext().setReplacedElementFactory(new SourceAwareReplacedElementFactory(defaultFactory));
 
-        // The font the measurement ships with is handed to the layout by name, so the file a machine happens to
-        // have installed under the name of that font is never the one which lays the table out
-        if (renderer.getSharedContext().getFontResolver() instanceof AWTFontResolver fontResolver) {
-            fontResolver.setFontMapping(MEASUREMENT_FONT_FAMILY, EMBEDDED_FONT);
-        }
+        useMeasurementFont(renderer.getSharedContext());
+        // A size in points becomes pixels at the resolution of the screen, which is 72 dpi on a headless server and
+        // anything on a desktop. WeasyPrint, as CSS, counts 96 pixels to an inch.
+        renderer.getSharedContext().setDPI(CSS_DPI);
 
         BufferedImage image = new BufferedImage(pageWidth, PAGE_HEIGHT, BufferedImage.TYPE_BYTE_GRAY);
         Graphics2D g2d = image.createGraphics();
@@ -178,30 +220,31 @@ public class TableAnalyzer {
         }
     }
 
-    private void findTableAndAnalyze(Box box, Map<Integer, Integer> columnWidths, HeaderHeight headerHeight, List<Integer> rowHeights) {
+    private void findTableAndAnalyze(Box box, Map<Integer, Integer> columnWidths, Gathered gathered, List<Integer> rowHeights) {
         if (box == null) {
             return;
         }
 
         // Check if this is a table box
         if (box.getElement() != null && TABLE.equalsIgnoreCase(box.getElement().getNodeName())) {
-            gatherColumnWidths(box, columnWidths, headerHeight, rowHeights);
+            gatherColumnWidths(box, columnWidths, gathered, rowHeights);
             return; // Found and analyzed, no need to go deeper
         }
 
         // Recursively search children
         if (box instanceof LineBox lineBox) {
             for (Box inlinedBox : lineBox.getNonFlowContent()) {
-                findTableAndAnalyze(inlinedBox, columnWidths, headerHeight, rowHeights);
+                findTableAndAnalyze(inlinedBox, columnWidths, gathered, rowHeights);
             }
         } else {
             for (int i = 0; i < box.getChildCount(); i++) {
-                findTableAndAnalyze(box.getChild(i), columnWidths, headerHeight, rowHeights);
+                findTableAndAnalyze(box.getChild(i), columnWidths, gathered, rowHeights);
             }
         }
     }
 
-    private void gatherColumnWidths(@NotNull Box tableBox, @NotNull Map<Integer, Integer> columnWidths, @NotNull HeaderHeight headerHeight, @NotNull List<Integer> rowHeights) {
+    private void gatherColumnWidths(@NotNull Box tableBox, @NotNull Map<Integer, Integer> columnWidths, @NotNull Gathered gathered, @NotNull List<Integer> rowHeights) {
+        gathered.tableWidth = tableBox.getWidth();
         List<Box> tbody = findChildrenByTag(tableBox, TBODY);
         List<Box> rows = findChildrenByTag(!tbody.isEmpty() ? tbody.getFirst() : tableBox, TR);
 
@@ -211,7 +254,7 @@ public class TableAnalyzer {
             List<Box> cells = findChildrenByTag(row, TD, TH);
             if (!cells.isEmpty() && cells.stream().allMatch(cell -> TH.equalsIgnoreCase(cell.getElement().getNodeName()))) {
                 // A row of header cells is repeated on every page the table spans, so it takes its height there
-                headerHeight.value += row.getHeight();
+                gathered.headerHeight += row.getHeight();
             }
             int columnIndex = 0;
 
@@ -280,6 +323,42 @@ public class TableAnalyzer {
             }
         }
         return adjustedWidths;
+    }
+
+    /**
+     * Hands the font the measurement ships with to the layout by name, so the file a machine happens to have installed
+     * under the name of that font is never the one which lays the table out.
+     * <p>
+     * The renderer takes no resolver of its own, and a font given by {@code setFontMapping} gets a derived bold, so the
+     * resolver is set, as the one way the renderer allows.
+     * </p>
+     */
+    @SuppressWarnings({"removal", "java:S5738"})
+    private static void useMeasurementFont(@NotNull SharedContext sharedContext) {
+        sharedContext.setFontResolver(new MeasurementFontResolver());
+    }
+
+    /**
+     * Lays the measurement font out in the face its weight and style ask for. The resolver of flying-saucer derives a
+     * bold or an italic face from the one font it is given, and a derived bold is wider or narrower than the real one.
+     */
+    static class MeasurementFontResolver extends AWTFontResolver {
+        @Override
+        protected Font resolveFont(SharedContext ctx, String font, float size, IdentValue weight, IdentValue style, IdentValue variant) {
+            if (!MEASUREMENT_FONT_FAMILY.equals(font.replace("'", "").replace("\"", ""))) {
+                return super.resolveFont(ctx, font, size, weight, style, variant);
+            }
+            boolean bold = weight == IdentValue.BOLD || weight == IdentValue.FONT_WEIGHT_700 || weight == IdentValue.FONT_WEIGHT_800 || weight == IdentValue.FONT_WEIGHT_900;
+            boolean italic = style == IdentValue.ITALIC || style == IdentValue.OBLIQUE;
+            return face(bold, italic).deriveFont(size * ctx.getTextRenderer().getFontScale());
+        }
+
+        private static @NotNull Font face(boolean bold, boolean italic) {
+            if (bold) {
+                return italic ? EMBEDDED_BOLD_ITALIC_FONT : EMBEDDED_BOLD_FONT;
+            }
+            return italic ? EMBEDDED_ITALIC_FONT : EMBEDDED_FONT;
+        }
     }
 
     /**

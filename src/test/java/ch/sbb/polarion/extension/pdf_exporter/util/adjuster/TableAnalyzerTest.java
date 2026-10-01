@@ -4,6 +4,7 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ConversionPa
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.Orientation;
 import ch.sbb.polarion.extension.pdf_exporter.util.PaperSizeUtils;
 import lombok.SneakyThrows;
+import org.jsoup.Jsoup;
 import org.jsoup.nodes.Element;
 import org.jsoup.parser.Tag;
 import org.junit.jupiter.api.Test;
@@ -66,8 +67,8 @@ class TableAnalyzerTest {
         Font embeddedFont = (Font) fontField.get(null);
 
         String family = embeddedFont.getFamily();
-        assertTrue(family.equals("DejaVu Sans") || family.equals("SansSerif") || family.equals("Dialog"),
-                "Font family should be 'DejaVu Sans' or fallback 'SansSerif'/'Dialog', but was: " + family);
+        assertTrue(family.equals("Liberation Sans") || family.equals("SansSerif") || family.equals("Dialog"),
+                "Font family should be 'Liberation Sans' or fallback 'SansSerif'/'Dialog', but was: " + family);
     }
 
     @Test
@@ -162,9 +163,9 @@ class TableAnalyzerTest {
         assertNotNull(fontFamily, "Embedded font family should not be null");
         assertFalse(fontFamily.isEmpty(), "Embedded font family should not be empty");
 
-        // The font should be either DejaVu Sans (embedded loaded) or a fallback
+        // The font should be either Liberation Sans (embedded loaded) or a fallback
         // Either way, column widths should be calculated using this font
-        assertTrue(fontFamily.equals("DejaVu Sans") || fontFamily.equals("SansSerif") || fontFamily.equals("Dialog"),
+        assertTrue(fontFamily.equals("Liberation Sans") || fontFamily.equals("SansSerif") || fontFamily.equals("Dialog"),
                 "Font family should be known: " + fontFamily);
     }
 
@@ -545,6 +546,27 @@ class TableAnalyzerTest {
             assertTrue(columnWidths.containsKey(i), "Column " + i + " should have a width");
             assertTrue(columnWidths.get(i) >= 130 && columnWidths.get(i) <= 180, "Column " + i + " width should be certain range, but was " + columnWidths.get(i));
         }
+    }
+
+    @Test
+    void measuresAFontSizeInPointsAsCssDoes() {
+        // CSS counts 96 pixels to an inch, so 9pt is 12px. At the 72 dpi of a headless server it was 9px, and a table too
+        // wide for its page measured as one which fits
+        String words = "Sicherheitsanforderungen ".repeat(8);
+        int inPoints = TableAnalyzer.analyze(Jsoup.parse("<table><tr><td style=\"font-size: 9pt\">" + words + "</td></tr></table>").selectFirst("table"), 2000).tableWidth();
+        int inPixels = TableAnalyzer.analyze(Jsoup.parse("<table><tr><td style=\"font-size: 12px\">" + words + "</td></tr></table>").selectFirst("table"), 2000).tableWidth();
+
+        assertEquals(inPixels, inPoints);
+    }
+
+    @Test
+    void measuresACellWhichBreaksAnywhereAsNarrowAsItsWidestCharacter() {
+        String cells = "<td>Approved</td>".repeat(30);
+        int whole = TableAnalyzer.analyze(Jsoup.parse("<table><tr>" + cells + "</tr></table>").selectFirst("table"), 592).tableWidth();
+        int anywhere = TableAnalyzer.analyze(Jsoup.parse("<table><tr>" + cells.replace("<td>", "<td style=\"overflow-wrap: anywhere\">") + "</tr></table>").selectFirst("table"), 592).tableWidth();
+
+        assertTrue(whole > 592, "Whole words leave the table no room, but it measured " + whole);
+        assertTrue(anywhere <= 592, "Broken anywhere, the words fit, but the table measured " + anywhere);
     }
 
 }

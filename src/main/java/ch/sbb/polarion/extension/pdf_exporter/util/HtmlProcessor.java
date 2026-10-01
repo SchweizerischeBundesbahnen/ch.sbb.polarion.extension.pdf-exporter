@@ -14,6 +14,7 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.Orientation;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PaperSize;
 import ch.sbb.polarion.extension.pdf_exporter.settings.LocalizationSettings;
 import ch.sbb.polarion.extension.pdf_exporter.util.adjuster.PageWidthAdjuster;
+import ch.sbb.polarion.extension.pdf_exporter.util.adjuster.LongWordsAdjuster;
 import ch.sbb.polarion.extension.pdf_exporter.util.adjuster.TableRowsAdjuster;
 import ch.sbb.polarion.extension.pdf_exporter.util.html.HtmlLinksHelper;
 import com.helger.css.decl.CSSDeclarationList;
@@ -206,6 +207,7 @@ public class HtmlProcessor {
             timedIfNotNull(generationLog, "Adjust content to fit page", () -> adjustContentToFitPage(document, exportParams));
             // ----
         }
+        timedIfNotNull(generationLog, "Break long words in table cells", () -> LongWordsAdjuster.addBreakPoints(document));
         timedIfNotNull(generationLog, "Keep table rows whole", () -> keepTableRowsWholeUnlessFittedBetweenPageBreaks(document, exportParams, customPageBreaks));
 
         html = document.body().html();
