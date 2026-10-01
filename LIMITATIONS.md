@@ -22,7 +22,7 @@ at least as wide as its longest short word.
 In a wide table with many columns, the columns can therefore together need more room than the page has. The export
 measures such a table before it renders it. When its words leave it wider than the page, they break into even parts
 of up to 20, then 15, then 10 characters, until the table fits. Such a break has no hyphen. Should its short words
-still leave it no room, its cells break a word at any character.
+still leave it no room, its cells of up to 100 characters break a word at any character.
 
 ### Workaround
 

@@ -59,6 +59,9 @@ public class TableRowsAdjuster extends AbstractAdjuster {
      */
     private static final float TOO_WIDE = 1.05f;
 
+    /** A cell of no more text than this may break a word anywhere, should the table have no room otherwise. */
+    private static final int SHORT_CELL = 100;
+
     private static final String ROWS_OF_THE_TABLE = "> tr, > thead > tr, > tbody > tr, > tfoot > tr";
 
     private static final String CELL = "td, th";
@@ -123,13 +126,20 @@ public class TableRowsAdjuster extends AbstractAdjuster {
         } while (metrics.tableWidth() > width && step < LongWordsAdjuster.CRAMPED_PARTS.size());
         if (metrics.tableWidth() > width * TOO_WIDE) {
             breakAnywhere(table);
+            metrics = TableAnalyzer.analyze(table, width);
         }
         return metrics;
     }
 
-    /** Lets the cells of a table break a word at any character. Only a table of this kind pays for the slow layout. */
+    /**
+     * Lets the short cells of a table break a word at any character. The layout then works out a width for every character
+     * of a cell, which costs a long cell minutes, while the words of a long cell already break into parts.
+     */
     private static void breakAnywhere(@NotNull Element table) {
         for (Element cell : table.select(CELL)) {
+            if (cell.text().length() > SHORT_CELL) {
+                continue;
+            }
             CSSDeclarationList style = CssUtils.parseDeclarations(cell.attr(HtmlTagAttr.STYLE));
             CssUtils.setPropertyValue(style, CssProp.OVERFLOW_WRAP, CssProp.OVERFLOW_WRAP_ANYWHERE_VALUE);
             cell.attr(HtmlTagAttr.STYLE, style.getAsCSSString());

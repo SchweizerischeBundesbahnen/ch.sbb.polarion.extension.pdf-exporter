@@ -145,14 +145,17 @@ class TableRowsAdjusterTest {
     }
 
     @Test
-    void letsTheCellsOfATableWhichShortWordsLeaveNoRoomBreakAnywhere() {
+    void letsTheShortCellsOfATableWhichShortWordsLeaveNoRoomBreakAnywhere() {
         // Thirty columns of a word shorter than any part a word breaks into need more than a page
         String row = "<tr>" + "<td>Approved</td>".repeat(30) + "</tr>";
-        Document document = Jsoup.parse("<table><tbody>" + row + row + "</tbody></table>");
+        String description = "A description of a requirement, long enough that working out a width for each character would be slow. ";
+        Document document = Jsoup.parse("<table><tbody>" + row + row + "<tr><td colspan=\"30\">" + description + "</td></tr></tbody></table>");
 
         new TableRowsAdjuster(document, A4_PORTRAIT).execute();
 
-        assertThat(document.select("td").eachAttr("style")).containsOnly("overflow-wrap:anywhere;").hasSize(60);
+        List<Element> cells = document.select("td");
+        assertThat(cells.subList(0, 60)).extracting(cell -> cell.attr("style")).containsOnly("overflow-wrap:anywhere;");
+        assertThat(cells.get(60).hasAttr("style")).as("A long cell keeps the fast layout").isFalse();
     }
 
     @Test

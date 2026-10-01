@@ -1,7 +1,9 @@
 package ch.sbb.polarion.extension.pdf_exporter.util.adjuster;
 
+import ch.sbb.polarion.extension.pdf_exporter.constants.CssProp;
 import ch.sbb.polarion.extension.pdf_exporter.constants.HtmlTagAttr;
 import ch.sbb.polarion.extension.pdf_exporter.util.CssUtils;
+import com.helger.css.decl.CSSDeclarationList;
 import com.polarion.core.util.logging.Logger;
 import lombok.experimental.UtilityClass;
 import org.jetbrains.annotations.NotNull;
@@ -75,14 +77,14 @@ public class TableAnalyzer {
     private static final String EMBEDDED_ITALIC_FONT_PATH = "/fonts/LiberationSans-Italic.ttf";
     private static final String EMBEDDED_BOLD_ITALIC_FONT_PATH = "/fonts/LiberationSans-BoldItalic.ttf";
 
+    /** The pixels CSS counts to an inch, which turns a font size in points into the pixels WeasyPrint lays it out in. */
+    private static final float CSS_DPI = 96f;
+
     /**
      * The name the measurement gives the font it ships with. A name of its own, because a machine which has a
      * font of the same name installed lends its own file to the layout: its bold face is not the one shipped
      * here, the text then takes a line more or less, and the same document comes out laid out differently.
      */
-    /** The pixels CSS counts to an inch, which turns a font size in points into the pixels WeasyPrint lays it out in. */
-    private static final float CSS_DPI = 96f;
-
     private static final String MEASUREMENT_FONT_FAMILY = "PdfExporterTableMeasurement";
     private static final Font EMBEDDED_FONT = loadEmbeddedFont();
     private static final Font EMBEDDED_BOLD_FONT = loadFontFromPath(EMBEDDED_BOLD_FONT_PATH);
@@ -148,8 +150,24 @@ public class TableAnalyzer {
         org.jsoup.nodes.Document tempDoc = org.jsoup.nodes.Document.createShell("");
         // Inject CSS to force the embedded font for consistent column width calculation across platforms
         tempDoc.head().appendElement("style").text("* { font-family: '" + MEASUREMENT_FONT_FAMILY + "', sans-serif !important; }");
-        tempDoc.body().appendElement("div").attr(HtmlTagAttr.STYLE, inheritedTextStyle(tableElement)).appendChild(tableElement.clone());
+        Element table = tableElement.clone();
+        measureBreakAnywhere(table);
+        tempDoc.body().appendElement("div").attr(HtmlTagAttr.STYLE, inheritedTextStyle(tableElement)).appendChild(table);
         return new W3CDom().fromJsoup(tempDoc);
+    }
+
+    /**
+     * Lets the measure break a word anywhere where the document does. The measure knows no {@code overflow-wrap}, only its
+     * older name, {@code word-wrap}, and lays out its {@code break-word} as CSS lays out {@code anywhere}.
+     */
+    private static void measureBreakAnywhere(@NotNull Element table) {
+        for (Element element : table.select("[style]")) {
+            CSSDeclarationList style = CssUtils.parseDeclarations(element.attr(HtmlTagAttr.STYLE));
+            if (CssProp.OVERFLOW_WRAP_ANYWHERE_VALUE.equals(CssUtils.getPropertyValue(style, CssProp.OVERFLOW_WRAP))) {
+                CssUtils.setPropertyValue(style, CssProp.WORD_WRAP, CssProp.WORD_WRAP_BREAK_WORD_VALUE);
+                element.attr(HtmlTagAttr.STYLE, style.getAsCSSString());
+            }
+        }
     }
 
     /**
