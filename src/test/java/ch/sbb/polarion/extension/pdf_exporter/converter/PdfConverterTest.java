@@ -19,6 +19,7 @@ import ch.sbb.polarion.extension.pdf_exporter.settings.CssSettings;
 import ch.sbb.polarion.extension.pdf_exporter.settings.HeaderFooterSettings;
 import ch.sbb.polarion.extension.pdf_exporter.util.DocumentDataFactory;
 import ch.sbb.polarion.extension.pdf_exporter.util.HtmlProcessor;
+import ch.sbb.polarion.extension.pdf_exporter.util.adjuster.Hyphenation;
 import ch.sbb.polarion.extension.pdf_exporter.util.PdfGenerationLog;
 import ch.sbb.polarion.extension.pdf_exporter.util.PdfTemplateProcessor;
 import ch.sbb.polarion.extension.pdf_exporter.util.placeholder.PlaceholderProcessor;
@@ -373,7 +374,7 @@ class PdfConverterTest {
         // Assert
         assertThat(resultContent).isEqualTo("result string");
         ArgumentCaptor<List<String>> rolesCaptor = ArgumentCaptor.forClass(List.class);
-        verify(htmlProcessor).processHtmlForPDF(eq("test content"), eq(exportParams), rolesCaptor.capture(), isNull(), isNull());
+        verify(htmlProcessor).processHtmlForPDF(eq("test content"), eq(exportParams), rolesCaptor.capture(), eq(Hyphenation.NONE), isNull());
         assertThat(rolesCaptor.getValue()).containsExactly("role1", "testRole1OppositeName", "role2", "testRole2OppositeName");
     }
 
@@ -408,7 +409,7 @@ class PdfConverterTest {
         // Assert
         assertThat(resultContent).isEqualTo("result string");
         ArgumentCaptor<List<String>> rolesCaptor = ArgumentCaptor.forClass(List.class);
-        verify(htmlProcessor).processHtmlForPDF(eq("test content"), eq(exportParams), rolesCaptor.capture(), isNull(), isNull());
+        verify(htmlProcessor).processHtmlForPDF(eq("test content"), eq(exportParams), rolesCaptor.capture(), eq(Hyphenation.NONE), isNull());
         assertThat(rolesCaptor.getValue()).containsExactly("role1", "role2");
     }
 
@@ -443,7 +444,7 @@ class PdfConverterTest {
         // Assert
         assertThat(resultContent).isEqualTo("result string");
         ArgumentCaptor<List<String>> rolesCaptor = ArgumentCaptor.forClass(List.class);
-        verify(htmlProcessor).processHtmlForPDF(eq("test content"), eq(exportParams), rolesCaptor.capture(), isNull(), isNull());
+        verify(htmlProcessor).processHtmlForPDF(eq("test content"), eq(exportParams), rolesCaptor.capture(), eq(Hyphenation.NONE), isNull());
         assertThat(rolesCaptor.getValue()).containsExactly("testRole1OppositeName", "testRole2OppositeName");
     }
 
@@ -790,13 +791,5 @@ class PdfConverterTest {
         ExportParams exportParams = ExportParams.builder().languageCustomField("docLanguage").build();
 
         assertThat(newPdfConverter().resolveDocumentLanguage(languageTestDocumentData(), exportParams)).isNull();
-    }
-
-    @Test
-    void letsTheWordsOfTablesHyphenateUnlessTheCssTurnsHyphenationOff() {
-        assertThat(PdfConverter.hyphenates(".content { hyphens: auto; }")).isTrue();
-        assertThat(PdfConverter.hyphenates("table { width: 100%; }")).isTrue();
-        assertThat(PdfConverter.hyphenates("td { hyphens: none; }")).isFalse();
-        assertThat(PdfConverter.hyphenates("body { -webkit-hyphens:manual }")).isFalse();
     }
 }

@@ -14,6 +14,7 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.Orientation;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PaperSize;
 import ch.sbb.polarion.extension.pdf_exporter.settings.LocalizationSettings;
 import ch.sbb.polarion.extension.pdf_exporter.util.adjuster.PageWidthAdjuster;
+import ch.sbb.polarion.extension.pdf_exporter.util.adjuster.Hyphenation;
 import ch.sbb.polarion.extension.pdf_exporter.util.adjuster.LongWordsAdjuster;
 import ch.sbb.polarion.extension.pdf_exporter.util.adjuster.TableRowsAdjuster;
 import ch.sbb.polarion.extension.pdf_exporter.util.html.HtmlLinksHelper;
@@ -83,13 +84,14 @@ public class HtmlProcessor {
     }
 
     public String processHtmlForPDF(@NotNull String html, @NotNull ExportParams exportParams, @NotNull List<String> selectedRoleEnumValues, @Nullable PdfGenerationLog generationLog) {
-        return processHtmlForPDF(html, exportParams, selectedRoleEnumValues, null, generationLog);
+        return processHtmlForPDF(html, exportParams, selectedRoleEnumValues, Hyphenation.NONE, generationLog);
     }
 
     /**
-     * @param documentLanguage the language of the document, in which its tables hyphenate their long words of letters
+     * @param hyphenation the language of the document, in which its tables hyphenate their long words of letters, and
+     *                    the rules of the CSS which turn hyphenation off
      */
-    public String processHtmlForPDF(@NotNull String html, @NotNull ExportParams exportParams, @NotNull List<String> selectedRoleEnumValues, @Nullable String documentLanguage, @Nullable PdfGenerationLog generationLog) {
+    public String processHtmlForPDF(@NotNull String html, @NotNull ExportParams exportParams, @NotNull List<String> selectedRoleEnumValues, @NotNull Hyphenation hyphenation, @Nullable PdfGenerationLog generationLog) {
         if (exportParams.getDocumentType() == BASELINE_COLLECTION) {
             // Unsupported document type
             throw new IllegalArgumentException(UNSUPPORTED_DOCUMENT_TYPE.formatted(exportParams.getDocumentType()));
@@ -214,7 +216,7 @@ public class HtmlProcessor {
             timedIfNotNull(generationLog, "Adjust content to fit page", () -> adjustContentToFitPage(document, exportParams));
             // ----
         }
-        timedIfNotNull(generationLog, "Break long words in table cells", () -> LongWordsAdjuster.addBreakPoints(document, documentLanguage));
+        timedIfNotNull(generationLog, "Break long words in table cells", () -> LongWordsAdjuster.addBreakPoints(document, hyphenation));
         timedIfNotNull(generationLog, "Keep table rows whole", () -> keepTableRowsWholeUnlessFittedBetweenPageBreaks(document, exportParams, customPageBreaks));
 
         html = document.body().html();

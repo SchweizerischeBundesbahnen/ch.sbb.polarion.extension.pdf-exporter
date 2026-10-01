@@ -11,6 +11,7 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
 import org.jsoup.nodes.TextNode;
+import org.jsoup.select.Selector;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -58,6 +59,11 @@ public class LongWordsAdjuster {
 
     private static final String IN_A_LANGUAGE = "[lang]";
 
+    /** Marks an element a rule of the CSS of the export turns hyphenation off for. */
+    private static final String NO_HYPHENATION = "data-pdf-exporter-no-hyphenation";
+
+    private static final String TURNED_OFF = "[" + NO_HYPHENATION + "]";
+
     /** The languages WeasyPrint hyphenates, by the dictionaries of pyphen it ships with, as primary language subtags. */
     private static final Set<String> HYPHENATION_DICTIONARIES = Set.of(
             "af", "as", "be", "bg", "ca", "cs", "da", "de", "el", "en", "eo", "es", "et", "eu", "fr", "gl", "hr", "hu", "id", "is",
@@ -80,20 +86,26 @@ public class LongWordsAdjuster {
     private static final Rule DEFAULT_RULE = new Rule(LONG_WORD, VERY_LONG_WORD, LONG_WORD);
 
     public static void addBreakPoints(@NotNull Document document) {
-        addBreakPoints(document, null);
+        addBreakPoints(document, Hyphenation.NONE);
+    }
+
+    public static void addBreakPoints(@NotNull Document document, @Nullable String language) {
+        addBreakPoints(document, new Hyphenation(language, List.of()));
     }
 
     /**
-     * @param language the language of the document, which its tables are then marked to be in, unless they are in one
-     *                 of their own, so that they hyphenate their long words of letters wherever they are laid out
+     * @param hyphenation the language of the document, which its tables are then marked to be in, unless they are in
+     *                    one of their own, so that they hyphenate their long words of letters wherever they are laid
+     *                    out; and the rules of the CSS which turn hyphenation off, whose elements are marked so
      */
-    public static void addBreakPoints(@NotNull Document document, @Nullable String language) {
-        if (language != null) {
+    public static void addBreakPoints(@NotNull Document document, @NotNull Hyphenation hyphenation) {
+        if (hyphenation.language() != null) {
             for (Element table : document.select(TABLE)) {
                 if (table.closest(IN_A_LANGUAGE) == null) {
-                    table.attr(LANG, language);
+                    table.attr(LANG, hyphenation.language());
                 }
             }
+            markHyphenationTurnedOff(document, hyphenation.turnedOffBy());
         }
         for (Element cell : document.select(CELL)) {
             breakWordsOf(cell, DEFAULT_RULE);
@@ -131,13 +143,28 @@ public class LongWordsAdjuster {
         }
     }
 
+    /** Marks the elements a rule of the CSS turns hyphenation off for. A selector which cannot be read may reach any. */
+    private static void markHyphenationTurnedOff(@NotNull Document document, @NotNull List<String> selectors) {
+        for (String selector : selectors) {
+            try {
+                document.select(selector).attr(NO_HYPHENATION, "");
+            } catch (Selector.SelectorParseException e) {
+                document.body().attr(NO_HYPHENATION, "");
+            }
+        }
+    }
+
     /**
-     * Whether a cell can hyphenate its words: it is in a language WeasyPrint has a dictionary for, and neither it nor an
-     * element around it states another hyphenation than {@code auto}. Where it cannot, a word keeps its break points.
+     * Whether a cell can hyphenate its words: it is in a language WeasyPrint has a dictionary for, no rule of the CSS
+     * turns hyphenation off for it, an element around it or one inside it, and neither it nor an element around it
+     * states another hyphenation than {@code auto}. Where it cannot, a word keeps its break points.
      */
     private static boolean hyphenates(@NotNull Element cell) {
         Element inALanguage = cell.closest(IN_A_LANGUAGE);
         if (inALanguage == null || !HYPHENATION_DICTIONARIES.contains(inALanguage.attr(LANG).split("[-_]")[0].toLowerCase(Locale.ROOT))) {
+            return false;
+        }
+        if (cell.closest(TURNED_OFF) != null || cell.selectFirst(TURNED_OFF) != null) {
             return false;
         }
         for (Element element = cell; element != null; element = element.parent()) {

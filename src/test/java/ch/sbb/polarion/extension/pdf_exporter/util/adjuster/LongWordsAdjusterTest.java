@@ -6,6 +6,7 @@ import org.jsoup.nodes.Element;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
@@ -238,10 +239,24 @@ class LongWordsAdjusterTest {
     }
 
     @Test
+    void keepsTheBreakPointsOfAWordWhichARuleOfTheCssKeepsFromHyphenating() {
+        Document document = Jsoup.parse("<h1>Grundstücksverkehrsgenehmigungszuständigkeitsübertragungsverordnung</h1>"
+                + "<table class=\"plain\"><tr><td>Grundstücksverkehrsgenehmigungszuständigkeitsübertragungsverordnung</td></tr></table>"
+                + "<table><tr><td>Grundstücksverkehrsgenehmigungszuständigkeitsübertragungsverordnung</td></tr></table>");
+
+        LongWordsAdjuster.addBreakPoints(document, new Hyphenation("de", List.of("h1", "table.plain td")));
+
+        List<Element> cells = document.select("td");
+        assertThat(cells.get(0).select("wbr")).as("The rule reaches the cell, so its word keeps its break points").hasSize(3);
+        assertThat(cells.get(1).select("wbr")).as("A rule for headings leaves the cells of a table to hyphenate").isEmpty();
+        assertThat(cells.get(1).attr("style")).isEqualTo("hyphens:auto;");
+    }
+
+    @Test
     void leavesATableOfADocumentWithoutALanguageUnmarked() {
         Document document = Jsoup.parse("<table><tr><td>" + "ABCDEFGHIJ".repeat(5) + "</td></tr></table>");
 
-        LongWordsAdjuster.addBreakPoints(document, null);
+        LongWordsAdjuster.addBreakPoints(document, Hyphenation.NONE);
 
         assertThat(document.selectFirst("table").hasAttr("lang")).isFalse();
         assertThat(document.select("wbr")).as("Without a dictionary only break points break the word").hasSize(2);

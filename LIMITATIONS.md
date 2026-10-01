@@ -27,7 +27,7 @@ still leave it no room, its cells of up to 100 characters break a word at any ch
 In a document with a language, a word of letters alone does not break into parts: its cell hyphenates it, at a
 syllable and with a hyphen. An ID, a path or a URL keeps its break points. So does every word where hyphenation is
 not possible: the language has no hyphenation dictionary in WeasyPrint, or the CSS sets `hyphens` to `none` or
-`manual`.
+`manual` for the cell, for an element around it or for one inside it.
 
 ### Workaround
 

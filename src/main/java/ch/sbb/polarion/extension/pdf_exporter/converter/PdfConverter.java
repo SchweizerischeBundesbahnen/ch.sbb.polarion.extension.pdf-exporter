@@ -27,6 +27,7 @@ import ch.sbb.polarion.extension.pdf_exporter.util.DebugDataStorage;
 import ch.sbb.polarion.extension.pdf_exporter.util.DocumentDataFactory;
 import ch.sbb.polarion.extension.pdf_exporter.util.ExportContext;
 import ch.sbb.polarion.extension.pdf_exporter.util.DocumentLanguageResolver;
+import ch.sbb.polarion.extension.pdf_exporter.util.HyphenationRules;
 import ch.sbb.polarion.extension.pdf_exporter.util.EnumValuesProvider;
 import ch.sbb.polarion.extension.pdf_exporter.util.HtmlLogger;
 import ch.sbb.polarion.extension.pdf_exporter.util.MediaUtils;
@@ -36,6 +37,7 @@ import ch.sbb.polarion.extension.pdf_exporter.util.PdfExporterListStyleProvider;
 import ch.sbb.polarion.extension.pdf_exporter.util.PdfGenerationLog;
 import ch.sbb.polarion.extension.pdf_exporter.util.PdfTemplateProcessor;
 import ch.sbb.polarion.extension.pdf_exporter.util.PolarionTypes;
+import ch.sbb.polarion.extension.pdf_exporter.util.adjuster.Hyphenation;
 import ch.sbb.polarion.extension.pdf_exporter.util.html.HtmlLinksHelper;
 import ch.sbb.polarion.extension.pdf_exporter.util.placeholder.PlaceholderProcessor;
 import ch.sbb.polarion.extension.pdf_exporter.util.placeholder.PlaceholderValues;
@@ -76,15 +78,11 @@ import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.List;
-import java.util.regex.Pattern;
 
 @AllArgsConstructor
 @SuppressWarnings("java:S1200")
 public class PdfConverter {
     public static final String CUSTOM_METADATA_TAG = "CUSTOM_METADATA";
-
-    /** A declaration which turns automatic hyphenation off. */
-    private static final Pattern NO_HYPHENATION = Pattern.compile("hyphens\\s*:\\s*(none|manual)", Pattern.CASE_INSENSITIVE);
 
     private final Logger logger = Logger.getLogger(PdfConverter.class);
     private final PdfExporterPolarionService pdfExporterPolarionService;
@@ -269,8 +267,8 @@ public class PdfConverter {
     private @NotNull String prepareHtmlContent(@NotNull ExportParams exportParams, @Nullable ITrackerProject project, @NotNull DocumentData<? extends IUniqueObject> documentData, @Nullable ExportMetaInfoCallback metaInfoCallback, @Nullable PdfGenerationLog generationLog) {
         String cssContent = timedIfNotNull(generationLog, "Get CSS content", () -> getFirstPageHeaderFooterCss(exportParams) + getCssContent(documentData, exportParams));
         String documentLanguage = resolveDocumentLanguage(documentData, exportParams);
-        String hyphenationLanguage = hyphenates(cssContent) ? documentLanguage : null;
-        String preparedDocumentContent = postProcessDocumentContent(exportParams, project, documentData.getContent(), hyphenationLanguage, generationLog);
+        Hyphenation hyphenation = new Hyphenation(documentLanguage, HyphenationRules.turningHyphenationOff(cssContent));
+        String preparedDocumentContent = postProcessDocumentContent(exportParams, project, documentData.getContent(), hyphenation, generationLog);
         String headerFooterContent = timedIfNotNull(generationLog, "Get header/footer content", () -> getHeaderFooterContent(documentData, exportParams));
 
         HtmlData htmlData = new HtmlData(cssContent, preparedDocumentContent, headerFooterContent);
@@ -428,13 +426,13 @@ public class PdfConverter {
 
     @VisibleForTesting
     String postProcessDocumentContent(@NotNull ExportParams exportParams, @Nullable ITrackerProject project, @Nullable String documentContent) {
-        return postProcessDocumentContent(exportParams, project, documentContent, null, null);
+        return postProcessDocumentContent(exportParams, project, documentContent, Hyphenation.NONE, null);
     }
 
-    String postProcessDocumentContent(@NotNull ExportParams exportParams, @Nullable ITrackerProject project, @Nullable String documentContent, @Nullable String documentLanguage, @Nullable PdfGenerationLog generationLog) {
+    String postProcessDocumentContent(@NotNull ExportParams exportParams, @Nullable ITrackerProject project, @Nullable String documentContent, @NotNull Hyphenation hyphenation, @Nullable PdfGenerationLog generationLog) {
         if (documentContent != null) {
             List<String> selectedRoleEnumValues = project == null ? Collections.emptyList() : EnumValuesProvider.getLinkRoleNames(project, exportParams.getLinkedWorkitemRoles(), exportParams.getLinkRoleDirection());
-            return htmlProcessor.processHtmlForPDF(documentContent, exportParams, selectedRoleEnumValues, documentLanguage, generationLog);
+            return htmlProcessor.processHtmlForPDF(documentContent, exportParams, selectedRoleEnumValues, hyphenation, generationLog);
         } else {
             return "";
         }
@@ -450,15 +448,6 @@ public class PdfConverter {
         String content = htmlData.headerFooterContent
                 + "<div class='content'>" + htmlData.documentContent + "</div>";
         return pdfTemplateProcessor.processUsing(exportParams, documentName, htmlData.cssContent, content, metaTags, documentLanguage);
-    }
-
-    /**
-     * Whether the CSS of the export lets the words of tables hyphenate: a stylesheet which turns hyphenation off, anywhere,
-     * keeps them to their break points.
-     */
-    @VisibleForTesting
-    static boolean hyphenates(@NotNull String css) {
-        return !NO_HYPHENATION.matcher(css).find();
     }
 
     @Nullable
