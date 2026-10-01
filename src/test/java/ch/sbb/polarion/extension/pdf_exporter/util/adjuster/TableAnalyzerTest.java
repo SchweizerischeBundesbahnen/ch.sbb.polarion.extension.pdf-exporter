@@ -66,8 +66,8 @@ class TableAnalyzerTest {
         Font embeddedFont = (Font) fontField.get(null);
 
         String family = embeddedFont.getFamily();
-        assertTrue(family.equals("DejaVu Sans") || family.equals("SansSerif") || family.equals("Dialog"),
-                "Font family should be 'DejaVu Sans' or fallback 'SansSerif'/'Dialog', but was: " + family);
+        assertTrue(family.equals("Liberation Sans") || family.equals("SansSerif") || family.equals("Dialog"),
+                "Font family should be 'Liberation Sans' or fallback 'SansSerif'/'Dialog', but was: " + family);
     }
 
     @Test
@@ -162,9 +162,9 @@ class TableAnalyzerTest {
         assertNotNull(fontFamily, "Embedded font family should not be null");
         assertFalse(fontFamily.isEmpty(), "Embedded font family should not be empty");
 
-        // The font should be either DejaVu Sans (embedded loaded) or a fallback
+        // The font should be either Liberation Sans (embedded loaded) or a fallback
         // Either way, column widths should be calculated using this font
-        assertTrue(fontFamily.equals("DejaVu Sans") || fontFamily.equals("SansSerif") || fontFamily.equals("Dialog"),
+        assertTrue(fontFamily.equals("Liberation Sans") || fontFamily.equals("SansSerif") || fontFamily.equals("Dialog"),
                 "Font family should be known: " + fontFamily);
     }
 

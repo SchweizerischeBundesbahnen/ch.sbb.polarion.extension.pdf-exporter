@@ -9,10 +9,12 @@ import org.jsoup.helper.W3CDom;
 import org.jsoup.nodes.Element;
 import org.w3c.dom.Document;
 import org.xhtmlrenderer.context.AWTFontResolver;
+import org.xhtmlrenderer.css.constants.IdentValue;
 import org.xhtmlrenderer.extend.ReplacedElement;
 import org.xhtmlrenderer.extend.ReplacedElementFactory;
 import org.xhtmlrenderer.extend.UserAgentCallback;
 import org.xhtmlrenderer.layout.LayoutContext;
+import org.xhtmlrenderer.layout.SharedContext;
 import org.xhtmlrenderer.newtable.TableSectionBox;
 import org.xhtmlrenderer.render.BlockBox;
 import org.xhtmlrenderer.render.Box;
@@ -60,7 +62,14 @@ public class TableAnalyzer {
 
     // Doesn't really matter, our concern here are widths
     private static final int PAGE_HEIGHT = 1000;
-    private static final String EMBEDDED_FONT_PATH = "/fonts/DejaVuSans.ttf";
+    /**
+     * The font an export is laid out in: the default CSS asks for Arial, and the WeasyPrint service lays it out in
+     * Liberation Sans, which has the metrics of Arial. Measured in it, a table takes the widths it takes in the PDF.
+     */
+    private static final String EMBEDDED_FONT_PATH = "/fonts/LiberationSans-Regular.ttf";
+    private static final String EMBEDDED_BOLD_FONT_PATH = "/fonts/LiberationSans-Bold.ttf";
+    private static final String EMBEDDED_ITALIC_FONT_PATH = "/fonts/LiberationSans-Italic.ttf";
+    private static final String EMBEDDED_BOLD_ITALIC_FONT_PATH = "/fonts/LiberationSans-BoldItalic.ttf";
 
     /**
      * The name the measurement gives the font it ships with. A name of its own, because a machine which has a
@@ -69,6 +78,9 @@ public class TableAnalyzer {
      */
     private static final String MEASUREMENT_FONT_FAMILY = "PdfExporterTableMeasurement";
     private static final Font EMBEDDED_FONT = loadEmbeddedFont();
+    private static final Font EMBEDDED_BOLD_FONT = loadFontFromPath(EMBEDDED_BOLD_FONT_PATH);
+    private static final Font EMBEDDED_ITALIC_FONT = loadFontFromPath(EMBEDDED_ITALIC_FONT_PATH);
+    private static final Font EMBEDDED_BOLD_ITALIC_FONT = loadFontFromPath(EMBEDDED_BOLD_ITALIC_FONT_PATH);
 
     private static Font loadEmbeddedFont() {
         return loadFontFromPath(EMBEDDED_FONT_PATH);
@@ -159,9 +171,7 @@ public class TableAnalyzer {
 
         // The font the measurement ships with is handed to the layout by name, so the file a machine happens to
         // have installed under the name of that font is never the one which lays the table out
-        if (renderer.getSharedContext().getFontResolver() instanceof AWTFontResolver fontResolver) {
-            fontResolver.setFontMapping(MEASUREMENT_FONT_FAMILY, EMBEDDED_FONT);
-        }
+        renderer.getSharedContext().setFontResolver(new MeasurementFontResolver());
 
         BufferedImage image = new BufferedImage(pageWidth, PAGE_HEIGHT, BufferedImage.TYPE_BYTE_GRAY);
         Graphics2D g2d = image.createGraphics();
@@ -292,6 +302,23 @@ public class TableAnalyzer {
      * element here so that buggy path is never reached. Everything else (healthy images, form controls, ...)
      * is delegated to the default factory so it still contributes its real intrinsic width to the measurement.
      */
+    /**
+     * Lays the measurement font out in the face its weight and style ask for. The resolver of flying-saucer derives a
+     * bold or an italic face from the one font it is given, and a derived bold is wider or narrower than the real one.
+     */
+    static class MeasurementFontResolver extends AWTFontResolver {
+        @Override
+        protected Font resolveFont(SharedContext ctx, String font, float size, IdentValue weight, IdentValue style, IdentValue variant) {
+            if (!MEASUREMENT_FONT_FAMILY.equals(font.replace("'", "").replace("\"", ""))) {
+                return super.resolveFont(ctx, font, size, weight, style, variant);
+            }
+            boolean bold = weight == IdentValue.BOLD || weight == IdentValue.FONT_WEIGHT_700 || weight == IdentValue.FONT_WEIGHT_800 || weight == IdentValue.FONT_WEIGHT_900;
+            boolean italic = style == IdentValue.ITALIC || style == IdentValue.OBLIQUE;
+            Font face = bold ? (italic ? EMBEDDED_BOLD_ITALIC_FONT : EMBEDDED_BOLD_FONT) : (italic ? EMBEDDED_ITALIC_FONT : EMBEDDED_FONT);
+            return face.deriveFont(size * ctx.getTextRenderer().getFontScale());
+        }
+    }
+
     static class SourceAwareReplacedElementFactory implements ReplacedElementFactory {
         private final ReplacedElementFactory delegate;
 
