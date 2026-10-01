@@ -401,8 +401,12 @@ Also, there is a configuration for the cases when landscape page more required (
 ![Page Break Configuration](docs/user_guide/img/page_break_configuration.png)
 
 ## No Page Break of a work item
-The presentation of a work item in a Live Document can ask for **No Page Break**. The exported PDF keeps such a work
-item on one page: it moves to the next page whole rather than being split.
+The presentation of a work item in a Live Document can ask for **No Page Break**, in the Configure Work Item
+Presentation dialog of the document:
+
+![No Page Break](docs/user_guide/img/no_page_break.png)
+
+The exported PDF keeps such a work item on one page: it moves to the next page whole rather than being split.
 
 A work item with a table of its own is the exception. Its table may run across pages, repeating its header, and each
 row of it is kept on one page instead.
