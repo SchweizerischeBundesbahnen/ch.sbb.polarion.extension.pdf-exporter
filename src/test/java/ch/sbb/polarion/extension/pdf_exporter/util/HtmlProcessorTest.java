@@ -565,6 +565,31 @@ class HtmlProcessorTest {
     }
 
     @Test
+    void keepsAWorkItemWithoutTablesOnOnePageAsNoPageBreakAsks() {
+        Document document = JSoupUtils.parseHtml("<table style=\"page-break-inside:avoid;\"><tr><td><div class=\"polarion-dle-workitem-basic-0\">Some content</div></td></tr></table>");
+
+        processor.removePageBreakAvoids(document);
+
+        assertTrue(document.select("table").isEmpty(), "The wrapper is gone");
+        Element block = document.body().child(0);
+        assertEquals("div", block.tagName());
+        assertEquals("break-inside: avoid;", block.attr("style"));
+        assertEquals("Some content", block.text());
+    }
+
+    @Test
+    void unwrapsAWorkItemWithATableSoThatItsTableCanRunAcrossPages() {
+        Document document = JSoupUtils.parseHtml("<table style=\"page-break-inside:avoid;\"><tr><td><div class=\"polarion-dle-workitem-basic-0\">Some content</div>"
+                + "<table><tr><td>Cell</td></tr></table></td></tr></table>");
+
+        processor.removePageBreakAvoids(document);
+
+        assertEquals(1, document.select("table").size(), "Only the table of the work item is left");
+        assertTrue(document.select("div[style*=break-inside]").isEmpty(), "Nothing keeps the work item whole");
+        assertTrue(document.selectFirst("tr").attr("style").contains("break-inside:avoid"), "Its rows are kept whole instead");
+    }
+
+    @Test
     @SneakyThrows
     void removePageBreakAvoidsTest() {
         try (InputStream isInvalidHtml = this.getClass().getResourceAsStream("/withPageBreakAvoids.html");

@@ -933,8 +933,16 @@ public class HtmlProcessor {
         //
         // Taking into account that work item content can also contain tables this task should be done with cautious.
         // Removing "page-break-inside:avoid;" from table's styling doesn't help, tables are still broken. So, solution
-        // is to remove that table wrapping at all. However, to preserve the user's intent of avoiding page breaks,
-        // "break-inside: avoid" is propagated to rows of any inner content tables. As a result above example becomes:
+        // is to remove that table wrapping. A work item without tables of its own is kept on one page by a block, as
+        // the table meant to:
+        //
+        // <div style="break-inside: avoid;">
+        //   <CONTENT>
+        // </div>
+        //
+        // A work item with tables is unwrapped, so that its tables can run across pages and repeat their headers there.
+        // To preserve the user's intent of avoiding page breaks, "break-inside: avoid" is propagated to rows of the
+        // inner tables instead:
         //
         // <CONTENT> (with "break-inside: avoid" on inner table rows)
         //
@@ -968,8 +976,19 @@ public class HtmlProcessor {
             return false;
         }
 
+        Elements innerTables = td.select(HtmlTag.TABLE);
+        if (innerTables.isEmpty()) {
+            // Nothing in the work item needs to run across pages, so a block keeps it on one page
+            Element block = new Element(HtmlTag.DIV).attr(HtmlTagAttr.STYLE, CssProp.BREAK_INSIDE + ": " + CssProp.PAGE_BREAK_INSIDE_AVOID_VALUE + ";");
+            for (Node contentNodes : td.childNodes()) {
+                block.appendChild(contentNodes.clone());
+            }
+            table.replaceWith(block);
+            return true;
+        }
+
         // Propagate page-break avoidance to rows of inner tables
-        for (Element innerTable : td.select(HtmlTag.TABLE)) {
+        for (Element innerTable : innerTables) {
             propagateBreakInsideAvoidToRows(innerTable);
             if (CssProp.PAGE_BREAK_INSIDE_AVOID_VALUE.equals(getCssValue(innerTable, CssProp.PAGE_BREAK_INSIDE))) {
                 removePageBreakInsideAvoid(innerTable);
