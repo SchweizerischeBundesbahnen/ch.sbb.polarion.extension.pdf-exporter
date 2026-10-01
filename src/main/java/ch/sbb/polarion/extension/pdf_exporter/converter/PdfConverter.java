@@ -266,10 +266,10 @@ public class PdfConverter {
 
     private @NotNull String prepareHtmlContent(@NotNull ExportParams exportParams, @Nullable ITrackerProject project, @NotNull DocumentData<? extends IUniqueObject> documentData, @Nullable ExportMetaInfoCallback metaInfoCallback, @Nullable PdfGenerationLog generationLog) {
         String cssContent = timedIfNotNull(generationLog, "Get CSS content", () -> getFirstPageHeaderFooterCss(exportParams) + getCssContent(documentData, exportParams));
-        String documentLanguage = resolveDocumentLanguage(documentData, exportParams);
-        Hyphenation hyphenation = new Hyphenation(documentLanguage, HyphenationRules.turningHyphenationOff(cssContent));
-        String preparedDocumentContent = postProcessDocumentContent(exportParams, project, documentData.getContent(), hyphenation, generationLog);
         String headerFooterContent = timedIfNotNull(generationLog, "Get header/footer content", () -> getHeaderFooterContent(documentData, exportParams));
+        String documentLanguage = resolveDocumentLanguage(documentData, exportParams);
+        Hyphenation hyphenation = new Hyphenation(documentLanguage, HyphenationRules.turningHyphenationOff(cssContent), headerFooterContent);
+        String preparedDocumentContent = postProcessDocumentContent(exportParams, project, documentData.getContent(), hyphenation, generationLog);
 
         HtmlData htmlData = new HtmlData(cssContent, preparedDocumentContent, headerFooterContent);
 

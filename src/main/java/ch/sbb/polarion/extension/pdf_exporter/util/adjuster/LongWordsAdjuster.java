@@ -7,6 +7,7 @@ import com.helger.css.decl.CSSDeclarationList;
 import lombok.experimental.UtilityClass;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
@@ -106,7 +107,7 @@ public class LongWordsAdjuster {
                     table.attr(LANG, hyphenation.language());
                 }
             }
-            markHyphenationTurnedOff(document, hyphenation.turnedOffBy());
+            markHyphenationTurnedOff(document, hyphenation);
         }
         for (Element cell : document.select(CELL)) {
             breakWordsOf(cell, DEFAULT_RULE);
@@ -146,23 +147,26 @@ public class LongWordsAdjuster {
 
     /**
      * Marks the elements a rule of the CSS turns hyphenation off for. The rules are matched as the PDF lays the document
-     * out, inside the {@code div.content} its template wraps it in. A rule for the whole document, for its body or for
-     * that wrapper, as one which cannot be read, marks every table, as those elements are not part of what is processed
-     * here.
+     * out: inside the {@code div.content} its template wraps it in, after the header and the footer. A rule for the whole
+     * document, for its body or for that wrapper, as one which cannot be read, marks every table, as those elements are
+     * not part of what is processed here.
      */
-    private static void markHyphenationTurnedOff(@NotNull Document document, @NotNull List<String> selectors) {
-        if (selectors.isEmpty()) {
+    private static void markHyphenationTurnedOff(@NotNull Document document, @NotNull Hyphenation hyphenation) {
+        if (hyphenation.turnedOffBy().isEmpty()) {
             return;
         }
         Element body = document.body();
         Element content = new Element("div").addClass("content");
         content.insertChildren(0, new ArrayList<>(body.childNodes()));
+        List<Node> pageBefore = new ArrayList<>(Jsoup.parseBodyFragment(hyphenation.pageBefore()).body().childNodes());
+        body.insertChildren(0, pageBefore);
         body.appendChild(content);
         try {
-            for (String selector : selectors) {
+            for (String selector : hyphenation.turnedOffBy()) {
                 markHyphenationTurnedOff(document, selector, content);
             }
         } finally {
+            pageBefore.forEach(Node::remove);
             content.unwrap();
         }
     }

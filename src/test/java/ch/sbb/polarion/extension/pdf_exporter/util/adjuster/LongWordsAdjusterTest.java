@@ -269,6 +269,18 @@ class LongWordsAdjusterTest {
     }
 
     @Test
+    void matchesARuleWhichNamesAnElementByItsPlaceAfterTheHeaderAndTheFooter() {
+        // In the PDF the header comes first, so a rule for the first div of the body does not reach the document
+        Document document = Jsoup.parse("<table><tr><td>Grundstücksverkehrsgenehmigungszuständigkeitsübertragungsverordnung</td></tr></table>");
+
+        LongWordsAdjuster.addBreakPoints(document, new Hyphenation("de", List.of("body > div:first-child"), "<div class='header'></div><div class='footer'></div>"));
+
+        assertThat(document.select("wbr")).isEmpty();
+        assertThat(document.selectFirst("td").attr("style")).isEqualTo("hyphens:auto;");
+        assertThat(document.body().children()).as("The header and the footer are gone again").extracting(Element::tagName).containsExactly("table");
+    }
+
+    @Test
     void leavesATableOfADocumentWithoutALanguageUnmarked() {
         Document document = Jsoup.parse("<table><tr><td>" + "ABCDEFGHIJ".repeat(5) + "</td></tr></table>");
 
