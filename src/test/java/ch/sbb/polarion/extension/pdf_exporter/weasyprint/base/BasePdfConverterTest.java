@@ -168,7 +168,7 @@ public abstract class BasePdfConverterTest extends BaseWeasyPrintTest {
     protected void setupCssSettings() {
         when(cssSettings.load(any(), any())).thenReturn(CssModel.builder()
                 .disableDefaultCss(false)
-                .css(readCssResource(CSS_OPEN_SANS, FONT_REGULAR))
+                .css(readFontCss())
                 .build());
     }
 
@@ -176,11 +176,11 @@ public abstract class BasePdfConverterTest extends BaseWeasyPrintTest {
      * Setup cover page settings. Override in subclasses for custom cover pages.
      */
     protected void setupCoverPageSettings() {
-        String openSansCss = readCssResource(CSS_OPEN_SANS, FONT_REGULAR);
+        String fontCss = readFontCss();
         lenient().when(coverPageSettings.load(any(), any())).thenReturn(CoverPageModel.builder()
                 .useCustomValues(true)
                 .templateHtml("<div>Cover Page Title</div>")
-                .templateCss(openSansCss)
+                .templateCss(fontCss)
                 .build());
         lenient().when(coverPageSettings.processImagePlaceholders(any())).thenAnswer(invocation -> invocation.getArgument(0));
     }

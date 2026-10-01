@@ -36,7 +36,7 @@ import static org.mockito.ArgumentMatchers.eq;
 class DocumentTableRowKeptWholeTest extends BasePdfConverterTest {
 
     /** Room above the table, as much as it takes for the end of the first page to fall inside the row of the Patron. */
-    private static final String PREFACE = "<div style=\"height: 750px\"></div>";
+    private static final String PREFACE = "<div style=\"height: 768px\"></div>";
 
     @Test
     void keepsTheRowOfTheTableOnOnePage() {

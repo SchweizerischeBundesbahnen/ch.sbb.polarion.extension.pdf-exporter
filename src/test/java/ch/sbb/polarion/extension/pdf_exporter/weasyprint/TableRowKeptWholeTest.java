@@ -35,7 +35,7 @@ import static org.mockito.ArgumentMatchers.eq;
  */
 class TableRowKeptWholeTest extends BasePdfConverterTest {
 
-    private static final int ROWS = 24;
+    private static final int ROWS = 28;
 
     /** A border around each cell, so the pages show where a row ends and whether it was split. */
     private static final String CELL = "<td style=\"border: 1px solid #999;\">";
@@ -53,7 +53,7 @@ class TableRowKeptWholeTest extends BasePdfConverterTest {
     private static final String ICON = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAAF0lEQVR4nGM4w8BAEiJN9aiGUQ1DSgMAQWfMAdovJBMAAAAASUVORK5CYII=";
 
     /** Room above the table, as much as it takes for the end of the first page to fall inside a row. */
-    private static final String PREFACE = "<div style=\"height: 18px\"></div>";
+    private static final String PREFACE = "<div style=\"height: 33px\"></div>";
 
     @Test
     void keepsEveryRowOfAWorkItemsTableOnOnePage() {

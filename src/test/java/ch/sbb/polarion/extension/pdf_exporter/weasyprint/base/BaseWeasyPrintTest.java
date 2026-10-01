@@ -41,9 +41,13 @@ public abstract class BaseWeasyPrintTest {
     public static final String WEASYPRINT_TEST_CSS_RESOURCES_FOLDER = "/weasyprint/css/";
     public static final String WEASYPRINT_TEST_FONT_RESOURCES_FOLDER = "/weasyprint/font/";
     public static final String FONT_BASE64_REPLACE_PARAM = "{FONT_BASE64}";
-    /** Embeds Open Sans and puts it on every element, so text is laid out the same wherever WeasyPrint runs. */
-    public static final String CSS_OPEN_SANS = "openSans";
     public static final String FONT_REGULAR = "OpenSans-Regular";
+
+    /** Embeds Liberation Sans, the font of an export, and puts it on every element, so text is laid out the same wherever WeasyPrint runs. */
+    private static final String CSS_LIBERATION_SANS = "liberationSans";
+
+    /** The faces of Liberation Sans the stylesheet embeds, each where the stylesheet names it in braces. */
+    private static final List<String> LIBERATION_SANS_FACES = List.of("LiberationSans-Regular", "LiberationSans-Bold", "LiberationSans-Italic", "LiberationSans-BoldItalic");
 
     protected static final String REPORTS_FOLDER_PATH = "target/surefire-reports/";
     protected static final String EXT_HTML = ".html";
@@ -51,6 +55,7 @@ public abstract class BaseWeasyPrintTest {
     protected static final String EXT_PDF = ".pdf";
     protected static final String EXT_CSS = ".css";
     protected static final String EXT_WOFF = ".woff";
+    protected static final String EXT_TTF = ".ttf";
 
     private static final Logger logger = LoggerFactory.getLogger(BaseWeasyPrintTest.class);
 
@@ -70,6 +75,19 @@ public abstract class BaseWeasyPrintTest {
     public static String readCssResource(String resourceName, String fontResourceName) {
         return StringUtils.readToString(BaseWeasyPrintTest.class.getResourceAsStream(WEASYPRINT_TEST_CSS_RESOURCES_FOLDER + resourceName + EXT_CSS))
                 .replace(FONT_BASE64_REPLACE_PARAM, Base64.getEncoder().encodeToString(readFontResource(fontResourceName)));
+    }
+
+    /** The stylesheet which puts the font of an export, embedded, on every element. */
+    @SneakyThrows
+    @SuppressWarnings("ConstantConditions")
+    public static String readFontCss() {
+        String css = StringUtils.readToString(BaseWeasyPrintTest.class.getResourceAsStream(WEASYPRINT_TEST_CSS_RESOURCES_FOLDER + CSS_LIBERATION_SANS + EXT_CSS));
+        for (String face : LIBERATION_SANS_FACES) {
+            try (InputStream font = BaseWeasyPrintTest.class.getResourceAsStream(WEASYPRINT_TEST_FONT_RESOURCES_FOLDER + face + EXT_TTF)) {
+                css = css.replace("{" + face + "}", Base64.getEncoder().encodeToString(font.readAllBytes()));
+            }
+        }
+        return css;
     }
 
     @SneakyThrows

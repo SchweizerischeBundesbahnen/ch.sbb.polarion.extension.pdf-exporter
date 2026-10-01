@@ -50,12 +50,6 @@ class IconAlignmentTest extends BasePdfConverterTest {
      */
     private static final String ICON = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAAF0lEQVR4nGM4w8BAEiJN9aiGUQ1DSgMAQWfMAdovJBMAAAAASUVORK5CYII=";
 
-    /**
-     * No CSS but the default one, so the lines take the height of the font an export is laid out in. Open Sans makes
-     * a line higher than an icon, so the lines would not show what an icon does to them. Only sizes are compared here.
-     */
-    private static final String IN_THE_FONT_OF_AN_EXPORT = "";
-
     /** Each kind of lines starts a page of its own, so that none of them is split between two pages. */
     private static final String PAGE_BREAK = "<div style=\"break-before: page;\"></div>";
 
@@ -103,7 +97,7 @@ class IconAlignmentTest extends BasePdfConverterTest {
             content.append(workItem("P" + line + "P", "<span>Should Have</span>"));
         }
 
-        byte[] pdf = export(content.toString(), IN_THE_FONT_OF_AN_EXPORT);
+        byte[] pdf = export(content.toString(), readFontCss());
 
         float plain = lineHeight(pdf, "P");
         assertThat(lineHeight(pdf, "L")).as("A line with the icon of a link is as high as a line of text").isCloseTo(plain, within(LINE_TOLERANCE_PT));
@@ -119,7 +113,7 @@ class IconAlignmentTest extends BasePdfConverterTest {
         String item = "<li><span class=\"polarion-rte-link\"><a class=\"polarion-Hyperlink\" href=\"#\"><span style=\"white-space:nowrap;\">"
                 + "<img src=\"" + ICON + "\" class=\"polarion-Icons\"/></span>Specification</a></span></li>";
 
-        byte[] pdf = export("<ul>" + item.repeat(3) + "</ul>", IN_THE_FONT_OF_AN_EXPORT);
+        byte[] pdf = export("<ul>" + item.repeat(3) + "</ul>", readFontCss());
 
         List<DrawnImages.Box> icons = DrawnImages.boxesIn(pdf);
         assertThat(icons).hasSize(3);
@@ -131,7 +125,7 @@ class IconAlignmentTest extends BasePdfConverterTest {
     }
 
     private void assertIconsInTheMiddleOfTheirLines(@NotNull String testName, @NotNull String customCss) {
-        byte[] pdf = export(readHtmlResource("iconsInLine"), readCssResource(CSS_OPEN_SANS, FONT_REGULAR) + customCss);
+        byte[] pdf = export(readHtmlResource("iconsInLine"), readFontCss() + customCss);
 
         List<DrawnImages.Box> icons = DrawnImages.boxesIn(pdf);
         assertThat(icons).hasSize(WORDS_AFTER_ICONS.size());

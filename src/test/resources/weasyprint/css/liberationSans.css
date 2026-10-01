@@ -1,0 +1,29 @@
+/*
+ * The fonts of the machine WeasyPrint runs on decide how text is laid out. Liberation Sans, embedded here and put on
+ * every element, lays it out the same on every machine, so the reference images of a test hold anywhere. It is the
+ * font an export is laid out in: the default CSS asks for Arial, and the WeasyPrint container has Liberation Sans for it.
+ * It sets the font alone: the sizes and everything else come from the default CSS, as in an export.
+ */
+@font-face {
+  font-family: Embedded Liberation Sans;
+  src: url(data:font/ttf;base64,{LiberationSans-Regular}) format('truetype');
+}
+@font-face {
+  font-family: Embedded Liberation Sans;
+  font-weight: bold;
+  src: url(data:font/ttf;base64,{LiberationSans-Bold}) format('truetype');
+}
+@font-face {
+  font-family: Embedded Liberation Sans;
+  font-style: italic;
+  src: url(data:font/ttf;base64,{LiberationSans-Italic}) format('truetype');
+}
+@font-face {
+  font-family: Embedded Liberation Sans;
+  font-weight: bold;
+  font-style: italic;
+  src: url(data:font/ttf;base64,{LiberationSans-BoldItalic}) format('truetype');
+}
+* {
+  font-family: Embedded Liberation Sans !important;
+}
