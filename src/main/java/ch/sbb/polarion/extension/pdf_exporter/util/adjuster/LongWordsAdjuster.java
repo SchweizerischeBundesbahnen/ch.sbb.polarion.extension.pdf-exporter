@@ -1,14 +1,25 @@
 package ch.sbb.polarion.extension.pdf_exporter.util.adjuster;
 
+import ch.sbb.polarion.extension.pdf_exporter.constants.CssProp;
+import ch.sbb.polarion.extension.pdf_exporter.constants.HtmlTagAttr;
+import ch.sbb.polarion.extension.pdf_exporter.util.CssUtils;
+import com.helger.css.decl.CSSDeclarationList;
 import lombok.experimental.UtilityClass;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
 import org.jsoup.nodes.TextNode;
+import org.jsoup.select.Elements;
+import org.jsoup.select.Selector;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 
 /**
  * Gives the long words of table cells, a URL or an ID, places where a line may break.
@@ -16,6 +27,10 @@ import java.util.List;
  * The default CSS lets a cell break a word nowhere else. A long word then still fits its column, a short one is never
  * split, and WeasyPrint need not work out a width for every character of a cell, which takes it minutes for a cell of
  * long text.
+ * </p>
+ * <p>
+ * A table in a language, as the tables of a document with a language are, hyphenates a long word of letters instead:
+ * its cell gets {@code hyphens: auto}, which breaks the word at a syllable and with a hyphen.
  * </p>
  */
 @UtilityClass
@@ -38,6 +53,25 @@ public class LongWordsAdjuster {
 
     private static final String WBR = "wbr";
 
+    private static final String TABLE = "table";
+
+    private static final String CELL = "td, th";
+
+    private static final String LANG = "lang";
+
+    private static final String IN_A_LANGUAGE = "[lang]";
+
+    /** Marks an element a rule of the CSS of the export turns hyphenation off for. */
+    private static final String NO_HYPHENATION = "data-pdf-exporter-no-hyphenation";
+
+    private static final String TURNED_OFF = "[" + NO_HYPHENATION + "]";
+
+    /** The languages WeasyPrint hyphenates, by the dictionaries of pyphen it ships with, as primary language subtags. */
+    private static final Set<String> HYPHENATION_DICTIONARIES = Set.of(
+            "af", "as", "be", "bg", "ca", "cs", "da", "de", "el", "en", "eo", "es", "et", "eu", "fr", "gl", "hr", "hu", "id", "is",
+            "it", "kn", "lt", "lv", "mn", "mr", "nb", "nl", "nn", "or", "pa", "pl", "pt", "ro", "ru", "sa", "sk", "sl", "sq", "sr",
+            "sv", "te", "th", "uk", "zu");
+
     /** A character which joins no word: the text of the next block, or of a table inside the cell, starts anew. */
     private static final char BOUNDARY = '\n';
 
@@ -54,7 +88,28 @@ public class LongWordsAdjuster {
     private static final Rule DEFAULT_RULE = new Rule(LONG_WORD, VERY_LONG_WORD, LONG_WORD);
 
     public static void addBreakPoints(@NotNull Document document) {
-        for (Element cell : document.select("td, th")) {
+        addBreakPoints(document, Hyphenation.NONE);
+    }
+
+    public static void addBreakPoints(@NotNull Document document, @Nullable String language) {
+        addBreakPoints(document, new Hyphenation(language, List.of()));
+    }
+
+    /**
+     * @param hyphenation the language of the document, which its tables are then marked to be in, unless they are in
+     *                    one of their own, so that they hyphenate their long words of letters wherever they are laid
+     *                    out; and the rules of the CSS which turn hyphenation off, whose elements are marked so
+     */
+    public static void addBreakPoints(@NotNull Document document, @NotNull Hyphenation hyphenation) {
+        if (hyphenation.language() != null) {
+            for (Element table : document.select(TABLE)) {
+                if (table.closest(IN_A_LANGUAGE) == null) {
+                    table.attr(LANG, hyphenation.language());
+                }
+            }
+            markHyphenationTurnedOff(document, hyphenation);
+        }
+        for (Element cell : document.select(CELL)) {
             breakWordsOf(cell, DEFAULT_RULE);
         }
     }
@@ -66,7 +121,7 @@ public class LongWordsAdjuster {
      */
     public static void addBreakPointsToFit(@NotNull Element table, int part) {
         Rule rule = new Rule(part, part, part);
-        for (Element cell : table.select("td, th")) {
+        for (Element cell : table.select(CELL)) {
             breakWordsOf(cell, rule);
         }
     }
@@ -75,11 +130,92 @@ public class LongWordsAdjuster {
     private record CellText(@NotNull String text, @NotNull List<TextNode> nodes, @NotNull List<Integer> starts) {
     }
 
+    /** Where the long words of a text may break, and whether a word was left to hyphenation instead. */
+    private record Breaks(@NotNull List<Integer> points, boolean hyphenates) {
+    }
+
     private static void breakWordsOf(@NotNull Element cell, @NotNull Rule rule) {
         CellText cellText = collect(cell);
-        List<Integer> breaks = breakPoints(cellText.text(), rule);
-        if (!breaks.isEmpty()) {
-            insert(cellText, breaks);
+        Breaks breaks = breakPoints(cellText.text(), rule, hyphenates(cell));
+        if (!breaks.points().isEmpty()) {
+            insert(cellText, breaks.points());
+        }
+        if (breaks.hyphenates()) {
+            hyphenate(cell);
+        }
+    }
+
+    /**
+     * Marks the elements a rule of the CSS turns hyphenation off for. The rules are matched as the PDF lays the document
+     * out: inside the {@code div.content} its template wraps it in, after the header and the footer. A rule for the whole
+     * document, for its body or for that wrapper, as one which cannot be read, marks every table, as those elements are
+     * not part of what is processed here.
+     */
+    private static void markHyphenationTurnedOff(@NotNull Document document, @NotNull Hyphenation hyphenation) {
+        if (hyphenation.turnedOffBy().isEmpty()) {
+            return;
+        }
+        Element body = document.body();
+        Element content = new Element("div").addClass("content");
+        content.insertChildren(0, new ArrayList<>(body.childNodes()));
+        List<Node> pageBefore = new ArrayList<>(Jsoup.parseBodyFragment(hyphenation.pageBefore()).body().childNodes());
+        body.insertChildren(0, pageBefore);
+        body.appendChild(content);
+        try {
+            for (String selector : hyphenation.turnedOffBy()) {
+                markHyphenationTurnedOff(document, selector, content);
+            }
+        } finally {
+            pageBefore.forEach(Node::remove);
+            content.unwrap();
+        }
+    }
+
+    private static void markHyphenationTurnedOff(@NotNull Document document, @NotNull String selector, @NotNull Element content) {
+        Elements selected;
+        try {
+            selected = document.select(selector);
+        } catch (Selector.SelectorParseException e) {
+            document.select(TABLE).attr(NO_HYPHENATION, "");
+            return;
+        }
+        for (Element element : selected) {
+            if (element == content || element == document.body() || element.nameIs("html")) {
+                document.select(TABLE).attr(NO_HYPHENATION, "");
+                return;
+            }
+            element.attr(NO_HYPHENATION, "");
+        }
+    }
+
+    /**
+     * Whether a cell can hyphenate its words: it is in a language WeasyPrint has a dictionary for, no rule of the CSS
+     * turns hyphenation off for it, an element around it or one inside it, and neither it nor an element around it
+     * states another hyphenation than {@code auto}. Where it cannot, a word keeps its break points.
+     */
+    private static boolean hyphenates(@NotNull Element cell) {
+        Element inALanguage = cell.closest(IN_A_LANGUAGE);
+        if (inALanguage == null || !HYPHENATION_DICTIONARIES.contains(inALanguage.attr(LANG).split("[-_]")[0].toLowerCase(Locale.ROOT))) {
+            return false;
+        }
+        if (cell.closest(TURNED_OFF) != null || cell.selectFirst(TURNED_OFF) != null) {
+            return false;
+        }
+        for (Element element = cell; element != null; element = element.parent()) {
+            String hyphens = CssUtils.getPropertyValue(CssUtils.parseDeclarations(element.attr(HtmlTagAttr.STYLE)), CssProp.HYPHENS);
+            if (!hyphens.isEmpty()) {
+                return CssProp.HYPHENS_AUTO_VALUE.equals(hyphens);
+            }
+        }
+        return true;
+    }
+
+    /** Lets a cell break its words at a syllable, unless the document states how it hyphenates. */
+    private static void hyphenate(@NotNull Element cell) {
+        CSSDeclarationList style = CssUtils.parseDeclarations(cell.attr(HtmlTagAttr.STYLE));
+        if (CssUtils.getPropertyValue(style, CssProp.HYPHENS).isEmpty()) {
+            CssUtils.setPropertyValue(style, CssProp.HYPHENS, CssProp.HYPHENS_AUTO_VALUE);
+            cell.attr(HtmlTagAttr.STYLE, style.getAsCSSString());
         }
     }
 
@@ -100,11 +236,11 @@ public class LongWordsAdjuster {
                 text.append(textNode.getWholeText());
             } else if (child instanceof Element element) {
                 // A place to break, given before, ends a word as a space does
-                boolean boundary = element.isBlock() || element.nameIs("br") || element.nameIs(WBR) || element.nameIs("table");
+                boolean boundary = element.isBlock() || element.nameIs("br") || element.nameIs(WBR) || element.nameIs(TABLE);
                 if (boundary) {
                     text.append(BOUNDARY);
                 }
-                if (!element.nameIs("table")) {
+                if (!element.nameIs(TABLE)) {
                     collect(element, text, nodes, starts);
                 }
                 if (boundary) {
@@ -115,16 +251,72 @@ public class LongWordsAdjuster {
     }
 
     /** The places, as offsets into the text, where its long words may break. */
-    private static @NotNull List<Integer> breakPoints(@NotNull String text, @NotNull Rule rule) {
+    private static @NotNull Breaks breakPoints(@NotNull String text, @NotNull Rule rule, boolean canHyphenate) {
         List<Integer> breaks = new ArrayList<>();
+        boolean hyphenates = false;
         int index = 0;
         while (index < text.length()) {
             int start = skipSpaces(text, index);
             int end = endOfWord(text, start);
-            addWordBreakPoints(text, start, end, rule, breaks);
+            if (canHyphenate && text.codePointCount(start, end) > rule.partsFrom() && isAWordOfALanguage(text, start, end)) {
+                hyphenates = true;
+            } else {
+                addWordBreakPoints(text, start, end, rule, breaks);
+            }
             index = end;
         }
-        return breaks;
+        return new Breaks(breaks, hyphenates);
+    }
+
+    /**
+     * A word of letters alone, which a dictionary of the language can hyphenate, unlike an ID, a path or a name of code.
+     * The punctuation around it, as a full stop or a closing bracket, makes it no less a word, and words a no-break space
+     * joins, as in "der&nbsp;Rechtsschutzversicherungsgesellschaft", are words each.
+     */
+    private static boolean isAWordOfALanguage(@NotNull String text, int start, int end) {
+        int[] codePoints = text.substring(start, end).codePoints().toArray();
+        int wordStart = 0;
+        for (int index = 0; index <= codePoints.length; index++) {
+            if (index == codePoints.length || Character.getType(codePoints[index]) == Character.SPACE_SEPARATOR) {
+                if (!isAWord(codePoints, wordStart, index)) {
+                    return false;
+                }
+                wordStart = index + 1;
+            }
+        }
+        return true;
+    }
+
+    private static boolean isAWord(int @NotNull [] codePoints, int start, int end) {
+        int first = start;
+        int last = end;
+        while (first < last && isPunctuation(codePoints[first])) {
+            first++;
+        }
+        while (last > first && isPunctuation(codePoints[last - 1])) {
+            last--;
+        }
+        return first < last
+                && Arrays.stream(codePoints, first, last).allMatch(codePoint -> Character.isLetter(codePoint) || Character.getType(codePoint) == Character.NON_SPACING_MARK)
+                && !isCamelCase(codePoints, first, last);
+    }
+
+    /** A capital after a small letter, as in a class name, makes a name of code, which a hyphen would change. */
+    private static boolean isCamelCase(int @NotNull [] codePoints, int start, int end) {
+        for (int index = start + 1; index < end; index++) {
+            if (Character.isUpperCase(codePoints[index]) && Character.isLowerCase(codePoints[index - 1])) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean isPunctuation(int codePoint) {
+        return switch (Character.getType(codePoint)) {
+            case Character.OTHER_PUNCTUATION, Character.START_PUNCTUATION, Character.END_PUNCTUATION,
+                 Character.INITIAL_QUOTE_PUNCTUATION, Character.FINAL_QUOTE_PUNCTUATION -> true;
+            default -> false;
+        };
     }
 
     private static int skipSpaces(@NotNull String text, int index) {

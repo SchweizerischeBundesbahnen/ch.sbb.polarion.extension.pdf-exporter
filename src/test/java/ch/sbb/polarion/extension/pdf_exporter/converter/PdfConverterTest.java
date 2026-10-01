@@ -19,6 +19,7 @@ import ch.sbb.polarion.extension.pdf_exporter.settings.CssSettings;
 import ch.sbb.polarion.extension.pdf_exporter.settings.HeaderFooterSettings;
 import ch.sbb.polarion.extension.pdf_exporter.util.DocumentDataFactory;
 import ch.sbb.polarion.extension.pdf_exporter.util.HtmlProcessor;
+import ch.sbb.polarion.extension.pdf_exporter.util.adjuster.Hyphenation;
 import ch.sbb.polarion.extension.pdf_exporter.util.PdfGenerationLog;
 import ch.sbb.polarion.extension.pdf_exporter.util.PdfTemplateProcessor;
 import ch.sbb.polarion.extension.pdf_exporter.util.placeholder.PlaceholderProcessor;
@@ -364,7 +365,7 @@ class PdfConverterTest {
         when(typeEnum.getAllOptions()).thenReturn(List.of(typeOption));
         when(project.getWorkItemTypeEnum()).thenReturn(typeEnum);
         when(project.getWorkItemLinkRoleEnum()).thenReturn(roleEnum);
-        when(htmlProcessor.processHtmlForPDF(anyString(), eq(exportParams), any(List.class), any())).thenReturn("result string");
+        when(htmlProcessor.processHtmlForPDF(anyString(), eq(exportParams), any(List.class), any(), any())).thenReturn("result string");
 
         // Act
         PdfConverter pdfConverter = new PdfConverter(null, null, null, null, null, null, null, htmlProcessor, null, bulkProcessingConnector);
@@ -373,7 +374,7 @@ class PdfConverterTest {
         // Assert
         assertThat(resultContent).isEqualTo("result string");
         ArgumentCaptor<List<String>> rolesCaptor = ArgumentCaptor.forClass(List.class);
-        verify(htmlProcessor).processHtmlForPDF(eq("test content"), eq(exportParams), rolesCaptor.capture(), isNull());
+        verify(htmlProcessor).processHtmlForPDF(eq("test content"), eq(exportParams), rolesCaptor.capture(), eq(Hyphenation.NONE), isNull());
         assertThat(rolesCaptor.getValue()).containsExactly("role1", "testRole1OppositeName", "role2", "testRole2OppositeName");
     }
 
@@ -399,7 +400,7 @@ class PdfConverterTest {
         when(typeEnum.getAllOptions()).thenReturn(List.of(typeOption));
         when(project.getWorkItemTypeEnum()).thenReturn(typeEnum);
         when(project.getWorkItemLinkRoleEnum()).thenReturn(roleEnum);
-        when(htmlProcessor.processHtmlForPDF(anyString(), eq(exportParams), any(List.class), any())).thenReturn("result string");
+        when(htmlProcessor.processHtmlForPDF(anyString(), eq(exportParams), any(List.class), any(), any())).thenReturn("result string");
 
         // Act
         PdfConverter pdfConverter = new PdfConverter(null, null, null, null, null, null, null, htmlProcessor, null, bulkProcessingConnector);
@@ -408,7 +409,7 @@ class PdfConverterTest {
         // Assert
         assertThat(resultContent).isEqualTo("result string");
         ArgumentCaptor<List<String>> rolesCaptor = ArgumentCaptor.forClass(List.class);
-        verify(htmlProcessor).processHtmlForPDF(eq("test content"), eq(exportParams), rolesCaptor.capture(), isNull());
+        verify(htmlProcessor).processHtmlForPDF(eq("test content"), eq(exportParams), rolesCaptor.capture(), eq(Hyphenation.NONE), isNull());
         assertThat(rolesCaptor.getValue()).containsExactly("role1", "role2");
     }
 
@@ -434,7 +435,7 @@ class PdfConverterTest {
         when(typeEnum.getAllOptions()).thenReturn(List.of(typeOption));
         when(project.getWorkItemTypeEnum()).thenReturn(typeEnum);
         when(project.getWorkItemLinkRoleEnum()).thenReturn(roleEnum);
-        when(htmlProcessor.processHtmlForPDF(anyString(), eq(exportParams), any(List.class), any())).thenReturn("result string");
+        when(htmlProcessor.processHtmlForPDF(anyString(), eq(exportParams), any(List.class), any(), any())).thenReturn("result string");
 
         // Act
         PdfConverter pdfConverter = new PdfConverter(null, null, null, null, null, null, null, htmlProcessor, null, bulkProcessingConnector);
@@ -443,7 +444,7 @@ class PdfConverterTest {
         // Assert
         assertThat(resultContent).isEqualTo("result string");
         ArgumentCaptor<List<String>> rolesCaptor = ArgumentCaptor.forClass(List.class);
-        verify(htmlProcessor).processHtmlForPDF(eq("test content"), eq(exportParams), rolesCaptor.capture(), isNull());
+        verify(htmlProcessor).processHtmlForPDF(eq("test content"), eq(exportParams), rolesCaptor.capture(), eq(Hyphenation.NONE), isNull());
         assertThat(rolesCaptor.getValue()).containsExactly("testRole1OppositeName", "testRole2OppositeName");
     }
 

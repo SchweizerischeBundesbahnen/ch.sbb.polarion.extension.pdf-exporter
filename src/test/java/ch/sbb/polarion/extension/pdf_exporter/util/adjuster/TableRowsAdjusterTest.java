@@ -159,6 +159,19 @@ class TableRowsAdjusterTest {
     }
 
     @Test
+    void hyphenatesTheWordsOfATableWithNoRoomInADocumentWithALanguage() {
+        // Long compounds leave three columns no room, as the measure does not hyphenate, but WeasyPrint does
+        String text = "Die Rechtsschutzversicherungsgesellschaft prüft die Kraftfahrzeughaftpflichtversicherung und das Bundesausbildungsförderungsgesetz.";
+        Document document = Jsoup.parse("<table><tbody><tr>" + ("<td>" + text + "</td>").repeat(3) + "</tr></tbody></table>");
+        LongWordsAdjuster.addBreakPoints(document, "de");
+
+        new TableRowsAdjuster(document, A4_PORTRAIT).execute();
+
+        assertThat(document.select("wbr")).as("No word of letters gets a break point without a hyphen").isEmpty();
+        assertThat(document.select("td").eachAttr("style")).containsOnly("hyphens:auto;").hasSize(3);
+    }
+
+    @Test
     void leavesTheCellsOfATableWhichFitsAsTheyAre() {
         String row = "<tr>" + "<td>Approved</td>".repeat(4) + "</tr>";
         Document document = Jsoup.parse("<table><tbody>" + row + "</tbody></table>");
