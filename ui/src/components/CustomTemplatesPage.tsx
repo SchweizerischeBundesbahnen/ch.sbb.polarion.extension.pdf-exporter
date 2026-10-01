@@ -26,24 +26,6 @@ export interface TemplateField {
 }
 
 /**
- * More custom templates a checkbox switches on, e.g. the parts of a different first page. They have a tab of their
- * own, and no built-in counterpart. They are stored whatever the checkbox says, so switching it off keeps what the
- * administrator wrote.
- */
-export interface OptionalTemplates {
-  /** Key of the checkbox in the settings document, e.g. `differentFirstPage`. */
-  key: string;
-  /** Label of the checkbox, e.g. "Different first page". */
-  label: string;
-  /** Label of their tab, e.g. "First Page Templates". */
-  tabLabel: string;
-  intro: ReactNode;
-  fields: TemplateField[];
-}
-
-type TabId = 'custom' | 'optional' | 'default';
-
-/**
  * The settings documents these pages edit: the choice between built-in and custom values, one string per field,
  * the hash of the built-in values the custom ones were copied from, and whether those changed since.
  */
@@ -78,8 +60,6 @@ interface CustomTemplatesPageProps {
   customIntro: ReactNode;
   defaultIntro: ReactNode;
   fields: TemplateField[];
-  /** More custom templates on a tab of their own, which a checkbox under the custom choice switches on. */
-  optionalTemplates?: OptionalTemplates;
   /** Extra content below the editors, e.g. the supported-placeholders table. */
   footer?: ReactNode;
   /** Class on the editor grid, so a page can lay its fields out (three across, two rows of three...). */
@@ -124,8 +104,7 @@ export default function CustomTemplatesPage({
   customLabel,
   customIntro,
   defaultIntro,
-  fields: mainFields,
-  optionalTemplates,
+  fields,
   footer,
   editorsClassName,
   copySources,
@@ -133,21 +112,12 @@ export default function CustomTemplatesPage({
   isEmpty,
 }: Readonly<CustomTemplatesPageProps>) {
   const scope = getScope();
-  const optionalKey = optionalTemplates?.key;
-  const optionalFields = useMemo(() => optionalTemplates?.fields ?? [], [optionalTemplates]);
-  // Every template the settings document holds, the optional ones too, whether the checkbox is on or not. A page which
-  // hands the same fields keeps the same array, so the loads that depend on it do not run again.
-  const fields = useMemo(() => [...mainFields, ...optionalFields], [mainFields, optionalFields]);
   // A new configuration starts with empty templates, not in use: the built-in ones apply until the administrator
   // writes some. Keyed by the field names, since the pages hand a new `fields` array to every render.
   const fieldKeys = fields.map((field) => field.key).join(',');
   const initialContent = useMemo<TemplateSettings>(
-    () => ({
-      useCustomValues: false,
-      ...(optionalKey ? { [optionalKey]: false } : {}),
-      ...Object.fromEntries(fieldKeys.split(',').map((key) => [key, ''])),
-    }),
-    [fieldKeys, optionalKey],
+    () => ({ useCustomValues: false, ...Object.fromEntries(fieldKeys.split(',').map((key) => [key, ''])) }),
+    [fieldKeys],
   );
   const settings = useNamedSettings<TemplateSettings>(feature, initialContent);
   const { confirm, confirmDialog } = useConfirm();
@@ -163,8 +133,6 @@ export default function CustomTemplatesPage({
   const [values, setValues] = useState<Record<string, string>>({});
   const [defaults, setDefaults] = useState<Record<string, string>>({});
   const [useCustomValues, setUseCustomValues] = useState(false);
-  // Whether the optional templates are on. The built-in values have none.
-  const [optionalOn, setOptionalOn] = useState(false);
   const [defaultHash, setDefaultHash] = useState<string | undefined>(undefined);
   const [defaultSource, setDefaultSource] = useState<string | undefined>(undefined);
   const [defaultChanged, setDefaultChanged] = useState(false);
@@ -174,7 +142,7 @@ export default function CustomTemplatesPage({
   const [selectedConfig, setSelectedConfig] = useState<string | null>(named ? null : DEFAULT_NAME);
   const [editingName, setEditingName] = useState(false);
   // The default templates apply until a configuration says otherwise, so their tab is the one open.
-  const [activeTab, setActiveTab] = useState<TabId>('default');
+  const [activeTab, setActiveTab] = useState<'custom' | 'default'>('default');
   const [showRevisions, setShowRevisions] = useState(false);
   const [revisionsToken, setRevisionsToken] = useState(0);
   // Two independent reads feed this page - the built-in values and the selected configuration - and a
@@ -194,7 +162,6 @@ export default function CustomTemplatesPage({
     (content: TemplateSettings) => {
       latestLoad.current += 1;
       setValues(toValues(content));
-      setOptionalOn(!!optionalKey && !!content[optionalKey]);
       setUseCustomValues(!!content.useCustomValues);
       // A configuration opens on the templates it uses: those are the ones an export gets.
       setActiveTab(content.useCustomValues ? 'custom' : 'default');
@@ -205,7 +172,7 @@ export default function CustomTemplatesPage({
       // data, telling the administrator the page could not read what it is showing.
       setContentError(false);
     },
-    [toValues, optionalKey],
+    [toValues],
   );
 
   // The template the custom templates were copied from, when it is still one of the sources.
@@ -252,22 +219,13 @@ export default function CustomTemplatesPage({
     };
   }, [named, settings, scope, applyContent]);
 
-  /** Switches the optional templates on or off, and shows the tab that has them, or the custom one they left. */
-  const chooseOptional = (on: boolean) => {
-    setOptionalOn(on);
-    setActiveTab(on ? 'optional' : 'custom');
-  };
-
   /** Chooses the templates an export uses, and shows them: the built-in ones to read, the custom ones to edit. */
   const chooseTemplates = (custom: boolean) => {
     setUseCustomValues(custom);
     setActiveTab(custom ? 'custom' : 'default');
   };
 
-  // The templates an export gets: the optional ones only while they are on.
-  const shownFields = optionalOn ? fields : mainFields;
-  const hasValues = (of: TemplateField[]) => of.some((field) => (values[field.key] ?? '').trim() !== '');
-  const hasCustomValues = hasValues(shownFields);
+  const hasCustomValues = fields.some((field) => (values[field.key] ?? '').trim() !== '');
 
   // Only a copy persists what a predefined template brings along, reading one for a comparison or a review does not.
   // A comparison is against the template chosen in "Copy from", which starts on the one the custom templates were copied
@@ -281,7 +239,7 @@ export default function CustomTemplatesPage({
   const handleCopy = async () => {
     const seq = latestLoad.current;
     if (
-      hasValues(mainFields) &&
+      hasCustomValues &&
       !(await confirm('Are you sure you want to replace the custom templates with the default ones?'))
     ) {
       return;
@@ -290,12 +248,7 @@ export default function CustomTemplatesPage({
       const content = await copyBuiltIn();
       if (seq !== latestLoad.current) return;
       latestLoad.current += 1;
-      // The built-in values have no optional templates, so a copy leaves them as they are.
-      const copied = toValues(content);
-      setValues((current) => ({
-        ...current,
-        ...Object.fromEntries(mainFields.map((field) => [field.key, copied[field.key]])),
-      }));
+      setValues(toValues(content));
       setDefaultHash(hashOf(content));
       setDefaultSource(sourceOf(content));
       setDefaultChanged(false);
@@ -347,7 +300,6 @@ export default function CustomTemplatesPage({
     // The templates are stored whatever the choice says: switching to the built-in ones must not throw away
     // what the administrator wrote.
     const content: TemplateSettings = { useCustomValues };
-    if (optionalKey) content[optionalKey] = optionalOn;
     for (const field of fields) {
       content[field.key] = values[field.key] ?? '';
     }
@@ -381,12 +333,11 @@ export default function CustomTemplatesPage({
     }
   };
 
-  const editors = (tab: TabId) => {
-    const readOnly = tab === 'default';
+  const editors = (readOnly: boolean) => {
     const classes = ['template-editors', editorsClassName].filter(Boolean);
     return (
       <div className={classes.join(' ')}>
-        {(tab === 'optional' ? optionalFields : mainFields).map((field) => (
+        {fields.map((field) => (
           <div className="template-editor" key={field.key}>
             <div className="label-block">
               <label htmlFor={`${readOnly ? 'default' : 'custom'}-${field.key}`}>{field.label}</label>
@@ -404,8 +355,6 @@ export default function CustomTemplatesPage({
       </div>
     );
   };
-
-  const intro = { custom: customIntro, optional: optionalTemplates?.intro, default: defaultIntro }[activeTab];
 
   return (
     <PageLayout title={title}>
@@ -452,20 +401,6 @@ export default function CustomTemplatesPage({
             {customLabel}
           </label>
         </div>
-        {optionalTemplates && (
-          // Under the custom choice: it chooses among the custom templates, and applies only with them.
-          <label htmlFor={`custom-${optionalKey}`} className="optional-choice">
-            <input
-              id={`custom-${optionalKey}`}
-              type="checkbox"
-              // The built-in templates have none, so it shows off with them whatever the custom ones store.
-              checked={useCustomValues && optionalOn}
-              disabled={!useCustomValues}
-              onChange={(event) => chooseOptional(event.target.checked)}
-            />
-            {optionalTemplates.label}
-          </label>
-        )}
 
         {useCustomValues && defaultChanged && (
           <div className="alert alert-warning default-changed">
@@ -484,19 +419,16 @@ export default function CustomTemplatesPage({
           items={[
             // Only the tab of the templates an export uses opens: the other ones do not apply.
             { id: 'custom', label: 'Custom Templates', disabled: !useCustomValues },
-            ...(optionalTemplates
-              ? [{ id: 'optional', label: optionalTemplates.tabLabel, disabled: !useCustomValues || !optionalOn }]
-              : []),
             { id: 'default', label: 'Default Templates', disabled: useCustomValues },
           ]}
           activeId={activeTab}
-          onSelect={(id) => setActiveTab(id as TabId)}
+          onSelect={(id) => setActiveTab(id as 'custom' | 'default')}
           name={`${feature}-tab`}
           ariaLabel={title}
         />
 
         <div className="tab-panel">
-          <p>{intro}</p>
+          <p>{activeTab === 'custom' ? customIntro : defaultIntro}</p>
           {activeTab === 'custom' && (
             <div className="template-actions">
               {copySources && (
@@ -527,7 +459,7 @@ export default function CustomTemplatesPage({
               </button>
             </div>
           )}
-          {editors(activeTab)}
+          {editors(activeTab === 'default')}
         </div>
 
         <ConfigurationButtons
@@ -552,7 +484,7 @@ export default function CustomTemplatesPage({
       {footer}
       <CompareWithDefault
         open={comparison !== null}
-        fields={mainFields}
+        fields={fields}
         custom={values}
         builtIn={comparison?.values ?? {}}
         defaultLabel={comparison?.template ? `Default: ${comparison.template}` : undefined}

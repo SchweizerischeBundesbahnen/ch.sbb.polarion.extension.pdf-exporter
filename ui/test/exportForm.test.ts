@@ -101,6 +101,23 @@ describe('reading a style package into the form', () => {
   });
 });
 
+describe('the header and footer of the first page', () => {
+  it('switches it on exactly when the package names one', () => {
+    expect(toExportForm({ firstPageHeaderFooter: 'Title page' })).toMatchObject({
+      firstPageHeaderFooterEnabled: true,
+      firstPageHeaderFooter: 'Title page',
+    });
+    expect(toExportForm({})).toMatchObject({ firstPageHeaderFooterEnabled: false, firstPageHeaderFooter: 'Default' });
+  });
+
+  it('sends its name while switched on, and null while off, keeping what was picked', () => {
+    const form = { ...toExportForm(SAMPLE_STYLE_PACKAGE_FULL), firstPageHeaderFooter: 'Title page' };
+
+    expect(params({ ...form, firstPageHeaderFooterEnabled: true }).firstPageHeaderFooter).toBe('Title page');
+    expect(params({ ...form, firstPageHeaderFooterEnabled: false }).firstPageHeaderFooter).toBeNull();
+  });
+});
+
 describe('the fields a user can get wrong', () => {
   it('accepts a comma separated list of positive integers as chapters, and nothing else', () => {
     expect(parseChapters('1,2,4')).toEqual(['1', '2', '4']);

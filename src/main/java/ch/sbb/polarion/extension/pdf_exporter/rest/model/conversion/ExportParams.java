@@ -49,6 +49,9 @@ public class ExportParams extends ConversionParams {
     @Schema(description = "Header/Footer settings name")
     private String headerFooter;
 
+    @Schema(description = "Header/Footer settings name of the first page. Not set, the first page has the header and footer of the other pages")
+    private String firstPageHeaderFooter;
+
     @Schema(description = "Localization settings name")
     private String localization;
 
@@ -132,6 +135,7 @@ public class ExportParams extends ConversionParams {
     public void overwriteByStylePackage(@NotNull StylePackageModel stylePackageModel) {
         coverPage = stylePackageModel.getCoverPage();
         headerFooter = stylePackageModel.getHeaderFooter();
+        firstPageHeaderFooter = stylePackageModel.getFirstPageHeaderFooter();
         css = stylePackageModel.getCss();
         localization = stylePackageModel.getLocalization();
         webhooks = stylePackageModel.getWebhooks();

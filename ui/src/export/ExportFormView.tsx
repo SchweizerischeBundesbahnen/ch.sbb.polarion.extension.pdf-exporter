@@ -251,6 +251,23 @@ export default function ExportFormView({
                 />
               </FieldCell>
             </FieldRow>
+            <SwitchRow
+              id={id('first-page-header-footer-checkbox')}
+              label="First page header/footer:"
+              checked={form.firstPageHeaderFooterEnabled}
+              onChange={(checked) => onPatch({ firstPageHeaderFooterEnabled: checked })}
+            >
+              <FieldCell shown={form.firstPageHeaderFooterEnabled}>
+                <SearchableSelect
+                  id={id('first-page-header-footer-selector')}
+                  ariaLabel="First page header/footer"
+                  options={childOptions('header-footer')}
+                  value={childValue(childOptions('header-footer'), form.firstPageHeaderFooter)}
+                  onChange={(value) => onPatch({ firstPageHeaderFooter: value })}
+                  disabled={busy}
+                />
+              </FieldCell>
+            </SwitchRow>
             <FieldRow label="Localization:" labelFor={id('localization-selector')}>
               <FieldCell>
                 <SearchableSelect

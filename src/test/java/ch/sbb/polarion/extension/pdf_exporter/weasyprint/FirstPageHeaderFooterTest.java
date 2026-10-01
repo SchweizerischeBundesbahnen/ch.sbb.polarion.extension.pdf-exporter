@@ -1,5 +1,6 @@
 package ch.sbb.polarion.extension.pdf_exporter.weasyprint;
 
+import ch.sbb.polarion.extension.generic.settings.SettingId;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.DocumentType;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.Orientation;
@@ -22,14 +23,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 /**
- * A header and footer with a different first page prints its first page parts on the first page, and its other parts on
- * every page after it.
+ * A style package may name a header and footer of the first page. Its parts are printed on the first page, and the parts
+ * of the header and footer of the style package on every page after it.
  */
 class FirstPageHeaderFooterTest extends BasePdfConverterTest {
 
@@ -39,18 +41,24 @@ class FirstPageHeaderFooterTest extends BasePdfConverterTest {
             <div>Page three</div>
             """;
 
+    private static final HeaderFooterModel RUNNING = HeaderFooterModel.builder()
+            .useCustomValues(true)
+            .headerLeft("Running left").headerCenter("Running center").headerRight("Running right")
+            .footerLeft("Running foot left").footerCenter("Running foot center").footerRight("Running page {{ PAGE_NUMBER }}")
+            .build();
+
+    private static final HeaderFooterModel TITLE = HeaderFooterModel.builder()
+            .useCustomValues(true)
+            .headerLeft("Title left").headerCenter("Title center").headerRight("Title right")
+            .footerLeft("Title foot left").footerCenter("Title foot center").footerRight("Title page {{ PAGE_NUMBER }}")
+            .build();
+
     @Test
     void printsTheFirstPagePartsOnTheFirstPageOnly() {
-        mockHeaderFooter(HeaderFooterModel.builder()
-                .useCustomValues(true)
-                .headerLeft("Running left").headerCenter("Running center").headerRight("Running right")
-                .footerLeft("Running foot left").footerCenter("Running foot center").footerRight("Running page {{ PAGE_NUMBER }}")
-                .differentFirstPage(true)
-                .firstPageHeaderLeft("Title left").firstPageHeaderCenter("Title center").firstPageHeaderRight("Title right")
-                .firstPageFooterLeft("Title foot left").firstPageFooterCenter("Title foot center").firstPageFooterRight("Title page {{ PAGE_NUMBER }}")
-                .build());
+        mockHeaderFooters(TITLE);
 
-        List<String> pages = pageTexts(export());
+        byte[] pdf = export(null, "title");
+        List<String> pages = pageTexts(pdf);
 
         assertThat(pages).hasSize(3);
         assertThat(pages.getFirst()).contains("Title left", "Title center", "Title right", "Title foot left", "Title foot center", "Title page 1")
@@ -59,74 +67,71 @@ class FirstPageHeaderFooterTest extends BasePdfConverterTest {
             assertThat(pages.get(page)).contains("Running left", "Running center", "Running right", "Running foot left", "Running foot center", "Running page " + (page + 1))
                     .doesNotContain("Title");
         }
+        assertFalse(compareContentUsingReferenceImages(getCurrentMethodName(), pdf), "The pages differ from the reference images");
     }
 
     /** A cover page takes the place of a page rendered before the document, so the first page is the one after it. */
     @Test
     void printsTheFirstPagePartsOnThePageAfterTheCoverPage() {
-        mockHeaderFooter(HeaderFooterModel.builder()
-                .useCustomValues(true)
-                .headerLeft("Running left").headerCenter("Running center").headerRight("Running right")
-                .footerLeft("Running foot left").footerCenter("Running foot center").footerRight("Running foot right")
-                .differentFirstPage(true)
-                .firstPageHeaderLeft("Title left").firstPageHeaderCenter("Title center").firstPageHeaderRight("Title right")
-                .firstPageFooterLeft("Title foot left").firstPageFooterCenter("Title foot center").firstPageFooterRight("Title foot right")
-                .build());
+        mockHeaderFooters(TITLE);
 
-        List<String> pages = pageTexts(export("test"));
+        byte[] pdf = export("test", "title");
+        List<String> pages = pageTexts(pdf);
 
         assertThat(pages).hasSize(4);
         assertThat(pages.getFirst()).contains("Cover Page Title").doesNotContain("Running", "Title left");
-        assertThat(pages.get(1)).contains("Page one", "Title left", "Title center", "Title right", "Title foot left", "Title foot center", "Title foot right")
+        assertThat(pages.get(1)).contains("Page one", "Title left", "Title center", "Title right", "Title foot left", "Title foot center", "Title page 2")
                 .doesNotContain("Running");
         for (int page = 2; page < pages.size(); page++) {
-            assertThat(pages.get(page)).contains("Running left", "Running center", "Running right", "Running foot left", "Running foot center", "Running foot right")
+            assertThat(pages.get(page)).contains("Running left", "Running center", "Running right", "Running foot left", "Running foot center", "Running page " + (page + 1))
                     .doesNotContain("Title");
+        }
+        assertFalse(compareContentUsingReferenceImages(getCurrentMethodName(), pdf), "The pages differ from the reference images");
+    }
+
+    @Test
+    void leavesTheFirstPageBareWhenItsHeaderAndFooterIsEmpty() {
+        mockHeaderFooters(HeaderFooterModel.builder()
+                .useCustomValues(true)
+                .headerLeft("").headerCenter("").headerRight("")
+                .footerLeft("").footerCenter("").footerRight("")
+                .build());
+
+        byte[] pdf = export(null, "title");
+        List<String> pages = pageTexts(pdf);
+
+        assertThat(pages).hasSize(3);
+        assertThat(pages.getFirst()).contains("Page one").doesNotContain("Running");
+        assertThat(pages.get(1)).contains("Running left", "Running page 2");
+        assertFalse(compareContentUsingReferenceImages(getCurrentMethodName(), pdf), "The pages differ from the reference images");
+    }
+
+    @Test
+    void printsTheOtherPartsOnTheFirstPageWithoutAHeaderAndFooterOfItsOwn() {
+        mockHeaderFooters(null);
+
+        byte[] pdf = export(null, null);
+        List<String> pages = pageTexts(pdf);
+
+        assertThat(pages).hasSize(3);
+        assertThat(pages.getFirst()).contains("Running left", "Running page 1").doesNotContain("Title");
+        assertFalse(compareContentUsingReferenceImages(getCurrentMethodName(), pdf), "The pages differ from the reference images");
+    }
+
+    /** The style package names "running" for the other pages and "title" for the first one, if it has one. */
+    private void mockHeaderFooters(@Nullable HeaderFooterModel title) {
+        when(headerFooterSettings.load(any(), eq(SettingId.fromName("running")))).thenReturn(RUNNING);
+        if (title != null) {
+            when(headerFooterSettings.load(any(), eq(SettingId.fromName("title")))).thenReturn(title);
         }
     }
 
-    @Test
-    void leavesTheFirstPageBareWhenItsPartsAreEmpty() {
-        mockHeaderFooter(HeaderFooterModel.builder()
-                .useCustomValues(true)
-                .headerLeft("Running left").headerCenter("Running center").headerRight("Running right")
-                .footerLeft("Running foot left").footerCenter("Running foot center").footerRight("Running foot right")
-                .differentFirstPage(true)
-                .build());
-
-        List<String> pages = pageTexts(export());
-
-        assertThat(pages.getFirst()).contains("Page one").doesNotContain("Running");
-        assertThat(pages.get(1)).contains("Running left", "Running foot right");
-    }
-
-    @Test
-    void ignoresTheFirstPagePartsWhenTheFirstPageIsNotDifferent() {
-        mockHeaderFooter(HeaderFooterModel.builder()
-                .useCustomValues(true)
-                .headerLeft("Running left").headerCenter("Running center").headerRight("Running right")
-                .footerLeft("Running foot left").footerCenter("Running foot center").footerRight("Running foot right")
-                .differentFirstPage(false)
-                .firstPageHeaderLeft("Title left")
-                .build());
-
-        List<String> pages = pageTexts(export());
-
-        assertThat(pages.getFirst()).contains("Running left", "Running foot right").doesNotContain("Title");
-    }
-
-    private void mockHeaderFooter(@NotNull HeaderFooterModel model) {
-        when(headerFooterSettings.load(any(), any())).thenReturn(model);
-    }
-
-    private byte @NotNull [] export() {
-        return export(null);
-    }
-
-    private byte @NotNull [] export(@Nullable String coverPage) {
+    private byte @NotNull [] export(@Nullable String coverPage, @Nullable String firstPageHeaderFooter) {
         ExportParams params = ExportParams.builder()
                 .projectId("test")
                 .coverPage(coverPage)
+                .headerFooter("running")
+                .firstPageHeaderFooter(firstPageHeaderFooter)
                 .locationPath("testLocation")
                 .orientation(Orientation.PORTRAIT)
                 .paperSize(PaperSize.A4)

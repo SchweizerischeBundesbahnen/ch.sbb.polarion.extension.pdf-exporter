@@ -501,22 +501,24 @@ This is only an example to illustrate an idea, if your use case is different fee
 
 ### Different header and footer on the first page
 
-A document which carries its own title page often needs another header and footer there, or none. Section Header and Footer
-offers this without CSS:
+A document which carries its own title page often needs another header and footer there, or none. A style package
+names it next to the header and footer of the other pages:
 
-1. Choose `Use custom header and footer`.
-2. Tick `Different first page` below it. The tab `First Page Templates` opens with six parts for the first page.
-3. Fill them like the other parts. Placeholders and Velocity expressions work the same way.
-4. Leave a part empty to print nothing there. Leave all six empty for a first page without header and footer.
-5. Press `Save`.
+1. Create the header and footer of the first page in section Header and Footer, like any other one.
+2. Open section Style Package and choose the style package.
+3. Tick `First page header/footer` and choose that header and footer below it.
+4. Press `Save`.
 
-The checkbox is disabled while the default header and footer is chosen, as the default has no first page of its own.
-The first page parts stay stored while the checkbox is off. `Copy from default` replaces only the other parts.
+Any header and footer can serve for the first page, so documents can share a title page and differ in the other pages,
+or the other way round. A header and footer with all six parts empty gives a first page without header and footer.
 
-The first page parts replace the other ones on the first page only. The other pages keep the other parts.
-The PDF gets them through a CSS rule `@page :first`, added only while the first page is different.
-The cover page of a style package is a separate page, so the first page is then the one after the cover page.
-The first page parts carry the classes `first-page-top-left` to `first-page-bottom-right`, for a custom CSS to restyle them.
+The header and footer of the first page replaces the other one on the first page only. Its placeholders and Velocity
+expressions work the same way. The PDF gets it through a CSS rule `@page :first`, added only while the style package
+names one. The cover page of a style package is a separate page, so the first page is then the one after the cover page.
+Its parts carry the classes `first-page-top-left` to `first-page-bottom-right`, for a custom CSS to restyle them.
+
+The export dialog and the side panel offer the same choice while the style package exposes its settings. The REST API
+takes it as `firstPageHeaderFooter` of the export parameters.
 
 ## Advanced configuration
 

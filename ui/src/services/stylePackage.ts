@@ -28,6 +28,8 @@ export interface StylePackageSettings {
   exposeSettings?: boolean;
   coverPage?: string | null;
   headerFooter?: string | null;
+  /** The header and footer of the first page, null when it has the one of the other pages. */
+  firstPageHeaderFooter?: string | null;
   css?: string | null;
   localization?: string | null;
   webhooks?: string | null;

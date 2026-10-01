@@ -182,15 +182,6 @@
   width: auto;
 }
 
-/* A choice among the custom templates, indented under the choice of them. Not a radio, so outside their group. */
-.optional-choice {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  width: fit-content;
-  margin: -6px 0 12px 22px;
-}
-
 /* Copy and compare, above the editors of the custom values. */
 .template-actions {
   display: flex;
@@ -466,6 +457,12 @@
 .style-packages-page .checkbox.input-group label.cover-page-label,
 .style-packages-page .checkbox.input-group label.webhooks-label {
   width: 120px;
+}
+
+/* The header and footer of the first page: its label is too long for the column head, so it takes a line
+   of its own and the dropdown goes below it, where the column head would end, under the one above it. */
+.style-packages-page .first-page-header-footer-select {
+  margin: 6px 0 0 120px;
 }
 
 /* A row whose label, info icon and field share one line. */

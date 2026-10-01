@@ -75,6 +75,8 @@ interface Form {
   coverPage: string;
   css: string;
   headerFooter: string;
+  firstPageHeaderFooterEnabled: boolean;
+  firstPageHeaderFooter: string;
   localization: string;
   webhooksEnabled: boolean;
   webhooks: string;
@@ -152,6 +154,8 @@ function toForm(content: StylePackageSettings): Form {
     coverPage: content.coverPage ?? DEFAULT_NAME,
     css: content.css ?? DEFAULT_NAME,
     headerFooter: content.headerFooter ?? DEFAULT_NAME,
+    firstPageHeaderFooterEnabled: !!content.firstPageHeaderFooter,
+    firstPageHeaderFooter: content.firstPageHeaderFooter ?? DEFAULT_NAME,
     localization: content.localization ?? DEFAULT_NAME,
     webhooksEnabled: !!content.webhooks,
     webhooks: content.webhooks ?? DEFAULT_NAME,
@@ -417,6 +421,9 @@ export default function StylePackages() {
       coverPage: form.coverPageEnabled ? childValue('cover-page', form.coverPage) : null,
       css: childValue('css', form.css),
       headerFooter: childValue('header-footer', form.headerFooter),
+      firstPageHeaderFooter: form.firstPageHeaderFooterEnabled
+        ? childValue('header-footer', form.firstPageHeaderFooter)
+        : null,
       localization: childValue('localization', form.localization),
       webhooks: form.webhooksEnabled ? childValue('webhooks', form.webhooks) : null,
       headersColor: form.headersColor,
@@ -652,6 +659,29 @@ export default function StylePackages() {
                 value={childValue('header-footer', form.headerFooter)}
                 onChange={(value) => patch({ headerFooter: value })}
               />
+            </div>
+            <div className="checkbox input-group">
+              <label htmlFor="first-page-header-footer-checkbox" className="first-page-header-footer-label">
+                <input
+                  id="first-page-header-footer-checkbox"
+                  type="checkbox"
+                  checked={form.firstPageHeaderFooterEnabled}
+                  onChange={(e) => patch({ firstPageHeaderFooterEnabled: e.target.checked })}
+                />
+                First page header/footer
+              </label>
+              {form.firstPageHeaderFooterEnabled && (
+                <div className="first-page-header-footer-select">
+                  <SearchableSelect
+                    id="first-page-header-footer-select"
+                    ariaLabel="First page header/footer"
+                    options={childNames['header-footer']}
+                    loading={childNamesLoading}
+                    value={childValue('header-footer', form.firstPageHeaderFooter)}
+                    onChange={(value) => patch({ firstPageHeaderFooter: value })}
+                  />
+                </div>
+              )}
             </div>
             <div className="input-group">
               <label htmlFor="localization-select">Localization:</label>
