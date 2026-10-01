@@ -74,7 +74,7 @@ public abstract class BasePerformanceTest extends BasePdfConverterTest {
      * reports folder at once, so that it is there whichever check fails.
      */
     protected @NotNull Timing export(@NotNull String name, @NotNull String title, @NotNull String content, @NotNull ExportParams params) {
-        if (!REFERENCE.equals(name)) {
+        if (!name.startsWith(REFERENCE)) {
             slowdown();
         }
         DocumentData<IModule> liveDoc = DocumentData.creator(DocumentType.LIVE_DOC, module)
@@ -124,17 +124,27 @@ public abstract class BasePerformanceTest extends BasePdfConverterTest {
             String reference = readHtmlResource("performance/reference");
             ExportParams params = portraitA4().build();
             // The first export warms the JVM and the service up, the best of the next three is the time of the machine
-            export(REFERENCE, "Reference", reference, params);
+            // Each run keeps a report of its own, and one more says which time set the budgets
+            export(REFERENCE + "-warmup", "Reference", reference, params);
             long best = Long.MAX_VALUE;
-            for (int run = 0; run < 3; run++) {
-                best = Math.min(best, export(REFERENCE, "Reference", reference, params).totalMs());
+            for (int run = 1; run <= 3; run++) {
+                best = Math.min(best, export(REFERENCE + "-" + run, "Reference", reference, params).totalMs());
             }
+            writeReferenceSummary(best);
             assertThat(best)
                     .as("The reference document takes %d ms, against %d ms on the machine of the budgets: the machine is far slower, or every export became slower", best, REFERENCE_MS)
                     .isLessThanOrEqualTo(Math.round(REFERENCE_MS * MAX_SLOWDOWN));
             slowdown = Math.max(1d, (double) best / REFERENCE_MS);
         }
         return slowdown;
+    }
+
+    @SneakyThrows
+    private static void writeReferenceSummary(long best) {
+        Files.writeString(Path.of(REPORTS_FOLDER_PATH, "performance-" + REFERENCE + ".txt"),
+                "reference: best of three %d ms, against %d ms on the machine of the budgets, limit %d ms, budgets scaled by %.2f%n".formatted(
+                        best, REFERENCE_MS, Math.round(REFERENCE_MS * MAX_SLOWDOWN), Math.max(1d, (double) best / REFERENCE_MS)),
+                StandardCharsets.UTF_8);
     }
 
     @SneakyThrows
