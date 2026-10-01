@@ -11,6 +11,7 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
 import org.jsoup.nodes.TextNode;
+import org.jsoup.select.Elements;
 import org.jsoup.select.Selector;
 
 import java.util.ArrayList;
@@ -143,14 +144,43 @@ public class LongWordsAdjuster {
         }
     }
 
-    /** Marks the elements a rule of the CSS turns hyphenation off for. A selector which cannot be read may reach any. */
+    /**
+     * Marks the elements a rule of the CSS turns hyphenation off for. The rules are matched as the PDF lays the document
+     * out, inside the {@code div.content} its template wraps it in. A rule for the whole document, for its body or for
+     * that wrapper, as one which cannot be read, marks every table, as those elements are not part of what is processed
+     * here.
+     */
     private static void markHyphenationTurnedOff(@NotNull Document document, @NotNull List<String> selectors) {
-        for (String selector : selectors) {
-            try {
-                document.select(selector).attr(NO_HYPHENATION, "");
-            } catch (Selector.SelectorParseException e) {
-                document.body().attr(NO_HYPHENATION, "");
+        if (selectors.isEmpty()) {
+            return;
+        }
+        Element body = document.body();
+        Element content = new Element("div").addClass("content");
+        content.insertChildren(0, new ArrayList<>(body.childNodes()));
+        body.appendChild(content);
+        try {
+            for (String selector : selectors) {
+                markHyphenationTurnedOff(document, selector, content);
             }
+        } finally {
+            content.unwrap();
+        }
+    }
+
+    private static void markHyphenationTurnedOff(@NotNull Document document, @NotNull String selector, @NotNull Element content) {
+        Elements selected;
+        try {
+            selected = document.select(selector);
+        } catch (Selector.SelectorParseException e) {
+            document.select(TABLE).attr(NO_HYPHENATION, "");
+            return;
+        }
+        for (Element element : selected) {
+            if (element == content || element == document.body() || element.nameIs("html")) {
+                document.select(TABLE).attr(NO_HYPHENATION, "");
+                return;
+            }
+            element.attr(NO_HYPHENATION, "");
         }
     }
 

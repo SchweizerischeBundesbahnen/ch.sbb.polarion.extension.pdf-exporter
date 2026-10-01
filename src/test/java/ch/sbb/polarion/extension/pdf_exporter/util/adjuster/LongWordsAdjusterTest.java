@@ -253,6 +253,22 @@ class LongWordsAdjusterTest {
     }
 
     @Test
+    void matchesTheRulesOfTheCssAsThePdfLaysTheDocumentOut() {
+        // The template wraps the document in a div.content, which a rule of a style package names
+        String table = "<table><tr><td>Grundstücksverkehrsgenehmigungszuständigkeitsübertragungsverordnung</td></tr></table>";
+        Document inside = Jsoup.parse(table);
+        Document wrapper = Jsoup.parse(table);
+
+        LongWordsAdjuster.addBreakPoints(inside, new Hyphenation("de", List.of(".content td")));
+        LongWordsAdjuster.addBreakPoints(wrapper, new Hyphenation("de", List.of(".content")));
+
+        assertThat(inside.select("wbr")).as("The rule reaches the cell inside the wrapper").hasSize(3);
+        assertThat(wrapper.select("wbr")).as("The rule reaches the cell through the wrapper").hasSize(3);
+        assertThat(wrapper.selectFirst("table").hasAttr("data-pdf-exporter-no-hyphenation")).as("The mark outlives a split of the document").isTrue();
+        assertThat(wrapper.select("div.content")).as("The wrapper is gone again").isEmpty();
+    }
+
+    @Test
     void leavesATableOfADocumentWithoutALanguageUnmarked() {
         Document document = Jsoup.parse("<table><tr><td>" + "ABCDEFGHIJ".repeat(5) + "</td></tr></table>");
 
