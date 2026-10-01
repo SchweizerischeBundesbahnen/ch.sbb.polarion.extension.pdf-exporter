@@ -186,12 +186,26 @@ public class LongWordsAdjuster {
 
     /**
      * A word of letters alone, which a dictionary of the language can hyphenate, unlike an ID or a path. The punctuation
-     * around it, as a full stop or a closing bracket, makes it no less a word.
+     * around it, as a full stop or a closing bracket, makes it no less a word, and words a no-break space joins, as in
+     * "der&nbsp;Rechtsschutzversicherungsgesellschaft", are words each.
      */
     private static boolean isAWordOfALanguage(@NotNull String text, int start, int end) {
         int[] codePoints = text.substring(start, end).codePoints().toArray();
-        int first = 0;
-        int last = codePoints.length;
+        int wordStart = 0;
+        for (int index = 0; index <= codePoints.length; index++) {
+            if (index == codePoints.length || Character.getType(codePoints[index]) == Character.SPACE_SEPARATOR) {
+                if (!isAWord(codePoints, wordStart, index)) {
+                    return false;
+                }
+                wordStart = index + 1;
+            }
+        }
+        return true;
+    }
+
+    private static boolean isAWord(int @NotNull [] codePoints, int start, int end) {
+        int first = start;
+        int last = end;
         while (first < last && isPunctuation(codePoints[first])) {
             first++;
         }

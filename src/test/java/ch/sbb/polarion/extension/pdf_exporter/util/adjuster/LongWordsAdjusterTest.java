@@ -183,6 +183,18 @@ class LongWordsAdjusterTest {
     }
 
     @Test
+    void hyphenatesTheWordsANoBreakSpaceJoins() {
+        // Polarion writes a no-break space after a short word, which joins it to the next one
+        Document document = Jsoup.parse("<table><tr><td>von der&nbsp;Rechtsschutzversicherungsgesellschaft geprüft</td></tr></table>");
+        LongWordsAdjuster.addBreakPoints(document, "de");
+
+        LongWordsAdjuster.addBreakPointsToFit(document.selectFirst("table"), 15);
+
+        assertThat(document.select("wbr")).isEmpty();
+        assertThat(document.selectFirst("td").attr("style")).isEqualTo("hyphens:auto;");
+    }
+
+    @Test
     void leavesATableOfADocumentWithoutALanguageUnmarked() {
         Document document = Jsoup.parse("<table><tr><td>" + "ABCDEFGHIJ".repeat(5) + "</td></tr></table>");
 
