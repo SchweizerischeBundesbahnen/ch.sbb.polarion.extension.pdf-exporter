@@ -569,4 +569,14 @@ class TableAnalyzerTest {
         assertTrue(anywhere <= 592, "Broken anywhere, the words fit, but the table measured " + anywhere);
     }
 
+    @Test
+    void measuresACellWhichHyphenatesAsOneWhichBreaksItsWords() {
+        String cells = "<td>Rechtsschutzversicherungsgesellschaft</td>".repeat(4);
+        int whole = TableAnalyzer.analyze(Jsoup.parse("<table><tr>" + cells + "</tr></table>").selectFirst("table"), 592).tableWidth();
+        int hyphenated = TableAnalyzer.analyze(Jsoup.parse("<table><tr>" + cells.replace("<td>", "<td style=\"hyphens: auto\">") + "</tr></table>").selectFirst("table"), 592).tableWidth();
+
+        assertTrue(whole > 592, "Whole words leave the table no room, but it measured " + whole);
+        assertTrue(hyphenated <= 592, "Hyphenated, the words fit, but the table measured " + hyphenated);
+    }
+
 }

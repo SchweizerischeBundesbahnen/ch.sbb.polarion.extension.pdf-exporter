@@ -10,6 +10,7 @@ import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.apache.pdfbox.text.TextPosition;
 import org.jetbrains.annotations.NotNull;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -19,6 +20,7 @@ import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.mockito.Mockito.lenient;
 
 /**
  * Tables of real texts, in several languages and scripts and with the values documents hold, laid out as an export lays
@@ -28,6 +30,8 @@ class TableCellTextsTest extends BasePdfConverterTest {
 
     /** How far text may reach to the right: the page less its right margin. */
     private static final float RIGHT_MARGIN_PT = 40;
+
+    private static final String LANGUAGE_FIELD = "docLanguage";
 
     private static Stream<Arguments> tables() {
         return Stream.of(
@@ -55,6 +59,36 @@ class TableCellTextsTest extends BasePdfConverterTest {
         String text = text(pdf);
         for (String word : wholeWords) {
             assertThat(text).as("\"%s\" is printed whole", word).contains(word);
+        }
+        assertFalse(differ, "The pages differ from the reference images");
+    }
+
+    /**
+     * The words of a table with no room, in a document with a language, break at a syllable and with a hyphen, as the
+     * measure of the table, which does not hyphenate, would otherwise give them break points without one.
+     */
+    @Test
+    void hyphenatesTheLongWordsOfACrampedTableInADocumentWithALanguage() {
+        lenient().when(module.getCustomField(LANGUAGE_FIELD)).thenReturn("de");
+        ExportParams params = ExportParams.builder()
+                .projectId("test")
+                .locationPath("testLocation")
+                .orientation(Orientation.PORTRAIT)
+                .paperSize(PaperSize.A4)
+                .languageCustomField(LANGUAGE_FIELD)
+                .build();
+
+        byte[] pdf = exportLiveDoc("Texts in table cells", readHtmlResource("tableCellTexts/germanHyphenated"), params);
+        boolean differ = compareContentUsingReferenceImages("tableCellTexts_germanHyphenated", pdf);
+
+        assertThat(rightEdge(pdf)).as("The text stays inside the page").isLessThanOrEqualTo(pageWidth(pdf) - RIGHT_MARGIN_PT);
+        // A line which ends in a hyphen continues the word: joined, every word reads whole, which a break without one breaks
+        String joined = rawText(pdf).replaceAll("[\u2010-]\\R", "").replaceAll("\\s+", " ");
+        for (String word : List.of("Donaudampfschifffahrtsgesellschaftskapitänsmütze", "Rechtsschutzversicherungsgesellschaft",
+                "Kraftfahrzeughaftpflichtversicherung", "Bundesausbildungsförderungsgesetz", "Verwaltungsvereinfachungsmaßnahmen",
+                "Grundstücksverkehrsgenehmigungszuständigkeitsübertragungsverordnung", "Arbeiterunfallversicherungsgesetznovelle",
+                "Nahrungsmittelunverträglichkeiten", "Streichholzschächtelchensammlungen")) {
+            assertThat(joined).as("\"%s\" breaks only at a hyphen", word).contains(word);
         }
         assertFalse(differ, "The pages differ from the reference images");
     }
@@ -91,6 +125,13 @@ class TableCellTextsTest extends BasePdfConverterTest {
     private static float pageWidth(byte @NotNull [] pdf) {
         try (PDDocument document = Loader.loadPDF(pdf)) {
             return document.getPage(0).getMediaBox().getWidth();
+        }
+    }
+
+    @SneakyThrows
+    private static @NotNull String rawText(byte @NotNull [] pdf) {
+        try (PDDocument document = Loader.loadPDF(pdf)) {
+            return new PDFTextStripper().getText(document);
         }
     }
 

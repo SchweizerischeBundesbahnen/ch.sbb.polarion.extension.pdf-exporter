@@ -11,6 +11,8 @@ public class CssProp {
     public static final String FLOAT_LEFT_VALUE = "left";
     public static final String FONT_SIZE = "font-size";
     public static final String HEIGHT = "height";
+    public static final String HYPHENS = "hyphens";
+    public static final String HYPHENS_AUTO_VALUE = "auto";
     public static final String MARGIN = "margin";
     public static final String MAX_HEIGHT = "max-height";
     public static final String MAX_WIDTH = "max-width";

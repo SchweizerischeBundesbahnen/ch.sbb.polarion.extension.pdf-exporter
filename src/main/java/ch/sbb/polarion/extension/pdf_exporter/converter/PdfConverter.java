@@ -263,13 +263,13 @@ public class PdfConverter {
 
     private @NotNull String prepareHtmlContent(@NotNull ExportParams exportParams, @Nullable ITrackerProject project, @NotNull DocumentData<? extends IUniqueObject> documentData, @Nullable ExportMetaInfoCallback metaInfoCallback, @Nullable PdfGenerationLog generationLog) {
         String cssContent = timedIfNotNull(generationLog, "Get CSS content", () -> getFirstPageHeaderFooterCss(exportParams) + getCssContent(documentData, exportParams));
-        String preparedDocumentContent = postProcessDocumentContent(exportParams, project, documentData.getContent(), generationLog);
+        String documentLanguage = resolveDocumentLanguage(documentData, exportParams);
+        String preparedDocumentContent = postProcessDocumentContent(exportParams, project, documentData.getContent(), documentLanguage, generationLog);
         String headerFooterContent = timedIfNotNull(generationLog, "Get header/footer content", () -> getHeaderFooterContent(documentData, exportParams));
 
         HtmlData htmlData = new HtmlData(cssContent, preparedDocumentContent, headerFooterContent);
 
         String metaTags = timedIfNotNull(generationLog, "Build meta tags", () -> buildMetaTags(documentData, exportParams));
-        String documentLanguage = resolveDocumentLanguage(documentData, exportParams);
         String composedHtml = timedIfNotNull(generationLog, "Compose HTML", () -> composeHtml(documentData.getTitle(), htmlData, exportParams, metaTags, documentLanguage));
 
         if (metaInfoCallback != null) {
@@ -422,13 +422,13 @@ public class PdfConverter {
 
     @VisibleForTesting
     String postProcessDocumentContent(@NotNull ExportParams exportParams, @Nullable ITrackerProject project, @Nullable String documentContent) {
-        return postProcessDocumentContent(exportParams, project, documentContent, null);
+        return postProcessDocumentContent(exportParams, project, documentContent, null, null);
     }
 
-    String postProcessDocumentContent(@NotNull ExportParams exportParams, @Nullable ITrackerProject project, @Nullable String documentContent, @Nullable PdfGenerationLog generationLog) {
+    String postProcessDocumentContent(@NotNull ExportParams exportParams, @Nullable ITrackerProject project, @Nullable String documentContent, @Nullable String documentLanguage, @Nullable PdfGenerationLog generationLog) {
         if (documentContent != null) {
             List<String> selectedRoleEnumValues = project == null ? Collections.emptyList() : EnumValuesProvider.getLinkRoleNames(project, exportParams.getLinkedWorkitemRoles(), exportParams.getLinkRoleDirection());
-            return htmlProcessor.processHtmlForPDF(documentContent, exportParams, selectedRoleEnumValues, generationLog);
+            return htmlProcessor.processHtmlForPDF(documentContent, exportParams, selectedRoleEnumValues, documentLanguage, generationLog);
         } else {
             return "";
         }

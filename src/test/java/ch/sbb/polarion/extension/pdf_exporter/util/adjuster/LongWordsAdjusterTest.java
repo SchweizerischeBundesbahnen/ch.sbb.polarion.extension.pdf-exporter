@@ -136,4 +136,59 @@ class LongWordsAdjusterTest {
 
         assertThat(document.select("wbr")).as("No single word is long enough to break").isEmpty();
     }
+
+    @Test
+    void hyphenatesAVeryLongWordOfLettersInADocumentWithALanguage() {
+        Document document = Jsoup.parse("<table><tr><td>Grundstücksverkehrsgenehmigungszuständigkeitsübertragungsverordnung</td></tr></table>");
+
+        LongWordsAdjuster.addBreakPoints(document, "de");
+
+        assertThat(document.selectFirst("table").attr("lang")).as("The table is in the language of the document").isEqualTo("de");
+        assertThat(document.select("wbr")).as("A syllable breaks the word, with a hyphen").isEmpty();
+        assertThat(document.selectFirst("td").attr("style")).isEqualTo("hyphens:auto;");
+    }
+
+    @Test
+    void keepsTheBreakPointsOfAnIdInADocumentWithALanguage() {
+        Document document = Jsoup.parse("<table><tr><td>REQUIREMENT2026ABCDEFGHIJKLMNOP</td></tr></table>");
+
+        LongWordsAdjuster.addBreakPoints(document, "de");
+
+        assertThat(document.selectFirst("td").html()).as("No dictionary hyphenates an ID").isEqualTo("REQUIREMENT2026<wbr>ABCDEFGHIJKLMNOP");
+        assertThat(document.selectFirst("td").hasAttr("style")).isFalse();
+    }
+
+    @Test
+    void leavesTheLanguageAndTheHyphenationATableStatesAsTheyAre() {
+        Document document = Jsoup.parse("<table lang=\"fr\"><tr><td style=\"hyphens: manual\">" + "anticonstitutionnellement".repeat(2) + "</td></tr></table>");
+
+        LongWordsAdjuster.addBreakPoints(document, "de");
+
+        assertThat(document.selectFirst("table").attr("lang")).isEqualTo("fr");
+        assertThat(document.selectFirst("td").attr("style")).isEqualTo("hyphens: manual");
+        assertThat(document.select("wbr")).isEmpty();
+    }
+
+    @Test
+    void hyphenatesTheWordsOfATableWithNoRoomInADocumentWithALanguage() {
+        Document document = Jsoup.parse("<table><tr><td>Die Rechtsschutzversicherungsgesellschaft TMSPRG-13164-ABCDEFGHIJ</td></tr></table>");
+        LongWordsAdjuster.addBreakPoints(document, "de");
+
+        LongWordsAdjuster.addBreakPointsToFit(document.selectFirst("table"), 15);
+
+        Element cell = document.selectFirst("td");
+        assertThat(cell.text()).isEqualTo("Die Rechtsschutzversicherungsgesellschaft TMSPRG-13164-ABCDEFGHIJ");
+        assertThat(cell.html()).as("The word of letters hyphenates, the ID breaks").startsWith("Die Rechtsschutzversicherungsgesellschaft TMSPRG-<wbr>");
+        assertThat(cell.attr("style")).isEqualTo("hyphens:auto;");
+    }
+
+    @Test
+    void leavesATableOfADocumentWithoutALanguageUnmarked() {
+        Document document = Jsoup.parse("<table><tr><td>" + "ABCDEFGHIJ".repeat(5) + "</td></tr></table>");
+
+        LongWordsAdjuster.addBreakPoints(document, null);
+
+        assertThat(document.selectFirst("table").hasAttr("lang")).isFalse();
+        assertThat(document.select("wbr")).as("Without a dictionary only break points break the word").hasSize(2);
+    }
 }

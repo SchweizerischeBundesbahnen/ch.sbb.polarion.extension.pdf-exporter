@@ -151,19 +151,22 @@ public class TableAnalyzer {
         // Inject CSS to force the embedded font for consistent column width calculation across platforms
         tempDoc.head().appendElement("style").text("* { font-family: '" + MEASUREMENT_FONT_FAMILY + "', sans-serif !important; }");
         Element table = tableElement.clone();
-        measureBreakAnywhere(table);
+        measureBreakableWords(table);
         tempDoc.body().appendElement("div").attr(HtmlTagAttr.STYLE, inheritedTextStyle(tableElement)).appendChild(table);
         return new W3CDom().fromJsoup(tempDoc);
     }
 
     /**
-     * Lets the measure break a word anywhere where the document does. The measure knows no {@code overflow-wrap}, only its
-     * older name, {@code word-wrap}, and lays out its {@code break-word} as CSS lays out {@code anywhere}.
+     * Lets the measure break a word where the document lets it break anywhere or hyphenate it. The measure knows neither
+     * {@code overflow-wrap} nor {@code hyphens}, only the older name {@code word-wrap}, and lays out its
+     * {@code break-word} as CSS lays out {@code anywhere}: a word which hyphenates breaks at a syllable, which this comes
+     * close to.
      */
-    private static void measureBreakAnywhere(@NotNull Element table) {
+    private static void measureBreakableWords(@NotNull Element table) {
         for (Element element : table.select("[style]")) {
             CSSDeclarationList style = CssUtils.parseDeclarations(element.attr(HtmlTagAttr.STYLE));
-            if (CssProp.OVERFLOW_WRAP_ANYWHERE_VALUE.equals(CssUtils.getPropertyValue(style, CssProp.OVERFLOW_WRAP))) {
+            if (CssProp.OVERFLOW_WRAP_ANYWHERE_VALUE.equals(CssUtils.getPropertyValue(style, CssProp.OVERFLOW_WRAP))
+                    || CssProp.HYPHENS_AUTO_VALUE.equals(CssUtils.getPropertyValue(style, CssProp.HYPHENS))) {
                 CssUtils.setPropertyValue(style, CssProp.WORD_WRAP, CssProp.WORD_WRAP_BREAK_WORD_VALUE);
                 element.attr(HtmlTagAttr.STYLE, style.getAsCSSString());
             }

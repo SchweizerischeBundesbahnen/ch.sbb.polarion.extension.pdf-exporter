@@ -83,6 +83,13 @@ public class HtmlProcessor {
     }
 
     public String processHtmlForPDF(@NotNull String html, @NotNull ExportParams exportParams, @NotNull List<String> selectedRoleEnumValues, @Nullable PdfGenerationLog generationLog) {
+        return processHtmlForPDF(html, exportParams, selectedRoleEnumValues, null, generationLog);
+    }
+
+    /**
+     * @param documentLanguage the language of the document, in which its tables hyphenate their long words of letters
+     */
+    public String processHtmlForPDF(@NotNull String html, @NotNull ExportParams exportParams, @NotNull List<String> selectedRoleEnumValues, @Nullable String documentLanguage, @Nullable PdfGenerationLog generationLog) {
         if (exportParams.getDocumentType() == BASELINE_COLLECTION) {
             // Unsupported document type
             throw new IllegalArgumentException(UNSUPPORTED_DOCUMENT_TYPE.formatted(exportParams.getDocumentType()));
@@ -207,7 +214,7 @@ public class HtmlProcessor {
             timedIfNotNull(generationLog, "Adjust content to fit page", () -> adjustContentToFitPage(document, exportParams));
             // ----
         }
-        timedIfNotNull(generationLog, "Break long words in table cells", () -> LongWordsAdjuster.addBreakPoints(document));
+        timedIfNotNull(generationLog, "Break long words in table cells", () -> LongWordsAdjuster.addBreakPoints(document, documentLanguage));
         timedIfNotNull(generationLog, "Keep table rows whole", () -> keepTableRowsWholeUnlessFittedBetweenPageBreaks(document, exportParams, customPageBreaks));
 
         html = document.body().html();

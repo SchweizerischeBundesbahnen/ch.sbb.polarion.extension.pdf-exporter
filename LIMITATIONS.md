@@ -24,6 +24,9 @@ measures such a table before it renders it. When its words leave it wider than t
 of up to 20, then 15, then 10 characters, until the table fits. Such a break has no hyphen. Should its short words
 still leave it no room, its cells of up to 100 characters break a word at any character.
 
+In a document with a language, a word of letters alone does not break into parts: its cell hyphenates it, at a
+syllable and with a hyphen. An ID, a path or a URL keeps its break points.
+
 ### Workaround
 
 Let the words of such a table break at syllables, with a real hyphen, by setting the language of the
