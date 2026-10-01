@@ -106,8 +106,13 @@ public class TableAnalyzer {
      * @param columnWidths the width of each column, proportionally adjusted to the width of a page
      * @param headerHeight the height of the rows the table repeats on every page it spans
      * @param rowHeights   the height of each row of the table itself, not of the tables nested in it, in document order
+     * @param tableWidth   the width the table takes, wider than the page where its words cannot break to fit it
      */
-    public record TableMetrics(@NotNull Map<Integer, Integer> columnWidths, int headerHeight, @NotNull List<Integer> rowHeights) {
+    public record TableMetrics(@NotNull Map<Integer, Integer> columnWidths, int headerHeight, @NotNull List<Integer> rowHeights, int tableWidth) {
+
+        public TableMetrics(@NotNull Map<Integer, Integer> columnWidths, int headerHeight, @NotNull List<Integer> rowHeights) {
+            this(columnWidths, headerHeight, rowHeights, 0);
+        }
     }
 
     public Map<Integer, Integer> getColumnWidths(@NotNull Element tableElement, int pageWidth) {
@@ -116,19 +121,20 @@ public class TableAnalyzer {
 
     public TableMetrics analyze(@NotNull Element tableElement, int pageWidth) {
         Map<Integer, Integer> columnWidths = new HashMap<>();
-        HeaderHeight headerHeight = new HeaderHeight();
+        Gathered gathered = new Gathered();
         List<Integer> rowHeights = new ArrayList<>();
 
         Document doc = toSelfDocument(tableElement);
         Box rootBox = render(doc, pageWidth);
-        findTableAndAnalyze(rootBox, columnWidths, headerHeight, rowHeights);
+        findTableAndAnalyze(rootBox, columnWidths, gathered, rowHeights);
 
-        return new TableMetrics(adjustWidths(columnWidths, pageWidth), headerHeight.value, rowHeights);
+        return new TableMetrics(adjustWidths(columnWidths, pageWidth), gathered.headerHeight, rowHeights, gathered.tableWidth);
     }
 
-    /** The height the header rows take, gathered while the rendered table is walked. */
-    private static class HeaderHeight {
-        private int value;
+    /** What a walk over the rendered table gathers: the height its header rows take, and the width of the table. */
+    private static class Gathered {
+        private int headerHeight;
+        private int tableWidth;
     }
 
     private Document toSelfDocument(@NotNull Element tableElement) {
@@ -169,9 +175,7 @@ public class TableAnalyzer {
         ReplacedElementFactory defaultFactory = renderer.getSharedContext().getReplacedElementFactory();
         renderer.getSharedContext().setReplacedElementFactory(new SourceAwareReplacedElementFactory(defaultFactory));
 
-        // The font the measurement ships with is handed to the layout by name, so the file a machine happens to
-        // have installed under the name of that font is never the one which lays the table out
-        renderer.getSharedContext().setFontResolver(new MeasurementFontResolver());
+        useMeasurementFont(renderer.getSharedContext());
 
         BufferedImage image = new BufferedImage(pageWidth, PAGE_HEIGHT, BufferedImage.TYPE_BYTE_GRAY);
         Graphics2D g2d = image.createGraphics();
@@ -188,30 +192,31 @@ public class TableAnalyzer {
         }
     }
 
-    private void findTableAndAnalyze(Box box, Map<Integer, Integer> columnWidths, HeaderHeight headerHeight, List<Integer> rowHeights) {
+    private void findTableAndAnalyze(Box box, Map<Integer, Integer> columnWidths, Gathered gathered, List<Integer> rowHeights) {
         if (box == null) {
             return;
         }
 
         // Check if this is a table box
         if (box.getElement() != null && TABLE.equalsIgnoreCase(box.getElement().getNodeName())) {
-            gatherColumnWidths(box, columnWidths, headerHeight, rowHeights);
+            gatherColumnWidths(box, columnWidths, gathered, rowHeights);
             return; // Found and analyzed, no need to go deeper
         }
 
         // Recursively search children
         if (box instanceof LineBox lineBox) {
             for (Box inlinedBox : lineBox.getNonFlowContent()) {
-                findTableAndAnalyze(inlinedBox, columnWidths, headerHeight, rowHeights);
+                findTableAndAnalyze(inlinedBox, columnWidths, gathered, rowHeights);
             }
         } else {
             for (int i = 0; i < box.getChildCount(); i++) {
-                findTableAndAnalyze(box.getChild(i), columnWidths, headerHeight, rowHeights);
+                findTableAndAnalyze(box.getChild(i), columnWidths, gathered, rowHeights);
             }
         }
     }
 
-    private void gatherColumnWidths(@NotNull Box tableBox, @NotNull Map<Integer, Integer> columnWidths, @NotNull HeaderHeight headerHeight, @NotNull List<Integer> rowHeights) {
+    private void gatherColumnWidths(@NotNull Box tableBox, @NotNull Map<Integer, Integer> columnWidths, @NotNull Gathered gathered, @NotNull List<Integer> rowHeights) {
+        gathered.tableWidth = tableBox.getWidth();
         List<Box> tbody = findChildrenByTag(tableBox, TBODY);
         List<Box> rows = findChildrenByTag(!tbody.isEmpty() ? tbody.getFirst() : tableBox, TR);
 
@@ -221,7 +226,7 @@ public class TableAnalyzer {
             List<Box> cells = findChildrenByTag(row, TD, TH);
             if (!cells.isEmpty() && cells.stream().allMatch(cell -> TH.equalsIgnoreCase(cell.getElement().getNodeName()))) {
                 // A row of header cells is repeated on every page the table spans, so it takes its height there
-                headerHeight.value += row.getHeight();
+                gathered.headerHeight += row.getHeight();
             }
             int columnIndex = 0;
 
@@ -293,15 +298,18 @@ public class TableAnalyzer {
     }
 
     /**
-     * A {@link ReplacedElementFactory} for the measurement-only pre-render that neutralises source-less images.
+     * Hands the font the measurement ships with to the layout by name, so the file a machine happens to have installed
+     * under the name of that font is never the one which lays the table out.
      * <p>
-     * flying-saucer's default factory tries to build a "missing image" placeholder for an {@code <img>} whose
-     * source is absent/empty. When the element additionally has no explicit width/height both CSS dimensions
-     * resolve to {@code -1}, and the placeholder construction throws {@code IllegalArgumentException} internally,
-     * which is swallowed but logged at ERROR with a full stacktrace. Such images are returned as an empty
-     * element here so that buggy path is never reached. Everything else (healthy images, form controls, ...)
-     * is delegated to the default factory so it still contributes its real intrinsic width to the measurement.
+     * The renderer takes no resolver of its own, and a font given by {@code setFontMapping} gets a derived bold, so the
+     * resolver is set, as the one way the renderer allows.
+     * </p>
      */
+    @SuppressWarnings({"removal", "java:S5738"})
+    private static void useMeasurementFont(@NotNull SharedContext sharedContext) {
+        sharedContext.setFontResolver(new MeasurementFontResolver());
+    }
+
     /**
      * Lays the measurement font out in the face its weight and style ask for. The resolver of flying-saucer derives a
      * bold or an italic face from the one font it is given, and a derived bold is wider or narrower than the real one.
@@ -314,11 +322,27 @@ public class TableAnalyzer {
             }
             boolean bold = weight == IdentValue.BOLD || weight == IdentValue.FONT_WEIGHT_700 || weight == IdentValue.FONT_WEIGHT_800 || weight == IdentValue.FONT_WEIGHT_900;
             boolean italic = style == IdentValue.ITALIC || style == IdentValue.OBLIQUE;
-            Font face = bold ? (italic ? EMBEDDED_BOLD_ITALIC_FONT : EMBEDDED_BOLD_FONT) : (italic ? EMBEDDED_ITALIC_FONT : EMBEDDED_FONT);
-            return face.deriveFont(size * ctx.getTextRenderer().getFontScale());
+            return face(bold, italic).deriveFont(size * ctx.getTextRenderer().getFontScale());
+        }
+
+        private static @NotNull Font face(boolean bold, boolean italic) {
+            if (bold) {
+                return italic ? EMBEDDED_BOLD_ITALIC_FONT : EMBEDDED_BOLD_FONT;
+            }
+            return italic ? EMBEDDED_ITALIC_FONT : EMBEDDED_FONT;
         }
     }
 
+    /**
+     * A {@link ReplacedElementFactory} for the measurement-only pre-render that neutralises source-less images.
+     * <p>
+     * flying-saucer's default factory tries to build a "missing image" placeholder for an {@code <img>} whose
+     * source is absent/empty. When the element additionally has no explicit width/height both CSS dimensions
+     * resolve to {@code -1}, and the placeholder construction throws {@code IllegalArgumentException} internally,
+     * which is swallowed but logged at ERROR with a full stacktrace. Such images are returned as an empty
+     * element here so that buggy path is never reached. Everything else (healthy images, form controls, ...)
+     * is delegated to the default factory so it still contributes its real intrinsic width to the measurement.
+     */
     static class SourceAwareReplacedElementFactory implements ReplacedElementFactory {
         private final ReplacedElementFactory delegate;
 

@@ -52,6 +52,13 @@ public class TableRowsAdjuster extends AbstractAdjuster {
      */
     private static final String ICON = "img.polarion-Icons, .polarion-JSEnumOption img, img[src*=/icons/], img[src*=/ria/images/], img[" + ICON_MARK + "]";
 
+    /**
+     * How much wider than its room the measure may find a table before its words get more places to break. The measure
+     * lays text out with no kerning, so a table whose words just fit measures a few percent wider than it prints. Once
+     * they get them, they get as many as it takes for the measure to find the table no wider than its room.
+     */
+    private static final float TOO_WIDE = 1.05f;
+
     private static final String ROWS_OF_THE_TABLE = "> tr, > thead > tr, > tbody > tr, > tfoot > tr";
 
     private static final String CELL = "td, th";
@@ -82,6 +89,9 @@ public class TableRowsAdjuster extends AbstractAdjuster {
             Integer width = widthOf(table, measured, pageWidth);
             if (!rows.isEmpty() && width != null) {
                 TableAnalyzer.TableMetrics metrics = TableAnalyzer.analyze(table, width);
+                if (metrics.tableWidth() > width * TOO_WIDE) {
+                    metrics = breakWordsToFit(table, width);
+                }
                 measured.put(table, metrics);
                 keepShortRowsWhole(rows, metrics);
             }
@@ -95,6 +105,22 @@ public class TableRowsAdjuster extends AbstractAdjuster {
      */
     public static void markIcons(@NotNull Document document) {
         document.select(ICON).attr(ICON_MARK, "");
+    }
+
+    /**
+     * Gives the words of a table more places to break, as they leave it wider than the room it has: they break into
+     * shorter and shorter parts until the table fits.
+     *
+     * @return the measure of the table as it is laid out now
+     */
+    private static @NotNull TableAnalyzer.TableMetrics breakWordsToFit(@NotNull Element table, int width) {
+        TableAnalyzer.TableMetrics metrics;
+        int step = 0;
+        do {
+            LongWordsAdjuster.addBreakPointsToFit(table, LongWordsAdjuster.CRAMPED_PARTS.get(step++));
+            metrics = TableAnalyzer.analyze(table, width);
+        } while (metrics.tableWidth() > width && step < LongWordsAdjuster.CRAMPED_PARTS.size());
+        return metrics;
     }
 
     private void keepShortRowsWhole(@NotNull Elements rows, @NotNull TableAnalyzer.TableMetrics metrics) {

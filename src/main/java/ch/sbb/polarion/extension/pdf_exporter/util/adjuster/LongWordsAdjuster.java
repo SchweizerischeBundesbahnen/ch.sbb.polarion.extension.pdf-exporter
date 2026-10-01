@@ -24,7 +24,7 @@ public class LongWordsAdjuster {
     /** A word longer than this may break after a slash, an underscore, a hyphen, a dot and the like. */
     static final int LONG_WORD = 20;
 
-    /** A word longer than this, as no word of a language is, may break anywhere, every {@value #LONG_WORD} characters. */
+    /** A word longer than this, as no word of a language is, breaks into parts of {@value #LONG_WORD} characters at most. */
     static final int VERY_LONG_WORD = 40;
 
     /** The characters a long word may break after, as a URL, a path, an address or an ID is read in parts. */
@@ -38,9 +38,33 @@ public class LongWordsAdjuster {
     /** A character which joins no word: the text of the next block, or of a table inside the cell, starts anew. */
     private static final char BOUNDARY = '\n';
 
+    /**
+     * How long the parts of a word may be in a table its words leave no room for, tried one after the other: the parts
+     * get shorter until the table fits.
+     */
+    public static final List<Integer> CRAMPED_PARTS = List.of(LONG_WORD, 15, 10);
+
+    /** Where the words of the cells of a table may break: their length, from which on, and how long a part may be. */
+    private record Rule(int separatorsFrom, int partsFrom, int part) {
+    }
+
+    private static final Rule DEFAULT_RULE = new Rule(LONG_WORD, VERY_LONG_WORD, LONG_WORD);
+
     public static void addBreakPoints(@NotNull Document document) {
         for (Element cell : document.select("td, th")) {
-            addBreakPoints(cell);
+            breakWordsOf(cell, DEFAULT_RULE);
+        }
+    }
+
+    /**
+     * Gives the words of a table more places to break, as its words leave it wider than the room it has: a word longer
+     * than the given length breaks after its separators, and into parts of that length at most, as even as they can
+     * be. A table which allowed a break at any character used to break its words wherever a line ended.
+     */
+    public static void addBreakPointsToFit(@NotNull Element table, int part) {
+        Rule rule = new Rule(part, part, part);
+        for (Element cell : table.select("td, th")) {
+            breakWordsOf(cell, rule);
         }
     }
 
@@ -48,9 +72,9 @@ public class LongWordsAdjuster {
     private record CellText(@NotNull String text, @NotNull List<TextNode> nodes, @NotNull List<Integer> starts) {
     }
 
-    private static void addBreakPoints(@NotNull Element cell) {
+    private static void breakWordsOf(@NotNull Element cell, @NotNull Rule rule) {
         CellText cellText = collect(cell);
-        List<Integer> breaks = breakPoints(cellText.text());
+        List<Integer> breaks = breakPoints(cellText.text(), rule);
         if (!breaks.isEmpty()) {
             insert(cellText, breaks);
         }
@@ -72,7 +96,8 @@ public class LongWordsAdjuster {
                 nodes.add(textNode);
                 text.append(textNode.getWholeText());
             } else if (child instanceof Element element) {
-                boolean boundary = element.isBlock() || element.nameIs("br") || element.nameIs("table");
+                // A place to break, given before, ends a word as a space does
+                boolean boundary = element.isBlock() || element.nameIs("br") || element.nameIs(WBR) || element.nameIs("table");
                 if (boundary) {
                     text.append(BOUNDARY);
                 }
@@ -87,13 +112,13 @@ public class LongWordsAdjuster {
     }
 
     /** The places, as offsets into the text, where its long words may break. */
-    static @NotNull List<Integer> breakPoints(@NotNull String text) {
+    private static @NotNull List<Integer> breakPoints(@NotNull String text, @NotNull Rule rule) {
         List<Integer> breaks = new ArrayList<>();
         int index = 0;
         while (index < text.length()) {
             int start = skipSpaces(text, index);
             int end = endOfWord(text, start);
-            addBreakPoints(text, start, end, breaks);
+            addWordBreakPoints(text, start, end, rule, breaks);
             index = end;
         }
         return breaks;
@@ -131,22 +156,42 @@ public class LongWordsAdjuster {
         return position;
     }
 
-    private static void addBreakPoints(@NotNull String text, int start, int end, @NotNull List<Integer> breaks) {
+    private static void addWordBreakPoints(@NotNull String text, int start, int end, @NotNull Rule rule, @NotNull List<Integer> breaks) {
         int length = text.codePointCount(start, end);
-        if (length <= LONG_WORD) {
+        if (length <= rule.separatorsFrom()) {
             return;
         }
-        boolean veryLong = length > VERY_LONG_WORD;
-        int sinceBreak = 0;
+        boolean intoParts = length > rule.partsFrom();
+        int partStart = start;
         int position = start;
         while (position < end) {
             int codePoint = text.codePointAt(position);
             position += Character.charCount(codePoint);
-            sinceBreak++;
-            if (position < end && (BREAK_AFTER.indexOf(codePoint) >= 0 || veryLong && sinceBreak >= LONG_WORD)) {
+            if (BREAK_AFTER.indexOf(codePoint) >= 0 && position < end) {
+                if (intoParts) {
+                    addPartBreakPoints(text, partStart, position, rule.part(), breaks);
+                }
                 breaks.add(position);
-                sinceBreak = 0;
+                partStart = position;
             }
+        }
+        if (intoParts) {
+            addPartBreakPoints(text, partStart, end, rule.part(), breaks);
+        }
+    }
+
+    /** Breaks a stretch of a word with no separator into parts of the given length at most, as even as they can be. */
+    private static void addPartBreakPoints(@NotNull String text, int start, int end, int part, @NotNull List<Integer> breaks) {
+        int length = text.codePointCount(start, end);
+        if (length <= part) {
+            return;
+        }
+        int parts = (length + part - 1) / part;
+        int position = start;
+        for (int index = 1; index < parts; index++) {
+            int partLength = length * index / parts - length * (index - 1) / parts;
+            position = text.offsetByCodePoints(position, partLength);
+            breaks.add(position);
         }
     }
 
@@ -186,10 +231,12 @@ public class LongWordsAdjuster {
         }
         // One insertion for all parts: an insertion renumbers the siblings after it, so one per part takes time growing
         // with the square of their count
-        Element parent = (Element) textNode.parent();
-        int index = textNode.siblingIndex();
-        textNode.remove();
-        parent.insertChildren(index, parts);
+        Element parent = textNode.parent();
+        if (parent != null) {
+            int index = textNode.siblingIndex();
+            textNode.remove();
+            parent.insertChildren(index, parts);
+        }
         return next;
     }
 }

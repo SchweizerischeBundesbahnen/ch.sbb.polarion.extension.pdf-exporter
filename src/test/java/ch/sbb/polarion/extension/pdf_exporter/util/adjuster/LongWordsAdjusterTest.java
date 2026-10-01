@@ -35,12 +35,12 @@ class LongWordsAdjusterTest {
     }
 
     @Test
-    void breaksAVeryLongWordWithoutSeparatorsEveryTwentyCharacters() {
+    void breaksAVeryLongWordWithoutSeparatorsIntoEvenParts() {
         Document document = Jsoup.parse("<table><tr><td>" + "ABCDEFGHIJ".repeat(5) + "</td></tr></table>");
 
         LongWordsAdjuster.addBreakPoints(document);
 
-        assertThat(document.selectFirst("td").html()).isEqualTo("ABCDEFGHIJABCDEFGHIJ<wbr>ABCDEFGHIJABCDEFGHIJ<wbr>ABCDEFGHIJ");
+        assertThat(document.selectFirst("td").html()).isEqualTo("ABCDEFGHIJABCDEF<wbr>GHIJABCDEFGHIJABC<wbr>DEFGHIJABCDEFGHIJ");
     }
 
     @Test
@@ -69,8 +69,18 @@ class LongWordsAdjusterTest {
 
         LongWordsAdjuster.addBreakPoints(document);
 
-        assertThat(document.selectFirst("td").select("wbr")).as("A break after each twenty characters of the word, wherever it falls").hasSize(2);
+        assertThat(document.selectFirst("td").select("wbr")).as("The word breaks into three even parts, wherever they fall").hasSize(2);
         assertThat(document.selectFirst("td").text()).isEqualTo("ABCDEFGHIJ".repeat(5));
+    }
+
+    @Test
+    void breaksTheWordsOfATableWithNoRoomIntoShorterParts() {
+        Document document = Jsoup.parse("<table><tr><td>Disapproved Sicherheitsanforderungen TMSPRG-13164</td></tr></table>");
+
+        LongWordsAdjuster.addBreakPointsToFit(document.selectFirst("table"), 10);
+
+        assertThat(document.selectFirst("td").html()).as("Even parts of ten characters at most, and a break after a separator")
+                .isEqualTo("Disap<wbr>proved Sicherhe<wbr>itsanfor<wbr>derungen TMSPRG-<wbr>13164");
     }
 
     @Test
@@ -81,7 +91,8 @@ class LongWordsAdjusterTest {
         LongWordsAdjuster.addBreakPoints(document);
 
         String cell = document.selectFirst("td").html();
-        assertThat(cell).contains("A".repeat(19) + emoji + "<wbr>").doesNotContain("\uD83D<wbr>");
+        assertThat(cell).as("Three parts of 14 and 15 characters, the second break between two emoji")
+                .isEqualTo("A".repeat(14) + "<wbr>" + "A".repeat(5) + emoji.repeat(10) + "<wbr>" + emoji.repeat(15));
     }
 
     @Test
