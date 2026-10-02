@@ -54,6 +54,10 @@ import static org.mockito.Mockito.*;
 @SuppressWarnings("ConstantConditions")
 class HtmlProcessorTest {
 
+    /** The width and the height of a portrait A4 page, which a work item is laid out on. */
+    private static final int A4_WIDTH = PaperSizeUtils.getMaxWidth(ConversionParams.builder().build());
+    private static final int A4_HEIGHT = PaperSizeUtils.getMaxHeight(ConversionParams.builder().build());
+
     @Mock
     private PdfExporterFileResourceProvider fileResourceProvider;
     @Mock
@@ -568,7 +572,7 @@ class HtmlProcessorTest {
     void keepsAWorkItemWithoutTablesOnOnePageAsNoPageBreakAsks() {
         Document document = JSoupUtils.parseHtml("<table style=\"page-break-inside:avoid;\"><tr><td><div class=\"polarion-dle-workitem-basic-0\">Some content</div></td></tr></table>");
 
-        processor.removePageBreakAvoids(document);
+        processor.removePageBreakAvoids(document, A4_WIDTH, A4_HEIGHT);
 
         assertTrue(document.select("table").isEmpty(), "The wrapper is gone");
         Element block = document.body().child(0);
@@ -578,11 +582,24 @@ class HtmlProcessorTest {
     }
 
     @Test
-    void unwrapsAWorkItemWithATableSoThatItsTableCanRunAcrossPages() {
+    void keepsAWorkItemWithATableWhichFitsAPageOnOnePage() {
         Document document = JSoupUtils.parseHtml("<table style=\"page-break-inside:avoid;\"><tr><td><div class=\"polarion-dle-workitem-basic-0\">Some content</div>"
                 + "<table><tr><td>Cell</td></tr></table></td></tr></table>");
 
-        processor.removePageBreakAvoids(document);
+        processor.removePageBreakAvoids(document, A4_WIDTH, A4_HEIGHT);
+
+        Element block = document.body().child(0);
+        assertEquals("div", block.tagName(), "The work item fits a page, so a block keeps it there, its table and all");
+        assertEquals("break-inside: avoid;", block.attr("style"));
+        assertEquals(1, block.select("table").size(), "The table of the work item stays in it");
+    }
+
+    @Test
+    void unwrapsAWorkItemWithATableTallerThanAPageSoThatItsTableCanRunAcrossPages() {
+        Document document = JSoupUtils.parseHtml("<table style=\"page-break-inside:avoid;\"><tr><td><div class=\"polarion-dle-workitem-basic-0\">Some content</div>"
+                + "<table>" + "<tr><td>Cell</td></tr>".repeat(100) + "</table></td></tr></table>");
+
+        processor.removePageBreakAvoids(document, A4_WIDTH, A4_HEIGHT);
 
         assertEquals(1, document.select("table").size(), "Only the table of the work item is left");
         assertTrue(document.select("div[style*=break-inside]").isEmpty(), "Nothing keeps the work item whole");
@@ -597,7 +614,8 @@ class HtmlProcessorTest {
 
             Document document = JSoupUtils.parseHtml(new String(isInvalidHtml.readAllBytes(), StandardCharsets.UTF_8));
 
-            processor.removePageBreakAvoids(document);
+            // A page no work item fits, so that each one with a table of its own is unwrapped
+            processor.removePageBreakAvoids(document, A4_WIDTH, 0);
             String fixedHtml = document.body().html();
             String validHtml = new String(isValidHtml.readAllBytes(), StandardCharsets.UTF_8);
 
@@ -615,7 +633,7 @@ class HtmlProcessorTest {
                 + "<table style=\"width: 100%\"><tr><td>Normal table</td></tr></table>";
         Document document = JSoupUtils.parseHtml(html);
 
-        assertDoesNotThrow(() -> processor.removePageBreakAvoids(document));
+        assertDoesNotThrow(() -> processor.removePageBreakAvoids(document, A4_WIDTH, A4_HEIGHT));
     }
 
     @Test
@@ -627,7 +645,7 @@ class HtmlProcessorTest {
                 + "</tbody></table>";
         Document document = JSoupUtils.parseHtml(html);
 
-        processor.removePageBreakAvoids(document);
+        processor.removePageBreakAvoids(document, A4_WIDTH, A4_HEIGHT);
 
         // The serializer puts line breaks between declarations
         List<String> rowStyles = document.select("tr").eachAttr("style").stream().map(style -> style.replaceAll("\\s", "")).toList();

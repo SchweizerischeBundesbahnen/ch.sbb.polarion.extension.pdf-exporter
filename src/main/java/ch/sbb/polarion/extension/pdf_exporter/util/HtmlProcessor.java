@@ -16,6 +16,7 @@ import ch.sbb.polarion.extension.pdf_exporter.settings.LocalizationSettings;
 import ch.sbb.polarion.extension.pdf_exporter.util.adjuster.PageWidthAdjuster;
 import ch.sbb.polarion.extension.pdf_exporter.util.adjuster.Hyphenation;
 import ch.sbb.polarion.extension.pdf_exporter.util.adjuster.LongWordsAdjuster;
+import ch.sbb.polarion.extension.pdf_exporter.util.adjuster.TableAnalyzer;
 import ch.sbb.polarion.extension.pdf_exporter.util.adjuster.TableRowsAdjuster;
 import ch.sbb.polarion.extension.pdf_exporter.util.html.HtmlLinksHelper;
 import com.helger.css.decl.CSSDeclarationList;
@@ -145,7 +146,9 @@ public class HtmlProcessor {
 
         if (exportParams.getDocumentType() == LIVE_DOC || exportParams.getDocumentType() == WIKI_PAGE) {
             // Moves WorkItem content out of table wrapping it
-            timedIfNotNull(generationLog, "Remove page break avoids", () -> removePageBreakAvoids(document));
+            ConversionParams page = pageOf(exportParams);
+            int pageHeight = pageHeight(page, hasCustomPageBreaks(htmlForParsing));
+            timedIfNotNull(generationLog, "Remove page break avoids", () -> removePageBreakAvoids(document, PaperSizeUtils.getMaxWidth(page), pageHeight));
 
             // Fixes nested HTML lists structure
             timedIfNotNull(generationLog, "Fix nested lists", () -> fixNestedLists(document));
@@ -952,7 +955,11 @@ public class HtmlProcessor {
         }
     }
 
-    void removePageBreakAvoids(@NotNull Document document) {
+    /**
+     * @param pageWidth  the width a work item is laid out at
+     * @param pageHeight the height of the page a work item kept whole must fit
+     */
+    void removePageBreakAvoids(@NotNull Document document, int pageWidth, int pageHeight) {
         // Polarion wraps content of a work item as it is into table's cell with table's styling "page-break-inside: avoid"
         // if it's configured to avoid page breaks:
         //
@@ -978,7 +985,8 @@ public class HtmlProcessor {
         //   <CONTENT>
         // </div>
         //
-        // A work item with tables is unwrapped, so that its tables can run across pages and repeat their headers there.
+        // A work item with tables which fits a page is kept on it the same way. A work item with tables which is taller than a
+        // page is unwrapped, so that its tables can run across pages and repeat their headers there.
         // To preserve the user's intent of avoiding page breaks, "break-inside: avoid" is propagated to rows of the
         // inner tables instead:
         //
@@ -989,15 +997,15 @@ public class HtmlProcessor {
         for (Element table : tables) {
             String pageBreakInsideValue = getCssValue(table, CssProp.PAGE_BREAK_INSIDE);
             if (pageBreakInsideValue.equals(CssProp.PAGE_BREAK_INSIDE_AVOID_VALUE)) {
-                processPageBreakAvoidTable(table);
+                processPageBreakAvoidTable(table, pageWidth, pageHeight);
             }
         }
     }
 
-    private void processPageBreakAvoidTable(Element table) {
+    private void processPageBreakAvoidTable(Element table, int pageWidth, int pageHeight) {
         Element tbody = JSoupUtils.getSingleChildByTag(table, HtmlTag.TBODY);
         Element tr = JSoupUtils.getSingleChildByTag(tbody != null ? tbody : table, HtmlTag.TR);
-        if (tr != null && unwrapWrapperTable(table, tr)) {
+        if (tr != null && unwrapWrapperTable(table, tr, pageWidth, pageHeight)) {
             return;
         }
 
@@ -1008,7 +1016,7 @@ public class HtmlProcessor {
         removePageBreakInsideAvoid(table);
     }
 
-    private boolean unwrapWrapperTable(Element table, Element tr) {
+    private boolean unwrapWrapperTable(Element table, Element tr, int pageWidth, int pageHeight) {
         Element td = JSoupUtils.getSingleChildByTag(tr, HtmlTag.TD);
         if (td == null) {
             return false;
@@ -1017,7 +1025,7 @@ public class HtmlProcessor {
         Elements innerTables = td.select(HtmlTag.TABLE);
         // The attribute table of the work item belongs to it as its title does: a work item with no other table is kept
         // on one page with its attributes, as the user who asked for No Page Break wants it
-        if (innerTables.not(WORK_ITEM_ATTRIBUTE_TABLE).isEmpty()) {
+        if (innerTables.not(WORK_ITEM_ATTRIBUTE_TABLE).isEmpty() || fitsAPage(table, pageWidth, pageHeight)) {
             // Nothing in the work item needs to run across pages, so a block keeps it on one page
             Element block = new Element(HtmlTag.DIV).attr(HtmlTagAttr.STYLE, CssProp.BREAK_INSIDE + ": " + CssProp.PAGE_BREAK_INSIDE_AVOID_VALUE + ";");
             for (Node contentNodes : td.childNodes()) {
@@ -1041,6 +1049,12 @@ public class HtmlProcessor {
         }
         table.remove();
         return true;
+    }
+
+    /** Whether the work item the wrapper table holds, its tables and all, is laid out no taller than a page. */
+    private boolean fitsAPage(@NotNull Element wrapperTable, int pageWidth, int pageHeight) {
+        List<Integer> heights = TableAnalyzer.analyze(wrapperTable, pageWidth).rowHeights();
+        return heights.size() == 1 && heights.getFirst() <= pageHeight;
     }
 
     private void propagateBreakInsideAvoidToRows(Element table) {
@@ -1180,15 +1194,24 @@ public class HtmlProcessor {
      * either orientation, so its rows are measured against the lower of the two pages.
      */
     public void keepTableRowsWhole(@NotNull Document document, @NotNull ConversionParams conversionParams, boolean customPageBreaks) {
-        // An export which names no paper size or orientation is laid out on a portrait A4, and measured on one
-        ConversionParams page = ConversionParams.builder()
+        ConversionParams page = pageOf(conversionParams);
+        int pageHeight = pageHeight(page, customPageBreaks || !document.select("div." + PAGE_BREAK_SECTION_CLASS).isEmpty());
+        new TableRowsAdjuster(document, page, pageHeight).execute();
+    }
+
+    /** The height of the page, or of the lower of its two orientations where a page break may turn it. */
+    private static int pageHeight(@NotNull ConversionParams page, boolean mayTurn) {
+        return mayTurn
+                ? Math.min(PaperSizeUtils.MAX_PORTRAIT_HEIGHTS.get(page.getPaperSize()), PaperSizeUtils.MAX_LANDSCAPE_HEIGHTS.get(page.getPaperSize()))
+                : PaperSizeUtils.getMaxHeight(page);
+    }
+
+    /** The page an export is laid out on: one which names no paper size or orientation is laid out on a portrait A4. */
+    private static @NotNull ConversionParams pageOf(@NotNull ConversionParams conversionParams) {
+        return ConversionParams.builder()
                 .paperSize(conversionParams.getPaperSize() != null ? conversionParams.getPaperSize() : PaperSize.A4)
                 .orientation(conversionParams.getOrientation() != null ? conversionParams.getOrientation() : Orientation.PORTRAIT)
                 .build();
-        int pageHeight = customPageBreaks || !document.select("div." + PAGE_BREAK_SECTION_CLASS).isEmpty()
-                ? Math.min(PaperSizeUtils.MAX_PORTRAIT_HEIGHTS.get(page.getPaperSize()), PaperSizeUtils.MAX_LANDSCAPE_HEIGHTS.get(page.getPaperSize()))
-                : PaperSizeUtils.getMaxHeight(page);
-        new TableRowsAdjuster(document, page, pageHeight).execute();
     }
 
     /** Keeps each short table row of a block between page breaks on one page, measured on the page of the block. */

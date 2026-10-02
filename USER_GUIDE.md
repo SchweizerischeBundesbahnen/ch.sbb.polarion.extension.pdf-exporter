@@ -409,10 +409,10 @@ Presentation dialog of the document:
 The exported PDF keeps such a work item on one page: it moves to the next page whole rather than being split. The
 table of its attributes, as Status, Severity or Linked Work Items, belongs to it and moves with it.
 
-A work item with a table in its content is the exception. Its table may run across pages, repeating its header, and
-each row of it is kept on one page instead.
+A table in its content moves with it too, as long as the whole work item fits a page.
 
-A work item taller than a page is split where the page ends, as nothing can keep it on one.
+A work item taller than a page cannot keep to one. It starts where it stands and is split where the page ends. A table
+in its content then runs across pages, repeats its header, and keeps each row on one page.
 
 ## Bulk PDF Export
 There is a possibility to export multiple documents in one run. This can be achieved with the help of a special widget:
