@@ -406,10 +406,11 @@ Presentation dialog of the document:
 
 ![No Page Break](docs/user_guide/img/no_page_break.png)
 
-The exported PDF keeps such a work item on one page: it moves to the next page whole rather than being split.
+The exported PDF keeps such a work item on one page: it moves to the next page whole rather than being split. The
+table of its attributes, as Status, Severity or Linked Work Items, belongs to it and moves with it.
 
-A work item with a table of its own is the exception. Its table may run across pages, repeating its header, and each
-row of it is kept on one page instead.
+A work item with a table in its content is the exception. Its table may run across pages, repeating its header, and
+each row of it is kept on one page instead.
 
 A work item taller than a page is split where the page ends, as nothing can keep it on one.
 
