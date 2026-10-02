@@ -31,9 +31,14 @@ The default CSS of 13.9.0 changes how tables, icons, work item attributes and th
 - The first page starts as high as every other page.
 - A row of a work items table in a Live Report is kept on one page.
 
-Custom CSS which was copied from the default values and then edited does not get these changes. Use
-`Compare with default` to see them, and take over what you need. A copy which was not edited follows the default
-values by itself.
+With **Use default CSS and custom CSS**, the custom CSS is applied after the default CSS. A copy of the default
+values which was then edited brings back only the rules it repeats: the old `overflow-wrap: anywhere` in table
+cells and `vertical-align: bottom` of icons. Remove them from the copy to get the new behavior. A copy which was not
+edited is ignored, and the default CSS applies alone.
+
+With **Use custom CSS only**, the custom CSS is the only CSS, edited or not, and does not get any of these changes.
+The page then warns that the default CSS changed since it was copied. Use `Compare with default` to see the
+changes, take over what you need, and mark the change as reviewed.
 
 ## Upgrade from version 13.7.x to 13.8.0
 
