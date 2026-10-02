@@ -326,6 +326,13 @@ class ImageSizeInTablesAdjusterTest {
                 "The image states no width it is drawn at, so its shape is not known");
     }
 
+    /** A small image of a width in percent states a low height, and its row breaks where it must. */
+    @Test
+    void testRowOfASmallImageOfAWidthInPercentBreaks() {
+        assertEquals("", breakInsideOfARowWith("<img src='small.svg' style='width: 100%;height: 50px;'/>", "A note"),
+                "The image states a height the page holds");
+    }
+
     @Test
     void testRowOfAThumbnailTheColumnNarrowsBreaks() {
         assertEquals("", breakInsideOfARowWith("<img src='wide.svg' style='width: 3000px;height: 1500px;'/>", "Wider than a column"),

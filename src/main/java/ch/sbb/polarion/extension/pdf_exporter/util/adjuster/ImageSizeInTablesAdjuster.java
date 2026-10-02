@@ -134,8 +134,11 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
             // knows before it is embedded. The editor states both sides from the file, so they give that shape: a shape a
             // drag of a handle distorted may be wrong, but keeping every narrowed row whole moves whole tables of thumbnails
             // to the next page. An image which states no height may be as tall as the page leaves it.
-            boolean shapeStated = statedHeight > 0 && absoluteWidth > 0;
-            return !shapeStated || statedHeight * Math.min(absoluteWidth, maxWidth) / absoluteWidth > imageHeight;
+            if (statedHeight <= 0) {
+                return true;
+            }
+            // A width in percent states no shape, and the height it states is the one hint of how tall the image is
+            return absoluteWidth > 0 ? statedHeight * Math.min(absoluteWidth, maxWidth) / absoluteWidth > imageHeight : statedHeight > imageHeight;
         }
         return statedHeight > imageHeight;
     }
