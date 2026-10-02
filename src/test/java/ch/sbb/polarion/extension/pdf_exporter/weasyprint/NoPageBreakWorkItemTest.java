@@ -28,8 +28,9 @@ import static org.mockito.ArgumentMatchers.eq;
 /**
  * A work item whose presentation asks for "No Page Break" is not split across two pages.
  * <p>
- * Polarion wraps such a work item into a one-cell table with "page-break-inside: avoid". The work item here has no
- * table of its own and is placed so that the end of the first page falls inside it.
+ * Polarion wraps such a work item into a one-cell table with "page-break-inside: avoid". Each work item here is placed
+ * so that the end of the first page falls inside it: one with lines of text alone, and one whose fields stand in an
+ * attribute table, which belongs to the work item as its title does.
  * </p>
  */
 class NoPageBreakWorkItemTest extends BasePdfConverterTest {
@@ -40,12 +41,15 @@ class NoPageBreakWorkItemTest extends BasePdfConverterTest {
      */
     private static final String PREFACE = "<div style=\"height: 718px; border: 1px dashed #999;\">Content above the work item</div>";
 
+    /** Content above the work item with an attribute table, as much as it takes for the end of the page to fall inside its table. */
+    private static final String PREFACE_OF_THE_ATTRIBUTES = "<div style=\"height: 800px; border: 1px dashed #999;\">Content above the work item</div>";
+
     /** The lines of the work item, each marked with its number. */
     private static final int LINES = 12;
 
     @Test
     void keepsTheWorkItemOnOnePage() {
-        byte[] pdf = export();
+        byte[] pdf = export(PREFACE + readHtmlResource("noPageBreakWorkItem"));
         List<String> pages = pageTexts(pdf);
 
         assertThat(pages).as("The work item moves whole to the second page").hasSize(2);
@@ -54,7 +58,20 @@ class NoPageBreakWorkItemTest extends BasePdfConverterTest {
         assertFalse(compareContentUsingReferenceImages(getCurrentMethodName(), pdf), "The pages differ from the reference images");
     }
 
-    private byte @NotNull [] export() {
+    @Test
+    void keepsTheWorkItemWithItsAttributeTableOnOnePage() {
+        byte[] pdf = export(PREFACE_OF_THE_ATTRIBUTES + readHtmlResource("noPageBreakWorkItemWithAttributes"));
+        // Compared first, so that the pages are written to the reports whatever fails
+        boolean differ = compareContentUsingReferenceImages(getCurrentMethodName(), pdf);
+        List<String> pages = pageTexts(pdf);
+
+        assertThat(pageOf(pages, "Password Regex")).as("The work item is printed").isNotNegative();
+        assertThat(pageOf(pages, "Status")).as("The attribute table starts on the page of its work item").isEqualTo(pageOf(pages, "Password Regex"));
+        assertThat(pageOf(pages, "Basic Product Behavior")).as("The attribute table ends on the page of its work item").isEqualTo(pageOf(pages, "Password Regex"));
+        assertFalse(differ, "The pages differ from the reference images");
+    }
+
+    private byte @NotNull [] export(@NotNull String content) {
         ExportParams params = ExportParams.builder()
                 .projectId("test")
                 .locationPath("testLocation")
@@ -64,7 +81,7 @@ class NoPageBreakWorkItemTest extends BasePdfConverterTest {
         DocumentData<IModule> liveDoc = DocumentData.creator(DocumentType.LIVE_DOC, module)
                 .id(LiveDocId.from("testProjectId", "_default", "testDocumentId"))
                 .title("No Page Break")
-                .content(PREFACE + readHtmlResource("noPageBreakWorkItem"))
+                .content(content)
                 .lastRevision("42")
                 .revisionPlaceholder("42")
                 .build();

@@ -46,6 +46,7 @@ import static ch.sbb.polarion.extension.pdf_exporter.util.exporter.Constants.*;
 
 public class HtmlProcessor {
 
+    private static final String WORK_ITEM_ATTRIBUTE_TABLE = "table.polarion-dle-workitem-fields-end-table";
     private static final String DIV_START_TAG = "<div>";
     /** The class of a section a page break makes, in the orientation of its pages. */
     private static final String PAGE_BREAK_SECTION_CLASS = "sbb_page_break";
@@ -584,7 +585,7 @@ public class HtmlProcessor {
             autoCellWidth(document);
         }
 
-        Elements wiAttrTables = document.select("table.polarion-dle-workitem-fields-end-table");
+        Elements wiAttrTables = document.select(WORK_ITEM_ATTRIBUTE_TABLE);
         for (Element table : wiAttrTables) {
             table.attr(HtmlTagAttr.STYLE, "width: 100%");
 
@@ -988,7 +989,9 @@ public class HtmlProcessor {
         }
 
         Elements innerTables = td.select(HtmlTag.TABLE);
-        if (innerTables.isEmpty()) {
+        // The attribute table of the work item belongs to it as its title does: a work item with no other table is kept
+        // on one page with its attributes, as the user who asked for No Page Break wants it
+        if (innerTables.not(WORK_ITEM_ATTRIBUTE_TABLE).isEmpty()) {
             // Nothing in the work item needs to run across pages, so a block keeps it on one page
             Element block = new Element(HtmlTag.DIV).attr(HtmlTagAttr.STYLE, CssProp.BREAK_INSIDE + ": " + CssProp.PAGE_BREAK_INSIDE_AVOID_VALUE + ";");
             for (Node contentNodes : td.childNodes()) {
