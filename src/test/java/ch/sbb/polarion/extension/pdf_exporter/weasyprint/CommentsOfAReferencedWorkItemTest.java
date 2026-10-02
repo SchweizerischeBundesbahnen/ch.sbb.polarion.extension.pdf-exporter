@@ -35,7 +35,8 @@ import static org.mockito.Mockito.when;
 
 /**
  * A comment of the document placed in the description of a work item which the document references from another one is
- * exported where it stands, as one in the text of the document or in the description of a work item of its own.
+ * exported where it stands, as one in the text of the document or in the description of a work item of its own. The
+ * document is the one of the issue (#1118).
  * <p>
  * The document is given as the renderer gives it: Polarion renders the icon of a comment in the description of a
  * referenced work item, class {@code polarion-dle-workitem-basic-external}, as of any other work item once the export lets
@@ -47,32 +48,52 @@ class CommentsOfAReferencedWorkItemTest extends BasePdfConverterTest {
     /** The icon Polarion renders for a comment in the description of a work item. */
     private static final String ICON = "<img id=\"polarion-comment:%s\" title=\"%s\" contenteditable=\"false\" src=\"/polarion/ria/images/control/comment.png\" class=\"polarion-dle-comment-icon\"/>";
 
+    /** The attribute table Polarion renders at the end of a work item, with its status and its type. */
+    private static final String ATTRIBUTES = """
+            <table class="polarion-dle-workitem-fields-end-table"><tbody>
+            <tr><td class="polarion-dle-workitem-fields-end-table-label">Status</td><td class="polarion-dle-workitem-fields-end-table-value">%s</td></tr>
+            <tr><td class="polarion-dle-workitem-fields-end-table-label">Type</td><td class="polarion-dle-workitem-fields-end-table-value">%s</td></tr>
+            </tbody></table>""";
+
+    /**
+     * The document of the issue as the renderer gives it: a work item with a comment in its description, a comment in a
+     * line of text, the referenced work item with a comment in its description, and a work item after it.
+     */
     private static final String RENDERED_DOCUMENT = """
-            <h1>Comments of a referenced work item</h1>
-            <p>Text of the document.<span id="polarion-comment:1"></span></p>
-            <div id="polarion_wiki macro name=module-workitem;params=id=EL-2" class="polarion-dle-workitem-basic-0 polarion-dle-workitem-basic-internal" title="Requirement: EL-2">
-            <span class="polarion-dle-workitem-title">EL-2 - A work item of the document</span>
-            <p>Description of the work item of the document.%s</p>
+            <div id="polarion_wiki macro name=module-workitem;params=id=CHUD-30743" class="polarion-dle-workitem-basic-0 polarion-dle-workitem-basic-internal" title="Design Statement: CHUD-30743">
+            <span class="polarion-dle-workitem-title">CHUD-30743 - Statement for the Another Req</span>
+            <p>This is the Solution of the Another Req%s</p>%s
             </div>
-            <div id="polarion_wiki macro name=module-workitem;params=id=EL-3|external=true" class="polarion-dle-workitem-basic-0 polarion-dle-workitem-basic-external" title="Requirement: EL-3">
-            <span class="polarion-dle-workitem-title">EL-3 - A work item the document references</span>
-            <p>Description of the referenced work item.%s</p>
+            <p>A<span id="polarion-comment:2"></span> text</p>
+            <div id="polarion_wiki macro name=module-workitem;params=id=CHUD-30741|external=true" class="polarion-dle-workitem-basic-0 polarion-dle-workitem-basic-external" title="Requirement: CHUD-30741">
+            <span class="polarion-dle-workitem-title">CHUD-30741 - The refinement</span>
+            <p>Refinement of the URS requirement%s</p>%s
             </div>
-            <p>Text after the work items.</p>
-            """.formatted(ICON.formatted("2", "Comment in the work item"), ICON.formatted("3", "Review comment inside the referenced WI"));
+            <div id="polarion_wiki macro name=module-workitem;params=id=CHUD-30742" class="polarion-dle-workitem-basic-0 polarion-dle-workitem-basic-internal" title="Design Statement: CHUD-30742">
+            <span class="polarion-dle-workitem-title">CHUD-30742 - Statement for the refinement</span>
+            <p>Here is the solution for the Refinement</p>%s
+            </div>
+            """.formatted(
+            ICON.formatted("1", "Review comment inside the WI"), ATTRIBUTES.formatted("Draft", "Design Statement"),
+            ICON.formatted("3", "Review comment inside the referenced WI"), ATTRIBUTES.formatted("Ready For Review", "Requirement"),
+            ATTRIBUTES.formatted("Draft", "Design Statement"));
+
+    /** The comment of a work item which was deleted: the document places it nowhere, so it comes at the end. */
+    private static final String UNREFERENCED = "This is a comment for the deleted WI. So it should be shown at the end of the document as unreferenced.";
 
     @Test
     void placesTheCommentOfAReferencedWorkItemWhereItStands() {
         LiveDocCommentsProcessor processor = new LiveDocCommentsProcessor();
         Map<String, LiveDocComment> comments = processor.getLiveDocComments(documentWith(
-                comment("1", "Comment on the document"),
-                comment("2", "Comment in the work item"),
-                comment("3", "Review comment inside the referenced WI")), CommentsRenderType.ALL);
+                comment("1", "Review comment inside the WI"),
+                comment("2", "Review comment outside of WI"),
+                comment("3", "Review comment inside the referenced WI"),
+                comment("4", UNREFERENCED)), CommentsRenderType.ALL);
         Set<String> rendered = new LinkedHashSet<>();
         String content = processor.addLiveDocComments(RENDERED_DOCUMENT, comments, false, rendered);
         String withUnreferenced = processor.addUnreferencedComments(content, comments, false, rendered);
 
-        assertThat(withUnreferenced).as("Every comment is placed where it stands, and none is left for the end of the document").isEqualTo(content);
+        assertThat(rendered).as("Every comment the document places is placed where it stands").containsExactly("1", "2", "3");
 
         ExportParams params = ExportParams.builder()
                 .projectId("test")
@@ -82,15 +103,15 @@ class CommentsOfAReferencedWorkItemTest extends BasePdfConverterTest {
                 .renderComments(CommentsRenderType.ALL)
                 .includeUnreferencedComments(true)
                 .build();
-        byte[] pdf = exportLiveDoc("Comments of a referenced work item", withUnreferenced, params);
+        byte[] pdf = exportLiveDoc("Comments in a referenced WI", withUnreferenced, params);
         boolean differ = compareContentUsingReferenceImages(getCurrentMethodName(), pdf);
 
-        String text = textOf(pdf);
-        assertThat(text).as("Each comment follows the text it is placed in")
-                .containsSubsequence("Text of the document.", "Comment on the document",
-                        "Description of the work item of the document.", "Comment in the work item",
-                        "Description of the referenced work item.", "Review comment inside the referenced WI",
-                        "Text after the work items.");
+        assertThat(textOf(pdf)).as("Each comment follows the text it is placed in, and the unreferenced one comes last")
+                .containsSubsequence("This is the Solution of the Another Req", "Review comment inside the WI",
+                        "Review comment outside of WI", "text",
+                        "Refinement of the URS requirement", "Review comment inside the referenced WI",
+                        "Here is the solution for the Refinement",
+                        "This is a comment for the deleted WI.");
         assertFalse(differ, "The pages differ from the reference images");
     }
 
