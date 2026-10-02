@@ -40,6 +40,12 @@ class TableRowWithTallImageTest extends BasePdfConverterTest {
     /** A diagram of its own 300x3000 px, which fit to page shortens to the height of a page. */
     private static final String DIAGRAM = "/weasyprint/img/tall-chain.svg";
 
+    /** A thumbnail of its own 200x100 px, in the shape its image states. */
+    private static final String THUMBNAIL = "data:image/svg+xml;base64," + Base64.getEncoder().encodeToString(("""
+            <svg xmlns="http://www.w3.org/2000/svg" width="200" height="100" viewBox="0 0 200 100">
+              <rect x="2" y="2" width="196" height="96" fill="#e8f0fe" stroke="#1a73e8" stroke-width="3"/>
+            </svg>""").getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
     /** The text fills the first page, and the table takes the second one whole. */
     private static final int DOCUMENT_PAGES = 2;
 
@@ -108,7 +114,7 @@ class TableRowWithTallImageTest extends BasePdfConverterTest {
         assertFalse(differ, "The pages differ from the reference images");
     }
 
-    /** The column narrows a wide image and drops the height it states, and the image, drawn in the shape of its file, keeps its row whole. */
+    /** The column narrows an image which states a shape taller than the page, and its row is kept whole. */
     @Test
     void keepsATableRowWithAnImageTheColumnNarrowsWhole() {
         export("tableRowWithAWideImage", getCurrentMethodName(), "Diagram 1", true);
@@ -118,6 +124,16 @@ class TableRowWithTallImageTest extends BasePdfConverterTest {
     @Test
     void keepsARowWhichLetsItselfBreakWhole() {
         export("tableRowWithTallImageWhichStatesHowItBreaks", getCurrentMethodName(), "Diagram 1", true);
+    }
+
+    /** A thumbnail the column narrows stays low, so its row breaks where it must and the table stays under the text. */
+    @Test
+    void leavesATableWithAThumbnailTheColumnNarrowsWhereItIs() {
+        byte[] pdf = pdfOf("tableRowWithAThumbnail", Orientation.PORTRAIT);
+        boolean differ = compareContentUsingReferenceImages(getCurrentMethodName(), pdf);
+
+        assertEquals(0, pagesWhichCarry(pdf, "Thumbnail 1").getFirst(), "The table starts under the text, where it stands, and leaves no page blank");
+        assertFalse(differ, "The pages differ from the reference images");
     }
 
     private void export(@NotNull String resource, @NotNull String testName, @NotNull String headerWords, @NotNull Orientation orientation, boolean compareWithReferences) {
@@ -146,7 +162,7 @@ class TableRowWithTallImageTest extends BasePdfConverterTest {
         DocumentData<IModule> liveDoc = DocumentData.creator(DocumentType.LIVE_DOC, module)
                 .id(LiveDocId.from("testProjectId", "_default", "testDocumentId"))
                 .title("A table row which holds an image")
-                .content(readHtmlResource(resource).replace("{DIAGRAM}", diagramSource()))
+                .content(readHtmlResource(resource).replace("{DIAGRAM}", diagramSource()).replace("{THUMBNAIL}", THUMBNAIL))
                 .lastRevision("42")
                 .revisionPlaceholder("42")
                 .build();
