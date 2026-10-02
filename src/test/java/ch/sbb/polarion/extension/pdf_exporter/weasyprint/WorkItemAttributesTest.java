@@ -25,7 +25,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
  * <p>
  * Its labels are bold, as in Polarion. A link to a work item, as "DGT-1458 - Work Item with Attributes", stays together
  * in the attribute table and in a narrow column of a document table: the icon on the line of the ID, the ID whole on
- * one line, the dash after it on that line. Only the title may wrap.
+ * one line, the dash after it on that line, and a suspect icon before the icon of the work item. Only the title, and
+ * the revision after it, may wrap. A column narrower than a link widens to hold it rather than split it.
  * </p>
  */
 class WorkItemAttributesTest extends BasePdfConverterTest {
@@ -34,7 +35,7 @@ class WorkItemAttributesTest extends BasePdfConverterTest {
     private static final List<String> LABELS = List.of("Severity", "Linked", "Author", "Created");
 
     private static final List<String> LINKED_IDS = List.of(
-            "DGT-1458", "DGT-1462", "DGT-1470", "SYSTEMREQUIREMENTS-123456",
+            "DGT-1458", "DGT-1462", "DGT-1470", "SYSTEMREQUIREMENTS-123456", "EL-101", "EL-757", "EL-759", "EL-760", "EL-761",
             "REQ-200", "REQ-201", "REQ-202", "TC-300", "TC-301", "TC-302", "FEAT-40", "FEAT-41", "FEAT-42", "DGT-1600", "DGT-1601", "DGT-1602");
 
     /** How far the middle of an icon may be from the middle of its ID, in points. */
@@ -42,6 +43,9 @@ class WorkItemAttributesTest extends BasePdfConverterTest {
 
     /** How far the ID may start after the right edge of its icon, in points. */
     private static final float BESIDE_PT = 4;
+
+    /** The links marked suspect, whose suspect icon stands before the icon of the work item. */
+    private static final List<String> SUSPECT_IDS = List.of("EL-101", "EL-760", "EL-761", "REQ-200", "REQ-201", "REQ-202");
 
     /** A word printed on one line: where it starts, on which page, and the text which follows it on that line. */
     private record Word(int page, @NotNull TextPosition first, @NotNull String rest) {
@@ -74,12 +78,21 @@ class WorkItemAttributesTest extends BasePdfConverterTest {
 
             TextPosition first = word.first();
             float middle = first.getYDirAdj() - first.getHeightDir() / 2;
-            assertThat(icons).as("The icon of %s stands right before it, on its line", id).anySatisfy(icon -> {
-                assertThat(icon.page()).isEqualTo(word.page());
-                assertThat(icon.middle()).isCloseTo(middle, within(SAME_LINE_PT));
-                assertThat(first.getXDirAdj() - (icon.left() + icon.width())).isBetween(-0.5f, BESIDE_PT);
-            });
+            DrawnImages.Box typeIcon = iconBefore(icons, word.page(), first.getXDirAdj(), middle);
+            assertThat(typeIcon).as("The icon of %s stands right before it, on its line", id).isNotNull();
+            if (SUSPECT_IDS.contains(id)) {
+                assertThat(iconBefore(icons, word.page(), typeIcon.left(), middle)).as("The suspect icon of %s stands right before its icon, on its line", id).isNotNull();
+            }
         }
+    }
+
+    /** The icon which ends right before the given place, on the line whose middle is given, if any. */
+    private static DrawnImages.Box iconBefore(@NotNull List<DrawnImages.Box> icons, int page, float left, float middle) {
+        return icons.stream()
+                .filter(icon -> icon.page() == page && Math.abs(icon.middle() - middle) <= SAME_LINE_PT)
+                .filter(icon -> left - (icon.left() + icon.width()) >= -0.5f && left - (icon.left() + icon.width()) <= BESIDE_PT)
+                .findFirst()
+                .orElse(null);
     }
 
     private byte @NotNull [] export() {
