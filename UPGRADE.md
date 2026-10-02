@@ -38,7 +38,9 @@ edited is ignored, and the default CSS applies alone.
 
 With **Use custom CSS only**, the custom CSS is the only CSS, edited or not, and does not get any of these changes.
 The page then warns that the default CSS changed since it was copied. Use `Compare with default` to see the
-changes, take over what you need, and mark the change as reviewed.
+changes, take over what you need, and mark the change as reviewed. A copy stored before 13.8.0 and edited since
+does not remember what it was copied from, so the page shows no warning for it: compare it with the default CSS
+yourself.
 
 ## Upgrade from version 13.7.x to 13.8.0
 
