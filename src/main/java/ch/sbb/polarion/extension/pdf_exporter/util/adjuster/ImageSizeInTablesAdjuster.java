@@ -36,6 +36,9 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
     /** What a cell adds around the image it holds: the padding Polarion writes and the border of the cell. */
     private static final int CELL_CHROME_PX = 16;
 
+    /** What the limit of the height of an image says where the image asks for less than the page leaves it. */
+    private static final float HOLDS_THE_PAGE = -1;
+
     /** However tall a header grows, an image is still worth seeing. */
     private static final int MIN_IMAGE_HEIGHT_PX = 100;
 
@@ -117,11 +120,19 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
         int imageHeight = Math.max(allowedHeight - (roomOfTheRestOfTheCell(img, maxWidth, cssWidth, allowedHeight) - CELL_CHROME_PX), MIN_IMAGE_HEIGHT_PX);
         float statedHeight = limitHeight(img, imageHeight);
 
+        if (statedHeight == HOLDS_THE_PAGE) {
+            return false;
+        }
         if (cssWidth > maxWidth || cssMaxWidth > maxWidth) {
             adjustImageStyle(img, maxWidth, cssWidth);
-            // The column drops the height the image states, and the image is drawn in the shape of its file, which is not
-            // known before it is embedded: it may be as tall as the page leaves it
-            return !TableRowsAdjuster.isIcon(img);
+            if (TableRowsAdjuster.isIcon(img)) {
+                return false;
+            }
+            // The column drops the height the image states, and the image is drawn in the shape of its file. A document
+            // states both sides from the file, so they give that shape; an image which states no height may be as tall as
+            // the page leaves it, as nothing knows its file before it is embedded
+            boolean shapeStated = statedHeight > 0 && cssWidth > 0 && cssWidth < Float.MAX_VALUE;
+            return !shapeStated || statedHeight * maxWidth / cssWidth > imageHeight;
         }
         return statedHeight > imageHeight;
     }
@@ -237,14 +248,15 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
      * A row which fills the page to its last pixel cannot carry the header of its table: the header is then
      * left on the page before, above nothing, or dropped altogether. The image gives that height up.
      *
-     * @return the height the image states, or 0 where it states none or no more than the page holds
+     * @return the height the image states, 0 where it states none, or {@link #HOLDS_THE_PAGE} where it asks for no more
+     * than the page leaves it
      */
     private float limitHeight(Element img, int allowedHeight) {
         CSSDeclarationList cssStyles = CssUtils.parseDeclarations(img.attr(HtmlTagAttr.STYLE));
         float statedMaxHeight = extractPixels(CssUtils.getPropertyValue(cssStyles, CssProp.MAX_HEIGHT));
         if (statedMaxHeight > 0 && statedMaxHeight <= allowedHeight) {
             // The image asks for less than the page leaves it, and what it asks for is what it keeps
-            return 0;
+            return HOLDS_THE_PAGE;
         }
 
         CssUtils.setPropertyValue(cssStyles, CssProp.MAX_HEIGHT, allowedHeight + Measure.PX);

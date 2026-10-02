@@ -290,9 +290,15 @@ class ImageSizeInTablesAdjusterTest {
     }
 
     @Test
-    void testRowOfAnImageWhichTheColumnNarrowsIsKeptWhole() {
-        assertEquals(CssProp.PAGE_BREAK_INSIDE_AVOID_VALUE, breakInsideOfARowWith("<img src='wide.svg' style='width: 3000px;height: 1500px;'/>", "Wider than a column"),
-                "The column drops the height the image states, and the shape of its file, which it is then drawn in, is not known");
+    void testRowOfATallImageTheColumnNarrowsIsKeptWhole() {
+        assertEquals(CssProp.PAGE_BREAK_INSIDE_AVOID_VALUE, breakInsideOfARowWith("<img src='tall.svg' style='width: 3000px;height: 30000px;'/>", "Wider than a column"),
+                "Narrowed to its column in the shape it states, the image is still taller than the page leaves it");
+    }
+
+    @Test
+    void testRowOfAThumbnailTheColumnNarrowsBreaks() {
+        assertEquals("", breakInsideOfARowWith("<img src='wide.svg' style='width: 3000px;height: 1500px;'/>", "Wider than a column"),
+                "Narrowed to its column in the shape it states, the image is low, and the row breaks where it must");
     }
 
     @Test
