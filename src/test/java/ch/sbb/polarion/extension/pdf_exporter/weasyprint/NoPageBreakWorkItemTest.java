@@ -71,6 +71,31 @@ class NoPageBreakWorkItemTest extends BasePdfConverterTest {
         assertFalse(differ, "The pages differ from the reference images");
     }
 
+    /** A table of its own does not let a work item which fits a page split across two. */
+    @Test
+    void keepsTheWorkItemWithATableWhichFitsAPageOnOnePage() {
+        byte[] pdf = export(PREFACE + readHtmlResource("noPageBreakWorkItemWithATable"));
+        boolean differ = compareContentUsingReferenceImages(getCurrentMethodName(), pdf);
+        List<String> pages = pageTexts(pdf);
+
+        assertThat(pageOf(pages, "L1L")).as("The work item is printed").isNotNegative();
+        assertThat(pageOf(pages, "T1T")).as("Its table starts on the page of the work item").isEqualTo(pageOf(pages, "L1L"));
+        assertThat(pageOf(pages, "L" + LINES + "L")).as("The work item starts and ends on one page").isEqualTo(pageOf(pages, "L1L"));
+        assertFalse(differ, "The pages differ from the reference images");
+    }
+
+    /** A work item taller than a page cannot keep to one, and its table runs across pages from where the work item starts. */
+    @Test
+    void letsAWorkItemTallerThanAPageRunAcrossPages() {
+        byte[] pdf = export(PREFACE + readHtmlResource("noPageBreakWorkItemWithATallTable"));
+        boolean differ = compareContentUsingReferenceImages(getCurrentMethodName(), pdf);
+        List<String> pages = pageTexts(pdf);
+
+        assertThat(pageOf(pages, "L1L")).as("The work item starts on the first page, under the content above it, and leaves no page blank").isZero();
+        assertThat(pageOf(pages, "T60T")).as("Its table runs on across the pages after it").isPositive();
+        assertFalse(differ, "The pages differ from the reference images");
+    }
+
     private byte @NotNull [] export(@NotNull String content) {
         ExportParams params = ExportParams.builder()
                 .projectId("test")
