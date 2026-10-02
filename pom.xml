@@ -117,8 +117,8 @@
             </build>
         </profile>
         <profile>
-            <!-- The exports of large documents, timed against a budget: mvn verify -P performance-tests -->
-            <id>performance-tests</id>
+            <!-- The exports of large documents, timed against a budget: mvn verify -P performance-tests-with-weasyprint-docker -->
+            <id>performance-tests-with-weasyprint-docker</id>
 
             <properties>
                 <groups>performance</groups>

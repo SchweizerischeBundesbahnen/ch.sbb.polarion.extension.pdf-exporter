@@ -134,7 +134,7 @@ The performance tests export documents of a known shape and fail when an export 
 They are tagged `performance` and run in a profile of their own, not in the regular build:
 
 ```bash
-mvn verify -P performance-tests -DskipJsTests
+mvn verify -P performance-tests-with-weasyprint-docker -DskipJsTests
 ```
 
 Pass `-Dweasyprint.service.url=http://localhost:9080` to use a running WeasyPrint service instead of a container.

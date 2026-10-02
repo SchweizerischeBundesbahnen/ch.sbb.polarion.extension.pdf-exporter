@@ -37,7 +37,7 @@ jobs:
           java-version: ${{ env.JAVA_VERSION }}
           cache: maven
       - name: ⏱️ Run the performance tests
-        run: mvn --batch-mode -s "${SETTINGS_XML}" verify -P performance-tests -DskipJsTests -Dweasyprint.service.url="${WEASYPRINT_SERVICE_URL}"
+        run: mvn --batch-mode -s "${SETTINGS_XML}" verify -P performance-tests-with-weasyprint-docker -DskipJsTests -Dweasyprint.service.url="${WEASYPRINT_SERVICE_URL}"
       - name: 📋 Upload the timing reports
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1

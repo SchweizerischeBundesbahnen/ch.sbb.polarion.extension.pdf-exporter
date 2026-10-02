@@ -27,7 +27,7 @@ import static org.mockito.ArgumentMatchers.eq;
 
 /**
  * The base of the performance tests: they export documents of a known shape and fail when an export takes far longer
- * than it does today. They run in the profile {@code performance-tests} alone.
+ * than it does today. They run in the profile {@code performance-tests-with-weasyprint-docker} alone.
  * <p>
  * A budget is set for the exporter and for WeasyPrint apart, read from the timings of the generation log, so a failure
  * says which side became slow. The budgets are some ten times what an export takes on the machine they were set on.
