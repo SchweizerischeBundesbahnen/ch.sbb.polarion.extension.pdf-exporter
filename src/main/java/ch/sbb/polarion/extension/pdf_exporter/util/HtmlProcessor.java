@@ -47,6 +47,9 @@ import static ch.sbb.polarion.extension.pdf_exporter.util.exporter.Constants.*;
 public class HtmlProcessor {
 
     private static final String WORK_ITEM_ATTRIBUTE_TABLE = "table.polarion-dle-workitem-fields-end-table";
+
+    /** What Polarion puts between the ID of a linked work item and its title. */
+    private static final String LINK_TITLE_DASH = " - ";
     private static final String DIV_START_TAG = "<div>";
     /** The class of a section a page break makes, in the orientation of its pages. */
     private static final String PAGE_BREAK_SECTION_CLASS = "sbb_page_break";
@@ -200,6 +203,7 @@ public class HtmlProcessor {
         if (exportParams.isCutEmptyWIAttributes()) {
             timedIfNotNull(generationLog, "Cut empty WI attributes", () -> cutEmptyWIAttributes(document));
         }
+        timedIfNotNull(generationLog, "Keep link IDs with their dash", () -> keepLinkIdsWithTheirDash(document));
         // Rewrites Polarion Work Item hyperlinks so that they become intra-document anchor links.
         timedIfNotNull(generationLog, "Rewrite Polarion URLs", () -> rewritePolarionUrls(document));
         if (exportParams.isCutLocalUrls()) {
@@ -615,6 +619,26 @@ public class HtmlProcessor {
                     CssUtils.setPropertyValue(cssStyles, CssProp.WIDTH, CssProp.WIDTH_AUTO_VALUE);
                     cell.attr(HtmlTagAttr.STYLE, cssStyles.getAsCSSString());
                 }
+            }
+        }
+    }
+
+    /**
+     * Polarion prints a link to a work item as its icon, its ID, and " - " before its title. The title may wrap, but a
+     * column as narrow as the ID would leave the dash alone on the next line. The dash joins the ID, which never wraps.
+     */
+    @VisibleForTesting
+    void keepLinkIdsWithTheirDash(@NotNull Document document) {
+        for (Element title : document.select("a.polarion-Hyperlink > span")) {
+            Element id = title.previousElementSibling();
+            if (id != null && HtmlTag.SPAN.equals(id.tagName()) && id.children().isEmpty()
+                    && title.childNodeSize() > 0 && title.childNode(0) instanceof TextNode text && text.getWholeText().startsWith(LINK_TITLE_DASH)) {
+                text.text(text.getWholeText().substring(LINK_TITLE_DASH.length() - 1));
+                // The dash keeps the color of the title, which the ID does not share
+                Element idWithDash = new Element(HtmlTag.SPAN).attr(HtmlTagAttr.STYLE, CssProp.WHITE_SPACE + ": " + CssProp.WHITE_SPACE_NOWRAP_VALUE);
+                id.before(idWithDash);
+                idWithDash.appendChild(id);
+                idWithDash.appendElement(HtmlTag.SPAN).text(LINK_TITLE_DASH.stripTrailing());
             }
         }
     }
