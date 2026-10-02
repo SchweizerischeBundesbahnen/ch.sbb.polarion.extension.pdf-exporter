@@ -387,7 +387,7 @@ class ImageSizeInTablesAdjusterTest {
     }
 
     @Test
-    void testRowWhichStatesHowItBreaksKeepsIt() {
+    void testRowWhichLetsItselfBreakIsKeptWholeAllTheSame() {
         String html = """
                 <table>
                     <tr><th>Diagram</th><th>Note</th></tr>
@@ -398,8 +398,8 @@ class ImageSizeInTablesAdjusterTest {
         Document doc = Jsoup.parse(html);
         new ImageSizeInTablesAdjuster(doc, ConversionParams.builder().build()).execute();
 
-        assertEquals("auto", CssUtils.getPropertyValue(parseCss(doc.getElementById("row").attr(HtmlTagAttr.STYLE)), CssProp.BREAK_INSIDE),
-                "The document says how the row breaks, and that is how it breaks");
+        assertEquals(CssProp.PAGE_BREAK_INSIDE_AVOID_VALUE, CssUtils.getPropertyValue(parseCss(doc.getElementById("row").attr(HtmlTagAttr.STYLE)), CssProp.BREAK_INSIDE),
+                "The image does not split, so a break of the row would only leave the header alone: the table moves on whole");
     }
 
     private String breakInsideOfARowWith(String image, String note) {

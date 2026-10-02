@@ -114,14 +114,10 @@ class TableRowWithTallImageTest extends BasePdfConverterTest {
         export("tableRowWithAWideImage", getCurrentMethodName(), "Diagram 1", true);
     }
 
-    /** A row which states how it breaks breaks that way, as the document says. */
+    /** A row which lets itself break is kept whole all the same: its image does not split, and the table moves on whole. */
     @Test
-    void breaksARowAsItStates() {
-        byte[] pdf = pdfOf("tableRowWithTallImageWhichStatesHowItBreaks", Orientation.PORTRAIT);
-        boolean differ = compareContentUsingReferenceImages(getCurrentMethodName(), pdf);
-
-        assertEquals(0, pagesWhichCarry(pdf, "Taller than a page").getFirst(), "The row starts on the first page, where the document lets it break");
-        assertFalse(differ, "The pages differ from the reference images");
+    void keepsARowWhichLetsItselfBreakWhole() {
+        export("tableRowWithTallImageWhichStatesHowItBreaks", getCurrentMethodName(), "Diagram 1", true);
     }
 
     private void export(@NotNull String resource, @NotNull String testName, @NotNull String headerWords, @NotNull Orientation orientation, boolean compareWithReferences) {

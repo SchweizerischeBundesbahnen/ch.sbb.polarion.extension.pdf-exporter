@@ -190,13 +190,16 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
         }
     }
 
-    /** Keeps the row on one page, unless the document already says how it may break. */
+    /**
+     * Keeps the row on one page, whatever it states of its own breaks. An image does not split: a row which breaks only
+     * leaves the header of its table on one page and the image on the next, so the whole table moves on instead.
+     */
     private static void keepWhole(@NotNull Element row) {
         CSSDeclarationList rowStyles = CssUtils.parseDeclarations(row.attr(HtmlTagAttr.STYLE));
-        if (!CssUtils.getPropertyValue(rowStyles, CssProp.BREAK_INSIDE).isEmpty() || !CssUtils.getPropertyValue(rowStyles, CssProp.PAGE_BREAK_INSIDE).isEmpty()) {
-            return;
-        }
         CssUtils.setPropertyValue(rowStyles, CssProp.BREAK_INSIDE, CssProp.PAGE_BREAK_INSIDE_AVOID_VALUE);
+        if (!CssUtils.getPropertyValue(rowStyles, CssProp.PAGE_BREAK_INSIDE).isEmpty()) {
+            CssUtils.setPropertyValue(rowStyles, CssProp.PAGE_BREAK_INSIDE, CssProp.PAGE_BREAK_INSIDE_AVOID_VALUE);
+        }
         row.attr(HtmlTagAttr.STYLE, rowStyles.getAsCSSString());
     }
 
