@@ -46,7 +46,7 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
             Map<Integer, Integer> columnWidths = metrics.columnWidths();
 
             for (Element img : images) {
-                limitHeight(img, metrics.headerHeight());
+                boolean heightCut = limitHeight(img, metrics.headerHeight());
 
                 float cssWidth = extractWidth(img, CssProp.WIDTH);
                 float cssMaxWidth = extractWidth(img, CssProp.MAX_WIDTH);
@@ -58,6 +58,10 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
 
                 if (cssWidth > maxWidth || cssMaxWidth > maxWidth) {
                     adjustImageStyle(img, maxWidth, cssWidth);
+                    keepTheRowWholeUnlessTheImageStatesItsSize(img);
+                }
+                if (heightCut) {
+                    // The image states a height the page cannot hold, and a row of that height leaves the header alone too
                     keepTheRowWhole(img);
                 }
             }
@@ -68,14 +72,17 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
      * An image wider than its column which states no size of its own takes the size of the file it comes
      * from, which can be a page tall. Such a row is kept whole: split, it leaves the image on the next page
      * and the header of its table on this one, above a row which shows nothing. A row holding an icon, or an
-     * image of a stated size, still breaks where it must, as any row of text does.
+     * image of a stated size which the page holds, still breaks where it must, as any row of text does.
      */
-    private void keepTheRowWhole(Element img) {
+    private void keepTheRowWholeUnlessTheImageStatesItsSize(Element img) {
         if (statedSize(img, CssUtils.parseDeclarations(img.attr(HtmlTagAttr.STYLE)), CssProp.WIDTH) > 0
                 || statedSize(img, CssUtils.parseDeclarations(img.attr(HtmlTagAttr.STYLE)), CssProp.HEIGHT) > 0) {
             return;
         }
+        keepTheRowWhole(img);
+    }
 
+    private void keepTheRowWhole(Element img) {
         Element row = img.closest(HtmlTag.TR);
         if (row != null) {
             CSSDeclarationList rowStyles = CssUtils.parseDeclarations(row.attr(HtmlTagAttr.STYLE));
@@ -87,23 +94,27 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
     /**
      * A row which fills the page to its last pixel cannot carry the header of its table: the header is then
      * left on the page before, above nothing, or dropped altogether. The image gives that height up.
+     *
+     * @return whether the image states a height which the limit cuts
      */
-    private void limitHeight(Element img, int headerHeight) {
+    private boolean limitHeight(Element img, int headerHeight) {
         int allowedHeight = Math.max(PaperSizeUtils.getMaxHeight(conversionParams) - headerHeight - CELL_CHROME_PX, MIN_IMAGE_HEIGHT_PX);
 
         CSSDeclarationList cssStyles = CssUtils.parseDeclarations(img.attr(HtmlTagAttr.STYLE));
         float statedHeight = extractPixels(CssUtils.getPropertyValue(cssStyles, CssProp.MAX_HEIGHT));
         if (statedHeight > 0 && statedHeight <= allowedHeight) {
             // The image asks for less than the page leaves it, and what it asks for is what it keeps
-            return;
+            return false;
         }
 
         CssUtils.setPropertyValue(cssStyles, CssProp.MAX_HEIGHT, allowedHeight + Measure.PX);
-        if (statedSize(img, cssStyles, CssProp.HEIGHT) > allowedHeight && CssUtils.getPropertyValue(cssStyles, CssProp.OBJECT_FIT).isEmpty()) {
+        boolean heightCut = statedSize(img, cssStyles, CssProp.HEIGHT) > allowedHeight;
+        if (heightCut && CssUtils.getPropertyValue(cssStyles, CssProp.OBJECT_FIT).isEmpty()) {
             // The limit cuts into the height the image states, and a height cut alone squashes the drawing
             CssUtils.setPropertyValue(cssStyles, CssProp.OBJECT_FIT, CssProp.OBJECT_FIT_CONTAIN_VALUE);
         }
         img.attr(HtmlTagAttr.STYLE, cssStyles.getAsCSSString());
+        return heightCut;
     }
 
     /** The size the image states in pixels, from its style or from its attribute. */

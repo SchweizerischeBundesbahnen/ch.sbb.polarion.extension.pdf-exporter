@@ -263,6 +263,26 @@ class ImageSizeInTablesAdjusterTest {
                 "An icon leaves the row free to break where a row of text would");
     }
 
+    @Test
+    void testRowOfAnImageWhichStatesAHeightThePageCannotHoldIsKeptWhole() {
+        String html = """
+                <table>
+                    <tr><th>Diagram</th><th>Note</th></tr>
+                    <tr id='tall-row'><td><img src='tall.svg' style='width: 150px;height: 1500px;'/></td><td>Taller than a page</td></tr>
+                    <tr id='short-row'><td><img src='short.svg' style='width: 150px;height: 300px;'/></td><td>A third of a page</td></tr>
+                </table>
+                """;
+
+        Document doc = Jsoup.parse(html);
+        new ImageSizeInTablesAdjuster(doc, ConversionParams.builder().build()).execute();
+
+        assertEquals(CssProp.PAGE_BREAK_INSIDE_AVOID_VALUE,
+                CssUtils.getPropertyValue(parseCss(doc.getElementById("tall-row").attr(HtmlTagAttr.STYLE)), CssProp.BREAK_INSIDE),
+                "The image states a height the page cannot hold, so the row must carry its header with it");
+        assertEquals("", CssUtils.getPropertyValue(parseCss(doc.getElementById("short-row").attr(HtmlTagAttr.STYLE)), CssProp.BREAK_INSIDE),
+                "The page holds the height the image states, and the row breaks where it must");
+    }
+
     private float pixelsOf(CSSDeclarationList cssStyles, String property) {
         String value = CssUtils.getPropertyValue(cssStyles, property);
         assertTrue(value.endsWith(Measure.PX), property + " is stated in pixels, and reads '" + value + "'");
