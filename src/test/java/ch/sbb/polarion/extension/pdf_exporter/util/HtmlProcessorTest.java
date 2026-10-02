@@ -1424,6 +1424,30 @@ class HtmlProcessorTest {
         verify(spyHtmlProcessor).adjustContentToFitPage(any(Document.class), eq(exportParams), argThat((PageLayout fitted) -> fitted.pages() == pages));
     }
 
+    /** The empty paragraphs Polarion ends a document with, a line break alone, are dropped, however deep they stand. */
+    @Test
+    void cutsTheEmptyParagraphsADocumentEndsWith() {
+        Document document = JSoupUtils.parseHtml("""
+                <div><div><table><tr><td>Cell</td></tr></table><div style="clear: both;"></div><p id="polarion_13">&nbsp;</p><p id="polarion_14">
+                  <br />
+                </p></div></div>""");
+
+        processor.cutTrailingEmptyParagraphs(document);
+
+        assertTrue(document.select("p").isEmpty(), "Nothing follows the table which prints");
+        assertEquals(1, document.select("table").size(), "The table stays");
+    }
+
+    @Test
+    void keepsAnEmptyParagraphWhichContentFollows() {
+        Document document = JSoupUtils.parseHtml("<p id=\"polarion_1\"><br /></p><p id=\"polarion_2\">Text</p><p id=\"polarion_3\"><img src=\"diagram.svg\"/></p><p id=\"polarion_4\"><br /></p>");
+
+        processor.cutTrailingEmptyParagraphs(document);
+
+        assertEquals(List.of("polarion_1", "polarion_2", "polarion_3"), document.select("p").eachAttr("id"),
+                "Only the empty paragraph at the end goes: one before the text stays, as does one which holds an image");
+    }
+
     @Test
     @SneakyThrows
     void measuresTableRowsOnceTheTablesAreFittedToThePage() {

@@ -44,7 +44,9 @@ class PageSizesTest extends BasePdfConverterTest {
             <tr><th style="font-weight: bold;background-color: #F0F0F0;%2$s">Diagram 1</th><th style="font-weight: bold;background-color: #F0F0F0;%2$s">Note 1</th></tr>
             <tr><td style="%2$s"><img src="%1$s" style="max-width: 650px;"/></td><td style="%2$s">Taller than a page</td></tr>
             </tbody></table>
-            <p id="polarion_14"></p>""".formatted(DIAGRAM, CELL);
+            <p id="polarion_14">
+              <br />
+            </p>""".formatted(DIAGRAM, CELL);
 
     /** The bottom margin of the page every page is, as the default CSS states it. */
     private static final float BOTTOM_MARGIN_PX = 90;

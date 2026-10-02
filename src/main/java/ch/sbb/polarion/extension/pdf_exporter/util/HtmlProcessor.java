@@ -54,6 +54,9 @@ public class HtmlProcessor {
 
     private static final String WORK_ITEM_ATTRIBUTE_TABLE = "table.polarion-dle-workitem-fields-end-table";
 
+    /** What prints without any text of its own. */
+    private static final String PRINTED_WITHOUT_TEXT = "img, svg, object, embed, iframe, video, table, hr, canvas";
+
     /** What Polarion puts between the ID of a linked work item and its title. */
     private static final String LINK_TITLE_DASH = " - ";
     private static final String DIV_START_TAG = "<div>";
@@ -149,6 +152,9 @@ public class HtmlProcessor {
 
         // From Polarion perspective h1 - is a document title, h2 are h1 heading etc. We are making such headings' uplifting here
         timedIfNotNull(generationLog, "Adjust document headings", () -> adjustDocumentHeadings(document));
+
+        // Polarion ends a document with an empty paragraph, which prints nothing and can take a page of its own
+        timedIfNotNull(generationLog, "Cut trailing empty paragraphs", () -> cutTrailingEmptyParagraphs(document));
 
         if (exportParams.isCutEmptyChapters()) {
             // Cut empty chapters if explicitly requested by user
@@ -284,6 +290,41 @@ public class HtmlProcessor {
     @NotNull
     private String encodeDollarSigns(@NotNull String html) {
         return html.replace(DOLLAR_SIGN, DOLLAR_ENTITY);
+    }
+
+    /**
+     * Drops the empty paragraphs a document ends with. Polarion ends a document with one, a line break alone, which prints
+     * nothing but takes a line: after a table or an image which fills the last page, a page of its own, blank.
+     */
+    @VisibleForTesting
+    void cutTrailingEmptyParagraphs(@NotNull Document document) {
+        Elements paragraphs = document.body().select(HtmlTag.P);
+        for (int index = paragraphs.size() - 1; index >= 0; index--) {
+            Element paragraph = paragraphs.get(index);
+            if (!isEmptyParagraph(paragraph) || hasContentAfter(paragraph, document.body())) {
+                return;
+            }
+            paragraph.remove();
+        }
+    }
+
+    /** Whether the paragraph prints nothing: no text but spaces, and no element but line breaks. */
+    private static boolean isEmptyParagraph(@NotNull Element paragraph) {
+        return paragraph.text().replace('\u00A0', ' ').isBlank()
+                && paragraph.select("*").stream().allMatch(element -> element == paragraph || HtmlTag.BR.equals(element.tagName()));
+    }
+
+    /** Whether anything which prints follows the element up to the end of the body. */
+    private static boolean hasContentAfter(@NotNull Element element, @NotNull Element body) {
+        for (Element current = element; current != null && current != body; current = current.parent()) {
+            for (Node next = current.nextSibling(); next != null; next = next.nextSibling()) {
+                if (next instanceof TextNode text && !text.isBlank()
+                        || next instanceof Element following && (!following.text().isBlank() || !following.select(PRINTED_WITHOUT_TEXT).isEmpty())) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     @VisibleForTesting
