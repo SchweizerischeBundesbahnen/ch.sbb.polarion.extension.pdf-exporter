@@ -1395,6 +1395,19 @@ class HtmlProcessorTest {
     }
 
     @Test
+    void fitsABlockToThePageOfItsOrientation() {
+        HtmlProcessor spyHtmlProcessor = spy(processor);
+        ExportParams exportParams = getExportParams();
+        exportParams.setFitToPage(true);
+
+        spyHtmlProcessor.processPageBrakes("<p>Landscape</p><!--PAGE_BREAK--><!--LANDSCAPE_ABOVE--><p>Portrait</p>", exportParams);
+
+        InOrder inOrder = inOrder(spyHtmlProcessor);
+        inOrder.verify(spyHtmlProcessor).adjustContentToFitPage(anyString(), argThat((ConversionParams page) -> page.getOrientation() == Orientation.LANDSCAPE));
+        inOrder.verify(spyHtmlProcessor).adjustContentToFitPage(anyString(), argThat((ConversionParams page) -> page.getOrientation() == Orientation.PORTRAIT));
+    }
+
+    @Test
     @SneakyThrows
     void keepsARowWithAnIconWholeOnceTheIconIsEmbeddedBetweenPageBreaks() {
         when(fileResourceProvider.getResourceAsBase64String(anyString())).thenReturn("data:image/gif;base64,R0lGODlhAQABAAAAACw=");

@@ -742,11 +742,13 @@ public class HtmlProcessor {
                 }
 
                 if (exportParams.isFitToPage()) { //here we can make additional areas processing if needed
-                    area = adjustContentToFitPage(area, exportParams);
-                    area = keepTableRowsWhole(area, ConversionParams.builder()
+                    // A block is fitted to the page it is printed on, which a page break may have turned
+                    ConversionParams page = ConversionParams.builder()
                             .paperSize(exportParams.getPaperSize())
                             .orientation(landscape ? Orientation.LANDSCAPE : Orientation.PORTRAIT)
-                            .build());
+                            .build();
+                    area = adjustContentToFitPage(area, page);
+                    area = keepTableRowsWhole(area, page);
                 }
 
                 String orientationClass = (landscape ? "land" : "port") + exportParams.getPaperSize();
