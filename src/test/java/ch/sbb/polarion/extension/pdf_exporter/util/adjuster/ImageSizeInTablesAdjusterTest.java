@@ -375,13 +375,49 @@ class ImageSizeInTablesAdjusterTest {
         assertTrue(limitWithCaption < limitAlone - 20, "The caption takes " + (limitAlone - limitWithCaption) + " px of the page from the image");
     }
 
+    /** A caption takes the text styles of the elements around its table, as it prints. */
+    @Test
+    void testCaptionIsMeasuredInTheTextStylesAroundItsTable() {
+        String alone = "<img id='diagram' src='tall.svg' style='max-width: 650px;'/>";
+        String withCaption = alone + "<p>Figure 1: A chain of steps, as tall as a page. Each step leads to the next one.</p>";
+        String largeText = "font-size: 24pt; line-height: 2;";
+
+        float captionInPlainText = maxHeightOfTheImageIn(alone) - maxHeightOfTheImageIn(withCaption);
+        float captionInLargeText = maxHeightOfTheImageIn(alone, largeText) - maxHeightOfTheImageIn(withCaption, largeText);
+
+        assertTrue(captionInLargeText > captionInPlainText + 20,
+                "The caption takes " + captionInPlainText + " px in plain text and " + captionInLargeText + " px in large text");
+    }
+
+    /** Lines which hold no text, and another image of the cell, take room of the page too. */
+    @Test
+    void testLinesAndOtherImagesOfTheCellTakeTheirRoom() {
+        float alone = maxHeightOfTheImageIn("<img id='diagram' src='tall.svg' style='max-width: 650px;'/>");
+        float withLines = maxHeightOfTheImageIn("<img id='diagram' src='tall.svg' style='max-width: 650px;'/><br/><br/><br/><br/>");
+        float withAnImage = maxHeightOfTheImageIn("<img id='diagram' src='tall.svg' style='max-width: 650px;'/><img src='other.svg' style='width: 100px;height: 200px;'/>");
+
+        assertTrue(withLines < alone - 20, "The empty lines take " + (alone - withLines) + " px of the page");
+        assertEquals(alone - 200, withAnImage, 1f, "The other image takes the height it states");
+    }
+
+    /** An image which states only a width the column narrows is drawn in the shape of its file, and its row is kept whole. */
+    @Test
+    void testRowOfAnImageWhichStatesOnlyAWidthTheColumnNarrowsIsKeptWhole() {
+        assertEquals(CssProp.PAGE_BREAK_INSIDE_AVOID_VALUE, breakInsideOfARowWith("<img src='tall.svg' width='800' style='max-width: 900px;'/>", "Wider than a column"),
+                "The height of the image follows its file, which is not known before it is embedded");
+    }
+
     private float maxHeightOfTheImageIn(String cell) {
+        return maxHeightOfTheImageIn(cell, "");
+    }
+
+    private float maxHeightOfTheImageIn(String cell, String textStyle) {
         Document doc = Jsoup.parse("""
-                <table>
+                <div style='%s'><table>
                     <tr><th>Diagram</th><th>Note</th></tr>
                     <tr><td style='width: 200px;'>%s</td><td>Taller than a page</td></tr>
-                </table>
-                """.formatted(cell));
+                </table></div>
+                """.formatted(textStyle, cell));
         new ImageSizeInTablesAdjuster(doc, ConversionParams.builder().build()).execute();
         return pixelsOf(parseCss(doc.getElementById("diagram").attr(HtmlTagAttr.STYLE)), CssProp.MAX_HEIGHT);
     }

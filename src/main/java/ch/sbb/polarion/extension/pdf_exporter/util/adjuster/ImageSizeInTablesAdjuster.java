@@ -16,12 +16,19 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 import java.util.ArrayList;
+import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
 
     private static final String TD_TH_SELECTOR = String.format("%s, %s", HtmlTag.TD, HtmlTag.TH);
+
+    /** What takes room in a cell without being text. */
+    private static final String CONTENT_WITHOUT_TEXT = "br, hr, svg, object, iframe, table";
+
+    /** The room each cell takes without its images, measured once for all of them. */
+    private final Map<Element, Integer> roomOfTheCellWithoutImages = new IdentityHashMap<>();
 
     /** The rows of the table itself, in the order its measure lists them, and not those of a table nested in it. */
     private static final String ROWS_OF_THE_TABLE = "> tr, > thead > tr, > tbody > tr, > tfoot > tr";
@@ -116,26 +123,52 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
             keepTheRowWholeUnlessTheImageStatesItsSize(img);
             // The column drops the height the image states, and the image is drawn in the shape of its file, which is not
             // known before it is embedded: it may be as tall as the page leaves it
-            return statedHeight > 0;
+            return !TableRowsAdjuster.isIcon(img);
         }
         return statedHeight > imageHeight;
     }
 
     /**
-     * The height the cell of the image takes without it: its padding and border, and what else it holds, laid out at the
-     * width of its column. An icon, or an image alone in its cell, is not measured: the cell adds its chrome alone.
+     * The height the cell of the image takes without it: its padding and border, what else it holds laid out at the
+     * width of its column, and the heights its other images state. An icon is not measured: its cell adds its chrome alone.
      */
     private int roomOfTheRestOfTheCell(@NotNull Element img, float columnWidth) {
         Element cell = img.closest(TD_TH_SELECTOR);
-        if (cell == null || TableRowsAdjuster.isIcon(img) || cell.text().isBlank()) {
+        if (cell == null || TableRowsAdjuster.isIcon(img)) {
             return CELL_CHROME_PX;
         }
+        int content = roomOfTheCellWithoutImages.computeIfAbsent(cell, measured -> roomWithoutImages(measured, columnWidth));
+        float otherImages = 0;
+        for (Element other : cell.select(HtmlTag.IMG)) {
+            if (other != img && !TableRowsAdjuster.isIcon(other)) {
+                otherImages += statedSize(other, CssUtils.parseDeclarations(other.attr(HtmlTagAttr.STYLE)), CssProp.HEIGHT);
+            }
+        }
+        return Math.max(content + (int) otherImages, CELL_CHROME_PX);
+    }
+
+    /**
+     * The height of the cell without its images, measured once for all of them. The cell is measured beside its table,
+     * so that it takes the text styles of the elements around it as the table does.
+     */
+    private int roomWithoutImages(@NotNull Element cell, float columnWidth) {
         Element rest = cell.clone();
-        rest.select(HtmlTag.IMG).get(cell.select(HtmlTag.IMG).indexOf(img)).remove();
-        Element table = new Element(HtmlTag.TABLE);
-        table.appendElement(HtmlTag.TR).appendChild(rest);
-        List<Integer> heights = TableAnalyzer.analyze(table, Math.max((int) columnWidth, 1)).rowHeights();
-        return heights.size() == 1 ? Math.max(heights.getFirst(), CELL_CHROME_PX) : CELL_CHROME_PX;
+        rest.select(HtmlTag.IMG).remove();
+        if (rest.text().isBlank() && rest.select(CONTENT_WITHOUT_TEXT).isEmpty()) {
+            return CELL_CHROME_PX;
+        }
+        Element probe = new Element(HtmlTag.TABLE);
+        probe.appendElement(HtmlTag.TR).appendChild(rest);
+        Element table = cell.closest(HtmlTag.TABLE);
+        if (table != null) {
+            table.after(probe);
+        }
+        try {
+            List<Integer> heights = TableAnalyzer.analyze(probe, Math.max((int) columnWidth, 1)).rowHeights();
+            return heights.size() == 1 ? Math.max(heights.getFirst(), CELL_CHROME_PX) : CELL_CHROME_PX;
+        } finally {
+            probe.remove();
+        }
     }
 
     /**
