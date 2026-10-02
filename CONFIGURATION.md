@@ -244,7 +244,6 @@ docker run --detach \
   ghcr.io/schweizerischebundesbahnen/bulk-processing-service:latest
 ```
 
-<a id="bulk-processing-api-key"></a>
 #### Bulk Processing API key
 
 The bulk processing service can require an API key, which it does as soon as it is started with `API_KEY` set.
