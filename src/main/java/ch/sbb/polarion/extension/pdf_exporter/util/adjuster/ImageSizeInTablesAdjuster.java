@@ -16,12 +16,19 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 import java.util.ArrayList;
+import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
 
     private static final String TD_TH_SELECTOR = String.format("%s, %s", HtmlTag.TD, HtmlTag.TH);
+
+    /** What takes room in a cell without being text. */
+    private static final String CONTENT_WITHOUT_TEXT = "br, hr, svg, object, iframe, table";
+
+    /** The room a cell of one image takes besides it, measured once. */
+    private final Map<Element, Integer> roomOfTheCellOfOneImage = new IdentityHashMap<>();
 
     /** The rows of the table itself, in the order its measure lists them, and not those of a table nested in it. */
     private static final String ROWS_OF_THE_TABLE = "> tr, > thead > tr, > tbody > tr, > tfoot > tr";
@@ -31,7 +38,6 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
 
     /** However tall a header grows, an image is still worth seeing. */
     private static final int MIN_IMAGE_HEIGHT_PX = 100;
-
 
     public ImageSizeInTablesAdjuster(@NotNull Document document, @NotNull ConversionParams conversionParams) {
         super(document, conversionParams);
@@ -99,9 +105,6 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
      * @return whether the image is drawn as tall as the page leaves it, and a row of that height leaves the header alone too
      */
     private boolean fitToColumn(@NotNull Element img, @NotNull Map<Integer, Integer> columnWidths, int allowedHeight) {
-        float statedWidth = statedSize(img, CssUtils.parseDeclarations(img.attr(HtmlTagAttr.STYLE)), CssProp.WIDTH);
-        float statedHeight = limitHeight(img, allowedHeight);
-
         float cssWidth = extractWidth(img, CssProp.WIDTH);
         float cssMaxWidth = extractWidth(img, CssProp.MAX_WIDTH);
 
@@ -110,19 +113,80 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
 
         float maxWidth = getMaxWidth(img, columnWidths, columnCountBasedWidth, paramsBasedWidth);
 
+        // What else the cell holds, as a caption under the image, takes its room of the page too
+        int imageHeight = Math.max(allowedHeight - (roomOfTheRestOfTheCell(img, maxWidth, cssWidth, allowedHeight) - CELL_CHROME_PX), MIN_IMAGE_HEIGHT_PX);
+        float statedHeight = limitHeight(img, imageHeight);
+
         if (cssWidth > maxWidth || cssMaxWidth > maxWidth) {
             adjustImageStyle(img, maxWidth, cssWidth);
-            keepTheRowWholeUnlessTheImageStatesItsSize(img);
+            // The column drops the height the image states, and the image is drawn in the shape of its file, which is not
+            // known before it is embedded: it may be as tall as the page leaves it
+            return !TableRowsAdjuster.isIcon(img);
         }
-        return drawnHeight(statedWidth, statedHeight, maxWidth) > allowedHeight;
+        return statedHeight > imageHeight;
     }
 
     /**
-     * The height an image of the stated size is drawn at once the column narrows it, as the ratio it states.
-     * An image which states no height has none to cut.
+     * The height the cell of the image takes besides it: its padding and border, and what else it holds above or below
+     * it. The cell is laid out with the image as tall as the page leaves it, and what it takes beyond that is the rest: an
+     * image beside it shares its height, a caption under it does not. An icon is not measured: its cell adds its chrome alone.
      */
-    private static float drawnHeight(float statedWidth, float statedHeight, float maxWidth) {
-        return statedWidth > 0 && statedWidth > maxWidth ? statedHeight * maxWidth / statedWidth : statedHeight;
+    private int roomOfTheRestOfTheCell(@NotNull Element img, float columnWidth, float statedWidth, int allowedHeight) {
+        Element cell = img.closest(TD_TH_SELECTOR);
+        if (cell == null || TableRowsAdjuster.isIcon(img)) {
+            return CELL_CHROME_PX;
+        }
+        boolean alone = cell.select(HtmlTag.IMG).stream().noneMatch(other -> other != img && !TableRowsAdjuster.isIcon(other));
+        if (alone) {
+            // What else the cell holds is the same for the one image of it, so it is measured once
+            return roomOfTheCellOfOneImage.computeIfAbsent(cell, measured -> roomBeside(measured, img, columnWidth, statedWidth, allowedHeight));
+        }
+        return roomBeside(cell, img, columnWidth, statedWidth, allowedHeight);
+    }
+
+    /**
+     * Lays the cell out with the image as tall as the page leaves it, and the other images no taller, beside its table, so
+     * that it takes the text styles of the elements around it as the table does.
+     */
+    private int roomBeside(@NotNull Element cell, @NotNull Element img, float columnWidth, float statedWidth, int allowedHeight) {
+        Element copy = cell.clone();
+        Elements images = copy.select(HtmlTag.IMG);
+        Element image = images.get(cell.select(HtmlTag.IMG).indexOf(img));
+        if (copy.text().isBlank() && copy.select(CONTENT_WITHOUT_TEXT).isEmpty() && images.size() == 1) {
+            return CELL_CHROME_PX;
+        }
+        for (Element other : images) {
+            if (other != image && !TableRowsAdjuster.isIcon(other)) {
+                drawNoTallerThan(other, allowedHeight);
+            }
+        }
+        // Without a width of its own the image takes its column, as a diagram does, and stands on a line of its own
+        int width = (int) (statedWidth > 0 && statedWidth < columnWidth ? statedWidth : columnWidth);
+        image.removeAttr(CssProp.WIDTH).removeAttr(CssProp.HEIGHT)
+                .attr(HtmlTagAttr.STYLE, CssProp.WIDTH + ": " + width + Measure.PX + "; " + CssProp.HEIGHT + ": " + allowedHeight + Measure.PX);
+
+        Element probe = new Element(HtmlTag.TABLE);
+        probe.appendElement(HtmlTag.TR).appendChild(copy);
+        Element table = cell.closest(HtmlTag.TABLE);
+        if (table != null) {
+            table.after(probe);
+        }
+        try {
+            List<Integer> heights = TableAnalyzer.analyze(probe, Math.max((int) columnWidth, 1)).rowHeights();
+            return heights.size() == 1 ? Math.max(heights.getFirst() - allowedHeight, CELL_CHROME_PX) : CELL_CHROME_PX;
+        } finally {
+            probe.remove();
+        }
+    }
+
+    /** States the height the image is limited to, where it states a taller one, as the measure reads it. */
+    private void drawNoTallerThan(@NotNull Element img, int height) {
+        CSSDeclarationList cssStyles = CssUtils.parseDeclarations(img.attr(HtmlTagAttr.STYLE));
+        if (statedSize(img, cssStyles, CssProp.HEIGHT) > height) {
+            CssUtils.setPropertyValue(cssStyles, CssProp.HEIGHT, height + Measure.PX);
+            img.attr(HtmlTagAttr.STYLE, cssStyles.getAsCSSString());
+            img.removeAttr(CssProp.HEIGHT);
+        }
     }
 
     /**
@@ -157,33 +221,15 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
     }
 
     /**
-     * An image wider than its column which states no size of its own takes the size of the file it comes
-     * from, which can be a page tall. Such a row is kept whole: split, it leaves the image on the next page
-     * and the header of its table on this one, above a row which shows nothing. A row holding an icon, or an
-     * image of a stated size which the page holds, still breaks where it must, as any row of text does.
+     * Keeps the row on one page, whatever it states of its own breaks. An image does not split: a row which breaks only
+     * leaves the header of its table on one page and the image on the next, so the whole table moves on instead.
      */
-    private void keepTheRowWholeUnlessTheImageStatesItsSize(Element img) {
-        if (statedSize(img, CssUtils.parseDeclarations(img.attr(HtmlTagAttr.STYLE)), CssProp.WIDTH) > 0
-                || statedSize(img, CssUtils.parseDeclarations(img.attr(HtmlTagAttr.STYLE)), CssProp.HEIGHT) > 0) {
-            return;
-        }
-        keepTheRowWhole(img);
-    }
-
-    private void keepTheRowWhole(Element img) {
-        Element row = img.closest(HtmlTag.TR);
-        if (row != null) {
-            keepWhole(row);
-        }
-    }
-
-    /** Keeps the row on one page, unless the document already says how it may break. */
     private static void keepWhole(@NotNull Element row) {
         CSSDeclarationList rowStyles = CssUtils.parseDeclarations(row.attr(HtmlTagAttr.STYLE));
-        if (!CssUtils.getPropertyValue(rowStyles, CssProp.BREAK_INSIDE).isEmpty() || !CssUtils.getPropertyValue(rowStyles, CssProp.PAGE_BREAK_INSIDE).isEmpty()) {
-            return;
-        }
         CssUtils.setPropertyValue(rowStyles, CssProp.BREAK_INSIDE, CssProp.PAGE_BREAK_INSIDE_AVOID_VALUE);
+        if (!CssUtils.getPropertyValue(rowStyles, CssProp.PAGE_BREAK_INSIDE).isEmpty()) {
+            CssUtils.setPropertyValue(rowStyles, CssProp.PAGE_BREAK_INSIDE, CssProp.PAGE_BREAK_INSIDE_AVOID_VALUE);
+        }
         row.attr(HtmlTagAttr.STYLE, rowStyles.getAsCSSString());
     }
 
