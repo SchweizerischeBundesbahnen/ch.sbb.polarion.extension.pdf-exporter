@@ -57,7 +57,12 @@ class PageRulesTest {
             // A5 states margins of its own, 90 and 60 px, which only its named page in an area between page breaks has
             ConversionParams a5 = ConversionParams.builder().paperSize(PaperSize.A5).orientation(Orientation.PORTRAIT).build();
             assertThat(layout.contentHeight(a5)).isEqualTo(583);
-            assertThat(layout.onNamedPages().contentHeight(a5)).isEqualTo(643);
+            assertThat(layout.on(PageLayout.Pages.NAMED_PAGE).contentHeight(a5)).isEqualTo(643);
+            // A3 states larger margins of its own, so of either page its named one is the lower
+            ConversionParams a3 = ConversionParams.builder().paperSize(PaperSize.A3).orientation(Orientation.PORTRAIT).build();
+            assertThat(layout.on(PageLayout.Pages.EITHER_PAGE).contentHeight(a3)).isEqualTo(layout.on(PageLayout.Pages.NAMED_PAGE).contentHeight(a3))
+                    .isLessThan(layout.contentHeight(a3));
+            assertThat(layout.on(PageLayout.Pages.EITHER_PAGE).contentHeight(a5)).isEqualTo(layout.contentHeight(a5));
         }
     }
 

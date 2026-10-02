@@ -1,5 +1,6 @@
 package ch.sbb.polarion.extension.pdf_exporter.util;
 
+import ch.sbb.polarion.extension.pdf_exporter.util.adjuster.Hyphenation;
 import ch.sbb.polarion.extension.generic.settings.SettingId;
 import ch.sbb.polarion.extension.generic.test_extensions.BundleJarsPrioritizingRunnableMockExtension;
 import ch.sbb.polarion.extension.pdf_exporter.configuration.PdfExporterExtensionConfigurationExtension;
@@ -1407,6 +1408,20 @@ class HtmlProcessorTest {
                 ConversionParams.builder().paperSize(PaperSize.A4).orientation(Orientation.PORTRAIT).build());
 
         assertTrue(block.replace(" ", "").contains("<trstyle=\"break-inside:avoid;\">"), block);
+    }
+
+    /** The page break widgets of a Live Report print sections on named pages, so images are fitted to the lower of both pages. */
+    @ParameterizedTest
+    @CsvSource({"<div class=\"sbb_page_break portA3\"><p>Section</p></div>, EITHER_PAGE", "<p>No section</p>, EVERY_PAGE"})
+    void fitsTheContentOfPageBreakSectionsToEitherPage(String html, PageLayout.Pages pages) {
+        HtmlProcessor spyHtmlProcessor = spy(processor);
+        ExportParams exportParams = getExportParams();
+        exportParams.setFitToPage(true);
+        PageLayout layout = PageLayout.of("@page { margin: 120px 60px 90px 80px; } @page portA3 { margin: 140px 80px 110px 100px; }");
+
+        spyHtmlProcessor.processHtmlForPDF(html, exportParams, List.of(), Hyphenation.NONE, layout, null);
+
+        verify(spyHtmlProcessor).adjustContentToFitPage(any(Document.class), eq(exportParams), argThat((PageLayout fitted) -> fitted.pages() == pages));
     }
 
     @Test

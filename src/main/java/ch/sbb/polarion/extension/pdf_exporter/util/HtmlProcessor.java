@@ -234,7 +234,9 @@ public class HtmlProcessor {
             // ---- BOOKMARK 1
             // In case of custom page breaks adjustContentToFitPage() will be called separately for each HTML block between
             // page breaks separately (see BOOKMARK 2 below), as paper orientation can be changed by page break
-            timedIfNotNull(generationLog, "Adjust content to fit page", () -> adjustContentToFitPage(document, exportParams, pageLayout));
+            // The page break widgets of a Live Report print their sections on named pages, the rest on the page every page is
+            PageLayout printedOn = document.select("div." + PAGE_BREAK_SECTION_CLASS).isEmpty() ? pageLayout : pageLayout.on(PageLayout.Pages.EITHER_PAGE);
+            timedIfNotNull(generationLog, "Adjust content to fit page", () -> adjustContentToFitPage(document, exportParams, printedOn));
             // ----
         }
         timedIfNotNull(generationLog, "Break long words in table cells", () -> LongWordsAdjuster.addBreakPoints(document, hyphenation));
@@ -804,7 +806,7 @@ public class HtmlProcessor {
                             .paperSize(exportParams.getPaperSize())
                             .orientation(landscape ? Orientation.LANDSCAPE : Orientation.PORTRAIT)
                             .build();
-                    area = adjustContentToFitPage(area, page, pageLayout.onNamedPages());
+                    area = adjustContentToFitPage(area, page, pageLayout.on(PageLayout.Pages.NAMED_PAGE));
                     area = keepTableRowsWhole(area, page);
                 }
 
