@@ -283,6 +283,53 @@ class ImageSizeInTablesAdjusterTest {
                 "The page holds the height the image states, and the row breaks where it must");
     }
 
+    @Test
+    void testRowOfAnImageWhichStatesAHeightInPointsIsKeptWhole() {
+        assertEquals(CssProp.PAGE_BREAK_INSIDE_AVOID_VALUE, breakInsideOfARowWith("<img src='tall.svg' style='width: 100pt;height: 1200pt;'/>", "Taller than a page"),
+                "A height stated in points is as tall as one stated in pixels");
+    }
+
+    @Test
+    void testRowOfAnImageWhichTheColumnShortensBelowThePageBreaks() {
+        assertEquals("", breakInsideOfARowWith("<img src='wide.svg' style='width: 3000px;height: 1500px;'/>", "Wider than a column"),
+                "The column narrows the image, and the height it keeps the page holds");
+    }
+
+    @Test
+    void testRowWhoseTextRunsOverAPageBreaks() {
+        assertEquals("", breakInsideOfARowWith("<img src='tall.svg' style='width: 150px;height: 1500px;'/>", "A line of text. ".repeat(800)),
+                "The text of the row runs over a page and splits the row anyway, so keeping it whole would only leave a page blank");
+    }
+
+    @Test
+    void testRowWhichStatesHowItBreaksKeepsIt() {
+        String html = """
+                <table>
+                    <tr><th>Diagram</th><th>Note</th></tr>
+                    <tr id='row' style='break-inside: auto;'><td><img src='tall.svg' style='width: 150px;height: 1500px;'/></td><td>Taller than a page</td></tr>
+                </table>
+                """;
+
+        Document doc = Jsoup.parse(html);
+        new ImageSizeInTablesAdjuster(doc, ConversionParams.builder().build()).execute();
+
+        assertEquals("auto", CssUtils.getPropertyValue(parseCss(doc.getElementById("row").attr(HtmlTagAttr.STYLE)), CssProp.BREAK_INSIDE),
+                "The document says how the row breaks, and that is how it breaks");
+    }
+
+    private String breakInsideOfARowWith(String image, String note) {
+        String html = """
+                <table>
+                    <tr><th>Diagram</th><th>Note</th></tr>
+                    <tr id='row'><td>%s</td><td>%s</td></tr>
+                </table>
+                """.formatted(image, note);
+
+        Document doc = Jsoup.parse(html);
+        new ImageSizeInTablesAdjuster(doc, ConversionParams.builder().build()).execute();
+        return CssUtils.getPropertyValue(parseCss(doc.getElementById("row").attr(HtmlTagAttr.STYLE)), CssProp.BREAK_INSIDE);
+    }
+
     private float pixelsOf(CSSDeclarationList cssStyles, String property) {
         String value = CssUtils.getPropertyValue(cssStyles, property);
         assertTrue(value.endsWith(Measure.PX), property + " is stated in pixels, and reads '" + value + "'");

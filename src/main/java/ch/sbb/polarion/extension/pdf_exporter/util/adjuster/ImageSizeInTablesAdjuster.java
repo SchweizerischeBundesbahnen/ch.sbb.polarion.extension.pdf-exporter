@@ -15,10 +15,15 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
 
     private static final String TD_TH_SELECTOR = String.format("%s, %s", HtmlTag.TD, HtmlTag.TH);
+
+    /** The rows of the table itself, in the order its measure lists them, and not those of a table nested in it. */
+    private static final String ROWS_OF_THE_TABLE = "> tr, > thead > tr, > tbody > tr, > tfoot > tr";
 
     /** What a cell adds around the image it holds: the padding Polarion writes and the border of the cell. */
     private static final int CELL_CHROME_PX = 16;
@@ -45,25 +50,73 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
             TableAnalyzer.TableMetrics metrics = TableAnalyzer.analyze(table, PaperSizeUtils.getMaxWidth(conversionParams));
             Map<Integer, Integer> columnWidths = metrics.columnWidths();
 
+            int allowedHeight = allowedHeight(metrics.headerHeight());
+            List<Element> rowsToKeepWhole = new ArrayList<>();
             for (Element img : images) {
-                boolean heightCut = limitHeight(img, metrics.headerHeight());
-
-                float cssWidth = extractWidth(img, CssProp.WIDTH);
-                float cssMaxWidth = extractWidth(img, CssProp.MAX_WIDTH);
-
-                float columnCountBasedWidth = getImageWidthBasedOnColumnsCount(img);
-                float paramsBasedWidth = PaperSizeUtils.getMaxWidthInTables(conversionParams);
-
-                float maxWidth = getMaxWidth(img, columnWidths, columnCountBasedWidth, paramsBasedWidth);
-
-                if (cssWidth > maxWidth || cssMaxWidth > maxWidth) {
-                    adjustImageStyle(img, maxWidth, cssWidth);
-                    keepTheRowWholeUnlessTheImageStatesItsSize(img);
+                Element row = img.closest(HtmlTag.TR);
+                if (fitToColumn(img, columnWidths, allowedHeight) && row != null && !rowsToKeepWhole.contains(row)) {
+                    rowsToKeepWhole.add(row);
                 }
-                if (heightCut) {
-                    // The image states a height the page cannot hold, and a row of that height leaves the header alone too
-                    keepTheRowWhole(img);
-                }
+            }
+            keepWholeWhereTheRestFits(table, rowsToKeepWhole, allowedHeight);
+        }
+    }
+
+    /**
+     * Fits the image to its column and to the height the page leaves it.
+     *
+     * @return whether the image is drawn as tall as the page leaves it, and a row of that height leaves the header alone too
+     */
+    private boolean fitToColumn(@NotNull Element img, @NotNull Map<Integer, Integer> columnWidths, int allowedHeight) {
+        float statedWidth = statedSize(img, CssUtils.parseDeclarations(img.attr(HtmlTagAttr.STYLE)), CssProp.WIDTH);
+        float statedHeight = limitHeight(img, allowedHeight);
+
+        float cssWidth = extractWidth(img, CssProp.WIDTH);
+        float cssMaxWidth = extractWidth(img, CssProp.MAX_WIDTH);
+
+        float columnCountBasedWidth = getImageWidthBasedOnColumnsCount(img);
+        float paramsBasedWidth = PaperSizeUtils.getMaxWidthInTables(conversionParams);
+
+        float maxWidth = getMaxWidth(img, columnWidths, columnCountBasedWidth, paramsBasedWidth);
+
+        if (cssWidth > maxWidth || cssMaxWidth > maxWidth) {
+            adjustImageStyle(img, maxWidth, cssWidth);
+            keepTheRowWholeUnlessTheImageStatesItsSize(img);
+        }
+        return drawnHeight(statedWidth, statedHeight, maxWidth) > allowedHeight;
+    }
+
+    /**
+     * The height an image of the stated size is drawn at once the column narrows it, as the ratio it states.
+     * An image which states no height has none to cut.
+     */
+    private static float drawnHeight(float statedWidth, float statedHeight, float maxWidth) {
+        return statedWidth > 0 && statedWidth > maxWidth ? statedHeight * maxWidth / statedWidth : statedHeight;
+    }
+
+    /**
+     * A row is kept whole where all the rest of it fits under the header as well. Text of another cell which runs
+     * over a page splits the row anyway, and kept whole the row would only leave the page before it blank.
+     */
+    private void keepWholeWhereTheRestFits(@NotNull Element table, @NotNull List<Element> rows, int allowedHeight) {
+        if (rows.isEmpty()) {
+            return;
+        }
+        Element withoutImages = table.clone();
+        Elements ownRows = table.select(ROWS_OF_THE_TABLE);
+        Elements clonedRows = withoutImages.select(ROWS_OF_THE_TABLE);
+        for (Element row : rows) {
+            int index = ownRows.indexOf(row);
+            if (index >= 0 && index < clonedRows.size()) {
+                clonedRows.get(index).select(HtmlTag.IMG).remove();
+            }
+        }
+        List<Integer> heights = TableAnalyzer.analyze(withoutImages, PaperSizeUtils.getMaxWidth(conversionParams)).rowHeights();
+        for (Element row : rows) {
+            int index = ownRows.indexOf(row);
+            // A row the measure did not find is kept whole, as before the rest of it was measured
+            if (index < 0 || heights.size() != ownRows.size() || heights.get(index) <= allowedHeight) {
+                keepWhole(row);
             }
         }
     }
@@ -85,36 +138,47 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
     private void keepTheRowWhole(Element img) {
         Element row = img.closest(HtmlTag.TR);
         if (row != null) {
-            CSSDeclarationList rowStyles = CssUtils.parseDeclarations(row.attr(HtmlTagAttr.STYLE));
-            CssUtils.setPropertyValue(rowStyles, CssProp.BREAK_INSIDE, CssProp.PAGE_BREAK_INSIDE_AVOID_VALUE);
-            row.attr(HtmlTagAttr.STYLE, rowStyles.getAsCSSString());
+            keepWhole(row);
         }
+    }
+
+    /** Keeps the row on one page, unless the document already says how it may break. */
+    private static void keepWhole(@NotNull Element row) {
+        CSSDeclarationList rowStyles = CssUtils.parseDeclarations(row.attr(HtmlTagAttr.STYLE));
+        if (!CssUtils.getPropertyValue(rowStyles, CssProp.BREAK_INSIDE).isEmpty() || !CssUtils.getPropertyValue(rowStyles, CssProp.PAGE_BREAK_INSIDE).isEmpty()) {
+            return;
+        }
+        CssUtils.setPropertyValue(rowStyles, CssProp.BREAK_INSIDE, CssProp.PAGE_BREAK_INSIDE_AVOID_VALUE);
+        row.attr(HtmlTagAttr.STYLE, rowStyles.getAsCSSString());
     }
 
     /**
      * A row which fills the page to its last pixel cannot carry the header of its table: the header is then
      * left on the page before, above nothing, or dropped altogether. The image gives that height up.
      *
-     * @return whether the image states a height which the limit cuts
+     * @return the height the image states, or 0 where it states none or no more than the page holds
      */
-    private boolean limitHeight(Element img, int headerHeight) {
-        int allowedHeight = Math.max(PaperSizeUtils.getMaxHeight(conversionParams) - headerHeight - CELL_CHROME_PX, MIN_IMAGE_HEIGHT_PX);
-
+    private float limitHeight(Element img, int allowedHeight) {
         CSSDeclarationList cssStyles = CssUtils.parseDeclarations(img.attr(HtmlTagAttr.STYLE));
-        float statedHeight = extractPixels(CssUtils.getPropertyValue(cssStyles, CssProp.MAX_HEIGHT));
-        if (statedHeight > 0 && statedHeight <= allowedHeight) {
+        float statedMaxHeight = extractPixels(CssUtils.getPropertyValue(cssStyles, CssProp.MAX_HEIGHT));
+        if (statedMaxHeight > 0 && statedMaxHeight <= allowedHeight) {
             // The image asks for less than the page leaves it, and what it asks for is what it keeps
-            return false;
+            return 0;
         }
 
         CssUtils.setPropertyValue(cssStyles, CssProp.MAX_HEIGHT, allowedHeight + Measure.PX);
-        boolean heightCut = statedSize(img, cssStyles, CssProp.HEIGHT) > allowedHeight;
-        if (heightCut && CssUtils.getPropertyValue(cssStyles, CssProp.OBJECT_FIT).isEmpty()) {
+        float statedHeight = statedSize(img, cssStyles, CssProp.HEIGHT);
+        if (statedHeight > allowedHeight && CssUtils.getPropertyValue(cssStyles, CssProp.OBJECT_FIT).isEmpty()) {
             // The limit cuts into the height the image states, and a height cut alone squashes the drawing
             CssUtils.setPropertyValue(cssStyles, CssProp.OBJECT_FIT, CssProp.OBJECT_FIT_CONTAIN_VALUE);
         }
         img.attr(HtmlTagAttr.STYLE, cssStyles.getAsCSSString());
-        return heightCut;
+        return statedHeight;
+    }
+
+    /** The height a page leaves an image of a row under the header of its table. */
+    private int allowedHeight(int headerHeight) {
+        return Math.max(PaperSizeUtils.getMaxHeight(conversionParams) - headerHeight - CELL_CHROME_PX, MIN_IMAGE_HEIGHT_PX);
     }
 
     /** The size the image states in pixels, from its style or from its attribute. */
@@ -143,14 +207,14 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
         return extractPixels(value);
     }
 
+    /** The length in pixels, where it is stated in an absolute unit, and 0 otherwise. */
     private float extractPixels(String value) {
-        if (value.endsWith(Measure.EX)) {
-            return parseNumber(value.replace(Measure.EX, "")) * Measure.EX_TO_PX_RATIO;
-        } else if (value.endsWith(Measure.PX)) {
-            return parseNumber(value.replace(Measure.PX, ""));
-        } else {
-            return 0;
+        for (Map.Entry<String, Float> unit : Measure.ABSOLUTE_UNITS_IN_PX.entrySet()) {
+            if (value.endsWith(unit.getKey())) {
+                return parseNumber(value.substring(0, value.length() - unit.getKey().length()).trim()) * unit.getValue();
+            }
         }
+        return 0;
     }
 
     private float parseNumber(String value) {
