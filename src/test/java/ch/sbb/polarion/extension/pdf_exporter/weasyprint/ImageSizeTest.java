@@ -3,6 +3,7 @@ package ch.sbb.polarion.extension.pdf_exporter.weasyprint;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.Orientation;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PaperSize;
+import ch.sbb.polarion.extension.pdf_exporter.util.PaperSizeUtils;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.base.BasePdfConverterTest;
 import lombok.SneakyThrows;
 import org.apache.pdfbox.Loader;
@@ -87,6 +88,24 @@ class ImageSizeTest extends BasePdfConverterTest {
         // Fit to page shortens it to the height of a page, and the width follows: 81 * 874 / 1521
         assertEquals(List.of(DrawnImages.size(47, PAGE_HEIGHT)), DrawnImages.sizesIn(pdf));
         assertFalse(compareContentUsingReferenceImages(getCurrentMethodName(), pdf), "The pages differ from the reference images");
+    }
+
+    /** A page break may turn a block of a portrait document, and the diagram is fitted to the page it is printed on. */
+    @Test
+    @SneakyThrows
+    void fitsADiagramToTheLandscapePageOfItsBlock() {
+        String source = "data:image/svg+xml;base64," + Base64.getEncoder().encodeToString(TALL_SVG.getBytes());
+        String html = """
+                <p><img src="%s" style="max-width: 650px;"/></p><!--PAGE_BREAK--><!--LANDSCAPE_ABOVE--><p>A portrait page</p>""".formatted(source);
+
+        byte[] pdf = export(html, true);
+
+        List<List<Integer>> sizes = DrawnImages.sizesIn(pdf);
+        assertEquals(1, sizes.size(), "The document holds one image");
+        int landscapeHeight = PaperSizeUtils.MAX_LANDSCAPE_HEIGHTS.get(PaperSize.A4);
+        assertTrue(sizes.getFirst().getLast() <= landscapeHeight, "The diagram is no taller than the landscape page it is printed on");
+        assertEquals(81d / 1521d, (double) sizes.getFirst().getFirst() / sizes.getFirst().getLast(), 0.01d, "The diagram keeps its own shape");
+        assertEquals(2, pageCount(pdf), "The diagram fits its landscape page, and the text after the page break takes a portrait one");
     }
 
     @Test
