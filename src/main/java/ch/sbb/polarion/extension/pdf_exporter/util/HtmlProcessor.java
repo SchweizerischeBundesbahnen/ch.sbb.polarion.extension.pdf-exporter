@@ -31,16 +31,20 @@ import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
 import org.jsoup.nodes.TextNode;
 import org.jsoup.select.Elements;
+import org.jsoup.select.NodeTraversor;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.ToIntFunction;
 
 import static ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.DocumentType.*;
 import static ch.sbb.polarion.extension.pdf_exporter.util.exporter.Constants.*;
@@ -146,9 +150,7 @@ public class HtmlProcessor {
 
         if (exportParams.getDocumentType() == LIVE_DOC || exportParams.getDocumentType() == WIKI_PAGE) {
             // Moves WorkItem content out of table wrapping it
-            ConversionParams page = pageOf(exportParams);
-            boolean mayTurn = hasCustomPageBreaks(htmlForParsing);
-            timedIfNotNull(generationLog, "Remove page break avoids", () -> removePageBreakAvoids(document, pageWidth(page, mayTurn), pageHeight(page, mayTurn)));
+            timedIfNotNull(generationLog, "Remove page break avoids", () -> removePageBreakAvoids(document, pageOf(exportParams)));
 
             // Fixes nested HTML lists structure
             timedIfNotNull(generationLog, "Fix nested lists", () -> fixNestedLists(document));
@@ -716,6 +718,30 @@ public class HtmlProcessor {
     }
 
     /**
+     * Whether each area between page breaks is printed on a landscape page. The marks next to a page break turn the area
+     * above it, and a wiki block turns or resets the area below it.
+     */
+    static @NotNull List<Boolean> landscapeOfAreas(@NotNull List<String> areas, boolean defaultLandscape) {
+        List<Boolean> result = new ArrayList<>();
+        boolean landscape = defaultLandscape;
+        for (int index = 0; index < areas.size(); index++) {
+            String area = areas.get(index);
+            String nextArea = index + 1 < areas.size() ? areas.get(index + 1) : null;
+            if (nextArea != null && nextArea.startsWith(LANDSCAPE_ABOVE_MARK)) {
+                landscape = true;
+            } else if (nextArea != null && nextArea.startsWith(PORTRAIT_ABOVE_MARK)) {
+                landscape = false;
+            } else if (area.startsWith(LANDSCAPE_ABOVE_MARK) || area.startsWith(PORTRAIT_ABOVE_MARK) || area.startsWith(RESET_BELOW_MARK)) {
+                landscape = defaultLandscape;
+            } else if (area.startsWith(ROTATE_BELOW_MARK)) {
+                landscape = !defaultLandscape;
+            }
+            result.add(landscape);
+        }
+        return result;
+    }
+
+    /**
      * {@link ch.sbb.polarion.extension.pdf_exporter.util.exporter.CustomPageBreakPart} and {@link ch.sbb.polarion.extension.pdf_exporter.util.exporter.CustomWikiBlockPart} insert specific
      * 'marks' into positions where we must place page breaks.
      * The solution below replaces marks with proper html tags and does additional processing.
@@ -726,8 +752,8 @@ public class HtmlProcessor {
     String processPageBrakes(@NotNull String html, ExportParams exportParams) {
         StringBuilder resultBuf = new StringBuilder();
         LinkedList<String> areas = new LinkedList<>(Arrays.asList(html.split(PAGE_BREAK_MARK)));
-        boolean landscape = exportParams.getOrientation() == Orientation.LANDSCAPE; //we start by using global orientation setting
-        boolean defaultLandscape = landscape;
+        //we start by using global orientation setting
+        Iterator<Boolean> landscapeOfAreas = landscapeOfAreas(areas, exportParams.getOrientation() == Orientation.LANDSCAPE).iterator();
         boolean skipEmptyAreas = exportParams.isCutEmptyChapters() || exportParams.getChapters() != null && !exportParams.getChapters().isEmpty(); //avoid having empty pages in some cases
         boolean firstArea = true;
 
@@ -735,18 +761,7 @@ public class HtmlProcessor {
         while (!areas.isEmpty()) {
             String area = areas.pollFirst();
             String nextArea = areas.isEmpty() ? null : areas.getFirst();
-
-            if (nextArea != null && nextArea.startsWith(LANDSCAPE_ABOVE_MARK)) {
-                landscape = true;
-            } else if (nextArea != null && nextArea.startsWith(PORTRAIT_ABOVE_MARK)) {
-                landscape = false;
-            } else {
-                if (area.startsWith(LANDSCAPE_ABOVE_MARK) || area.startsWith(PORTRAIT_ABOVE_MARK) || area.startsWith(RESET_BELOW_MARK)) {
-                    landscape = defaultLandscape;
-                } else if (area.startsWith(ROTATE_BELOW_MARK)) {
-                    landscape = !defaultLandscape;
-                }
-            }
+            boolean landscape = landscapeOfAreas.next();
 
             // A page break the document ends with leaves an area with nothing in it, and nothing is worth a page.
             // Whether an area holds anything is asked of the areas which can be dropped, and of those alone.
@@ -960,6 +975,34 @@ public class HtmlProcessor {
      * @param pageHeight the height of the page a work item kept whole must fit
      */
     void removePageBreakAvoids(@NotNull Document document, int pageWidth, int pageHeight) {
+        removePageBreakAvoids(document, table -> pageWidth, table -> pageHeight);
+    }
+
+    /** Each work item is measured on the page of the area it is printed in, which a page break may have turned. */
+    void removePageBreakAvoids(@NotNull Document document, @NotNull ConversionParams page) {
+        List<String> areas = hasCustomPageBreaks(document.body().html()) ? Arrays.asList(document.body().html().split(PAGE_BREAK_MARK)) : List.of("");
+        List<Boolean> landscapeOfAreas = landscapeOfAreas(areas, page.getOrientation() == Orientation.LANDSCAPE);
+
+        Map<Element, ConversionParams> pageOfTable = new IdentityHashMap<>();
+        int[] area = {0};
+        NodeTraversor.traverse((node, depth) -> {
+            if (node instanceof Comment comment && PAGE_BREAK.equals(comment.getData())) {
+                area[0]++;
+            } else if (node instanceof Element element && HtmlTag.TABLE.equals(element.tagName())) {
+                boolean landscape = landscapeOfAreas.get(Math.min(area[0], landscapeOfAreas.size() - 1));
+                pageOfTable.put(element, ConversionParams.builder()
+                        .paperSize(page.getPaperSize())
+                        .orientation(landscape ? Orientation.LANDSCAPE : Orientation.PORTRAIT)
+                        .build());
+            }
+        }, document.body());
+
+        removePageBreakAvoids(document,
+                table -> PaperSizeUtils.getMaxWidth(pageOfTable.getOrDefault(table, page)),
+                table -> PaperSizeUtils.getMaxHeight(pageOfTable.getOrDefault(table, page)));
+    }
+
+    private void removePageBreakAvoids(@NotNull Document document, @NotNull ToIntFunction<Element> pageWidth, @NotNull ToIntFunction<Element> pageHeight) {
         // Polarion wraps content of a work item as it is into table's cell with table's styling "page-break-inside: avoid"
         // if it's configured to avoid page breaks:
         //
@@ -997,7 +1040,7 @@ public class HtmlProcessor {
         for (Element table : tables) {
             String pageBreakInsideValue = getCssValue(table, CssProp.PAGE_BREAK_INSIDE);
             if (pageBreakInsideValue.equals(CssProp.PAGE_BREAK_INSIDE_AVOID_VALUE)) {
-                processPageBreakAvoidTable(table, pageWidth, pageHeight);
+                processPageBreakAvoidTable(table, pageWidth.applyAsInt(table), pageHeight.applyAsInt(table));
             }
         }
     }
@@ -1203,13 +1246,6 @@ public class HtmlProcessor {
         ConversionParams page = pageOf(conversionParams);
         int pageHeight = pageHeight(page, customPageBreaks || !document.select("div." + PAGE_BREAK_SECTION_CLASS).isEmpty());
         new TableRowsAdjuster(document, page, pageHeight).execute();
-    }
-
-    /** The width of the page, or of the narrower of its two orientations where a page break may turn it. */
-    private static int pageWidth(@NotNull ConversionParams page, boolean mayTurn) {
-        return mayTurn
-                ? Math.min(PaperSizeUtils.MAX_PORTRAIT_WIDTHS.get(page.getPaperSize()), PaperSizeUtils.MAX_LANDSCAPE_WIDTHS.get(page.getPaperSize()))
-                : PaperSizeUtils.getMaxWidth(page);
     }
 
     /** The height of the page, or of the lower of its two orientations where a page break may turn it. */

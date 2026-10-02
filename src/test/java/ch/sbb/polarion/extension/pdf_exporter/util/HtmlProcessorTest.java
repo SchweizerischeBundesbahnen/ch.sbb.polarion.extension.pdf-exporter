@@ -23,6 +23,7 @@ import org.jsoup.nodes.TextNode;
 import org.jsoup.select.Elements;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.InOrder;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -605,17 +606,17 @@ class HtmlProcessorTest {
         assertEquals(1, document.select("table").size(), "Only the table of the work item is left");
     }
 
-    @Test
-    void measuresAWorkItemOnTheNarrowerPageWhereAPageBreakMayTurnIt() {
-        HtmlProcessor spyHtmlProcessor = spy(processor);
-        ExportParams exportParams = getExportParams();
-        exportParams.setPaperSize(PaperSize.A4);
-        exportParams.setOrientation(Orientation.LANDSCAPE);
+    /** A page break turns the area of the work item, and the work item is measured on that landscape page, its width and its height. */
+    @ParameterizedTest
+    @CsvSource({"200, true", "300, false"})
+    void measuresAWorkItemOnThePageOfItsArea(int words, boolean keptWhole) {
+        Document document = JSoupUtils.parseHtml("<table style=\"page-break-inside:avoid;\"><tr><td><p>" + "A word of text. ".repeat(words) + "</p>"
+                + "<table><tr><td>Cell</td></tr></table></td></tr></table><!--PAGE_BREAK--><!--LANDSCAPE_ABOVE--><p>A portrait page</p>");
 
-        spyHtmlProcessor.processHtmlForPDF("<p>Landscape</p><!--PAGE_BREAK--><!--PORTRAIT_ABOVE--><p>Portrait</p>", exportParams, List.of());
+        processor.removePageBreakAvoids(document, ConversionParams.builder().paperSize(PaperSize.A4).orientation(Orientation.PORTRAIT).build());
 
-        verify(spyHtmlProcessor).removePageBreakAvoids(any(Document.class), eq(PaperSizeUtils.MAX_PORTRAIT_WIDTHS.get(PaperSize.A4)),
-                eq(PaperSizeUtils.MAX_LANDSCAPE_HEIGHTS.get(PaperSize.A4)));
+        assertEquals(keptWhole, !document.select("div[style*=break-inside]").isEmpty(),
+                "The work item is kept whole where it fits the landscape page of its area, laid out at the width of that page");
     }
 
     @Test
