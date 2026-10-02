@@ -1419,7 +1419,7 @@ class HtmlProcessorTest {
         spyHtmlProcessor.processHtmlForPDF("<table><tbody><tr><td>Patron</td></tr></tbody></table>", exportParams, List.of());
 
         InOrder inOrder = inOrder(spyHtmlProcessor);
-        inOrder.verify(spyHtmlProcessor).adjustContentToFitPage(any(Document.class), eq(exportParams));
+        inOrder.verify(spyHtmlProcessor).adjustContentToFitPage(any(Document.class), eq(exportParams), any(PageLayout.class));
         inOrder.verify(spyHtmlProcessor).keepTableRowsWhole(any(Document.class), eq(exportParams), eq(false));
     }
 
@@ -1467,8 +1467,8 @@ class HtmlProcessorTest {
         spyHtmlProcessor.processPageBrakes("<p>Landscape</p><!--PAGE_BREAK--><!--LANDSCAPE_ABOVE--><p>Portrait</p>", exportParams);
 
         InOrder inOrder = inOrder(spyHtmlProcessor);
-        inOrder.verify(spyHtmlProcessor).adjustContentToFitPage(anyString(), argThat((ConversionParams page) -> page.getOrientation() == Orientation.LANDSCAPE));
-        inOrder.verify(spyHtmlProcessor).adjustContentToFitPage(anyString(), argThat((ConversionParams page) -> page.getOrientation() == Orientation.PORTRAIT));
+        inOrder.verify(spyHtmlProcessor).adjustContentToFitPage(anyString(), argThat((ConversionParams page) -> page.getOrientation() == Orientation.LANDSCAPE), any(PageLayout.class));
+        inOrder.verify(spyHtmlProcessor).adjustContentToFitPage(anyString(), argThat((ConversionParams page) -> page.getOrientation() == Orientation.PORTRAIT), any(PageLayout.class));
     }
 
     @Test

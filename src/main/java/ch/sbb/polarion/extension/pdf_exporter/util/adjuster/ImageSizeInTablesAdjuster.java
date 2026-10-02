@@ -5,6 +5,7 @@ import ch.sbb.polarion.extension.pdf_exporter.constants.HtmlTag;
 import ch.sbb.polarion.extension.pdf_exporter.constants.HtmlTagAttr;
 import ch.sbb.polarion.extension.pdf_exporter.constants.Measure;
 import ch.sbb.polarion.extension.pdf_exporter.util.CssUtils;
+import ch.sbb.polarion.extension.pdf_exporter.util.PageLayout;
 import ch.sbb.polarion.extension.pdf_exporter.util.PaperSizeUtils;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ConversionParams;
 import com.helger.css.decl.CSSDeclarationList;
@@ -42,8 +43,16 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
     /** However tall a header grows, an image is still worth seeing. */
     private static final int MIN_IMAGE_HEIGHT_PX = 100;
 
+    /** What the CSS of the export says of the page, which the inline styles do not carry. */
+    private final @NotNull PageLayout pageLayout;
+
     public ImageSizeInTablesAdjuster(@NotNull Document document, @NotNull ConversionParams conversionParams) {
+        this(document, conversionParams, PageLayout.NONE);
+    }
+
+    public ImageSizeInTablesAdjuster(@NotNull Document document, @NotNull ConversionParams conversionParams, @NotNull PageLayout pageLayout) {
         super(document, conversionParams);
+        this.pageLayout = pageLayout;
     }
 
     @Override
@@ -63,7 +72,7 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
             TableAnalyzer.TableMetrics metrics = TableAnalyzer.analyze(table, PaperSizeUtils.getMaxWidth(conversionParams));
             Map<Integer, Integer> columnWidths = metrics.columnWidths();
 
-            int allowedHeight = allowedHeight(metrics.headerHeight());
+            int allowedHeight = allowedHeight(headerHeight(table, metrics));
             for (Element img : images) {
                 if (fitToColumn(img, columnWidths, allowedHeight)) {
                     addRowOf(img, rowsToKeepWhole);
@@ -222,7 +231,7 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
             }
         }
         withoutImages.select(HtmlTag.IMG).forEach(this::drawAtTheHeightItIsLimitedTo);
-        TableAnalyzer.TableMetrics metrics = TableAnalyzer.analyze(withoutImages, PaperSizeUtils.getMaxWidth(conversionParams));
+        TableAnalyzer.TableMetrics metrics = TableAnalyzer.analyze(withoutImages, PaperSizeUtils.getMaxWidth(conversionParams), pageLayout.tableHeaderCss());
         List<Integer> heights = metrics.rowHeights();
         int allowedHeight = allowedHeight(metrics.headerHeight());
         if (heights.size() != ownRows.size()) {
@@ -275,9 +284,15 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
         return statedHeight;
     }
 
+    /** The height of the header of the table, as the CSS of the export makes it where it says anything of one. */
+    private int headerHeight(@NotNull Element table, @NotNull TableAnalyzer.TableMetrics metrics) {
+        String headerCss = pageLayout.tableHeaderCss();
+        return headerCss.isBlank() ? metrics.headerHeight() : TableAnalyzer.analyze(table, PaperSizeUtils.getMaxWidth(conversionParams), headerCss).headerHeight();
+    }
+
     /** The height a page leaves an image of a row under the header of its table. */
     private int allowedHeight(int headerHeight) {
-        return Math.max(PaperSizeUtils.getMaxHeight(conversionParams) - headerHeight - CELL_CHROME_PX, MIN_IMAGE_HEIGHT_PX);
+        return Math.max(pageLayout.contentHeight(conversionParams) - headerHeight - CELL_CHROME_PX, MIN_IMAGE_HEIGHT_PX);
     }
 
     /** The size the image states in pixels, from its style or from its attribute. */

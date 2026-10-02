@@ -4,6 +4,7 @@ import ch.sbb.polarion.extension.pdf_exporter.constants.CssProp;
 import ch.sbb.polarion.extension.pdf_exporter.constants.HtmlTagAttr;
 import ch.sbb.polarion.extension.pdf_exporter.constants.Measure;
 import ch.sbb.polarion.extension.pdf_exporter.util.CssUtils;
+import ch.sbb.polarion.extension.pdf_exporter.util.PageLayout;
 import ch.sbb.polarion.extension.pdf_exporter.util.PaperSizeUtils;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ConversionParams;
 import com.helger.css.decl.CSSDeclarationList;
@@ -17,14 +18,26 @@ import org.jsoup.select.Elements;
 
 public class ImageSizeAdjuster extends AbstractAdjuster {
 
+    /** What the CSS of the export says of the page: the height it leaves its content. */
+    private final @NotNull PageLayout pageLayout;
+
     public ImageSizeAdjuster(@NotNull Document document, @NotNull ConversionParams conversionParams) {
+        this(document, conversionParams, PageLayout.NONE);
+    }
+
+    public ImageSizeAdjuster(@NotNull Document document, @NotNull ConversionParams conversionParams, @NotNull PageLayout pageLayout) {
         super(document, conversionParams);
+        this.pageLayout = pageLayout;
     }
 
     @Override
     public void execute() {
         float maxWidth = PaperSizeUtils.getMaxWidth(conversionParams);
-        float maxHeight = PaperSizeUtils.getMaxHeight(conversionParams);
+        // The paragraph an image stands in takes its bottom margin and the descent of its line under the image, where the
+        // height of the page is the one the CSS gives; the one of the paper size is lower than any page by more
+        float maxHeight = pageLayout.givesContentHeightOf(conversionParams)
+                ? pageLayout.contentHeight(conversionParams) - pageLayout.roomUnderAnImage()
+                : PaperSizeUtils.getMaxHeight(conversionParams);
 
         Elements images = document.select("img[style]");
 

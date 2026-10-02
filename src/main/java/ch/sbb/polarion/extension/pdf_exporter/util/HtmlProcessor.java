@@ -25,6 +25,7 @@ import lombok.SneakyThrows;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
+import org.jsoup.Jsoup;
 import org.jsoup.nodes.Comment;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -101,6 +102,16 @@ public class HtmlProcessor {
      *                    the rules of the CSS which turn hyphenation off
      */
     public String processHtmlForPDF(@NotNull String html, @NotNull ExportParams exportParams, @NotNull List<String> selectedRoleEnumValues, @NotNull Hyphenation hyphenation, @Nullable PdfGenerationLog generationLog) {
+        return processHtmlForPDF(html, exportParams, selectedRoleEnumValues, hyphenation, PageLayout.NONE, generationLog);
+    }
+
+    /**
+     * @param pageLayout what the CSS of the export says of the page which fitting the content to it needs: the rules which
+     *                   make a table header taller, and the height a page leaves its content
+     */
+    @SuppressWarnings("java:S3776")
+    public String processHtmlForPDF(@NotNull String html, @NotNull ExportParams exportParams, @NotNull List<String> selectedRoleEnumValues, @NotNull Hyphenation hyphenation,
+                                    @NotNull PageLayout pageLayout, @Nullable PdfGenerationLog generationLog) {
         if (exportParams.getDocumentType() == BASELINE_COLLECTION) {
             // Unsupported document type
             throw new IllegalArgumentException(UNSUPPORTED_DOCUMENT_TYPE.formatted(exportParams.getDocumentType()));
@@ -223,7 +234,7 @@ public class HtmlProcessor {
             // ---- BOOKMARK 1
             // In case of custom page breaks adjustContentToFitPage() will be called separately for each HTML block between
             // page breaks separately (see BOOKMARK 2 below), as paper orientation can be changed by page break
-            timedIfNotNull(generationLog, "Adjust content to fit page", () -> adjustContentToFitPage(document, exportParams));
+            timedIfNotNull(generationLog, "Adjust content to fit page", () -> adjustContentToFitPage(document, exportParams, pageLayout));
             // ----
         }
         timedIfNotNull(generationLog, "Break long words in table cells", () -> LongWordsAdjuster.addBreakPoints(document, hyphenation));
@@ -241,7 +252,7 @@ public class HtmlProcessor {
             // ---- BOOKMARK 2
             // processPageBrakes() contains its own adjustContentToFitPage() calls, see BOOKMARK 1 for same logic without custom page breaks
             String htmlBeforePageBreaks = html;
-            html = timedIfNotNull(generationLog, "Process page breaks", () -> processPageBrakes(htmlBeforePageBreaks, exportParams));
+            html = timedIfNotNull(generationLog, "Process page breaks", () -> processPageBrakes(htmlBeforePageBreaks, exportParams, pageLayout));
             // ----
         }
 
@@ -748,8 +759,12 @@ public class HtmlProcessor {
      */
     @NotNull
     @VisibleForTesting
-    @SuppressWarnings("java:S3776")
     String processPageBrakes(@NotNull String html, ExportParams exportParams) {
+        return processPageBrakes(html, exportParams, PageLayout.NONE);
+    }
+
+    @SuppressWarnings("java:S3776")
+    String processPageBrakes(@NotNull String html, ExportParams exportParams, @NotNull PageLayout pageLayout) {
         StringBuilder resultBuf = new StringBuilder();
         LinkedList<String> areas = new LinkedList<>(Arrays.asList(html.split(PAGE_BREAK_MARK)));
         //we start by using global orientation setting
@@ -789,7 +804,7 @@ public class HtmlProcessor {
                             .paperSize(exportParams.getPaperSize())
                             .orientation(landscape ? Orientation.LANDSCAPE : Orientation.PORTRAIT)
                             .build();
-                    area = adjustContentToFitPage(area, page);
+                    area = adjustContentToFitPage(area, page, pageLayout.onNamedPages());
                     area = keepTableRowsWhole(area, page);
                 }
 
@@ -1271,14 +1286,22 @@ public class HtmlProcessor {
     }
 
     public void adjustContentToFitPage(@NotNull Document document, @NotNull ConversionParams conversionParams) {
-        new PageWidthAdjuster(document, conversionParams)
+        adjustContentToFitPage(document, conversionParams, PageLayout.NONE);
+    }
+
+    public void adjustContentToFitPage(@NotNull Document document, @NotNull ConversionParams conversionParams, @NotNull PageLayout pageLayout) {
+        new PageWidthAdjuster(document, conversionParams, pageLayout)
                 .adjustImageSizeInTables()
                 .adjustImageSize()
                 .adjustTableSize();
     }
 
     public @NotNull String adjustContentToFitPage(@NotNull String html, @NotNull ConversionParams conversionParams) {
-        return new PageWidthAdjuster(html, conversionParams)
+        return adjustContentToFitPage(html, conversionParams, PageLayout.NONE);
+    }
+
+    public @NotNull String adjustContentToFitPage(@NotNull String html, @NotNull ConversionParams conversionParams, @NotNull PageLayout pageLayout) {
+        return new PageWidthAdjuster(Jsoup.parse(html), conversionParams, pageLayout)
                 .adjustImageSizeInTables()
                 .adjustImageSize()
                 .adjustTableSize()
