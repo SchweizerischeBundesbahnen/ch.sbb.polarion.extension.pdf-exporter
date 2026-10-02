@@ -120,19 +120,20 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
         int imageHeight = Math.max(allowedHeight - (roomOfTheRestOfTheCell(img, maxWidth, cssWidth, allowedHeight) - CELL_CHROME_PX), MIN_IMAGE_HEIGHT_PX);
         float statedHeight = limitHeight(img, imageHeight);
 
-        if (statedHeight == HOLDS_THE_PAGE) {
+        boolean narrowed = cssWidth > maxWidth || cssMaxWidth > maxWidth;
+        if (narrowed) {
+            adjustImageStyle(img, maxWidth, cssWidth);
+        }
+        if (statedHeight == HOLDS_THE_PAGE || TableRowsAdjuster.isIcon(img)) {
             return false;
         }
-        if (cssWidth > maxWidth || cssMaxWidth > maxWidth) {
-            adjustImageStyle(img, maxWidth, cssWidth);
-            if (TableRowsAdjuster.isIcon(img)) {
-                return false;
-            }
-            // The column drops the height the image states, and the image is drawn in the shape of its file. A document
-            // states both sides from the file, so they give that shape; an image which states no height may be as tall as
-            // the page leaves it, as nothing knows its file before it is embedded
+        if (narrowed) {
+            // The column drops the height the image states, and the image is drawn in the shape of its file, which nothing
+            // knows before it is embedded. The editor states both sides from the file, so they give that shape: a shape a
+            // drag of a handle distorted may be wrong, but keeping every narrowed row whole moves whole tables of thumbnails
+            // to the next page. An image which states no height may be as tall as the page leaves it.
             boolean shapeStated = statedHeight > 0 && cssWidth > 0 && cssWidth < Float.MAX_VALUE;
-            return !shapeStated || statedHeight * maxWidth / cssWidth > imageHeight;
+            return !shapeStated || statedHeight * Math.min(cssWidth, maxWidth) / cssWidth > imageHeight;
         }
         return statedHeight > imageHeight;
     }

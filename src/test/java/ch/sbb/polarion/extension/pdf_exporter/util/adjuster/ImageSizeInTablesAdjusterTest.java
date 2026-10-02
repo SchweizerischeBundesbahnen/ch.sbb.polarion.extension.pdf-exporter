@@ -295,6 +295,30 @@ class ImageSizeInTablesAdjusterTest {
                 "Narrowed to its column in the shape it states, the image is still taller than the page leaves it");
     }
 
+    /** An image which asks for less height than the page leaves it is still narrowed to its column. */
+    @Test
+    void testImageWhichHoldsThePageIsStillFittedToTheColumn() {
+        Document doc = Jsoup.parse("""
+                <table>
+                    <tr><th>Diagram</th><th>Note</th></tr>
+                    <tr id='row'><td style='width: 200px;'><img id='wide' src='wide.svg' style='width: 3000px;max-height: 200px;'/></td><td>A note</td></tr>
+                </table>
+                """);
+        new ImageSizeInTablesAdjuster(doc, ConversionParams.builder().build()).execute();
+
+        CSSDeclarationList styles = parseCss(doc.getElementById("wide").attr(HtmlTagAttr.STYLE));
+        assertTrue(pixelsOf(styles, CssProp.WIDTH) < 3000, "The column narrows the image");
+        assertEquals("", CssUtils.getPropertyValue(parseCss(doc.getElementById("row").attr(HtmlTagAttr.STYLE)), CssProp.BREAK_INSIDE),
+                "The image asks for less height than the page leaves it, and its row breaks where it must");
+    }
+
+    /** An image which only its max-width makes wider than the column is drawn at the width it states, and its height follows that. */
+    @Test
+    void testRowOfAnImageDrawnAtTheWidthItStatesBreaks() {
+        assertEquals("", breakInsideOfARowWith("<img src='narrow.svg' style='width: 100px;height: 400px;max-width: 2000px;'/>", "A note"),
+                "The image is drawn 100 x 400, which the page holds");
+    }
+
     @Test
     void testRowOfAThumbnailTheColumnNarrowsBreaks() {
         assertEquals("", breakInsideOfARowWith("<img src='wide.svg' style='width: 3000px;height: 1500px;'/>", "Wider than a column"),
