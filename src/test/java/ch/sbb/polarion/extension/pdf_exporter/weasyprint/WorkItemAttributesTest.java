@@ -23,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 /**
  * The attribute table of a work item and the links to work items it holds, as Polarion renders them.
  * <p>
- * Its labels are bold, as in Polarion. A link to a work item, as "DGT-1458 - Work Item with Attributes", stays together
+ * Its labels are bold and stand at the top of their rows, as in Polarion. A link to a work item, as "DGT-1458 - Work Item with Attributes", stays together
  * in the attribute table and in a narrow column of a document table: the icon on the line of the ID, the ID whole on
  * one line, the dash after it on that line, and a suspect icon before the icon of the work item. Only the title, and
  * the revision after it, may wrap. A column narrower than a link widens to hold it rather than split it.
@@ -63,6 +63,15 @@ class WorkItemAttributesTest extends BasePdfConverterTest {
             assertThat(labels.get(label).first().getFont().getName()).as("The label \"%s\" is bold", label).containsIgnoringCase("bold");
         }
         assertFalse(differ, "The pages differ from the reference images");
+    }
+
+    @Test
+    void printsTheLabelOfAnAttributeAtTheTopOfItsRow() {
+        byte[] pdf = export();
+
+        // The label of a value of several lines stands on its first line, as in Polarion, not in the middle of the row
+        Map<String, Word> words = wordsIn(pdf, List.of("Linked", "verifies"));
+        assertThat(words.get("Linked").first().getYDirAdj()).isCloseTo(words.get("verifies").first().getYDirAdj(), within(SAME_LINE_PT));
     }
 
     @Test
