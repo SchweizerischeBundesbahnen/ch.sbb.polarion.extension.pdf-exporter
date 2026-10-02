@@ -10,12 +10,14 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ConversionPa
 import com.helger.css.decl.CSSDeclarationList;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -43,6 +45,8 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
         // A table holds the images of the tables nested in it too, and the first table to fit an image decides for its row.
         // The row belongs to the innermost table, which is measured for it once every image is fitted.
         Map<Element, List<Element>> rowsToKeepWhole = new LinkedHashMap<>();
+        // What the page leaves the rows of each table under its header, measured with the images the header holds
+        Map<Element, Integer> allowedHeights = new HashMap<>();
 
         for (Element table : tables) {
             Elements images = table.select(HtmlTag.IMG);
@@ -55,13 +59,14 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
             Map<Integer, Integer> columnWidths = metrics.columnWidths();
 
             int allowedHeight = allowedHeight(metrics.headerHeight());
+            allowedHeights.put(table, allowedHeight);
             for (Element img : images) {
                 if (fitToColumn(img, columnWidths, allowedHeight)) {
                     addRowOf(img, rowsToKeepWhole);
                 }
             }
         }
-        rowsToKeepWhole.forEach(this::keepWholeWhereTheRestFits);
+        rowsToKeepWhole.forEach((table, rows) -> keepWholeWhereTheRestFits(table, rows, allowedHeights.get(table)));
     }
 
     /** Adds the row of the image to the rows of the table it belongs to, the innermost one. */
@@ -112,7 +117,11 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
      * A row is kept whole where all the rest of it fits under the header as well. Text of another cell which runs
      * over a page splits the row anyway, and kept whole the row would only leave the page before it blank.
      */
-    private void keepWholeWhereTheRestFits(@NotNull Element table, @NotNull List<Element> rows) {
+    private void keepWholeWhereTheRestFits(@NotNull Element table, @NotNull List<Element> rows, @Nullable Integer allowedHeight) {
+        if (allowedHeight == null) {
+            // The table of a row holds its image too and is always measured for it, so this table was never seen
+            return;
+        }
         Element withoutImages = table.clone();
         Elements ownRows = table.select(ROWS_OF_THE_TABLE);
         Elements clonedRows = withoutImages.select(ROWS_OF_THE_TABLE);
@@ -122,9 +131,7 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
                 clonedRows.get(index).select(HtmlTag.IMG).remove();
             }
         }
-        TableAnalyzer.TableMetrics metrics = TableAnalyzer.analyze(withoutImages, PaperSizeUtils.getMaxWidth(conversionParams));
-        List<Integer> heights = metrics.rowHeights();
-        int allowedHeight = allowedHeight(metrics.headerHeight());
+        List<Integer> heights = TableAnalyzer.analyze(withoutImages, PaperSizeUtils.getMaxWidth(conversionParams)).rowHeights();
         if (heights.size() != ownRows.size()) {
             // The measure saw another table than the document holds, so it says nothing about these rows
             return;
