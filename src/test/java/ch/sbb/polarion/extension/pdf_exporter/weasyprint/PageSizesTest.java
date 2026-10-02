@@ -36,14 +36,15 @@ class PageSizesTest extends BasePdfConverterTest {
 
     private static final String CELL = "text-align: left;vertical-align: top;border: 1px solid #CCCCCC;padding: 5px;";
 
-    /** A line of text, the diagram under it, and a table whose one row holds the diagram again. */
+    /** A line of text, the diagram under it, a table whose one row holds the diagram again, and the empty paragraph Polarion ends a document with. */
     private static final String CONTENT = """
             <p>A diagram taller than the page, fitted to it.</p>
             <p><img src="%1$s" style="max-width: 650px;"/></p>
             <table class="polarion-Document-table" style="width: 100%%;border: 1px solid #CCCCCC;border-collapse: collapse;"><tbody>
             <tr><th style="font-weight: bold;background-color: #F0F0F0;%2$s">Diagram 1</th><th style="font-weight: bold;background-color: #F0F0F0;%2$s">Note 1</th></tr>
             <tr><td style="%2$s"><img src="%1$s" style="max-width: 650px;"/></td><td style="%2$s">Taller than a page</td></tr>
-            </tbody></table>""".formatted(DIAGRAM, CELL);
+            </tbody></table>
+            <p id="polarion_14"></p>""".formatted(DIAGRAM, CELL);
 
     /** The bottom margin of the page every page is, as the default CSS states it. */
     private static final float BOTTOM_MARGIN_PX = 90;
@@ -78,6 +79,7 @@ class PageSizesTest extends BasePdfConverterTest {
         }
         assertThat(diagrams.get(1).page()).as("The diagram of the table has a page of its own").isGreaterThan(diagrams.get(0).page());
         assertThat(pagesWhichCarry(pdf, "Diagram 1")).as("The header of the table stands on the page of its row").containsExactly(diagrams.get(1).page());
+        assertThat(pageCountOf(pdf)).as("The empty paragraph after the table takes no page of its own").isEqualTo(diagrams.get(1).page() + 1);
         assertFalse(differ, "The pages differ from the reference images");
     }
 
@@ -89,6 +91,13 @@ class PageSizesTest extends BasePdfConverterTest {
     private static float footerLineOf(byte @NotNull [] pdf) {
         try (PDDocument document = Loader.loadPDF(pdf)) {
             return document.getPage(0).getMediaBox().getHeight() - BOTTOM_MARGIN_PX * PT_PER_PX;
+        }
+    }
+
+    @SneakyThrows
+    private static int pageCountOf(byte @NotNull [] pdf) {
+        try (PDDocument document = Loader.loadPDF(pdf)) {
+            return document.getNumberOfPages();
         }
     }
 

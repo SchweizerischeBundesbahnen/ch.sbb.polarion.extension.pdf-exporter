@@ -292,7 +292,9 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
 
     /** The height a page leaves an image of a row under the header of its table. */
     private int allowedHeight(int headerHeight) {
-        return Math.max(pageLayout.contentHeight(conversionParams) - headerHeight - CELL_CHROME_PX, MIN_IMAGE_HEIGHT_PX);
+        // The row which fills the page leaves the room a paragraph takes after the table, as the empty one Polarion ends a
+        // document with, which would otherwise take a page of its own
+        return Math.max(pageLayout.heightForAnImage(conversionParams) - headerHeight - CELL_CHROME_PX, MIN_IMAGE_HEIGHT_PX);
     }
 
     /** The size the image states in pixels, from its style or from its attribute. */

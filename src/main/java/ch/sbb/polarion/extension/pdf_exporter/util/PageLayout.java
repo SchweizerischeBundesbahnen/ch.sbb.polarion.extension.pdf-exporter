@@ -14,7 +14,7 @@ import java.util.Map;
  * @param tableHeaderCss the rules of the CSS which make a table header taller, as CSS the measure of a table reads
  * @param heights        the height each page leaves its content, of the page every page is and of each named page
  * @param namedPages     whether the content is printed on the named pages the export gives the areas between page breaks
- * @param roomUnderAnImage the room under an image the paragraph it stands in takes, which an image filling a page gives up
+ * @param roomUnderAnImage the room a paragraph takes under an image, which an image filling a page gives up
  */
 public record PageLayout(@NotNull String tableHeaderCss, @NotNull PageRules.Heights heights, boolean namedPages, int roomUnderAnImage) {
 
@@ -34,6 +34,15 @@ public record PageLayout(@NotNull String tableHeaderCss, @NotNull PageRules.Heig
     public int contentHeight(@NotNull ConversionParams page) {
         Integer height = heightsOfThePage().get(nameOf(page));
         return height != null ? height : PaperSizeUtils.getMaxHeight(page);
+    }
+
+    /**
+     * The height an image may fill on the page: the height the CSS gives the page less the room a paragraph takes under
+     * what fills it, the one the image stands in or the empty one Polarion ends a document with. Where the CSS gives no
+     * height, the one of the paper size is lower than any page by more than that.
+     */
+    public int heightForAnImage(@NotNull ConversionParams page) {
+        return givesContentHeightOf(page) ? contentHeight(page) - roomUnderAnImage : PaperSizeUtils.getMaxHeight(page);
     }
 
     /** Whether the CSS gives the height of the page, which it fills to the pixel, rather than the paper size a lower one. */

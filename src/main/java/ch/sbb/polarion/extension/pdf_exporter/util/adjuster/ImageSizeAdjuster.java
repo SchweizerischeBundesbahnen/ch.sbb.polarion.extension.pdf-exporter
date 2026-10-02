@@ -33,11 +33,7 @@ public class ImageSizeAdjuster extends AbstractAdjuster {
     @Override
     public void execute() {
         float maxWidth = PaperSizeUtils.getMaxWidth(conversionParams);
-        // The paragraph an image stands in takes its bottom margin and the descent of its line under the image, where the
-        // height of the page is the one the CSS gives; the one of the paper size is lower than any page by more
-        float maxHeight = pageLayout.givesContentHeightOf(conversionParams)
-                ? pageLayout.contentHeight(conversionParams) - pageLayout.roomUnderAnImage()
-                : PaperSizeUtils.getMaxHeight(conversionParams);
+        float maxHeight = pageLayout.heightForAnImage(conversionParams);
 
         Elements images = document.select("img[style]");
 
