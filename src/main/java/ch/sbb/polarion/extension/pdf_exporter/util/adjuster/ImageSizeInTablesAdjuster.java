@@ -120,6 +120,8 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
         int imageHeight = Math.max(allowedHeight - (roomOfTheRestOfTheCell(img, maxWidth, cssWidth, allowedHeight) - CELL_CHROME_PX), MIN_IMAGE_HEIGHT_PX);
         float statedHeight = limitHeight(img, imageHeight);
 
+        // The width the image states in an absolute unit, read before the column replaces it; a percentage states no shape
+        float absoluteWidth = statedSize(img, CssUtils.parseDeclarations(img.attr(HtmlTagAttr.STYLE)), CssProp.WIDTH);
         boolean narrowed = cssWidth > maxWidth || cssMaxWidth > maxWidth;
         if (narrowed) {
             adjustImageStyle(img, maxWidth, cssWidth);
@@ -132,8 +134,8 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
             // knows before it is embedded. The editor states both sides from the file, so they give that shape: a shape a
             // drag of a handle distorted may be wrong, but keeping every narrowed row whole moves whole tables of thumbnails
             // to the next page. An image which states no height may be as tall as the page leaves it.
-            boolean shapeStated = statedHeight > 0 && cssWidth > 0 && cssWidth < Float.MAX_VALUE;
-            return !shapeStated || statedHeight * Math.min(cssWidth, maxWidth) / cssWidth > imageHeight;
+            boolean shapeStated = statedHeight > 0 && absoluteWidth > 0;
+            return !shapeStated || statedHeight * Math.min(absoluteWidth, maxWidth) / absoluteWidth > imageHeight;
         }
         return statedHeight > imageHeight;
     }

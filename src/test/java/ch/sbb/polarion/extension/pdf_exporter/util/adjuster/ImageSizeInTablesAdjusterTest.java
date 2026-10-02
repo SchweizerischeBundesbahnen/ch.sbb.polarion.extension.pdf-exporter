@@ -319,6 +319,13 @@ class ImageSizeInTablesAdjusterTest {
                 "The image is drawn 100 x 400, which the page holds");
     }
 
+    /** A width in percent states no shape, so a tall image of one may be as tall as the page leaves it. */
+    @Test
+    void testRowOfATallImageOfAWidthInPercentIsKeptWhole() {
+        assertEquals(CssProp.PAGE_BREAK_INSIDE_AVOID_VALUE, breakInsideOfARowWith("<img src='tall.svg' style='width: 100%;height: 2000px;'/>", "A note"),
+                "The image states no width it is drawn at, so its shape is not known");
+    }
+
     @Test
     void testRowOfAThumbnailTheColumnNarrowsBreaks() {
         assertEquals("", breakInsideOfARowWith("<img src='wide.svg' style='width: 3000px;height: 1500px;'/>", "Wider than a column"),
