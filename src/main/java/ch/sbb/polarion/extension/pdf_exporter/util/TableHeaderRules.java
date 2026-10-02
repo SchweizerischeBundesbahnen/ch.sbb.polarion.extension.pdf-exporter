@@ -30,9 +30,12 @@ public class TableHeaderRules {
     /** A selector which ends at a header cell or a table head, as {@code th}, {@code table th} or {@code thead tr}. */
     private static final Pattern HEADER_SELECTOR = Pattern.compile("(^|[\\s>+~(])(th|thead)(?![\\w-])", Pattern.CASE_INSENSITIVE);
 
-    /** The properties which make a header taller or lower. Fonts and colors of other kinds, and images, do not. */
+    /**
+     * The properties which make a header taller. Colors and images do not, and white-space only keeps a header to fewer
+     * lines, which the measure errs on the safe side without.
+     */
     private static final Set<String> HEIGHT_PROPERTIES = Set.of(
-            "font", "font-size", "font-weight", "line-height", "white-space",
+            "font", "font-size", "font-weight", "line-height",
             "padding", "padding-top", "padding-bottom",
             "border", "border-top", "border-bottom", "border-width", "border-top-width", "border-bottom-width");
 

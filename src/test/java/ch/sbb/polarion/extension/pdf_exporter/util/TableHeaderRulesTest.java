@@ -1,6 +1,11 @@
 package ch.sbb.polarion.extension.pdf_exporter.util;
 
+import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
+
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.Objects;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -28,6 +33,15 @@ class TableHeaderRulesTest {
     @Test
     void leavesAValueWhichNamesAResource() {
         assertThat(TableHeaderRules.measuredBy("th { border: 1px solid; font: 12pt url(font.woff); }")).contains("border").doesNotContain("url(");
+    }
+
+    /** The default CSS says nothing which makes a header taller, so an export without a style package measures it once. */
+    @Test
+    @SneakyThrows
+    void readsNothingOfTheDefaultCss() {
+        try (InputStream css = TableHeaderRulesTest.class.getResourceAsStream("/default/dle-pdf-export.css")) {
+            assertThat(TableHeaderRules.measuredBy(new String(Objects.requireNonNull(css).readAllBytes(), StandardCharsets.UTF_8))).isEmpty();
+        }
     }
 
     @Test
