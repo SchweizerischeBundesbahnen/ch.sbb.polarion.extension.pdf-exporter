@@ -541,12 +541,14 @@ pre {
     padding-right: 20px;
     border: 1px solid #CCCCCC;
     font-weight: bold;
+    vertical-align: top;
 }
 
 .polarion-dle-workitem-fields-end-table-value {
     padding: 4px;
     padding-right: 20px;
     border: 1px solid #CCCCCC;
+    vertical-align: top;
 }
 
 .polarion-dle-captionContainer {
