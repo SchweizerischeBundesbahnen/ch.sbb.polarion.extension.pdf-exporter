@@ -340,9 +340,9 @@ class ImageSizeInTablesAdjusterTest {
                 "The image is drawn as tall as the page leaves it, so its row carries the header of its own table");
     }
 
-    /** A header which holds a tall image leaves the rows under it the less of the page, image and all. */
+    /** A header which holds a tall image leaves the rows under it the page less the header as it is drawn, its image fitted. */
     @Test
-    void testRowUnderAHeaderWithATallImageIsMeasuredUnderTheWholeHeader() {
+    void testRowUnderAHeaderWithATallImageIsMeasuredUnderTheHeaderAsDrawn() {
         String html = """
                 <table>
                     <tr><th><img src='logo.svg' style='width: 150px;height: 1500px;'/></th><th>Note</th></tr>
@@ -353,8 +353,8 @@ class ImageSizeInTablesAdjusterTest {
         Document doc = Jsoup.parse(html);
         new ImageSizeInTablesAdjuster(doc, ConversionParams.builder().build()).execute();
 
-        assertEquals("", CssUtils.getPropertyValue(parseCss(doc.getElementById("row").attr(HtmlTagAttr.STYLE)), CssProp.BREAK_INSIDE),
-                "The text of the row does not fit under the header with its image, so the row breaks where it must");
+        assertEquals(CssProp.PAGE_BREAK_INSIDE_AVOID_VALUE, CssUtils.getPropertyValue(parseCss(doc.getElementById("row").attr(HtmlTagAttr.STYLE)), CssProp.BREAK_INSIDE),
+                "The row fits under the header as it is drawn, its image fitted to the page, so it carries the header with it");
     }
 
     @Test

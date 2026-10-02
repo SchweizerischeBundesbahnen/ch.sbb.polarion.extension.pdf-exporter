@@ -10,14 +10,12 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ConversionPa
 import com.helger.css.decl.CSSDeclarationList;
 
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -45,8 +43,6 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
         // A table holds the images of the tables nested in it too, and the first table to fit an image decides for its row.
         // The row belongs to the innermost table, which is measured for it once every image is fitted.
         Map<Element, List<Element>> rowsToKeepWhole = new LinkedHashMap<>();
-        // What the page leaves the rows of each table under its header, measured with the images the header holds
-        Map<Element, Integer> allowedHeights = new HashMap<>();
 
         for (Element table : tables) {
             Elements images = table.select(HtmlTag.IMG);
@@ -59,14 +55,30 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
             Map<Integer, Integer> columnWidths = metrics.columnWidths();
 
             int allowedHeight = allowedHeight(metrics.headerHeight());
-            allowedHeights.put(table, allowedHeight);
             for (Element img : images) {
                 if (fitToColumn(img, columnWidths, allowedHeight)) {
                     addRowOf(img, rowsToKeepWhole);
                 }
             }
         }
-        rowsToKeepWhole.forEach((table, rows) -> keepWholeWhereTheRestFits(table, rows, allowedHeights.get(table)));
+        rowsToKeepWhole.forEach(this::keepWholeWhereTheRestFits);
+    }
+
+    /** The measure reads the height an image states and not the limit put on it, so the image of a copy states the limit. */
+    private void drawAtTheHeightItIsLimitedTo(@NotNull Element img) {
+        CSSDeclarationList cssStyles = CssUtils.parseDeclarations(img.attr(HtmlTagAttr.STYLE));
+        float limit = extractPixels(CssUtils.getPropertyValue(cssStyles, CssProp.MAX_HEIGHT));
+        if (limit > 0 && statedSize(img, cssStyles, CssProp.HEIGHT) > limit) {
+            CssUtils.setPropertyValue(cssStyles, CssProp.HEIGHT, ((int) limit) + Measure.PX);
+            img.attr(HtmlTagAttr.STYLE, cssStyles.getAsCSSString());
+            img.removeAttr(CssProp.HEIGHT);
+        }
+    }
+
+    /** A row of header cells alone, which the table repeats on every page it spans. */
+    private static boolean isHeaderRow(@NotNull Element row) {
+        Elements cells = row.select("> " + HtmlTag.TD + ", > " + HtmlTag.TH);
+        return !cells.isEmpty() && cells.stream().allMatch(cell -> HtmlTag.TH.equals(cell.tagName()));
     }
 
     /** Adds the row of the image to the rows of the table it belongs to, the innermost one. */
@@ -117,21 +129,21 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
      * A row is kept whole where all the rest of it fits under the header as well. Text of another cell which runs
      * over a page splits the row anyway, and kept whole the row would only leave the page before it blank.
      */
-    private void keepWholeWhereTheRestFits(@NotNull Element table, @NotNull List<Element> rows, @Nullable Integer allowedHeight) {
-        if (allowedHeight == null) {
-            // The table of a row holds its image too and is always measured for it, so this table was never seen
-            return;
-        }
+    private void keepWholeWhereTheRestFits(@NotNull Element table, @NotNull List<Element> rows) {
         Element withoutImages = table.clone();
         Elements ownRows = table.select(ROWS_OF_THE_TABLE);
         Elements clonedRows = withoutImages.select(ROWS_OF_THE_TABLE);
         for (Element row : rows) {
             int index = ownRows.indexOf(row);
-            if (index >= 0 && index < clonedRows.size()) {
+            // A header keeps its images, fitted to the page as they are drawn: the room under it is what is measured
+            if (index >= 0 && index < clonedRows.size() && !isHeaderRow(row)) {
                 clonedRows.get(index).select(HtmlTag.IMG).remove();
             }
         }
-        List<Integer> heights = TableAnalyzer.analyze(withoutImages, PaperSizeUtils.getMaxWidth(conversionParams)).rowHeights();
+        withoutImages.select(HtmlTag.IMG).forEach(this::drawAtTheHeightItIsLimitedTo);
+        TableAnalyzer.TableMetrics metrics = TableAnalyzer.analyze(withoutImages, PaperSizeUtils.getMaxWidth(conversionParams));
+        List<Integer> heights = metrics.rowHeights();
+        int allowedHeight = allowedHeight(metrics.headerHeight());
         if (heights.size() != ownRows.size()) {
             // The measure saw another table than the document holds, so it says nothing about these rows
             return;
