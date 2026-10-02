@@ -99,9 +99,6 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
      * @return whether the image is drawn as tall as the page leaves it, and a row of that height leaves the header alone too
      */
     private boolean fitToColumn(@NotNull Element img, @NotNull Map<Integer, Integer> columnWidths, int allowedHeight) {
-        float statedWidth = statedSize(img, CssUtils.parseDeclarations(img.attr(HtmlTagAttr.STYLE)), CssProp.WIDTH);
-        float statedHeight = limitHeight(img, allowedHeight);
-
         float cssWidth = extractWidth(img, CssProp.WIDTH);
         float cssMaxWidth = extractWidth(img, CssProp.MAX_WIDTH);
 
@@ -110,19 +107,35 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
 
         float maxWidth = getMaxWidth(img, columnWidths, columnCountBasedWidth, paramsBasedWidth);
 
+        // What else the cell holds, as a caption under the image, takes its room of the page too
+        int imageHeight = Math.max(allowedHeight - (roomOfTheRestOfTheCell(img, maxWidth) - CELL_CHROME_PX), MIN_IMAGE_HEIGHT_PX);
+        float statedHeight = limitHeight(img, imageHeight);
+
         if (cssWidth > maxWidth || cssMaxWidth > maxWidth) {
             adjustImageStyle(img, maxWidth, cssWidth);
             keepTheRowWholeUnlessTheImageStatesItsSize(img);
+            // The column drops the height the image states, and the image is drawn in the shape of its file, which is not
+            // known before it is embedded: it may be as tall as the page leaves it
+            return statedHeight > 0;
         }
-        return drawnHeight(statedWidth, statedHeight, maxWidth) > allowedHeight;
+        return statedHeight > imageHeight;
     }
 
     /**
-     * The height an image of the stated size is drawn at once the column narrows it, as the ratio it states.
-     * An image which states no height has none to cut.
+     * The height the cell of the image takes without it: its padding and border, and what else it holds, laid out at the
+     * width of its column. An icon, or an image alone in its cell, is not measured: the cell adds its chrome alone.
      */
-    private static float drawnHeight(float statedWidth, float statedHeight, float maxWidth) {
-        return statedWidth > 0 && statedWidth > maxWidth ? statedHeight * maxWidth / statedWidth : statedHeight;
+    private int roomOfTheRestOfTheCell(@NotNull Element img, float columnWidth) {
+        Element cell = img.closest(TD_TH_SELECTOR);
+        if (cell == null || TableRowsAdjuster.isIcon(img) || cell.text().isBlank()) {
+            return CELL_CHROME_PX;
+        }
+        Element rest = cell.clone();
+        rest.select(HtmlTag.IMG).get(cell.select(HtmlTag.IMG).indexOf(img)).remove();
+        Element table = new Element(HtmlTag.TABLE);
+        table.appendElement(HtmlTag.TR).appendChild(rest);
+        List<Integer> heights = TableAnalyzer.analyze(table, Math.max((int) columnWidth, 1)).rowHeights();
+        return heights.size() == 1 ? Math.max(heights.getFirst(), CELL_CHROME_PX) : CELL_CHROME_PX;
     }
 
     /**

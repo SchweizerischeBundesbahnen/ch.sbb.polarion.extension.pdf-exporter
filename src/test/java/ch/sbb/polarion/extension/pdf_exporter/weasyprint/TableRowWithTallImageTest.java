@@ -24,6 +24,7 @@ import java.util.Objects;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.eq;
 
@@ -62,6 +63,12 @@ class TableRowWithTallImageTest extends BasePdfConverterTest {
         export("tableRowWithTallImageUnderAWrappedHeader", getCurrentMethodName(), "A header which states", true);
     }
 
+    /** A caption under the image in its cell takes room of the page too, and the image gives that height up. */
+    @Test
+    void keepsATableRowWithAnImageAndItsCaptionWhole() {
+        export("tableRowWithTallImageAndCaption", getCurrentMethodName(), "Diagram 1", true);
+    }
+
     /** A column of a landscape page is wider than a diagram may grow, and the row is kept whole all the same. */
     @Test
     void keepsATableRowWithAnImageInAWideColumnWhole() {
@@ -78,7 +85,61 @@ class TableRowWithTallImageTest extends BasePdfConverterTest {
         export(resource, testName, headerWords, Orientation.PORTRAIT, compareWithReferences);
     }
 
+    /** A height stated in points is as tall as one stated in pixels, and the row is kept whole all the same. */
+    @Test
+    void keepsATableRowWithAnImageOfAHeightInPointsWhole() {
+        export("tableRowWithTallImageInPoints", getCurrentMethodName(), "Diagram 1", true);
+    }
+
+    /** The table nested in a cell of another one keeps its row with its own header. */
+    @Test
+    void keepsATableRowOfANestedTableWhole() {
+        export("tableRowWithTallImageInANestedTable", getCurrentMethodName(), "Diagram 1", true);
+    }
+
+    /** Text of another cell which runs over a page splits the row anyway, so it starts where it stands, and leaves no page blank. */
+    @Test
+    void letsARowWhoseTextRunsOverAPageStartUnderTheText() {
+        byte[] pdf = pdfOf("tableRowWithTallImageAndALongNote", Orientation.PORTRAIT);
+        boolean differ = compareContentUsingReferenceImages(getCurrentMethodName(), pdf);
+
+        assertEquals(0, pagesWhichCarry(pdf, "line 1.").getFirst(), "The row starts on the first page, under the text above the table");
+        assertTrue(pagesWhichCarry(pdf, "line 120.").getFirst() > 0, "Its note runs on to the pages after it");
+        assertFalse(differ, "The pages differ from the reference images");
+    }
+
+    /** The column narrows a wide image and drops the height it states, and the image, drawn in the shape of its file, keeps its row whole. */
+    @Test
+    void keepsATableRowWithAnImageTheColumnNarrowsWhole() {
+        export("tableRowWithAWideImage", getCurrentMethodName(), "Diagram 1", true);
+    }
+
+    /** A row which states how it breaks breaks that way, as the document says. */
+    @Test
+    void breaksARowAsItStates() {
+        byte[] pdf = pdfOf("tableRowWithTallImageWhichStatesHowItBreaks", Orientation.PORTRAIT);
+        boolean differ = compareContentUsingReferenceImages(getCurrentMethodName(), pdf);
+
+        assertEquals(0, pagesWhichCarry(pdf, "Taller than a page").getFirst(), "The row starts on the first page, where the document lets it break");
+        assertFalse(differ, "The pages differ from the reference images");
+    }
+
     private void export(@NotNull String resource, @NotNull String testName, @NotNull String headerWords, @NotNull Orientation orientation, boolean compareWithReferences) {
+        byte[] pdf = pdfOf(resource, orientation);
+
+        assertEquals(DOCUMENT_PAGES, pageCount(pdf), "The text fills the first page and the table takes the second, whole");
+        assertEquals(List.of(DOCUMENT_PAGES - 1), pagesWhichCarry(pdf, headerWords),
+                "The header belongs to the page its row is on, and a header left on the page before heads nothing there");
+        List<List<Integer>> drawn = DrawnImages.sizesIn(pdf);
+        assertEquals(1, drawn.size(), "The document draws the diagram once");
+        assertEquals(DIAGRAM_RATIO, (double) drawn.getFirst().getFirst() / drawn.getFirst().getLast(), 0.01d,
+                "The diagram is drawn whole, in the shape of the file it comes from");
+        if (compareWithReferences) {
+            assertFalse(compareContentUsingReferenceImages(testName, pdf), "The pages differ from the reference images");
+        }
+    }
+
+    private byte @NotNull [] pdfOf(@NotNull String resource, @NotNull Orientation orientation) {
         ExportParams params = ExportParams.builder()
                 .projectId("test")
                 .locationPath("testLocation")
@@ -95,18 +156,7 @@ class TableRowWithTallImageTest extends BasePdfConverterTest {
                 .build();
         documentDataFactoryMockedStatic.when(() -> DocumentDataFactory.getDocumentData(eq(params), anyBoolean())).thenReturn(liveDoc);
 
-        byte[] pdf = converter.convertToPdf(params, null);
-
-        assertEquals(DOCUMENT_PAGES, pageCount(pdf), "The text fills the first page and the table takes the second, whole");
-        assertEquals(List.of(DOCUMENT_PAGES - 1), pagesWhichCarry(pdf, headerWords),
-                "The header belongs to the page its row is on, and a header left on the page before heads nothing there");
-        List<List<Integer>> drawn = DrawnImages.sizesIn(pdf);
-        assertEquals(1, drawn.size(), "The document draws the diagram once");
-        assertEquals(DIAGRAM_RATIO, (double) drawn.getFirst().getFirst() / drawn.getFirst().getLast(), 0.01d,
-                "The diagram is drawn whole, in the shape of the file it comes from");
-        if (compareWithReferences) {
-            assertFalse(compareContentUsingReferenceImages(testName, pdf), "The pages differ from the reference images");
-        }
+        return converter.convertToPdf(params, null);
     }
 
     /** The pages whose text holds the given words, counted from zero. */

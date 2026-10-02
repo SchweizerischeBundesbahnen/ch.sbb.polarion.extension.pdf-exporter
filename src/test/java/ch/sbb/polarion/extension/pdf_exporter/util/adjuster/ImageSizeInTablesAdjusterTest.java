@@ -290,9 +290,15 @@ class ImageSizeInTablesAdjusterTest {
     }
 
     @Test
-    void testRowOfAnImageWhichTheColumnShortensBelowThePageBreaks() {
-        assertEquals("", breakInsideOfARowWith("<img src='wide.svg' style='width: 3000px;height: 1500px;'/>", "Wider than a column"),
-                "The column narrows the image, and the height it keeps the page holds");
+    void testRowOfAnImageWhichTheColumnNarrowsIsKeptWhole() {
+        assertEquals(CssProp.PAGE_BREAK_INSIDE_AVOID_VALUE, breakInsideOfARowWith("<img src='wide.svg' style='width: 3000px;height: 1500px;'/>", "Wider than a column"),
+                "The column drops the height the image states, and the shape of its file, which it is then drawn in, is not known");
+    }
+
+    @Test
+    void testRowOfAnImageWhichStatesAHeightThePageHoldsBreaks() {
+        assertEquals("", breakInsideOfARowWith("<img src='short.svg' style='width: 150px;height: 300px;'/>", "A third of a page"),
+                "The page holds the image, and the row breaks where it must");
     }
 
     @Test
@@ -355,6 +361,29 @@ class ImageSizeInTablesAdjusterTest {
 
         assertEquals(CssProp.PAGE_BREAK_INSIDE_AVOID_VALUE, CssUtils.getPropertyValue(parseCss(doc.getElementById("row").attr(HtmlTagAttr.STYLE)), CssProp.BREAK_INSIDE),
                 "The row fits under the header as it is drawn, its image fitted to the page, so it carries the header with it");
+    }
+
+    /** A caption under the image in its cell takes room of the page, and the image gives that height up. */
+    @Test
+    void testImageWithACaptionIsLimitedToThePageLessTheCaption() {
+        String alone = "<img id='diagram' src='tall.svg' style='max-width: 650px;'/>";
+        String withCaption = alone + "<p>Figure 1: A chain of steps, as tall as a page. Each step leads to the next one, from the first to the last.</p>";
+
+        float limitAlone = maxHeightOfTheImageIn(alone);
+        float limitWithCaption = maxHeightOfTheImageIn(withCaption);
+
+        assertTrue(limitWithCaption < limitAlone - 20, "The caption takes " + (limitAlone - limitWithCaption) + " px of the page from the image");
+    }
+
+    private float maxHeightOfTheImageIn(String cell) {
+        Document doc = Jsoup.parse("""
+                <table>
+                    <tr><th>Diagram</th><th>Note</th></tr>
+                    <tr><td style='width: 200px;'>%s</td><td>Taller than a page</td></tr>
+                </table>
+                """.formatted(cell));
+        new ImageSizeInTablesAdjuster(doc, ConversionParams.builder().build()).execute();
+        return pixelsOf(parseCss(doc.getElementById("diagram").attr(HtmlTagAttr.STYLE)), CssProp.MAX_HEIGHT);
     }
 
     @Test
