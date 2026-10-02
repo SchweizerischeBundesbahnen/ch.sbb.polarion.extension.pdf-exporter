@@ -318,6 +318,28 @@ class ImageSizeInTablesAdjusterTest {
                 "The text of the row runs over a page and splits the row anyway");
     }
 
+    /** The outer table fits an image of a nested one first, and the row of the nested table is still kept whole. */
+    @Test
+    void testRowOfANestedTableWhoseImageTheOuterTableShortensIsKeptWhole() {
+        String html = """
+                <table>
+                    <tr><td style='width: 200px;'>
+                        <table>
+                            <tr><th>Diagram</th></tr>
+                            <tr id='row'><td><img src='tall.svg' style='width: 900px;height: 9000px;'/></td></tr>
+                        </table>
+                    </td><td>A cell beside it</td></tr>
+                </table>
+                """;
+
+        Document doc = Jsoup.parse(html);
+        new ImageSizeInTablesAdjuster(doc, ConversionParams.builder().build()).execute();
+
+        assertEquals(CssProp.PAGE_BREAK_INSIDE_AVOID_VALUE,
+                CssUtils.getPropertyValue(parseCss(doc.getElementById("row").attr(HtmlTagAttr.STYLE)), CssProp.BREAK_INSIDE),
+                "The image is drawn as tall as the page leaves it, so its row carries the header of its own table");
+    }
+
     @Test
     void testRowWhichStatesHowItBreaksKeepsIt() {
         String html = """

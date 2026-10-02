@@ -16,6 +16,7 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
@@ -39,6 +40,9 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
     @Override
     public void execute() {
         Elements tables = document.select(HtmlTag.TABLE);
+        // A table holds the images of the tables nested in it too, and the first table to fit an image decides for its row.
+        // The row belongs to the innermost table, which is measured for it once every image is fitted.
+        Map<Element, List<Element>> rowsToKeepWhole = new LinkedHashMap<>();
 
         for (Element table : tables) {
             Elements images = table.select(HtmlTag.IMG);
@@ -51,14 +55,24 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
             Map<Integer, Integer> columnWidths = metrics.columnWidths();
 
             int allowedHeight = allowedHeight(metrics.headerHeight());
-            List<Element> rowsToKeepWhole = new ArrayList<>();
             for (Element img : images) {
-                Element row = img.closest(HtmlTag.TR);
-                if (fitToColumn(img, columnWidths, allowedHeight) && row != null && !rowsToKeepWhole.contains(row)) {
-                    rowsToKeepWhole.add(row);
+                if (fitToColumn(img, columnWidths, allowedHeight)) {
+                    addRowOf(img, rowsToKeepWhole);
                 }
             }
-            keepWholeWhereTheRestFits(table, rowsToKeepWhole, allowedHeight);
+        }
+        rowsToKeepWhole.forEach(this::keepWholeWhereTheRestFits);
+    }
+
+    /** Adds the row of the image to the rows of the table it belongs to, the innermost one. */
+    private static void addRowOf(@NotNull Element img, @NotNull Map<Element, List<Element>> rowsByTable) {
+        Element row = img.closest(HtmlTag.TR);
+        Element table = row != null ? row.closest(HtmlTag.TABLE) : null;
+        if (table != null) {
+            List<Element> rows = rowsByTable.computeIfAbsent(table, key -> new ArrayList<>());
+            if (!rows.contains(row)) {
+                rows.add(row);
+            }
         }
     }
 
@@ -98,10 +112,7 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
      * A row is kept whole where all the rest of it fits under the header as well. Text of another cell which runs
      * over a page splits the row anyway, and kept whole the row would only leave the page before it blank.
      */
-    private void keepWholeWhereTheRestFits(@NotNull Element table, @NotNull List<Element> rows, int allowedHeight) {
-        if (rows.isEmpty()) {
-            return;
-        }
+    private void keepWholeWhereTheRestFits(@NotNull Element table, @NotNull List<Element> rows) {
         Element withoutImages = table.clone();
         Elements ownRows = table.select(ROWS_OF_THE_TABLE);
         Elements clonedRows = withoutImages.select(ROWS_OF_THE_TABLE);
@@ -111,7 +122,9 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
                 clonedRows.get(index).select(HtmlTag.IMG).remove();
             }
         }
-        List<Integer> heights = TableAnalyzer.analyze(withoutImages, PaperSizeUtils.getMaxWidth(conversionParams)).rowHeights();
+        TableAnalyzer.TableMetrics metrics = TableAnalyzer.analyze(withoutImages, PaperSizeUtils.getMaxWidth(conversionParams));
+        List<Integer> heights = metrics.rowHeights();
+        int allowedHeight = allowedHeight(metrics.headerHeight());
         if (heights.size() != ownRows.size()) {
             // The measure saw another table than the document holds, so it says nothing about these rows
             return;
