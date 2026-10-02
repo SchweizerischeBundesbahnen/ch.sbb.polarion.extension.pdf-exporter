@@ -595,6 +595,30 @@ class HtmlProcessorTest {
     }
 
     @Test
+    void unwrapsAWorkItemWithATableAndAnImageTheMeasureCannotSize() {
+        Document document = JSoupUtils.parseHtml("<table style=\"page-break-inside:avoid;\"><tr><td><div class=\"polarion-dle-workitem-basic-0\">Some content</div>"
+                + "<img src=\"/polarion/wiki/diagram.png\"/><table><tr><td>Cell</td></tr></table></td></tr></table>");
+
+        processor.removePageBreakAvoids(document, A4_WIDTH, A4_HEIGHT);
+
+        assertTrue(document.select("div[style*=break-inside]").isEmpty(), "Its image is not loaded yet, so nothing says the work item fits a page");
+        assertEquals(1, document.select("table").size(), "Only the table of the work item is left");
+    }
+
+    @Test
+    void measuresAWorkItemOnTheNarrowerPageWhereAPageBreakMayTurnIt() {
+        HtmlProcessor spyHtmlProcessor = spy(processor);
+        ExportParams exportParams = getExportParams();
+        exportParams.setPaperSize(PaperSize.A4);
+        exportParams.setOrientation(Orientation.LANDSCAPE);
+
+        spyHtmlProcessor.processHtmlForPDF("<p>Landscape</p><!--PAGE_BREAK--><!--PORTRAIT_ABOVE--><p>Portrait</p>", exportParams, List.of());
+
+        verify(spyHtmlProcessor).removePageBreakAvoids(any(Document.class), eq(PaperSizeUtils.MAX_PORTRAIT_WIDTHS.get(PaperSize.A4)),
+                eq(PaperSizeUtils.MAX_LANDSCAPE_HEIGHTS.get(PaperSize.A4)));
+    }
+
+    @Test
     void unwrapsAWorkItemWithATableTallerThanAPageSoThatItsTableCanRunAcrossPages() {
         Document document = JSoupUtils.parseHtml("<table style=\"page-break-inside:avoid;\"><tr><td><div class=\"polarion-dle-workitem-basic-0\">Some content</div>"
                 + "<table>" + "<tr><td>Cell</td></tr>".repeat(100) + "</table></td></tr></table>");

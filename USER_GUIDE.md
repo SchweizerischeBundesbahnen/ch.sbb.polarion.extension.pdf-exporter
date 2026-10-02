@@ -409,7 +409,8 @@ Presentation dialog of the document:
 The exported PDF keeps such a work item on one page: it moves to the next page whole rather than being split. The
 table of its attributes, as Status, Severity or Linked Work Items, belongs to it and moves with it.
 
-A table in its content moves with it too, as long as the whole work item fits a page.
+A table in its content moves with it too, as long as the whole work item fits a page. A work item with both a table and
+an image in its content is not measured before the export, so it is treated as one taller than a page.
 
 A work item taller than a page cannot keep to one. It starts where it stands and is split where the page ends. A table
 in its content then runs across pages, repeats its header, and keeps each row on one page.

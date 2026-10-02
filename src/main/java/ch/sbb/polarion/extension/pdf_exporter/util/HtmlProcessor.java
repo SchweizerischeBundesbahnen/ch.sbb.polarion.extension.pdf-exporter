@@ -147,8 +147,8 @@ public class HtmlProcessor {
         if (exportParams.getDocumentType() == LIVE_DOC || exportParams.getDocumentType() == WIKI_PAGE) {
             // Moves WorkItem content out of table wrapping it
             ConversionParams page = pageOf(exportParams);
-            int pageHeight = pageHeight(page, hasCustomPageBreaks(htmlForParsing));
-            timedIfNotNull(generationLog, "Remove page break avoids", () -> removePageBreakAvoids(document, PaperSizeUtils.getMaxWidth(page), pageHeight));
+            boolean mayTurn = hasCustomPageBreaks(htmlForParsing);
+            timedIfNotNull(generationLog, "Remove page break avoids", () -> removePageBreakAvoids(document, pageWidth(page, mayTurn), pageHeight(page, mayTurn)));
 
             // Fixes nested HTML lists structure
             timedIfNotNull(generationLog, "Fix nested lists", () -> fixNestedLists(document));
@@ -1051,8 +1051,14 @@ public class HtmlProcessor {
         return true;
     }
 
-    /** Whether the work item the wrapper table holds, its tables and all, is laid out no taller than a page. */
+    /**
+     * Whether the work item the wrapper table holds, its tables and all, is laid out no taller than a page. An image is not
+     * in the document yet, only the address it comes from, so a work item with one the measure cannot size is not known to fit.
+     */
     private boolean fitsAPage(@NotNull Element wrapperTable, int pageWidth, int pageHeight) {
+        if (!TableRowsAdjuster.isMeasured(wrapperTable)) {
+            return false;
+        }
         List<Integer> heights = TableAnalyzer.analyze(wrapperTable, pageWidth).rowHeights();
         return heights.size() == 1 && heights.getFirst() <= pageHeight;
     }
@@ -1197,6 +1203,13 @@ public class HtmlProcessor {
         ConversionParams page = pageOf(conversionParams);
         int pageHeight = pageHeight(page, customPageBreaks || !document.select("div." + PAGE_BREAK_SECTION_CLASS).isEmpty());
         new TableRowsAdjuster(document, page, pageHeight).execute();
+    }
+
+    /** The width of the page, or of the narrower of its two orientations where a page break may turn it. */
+    private static int pageWidth(@NotNull ConversionParams page, boolean mayTurn) {
+        return mayTurn
+                ? Math.min(PaperSizeUtils.MAX_PORTRAIT_WIDTHS.get(page.getPaperSize()), PaperSizeUtils.MAX_LANDSCAPE_WIDTHS.get(page.getPaperSize()))
+                : PaperSizeUtils.getMaxWidth(page);
     }
 
     /** The height of the page, or of the lower of its two orientations where a page break may turn it. */
