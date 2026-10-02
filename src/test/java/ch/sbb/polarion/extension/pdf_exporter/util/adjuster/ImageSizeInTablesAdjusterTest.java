@@ -397,7 +397,33 @@ class ImageSizeInTablesAdjusterTest {
         float withAnImage = maxHeightOfTheImageIn("<img id='diagram' src='tall.svg' style='max-width: 650px;'/><img src='other.svg' style='width: 100px;height: 200px;'/>");
 
         assertTrue(withLines < alone - 20, "The empty lines take " + (alone - withLines) + " px of the page");
-        assertEquals(alone - 200, withAnImage, 1f, "The other image takes the height it states");
+        assertTrue(withAnImage < alone - 150, "The other image, on a line under the diagram, takes " + (alone - withAnImage) + " px of the page");
+    }
+
+    /** A row whose text runs over a page splits anyway, and keeps the break it states, whatever image it holds. */
+    @Test
+    void testRowWhoseTextRunsOverAPageKeepsTheBreakItStates() {
+        String html = """
+                <table>
+                    <tr><th>Diagram</th><th>Note</th></tr>
+                    <tr id='row' style='break-inside: auto;'><td style='width: 200px;'><img src='tall.svg' style='max-width: 650px;'/></td><td>%s</td></tr>
+                </table>
+                """.formatted("A line of text. ".repeat(800));
+
+        Document doc = Jsoup.parse(html);
+        new ImageSizeInTablesAdjuster(doc, ConversionParams.builder().build()).execute();
+
+        assertEquals("auto", CssUtils.getPropertyValue(parseCss(doc.getElementById("row").attr(HtmlTagAttr.STYLE)), CssProp.BREAK_INSIDE),
+                "Kept whole, the row would only move its text to the next page and leave this one blank");
+    }
+
+    /** Two images side by side share the height of their line, and neither takes the height of the other from the page. */
+    @Test
+    void testImagesSideBySideShareTheirHeight() {
+        float alone = maxHeightOfTheImageIn("<img id='diagram' src='tall.svg' style='width: 80px;height: 1500px;'/>");
+        float besideAnother = maxHeightOfTheImageIn("<img id='diagram' src='tall.svg' style='width: 80px;height: 1500px;'/><img src='other.svg' style='width: 80px;height: 500px;'/>");
+
+        assertEquals(alone, besideAnother, 10f, "The image beside it shares the line of the diagram");
     }
 
     /** An image which states only a width the column narrows is drawn in the shape of its file, and its row is kept whole. */
