@@ -263,6 +263,129 @@ class ImageSizeInTablesAdjusterTest {
                 "An icon leaves the row free to break where a row of text would");
     }
 
+    @Test
+    void testRowOfAnImageWhichStatesAHeightThePageCannotHoldIsKeptWhole() {
+        String html = """
+                <table>
+                    <tr><th>Diagram</th><th>Note</th></tr>
+                    <tr id='tall-row'><td><img src='tall.svg' style='width: 150px;height: 1500px;'/></td><td>Taller than a page</td></tr>
+                    <tr id='short-row'><td><img src='short.svg' style='width: 150px;height: 300px;'/></td><td>A third of a page</td></tr>
+                </table>
+                """;
+
+        Document doc = Jsoup.parse(html);
+        new ImageSizeInTablesAdjuster(doc, ConversionParams.builder().build()).execute();
+
+        assertEquals(CssProp.PAGE_BREAK_INSIDE_AVOID_VALUE,
+                CssUtils.getPropertyValue(parseCss(doc.getElementById("tall-row").attr(HtmlTagAttr.STYLE)), CssProp.BREAK_INSIDE),
+                "The image states a height the page cannot hold, so the row must carry its header with it");
+        assertEquals("", CssUtils.getPropertyValue(parseCss(doc.getElementById("short-row").attr(HtmlTagAttr.STYLE)), CssProp.BREAK_INSIDE),
+                "The page holds the height the image states, and the row breaks where it must");
+    }
+
+    @Test
+    void testRowOfAnImageWhichStatesAHeightInPointsIsKeptWhole() {
+        assertEquals(CssProp.PAGE_BREAK_INSIDE_AVOID_VALUE, breakInsideOfARowWith("<img src='tall.svg' style='width: 100pt;height: 1200pt;'/>", "Taller than a page"),
+                "A height stated in points is as tall as one stated in pixels");
+    }
+
+    @Test
+    void testRowOfAnImageWhichTheColumnShortensBelowThePageBreaks() {
+        assertEquals("", breakInsideOfARowWith("<img src='wide.svg' style='width: 3000px;height: 1500px;'/>", "Wider than a column"),
+                "The column narrows the image, and the height it keeps the page holds");
+    }
+
+    @Test
+    void testRowWhoseTextRunsOverAPageBreaks() {
+        assertEquals("", breakInsideOfARowWith("<img src='tall.svg' style='width: 150px;height: 1500px;'/>", "A line of text. ".repeat(800)),
+                "The text of the row runs over a page and splits the row anyway, so keeping it whole would only leave a page blank");
+    }
+
+    /** The export moves a row of header cells into a thead, and the rest of the row is measured all the same. */
+    @Test
+    void testRowWhoseTextRunsOverAPageBreaksUnderAHead() {
+        String html = """
+                <table>
+                    <thead><tr><th>Diagram</th><th>Note</th></tr></thead>
+                    <tbody><tr id='row'><td><img src='tall.svg' style='width: 150px;height: 1500px;'/></td><td>%s</td></tr></tbody>
+                </table>
+                """.formatted("A line of text. ".repeat(800));
+
+        Document doc = Jsoup.parse(html);
+        new ImageSizeInTablesAdjuster(doc, ConversionParams.builder().build()).execute();
+
+        assertEquals("", CssUtils.getPropertyValue(parseCss(doc.getElementById("row").attr(HtmlTagAttr.STYLE)), CssProp.BREAK_INSIDE),
+                "The text of the row runs over a page and splits the row anyway");
+    }
+
+    /** The outer table fits an image of a nested one first, and the row of the nested table is still kept whole. */
+    @Test
+    void testRowOfANestedTableWhoseImageTheOuterTableShortensIsKeptWhole() {
+        String html = """
+                <table>
+                    <tr><td style='width: 200px;'>
+                        <table>
+                            <tr><th>Diagram</th></tr>
+                            <tr id='row'><td><img src='tall.svg' style='width: 900px;height: 9000px;'/></td></tr>
+                        </table>
+                    </td><td>A cell beside it</td></tr>
+                </table>
+                """;
+
+        Document doc = Jsoup.parse(html);
+        new ImageSizeInTablesAdjuster(doc, ConversionParams.builder().build()).execute();
+
+        assertEquals(CssProp.PAGE_BREAK_INSIDE_AVOID_VALUE,
+                CssUtils.getPropertyValue(parseCss(doc.getElementById("row").attr(HtmlTagAttr.STYLE)), CssProp.BREAK_INSIDE),
+                "The image is drawn as tall as the page leaves it, so its row carries the header of its own table");
+    }
+
+    /** A header which holds a tall image leaves the rows under it the page less the header as it is drawn, its image fitted. */
+    @Test
+    void testRowUnderAHeaderWithATallImageIsMeasuredUnderTheHeaderAsDrawn() {
+        String html = """
+                <table>
+                    <tr><th><img src='logo.svg' style='width: 150px;height: 1500px;'/></th><th>Note</th></tr>
+                    <tr id='row'><td><img src='tall.svg' style='width: 150px;height: 1500px;'/></td><td>%s</td></tr>
+                </table>
+                """.formatted("A line of text. ".repeat(60));
+
+        Document doc = Jsoup.parse(html);
+        new ImageSizeInTablesAdjuster(doc, ConversionParams.builder().build()).execute();
+
+        assertEquals(CssProp.PAGE_BREAK_INSIDE_AVOID_VALUE, CssUtils.getPropertyValue(parseCss(doc.getElementById("row").attr(HtmlTagAttr.STYLE)), CssProp.BREAK_INSIDE),
+                "The row fits under the header as it is drawn, its image fitted to the page, so it carries the header with it");
+    }
+
+    @Test
+    void testRowWhichStatesHowItBreaksKeepsIt() {
+        String html = """
+                <table>
+                    <tr><th>Diagram</th><th>Note</th></tr>
+                    <tr id='row' style='break-inside: auto;'><td><img src='tall.svg' style='width: 150px;height: 1500px;'/></td><td>Taller than a page</td></tr>
+                </table>
+                """;
+
+        Document doc = Jsoup.parse(html);
+        new ImageSizeInTablesAdjuster(doc, ConversionParams.builder().build()).execute();
+
+        assertEquals("auto", CssUtils.getPropertyValue(parseCss(doc.getElementById("row").attr(HtmlTagAttr.STYLE)), CssProp.BREAK_INSIDE),
+                "The document says how the row breaks, and that is how it breaks");
+    }
+
+    private String breakInsideOfARowWith(String image, String note) {
+        String html = """
+                <table>
+                    <tr><th>Diagram</th><th>Note</th></tr>
+                    <tr id='row'><td>%s</td><td>%s</td></tr>
+                </table>
+                """.formatted(image, note);
+
+        Document doc = Jsoup.parse(html);
+        new ImageSizeInTablesAdjuster(doc, ConversionParams.builder().build()).execute();
+        return CssUtils.getPropertyValue(parseCss(doc.getElementById("row").attr(HtmlTagAttr.STYLE)), CssProp.BREAK_INSIDE);
+    }
+
     private float pixelsOf(CSSDeclarationList cssStyles, String property) {
         String value = CssUtils.getPropertyValue(cssStyles, property);
         assertTrue(value.endsWith(Measure.PX), property + " is stated in pixels, and reads '" + value + "'");

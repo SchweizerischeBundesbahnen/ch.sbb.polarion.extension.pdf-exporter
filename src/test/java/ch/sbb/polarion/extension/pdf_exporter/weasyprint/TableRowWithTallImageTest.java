@@ -62,11 +62,27 @@ class TableRowWithTallImageTest extends BasePdfConverterTest {
         export("tableRowWithTallImageUnderAWrappedHeader", getCurrentMethodName(), "A header which states", true);
     }
 
+    /** A column of a landscape page is wider than a diagram may grow, and the row is kept whole all the same. */
+    @Test
+    void keepsATableRowWithAnImageInAWideColumnWhole() {
+        export("tableRowWithTallImageInAWideColumn", getCurrentMethodName(), "Diagram 1", Orientation.LANDSCAPE, true);
+    }
+
+    /** An image which states its size can be as tall as a page too, and its row is kept whole as well. */
+    @Test
+    void keepsATableRowWithAnImageOfAStatedSizeWhole() {
+        export("tableRowWithTallImageOfAStatedSize", getCurrentMethodName(), "Diagram 1", true);
+    }
+
     private void export(@NotNull String resource, @NotNull String testName, @NotNull String headerWords, boolean compareWithReferences) {
+        export(resource, testName, headerWords, Orientation.PORTRAIT, compareWithReferences);
+    }
+
+    private void export(@NotNull String resource, @NotNull String testName, @NotNull String headerWords, @NotNull Orientation orientation, boolean compareWithReferences) {
         ExportParams params = ExportParams.builder()
                 .projectId("test")
                 .locationPath("testLocation")
-                .orientation(Orientation.PORTRAIT)
+                .orientation(orientation)
                 .paperSize(PaperSize.A4)
                 .build();
 
