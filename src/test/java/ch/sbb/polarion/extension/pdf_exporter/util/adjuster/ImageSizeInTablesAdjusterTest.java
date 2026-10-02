@@ -301,6 +301,23 @@ class ImageSizeInTablesAdjusterTest {
                 "The text of the row runs over a page and splits the row anyway, so keeping it whole would only leave a page blank");
     }
 
+    /** The export moves a row of header cells into a thead, and the rest of the row is measured all the same. */
+    @Test
+    void testRowWhoseTextRunsOverAPageBreaksUnderAHead() {
+        String html = """
+                <table>
+                    <thead><tr><th>Diagram</th><th>Note</th></tr></thead>
+                    <tbody><tr id='row'><td><img src='tall.svg' style='width: 150px;height: 1500px;'/></td><td>%s</td></tr></tbody>
+                </table>
+                """.formatted("A line of text. ".repeat(800));
+
+        Document doc = Jsoup.parse(html);
+        new ImageSizeInTablesAdjuster(doc, ConversionParams.builder().build()).execute();
+
+        assertEquals("", CssUtils.getPropertyValue(parseCss(doc.getElementById("row").attr(HtmlTagAttr.STYLE)), CssProp.BREAK_INSIDE),
+                "The text of the row runs over a page and splits the row anyway");
+    }
+
     @Test
     void testRowWhichStatesHowItBreaksKeepsIt() {
         String html = """

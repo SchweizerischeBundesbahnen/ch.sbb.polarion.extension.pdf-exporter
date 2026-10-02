@@ -112,10 +112,13 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
             }
         }
         List<Integer> heights = TableAnalyzer.analyze(withoutImages, PaperSizeUtils.getMaxWidth(conversionParams)).rowHeights();
+        if (heights.size() != ownRows.size()) {
+            // The measure saw another table than the document holds, so it says nothing about these rows
+            return;
+        }
         for (Element row : rows) {
             int index = ownRows.indexOf(row);
-            // A row the measure did not find is kept whole, as before the rest of it was measured
-            if (index < 0 || heights.size() != ownRows.size() || heights.get(index) <= allowedHeight) {
+            if (index >= 0 && heights.get(index) <= allowedHeight) {
                 keepWhole(row);
             }
         }
