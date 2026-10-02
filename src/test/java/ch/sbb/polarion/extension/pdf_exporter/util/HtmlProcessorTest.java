@@ -1381,6 +1381,27 @@ class HtmlProcessorTest {
     }
 
     @Test
+    void keepsTheIdOfALinkWithItsDash() {
+        Document document = Jsoup.parse("<a class=\"polarion-Hyperlink\"><span><img src=\"icon.gif\"/></span><span style=\"color:#000000;\">EL-761</span>"
+                + "<span style=\"white-space: normal\"> - User name must contain at least one number</span></a>");
+
+        processor.keepLinkIdsWithTheirDash(document);
+
+        assertEquals("<a class=\"polarion-Hyperlink\"><span><img src=\"icon.gif\"></span><span style=\"white-space: nowrap\"><span style=\"color:#000000;\">EL-761</span><span> -</span></span>"
+                + "<span style=\"white-space: normal\"> User name must contain at least one number</span></a>", document.body().html().replace("\n", ""));
+    }
+
+    @Test
+    void leavesALinkWithoutADashAlone() {
+        String html = "<a class=\"polarion-Hyperlink\"><span>EL-761</span><span>User name</span></a>";
+        Document document = Jsoup.parse(html);
+
+        processor.keepLinkIdsWithTheirDash(document);
+
+        assertEquals(html, document.body().html().replace("\n", ""));
+    }
+
+    @Test
     void measuresTheTableRowsOfABlockOnThePageOfItsOrientation() {
         HtmlProcessor spyHtmlProcessor = spy(processor);
         ExportParams exportParams = getExportParams();
