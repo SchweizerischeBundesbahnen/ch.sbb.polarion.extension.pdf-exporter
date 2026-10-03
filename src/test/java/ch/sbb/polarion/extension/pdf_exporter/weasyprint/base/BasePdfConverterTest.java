@@ -2,6 +2,10 @@ package ch.sbb.polarion.extension.pdf_exporter.weasyprint.base;
 
 import ch.sbb.polarion.extension.pdf_exporter.converter.CoverPageProcessor;
 import ch.sbb.polarion.extension.pdf_exporter.converter.PdfConverter;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.DocumentType;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.DocumentData;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.id.LiveDocId;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.coverpage.CoverPageModel;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.css.CssModel;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.headerfooter.HeaderFooterModel;
@@ -29,6 +33,7 @@ import com.polarion.platform.IPlatformService;
 import com.polarion.platform.security.ISecurityService;
 import com.polarion.platform.service.repository.IRepositoryService;
 import lombok.SneakyThrows;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -44,7 +49,9 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 /**
@@ -255,6 +262,21 @@ public abstract class BasePdfConverterTest extends BaseWeasyPrintTest {
             }
         }
         return hasDiff;
+    }
+
+    /**
+     * Exports the given content as the content of a LiveDoc, through the whole processing an export of a document gets.
+     */
+    protected byte @NotNull [] exportLiveDoc(@NotNull String title, @NotNull String content, @NotNull ExportParams params) {
+        DocumentData<IModule> liveDoc = DocumentData.creator(DocumentType.LIVE_DOC, module)
+                .id(LiveDocId.from("testProjectId", "_default", "testDocumentId"))
+                .title(title)
+                .content(content)
+                .lastRevision("42")
+                .revisionPlaceholder("42")
+                .build();
+        documentDataFactoryMockedStatic.when(() -> DocumentDataFactory.getDocumentData(eq(params), anyBoolean())).thenReturn(liveDoc);
+        return converter.convertToPdf(params, null);
     }
 
 }
