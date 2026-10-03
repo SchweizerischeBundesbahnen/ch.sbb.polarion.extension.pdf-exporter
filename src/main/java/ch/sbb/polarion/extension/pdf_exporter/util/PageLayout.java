@@ -3,6 +3,7 @@ package ch.sbb.polarion.extension.pdf_exporter.util;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ConversionParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.Orientation;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PaperSize;
+import com.helger.css.decl.CascadingStyleSheet;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -31,8 +32,10 @@ public record PageLayout(@NotNull String tableHeaderCss, @NotNull PageRules.Heig
     /** Nothing of the CSS: the measure reads inline styles alone, and a page is as high as its paper size makes it. */
     public static final PageLayout NONE = new PageLayout("", PageRules.Heights.NONE, Pages.EVERY_PAGE, ParagraphRules.DEFAULT_ROOM_PX);
 
+    /** The layout the CSS of an export gives, read from one stylesheet: the parse of the CSS is most of what this takes. */
     public static @NotNull PageLayout of(@NotNull String css) {
-        return new PageLayout(TableHeaderRules.measuredBy(css), PageRules.contentHeights(css), Pages.EVERY_PAGE, ParagraphRules.roomUnderAnImage(css));
+        CascadingStyleSheet stylesheet = ExportStylesheet.read(css);
+        return new PageLayout(TableHeaderRules.measuredBy(stylesheet), PageRules.contentHeights(stylesheet), Pages.EVERY_PAGE, ParagraphRules.roomUnderAnImage(stylesheet));
     }
 
     /** The same layout on the given pages. */
