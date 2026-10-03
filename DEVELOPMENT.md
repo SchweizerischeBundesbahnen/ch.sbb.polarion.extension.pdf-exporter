@@ -139,16 +139,22 @@ mvn verify -P performance-tests-with-weasyprint-docker -DskipJsTests
 
 Pass `-Dweasyprint.service.url=http://localhost:9080` to use a running WeasyPrint service instead of a container.
 
-- `ExportPerformanceTest` exports one shape each: a large table, cells running across pages, many images, many work
-  items, sections which page breaks turn landscape, tables whose words leave them no room, and hyphenated tables.
+- `ExportPerformanceTest` exports one shape each: a small document, a large table, cells running across pages, many
+  images, many work items, sections which page breaks turn landscape, tables whose words leave them no room, and
+  hyphenated tables. The small document takes the exporter little but what every export costs, so a cost added to
+  every export shows there as a multiple of its time.
 - `FeatureDocumentTest` exports one document with every feature and every option of a style package, and compares its
   pages with reference images, so that one export shows whether any of it broke.
 
 Each test has a budget for the exporter and one for WeasyPrint, read from the generation log, so a failure names the
-slow side. The budgets are about ten times today's times on an arm64 Mac. They are scaled by how much slower the
-machine of the run exports a small reference document, so a slower CI runner does not fail them. The reference itself
-may take at most three times its time on that Mac: a change which slows every export slows the reference too. The
-timing report of each export is written to `target/surefire-reports/performance-*.txt`, before any check.
+slow side. The budgets are twice today's times on an arm64 Mac. They are scaled by how much slower the machine of the
+run does a fixed piece of work of the JDK, hashing and sorting, which runs no code of the exporter. So a slower CI
+runner does not fail them, and a change which slows every export cannot raise its own budget. The CSS of an export
+carries the fonts of the default CSS embedded, as in Polarion, so a cost which grows with the CSS shows here too. The
+timing report of each export is written to `target/surefire-reports/performance-*.txt`, before any check, and
+`performance-machine.txt` says by how much the budgets were scaled.
+
+To set the budgets anew, run the tests on an arm64 Mac and set each to twice its time there.
 
 ## Debugging
 

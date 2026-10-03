@@ -9,20 +9,32 @@ import static org.mockito.Mockito.lenient;
 /**
  * Documents of the shapes which make an export slow, each timed against a budget of the exporter and of WeasyPrint.
  * <p>
- * The budgets, in ms, are some ten times what each part took on the machine of {@link BasePerformanceTest}: three cells
- * of 10,000 characters take WeasyPrint under a second, and took it minutes when the cells could break anywhere (#1101).
+ * The budgets, in ms, are twice what each part took on the machine of {@link BasePerformanceTest}: three cells of
+ * 10,000 characters take WeasyPrint under a second, and took it minutes when the cells could break anywhere (#1101).
  * </p>
  */
 class ExportPerformanceTest extends BasePerformanceTest {
 
     private static final String LANGUAGE_FIELD = "docLanguage";
 
+    /**
+     * A small document, which takes the exporter little but what every export costs: a cost added to every export, as a
+     * parse of the CSS with its fonts (#1139), shows here as a multiple of its time.
+     */
+    @Test
+    void exportsASmallDocument() {
+        Timing timing = fastestOfThree("reference", "Reference", readHtmlResource("performance/reference"), portraitA4().build());
+
+        assertThat(pageCount(timing.pdf())).isEqualTo(1);
+        assertWithinBudget(timing, 900, 2_500);
+    }
+
     @Test
     void exportsALargeTable() {
         Timing timing = export("largeTable", "A large table", Documents.largeTable(400), portraitA4().fitToPage(true).build());
 
         assertThat(pageCount(timing.pdf())).isGreaterThan(10);
-        assertWithinBudget(timing, 7_000, 45_000);
+        assertWithinBudget(timing, 1_300, 10_500);
     }
 
     @Test
@@ -30,7 +42,7 @@ class ExportPerformanceTest extends BasePerformanceTest {
         Timing timing = export("longCells", "Long cells", Documents.longCells(3, 10_000), portraitA4().fitToPage(true).build());
 
         assertThat(pageCount(timing.pdf())).isGreaterThan(5);
-        assertWithinBudget(timing, 5_000, 10_000);
+        assertWithinBudget(timing, 900, 3_000);
     }
 
     @Test
@@ -38,7 +50,7 @@ class ExportPerformanceTest extends BasePerformanceTest {
         Timing timing = export("manyImages", "Many images", Documents.manyImages(80), portraitA4().fitToPage(true).build());
 
         assertThat(pageCount(timing.pdf())).isGreaterThan(5);
-        assertWithinBudget(timing, 8_000, 7_000);
+        assertWithinBudget(timing, 1_700, 2_800);
     }
 
     @Test
@@ -46,7 +58,7 @@ class ExportPerformanceTest extends BasePerformanceTest {
         Timing timing = export("manyWorkItems", "Many work items", Documents.manyWorkItems(300), portraitA4().fitToPage(true).build());
 
         assertThat(pageCount(timing.pdf())).isGreaterThan(20);
-        assertWithinBudget(timing, 7_000, 21_000);
+        assertWithinBudget(timing, 1_400, 6_300);
     }
 
     @Test
@@ -54,7 +66,7 @@ class ExportPerformanceTest extends BasePerformanceTest {
         Timing timing = export("pageBreakSections", "Page breaks", Documents.pageBreakSections(40), portraitA4().fitToPage(true).build());
 
         assertThat(pageCount(timing.pdf())).isGreaterThanOrEqualTo(40);
-        assertWithinBudget(timing, 7_000, 48_000);
+        assertWithinBudget(timing, 1_300, 10_600);
     }
 
     @Test
@@ -62,7 +74,7 @@ class ExportPerformanceTest extends BasePerformanceTest {
         Timing timing = export("crampedTables", "Cramped tables", Documents.crampedTables(30), portraitA4().fitToPage(true).build());
 
         assertThat(pageCount(timing.pdf())).isGreaterThan(5);
-        assertWithinBudget(timing, 15_000, 43_000);
+        assertWithinBudget(timing, 2_000, 10_000);
     }
 
     @Test
@@ -73,6 +85,6 @@ class ExportPerformanceTest extends BasePerformanceTest {
         Timing timing = export("hyphenatedTables", "Silbentrennung", Documents.hyphenatedTables(30), params);
 
         assertThat(pageCount(timing.pdf())).isGreaterThan(5);
-        assertWithinBudget(timing, 5_000, 13_000);
+        assertWithinBudget(timing, 900, 4_300);
     }
 }

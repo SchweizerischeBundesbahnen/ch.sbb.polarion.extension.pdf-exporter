@@ -15,49 +15,87 @@ import lombok.SneakyThrows;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.MessageDigest;
+import java.util.Arrays;
+import java.util.Base64;
+import java.util.Objects;
+import java.util.Random;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 
 /**
- * The base of the performance tests: they export documents of a known shape and fail when an export takes far longer
- * than it does today. They run in the profile {@code performance-tests-with-weasyprint-docker} alone.
+ * The base of the performance tests: they export documents of a known shape and fail when an export takes longer than
+ * it does today. They run in the profile {@code performance-tests-with-weasyprint-docker} alone.
  * <p>
  * A budget is set for the exporter and for WeasyPrint apart, read from the timings of the generation log, so a failure
- * says which side became slow. The budgets are some ten times what an export takes on the machine they were set on.
- * They are scaled by how much slower the machine of the run exports a small reference document, so a slower machine
- * is not taken for a slower export, while an export grown an order of magnitude slower still fails. The reference export
- * has a limit of its own, three times its time on that machine: a change which slows every export slows the reference
- * too, and would otherwise raise every budget with it.
+ * says which side became slow. The budgets are twice what an export takes on the machine they were set on. They are
+ * scaled by how much slower the machine of the run does a fixed piece of work, which runs no code of the exporter: a
+ * change which slows every export cannot slow the measure of the machine with it and raise every budget.
+ * </p>
+ * <p>
+ * The CSS of an export carries its fonts as Polarion gives them, embedded as data URLs, as a real export does. A cost
+ * which grows with the CSS shows here as it shows in Polarion.
  * </p>
  */
 @Tag("performance")
 public abstract class BasePerformanceTest extends BasePdfConverterTest {
 
-    /** What the reference document takes to export on the machine the budgets were set on, an arm64 Mac, in ms. */
-    private static final long REFERENCE_MS = 850;
-
-    /** How much slower the reference export may be, for a slower machine, before it counts as a slower exporter. */
-    private static final double MAX_SLOWDOWN = 3;
+    /** What the fixed piece of work takes on the machine the budgets were set on, an arm64 Mac, in ms. */
+    private static final long CALIBRATION_MS = 265;
 
     private static final String WEASYPRINT_STAGE = "WeasyPrint conversion";
 
-    private static final String REFERENCE = "reference";
+    private static final String MACHINE = "machine";
 
-    /** How much slower than the machine of the budgets this one exports, measured once per run. */
+    /** The fonts of the default CSS, which Polarion serves and the export embeds, in place of fonts of a like size. */
+    private static final String POLARION_FONTS = "/polarion/ria/fonts/";
+    private static final String FONT_AWESOME = "/polarion/ria/fontawesome-";
+
+    /** How much slower than the machine of the budgets this one is, measured once per run. */
     private static Double slowdown;
+
+    /** Whether the exporter and the service ran once in this JVM, so that no timed export pays for a cold start. */
+    private static boolean warmedUp;
+
+    private static String embeddedFont;
 
     /** An export and how long its parts took. */
     protected record Timing(@NotNull String name, byte @NotNull [] pdf, long totalMs, long weasyPrintMs, @NotNull String report) {
         long exporterMs() {
             return totalMs - weasyPrintMs;
         }
+    }
+
+    /** Embeds the fonts the default CSS names, as Polarion serves them, rather than leaving their URLs in the CSS. */
+    @BeforeEach
+    void embedTheFontsOfTheDefaultCss() {
+        lenient().when(fileResourceProvider.getResourceAsBase64String(anyString())).thenAnswer(invocation -> {
+            String url = invocation.getArgument(0);
+            return url.startsWith(POLARION_FONTS) || url.startsWith(FONT_AWESOME) ? embeddedFont() : null;
+        });
+    }
+
+    @SneakyThrows
+    private static @NotNull String embeddedFont() {
+        if (embeddedFont == null) {
+            // A font of the size of those of Polarion, from 300 to 430 KB each, which the test CSS overrides for every element
+            try (InputStream font = BasePerformanceTest.class.getResourceAsStream(WEASYPRINT_TEST_FONT_RESOURCES_FOLDER + "fa-solid-900" + EXT_TTF)) {
+                embeddedFont = "data:font/ttf;base64," + Base64.getEncoder().encodeToString(Objects.requireNonNull(font).readAllBytes());
+            }
+        }
+        return embeddedFont;
     }
 
     protected static @NotNull ExportParams.ExportParamsBuilder<?, ?> portraitA4() {
@@ -69,13 +107,14 @@ public abstract class BasePerformanceTest extends BasePdfConverterTest {
     }
 
     /**
-     * Exports the content as a LiveDoc and times its stages. The speed of the machine is measured before the first
-     * export, so that no export of a test pays for a cold JVM or a cold service, and the timing report is written to the
-     * reports folder at once, so that it is there whichever check fails.
+     * Exports the content as a LiveDoc and times its stages. The first export of a run is preceded by one which is not
+     * timed, to warm the JVM and the service up. The timing report is written to the reports folder at once, so that it is
+     * there whichever check fails.
      */
     protected @NotNull Timing export(@NotNull String name, @NotNull String title, @NotNull String content, @NotNull ExportParams params) {
-        if (!name.startsWith(REFERENCE)) {
-            slowdown();
+        if (!warmedUp) {
+            warmedUp = true;
+            export("warmup", "Warm-up", readHtmlResource("performance/reference"), portraitA4().build());
         }
         DocumentData<IModule> liveDoc = DocumentData.creator(DocumentType.LIVE_DOC, module)
                 .id(LiveDocId.from("testProjectId", "_default", "testDocumentId"))
@@ -93,13 +132,29 @@ public abstract class BasePerformanceTest extends BasePdfConverterTest {
                 .mapToLong(ExecutionProfiler.TimingEntry::durationMs)
                 .sum();
         Timing timing = new Timing(name, pdf, log.getTotalDurationMs(), weasyPrintMs, log.generateTimingReport(title));
-        writeReport(timing, "%s: exporter %d ms, WeasyPrint %d ms".formatted(name, timing.exporterMs(), timing.weasyPrintMs()));
+        writeReport(timing.name(), "%s: exporter %d ms, WeasyPrint %d ms%n%s".formatted(name, timing.exporterMs(), timing.weasyPrintMs(), timing.report()));
         return timing;
     }
 
+    /**
+     * Exports the content once to warm the JVM and the service up for it, then three times, and returns the fastest: the
+     * export of a small document takes too little for one run to tell a slower exporter from a busy machine.
+     */
+    protected @NotNull Timing fastestOfThree(@NotNull String name, @NotNull String title, @NotNull String content, @NotNull ExportParams params) {
+        export(name + "-warmup", title, content, params);
+        Timing fastest = null;
+        for (int run = 1; run <= 3; run++) {
+            Timing timing = export(name + "-" + run, title, content, params);
+            if (fastest == null || timing.totalMs() < fastest.totalMs()) {
+                fastest = timing;
+            }
+        }
+        return new Timing(name, fastest.pdf(), fastest.totalMs(), fastest.weasyPrintMs(), fastest.report());
+    }
+
     @SneakyThrows
-    private static void writeReport(@NotNull Timing timing, @NotNull String summary) {
-        Files.writeString(Path.of(REPORTS_FOLDER_PATH, "performance-" + timing.name() + ".txt"), summary + System.lineSeparator() + timing.report(), StandardCharsets.UTF_8);
+    private static void writeReport(@NotNull String name, @NotNull String text) {
+        Files.writeString(Path.of(REPORTS_FOLDER_PATH, "performance-" + name + ".txt"), text, StandardCharsets.UTF_8);
     }
 
     /**
@@ -112,39 +167,50 @@ public abstract class BasePerformanceTest extends BasePdfConverterTest {
         long weasyPrintLimit = Math.round(weasyPrintBudgetMs * scale);
         String summary = "%s: exporter %d ms of %d, WeasyPrint %d ms of %d, budgets scaled by %.2f".formatted(
                 timing.name(), timing.exporterMs(), exporterLimit, timing.weasyPrintMs(), weasyPrintLimit, scale);
-        writeReport(timing, summary);
+        writeReport(timing.name(), summary + System.lineSeparator() + timing.report());
 
         assertThat(timing.exporterMs()).as("The exporter is within its budget. %s%n%s", summary, timing.report()).isLessThanOrEqualTo(exporterLimit);
         assertThat(timing.weasyPrintMs()).as("WeasyPrint is within its budget. %s%n%s", summary, timing.report()).isLessThanOrEqualTo(weasyPrintLimit);
     }
 
-    /** How much slower than the machine of the budgets this one exports the reference document, never less than one. */
-    private double slowdown() {
+    /** How much slower than the machine of the budgets this one does the fixed piece of work, never less than one. */
+    private static double slowdown() {
         if (slowdown == null) {
-            String reference = readHtmlResource("performance/reference");
-            ExportParams params = portraitA4().build();
-            // The first export warms the JVM and the service up, the best of the next three is the time of the machine
-            // Each run keeps a report of its own, and one more says which time set the budgets
-            export(REFERENCE + "-warmup", "Reference", reference, params);
+            calibrate();
             long best = Long.MAX_VALUE;
-            for (int run = 1; run <= 3; run++) {
-                best = Math.min(best, export(REFERENCE + "-" + run, "Reference", reference, params).totalMs());
+            for (int run = 0; run < 3; run++) {
+                best = Math.min(best, calibrate());
             }
-            writeReferenceSummary(best);
-            assertThat(best)
-                    .as("The reference document takes %d ms, against %d ms on the machine of the budgets: the machine is far slower, or every export became slower", best, REFERENCE_MS)
-                    .isLessThanOrEqualTo(Math.round(REFERENCE_MS * MAX_SLOWDOWN));
-            slowdown = Math.max(1d, (double) best / REFERENCE_MS);
+            slowdown = Math.max(1d, (double) best / CALIBRATION_MS);
+            writeReport(MACHINE, "machine: best of three %d ms of fixed work, against %d ms on the machine of the budgets, budgets scaled by %.2f%n"
+                    .formatted(best, CALIBRATION_MS, slowdown));
         }
         return slowdown;
     }
 
+    /**
+     * Times a fixed piece of work of the JDK alone, hashing and sorting, which no change of the exporter or of its
+     * libraries makes slower. It tells how fast this machine is, for the budgets.
+     */
     @SneakyThrows
-    private static void writeReferenceSummary(long best) {
-        Files.writeString(Path.of(REPORTS_FOLDER_PATH, "performance-" + REFERENCE + ".txt"),
-                "reference: best of three %d ms, against %d ms on the machine of the budgets, limit %d ms, budgets scaled by %.2f%n".formatted(
-                        best, REFERENCE_MS, Math.round(REFERENCE_MS * MAX_SLOWDOWN), Math.max(1d, (double) best / REFERENCE_MS)),
-                StandardCharsets.UTF_8);
+    private static long calibrate() {
+        long start = System.nanoTime();
+        MessageDigest digest = MessageDigest.getInstance("SHA-256");
+        byte[] block = new byte[1 << 20];
+        new Random(42).nextBytes(block);
+        for (int round = 0; round < 200; round++) {
+            digest.update(block);
+        }
+        int[] numbers = new Random(42).ints(4_000_000).toArray();
+        Arrays.sort(numbers);
+        consume(digest.digest(), numbers);
+        return (System.nanoTime() - start) / 1_000_000;
+    }
+
+    /** Keeps the result of the work, so that the JIT cannot drop the work. */
+    private static void consume(byte @NotNull [] hash, int @Nullable [] numbers) {
+        assertThat(hash).hasSize(32);
+        assertThat(numbers).isNotEmpty();
     }
 
     @SneakyThrows
