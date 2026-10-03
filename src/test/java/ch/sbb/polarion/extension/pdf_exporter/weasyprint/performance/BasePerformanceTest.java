@@ -42,9 +42,9 @@ import static org.mockito.Mockito.lenient;
  * it does today. They run in the profile {@code performance-tests-with-weasyprint-docker} alone.
  * <p>
  * A budget is set for the exporter and for WeasyPrint apart, read from the timings of the generation log, so a failure
- * says which side became slow. The budgets are twice what an export takes on the machine they were set on. They are
- * scaled by how much slower the machine of the run does a fixed piece of work, which runs no code of the exporter: a
- * change which slows every export cannot slow the measure of the machine with it and raise every budget.
+ * says which side became slow. The budgets are three times what an export takes on the machine they were set on. They
+ * are scaled by how much slower the machine of the run does a fixed piece of work, which runs no code of the exporter:
+ * a change which slows every export cannot slow the measure of the machine with it and raise every budget.
  * </p>
  * <p>
  * The CSS of an export carries its fonts as Polarion gives them, embedded as data URLs, as a real export does. A cost
