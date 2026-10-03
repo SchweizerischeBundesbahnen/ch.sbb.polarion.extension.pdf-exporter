@@ -22,6 +22,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 
@@ -97,6 +98,8 @@ class ImageSizeInTablesAdjusterTest {
         // Mock TableAnalyzer.getColumnWidths to return an empty map
         try (var mockedTableAnalyzer = mockStatic(TableAnalyzer.class)) {
             mockedTableAnalyzer.when(() -> TableAnalyzer.analyze(any(Element.class), anyInt()))
+                    .thenReturn(new TableAnalyzer.TableMetrics(Collections.emptyMap(), 0, List.of()));
+            mockedTableAnalyzer.when(() -> TableAnalyzer.analyze(any(Element.class), anyInt(), anyString()))
                     .thenReturn(new TableAnalyzer.TableMetrics(Collections.emptyMap(), 0, List.of()));
 
             ImageSizeInTablesAdjuster adjuster = new ImageSizeInTablesAdjuster(doc, ConversionParams.builder().build());

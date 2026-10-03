@@ -1,5 +1,6 @@
 package ch.sbb.polarion.extension.pdf_exporter.util;
 
+import ch.sbb.polarion.extension.pdf_exporter.util.adjuster.Hyphenation;
 import ch.sbb.polarion.extension.generic.settings.SettingId;
 import ch.sbb.polarion.extension.generic.test_extensions.BundleJarsPrioritizingRunnableMockExtension;
 import ch.sbb.polarion.extension.pdf_exporter.configuration.PdfExporterExtensionConfigurationExtension;
@@ -1409,6 +1410,44 @@ class HtmlProcessorTest {
         assertTrue(block.replace(" ", "").contains("<trstyle=\"break-inside:avoid;\">"), block);
     }
 
+    /** The page break widgets of a Live Report print sections on named pages, so images are fitted to the lower of both pages. */
+    @ParameterizedTest
+    @CsvSource({"<div class=\"sbb_page_break portA3\"><p>Section</p></div>, EITHER_PAGE", "<p>No section</p>, EVERY_PAGE"})
+    void fitsTheContentOfPageBreakSectionsToEitherPage(String html, PageLayout.Pages pages) {
+        HtmlProcessor spyHtmlProcessor = spy(processor);
+        ExportParams exportParams = getExportParams();
+        exportParams.setFitToPage(true);
+        PageLayout layout = PageLayout.of("@page { margin: 120px 60px 90px 80px; } @page portA3 { margin: 140px 80px 110px 100px; }");
+
+        spyHtmlProcessor.processHtmlForPDF(html, exportParams, List.of(), Hyphenation.NONE, layout, null);
+
+        verify(spyHtmlProcessor).adjustContentToFitPage(any(Document.class), eq(exportParams), argThat((PageLayout fitted) -> fitted.pages() == pages));
+    }
+
+    /** The empty paragraphs Polarion ends a document with, a line break alone, are dropped, however deep they stand. */
+    @Test
+    void cutsTheEmptyParagraphsADocumentEndsWith() {
+        Document document = JSoupUtils.parseHtml("""
+                <div><div><table><tr><td>Cell</td></tr></table><div style="clear: both;"></div><p id="polarion_13">&nbsp;</p><p id="polarion_14">
+                  <br />
+                </p></div></div>""");
+
+        processor.cutTrailingEmptyParagraphs(document);
+
+        assertTrue(document.select("p").isEmpty(), "Nothing follows the table which prints");
+        assertEquals(1, document.select("table").size(), "The table stays");
+    }
+
+    @Test
+    void keepsAnEmptyParagraphWhichContentFollows() {
+        Document document = JSoupUtils.parseHtml("<p id=\"polarion_1\"><br /></p><p id=\"polarion_2\">Text</p><p id=\"polarion_3\"><img src=\"diagram.svg\"/></p><p id=\"polarion_4\"><br /></p>");
+
+        processor.cutTrailingEmptyParagraphs(document);
+
+        assertEquals(List.of("polarion_1", "polarion_2", "polarion_3"), document.select("p").eachAttr("id"),
+                "Only the empty paragraph at the end goes: one before the text stays, as does one which holds an image");
+    }
+
     @Test
     @SneakyThrows
     void measuresTableRowsOnceTheTablesAreFittedToThePage() {
@@ -1419,7 +1458,7 @@ class HtmlProcessorTest {
         spyHtmlProcessor.processHtmlForPDF("<table><tbody><tr><td>Patron</td></tr></tbody></table>", exportParams, List.of());
 
         InOrder inOrder = inOrder(spyHtmlProcessor);
-        inOrder.verify(spyHtmlProcessor).adjustContentToFitPage(any(Document.class), eq(exportParams));
+        inOrder.verify(spyHtmlProcessor).adjustContentToFitPage(any(Document.class), eq(exportParams), any(PageLayout.class));
         inOrder.verify(spyHtmlProcessor).keepTableRowsWhole(any(Document.class), eq(exportParams), eq(false));
     }
 
@@ -1467,8 +1506,8 @@ class HtmlProcessorTest {
         spyHtmlProcessor.processPageBrakes("<p>Landscape</p><!--PAGE_BREAK--><!--LANDSCAPE_ABOVE--><p>Portrait</p>", exportParams);
 
         InOrder inOrder = inOrder(spyHtmlProcessor);
-        inOrder.verify(spyHtmlProcessor).adjustContentToFitPage(anyString(), argThat((ConversionParams page) -> page.getOrientation() == Orientation.LANDSCAPE));
-        inOrder.verify(spyHtmlProcessor).adjustContentToFitPage(anyString(), argThat((ConversionParams page) -> page.getOrientation() == Orientation.PORTRAIT));
+        inOrder.verify(spyHtmlProcessor).adjustContentToFitPage(anyString(), argThat((ConversionParams page) -> page.getOrientation() == Orientation.LANDSCAPE), any(PageLayout.class));
+        inOrder.verify(spyHtmlProcessor).adjustContentToFitPage(anyString(), argThat((ConversionParams page) -> page.getOrientation() == Orientation.PORTRAIT), any(PageLayout.class));
     }
 
     @Test

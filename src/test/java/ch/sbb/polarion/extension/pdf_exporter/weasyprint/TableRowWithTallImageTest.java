@@ -6,6 +6,7 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.Orientation;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PaperSize;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.DocumentData;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.id.LiveDocId;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.css.CssModel;
 import ch.sbb.polarion.extension.pdf_exporter.util.DocumentDataFactory;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.base.BasePdfConverterTest;
 import com.polarion.alm.tracker.model.IModule;
@@ -25,8 +26,10 @@ import java.util.Objects;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.when;
 
 /**
  * A table row is not split across pages where it holds an image.
@@ -73,6 +76,16 @@ class TableRowWithTallImageTest extends BasePdfConverterTest {
     @Test
     void keepsATableRowWithAnImageAndItsCaptionWhole() {
         export("tableRowWithTallImageAndCaption", getCurrentMethodName(), "Diagram 1", true);
+    }
+
+    /** A style package which makes the header taller leaves the row the less of the page. */
+    @Test
+    void keepsATableRowWholeUnderAHeaderTheCssMakesTaller() {
+        when(cssSettings.load(any(), any())).thenReturn(CssModel.builder()
+                .disableDefaultCss(false)
+                .css(readFontCss() + "th { font-size: 20pt; padding: 24px !important; }")
+                .build());
+        export("tableRowWithTallImage", getCurrentMethodName(), "Diagram 1", true);
     }
 
     /** A column of a landscape page is wider than a diagram may grow, and the row is kept whole all the same. */

@@ -28,6 +28,7 @@ import ch.sbb.polarion.extension.pdf_exporter.util.DocumentDataFactory;
 import ch.sbb.polarion.extension.pdf_exporter.util.ExportContext;
 import ch.sbb.polarion.extension.pdf_exporter.util.DocumentLanguageResolver;
 import ch.sbb.polarion.extension.pdf_exporter.util.HyphenationRules;
+import ch.sbb.polarion.extension.pdf_exporter.util.PageLayout;
 import ch.sbb.polarion.extension.pdf_exporter.util.EnumValuesProvider;
 import ch.sbb.polarion.extension.pdf_exporter.util.HtmlLogger;
 import ch.sbb.polarion.extension.pdf_exporter.util.MediaUtils;
@@ -269,7 +270,8 @@ public class PdfConverter {
         String headerFooterContent = timedIfNotNull(generationLog, "Get header/footer content", () -> getHeaderFooterContent(documentData, exportParams));
         String documentLanguage = resolveDocumentLanguage(documentData, exportParams);
         Hyphenation hyphenation = new Hyphenation(documentLanguage, HyphenationRules.turningHyphenationOff(cssContent), headerFooterContent);
-        String preparedDocumentContent = postProcessDocumentContent(exportParams, project, documentData.getContent(), hyphenation, generationLog);
+        PageLayout pageLayout = PageLayout.of(cssContent);
+        String preparedDocumentContent = postProcessDocumentContent(exportParams, project, documentData.getContent(), hyphenation, pageLayout, generationLog);
 
         HtmlData htmlData = new HtmlData(cssContent, preparedDocumentContent, headerFooterContent);
 
@@ -426,13 +428,14 @@ public class PdfConverter {
 
     @VisibleForTesting
     String postProcessDocumentContent(@NotNull ExportParams exportParams, @Nullable ITrackerProject project, @Nullable String documentContent) {
-        return postProcessDocumentContent(exportParams, project, documentContent, Hyphenation.NONE, null);
+        return postProcessDocumentContent(exportParams, project, documentContent, Hyphenation.NONE, PageLayout.NONE, null);
     }
 
-    String postProcessDocumentContent(@NotNull ExportParams exportParams, @Nullable ITrackerProject project, @Nullable String documentContent, @NotNull Hyphenation hyphenation, @Nullable PdfGenerationLog generationLog) {
+    String postProcessDocumentContent(@NotNull ExportParams exportParams, @Nullable ITrackerProject project, @Nullable String documentContent, @NotNull Hyphenation hyphenation,
+                                      @NotNull PageLayout pageLayout, @Nullable PdfGenerationLog generationLog) {
         if (documentContent != null) {
             List<String> selectedRoleEnumValues = project == null ? Collections.emptyList() : EnumValuesProvider.getLinkRoleNames(project, exportParams.getLinkedWorkitemRoles(), exportParams.getLinkRoleDirection());
-            return htmlProcessor.processHtmlForPDF(documentContent, exportParams, selectedRoleEnumValues, hyphenation, generationLog);
+            return htmlProcessor.processHtmlForPDF(documentContent, exportParams, selectedRoleEnumValues, hyphenation, pageLayout, generationLog);
         } else {
             return "";
         }

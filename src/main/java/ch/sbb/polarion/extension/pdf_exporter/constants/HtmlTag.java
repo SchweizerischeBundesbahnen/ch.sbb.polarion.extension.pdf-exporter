@@ -19,6 +19,7 @@ public class HtmlTag {
     public static final String METER = "meter";
     public static final String OBJECT = "object";
     public static final String OL = "ol";
+    public static final String P = "p";
     public static final String PICTURE = "picture";
     public static final String PROGRESS = "progress";
     public static final String STYLE = "style"; // This constant specifies HTML's style-tag (not tag's attribute)

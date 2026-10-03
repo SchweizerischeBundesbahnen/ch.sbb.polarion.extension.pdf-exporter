@@ -2,6 +2,7 @@ package ch.sbb.polarion.extension.pdf_exporter.util.adjuster;
 
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ConversionParams;
 import lombok.Getter;
+import ch.sbb.polarion.extension.pdf_exporter.util.PageLayout;
 import org.jetbrains.annotations.NotNull;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -25,14 +26,19 @@ public class PageWidthAdjuster {
     }
 
     public PageWidthAdjuster(@NotNull Document document, @NotNull ConversionParams conversionParams) {
+        this(document, conversionParams, PageLayout.NONE);
+    }
+
+    /** @param pageLayout what the CSS of the export says of the page which fitting the content to it needs */
+    public PageWidthAdjuster(@NotNull Document document, @NotNull ConversionParams conversionParams, @NotNull PageLayout pageLayout) {
         this.document = document;
         this.document.outputSettings()
                 .syntax(Document.OutputSettings.Syntax.xml)
                 .escapeMode(Entities.EscapeMode.base)
                 .prettyPrint(false);
 
-        imageSizeInTablesAdjuster = new ImageSizeInTablesAdjuster(document, conversionParams);
-        imageSizeAdjuster = new ImageSizeAdjuster(document, conversionParams);
+        imageSizeInTablesAdjuster = new ImageSizeInTablesAdjuster(document, conversionParams, pageLayout);
+        imageSizeAdjuster = new ImageSizeAdjuster(document, conversionParams, pageLayout);
         tableSizeAdjuster = new TableSizeAdjuster(document, conversionParams);
     }
 

@@ -25,6 +25,7 @@ import lombok.SneakyThrows;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
+import org.jsoup.Jsoup;
 import org.jsoup.nodes.Comment;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -52,6 +53,9 @@ import static ch.sbb.polarion.extension.pdf_exporter.util.exporter.Constants.*;
 public class HtmlProcessor {
 
     private static final String WORK_ITEM_ATTRIBUTE_TABLE = "table.polarion-dle-workitem-fields-end-table";
+
+    /** What prints without any text of its own. */
+    private static final String PRINTED_WITHOUT_TEXT = "img, svg, object, embed, iframe, video, table, hr, canvas";
 
     /** What Polarion puts between the ID of a linked work item and its title. */
     private static final String LINK_TITLE_DASH = " - ";
@@ -101,6 +105,16 @@ public class HtmlProcessor {
      *                    the rules of the CSS which turn hyphenation off
      */
     public String processHtmlForPDF(@NotNull String html, @NotNull ExportParams exportParams, @NotNull List<String> selectedRoleEnumValues, @NotNull Hyphenation hyphenation, @Nullable PdfGenerationLog generationLog) {
+        return processHtmlForPDF(html, exportParams, selectedRoleEnumValues, hyphenation, PageLayout.NONE, generationLog);
+    }
+
+    /**
+     * @param pageLayout what the CSS of the export says of the page which fitting the content to it needs: the rules which
+     *                   make a table header taller, and the height a page leaves its content
+     */
+    @SuppressWarnings("java:S3776")
+    public String processHtmlForPDF(@NotNull String html, @NotNull ExportParams exportParams, @NotNull List<String> selectedRoleEnumValues, @NotNull Hyphenation hyphenation,
+                                    @NotNull PageLayout pageLayout, @Nullable PdfGenerationLog generationLog) {
         if (exportParams.getDocumentType() == BASELINE_COLLECTION) {
             // Unsupported document type
             throw new IllegalArgumentException(UNSUPPORTED_DOCUMENT_TYPE.formatted(exportParams.getDocumentType()));
@@ -138,6 +152,9 @@ public class HtmlProcessor {
 
         // From Polarion perspective h1 - is a document title, h2 are h1 heading etc. We are making such headings' uplifting here
         timedIfNotNull(generationLog, "Adjust document headings", () -> adjustDocumentHeadings(document));
+
+        // Polarion ends a document with an empty paragraph, which prints nothing and can take a page of its own
+        timedIfNotNull(generationLog, "Cut trailing empty paragraphs", () -> cutTrailingEmptyParagraphs(document));
 
         if (exportParams.isCutEmptyChapters()) {
             // Cut empty chapters if explicitly requested by user
@@ -223,7 +240,9 @@ public class HtmlProcessor {
             // ---- BOOKMARK 1
             // In case of custom page breaks adjustContentToFitPage() will be called separately for each HTML block between
             // page breaks separately (see BOOKMARK 2 below), as paper orientation can be changed by page break
-            timedIfNotNull(generationLog, "Adjust content to fit page", () -> adjustContentToFitPage(document, exportParams));
+            // The page break widgets of a Live Report print their sections on named pages, the rest on the page every page is
+            PageLayout printedOn = document.select("div." + PAGE_BREAK_SECTION_CLASS).isEmpty() ? pageLayout : pageLayout.on(PageLayout.Pages.EITHER_PAGE);
+            timedIfNotNull(generationLog, "Adjust content to fit page", () -> adjustContentToFitPage(document, exportParams, printedOn));
             // ----
         }
         timedIfNotNull(generationLog, "Break long words in table cells", () -> LongWordsAdjuster.addBreakPoints(document, hyphenation));
@@ -241,7 +260,7 @@ public class HtmlProcessor {
             // ---- BOOKMARK 2
             // processPageBrakes() contains its own adjustContentToFitPage() calls, see BOOKMARK 1 for same logic without custom page breaks
             String htmlBeforePageBreaks = html;
-            html = timedIfNotNull(generationLog, "Process page breaks", () -> processPageBrakes(htmlBeforePageBreaks, exportParams));
+            html = timedIfNotNull(generationLog, "Process page breaks", () -> processPageBrakes(htmlBeforePageBreaks, exportParams, pageLayout));
             // ----
         }
 
@@ -271,6 +290,41 @@ public class HtmlProcessor {
     @NotNull
     private String encodeDollarSigns(@NotNull String html) {
         return html.replace(DOLLAR_SIGN, DOLLAR_ENTITY);
+    }
+
+    /**
+     * Drops the empty paragraphs a document ends with. Polarion ends a document with one, a line break alone, which prints
+     * nothing but takes a line: after a table or an image which fills the last page, a page of its own, blank.
+     */
+    @VisibleForTesting
+    void cutTrailingEmptyParagraphs(@NotNull Document document) {
+        Elements paragraphs = document.body().select(HtmlTag.P);
+        for (int index = paragraphs.size() - 1; index >= 0; index--) {
+            Element paragraph = paragraphs.get(index);
+            if (!isEmptyParagraph(paragraph) || hasContentAfter(paragraph, document.body())) {
+                return;
+            }
+            paragraph.remove();
+        }
+    }
+
+    /** Whether the paragraph prints nothing: no text but spaces, and no element but line breaks. */
+    private static boolean isEmptyParagraph(@NotNull Element paragraph) {
+        return paragraph.text().replace('\u00A0', ' ').isBlank()
+                && paragraph.select("*").stream().allMatch(element -> element == paragraph || HtmlTag.BR.equals(element.tagName()));
+    }
+
+    /** Whether anything which prints follows the element up to the end of the body. */
+    private static boolean hasContentAfter(@NotNull Element element, @NotNull Element body) {
+        for (Element current = element; current != null && current != body; current = current.parent()) {
+            for (Node next = current.nextSibling(); next != null; next = next.nextSibling()) {
+                if (next instanceof TextNode text && !text.isBlank()
+                        || next instanceof Element following && (!following.text().isBlank() || !following.select(PRINTED_WITHOUT_TEXT).isEmpty())) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     @VisibleForTesting
@@ -748,8 +802,12 @@ public class HtmlProcessor {
      */
     @NotNull
     @VisibleForTesting
-    @SuppressWarnings("java:S3776")
     String processPageBrakes(@NotNull String html, ExportParams exportParams) {
+        return processPageBrakes(html, exportParams, PageLayout.NONE);
+    }
+
+    @SuppressWarnings("java:S3776")
+    String processPageBrakes(@NotNull String html, ExportParams exportParams, @NotNull PageLayout pageLayout) {
         StringBuilder resultBuf = new StringBuilder();
         LinkedList<String> areas = new LinkedList<>(Arrays.asList(html.split(PAGE_BREAK_MARK)));
         //we start by using global orientation setting
@@ -789,7 +847,7 @@ public class HtmlProcessor {
                             .paperSize(exportParams.getPaperSize())
                             .orientation(landscape ? Orientation.LANDSCAPE : Orientation.PORTRAIT)
                             .build();
-                    area = adjustContentToFitPage(area, page);
+                    area = adjustContentToFitPage(area, page, pageLayout.on(PageLayout.Pages.NAMED_PAGE));
                     area = keepTableRowsWhole(area, page);
                 }
 
@@ -1271,14 +1329,22 @@ public class HtmlProcessor {
     }
 
     public void adjustContentToFitPage(@NotNull Document document, @NotNull ConversionParams conversionParams) {
-        new PageWidthAdjuster(document, conversionParams)
+        adjustContentToFitPage(document, conversionParams, PageLayout.NONE);
+    }
+
+    public void adjustContentToFitPage(@NotNull Document document, @NotNull ConversionParams conversionParams, @NotNull PageLayout pageLayout) {
+        new PageWidthAdjuster(document, conversionParams, pageLayout)
                 .adjustImageSizeInTables()
                 .adjustImageSize()
                 .adjustTableSize();
     }
 
     public @NotNull String adjustContentToFitPage(@NotNull String html, @NotNull ConversionParams conversionParams) {
-        return new PageWidthAdjuster(html, conversionParams)
+        return adjustContentToFitPage(html, conversionParams, PageLayout.NONE);
+    }
+
+    public @NotNull String adjustContentToFitPage(@NotNull String html, @NotNull ConversionParams conversionParams, @NotNull PageLayout pageLayout) {
+        return new PageWidthAdjuster(Jsoup.parse(html), conversionParams, pageLayout)
                 .adjustImageSizeInTables()
                 .adjustImageSize()
                 .adjustTableSize()

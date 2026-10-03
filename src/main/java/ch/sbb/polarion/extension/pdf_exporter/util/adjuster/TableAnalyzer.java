@@ -129,11 +129,19 @@ public class TableAnalyzer {
     }
 
     public TableMetrics analyze(@NotNull Element tableElement, int pageWidth) {
+        return analyze(tableElement, pageWidth, "");
+    }
+
+    /**
+     * Measures the table as {@link #analyze(Element, int)} does, with the given CSS applied as well: rules of the export
+     * which the inline styles of the table do not carry.
+     */
+    public TableMetrics analyze(@NotNull Element tableElement, int pageWidth, @NotNull String css) {
         Map<Integer, Integer> columnWidths = new HashMap<>();
         Gathered gathered = new Gathered();
         List<Integer> rowHeights = new ArrayList<>();
 
-        Document doc = toSelfDocument(tableElement);
+        Document doc = toSelfDocument(tableElement, css);
         Box rootBox = render(doc, pageWidth);
         findTableAndAnalyze(rootBox, columnWidths, gathered, rowHeights);
 
@@ -146,8 +154,11 @@ public class TableAnalyzer {
         private int tableWidth;
     }
 
-    private Document toSelfDocument(@NotNull Element tableElement) {
+    private Document toSelfDocument(@NotNull Element tableElement, @NotNull String css) {
         org.jsoup.nodes.Document tempDoc = org.jsoup.nodes.Document.createShell("");
+        if (!css.isBlank()) {
+            tempDoc.head().appendElement("style").text(css);
+        }
         // Inject CSS to force the embedded font for consistent column width calculation across platforms
         tempDoc.head().appendElement("style").text("* { font-family: '" + MEASUREMENT_FONT_FAMILY + "', sans-serif !important; }");
         Element table = tableElement.clone();
