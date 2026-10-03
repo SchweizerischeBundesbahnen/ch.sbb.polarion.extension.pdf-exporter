@@ -186,7 +186,15 @@ public class PdfConverter {
     }
 
     public byte[] convertToPdf(@NotNull ExportParams exportParams, @Nullable ExportMetaInfoCallback metaInfoCallback) {
-        PdfGenerationLog generationLog = new PdfGenerationLog();
+        return convertToPdf(exportParams, metaInfoCallback, new PdfGenerationLog());
+    }
+
+    /**
+     * @param generationLog where the stages of the export are timed, which a performance test reads to tell the time of
+     *                      the exporter from the time of WeasyPrint
+     */
+    @VisibleForTesting
+    public byte[] convertToPdf(@NotNull ExportParams exportParams, @Nullable ExportMetaInfoCallback metaInfoCallback, @NotNull PdfGenerationLog generationLog) {
         generationLog.log("Starting PDF generation");
 
         try {

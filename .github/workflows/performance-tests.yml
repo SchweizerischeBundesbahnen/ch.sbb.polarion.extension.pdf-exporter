@@ -1,0 +1,47 @@
+---
+name: Performance Tests
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main, release-v*]
+    types: [opened, synchronize, reopened, ready_for_review]
+  workflow_dispatch:
+permissions: {}
+env:
+  SETTINGS_XML: ${{ github.workspace }}/.mvn/settings.xml
+  JAVA_VERSION: 21
+  JAVA_DISTRIBUTION: temurin
+jobs:
+  performance-tests:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    services:
+      weasyprint:
+        image: ghcr.io/schweizerischebundesbahnen/weasyprint-service:latest@sha256:c8c03dcbaf1ab2a1cffd92ec2334c4cffca1953e0d4def9e7772c200fd4602b5  # zizmor: ignore[unpinned-images]
+        ports: [9080:9080]
+    env:
+      IO_JFROG_SBB_POLARION_TOKEN: ${{ secrets.IO_JFROG_SBB_POLARION_TOKEN }}
+      GITHUB_TOKEN: ${{ github.token }}  # Providing this prevents reaching the GitHub request limits
+      WEASYPRINT_SERVICE_URL: http://localhost:9080
+    steps:
+      - name: 📄 Checkout the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+        with:
+          persist-credentials: false
+      - name: 🧱 Set up JDK and Maven
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6  # v6.0.1
+        with:
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: maven
+      - name: ⏱️ Run the performance tests
+        run: mvn --batch-mode -s "${SETTINGS_XML}" verify -P performance-tests-with-weasyprint-docker -DskipJsTests -Dweasyprint.service.url="${WEASYPRINT_SERVICE_URL}"
+      - name: 📋 Upload the timing reports
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: performance-reports
+          path: target/surefire-reports/performance-*.txt
+          retention-days: 7
