@@ -15,6 +15,33 @@ at the old node, e.g. `#/administration/pdf-export/user-guide` or
 `#/project/<id>/administration/pdf-export/user-guide`, no longer opens a page: replace `user-guide` with
 `documentation` in it. The User Guide itself is one click away in the documentation sidebar.
 
+### weasyprint-service 70.0.1 or later
+
+Use weasyprint-service 70.0.1 or later. An earlier version draws a Polarion diagram at the size of its file, not at
+the size the document gives it.
+
+### Custom CSS
+
+The default CSS of 13.9.0 changes how tables, icons, work item attributes and the table of contents print:
+
+- The labels of the attribute table of a work item are bold, and its cells are aligned at the top.
+- A long word in a table cell breaks only where it must (`overflow-wrap: break-word`, before `anywhere`).
+- Icons stay in the middle of their line, at the height of the text.
+- The table of contents is spaced evenly, with no blank line.
+- The first page starts as high as every other page.
+- A row of a work items table in a Live Report is kept on one page.
+
+With **Use default CSS and custom CSS**, the custom CSS is applied after the default CSS. A copy of the default
+values which was then edited brings back only the rules it repeats: the old `overflow-wrap: anywhere` in table
+cells and `vertical-align: bottom` of icons. Remove them from the copy to get the new behavior. A copy which was not
+edited is ignored, and the default CSS applies alone.
+
+With **Use custom CSS only**, the custom CSS is the only CSS, edited or not, and does not get any of these changes.
+The page then warns that the default CSS changed since it was copied. Use `Compare with default` to see the
+changes, take over what you need, and mark the change as reviewed. A copy stored before 13.8.0 and edited since
+does not remember what it was copied from, so the page shows no warning for it: compare it with the default CSS
+yourself.
+
 ## Upgrade from version 13.7.x to 13.8.0
 
 ### Custom values of CSS, Cover page, Header and Footer, and Filename template
@@ -40,7 +67,7 @@ WeasyPrint 67.0 introduced breaking changes in PDF variant support:
 - `pdf/a-2a` - Accessible PDF/A-2 (tagged, Unicode, modern features)
 - `pdf/a-3a` - Accessible PDF/A-3 (tagged, Unicode, file attachments)
 - `pdf/a-4e` - PDF/A-4 for engineering documents (allows 3D, RichMedia)
-- `pdf/a-4f` - PDF/A-4 with embedded files (requires attachments in document)
+- `pdf/a-4f` - PDF/A-4 with embedded files (requires attachments, which only a Test Run export embeds)
 - `pdf/ua-2` - Accessible PDF for assistive technologies (ISO 14289-2:2024) - **partial support, see Limitations**
 
 **Post-processing applied automatically:**
@@ -57,7 +84,7 @@ The extension applies post-processing to ensure PDF/A and PDF/UA compliance:
 1. If you were using `pdf/a-4b` variant, switch to `pdf/a-4f` or `pdf/a-4e` instead
 2. Update any style packages that reference `PDF_A_4B` to use `PDF_A_4F` or `PDF_A_4E`
 3. Update weasyprint-service Docker image to version 67.0.0 or later
-4. Note: `pdf/a-4f` requires documents to have attachments (embedded files) per ISO 19005-4:2020 clause 6.9
+4. Note: `pdf/a-4f` requires documents to have attachments (embedded files) per ISO 19005-4:2020 clause 6.9. Only an export of a Test Run embeds any, with "Embed attachments into resulted PDF"
 
 ## Upgrade from version 11.x.x to 12.0.0
 

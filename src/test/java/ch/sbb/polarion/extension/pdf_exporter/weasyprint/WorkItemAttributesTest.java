@@ -76,8 +76,19 @@ class WorkItemAttributesTest extends BasePdfConverterTest {
 
     @Test
     void keepsTheIconTheIdAndTheDashOfALinkTogether() {
-        byte[] pdf = export();
+        assertLinksKeptTogether(export());
+    }
 
+    /**
+     * Fit to page lets a table choose the widths of its columns, so a column narrower than a link is no longer one. Without
+     * it the narrow column keeps the width the document states, and still widens to hold a link rather than split it.
+     */
+    @Test
+    void keepsALinkTogetherInAColumnTheDocumentKeepsNarrow() {
+        assertLinksKeptTogether(export(false));
+    }
+
+    private static void assertLinksKeptTogether(byte @NotNull [] pdf) {
         Map<String, Word> ids = wordsIn(pdf, LINKED_IDS);
         List<DrawnImages.Box> icons = DrawnImages.boxesIn(pdf);
         for (String id : LINKED_IDS) {
@@ -105,12 +116,16 @@ class WorkItemAttributesTest extends BasePdfConverterTest {
     }
 
     private byte @NotNull [] export() {
+        return export(true);
+    }
+
+    private byte @NotNull [] export(boolean fitToPage) {
         ExportParams params = ExportParams.builder()
                 .projectId("test")
                 .locationPath("testLocation")
                 .orientation(Orientation.PORTRAIT)
                 .paperSize(PaperSize.A4)
-                .fitToPage(true)
+                .fitToPage(fitToPage)
                 .build();
         return exportLiveDoc("Work item attributes", readHtmlResource("workItemAttributes"), params);
     }

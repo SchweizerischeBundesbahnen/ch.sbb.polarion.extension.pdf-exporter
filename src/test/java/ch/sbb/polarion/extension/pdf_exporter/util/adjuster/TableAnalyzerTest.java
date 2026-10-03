@@ -20,6 +20,19 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class TableAnalyzerTest {
 
+    /** The export moves a row of header cells into a thead, and the header still counts, as its rows do. */
+    @Test
+    void measuresTheRowsAndTheHeaderOfATableWithAHead() {
+        Element table = Jsoup.parse("""
+                <table><thead><tr><th>Diagram</th><th>Note</th></tr></thead>
+                <tbody><tr><td>A</td><td>B</td></tr><tr><td>C</td><td>D</td></tr></tbody></table>""").selectFirst("table");
+
+        TableAnalyzer.TableMetrics metrics = TableAnalyzer.analyze(table, 650);
+
+        assertEquals(3, metrics.rowHeights().size(), "The row of the head is a row of the table as well");
+        assertTrue(metrics.headerHeight() > 0, "The head is repeated on every page, so it takes its height there");
+    }
+
     @Test
     @SneakyThrows
     void embeddedFontIsLoaded() {

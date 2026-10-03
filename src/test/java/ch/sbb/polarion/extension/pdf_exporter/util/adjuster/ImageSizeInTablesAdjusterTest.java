@@ -22,6 +22,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 
@@ -97,6 +98,8 @@ class ImageSizeInTablesAdjusterTest {
         // Mock TableAnalyzer.getColumnWidths to return an empty map
         try (var mockedTableAnalyzer = mockStatic(TableAnalyzer.class)) {
             mockedTableAnalyzer.when(() -> TableAnalyzer.analyze(any(Element.class), anyInt()))
+                    .thenReturn(new TableAnalyzer.TableMetrics(Collections.emptyMap(), 0, List.of()));
+            mockedTableAnalyzer.when(() -> TableAnalyzer.analyze(any(Element.class), anyInt(), anyString()))
                     .thenReturn(new TableAnalyzer.TableMetrics(Collections.emptyMap(), 0, List.of()));
 
             ImageSizeInTablesAdjuster adjuster = new ImageSizeInTablesAdjuster(doc, ConversionParams.builder().build());
@@ -261,6 +264,264 @@ class ImageSizeInTablesAdjusterTest {
                 "The image states no size, so it can fill the page and the row must carry its header with it");
         assertEquals("", CssUtils.getPropertyValue(parseCss(doc.getElementById("small-row").attr(HtmlTagAttr.STYLE)), CssProp.BREAK_INSIDE),
                 "An icon leaves the row free to break where a row of text would");
+    }
+
+    @Test
+    void testRowOfAnImageWhichStatesAHeightThePageCannotHoldIsKeptWhole() {
+        String html = """
+                <table>
+                    <tr><th>Diagram</th><th>Note</th></tr>
+                    <tr id='tall-row'><td><img src='tall.svg' style='width: 150px;height: 1500px;'/></td><td>Taller than a page</td></tr>
+                    <tr id='short-row'><td><img src='short.svg' style='width: 150px;height: 300px;'/></td><td>A third of a page</td></tr>
+                </table>
+                """;
+
+        Document doc = Jsoup.parse(html);
+        new ImageSizeInTablesAdjuster(doc, ConversionParams.builder().build()).execute();
+
+        assertEquals(CssProp.PAGE_BREAK_INSIDE_AVOID_VALUE,
+                CssUtils.getPropertyValue(parseCss(doc.getElementById("tall-row").attr(HtmlTagAttr.STYLE)), CssProp.BREAK_INSIDE),
+                "The image states a height the page cannot hold, so the row must carry its header with it");
+        assertEquals("", CssUtils.getPropertyValue(parseCss(doc.getElementById("short-row").attr(HtmlTagAttr.STYLE)), CssProp.BREAK_INSIDE),
+                "The page holds the height the image states, and the row breaks where it must");
+    }
+
+    @Test
+    void testRowOfAnImageWhichStatesAHeightInPointsIsKeptWhole() {
+        assertEquals(CssProp.PAGE_BREAK_INSIDE_AVOID_VALUE, breakInsideOfARowWith("<img src='tall.svg' style='width: 100pt;height: 1200pt;'/>", "Taller than a page"),
+                "A height stated in points is as tall as one stated in pixels");
+    }
+
+    @Test
+    void testRowOfATallImageTheColumnNarrowsIsKeptWhole() {
+        assertEquals(CssProp.PAGE_BREAK_INSIDE_AVOID_VALUE, breakInsideOfARowWith("<img src='tall.svg' style='width: 3000px;height: 30000px;'/>", "Wider than a column"),
+                "Narrowed to its column in the shape it states, the image is still taller than the page leaves it");
+    }
+
+    /** An image which asks for less height than the page leaves it is still narrowed to its column. */
+    @Test
+    void testImageWhichHoldsThePageIsStillFittedToTheColumn() {
+        Document doc = Jsoup.parse("""
+                <table>
+                    <tr><th>Diagram</th><th>Note</th></tr>
+                    <tr id='row'><td style='width: 200px;'><img id='wide' src='wide.svg' style='width: 3000px;max-height: 200px;'/></td><td>A note</td></tr>
+                </table>
+                """);
+        new ImageSizeInTablesAdjuster(doc, ConversionParams.builder().build()).execute();
+
+        CSSDeclarationList styles = parseCss(doc.getElementById("wide").attr(HtmlTagAttr.STYLE));
+        assertTrue(pixelsOf(styles, CssProp.WIDTH) < 3000, "The column narrows the image");
+        assertEquals("", CssUtils.getPropertyValue(parseCss(doc.getElementById("row").attr(HtmlTagAttr.STYLE)), CssProp.BREAK_INSIDE),
+                "The image asks for less height than the page leaves it, and its row breaks where it must");
+    }
+
+    /** An image which only its max-width makes wider than the column is drawn at the width it states, and its height follows that. */
+    @Test
+    void testRowOfAnImageDrawnAtTheWidthItStatesBreaks() {
+        assertEquals("", breakInsideOfARowWith("<img src='narrow.svg' style='width: 100px;height: 400px;max-width: 2000px;'/>", "A note"),
+                "The image is drawn 100 x 400, which the page holds");
+    }
+
+    /** A width in percent states no shape, so a tall image of one may be as tall as the page leaves it. */
+    @Test
+    void testRowOfATallImageOfAWidthInPercentIsKeptWhole() {
+        assertEquals(CssProp.PAGE_BREAK_INSIDE_AVOID_VALUE, breakInsideOfARowWith("<img src='tall.svg' style='width: 100%;height: 2000px;'/>", "A note"),
+                "The image states no width it is drawn at, so its shape is not known");
+    }
+
+    /** A small image of a width in percent states a low height, and its row breaks where it must. */
+    @Test
+    void testRowOfASmallImageOfAWidthInPercentBreaks() {
+        assertEquals("", breakInsideOfARowWith("<img src='small.svg' style='width: 100%;height: 50px;'/>", "A note"),
+                "The image states a height the page holds");
+    }
+
+    @Test
+    void testRowOfAThumbnailTheColumnNarrowsBreaks() {
+        assertEquals("", breakInsideOfARowWith("<img src='wide.svg' style='width: 3000px;height: 1500px;'/>", "Wider than a column"),
+                "Narrowed to its column in the shape it states, the image is low, and the row breaks where it must");
+    }
+
+    @Test
+    void testRowOfAnImageWhichStatesAHeightThePageHoldsBreaks() {
+        assertEquals("", breakInsideOfARowWith("<img src='short.svg' style='width: 150px;height: 300px;'/>", "A third of a page"),
+                "The page holds the image, and the row breaks where it must");
+    }
+
+    @Test
+    void testRowWhoseTextRunsOverAPageBreaks() {
+        assertEquals("", breakInsideOfARowWith("<img src='tall.svg' style='width: 150px;height: 1500px;'/>", "A line of text. ".repeat(800)),
+                "The text of the row runs over a page and splits the row anyway, so keeping it whole would only leave a page blank");
+    }
+
+    /** The export moves a row of header cells into a thead, and the rest of the row is measured all the same. */
+    @Test
+    void testRowWhoseTextRunsOverAPageBreaksUnderAHead() {
+        String html = """
+                <table>
+                    <thead><tr><th>Diagram</th><th>Note</th></tr></thead>
+                    <tbody><tr id='row'><td><img src='tall.svg' style='width: 150px;height: 1500px;'/></td><td>%s</td></tr></tbody>
+                </table>
+                """.formatted("A line of text. ".repeat(800));
+
+        Document doc = Jsoup.parse(html);
+        new ImageSizeInTablesAdjuster(doc, ConversionParams.builder().build()).execute();
+
+        assertEquals("", CssUtils.getPropertyValue(parseCss(doc.getElementById("row").attr(HtmlTagAttr.STYLE)), CssProp.BREAK_INSIDE),
+                "The text of the row runs over a page and splits the row anyway");
+    }
+
+    /** The outer table fits an image of a nested one first, and the row of the nested table is still kept whole. */
+    @Test
+    void testRowOfANestedTableWhoseImageTheOuterTableShortensIsKeptWhole() {
+        String html = """
+                <table>
+                    <tr><td style='width: 200px;'>
+                        <table>
+                            <tr><th>Diagram</th></tr>
+                            <tr id='row'><td><img src='tall.svg' style='width: 900px;height: 9000px;'/></td></tr>
+                        </table>
+                    </td><td>A cell beside it</td></tr>
+                </table>
+                """;
+
+        Document doc = Jsoup.parse(html);
+        new ImageSizeInTablesAdjuster(doc, ConversionParams.builder().build()).execute();
+
+        assertEquals(CssProp.PAGE_BREAK_INSIDE_AVOID_VALUE,
+                CssUtils.getPropertyValue(parseCss(doc.getElementById("row").attr(HtmlTagAttr.STYLE)), CssProp.BREAK_INSIDE),
+                "The image is drawn as tall as the page leaves it, so its row carries the header of its own table");
+    }
+
+    /** A header which holds a tall image leaves the rows under it the page less the header as it is drawn, its image fitted. */
+    @Test
+    void testRowUnderAHeaderWithATallImageIsMeasuredUnderTheHeaderAsDrawn() {
+        String html = """
+                <table>
+                    <tr><th><img src='logo.svg' style='width: 150px;height: 1500px;'/></th><th>Note</th></tr>
+                    <tr id='row'><td><img src='tall.svg' style='width: 150px;height: 1500px;'/></td><td>%s</td></tr>
+                </table>
+                """.formatted("A line of text. ".repeat(60));
+
+        Document doc = Jsoup.parse(html);
+        new ImageSizeInTablesAdjuster(doc, ConversionParams.builder().build()).execute();
+
+        assertEquals(CssProp.PAGE_BREAK_INSIDE_AVOID_VALUE, CssUtils.getPropertyValue(parseCss(doc.getElementById("row").attr(HtmlTagAttr.STYLE)), CssProp.BREAK_INSIDE),
+                "The row fits under the header as it is drawn, its image fitted to the page, so it carries the header with it");
+    }
+
+    /** A caption under the image in its cell takes room of the page, and the image gives that height up. */
+    @Test
+    void testImageWithACaptionIsLimitedToThePageLessTheCaption() {
+        String alone = "<img id='diagram' src='tall.svg' style='max-width: 650px;'/>";
+        String withCaption = alone + "<p>Figure 1: A chain of steps, as tall as a page. Each step leads to the next one, from the first to the last.</p>";
+
+        float limitAlone = maxHeightOfTheImageIn(alone);
+        float limitWithCaption = maxHeightOfTheImageIn(withCaption);
+
+        assertTrue(limitWithCaption < limitAlone - 20, "The caption takes " + (limitAlone - limitWithCaption) + " px of the page from the image");
+    }
+
+    /** A caption takes the text styles of the elements around its table, as it prints. */
+    @Test
+    void testCaptionIsMeasuredInTheTextStylesAroundItsTable() {
+        String alone = "<img id='diagram' src='tall.svg' style='max-width: 650px;'/>";
+        String withCaption = alone + "<p>Figure 1: A chain of steps, as tall as a page. Each step leads to the next one.</p>";
+        String largeText = "font-size: 24pt; line-height: 2;";
+
+        float captionInPlainText = maxHeightOfTheImageIn(alone) - maxHeightOfTheImageIn(withCaption);
+        float captionInLargeText = maxHeightOfTheImageIn(alone, largeText) - maxHeightOfTheImageIn(withCaption, largeText);
+
+        assertTrue(captionInLargeText > captionInPlainText + 20,
+                "The caption takes " + captionInPlainText + " px in plain text and " + captionInLargeText + " px in large text");
+    }
+
+    /** Lines which hold no text, and another image of the cell, take room of the page too. */
+    @Test
+    void testLinesAndOtherImagesOfTheCellTakeTheirRoom() {
+        float alone = maxHeightOfTheImageIn("<img id='diagram' src='tall.svg' style='max-width: 650px;'/>");
+        float withLines = maxHeightOfTheImageIn("<img id='diagram' src='tall.svg' style='max-width: 650px;'/><br/><br/><br/><br/>");
+        float withAnImage = maxHeightOfTheImageIn("<img id='diagram' src='tall.svg' style='max-width: 650px;'/><img src='other.svg' style='width: 100px;height: 200px;'/>");
+
+        assertTrue(withLines < alone - 20, "The empty lines take " + (alone - withLines) + " px of the page");
+        assertTrue(withAnImage < alone - 150, "The other image, on a line under the diagram, takes " + (alone - withAnImage) + " px of the page");
+    }
+
+    /** A row whose text runs over a page splits anyway, and keeps the break it states, whatever image it holds. */
+    @Test
+    void testRowWhoseTextRunsOverAPageKeepsTheBreakItStates() {
+        String html = """
+                <table>
+                    <tr><th>Diagram</th><th>Note</th></tr>
+                    <tr id='row' style='break-inside: auto;'><td style='width: 200px;'><img src='tall.svg' style='max-width: 650px;'/></td><td>%s</td></tr>
+                </table>
+                """.formatted("A line of text. ".repeat(800));
+
+        Document doc = Jsoup.parse(html);
+        new ImageSizeInTablesAdjuster(doc, ConversionParams.builder().build()).execute();
+
+        assertEquals("auto", CssUtils.getPropertyValue(parseCss(doc.getElementById("row").attr(HtmlTagAttr.STYLE)), CssProp.BREAK_INSIDE),
+                "Kept whole, the row would only move its text to the next page and leave this one blank");
+    }
+
+    /** Two images side by side share the height of their line, and neither takes the height of the other from the page. */
+    @Test
+    void testImagesSideBySideShareTheirHeight() {
+        float alone = maxHeightOfTheImageIn("<img id='diagram' src='tall.svg' style='width: 80px;height: 1500px;'/>");
+        float besideAnother = maxHeightOfTheImageIn("<img id='diagram' src='tall.svg' style='width: 80px;height: 1500px;'/><img src='other.svg' style='width: 80px;height: 500px;'/>");
+
+        assertEquals(alone, besideAnother, 10f, "The image beside it shares the line of the diagram");
+    }
+
+    /** An image which states only a width the column narrows is drawn in the shape of its file, and its row is kept whole. */
+    @Test
+    void testRowOfAnImageWhichStatesOnlyAWidthTheColumnNarrowsIsKeptWhole() {
+        assertEquals(CssProp.PAGE_BREAK_INSIDE_AVOID_VALUE, breakInsideOfARowWith("<img src='tall.svg' width='800' style='max-width: 900px;'/>", "Wider than a column"),
+                "The height of the image follows its file, which is not known before it is embedded");
+    }
+
+    private float maxHeightOfTheImageIn(String cell) {
+        return maxHeightOfTheImageIn(cell, "");
+    }
+
+    private float maxHeightOfTheImageIn(String cell, String textStyle) {
+        Document doc = Jsoup.parse("""
+                <div style='%s'><table>
+                    <tr><th>Diagram</th><th>Note</th></tr>
+                    <tr><td style='width: 200px;'>%s</td><td>Taller than a page</td></tr>
+                </table></div>
+                """.formatted(textStyle, cell));
+        new ImageSizeInTablesAdjuster(doc, ConversionParams.builder().build()).execute();
+        return pixelsOf(parseCss(doc.getElementById("diagram").attr(HtmlTagAttr.STYLE)), CssProp.MAX_HEIGHT);
+    }
+
+    @Test
+    void testRowWhichLetsItselfBreakIsKeptWholeAllTheSame() {
+        String html = """
+                <table>
+                    <tr><th>Diagram</th><th>Note</th></tr>
+                    <tr id='row' style='break-inside: auto;'><td><img src='tall.svg' style='width: 150px;height: 1500px;'/></td><td>Taller than a page</td></tr>
+                </table>
+                """;
+
+        Document doc = Jsoup.parse(html);
+        new ImageSizeInTablesAdjuster(doc, ConversionParams.builder().build()).execute();
+
+        assertEquals(CssProp.PAGE_BREAK_INSIDE_AVOID_VALUE, CssUtils.getPropertyValue(parseCss(doc.getElementById("row").attr(HtmlTagAttr.STYLE)), CssProp.BREAK_INSIDE),
+                "The image does not split, so a break of the row would only leave the header alone: the table moves on whole");
+    }
+
+    private String breakInsideOfARowWith(String image, String note) {
+        String html = """
+                <table>
+                    <tr><th>Diagram</th><th>Note</th></tr>
+                    <tr id='row'><td>%s</td><td>%s</td></tr>
+                </table>
+                """.formatted(image, note);
+
+        Document doc = Jsoup.parse(html);
+        new ImageSizeInTablesAdjuster(doc, ConversionParams.builder().build()).execute();
+        return CssUtils.getPropertyValue(parseCss(doc.getElementById("row").attr(HtmlTagAttr.STYLE)), CssProp.BREAK_INSIDE);
     }
 
     private float pixelsOf(CSSDeclarationList cssStyles, String property) {

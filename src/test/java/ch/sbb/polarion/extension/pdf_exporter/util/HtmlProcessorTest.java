@@ -1,5 +1,6 @@
 package ch.sbb.polarion.extension.pdf_exporter.util;
 
+import ch.sbb.polarion.extension.pdf_exporter.util.adjuster.Hyphenation;
 import ch.sbb.polarion.extension.generic.settings.SettingId;
 import ch.sbb.polarion.extension.generic.test_extensions.BundleJarsPrioritizingRunnableMockExtension;
 import ch.sbb.polarion.extension.pdf_exporter.configuration.PdfExporterExtensionConfigurationExtension;
@@ -23,6 +24,7 @@ import org.jsoup.nodes.TextNode;
 import org.jsoup.select.Elements;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.InOrder;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -53,6 +55,10 @@ import static org.mockito.Mockito.*;
 @ExtendWith({MockitoExtension.class, BundleJarsPrioritizingRunnableMockExtension.class, PdfExporterExtensionConfigurationExtension.class})
 @SuppressWarnings("ConstantConditions")
 class HtmlProcessorTest {
+
+    /** The width and the height of a portrait A4 page, which a work item is laid out on. */
+    private static final int A4_WIDTH = PaperSizeUtils.getMaxWidth(ConversionParams.builder().build());
+    private static final int A4_HEIGHT = PaperSizeUtils.getMaxHeight(ConversionParams.builder().build());
 
     @Mock
     private PdfExporterFileResourceProvider fileResourceProvider;
@@ -568,7 +574,7 @@ class HtmlProcessorTest {
     void keepsAWorkItemWithoutTablesOnOnePageAsNoPageBreakAsks() {
         Document document = JSoupUtils.parseHtml("<table style=\"page-break-inside:avoid;\"><tr><td><div class=\"polarion-dle-workitem-basic-0\">Some content</div></td></tr></table>");
 
-        processor.removePageBreakAvoids(document);
+        processor.removePageBreakAvoids(document, A4_WIDTH, A4_HEIGHT);
 
         assertTrue(document.select("table").isEmpty(), "The wrapper is gone");
         Element block = document.body().child(0);
@@ -578,11 +584,48 @@ class HtmlProcessorTest {
     }
 
     @Test
-    void unwrapsAWorkItemWithATableSoThatItsTableCanRunAcrossPages() {
+    void keepsAWorkItemWithATableWhichFitsAPageOnOnePage() {
         Document document = JSoupUtils.parseHtml("<table style=\"page-break-inside:avoid;\"><tr><td><div class=\"polarion-dle-workitem-basic-0\">Some content</div>"
                 + "<table><tr><td>Cell</td></tr></table></td></tr></table>");
 
-        processor.removePageBreakAvoids(document);
+        processor.removePageBreakAvoids(document, A4_WIDTH, A4_HEIGHT);
+
+        Element block = document.body().child(0);
+        assertEquals("div", block.tagName(), "The work item fits a page, so a block keeps it there, its table and all");
+        assertEquals("break-inside: avoid;", block.attr("style"));
+        assertEquals(1, block.select("table").size(), "The table of the work item stays in it");
+    }
+
+    @Test
+    void unwrapsAWorkItemWithATableAndAnImageTheMeasureCannotSize() {
+        Document document = JSoupUtils.parseHtml("<table style=\"page-break-inside:avoid;\"><tr><td><div class=\"polarion-dle-workitem-basic-0\">Some content</div>"
+                + "<img src=\"/polarion/wiki/diagram.png\"/><table><tr><td>Cell</td></tr></table></td></tr></table>");
+
+        processor.removePageBreakAvoids(document, A4_WIDTH, A4_HEIGHT);
+
+        assertTrue(document.select("div[style*=break-inside]").isEmpty(), "Its image is not loaded yet, so nothing says the work item fits a page");
+        assertEquals(1, document.select("table").size(), "Only the table of the work item is left");
+    }
+
+    /** A page break turns the area of the work item, and the work item is measured on that landscape page, its width and its height. */
+    @ParameterizedTest
+    @CsvSource({"200, true", "300, false"})
+    void measuresAWorkItemOnThePageOfItsArea(int words, boolean keptWhole) {
+        Document document = JSoupUtils.parseHtml("<table style=\"page-break-inside:avoid;\"><tr><td><p>" + "A word of text. ".repeat(words) + "</p>"
+                + "<table><tr><td>Cell</td></tr></table></td></tr></table><!--PAGE_BREAK--><!--LANDSCAPE_ABOVE--><p>A portrait page</p>");
+
+        processor.removePageBreakAvoids(document, ConversionParams.builder().paperSize(PaperSize.A4).orientation(Orientation.PORTRAIT).build());
+
+        assertEquals(keptWhole, !document.select("div[style*=break-inside]").isEmpty(),
+                "The work item is kept whole where it fits the landscape page of its area, laid out at the width of that page");
+    }
+
+    @Test
+    void unwrapsAWorkItemWithATableTallerThanAPageSoThatItsTableCanRunAcrossPages() {
+        Document document = JSoupUtils.parseHtml("<table style=\"page-break-inside:avoid;\"><tr><td><div class=\"polarion-dle-workitem-basic-0\">Some content</div>"
+                + "<table>" + "<tr><td>Cell</td></tr>".repeat(100) + "</table></td></tr></table>");
+
+        processor.removePageBreakAvoids(document, A4_WIDTH, A4_HEIGHT);
 
         assertEquals(1, document.select("table").size(), "Only the table of the work item is left");
         assertTrue(document.select("div[style*=break-inside]").isEmpty(), "Nothing keeps the work item whole");
@@ -597,7 +640,8 @@ class HtmlProcessorTest {
 
             Document document = JSoupUtils.parseHtml(new String(isInvalidHtml.readAllBytes(), StandardCharsets.UTF_8));
 
-            processor.removePageBreakAvoids(document);
+            // A page no work item fits, so that each one with a table of its own is unwrapped
+            processor.removePageBreakAvoids(document, A4_WIDTH, 0);
             String fixedHtml = document.body().html();
             String validHtml = new String(isValidHtml.readAllBytes(), StandardCharsets.UTF_8);
 
@@ -615,7 +659,7 @@ class HtmlProcessorTest {
                 + "<table style=\"width: 100%\"><tr><td>Normal table</td></tr></table>";
         Document document = JSoupUtils.parseHtml(html);
 
-        assertDoesNotThrow(() -> processor.removePageBreakAvoids(document));
+        assertDoesNotThrow(() -> processor.removePageBreakAvoids(document, A4_WIDTH, A4_HEIGHT));
     }
 
     @Test
@@ -627,7 +671,7 @@ class HtmlProcessorTest {
                 + "</tbody></table>";
         Document document = JSoupUtils.parseHtml(html);
 
-        processor.removePageBreakAvoids(document);
+        processor.removePageBreakAvoids(document, A4_WIDTH, A4_HEIGHT);
 
         // The serializer puts line breaks between declarations
         List<String> rowStyles = document.select("tr").eachAttr("style").stream().map(style -> style.replaceAll("\\s", "")).toList();
@@ -1366,6 +1410,44 @@ class HtmlProcessorTest {
         assertTrue(block.replace(" ", "").contains("<trstyle=\"break-inside:avoid;\">"), block);
     }
 
+    /** The page break widgets of a Live Report print sections on named pages, so images are fitted to the lower of both pages. */
+    @ParameterizedTest
+    @CsvSource({"<div class=\"sbb_page_break portA3\"><p>Section</p></div>, EITHER_PAGE", "<p>No section</p>, EVERY_PAGE"})
+    void fitsTheContentOfPageBreakSectionsToEitherPage(String html, PageLayout.Pages pages) {
+        HtmlProcessor spyHtmlProcessor = spy(processor);
+        ExportParams exportParams = getExportParams();
+        exportParams.setFitToPage(true);
+        PageLayout layout = PageLayout.of("@page { margin: 120px 60px 90px 80px; } @page portA3 { margin: 140px 80px 110px 100px; }");
+
+        spyHtmlProcessor.processHtmlForPDF(html, exportParams, List.of(), Hyphenation.NONE, layout, null);
+
+        verify(spyHtmlProcessor).adjustContentToFitPage(any(Document.class), eq(exportParams), argThat((PageLayout fitted) -> fitted.pages() == pages));
+    }
+
+    /** The empty paragraphs Polarion ends a document with, a line break alone, are dropped, however deep they stand. */
+    @Test
+    void cutsTheEmptyParagraphsADocumentEndsWith() {
+        Document document = JSoupUtils.parseHtml("""
+                <div><div><table><tr><td>Cell</td></tr></table><div style="clear: both;"></div><p id="polarion_13">&nbsp;</p><p id="polarion_14">
+                  <br />
+                </p></div></div>""");
+
+        processor.cutTrailingEmptyParagraphs(document);
+
+        assertTrue(document.select("p").isEmpty(), "Nothing follows the table which prints");
+        assertEquals(1, document.select("table").size(), "The table stays");
+    }
+
+    @Test
+    void keepsAnEmptyParagraphWhichContentFollows() {
+        Document document = JSoupUtils.parseHtml("<p id=\"polarion_1\"><br /></p><p id=\"polarion_2\">Text</p><p id=\"polarion_3\"><img src=\"diagram.svg\"/></p><p id=\"polarion_4\"><br /></p>");
+
+        processor.cutTrailingEmptyParagraphs(document);
+
+        assertEquals(List.of("polarion_1", "polarion_2", "polarion_3"), document.select("p").eachAttr("id"),
+                "Only the empty paragraph at the end goes: one before the text stays, as does one which holds an image");
+    }
+
     @Test
     @SneakyThrows
     void measuresTableRowsOnceTheTablesAreFittedToThePage() {
@@ -1376,8 +1458,29 @@ class HtmlProcessorTest {
         spyHtmlProcessor.processHtmlForPDF("<table><tbody><tr><td>Patron</td></tr></tbody></table>", exportParams, List.of());
 
         InOrder inOrder = inOrder(spyHtmlProcessor);
-        inOrder.verify(spyHtmlProcessor).adjustContentToFitPage(any(Document.class), eq(exportParams));
+        inOrder.verify(spyHtmlProcessor).adjustContentToFitPage(any(Document.class), eq(exportParams), any(PageLayout.class));
         inOrder.verify(spyHtmlProcessor).keepTableRowsWhole(any(Document.class), eq(exportParams), eq(false));
+    }
+
+    @Test
+    void keepsTheIdOfALinkWithItsDash() {
+        Document document = Jsoup.parse("<a class=\"polarion-Hyperlink\"><span><img src=\"icon.gif\"/></span><span style=\"color:#000000;\">EL-761</span>"
+                + "<span style=\"white-space: normal\"> - User name must contain at least one number</span></a>");
+
+        processor.keepLinkIdsWithTheirDash(document);
+
+        assertEquals("<a class=\"polarion-Hyperlink\"><span><img src=\"icon.gif\"></span><span style=\"white-space: nowrap\"><span style=\"color:#000000;\">EL-761</span><span> -</span></span>"
+                + "<span style=\"white-space: normal\"> User name must contain at least one number</span></a>", document.body().html().replace("\n", ""));
+    }
+
+    @Test
+    void leavesALinkWithoutADashAlone() {
+        String html = "<a class=\"polarion-Hyperlink\"><span>EL-761</span><span>User name</span></a>";
+        Document document = Jsoup.parse(html);
+
+        processor.keepLinkIdsWithTheirDash(document);
+
+        assertEquals(html, document.body().html().replace("\n", ""));
     }
 
     @Test
@@ -1392,6 +1495,19 @@ class HtmlProcessorTest {
         InOrder inOrder = inOrder(spyHtmlProcessor);
         inOrder.verify(spyHtmlProcessor).keepTableRowsWhole(anyString(), argThat(page -> page.getOrientation() == Orientation.LANDSCAPE));
         inOrder.verify(spyHtmlProcessor).keepTableRowsWhole(anyString(), argThat(page -> page.getOrientation() == Orientation.PORTRAIT));
+    }
+
+    @Test
+    void fitsABlockToThePageOfItsOrientation() {
+        HtmlProcessor spyHtmlProcessor = spy(processor);
+        ExportParams exportParams = getExportParams();
+        exportParams.setFitToPage(true);
+
+        spyHtmlProcessor.processPageBrakes("<p>Landscape</p><!--PAGE_BREAK--><!--LANDSCAPE_ABOVE--><p>Portrait</p>", exportParams);
+
+        InOrder inOrder = inOrder(spyHtmlProcessor);
+        inOrder.verify(spyHtmlProcessor).adjustContentToFitPage(anyString(), argThat((ConversionParams page) -> page.getOrientation() == Orientation.LANDSCAPE), any(PageLayout.class));
+        inOrder.verify(spyHtmlProcessor).adjustContentToFitPage(anyString(), argThat((ConversionParams page) -> page.getOrientation() == Orientation.PORTRAIT), any(PageLayout.class));
     }
 
     @Test

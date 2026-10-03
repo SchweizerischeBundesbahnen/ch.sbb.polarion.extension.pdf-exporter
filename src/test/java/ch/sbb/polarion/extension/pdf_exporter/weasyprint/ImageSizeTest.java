@@ -52,8 +52,11 @@ class ImageSizeTest extends BasePdfConverterTest {
     /** The pages the document of the fit to page system test runs to. */
     private static final int DOCUMENT_PAGES = 7;
 
-    /** The height of a portrait A4 page, which is what fit to page allows an image. */
-    private static final int PAGE_HEIGHT = 874;
+    /** The height a portrait A4 leaves its content under the margins of the default CSS, 1122 - 120 - 90, which fit to page gives an image less the room the paragraph takes under it. */
+    private static final int PAGE_HEIGHT = 912;
+
+    /** The height a landscape A4 leaves its content under the same margins, 793 - 120 - 90. */
+    private static final int LANDSCAPE_PAGE_HEIGHT = 583;
 
     private static final int OWN_WIDTH = 200;
     private static final int OWN_HEIGHT = 100;
@@ -84,9 +87,28 @@ class ImageSizeTest extends BasePdfConverterTest {
 
         byte[] pdf = export(html, true);
 
-        // Fit to page shortens it to the height of a page, and the width follows: 81 * 874 / 1521
-        assertEquals(List.of(DrawnImages.size(47, PAGE_HEIGHT)), DrawnImages.sizesIn(pdf));
+        // Fit to page shortens it to the height of a page less the room the paragraph takes under it, 912 - 15, and the
+        // width follows: 81 * 897 / 1521
+        assertEquals(List.of(DrawnImages.size(48, PAGE_HEIGHT - 15)), DrawnImages.sizesIn(pdf));
         assertFalse(compareContentUsingReferenceImages(getCurrentMethodName(), pdf), "The pages differ from the reference images");
+    }
+
+    /** A page break may turn a block of a portrait document, and the diagram is fitted to the page it is printed on. */
+    @Test
+    @SneakyThrows
+    void fitsADiagramToTheLandscapePageOfItsBlock() {
+        String source = "data:image/svg+xml;base64," + Base64.getEncoder().encodeToString(TALL_SVG.getBytes());
+        String html = """
+                <p><img src="%s" style="max-width: 650px;"/></p><!--PAGE_BREAK--><!--LANDSCAPE_ABOVE--><p>A portrait page</p>""".formatted(source);
+
+        byte[] pdf = export(html, true);
+
+        List<List<Integer>> sizes = DrawnImages.sizesIn(pdf);
+        assertEquals(1, sizes.size(), "The document holds one image");
+        int landscapeHeight = LANDSCAPE_PAGE_HEIGHT;
+        assertTrue(sizes.getFirst().getLast() <= landscapeHeight, "The diagram is no taller than the landscape page it is printed on");
+        assertEquals(81d / 1521d, (double) sizes.getFirst().getFirst() / sizes.getFirst().getLast(), 0.01d, "The diagram keeps its own shape");
+        assertEquals(2, pageCount(pdf), "The diagram fits its landscape page, and the text after the page break takes a portrait one");
     }
 
     @Test

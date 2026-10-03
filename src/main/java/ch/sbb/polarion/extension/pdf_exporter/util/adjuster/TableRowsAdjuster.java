@@ -198,9 +198,14 @@ public class TableRowsAdjuster extends AbstractAdjuster {
         }
     }
 
-    /** Whether the measure knows the height of the row: no content it cannot size, and no image but icons. */
-    private static boolean isMeasured(@NotNull Element row) {
-        return row.select(EMBEDDED_CONTENT).isEmpty() && row.select(HtmlTag.IMG).size() == row.select(ICON).size();
+    /** Whether the image is an icon Polarion draws in a line of text. */
+    public static boolean isIcon(@NotNull Element img) {
+        return img.is(ICON);
+    }
+
+    /** Whether the measure knows the height of the element: no content it cannot size, and no image but icons. */
+    public static boolean isMeasured(@NotNull Element element) {
+        return element.select(EMBEDDED_CONTENT).isEmpty() && element.select(HtmlTag.IMG).size() == element.select(ICON).size();
     }
 
     /** A row which states how it breaks itself is left as it is. */

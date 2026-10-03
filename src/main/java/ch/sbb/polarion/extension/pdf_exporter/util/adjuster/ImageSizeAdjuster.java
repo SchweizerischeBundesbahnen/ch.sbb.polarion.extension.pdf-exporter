@@ -4,6 +4,7 @@ import ch.sbb.polarion.extension.pdf_exporter.constants.CssProp;
 import ch.sbb.polarion.extension.pdf_exporter.constants.HtmlTagAttr;
 import ch.sbb.polarion.extension.pdf_exporter.constants.Measure;
 import ch.sbb.polarion.extension.pdf_exporter.util.CssUtils;
+import ch.sbb.polarion.extension.pdf_exporter.util.PageLayout;
 import ch.sbb.polarion.extension.pdf_exporter.util.PaperSizeUtils;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ConversionParams;
 import com.helger.css.decl.CSSDeclarationList;
@@ -17,14 +18,22 @@ import org.jsoup.select.Elements;
 
 public class ImageSizeAdjuster extends AbstractAdjuster {
 
+    /** What the CSS of the export says of the page: the height it leaves its content. */
+    private final @NotNull PageLayout pageLayout;
+
     public ImageSizeAdjuster(@NotNull Document document, @NotNull ConversionParams conversionParams) {
+        this(document, conversionParams, PageLayout.NONE);
+    }
+
+    public ImageSizeAdjuster(@NotNull Document document, @NotNull ConversionParams conversionParams, @NotNull PageLayout pageLayout) {
         super(document, conversionParams);
+        this.pageLayout = pageLayout;
     }
 
     @Override
     public void execute() {
         float maxWidth = PaperSizeUtils.getMaxWidth(conversionParams);
-        float maxHeight = PaperSizeUtils.getMaxHeight(conversionParams);
+        float maxHeight = pageLayout.heightForAnImage(conversionParams);
 
         Elements images = document.select("img[style]");
 

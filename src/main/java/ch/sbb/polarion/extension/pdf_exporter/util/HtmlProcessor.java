@@ -16,6 +16,7 @@ import ch.sbb.polarion.extension.pdf_exporter.settings.LocalizationSettings;
 import ch.sbb.polarion.extension.pdf_exporter.util.adjuster.PageWidthAdjuster;
 import ch.sbb.polarion.extension.pdf_exporter.util.adjuster.Hyphenation;
 import ch.sbb.polarion.extension.pdf_exporter.util.adjuster.LongWordsAdjuster;
+import ch.sbb.polarion.extension.pdf_exporter.util.adjuster.TableAnalyzer;
 import ch.sbb.polarion.extension.pdf_exporter.util.adjuster.TableRowsAdjuster;
 import ch.sbb.polarion.extension.pdf_exporter.util.html.HtmlLinksHelper;
 import com.helger.css.decl.CSSDeclarationList;
@@ -24,28 +25,40 @@ import lombok.SneakyThrows;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
+import org.jsoup.Jsoup;
 import org.jsoup.nodes.Comment;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
 import org.jsoup.nodes.TextNode;
 import org.jsoup.select.Elements;
+import org.jsoup.select.NodeTraversor;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.ToIntFunction;
 
 import static ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.DocumentType.*;
 import static ch.sbb.polarion.extension.pdf_exporter.util.exporter.Constants.*;
 
 public class HtmlProcessor {
 
+    private static final String WORK_ITEM_ATTRIBUTE_TABLE = "table.polarion-dle-workitem-fields-end-table";
+
+    /** What prints without any text of its own. */
+    private static final String PRINTED_WITHOUT_TEXT = "img, svg, object, embed, iframe, video, table, hr, canvas";
+
+    /** What Polarion puts between the ID of a linked work item and its title. */
+    private static final String LINK_TITLE_DASH = " - ";
     private static final String DIV_START_TAG = "<div>";
     /** The class of a section a page break makes, in the orientation of its pages. */
     private static final String PAGE_BREAK_SECTION_CLASS = "sbb_page_break";
@@ -92,6 +105,16 @@ public class HtmlProcessor {
      *                    the rules of the CSS which turn hyphenation off
      */
     public String processHtmlForPDF(@NotNull String html, @NotNull ExportParams exportParams, @NotNull List<String> selectedRoleEnumValues, @NotNull Hyphenation hyphenation, @Nullable PdfGenerationLog generationLog) {
+        return processHtmlForPDF(html, exportParams, selectedRoleEnumValues, hyphenation, PageLayout.NONE, generationLog);
+    }
+
+    /**
+     * @param pageLayout what the CSS of the export says of the page which fitting the content to it needs: the rules which
+     *                   make a table header taller, and the height a page leaves its content
+     */
+    @SuppressWarnings("java:S3776")
+    public String processHtmlForPDF(@NotNull String html, @NotNull ExportParams exportParams, @NotNull List<String> selectedRoleEnumValues, @NotNull Hyphenation hyphenation,
+                                    @NotNull PageLayout pageLayout, @Nullable PdfGenerationLog generationLog) {
         if (exportParams.getDocumentType() == BASELINE_COLLECTION) {
             // Unsupported document type
             throw new IllegalArgumentException(UNSUPPORTED_DOCUMENT_TYPE.formatted(exportParams.getDocumentType()));
@@ -130,6 +153,9 @@ public class HtmlProcessor {
         // From Polarion perspective h1 - is a document title, h2 are h1 heading etc. We are making such headings' uplifting here
         timedIfNotNull(generationLog, "Adjust document headings", () -> adjustDocumentHeadings(document));
 
+        // Polarion ends a document with an empty paragraph, which prints nothing and can take a page of its own
+        timedIfNotNull(generationLog, "Cut trailing empty paragraphs", () -> cutTrailingEmptyParagraphs(document));
+
         if (exportParams.isCutEmptyChapters()) {
             // Cut empty chapters if explicitly requested by user
             timedIfNotNull(generationLog, "Cut empty chapters", () -> cutEmptyChapters(document));
@@ -141,7 +167,7 @@ public class HtmlProcessor {
 
         if (exportParams.getDocumentType() == LIVE_DOC || exportParams.getDocumentType() == WIKI_PAGE) {
             // Moves WorkItem content out of table wrapping it
-            timedIfNotNull(generationLog, "Remove page break avoids", () -> removePageBreakAvoids(document));
+            timedIfNotNull(generationLog, "Remove page break avoids", () -> removePageBreakAvoids(document, pageOf(exportParams)));
 
             // Fixes nested HTML lists structure
             timedIfNotNull(generationLog, "Fix nested lists", () -> fixNestedLists(document));
@@ -199,6 +225,7 @@ public class HtmlProcessor {
         if (exportParams.isCutEmptyWIAttributes()) {
             timedIfNotNull(generationLog, "Cut empty WI attributes", () -> cutEmptyWIAttributes(document));
         }
+        timedIfNotNull(generationLog, "Keep link IDs with their dash", () -> keepLinkIdsWithTheirDash(document));
         // Rewrites Polarion Work Item hyperlinks so that they become intra-document anchor links.
         timedIfNotNull(generationLog, "Rewrite Polarion URLs", () -> rewritePolarionUrls(document));
         if (exportParams.isCutLocalUrls()) {
@@ -213,7 +240,9 @@ public class HtmlProcessor {
             // ---- BOOKMARK 1
             // In case of custom page breaks adjustContentToFitPage() will be called separately for each HTML block between
             // page breaks separately (see BOOKMARK 2 below), as paper orientation can be changed by page break
-            timedIfNotNull(generationLog, "Adjust content to fit page", () -> adjustContentToFitPage(document, exportParams));
+            // The page break widgets of a Live Report print their sections on named pages, the rest on the page every page is
+            PageLayout printedOn = document.select("div." + PAGE_BREAK_SECTION_CLASS).isEmpty() ? pageLayout : pageLayout.on(PageLayout.Pages.EITHER_PAGE);
+            timedIfNotNull(generationLog, "Adjust content to fit page", () -> adjustContentToFitPage(document, exportParams, printedOn));
             // ----
         }
         timedIfNotNull(generationLog, "Break long words in table cells", () -> LongWordsAdjuster.addBreakPoints(document, hyphenation));
@@ -231,7 +260,7 @@ public class HtmlProcessor {
             // ---- BOOKMARK 2
             // processPageBrakes() contains its own adjustContentToFitPage() calls, see BOOKMARK 1 for same logic without custom page breaks
             String htmlBeforePageBreaks = html;
-            html = timedIfNotNull(generationLog, "Process page breaks", () -> processPageBrakes(htmlBeforePageBreaks, exportParams));
+            html = timedIfNotNull(generationLog, "Process page breaks", () -> processPageBrakes(htmlBeforePageBreaks, exportParams, pageLayout));
             // ----
         }
 
@@ -261,6 +290,41 @@ public class HtmlProcessor {
     @NotNull
     private String encodeDollarSigns(@NotNull String html) {
         return html.replace(DOLLAR_SIGN, DOLLAR_ENTITY);
+    }
+
+    /**
+     * Drops the empty paragraphs a document ends with. Polarion ends a document with one, a line break alone, which prints
+     * nothing but takes a line: after a table or an image which fills the last page, a page of its own, blank.
+     */
+    @VisibleForTesting
+    void cutTrailingEmptyParagraphs(@NotNull Document document) {
+        Elements paragraphs = document.body().select(HtmlTag.P);
+        for (int index = paragraphs.size() - 1; index >= 0; index--) {
+            Element paragraph = paragraphs.get(index);
+            if (!isEmptyParagraph(paragraph) || hasContentAfter(paragraph, document.body())) {
+                return;
+            }
+            paragraph.remove();
+        }
+    }
+
+    /** Whether the paragraph prints nothing: no text but spaces, and no element but line breaks. */
+    private static boolean isEmptyParagraph(@NotNull Element paragraph) {
+        return paragraph.text().replace('\u00A0', ' ').isBlank()
+                && paragraph.select("*").stream().allMatch(element -> element == paragraph || HtmlTag.BR.equals(element.tagName()));
+    }
+
+    /** Whether anything which prints follows the element up to the end of the body. */
+    private static boolean hasContentAfter(@NotNull Element element, @NotNull Element body) {
+        for (Element current = element; current != null && current != body; current = current.parent()) {
+            for (Node next = current.nextSibling(); next != null; next = next.nextSibling()) {
+                if (next instanceof TextNode text && !text.isBlank()
+                        || next instanceof Element following && (!following.text().isBlank() || !following.select(PRINTED_WITHOUT_TEXT).isEmpty())) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     @VisibleForTesting
@@ -584,7 +648,7 @@ public class HtmlProcessor {
             autoCellWidth(document);
         }
 
-        Elements wiAttrTables = document.select("table.polarion-dle-workitem-fields-end-table");
+        Elements wiAttrTables = document.select(WORK_ITEM_ATTRIBUTE_TABLE);
         for (Element table : wiAttrTables) {
             table.attr(HtmlTagAttr.STYLE, "width: 100%");
 
@@ -614,6 +678,26 @@ public class HtmlProcessor {
                     CssUtils.setPropertyValue(cssStyles, CssProp.WIDTH, CssProp.WIDTH_AUTO_VALUE);
                     cell.attr(HtmlTagAttr.STYLE, cssStyles.getAsCSSString());
                 }
+            }
+        }
+    }
+
+    /**
+     * Polarion prints a link to a work item as its icon, its ID, and " - " before its title. The title may wrap, but a
+     * column as narrow as the ID would leave the dash alone on the next line. The dash joins the ID, which never wraps.
+     */
+    @VisibleForTesting
+    void keepLinkIdsWithTheirDash(@NotNull Document document) {
+        for (Element title : document.select("a.polarion-Hyperlink > span")) {
+            Element id = title.previousElementSibling();
+            if (id != null && HtmlTag.SPAN.equals(id.tagName()) && id.children().isEmpty()
+                    && title.childNodeSize() > 0 && title.childNode(0) instanceof TextNode text && text.getWholeText().startsWith(LINK_TITLE_DASH)) {
+                text.text(text.getWholeText().substring(LINK_TITLE_DASH.length() - 1));
+                // The dash keeps the color of the title, which the ID does not share
+                Element idWithDash = new Element(HtmlTag.SPAN).attr(HtmlTagAttr.STYLE, CssProp.WHITE_SPACE + ": " + CssProp.WHITE_SPACE_NOWRAP_VALUE);
+                id.before(idWithDash);
+                idWithDash.appendChild(id);
+                idWithDash.appendElement(HtmlTag.SPAN).text(LINK_TITLE_DASH.stripTrailing());
             }
         }
     }
@@ -688,18 +772,46 @@ public class HtmlProcessor {
     }
 
     /**
+     * Whether each area between page breaks is printed on a landscape page. The marks next to a page break turn the area
+     * above it, and a wiki block turns or resets the area below it.
+     */
+    static @NotNull List<Boolean> landscapeOfAreas(@NotNull List<String> areas, boolean defaultLandscape) {
+        List<Boolean> result = new ArrayList<>();
+        boolean landscape = defaultLandscape;
+        for (int index = 0; index < areas.size(); index++) {
+            String area = areas.get(index);
+            String nextArea = index + 1 < areas.size() ? areas.get(index + 1) : null;
+            if (nextArea != null && nextArea.startsWith(LANDSCAPE_ABOVE_MARK)) {
+                landscape = true;
+            } else if (nextArea != null && nextArea.startsWith(PORTRAIT_ABOVE_MARK)) {
+                landscape = false;
+            } else if (area.startsWith(LANDSCAPE_ABOVE_MARK) || area.startsWith(PORTRAIT_ABOVE_MARK) || area.startsWith(RESET_BELOW_MARK)) {
+                landscape = defaultLandscape;
+            } else if (area.startsWith(ROTATE_BELOW_MARK)) {
+                landscape = !defaultLandscape;
+            }
+            result.add(landscape);
+        }
+        return result;
+    }
+
+    /**
      * {@link ch.sbb.polarion.extension.pdf_exporter.util.exporter.CustomPageBreakPart} and {@link ch.sbb.polarion.extension.pdf_exporter.util.exporter.CustomWikiBlockPart} insert specific
      * 'marks' into positions where we must place page breaks.
      * The solution below replaces marks with proper html tags and does additional processing.
      */
     @NotNull
     @VisibleForTesting
-    @SuppressWarnings("java:S3776")
     String processPageBrakes(@NotNull String html, ExportParams exportParams) {
+        return processPageBrakes(html, exportParams, PageLayout.NONE);
+    }
+
+    @SuppressWarnings("java:S3776")
+    String processPageBrakes(@NotNull String html, ExportParams exportParams, @NotNull PageLayout pageLayout) {
         StringBuilder resultBuf = new StringBuilder();
         LinkedList<String> areas = new LinkedList<>(Arrays.asList(html.split(PAGE_BREAK_MARK)));
-        boolean landscape = exportParams.getOrientation() == Orientation.LANDSCAPE; //we start by using global orientation setting
-        boolean defaultLandscape = landscape;
+        //we start by using global orientation setting
+        Iterator<Boolean> landscapeOfAreas = landscapeOfAreas(areas, exportParams.getOrientation() == Orientation.LANDSCAPE).iterator();
         boolean skipEmptyAreas = exportParams.isCutEmptyChapters() || exportParams.getChapters() != null && !exportParams.getChapters().isEmpty(); //avoid having empty pages in some cases
         boolean firstArea = true;
 
@@ -707,18 +819,7 @@ public class HtmlProcessor {
         while (!areas.isEmpty()) {
             String area = areas.pollFirst();
             String nextArea = areas.isEmpty() ? null : areas.getFirst();
-
-            if (nextArea != null && nextArea.startsWith(LANDSCAPE_ABOVE_MARK)) {
-                landscape = true;
-            } else if (nextArea != null && nextArea.startsWith(PORTRAIT_ABOVE_MARK)) {
-                landscape = false;
-            } else {
-                if (area.startsWith(LANDSCAPE_ABOVE_MARK) || area.startsWith(PORTRAIT_ABOVE_MARK) || area.startsWith(RESET_BELOW_MARK)) {
-                    landscape = defaultLandscape;
-                } else if (area.startsWith(ROTATE_BELOW_MARK)) {
-                    landscape = !defaultLandscape;
-                }
-            }
+            boolean landscape = landscapeOfAreas.next();
 
             // A page break the document ends with leaves an area with nothing in it, and nothing is worth a page.
             // Whether an area holds anything is asked of the areas which can be dropped, and of those alone.
@@ -741,11 +842,13 @@ public class HtmlProcessor {
                 }
 
                 if (exportParams.isFitToPage()) { //here we can make additional areas processing if needed
-                    area = adjustContentToFitPage(area, exportParams);
-                    area = keepTableRowsWhole(area, ConversionParams.builder()
+                    // A block is fitted to the page it is printed on, which a page break may have turned
+                    ConversionParams page = ConversionParams.builder()
                             .paperSize(exportParams.getPaperSize())
                             .orientation(landscape ? Orientation.LANDSCAPE : Orientation.PORTRAIT)
-                            .build());
+                            .build();
+                    area = adjustContentToFitPage(area, page, pageLayout.on(PageLayout.Pages.NAMED_PAGE));
+                    area = keepTableRowsWhole(area, page);
                 }
 
                 String orientationClass = (landscape ? "land" : "port") + exportParams.getPaperSize();
@@ -925,7 +1028,39 @@ public class HtmlProcessor {
         }
     }
 
-    void removePageBreakAvoids(@NotNull Document document) {
+    /**
+     * @param pageWidth  the width a work item is laid out at
+     * @param pageHeight the height of the page a work item kept whole must fit
+     */
+    void removePageBreakAvoids(@NotNull Document document, int pageWidth, int pageHeight) {
+        removePageBreakAvoids(document, table -> pageWidth, table -> pageHeight);
+    }
+
+    /** Each work item is measured on the page of the area it is printed in, which a page break may have turned. */
+    void removePageBreakAvoids(@NotNull Document document, @NotNull ConversionParams page) {
+        List<String> areas = hasCustomPageBreaks(document.body().html()) ? Arrays.asList(document.body().html().split(PAGE_BREAK_MARK)) : List.of("");
+        List<Boolean> landscapeOfAreas = landscapeOfAreas(areas, page.getOrientation() == Orientation.LANDSCAPE);
+
+        Map<Element, ConversionParams> pageOfTable = new IdentityHashMap<>();
+        int[] area = {0};
+        NodeTraversor.traverse((node, depth) -> {
+            if (node instanceof Comment comment && PAGE_BREAK.equals(comment.getData())) {
+                area[0]++;
+            } else if (node instanceof Element element && HtmlTag.TABLE.equals(element.tagName())) {
+                boolean landscape = landscapeOfAreas.get(Math.min(area[0], landscapeOfAreas.size() - 1));
+                pageOfTable.put(element, ConversionParams.builder()
+                        .paperSize(page.getPaperSize())
+                        .orientation(landscape ? Orientation.LANDSCAPE : Orientation.PORTRAIT)
+                        .build());
+            }
+        }, document.body());
+
+        removePageBreakAvoids(document,
+                table -> PaperSizeUtils.getMaxWidth(pageOfTable.getOrDefault(table, page)),
+                table -> PaperSizeUtils.getMaxHeight(pageOfTable.getOrDefault(table, page)));
+    }
+
+    private void removePageBreakAvoids(@NotNull Document document, @NotNull ToIntFunction<Element> pageWidth, @NotNull ToIntFunction<Element> pageHeight) {
         // Polarion wraps content of a work item as it is into table's cell with table's styling "page-break-inside: avoid"
         // if it's configured to avoid page breaks:
         //
@@ -951,7 +1086,8 @@ public class HtmlProcessor {
         //   <CONTENT>
         // </div>
         //
-        // A work item with tables is unwrapped, so that its tables can run across pages and repeat their headers there.
+        // A work item with tables which fits a page is kept on it the same way. A work item with tables which is taller than a
+        // page is unwrapped, so that its tables can run across pages and repeat their headers there.
         // To preserve the user's intent of avoiding page breaks, "break-inside: avoid" is propagated to rows of the
         // inner tables instead:
         //
@@ -962,15 +1098,15 @@ public class HtmlProcessor {
         for (Element table : tables) {
             String pageBreakInsideValue = getCssValue(table, CssProp.PAGE_BREAK_INSIDE);
             if (pageBreakInsideValue.equals(CssProp.PAGE_BREAK_INSIDE_AVOID_VALUE)) {
-                processPageBreakAvoidTable(table);
+                processPageBreakAvoidTable(table, pageWidth.applyAsInt(table), pageHeight.applyAsInt(table));
             }
         }
     }
 
-    private void processPageBreakAvoidTable(Element table) {
+    private void processPageBreakAvoidTable(Element table, int pageWidth, int pageHeight) {
         Element tbody = JSoupUtils.getSingleChildByTag(table, HtmlTag.TBODY);
         Element tr = JSoupUtils.getSingleChildByTag(tbody != null ? tbody : table, HtmlTag.TR);
-        if (tr != null && unwrapWrapperTable(table, tr)) {
+        if (tr != null && unwrapWrapperTable(table, tr, pageWidth, pageHeight)) {
             return;
         }
 
@@ -981,14 +1117,16 @@ public class HtmlProcessor {
         removePageBreakInsideAvoid(table);
     }
 
-    private boolean unwrapWrapperTable(Element table, Element tr) {
+    private boolean unwrapWrapperTable(Element table, Element tr, int pageWidth, int pageHeight) {
         Element td = JSoupUtils.getSingleChildByTag(tr, HtmlTag.TD);
         if (td == null) {
             return false;
         }
 
         Elements innerTables = td.select(HtmlTag.TABLE);
-        if (innerTables.isEmpty()) {
+        // The attribute table of the work item belongs to it as its title does: a work item with no other table is kept
+        // on one page with its attributes, as the user who asked for No Page Break wants it
+        if (innerTables.not(WORK_ITEM_ATTRIBUTE_TABLE).isEmpty() || fitsAPage(table, pageWidth, pageHeight)) {
             // Nothing in the work item needs to run across pages, so a block keeps it on one page
             Element block = new Element(HtmlTag.DIV).attr(HtmlTagAttr.STYLE, CssProp.BREAK_INSIDE + ": " + CssProp.PAGE_BREAK_INSIDE_AVOID_VALUE + ";");
             for (Node contentNodes : td.childNodes()) {
@@ -1012,6 +1150,18 @@ public class HtmlProcessor {
         }
         table.remove();
         return true;
+    }
+
+    /**
+     * Whether the work item the wrapper table holds, its tables and all, is laid out no taller than a page. An image is not
+     * in the document yet, only the address it comes from, so a work item with one the measure cannot size is not known to fit.
+     */
+    private boolean fitsAPage(@NotNull Element wrapperTable, int pageWidth, int pageHeight) {
+        if (!TableRowsAdjuster.isMeasured(wrapperTable)) {
+            return false;
+        }
+        List<Integer> heights = TableAnalyzer.analyze(wrapperTable, pageWidth).rowHeights();
+        return heights.size() == 1 && heights.getFirst() <= pageHeight;
     }
 
     private void propagateBreakInsideAvoidToRows(Element table) {
@@ -1151,15 +1301,24 @@ public class HtmlProcessor {
      * either orientation, so its rows are measured against the lower of the two pages.
      */
     public void keepTableRowsWhole(@NotNull Document document, @NotNull ConversionParams conversionParams, boolean customPageBreaks) {
-        // An export which names no paper size or orientation is laid out on a portrait A4, and measured on one
-        ConversionParams page = ConversionParams.builder()
+        ConversionParams page = pageOf(conversionParams);
+        int pageHeight = pageHeight(page, customPageBreaks || !document.select("div." + PAGE_BREAK_SECTION_CLASS).isEmpty());
+        new TableRowsAdjuster(document, page, pageHeight).execute();
+    }
+
+    /** The height of the page, or of the lower of its two orientations where a page break may turn it. */
+    private static int pageHeight(@NotNull ConversionParams page, boolean mayTurn) {
+        return mayTurn
+                ? Math.min(PaperSizeUtils.MAX_PORTRAIT_HEIGHTS.get(page.getPaperSize()), PaperSizeUtils.MAX_LANDSCAPE_HEIGHTS.get(page.getPaperSize()))
+                : PaperSizeUtils.getMaxHeight(page);
+    }
+
+    /** The page an export is laid out on: one which names no paper size or orientation is laid out on a portrait A4. */
+    private static @NotNull ConversionParams pageOf(@NotNull ConversionParams conversionParams) {
+        return ConversionParams.builder()
                 .paperSize(conversionParams.getPaperSize() != null ? conversionParams.getPaperSize() : PaperSize.A4)
                 .orientation(conversionParams.getOrientation() != null ? conversionParams.getOrientation() : Orientation.PORTRAIT)
                 .build();
-        int pageHeight = customPageBreaks || !document.select("div." + PAGE_BREAK_SECTION_CLASS).isEmpty()
-                ? Math.min(PaperSizeUtils.MAX_PORTRAIT_HEIGHTS.get(page.getPaperSize()), PaperSizeUtils.MAX_LANDSCAPE_HEIGHTS.get(page.getPaperSize()))
-                : PaperSizeUtils.getMaxHeight(page);
-        new TableRowsAdjuster(document, page, pageHeight).execute();
     }
 
     /** Keeps each short table row of a block between page breaks on one page, measured on the page of the block. */
@@ -1170,14 +1329,22 @@ public class HtmlProcessor {
     }
 
     public void adjustContentToFitPage(@NotNull Document document, @NotNull ConversionParams conversionParams) {
-        new PageWidthAdjuster(document, conversionParams)
+        adjustContentToFitPage(document, conversionParams, PageLayout.NONE);
+    }
+
+    public void adjustContentToFitPage(@NotNull Document document, @NotNull ConversionParams conversionParams, @NotNull PageLayout pageLayout) {
+        new PageWidthAdjuster(document, conversionParams, pageLayout)
                 .adjustImageSizeInTables()
                 .adjustImageSize()
                 .adjustTableSize();
     }
 
     public @NotNull String adjustContentToFitPage(@NotNull String html, @NotNull ConversionParams conversionParams) {
-        return new PageWidthAdjuster(html, conversionParams)
+        return adjustContentToFitPage(html, conversionParams, PageLayout.NONE);
+    }
+
+    public @NotNull String adjustContentToFitPage(@NotNull String html, @NotNull ConversionParams conversionParams, @NotNull PageLayout pageLayout) {
+        return new PageWidthAdjuster(Jsoup.parse(html), conversionParams, pageLayout)
                 .adjustImageSizeInTables()
                 .adjustImageSize()
                 .adjustTableSize()
