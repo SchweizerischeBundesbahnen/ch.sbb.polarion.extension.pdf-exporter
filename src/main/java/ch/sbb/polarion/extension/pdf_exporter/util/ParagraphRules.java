@@ -7,10 +7,6 @@ import com.helger.css.decl.CSSStyleRule;
 import com.helger.css.decl.CascadingStyleSheet;
 import com.helger.css.decl.visit.CSSVisitor;
 import com.helger.css.decl.visit.DefaultCSSVisitor;
-import com.helger.css.handler.DoNothingCSSParseExceptionCallback;
-import com.helger.css.reader.CSSReader;
-import com.helger.css.reader.CSSReaderSettings;
-import com.helger.css.reader.errorhandler.DoNothingCSSParseErrorHandler;
 import com.helger.css.writer.CSSWriterSettings;
 import lombok.experimental.UtilityClass;
 import org.jetbrains.annotations.NotNull;
@@ -37,10 +33,11 @@ public class ParagraphRules {
 
     /** The room under an image the paragraph it stands in takes, in pixels, as the CSS states its font and its margins. */
     public int roomUnderAnImage(@NotNull String css) {
-        CascadingStyleSheet stylesheet = CSSReader.readFromStringReader(css, new CSSReaderSettings()
-                .setBrowserCompliantMode(true)
-                .setCustomErrorHandler(new DoNothingCSSParseErrorHandler())
-                .setCustomExceptionHandler(new DoNothingCSSParseExceptionCallback()));
+        return roomUnderAnImage(ExportStylesheet.read(css));
+    }
+
+    /** The room under an image the paragraph it stands in takes, in pixels, as the stylesheet states its font and its margins. */
+    public int roomUnderAnImage(@Nullable CascadingStyleSheet stylesheet) {
         if (stylesheet == null) {
             return DEFAULT_ROOM_PX;
         }

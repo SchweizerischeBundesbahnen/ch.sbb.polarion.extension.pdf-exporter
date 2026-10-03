@@ -8,10 +8,6 @@ import com.helger.css.decl.CSSPageRule;
 import com.helger.css.decl.CascadingStyleSheet;
 import com.helger.css.decl.ICSSPageRuleMember;
 import com.helger.css.decl.ICSSTopLevelRule;
-import com.helger.css.handler.DoNothingCSSParseExceptionCallback;
-import com.helger.css.reader.CSSReader;
-import com.helger.css.reader.CSSReaderSettings;
-import com.helger.css.reader.errorhandler.DoNothingCSSParseErrorHandler;
 import lombok.experimental.UtilityClass;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -79,13 +75,11 @@ public class PageRules {
 
     /** The height each page leaves its content, as the {@code @page} rules of the CSS state it. */
     public @NotNull Heights contentHeights(@NotNull String css) {
-        if (!css.contains("@page")) {
-            return Heights.NONE;
-        }
-        CascadingStyleSheet stylesheet = CSSReader.readFromStringReader(css, new CSSReaderSettings()
-                .setBrowserCompliantMode(true)
-                .setCustomErrorHandler(new DoNothingCSSParseErrorHandler())
-                .setCustomExceptionHandler(new DoNothingCSSParseExceptionCallback()));
+        return css.contains("@page") ? contentHeights(ExportStylesheet.read(css)) : Heights.NONE;
+    }
+
+    /** The height each page leaves its content, as the {@code @page} rules of the stylesheet state it. */
+    public @NotNull Heights contentHeights(@Nullable CascadingStyleSheet stylesheet) {
         if (stylesheet == null) {
             return Heights.NONE;
         }

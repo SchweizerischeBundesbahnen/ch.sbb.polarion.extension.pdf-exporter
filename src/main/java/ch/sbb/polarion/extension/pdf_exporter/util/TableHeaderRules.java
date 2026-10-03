@@ -6,13 +6,10 @@ import com.helger.css.decl.CSSStyleRule;
 import com.helger.css.decl.CascadingStyleSheet;
 import com.helger.css.decl.visit.CSSVisitor;
 import com.helger.css.decl.visit.DefaultCSSVisitor;
-import com.helger.css.handler.DoNothingCSSParseExceptionCallback;
-import com.helger.css.reader.CSSReader;
-import com.helger.css.reader.CSSReaderSettings;
-import com.helger.css.reader.errorhandler.DoNothingCSSParseErrorHandler;
 import com.helger.css.writer.CSSWriterSettings;
 import lombok.experimental.UtilityClass;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -41,13 +38,11 @@ public class TableHeaderRules {
 
     /** The rules of the CSS which make a table header taller or lower, as CSS the measure reads, or nothing. */
     public @NotNull String measuredBy(@NotNull String css) {
-        if (!HEADER_SELECTOR.matcher(css).find()) {
-            return "";
-        }
-        CascadingStyleSheet stylesheet = CSSReader.readFromStringReader(css, new CSSReaderSettings()
-                .setBrowserCompliantMode(true)
-                .setCustomErrorHandler(new DoNothingCSSParseErrorHandler())
-                .setCustomExceptionHandler(new DoNothingCSSParseExceptionCallback()));
+        return HEADER_SELECTOR.matcher(css).find() ? measuredBy(ExportStylesheet.read(css)) : "";
+    }
+
+    /** The rules of the stylesheet which make a table header taller or lower, as CSS the measure reads, or nothing. */
+    public @NotNull String measuredBy(@Nullable CascadingStyleSheet stylesheet) {
         if (stylesheet == null) {
             return "";
         }
