@@ -15,7 +15,6 @@ import lombok.SneakyThrows;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 
@@ -26,8 +25,11 @@ import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.util.Arrays;
 import java.util.Base64;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
+import java.util.regex.Pattern;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -53,11 +55,13 @@ import static org.mockito.Mockito.lenient;
 public abstract class BasePerformanceTest extends BasePdfConverterTest {
 
     /** What the fixed piece of work takes on the machine the budgets were set on, an arm64 Mac, in ms. */
-    private static final long CALIBRATION_MS = 265;
+    private static final long CALIBRATION_MS = 213;
 
     private static final String WEASYPRINT_STAGE = "WeasyPrint conversion";
 
     private static final String MACHINE = "machine";
+
+    private static final Pattern WORD = Pattern.compile("word(\\d)");
 
     /** The fonts of the default CSS, which Polarion serves and the export embeds, in place of fonts of a like size. */
     private static final String POLARION_FONTS = "/polarion/ria/fonts/";
@@ -189,8 +193,10 @@ public abstract class BasePerformanceTest extends BasePdfConverterTest {
     }
 
     /**
-     * Times a fixed piece of work of the JDK alone, hashing and sorting, which no change of the exporter or of its
-     * libraries makes slower. It tells how fast this machine is, for the budgets.
+     * Times a fixed piece of work of the JDK alone, which no change of the exporter or of its libraries makes slower. It
+     * tells how fast this machine is, for the budgets. Besides hashing and sorting, it builds and walks many small
+     * objects and runs a regular expression over a long text, as an export does with the DOM of a document: a machine
+     * whose memory is slower than its processor is slower at that.
      */
     @SneakyThrows
     private static long calibrate() {
@@ -198,19 +204,29 @@ public abstract class BasePerformanceTest extends BasePdfConverterTest {
         MessageDigest digest = MessageDigest.getInstance("SHA-256");
         byte[] block = new byte[1 << 20];
         new Random(42).nextBytes(block);
-        for (int round = 0; round < 200; round++) {
+        for (int round = 0; round < 100; round++) {
             digest.update(block);
         }
-        int[] numbers = new Random(42).ints(4_000_000).toArray();
+        int[] numbers = new Random(42).ints(2_000_000).toArray();
         Arrays.sort(numbers);
-        consume(digest.digest(), numbers);
+        Map<String, Integer> words = new HashMap<>();
+        StringBuilder text = new StringBuilder();
+        for (int index = 0; index < 1_500_000; index++) {
+            String word = "word" + index % 50_000;
+            words.merge(word, 1, Integer::sum);
+            text.append(word).append(' ');
+        }
+        String shortened = WORD.matcher(text).replaceAll("w$1");
+        consume(digest.digest(), numbers, words, shortened);
         return (System.nanoTime() - start) / 1_000_000;
     }
 
     /** Keeps the result of the work, so that the JIT cannot drop the work. */
-    private static void consume(byte @NotNull [] hash, int @Nullable [] numbers) {
+    private static void consume(byte @NotNull [] hash, int @NotNull [] numbers, @NotNull Map<String, Integer> words, @NotNull String text) {
         assertThat(hash).hasSize(32);
         assertThat(numbers).isNotEmpty();
+        assertThat(words).hasSize(50_000);
+        assertThat(text).isNotEmpty();
     }
 
     @SneakyThrows

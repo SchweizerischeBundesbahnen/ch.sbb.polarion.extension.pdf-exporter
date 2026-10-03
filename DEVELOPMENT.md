@@ -148,7 +148,7 @@ Pass `-Dweasyprint.service.url=http://localhost:9080` to use a running WeasyPrin
 
 Each test has a budget for the exporter and one for WeasyPrint, read from the generation log, so a failure names the
 slow side. The budgets are twice today's times on an arm64 Mac. They are scaled by how much slower the machine of the
-run does a fixed piece of work of the JDK, hashing and sorting, which runs no code of the exporter. So a slower CI
+run does a fixed piece of work of the JDK, hashing, sorting and many small objects, which runs no code of the exporter. So a slower CI
 runner does not fail them, and a change which slows every export cannot raise its own budget. The CSS of an export
 carries the fonts of the default CSS embedded, as in Polarion, so a cost which grows with the CSS shows here too. The
 timing report of each export is written to `target/surefire-reports/performance-*.txt`, before any check, and
