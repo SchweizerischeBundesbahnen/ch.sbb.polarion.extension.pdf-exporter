@@ -1,5 +1,12 @@
 # Changelog
 
+## [13.9.1](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v13.9.0...v13.9.1) (2026-10-03)
+
+
+### Bug Fixes
+
+* **deps:** update npm to v12.2.0 ([617a705](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/617a705abef5fe81e6ecf8c5a02f58a67a5ca6fd))
+
 ## [13.9.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v13.8.0...v13.9.0) (2026-10-03)
 
 
