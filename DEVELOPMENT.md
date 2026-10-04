@@ -157,7 +157,9 @@ runner does not fail the tests, and a change which slows every export cannot rai
 carries the fonts of the default CSS embedded, as in Polarion, so a cost which grows with the CSS shows here too.
 
 After the last test, the log shows a table of every export: its time, its reference time and limit on this machine,
-how far it is from the reference, and whether it is within the limit. The table is also written to
+how far it is from the reference, and whether it is within the limit. In the log, an export over its limit is red and
+one more than twice its reference is yellow; Maven keeps the colors in a terminal, and in CI with `-Dstyle.color=always`.
+`NO_COLOR` turns them off. The table is also written to
 `target/surefire-reports/performance-summary.md`, which CI adds to the summary of the run, and the timing report of
 each export to `target/surefire-reports/performance-*.txt`.
 

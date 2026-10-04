@@ -37,6 +37,13 @@ public final class PerformanceRun implements AutoCloseable {
 
     private static final String SUMMARY_FILE = "target/surefire-reports/performance-summary.md";
 
+    /** How far above its reference an export is worth a look, in percent: a third of the way to its limit. */
+    private static final long NOTABLE_DIFFERENCE = 100;
+
+    private static final String RED = "\u001B[1;31m";
+    private static final String YELLOW = "\u001B[33m";
+    private static final String RESET = "\u001B[0m";
+
     private static PerformanceRun current;
 
     private final long calibrationMs;
@@ -106,13 +113,16 @@ public final class PerformanceRun implements AutoCloseable {
 
     @Override
     public void close() {
-        String table = table();
-        log(System.lineSeparator() + table);
-        write(table);
+        log(System.lineSeparator() + table(colored()));
+        write(table(false));
         current = null;
     }
 
-    private @NotNull String table() {
+    /**
+     * The table in Markdown. Colored, it marks only what needs a look: an export over its limit in red, one far above its
+     * reference in yellow.
+     */
+    private @NotNull String table(boolean colored) {
         StringBuilder table = new StringBuilder()
                 .append("### Performance tests%n%n".formatted())
                 .append("The fixed work took %d ms, %d ms on the machine of the reference times: reference times scaled by %.2f, limit %d times the reference.%n%n"
@@ -120,10 +130,24 @@ public final class PerformanceRun implements AutoCloseable {
                 .append("| Export | Part | Time, ms | Reference, ms | Limit, ms | Against the reference | Result |%n".formatted())
                 .append("|---|---|---:|---:|---:|---:|---|%n".formatted());
         for (Row row : rows) {
+            String difference = row.difference() == 0 ? "0 %" : "%+d %%".formatted(row.difference());
+            String result = row.withinLimit() ? "ok" : "over the limit";
+            if (colored && !row.withinLimit()) {
+                difference = RED + difference + RESET;
+                result = RED + result + RESET;
+            } else if (colored && row.difference() > NOTABLE_DIFFERENCE) {
+                difference = YELLOW + difference + RESET;
+            }
             table.append("| %s | %s | %d | %d | %d | %s | %s |%n".formatted(row.export(), row.part(), row.timeMs(), row.referenceMs(), row.limitMs(),
-                    row.difference() == 0 ? "0 %" : "%+d %%".formatted(row.difference()), row.withinLimit() ? "ok" : "over the limit"));
+                    difference, result));
         }
         return table.toString();
+    }
+
+    /** Whether the log is colored: it is, unless {@code NO_COLOR} says otherwise, as https://no-color.org asks. */
+    private static boolean colored() {
+        String noColor = System.getenv("NO_COLOR");
+        return noColor == null || noColor.isEmpty();
     }
 
     @SneakyThrows
