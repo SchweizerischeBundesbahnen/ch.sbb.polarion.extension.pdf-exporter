@@ -175,7 +175,8 @@ shows here too. Each part is judged against its expected time:
 | Exporter | 1.2 times | 1.5 times |
 | WeasyPrint | 1.35 times | 2 times |
 
-Across eleven runs of CI, no part came more than 16 % above its expected time. A part over its limit fails its test and
+Leaving one run out at a time, no part came more than 13 % above its expected time over six runs of CI, nor 8 % over
+five runs on a Mac. A part over its limit fails its test and
 the build. A warning only marks the part in the report and writes a `::warning` line, which GitHub Actions shows as an
 annotation of the run.
 
