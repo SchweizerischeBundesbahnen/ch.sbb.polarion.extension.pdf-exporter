@@ -13,8 +13,8 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 
 /**
- * Averages the times of runs of the performance tests into reference times, which it prints. Each argument is a
- * {@code performance-reference-times.properties} a run of CI uploads. Runs on machines of different speed average as
+ * Averages the times of runs of the performance tests on one architecture into its reference times, which it prints.
+ * Each argument is the {@code performance-reference-times.properties} a run writes, and CI uploads. Runs on machines of different speed average as
  * {@link PerformanceRun} reads them: the small document by its time against the fixed piece of work, every other export
  * by its time against the small document of the same run.
  * <p>
@@ -47,7 +47,7 @@ public final class AverageReferenceTimes {
         System.out.print(average(runs));
     }
 
-    /** The reference times of the given runs, in the form of {@code reference-times.properties}. */
+    /** The reference times of the given runs, in the form of {@code reference-times-<architecture>.properties}. */
     static String average(List<Properties> runs) {
         double calibration = runs.stream().mapToDouble(run -> value(run, CALIBRATION)).average().orElseThrow();
         Map<String, Long> references = new TreeMap<>();
@@ -62,7 +62,7 @@ public final class AverageReferenceTimes {
             }
         }
         StringBuilder text = new StringBuilder()
-                .append("# The reference times of the performance tests, in ms: the average of ").append(runs.size()).append(" runs of CI, made by AverageReferenceTimes.\n")
+                .append("# The reference times of the performance tests on one architecture, in ms: the average of ").append(runs.size()).append(" runs, made by AverageReferenceTimes.\n")
                 .append("# Each test reads <export>.exporter and <export>.weasyprint. The small document is scaled by the fixed piece of work of\n")
                 .append("# machine.calibration, every other export by the small document of its run.\n")
                 .append(CALIBRATION).append('=').append(Math.round(calibration)).append('\n');

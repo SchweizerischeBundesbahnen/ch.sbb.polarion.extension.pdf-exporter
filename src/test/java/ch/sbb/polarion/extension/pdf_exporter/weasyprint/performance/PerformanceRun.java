@@ -26,7 +26,9 @@ import java.util.regex.Pattern;
  * take in this run, and writes a report of every export after the last test, the reference times first and the results
  * under them, and the times of the run in the form of the reference times.
  * <p>
- * The reference times, in {@value #REFERENCE_TIMES}, are the average of runs of CI. Each part of an export is expected to
+ * The reference times are the average of runs of the tests on a machine of the architecture of this one: the arm64 of a
+ * Mac, or the amd64 of a runner of CI, each in {@code performance/reference-times-<architecture>.properties}, as WeasyPrint
+ * runs in a container of the same architecture and lays documents out at a different pace on each. Each part of an export is expected to
  * take its reference time scaled by how the small document went in this run: the small document is exported first, and
  * whatever makes this machine or this moment faster or slower makes it so too. A change which slows every export would
  * slow the small document as well and go unseen that way, so the small document itself is scaled by a fixed piece of JDK
@@ -50,7 +52,8 @@ public final class PerformanceRun implements AutoCloseable {
     /** How WeasyPrint may deviate from its expected time: a service of its own, which varies by up to a fifth in CI. */
     private static final Tolerance WEASYPRINT_TOLERANCE = new Tolerance(1.35, 2);
 
-    private static final String REFERENCE_TIMES = "/performance/reference-times.properties";
+    /** The reference times of the architecture of this machine, as runs of the tests on such a machine averaged them. */
+    private static final String REFERENCE_TIMES = "/performance/reference-times-%s.properties";
     private static final String CALIBRATION_KEY = "machine.calibration";
 
     private static final String REPORTS = "target/surefire-reports/";
@@ -61,6 +64,8 @@ public final class PerformanceRun implements AutoCloseable {
 
     private static PerformanceRun current;
 
+    private final String architecture;
+    private final String referenceTimesFile;
     private final Properties referenceTimes;
     private final long referenceCalibrationMs;
     private final long calibrationMs;
@@ -101,7 +106,9 @@ public final class PerformanceRun implements AutoCloseable {
     }
 
     public PerformanceRun() {
-        referenceTimes = readReferenceTimes();
+        architecture = architecture(System.getProperty("os.arch"));
+        referenceTimesFile = REFERENCE_TIMES.formatted(architecture);
+        referenceTimes = readReferenceTimes(referenceTimesFile);
         referenceCalibrationMs = milliseconds(CALIBRATION_KEY);
         calibrate();
         long best = Long.MAX_VALUE;
@@ -110,8 +117,8 @@ public final class PerformanceRun implements AutoCloseable {
         }
         calibrationMs = best;
         machineFactor = (double) calibrationMs / referenceCalibrationMs;
-        log("Performance tests: the fixed work took %d ms here and %d ms where the reference times were taken, so the small document is expected to take %.2f times its reference time"
-                .formatted(calibrationMs, referenceCalibrationMs, machineFactor));
+        log("Performance tests: the reference times of %s, from %s. The fixed work took %d ms here and %d ms where they were taken, so the small document is expected to take %.2f times its reference time"
+                .formatted(architecture, referenceTimesFile, calibrationMs, referenceCalibrationMs, machineFactor));
     }
 
     /** The run of the tests, which the extension started. */
@@ -130,7 +137,7 @@ public final class PerformanceRun implements AutoCloseable {
                 .formatted(exporterMs, weasyPrintMs, scale("", EXPORTER), scale("", WEASYPRINT)));
     }
 
-    /** The reference time of a part of an export, from {@value #REFERENCE_TIMES}. */
+    /** The reference time of a part of an export, from the reference times of this architecture. */
     long reference(@NotNull String export, @NotNull String part) {
         return milliseconds(key(export, part));
     }
@@ -183,10 +190,10 @@ public final class PerformanceRun implements AutoCloseable {
     private @NotNull String report() {
         StringBuilder report = new StringBuilder()
                 .append("### Performance tests%n%n#### Reference times%n%n".formatted())
-                .append(("The reference times are the average of runs of CI. The small document is expected at its reference time times %.2f: "
+                .append(("The reference times are those of %s, the average of runs on that architecture. The small document is expected at its reference time times %.2f: "
                         + "the fixed work took %d ms here and %d ms there. The other exports are expected at their reference times scaled by the small document of this run: "
                         + "%d ms in the exporter and %d ms in WeasyPrint, against its reference times of %d ms and %d ms.%n%n")
-                        .formatted(machineFactor, calibrationMs, referenceCalibrationMs, baselineMs.getOrDefault(EXPORTER, 0L), baselineMs.getOrDefault(WEASYPRINT, 0L),
+                        .formatted(architecture, machineFactor, calibrationMs, referenceCalibrationMs, baselineMs.getOrDefault(EXPORTER, 0L), baselineMs.getOrDefault(WEASYPRINT, 0L),
                                 reference(SMALL_DOCUMENT, EXPORTER), reference(SMALL_DOCUMENT, WEASYPRINT)))
                 .append("| Export | Part | Reference, ms | Scaled by | Expected here, ms |%n|---|---|---:|---:|---:|%n".formatted());
         for (Row row : rows) {
@@ -209,7 +216,7 @@ public final class PerformanceRun implements AutoCloseable {
     private @NotNull String times() {
         Map<String, Long> sorted = new TreeMap<>();
         rows.forEach(row -> sorted.put(key(row.export(), row.part()), row.timeMs()));
-        StringBuilder times = new StringBuilder("# The times of a run of the performance tests, in the form of %s%n".formatted(REFERENCE_TIMES.substring(1)))
+        StringBuilder times = new StringBuilder("# The times of a run of the performance tests on %s, in the form of %s%n".formatted(architecture, referenceTimesFile.substring(1)))
                 .append("%s=%d%n".formatted(CALIBRATION_KEY, calibrationMs));
         sorted.forEach((key, value) -> times.append("%s=%d%n".formatted(key, value)));
         return times.toString();
@@ -227,24 +234,37 @@ public final class PerformanceRun implements AutoCloseable {
         return tolerance == Math.rint(tolerance) ? String.valueOf((long) tolerance) : String.valueOf(tolerance);
     }
 
-    /** A time of {@value #REFERENCE_TIMES}, which fails naming the key where it is missing or no number. */
+    /** A time of the reference times, which fails naming the key where it is missing or no number. */
     private long milliseconds(@NotNull String key) {
         String value = referenceTimes.getProperty(key);
         if (value == null) {
-            throw new IllegalStateException("No time " + key + " in " + REFERENCE_TIMES);
+            throw new IllegalStateException("No time " + key + " in " + referenceTimesFile);
         }
         try {
             return Long.parseLong(value.trim());
         } catch (NumberFormatException e) {
-            throw new IllegalStateException("The time " + key + " in " + REFERENCE_TIMES + " is no number of milliseconds: '" + value + "'", e);
+            throw new IllegalStateException("The time " + key + " in " + referenceTimesFile + " is no number of milliseconds: '" + value + "'", e);
         }
     }
 
+    /**
+     * The architecture whose reference times this machine is judged by: arm64 for a Mac, amd64 for a runner of CI. WeasyPrint
+     * runs in a container of the same architecture, and lays documents out at a different pace on each, which no measure of
+     * the JVM alone tells.
+     */
+    static @NotNull String architecture(@NotNull String osArch) {
+        return switch (osArch) {
+            case "aarch64", "arm64" -> "arm64";
+            case "amd64", "x86_64" -> "amd64";
+            default -> throw new IllegalStateException("No reference times for the architecture " + osArch + ": only arm64 and amd64 have them");
+        };
+    }
+
     @SneakyThrows
-    private static @NotNull Properties readReferenceTimes() {
+    private static @NotNull Properties readReferenceTimes(@NotNull String file) {
         Properties properties = new Properties();
-        try (InputStream stream = PerformanceRun.class.getResourceAsStream(REFERENCE_TIMES)) {
-            properties.load(Objects.requireNonNull(stream, REFERENCE_TIMES));
+        try (InputStream stream = PerformanceRun.class.getResourceAsStream(file)) {
+            properties.load(Objects.requireNonNull(stream, file));
         }
         return properties;
     }

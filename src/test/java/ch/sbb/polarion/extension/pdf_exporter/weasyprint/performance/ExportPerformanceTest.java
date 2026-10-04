@@ -9,7 +9,7 @@ import static org.mockito.Mockito.lenient;
 /**
  * Documents of the shapes which make an export slow, each timed against a reference time of the exporter and of WeasyPrint.
  * <p>
- * The reference times of each part are in {@code performance/reference-times.properties}: three cells of 10,000
+ * The reference times of each part are in {@code performance/reference-times-<architecture>.properties}: three cells of 10,000
  * characters take WeasyPrint under a second, and took it minutes when the cells could break anywhere (#1101).
  * </p>
  */

@@ -152,9 +152,13 @@ service instead of a container.
 The exporter and WeasyPrint are timed apart, read from the generation log, so a failure names the slow side. Each
 document is exported three times, and the time of each part is the average.
 
-The reference time of each part is in `src/test/resources/performance/reference-times.properties`: its average over
-runs of CI, together with the time CI takes for a fixed piece of JDK work, hashing, sorting and many small objects, which
-runs no code of the exporter. A run expects each part to take its reference time scaled to the run:
+The reference times depend on the architecture, as WeasyPrint runs in a container of the same architecture and lays
+documents out at a different pace on each. `src/test/resources/performance/reference-times-arm64.properties` holds those
+of an arm64 Mac, `reference-times-amd64.properties` those of the amd64 runners of CI, and a run takes the file of its own
+architecture, so that the tests judge an export both locally and in CI. Each file holds the average time of each part
+over runs on that architecture, together with the time those runs took for a fixed piece of JDK work, hashing, sorting
+and many small objects, which runs no code of the exporter. A run expects each part to take its reference time scaled to
+the run:
 
 - The small document is exported first. Every other export is scaled by how much longer or shorter than its reference
   the small document took in this run, the exporter and WeasyPrint apart. Whatever makes this machine or this moment
@@ -173,8 +177,7 @@ shows here too. Each part is judged against its expected time:
 
 Across eleven runs of CI, no part came more than 16 % above its expected time. A part over its limit fails its test and
 the build. A warning only marks the part in the report and writes a `::warning` line, which GitHub Actions shows as an
-annotation of the run. On a machine unlike the CI runners, as an arm64 Mac, the parts come out up to a third below their
-expected time, as WeasyPrint lays out large documents relatively faster there.
+annotation of the run.
 
 After the last test, the log shows the report: a table of the reference times, what each is scaled by and the time
 expected here, and a table of the results, each part with its expected time, its time, how far it is from the expected
@@ -183,14 +186,26 @@ one, its warning level, its limit and its result. The report is also written to
 report of each export.
 
 Each run also writes its times to `target/surefire-reports/performance-reference-times.properties`, which CI uploads.
-To take new reference times, average them over at least five runs of CI on `main`, and propose the result in a pull
-request:
+To take new reference times, average them over at least five runs, and propose the result in a pull request. For amd64,
+take the runs of CI on `main`:
 
 ```bash
 gh run list --workflow "Performance Tests" --branch main --status success --limit 10 --json databaseId -q '.[].databaseId' \
   | xargs -I{} gh run download {} -n performance-reports -D runs/{}
 java src/test/java/ch/sbb/polarion/extension/pdf_exporter/weasyprint/performance/AverageReferenceTimes.java \
-  runs/*/performance-reference-times.properties > src/test/resources/performance/reference-times.properties
+  runs/*/performance-reference-times.properties > src/test/resources/performance/reference-times-amd64.properties
+```
+
+For arm64, run the tests on a Mac five times:
+
+```bash
+mkdir -p runs
+for run in 1 2 3 4 5; do
+  mvn clean verify -P performance-tests-with-weasyprint-docker
+  cp target/surefire-reports/performance-reference-times.properties runs/arm64-$run.properties
+done
+java src/test/java/ch/sbb/polarion/extension/pdf_exporter/weasyprint/performance/AverageReferenceTimes.java \
+  runs/arm64-*.properties > src/test/resources/performance/reference-times-arm64.properties
 ```
 
 A pull request, never the build itself, so that a regression merged into `main` cannot become its own reference.
