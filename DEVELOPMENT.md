@@ -134,10 +134,13 @@ The performance tests export documents of a known shape and fail when an export 
 They are tagged `performance` and run in a profile of their own, not in the regular build:
 
 ```bash
-mvn verify -P performance-tests-with-weasyprint-docker -DskipJsTests
+mvn verify -P performance-tests-with-weasyprint-docker
 ```
 
-Pass `-Dweasyprint.service.url=http://localhost:9080` to use a running WeasyPrint service instead of a container.
+The profile builds the classes, the tests and the jar, and runs these tests alone. It takes every other step of the
+build out: the documentation pages, the UI and its tests, the OpenAPI file, coverage, the source and javadoc jars and
+the Polarion compatibility check. Pass `-Dweasyprint.service.url=http://localhost:9080` to use a running WeasyPrint
+service instead of a container.
 
 - `ExportPerformanceTest` exports one shape each: a small document, a large table, cells running across pages, many
   images, many work items, sections which page breaks turn landscape, tables whose words leave them no room, and
@@ -146,16 +149,33 @@ Pass `-Dweasyprint.service.url=http://localhost:9080` to use a running WeasyPrin
 - `FeatureDocumentTest` exports one document with every feature and every option of a style package, and compares its
   pages with reference images, so that one export shows whether any of it broke.
 
-Each test has a budget for the exporter and one for WeasyPrint, read from the generation log, so a failure names the
-slow side. The budgets are three times today's times on an arm64 Mac. They are scaled by how much slower the machine
-of the run does a fixed piece of work of the JDK, hashing, sorting and many small objects, which runs no code of the
-exporter. So a slower CI runner does not fail them, and a change which slows every export cannot raise its own budget.
-The CSS of an export carries the fonts of the default CSS embedded, as in Polarion, so a cost which grows with the CSS
-shows here too. The timing report of each export is written to `target/surefire-reports/performance-*.txt`, before any
-check, and `performance-machine.txt` says by how much the budgets were scaled.
+The exporter and WeasyPrint are timed apart, read from the generation log, so a failure names the slow side. Each
+document is exported three times, and the time of each part is the average. The reference time of each part is in
+`src/test/resources/performance/reference-times.properties`, its time on an arm64 Mac, together with the time that Mac
+takes for a fixed piece of work of the JDK: hashing, sorting and many small objects, which runs no code of the exporter.
+Before the first test, `PerformanceRun` times that work on this machine, and the factor of the two scales every reference
+time to the time expected here. So a slower CI runner does not fail the tests, and a change which slows every export
+cannot raise its own limit. The CSS of an export carries the fonts of the default CSS embedded, as in Polarion, so a
+cost which grows with the CSS shows here too.
 
-To set the budgets anew, run the tests on an arm64 Mac and set each to three times its time there. A GitHub runner
-runs the exporter up to 1.8 times slower than the measure of the machine says, so a lower budget fails at random.
+Each part is judged against its expected time:
+
+| Part | Warning above | Fails above |
+|---|---|---|
+| Exporter | 1.5 times | 2 times |
+| WeasyPrint | 1.5 times | 3 times |
+
+A part over its limit fails its test and the build. A warning only marks the part in the report and writes a
+`::warning` line, which GitHub Actions shows as an annotation of the run.
+
+After the last test, the log shows the report: a table of the reference times and the times expected here, and a table
+of the results, each part with its expected time, its time, how far it is from the expected one, its warning level,
+its limit and its result. The report is also written to `target/surefire-reports/performance-summary.md`, which CI adds
+to the summary of the run and uploads with the timing report of each export.
+
+The run also writes its own times to `target/surefire-reports/performance-reference-times.properties`, in the form of
+the reference times and with the time of the fixed work on this machine. To take new reference times, copy that file
+from a run on the reference machine over `reference-times.properties`.
 
 ## Debugging
 

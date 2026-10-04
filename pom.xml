@@ -117,7 +117,8 @@
             </build>
         </profile>
         <profile>
-            <!-- The exports of large documents, timed against a budget: mvn verify -P performance-tests-with-weasyprint-docker -->
+            <!-- The exports of large documents, timed against a reference: mvn verify -P performance-tests-with-weasyprint-docker -->
+            <!-- It builds the classes, the jar and the tests and runs the tests: nothing of the UI, the docs or the checks of a release -->
             <id>performance-tests-with-weasyprint-docker</id>
 
             <properties>
@@ -128,16 +129,139 @@
             <build>
                 <plugins>
                     <plugin>
+                        <!-- Each execution of a step of the full build is taken out of it: the docs, the UI, the OpenAPI file, coverage and the checks of a release -->
+                        <groupId>ch.sbb.maven.plugins</groupId>
+                        <artifactId>markdown2html-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>readme.md-to-about.html</id>
+                                <phase>none</phase>
+                            </execution>
+                            <execution>
+                                <id>disclaimer.md-to-disclaimer.html</id>
+                                <phase>none</phase>
+                            </execution>
+                            <execution>
+                                <id>quick_start.md-to-quick-start.html</id>
+                                <phase>none</phase>
+                            </execution>
+                            <execution>
+                                <id>user_guide.md-to-user-guide.html</id>
+                                <phase>none</phase>
+                            </execution>
+                            <execution>
+                                <id>configuration.md-to-configuration.html</id>
+                                <phase>none</phase>
+                            </execution>
+                            <execution>
+                                <id>limitations.md-to-limitations.html</id>
+                                <phase>none</phase>
+                            </execution>
+                            <execution>
+                                <id>upgrade.md-to-upgrade.html</id>
+                                <phase>none</phase>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>com.github.eirslett</groupId>
+                        <artifactId>frontend-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>vite-install-node-and-npm</id>
+                                <phase>none</phase>
+                            </execution>
+                            <execution>
+                                <id>vite-npm-ci</id>
+                                <phase>none</phase>
+                            </execution>
+                            <execution>
+                                <id>vite-npm-build</id>
+                                <phase>none</phase>
+                            </execution>
+                            <execution>
+                                <id>vite-npm-test</id>
+                                <phase>none</phase>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>io.swagger.core.v3</groupId>
+                        <artifactId>swagger-maven-plugin-jakarta</artifactId>
+                        <executions>
+                            <execution>
+                                <id>default</id>
+                                <phase>none</phase>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>io.github.grigoriev</groupId>
+                        <artifactId>pre-commit-run-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>format-openapi-json</id>
+                                <phase>none</phase>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.jacoco</groupId>
+                        <artifactId>jacoco-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>prepare-agent</id>
+                                <phase>none</phase>
+                            </execution>
+                            <execution>
+                                <id>report</id>
+                                <phase>none</phase>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>attach-javadocs</id>
+                                <phase>none</phase>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-source-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>attach-sources</id>
+                                <phase>none</phase>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>com.intechcore</groupId>
+                        <artifactId>polarion-compatibility-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>polarion-compatibility-check</id>
+                                <phase>none</phase>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-surefire-plugin</artifactId>
                         <version>${maven-surefire-plugin.version}</version>
                         <configuration>
-                            <redirectTestOutputToFile>true</redirectTestOutputToFile>
+                            <!-- The test output stays in the log: the factor of the machine and the table of the run belong there -->
+                            <redirectTestOutputToFile>false</redirectTestOutputToFile>
                             <forkCount>1</forkCount>
                             <reuseForks>true</reuseForks>
                             <parallel>none</parallel>
                             <systemPropertyVariables>
                                 <wpExporterImpl>docker</wpExporterImpl>
+                                <log4j2.configurationFile>log4j2-performance.xml</log4j2.configurationFile>
                             </systemPropertyVariables>
                         </configuration>
                     </plugin>
