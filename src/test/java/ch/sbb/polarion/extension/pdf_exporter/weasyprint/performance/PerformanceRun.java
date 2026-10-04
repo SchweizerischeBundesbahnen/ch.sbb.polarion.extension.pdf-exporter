@@ -90,7 +90,7 @@ public final class PerformanceRun implements AutoCloseable {
 
     public PerformanceRun() {
         referenceTimes = readReferenceTimes();
-        referenceCalibrationMs = Long.parseLong(Objects.requireNonNull(referenceTimes.getProperty(CALIBRATION_KEY), CALIBRATION_KEY).trim());
+        referenceCalibrationMs = milliseconds(CALIBRATION_KEY);
         calibrate();
         long best = Long.MAX_VALUE;
         for (int run = 0; run < 3; run++) {
@@ -117,12 +117,20 @@ public final class PerformanceRun implements AutoCloseable {
 
     /** The reference time of a part of an export, from {@value #REFERENCE_TIMES}. */
     long reference(@NotNull String export, @NotNull String part) {
-        String key = key(export, part);
+        return milliseconds(key(export, part));
+    }
+
+    /** A time of {@value #REFERENCE_TIMES}, which fails naming the key where it is missing or no number. */
+    private long milliseconds(@NotNull String key) {
         String value = referenceTimes.getProperty(key);
         if (value == null) {
-            throw new IllegalStateException("No reference time " + key + " in " + REFERENCE_TIMES);
+            throw new IllegalStateException("No time " + key + " in " + REFERENCE_TIMES);
         }
-        return Long.parseLong(value.trim());
+        try {
+            return Long.parseLong(value.trim());
+        } catch (NumberFormatException e) {
+            throw new IllegalStateException("The time " + key + " in " + REFERENCE_TIMES + " is no number of milliseconds: '" + value + "'", e);
+        }
     }
 
     /** The time a part of an export is expected to take on this machine: its reference time times the factor. */
