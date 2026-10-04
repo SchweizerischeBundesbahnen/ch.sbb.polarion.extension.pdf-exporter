@@ -18,10 +18,12 @@ import java.util.regex.Pattern;
 public final class FontFamilyUse implements Predicate<String> {
 
     /**
-     * What says nothing of the use of a family: a rule which declares one, and a comment, as the licence of a stylesheet
-     * which names its maker. A data url carries no brace and no asterisk.
+     * What says nothing of the use of a family: a rule which declares one, a comment, as the licence of a stylesheet
+     * which names its maker, and the payload of a data url, as the images and fonts already embedded, by far the most
+     * of a document, which no search has to read through. A data url carries no brace and no asterisk.
      */
-    private static final Pattern NOT_A_USE = Pattern.compile("@font-face\\s*\\{[^}]*}|/\\*.*?\\*/", Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
+    private static final Pattern NOT_A_USE = Pattern.compile("@font-face\\s*\\{[^}]*}|/\\*.*?\\*/|;base64,[A-Z0-9+/=]+",
+            Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
 
     private final List<String> texts;
 

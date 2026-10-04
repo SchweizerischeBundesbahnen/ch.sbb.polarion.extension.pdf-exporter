@@ -69,6 +69,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Set;
+import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.Collections;
 import java.util.Arrays;
@@ -456,10 +457,10 @@ public class MediaUtils {
     }
 
     /**
-     * @param usedFamily whether the document names a font family anywhere: the {@code @font-face} rule of a family it
-     *                   does not name is left out, and the font it points at is not fetched. A stylesheet of an icon
-     *                   font declares its families under the names of every older version as well, each with the
-     *                   same fonts, which an export would otherwise carry once for each name.
+     * @param usedFamily whether the document names a font family anywhere: a {@code @font-face} rule which only repeats
+     *                   the fonts of one before it under a family the document does not name is left out. A stylesheet
+     *                   of an icon font declares its families under the names of every older version as well, each with
+     *                   the same fonts, which an export would otherwise carry once for each name.
      */
     public String inlineCssResources(@NotNull String css, @NotNull FileResourceProvider fileResourceProvider,
                                      @Nullable String stylesheetUrl, @NotNull Predicate<String> usedFamily) {
@@ -900,10 +901,15 @@ public class MediaUtils {
     }
 
     /**
-     * Reads the {@code @font-face} rules first, as the urls of their sources are not all to be fetched. The rule of a
-     * family the document does not name is left out whole. Of a list of sources, the {@code local()} ones and the first
-     * url of a format WeasyPrint reads are kept, and the others are dropped: WeasyPrint reads a truetype, an opentype
-     * or a woff font, and skips a woff2, an eot or an svg one, which a stylesheet for browsers lists first.
+     * Reads the {@code @font-face} rules first, as the urls of their sources are not all to be fetched. Of a list of
+     * sources, the {@code local()} ones and the first url of a format WeasyPrint reads are kept, and the others are
+     * dropped: WeasyPrint reads a truetype, an opentype or a woff font, and skips a woff2, an eot or an svg one, which a
+     * stylesheet for browsers lists first.
+     * <p>
+     * A rule which only repeats the fonts of a rule before it under another family, as a stylesheet of icons does for the
+     * names of its older versions, is left out whole where the document names that family nowhere. A rule with a font of
+     * its own always stays: its family may be named in a stylesheet this one cannot see.
+     * </p>
      *
      * @return the declarations it rewrote, whose urls it accounted for itself
      */
@@ -911,10 +917,14 @@ public class MediaUtils {
                                               @NotNull CssRewrite rewrite, @NotNull FileResourceProvider fileResourceProvider,
                                               @Nullable String location, @NotNull Predicate<String> usedFamily) {
         Set<CSSDeclaration> rewritten = Collections.newSetFromMap(new IdentityHashMap<>());
+        Set<String> carried = new HashSet<>();
         for (CSSFontFaceRule rule : stylesheet.getAllFontFaceRules()) {
             String family = familyOf(rule);
             CssRange ruleRange = rangeOf(lineStarts, css, rule.getSourceLocation());
-            if (family != null && ruleRange != null && !usedFamily.test(family)) {
+            List<String> fonts = fontsOf(rule, location);
+            boolean repeats = !fonts.isEmpty() && carried.containsAll(fonts);
+            carried.addAll(fonts);
+            if (repeats && family != null && ruleRange != null && !usedFamily.test(family)) {
                 rewrite.accounted().add(ruleRange);
                 rewrite.edits().add(new CssEdit(ruleRange, ""));
                 rewritten.addAll(rule.getAllDeclarations());
@@ -928,6 +938,21 @@ public class MediaUtils {
             }
         }
         return rewritten;
+    }
+
+    /** The urls of the fonts a rule names, each resolved as it is fetched. */
+    private static List<String> fontsOf(@NotNull CSSFontFaceRule rule, @Nullable String location) {
+        List<String> fonts = new ArrayList<>();
+        for (CSSDeclaration declaration : rule.getAllDeclarations()) {
+            if (FONT_SOURCES.equalsIgnoreCase(declaration.getProperty())) {
+                for (ICSSExpressionMember member : declaration.getExpression().getAllMembers()) {
+                    if (member instanceof CSSExpressionMemberTermURI uri) {
+                        fonts.add(resolveAgainst(location, uri.getURIString()));
+                    }
+                }
+            }
+        }
+        return fonts;
     }
 
     private static @Nullable String familyOf(@NotNull CSSFontFaceRule rule) {

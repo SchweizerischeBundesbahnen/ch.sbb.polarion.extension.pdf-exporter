@@ -235,8 +235,8 @@ class ExternalCssInternalizerTest {
 
     /**
      * The stylesheet of Font Awesome 6.2, as Polarion serves it, declares each of its three fonts under the families of
-     * its versions 4, 5 and 6, each in woff2 and truetype. Of a document which names none of the old families, the
-     * export carries each font once, in the truetype WeasyPrint reads.
+     * its versions 4, 5 and 6, each in woff2 and truetype, and a small font of its own for version 4. Of a document which
+     * names none of the old families, the export carries each font once, in the truetype WeasyPrint reads.
      */
     @Test
     @SneakyThrows
@@ -253,10 +253,10 @@ class ExternalCssInternalizerTest {
         String document = "<link rel=\"stylesheet\" href=\"" + url + "\"/><span class=\"fa-solid fa-chart-column\"></span>";
         String result = cssLinkInliner.inlineIn(Map.of("rel", "stylesheet", "href", url), document).orElseThrow();
 
-        assertThat(result.split("@font-face", -1)).as("the three fonts of version 6 only").hasSize(4);
-        assertThat(result).contains("fa-brands-400_ttf", "fa-regular-400_ttf", "fa-solid-900_ttf")
-                .doesNotContain("Font Awesome 5", "font-family:\"FontAwesome\"", "woff2");
-        verify(fileResourceProvider, times(3)).getResourceAsBase64String(anyString());
+        assertThat(result.split("@font-face", -1)).as("the three fonts of version 6, and the font of its own of version 4").hasSize(5);
+        assertThat(result).contains("fa-brands-400_ttf", "fa-regular-400_ttf", "fa-solid-900_ttf", "fa-v4compatibility_ttf")
+                .doesNotContain("Font Awesome 5", "woff2");
+        verify(fileResourceProvider, times(4)).getResourceAsBase64String(anyString());
     }
 
     private static String fileOf(String url) {

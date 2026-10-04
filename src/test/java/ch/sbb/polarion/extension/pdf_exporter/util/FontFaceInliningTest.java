@@ -73,4 +73,13 @@ class FontFaceInliningTest {
         assertThat(css).contains("Font Awesome 6 Free").doesNotContain("\"FontAwesome\"");
         assertThat(css.split("solid_ttf", -1)).as("the font of the named family, once").hasSize(2);
     }
+
+    /** A font of its own may be named in a stylesheet this one cannot see, as a sibling link of the same document. */
+    @Test
+    void keepsTheFontOfItsOwnOfAFamilyNothingHereNames() {
+        String css = MediaUtils.inlineCssResources("""
+                @font-face { font-family: "Corporate"; src: url(/fonts/corporate.ttf) format("truetype"); }""", provider, null, FontFamilyUse.in(".x { color: red; }"));
+
+        assertThat(css).contains("corporate_ttf");
+    }
 }

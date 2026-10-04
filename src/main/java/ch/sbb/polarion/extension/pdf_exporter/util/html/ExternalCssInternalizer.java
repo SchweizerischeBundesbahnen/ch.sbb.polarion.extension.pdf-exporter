@@ -35,9 +35,9 @@ public class ExternalCssInternalizer implements LinkInternalizer {
     }
 
     /**
-     * Inlines the stylesheet with the fonts of the families the document or the stylesheet itself names, and of no
-     * other: a stylesheet of icons declares its families under the names of its older versions as well, with the same
-     * fonts.
+     * Inlines the stylesheet without the fonts it only repeats under a family neither the document nor the stylesheet
+     * itself names: a stylesheet of icons declares its families under the names of its older versions as well, with the
+     * same fonts.
      */
     @Override
     public Optional<String> inlineIn(Map<String, String> attributes, String document) {
@@ -62,7 +62,8 @@ public class ExternalCssInternalizer implements LinkInternalizer {
         // against that location: no pattern runs over a stylesheet the document points at
         String cssContent = new String(fileResourceProvider.getResourceAsBytes(url));
         cssContent = MediaUtils.inlineCssResources(cssContent, fileResourceProvider, url,
-                document.isEmpty() ? family -> true : FontFamilyUse.in(document, cssContent));
+                // the stylesheet first: the families it names are found there, without a search through the document
+                document.isEmpty() ? family -> true : FontFamilyUse.in(cssContent, document));
         inlinedContent.append(keepInsideStyleElement(cssContent));
         inlinedContent.append("</style>");
 

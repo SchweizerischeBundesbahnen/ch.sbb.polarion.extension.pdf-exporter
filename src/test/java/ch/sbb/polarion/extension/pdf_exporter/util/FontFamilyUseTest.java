@@ -34,7 +34,8 @@ class FontFamilyUseTest {
     @ValueSource(strings = {
             "@font-face { font-family: \"FontAwesome\"; src: url(fa.ttf); } .x { color: red; }",
             "/*! Font Awesome Free 6.2.0 by @fontawesome, FontAwesome */ .x { color: red; }",
-            "<link href=\"/polarion/ria/fontawesome-6.2.0/css/all.min.css\"/> .myfontawesome { }"
+            "<link href=\"/polarion/ria/fontawesome-6.2.0/css/all.min.css\"/> .myfontawesome { }",
+            "<img src=\"data:image/png;base64,iVBORw0FontAwesome+gg==\"/>"
     })
     void doesNotCountANameWhichNamesNoUse(String text) {
         assertThat(FontFamilyUse.in(text).test("FontAwesome")).isFalse();
