@@ -5,6 +5,11 @@ import ch.sbb.polarion.extension.generic.util.BundleJarsPrioritizingRunnable;
 import ch.sbb.polarion.extension.generic.util.ScopeUtils;
 import com.helger.css.CSSSourceLocation;
 import com.helger.css.ICSSSourceLocationAware;
+import com.helger.css.decl.CSSExpression;
+import com.helger.css.decl.CSSFontFaceRule;
+import com.helger.css.decl.CSSExpressionMemberFunction;
+import com.helger.css.decl.ECSSExpressionOperator;
+import com.helger.css.writer.CSSWriterSettings;
 import com.helger.css.decl.CSSMediaRule;
 import com.helger.css.decl.CSSSupportsRule;
 import com.helger.css.decl.CSSStyleRule;
@@ -63,6 +68,9 @@ import java.net.URLConnection;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Set;
+import java.util.IdentityHashMap;
+import java.util.Collections;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
@@ -73,6 +81,7 @@ import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.function.BiFunction;
+import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 
 import static ch.sbb.polarion.extension.pdf_exporter.util.TikaMimeTypeResolver.PARAM_RESULT;
@@ -443,6 +452,17 @@ public class MediaUtils {
      */
     public String inlineCssResources(@NotNull String css, @NotNull FileResourceProvider fileResourceProvider,
                                      @Nullable String stylesheetUrl) {
+        return inlineCssResources(css, fileResourceProvider, stylesheetUrl, family -> true);
+    }
+
+    /**
+     * @param usedFamily whether the document names a font family anywhere: the {@code @font-face} rule of a family it
+     *                   does not name is left out, and the font it points at is not fetched. A stylesheet of an icon
+     *                   font declares its families under the names of every older version as well, each with the
+     *                   same fonts, which an export would otherwise carry once for each name.
+     */
+    public String inlineCssResources(@NotNull String css, @NotNull FileResourceProvider fileResourceProvider,
+                                     @Nullable String stylesheetUrl, @NotNull Predicate<String> usedFamily) {
         if (!mayReferenceAResource(css)) {
             // no url, no import and no address: there is nothing to rewrite and nothing to check, and a
             // style attribute of a large document is not worth a parser run for that
@@ -467,7 +487,8 @@ public class MediaUtils {
         int[] lineStarts = lineStartsOf(stripped);
         CssRewrite rewrite = new CssRewrite();
         readImports(stripped, stylesheet, lineStarts, rewrite);
-        readUrls(stripped, stylesheet, lineStarts, rewrite, fileResourceProvider, locationOf(stylesheetUrl));
+        Set<CSSDeclaration> rewritten = readFontFaces(stripped, stylesheet, lineStarts, rewrite, fileResourceProvider, locationOf(stylesheetUrl), usedFamily);
+        readUrls(stripped, stylesheet, lineStarts, rewrite, fileResourceProvider, locationOf(stylesheetUrl), rewritten);
 
         char[] unaccounted = maskAccounted(stripped, stylesheet, lineStarts, rewrite.accounted());
         return neutralize(stripped, unaccounted, rewrite.edits(), stylesheetUrl,
@@ -845,10 +866,14 @@ public class MediaUtils {
 
     private void readUrls(@NotNull String css, @NotNull CascadingStyleSheet stylesheet, int[] lineStarts,
                           @NotNull CssRewrite rewrite, @NotNull FileResourceProvider fileResourceProvider,
-                          @Nullable String location) {
+                          @Nullable String location, @NotNull Set<CSSDeclaration> rewritten) {
         CSSVisitor.visitCSSUrl(stylesheet, new DefaultCSSUrlVisitor() {
             @Override
             public void onUrlDeclaration(@Nullable ICSSTopLevelRule topLevelRule, @NotNull CSSDeclaration declaration, @NotNull CSSExpressionMemberTermURI uri) {
+                if (rewritten.contains(declaration)) {
+                    // the font faces were read first, and their rewrite already covers every url of this declaration
+                    return;
+                }
                 CssRange range = rangeOf(lineStarts, css, uri.getSourceLocation());
                 // the parser resolves the escapes of a url term itself, so this value is the one the
                 // renderer would read, and the one the policy is asked about
@@ -872,6 +897,140 @@ public class MediaUtils {
                 }
             }
         });
+    }
+
+    /**
+     * Reads the {@code @font-face} rules first, as the urls of their sources are not all to be fetched. The rule of a
+     * family the document does not name is left out whole. Of a list of sources, the {@code local()} ones and the first
+     * url of a format WeasyPrint reads are kept, and the others are dropped: WeasyPrint reads a truetype, an opentype
+     * or a woff font, and skips a woff2, an eot or an svg one, which a stylesheet for browsers lists first.
+     *
+     * @return the declarations it rewrote, whose urls it accounted for itself
+     */
+    private Set<CSSDeclaration> readFontFaces(@NotNull String css, @NotNull CascadingStyleSheet stylesheet, int[] lineStarts,
+                                              @NotNull CssRewrite rewrite, @NotNull FileResourceProvider fileResourceProvider,
+                                              @Nullable String location, @NotNull Predicate<String> usedFamily) {
+        Set<CSSDeclaration> rewritten = Collections.newSetFromMap(new IdentityHashMap<>());
+        for (CSSFontFaceRule rule : stylesheet.getAllFontFaceRules()) {
+            String family = familyOf(rule);
+            CssRange ruleRange = rangeOf(lineStarts, css, rule.getSourceLocation());
+            if (family != null && ruleRange != null && !usedFamily.test(family)) {
+                rewrite.accounted().add(ruleRange);
+                rewrite.edits().add(new CssEdit(ruleRange, ""));
+                rewritten.addAll(rule.getAllDeclarations());
+                continue;
+            }
+            for (CSSDeclaration declaration : rule.getAllDeclarations()) {
+                if (FONT_SOURCES.equalsIgnoreCase(declaration.getProperty())
+                        && keepOneSource(css, declaration, lineStarts, rewrite, fileResourceProvider, location)) {
+                    rewritten.add(declaration);
+                }
+            }
+        }
+        return rewritten;
+    }
+
+    private static @Nullable String familyOf(@NotNull CSSFontFaceRule rule) {
+        for (CSSDeclaration declaration : rule.getAllDeclarations()) {
+            if ("font-family".equalsIgnoreCase(declaration.getProperty())) {
+                return unquote(declaration.getExpression().getAsCSSString(CSS_WRITER_SETTINGS, 0));
+            }
+        }
+        return null;
+    }
+
+    /** The value without the quotes around it, if it has them. */
+    private static @NotNull String unquote(@NotNull String value) {
+        String trimmed = value.trim();
+        boolean quoted = trimmed.length() > 1 && (trimmed.charAt(0) == '"' || trimmed.charAt(0) == '\'') && trimmed.charAt(trimmed.length() - 1) == trimmed.charAt(0);
+        return quoted ? trimmed.substring(1, trimmed.length() - 1) : trimmed;
+    }
+
+    /**
+     * Rewrites the sources of a font to the {@code local()} ones and the first url of a format WeasyPrint reads, that url
+     * inlined. A list with nothing to drop, or no url of a readable format, is left to the pass over every url.
+     *
+     * @return whether it rewrote the declaration
+     */
+    private boolean keepOneSource(@NotNull String css, @NotNull CSSDeclaration declaration, int[] lineStarts, @NotNull CssRewrite rewrite,
+                                  @NotNull FileResourceProvider fileResourceProvider, @Nullable String location) {
+        List<List<ICSSExpressionMember>> sources = sourcesOf(declaration);
+        int chosen = -1;
+        for (int index = 0; index < sources.size() && chosen < 0; index++) {
+            if (readableFontSource(sources.get(index))) {
+                chosen = index;
+            }
+        }
+        CssRange range = rangeOf(lineStarts, css, declaration.getSourceLocation());
+        boolean dropsAny = sources.stream().filter(source -> uriOf(source) != null).count() > 1;
+        if (chosen < 0 || range == null || !dropsAny) {
+            return false;
+        }
+        List<String> kept = new ArrayList<>();
+        for (int index = 0; index < sources.size(); index++) {
+            List<ICSSExpressionMember> source = sources.get(index);
+            CSSExpressionMemberTermURI uri = uriOf(source);
+            if (uri == null) {
+                kept.add(textOf(source));
+            } else if (index == chosen) {
+                kept.add(inlinedSource(source, uri, fileResourceProvider, location));
+            }
+        }
+        rewrite.accounted().add(range);
+        rewrite.edits().add(new CssEdit(range, declaration.getProperty() + ": " + String.join(", ", kept)));
+        return true;
+    }
+
+    /** The sources of a {@code src} declaration, each the members between two commas. */
+    private static List<List<ICSSExpressionMember>> sourcesOf(@NotNull CSSDeclaration declaration) {
+        List<List<ICSSExpressionMember>> sources = new ArrayList<>();
+        List<ICSSExpressionMember> source = new ArrayList<>();
+        for (ICSSExpressionMember member : declaration.getExpression().getAllMembers()) {
+            if (member == ECSSExpressionOperator.COMMA) {
+                sources.add(source);
+                source = new ArrayList<>();
+            } else {
+                source.add(member);
+            }
+        }
+        sources.add(source);
+        return sources;
+    }
+
+    private static @Nullable CSSExpressionMemberTermURI uriOf(@NotNull List<ICSSExpressionMember> source) {
+        return source.stream().filter(CSSExpressionMemberTermURI.class::isInstance).map(CSSExpressionMemberTermURI.class::cast).findFirst().orElse(null);
+    }
+
+    /** Whether WeasyPrint reads the font of a source: by the format it states, or by the name of its file where it states none. */
+    private static boolean readableFontSource(@NotNull List<ICSSExpressionMember> source) {
+        CSSExpressionMemberTermURI uri = uriOf(source);
+        if (uri == null) {
+            return false;
+        }
+        for (ICSSExpressionMember member : source) {
+            if (member instanceof CSSExpressionMemberFunction function && "format".equalsIgnoreCase(function.getFunctionName())) {
+                CSSExpression argument = function.getExpression();
+                String format = argument == null ? "" : unquote(argument.getAsCSSString(CSS_WRITER_SETTINGS, 0)).toLowerCase(Locale.ROOT);
+                return READABLE_FONT_FORMATS.contains(format);
+            }
+        }
+        return !UNREADABLE_FONT_FILE.matcher(uri.getURIString()).find();
+    }
+
+    private String inlinedSource(@NotNull List<ICSSExpressionMember> source, @NotNull CSSExpressionMemberTermURI uri,
+                                 @NotNull FileResourceProvider fileResourceProvider, @Nullable String location) {
+        String resolved = resolveAgainst(location, uri.getURIString());
+        String replacement = replacementFor(fileResourceProvider, resolved);
+        String url = "url(" + (replacement != null ? replacement : escapeCssUrl(resolved)) + ")";
+        List<String> parts = new ArrayList<>();
+        for (ICSSExpressionMember member : source) {
+            parts.add(member == uri ? url : member.getAsCSSString(CSS_WRITER_SETTINGS, 0));
+        }
+        return String.join(" ", parts);
+    }
+
+    private static String textOf(@NotNull List<ICSSExpressionMember> source) {
+        return String.join(" ", source.stream().map(member -> member.getAsCSSString(CSS_WRITER_SETTINGS, 0)).toList());
     }
 
     /**
@@ -1119,6 +1278,16 @@ public class MediaUtils {
      * of an inline svg is not loaded by either of them today and is rewritten all the same, a data url
      * being a valid href there.
      */
+    private static final String FONT_SOURCES = "src";
+
+    /** The formats of a font WeasyPrint reads. It skips a woff2, an eot and an svg font, so fetching one is wasted. */
+    private static final Set<String> READABLE_FONT_FORMATS = Set.of("truetype", "opentype", "woff", "truetype-variations", "opentype-variations", "collection");
+
+    /** The file of a font WeasyPrint does not read, told by its name where no format says. */
+    private static final Pattern UNREADABLE_FONT_FILE = Pattern.compile("\\.(woff2|eot|svg)([?#].*)?$", Pattern.CASE_INSENSITIVE);
+
+    private static final CSSWriterSettings CSS_WRITER_SETTINGS = new CSSWriterSettings();
+
     private static final List<String[]> RESOURCE_ATTRIBUTES = List.of(
             new String[]{"img[src]", "src"},
             new String[]{"object[data]", "data"},

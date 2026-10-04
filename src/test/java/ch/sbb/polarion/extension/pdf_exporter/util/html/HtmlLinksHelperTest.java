@@ -7,6 +7,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Answers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -20,9 +21,10 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith({MockitoExtension.class, PdfExporterExtensionConfigurationExtension.class})
 class HtmlLinksHelperTest {
-    @Mock
+    // the helper passes the document along, and the default method hands the call on to the one these tests stub
+    @Mock(answer = Answers.CALLS_REAL_METHODS)
     private LinkInternalizer linkInternalizer1;
-    @Mock
+    @Mock(answer = Answers.CALLS_REAL_METHODS)
     private LinkInternalizer linkInternalizer2;
 
     private HtmlLinksHelper htmlLinksHelper;

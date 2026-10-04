@@ -62,7 +62,7 @@ public class HtmlLinksHelper {
             if (!range.isTracked() || range.startPos() < 0 || range.endPos() < range.startPos()) {
                 continue;
             }
-            inlineLinkTag(attributesOf(link))
+            inlineLinkTag(attributesOf(link), htmlContent)
                     .ifPresent(inlined -> inlinedLinks.add(new InlinedLink(range.startPos(), range.endPos(), inlined)));
         }
 
@@ -79,9 +79,9 @@ public class HtmlLinksHelper {
     private record InlinedLink(int start, int end, @NotNull String replacement) {
     }
 
-    private Optional<String> inlineLinkTag(Map<String, String> attributesMap) {
+    private Optional<String> inlineLinkTag(Map<String, String> attributesMap, String document) {
         return linkInliners.stream()
-                .map(i -> i.inline(attributesMap))
+                .map(i -> i.inlineIn(attributesMap, document))
                 .filter(Optional::isPresent)
                 .map(Optional::get)
                 .findFirst();

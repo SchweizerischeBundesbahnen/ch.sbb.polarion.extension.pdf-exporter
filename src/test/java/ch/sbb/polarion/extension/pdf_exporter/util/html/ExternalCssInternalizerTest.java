@@ -2,6 +2,7 @@ package ch.sbb.polarion.extension.pdf_exporter.util.html;
 
 import ch.sbb.polarion.extension.pdf_exporter.configuration.PdfExporterExtensionConfigurationExtension;
 import ch.sbb.polarion.extension.pdf_exporter.util.FileResourceProvider;
+import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -11,11 +12,16 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Map;
+import java.util.Objects;
+import java.io.InputStream;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith({MockitoExtension.class, PdfExporterExtensionConfigurationExtension.class})
@@ -225,5 +231,35 @@ class ExternalCssInternalizerTest {
 
         assertThat(result).isPresent();
         assertThat(result.get()).doesNotContain("theme.css").contains("color: red");
+    }
+
+    /**
+     * The stylesheet of Font Awesome 6.2, as Polarion serves it, declares each of its three fonts under the families of
+     * its versions 4, 5 and 6, each in woff2 and truetype. Of a document which names none of the old families, the
+     * export carries each font once, in the truetype WeasyPrint reads.
+     */
+    @Test
+    @SneakyThrows
+    void embedsEachFontOfFontAwesomeOnce() {
+        String url = "/polarion/ria/fontawesome-6.2.0/css/all.min.css";
+        byte[] stylesheet;
+        try (InputStream file = getClass().getResourceAsStream("/performance/fontawesome-6.2.0/css/all.min.css")) {
+            stylesheet = Objects.requireNonNull(file).readAllBytes();
+        }
+        when(fileResourceProvider.getResourceAsBytes(url)).thenReturn(stylesheet);
+        when(fileResourceProvider.getResourceAsBase64String(anyString())).thenAnswer(invocation -> "data:font/ttf;base64,"
+                + fileOf(invocation.getArgument(0)));
+
+        String document = "<link rel=\"stylesheet\" href=\"" + url + "\"/><span class=\"fa-solid fa-chart-column\"></span>";
+        String result = cssLinkInliner.inlineIn(Map.of("rel", "stylesheet", "href", url), document).orElseThrow();
+
+        assertThat(result.split("@font-face", -1)).as("the three fonts of version 6 only").hasSize(4);
+        assertThat(result).contains("fa-brands-400_ttf", "fa-regular-400_ttf", "fa-solid-900_ttf")
+                .doesNotContain("Font Awesome 5", "font-family:\"FontAwesome\"", "woff2");
+        verify(fileResourceProvider, times(3)).getResourceAsBase64String(anyString());
+    }
+
+    private static String fileOf(String url) {
+        return url.substring(url.lastIndexOf('/') + 1).replace('.', '_');
     }
 }
