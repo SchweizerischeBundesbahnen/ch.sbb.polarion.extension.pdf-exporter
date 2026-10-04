@@ -38,7 +38,8 @@ import static org.mockito.Mockito.lenient;
  * <p>
  * The exporter and WeasyPrint are timed apart, read from the timings of the generation log, so a failure says which side
  * became slow. Each document is exported {@link #RUNS} times, and the time of each part is the average. Each part has a
- * reference time in {@code performance/reference-times.properties}, its average over runs of CI. {@link PerformanceRun}
+ * reference time in {@code performance/reference-times-<architecture>.properties}, its average over runs on a machine of
+ * that architecture. {@link PerformanceRun}
  * expects each part to take its reference time scaled by how the small document went in this run, which absorbs how
  * fast this machine and this moment are; the small document itself it scales by a fixed piece of JDK work, so that a
  * change which slows every export still shows. It writes a report of every export after the last test.
@@ -63,8 +64,8 @@ public abstract class BasePerformanceTest extends BasePdfConverterTest {
     private static final String POLARION_FONTS = "/polarion/ria/fonts/";
     private static final String FONT_AWESOME = "/polarion/ria/fontawesome-";
 
-    /** Whether the exporter and the service ran once in this JVM, so that no timed export pays for a cold start. */
-    private static boolean warmedUp;
+    /** The small document as the run timed it first, after warming the JVM and the service up. */
+    private static Timing baseline;
 
     private static String embeddedFont;
 
@@ -105,19 +106,24 @@ public abstract class BasePerformanceTest extends BasePdfConverterTest {
 
     /**
      * Exports the content as a LiveDoc {@link #RUNS} times and returns the average time of each part: one export of a
-     * document takes too little for one run to tell a slower exporter from a busy machine. Before the first export of a
-     * run of the tests, one export which is not timed warms the JVM and the service up, and the small document is timed
-     * as the baseline of the run, which {@link PerformanceRun} scales the other reference times by. The timing report of
-     * each export is written to the reports folder at once, so that it is there whichever check fails.
+     * document takes too little for one run to tell a slower exporter from a busy machine. The timing report of each
+     * export is written to the reports folder at once, so that it is there whichever check fails.
+     * <p>
+     * Before the first export of a run of the tests, {@link #RUNS} exports which are not timed warm the JVM and the service
+     * up, and the small document is timed as the baseline of the run, which {@link PerformanceRun} scales the other
+     * reference times by. Its own test takes that same timing rather than one of its own: the reference times hold each
+     * export against the small document of its run, so the run must scale by the very sample it reports.
+     * </p>
      */
     protected @NotNull Timing export(@NotNull String name, @NotNull String title, @NotNull String content, @NotNull ExportParams params) {
-        if (!warmedUp) {
-            warmedUp = true;
-            exportOnce("warmup", "Warm-up", smallDocument(), portraitA4().build());
-            Timing baseline = average(PerformanceRun.SMALL_DOCUMENT + "-baseline", SMALL_DOCUMENT_TITLE, smallDocument(), portraitA4().build());
+        if (baseline == null) {
+            for (int run = 1; run <= RUNS; run++) {
+                exportOnce("warmup-" + run, "Warm-up", smallDocument(), portraitA4().build());
+            }
+            baseline = average(PerformanceRun.SMALL_DOCUMENT, SMALL_DOCUMENT_TITLE, smallDocument(), portraitA4().build());
             PerformanceRun.current().baseline(baseline.exporterMs(), baseline.weasyPrintMs());
         }
-        return average(name, title, content, params);
+        return PerformanceRun.SMALL_DOCUMENT.equals(name) ? baseline : average(name, title, content, params);
     }
 
     /** The small document, which takes the exporter and WeasyPrint little but what every export costs. */
