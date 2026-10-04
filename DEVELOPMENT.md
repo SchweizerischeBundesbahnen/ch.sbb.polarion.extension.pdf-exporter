@@ -134,10 +134,13 @@ The performance tests export documents of a known shape and fail when an export 
 They are tagged `performance` and run in a profile of their own, not in the regular build:
 
 ```bash
-mvn verify -P performance-tests-with-weasyprint-docker -DskipJsTests
+mvn verify -P performance-tests-with-weasyprint-docker
 ```
 
-Pass `-Dweasyprint.service.url=http://localhost:9080` to use a running WeasyPrint service instead of a container.
+The profile builds the classes, the tests and the jar, and runs these tests alone. It takes every other step of the
+build out: the documentation pages, the UI and its tests, the OpenAPI file, coverage, the source and javadoc jars and
+the Polarion compatibility check. Pass `-Dweasyprint.service.url=http://localhost:9080` to use a running WeasyPrint
+service instead of a container.
 
 - `ExportPerformanceTest` exports one shape each: a small document, a large table, cells running across pages, many
   images, many work items, sections which page breaks turn landscape, tables whose words leave them no room, and
@@ -146,16 +149,21 @@ Pass `-Dweasyprint.service.url=http://localhost:9080` to use a running WeasyPrin
 - `FeatureDocumentTest` exports one document with every feature and every option of a style package, and compares its
   pages with reference images, so that one export shows whether any of it broke.
 
-Each test has a budget for the exporter and one for WeasyPrint, read from the generation log, so a failure names the
-slow side. The budgets are three times today's times on an arm64 Mac. They are scaled by how much slower the machine
-of the run does a fixed piece of work of the JDK, hashing, sorting and many small objects, which runs no code of the
-exporter. So a slower CI runner does not fail them, and a change which slows every export cannot raise its own budget.
-The CSS of an export carries the fonts of the default CSS embedded, as in Polarion, so a cost which grows with the CSS
-shows here too. The timing report of each export is written to `target/surefire-reports/performance-*.txt`, before any
-check, and `performance-machine.txt` says by how much the budgets were scaled.
+The exporter and WeasyPrint are timed apart, read from the generation log, so a failure names the slow side. Each has a
+reference time, its time on an arm64 Mac, and fails at three times that. Before the first test, `PerformanceRun` times
+a fixed piece of work of the JDK, hashing, sorting and many small objects, which runs no code of the exporter. How much
+slower than on the Mac this machine does it scales every reference time, and the log says by how much. So a slower CI
+runner does not fail the tests, and a change which slows every export cannot raise its own limit. The CSS of an export
+carries the fonts of the default CSS embedded, as in Polarion, so a cost which grows with the CSS shows here too.
 
-To set the budgets anew, run the tests on an arm64 Mac and set each to three times its time there. A GitHub runner
-runs the exporter up to 1.8 times slower than the measure of the machine says, so a lower budget fails at random.
+After the last test, the log shows a table of every export: its time, its reference time and limit on this machine,
+how far it is from the reference, and whether it is within the limit. The table is also written to
+`target/surefire-reports/performance-summary.md`, which CI adds to the summary of the run, and the timing report of
+each export to `target/surefire-reports/performance-*.txt`.
+
+To set the reference times anew, run the tests on an arm64 Mac and set each to its time there. A GitHub runner runs
+the exporter up to 1.8 times slower than the measure of the machine says, so a limit below three times the reference
+fails at random.
 
 ## Debugging
 

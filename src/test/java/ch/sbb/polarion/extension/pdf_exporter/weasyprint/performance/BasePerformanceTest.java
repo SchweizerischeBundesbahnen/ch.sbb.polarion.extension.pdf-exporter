@@ -17,19 +17,14 @@ import org.apache.pdfbox.pdmodel.PDDocument;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.security.MessageDigest;
-import java.util.Arrays;
 import java.util.Base64;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Objects;
-import java.util.Random;
-import java.util.regex.Pattern;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -41,10 +36,11 @@ import static org.mockito.Mockito.lenient;
  * The base of the performance tests: they export documents of a known shape and fail when an export takes longer than
  * it does today. They run in the profile {@code performance-tests-with-weasyprint-docker} alone.
  * <p>
- * A budget is set for the exporter and for WeasyPrint apart, read from the timings of the generation log, so a failure
- * says which side became slow. The budgets are three times what an export takes on the machine they were set on. They
- * are scaled by how much slower the machine of the run does a fixed piece of work, which runs no code of the exporter:
- * a change which slows every export cannot slow the measure of the machine with it and raise every budget.
+ * The exporter and WeasyPrint are timed apart, read from the timings of the generation log, so a failure says which side
+ * became slow. Each has a reference time, what it took on the machine the reference times were taken on, and may take
+ * three times as long. {@link PerformanceRun} scales the reference times by how much slower the machine of the run does
+ * a fixed piece of work, which runs no code of the exporter: a change which slows every export cannot slow the measure of
+ * the machine with it and raise every limit. It writes a table of every export to the log after the last test.
  * </p>
  * <p>
  * The CSS of an export carries its fonts as Polarion gives them, embedded as data URLs, as a real export does. A cost
@@ -52,23 +48,14 @@ import static org.mockito.Mockito.lenient;
  * </p>
  */
 @Tag("performance")
+@ExtendWith(PerformanceRun.Extension.class)
 public abstract class BasePerformanceTest extends BasePdfConverterTest {
 
-    /** What the fixed piece of work takes on the machine the budgets were set on, an arm64 Mac, in ms. */
-    private static final long CALIBRATION_MS = 213;
-
     private static final String WEASYPRINT_STAGE = "WeasyPrint conversion";
-
-    private static final String MACHINE = "machine";
-
-    private static final Pattern WORD = Pattern.compile("word(\\d)");
 
     /** The fonts of the default CSS, which Polarion serves and the export embeds, in place of fonts of a like size. */
     private static final String POLARION_FONTS = "/polarion/ria/fonts/";
     private static final String FONT_AWESOME = "/polarion/ria/fontawesome-";
-
-    /** How much slower than the machine of the budgets this one is, measured once per run. */
-    private static Double slowdown;
 
     /** Whether the exporter and the service ran once in this JVM, so that no timed export pays for a cold start. */
     private static boolean warmedUp;
@@ -162,71 +149,25 @@ public abstract class BasePerformanceTest extends BasePdfConverterTest {
     }
 
     /**
-     * Fails when the exporter or WeasyPrint took longer than its budget, scaled to this machine. The timing report of the
-     * export is written to the reports folder either way.
+     * Fails when the exporter or WeasyPrint took longer than {@link PerformanceRun#TOLERANCE} times its reference time,
+     * scaled to this machine. Both parts go into the table of the run first, and the timing report of the export is
+     * written to the reports folder either way.
+     *
+     * @param exporterReferenceMs   what the exporter took on the machine of the reference times
+     * @param weasyPrintReferenceMs what WeasyPrint took there
      */
-    protected void assertWithinBudget(@NotNull Timing timing, long exporterBudgetMs, long weasyPrintBudgetMs) {
-        double scale = slowdown();
-        long exporterLimit = Math.round(exporterBudgetMs * scale);
-        long weasyPrintLimit = Math.round(weasyPrintBudgetMs * scale);
-        String summary = "%s: exporter %d ms of %d, WeasyPrint %d ms of %d, budgets scaled by %.2f".formatted(
-                timing.name(), timing.exporterMs(), exporterLimit, timing.weasyPrintMs(), weasyPrintLimit, scale);
+    protected void assertWithinReference(@NotNull Timing timing, long exporterReferenceMs, long weasyPrintReferenceMs) {
+        PerformanceRun run = PerformanceRun.current();
+        run.add(timing.name(), "exporter", timing.exporterMs(), exporterReferenceMs);
+        run.add(timing.name(), "WeasyPrint", timing.weasyPrintMs(), weasyPrintReferenceMs);
+        long exporterLimit = run.limit(exporterReferenceMs);
+        long weasyPrintLimit = run.limit(weasyPrintReferenceMs);
+        String summary = "%s: exporter %d ms of %d, WeasyPrint %d ms of %d, reference times scaled by %.2f".formatted(
+                timing.name(), timing.exporterMs(), exporterLimit, timing.weasyPrintMs(), weasyPrintLimit, run.scale());
         writeReport(timing.name(), summary + System.lineSeparator() + timing.report());
 
-        assertThat(timing.exporterMs()).as("The exporter is within its budget. %s%n%s", summary, timing.report()).isLessThanOrEqualTo(exporterLimit);
-        assertThat(timing.weasyPrintMs()).as("WeasyPrint is within its budget. %s%n%s", summary, timing.report()).isLessThanOrEqualTo(weasyPrintLimit);
-    }
-
-    /** How much slower than the machine of the budgets this one does the fixed piece of work, never less than one. */
-    private static double slowdown() {
-        if (slowdown == null) {
-            calibrate();
-            long best = Long.MAX_VALUE;
-            for (int run = 0; run < 3; run++) {
-                best = Math.min(best, calibrate());
-            }
-            slowdown = Math.max(1d, (double) best / CALIBRATION_MS);
-            writeReport(MACHINE, "machine: best of three %d ms of fixed work, against %d ms on the machine of the budgets, budgets scaled by %.2f%n"
-                    .formatted(best, CALIBRATION_MS, slowdown));
-        }
-        return slowdown;
-    }
-
-    /**
-     * Times a fixed piece of work of the JDK alone, which no change of the exporter or of its libraries makes slower. It
-     * tells how fast this machine is, for the budgets. Besides hashing and sorting, it builds and walks many small
-     * objects and runs a regular expression over a long text, as an export does with the DOM of a document: a machine
-     * whose memory is slower than its processor is slower at that.
-     */
-    @SneakyThrows
-    private static long calibrate() {
-        long start = System.nanoTime();
-        MessageDigest digest = MessageDigest.getInstance("SHA-256");
-        byte[] block = new byte[1 << 20];
-        new Random(42).nextBytes(block);
-        for (int round = 0; round < 100; round++) {
-            digest.update(block);
-        }
-        int[] numbers = new Random(42).ints(2_000_000).toArray();
-        Arrays.sort(numbers);
-        Map<String, Integer> words = new HashMap<>();
-        StringBuilder text = new StringBuilder();
-        for (int index = 0; index < 1_500_000; index++) {
-            String word = "word" + index % 50_000;
-            words.merge(word, 1, Integer::sum);
-            text.append(word).append(' ');
-        }
-        String shortened = WORD.matcher(text).replaceAll("w$1");
-        consume(digest.digest(), numbers, words, shortened);
-        return (System.nanoTime() - start) / 1_000_000;
-    }
-
-    /** Keeps the result of the work, so that the JIT cannot drop the work. */
-    private static void consume(byte @NotNull [] hash, int @NotNull [] numbers, @NotNull Map<String, Integer> words, @NotNull String text) {
-        assertThat(hash).hasSize(32);
-        assertThat(numbers).isNotEmpty();
-        assertThat(words).hasSize(50_000);
-        assertThat(text).isNotEmpty();
+        assertThat(timing.exporterMs()).as("The exporter is within its limit. %s%n%s", summary, timing.report()).isLessThanOrEqualTo(exporterLimit);
+        assertThat(timing.weasyPrintMs()).as("WeasyPrint is within its limit. %s%n%s", summary, timing.report()).isLessThanOrEqualTo(weasyPrintLimit);
     }
 
     @SneakyThrows

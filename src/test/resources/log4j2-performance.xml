@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The logging of the performance tests: their log is read for the factor of the machine and the table of the run,
+     so the debug output of the Docker client and of testcontainers stays out of it -->
+<Configuration status="WARN">
+	<Appenders>
+		<Console name="Console" target="SYSTEM_OUT">
+			<PatternLayout pattern="%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"/>
+		</Console>
+	</Appenders>
+
+	<Loggers>
+		<Logger name="org.xhtmlrenderer" level="error"/>
+		<Logger name="com.github.dockerjava" level="warn"/>
+		<Logger name="org.testcontainers" level="warn"/>
+		<Logger name="tc" level="warn"/>
+
+		<Root level="INFO">
+			<AppenderRef ref="Console"/>
+		</Root>
+	</Loggers>
+</Configuration>

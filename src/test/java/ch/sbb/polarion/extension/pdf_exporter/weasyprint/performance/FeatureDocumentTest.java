@@ -17,7 +17,7 @@ import static org.mockito.Mockito.when;
  * One document holding every kind of content the exporter handles, exported with every option a style package sets: a
  * cover page, a header and footer of the first page, a watermark, comments, the language of the document and fit to page.
  * Its pages are compared with reference images, so that one export shows whether any of it broke, and the export is
- * timed against a budget.
+ * timed against its reference time.
  * <p>
  * The document is stitched together from the fixtures of the integration tests: the tables of figures and tables, text,
  * lists and comments, tables with no room for their words, URLs and IDs, a table in German, special symbols, a work item
@@ -58,6 +58,6 @@ class FeatureDocumentTest extends BasePerformanceTest {
         // Counted first, as a page which no reference image has stops the comparison
         assertThat(pageCount(timing.pdf())).as("The pages the document runs to").isEqualTo(PAGES);
         assertFalse(compareContentUsingReferenceImages("featureDocument", timing.pdf()), "The pages differ from the reference images");
-        assertWithinBudget(timing, 3_300, 8_700);
+        assertWithinReference(timing, 1_060, 2_790);
     }
 }
