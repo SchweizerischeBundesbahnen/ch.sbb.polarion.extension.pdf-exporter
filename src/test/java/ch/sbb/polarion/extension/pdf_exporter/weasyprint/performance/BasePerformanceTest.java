@@ -18,6 +18,8 @@ import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -51,6 +53,8 @@ import static org.mockito.Mockito.lenient;
  */
 @Tag("performance")
 @ExtendWith(PerformanceRun.Extension.class)
+// The test of the small document takes the timing of the baseline and exports nothing, leaving the stubs of its set-up unused
+@MockitoSettings(strictness = Strictness.LENIENT)
 public abstract class BasePerformanceTest extends BasePdfConverterTest {
 
     private static final String WEASYPRINT_STAGE = "WeasyPrint conversion";
