@@ -37,7 +37,7 @@ jobs:
           java-version: ${{ env.JAVA_VERSION }}
           cache: maven
       - name: ⏱️ Run the performance tests
-        run: mvn --batch-mode -Dstyle.color=always -s "${SETTINGS_XML}" verify -P performance-tests-with-weasyprint-docker -Dweasyprint.service.url="${WEASYPRINT_SERVICE_URL}"
+        run: mvn --batch-mode -s "${SETTINGS_XML}" verify -P performance-tests-with-weasyprint-docker -Dweasyprint.service.url="${WEASYPRINT_SERVICE_URL}"
       - name: 📊 Show the table of the run
         if: always()
         run: |
