@@ -19,11 +19,12 @@ class ExportPerformanceTest extends BasePerformanceTest {
 
     /**
      * A small document, which takes the exporter little but what every export costs: a cost added to every export, as a
-     * parse of the CSS with its fonts (#1139), shows here as a multiple of its time.
+     * parse of the CSS with its fonts (#1139), shows here as a multiple of its time. It is judged against the fixed piece
+     * of JDK work, the other documents against it.
      */
     @Test
     void exportsASmallDocument() {
-        Timing timing = export("reference", "Reference", readHtmlResource("performance/reference"), portraitA4().build());
+        Timing timing = export(PerformanceRun.SMALL_DOCUMENT, SMALL_DOCUMENT_TITLE, smallDocument(), portraitA4().build());
 
         assertThat(pageCount(timing.pdf())).isEqualTo(1);
         assertWithinReference(timing);

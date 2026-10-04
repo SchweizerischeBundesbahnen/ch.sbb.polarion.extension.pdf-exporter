@@ -150,32 +150,50 @@ service instead of a container.
   pages with reference images, so that one export shows whether any of it broke.
 
 The exporter and WeasyPrint are timed apart, read from the generation log, so a failure names the slow side. Each
-document is exported three times, and the time of each part is the average. The reference time of each part is in
-`src/test/resources/performance/reference-times.properties`, its time on an arm64 Mac, together with the time that Mac
-takes for a fixed piece of work of the JDK: hashing, sorting and many small objects, which runs no code of the exporter.
-Before the first test, `PerformanceRun` times that work on this machine, and the factor of the two scales every reference
-time to the time expected here. So a slower CI runner does not fail the tests, and a change which slows every export
-cannot raise its own limit. The CSS of an export carries the fonts of the default CSS embedded, as in Polarion, so a
-cost which grows with the CSS shows here too.
+document is exported three times, and the time of each part is the average.
 
-Each part is judged against its expected time:
+The reference time of each part is in `src/test/resources/performance/reference-times.properties`: its average over
+runs of CI, together with the time CI takes for a fixed piece of JDK work, hashing, sorting and many small objects, which
+runs no code of the exporter. A run expects each part to take its reference time scaled to the run:
+
+- The small document is exported first. Every other export is scaled by how much longer or shorter than its reference
+  the small document took in this run, the exporter and WeasyPrint apart. Whatever makes this machine or this moment
+  faster or slower makes the small document so too, so a runner slower at WeasyPrint than at Java, or a busy neighbor,
+  cancels out.
+- A change which slows every export would slow the small document as well and cancel out that way. So the small document
+  itself is scaled by the fixed work, timed before the first test: a slowdown of every export, as #1139, shows there.
+
+The CSS of an export carries the fonts of the default CSS embedded, as in Polarion, so a cost which grows with the CSS
+shows here too. Each part is judged against its expected time:
 
 | Part | Warning above | Fails above |
 |---|---|---|
-| Exporter | 1.5 times | 2 times |
-| WeasyPrint | 1.5 times | 3 times |
+| Exporter | 1.2 times | 1.5 times |
+| WeasyPrint | 1.35 times | 2 times |
 
-A part over its limit fails its test and the build. A warning only marks the part in the report and writes a
-`::warning` line, which GitHub Actions shows as an annotation of the run.
+Across eleven runs of CI, no part came more than 16 % above its expected time. A part over its limit fails its test and
+the build. A warning only marks the part in the report and writes a `::warning` line, which GitHub Actions shows as an
+annotation of the run. On a machine unlike the CI runners, as an arm64 Mac, the parts come out up to a third below their
+expected time, as WeasyPrint lays out large documents relatively faster there.
 
-After the last test, the log shows the report: a table of the reference times and the times expected here, and a table
-of the results, each part with its expected time, its time, how far it is from the expected one, its warning level,
-its limit and its result. The report is also written to `target/surefire-reports/performance-summary.md`, which CI adds
-to the summary of the run and uploads with the timing report of each export.
+After the last test, the log shows the report: a table of the reference times, what each is scaled by and the time
+expected here, and a table of the results, each part with its expected time, its time, how far it is from the expected
+one, its warning level, its limit and its result. The report is also written to
+`target/surefire-reports/performance-summary.md`, which CI adds to the summary of the run and uploads with the timing
+report of each export.
 
-The run also writes its own times to `target/surefire-reports/performance-reference-times.properties`, in the form of
-the reference times and with the time of the fixed work on this machine. To take new reference times, copy that file
-from a run on the reference machine over `reference-times.properties`.
+Each run also writes its times to `target/surefire-reports/performance-reference-times.properties`, which CI uploads.
+To take new reference times, average them over at least five runs of CI on `main`, and propose the result in a pull
+request:
+
+```bash
+gh run list --workflow "Performance Tests" --branch main --status success --limit 10 --json databaseId -q '.[].databaseId' \
+  | xargs -I{} gh run download {} -n performance-reports -D runs/{}
+java src/test/java/ch/sbb/polarion/extension/pdf_exporter/weasyprint/performance/AverageReferenceTimes.java \
+  runs/*/performance-reference-times.properties > src/test/resources/performance/reference-times.properties
+```
+
+A pull request, never the build itself, so that a regression merged into `main` cannot become its own reference.
 
 ## Debugging
 
