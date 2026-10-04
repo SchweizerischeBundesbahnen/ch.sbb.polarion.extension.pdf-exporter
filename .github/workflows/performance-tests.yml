@@ -52,4 +52,5 @@ jobs:
           path: |
             target/surefire-reports/performance-*.txt
             target/surefire-reports/performance-summary.md
+            target/surefire-reports/performance-reference-times.properties
           retention-days: 7

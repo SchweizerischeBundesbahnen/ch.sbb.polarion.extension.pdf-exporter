@@ -149,21 +149,33 @@ service instead of a container.
 - `FeatureDocumentTest` exports one document with every feature and every option of a style package, and compares its
   pages with reference images, so that one export shows whether any of it broke.
 
-The exporter and WeasyPrint are timed apart, read from the generation log, so a failure names the slow side. Each has a
-reference time, its time on an arm64 Mac, and fails at three times that. Before the first test, `PerformanceRun` times
-a fixed piece of work of the JDK, hashing, sorting and many small objects, which runs no code of the exporter. How much
-slower than on the Mac this machine does it scales every reference time, and the log says by how much. So a slower CI
-runner does not fail the tests, and a change which slows every export cannot raise its own limit. The CSS of an export
-carries the fonts of the default CSS embedded, as in Polarion, so a cost which grows with the CSS shows here too.
+The exporter and WeasyPrint are timed apart, read from the generation log, so a failure names the slow side. Each
+document is exported three times, and the time of each part is the average. The reference time of each part is in
+`src/test/resources/performance/reference-times.properties`, its time on an arm64 Mac, together with the time that Mac
+takes for a fixed piece of work of the JDK: hashing, sorting and many small objects, which runs no code of the exporter.
+Before the first test, `PerformanceRun` times that work on this machine, and the factor of the two scales every reference
+time to the time expected here. So a slower CI runner does not fail the tests, and a change which slows every export
+cannot raise its own limit. The CSS of an export carries the fonts of the default CSS embedded, as in Polarion, so a
+cost which grows with the CSS shows here too.
 
-After the last test, the log shows a table of every export: its time, its reference time and limit on this machine,
-how far it is from the reference, and whether it is within the limit. The table is also written to
-`target/surefire-reports/performance-summary.md`, which CI adds to the summary of the run, and the timing report of
-each export to `target/surefire-reports/performance-*.txt`.
+Each part is judged against its expected time:
 
-To set the reference times anew, run the tests on an arm64 Mac and set each to its time there. A GitHub runner runs
-the exporter up to 1.8 times slower than the measure of the machine says, so a limit below three times the reference
-fails at random.
+| Part | Warning above | Fails above |
+|---|---|---|
+| Exporter | 1.5 times | 2 times |
+| WeasyPrint | 1.5 times | 3 times |
+
+A part over its limit fails its test and the build. A warning only marks the part in the report and writes a
+`::warning` line, which GitHub Actions shows as an annotation of the run.
+
+After the last test, the log shows the report: a table of the reference times and the times expected here, and a table
+of the results, each part with its expected time, its time, how far it is from the expected one, its warning level,
+its limit and its result. The report is also written to `target/surefire-reports/performance-summary.md`, which CI adds
+to the summary of the run and uploads with the timing report of each export.
+
+The run also writes its own times to `target/surefire-reports/performance-reference-times.properties`, in the form of
+the reference times and with the time of the fixed work on this machine. To take new reference times, copy that file
+from a run on the reference machine over `reference-times.properties`.
 
 ## Debugging
 

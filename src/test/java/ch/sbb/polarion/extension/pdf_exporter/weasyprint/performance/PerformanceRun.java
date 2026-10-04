@@ -5,6 +5,7 @@ import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -14,44 +15,67 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Properties;
 import java.util.Random;
+import java.util.TreeMap;
 import java.util.regex.Pattern;
 
 /**
- * One run of the performance tests, across all their classes. Before the first test it measures how fast the machine
- * is and writes the factor which scales every reference time to the log. After the last test it writes a table of every
- * export: its time, its reference time, its limit and how far it is from the reference.
+ * One run of the performance tests, across all their classes. Before the first test it measures how fast this machine
+ * is against the machine of the reference times and writes that factor to the log. Each part of an export is expected
+ * to take its reference time times the factor here, and is judged against that expected time. After the last test it
+ * writes a report to the log and to a file, the reference times first and the results under them, and the times of the
+ * run in the form of the reference times.
  * <p>
- * JUnit keeps it in the store of the root context, which it closes once every test has run.
+ * The reference times are in {@value #REFERENCE_TIMES}. JUnit keeps the run in the store of the root context, which it
+ * closes once every test has run.
  * </p>
  */
 public final class PerformanceRun implements AutoCloseable {
 
-    /** What the fixed piece of work takes on the machine the reference times were taken on, an arm64 Mac, in ms. */
-    static final long CALIBRATION_MS = 213;
+    /** How many times its expected time the exporter may take before it fails: it is our code. */
+    static final double EXPORTER_TOLERANCE = 2;
 
-    /** How many times its reference time an export may take on this machine before it fails. */
-    static final int TOLERANCE = 3;
+    /** How many times its expected time WeasyPrint may take before it fails: a service of its own, which varies more. */
+    static final double WEASYPRINT_TOLERANCE = 3;
+
+    /** How many times its expected time a part may take before the report and the log mark it, without failing. */
+    static final double WARNING_TOLERANCE = 1.5;
+
+    static final String EXPORTER = "exporter";
+    static final String WEASYPRINT = "WeasyPrint";
+
+    private static final String REFERENCE_TIMES = "/performance/reference-times.properties";
+    private static final String CALIBRATION_KEY = "machine.calibration";
+
+    private static final String REPORTS = "target/surefire-reports/";
+    private static final String SUMMARY_FILE = REPORTS + "performance-summary.md";
+    private static final String TIMES_FILE = REPORTS + "performance-reference-times.properties";
 
     private static final Pattern WORD = Pattern.compile("word(\\d)");
 
-    private static final String SUMMARY_FILE = "target/surefire-reports/performance-summary.md";
-
     private static PerformanceRun current;
 
+    private final Properties referenceTimes;
+    private final long referenceCalibrationMs;
     private final long calibrationMs;
-    private final double scale;
+    private final double factor;
     private final List<Row> rows = new ArrayList<>();
 
-    /** One part of one export, as the table shows it. */
-    private record Row(@NotNull String export, @NotNull String part, long timeMs, long referenceMs, long limitMs) {
-        boolean withinLimit() {
-            return timeMs <= limitMs;
+    /** One part of one export, as the report shows it. */
+    private record Row(@NotNull String export, @NotNull String part, long referenceMs, long expectedMs, long timeMs, long warningMs, long limitMs) {
+        @NotNull String result() {
+            if (timeMs > limitMs) {
+                return "over the limit";
+            }
+            return timeMs > warningMs ? "warning" : "ok";
         }
 
-        /** How far the time is from the reference, in whole percent. */
-        long difference() {
-            return referenceMs == 0 ? 0 : Math.round(((double) timeMs / referenceMs - 1) * 100);
+        /** How far the time is from the expected one, in whole percent. */
+        @NotNull String difference() {
+            long percent = expectedMs == 0 ? 0 : Math.round(((double) timeMs / expectedMs - 1) * 100);
+            return percent == 0 ? "0 %" : "%+d %%".formatted(percent);
         }
     }
 
@@ -65,15 +89,17 @@ public final class PerformanceRun implements AutoCloseable {
     }
 
     public PerformanceRun() {
+        referenceTimes = readReferenceTimes();
+        referenceCalibrationMs = Long.parseLong(Objects.requireNonNull(referenceTimes.getProperty(CALIBRATION_KEY), CALIBRATION_KEY).trim());
         calibrate();
         long best = Long.MAX_VALUE;
         for (int run = 0; run < 3; run++) {
             best = Math.min(best, calibrate());
         }
         calibrationMs = best;
-        scale = Math.max(1d, (double) best / CALIBRATION_MS);
-        log("Performance tests: the fixed work took %d ms, %d ms on the machine of the reference times, so the reference times are scaled by %.2f"
-                .formatted(calibrationMs, CALIBRATION_MS, scale));
+        factor = (double) calibrationMs / referenceCalibrationMs;
+        log("Performance tests: the fixed work took %d ms here and %d ms on the machine of the reference times, so each export is expected to take %.2f times its reference time"
+                .formatted(calibrationMs, referenceCalibrationMs, factor));
     }
 
     /** The run of the tests, which the extension started. */
@@ -84,56 +110,105 @@ public final class PerformanceRun implements AutoCloseable {
         return current;
     }
 
-    /** How much slower than the machine of the reference times this one is, never less than one. */
-    double scale() {
-        return scale;
+    /** How much slower than the machine of the reference times this one is, below one where it is faster. */
+    double factor() {
+        return factor;
     }
 
-    /** The reference time of a part of an export, scaled to this machine. */
-    long reference(long referenceMs) {
-        return Math.round(referenceMs * scale);
+    /** The reference time of a part of an export, from {@value #REFERENCE_TIMES}. */
+    long reference(@NotNull String export, @NotNull String part) {
+        String key = key(export, part);
+        String value = referenceTimes.getProperty(key);
+        if (value == null) {
+            throw new IllegalStateException("No reference time " + key + " in " + REFERENCE_TIMES);
+        }
+        return Long.parseLong(value.trim());
     }
 
-    /** The time a part of an export may take on this machine. */
-    long limit(long referenceMs) {
-        return reference(referenceMs) * TOLERANCE;
+    /** The time a part of an export is expected to take on this machine: its reference time times the factor. */
+    long expected(@NotNull String export, @NotNull String part) {
+        return Math.round(reference(export, part) * factor);
     }
 
-    /** Records a part of an export for the table, before it is checked against its limit. */
-    synchronized void add(@NotNull String export, @NotNull String part, long timeMs, long referenceMs) {
-        rows.add(new Row(export, part, timeMs, reference(referenceMs), limit(referenceMs)));
+    /** The time a part of an export may take on this machine, at the given multiple of its expected time. */
+    long limit(@NotNull String export, @NotNull String part, double tolerance) {
+        return Math.round(expected(export, part) * tolerance);
+    }
+
+    /** Records a part of an export for the report, before it is checked against its limit. */
+    synchronized void add(@NotNull String export, @NotNull String part, long timeMs, double tolerance) {
+        rows.add(new Row(export, part, reference(export, part), expected(export, part), timeMs,
+                limit(export, part, WARNING_TOLERANCE), limit(export, part, tolerance)));
     }
 
     @Override
     public void close() {
-        String table = table();
-        log(System.lineSeparator() + table);
-        write(table);
+        String report = report();
+        log(System.lineSeparator() + report);
+        write(SUMMARY_FILE, report);
+        write(TIMES_FILE, times());
+        // A line of this form becomes an annotation of the run in GitHub Actions, and is plain text anywhere else
+        rows.stream().filter(row -> "warning".equals(row.result())).forEach(row -> log("::warning title=Performance::%s, %s: %d ms, %s against the %d ms expected"
+                .formatted(row.export(), row.part(), row.timeMs(), row.difference(), row.expectedMs())));
         current = null;
     }
 
-    private @NotNull String table() {
-        StringBuilder table = new StringBuilder()
-                .append("### Performance tests%n%n".formatted())
-                .append("The fixed work took %d ms, %d ms on the machine of the reference times: reference times scaled by %.2f, limit %d times the reference.%n%n"
-                        .formatted(calibrationMs, CALIBRATION_MS, scale, TOLERANCE))
-                .append("| Export | Part | Time, ms | Reference, ms | Limit, ms | Against the reference | Result |%n".formatted())
-                .append("|---|---|---:|---:|---:|---:|---|%n".formatted());
+    /** The report in Markdown: the reference times and what they make of this machine first, the results under them. */
+    private @NotNull String report() {
+        StringBuilder report = new StringBuilder()
+                .append("### Performance tests%n%n#### Reference times%n%n".formatted())
+                .append("The fixed work took %d ms here and %d ms on the machine of the reference times: a factor of %.2f. Expected is the reference time times the factor.%n%n"
+                        .formatted(calibrationMs, referenceCalibrationMs, factor))
+                .append("| Export | Part | Reference, ms | Expected here, ms |%n|---|---|---:|---:|%n".formatted());
         for (Row row : rows) {
-            table.append("| %s | %s | %d | %d | %d | %s | %s |%n".formatted(row.export(), row.part(), row.timeMs(), row.referenceMs(), row.limitMs(),
-                    row.difference() == 0 ? "0 %" : "%+d %%".formatted(row.difference()), row.withinLimit() ? "ok" : "over the limit"));
+            report.append("| %s | %s | %d | %d |%n".formatted(row.export(), row.part(), row.referenceMs(), row.expectedMs()));
         }
-        return table.toString();
+        report.append("%n#### Results%n%n".formatted())
+                .append("Each time is the average of %d exports. The exporter fails at %s times its expected time, WeasyPrint at %s times, and either is marked as a warning above %s times.%n%n"
+                        .formatted(BasePerformanceTest.RUNS, times(EXPORTER_TOLERANCE), times(WEASYPRINT_TOLERANCE), times(WARNING_TOLERANCE)))
+                .append("| Export | Part | Expected, ms | Time, ms | Against expected | Warning above, ms | Limit, ms | Result |%n|---|---|---:|---:|---:|---:|---:|---|%n".formatted());
+        for (Row row : rows) {
+            report.append("| %s | %s | %d | %d | %s | %d | %d | %s |%n".formatted(row.export(), row.part(), row.expectedMs(), row.timeMs(),
+                    row.difference(), row.warningMs(), row.limitMs(), row.result()));
+        }
+        return report.toString();
+    }
+
+    /** The times of this run in the form of the reference times, to take as new reference times when this is the machine. */
+    private @NotNull String times() {
+        Map<String, Long> sorted = new TreeMap<>();
+        rows.forEach(row -> sorted.put(key(row.export(), row.part()), row.timeMs()));
+        StringBuilder times = new StringBuilder("# The times of a run of the performance tests, in the form of %s%n".formatted(REFERENCE_TIMES.substring(1)))
+                .append("%s=%d%n".formatted(CALIBRATION_KEY, calibrationMs));
+        sorted.forEach((key, value) -> times.append("%s=%d%n".formatted(key, value)));
+        return times.toString();
+    }
+
+    private static @NotNull String key(@NotNull String export, @NotNull String part) {
+        return export + "." + (EXPORTER.equals(part) ? "exporter" : "weasyprint");
+    }
+
+    private static @NotNull String times(double tolerance) {
+        return tolerance == Math.rint(tolerance) ? String.valueOf((long) tolerance) : String.valueOf(tolerance);
     }
 
     @SneakyThrows
-    private static void write(@NotNull String table) {
-        Path file = Path.of(SUMMARY_FILE);
-        Files.createDirectories(file.getParent());
-        Files.writeString(file, table, StandardCharsets.UTF_8);
+    private static @NotNull Properties readReferenceTimes() {
+        Properties properties = new Properties();
+        try (InputStream stream = PerformanceRun.class.getResourceAsStream(REFERENCE_TIMES)) {
+            properties.load(Objects.requireNonNull(stream, REFERENCE_TIMES));
+        }
+        return properties;
     }
 
-    @SuppressWarnings("java:S106") // The table belongs in the log of the build, which is what a performance run is read in
+    @SneakyThrows
+    private static void write(@NotNull String file, @NotNull String text) {
+        Path path = Path.of(file);
+        Files.createDirectories(path.getParent());
+        Files.writeString(path, text, StandardCharsets.UTF_8);
+    }
+
+    @SuppressWarnings("java:S106") // The report belongs in the log of the build, which is what a performance run is read in
     private static void log(@NotNull String text) {
         System.out.println(text);
     }

@@ -58,6 +58,6 @@ class FeatureDocumentTest extends BasePerformanceTest {
         // Counted first, as a page which no reference image has stops the comparison
         assertThat(pageCount(timing.pdf())).as("The pages the document runs to").isEqualTo(PAGES);
         assertFalse(compareContentUsingReferenceImages("featureDocument", timing.pdf()), "The pages differ from the reference images");
-        assertWithinReference(timing, 1_060, 2_790);
+        assertWithinReference(timing);
     }
 }
