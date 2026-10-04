@@ -18,6 +18,8 @@ import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -38,12 +40,11 @@ import static org.mockito.Mockito.lenient;
  * <p>
  * The exporter and WeasyPrint are timed apart, read from the timings of the generation log, so a failure says which side
  * became slow. Each document is exported {@link #RUNS} times, and the time of each part is the average. Each part has a
- * reference time in {@code performance/reference-times.properties}, what it took on the machine the reference times were
- * taken on. {@link PerformanceRun} measures how much slower this machine does a fixed piece of work, which runs no code
- * of the exporter, and expects each part to take its reference time times that factor here: a change which slows every
- * export cannot slow the measure of the machine with it. The exporter fails at twice its expected time, WeasyPrint at
- * three times, and either is a warning above one and a half times. The run writes a report of every export after the
- * last test.
+ * reference time in {@code performance/reference-times-<architecture>.properties}, its average over runs on a machine of
+ * that architecture. {@link PerformanceRun}
+ * expects each part to take its reference time scaled by how the small document went in this run, which absorbs how
+ * fast this machine and this moment are; the small document itself it scales by a fixed piece of JDK work, so that a
+ * change which slows every export still shows. It writes a report of every export after the last test.
  * </p>
  * <p>
  * The CSS of an export carries its fonts as Polarion gives them, embedded as data URLs, as a real export does. A cost
@@ -52,6 +53,8 @@ import static org.mockito.Mockito.lenient;
  */
 @Tag("performance")
 @ExtendWith(PerformanceRun.Extension.class)
+// The test of the small document takes the timing of the baseline and exports nothing, leaving the stubs of its set-up unused
+@MockitoSettings(strictness = Strictness.LENIENT)
 public abstract class BasePerformanceTest extends BasePdfConverterTest {
 
     private static final String WEASYPRINT_STAGE = "WeasyPrint conversion";
@@ -59,12 +62,14 @@ public abstract class BasePerformanceTest extends BasePdfConverterTest {
     /** How many times each document is exported, the time of a part being the average of all. */
     protected static final int RUNS = 3;
 
+    protected static final String SMALL_DOCUMENT_TITLE = "Small document";
+
     /** The fonts of the default CSS, which Polarion serves and the export embeds, in place of fonts of a like size. */
     private static final String POLARION_FONTS = "/polarion/ria/fonts/";
     private static final String FONT_AWESOME = "/polarion/ria/fontawesome-";
 
-    /** Whether the exporter and the service ran once in this JVM, so that no timed export pays for a cold start. */
-    private static boolean warmedUp;
+    /** The small document as the run timed it first, after warming the JVM and the service up. */
+    private static Timing baseline;
 
     private static String embeddedFont;
 
@@ -105,15 +110,32 @@ public abstract class BasePerformanceTest extends BasePdfConverterTest {
 
     /**
      * Exports the content as a LiveDoc {@link #RUNS} times and returns the average time of each part: one export of a
-     * document takes too little for one run to tell a slower exporter from a busy machine. The first export of a run of
-     * the tests is preceded by one which is not timed, to warm the JVM and the service up. The timing report of each
+     * document takes too little for one run to tell a slower exporter from a busy machine. The timing report of each
      * export is written to the reports folder at once, so that it is there whichever check fails.
+     * <p>
+     * Before the first export of a run of the tests, {@link #RUNS} exports which are not timed warm the JVM and the service
+     * up, and the small document is timed as the baseline of the run, which {@link PerformanceRun} scales the other
+     * reference times by. Its own test takes that same timing rather than one of its own: the reference times hold each
+     * export against the small document of its run, so the run must scale by the very sample it reports.
+     * </p>
      */
     protected @NotNull Timing export(@NotNull String name, @NotNull String title, @NotNull String content, @NotNull ExportParams params) {
-        if (!warmedUp) {
-            warmedUp = true;
-            exportOnce("warmup", "Warm-up", readHtmlResource("performance/reference"), portraitA4().build());
+        if (baseline == null) {
+            for (int run = 1; run <= RUNS; run++) {
+                exportOnce("warmup-" + run, "Warm-up", smallDocument(), portraitA4().build());
+            }
+            baseline = average(PerformanceRun.SMALL_DOCUMENT, SMALL_DOCUMENT_TITLE, smallDocument(), portraitA4().build());
+            PerformanceRun.current().baseline(baseline.exporterMs(), baseline.weasyPrintMs());
         }
+        return PerformanceRun.SMALL_DOCUMENT.equals(name) ? baseline : average(name, title, content, params);
+    }
+
+    /** The small document, which takes the exporter and WeasyPrint little but what every export costs. */
+    protected static @NotNull String smallDocument() {
+        return readHtmlResource("performance/reference");
+    }
+
+    private @NotNull Timing average(@NotNull String name, @NotNull String title, @NotNull String content, @NotNull ExportParams params) {
         long totalMs = 0;
         long weasyPrintMs = 0;
         Timing last = null;
@@ -152,20 +174,18 @@ public abstract class BasePerformanceTest extends BasePdfConverterTest {
     }
 
     /**
-     * Fails when the exporter took longer than {@link PerformanceRun#EXPORTER_TOLERANCE} times its expected time, or
-     * WeasyPrint {@link PerformanceRun#WEASYPRINT_TOLERANCE} times its own. The expected time is the reference time of the
-     * export times the factor of this machine. A part above {@link PerformanceRun#WARNING_TOLERANCE} times its expected time
-     * is only marked in the table and in the log. Both parts go into the table of the run first, and the timing report of
-     * the export is written to the reports folder either way.
+     * Fails when a part of the export took longer than its limit, a multiple of the time {@link PerformanceRun} expects
+     * of it on this machine, and only marks it in the report above its warning level. Both parts go into the report of
+     * the run first, and the timing report of the export is written to the reports folder either way.
      */
     protected void assertWithinReference(@NotNull Timing timing) {
         PerformanceRun run = PerformanceRun.current();
-        run.add(timing.name(), PerformanceRun.EXPORTER, timing.exporterMs(), PerformanceRun.EXPORTER_TOLERANCE);
-        run.add(timing.name(), PerformanceRun.WEASYPRINT, timing.weasyPrintMs(), PerformanceRun.WEASYPRINT_TOLERANCE);
-        long exporterLimit = run.limit(timing.name(), PerformanceRun.EXPORTER, PerformanceRun.EXPORTER_TOLERANCE);
-        long weasyPrintLimit = run.limit(timing.name(), PerformanceRun.WEASYPRINT, PerformanceRun.WEASYPRINT_TOLERANCE);
-        String summary = "%s: exporter %d ms of %d, WeasyPrint %d ms of %d, average of %d exports, expected times %.2f times the reference".formatted(
-                timing.name(), timing.exporterMs(), exporterLimit, timing.weasyPrintMs(), weasyPrintLimit, RUNS, run.factor());
+        run.add(timing.name(), PerformanceRun.EXPORTER, timing.exporterMs());
+        run.add(timing.name(), PerformanceRun.WEASYPRINT, timing.weasyPrintMs());
+        long exporterLimit = run.limit(timing.name(), PerformanceRun.EXPORTER);
+        long weasyPrintLimit = run.limit(timing.name(), PerformanceRun.WEASYPRINT);
+        String summary = "%s: exporter %d ms of %d, WeasyPrint %d ms of %d, average of %d exports".formatted(
+                timing.name(), timing.exporterMs(), exporterLimit, timing.weasyPrintMs(), weasyPrintLimit, RUNS);
         writeReport(timing.name(), summary + System.lineSeparator() + timing.report());
 
         assertThat(timing.exporterMs()).as("The exporter is within its limit. %s%n%s", summary, timing.report()).isLessThanOrEqualTo(exporterLimit);

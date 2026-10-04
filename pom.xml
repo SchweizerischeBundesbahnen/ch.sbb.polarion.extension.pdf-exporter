@@ -47,6 +47,8 @@
         <pdfbox.version>3.0.8</pdfbox.version>
         <okapi.xliff.version>1.48.0</okapi.xliff.version>
         <flying-saucer.version>10.5.0</flying-saucer.version>
+        <!-- 1.8.0 reads markdown2html.skip, which the performance profile sets; the generic parent pins 1.7.1 -->
+        <markdown2html-maven-plugin.version>1.8.0</markdown2html-maven-plugin.version>
 
         <!-- Performance tests run in a profile of their own: they take minutes and measure time, not looks -->
         <excludedGroups>performance</excludedGroups>
@@ -124,46 +126,13 @@
             <properties>
                 <groups>performance</groups>
                 <excludedGroups/>
+                <markdown2html.skip>true</markdown2html.skip>
             </properties>
 
             <build>
                 <plugins>
                     <plugin>
-                        <!-- Each execution of a step of the full build is taken out of it: the docs, the UI, the OpenAPI file, coverage and the checks of a release -->
-                        <groupId>ch.sbb.maven.plugins</groupId>
-                        <artifactId>markdown2html-maven-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>readme.md-to-about.html</id>
-                                <phase>none</phase>
-                            </execution>
-                            <execution>
-                                <id>disclaimer.md-to-disclaimer.html</id>
-                                <phase>none</phase>
-                            </execution>
-                            <execution>
-                                <id>quick_start.md-to-quick-start.html</id>
-                                <phase>none</phase>
-                            </execution>
-                            <execution>
-                                <id>user_guide.md-to-user-guide.html</id>
-                                <phase>none</phase>
-                            </execution>
-                            <execution>
-                                <id>configuration.md-to-configuration.html</id>
-                                <phase>none</phase>
-                            </execution>
-                            <execution>
-                                <id>limitations.md-to-limitations.html</id>
-                                <phase>none</phase>
-                            </execution>
-                            <execution>
-                                <id>upgrade.md-to-upgrade.html</id>
-                                <phase>none</phase>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
+                        <!-- The other steps of the full build are taken out by their executions, so that they do not run at all: the UI, the OpenAPI file, coverage and the checks of a release -->
                         <groupId>com.github.eirslett</groupId>
                         <artifactId>frontend-maven-plugin</artifactId>
                         <executions>
