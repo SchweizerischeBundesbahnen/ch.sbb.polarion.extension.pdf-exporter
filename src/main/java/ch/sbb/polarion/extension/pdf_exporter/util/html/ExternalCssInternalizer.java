@@ -1,6 +1,7 @@
 package ch.sbb.polarion.extension.pdf_exporter.util.html;
 
 import ch.sbb.polarion.extension.pdf_exporter.util.FileResourceProvider;
+import ch.sbb.polarion.extension.pdf_exporter.util.FontFamilyUse;
 import ch.sbb.polarion.extension.pdf_exporter.util.MediaUtils;
 import com.polarion.core.util.StringUtils;
 import org.jsoup.nodes.Document;
@@ -30,6 +31,16 @@ public class ExternalCssInternalizer implements LinkInternalizer {
 
     @Override
     public Optional<String> inline(Map<String, String> attributes) {
+        return inlineIn(attributes, "");
+    }
+
+    /**
+     * Inlines the stylesheet without the fonts it only repeats under a family neither the document nor the stylesheet
+     * itself names: a stylesheet of icons declares its families under the names of its older versions as well, with the
+     * same fonts.
+     */
+    @Override
+    public Optional<String> inlineIn(Map<String, String> attributes, String styles) {
         String url = attributes.get(HREF);
         if (!namesAStylesheet(attributes.get("rel"))
                 || StringUtils.isEmptyTrimmed(url)) {
@@ -50,7 +61,9 @@ public class ExternalCssInternalizer implements LinkInternalizer {
         // the urls of a fetched stylesheet are relative to it, and the parser resolves each of them
         // against that location: no pattern runs over a stylesheet the document points at
         String cssContent = new String(fileResourceProvider.getResourceAsBytes(url));
-        cssContent = MediaUtils.inlineCssResources(cssContent, fileResourceProvider, url);
+        cssContent = MediaUtils.inlineCssResources(cssContent, fileResourceProvider, url,
+                // the stylesheet first: the families it names are found there, without a search through the document
+                styles.isEmpty() ? family -> true : FontFamilyUse.in(cssContent, styles));
         inlinedContent.append(keepInsideStyleElement(cssContent));
         inlinedContent.append("</style>");
 

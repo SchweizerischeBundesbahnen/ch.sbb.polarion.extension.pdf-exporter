@@ -8,6 +8,8 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PaperSize;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.DocumentData;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.id.LiveDocId;
 import ch.sbb.polarion.extension.pdf_exporter.util.DocumentDataFactory;
+import ch.sbb.polarion.extension.pdf_exporter.util.html.HtmlLinksHelper;
+import ch.sbb.polarion.extension.pdf_exporter.util.HtmlProcessor;
 import ch.sbb.polarion.extension.pdf_exporter.util.PdfGenerationLog;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.base.BasePdfConverterTest;
 import com.polarion.alm.tracker.model.IModule;
@@ -15,6 +17,7 @@ import lombok.SneakyThrows;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -68,6 +71,9 @@ public abstract class BasePerformanceTest extends BasePdfConverterTest {
     private static final String POLARION_FONTS = "/polarion/ria/fonts/";
     private static final String FONT_AWESOME = "/polarion/ria/fontawesome-";
 
+    /** Font Awesome 6.2.0 as Polarion 2606 serves it: the stylesheet the template links, and its fonts. */
+    private static final String FONT_AWESOME_FILES = "/performance/fontawesome-";
+
     /** The small document as the run timed it first, after warming the JVM and the service up. */
     private static Timing baseline;
 
@@ -80,19 +86,47 @@ public abstract class BasePerformanceTest extends BasePdfConverterTest {
         }
     }
 
-    /** Embeds the fonts the default CSS names, as Polarion serves them, rather than leaving their URLs in the CSS. */
+    /**
+     * Links stylesheets as an export in Polarion does: the template links the stylesheet of Font Awesome, which is fetched
+     * and embedded with its fonts. The base of the tests leaves links as they are.
+     */
+    @Override
+    protected void setupHelperComponents() {
+        super.setupHelperComponents();
+        htmlProcessor = new HtmlProcessor(fileResourceProvider, localizationSettings, new HtmlLinksHelper(fileResourceProvider));
+    }
+
+    /**
+     * Serves what Polarion serves an export: the stylesheet and the fonts of Font Awesome as they are, the fonts of the
+     * default CSS as a font of a like size, which the test CSS overrides for every element. Nothing is left as a URL in the CSS.
+     */
     @BeforeEach
-    void embedTheFontsOfTheDefaultCss() {
+    void serveTheResourcesOfPolarion() {
+        lenient().when(fileResourceProvider.getResourceAsBytes(anyString())).thenAnswer(invocation -> {
+            String url = invocation.getArgument(0);
+            return url.startsWith(FONT_AWESOME) ? fontAwesomeFile(url) : null;
+        });
         lenient().when(fileResourceProvider.getResourceAsBase64String(anyString())).thenAnswer(invocation -> {
             String url = invocation.getArgument(0);
-            return url.startsWith(POLARION_FONTS) || url.startsWith(FONT_AWESOME) ? embeddedFont() : null;
+            if (url.startsWith(FONT_AWESOME)) {
+                byte[] font = fontAwesomeFile(url);
+                return font == null ? null : "data:font/%s;base64,%s".formatted(url.endsWith(".woff2") ? "woff2" : "ttf", Base64.getEncoder().encodeToString(font));
+            }
+            return url.startsWith(POLARION_FONTS) ? embeddedFont() : null;
         });
+    }
+
+    @SneakyThrows
+    private static byte @Nullable [] fontAwesomeFile(@NotNull String url) {
+        try (InputStream file = BasePerformanceTest.class.getResourceAsStream(FONT_AWESOME_FILES + url.substring(FONT_AWESOME.length()))) {
+            return file == null ? null : file.readAllBytes();
+        }
     }
 
     @SneakyThrows
     private static @NotNull String embeddedFont() {
         if (embeddedFont == null) {
-            // A font of the size of those of Polarion, from 300 to 430 KB each, which the test CSS overrides for every element
+            // A font of the size of those of Polarion, from 200 to 430 KB each, which the test CSS overrides for every element
             try (InputStream font = BasePerformanceTest.class.getResourceAsStream(WEASYPRINT_TEST_FONT_RESOURCES_FOLDER + "fa-solid-900" + EXT_TTF)) {
                 embeddedFont = "data:font/ttf;base64," + Base64.getEncoder().encodeToString(Objects.requireNonNull(font).readAllBytes());
             }

@@ -144,8 +144,10 @@ service instead of a container.
 
 - `ExportPerformanceTest` exports one shape each: a small document, a large table, cells running across pages, many
   images, many work items, sections which page breaks turn landscape, tables whose words leave them no room, and
-  hyphenated tables. The small document takes the exporter little but what every export costs, so a cost added to
-  every export shows there as a multiple of its time.
+  hyphenated tables, and a large document of some 340 pages and 100 MB with large photographs and SVG diagrams. The
+  small document takes the exporter little but what every export costs, so a cost added to every export shows there
+  as a multiple of its time. The large document is the other way round: what every export costs is a small part of
+  it, and a cost which grows with the document shows there.
 - `FeatureDocumentTest` exports one document with every feature and every option of a style package, and compares its
   pages with reference images, so that one export shows whether any of it broke.
 
