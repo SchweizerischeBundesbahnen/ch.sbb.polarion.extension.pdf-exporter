@@ -221,6 +221,8 @@ public final class PerformanceRun implements AutoCloseable {
     /** The times of this run in the form of the reference times, which {@link AverageReferenceTimes} averages over runs. */
     private @NotNull String times() {
         Map<String, Long> sorted = new TreeMap<>();
+        // The small document of the run is written whether its own test ran or not, as every other time is averaged against it
+        baselineMs.forEach((part, timeMs) -> sorted.put(key(SMALL_DOCUMENT, part), timeMs));
         rows.forEach(row -> sorted.put(key(row.export(), row.part()), row.timeMs()));
         StringBuilder times = new StringBuilder("# The times of a run of the performance tests on %s, in the form of %s%n".formatted(architecture, referenceTimesFile.substring(1)))
                 .append("%s=%d%n".formatted(CALIBRATION_KEY, calibrationMs));
