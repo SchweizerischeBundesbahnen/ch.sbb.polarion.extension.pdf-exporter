@@ -53,7 +53,7 @@ public class TocLeaf {
             Element tocItem = new Element(HtmlTag.LI);
 
             Element textLink = new Element(HtmlTag.A);
-            textLink.attr("href", String.format("#%s", id));
+            textLink.attr("href", "#" + id);
             if (number != null) {
                 Element itemNumberSpan = new Element(HtmlTag.SPAN);
                 itemNumberSpan.addClass("number");
@@ -67,7 +67,7 @@ public class TocLeaf {
             tocItem.appendChild(textLink);
 
             Element pageNumberLink = new Element(HtmlTag.A);
-            pageNumberLink.attr("href", String.format("#%s", id));
+            pageNumberLink.attr("href", "#" + id);
             pageNumberLink.addClass("page-number");
             tocItem.appendChild(pageNumberLink);
 

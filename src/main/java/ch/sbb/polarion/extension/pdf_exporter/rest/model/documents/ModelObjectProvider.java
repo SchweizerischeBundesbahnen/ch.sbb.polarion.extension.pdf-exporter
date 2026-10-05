@@ -120,7 +120,7 @@ public class ModelObjectProvider {
     }
 
     public static @NotNull String createPath(@NotNull String projectId, @NotNull String locationPath) {
-        return String.format("%s/%s", projectId, locationPath);
+        return projectId + "/" + locationPath;
     }
 
 }

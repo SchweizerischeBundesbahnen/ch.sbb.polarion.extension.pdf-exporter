@@ -52,7 +52,7 @@ public class DocumentFileNameHelper {
     @VisibleForTesting
     @NotNull String evaluateVelocity(@NotNull DocumentData<? extends IUniqueObject> documentData, @NotNull String fileNameTemplate) {
         String evaluatedName = velocityEvaluator.evaluateVelocityExpressions(documentData, fileNameTemplate);
-        return String.format("%s.pdf", evaluatedName);
+        return evaluatedName + ".pdf";
     }
 
     @VisibleForTesting

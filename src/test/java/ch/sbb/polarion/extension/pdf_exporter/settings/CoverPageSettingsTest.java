@@ -196,7 +196,7 @@ class CoverPageSettingsTest {
 
         CoverPageSettings coverPageSettings = mock(CoverPageSettings.class);
         when(coverPageSettings.getTemplateImageFileNames(coverPageTemplate)).thenReturn(images);
-        when(coverPageSettings.persistTemplateImage(coverPageTemplate, "scope", "image2.jpg", coverPageUuid)).thenReturn(String.format("path/%s", "image2.jpg"));
+        when(coverPageSettings.persistTemplateImage(coverPageTemplate, "scope", "image2.jpg", coverPageUuid)).thenReturn("path/image2.jpg");
         CoverPageModel model = CoverPageModel.builder().templateHtml("html").templateCss(".test { background: templateImage('image2.jpg') no-repeat center 100%; }").build();
 
         doCallRealMethod().when(coverPageSettings).processImagePaths(model, coverPageTemplate, "scope", coverPageUuid);

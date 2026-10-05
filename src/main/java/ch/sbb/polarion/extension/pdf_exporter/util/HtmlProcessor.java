@@ -630,7 +630,7 @@ public class HtmlProcessor {
         String alignment = RIGHT_ALIGNMENT_MARGIN.equals(marginValue) ? CssProp.TEXT_ALIGN_RIGHT_VALUE : CssProp.TEXT_ALIGN_CENTER_VALUE;
 
         Element wrapper = new Element(HtmlTag.DIV);
-        wrapper.attr(HtmlTagAttr.STYLE, String.format("%s: %s;", CssProp.TEXT_ALIGN, alignment));
+        wrapper.attr(HtmlTagAttr.STYLE, CssProp.TEXT_ALIGN + ": " + alignment + ";");
 
         Element previousSibling = image.previousElementSibling();
         if (previousSibling != null) {
@@ -667,7 +667,7 @@ public class HtmlProcessor {
     private void autoCellWidth(@NotNull Document document) {
         // Searches for <td> or <th> elements of regular tables whose width in styles specified not in percentage.
         // If they contain absolute values we replace them with auto, otherwise tables containing them can easily go outside boundaries of a page.
-        Elements cells = document.select(String.format("%s, %s", HtmlTag.TH, HtmlTag.TD));
+        Elements cells = document.select(HtmlTag.TH + ", " + HtmlTag.TD);
         for (Element cell : cells) {
             if (cell.hasAttr(HtmlTagAttr.STYLE)) {
                 String style = cell.attr(HtmlTagAttr.STYLE);
@@ -1215,7 +1215,7 @@ public class HtmlProcessor {
         // This method fixes the problem described above.
 
         boolean modified;
-        String listsSelector = String.format("%s, %s", HtmlTag.OL, HtmlTag.UL);
+        String listsSelector = HtmlTag.OL + ", " + HtmlTag.UL;
         do {
             modified = false;
             Elements lists = doc.select(listsSelector);
@@ -1467,13 +1467,13 @@ public class HtmlProcessor {
                 caption = captionBuf.toString();
             }
 
-            String href = String.format("#%s%s", TABLE_OF_FIGURES_ANCHOR_ID_PREFIX, anchorId);
+            String href = "#" + TABLE_OF_FIGURES_ANCHOR_ID_PREFIX + anchorId;
 
             Element tofItem = new Element(HtmlTag.LI);
 
             Element textLink = new Element(HtmlTag.A);
             textLink.attr(HtmlTagAttr.HREF, href);
-            textLink.text(String.format("%s %s. %s", label, number, caption.trim()));
+            textLink.text(label + " " + number + ". " + caption.trim());
             tofItem.appendChild(textLink);
 
             // Empty link whose ::after content is resolved by WeasyPrint to the target's page number

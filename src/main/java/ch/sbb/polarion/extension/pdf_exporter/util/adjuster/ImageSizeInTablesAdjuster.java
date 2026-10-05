@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.Map;
 public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
 
-    private static final String TD_TH_SELECTOR = String.format("%s, %s", HtmlTag.TD, HtmlTag.TH);
+    private static final String TD_TH_SELECTOR = HtmlTag.TD + ", " + HtmlTag.TH;
 
     /** What takes room in a cell without being text. */
     private static final String CONTENT_WITHOUT_TEXT = "br, hr, svg, object, iframe, table";
