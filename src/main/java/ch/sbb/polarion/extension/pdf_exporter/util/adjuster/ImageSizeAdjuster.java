@@ -1,7 +1,5 @@
 package ch.sbb.polarion.extension.pdf_exporter.util.adjuster;
 
-import com.helger.css.property.ECSSProperty;
-import com.helger.css.propertyvalue.CCSSValue;
 import ch.sbb.polarion.extension.pdf_exporter.constants.HtmlTagAttr;
 import ch.sbb.polarion.extension.pdf_exporter.constants.Measure;
 import ch.sbb.polarion.extension.pdf_exporter.util.CssUtils;
@@ -9,6 +7,8 @@ import ch.sbb.polarion.extension.pdf_exporter.util.PageLayout;
 import ch.sbb.polarion.extension.pdf_exporter.util.PaperSizeUtils;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ConversionParams;
 import com.helger.css.decl.CSSDeclarationList;
+import com.helger.css.property.ECSSProperty;
+import com.helger.css.propertyvalue.CCSSValue;
 
 import java.util.Map;
 

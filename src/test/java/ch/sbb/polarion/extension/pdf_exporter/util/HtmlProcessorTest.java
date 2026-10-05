@@ -1469,7 +1469,7 @@ class HtmlProcessorTest {
 
         processor.keepLinkIdsWithTheirDash(document);
 
-        assertEquals("<a class=\"polarion-Hyperlink\"><span><img src=\"icon.gif\"></span><span style=\"white-space: nowrap\"><span style=\"color:#000000;\">EL-761</span><span> -</span></span>"
+        assertEquals("<a class=\"polarion-Hyperlink\"><span><img src=\"icon.gif\"></span><span style=\"white-space: nowrap;\"><span style=\"color:#000000;\">EL-761</span><span> -</span></span>"
                 + "<span style=\"white-space: normal\"> User name must contain at least one number</span></a>", document.body().html().replace("\n", ""));
     }
 

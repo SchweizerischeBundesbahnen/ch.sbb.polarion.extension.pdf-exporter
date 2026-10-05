@@ -1,7 +1,7 @@
 package ch.sbb.polarion.extension.pdf_exporter.util;
 
-import com.helger.css.property.ECSSProperty;
 import com.helger.css.decl.CSSDeclarationList;
+import com.helger.css.property.ECSSProperty;
 import com.polarion.core.util.logging.Logger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -127,5 +127,18 @@ class CssUtilsTest {
 
         verify(mockLogger, atLeastOnce()).warn(argThat((String msg) ->
                 msg.contains("truncated") && msg.contains("total length=" + longStyle.length())));
+    }
+
+    @Test
+    void declarationWritesTheCssNameOfTheProperty() {
+        assertEquals("max-height: 10px;", CssUtils.declaration(ECSSProperty.MAX_HEIGHT, "10px"));
+    }
+
+    @Test
+    void declarationReadsBackAsItsValue() {
+        CSSDeclarationList cssStyles = CssUtils.parseDeclarations(CssUtils.declaration(ECSSProperty.WHITE_SPACE, "nowrap") + " " + CssUtils.declaration(ECSSProperty.WIDTH, "50%"));
+
+        assertEquals("nowrap", CssUtils.getPropertyValue(cssStyles, ECSSProperty.WHITE_SPACE));
+        assertEquals("50%", CssUtils.getPropertyValue(cssStyles, ECSSProperty.WIDTH));
     }
 }

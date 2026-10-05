@@ -1,11 +1,11 @@
 package ch.sbb.polarion.extension.pdf_exporter.util.adjuster;
 
-import com.helger.css.property.ECSSProperty;
-import com.helger.css.propertyvalue.CCSSValue;
 import ch.sbb.polarion.extension.pdf_exporter.constants.CssProp;
 import ch.sbb.polarion.extension.pdf_exporter.constants.HtmlTagAttr;
 import ch.sbb.polarion.extension.pdf_exporter.util.CssUtils;
 import com.helger.css.decl.CSSDeclarationList;
+import com.helger.css.property.ECSSProperty;
+import com.helger.css.propertyvalue.CCSSValue;
 import com.polarion.core.util.logging.Logger;
 import lombok.experimental.UtilityClass;
 import org.jetbrains.annotations.NotNull;
@@ -195,7 +195,7 @@ public class TableAnalyzer {
             for (Element ancestor : tableElement.parents()) {
                 String value = CssUtils.getPropertyValue(CssUtils.parseDeclarations(ancestor.attr(HtmlTagAttr.STYLE)), property);
                 if (!value.isEmpty()) {
-                    style.append(property.getName()).append(": ").append(value).append("; ");
+                    style.append(CssUtils.declaration(property, value)).append(' ');
                     break;
                 }
             }

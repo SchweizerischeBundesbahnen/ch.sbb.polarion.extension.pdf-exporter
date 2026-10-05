@@ -1,7 +1,5 @@
 package ch.sbb.polarion.extension.pdf_exporter.util;
 
-import com.helger.css.property.ECSSProperty;
-import com.helger.css.propertyvalue.CCSSValue;
 import ch.sbb.polarion.extension.generic.regex.RegexMatcher;
 import ch.sbb.polarion.extension.generic.settings.NamedSettings;
 import ch.sbb.polarion.extension.generic.settings.SettingId;
@@ -22,6 +20,8 @@ import ch.sbb.polarion.extension.pdf_exporter.util.adjuster.TableAnalyzer;
 import ch.sbb.polarion.extension.pdf_exporter.util.adjuster.TableRowsAdjuster;
 import ch.sbb.polarion.extension.pdf_exporter.util.html.HtmlLinksHelper;
 import com.helger.css.decl.CSSDeclarationList;
+import com.helger.css.property.ECSSProperty;
+import com.helger.css.propertyvalue.CCSSValue;
 import com.polarion.alm.shared.util.StringUtils;
 import lombok.SneakyThrows;
 import org.jetbrains.annotations.NotNull;
@@ -633,7 +633,7 @@ public class HtmlProcessor {
         String alignment = RIGHT_ALIGNMENT_MARGIN.equals(marginValue) ? CCSSValue.RIGHT : CCSSValue.CENTER;
 
         Element wrapper = new Element(HtmlTag.DIV);
-        wrapper.attr(HtmlTagAttr.STYLE, ECSSProperty.TEXT_ALIGN.getName() + ": " + alignment + ";");
+        wrapper.attr(HtmlTagAttr.STYLE, CssUtils.declaration(ECSSProperty.TEXT_ALIGN, alignment));
 
         Element previousSibling = image.previousElementSibling();
         if (previousSibling != null) {
@@ -697,7 +697,7 @@ public class HtmlProcessor {
                     && title.childNodeSize() > 0 && title.childNode(0) instanceof TextNode text && text.getWholeText().startsWith(LINK_TITLE_DASH)) {
                 text.text(text.getWholeText().substring(LINK_TITLE_DASH.length() - 1));
                 // The dash keeps the color of the title, which the ID does not share
-                Element idWithDash = new Element(HtmlTag.SPAN).attr(HtmlTagAttr.STYLE, ECSSProperty.WHITE_SPACE.getName() + ": " + CCSSValue.NOWRAP);
+                Element idWithDash = new Element(HtmlTag.SPAN).attr(HtmlTagAttr.STYLE, CssUtils.declaration(ECSSProperty.WHITE_SPACE, CCSSValue.NOWRAP));
                 id.before(idWithDash);
                 idWithDash.appendChild(id);
                 idWithDash.appendElement(HtmlTag.SPAN).text(LINK_TITLE_DASH.stripTrailing());
@@ -1130,7 +1130,7 @@ public class HtmlProcessor {
         // on one page with its attributes, as the user who asked for No Page Break wants it
         if (innerTables.not(WORK_ITEM_ATTRIBUTE_TABLE).isEmpty() || fitsAPage(table, pageWidth, pageHeight)) {
             // Nothing in the work item needs to run across pages, so a block keeps it on one page
-            Element block = new Element(HtmlTag.DIV).attr(HtmlTagAttr.STYLE, ECSSProperty.BREAK_INSIDE.getName() + ": " + CssProp.PAGE_BREAK_INSIDE_AVOID_VALUE + ";");
+            Element block = new Element(HtmlTag.DIV).attr(HtmlTagAttr.STYLE, CssUtils.declaration(ECSSProperty.BREAK_INSIDE, CssProp.PAGE_BREAK_INSIDE_AVOID_VALUE));
             for (Node contentNodes : td.childNodes()) {
                 block.appendChild(contentNodes.clone());
             }

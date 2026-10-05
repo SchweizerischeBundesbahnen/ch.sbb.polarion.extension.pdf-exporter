@@ -1,9 +1,9 @@
 package ch.sbb.polarion.extension.pdf_exporter.util;
 
-import com.helger.css.property.ECSSProperty;
 import com.helger.css.decl.CSSDeclaration;
 import com.helger.css.decl.CSSDeclarationList;
 import com.helger.css.decl.CSSExpression;
+import com.helger.css.property.ECSSProperty;
 import com.helger.css.reader.CSSReaderDeclarationList;
 import com.helger.css.reader.CSSReaderSettings;
 import com.helger.css.reader.errorhandler.CSSParseError;
@@ -65,6 +65,11 @@ public class CssUtils {
         }
         // If there's no such property declaration - add it
         cssStyles.add(new CSSDeclaration(property.getName(), CSSExpression.createSimple(propertyValue)));
+    }
+
+    /** A declaration of a style attribute, as "max-height: 10px;". */
+    public @NotNull String declaration(@NotNull ECSSProperty property, @NotNull String value) {
+        return property.getName() + ": " + value + ";";
     }
 
     public void removeProperty(@NotNull CSSDeclarationList cssStyles, @NotNull ECSSProperty property) {

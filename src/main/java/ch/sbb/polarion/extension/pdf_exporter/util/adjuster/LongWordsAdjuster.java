@@ -1,10 +1,10 @@
 package ch.sbb.polarion.extension.pdf_exporter.util.adjuster;
 
-import com.helger.css.property.ECSSProperty;
-import com.helger.css.propertyvalue.CCSSValue;
 import ch.sbb.polarion.extension.pdf_exporter.constants.HtmlTagAttr;
 import ch.sbb.polarion.extension.pdf_exporter.util.CssUtils;
 import com.helger.css.decl.CSSDeclarationList;
+import com.helger.css.property.ECSSProperty;
+import com.helger.css.propertyvalue.CCSSValue;
 import lombok.experimental.UtilityClass;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;

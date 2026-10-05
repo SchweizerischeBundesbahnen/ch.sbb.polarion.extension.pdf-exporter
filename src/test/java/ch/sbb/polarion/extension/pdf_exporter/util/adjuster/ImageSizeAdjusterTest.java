@@ -1,9 +1,9 @@
 package ch.sbb.polarion.extension.pdf_exporter.util.adjuster;
 
-import com.helger.css.property.ECSSProperty;
 import ch.sbb.polarion.extension.pdf_exporter.constants.HtmlTagAttr;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ConversionParams;
 import ch.sbb.polarion.extension.pdf_exporter.util.CssUtils;
+import com.helger.css.property.ECSSProperty;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.junit.jupiter.api.Test;

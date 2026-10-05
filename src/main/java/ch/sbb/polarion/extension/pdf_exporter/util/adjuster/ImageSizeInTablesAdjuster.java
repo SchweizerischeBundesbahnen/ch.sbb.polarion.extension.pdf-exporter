@@ -1,7 +1,5 @@
 package ch.sbb.polarion.extension.pdf_exporter.util.adjuster;
 
-import com.helger.css.property.ECSSProperty;
-import com.helger.css.propertyvalue.CCSSValue;
 import ch.sbb.polarion.extension.pdf_exporter.constants.CssProp;
 import ch.sbb.polarion.extension.pdf_exporter.constants.HtmlTag;
 import ch.sbb.polarion.extension.pdf_exporter.constants.HtmlTagAttr;
@@ -11,6 +9,8 @@ import ch.sbb.polarion.extension.pdf_exporter.util.PageLayout;
 import ch.sbb.polarion.extension.pdf_exporter.util.PaperSizeUtils;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ConversionParams;
 import com.helger.css.decl.CSSDeclarationList;
+import com.helger.css.property.ECSSProperty;
+import com.helger.css.propertyvalue.CCSSValue;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.VisibleForTesting;
@@ -192,7 +192,7 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
         // Without a width of its own the image takes its column, as a diagram does, and stands on a line of its own
         int width = (int) (statedWidth > 0 && statedWidth < columnWidth ? statedWidth : columnWidth);
         image.removeAttr(HtmlTagAttr.WIDTH).removeAttr(HtmlTagAttr.HEIGHT)
-                .attr(HtmlTagAttr.STYLE, ECSSProperty.WIDTH.getName() + ": " + width + Measure.PX + "; " + ECSSProperty.HEIGHT.getName() + ": " + allowedHeight + Measure.PX);
+                .attr(HtmlTagAttr.STYLE, CssUtils.declaration(ECSSProperty.WIDTH, width + Measure.PX) + " " + CssUtils.declaration(ECSSProperty.HEIGHT, allowedHeight + Measure.PX));
 
         Element probe = new Element(HtmlTag.TABLE);
         probe.appendElement(HtmlTag.TR).appendChild(copy);
