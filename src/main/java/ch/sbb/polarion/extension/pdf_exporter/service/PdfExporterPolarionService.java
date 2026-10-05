@@ -16,7 +16,6 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.stylepackage.S
 import ch.sbb.polarion.extension.pdf_exporter.settings.AuthorizationSettings;
 import ch.sbb.polarion.extension.pdf_exporter.settings.StylePackageSettings;
 import ch.sbb.polarion.extension.pdf_exporter.settings.StylePackageVisibilitySettings;
-import ch.sbb.polarion.extension.pdf_exporter.util.WildcardUtils;
 import com.polarion.alm.projects.IProjectService;
 import com.polarion.alm.projects.model.IUniqueObject;
 import com.polarion.alm.tracker.ITestManagementService;
