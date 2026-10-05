@@ -518,8 +518,10 @@ class PdfExporterPolarionServiceTest {
 
     @Test
     void testGetTestRun() {
-        when(testManagementService.getTestRun("testProjectId", "testTestRunId", null)).thenReturn(mock(ITestRun.class));
-        when(testManagementService.getTestRun("testProjectId", "testTestRunId", "1234")).thenReturn(mock(ITestRun.class));
+        ITestRun currentTestRun = mock(ITestRun.class);
+        when(testManagementService.getTestRun("testProjectId", "testTestRunId", null)).thenReturn(currentTestRun);
+        ITestRun baselineTestRun = mock(ITestRun.class);
+        when(testManagementService.getTestRun("testProjectId", "testTestRunId", "1234")).thenReturn(baselineTestRun);
 
         ITestRun testRun = service.getTestRun("testProjectId", "testTestRunId", null);
         assertNotNull(testRun);
@@ -688,7 +690,8 @@ class PdfExporterPolarionServiceTest {
     void testGetTestRunAttachment() {
         ITestRun testRun = mock(ITestRun.class);
         when(testRun.isUnresolvable()).thenReturn(false);
-        when(testRun.getAttachment("testAttachmentId")).thenReturn(mock(ITestRunAttachment.class));
+        ITestRunAttachment attachment = mock(ITestRunAttachment.class);
+        when(testRun.getAttachment("testAttachmentId")).thenReturn(attachment);
         when(testManagementService.getTestRun("testProjectId", "testTestRunId", null)).thenReturn(testRun);
         when(testManagementService.getTestRun("testProjectId", "testTestRunId", "1234")).thenReturn(testRun);
 

@@ -183,7 +183,8 @@ class DocumentDataTest {
                 MockedConstruction<ProxyRichPage> proxyRichPageMockedConstruction = mockConstruction(ProxyRichPage.class, (mock, context) -> {
                     RichPageReference referenceRichPageMock = mock(RichPageReference.class);
                     when(mock.getReference()).thenReturn(referenceRichPageMock);
-                    when(referenceRichPageMock.scope()).thenReturn(mock(Scope.class));
+                    Scope scope = mock(Scope.class);
+                    when(referenceRichPageMock.scope()).thenReturn(scope);
                 });
 
                 MockedConstruction<RpeRenderer> modifiedDocumentRendererMockedConstruction = mockConstruction(RpeRenderer.class, (mock, context) -> {
@@ -230,7 +231,8 @@ class DocumentDataTest {
                 MockedConstruction<ProxyRichPage> proxyRichPageMockedConstruction = mockConstruction(ProxyRichPage.class, (mock, context) -> {
                     RichPageReference referenceRichPageMock = mock(RichPageReference.class);
                     when(mock.getReference()).thenReturn(referenceRichPageMock);
-                    when(referenceRichPageMock.scope()).thenReturn(mock(Scope.class));
+                    Scope scope = mock(Scope.class);
+                    when(referenceRichPageMock.scope()).thenReturn(scope);
                 });
 
                 MockedConstruction<RpeRenderer> modifiedDocumentRendererMockedConstruction = mockConstruction(RpeRenderer.class, (mock, context) -> {
@@ -293,7 +295,8 @@ class DocumentDataTest {
                 MockedConstruction<ProxyTestRun> proxyTestRunMockedConstruction = mockConstruction(ProxyTestRun.class, (mock, context) -> {
                     TestRunReference referenceRichPageMock = mock(TestRunReference.class);
                     when(mock.getReference()).thenReturn(referenceRichPageMock);
-                    when(referenceRichPageMock.scope()).thenReturn(mock(Scope.class));
+                    Scope scope = mock(Scope.class);
+                    when(referenceRichPageMock.scope()).thenReturn(scope);
                 });
 
                 MockedConstruction<RpeRenderer> modifiedDocumentRendererMockedConstruction = mockConstruction(RpeRenderer.class, (mock, context) -> {

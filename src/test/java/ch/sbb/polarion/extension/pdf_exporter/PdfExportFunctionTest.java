@@ -178,7 +178,8 @@ class PdfExportFunctionTest {
         ExportParams params = ExportParams.builder().projectId("projectId").build();
         IWorkItem newWorkItem = mock(IWorkItem.class);
         when(trackerProject.createWorkItem(anyString())).thenReturn(newWorkItem);
-        when(newWorkItem.createAttachment(anyString(), anyString(), any())).thenReturn(mock(IAttachment.class));
+        IAttachment attachment = mock(IAttachment.class);
+        when(newWorkItem.createAttachment(anyString(), anyString(), any())).thenReturn(attachment);
         when(module.getTitleWithSpace()).thenReturn("Some space / Document Title");
         doReturn("Status name").when(pdfExportFunction).getStatusName(any(), anyString());
         doReturn("Attach Title.pdf").when(pdfExportFunction).getDocumentFileName(params);
@@ -201,7 +202,7 @@ class PdfExportFunctionTest {
         // use existing work item
         args = new Arguments(Map.of("existing_wi_id", "ID-123"));
         IWorkItem foundWorkItem = mock(IWorkItem.class);
-        when(foundWorkItem.createAttachment(anyString(), anyString(), any())).thenReturn(mock(IAttachment.class));
+        when(foundWorkItem.createAttachment(anyString(), anyString(), any())).thenReturn(attachment);
         when(pdfExporterPolarionService.getWorkItem("projectId", "ID-123")).thenReturn(foundWorkItem);
         pdfExportFunction.savePdfAsWorkItemAttachment(module, params, "TargetStatus", args, new byte[0]);
         verify(foundWorkItem, times(1)).createAttachment(any(), any(), any());
@@ -209,7 +210,7 @@ class PdfExportFunctionTest {
         // use existing work item from specific project
         args = new Arguments(Map.of("existing_wi_id", "ID-345", "project_id", "proj2"));
         foundWorkItem = mock(IWorkItem.class);
-        when(foundWorkItem.createAttachment(anyString(), anyString(), any())).thenReturn(mock(IAttachment.class));
+        when(foundWorkItem.createAttachment(anyString(), anyString(), any())).thenReturn(attachment);
         when(pdfExporterPolarionService.getWorkItem("proj2", "ID-345")).thenReturn(foundWorkItem);
         pdfExportFunction.savePdfAsWorkItemAttachment(module, params, "TargetStatus", args, new byte[0]);
         verify(foundWorkItem, times(1)).createAttachment(any(), any(), any());

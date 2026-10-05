@@ -281,7 +281,8 @@ class CoverPageSettingsTest {
             when(mockedPdfExporterPolarionService.getReadOnlyConnection(mockedFolderLocation)).thenReturn(mockedReadOnlyConnection);
             ILocation fileLocation = Location.getLocation(String.format("path/%s_background.jpg", coverPageUuid));
             when(mockedReadOnlyConnection.getSubLocations(mockedFolderLocation, false)).thenReturn(Collections.singletonList(fileLocation));
-            when(mockedScopeLocation.append(anyString())).thenReturn(mock(Location.class));
+            Location location = mock(Location.class);
+            when(mockedScopeLocation.append(anyString())).thenReturn(location);
             when(mockedScopeLocation.append("settingsFolder")).thenReturn(mockedFolderLocation);
             mockedScopeUtils.when(() -> ScopeUtils.getContextLocation("scope")).thenReturn(mockedScopeLocation);
 
@@ -306,7 +307,8 @@ class CoverPageSettingsTest {
         try (MockedStatic<ScopeUtils> mockedScopeUtils = mockStatic(ScopeUtils.class)) {
             ILocation mockedScopeLocation = mock(Location.class);
             ILocation mockedFolderLocation = mock(Location.class);
-            when(mockedScopeLocation.append(anyString())).thenReturn(mock(Location.class));
+            Location location = mock(Location.class);
+            when(mockedScopeLocation.append(anyString())).thenReturn(location);
             when(mockedScopeLocation.append("settingsFolder")).thenReturn(mockedFolderLocation);
             mockedScopeUtils.when(() -> ScopeUtils.getContextLocation("scope")).thenReturn(mockedScopeLocation);
             // The repository refuses to list the folder the images live in.
