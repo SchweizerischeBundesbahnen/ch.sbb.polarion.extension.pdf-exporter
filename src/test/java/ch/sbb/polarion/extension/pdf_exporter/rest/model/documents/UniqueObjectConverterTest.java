@@ -17,7 +17,8 @@ class UniqueObjectConverterTest {
     @Test
     void testDocument() {
         Document document = mock(Document.class);
-        when(document.getOldApi()).thenReturn(mock(IModule.class));
+        IModule oldApi = mock(IModule.class);
+        when(document.getOldApi()).thenReturn(oldApi);
         new UniqueObjectConverter(document);
         verify(document, times(1)).getOldApi();
     }
@@ -25,7 +26,8 @@ class UniqueObjectConverterTest {
     @Test
     void testRichPage() {
         RichPage richPage = mock(RichPage.class);
-        when(richPage.getOldApi()).thenReturn(mock(IRichPage.class));
+        IRichPage oldApi = mock(IRichPage.class);
+        when(richPage.getOldApi()).thenReturn(oldApi);
         new UniqueObjectConverter(richPage);
         verify(richPage, times(1)).getOldApi();
     }
@@ -33,7 +35,8 @@ class UniqueObjectConverterTest {
     @Test
     void testTestRun() {
         TestRun testRun = mock(TestRun.class);
-        when(testRun.getOldApi()).thenReturn(mock(ITestRun.class));
+        ITestRun oldApi = mock(ITestRun.class);
+        when(testRun.getOldApi()).thenReturn(oldApi);
         new UniqueObjectConverter(testRun);
         verify(testRun, times(1)).getOldApi();
     }
@@ -41,7 +44,8 @@ class UniqueObjectConverterTest {
     @Test
     void testWikiPage() {
         WikiPage wikiPage = mock(WikiPage.class);
-        when(wikiPage.getOldApi()).thenReturn(mock(IWikiPage.class));
+        IWikiPage oldApi = mock(IWikiPage.class);
+        when(wikiPage.getOldApi()).thenReturn(oldApi);
         new UniqueObjectConverter(wikiPage);
         verify(wikiPage, times(1)).getOldApi();
     }

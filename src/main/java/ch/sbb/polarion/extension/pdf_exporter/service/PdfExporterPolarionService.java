@@ -16,7 +16,6 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.stylepackage.S
 import ch.sbb.polarion.extension.pdf_exporter.settings.AuthorizationSettings;
 import ch.sbb.polarion.extension.pdf_exporter.settings.StylePackageSettings;
 import ch.sbb.polarion.extension.pdf_exporter.settings.StylePackageVisibilitySettings;
-import ch.sbb.polarion.extension.pdf_exporter.util.WildcardUtils;
 import com.polarion.alm.projects.IProjectService;
 import com.polarion.alm.projects.model.IUniqueObject;
 import com.polarion.alm.tracker.ITestManagementService;
@@ -83,15 +82,13 @@ public class PdfExporterPolarionService extends PolarionService {
     public Collection<StylePackageWeightInfo> getStylePackagesWeights(@Nullable String scope) {
         StylePackageSettings stylePackageSettings = (StylePackageSettings) NamedSettingsRegistry.INSTANCE.getByFeatureName(StylePackageSettings.FEATURE_NAME);
         Collection<SettingName> stylePackageNames = stylePackageSettings.readNames(scope == null ? "" : scope);
-        Collection<StylePackageWeightInfo> stylePackageWeightInfos = new ArrayList<>();
-        for (SettingName settingName : stylePackageNames) {
-            stylePackageWeightInfos.add(StylePackageWeightInfo.builder()
-                    .name(settingName.getName())
-                    .scope(settingName.getScope())
-                    .weight(stylePackageSettings.read(settingName.getScope(), SettingId.fromName(settingName.getName()), null).getWeight())
-                    .build());
-        }
-        return stylePackageWeightInfos;
+        return stylePackageNames.stream()
+                .map(settingName -> StylePackageWeightInfo.builder()
+                        .name(settingName.getName())
+                        .scope(settingName.getScope())
+                        .weight(stylePackageSettings.read(settingName.getScope(), SettingId.fromName(settingName.getName()), null).getWeight())
+                        .build())
+                .toList();
     }
 
     public void updateStylePackagesWeights(@NotNull List<StylePackageWeightInfo> weightInfos) {

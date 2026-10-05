@@ -79,12 +79,11 @@ public class BulkExportWidgetHelper {
             return notReadable(transaction.context().localization().getString("security.cannotread"));
         }
 
-        List<String> cells = new ArrayList<>();
-        for (BulkExportColumn column : columns) {
-            // The rich page renders its widgets into the gwt target (see RichPageContextImpl), so the same one is
-            // used here: another target produces different links and icon markup for the very same field.
-            cells.add(item.fields().get(column.getId()).render().withLinks(true).htmlFor().gwt());
-        }
+        // The rich page renders its widgets into the gwt target (see RichPageContextImpl), so the same one is
+        // used here: another target produces different links and icon markup for the very same field.
+        List<String> cells = columns.stream()
+                .map(column -> item.fields().get(column.getId()).render().withLinks(true).htmlFor().gwt())
+                .toList();
 
         IUniqueObject oldApi = (IUniqueObject) item.getOldApi();
         return BulkExportItem.builder()

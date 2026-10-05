@@ -270,10 +270,10 @@ public class CoverPageSettings extends GenericNamedSettings<CoverPageModel> {
     }
 
     public String persistTemplateImage(String template, String scope, String imageFileName, UUID coverPageUuid) {
-        String jarFilePath = String.format("/%s/%s/%s", TEMPLATES_JAR_PATH, template, imageFileName);
+        String jarFilePath = String.join("/", "", TEMPLATES_JAR_PATH, template, imageFileName);
         byte[] fileContent = MediaUtils.getBinaryFileFromJar(jarFilePath);
         if (fileContent != null) {
-            ILocation location = ScopeUtils.getContextLocation(scope).append(String.format("%s/%s_%s", SETTINGS_SVN_LOCATION, coverPageUuid, imageFileName));
+            ILocation location = ScopeUtils.getContextLocation(scope).append(SETTINGS_SVN_LOCATION + "/" + coverPageUuid + "_" + imageFileName);
             getSettingsService().save(location, fileContent);
             return location.getLocationPath();
         } else {

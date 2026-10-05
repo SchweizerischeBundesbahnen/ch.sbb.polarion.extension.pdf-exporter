@@ -31,6 +31,7 @@ public class ImageSizeAdjuster extends AbstractAdjuster {
     }
 
     @Override
+    @SuppressWarnings("java:S9395") // sizes in pixels, which a float holds exactly; java:S1905 reports the explicit cast
     public void execute() {
         float maxWidth = PaperSizeUtils.getMaxWidth(conversionParams);
         float maxHeight = pageLayout.heightForAnImage(conversionParams);

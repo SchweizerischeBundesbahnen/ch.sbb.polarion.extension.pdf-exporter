@@ -135,7 +135,7 @@ public class PageRules {
                 switch (property) {
                     case "margin" -> {
                         top = pixels(values[0]);
-                        bottom = pixels(values.length > 2 ? values[2] : values[0]);
+                        bottom = pixels(values[values.length > 2 ? 2 : 0]);
                     }
                     case "margin-top" -> top = pixels(values[0]);
                     case "margin-bottom" -> bottom = pixels(values[0]);

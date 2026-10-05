@@ -157,6 +157,7 @@ public class BulkPdfExportWidgetRenderer extends AbstractWidgetRenderer {
                 .build();
     }
 
+    @SuppressWarnings("java:S9391") // the IterableWithSize of Polarion offers no stream
     private @NotNull List<BulkExportColumn> getDescriptorColumns() {
         List<BulkExportColumn> descriptorColumns = new ArrayList<>();
         for (Field column : columns) {

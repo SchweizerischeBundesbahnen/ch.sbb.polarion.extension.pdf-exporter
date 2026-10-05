@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.Map;
 public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
 
-    private static final String TD_TH_SELECTOR = String.format("%s, %s", HtmlTag.TD, HtmlTag.TH);
+    private static final String TD_TH_SELECTOR = HtmlTag.TD + ", " + HtmlTag.TH;
 
     /** What takes room in a cell without being text. */
     private static final String CONTENT_WITHOUT_TEXT = "br, hr, svg, object, iframe, table";
@@ -116,6 +116,7 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
      *
      * @return whether the image is drawn as tall as the page leaves it, and a row of that height leaves the header alone too
      */
+    @SuppressWarnings("java:S9395") // sizes in pixels, which a float holds exactly; java:S1905 reports the explicit cast
     private boolean fitToColumn(@NotNull Element img, @NotNull Map<Integer, Integer> columnWidths, int allowedHeight) {
         float cssWidth = extractWidth(img, CssProp.WIDTH);
         float cssMaxWidth = extractWidth(img, CssProp.MAX_WIDTH);
@@ -342,6 +343,7 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
         }
     }
 
+    @SuppressWarnings("java:S9395") // sizes in pixels, which a float holds exactly; java:S1905 reports the explicit cast
     private float getMaxWidth(Element img, Map<Integer, Integer> columnWidths, float columnCountBasedWidth, float paramsBasedWidth) {
         final float maxWidth;
         int column = getImageColumn(img);

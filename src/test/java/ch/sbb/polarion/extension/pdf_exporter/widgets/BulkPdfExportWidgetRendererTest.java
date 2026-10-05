@@ -260,7 +260,8 @@ class BulkPdfExportWidgetRendererTest {
 
         // AbstractWidgetRenderer casts the context's transaction to the internal one
         if (context.transaction() == null || !(context.transaction() instanceof InternalReadOnlyTransaction)) {
-            when(context.transaction()).thenReturn(mock(InternalReadOnlyTransaction.class, RETURNS_DEEP_STUBS));
+            InternalReadOnlyTransaction transaction = mock(InternalReadOnlyTransaction.class, RETURNS_DEEP_STUBS);
+            when(context.transaction()).thenReturn(transaction);
         }
         when(context.parameter(anyString())).thenReturn(dataSetParameter);
         doReturn(PrototypeEnum.BaselineCollection).when(dataSetParameter).prototype();

@@ -196,7 +196,7 @@ class CoverPageSettingsTest {
 
         CoverPageSettings coverPageSettings = mock(CoverPageSettings.class);
         when(coverPageSettings.getTemplateImageFileNames(coverPageTemplate)).thenReturn(images);
-        when(coverPageSettings.persistTemplateImage(coverPageTemplate, "scope", "image2.jpg", coverPageUuid)).thenReturn(String.format("path/%s", "image2.jpg"));
+        when(coverPageSettings.persistTemplateImage(coverPageTemplate, "scope", "image2.jpg", coverPageUuid)).thenReturn("path/image2.jpg");
         CoverPageModel model = CoverPageModel.builder().templateHtml("html").templateCss(".test { background: templateImage('image2.jpg') no-repeat center 100%; }").build();
 
         doCallRealMethod().when(coverPageSettings).processImagePaths(model, coverPageTemplate, "scope", coverPageUuid);
@@ -281,7 +281,8 @@ class CoverPageSettingsTest {
             when(mockedPdfExporterPolarionService.getReadOnlyConnection(mockedFolderLocation)).thenReturn(mockedReadOnlyConnection);
             ILocation fileLocation = Location.getLocation(String.format("path/%s_background.jpg", coverPageUuid));
             when(mockedReadOnlyConnection.getSubLocations(mockedFolderLocation, false)).thenReturn(Collections.singletonList(fileLocation));
-            when(mockedScopeLocation.append(anyString())).thenReturn(mock(Location.class));
+            Location location = mock(Location.class);
+            when(mockedScopeLocation.append(anyString())).thenReturn(location);
             when(mockedScopeLocation.append("settingsFolder")).thenReturn(mockedFolderLocation);
             mockedScopeUtils.when(() -> ScopeUtils.getContextLocation("scope")).thenReturn(mockedScopeLocation);
 
@@ -306,7 +307,8 @@ class CoverPageSettingsTest {
         try (MockedStatic<ScopeUtils> mockedScopeUtils = mockStatic(ScopeUtils.class)) {
             ILocation mockedScopeLocation = mock(Location.class);
             ILocation mockedFolderLocation = mock(Location.class);
-            when(mockedScopeLocation.append(anyString())).thenReturn(mock(Location.class));
+            Location location = mock(Location.class);
+            when(mockedScopeLocation.append(anyString())).thenReturn(location);
             when(mockedScopeLocation.append("settingsFolder")).thenReturn(mockedFolderLocation);
             mockedScopeUtils.when(() -> ScopeUtils.getContextLocation("scope")).thenReturn(mockedScopeLocation);
             // The repository refuses to list the folder the images live in.

@@ -89,12 +89,12 @@ class TestRunAdapterTest {
 
         IWorkItem excludedCase = mock(IWorkItem.class);
         when(excludedCase.getValue("embed")).thenReturn(Boolean.FALSE);
-        ITestRecord record = mock(ITestRecord.class);
-        when(record.getTestCase()).thenReturn(excludedCase);
-        when(record.getAttachments()).thenReturn(List.of(ofTheExcludedCase));
-        when(record.getTestStepResults()).thenReturn(List.of());
+        ITestRecord testRecord = mock(ITestRecord.class);
+        when(testRecord.getTestCase()).thenReturn(excludedCase);
+        when(testRecord.getAttachments()).thenReturn(List.of(ofTheExcludedCase));
+        when(testRecord.getTestStepResults()).thenReturn(List.of());
 
-        ITestRun testRun = testRunWith(List.of(ofTheRun, ofTheExcludedCase), List.of(record));
+        ITestRun testRun = testRunWith(List.of(ofTheRun, ofTheExcludedCase), List.of(testRecord));
         when(testRun.getValue("embed")).thenReturn(Boolean.TRUE);
         TestRunAdapter adapter = new TestRunAdapter(testRun);
 

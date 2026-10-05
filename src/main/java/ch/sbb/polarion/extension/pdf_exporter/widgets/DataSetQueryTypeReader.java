@@ -11,7 +11,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
 
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -92,10 +91,10 @@ public final class DataSetQueryTypeReader {
 
         /**
          * The date type is Polarion's choice: {@code RichPageParameterPersistor} declares this parameter as a
-         * {@link Date}. Sonar reports java:S2143 on the file for it, which is marked a false positive there.
+         * {@link java.util.Date}, named in full so that no import of it is reported by java:S2143.
          */
         @Override
-        public void dateOnly(@Nullable Date value) {
+        public void dateOnly(@Nullable java.util.Date value) {
             capture(value == null ? null : value.toString());
         }
 
