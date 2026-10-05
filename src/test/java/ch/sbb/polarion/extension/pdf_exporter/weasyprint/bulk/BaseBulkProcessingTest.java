@@ -38,11 +38,13 @@ import org.apache.pdfbox.text.PDFTextStripper;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoSettings;
+import org.testcontainers.containers.Container;
 import org.mockito.quality.Strictness;
 
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -218,10 +220,15 @@ abstract class BaseBulkProcessingTest extends BasePdfConverterTest {
         }
     }
 
-    /** The jobs the service keeps in its storage, which a failed merge must not add to. */
+    /**
+     * The jobs the service keeps in its storage, which a failed merge must not add to. A storage which cannot be listed
+     * fails, as counting it as empty would let a check of a deleted job pass without checking anything.
+     */
     @SneakyThrows
     protected static int storedJobs() {
-        String listing = SharedBulkProcessingContainers.bulkProcessing().execInContainer("ls", "-1", JOB_STORAGE_DIR).getStdout().trim();
-        return listing.isEmpty() ? 0 : listing.split("\n").length;
+        Container.ExecResult listing = SharedBulkProcessingContainers.bulkProcessing().execInContainer("ls", "-1", JOB_STORAGE_DIR);
+        assertEquals(0, listing.getExitCode(), "Cannot list the job storage of the service: " + listing.getStderr());
+        String jobs = listing.getStdout().trim();
+        return jobs.isEmpty() ? 0 : jobs.split("\n").length;
     }
 }

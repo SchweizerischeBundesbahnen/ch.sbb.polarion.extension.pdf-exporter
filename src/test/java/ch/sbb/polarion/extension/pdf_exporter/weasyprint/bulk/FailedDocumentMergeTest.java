@@ -32,8 +32,13 @@ class FailedDocumentMergeTest extends BaseBulkProcessingTest {
 
     @Test
     void failsAndDeletesTheJobWhereNoDocumentRenders() {
-        int jobsBefore = storedJobs();
         BulkProcessingServiceConnector connector = connector();
+        // A merge which succeeds keeps its job until the time to live of the service, which shows where the jobs are kept
+        int jobsBeforeSuccess = storedJobs();
+        connector.convertMergedToPdf(List.of(rendered("Alpha", "Rendered and merged.")), startParams());
+        assertEquals(jobsBeforeSuccess + 1, storedJobs(), "A completed job is kept where the jobs are counted");
+
+        int jobsBefore = storedJobs();
         List<MergeDocumentData> documents = List.of(failing(), failing());
         MergeJobStartParams params = startParams();
 
