@@ -57,12 +57,16 @@ public class HtmlLinksHelper {
     public String internalizeLinks(String htmlContent) {
         Document document = Jsoup.parse(htmlContent, "", Parser.htmlParser().setTrackPosition(true));
         List<InlinedLink> inlinedLinks = new ArrayList<>();
+        String styles = null;
         for (Element link : document.select("link")) {
             Range range = link.sourceRange();
             if (!range.isTracked() || range.startPos() < 0 || range.endPos() < range.startPos()) {
                 continue;
             }
-            inlineLinkTag(attributesOf(link), htmlContent)
+            if (styles == null) {
+                styles = stylesOf(document);
+            }
+            inlineLinkTag(attributesOf(link), styles)
                     .ifPresent(inlined -> inlinedLinks.add(new InlinedLink(range.startPos(), range.endPos(), inlined)));
         }
 
@@ -79,9 +83,23 @@ public class HtmlLinksHelper {
     private record InlinedLink(int start, int end, @NotNull String replacement) {
     }
 
-    private Optional<String> inlineLinkTag(Map<String, String> attributesMap, String document) {
+    /**
+     * The text of a document which can name a font family: its style elements, an inline svg's among them, its style
+     * attributes and the font attributes of html and svg. The rest of a document names none, and its embedded images,
+     * by far the most of a large one, are not worth a search.
+     */
+    private static String stylesOf(@NotNull Document document) {
+        StringBuilder styles = new StringBuilder();
+        document.select("style").forEach(style -> styles.append(style.data()).append('\n'));
+        for (String attribute : List.of("style", "face", "font-family")) {
+            document.select("[" + attribute + "]").forEach(element -> styles.append(element.attr(attribute)).append('\n'));
+        }
+        return styles.toString();
+    }
+
+    private Optional<String> inlineLinkTag(Map<String, String> attributesMap, String styles) {
         return linkInliners.stream()
-                .map(i -> i.inlineIn(attributesMap, document))
+                .map(i -> i.inlineIn(attributesMap, styles))
                 .filter(Optional::isPresent)
                 .map(Optional::get)
                 .findFirst();

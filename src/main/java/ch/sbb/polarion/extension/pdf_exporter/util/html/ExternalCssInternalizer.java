@@ -40,7 +40,7 @@ public class ExternalCssInternalizer implements LinkInternalizer {
      * same fonts.
      */
     @Override
-    public Optional<String> inlineIn(Map<String, String> attributes, String document) {
+    public Optional<String> inlineIn(Map<String, String> attributes, String styles) {
         String url = attributes.get(HREF);
         if (!namesAStylesheet(attributes.get("rel"))
                 || StringUtils.isEmptyTrimmed(url)) {
@@ -63,7 +63,7 @@ public class ExternalCssInternalizer implements LinkInternalizer {
         String cssContent = new String(fileResourceProvider.getResourceAsBytes(url));
         cssContent = MediaUtils.inlineCssResources(cssContent, fileResourceProvider, url,
                 // the stylesheet first: the families it names are found there, without a search through the document
-                document.isEmpty() ? family -> true : FontFamilyUse.in(cssContent, document));
+                styles.isEmpty() ? family -> true : FontFamilyUse.in(cssContent, styles));
         inlinedContent.append(keepInsideStyleElement(cssContent));
         inlinedContent.append("</style>");
 
