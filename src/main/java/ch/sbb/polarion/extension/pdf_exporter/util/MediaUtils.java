@@ -84,6 +84,7 @@ import java.util.regex.Pattern;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
+import java.util.stream.Collectors;
 
 import static ch.sbb.polarion.extension.pdf_exporter.util.TikaMimeTypeResolver.PARAM_RESULT;
 import static ch.sbb.polarion.extension.pdf_exporter.util.TikaMimeTypeResolver.PARAM_VALUE;
@@ -1047,11 +1048,9 @@ public class MediaUtils {
         String resolved = resolveAgainst(location, uri.getURIString());
         String replacement = replacementFor(fileResourceProvider, resolved);
         String url = "url(" + (replacement != null ? replacement : escapeCssUrl(resolved)) + ")";
-        List<String> parts = new ArrayList<>();
-        for (ICSSExpressionMember member : source) {
-            parts.add(member == uri ? url : member.getAsCSSString(CSS_WRITER_SETTINGS, 0));
-        }
-        return String.join(" ", parts);
+        return source.stream()
+                .map(member -> member == uri ? url : member.getAsCSSString(CSS_WRITER_SETTINGS, 0))
+                .collect(Collectors.joining(" "));
     }
 
     private static String textOf(@NotNull List<ICSSExpressionMember> source) {

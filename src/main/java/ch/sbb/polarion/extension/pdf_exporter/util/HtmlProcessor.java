@@ -20,6 +20,8 @@ import ch.sbb.polarion.extension.pdf_exporter.util.adjuster.TableAnalyzer;
 import ch.sbb.polarion.extension.pdf_exporter.util.adjuster.TableRowsAdjuster;
 import ch.sbb.polarion.extension.pdf_exporter.util.html.HtmlLinksHelper;
 import com.helger.css.decl.CSSDeclarationList;
+import com.helger.css.property.ECSSProperty;
+import com.helger.css.propertyvalue.CCSSValue;
 import com.polarion.alm.shared.util.StringUtils;
 import lombok.SneakyThrows;
 import org.jetbrains.annotations.NotNull;
@@ -610,8 +612,8 @@ public class HtmlProcessor {
                 String style = image.attr(HtmlTagAttr.STYLE);
                 CSSDeclarationList cssStyles = parseCss(style);
 
-                String displayValue = CssUtils.getPropertyValue(cssStyles, CssProp.DISPLAY);
-                if (!CssProp.DISPLAY_BLOCK_VALUE.equals(displayValue)) {
+                String displayValue = CssUtils.getPropertyValue(cssStyles, ECSSProperty.DISPLAY);
+                if (!CCSSValue.BLOCK.equals(displayValue)) {
                     continue;
                 }
 
@@ -627,11 +629,11 @@ public class HtmlProcessor {
     }
 
     private void wrapImageWithAlignment(@NotNull Document document, @NotNull Element image, @NotNull CSSDeclarationList cssStyles) {
-        String marginValue = CssUtils.getPropertyValue(cssStyles, CssProp.MARGIN);
-        String alignment = RIGHT_ALIGNMENT_MARGIN.equals(marginValue) ? CssProp.TEXT_ALIGN_RIGHT_VALUE : CssProp.TEXT_ALIGN_CENTER_VALUE;
+        String marginValue = CssUtils.getPropertyValue(cssStyles, ECSSProperty.MARGIN);
+        String alignment = RIGHT_ALIGNMENT_MARGIN.equals(marginValue) ? CCSSValue.RIGHT : CCSSValue.CENTER;
 
         Element wrapper = new Element(HtmlTag.DIV);
-        wrapper.attr(HtmlTagAttr.STYLE, CssProp.TEXT_ALIGN + ": " + alignment + ";");
+        wrapper.attr(HtmlTagAttr.STYLE, CssUtils.declaration(ECSSProperty.TEXT_ALIGN, alignment));
 
         Element previousSibling = image.previousElementSibling();
         if (previousSibling != null) {
@@ -674,9 +676,9 @@ public class HtmlProcessor {
                 String style = cell.attr(HtmlTagAttr.STYLE);
                 CSSDeclarationList cssStyles = parseCss(style);
 
-                String widthValue = CssUtils.getPropertyValue(cssStyles, CssProp.WIDTH);
+                String widthValue = CssUtils.getPropertyValue(cssStyles, ECSSProperty.WIDTH);
                 if (!widthValue.isEmpty() && !widthValue.contains("%")) {
-                    CssUtils.setPropertyValue(cssStyles, CssProp.WIDTH, CssProp.WIDTH_AUTO_VALUE);
+                    CssUtils.setPropertyValue(cssStyles, ECSSProperty.WIDTH, CCSSValue.AUTO);
                     cell.attr(HtmlTagAttr.STYLE, cssStyles.getAsCSSString());
                 }
             }
@@ -695,7 +697,7 @@ public class HtmlProcessor {
                     && title.childNodeSize() > 0 && title.childNode(0) instanceof TextNode text && text.getWholeText().startsWith(LINK_TITLE_DASH)) {
                 text.text(text.getWholeText().substring(LINK_TITLE_DASH.length() - 1));
                 // The dash keeps the color of the title, which the ID does not share
-                Element idWithDash = new Element(HtmlTag.SPAN).attr(HtmlTagAttr.STYLE, CssProp.WHITE_SPACE + ": " + CssProp.WHITE_SPACE_NOWRAP_VALUE);
+                Element idWithDash = new Element(HtmlTag.SPAN).attr(HtmlTagAttr.STYLE, CssUtils.declaration(ECSSProperty.WHITE_SPACE, CCSSValue.NOWRAP));
                 id.before(idWithDash);
                 idWithDash.appendChild(id);
                 idWithDash.appendElement(HtmlTag.SPAN).text(LINK_TITLE_DASH.stripTrailing());
@@ -1096,7 +1098,7 @@ public class HtmlProcessor {
 
         Elements tables = document.select(HtmlTag.TABLE);
         for (Element table : tables) {
-            String pageBreakInsideValue = getCssValue(table, CssProp.PAGE_BREAK_INSIDE);
+            String pageBreakInsideValue = getCssValue(table, ECSSProperty.PAGE_BREAK_INSIDE);
             if (pageBreakInsideValue.equals(CssProp.PAGE_BREAK_INSIDE_AVOID_VALUE)) {
                 processPageBreakAvoidTable(table, pageWidth.applyAsInt(table), pageHeight.applyAsInt(table));
             }
@@ -1128,7 +1130,7 @@ public class HtmlProcessor {
         // on one page with its attributes, as the user who asked for No Page Break wants it
         if (innerTables.not(WORK_ITEM_ATTRIBUTE_TABLE).isEmpty() || fitsAPage(table, pageWidth, pageHeight)) {
             // Nothing in the work item needs to run across pages, so a block keeps it on one page
-            Element block = new Element(HtmlTag.DIV).attr(HtmlTagAttr.STYLE, CssProp.BREAK_INSIDE + ": " + CssProp.PAGE_BREAK_INSIDE_AVOID_VALUE + ";");
+            Element block = new Element(HtmlTag.DIV).attr(HtmlTagAttr.STYLE, CssUtils.declaration(ECSSProperty.BREAK_INSIDE, CssProp.PAGE_BREAK_INSIDE_AVOID_VALUE));
             for (Node contentNodes : td.childNodes()) {
                 block.appendChild(contentNodes.clone());
             }
@@ -1139,7 +1141,7 @@ public class HtmlProcessor {
         // Propagate page-break avoidance to rows of inner tables
         for (Element innerTable : innerTables) {
             propagateBreakInsideAvoidToRows(innerTable);
-            if (CssProp.PAGE_BREAK_INSIDE_AVOID_VALUE.equals(getCssValue(innerTable, CssProp.PAGE_BREAK_INSIDE))) {
+            if (CssProp.PAGE_BREAK_INSIDE_AVOID_VALUE.equals(getCssValue(innerTable, ECSSProperty.PAGE_BREAK_INSIDE))) {
                 removePageBreakInsideAvoid(innerTable);
             }
         }
@@ -1168,26 +1170,26 @@ public class HtmlProcessor {
         // Use direct-child selectors to avoid processing rows of nested tables
         for (Element row : table.select("> tr, > thead > tr, > tbody > tr, > tfoot > tr")) {
             CSSDeclarationList rowStyles = getCssStyles(row);
-            CssUtils.setPropertyValue(rowStyles, CssProp.BREAK_INSIDE, CssProp.PAGE_BREAK_INSIDE_AVOID_VALUE);
+            CssUtils.setPropertyValue(rowStyles, ECSSProperty.BREAK_INSIDE, CssProp.PAGE_BREAK_INSIDE_AVOID_VALUE);
             // The default CSS keeps the first and last rows with their neighbors ("break-after/break-before: avoid").
             // With rows that must not split, WeasyPrint 70+ honors that by moving the whole table to the next page,
             // and loses its header when the two rows do not fit a page anyway. Allow breaks between these rows.
-            allowBreakUnlessDeclared(rowStyles, CssProp.BREAK_BEFORE, CssProp.PAGE_BREAK_BEFORE);
-            allowBreakUnlessDeclared(rowStyles, CssProp.BREAK_AFTER, CssProp.PAGE_BREAK_AFTER);
+            allowBreakUnlessDeclared(rowStyles, ECSSProperty.BREAK_BEFORE, ECSSProperty.PAGE_BREAK_BEFORE);
+            allowBreakUnlessDeclared(rowStyles, ECSSProperty.BREAK_AFTER, ECSSProperty.PAGE_BREAK_AFTER);
             row.attr(HtmlTagAttr.STYLE, rowStyles.getAsCSSString());
         }
     }
 
-    private void allowBreakUnlessDeclared(@NotNull CSSDeclarationList rowStyles, @NotNull String property, @NotNull String legacyProperty) {
+    private void allowBreakUnlessDeclared(@NotNull CSSDeclarationList rowStyles, @NotNull ECSSProperty property, @NotNull ECSSProperty legacyProperty) {
         // A break declared on the row itself already overrides the default CSS, and a forced one must stay
         if (CssUtils.getPropertyValue(rowStyles, property).isEmpty() && CssUtils.getPropertyValue(rowStyles, legacyProperty).isEmpty()) {
-            CssUtils.setPropertyValue(rowStyles, property, CssProp.BREAK_AUTO_VALUE);
+            CssUtils.setPropertyValue(rowStyles, property, CCSSValue.AUTO);
         }
     }
 
     private void removePageBreakInsideAvoid(Element table) {
         CSSDeclarationList tableStyles = getCssStyles(table);
-        CssUtils.removeProperty(tableStyles, CssProp.PAGE_BREAK_INSIDE);
+        CssUtils.removeProperty(tableStyles, ECSSProperty.PAGE_BREAK_INSIDE);
         table.attr(HtmlTagAttr.STYLE, tableStyles.getAsCSSString());
     }
 
@@ -1507,8 +1509,8 @@ public class HtmlProcessor {
         Element reportedByDiv = document.select("div:contains(Reported by):not(:has(div))").first();
         if (reportedByDiv != null) {
             CSSDeclarationList cssStyles = getCssStyles(reportedByDiv);
-            CssUtils.setPropertyValue(cssStyles, CssProp.TOP, "0");
-            CssUtils.setPropertyValue(cssStyles, CssProp.FONT_SIZE, "8px");
+            CssUtils.setPropertyValue(cssStyles, ECSSProperty.TOP, "0");
+            CssUtils.setPropertyValue(cssStyles, ECSSProperty.FONT_SIZE, "8px");
             reportedByDiv.attr(HtmlTagAttr.STYLE, cssStyles.getAsCSSString());
         }
     }
@@ -1528,9 +1530,9 @@ public class HtmlProcessor {
         Elements reportTables = document.select("table.polarion-rp-column-layout");
         for (Element reportTable : reportTables) {
             CSSDeclarationList cssStyles = getCssStyles(reportTable);
-            String width = CssUtils.getPropertyValue(cssStyles, CssProp.WIDTH);
+            String width = CssUtils.getPropertyValue(cssStyles, ECSSProperty.WIDTH);
             if ("1000px".equals(width)) {
-                CssUtils.setPropertyValue(cssStyles, CssProp.WIDTH, "100%");
+                CssUtils.setPropertyValue(cssStyles, ECSSProperty.WIDTH, "100%");
                 reportTable.attr(HtmlTagAttr.STYLE, cssStyles.getAsCSSString());
             }
         }
@@ -1671,9 +1673,9 @@ public class HtmlProcessor {
         Elements tables = document.select("table");
         for (Element table : tables) {
             CSSDeclarationList cssStyles = getCssStyles(table);
-            String cssFloat = CssUtils.getPropertyValue(cssStyles, CssProp.FLOAT);
-            if (CssProp.FLOAT_LEFT_VALUE.equals(cssFloat)) {
-                CssUtils.removeProperty(cssStyles, CssProp.FLOAT);
+            String cssFloat = CssUtils.getPropertyValue(cssStyles, ECSSProperty.FLOAT);
+            if (CCSSValue.LEFT.equals(cssFloat)) {
+                CssUtils.removeProperty(cssStyles, ECSSProperty.FLOAT);
                 if (cssStyles.isEmpty()) {
                     table.removeAttr(HtmlTagAttr.STYLE);
                 } else {
@@ -1704,7 +1706,7 @@ public class HtmlProcessor {
         return html.contains(PAGE_BREAK_MARK);
     }
 
-    private String getCssValue(@NotNull Element element, @NotNull String cssProperty) {
+    private String getCssValue(@NotNull Element element, @NotNull ECSSProperty cssProperty) {
         CSSDeclarationList cssStyles = getCssStyles(element);
         return CssUtils.getPropertyValue(cssStyles, cssProperty);
     }

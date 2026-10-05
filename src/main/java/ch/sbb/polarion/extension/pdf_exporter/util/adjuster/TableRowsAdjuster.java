@@ -7,6 +7,7 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ConversionPa
 import ch.sbb.polarion.extension.pdf_exporter.util.CssUtils;
 import ch.sbb.polarion.extension.pdf_exporter.util.PaperSizeUtils;
 import com.helger.css.decl.CSSDeclarationList;
+import com.helger.css.property.ECSSProperty;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jsoup.nodes.Document;
@@ -141,7 +142,7 @@ public class TableRowsAdjuster extends AbstractAdjuster {
                 continue;
             }
             CSSDeclarationList style = CssUtils.parseDeclarations(cell.attr(HtmlTagAttr.STYLE));
-            CssUtils.setPropertyValue(style, CssProp.OVERFLOW_WRAP, CssProp.OVERFLOW_WRAP_ANYWHERE_VALUE);
+            CssUtils.setPropertyValue(style, ECSSProperty.OVERFLOW_WRAP, CssProp.OVERFLOW_WRAP_ANYWHERE_VALUE);
             cell.attr(HtmlTagAttr.STYLE, style.getAsCSSString());
         }
     }
@@ -211,10 +212,10 @@ public class TableRowsAdjuster extends AbstractAdjuster {
     /** A row which states how it breaks itself is left as it is. */
     private void keepWhole(@NotNull Element row) {
         CSSDeclarationList rowStyles = CssUtils.parseDeclarations(row.attr(HtmlTagAttr.STYLE));
-        if (!CssUtils.getPropertyValue(rowStyles, CssProp.BREAK_INSIDE).isEmpty() || !CssUtils.getPropertyValue(rowStyles, CssProp.PAGE_BREAK_INSIDE).isEmpty()) {
+        if (!CssUtils.getPropertyValue(rowStyles, ECSSProperty.BREAK_INSIDE).isEmpty() || !CssUtils.getPropertyValue(rowStyles, ECSSProperty.PAGE_BREAK_INSIDE).isEmpty()) {
             return;
         }
-        CssUtils.setPropertyValue(rowStyles, CssProp.BREAK_INSIDE, CssProp.PAGE_BREAK_INSIDE_AVOID_VALUE);
+        CssUtils.setPropertyValue(rowStyles, ECSSProperty.BREAK_INSIDE, CssProp.PAGE_BREAK_INSIDE_AVOID_VALUE);
         row.attr(HtmlTagAttr.STYLE, rowStyles.getAsCSSString());
     }
 }

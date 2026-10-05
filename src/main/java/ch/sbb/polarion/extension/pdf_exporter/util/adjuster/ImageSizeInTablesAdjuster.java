@@ -9,6 +9,8 @@ import ch.sbb.polarion.extension.pdf_exporter.util.PageLayout;
 import ch.sbb.polarion.extension.pdf_exporter.util.PaperSizeUtils;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ConversionParams;
 import com.helger.css.decl.CSSDeclarationList;
+import com.helger.css.property.ECSSProperty;
+import com.helger.css.propertyvalue.CCSSValue;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.VisibleForTesting;
@@ -85,11 +87,11 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
     /** The measure reads the height an image states and not the limit put on it, so the image of a copy states the limit. */
     private void drawAtTheHeightItIsLimitedTo(@NotNull Element img) {
         CSSDeclarationList cssStyles = CssUtils.parseDeclarations(img.attr(HtmlTagAttr.STYLE));
-        float limit = extractPixels(CssUtils.getPropertyValue(cssStyles, CssProp.MAX_HEIGHT));
-        if (limit > 0 && statedSize(img, cssStyles, CssProp.HEIGHT) > limit) {
-            CssUtils.setPropertyValue(cssStyles, CssProp.HEIGHT, ((int) limit) + Measure.PX);
+        float limit = extractPixels(CssUtils.getPropertyValue(cssStyles, ECSSProperty.MAX_HEIGHT));
+        if (limit > 0 && statedSize(img, cssStyles, ECSSProperty.HEIGHT) > limit) {
+            CssUtils.setPropertyValue(cssStyles, ECSSProperty.HEIGHT, ((int) limit) + Measure.PX);
             img.attr(HtmlTagAttr.STYLE, cssStyles.getAsCSSString());
-            img.removeAttr(CssProp.HEIGHT);
+            img.removeAttr(HtmlTagAttr.HEIGHT);
         }
     }
 
@@ -118,8 +120,8 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
      */
     @SuppressWarnings("java:S9395") // sizes in pixels, which a float holds exactly; java:S1905 reports the explicit cast
     private boolean fitToColumn(@NotNull Element img, @NotNull Map<Integer, Integer> columnWidths, int allowedHeight) {
-        float cssWidth = extractWidth(img, CssProp.WIDTH);
-        float cssMaxWidth = extractWidth(img, CssProp.MAX_WIDTH);
+        float cssWidth = extractWidth(img, ECSSProperty.WIDTH);
+        float cssMaxWidth = extractWidth(img, ECSSProperty.MAX_WIDTH);
 
         float columnCountBasedWidth = getImageWidthBasedOnColumnsCount(img);
         float paramsBasedWidth = PaperSizeUtils.getMaxWidthInTables(conversionParams);
@@ -131,7 +133,7 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
         float statedHeight = limitHeight(img, imageHeight);
 
         // The width the image states in an absolute unit, read before the column replaces it; a percentage states no shape
-        float absoluteWidth = statedSize(img, CssUtils.parseDeclarations(img.attr(HtmlTagAttr.STYLE)), CssProp.WIDTH);
+        float absoluteWidth = statedSize(img, CssUtils.parseDeclarations(img.attr(HtmlTagAttr.STYLE)), ECSSProperty.WIDTH);
         boolean narrowed = cssWidth > maxWidth || cssMaxWidth > maxWidth;
         if (narrowed) {
             adjustImageStyle(img, maxWidth, cssWidth);
@@ -189,8 +191,8 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
         }
         // Without a width of its own the image takes its column, as a diagram does, and stands on a line of its own
         int width = (int) (statedWidth > 0 && statedWidth < columnWidth ? statedWidth : columnWidth);
-        image.removeAttr(CssProp.WIDTH).removeAttr(CssProp.HEIGHT)
-                .attr(HtmlTagAttr.STYLE, CssProp.WIDTH + ": " + width + Measure.PX + "; " + CssProp.HEIGHT + ": " + allowedHeight + Measure.PX);
+        image.removeAttr(HtmlTagAttr.WIDTH).removeAttr(HtmlTagAttr.HEIGHT)
+                .attr(HtmlTagAttr.STYLE, CssUtils.declaration(ECSSProperty.WIDTH, width + Measure.PX) + " " + CssUtils.declaration(ECSSProperty.HEIGHT, allowedHeight + Measure.PX));
 
         Element probe = new Element(HtmlTag.TABLE);
         probe.appendElement(HtmlTag.TR).appendChild(copy);
@@ -209,10 +211,10 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
     /** States the height the image is limited to, where it states a taller one, as the measure reads it. */
     private void drawNoTallerThan(@NotNull Element img, int height) {
         CSSDeclarationList cssStyles = CssUtils.parseDeclarations(img.attr(HtmlTagAttr.STYLE));
-        if (statedSize(img, cssStyles, CssProp.HEIGHT) > height) {
-            CssUtils.setPropertyValue(cssStyles, CssProp.HEIGHT, height + Measure.PX);
+        if (statedSize(img, cssStyles, ECSSProperty.HEIGHT) > height) {
+            CssUtils.setPropertyValue(cssStyles, ECSSProperty.HEIGHT, height + Measure.PX);
             img.attr(HtmlTagAttr.STYLE, cssStyles.getAsCSSString());
-            img.removeAttr(CssProp.HEIGHT);
+            img.removeAttr(HtmlTagAttr.HEIGHT);
         }
     }
 
@@ -253,9 +255,9 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
      */
     private static void keepWhole(@NotNull Element row) {
         CSSDeclarationList rowStyles = CssUtils.parseDeclarations(row.attr(HtmlTagAttr.STYLE));
-        CssUtils.setPropertyValue(rowStyles, CssProp.BREAK_INSIDE, CssProp.PAGE_BREAK_INSIDE_AVOID_VALUE);
-        if (!CssUtils.getPropertyValue(rowStyles, CssProp.PAGE_BREAK_INSIDE).isEmpty()) {
-            CssUtils.setPropertyValue(rowStyles, CssProp.PAGE_BREAK_INSIDE, CssProp.PAGE_BREAK_INSIDE_AVOID_VALUE);
+        CssUtils.setPropertyValue(rowStyles, ECSSProperty.BREAK_INSIDE, CssProp.PAGE_BREAK_INSIDE_AVOID_VALUE);
+        if (!CssUtils.getPropertyValue(rowStyles, ECSSProperty.PAGE_BREAK_INSIDE).isEmpty()) {
+            CssUtils.setPropertyValue(rowStyles, ECSSProperty.PAGE_BREAK_INSIDE, CssProp.PAGE_BREAK_INSIDE_AVOID_VALUE);
         }
         row.attr(HtmlTagAttr.STYLE, rowStyles.getAsCSSString());
     }
@@ -269,17 +271,17 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
      */
     private float limitHeight(Element img, int allowedHeight) {
         CSSDeclarationList cssStyles = CssUtils.parseDeclarations(img.attr(HtmlTagAttr.STYLE));
-        float statedMaxHeight = extractPixels(CssUtils.getPropertyValue(cssStyles, CssProp.MAX_HEIGHT));
+        float statedMaxHeight = extractPixels(CssUtils.getPropertyValue(cssStyles, ECSSProperty.MAX_HEIGHT));
         if (statedMaxHeight > 0 && statedMaxHeight <= allowedHeight) {
             // The image asks for less than the page leaves it, and what it asks for is what it keeps
             return HOLDS_THE_PAGE;
         }
 
-        CssUtils.setPropertyValue(cssStyles, CssProp.MAX_HEIGHT, allowedHeight + Measure.PX);
-        float statedHeight = statedSize(img, cssStyles, CssProp.HEIGHT);
-        if (statedHeight > allowedHeight && CssUtils.getPropertyValue(cssStyles, CssProp.OBJECT_FIT).isEmpty()) {
+        CssUtils.setPropertyValue(cssStyles, ECSSProperty.MAX_HEIGHT, allowedHeight + Measure.PX);
+        float statedHeight = statedSize(img, cssStyles, ECSSProperty.HEIGHT);
+        if (statedHeight > allowedHeight && CssUtils.getPropertyValue(cssStyles, ECSSProperty.OBJECT_FIT).isEmpty()) {
             // The limit cuts into the height the image states, and a height cut alone squashes the drawing
-            CssUtils.setPropertyValue(cssStyles, CssProp.OBJECT_FIT, CssProp.OBJECT_FIT_CONTAIN_VALUE);
+            CssUtils.setPropertyValue(cssStyles, ECSSProperty.OBJECT_FIT, CCSSValue.CONTAIN);
         }
         img.attr(HtmlTagAttr.STYLE, cssStyles.getAsCSSString());
         return statedHeight;
@@ -299,22 +301,22 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
     }
 
     /** The size the image states in pixels, from its style or from its attribute. */
-    private float statedSize(Element img, CSSDeclarationList cssStyles, String property) {
+    private float statedSize(Element img, CSSDeclarationList cssStyles, ECSSProperty property) {
         String value = CssUtils.getPropertyValue(cssStyles, property);
-        return value.isEmpty() ? parseNumber(img.attr(property)) : extractPixels(value);
+        return value.isEmpty() ? parseNumber(img.attr(property.getName())) : extractPixels(value);
     }
 
-    private float extractWidth(Element img, String property) {
+    private float extractWidth(Element img, ECSSProperty property) {
         String style = img.attr(HtmlTagAttr.STYLE);
         CSSDeclarationList cssStyles = CssUtils.parseDeclarations(style);
 
         String value = CssUtils.getPropertyValue(cssStyles, property);
         if (value.isEmpty()) {
             // An attribute states a width in pixels, and it is a width like any other
-            return CssProp.WIDTH.equals(property) ? parseNumber(img.attr(CssProp.WIDTH)) : 0;
+            return property == ECSSProperty.WIDTH ? parseNumber(img.attr(HtmlTagAttr.WIDTH)) : 0;
         }
 
-        if (value.equals(CssProp.AUTO_VALUE)) {
+        if (value.equals(CCSSValue.AUTO)) {
             return Float.MAX_VALUE;
         }
 
@@ -368,21 +370,21 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
         String style = img.attr(HtmlTagAttr.STYLE);
         CSSDeclarationList cssStyles = CssUtils.parseDeclarations(style);
 
-        img.removeAttr(CssProp.WIDTH);
-        img.removeAttr(CssProp.HEIGHT);
+        img.removeAttr(HtmlTagAttr.WIDTH);
+        img.removeAttr(HtmlTagAttr.HEIGHT);
 
         // The column shrinks the width, and a height stated for the width the image no longer has would
         // distort it. The image keeps its own ratio instead: a document states such a height by a drag of a
         // handle in the editor, and honouring one smears an image across a page of its own.
-        CssUtils.removeProperty(cssStyles, CssProp.HEIGHT);
+        CssUtils.removeProperty(cssStyles, ECSSProperty.HEIGHT);
 
         if (statedWidth > 0) {
             // The column is what limits the image, it never enlarges one: an image which states no width keeps none
             float adjustedWidth = Math.min(statedWidth, maxWidth);
-            CssUtils.setPropertyValue(cssStyles, CssProp.WIDTH, ((int) adjustedWidth) + Measure.PX);
+            CssUtils.setPropertyValue(cssStyles, ECSSProperty.WIDTH, ((int) adjustedWidth) + Measure.PX);
         }
         // For svg-images in tables width attribute is not enough, WeasyPrint needs max-width as well
-        CssUtils.setPropertyValue(cssStyles, CssProp.MAX_WIDTH, ((int) maxWidth) + Measure.PX);
+        CssUtils.setPropertyValue(cssStyles, ECSSProperty.MAX_WIDTH, ((int) maxWidth) + Measure.PX);
 
         img.attr(HtmlTagAttr.STYLE, cssStyles.getAsCSSString());
     }

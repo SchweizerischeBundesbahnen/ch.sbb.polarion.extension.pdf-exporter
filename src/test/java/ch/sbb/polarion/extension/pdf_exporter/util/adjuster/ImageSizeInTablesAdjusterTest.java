@@ -9,6 +9,8 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PaperSize;
 import ch.sbb.polarion.extension.pdf_exporter.util.CssUtils;
 import ch.sbb.polarion.extension.pdf_exporter.util.PaperSizeUtils;
 import com.helger.css.decl.CSSDeclarationList;
+import com.helger.css.property.ECSSProperty;
+import com.helger.css.propertyvalue.CCSSValue;
 import com.helger.css.reader.CSSReaderDeclarationList;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -76,7 +78,7 @@ class ImageSizeInTablesAdjusterTest {
 
         String style = testImg.attr(HtmlTagAttr.STYLE);
         CSSDeclarationList cssStyles = parseCss(style);
-        String maxWidthStr = CssUtils.getPropertyValue(cssStyles, CssProp.MAX_WIDTH);
+        String maxWidthStr = CssUtils.getPropertyValue(cssStyles, ECSSProperty.MAX_WIDTH);
         assertNotNull(maxWidthStr);
         float maxWidth = Float.parseFloat(maxWidthStr.replace(Measure.PX, ""));
         assertTrue(maxWidth > 400 && maxWidth < 450);
@@ -111,7 +113,7 @@ class ImageSizeInTablesAdjusterTest {
 
             String style = testImg.attr(HtmlTagAttr.STYLE);
             CSSDeclarationList cssStyles = parseCss(style);
-            String maxWidthStr = CssUtils.getPropertyValue(cssStyles, CssProp.MAX_WIDTH);
+            String maxWidthStr = CssUtils.getPropertyValue(cssStyles, ECSSProperty.MAX_WIDTH);
             assertNotNull(maxWidthStr, "max-width should be set even when TableAnalyzer returns empty map");
 
             float maxWidth = Float.parseFloat(maxWidthStr.replace(Measure.PX, ""));
@@ -135,8 +137,8 @@ class ImageSizeInTablesAdjusterTest {
         new ImageSizeInTablesAdjuster(doc, ConversionParams.builder().build()).execute();
 
         CSSDeclarationList cssStyles = parseCss(doc.getElementById("test-img").attr(HtmlTagAttr.STYLE));
-        assertEquals("", CssUtils.getPropertyValue(cssStyles, CssProp.WIDTH), "A width the image never had would enlarge a narrow image to the column");
-        assertNotEquals("", CssUtils.getPropertyValue(cssStyles, CssProp.MAX_WIDTH), "The column is what limits the image");
+        assertEquals("", CssUtils.getPropertyValue(cssStyles, ECSSProperty.WIDTH), "A width the image never had would enlarge a narrow image to the column");
+        assertNotEquals("", CssUtils.getPropertyValue(cssStyles, ECSSProperty.MAX_WIDTH), "The column is what limits the image");
     }
 
     @Test
@@ -154,9 +156,9 @@ class ImageSizeInTablesAdjusterTest {
         new ImageSizeInTablesAdjuster(doc, ConversionParams.builder().build()).execute();
 
         CSSDeclarationList cssStyles = parseCss(doc.getElementById("test-img").attr(HtmlTagAttr.STYLE));
-        String width = CssUtils.getPropertyValue(cssStyles, CssProp.WIDTH);
+        String width = CssUtils.getPropertyValue(cssStyles, ECSSProperty.WIDTH);
         assertNotEquals("", width, "The width the attribute stated is removed, so the style must carry it");
-        assertEquals(CssUtils.getPropertyValue(cssStyles, CssProp.MAX_WIDTH), width, "A width wider than the column is the column's");
+        assertEquals(CssUtils.getPropertyValue(cssStyles, ECSSProperty.MAX_WIDTH), width, "A width wider than the column is the column's");
     }
 
     @Test
@@ -174,7 +176,7 @@ class ImageSizeInTablesAdjusterTest {
         new ImageSizeInTablesAdjuster(doc, ConversionParams.builder().build()).execute();
 
         CSSDeclarationList cssStyles = parseCss(doc.getElementById("test-img").attr(HtmlTagAttr.STYLE));
-        assertEquals("100px", CssUtils.getPropertyValue(cssStyles, CssProp.WIDTH), "The column limits an image, it never enlarges one");
+        assertEquals("100px", CssUtils.getPropertyValue(cssStyles, ECSSProperty.WIDTH), "The column limits an image, it never enlarges one");
     }
 
     @Test
@@ -192,7 +194,7 @@ class ImageSizeInTablesAdjusterTest {
         new ImageSizeInTablesAdjuster(doc, ConversionParams.builder().build()).execute();
 
         CSSDeclarationList cssStyles = parseCss(doc.getElementById("test-img").attr(HtmlTagAttr.STYLE));
-        assertEquals("", CssUtils.getPropertyValue(cssStyles, CssProp.HEIGHT), "A height stated for a width the image no longer has would distort it");
+        assertEquals("", CssUtils.getPropertyValue(cssStyles, ECSSProperty.HEIGHT), "A height stated for a width the image no longer has would distort it");
     }
 
     @Test
@@ -208,7 +210,7 @@ class ImageSizeInTablesAdjusterTest {
         new ImageSizeInTablesAdjuster(doc, ConversionParams.builder().build()).execute();
 
         CSSDeclarationList cssStyles = parseCss(doc.getElementById("test-img").attr(HtmlTagAttr.STYLE));
-        float limit = pixelsOf(cssStyles, CssProp.MAX_HEIGHT);
+        float limit = pixelsOf(cssStyles, ECSSProperty.MAX_HEIGHT);
         assertTrue(limit > 0 && limit < PaperSizeUtils.getMaxHeight(ConversionParams.builder().build()),
                 "The page less the height of the header is what the image is given, and it states no size of its own");
     }
@@ -226,7 +228,7 @@ class ImageSizeInTablesAdjusterTest {
         new ImageSizeInTablesAdjuster(doc, ConversionParams.builder().build()).execute();
 
         CSSDeclarationList cssStyles = parseCss(doc.getElementById("test-img").attr(HtmlTagAttr.STYLE));
-        assertEquals(200f, pixelsOf(cssStyles, CssProp.MAX_HEIGHT), "A limit the document states is smaller than the page, so it stands");
+        assertEquals(200f, pixelsOf(cssStyles, ECSSProperty.MAX_HEIGHT), "A limit the document states is smaller than the page, so it stands");
     }
 
     @Test
@@ -242,7 +244,7 @@ class ImageSizeInTablesAdjusterTest {
         new ImageSizeInTablesAdjuster(doc, ConversionParams.builder().build()).execute();
 
         CSSDeclarationList cssStyles = parseCss(doc.getElementById("test-img").attr(HtmlTagAttr.STYLE));
-        assertEquals(CssProp.OBJECT_FIT_CONTAIN_VALUE, CssUtils.getPropertyValue(cssStyles, CssProp.OBJECT_FIT),
+        assertEquals(CCSSValue.CONTAIN, CssUtils.getPropertyValue(cssStyles, ECSSProperty.OBJECT_FIT),
                 "The limit cuts into the 3000 px the image states, and a height cut alone squashes the drawing");
     }
 
@@ -260,9 +262,9 @@ class ImageSizeInTablesAdjusterTest {
         new ImageSizeInTablesAdjuster(doc, ConversionParams.builder().build()).execute();
 
         assertEquals(CssProp.PAGE_BREAK_INSIDE_AVOID_VALUE,
-                CssUtils.getPropertyValue(parseCss(doc.getElementById("tall-row").attr(HtmlTagAttr.STYLE)), CssProp.BREAK_INSIDE),
+                CssUtils.getPropertyValue(parseCss(doc.getElementById("tall-row").attr(HtmlTagAttr.STYLE)), ECSSProperty.BREAK_INSIDE),
                 "The image states no size, so it can fill the page and the row must carry its header with it");
-        assertEquals("", CssUtils.getPropertyValue(parseCss(doc.getElementById("small-row").attr(HtmlTagAttr.STYLE)), CssProp.BREAK_INSIDE),
+        assertEquals("", CssUtils.getPropertyValue(parseCss(doc.getElementById("small-row").attr(HtmlTagAttr.STYLE)), ECSSProperty.BREAK_INSIDE),
                 "An icon leaves the row free to break where a row of text would");
     }
 
@@ -280,9 +282,9 @@ class ImageSizeInTablesAdjusterTest {
         new ImageSizeInTablesAdjuster(doc, ConversionParams.builder().build()).execute();
 
         assertEquals(CssProp.PAGE_BREAK_INSIDE_AVOID_VALUE,
-                CssUtils.getPropertyValue(parseCss(doc.getElementById("tall-row").attr(HtmlTagAttr.STYLE)), CssProp.BREAK_INSIDE),
+                CssUtils.getPropertyValue(parseCss(doc.getElementById("tall-row").attr(HtmlTagAttr.STYLE)), ECSSProperty.BREAK_INSIDE),
                 "The image states a height the page cannot hold, so the row must carry its header with it");
-        assertEquals("", CssUtils.getPropertyValue(parseCss(doc.getElementById("short-row").attr(HtmlTagAttr.STYLE)), CssProp.BREAK_INSIDE),
+        assertEquals("", CssUtils.getPropertyValue(parseCss(doc.getElementById("short-row").attr(HtmlTagAttr.STYLE)), ECSSProperty.BREAK_INSIDE),
                 "The page holds the height the image states, and the row breaks where it must");
     }
 
@@ -310,8 +312,8 @@ class ImageSizeInTablesAdjusterTest {
         new ImageSizeInTablesAdjuster(doc, ConversionParams.builder().build()).execute();
 
         CSSDeclarationList styles = parseCss(doc.getElementById("wide").attr(HtmlTagAttr.STYLE));
-        assertTrue(pixelsOf(styles, CssProp.WIDTH) < 3000, "The column narrows the image");
-        assertEquals("", CssUtils.getPropertyValue(parseCss(doc.getElementById("row").attr(HtmlTagAttr.STYLE)), CssProp.BREAK_INSIDE),
+        assertTrue(pixelsOf(styles, ECSSProperty.WIDTH) < 3000, "The column narrows the image");
+        assertEquals("", CssUtils.getPropertyValue(parseCss(doc.getElementById("row").attr(HtmlTagAttr.STYLE)), ECSSProperty.BREAK_INSIDE),
                 "The image asks for less height than the page leaves it, and its row breaks where it must");
     }
 
@@ -367,7 +369,7 @@ class ImageSizeInTablesAdjusterTest {
         Document doc = Jsoup.parse(html);
         new ImageSizeInTablesAdjuster(doc, ConversionParams.builder().build()).execute();
 
-        assertEquals("", CssUtils.getPropertyValue(parseCss(doc.getElementById("row").attr(HtmlTagAttr.STYLE)), CssProp.BREAK_INSIDE),
+        assertEquals("", CssUtils.getPropertyValue(parseCss(doc.getElementById("row").attr(HtmlTagAttr.STYLE)), ECSSProperty.BREAK_INSIDE),
                 "The text of the row runs over a page and splits the row anyway");
     }
 
@@ -389,7 +391,7 @@ class ImageSizeInTablesAdjusterTest {
         new ImageSizeInTablesAdjuster(doc, ConversionParams.builder().build()).execute();
 
         assertEquals(CssProp.PAGE_BREAK_INSIDE_AVOID_VALUE,
-                CssUtils.getPropertyValue(parseCss(doc.getElementById("row").attr(HtmlTagAttr.STYLE)), CssProp.BREAK_INSIDE),
+                CssUtils.getPropertyValue(parseCss(doc.getElementById("row").attr(HtmlTagAttr.STYLE)), ECSSProperty.BREAK_INSIDE),
                 "The image is drawn as tall as the page leaves it, so its row carries the header of its own table");
     }
 
@@ -406,7 +408,7 @@ class ImageSizeInTablesAdjusterTest {
         Document doc = Jsoup.parse(html);
         new ImageSizeInTablesAdjuster(doc, ConversionParams.builder().build()).execute();
 
-        assertEquals(CssProp.PAGE_BREAK_INSIDE_AVOID_VALUE, CssUtils.getPropertyValue(parseCss(doc.getElementById("row").attr(HtmlTagAttr.STYLE)), CssProp.BREAK_INSIDE),
+        assertEquals(CssProp.PAGE_BREAK_INSIDE_AVOID_VALUE, CssUtils.getPropertyValue(parseCss(doc.getElementById("row").attr(HtmlTagAttr.STYLE)), ECSSProperty.BREAK_INSIDE),
                 "The row fits under the header as it is drawn, its image fitted to the page, so it carries the header with it");
     }
 
@@ -460,7 +462,7 @@ class ImageSizeInTablesAdjusterTest {
         Document doc = Jsoup.parse(html);
         new ImageSizeInTablesAdjuster(doc, ConversionParams.builder().build()).execute();
 
-        assertEquals("auto", CssUtils.getPropertyValue(parseCss(doc.getElementById("row").attr(HtmlTagAttr.STYLE)), CssProp.BREAK_INSIDE),
+        assertEquals("auto", CssUtils.getPropertyValue(parseCss(doc.getElementById("row").attr(HtmlTagAttr.STYLE)), ECSSProperty.BREAK_INSIDE),
                 "Kept whole, the row would only move its text to the next page and leave this one blank");
     }
 
@@ -492,7 +494,7 @@ class ImageSizeInTablesAdjusterTest {
                 </table></div>
                 """.formatted(textStyle, cell));
         new ImageSizeInTablesAdjuster(doc, ConversionParams.builder().build()).execute();
-        return pixelsOf(parseCss(doc.getElementById("diagram").attr(HtmlTagAttr.STYLE)), CssProp.MAX_HEIGHT);
+        return pixelsOf(parseCss(doc.getElementById("diagram").attr(HtmlTagAttr.STYLE)), ECSSProperty.MAX_HEIGHT);
     }
 
     @Test
@@ -507,7 +509,7 @@ class ImageSizeInTablesAdjusterTest {
         Document doc = Jsoup.parse(html);
         new ImageSizeInTablesAdjuster(doc, ConversionParams.builder().build()).execute();
 
-        assertEquals(CssProp.PAGE_BREAK_INSIDE_AVOID_VALUE, CssUtils.getPropertyValue(parseCss(doc.getElementById("row").attr(HtmlTagAttr.STYLE)), CssProp.BREAK_INSIDE),
+        assertEquals(CssProp.PAGE_BREAK_INSIDE_AVOID_VALUE, CssUtils.getPropertyValue(parseCss(doc.getElementById("row").attr(HtmlTagAttr.STYLE)), ECSSProperty.BREAK_INSIDE),
                 "The image does not split, so a break of the row would only leave the header alone: the table moves on whole");
     }
 
@@ -521,16 +523,16 @@ class ImageSizeInTablesAdjusterTest {
 
         Document doc = Jsoup.parse(html);
         new ImageSizeInTablesAdjuster(doc, ConversionParams.builder().build()).execute();
-        return CssUtils.getPropertyValue(parseCss(doc.getElementById("row").attr(HtmlTagAttr.STYLE)), CssProp.BREAK_INSIDE);
+        return CssUtils.getPropertyValue(parseCss(doc.getElementById("row").attr(HtmlTagAttr.STYLE)), ECSSProperty.BREAK_INSIDE);
     }
 
-    private float pixelsOf(CSSDeclarationList cssStyles, String property) {
+    private float pixelsOf(CSSDeclarationList cssStyles, ECSSProperty property) {
         String value = CssUtils.getPropertyValue(cssStyles, property);
-        assertTrue(value.endsWith(Measure.PX), property + " is stated in pixels, and reads '" + value + "'");
+        assertTrue(value.endsWith(Measure.PX), property.getName() + " is stated in pixels, and reads '" + value + "'");
         try {
             return Float.parseFloat(value.replace(Measure.PX, ""));
         } catch (NumberFormatException e) {
-            return fail(property + " reads '" + value + "', which is no number");
+            return fail(property.getName() + " reads '" + value + "', which is no number");
         }
     }
 

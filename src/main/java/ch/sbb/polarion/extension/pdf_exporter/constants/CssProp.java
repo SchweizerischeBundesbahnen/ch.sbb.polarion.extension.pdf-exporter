@@ -2,40 +2,10 @@ package ch.sbb.polarion.extension.pdf_exporter.constants;
 
 import lombok.experimental.UtilityClass;
 
+/** The CSS values ph-css does not know. Property names are in ECSSProperty, other values in CCSSValue. */
 @UtilityClass
 public class CssProp {
-    public static final String AUTO_VALUE = "auto";
-    public static final String DISPLAY = "display";
-    public static final String DISPLAY_BLOCK_VALUE = "block";
-    public static final String FLOAT = "float";
-    public static final String FLOAT_LEFT_VALUE = "left";
-    public static final String FONT_SIZE = "font-size";
-    public static final String HEIGHT = "height";
-    public static final String HYPHENS = "hyphens";
-    public static final String HYPHENS_AUTO_VALUE = "auto";
-    public static final String MARGIN = "margin";
-    public static final String MAX_HEIGHT = "max-height";
-    public static final String MAX_WIDTH = "max-width";
-    public static final String OBJECT_FIT = "object-fit";
-    public static final String OBJECT_FIT_CONTAIN_VALUE = "contain";
-    public static final String OVERFLOW_WRAP = "overflow-wrap";
     public static final String OVERFLOW_WRAP_ANYWHERE_VALUE = "anywhere";
-    public static final String WORD_WRAP = "word-wrap";
     public static final String WORD_WRAP_BREAK_WORD_VALUE = "break-word";
-    public static final String BREAK_AFTER = "break-after";
-    public static final String BREAK_AUTO_VALUE = "auto";
-    public static final String BREAK_BEFORE = "break-before";
-    public static final String BREAK_INSIDE = "break-inside";
-    public static final String PAGE_BREAK_AFTER = "page-break-after";
-    public static final String PAGE_BREAK_BEFORE = "page-break-before";
-    public static final String PAGE_BREAK_INSIDE = "page-break-inside";
     public static final String PAGE_BREAK_INSIDE_AVOID_VALUE = "avoid";
-    public static final String TEXT_ALIGN = "text-align";
-    public static final String TEXT_ALIGN_CENTER_VALUE = "center";
-    public static final String TEXT_ALIGN_RIGHT_VALUE = "right";
-    public static final String TOP = "top";
-    public static final String WIDTH = "width";
-    public static final String WIDTH_AUTO_VALUE = "auto";
-    public static final String WHITE_SPACE = "white-space";
-    public static final String WHITE_SPACE_NOWRAP_VALUE = "nowrap";
 }
