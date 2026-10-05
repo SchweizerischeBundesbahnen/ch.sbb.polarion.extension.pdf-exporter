@@ -21,7 +21,7 @@ public class TableSizeAdjuster extends AbstractAdjuster {
 
     @Override
     public void execute() {
-        float maxWidth = PaperSizeUtils.getMaxWidth(conversionParams);
+        float maxWidth = (float) PaperSizeUtils.getMaxWidth(conversionParams);
 
         Elements tables = document.select("table[style]");
         for (Element table : tables) {

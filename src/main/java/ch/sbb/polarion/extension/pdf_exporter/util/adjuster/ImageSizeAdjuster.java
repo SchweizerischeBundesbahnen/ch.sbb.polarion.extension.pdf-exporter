@@ -32,8 +32,8 @@ public class ImageSizeAdjuster extends AbstractAdjuster {
 
     @Override
     public void execute() {
-        float maxWidth = PaperSizeUtils.getMaxWidth(conversionParams);
-        float maxHeight = pageLayout.heightForAnImage(conversionParams);
+        float maxWidth = (float) PaperSizeUtils.getMaxWidth(conversionParams);
+        float maxHeight = (float) pageLayout.heightForAnImage(conversionParams);
 
         Elements images = document.select("img[style]");
 

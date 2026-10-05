@@ -120,8 +120,8 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
         float cssWidth = extractWidth(img, CssProp.WIDTH);
         float cssMaxWidth = extractWidth(img, CssProp.MAX_WIDTH);
 
-        float columnCountBasedWidth = getImageWidthBasedOnColumnsCount(img);
-        float paramsBasedWidth = PaperSizeUtils.getMaxWidthInTables(conversionParams);
+        float columnCountBasedWidth = (float) getImageWidthBasedOnColumnsCount(img);
+        float paramsBasedWidth = (float) PaperSizeUtils.getMaxWidthInTables(conversionParams);
 
         float maxWidth = getMaxWidth(img, columnWidths, columnCountBasedWidth, paramsBasedWidth);
 
@@ -354,7 +354,7 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
             for (int i = 0; i < colspan; i++) {
                 totalWidth += columnWidths.getOrDefault(column + i, 0);
             }
-            maxWidth = totalWidth;
+            maxWidth = (float) totalWidth;
         } else {
             // ... otherwise calculate columns width based on columns count - page width equally divided on columns count, as a fallback. Not ideal but works pretty well for most cases.
             maxWidth = columnCountBasedWidth != -1 ? columnCountBasedWidth : paramsBasedWidth;
