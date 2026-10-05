@@ -44,10 +44,10 @@ public final class PerformanceRun implements AutoCloseable {
     static final String WEASYPRINT = "WeasyPrint";
 
     /**
-     * The bulk processing service of a merge: the upload of each document, its rendering by the WeasyPrint of the service
-     * and the merge. It is scaled and judged as WeasyPrint is, which it spends most of its time in.
+     * The bulk processing service of a merge, WeasyPrint aside: the upload of each document, what the service does with it
+     * and the merge. A service as WeasyPrint is, it is scaled and judged as WeasyPrint.
      */
-    static final String SERVICE = "service";
+    static final String BPS = "BPS";
 
     /** The export which the others are scaled by, and which is scaled by the fixed piece of work itself. */
     static final String SMALL_DOCUMENT = "smallDocument";
@@ -207,7 +207,7 @@ public final class PerformanceRun implements AutoCloseable {
         }
         report.append("%n#### Results%n%n".formatted())
                 .append(("Each time is the average of %d exports. The exporter is a warning above %s times its expected time and fails above %s times, "
-                        + "WeasyPrint, and the service of a merge, a warning above %s times and fails above %s times.%n%n")
+                        + "WeasyPrint and the bulk processing service of a merge a warning above %s times and fails above %s times.%n%n")
                         .formatted(BasePerformanceTest.RUNS, times(EXPORTER_TOLERANCE.warning()), times(EXPORTER_TOLERANCE.limit()),
                                 times(WEASYPRINT_TOLERANCE.warning()), times(WEASYPRINT_TOLERANCE.limit())))
                 .append("| Export | Part | Expected, ms | Time, ms | Against expected | Warning above, ms | Limit, ms | Result |%n|---|---|---:|---:|---:|---:|---:|---|%n".formatted());
@@ -232,15 +232,15 @@ public final class PerformanceRun implements AutoCloseable {
         return EXPORTER.equals(part) ? EXPORTER_TOLERANCE : WEASYPRINT_TOLERANCE;
     }
 
-    /** The part of the small document a part is scaled by: the service renders with WeasyPrint, so it follows WeasyPrint. */
+    /** The part of the small document a part is scaled by: the bulk processing service, a service too, follows WeasyPrint. */
     private static @NotNull String baselinePart(@NotNull String part) {
-        return SERVICE.equals(part) ? WEASYPRINT : part;
+        return BPS.equals(part) ? WEASYPRINT : part;
     }
 
     private static @NotNull String key(@NotNull String export, @NotNull String part) {
         return export + "." + switch (part) {
             case EXPORTER -> "exporter";
-            case SERVICE -> "service";
+            case BPS -> "bps";
             default -> "weasyprint";
         };
     }

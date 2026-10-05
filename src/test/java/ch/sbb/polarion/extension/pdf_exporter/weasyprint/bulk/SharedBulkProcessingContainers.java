@@ -12,7 +12,7 @@ import java.time.Duration;
  * tests of a run as {@link ch.sbb.polarion.extension.pdf_exporter.weasyprint.base.SharedWeasyPrintContainer} is.
  * TestContainers removes them when the JVM exits.
  */
-public final class SharedBulkProcessingContainers {
+final class SharedBulkProcessingContainers {
 
     private static final String WEASYPRINT_IMAGE = "ghcr.io/schweizerischebundesbahnen/weasyprint-service:latest";
     private static final String BULK_PROCESSING_IMAGE = "ghcr.io/schweizerischebundesbahnen/bulk-processing-service:latest";
@@ -46,15 +46,15 @@ public final class SharedBulkProcessingContainers {
         }
     }
 
-    public static @NotNull GenericContainer<?> bulkProcessing() {
+    static @NotNull GenericContainer<?> bulkProcessing() {
         return Holder.BULK_PROCESSING;
     }
 
-    public static @NotNull String bulkProcessingUrl() {
+    static @NotNull String bulkProcessingUrl() {
         return "http://" + Holder.BULK_PROCESSING.getHost() + ":" + Holder.BULK_PROCESSING.getMappedPort(BULK_PROCESSING_PORT);
     }
 
-    public static @NotNull String weasyPrintUrl() {
+    static @NotNull String weasyPrintUrl() {
         return "http://" + Holder.WEASYPRINT.getHost() + ":" + Holder.WEASYPRINT.getMappedPort(WEASYPRINT_PORT);
     }
 }

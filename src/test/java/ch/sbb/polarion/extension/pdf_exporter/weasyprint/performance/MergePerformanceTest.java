@@ -10,7 +10,6 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.id.LiveDocId;
 import ch.sbb.polarion.extension.pdf_exporter.util.DocumentDataFactory;
 import ch.sbb.polarion.extension.pdf_exporter.util.PdfTemplateProcessor;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.BulkProcessingConnector;
-import ch.sbb.polarion.extension.pdf_exporter.weasyprint.bulk.SharedBulkProcessingContainers;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.service.ApiKeyProvider;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.service.BulkProcessingServiceConnector;
 import com.polarion.alm.tracker.model.IModule;
@@ -27,12 +26,12 @@ import static org.mockito.ArgumentMatchers.eq;
 
 /**
  * Merges of many documents into one PDF through the bulk processing service, which a collection or a Bulk PDF Export
- * widget makes, timed as the single exports are (#1113). The service and the WeasyPrint it renders with run in the
- * containers the integration tests of the merge share.
+ * widget makes, timed as the single exports are (#1113), against the service of {@link TimedBulkProcessingService}.
  * <p>
- * A merge is timed in two parts. The exporter prepares the HTML of each document in Polarion. The service uploads each
- * document, renders it with its WeasyPrint and merges the PDFs, timed around the call of the connector. A merge slower in
- * the upload, the rendering or the merge itself shows in the service.
+ * A merge is timed in three parts. The exporter prepares the HTML of each document in Polarion. WeasyPrint renders each
+ * document, timed by the proxy it is called through, against the same WeasyPrint the single exports go to. The bulk
+ * processing service is the rest of the call of the connector: the upload of each document, what the service does with
+ * it, and the merge of the PDFs.
  * </p>
  */
 class MergePerformanceTest extends BasePerformanceTest {
@@ -40,14 +39,14 @@ class MergePerformanceTest extends BasePerformanceTest {
     private TimedConnector connector;
 
     /** A merge and how long its parts took. */
-    private record MergeTiming(@NotNull String name, byte @NotNull [] pdf, long exporterMs, long serviceMs) {
+    private record MergeTiming(@NotNull String name, byte @NotNull [] pdf, long exporterMs, long weasyPrintMs, long bpsMs) {
     }
 
     /** The converter of the base, merging through the service in the container and timing the service. */
     @Override
     protected void setupConverter() {
-        connector = new TimedConnector(new BulkProcessingServiceConnector(SharedBulkProcessingContainers.bulkProcessingUrl(),
-                SharedBulkProcessingContainers.weasyPrintUrl(), new ApiKeyProvider(() -> null, "bulk processing service")));
+        connector = new TimedConnector(new BulkProcessingServiceConnector(TimedBulkProcessingService.url(),
+                getWeasyPrintServiceUrl(), new ApiKeyProvider(() -> null, "bulk processing service")));
         CoverPageProcessor coverPageProcessor = new CoverPageProcessor(placeholderProcessor, velocityEvaluator, getWeasyPrintServiceConnector(),
                 coverPageSettings, new PdfTemplateProcessor(), htmlProcessor);
         converter = new PdfConverter(pdfExporterPolarionService, headerFooterSettings, cssSettings, placeholderProcessor, velocityEvaluator,
@@ -89,23 +88,31 @@ class MergePerformanceTest extends BasePerformanceTest {
 
         mergeOnce(name + "-warmup", params.subList(0, 2));
         long exporterMs = 0;
-        long serviceMs = 0;
+        long weasyPrintMs = 0;
+        long bpsMs = 0;
         MergeTiming last = null;
         for (int run = 1; run <= RUNS; run++) {
             last = mergeOnce(name + "-" + run, params);
             exporterMs += last.exporterMs();
-            serviceMs += last.serviceMs();
+            weasyPrintMs += last.weasyPrintMs();
+            bpsMs += last.bpsMs();
         }
-        return new MergeTiming(name, last.pdf(), Math.round((double) exporterMs / RUNS), Math.round((double) serviceMs / RUNS));
+        return new MergeTiming(name, last.pdf(), average(exporterMs), average(weasyPrintMs), average(bpsMs));
+    }
+
+    private static long average(long totalMs) {
+        return Math.round((double) totalMs / RUNS);
     }
 
     private @NotNull MergeTiming mergeOnce(@NotNull String name, @NotNull List<ExportParams> params) {
+        long weasyPrintBefore = TimedBulkProcessingService.weasyPrintMs();
         long start = System.nanoTime();
         BulkProcessingConnector.MergeResult result = converter.convertMergedToPdf(params);
         long totalMs = (System.nanoTime() - start) / 1_000_000;
+        long weasyPrintMs = TimedBulkProcessingService.weasyPrintMs() - weasyPrintBefore;
         assertThat(result.failedDocumentCount()).as("Every document of %s is merged", name).isZero();
-        MergeTiming timing = new MergeTiming(name, result.pdfBytes(), totalMs - connector.lastMs(), connector.lastMs());
-        writeReport(name, "%s: exporter %d ms, service %d ms%n".formatted(name, timing.exporterMs(), timing.serviceMs()));
+        MergeTiming timing = new MergeTiming(name, result.pdfBytes(), totalMs - connector.lastMs(), weasyPrintMs, connector.lastMs() - weasyPrintMs);
+        writeReport(name, "%s: exporter %d ms, WeasyPrint %d ms, BPS %d ms%n".formatted(name, timing.exporterMs(), timing.weasyPrintMs(), timing.bpsMs()));
         return timing;
     }
 
@@ -127,15 +134,18 @@ class MergePerformanceTest extends BasePerformanceTest {
     private void assertWithinReference(@NotNull MergeTiming timing) {
         PerformanceRun run = PerformanceRun.current();
         run.add(timing.name(), PerformanceRun.EXPORTER, timing.exporterMs());
-        run.add(timing.name(), PerformanceRun.SERVICE, timing.serviceMs());
+        run.add(timing.name(), PerformanceRun.WEASYPRINT, timing.weasyPrintMs());
+        run.add(timing.name(), PerformanceRun.BPS, timing.bpsMs());
         long exporterLimit = run.limit(timing.name(), PerformanceRun.EXPORTER);
-        long serviceLimit = run.limit(timing.name(), PerformanceRun.SERVICE);
-        String summary = "%s: exporter %d ms of %d, service %d ms of %d, average of %d merges".formatted(
-                timing.name(), timing.exporterMs(), exporterLimit, timing.serviceMs(), serviceLimit, RUNS);
+        long weasyPrintLimit = run.limit(timing.name(), PerformanceRun.WEASYPRINT);
+        long bpsLimit = run.limit(timing.name(), PerformanceRun.BPS);
+        String summary = "%s: exporter %d ms of %d, WeasyPrint %d ms of %d, BPS %d ms of %d, average of %d merges".formatted(
+                timing.name(), timing.exporterMs(), exporterLimit, timing.weasyPrintMs(), weasyPrintLimit, timing.bpsMs(), bpsLimit, RUNS);
         writeReport(timing.name(), summary);
 
         assertThat(timing.exporterMs()).as("The exporter is within its limit. %s", summary).isLessThanOrEqualTo(exporterLimit);
-        assertThat(timing.serviceMs()).as("The service is within its limit. %s", summary).isLessThanOrEqualTo(serviceLimit);
+        assertThat(timing.weasyPrintMs()).as("WeasyPrint is within its limit. %s", summary).isLessThanOrEqualTo(weasyPrintLimit);
+        assertThat(timing.bpsMs()).as("The bulk processing service is within its limit. %s", summary).isLessThanOrEqualTo(bpsLimit);
     }
 
     /** The connector of the service, which keeps how long its last merge took. */
