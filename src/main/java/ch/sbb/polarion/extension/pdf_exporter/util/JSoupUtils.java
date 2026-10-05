@@ -12,8 +12,6 @@ import org.jsoup.nodes.Node;
 import org.jsoup.nodes.TextNode;
 import org.jsoup.select.Elements;
 
-import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.IntStream;
@@ -174,15 +172,9 @@ public class JSoupUtils {
     }
 
     public List<Element> selectEmptyHeadings(@NotNull Document document, int headingLevel) {
-        Elements headings = document.select("h" + headingLevel);
-
-        List<Element> emptyHeadings = new LinkedList<>();
-        for (Element heading : headings) {
-            if (JSoupUtils.isEmptyHeading(heading, headingLevel)) {
-                emptyHeadings.add(heading);
-            }
-        }
-        return emptyHeadings;
+        return document.select("h" + headingLevel).stream()
+                .filter(heading -> JSoupUtils.isEmptyHeading(heading, headingLevel))
+                .toList();
     }
 
     /**
@@ -242,38 +234,24 @@ public class JSoupUtils {
      * Returns table rows (direct descendants of table itself or its direct tbody) which contain th-tags
      */
     public List<Element> getRowsWithHeaders(@NotNull Element table) {
-        List<Element> headerRows = new ArrayList<>();
-
         Element body = table.selectFirst("> " + HtmlTag.TBODY);
         Element container = body == null ? table : body;
 
-        Elements rows = container.select("> " + HtmlTag.TR);
-        for (Element row : rows) {
-            if (containsTH(row)) {
-                headerRows.add(row);
-            }
-        }
-
-        return headerRows;
+        return container.select("> " + HtmlTag.TR).stream()
+                .filter(JSoupUtils::containsTH)
+                .toList();
     }
 
     /**
      * Returns table rows (direct descendants of table itself or its direct tbody)
      */
     public List<Element> getBodyRows(@NotNull Element table) {
-        List<Element> bodyRows = new ArrayList<>();
-
         Element body = table.selectFirst("> " + HtmlTag.TBODY);
         Element container = body == null ? table : body;
 
-        Elements rows = container.select("> " + HtmlTag.TR);
-        for (Element row : rows) {
-            if (!containsTH(row)) {
-                bodyRows.add(row);
-            }
-        }
-
-        return bodyRows;
+        return container.select("> " + HtmlTag.TR).stream()
+                .filter(row -> !containsTH(row))
+                .toList();
     }
 
     public boolean containsTH(@NotNull Node row) {

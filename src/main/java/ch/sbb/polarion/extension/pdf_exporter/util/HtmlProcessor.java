@@ -46,6 +46,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.ToIntFunction;
+import java.util.stream.Collectors;
 
 import static ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.DocumentType.*;
 import static ch.sbb.polarion.extension.pdf_exporter.util.exporter.Constants.*;
@@ -720,10 +721,9 @@ public class HtmlProcessor {
 
     @VisibleForTesting
     void rewritePolarionUrls(@NotNull Document document) {
-        Set<String> workItemAnchors = new HashSet<>();
-        for (Element anchor : document.select("a[id^=work-item-anchor-]")) {
-            workItemAnchors.add(anchor.id());
-        }
+        Set<String> workItemAnchors = document.select("a[id^=work-item-anchor-]").stream()
+                .map(Element::id)
+                .collect(Collectors.toSet());
 
         for (Element link : document.select("a[href]")) {
             String href = link.attr(HtmlTagAttr.HREF);

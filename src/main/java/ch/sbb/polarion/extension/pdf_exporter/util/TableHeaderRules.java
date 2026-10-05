@@ -58,12 +58,10 @@ public class TableHeaderRules {
                         selectors.add(text);
                     }
                 }
-                List<String> declarations = new ArrayList<>();
-                for (CSSDeclaration declaration : styleRule.getAllDeclarations()) {
-                    if (makesTheHeaderTaller(declaration)) {
-                        declarations.add(declaration.getAsCSSString(writerSettings, 0));
-                    }
-                }
+                List<String> declarations = styleRule.getAllDeclarations().stream()
+                        .filter(TableHeaderRules::makesTheHeaderTaller)
+                        .map(declaration -> declaration.getAsCSSString(writerSettings, 0))
+                        .toList();
                 if (!selectors.isEmpty() && !declarations.isEmpty()) {
                     rules.append(String.join(", ", selectors)).append(" { ").append(String.join("; ", declarations)).append("; }\n");
                 }

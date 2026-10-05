@@ -82,15 +82,13 @@ public class PdfExporterPolarionService extends PolarionService {
     public Collection<StylePackageWeightInfo> getStylePackagesWeights(@Nullable String scope) {
         StylePackageSettings stylePackageSettings = (StylePackageSettings) NamedSettingsRegistry.INSTANCE.getByFeatureName(StylePackageSettings.FEATURE_NAME);
         Collection<SettingName> stylePackageNames = stylePackageSettings.readNames(scope == null ? "" : scope);
-        Collection<StylePackageWeightInfo> stylePackageWeightInfos = new ArrayList<>();
-        for (SettingName settingName : stylePackageNames) {
-            stylePackageWeightInfos.add(StylePackageWeightInfo.builder()
-                    .name(settingName.getName())
-                    .scope(settingName.getScope())
-                    .weight(stylePackageSettings.read(settingName.getScope(), SettingId.fromName(settingName.getName()), null).getWeight())
-                    .build());
-        }
-        return stylePackageWeightInfos;
+        return stylePackageNames.stream()
+                .map(settingName -> StylePackageWeightInfo.builder()
+                        .name(settingName.getName())
+                        .scope(settingName.getScope())
+                        .weight(stylePackageSettings.read(settingName.getScope(), SettingId.fromName(settingName.getName()), null).getWeight())
+                        .build())
+                .toList();
     }
 
     public void updateStylePackagesWeights(@NotNull List<StylePackageWeightInfo> weightInfos) {

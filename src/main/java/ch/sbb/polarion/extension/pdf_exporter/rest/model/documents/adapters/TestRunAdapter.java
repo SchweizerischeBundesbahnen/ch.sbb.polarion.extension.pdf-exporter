@@ -74,6 +74,7 @@ public class TestRunAdapter extends CommonUniqueObjectAdapter {
     }
 
     @Override
+    @SuppressWarnings("java:S9391") // a stream cannot carry the IOException of createAttachmentTempFile
     public @Nullable List<Path> getAttachmentFiles(@NotNull ExportParams exportParams) throws IOException {
         if (exportParams.isEmbedAttachments()) {
             List<Path> attachmentFiles = new ArrayList<>();
