@@ -22,6 +22,7 @@ public class PaperSizeUtils {
     public static final int JIS_B5_PORTRAIT_HEIGHT = 770;
     public static final int JIS_B5_LANDSCAPE_WIDTH = 830;
     public static final int JIS_B5_LANDSCAPE_HEIGHT = 480;
+    @SuppressWarnings("java:S9133") // a calibrated width ratio, not √2: the max widths of the pages depend on it
     public static final float NEXT_SIZE_ASPECT_RATIO = 1.41f;
     public static final float NEXT_SIZE_ASPECT_RATIO_TWICE = NEXT_SIZE_ASPECT_RATIO * NEXT_SIZE_ASPECT_RATIO;
 
