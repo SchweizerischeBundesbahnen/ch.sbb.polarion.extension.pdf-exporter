@@ -337,6 +337,23 @@ class HtmlProcessorTest {
     }
 
     @Test
+    void cutEmptyWIAttributesKeepsAnAttributeHoldingOnlyAPicture() {
+        // As Polarion renders a rich text field which is empty, and one which holds only a picture (#1158)
+        Document document = JSoupUtils.parseHtml("""
+                <table class="polarion-dle-workitem-fields-end-table">
+                <tr><td class="polarion-dle-workitem-fields-end-table-label">Empty</td><td class="polarion-dle-workitem-fields-end-table-value"></td></tr>
+                <tr><td class="polarion-dle-workitem-fields-end-table-label">Picture</td><td class="polarion-dle-workitem-fields-end-table-value"><a href="picture.png"><img src="picture.png"/></a><br/>\u200b\u200b</td></tr>
+                </table>""");
+
+        processor.cutEmptyWIAttributes(document);
+
+        String html = document.body().html();
+        assertFalse(html.contains("Empty"), html);
+        assertTrue(html.contains("Picture"), html);
+        assertEquals(1, document.select("img").size(), html);
+    }
+
+    @Test
     void pageBreakCommentsTest() {
         assertTrue(processor.isPageBreakComment(new Comment("PAGE_BREAK")));
         assertTrue(processor.isPageBreakComment(new Comment("LANDSCAPE_ABOVE")));
