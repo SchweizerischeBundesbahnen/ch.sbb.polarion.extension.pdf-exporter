@@ -1000,10 +1000,11 @@ public class HtmlProcessor {
     }
 
     private void cutEmptyWIAttributesInTables(@NotNull Document document) {
-        // Iterates through <td class="polarion-dle-workitem-fields-end-table-value"> elements and if they are empty (no value) removes enclosing them tr-elements
+        // Iterates through <td class="polarion-dle-workitem-fields-end-table-value"> elements and if they are empty (no value) removes enclosing them tr-elements.
+        // A rich text field holding only a picture has no text and is a value all the same (#1158)
         Elements attributeValueCells = document.select("td.polarion-dle-workitem-fields-end-table-value");
         for (Element attributeValueCell : attributeValueCells) {
-            if (attributeValueCell.text().isEmpty()) {
+            if (attributeValueCell.text().isEmpty() && attributeValueCell.select(PRINTED_WITHOUT_TEXT).isEmpty()) {
                 Element parent = attributeValueCell.parent();
                 if (parent != null && parent.nodeName().equals(HtmlTag.TR)) {
                     parent.remove();
