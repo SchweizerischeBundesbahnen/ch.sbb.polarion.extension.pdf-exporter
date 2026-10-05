@@ -79,7 +79,7 @@ public class ParagraphRules {
                 marginBottom = value;
             } else if ("margin".equals(property)) {
                 String[] sides = value.split("\\s+");
-                marginBottom = sides.length > 2 ? sides[2] : sides[0];
+                marginBottom = sides[sides.length > 2 ? 2 : 0];
             }
         }
     }
