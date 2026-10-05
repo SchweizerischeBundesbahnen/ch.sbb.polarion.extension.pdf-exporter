@@ -15,6 +15,7 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PdfVariant;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.DocumentData;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.id.LiveDocId;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.coverpage.CoverPageModel;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.headerfooter.HeaderFooterModel;
 import ch.sbb.polarion.extension.pdf_exporter.settings.StylePackageSettings;
 import ch.sbb.polarion.extension.pdf_exporter.util.CustomResourceUrlResolver;
 import ch.sbb.polarion.extension.pdf_exporter.util.DocumentDataFactory;
@@ -147,12 +148,28 @@ class BulkProcessingServiceTest extends BasePdfConverterTest {
                 coverPageProcessor, getWeasyPrintServiceConnector(), htmlProcessor, new PdfTemplateProcessor(), connector());
     }
 
-    /** A cover page naming its document and counting its pages, to tell the covers of a merge apart. */
+    /** A header naming the document and a footer counting its pages, so that each page tells which document it belongs to. */
+    @Override
+    protected void setupHeaderFooterSettings() {
+        when(headerFooterSettings.load(any(), any())).thenReturn(HeaderFooterModel.builder()
+                .useCustomValues(true)
+                .headerLeft("{{ DOCUMENT_TITLE }}")
+                .headerCenter("")
+                .headerRight("Merged through the bulk processing service")
+                .footerLeft("")
+                .footerCenter("")
+                .footerRight("Page {{ PAGE_NUMBER }} of {{ PAGES_TOTAL_COUNT }}")
+                .build());
+    }
+
+    /** A cover page which names its document and says what it shows, to tell the covers of a merge apart. */
     @Override
     protected void setupCoverPageSettings() {
         lenient().when(coverPageSettings.load(any(), any())).thenReturn(CoverPageModel.builder()
                 .useCustomValues(true)
-                .templateHtml("<div>Cover of {{ DOCUMENT_TITLE }}</div><div>Page {{ PAGE_NUMBER }} of {{ PAGES_TOTAL_COUNT }}</div>")
+                .templateHtml("<h1>{{ DOCUMENT_TITLE }}</h1>"
+                        + "<p>The cover page of this document, page {{ PAGE_NUMBER }} of {{ PAGES_TOTAL_COUNT }}.</p>"
+                        + "<p>It takes the place of the placeholder page the exporter sends first, and counts the pages of its own document only, not those of the whole merge.</p>")
                 .templateCss(readFontCss())
                 .build());
         lenient().when(coverPageSettings.processImagePlaceholders(any())).thenAnswer(invocation -> invocation.getArgument(0));
@@ -175,22 +192,27 @@ class BulkProcessingServiceTest extends BasePdfConverterTest {
     @Test
     void mergesDocumentsWithTheDefaultStylePackage() {
         MergeResult result = converter.convertMergedToPdf(List.of(
-                liveDoc("Alpha", "<p>Alpha 1</p>" + PAGE_BREAK + "<p>Alpha 2</p>"),
-                liveDoc("Bravo", "<p>Bravo 1</p>"),
-                liveDoc("Charlie", "<p>Charlie 1</p>" + PAGE_BREAK + "<p>Charlie 2</p>" + PAGE_BREAK + "<p>Charlie 3</p>")));
+                liveDoc("Alpha", pages("Alpha",
+                        "The first document of the merge. The documents follow each other in the order they are added: Alpha, Bravo, then Charlie.",
+                        "The second page of Alpha: a page break inside a document is kept.")),
+                liveDoc("Bravo", pages("Bravo",
+                        "The second document, of one page. Its cover page counts 2 pages: those of Bravo, not those of the whole merge.")),
+                liveDoc("Charlie", pages("Charlie",
+                        "The third and last document, of three pages.",
+                        "The second page of Charlie.",
+                        "The third page of Charlie, the last of the merge."))));
 
         assertEquals(0, result.failedDocumentCount());
         List<String> pages = pageTexts(result.pdfBytes());
         assertEquals(9, pages.size(), "Each document is its cover page and its own pages");
-        // Each cover takes the place of its placeholder and counts the pages of its own document, the cover included
-        assertPage(pages, 0, "Cover of Alpha", "Page 1 of 3");
-        assertPage(pages, 1, "Alpha 1");
-        assertPage(pages, 2, "Alpha 2");
-        assertPage(pages, 3, "Cover of Bravo", "Page 1 of 2");
-        assertPage(pages, 4, "Bravo 1");
-        assertPage(pages, 5, "Cover of Charlie", "Page 1 of 4");
-        assertPage(pages, 6, "Charlie 1");
-        assertPage(pages, 8, "Charlie 3");
+        assertPage(pages, 0, "Alpha", "page 1 of 3");
+        assertPage(pages, 1, "The first document of the merge");
+        assertPage(pages, 2, "The second page of Alpha");
+        assertPage(pages, 3, "Bravo", "page 1 of 2");
+        assertPage(pages, 4, "The second document");
+        assertPage(pages, 5, "Charlie", "page 1 of 4");
+        assertPage(pages, 6, "The third and last document");
+        assertPage(pages, 8, "the last of the merge");
         assertMatchesReferenceImages("bulkProcessingMergeWithDefaultStylePackage", result);
     }
 
@@ -222,20 +244,22 @@ class BulkProcessingServiceTest extends BasePdfConverterTest {
 
     @Test
     void mergesASingleDocument() {
-        MergeResult result = converter.convertMergedToPdf(List.of(liveDoc("Alpha", "<p>Alpha 1</p>")));
+        MergeResult result = converter.convertMergedToPdf(List.of(liveDoc("Alpha", pages("Alpha",
+                "The only document of the merge: its cover page and this page are the whole PDF, as an export of Alpha alone would be."))));
 
         List<String> pages = pageTexts(result.pdfBytes());
         assertEquals(2, pages.size());
-        assertPage(pages, 0, "Cover of Alpha", "Page 1 of 2");
-        assertPage(pages, 1, "Alpha 1");
+        assertPage(pages, 0, "Alpha", "page 1 of 2");
+        assertPage(pages, 1, "The only document of the merge");
         assertMatchesReferenceImages("bulkProcessingMergeOfASingleDocument", result);
     }
 
     @Test
     void keepsALandscapePageOfADocument() {
         MergeResult result = converter.convertMergedToPdf(List.of(
-                liveDoc("Alpha", "<p>Alpha 1</p>" + LANDSCAPE_PAGE_BREAK + "<p>Alpha 2</p>"),
-                liveDoc("Bravo", "<p>Bravo 1</p>")));
+                liveDoc("Alpha", page("Alpha", "This page is landscape, as the page break after it asks: the merge keeps the size of each page.")
+                        + LANDSCAPE_PAGE_BREAK + page("Alpha", "This page is portrait again.")),
+                liveDoc("Bravo", pages("Bravo", "The next document is portrait, as the style package asks."))));
 
         List<PDRectangle> sizes = pageSizes(result.pdfBytes());
         assertEquals(5, sizes.size(), "Each document is its cover page and its own pages");
@@ -247,25 +271,27 @@ class BulkProcessingServiceTest extends BasePdfConverterTest {
 
     @Test
     void mergesADocumentWithoutContent() {
-        MergeResult result = converter.convertMergedToPdf(List.of(liveDoc("Alpha", ""), liveDoc("Bravo", "<p>Bravo 1</p>")));
+        MergeResult result = converter.convertMergedToPdf(List.of(
+                liveDoc("Alpha", ""),
+                liveDoc("Bravo", pages("Bravo", "The document before this one, Alpha, has no content: it is its cover page and one empty page, and it is merged all the same."))));
 
         assertEquals(0, result.failedDocumentCount());
         List<String> pages = pageTexts(result.pdfBytes());
-        assertPage(pages, 0, "Cover of Alpha");
-        assertPage(pages, pages.size() - 1, "Bravo 1");
+        assertPage(pages, 0, "Alpha", "page 1 of 2");
+        assertPage(pages, pages.size() - 1, "has no content");
         assertMatchesReferenceImages("bulkProcessingMergeWithADocumentWithoutContent", result);
     }
 
     @Test
     void keepsTextOfAnyScript() {
         MergeResult result = converter.convertMergedToPdf(List.of(
-                liveDoc("Ärger", "<p>Grüße aus Zürich</p>"),
-                liveDoc("Требования", "<p>Требования к подвижному составу</p>")));
+                liveDoc("Ärger", pages("Ärger", "German umlauts and ß, in the title and in the text: Grüße aus Zürich, Fußgängerübergänge, Äpfel und Öl. Every letter is printed, none is a box.")),
+                liveDoc("Требования", pages("Требования", "Cyrillic, in the title and in the text: Требования к подвижному составу. Every letter is printed, none is a box."))));
 
         List<String> pages = pageTexts(result.pdfBytes());
-        assertPage(pages, 0, "Cover of Ärger");
+        assertPage(pages, 0, "Ärger");
         assertPage(pages, 1, "Grüße aus Zürich");
-        assertPage(pages, 2, "Cover of Требования");
+        assertPage(pages, 2, "Требования");
         assertPage(pages, 3, "Требования к подвижному составу");
         assertMatchesReferenceImages("bulkProcessingMergeOfAnyScript", result);
     }
@@ -274,16 +300,24 @@ class BulkProcessingServiceTest extends BasePdfConverterTest {
     void mergesADocumentWhoseResourcesThePolicyRefuses() {
         // Internal addresses, which the default policy refuses before any request: loopback, the metadata of a cloud and a private network
         MergeResult result = converter.convertMergedToPdf(List.of(
-                liveDoc("Alpha", "<p>Alpha 1</p>"
+                liveDoc("Alpha", "<h2>Alpha</h2>"
+                        + "<p>An image embedded in the document is printed:</p>"
+                        + "<svg xmlns='http://www.w3.org/2000/svg' width='200' height='40'><rect width='200' height='40' fill='#2e7d32'/>"
+                        + "<text x='12' y='26' fill='#ffffff' font-size='16' font-family='Liberation Sans'>An embedded image</text></svg>"
+                        + "<p>Between the two rules below stood two images and a background from internal addresses: loopback (127.0.0.1), "
+                        + "the metadata of a cloud (169.254.169.254) and a private network (10.0.0.1). The default policy refuses them, so nothing is printed there.</p>"
+                        + "<hr/>"
                         + "<p><img src='http://127.0.0.1:9/logo.png' alt='loopback'/></p>"
                         + "<p><img src='http://169.254.169.254/latest/meta-data/' alt='metadata'/></p>"
-                        + "<div style='background-image: url(http://10.0.0.1/background.png); height: 50px;'>Alpha 2</div>"),
-                liveDoc("Bravo", "<p>Bravo 1</p>")));
+                        + "<div style='background-image: url(http://10.0.0.1/background.png); height: 50px;'></div>"
+                        + "<hr/>"
+                        + "<p>The document is exported all the same.</p>"),
+                liveDoc("Bravo", pages("Bravo", "The next document is merged as usual."))));
 
         assertEquals(0, result.failedDocumentCount(), "A refused resource is left out, the document is still exported");
         List<String> pages = pageTexts(result.pdfBytes());
-        assertPage(pages, 1, "Alpha 1", "Alpha 2");
-        assertPage(pages, 3, "Bravo 1");
+        assertPage(pages, 1, "nothing is printed there", "exported all the same");
+        assertPage(pages, 3, "merged as usual");
         assertMatchesReferenceImages("bulkProcessingMergeWithRefusedResources", result);
     }
 
@@ -296,10 +330,16 @@ class BulkProcessingServiceTest extends BasePdfConverterTest {
 
     @Test
     void countsADocumentWhichFailsToRenderAndMergesTheOthers() {
-        MergeResult result = connector().convertMergedToPdf(List.of(rendered("Alpha"), failing(), rendered("Charlie")), startParams());
+        MergeResult result = connector().convertMergedToPdf(List.of(
+                rendered("Alpha", "The first document is rendered and merged."),
+                failing(),
+                rendered("Charlie", "Between Alpha and this document stood one which WeasyPrint refused: it is missing, and the merge counts it as failed.")), startParams());
 
         assertEquals(1, result.failedDocumentCount());
-        assertEquals(List.of("Alpha", "Charlie"), pageTexts(result.pdfBytes()));
+        List<String> pages = pageTexts(result.pdfBytes());
+        assertEquals(2, pages.size());
+        assertPage(pages, 0, "The first document is rendered");
+        assertPage(pages, 1, "WeasyPrint refused");
         assertMatchesReferenceImages("bulkProcessingMergeWithAFailedDocument", result);
     }
 
@@ -320,7 +360,7 @@ class BulkProcessingServiceTest extends BasePdfConverterTest {
     void deletesTheJobOfACancelledMerge() {
         int jobsBefore = storedJobs();
         BulkProcessingServiceConnector connector = connector();
-        List<MergeDocumentData> documents = List.of(rendered("Alpha"));
+        List<MergeDocumentData> documents = List.of(rendered("Alpha", "Never rendered."));
         MergeJobStartParams params = startParams();
 
         Thread.currentThread().interrupt();
@@ -334,7 +374,7 @@ class BulkProcessingServiceTest extends BasePdfConverterTest {
     @Test
     void failsWhereTheServiceCannotBeReached() {
         BulkProcessingServiceConnector unreachable = new BulkProcessingServiceConnector("http://localhost:1", weasyPrintUrl, noApiKey());
-        List<MergeDocumentData> documents = List.of(rendered("Alpha"));
+        List<MergeDocumentData> documents = List.of(rendered("Alpha", "Never rendered."));
         MergeJobStartParams params = startParams();
 
         assertThrows(ProcessingException.class, () -> unreachable.convertMergedToPdf(documents, params));
@@ -372,17 +412,30 @@ class BulkProcessingServiceTest extends BasePdfConverterTest {
         return MergeJobStartParams.builder().pdfVariant(PdfVariant.PDF_A_2B.toWeasyPrintParameter()).build();
     }
 
-    private static @NotNull MergeDocumentData rendered(@NotNull String text) {
-        return new MergeDocumentData(html(text), null, DocumentConversionParams.builder().pdfVariant(PdfVariant.PDF_A_2B.toWeasyPrintParameter()).build());
+    private static @NotNull MergeDocumentData rendered(@NotNull String title, @NotNull String text) {
+        return new MergeDocumentData(html(page(title, text)), null, DocumentConversionParams.builder().pdfVariant(PdfVariant.PDF_A_2B.toWeasyPrintParameter()).build());
     }
 
     /** A document WeasyPrint refuses, being asked for a PDF variant it does not know. */
     private static @NotNull MergeDocumentData failing() {
-        return new MergeDocumentData(html("Failing"), null, DocumentConversionParams.builder().pdfVariant("pdf/x-unknown").build());
+        return new MergeDocumentData(html(page("Failing", "This document asks for a PDF variant WeasyPrint does not know.")), null, DocumentConversionParams.builder().pdfVariant("pdf/x-unknown").build());
     }
 
-    private static @NotNull String html(@NotNull String text) {
-        return "<!DOCTYPE html><html lang='en'><head><meta charset='utf-8'><title>Merge</title><style>" + readFontCss() + "</style></head><body><p>" + text + "</p></body></html>";
+    private static @NotNull String html(@NotNull String body) {
+        return "<!DOCTYPE html><html lang='en'><head><meta charset='utf-8'><title>Merge</title><style>" + readFontCss() + "</style></head><body>" + body + "</body></html>";
+    }
+
+    /** The pages of a document, one for each text, each headed with the title of the document and saying what it shows. */
+    private static @NotNull String pages(@NotNull String title, @NotNull String... texts) {
+        List<String> pages = new ArrayList<>();
+        for (String text : texts) {
+            pages.add(page(title, text));
+        }
+        return String.join(PAGE_BREAK, pages);
+    }
+
+    private static @NotNull String page(@NotNull String title, @NotNull String text) {
+        return "<h2>" + title + "</h2><p>" + text + "</p>";
     }
 
     private void assertMatchesReferenceImages(@NotNull String name, @NotNull MergeResult result) {
