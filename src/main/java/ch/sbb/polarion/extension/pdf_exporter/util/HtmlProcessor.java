@@ -653,16 +653,21 @@ public class HtmlProcessor {
 
         Elements wiAttrTables = document.select(WORK_ITEM_ATTRIBUTE_TABLE);
         for (Element table : wiAttrTables) {
-            table.attr(HtmlTagAttr.STYLE, "width: 100%");
+            // Fitted to the page, the columns keep the widths below whatever a cell holds: a picture the editor states wider
+            // than the page is then fitted to the column of the values, instead of taking the room of the labels (#1160).
+            // The widths then hold the padding of a cell too, which a fixed layout would otherwise add to the table.
+            boolean fixed = exportParams.isFitToPage();
+            table.attr(HtmlTagAttr.STYLE, fixed ? "width: 100%; table-layout: fixed" : "width: 100%");
+            String cellSizing = fixed ? "; box-sizing: border-box" : "";
 
             Elements attrNameCells = table.select("td.polarion-dle-workitem-fields-end-table-label");
             for (Element attrNameCell : attrNameCells) {
-                attrNameCell.attr(HtmlTagAttr.STYLE, "width: 20%");
+                attrNameCell.attr(HtmlTagAttr.STYLE, "width: 20%" + cellSizing);
             }
 
             Elements attrNameValues = table.select("td.polarion-dle-workitem-fields-end-table-value");
             for (Element attrNameValue : attrNameValues) {
-                attrNameValue.attr(HtmlTagAttr.STYLE, "width: 80%");
+                attrNameValue.attr(HtmlTagAttr.STYLE, "width: 80%" + cellSizing);
             }
         }
     }

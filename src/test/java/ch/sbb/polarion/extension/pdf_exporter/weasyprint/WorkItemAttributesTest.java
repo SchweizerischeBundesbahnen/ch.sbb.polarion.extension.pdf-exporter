@@ -88,6 +88,24 @@ class WorkItemAttributesTest extends BasePdfConverterTest {
         assertLinksKeptTogether(export(false));
     }
 
+    /**
+     * A picture the editor states wider than the page, in a rich text field of the attribute table, is fitted to the column
+     * of the values. The column of the labels keeps its width, the same as in the table of a work item without a picture,
+     * instead of yielding its room to the picture and breaking its labels letter by letter (#1160).
+     */
+    @Test
+    void keepsTheColumnOfTheLabelsBesideAPictureWiderThanThePage() {
+        byte[] pdf = exportLiveDoc("Work item attributes", readHtmlResource("workItemAttributesWithABigImage"), params(true));
+        // Compared first, so that the pages are written to the reports whatever fails
+        boolean differ = compareContentUsingReferenceImages(getCurrentMethodName(), pdf);
+
+        Map<String, Word> values = wordsIn(pdf, List.of("Big:", "A short assessment"));
+        assertThat(values.get("Big:").first().getXDirAdj())
+                .as("The values of the table with the picture start where those of the table without one do")
+                .isCloseTo(values.get("A short assessment").first().getXDirAdj(), within(1f));
+        assertFalse(differ, "The pages differ from the reference images");
+    }
+
     private static void assertLinksKeptTogether(byte @NotNull [] pdf) {
         Map<String, Word> ids = wordsIn(pdf, LINKED_IDS);
         List<DrawnImages.Box> icons = DrawnImages.boxesIn(pdf);
@@ -120,14 +138,17 @@ class WorkItemAttributesTest extends BasePdfConverterTest {
     }
 
     private byte @NotNull [] export(boolean fitToPage) {
-        ExportParams params = ExportParams.builder()
+        return exportLiveDoc("Work item attributes", readHtmlResource("workItemAttributes"), params(fitToPage));
+    }
+
+    private static @NotNull ExportParams params(boolean fitToPage) {
+        return ExportParams.builder()
                 .projectId("test")
                 .locationPath("testLocation")
                 .orientation(Orientation.PORTRAIT)
                 .paperSize(PaperSize.A4)
                 .fitToPage(fitToPage)
                 .build();
-        return exportLiveDoc("Work item attributes", readHtmlResource("workItemAttributes"), params);
     }
 
     /** Each of the words found whole on one line, with the text which follows it there. */
