@@ -154,6 +154,12 @@ public abstract class BasePerformanceTest extends BasePdfConverterTest {
      * </p>
      */
     protected @NotNull Timing export(@NotNull String name, @NotNull String title, @NotNull String content, @NotNull ExportParams params) {
+        timeTheBaseline();
+        return PerformanceRun.SMALL_DOCUMENT.equals(name) ? baseline : average(name, title, content, params);
+    }
+
+    /** Warms the JVM and the service up and times the small document, once for the run, before the first export is timed. */
+    protected void timeTheBaseline() {
         if (baseline == null) {
             for (int run = 1; run <= RUNS; run++) {
                 exportOnce("warmup-" + run, "Warm-up", smallDocument(), portraitA4().build());
@@ -161,7 +167,6 @@ public abstract class BasePerformanceTest extends BasePdfConverterTest {
             baseline = average(PerformanceRun.SMALL_DOCUMENT, SMALL_DOCUMENT_TITLE, smallDocument(), portraitA4().build());
             PerformanceRun.current().baseline(baseline.exporterMs(), baseline.weasyPrintMs());
         }
-        return PerformanceRun.SMALL_DOCUMENT.equals(name) ? baseline : average(name, title, content, params);
     }
 
     /** The small document, which takes the exporter and WeasyPrint little but what every export costs. */
@@ -203,7 +208,7 @@ public abstract class BasePerformanceTest extends BasePdfConverterTest {
     }
 
     @SneakyThrows
-    private static void writeReport(@NotNull String name, @NotNull String text) {
+    protected static void writeReport(@NotNull String name, @NotNull String text) {
         Files.writeString(Path.of(REPORTS_FOLDER_PATH, "performance-" + name + ".txt"), text, StandardCharsets.UTF_8);
     }
 

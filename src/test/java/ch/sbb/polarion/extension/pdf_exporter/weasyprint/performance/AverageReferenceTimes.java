@@ -25,7 +25,7 @@ public final class AverageReferenceTimes {
 
     private static final String CALIBRATION = "machine.calibration";
     private static final String SMALL_DOCUMENT = "smallDocument.";
-    private static final String[] PARTS = {"exporter", "weasyprint"};
+    private static final String[] PARTS = {"exporter", "weasyprint", "bps"};
 
     private AverageReferenceTimes() {
     }
@@ -52,9 +52,10 @@ public final class AverageReferenceTimes {
         double calibration = runs.stream().mapToDouble(run -> value(run, CALIBRATION)).average().orElseThrow();
         Map<String, Long> references = new TreeMap<>();
         for (String part : PARTS) {
-            String smallKey = SMALL_DOCUMENT + part;
+            // The bulk processing service of a merge is averaged against the WeasyPrint of the small document, as PerformanceRun scales it
+            String smallKey = SMALL_DOCUMENT + ("bps".equals(part) ? "weasyprint" : part);
             double small = calibration * runs.stream().mapToDouble(run -> value(run, smallKey) / value(run, CALIBRATION)).average().orElseThrow();
-            references.put(smallKey, Math.round(small));
+            references.putIfAbsent(smallKey, Math.round(small));
             for (String key : keysOf(runs, part)) {
                 if (!key.equals(smallKey)) {
                     references.put(key, Math.round(small * runs.stream().mapToDouble(run -> value(run, key) / value(run, smallKey)).average().orElseThrow()));
@@ -63,7 +64,7 @@ public final class AverageReferenceTimes {
         }
         StringBuilder text = new StringBuilder()
                 .append("# The reference times of the performance tests on one architecture, in ms: the average of ").append(runs.size()).append(" runs, made by AverageReferenceTimes.\n")
-                .append("# Each test reads <export>.exporter and <export>.weasyprint. The small document is scaled by the fixed piece of work of\n")
+                .append("# Each test reads <export>.exporter and <export>.weasyprint, a merge <export>.bps too. The small document is scaled by the fixed piece of work of\n")
                 .append("# machine.calibration, every other export by the small document of its run.\n")
                 .append(CALIBRATION).append('=').append(Math.round(calibration)).append('\n');
         references.forEach((key, value) -> text.append(key).append('=').append(value).append('\n'));

@@ -43,6 +43,12 @@ public final class PerformanceRun implements AutoCloseable {
     static final String EXPORTER = "exporter";
     static final String WEASYPRINT = "WeasyPrint";
 
+    /**
+     * The bulk processing service of a merge, WeasyPrint aside: the upload of each document, what the service does with it
+     * and the merge. A service as WeasyPrint is, it is scaled and judged as WeasyPrint.
+     */
+    static final String BPS = "BPS";
+
     /** The export which the others are scaled by, and which is scaled by the fixed piece of work itself. */
     static final String SMALL_DOCUMENT = "smallDocument";
 
@@ -150,11 +156,11 @@ public final class PerformanceRun implements AutoCloseable {
         if (SMALL_DOCUMENT.equals(export)) {
             return machineFactor;
         }
-        Long baseline = baselineMs.get(part);
+        Long baseline = baselineMs.get(baselinePart(part));
         if (baseline == null) {
             throw new IllegalStateException("The small document was not timed before " + export);
         }
-        return (double) baseline / reference(SMALL_DOCUMENT, part);
+        return (double) baseline / reference(SMALL_DOCUMENT, baselinePart(part));
     }
 
     /** The time a part of an export is expected to take in this run: its reference time times its scale. */
@@ -201,7 +207,7 @@ public final class PerformanceRun implements AutoCloseable {
         }
         report.append("%n#### Results%n%n".formatted())
                 .append(("Each time is the average of %d exports. The exporter is a warning above %s times its expected time and fails above %s times, "
-                        + "WeasyPrint a warning above %s times and fails above %s times.%n%n")
+                        + "WeasyPrint and the bulk processing service of a merge a warning above %s times and fails above %s times.%n%n")
                         .formatted(BasePerformanceTest.RUNS, times(EXPORTER_TOLERANCE.warning()), times(EXPORTER_TOLERANCE.limit()),
                                 times(WEASYPRINT_TOLERANCE.warning()), times(WEASYPRINT_TOLERANCE.limit())))
                 .append("| Export | Part | Expected, ms | Time, ms | Against expected | Warning above, ms | Limit, ms | Result |%n|---|---|---:|---:|---:|---:|---:|---|%n".formatted());
@@ -215,6 +221,8 @@ public final class PerformanceRun implements AutoCloseable {
     /** The times of this run in the form of the reference times, which {@link AverageReferenceTimes} averages over runs. */
     private @NotNull String times() {
         Map<String, Long> sorted = new TreeMap<>();
+        // The small document of the run is written whether its own test ran or not, as every other time is averaged against it
+        baselineMs.forEach((part, timeMs) -> sorted.put(key(SMALL_DOCUMENT, part), timeMs));
         rows.forEach(row -> sorted.put(key(row.export(), row.part()), row.timeMs()));
         StringBuilder times = new StringBuilder("# The times of a run of the performance tests on %s, in the form of %s%n".formatted(architecture, referenceTimesFile.substring(1)))
                 .append("%s=%d%n".formatted(CALIBRATION_KEY, calibrationMs));
@@ -226,8 +234,17 @@ public final class PerformanceRun implements AutoCloseable {
         return EXPORTER.equals(part) ? EXPORTER_TOLERANCE : WEASYPRINT_TOLERANCE;
     }
 
+    /** The part of the small document a part is scaled by: the bulk processing service, a service too, follows WeasyPrint. */
+    private static @NotNull String baselinePart(@NotNull String part) {
+        return BPS.equals(part) ? WEASYPRINT : part;
+    }
+
     private static @NotNull String key(@NotNull String export, @NotNull String part) {
-        return export + "." + (EXPORTER.equals(part) ? "exporter" : "weasyprint");
+        return export + "." + switch (part) {
+            case EXPORTER -> "exporter";
+            case BPS -> "bps";
+            default -> "weasyprint";
+        };
     }
 
     private static @NotNull String times(double tolerance) {

@@ -116,19 +116,23 @@ public abstract class BaseWeasyPrintTest {
      * or the shared Testcontainers instance as a fallback.
      */
     public static @NotNull WeasyPrintServiceConnector getWeasyPrintServiceConnector() {
+        return new WeasyPrintServiceConnector(getWeasyPrintServiceUrl());
+    }
+
+    /** The address of the WeasyPrint service the exports of the tests go to, as {@link #getWeasyPrintServiceConnector()} chooses it. */
+    public static @NotNull String getWeasyPrintServiceUrl() {
         String externalUrl = System.getProperty(WEASYPRINT_SERVICE_URL_PROPERTY);
         if (externalUrl != null) {
             externalUrl = stripTrailingSlashes(externalUrl.trim());
             if (!externalUrl.isBlank()) {
-                return new WeasyPrintServiceConnector(externalUrl);
+                return externalUrl;
             }
         }
 
         GenericContainer<?> weasyPrintService = SharedWeasyPrintContainer.getInstance();
         assertTrue(weasyPrintService.isRunning(), "WeasyPrint container should be running");
 
-        String weasyPrintServiceBaseUrl = "http://" + weasyPrintService.getHost() + ":" + weasyPrintService.getFirstMappedPort();
-        return new WeasyPrintServiceConnector(weasyPrintServiceBaseUrl);
+        return "http://" + weasyPrintService.getHost() + ":" + weasyPrintService.getFirstMappedPort();
     }
 
     static @NotNull String stripTrailingSlashes(@NotNull String value) {
