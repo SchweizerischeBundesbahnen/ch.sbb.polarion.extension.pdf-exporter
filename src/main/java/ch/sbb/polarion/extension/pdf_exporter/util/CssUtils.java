@@ -1,5 +1,6 @@
 package ch.sbb.polarion.extension.pdf_exporter.util;
 
+import com.helger.css.property.ECSSProperty;
 import com.helger.css.decl.CSSDeclaration;
 import com.helger.css.decl.CSSDeclarationList;
 import com.helger.css.decl.CSSExpression;
@@ -45,30 +46,30 @@ public class CssUtils {
     }
 
     @NotNull
-    public String getPropertyValue(@NotNull CSSDeclarationList cssStyles, @NotNull String propertyName) {
+    public String getPropertyValue(@NotNull CSSDeclarationList cssStyles, @NotNull ECSSProperty property) {
         for (CSSDeclaration decl : cssStyles.getAllDeclarations()) {
-            if (decl.getProperty().equalsIgnoreCase(propertyName)) {
+            if (decl.getProperty().equalsIgnoreCase(property.getName())) {
                 return decl.getExpressionAsCSSString();
             }
         }
         return "";
     }
 
-    public void setPropertyValue(@NotNull CSSDeclarationList cssStyles, @NotNull String propertyName, @NotNull String propertyValue) {
+    public void setPropertyValue(@NotNull CSSDeclarationList cssStyles, @NotNull ECSSProperty property, @NotNull String propertyValue) {
         for (CSSDeclaration declaration : cssStyles.getAllDeclarations()) {
-            if (declaration.getProperty().equalsIgnoreCase(propertyName)) {
+            if (declaration.getProperty().equalsIgnoreCase(property.getName())) {
                 // If there's such property declaration - overwrite its value...
                 declaration.setExpression(CSSExpression.createSimple(propertyValue));
                 return; // ...and stop processing by returning
             }
         }
         // If there's no such property declaration - add it
-        cssStyles.add(new CSSDeclaration(propertyName, CSSExpression.createSimple(propertyValue)));
+        cssStyles.add(new CSSDeclaration(property.getName(), CSSExpression.createSimple(propertyValue)));
     }
 
-    public void removeProperty(@NotNull CSSDeclarationList cssStyles, @NotNull String propertyName) {
+    public void removeProperty(@NotNull CSSDeclarationList cssStyles, @NotNull ECSSProperty property) {
         for (CSSDeclaration declaration : cssStyles.getAllDeclarations()) {
-            if (declaration.getProperty().equalsIgnoreCase(propertyName)) {
+            if (declaration.getProperty().equalsIgnoreCase(property.getName())) {
                 cssStyles.removeDeclaration(declaration);
                 break;
             }

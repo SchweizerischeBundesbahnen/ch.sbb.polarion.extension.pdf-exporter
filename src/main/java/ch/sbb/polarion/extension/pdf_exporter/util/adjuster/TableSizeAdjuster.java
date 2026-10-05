@@ -1,6 +1,6 @@
 package ch.sbb.polarion.extension.pdf_exporter.util.adjuster;
 
-import ch.sbb.polarion.extension.pdf_exporter.constants.CssProp;
+import com.helger.css.property.ECSSProperty;
 import ch.sbb.polarion.extension.pdf_exporter.constants.HtmlTagAttr;
 import ch.sbb.polarion.extension.pdf_exporter.constants.Measure;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ConversionParams;
@@ -28,10 +28,10 @@ public class TableSizeAdjuster extends AbstractAdjuster {
         for (Element table : tables) {
             CSSDeclarationList cssStyles = CssUtils.parseDeclarations(table.attr(HtmlTagAttr.STYLE));
 
-            float width = extractDimension(CssUtils.getPropertyValue(cssStyles, CssProp.WIDTH));
+            float width = extractDimension(CssUtils.getPropertyValue(cssStyles, ECSSProperty.WIDTH));
 
             if (width > maxWidth) {
-                CssUtils.setPropertyValue(cssStyles, CssProp.WIDTH, "100%");
+                CssUtils.setPropertyValue(cssStyles, ECSSProperty.WIDTH, "100%");
             }
 
             table.attr(HtmlTagAttr.STYLE, cssStyles.getAsCSSString());

@@ -1,5 +1,7 @@
 package ch.sbb.polarion.extension.pdf_exporter.util.adjuster;
 
+import com.helger.css.property.ECSSProperty;
+import com.helger.css.propertyvalue.CCSSValue;
 import ch.sbb.polarion.extension.pdf_exporter.constants.CssProp;
 import ch.sbb.polarion.extension.pdf_exporter.constants.HtmlTagAttr;
 import ch.sbb.polarion.extension.pdf_exporter.util.CssUtils;
@@ -63,7 +65,7 @@ public class TableAnalyzer {
     private static final String TH = "th";
 
     /** The text styles which decide how tall a line of a cell is, and which a table inherits from around it. */
-    private static final List<String> INHERITED_TEXT_PROPERTIES = List.of("font-size", "line-height", "font-weight", "letter-spacing");
+    private static final List<ECSSProperty> INHERITED_TEXT_PROPERTIES = List.of(ECSSProperty.FONT_SIZE, ECSSProperty.LINE_HEIGHT, ECSSProperty.FONT_WEIGHT, ECSSProperty.LETTER_SPACING);
 
     // Doesn't really matter, our concern here are widths
     private static final int PAGE_HEIGHT = 1000;
@@ -175,9 +177,9 @@ public class TableAnalyzer {
     private static void measureBreakableWords(@NotNull Element table) {
         for (Element element : table.select("[style]")) {
             CSSDeclarationList style = CssUtils.parseDeclarations(element.attr(HtmlTagAttr.STYLE));
-            if (CssProp.OVERFLOW_WRAP_ANYWHERE_VALUE.equals(CssUtils.getPropertyValue(style, CssProp.OVERFLOW_WRAP))
-                    || CssProp.HYPHENS_AUTO_VALUE.equals(CssUtils.getPropertyValue(style, CssProp.HYPHENS))) {
-                CssUtils.setPropertyValue(style, CssProp.WORD_WRAP, CssProp.WORD_WRAP_BREAK_WORD_VALUE);
+            if (CssProp.OVERFLOW_WRAP_ANYWHERE_VALUE.equals(CssUtils.getPropertyValue(style, ECSSProperty.OVERFLOW_WRAP))
+                    || CCSSValue.AUTO.equals(CssUtils.getPropertyValue(style, ECSSProperty.HYPHENS))) {
+                CssUtils.setPropertyValue(style, ECSSProperty.WORD_WRAP, CssProp.WORD_WRAP_BREAK_WORD_VALUE);
                 element.attr(HtmlTagAttr.STYLE, style.getAsCSSString());
             }
         }
@@ -189,11 +191,11 @@ public class TableAnalyzer {
      */
     private String inheritedTextStyle(@NotNull Element tableElement) {
         StringBuilder style = new StringBuilder();
-        for (String property : INHERITED_TEXT_PROPERTIES) {
+        for (ECSSProperty property : INHERITED_TEXT_PROPERTIES) {
             for (Element ancestor : tableElement.parents()) {
                 String value = CssUtils.getPropertyValue(CssUtils.parseDeclarations(ancestor.attr(HtmlTagAttr.STYLE)), property);
                 if (!value.isEmpty()) {
-                    style.append(property).append(": ").append(value).append("; ");
+                    style.append(property.getName()).append(": ").append(value).append("; ");
                     break;
                 }
             }

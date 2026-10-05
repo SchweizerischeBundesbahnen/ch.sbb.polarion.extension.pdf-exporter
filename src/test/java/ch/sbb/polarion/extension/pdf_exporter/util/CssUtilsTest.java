@@ -1,6 +1,6 @@
 package ch.sbb.polarion.extension.pdf_exporter.util;
 
-import ch.sbb.polarion.extension.pdf_exporter.constants.CssProp;
+import com.helger.css.property.ECSSProperty;
 import com.helger.css.decl.CSSDeclarationList;
 import com.polarion.core.util.logging.Logger;
 import org.junit.jupiter.api.AfterEach;
@@ -35,7 +35,7 @@ class CssUtilsTest {
     void doesntFailOnGettingNotExistingValueTest() {
         CSSDeclarationList cssStyles = new CSSDeclarationList();
         assertDoesNotThrow(() -> {
-            String width = CssUtils.getPropertyValue(cssStyles, CssProp.WIDTH);
+            String width = CssUtils.getPropertyValue(cssStyles, ECSSProperty.WIDTH);
             assertEquals("", width);
         });
     }
@@ -43,22 +43,22 @@ class CssUtilsTest {
     @Test
     void getPropertyValueTest() {
         CSSDeclarationList cssStyles = CssUtils.parseDeclarations("width: 100px");
-        String width = CssUtils.getPropertyValue(cssStyles, CssProp.WIDTH);
+        String width = CssUtils.getPropertyValue(cssStyles, ECSSProperty.WIDTH);
         assertEquals("100px", width);
     }
 
     @Test
     void setPropertyValueTest() {
         CSSDeclarationList cssStyles = new CSSDeclarationList();
-        CssUtils.setPropertyValue(cssStyles, CssProp.WIDTH, "auto");
-        assertEquals("auto", CssUtils.getPropertyValue(cssStyles, CssProp.WIDTH));
+        CssUtils.setPropertyValue(cssStyles, ECSSProperty.WIDTH, "auto");
+        assertEquals("auto", CssUtils.getPropertyValue(cssStyles, ECSSProperty.WIDTH));
     }
 
     @Test
     void overwritePropertyValueTest() {
         CSSDeclarationList cssStyles = CssUtils.parseDeclarations("width: auto");
-        CssUtils.setPropertyValue(cssStyles, CssProp.WIDTH, "100px");
-        assertEquals("100px", CssUtils.getPropertyValue(cssStyles, CssProp.WIDTH));
+        CssUtils.setPropertyValue(cssStyles, ECSSProperty.WIDTH, "100px");
+        assertEquals("100px", CssUtils.getPropertyValue(cssStyles, ECSSProperty.WIDTH));
     }
 
     @Test
@@ -71,21 +71,21 @@ class CssUtilsTest {
     @Test
     void parseDeclarationsHandlesPercentValues() {
         CSSDeclarationList cssStyles = CssUtils.parseDeclarations("width: 50%");
-        assertEquals("50%", CssUtils.getPropertyValue(cssStyles, CssProp.WIDTH));
+        assertEquals("50%", CssUtils.getPropertyValue(cssStyles, ECSSProperty.WIDTH));
     }
 
     @Test
     void parseDeclarationsHandlesMultiplePropertiesWithPercent() {
         CSSDeclarationList cssStyles = CssUtils.parseDeclarations("width: 50%; height: 100%");
-        assertEquals("50%", CssUtils.getPropertyValue(cssStyles, CssProp.WIDTH));
-        assertEquals("100%", CssUtils.getPropertyValue(cssStyles, CssProp.HEIGHT));
+        assertEquals("50%", CssUtils.getPropertyValue(cssStyles, ECSSProperty.WIDTH));
+        assertEquals("100%", CssUtils.getPropertyValue(cssStyles, ECSSProperty.HEIGHT));
     }
 
     @Test
     void parseDeclarationsHandlesPageBreakInsideWithOtherProperties() {
         CSSDeclarationList cssStyles = CssUtils.parseDeclarations("page-break-inside:avoid; width:50%");
-        assertEquals("avoid", CssUtils.getPropertyValue(cssStyles, CssProp.PAGE_BREAK_INSIDE));
-        assertEquals("50%", CssUtils.getPropertyValue(cssStyles, CssProp.WIDTH));
+        assertEquals("avoid", CssUtils.getPropertyValue(cssStyles, ECSSProperty.PAGE_BREAK_INSIDE));
+        assertEquals("50%", CssUtils.getPropertyValue(cssStyles, ECSSProperty.WIDTH));
     }
 
     @ParameterizedTest

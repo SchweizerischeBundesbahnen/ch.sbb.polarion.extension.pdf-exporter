@@ -1,6 +1,7 @@
 package ch.sbb.polarion.extension.pdf_exporter.util.adjuster;
 
-import ch.sbb.polarion.extension.pdf_exporter.constants.CssProp;
+import com.helger.css.property.ECSSProperty;
+import com.helger.css.propertyvalue.CCSSValue;
 import ch.sbb.polarion.extension.pdf_exporter.constants.HtmlTagAttr;
 import ch.sbb.polarion.extension.pdf_exporter.constants.Measure;
 import ch.sbb.polarion.extension.pdf_exporter.util.CssUtils;
@@ -51,23 +52,23 @@ public class ImageSizeAdjuster extends AbstractAdjuster {
         // A limit smaller than the page is kept: a table sets one, leaving room for the header it repeats,
         // and a document may state one of its own. Anything larger than the page is the page. A limit which
         // cannot be read as a length, a percentage of a cell for one, is left as the document wrote it.
-        String statedLimit = CssUtils.getPropertyValue(cssStyles, CssProp.MAX_HEIGHT);
-        float limitInPx = extractDimension(cssStyles, CssProp.MAX_HEIGHT);
+        String statedLimit = CssUtils.getPropertyValue(cssStyles, ECSSProperty.MAX_HEIGHT);
+        float limitInPx = extractDimension(cssStyles, ECSSProperty.MAX_HEIGHT);
         boolean unreadableLimit = !statedLimit.isEmpty() && limitInPx == 0;
         if (!unreadableLimit && (statedLimit.isEmpty() || limitInPx > maxHeight)) {
-            CssUtils.setPropertyValue(cssStyles, CssProp.MAX_HEIGHT, (int) maxHeight + Measure.PX);
+            CssUtils.setPropertyValue(cssStyles, ECSSProperty.MAX_HEIGHT, (int) maxHeight + Measure.PX);
         }
-        if (!statesHeight(img, cssStyles) && CssUtils.getPropertyValue(cssStyles, CssProp.OBJECT_FIT).isEmpty()) {
+        if (!statesHeight(img, cssStyles) && CssUtils.getPropertyValue(cssStyles, ECSSProperty.OBJECT_FIT).isEmpty()) {
             // That clamp shortens the height alone, the width being the one given: the image is then stretched.
             // Only the drawing follows this property, so an image which states its own height keeps what it states,
             // and so does an image which states how it is to be drawn.
-            CssUtils.setPropertyValue(cssStyles, CssProp.OBJECT_FIT, CssProp.OBJECT_FIT_CONTAIN_VALUE);
+            CssUtils.setPropertyValue(cssStyles, ECSSProperty.OBJECT_FIT, CCSSValue.CONTAIN);
         }
         img.attr(HtmlTagAttr.STYLE, cssStyles.getAsCSSString());
 
-        float cssWidth = extractDimension(cssStyles, CssProp.WIDTH);
-        float cssMaxWidth = extractDimension(cssStyles, CssProp.MAX_WIDTH);
-        float cssHeight = extractDimension(cssStyles, CssProp.HEIGHT);
+        float cssWidth = extractDimension(cssStyles, ECSSProperty.WIDTH);
+        float cssMaxWidth = extractDimension(cssStyles, ECSSProperty.MAX_WIDTH);
+        float cssHeight = extractDimension(cssStyles, ECSSProperty.HEIGHT);
 
         float widthExceedingRatio = cssWidth / maxWidth;
         float maxWidthExceedingRatio = cssMaxWidth / maxWidth;
@@ -94,29 +95,29 @@ public class ImageSizeAdjuster extends AbstractAdjuster {
         }
 
         if (adjustedWidth > 0) {
-            CssUtils.setPropertyValue(cssStyles, CssProp.WIDTH, (int) adjustedWidth + Measure.PX);
+            CssUtils.setPropertyValue(cssStyles, ECSSProperty.WIDTH, (int) adjustedWidth + Measure.PX);
         }
         if (adjustedMaxWidth > 0) {
-            CssUtils.setPropertyValue(cssStyles, CssProp.MAX_WIDTH, (int) adjustedMaxWidth + Measure.PX);
+            CssUtils.setPropertyValue(cssStyles, ECSSProperty.MAX_WIDTH, (int) adjustedMaxWidth + Measure.PX);
         }
         if (adjustedHeight > 0) {
-            CssUtils.setPropertyValue(cssStyles, CssProp.HEIGHT, (int) adjustedHeight + Measure.PX);
+            CssUtils.setPropertyValue(cssStyles, ECSSProperty.HEIGHT, (int) adjustedHeight + Measure.PX);
         }
 
         img.attr(HtmlTagAttr.STYLE, cssStyles.getAsCSSString());
     }
 
     private boolean statesHeight(@NotNull Element img, CSSDeclarationList cssStyles) {
-        String height = CssUtils.getPropertyValue(cssStyles, CssProp.HEIGHT);
+        String height = CssUtils.getPropertyValue(cssStyles, ECSSProperty.HEIGHT);
         // "auto" states no height: the height still follows the width, so the clamp still stretches the image
-        return (!height.isEmpty() && !CssProp.AUTO_VALUE.equalsIgnoreCase(height)) || img.hasAttr(CssProp.HEIGHT);
+        return (!height.isEmpty() && !CCSSValue.AUTO.equalsIgnoreCase(height)) || img.hasAttr(HtmlTagAttr.HEIGHT);
     }
 
     /**
      * The length in pixels, where the unit it is stated in says how long it is on its own. A length stated in
      * a unit which depends on the element it sits on, such as a percentage, reads as none.
      */
-    private float extractDimension(CSSDeclarationList cssStyles, String property) {
+    private float extractDimension(CSSDeclarationList cssStyles, ECSSProperty property) {
         String value = CssUtils.getPropertyValue(cssStyles, property);
 
         for (Map.Entry<String, Float> unit : Measure.ABSOLUTE_UNITS_IN_PX.entrySet()) {

@@ -1,6 +1,7 @@
 package ch.sbb.polarion.extension.pdf_exporter.util.adjuster;
 
-import ch.sbb.polarion.extension.pdf_exporter.constants.CssProp;
+import com.helger.css.property.ECSSProperty;
+import com.helger.css.propertyvalue.CCSSValue;
 import ch.sbb.polarion.extension.pdf_exporter.constants.HtmlTagAttr;
 import ch.sbb.polarion.extension.pdf_exporter.util.CssUtils;
 import com.helger.css.decl.CSSDeclarationList;
@@ -202,9 +203,9 @@ public class LongWordsAdjuster {
             return false;
         }
         for (Element element = cell; element != null; element = element.parent()) {
-            String hyphens = CssUtils.getPropertyValue(CssUtils.parseDeclarations(element.attr(HtmlTagAttr.STYLE)), CssProp.HYPHENS);
+            String hyphens = CssUtils.getPropertyValue(CssUtils.parseDeclarations(element.attr(HtmlTagAttr.STYLE)), ECSSProperty.HYPHENS);
             if (!hyphens.isEmpty()) {
-                return CssProp.HYPHENS_AUTO_VALUE.equals(hyphens);
+                return CCSSValue.AUTO.equals(hyphens);
             }
         }
         return true;
@@ -213,8 +214,8 @@ public class LongWordsAdjuster {
     /** Lets a cell break its words at a syllable, unless the document states how it hyphenates. */
     private static void hyphenate(@NotNull Element cell) {
         CSSDeclarationList style = CssUtils.parseDeclarations(cell.attr(HtmlTagAttr.STYLE));
-        if (CssUtils.getPropertyValue(style, CssProp.HYPHENS).isEmpty()) {
-            CssUtils.setPropertyValue(style, CssProp.HYPHENS, CssProp.HYPHENS_AUTO_VALUE);
+        if (CssUtils.getPropertyValue(style, ECSSProperty.HYPHENS).isEmpty()) {
+            CssUtils.setPropertyValue(style, ECSSProperty.HYPHENS, CCSSValue.AUTO);
             cell.attr(HtmlTagAttr.STYLE, style.getAsCSSString());
         }
     }

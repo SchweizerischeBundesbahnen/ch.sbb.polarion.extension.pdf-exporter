@@ -1,6 +1,6 @@
 package ch.sbb.polarion.extension.pdf_exporter.util.adjuster;
 
-import ch.sbb.polarion.extension.pdf_exporter.constants.CssProp;
+import com.helger.css.property.ECSSProperty;
 import ch.sbb.polarion.extension.pdf_exporter.constants.HtmlTagAttr;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ConversionParams;
 import ch.sbb.polarion.extension.pdf_exporter.util.CssUtils;
@@ -41,7 +41,7 @@ class ImageSizeAdjusterTest {
         Document document = Jsoup.parse("<img id='test' style='max-height: 200px;'/>");
         new ImageSizeAdjuster(document, ConversionParams.builder().build()).execute();
 
-        assertEquals("200px", propertyOf(document, CssProp.MAX_HEIGHT), "A table leaves room for its header this way, and a document may ask for less too");
+        assertEquals("200px", propertyOf(document, ECSSProperty.MAX_HEIGHT), "A table leaves room for its header this way, and a document may ask for less too");
     }
 
     @Test
@@ -49,18 +49,18 @@ class ImageSizeAdjusterTest {
         Document document = Jsoup.parse("<img id='test' style='max-height: 2000px;'/>");
         new ImageSizeAdjuster(document, ConversionParams.builder().build()).execute();
 
-        assertEquals("874px", propertyOf(document, CssProp.MAX_HEIGHT), "Nothing is taller than the page it is printed on");
+        assertEquals("874px", propertyOf(document, ECSSProperty.MAX_HEIGHT), "Nothing is taller than the page it is printed on");
     }
 
     @Test
     void readsALimitStatedInAUnitOfItsOwn() {
         Document shortEnough = Jsoup.parse("<img id='test' style='max-height: 5cm;'/>");
         new ImageSizeAdjuster(shortEnough, ConversionParams.builder().build()).execute();
-        assertEquals("5cm", propertyOf(shortEnough, CssProp.MAX_HEIGHT), "5 cm is 189 px, which the page holds");
+        assertEquals("5cm", propertyOf(shortEnough, ECSSProperty.MAX_HEIGHT), "5 cm is 189 px, which the page holds");
 
         Document tooTall = Jsoup.parse("<img id='test' style='max-height: 100cm;'/>");
         new ImageSizeAdjuster(tooTall, ConversionParams.builder().build()).execute();
-        assertEquals("874px", propertyOf(tooTall, CssProp.MAX_HEIGHT), "100 cm is taller than the page it is printed on");
+        assertEquals("874px", propertyOf(tooTall, ECSSProperty.MAX_HEIGHT), "100 cm is taller than the page it is printed on");
     }
 
     @Test
@@ -68,7 +68,7 @@ class ImageSizeAdjusterTest {
         Document document = Jsoup.parse("<img id='test' style='max-height: 50%;'/>");
         new ImageSizeAdjuster(document, ConversionParams.builder().build()).execute();
 
-        assertEquals("50%", propertyOf(document, CssProp.MAX_HEIGHT), "Half of what the image sits in is not a length this reads");
+        assertEquals("50%", propertyOf(document, ECSSProperty.MAX_HEIGHT), "Half of what the image sits in is not a length this reads");
     }
 
     @Test
@@ -76,17 +76,17 @@ class ImageSizeAdjusterTest {
         Document document = Jsoup.parse("<img id='test' style='width: 592px;'/>");
         new ImageSizeAdjuster(document, ConversionParams.builder().build()).execute();
 
-        assertEquals("874px", propertyOf(document, CssProp.MAX_HEIGHT));
+        assertEquals("874px", propertyOf(document, ECSSProperty.MAX_HEIGHT));
     }
 
     private String objectFitOf(String html) {
         Document document = Jsoup.parse(html);
         new ImageSizeAdjuster(document, ConversionParams.builder().build()).execute();
 
-        return propertyOf(document, CssProp.OBJECT_FIT);
+        return propertyOf(document, ECSSProperty.OBJECT_FIT);
     }
 
-    private String propertyOf(Document document, String property) {
+    private String propertyOf(Document document, ECSSProperty property) {
         String style = document.getElementById("test").attr(HtmlTagAttr.STYLE);
         return CssUtils.getPropertyValue(CssUtils.parseDeclarations(style), property);
     }
