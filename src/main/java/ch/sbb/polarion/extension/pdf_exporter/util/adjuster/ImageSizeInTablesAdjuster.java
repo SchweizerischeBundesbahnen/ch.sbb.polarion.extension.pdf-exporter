@@ -116,12 +116,13 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
      *
      * @return whether the image is drawn as tall as the page leaves it, and a row of that height leaves the header alone too
      */
+    @SuppressWarnings("java:S9395") // sizes in pixels, which a float holds exactly; java:S1905 reports the explicit cast
     private boolean fitToColumn(@NotNull Element img, @NotNull Map<Integer, Integer> columnWidths, int allowedHeight) {
         float cssWidth = extractWidth(img, CssProp.WIDTH);
         float cssMaxWidth = extractWidth(img, CssProp.MAX_WIDTH);
 
-        float columnCountBasedWidth = (float) getImageWidthBasedOnColumnsCount(img);
-        float paramsBasedWidth = (float) PaperSizeUtils.getMaxWidthInTables(conversionParams);
+        float columnCountBasedWidth = getImageWidthBasedOnColumnsCount(img);
+        float paramsBasedWidth = PaperSizeUtils.getMaxWidthInTables(conversionParams);
 
         float maxWidth = getMaxWidth(img, columnWidths, columnCountBasedWidth, paramsBasedWidth);
 
@@ -342,6 +343,7 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
         }
     }
 
+    @SuppressWarnings("java:S9395") // sizes in pixels, which a float holds exactly; java:S1905 reports the explicit cast
     private float getMaxWidth(Element img, Map<Integer, Integer> columnWidths, float columnCountBasedWidth, float paramsBasedWidth) {
         final float maxWidth;
         int column = getImageColumn(img);
@@ -354,7 +356,7 @@ public class ImageSizeInTablesAdjuster extends AbstractAdjuster {
             for (int i = 0; i < colspan; i++) {
                 totalWidth += columnWidths.getOrDefault(column + i, 0);
             }
-            maxWidth = (float) totalWidth;
+            maxWidth = totalWidth;
         } else {
             // ... otherwise calculate columns width based on columns count - page width equally divided on columns count, as a fallback. Not ideal but works pretty well for most cases.
             maxWidth = columnCountBasedWidth != -1 ? columnCountBasedWidth : paramsBasedWidth;

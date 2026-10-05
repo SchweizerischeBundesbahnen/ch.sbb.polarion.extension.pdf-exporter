@@ -20,8 +20,9 @@ public class TableSizeAdjuster extends AbstractAdjuster {
     }
 
     @Override
+    @SuppressWarnings("java:S9395") // sizes in pixels, which a float holds exactly; java:S1905 reports the explicit cast
     public void execute() {
-        float maxWidth = (float) PaperSizeUtils.getMaxWidth(conversionParams);
+        float maxWidth = PaperSizeUtils.getMaxWidth(conversionParams);
 
         Elements tables = document.select("table[style]");
         for (Element table : tables) {
