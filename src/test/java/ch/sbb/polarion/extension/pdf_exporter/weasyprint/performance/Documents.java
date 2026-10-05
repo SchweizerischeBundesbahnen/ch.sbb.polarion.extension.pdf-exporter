@@ -98,7 +98,6 @@ class Documents {
         return "<h1>Silbentrennung</h1>" + IntStream.range(0, tables).mapToObj(index -> "<h2>Tabelle " + index + "</h2>" + table).collect(Collectors.joining("\n"));
     }
 
-    /** A small raster image of its own color, so that no two are the same. */
     /**
      * A document of some 340 pages and 100 MB, as a large specification is: sections of text, a table, a large picture each
      * and a diagram every second one. Its pictures are 60 photographs, each embedded where it is used, and its diagrams 20
@@ -183,6 +182,7 @@ class Documents {
         return "data:image/svg+xml;base64," + Base64.getEncoder().encodeToString(svg.toString().getBytes(StandardCharsets.UTF_8));
     }
 
+    /** A small raster image of its own color, so that no two are the same. */
     @SneakyThrows
     private static @NotNull String png(int index) {
         BufferedImage image = new BufferedImage(200, 100, BufferedImage.TYPE_INT_RGB);
