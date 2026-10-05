@@ -88,4 +88,16 @@ class ExportPerformanceTest extends BasePerformanceTest {
         assertThat(pageCount(timing.pdf())).isGreaterThan(5);
         assertWithinReference(timing);
     }
+
+    /**
+     * A large document of images and diagrams: what every export costs is a small part of it, and a cost which grows with
+     * the document shows, as a search through its embedded images once did (#1141).
+     */
+    @Test
+    void exportsALargeDocumentWithImagesAndDiagrams() {
+        Timing timing = export("largeDocument", "A large document", Documents.largeDocument(250), portraitA4().fitToPage(true).build());
+
+        assertThat(pageCount(timing.pdf())).isGreaterThan(300);
+        assertWithinReference(timing);
+    }
 }

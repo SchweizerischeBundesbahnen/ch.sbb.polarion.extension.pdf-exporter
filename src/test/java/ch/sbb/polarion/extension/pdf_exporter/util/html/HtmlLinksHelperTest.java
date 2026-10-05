@@ -7,6 +7,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Answers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -15,14 +16,17 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.anyMap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
 @ExtendWith({MockitoExtension.class, PdfExporterExtensionConfigurationExtension.class})
 class HtmlLinksHelperTest {
-    @Mock
+    // the helper passes the document along, and the default method hands the call on to the one these tests stub
+    @Mock(answer = Answers.CALLS_REAL_METHODS)
     private LinkInternalizer linkInternalizer1;
-    @Mock
+    @Mock(answer = Answers.CALLS_REAL_METHODS)
     private LinkInternalizer linkInternalizer2;
 
     private HtmlLinksHelper htmlLinksHelper;
@@ -98,5 +102,18 @@ class HtmlLinksHelperTest {
                 .contains("<style>a.css inlined, and longer than the tag was</style>")
                 .contains("<style>b.css inlined, and longer than the tag was</style>")
                 .doesNotContain("<link");
+    }
+
+    /** An inliner is given the text which can name a font family, not the content of the document, nor its embedded images. */
+    @Test
+    void shouldGiveAnInlinerTheStylesOfTheDocument() {
+        ArgumentCaptor<String> styles = ArgumentCaptor.forClass(String.class);
+        when(linkInternalizer1.inlineIn(anyMap(), styles.capture())).thenReturn(Optional.empty());
+
+        htmlLinksHelper.internalizeLinks("<html><head><link rel='stylesheet' href='a.css'><style>.x { font-family: Corporate; }</style></head>"
+                + "<body><p style='font-family: Brand'>A paragraph</p><font face='Old'>old</font><img src='data:image/png;base64,QUJD'/></body></html>");
+
+        assertThat(styles.getValue()).contains("font-family: Corporate", "font-family: Brand", "Old")
+                .doesNotContain("A paragraph", "base64");
     }
 }

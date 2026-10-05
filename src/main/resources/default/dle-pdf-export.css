@@ -23,33 +23,6 @@
     font-style: italic;
 }
 
-@font-face {
-    font-family: 'Font Awesome 6 Free';
-    font-style: normal;
-    font-weight: 900;
-    font-display: block;
-    src: url('/polarion/ria/fontawesome-6.2.0/webfonts/fa-solid-900.woff2') format('woff2'),
-    url('/polarion/ria/fontawesome-6.2.0/webfonts/fa-solid-900.ttf') format('truetype');
-}
-
-@font-face {
-    font-family: 'Font Awesome 6 Free';
-    font-style: normal;
-    font-weight: 400;
-    font-display: block;
-    src: url('/polarion/ria/fontawesome-6.2.0/webfonts/fa-regular-400.woff2') format('woff2'),
-    url('/polarion/ria/fontawesome-6.2.0/webfonts/fa-regular-400.ttf') format('truetype');
-}
-
-@font-face {
-    font-family: 'Font Awesome 6 Brands';
-    font-style: normal;
-    font-weight: 400;
-    font-display: block;
-    src: url('/polarion/ria/fontawesome-6.2.0/webfonts/fa-brands-400.woff2') format('woff2'),
-    url('/polarion/ria/fontawesome-6.2.0/webfonts/fa-brands-400.ttf') format('truetype');
-}
-
 body {
     font-size: 10pt;
     font-family: Arial, "Open Sans", sans-serif !important;
