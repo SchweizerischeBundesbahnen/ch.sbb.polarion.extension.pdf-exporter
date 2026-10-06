@@ -213,6 +213,9 @@ public class HtmlProcessor {
         // and value "right" if image margin is "auto 0px auto auto" or "center" otherwise.
         timedIfNotNull(generationLog, "Adjust image alignment", () -> adjustImageAlignment(document));
 
+        // Polarion's icons beside a link to a document have no alt, which a tagged PDF takes for a picture without a description
+        timedIfNotNull(generationLog, "Mark Polarion icons decorative", () -> markPolarionIconsDecorative(document));
+
         // Adjusts WorkItem attributes tables to stretch to full page width for better usage of page space and better readability.
         // Also changes absolute widths of normal table cells from absolute values to "auto" if "Fit tables and images to page" is on
         timedIfNotNull(generationLog, "Adjust cell width", () -> adjustCellWidth(document, exportParams));
@@ -605,6 +608,15 @@ public class HtmlProcessor {
 
     @VisibleForTesting
     @SuppressWarnings("java:S135") //multiple continues for early-exit guard clauses
+    /**
+     * Gives an empty {@code alt} to the icons Polarion draws without one, as beside a link to a document. Such an icon
+     * repeats the link it stands in, so it is decorative; without an {@code alt}, HTML takes it for a picture of content
+     * which lacks a description, and a tagged PDF variant names it a figure without an alternative text (PDF/UA-1, 7.3).
+     */
+    void markPolarionIconsDecorative(@NotNull Document document) {
+        document.select("img.polarion-Icons:not([alt])").attr(HtmlTagAttr.ALT, "");
+    }
+
     void adjustImageAlignment(@NotNull Document document) {
         Elements images = document.select(HtmlTag.IMG);
         for (Element image : images) {
