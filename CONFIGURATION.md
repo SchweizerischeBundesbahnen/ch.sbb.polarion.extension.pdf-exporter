@@ -226,6 +226,8 @@ ch.sbb.polarion.extension.pdf-exporter.webhooks.enabled=true
 
 Bulk export allows merging multiple Polarion documents into a single PDF file. This feature requires the [Bulk Processing Service](https://github.com/SchweizerischeBundesbahnen/bulk-processing-service) to be running and accessible.
 
+Use version 1.2.0 or later. An earlier version leaves out of a merge each document which embeds files, a Test Run exported with **Embed attachments**. See [UPGRADE.md](UPGRADE.md#bulk-processing-service-120-or-later).
+
 The "Merge all documents into a single PDF" checkbox in the bulk export popup is only visible when the Bulk Processing Service is available.
 
 To configure the Bulk Processing Service URL, add the following line to `polarion.properties`:

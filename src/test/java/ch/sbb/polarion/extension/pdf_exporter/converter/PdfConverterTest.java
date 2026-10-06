@@ -48,6 +48,7 @@ import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Properties;
 import java.util.stream.Stream;
@@ -668,6 +669,7 @@ class PdfConverterTest {
                 .content("test document content")
                 .lastRevision("12345")
                 .revisionPlaceholder("12345")
+                .attachmentFiles(List.of(Path.of("notes.txt")))
                 .build();
         documentDataFactoryMockedStatic.when(() -> DocumentDataFactory.getDocumentData(any(ExportParams.class), anyBoolean())).thenReturn(documentData);
 
@@ -696,6 +698,7 @@ class PdfConverterTest {
         verify(bulkProcessingConnector).convertMergedToPdf(docsCaptor.capture(), any(MergeJobStartParams.class));
         assertThat(docsCaptor.getValue()).hasSize(1);
         assertThat(docsCaptor.getValue().get(0).coverPageHtml()).isEqualTo("<cover>title</cover>");
+        assertThat(docsCaptor.getValue().get(0).attachmentFiles()).as("The files the document embeds go with it").containsExactly(Path.of("notes.txt"));
 
         // Verify placeholders were preserved for bulk service
         ArgumentCaptor<PlaceholderValues> placeholderCaptor = ArgumentCaptor.forClass(PlaceholderValues.class);

@@ -11,15 +11,25 @@ import jakarta.ws.rs.client.Invocation;
 import jakarta.ws.rs.client.WebTarget;
 import jakarta.ws.rs.core.Response;
 import com.polarion.core.util.exceptions.UserFriendlyRuntimeException;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PdfVariant;
+import org.glassfish.jersey.media.multipart.FormDataBodyPart;
+import org.glassfish.jersey.media.multipart.FormDataMultiPart;
+import org.glassfish.jersey.media.multipart.MultiPartFeature;
+import org.glassfish.jersey.media.multipart.file.FileDataBodyPart;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -314,6 +324,56 @@ class BulkProcessingServiceConnectorTest {
     void unauthorizedMessageDistinguishesTheTwoCases() {
         assertThat(BulkProcessingServiceConnector.unauthorizedMessage(true)).contains("rejected the configured API key");
         assertThat(BulkProcessingServiceConnector.unauthorizedMessage(false)).contains("requires an API key");
+    }
+
+    @Test
+    void shouldAddADocumentWhichEmbedsFilesAsAMultipartForm(@TempDir Path tempDir) throws IOException {
+        Path notes = Files.writeString(tempDir.resolve("notes.txt"), "notes");
+        Response startResponse = mockResponse(201, "{\"jobId\":\"job-with-files\"}");
+        Response addResponse = mockResponse(202, "{\"status\":\"accepted\"}");
+        Response finishResponse = mockPdfResponse(200, "merged".getBytes());
+        when(invocationBuilder.post(any(Entity.class)))
+                .thenReturn(startResponse)
+                .thenReturn(addResponse)
+                .thenReturn(addResponse)
+                .thenReturn(finishResponse);
+
+        connector.convertMergedToPdf(List.of(
+                new MergeDocumentData("<html>with files</html>", null, DEFAULT_PARAMS, List.of(notes)),
+                doc("<html>without files</html>", null)), MergeJobStartParams.builder().build());
+
+        verify(client).target(BULK_SERVICE_URL + "/api/convert/job-with-files/add-with-attachments");
+        verify(client).target(BULK_SERVICE_URL + "/api/convert/job-with-files/add");
+        verify(webTarget).register(MultiPartFeature.class);
+    }
+
+    @Test
+    void shouldSendTheFieldsAndTheFilesOfADocumentAsFormParts(@TempDir Path tempDir) throws IOException {
+        Path notes = Files.writeString(tempDir.resolve("notes.txt"), "notes");
+        DocumentConversionParams params = DocumentConversionParams.builder().pdfVariant(PdfVariant.PDF_A_4F.toWeasyPrintParameter()).build();
+
+        try (FormDataMultiPart multipart = BulkProcessingServiceConnector.toMultiPart(new MergeDocumentData("<html>Zürich</html>", "<html>cover</html>", params, List.of(notes)))) {
+            assertThat(text(multipart.getField("html"))).isEqualTo("<html>Zürich</html>");
+            assertThat(text(multipart.getField("coverPageHtml"))).isEqualTo("<html>cover</html>");
+            assertThat(text(multipart.getField("params"))).contains("\"pdfVariant\":\"pdf/a-4f\"");
+            FileDataBodyPart file = (FileDataBodyPart) multipart.getField("files");
+            assertThat(file.getFileEntity()).isEqualTo(notes.toFile());
+            assertThat(file.getContentDisposition().getFileName()).isEqualTo("notes.txt");
+        }
+    }
+
+    @Test
+    void shouldLeaveOutTheCoverPageOfADocumentWithoutOne(@TempDir Path tempDir) throws IOException {
+        Path notes = Files.writeString(tempDir.resolve("notes.txt"), "notes");
+
+        try (FormDataMultiPart multipart = BulkProcessingServiceConnector.toMultiPart(new MergeDocumentData("<html></html>", null, DEFAULT_PARAMS, List.of(notes)))) {
+            assertThat(multipart.getField("coverPageHtml")).isNull();
+            assertThat(multipart.getFields("files")).hasSize(1);
+        }
+    }
+
+    private static String text(FormDataBodyPart part) {
+        return new String((byte[]) part.getEntity(), StandardCharsets.UTF_8);
     }
 
     private MergeDocumentData doc(String html, String coverPageHtml) {

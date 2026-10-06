@@ -3,6 +3,15 @@
 Version-specific upgrade notes for the PDF Exporter extension. See the [README](README.md) for
 installation and the [configuration reference](CONFIGURATION.md) for all settings.
 
+## Upgrade from version 13.9.x to 13.10.0
+
+### bulk-processing-service 1.2.0 or later
+
+A merge needs bulk-processing-service 1.2.0 or later when a document of it embeds files: a Test Run exported with
+**Embed attachments**, in any PDF variant. The extension sends such a document to an endpoint which 1.2.0 adds. An earlier
+version does not know it, so the merge leaves that document out and counts it as failed. With 1.2.0 the merge keeps the
+files of every document, which PDF/A-4f requires.
+
 ## Upgrade from version 13.x.x to 13.9.0
 
 The **User Guide** administration entry is replaced by a single **Documentation** entry. It opens a

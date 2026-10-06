@@ -5,6 +5,7 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.MergeJobStar
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.nio.file.Path;
 import java.util.List;
 
 /**
@@ -15,7 +16,16 @@ public interface BulkProcessingConnector {
 
     MergeResult convertMergedToPdf(@NotNull List<MergeDocumentData> documents, @NotNull MergeJobStartParams params);
 
-    record MergeDocumentData(@NotNull String htmlContent, @Nullable String coverPageHtml, @NotNull DocumentConversionParams params) {}
+    /**
+     * A document of a merge.
+     *
+     * @param attachmentFiles the files the document embeds, as PDF/A-4f requires, or {@code null} where it embeds none
+     */
+    record MergeDocumentData(@NotNull String htmlContent, @Nullable String coverPageHtml, @NotNull DocumentConversionParams params, @Nullable List<Path> attachmentFiles) {
+        public MergeDocumentData(@NotNull String htmlContent, @Nullable String coverPageHtml, @NotNull DocumentConversionParams params) {
+            this(htmlContent, coverPageHtml, params, null);
+        }
+    }
 
     // A payload carrier (the merged PDF bytes); it is never compared by value, so the array-aware
     // equals/hashCode/toString java:S6218 asks for would be dead boilerplate here.
