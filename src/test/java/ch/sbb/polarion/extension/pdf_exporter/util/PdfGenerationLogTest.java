@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -145,6 +146,58 @@ class PdfGenerationLogTest {
                 .contains("WeasyPrint Conversion")
                 .contains("PDF Post-processing")
                 .contains("Cover Page");
+    }
+
+    /** A stage counts for its own time, without the stages nested in it, which count for theirs: no time counts twice. */
+    @Test
+    void countsANestedStageOnce() {
+        PdfGenerationLog nested = withEntries(
+                new PdfGenerationLog.TimingEntry("Get CSS content", 20, null, 2, "Compose HTML"),
+                new PdfGenerationLog.TimingEntry("Compose HTML", 200, null, 1, "Prepare HTML content"),
+                new PdfGenerationLog.TimingEntry("Cover page", 40, null, 1, "Prepare HTML content"),
+                new PdfGenerationLog.TimingEntry("Prepare HTML content", 300, null, 0, null),
+                new PdfGenerationLog.TimingEntry("WeasyPrint conversion", 500, null, 0, null));
+
+        Map<String, Long> categories = nested.timeByCategory();
+
+        assertThat(categories)
+                .containsEntry("HTML Processing", 260L) // 60 of its own, 180 of Compose HTML's, 20 of Get CSS content's
+                .containsEntry("Cover Page", 40L)
+                .containsEntry("WeasyPrint Conversion", 500L);
+        assertThat(categories.values().stream().mapToLong(Long::longValue).sum()).as("The categories add up to the stages at the top").isEqualTo(800L);
+    }
+
+    @Test
+    void neverCountsANegativeOwnTime() {
+        PdfGenerationLog nested = withEntries(
+                new PdfGenerationLog.TimingEntry("Compose HTML", 120, null, 1, "Prepare HTML content"),
+                new PdfGenerationLog.TimingEntry("Prepare HTML content", 100, null, 0, null));
+
+        assertThat(nested.timeByCategory()).containsEntry("HTML Processing", 120L);
+    }
+
+    /** A stage whose name matches two categories always takes the first in their order, from run to run. */
+    @Test
+    void putsAStageMatchingTwoCategoriesInTheFirst() {
+        PdfGenerationLog twice = withEntries(
+                new PdfGenerationLog.TimingEntry("Cover page conversion", 100, null, 0, null),
+                new PdfGenerationLog.TimingEntry("Merge HTML", 50, null, 0, null),
+                new PdfGenerationLog.TimingEntry("Title of the cover", 30, null, 0, null));
+
+        assertThat(twice.timeByCategory())
+                .containsEntry("WeasyPrint Conversion", 100L)
+                .containsEntry("PDF Post-processing", 50L)
+                .containsEntry("Cover Page", 30L)
+                .containsEntry("HTML Processing", 0L);
+    }
+
+    private static PdfGenerationLog withEntries(PdfGenerationLog.TimingEntry... entries) {
+        return new PdfGenerationLog() {
+            @Override
+            public List<TimingEntry> getTimingEntries() {
+                return List.of(entries);
+            }
+        };
     }
 
     @Test
