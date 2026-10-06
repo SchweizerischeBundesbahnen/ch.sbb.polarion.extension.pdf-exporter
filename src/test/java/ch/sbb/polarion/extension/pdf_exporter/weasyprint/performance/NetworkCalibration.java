@@ -101,7 +101,7 @@ final class NetworkCalibration {
             if (response.statusCode() != 200) {
                 throw new IllegalStateException("The sink in the container answered " + response.statusCode());
             }
-            // The first request opens the connection, as a merge does once
+            // The first request warms the forwarder up. Each request connects anew, as the connector does for each document
             if (run > 0) {
                 times[run - 1] = (System.nanoTime() - start) / 1_000_000;
             }
