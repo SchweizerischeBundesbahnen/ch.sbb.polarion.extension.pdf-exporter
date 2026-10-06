@@ -213,6 +213,9 @@ public class HtmlProcessor {
         // and value "right" if image margin is "auto 0px auto auto" or "center" otherwise.
         timedIfNotNull(generationLog, "Adjust image alignment", () -> adjustImageAlignment(document));
 
+        // Polarion's icons beside a link have no alt, which a tagged PDF takes for a picture without a description
+        timedIfNotNull(generationLog, "Describe Polarion icons", () -> describePolarionIcons(document));
+
         // Adjusts WorkItem attributes tables to stretch to full page width for better usage of page space and better readability.
         // Also changes absolute widths of normal table cells from absolute values to "auto" if "Fit tables and images to page" is on
         timedIfNotNull(generationLog, "Adjust cell width", () -> adjustCellWidth(document, exportParams));
@@ -600,6 +603,20 @@ public class HtmlProcessor {
 
         for (Element divHeading : divHeadings) {
             divHeading.tagName("h" + H_TAG_MIN_PRIORITY);
+        }
+    }
+
+    /**
+     * Gives the icons Polarion draws without an {@code alt} their {@code title} as one, or an empty one where they have
+     * none. An icon with a title says something of its own, as the marker of a suspect link; one without repeats the
+     * link it stands in, as the type of a work item or a document, so it is decorative. Without an {@code alt}, HTML
+     * takes either for a picture of content which lacks a description, and a tagged PDF variant names it a figure
+     * without an alternative text (PDF/UA-1, 7.3).
+     */
+    @VisibleForTesting
+    void describePolarionIcons(@NotNull Document document) {
+        for (Element icon : document.select("img.polarion-Icons:not([alt])")) {
+            icon.attr(HtmlTagAttr.ALT, icon.attr(HtmlTagAttr.TITLE));
         }
     }
 
