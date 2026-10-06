@@ -96,6 +96,8 @@ const open = (routes = baseRoutes()) => {
 
 const field = <T extends HTMLElement>(selector: string) => document.querySelector<T>(selector);
 const input = (id: string) => document.querySelector<HTMLInputElement>(`#${id}`)!;
+/** Whether the cell of a control keeps its place but is hidden, which is how the form hides a value that is switched off. */
+const hiddenCell = (element: Element) => element.closest<HTMLElement>('.field')?.style.visibility === 'hidden';
 const select = (id: string) => document.querySelector<HTMLSelectElement>(`#${id}`);
 
 /** The style packages the pane currently offers, in the order it lists them. */
@@ -203,15 +205,15 @@ describe('Style Packages page', () => {
     expect(input('matching-query').value).toBe('type:testrun');
     expect(input('exposeSettings').checked).toBe(true);
     expect(input('cover-page-checkbox').checked).toBe(true);
-    expect(select('cover-page-select')!.value).toBe('Fancy cover');
-    expect(select('css-select')!.value).toBe('Default');
-    expect(select('paper-size-select')!.value).toBe('A3');
-    expect(select('orientation-select')!.value).toBe('LANDSCAPE');
-    expect(select('pdf-variant-select')!.value).toBe('PDF_A_2U');
-    expect(select('image-density-select')!.value).toBe('DPI_300');
+    expect(select('cover-page-selector')!.value).toBe('Fancy cover');
+    expect(select('css-selector')!.value).toBe('Default');
+    expect(select('paper-size-selector')!.value).toBe('A3');
+    expect(select('orientation-selector')!.value).toBe('LANDSCAPE');
+    expect(select('pdf-variant-selector')!.value).toBe('PDF_A_2U');
+    expect(select('image-density-selector')!.value).toBe('DPI_300');
     expect(input('full-fonts').checked).toBe(true);
     expect(input('render-comments').checked).toBe(true);
-    expect(select('render-comments-select')!.value).toBe('ALL');
+    expect(select('render-comments-selector')!.value).toBe('ALL');
     expect(input('include-unreferenced-comments').checked).toBe(true);
     expect(input('render-native-comments').checked).toBe(false);
     expect(input('watermark').checked).toBe(false);
@@ -219,9 +221,9 @@ describe('Style Packages page', () => {
     expect(input('chapters').value).toBe('1,2');
     expect(input('metadata-fields-input').value).toBe('docOwner');
     expect(input('numbered-list-styles').value).toBe('1ai');
-    expect(select('language-select')!.value).toBe('fr');
-    expect(select('roles-direction-select')!.value).toBe('DIRECT');
-    expect(input('work-items-query').value).toBe('type:requirement');
+    expect(select('language')!.value).toBe('fr');
+    expect(select('roles-direction-selector')!.value).toBe('DIRECT');
+    expect(input('work-items-query-input').value).toBe('type:requirement');
     expect(input('attachments-filter').value).toBe('*.pdf');
     expect(input('testcase-field-id').value).toBe('withAttachments');
     expect(input('embed-attachments').checked).toBe(true);
@@ -242,7 +244,7 @@ describe('Style Packages page', () => {
     open();
     await loaded();
 
-    const options = Array.from(select('css-select')!.options);
+    const options = Array.from(select('css-selector')!.options);
     // The name stays plain: the marker is the `parent` class, which the shared dropdown paints as a
     // small italic "global" on the right of the option.
     expect(options.map((o) => o.textContent)).toEqual(['Default', 'Compact']);
@@ -259,7 +261,7 @@ describe('Style Packages page', () => {
     );
     await loaded();
 
-    expect(select('css-select')!.value).toBe('Default');
+    expect(select('css-selector')!.value).toBe('Default');
 
     await clickButton('Save');
     expect((await savedBody(fetchMock)).css).toBe('Default');
@@ -278,13 +280,13 @@ describe('Style Packages page', () => {
     open();
     await loaded();
 
-    expect(input('chapters').disabled).toBe(false);
+    expect(hiddenCell(input('chapters'))).toBe(false);
     await userEvent.click(input('specific-chapters'));
 
-    await vi.waitFor(() => expect(input('chapters').disabled).toBe(true));
+    // The field keeps its place, as in the export dialog, so the rows around it do not move
+    await vi.waitFor(() => expect(hiddenCell(input('chapters'))).toBe(true));
     // The text stays in the field: ticking the box again has to bring the old value back, not a blank.
     expect(input('chapters').value).toBe('1,2');
-    expect(input('chapters').className).toContain('hidden');
   });
 
   it('drops the sub-controls of a switch that is off from the layout', async () => {
@@ -292,8 +294,8 @@ describe('Style Packages page', () => {
     await loaded();
 
     await userEvent.click(input('selected-roles'));
-    await vi.waitFor(() => expect(select('roles-select')).toBeNull());
-    expect(select('roles-direction-select')).toBeNull();
+    await vi.waitFor(() => expect(select('roles-selector')).toBeNull());
+    expect(select('roles-direction-selector')).toBeNull();
 
     await userEvent.click(input('download-attachments'));
     await vi.waitFor(() => expect(field('#attachments-filter')).toBeNull());
@@ -393,7 +395,7 @@ describe('Style Packages page', () => {
       'custom-list-styles',
       'localization',
       'selected-roles',
-      'work-items-query-checkbox',
+      'work-items-query',
       'download-attachments',
     ]) {
       await userEvent.click(input(id));
@@ -422,11 +424,11 @@ describe('Style Packages page', () => {
     const fetchMock = open();
     await loaded();
 
-    await pick('cover-page-select', 'Default');
-    await pick('css-select', 'Compact');
-    await pick('header-footer-select', 'With logo');
-    await pick('localization-select', 'German');
-    await pick('webhooks-select', 'Default');
+    await pick('cover-page-selector', 'Default');
+    await pick('css-selector', 'Compact');
+    await pick('header-footer-selector', 'With logo');
+    await pick('localization-selector', 'German');
+    await pick('webhooks-selector', 'Default');
     await clickButton('Save');
 
     // The stored value is the configuration's name; the scope marker is a class on the option, not
@@ -444,9 +446,9 @@ describe('Style Packages page', () => {
     const fetchMock = open();
     await loaded();
 
-    await pick('paper-size-select', 'LETTER');
-    await pick('pdf-variant-select', 'PDF_UA_2');
-    await pick('image-density-select', 'DPI_600');
+    await pick('paper-size-selector', 'LETTER');
+    await pick('pdf-variant-selector', 'PDF_UA_2');
+    await pick('image-density-selector', 'DPI_600');
     await userEvent.click(input('watermark'));
     await userEvent.click(input('cut-urls'));
     await clickButton('Save');
@@ -469,10 +471,10 @@ describe('Style Packages page', () => {
       }),
     );
     await vi.waitFor(() => expect(input('first-page-header-footer-checkbox').checked).toBe(true));
-    expect(field('#first-page-header-footer-select')).not.toBeNull();
+    expect(hiddenCell(field('#first-page-header-footer-selector')!)).toBe(false);
 
     await userEvent.click(input('first-page-header-footer-checkbox'));
-    await vi.waitFor(() => expect(field('#first-page-header-footer-select')).toBeNull());
+    await vi.waitFor(() => expect(hiddenCell(field('#first-page-header-footer-selector')!)).toBe(true));
     await clickButton('Save');
 
     expect(await savedBody(fetchMock)).toMatchObject({ headerFooter: 'Default', firstPageHeaderFooter: null });
@@ -504,7 +506,7 @@ describe('Style Packages page', () => {
       'metadata-fields',
       'localization',
       'selected-roles',
-      'work-items-query-checkbox',
+      'work-items-query',
       'download-attachments',
       'expose-page-width-validation',
     ]) {
@@ -521,16 +523,16 @@ describe('Style Packages page', () => {
     await userEvent.fill(input('numbered-list-styles'), '1ai');
     await userEvent.fill(input('chapters'), '3,4');
     await userEvent.fill(input('metadata-fields-input'), 'docLanguage');
-    await userEvent.fill(input('work-items-query'), 'type:task');
+    await userEvent.fill(input('work-items-query-input'), 'type:task');
     await userEvent.fill(input('attachments-filter'), '*.docx');
     await userEvent.fill(input('testcase-field-id'), 'hasFiles');
     await setValue('headers-color', '#ff0000');
 
-    await pick('orientation-select', 'LANDSCAPE');
-    await pick('render-comments-select', 'ALL');
-    await pick('language-select', 'it');
-    await pick('roles-direction-select', 'REVERSE');
-    await pickAll('roles-select', ['verifies']);
+    await pick('orientation-selector', 'LANDSCAPE');
+    await pick('render-comments-selector', 'ALL');
+    await pick('language', 'it');
+    await pick('roles-direction-selector', 'REVERSE');
+    await pickAll('roles-selector', ['verifies']);
 
     await clickButton('Save');
 
@@ -626,8 +628,8 @@ describe('Style Packages page', () => {
 
     await vi.waitFor(() => expect(input('style-package-weight').value).toBe('50'));
     expect(input('exposeSettings').checked).toBe(false);
-    expect(select('paper-size-select')!.value).toBe('A4');
-    expect(select('pdf-variant-select')!.value).toBe('PDF_A_2B');
+    expect(select('paper-size-selector')!.value).toBe('A4');
+    expect(select('pdf-variant-selector')!.value).toBe('PDF_A_2B');
   });
 
   it('reloads the stored style package when the edit is cancelled', async () => {
@@ -857,12 +859,12 @@ describe('Style Packages page, accessibility', () => {
     await settled();
     const trigger = (id: string) =>
       document.querySelector(`#${id} + .searchable-dropdown :is(.sd-trigger, .sd-trigger-multi)`);
-    expect(trigger('cover-page-select')).toHaveAccessibleName('Cover page');
-    expect(trigger('webhooks-select')).toHaveAccessibleName('Webhooks');
-    expect(trigger('language-select')).toHaveAccessibleName('Language');
-    expect(trigger('render-comments-select')).toHaveAccessibleName('Comments rendering');
-    expect(trigger('roles-select')).toHaveAccessibleName('Workitem roles');
-    expect(trigger('roles-direction-select')).toHaveAccessibleName('Link role direction');
+    expect(trigger('cover-page-selector')).toHaveAccessibleName('Cover page');
+    expect(trigger('webhooks-selector')).toHaveAccessibleName('Webhooks');
+    expect(trigger('language')).toHaveAccessibleName('Language');
+    expect(trigger('render-comments-selector')).toHaveAccessibleName('Comments rendering');
+    expect(trigger('roles-selector')).toHaveAccessibleName('Workitem roles');
+    expect(trigger('roles-direction-selector')).toHaveAccessibleName('Link role direction');
   });
 
   it('has no WCAG A/AA violations with the switches off', async () => {
@@ -871,7 +873,7 @@ describe('Style Packages page, accessibility', () => {
     for (const id of ['specific-chapters', 'selected-roles', 'download-attachments', 'localization']) {
       await userEvent.click(input(id));
     }
-    await vi.waitFor(() => expect(select('roles-select')).toBeNull());
+    await vi.waitFor(() => expect(select('roles-selector')).toBeNull());
     expect(await pageViolations()).toEqual([]);
   });
 

@@ -88,7 +88,7 @@ const routes = (content: Record<string, unknown> = {}) => [
 
 /** The last section rendered, and the button of the switch above the packages enabled. */
 const loaded = () =>
-  document.querySelector('#roles-select') !== null &&
+  document.querySelector('#roles-selector') !== null &&
   Array.from(document.querySelectorAll<HTMLButtonElement>('.configurations-pane button')).some(
     (b) => (b.textContent ?? '').trim() === 'Change visibility' && !b.disabled,
   );
@@ -103,7 +103,7 @@ describe.skipIf(!__PIXEL_REFERENCES__)('Style Packages page visual', () => {
     await snapshotFeature(
       'style-package',
       routes({ firstPageHeaderFooter: 'With logo' }),
-      () => loaded() && document.querySelector('#first-page-header-footer-select') !== null,
+      () => loaded() && document.querySelector('#first-page-header-footer-selector') !== null,
       'style-packages-first-page',
     );
     expect(true).toBe(true);
