@@ -124,12 +124,12 @@ public class PdfA4Processor {
      * Fixes the PDF header to ensure it starts with "%PDF-2.0".
      * <p>
      * This is a workaround for PDFBox 3.x which doesn't always write PDF 2.0
-     * in the file header even when setVersion(2.0f) is called.
+     * in the file header even when setVersion(2.0f) is called. PDF/UA-2 writes PDF 2.0 too, so
+     * {@link PdfUa2Processor} uses it as well.
      *
      * @param pdfBytes the PDF content
      * @return the PDF content with fixed header
      */
-    @VisibleForTesting
     byte[] fixPdfHeader(byte[] pdfBytes) {
         // Check if header needs fixing
         if (pdfBytes.length < 10) {
