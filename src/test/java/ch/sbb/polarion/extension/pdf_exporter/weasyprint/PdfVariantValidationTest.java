@@ -44,13 +44,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * Integration tests for PDF variant validation using veraPDF library.
  * Tests supported PDF variants by converting HTML with images to PDF and validating the result.
  * <p>
- * The following variants are excluded from parameterized validation tests:
- * <ul>
- *     <li>PDF_UA_2 - incomplete ISO 14289-2:2024 support in WeasyPrint 67.0</li>
- *     <li>PDF_A_4F - requires embedded files in the document by specification (ISO 19005-4:2020 clause 6.9),
- *         tested separately with embedded files in {@link #testPdfA4fWithEmbeddedFiles()} and
- *         {@link #testPdfA4fWithCoverPageAndEmbeddedFiles()}</li>
- * </ul>
+ * PDF_A_4F is excluded from the parameterized validation tests: it requires embedded files in the document by
+ * specification (ISO 19005-4:2020 clause 6.9), tested separately with embedded files in
+ * {@link #testPdfA4fWithEmbeddedFiles()} and {@link #testPdfA4fWithCoverPageAndEmbeddedFiles()}.
  */
 @ExtendWith({CurrentContextExtension.class, MockitoExtension.class})
 @CurrentContextConfig("pdf-exporter")
@@ -64,7 +60,7 @@ class PdfVariantValidationTest extends BaseWeasyPrintTest {
     private IModule module;
 
     @ParameterizedTest(name = "Test PDF conversion and validation for {0}")
-    @EnumSource(value = PdfVariant.class, names = {"PDF_UA_2", "PDF_A_4F"}, mode = EnumSource.Mode.EXCLUDE)
+    @EnumSource(value = PdfVariant.class, names = {"PDF_A_4F"}, mode = EnumSource.Mode.EXCLUDE)
     @SneakyThrows
     void testPdfVariantConversionAndValidation(PdfVariant pdfVariant) {
         // Read HTML resource with images
@@ -95,7 +91,7 @@ class PdfVariantValidationTest extends BaseWeasyPrintTest {
     }
 
     @ParameterizedTest(name = "Test PDF with replaced first page and validation for {0}")
-    @EnumSource(value = PdfVariant.class, names = {"PDF_UA_2", "PDF_A_4F"}, mode = EnumSource.Mode.EXCLUDE)
+    @EnumSource(value = PdfVariant.class, names = {"PDF_A_4F"}, mode = EnumSource.Mode.EXCLUDE)
     @SneakyThrows
     void testPdfVariantConversionWithCoverPageAndValidation(PdfVariant pdfVariant) {
         // Read HTML resources for cover page and main content
@@ -146,7 +142,7 @@ class PdfVariantValidationTest extends BaseWeasyPrintTest {
      * Validates the merged result with veraPDF.
      */
     @ParameterizedTest(name = "Test bulk merge PDF compliance for {0}")
-    @EnumSource(value = PdfVariant.class, names = {"PDF_UA_2", "PDF_A_4F"}, mode = EnumSource.Mode.EXCLUDE)
+    @EnumSource(value = PdfVariant.class, names = {"PDF_A_4F"}, mode = EnumSource.Mode.EXCLUDE)
     @SneakyThrows
     void testBulkMergePdfVariantCompliance(PdfVariant pdfVariant) {
         // Read and prepare two different HTML documents
@@ -194,7 +190,7 @@ class PdfVariantValidationTest extends BaseWeasyPrintTest {
      * on the first document — simulating a bulk merge where documents have cover pages.
      */
     @ParameterizedTest(name = "Test bulk merge with cover page PDF compliance for {0}")
-    @EnumSource(value = PdfVariant.class, names = {"PDF_UA_2", "PDF_A_4F"}, mode = EnumSource.Mode.EXCLUDE)
+    @EnumSource(value = PdfVariant.class, names = {"PDF_A_4F"}, mode = EnumSource.Mode.EXCLUDE)
     @SneakyThrows
     void testBulkMergeWithCoverPagePdfVariantCompliance(PdfVariant pdfVariant) {
         String contentHtml = injectDefaultCss(readHtmlResource("pdfVariantValidation"));
@@ -260,18 +256,8 @@ class PdfVariantValidationTest extends BaseWeasyPrintTest {
     }
 
     /**
-     * Test PDF/UA-2 variant validation.
-     * <p>
-     * This test is expected to FAIL because WeasyPrint 67.0 has incomplete support for ISO 14289-2:2024 (PDF/UA-2).
-     * The following issues are NOT fixed by post-processing and require WeasyPrint updates:
-     * <ul>
-     *     <li>Structure destinations required for all internal links (clause 7.18.3, test 1)</li>
-     *     <li>PDF 2.0 namespace required for Document element (ISO 32005:2023)</li>
-     *     <li>Document-Span restriction (ISO 32005:2023)</li>
-     *     <li>ListNumbering attribute required for lists</li>
-     * </ul>
-     * <p>
-     * The pdfuaid:rev fix (setting to "2024") is applied via post-processing.
+     * Test PDF/UA-2 variant validation: the document is compliant, which WeasyPrint makes it with the structure the
+     * WeasyPrint service writes since 70.0.2, and the pdfuaid:rev which post-processing sets to "2024".
      */
     @Test
     @SneakyThrows
@@ -300,15 +286,7 @@ class PdfVariantValidationTest extends BaseWeasyPrintTest {
         PDFAFlavour flavour = PDFAFlavour.PDFUA_2;
         ValidationResult result = VeraPdfValidationUtils.validatePdf(pdfBytes, flavour);
 
-        // Note: Full PDF/UA-2 compliance requires WeasyPrint updates for:
-        // - Structure destinations for internal links (clause 8.8)
-        // - PDF 2.0 namespace for Document element (clause 8.2.5.2)
-        // - Document-Span restriction (ISO 32005:2023)
-        // - ListNumbering attribute for lists (clause 8.2.5.25)
-        // The pdfuaid:rev fix is applied via post-processing.
-
-        // For now, we just verify that the PDF was generated and our post-processing was applied
-        // (pdfuaid:rev error would appear in result.getTestAssertions() if not fixed)
+        assertTrue(result.isCompliant(), String.format("PDF must be compliant with PDF/UA-2. Failed rules: %s", result.getTestAssertions()));
         boolean hasPdfuaidRevError = result.getTestAssertions().stream()
                 .anyMatch(a -> a.getMessage() != null && a.getMessage().contains("pdfuaid:rev"));
         assertFalse(hasPdfuaidRevError, "pdfuaid:rev should be fixed to '2024' by post-processing");

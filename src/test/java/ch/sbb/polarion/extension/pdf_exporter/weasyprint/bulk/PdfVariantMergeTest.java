@@ -16,9 +16,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Each PDF variant a merge can be asked for, validated with veraPDF as
- * {@link ch.sbb.polarion.extension.pdf_exporter.weasyprint.PdfVariantValidationTest} validates a single export. PDF/UA-2
- * is left out as there, being incomplete in WeasyPrint, and so is PDF/A-4f, which requires embedded files a merge does
- * not carry (#1166).
+ * {@link ch.sbb.polarion.extension.pdf_exporter.weasyprint.PdfVariantValidationTest} validates a single export. PDF/A-4f
+ * is left out, which requires embedded files a merge does not carry (#1166).
  */
 class PdfVariantMergeTest extends BaseBulkProcessingTest {
 
@@ -27,7 +26,7 @@ class PdfVariantMergeTest extends BaseBulkProcessingTest {
     }
 
     @ParameterizedTest(name = "{0}")
-    @EnumSource(value = PdfVariant.class, names = {"PDF_UA_2", "PDF_A_4F"}, mode = EnumSource.Mode.EXCLUDE)
+    @EnumSource(value = PdfVariant.class, names = {"PDF_A_4F"}, mode = EnumSource.Mode.EXCLUDE)
     @SneakyThrows
     void mergesIntoAPdfOfTheRequestedVariant(PdfVariant pdfVariant) {
         String html = readHtmlResource("pdfVariantValidation");

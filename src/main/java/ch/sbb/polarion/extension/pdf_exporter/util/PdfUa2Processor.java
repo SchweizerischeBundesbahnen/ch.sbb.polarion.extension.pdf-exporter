@@ -3,9 +3,17 @@ package ch.sbb.polarion.extension.pdf_exporter.util;
 import com.polarion.core.util.logging.Logger;
 import lombok.experimental.UtilityClass;
 import org.apache.pdfbox.Loader;
+import org.apache.pdfbox.cos.COSArray;
+import org.apache.pdfbox.cos.COSBase;
+import org.apache.pdfbox.cos.COSDictionary;
+import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.cos.COSObject;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.common.PDMetadata;
+import org.apache.pdfbox.pdmodel.documentinterchange.logicalstructure.PDStructureElement;
+import org.apache.pdfbox.pdmodel.documentinterchange.logicalstructure.PDStructureTreeRoot;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -17,6 +25,11 @@ import javax.xml.transform.TransformerException;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayDeque;
+import java.util.Deque;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
  * Utility class for processing PDF/UA-2 documents to ensure compliance with ISO 14289-2:2024 specification.
@@ -25,16 +38,12 @@ import java.nio.charset.StandardCharsets;
  * or after PDF merging operations:
  * <ul>
  *     <li>Fixes XMP metadata to use correct pdfuaid:rev format (four-digit year "2024" instead of revision number)</li>
+ *     <li>Gives the Document element under the structure tree root the PDF 2.0 namespace, which a merge drops: PDFBox
+ *         wraps the Document elements of the merged files, which keep it, in a Document of its own without one
+ *         (ISO 14289-2:2024, 8.2.5.2)</li>
+ *     <li>Writes the document as PDF 2.0 again, which a merge writes as 1.6</li>
  * </ul>
- * <p>
- * <b>Note:</b> WeasyPrint 67.0 has incomplete support for ISO 14289-2:2024 (PDF/UA-2).
- * The following issues are NOT fixed by this processor and require WeasyPrint updates:
- * <ul>
- *     <li>Structure destinations required for all internal links (clause 7.18.3, test 1)</li>
- *     <li>PDF 2.0 namespace required for Document element (ISO 32005:2023)</li>
- *     <li>Document-Span restriction (ISO 32005:2023)</li>
- *     <li>ListNumbering attribute required for lists</li>
- * </ul>
+ * The rest of the structure PDF/UA-2 requires, WeasyPrint writes since the WeasyPrint service 70.0.2.
  */
 @UtilityClass
 public class PdfUa2Processor {
@@ -42,11 +51,16 @@ public class PdfUa2Processor {
     private static final String PDF_UA_2_REV_YEAR = "2024";
     private static final String PDFUAID_REV = "pdfuaid:rev";
     private static final String PDFUAID_PART = "pdfuaid:part";
+    private static final String STRUCTURE_TYPE_DOCUMENT = "Document";
+    private static final String PDF_2_NAMESPACE = "http://iso.org/pdf2/ssn";
+    private static final COSName NS = COSName.getPDFName("NS");
+    private static final COSName NAMESPACES = COSName.getPDFName("Namespaces");
 
     /**
      * Processes a PDF/UA-2 document to fix compliance issues according to ISO 14289-2:2024.
      * <p>
-     * Currently only fixes the pdfuaid:rev metadata value to "2024".
+     * It fixes the pdfuaid:rev metadata value to "2024", gives the Document element under the structure tree root the
+     * PDF 2.0 namespace where a merge dropped it, and writes the document as PDF 2.0.
      *
      * @param pdfBytes the original PDF content
      * @return the processed PDF content with compliance fixes applied
@@ -59,9 +73,90 @@ public class PdfUa2Processor {
             // Fix XMP metadata
             fixXmpMetadata(document);
 
+            // Give the Document element its namespace, and the document its version, which a merge drops
+            fixStructureNamespace(document);
+            document.setVersion(2.0f);
+            document.getDocumentCatalog().getCOSObject().setItem(COSName.VERSION, COSName.getPDFName("2.0"));
+
             // Save the modified document
             document.save(outputStream);
-            return outputStream.toByteArray();
+            return PdfA4Processor.fixPdfHeader(outputStream.toByteArray());
+        }
+    }
+
+    /**
+     * Gives each Document element under the structure tree root the PDF 2.0 namespace, and lists that namespace in the
+     * root. It takes the namespace of the elements below where one has it, as the parts a merge wraps, or else a new one.
+     *
+     * @param document the PDF document to process
+     */
+    @VisibleForTesting
+    void fixStructureNamespace(@NotNull PDDocument document) {
+        PDStructureTreeRoot root = document.getDocumentCatalog().getStructureTreeRoot();
+        if (root == null) {
+            return;
+        }
+        List<COSDictionary> documents = root.getKids().stream()
+                .filter(PDStructureElement.class::isInstance)
+                .map(PDStructureElement.class::cast)
+                .filter(element -> STRUCTURE_TYPE_DOCUMENT.equals(element.getStructureType()))
+                .map(PDStructureElement::getCOSObject)
+                .toList();
+        if (documents.isEmpty() || documents.stream().allMatch(element -> element.containsKey(NS))) {
+            return;
+        }
+        COSBase namespace = findNamespace(documents);
+        if (namespace == null) {
+            COSDictionary created = new COSDictionary();
+            created.setItem(COSName.TYPE, COSName.getPDFName("Namespace"));
+            created.setString(NS, PDF_2_NAMESPACE);
+            namespace = created;
+        }
+        for (COSDictionary element : documents) {
+            if (!element.containsKey(NS)) {
+                element.setItem(NS, namespace);
+            }
+        }
+        COSArray namespaces = root.getCOSObject().getCOSArray(NAMESPACES);
+        if (namespaces == null) {
+            namespaces = new COSArray();
+            root.getCOSObject().setItem(NAMESPACES, namespaces);
+        }
+        if (!namespaces.toList().contains(namespace)) {
+            namespaces.add(namespace);
+        }
+        logger.debug("Gave the Document element the PDF 2.0 namespace for PDF/UA-2 compliance");
+    }
+
+    /** The PDF 2.0 namespace an element at or below the given ones names, or {@code null} where none does. */
+    @Nullable
+    private COSBase findNamespace(@NotNull List<COSDictionary> elements) {
+        Deque<COSDictionary> pending = new ArrayDeque<>(elements);
+        Set<COSDictionary> seen = new HashSet<>();
+        while (!pending.isEmpty()) {
+            COSDictionary element = pending.pop();
+            if (!seen.add(element)) {
+                continue;
+            }
+            COSBase namespace = element.getItem(NS);
+            COSBase resolved = namespace instanceof COSObject object ? object.getObject() : namespace;
+            if (resolved instanceof COSDictionary dictionary && PDF_2_NAMESPACE.equals(dictionary.getString(NS))) {
+                return namespace;
+            }
+            COSBase kids = element.getDictionaryObject(COSName.K);
+            if (kids instanceof COSArray array) {
+                array.forEach(kid -> addElement(pending, kid));
+            } else {
+                addElement(pending, kids);
+            }
+        }
+        return null;
+    }
+
+    private void addElement(@NotNull Deque<COSDictionary> pending, @Nullable COSBase kid) {
+        COSBase resolved = kid instanceof COSObject object ? object.getObject() : kid;
+        if (resolved instanceof COSDictionary dictionary && dictionary.containsKey(COSName.S)) {
+            pending.push(dictionary);
         }
     }
 
