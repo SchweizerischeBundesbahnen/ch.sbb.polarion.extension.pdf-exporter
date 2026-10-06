@@ -1455,6 +1455,23 @@ class HtmlProcessorTest {
         assertEquals(1, document.select("table").size(), "The table stays");
     }
 
+    /** An icon of Polarion without alt takes its title, the suspect marker's "Suspect", or an empty one, as the icon of a linked document. */
+    @Test
+    void describesTheIconsOfPolarion() {
+        Document document = JSoupUtils.parseHtml("""
+                <a style="font-size:1em;" target="_top" class="polarion-Hyperlink" href="/polarion/#/project/elibrary/wiki/Specification/Product%20Specification"><span class="polarion-no-style-cleanup" title="Product Specification"><span style="white-space:nowrap;"><img src="data:image/png;base64,iVBORw0KGgo=" class="polarion-Icons polarion-no-style-cleanup" onmousedown="return false;" contenteditable="false" /></span></span>Product Specification</a>
+                <img src="/polarion/ria/images/suspect.gif" class="polarion-Icons" title="Suspect" onmousedown="return false;" contenteditable="false"/>
+                <img src="/polarion/icons/default/enums/status_ok.gif" class="polarion-Icons" alt="Verified" />
+                <img src="diagram.png" title="Diagram" />""");
+
+        processor.describePolarionIcons(document);
+
+        assertEquals(List.of("", "Suspect", "Verified"), document.select("img.polarion-Icons").eachAttr("alt"),
+                "An icon without alt takes its title or an empty one, an icon with one keeps it");
+        assertFalse(document.select("img[title=Diagram]").hasAttr("alt"), "An image which is not an icon of Polarion is left as it is");
+        assertTrue(document.body().html().contains("alt=\"\""), "The empty alt is written out, not dropped as a boolean attribute");
+    }
+
     @Test
     void keepsAnEmptyParagraphWhichContentFollows() {
         Document document = JSoupUtils.parseHtml("<p id=\"polarion_1\"><br /></p><p id=\"polarion_2\">Text</p><p id=\"polarion_3\"><img src=\"diagram.svg\"/></p><p id=\"polarion_4\"><br /></p>");
