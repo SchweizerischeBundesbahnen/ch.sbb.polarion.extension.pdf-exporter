@@ -59,6 +59,18 @@ public abstract class BaseWeasyPrintTest {
 
     private static final Logger logger = LoggerFactory.getLogger(BaseWeasyPrintTest.class);
 
+    /** The name of this node Polarion reads, which spares the lookup it makes without it. */
+    private static final String NODE_HOSTNAME_PROPERTY = "com.siemens.polarion.cluster.nodeHostname";
+
+    static {
+        // Without a base.url the export takes the name of this node for the base of its HTML. Polarion looks it up by a
+        // reverse DNS query, which takes seconds on a machine whose name the resolver does not know. The tests run no
+        // cluster, and the name means nothing to the container of WeasyPrint, so they give one.
+        if (System.getProperty(NODE_HOSTNAME_PROPERTY) == null) {
+            System.setProperty(NODE_HOSTNAME_PROPERTY, "localhost");
+        }
+    }
+
     @SneakyThrows
     @SuppressWarnings("ConstantConditions")
     public static String readHtmlResource(String resourceName) {
