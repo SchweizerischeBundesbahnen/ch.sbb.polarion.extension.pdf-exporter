@@ -1,7 +1,6 @@
 package ch.sbb.polarion.extension.pdf_exporter.weasyprint.service;
 
 import ch.sbb.polarion.extension.pdf_exporter.properties.PdfExporterExtensionConfiguration;
-import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.DocumentConversionParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.MergeJobStartParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PdfVariant;
 import ch.sbb.polarion.extension.pdf_exporter.util.PdfPostProcessor;
@@ -11,6 +10,10 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.polarion.core.util.exceptions.UserFriendlyRuntimeException;
 import com.polarion.core.util.logging.Logger;
+import org.glassfish.jersey.media.multipart.FormDataBodyPart;
+import org.glassfish.jersey.media.multipart.FormDataMultiPart;
+import org.glassfish.jersey.media.multipart.MultiPartFeature;
+import org.glassfish.jersey.media.multipart.file.FileDataBodyPart;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
@@ -24,6 +27,7 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -144,7 +148,7 @@ public class BulkProcessingServiceConnector implements BulkProcessingConnector {
                 throw new IllegalStateException(String.format("Merge job '%s' was cancelled", jobId));
             }
             try {
-                addDocumentToJob(jobId, doc.htmlContent(), doc.coverPageHtml(), doc.params());
+                addDocumentToJob(jobId, doc);
             } catch (Exception e) {
                 failedCount++;
                 logger.warn(String.format("Failed to add document to merge job '%s': %s", jobId, e.getMessage()));
@@ -199,43 +203,83 @@ public class BulkProcessingServiceConnector implements BulkProcessingConnector {
         }
     }
 
-    private void addDocumentToJob(@NotNull String jobId, @NotNull String htmlContent, @Nullable String coverPageHtml, @NotNull DocumentConversionParams docParams) {
+    /**
+     * Adds a document to the job. One which embeds files, as PDF/A-4f requires, goes as a multipart form with them, the
+     * others as JSON.
+     */
+    private void addDocumentToJob(@NotNull String jobId, @NotNull MergeDocumentData doc) {
         Client client = null;
         try {
             client = createClient();
-            WebTarget webTarget = client.target(bulkProcessingServiceBaseUrl + MERGE_API_PREFIX + jobId + "/add");
-
-            Map<String, Object> body = new java.util.HashMap<>();
-            body.put("html", htmlContent);
-            if (coverPageHtml != null) {
-                body.put("coverPageHtml", coverPageHtml);
-            }
-            body.put("params", docParams);
-
-            String jsonBody;
-            try {
-                jsonBody = new ObjectMapper().writeValueAsString(body);
-            } catch (JsonProcessingException e) {
-                throw new IllegalStateException("Could not serialize add document request", e);
-            }
-
-            Invocation.Builder builder = webTarget.request(MediaType.APPLICATION_JSON);
-            boolean apiKeySent = applyApiKey(builder) != null;
-            try (Response response = builder.post(Entity.entity(jsonBody, MediaType.APPLICATION_JSON))) {
-                if (response.getStatus() == Response.Status.UNAUTHORIZED.getStatusCode()) {
-                    throw new UserFriendlyRuntimeException(unauthorizedMessage(apiKeySent));
+            if (doc.attachmentFiles() != null) {
+                WebTarget webTarget = client.target(bulkProcessingServiceBaseUrl + MERGE_API_PREFIX + jobId + "/add-with-attachments");
+                webTarget.register(MultiPartFeature.class);
+                try (FormDataMultiPart multipart = toMultiPart(doc)) {
+                    postDocument(jobId, webTarget, Entity.entity(multipart, multipart.getMediaType()));
+                } catch (IOException e) {
+                    throw new IllegalStateException("Could not instantiate multi part form data", e);
                 }
-                if (response.getStatus() != Response.Status.OK.getStatusCode()
-                        && response.getStatus() != Response.Status.ACCEPTED.getStatusCode()) {
-                    String errorMessage = response.readEntity(String.class);
-                    throw new IllegalStateException(String.format(
-                            "Failed to add document to merge job '%s'. Status: %s, Message: [%s]",
-                            jobId, response.getStatus(), errorMessage));
-                }
+            } else {
+                WebTarget webTarget = client.target(bulkProcessingServiceBaseUrl + MERGE_API_PREFIX + jobId + "/add");
+                postDocument(jobId, webTarget, Entity.entity(toJson(doc), MediaType.APPLICATION_JSON));
             }
         } finally {
             if (client != null) {
                 client.close();
+            }
+        }
+    }
+
+    private static @NotNull String toJson(@NotNull MergeDocumentData doc) {
+        Map<String, Object> body = new java.util.HashMap<>();
+        body.put("html", doc.htmlContent());
+        if (doc.coverPageHtml() != null) {
+            body.put("coverPageHtml", doc.coverPageHtml());
+        }
+        body.put("params", doc.params());
+        try {
+            return new ObjectMapper().writeValueAsString(body);
+        } catch (JsonProcessingException e) {
+            throw new IllegalStateException("Could not serialize add document request", e);
+        }
+    }
+
+    /** The fields of the JSON request as form fields, the parameters as JSON, and the files the document embeds. */
+    @VisibleForTesting
+    static @NotNull FormDataMultiPart toMultiPart(@NotNull MergeDocumentData doc) {
+        FormDataMultiPart multipart = new FormDataMultiPart();
+        multipart.bodyPart(textPart("html", doc.htmlContent()));
+        if (doc.coverPageHtml() != null) {
+            multipart.bodyPart(textPart("coverPageHtml", doc.coverPageHtml()));
+        }
+        try {
+            multipart.bodyPart(textPart("params", new ObjectMapper().writeValueAsString(doc.params())));
+        } catch (JsonProcessingException e) {
+            throw new IllegalStateException("Could not serialize the conversion parameters", e);
+        }
+        if (doc.attachmentFiles() != null) {
+            doc.attachmentFiles().forEach(filePath -> multipart.bodyPart(new FileDataBodyPart("files", filePath.toFile())));
+        }
+        return multipart;
+    }
+
+    private static @NotNull FormDataBodyPart textPart(@NotNull String name, @NotNull String value) {
+        return new FormDataBodyPart(name, value.getBytes(StandardCharsets.UTF_8), MediaType.TEXT_PLAIN_TYPE.withCharset(StandardCharsets.UTF_8.name()));
+    }
+
+    private void postDocument(@NotNull String jobId, @NotNull WebTarget webTarget, @NotNull Entity<?> entity) {
+        Invocation.Builder builder = webTarget.request(MediaType.APPLICATION_JSON);
+        boolean apiKeySent = applyApiKey(builder) != null;
+        try (Response response = builder.post(entity)) {
+            if (response.getStatus() == Response.Status.UNAUTHORIZED.getStatusCode()) {
+                throw new UserFriendlyRuntimeException(unauthorizedMessage(apiKeySent));
+            }
+            if (response.getStatus() != Response.Status.OK.getStatusCode()
+                    && response.getStatus() != Response.Status.ACCEPTED.getStatusCode()) {
+                String errorMessage = response.readEntity(String.class);
+                throw new IllegalStateException(String.format(
+                        "Failed to add document to merge job '%s'. Status: %s, Message: [%s]",
+                        jobId, response.getStatus(), errorMessage));
             }
         }
     }

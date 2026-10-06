@@ -36,11 +36,13 @@ import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.testcontainers.containers.Container;
 import org.mockito.quality.Strictness;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -137,6 +139,11 @@ abstract class BaseBulkProcessingTest extends BasePdfConverterTest {
 
     /** The export parameters of a document, from the default style package, its content served as that of a LiveDoc. */
     protected @NotNull ExportParams liveDoc(@NotNull String title, @NotNull String content) {
+        return liveDoc(title, content, null);
+    }
+
+    /** The export parameters of a document which embeds the files, as PDF/A-4f requires. */
+    protected @NotNull ExportParams liveDoc(@NotNull String title, @NotNull String content, @Nullable List<Path> attachmentFiles) {
         ExportParams params = ExportParams.builder()
                 .projectId("testProjectId")
                 .locationPath("_default/" + title)
@@ -150,6 +157,7 @@ abstract class BaseBulkProcessingTest extends BasePdfConverterTest {
                 .content(content)
                 .lastRevision("42")
                 .revisionPlaceholder("42")
+                .attachmentFiles(attachmentFiles)
                 .build();
         documentDataFactoryMockedStatic.when(() -> DocumentDataFactory.getDocumentData(eq(params), anyBoolean())).thenReturn(document);
         return params;

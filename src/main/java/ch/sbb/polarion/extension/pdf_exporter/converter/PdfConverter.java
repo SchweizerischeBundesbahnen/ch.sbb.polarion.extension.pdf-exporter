@@ -157,7 +157,7 @@ public class PdfConverter {
                         .fullFonts(exportParams.isFullFonts())
                         .build();
 
-                preparedDocuments.add(new BulkProcessingConnector.MergeDocumentData(htmlContent, coverPageHtml, docParams));
+                preparedDocuments.add(new BulkProcessingConnector.MergeDocumentData(htmlContent, coverPageHtml, docParams, documentData.getAttachmentFiles()));
             }
 
             generationLog.log("All documents prepared, starting merged PDF generation");
