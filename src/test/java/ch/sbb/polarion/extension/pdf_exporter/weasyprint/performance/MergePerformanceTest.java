@@ -81,6 +81,7 @@ class MergePerformanceTest extends BasePerformanceTest {
      */
     private @NotNull MergeTiming merge(@NotNull String name, int documents, @NotNull IntFunction<String> content) {
         timeTheBaseline();
+        PerformanceRun.current().network(TimedBulkProcessingService.networkMs());
         List<ExportParams> params = new ArrayList<>();
         for (int index = 0; index < documents; index++) {
             params.add(liveDoc("Document " + (index + 1), content.apply(index)));

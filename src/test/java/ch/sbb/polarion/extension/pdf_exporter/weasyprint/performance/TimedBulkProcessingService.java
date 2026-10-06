@@ -44,8 +44,10 @@ final class TimedBulkProcessingService {
     /** Started on first access, thread safe without synchronization, as a holder class is initialized once. */
     private static final class Holder {
         private static final String URL;
+        private static final long NETWORK_MS;
 
         static {
+            NETWORK_MS = NetworkCalibration.measure(BULK_PROCESSING_IMAGE);
             int proxyPort = startProxy(BaseWeasyPrintTest.getWeasyPrintServiceUrl());
             Testcontainers.exposeHostPorts(proxyPort);
             @SuppressWarnings("resource") // removed when the JVM exits
@@ -60,6 +62,11 @@ final class TimedBulkProcessingService {
 
     static @NotNull String url() {
         return Holder.URL;
+    }
+
+    /** How long a document of a merge takes on the network between the JVM and the containers, as {@link NetworkCalibration} measured it. */
+    static long networkMs() {
+        return Holder.NETWORK_MS;
     }
 
     /** How long WeasyPrint has taken for the service since the run started, in milliseconds. */

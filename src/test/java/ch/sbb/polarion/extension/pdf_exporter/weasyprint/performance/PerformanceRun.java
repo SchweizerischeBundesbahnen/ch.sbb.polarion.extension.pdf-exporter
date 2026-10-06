@@ -35,6 +35,11 @@ import java.util.regex.Pattern;
  * work instead, which runs no code of the exporter.
  * </p>
  * <p>
+ * The bulk processing service of a merge is scaled by the network instead: each document crosses it twice, into the
+ * service and from it to WeasyPrint, and Docker in a VM, as on Windows or a Mac, takes ten times as long there as Docker
+ * on Linux, which neither the small document nor the fixed work shows. {@link NetworkCalibration} times it.
+ * </p>
+ * <p>
  * JUnit keeps the run in the store of the root context, which it closes once every test has run.
  * </p>
  */
@@ -45,7 +50,8 @@ public final class PerformanceRun implements AutoCloseable {
 
     /**
      * The bulk processing service of a merge, WeasyPrint aside: the upload of each document, what the service does with it
-     * and the merge. A service as WeasyPrint is, it is scaled and judged as WeasyPrint.
+     * and the merge. A service as WeasyPrint is, it is judged as WeasyPrint, but scaled by the network the documents
+     * cross, where the reference times hold a network.calibration.
      */
     static final String BPS = "BPS";
 
@@ -61,6 +67,7 @@ public final class PerformanceRun implements AutoCloseable {
     /** The reference times of the architecture of this machine, as runs of the tests on such a machine averaged them. */
     private static final String REFERENCE_TIMES = "/performance/reference-times-%s.properties";
     private static final String CALIBRATION_KEY = "machine.calibration";
+    private static final String NETWORK_CALIBRATION_KEY = "network.calibration";
 
     private static final String REPORTS = "target/surefire-reports/";
     private static final String SUMMARY_FILE = REPORTS + "performance-summary.md";
@@ -76,6 +83,9 @@ public final class PerformanceRun implements AutoCloseable {
     private final long referenceCalibrationMs;
     private final long calibrationMs;
     private final double machineFactor;
+    /** Null in reference times taken before the network was timed: the bulk processing service then follows WeasyPrint. */
+    private final Long referenceNetworkMs;
+    private Long networkMs;
     private final Map<String, Long> baselineMs = new HashMap<>();
     private final List<Row> rows = new ArrayList<>();
 
@@ -116,6 +126,7 @@ public final class PerformanceRun implements AutoCloseable {
         referenceTimesFile = REFERENCE_TIMES.formatted(architecture);
         referenceTimes = readReferenceTimes(referenceTimesFile);
         referenceCalibrationMs = milliseconds(CALIBRATION_KEY);
+        referenceNetworkMs = referenceTimes.containsKey(NETWORK_CALIBRATION_KEY) ? milliseconds(NETWORK_CALIBRATION_KEY) : null;
         calibrate();
         long best = Long.MAX_VALUE;
         for (int run = 0; run < 3; run++) {
@@ -143,6 +154,19 @@ public final class PerformanceRun implements AutoCloseable {
                 .formatted(exporterMs, weasyPrintMs, scale("", EXPORTER), scale("", WEASYPRINT)));
     }
 
+    /** Records how long a document of a merge took on the network in this run, which the bulk processing service is scaled by. */
+    synchronized void network(long ms) {
+        if (networkMs != null) {
+            return;
+        }
+        networkMs = ms;
+        log(referenceNetworkMs == null
+                ? "Performance tests: a document of a merge took %d ms on the network here; %s has no %s, so the bulk processing service is scaled as WeasyPrint"
+                .formatted(ms, referenceTimesFile, NETWORK_CALIBRATION_KEY)
+                : "Performance tests: a document of a merge took %d ms on the network here and %d ms where the reference times were taken, so the bulk processing service is expected to take %.2f times its reference times"
+                .formatted(ms, referenceNetworkMs, scale("", BPS)));
+    }
+
     /** The reference time of a part of an export, from the reference times of this architecture. */
     long reference(@NotNull String export, @NotNull String part) {
         return milliseconds(key(export, part));
@@ -150,11 +174,15 @@ public final class PerformanceRun implements AutoCloseable {
 
     /**
      * What the reference time of a part is multiplied by in this run: for the small document the factor of the fixed
-     * work, for any other export how much longer or shorter than its own reference the small document took here.
+     * work, for the bulk processing service the factor of the network, for any other export how much longer or shorter
+     * than its own reference the small document took here.
      */
     double scale(@NotNull String export, @NotNull String part) {
         if (SMALL_DOCUMENT.equals(export)) {
             return machineFactor;
+        }
+        if (BPS.equals(part) && networkMs != null && referenceNetworkMs != null) {
+            return (double) networkMs / referenceNetworkMs;
         }
         Long baseline = baselineMs.get(baselinePart(part));
         if (baseline == null) {
@@ -201,6 +229,7 @@ public final class PerformanceRun implements AutoCloseable {
                         + "%d ms in the exporter and %d ms in WeasyPrint, against its reference times of %d ms and %d ms.%n%n")
                         .formatted(architecture, machineFactor, calibrationMs, referenceCalibrationMs, baselineMs.getOrDefault(EXPORTER, 0L), baselineMs.getOrDefault(WEASYPRINT, 0L),
                                 reference(SMALL_DOCUMENT, EXPORTER), reference(SMALL_DOCUMENT, WEASYPRINT)))
+                .append(networkReport())
                 .append("| Export | Part | Reference, ms | Scaled by | Expected here, ms |%n|---|---|---:|---:|---:|%n".formatted());
         for (Row row : rows) {
             report.append("| %s | %s | %d | %.2f | %d |%n".formatted(row.export(), row.part(), row.referenceMs(), row.scale(), row.expectedMs()));
@@ -218,6 +247,19 @@ public final class PerformanceRun implements AutoCloseable {
         return report.toString();
     }
 
+    /** How the bulk processing service is scaled, for the report: empty when no merge ran. */
+    private @NotNull String networkReport() {
+        if (networkMs == null) {
+            return "";
+        }
+        if (referenceNetworkMs == null) {
+            return "A document of a merge took %d ms on the network here. The reference times have no %s, so the bulk processing service is scaled as WeasyPrint.%n%n"
+                    .formatted(networkMs, NETWORK_CALIBRATION_KEY);
+        }
+        return "The bulk processing service is expected at its reference times times %.2f: a document of a merge took %d ms on the network here and %d ms there.%n%n"
+                .formatted(scale("", BPS), networkMs, referenceNetworkMs);
+    }
+
     /** The times of this run in the form of the reference times, which {@link AverageReferenceTimes} averages over runs. */
     private @NotNull String times() {
         Map<String, Long> sorted = new TreeMap<>();
@@ -226,6 +268,9 @@ public final class PerformanceRun implements AutoCloseable {
         rows.forEach(row -> sorted.put(key(row.export(), row.part()), row.timeMs()));
         StringBuilder times = new StringBuilder("# The times of a run of the performance tests on %s, in the form of %s%n".formatted(architecture, referenceTimesFile.substring(1)))
                 .append("%s=%d%n".formatted(CALIBRATION_KEY, calibrationMs));
+        if (networkMs != null) {
+            times.append("%s=%d%n".formatted(NETWORK_CALIBRATION_KEY, networkMs));
+        }
         sorted.forEach((key, value) -> times.append("%s=%d%n".formatted(key, value)));
         return times.toString();
     }
