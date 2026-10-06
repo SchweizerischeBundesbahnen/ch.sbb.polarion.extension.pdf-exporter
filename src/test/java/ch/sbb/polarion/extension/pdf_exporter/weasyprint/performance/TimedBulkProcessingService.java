@@ -5,6 +5,7 @@ import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 import lombok.SneakyThrows;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.testcontainers.Testcontainers;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
@@ -44,6 +45,7 @@ final class TimedBulkProcessingService {
     /** Started on first access, thread safe without synchronization, as a holder class is initialized once. */
     private static final class Holder {
         private static final String URL;
+        private static final Long NETWORK_MS;
 
         static {
             int proxyPort = startProxy(BaseWeasyPrintTest.getWeasyPrintServiceUrl());
@@ -55,11 +57,31 @@ final class TimedBulkProcessingService {
                     .waitingFor(Wait.forHttp("/ready").forPort(BULK_PROCESSING_PORT).forStatusCode(200).withStartupTimeout(Duration.ofMinutes(2)));
             bulkProcessing.start();
             URL = "http://" + bulkProcessing.getHost() + ":" + bulkProcessing.getMappedPort(BULK_PROCESSING_PORT);
+            NETWORK_MS = measureNetwork();
+        }
+
+        /** Null when the measurement fails, which leaves the service as it is: the run then scales it as WeasyPrint. */
+        @SuppressWarnings({"java:S106", "java:S1181"}) // The failure belongs in the log of the build; any failure of the measurement only loses the measurement
+        private static Long measureNetwork() {
+            try {
+                return NetworkCalibration.measure(BULK_PROCESSING_IMAGE);
+            } catch (Throwable e) {
+                System.out.println("Performance tests: the network could not be timed, so the bulk processing service is scaled as WeasyPrint: " + e);
+                return null;
+            }
         }
     }
 
     static @NotNull String url() {
         return Holder.URL;
+    }
+
+    /**
+     * How long a document of a merge takes on the network between the JVM and the containers, as {@link NetworkCalibration}
+     * measured it, or null where it could not.
+     */
+    static @Nullable Long networkMs() {
+        return Holder.NETWORK_MS;
     }
 
     /** How long WeasyPrint has taken for the service since the run started, in milliseconds. */
