@@ -70,38 +70,23 @@ public class ImageSizeAdjuster extends AbstractAdjuster {
         float cssMaxWidth = extractDimension(cssStyles, ECSSProperty.MAX_WIDTH);
         float cssHeight = extractDimension(cssStyles, ECSSProperty.HEIGHT);
 
-        float widthExceedingRatio = cssWidth / maxWidth;
-        float maxWidthExceedingRatio = cssMaxWidth / maxWidth;
-        float heightExceedingRatio = cssHeight / maxHeight;
-
-        if (widthExceedingRatio <= 1 && heightExceedingRatio <= 1 && maxWidthExceedingRatio <= 1) {
+        // The width the image is drawn at: its width, held to its limit where it states both. A limit wider than the
+        // page alone does not make the image wider than the page when its width is narrower.
+        float drawnWidth = cssWidth > 0 && cssMaxWidth > 0 ? Math.min(cssWidth, cssMaxWidth) : Math.max(cssWidth, cssMaxWidth);
+        float exceedingRatio = Math.max(drawnWidth / maxWidth, cssHeight / maxHeight);
+        if (exceedingRatio <= 1) {
             return;
         }
 
-        float adjustedWidth = 0;
-        float adjustedMaxWidth = 0;
-        float adjustedHeight = 0;
-
-        if (widthExceedingRatio > heightExceedingRatio) {
-            adjustedWidth = divide(cssWidth, widthExceedingRatio);
-            adjustedHeight = divide(cssHeight, widthExceedingRatio);
-        } else if (maxWidthExceedingRatio > heightExceedingRatio) {
-            adjustedMaxWidth = divide(cssMaxWidth, maxWidthExceedingRatio);
-            adjustedHeight = divide(cssHeight, maxWidthExceedingRatio);
-        } else {
-            adjustedMaxWidth = divide(cssMaxWidth, heightExceedingRatio);
-            adjustedWidth = divide(cssWidth, heightExceedingRatio);
-            adjustedHeight = divide(cssHeight, heightExceedingRatio);
+        // Every length it states shrinks by the same ratio, so the image keeps its shape
+        if (cssWidth > 0) {
+            CssUtils.setPropertyValue(cssStyles, ECSSProperty.WIDTH, (int) (cssWidth / exceedingRatio) + Measure.PX);
         }
-
-        if (adjustedWidth > 0) {
-            CssUtils.setPropertyValue(cssStyles, ECSSProperty.WIDTH, (int) adjustedWidth + Measure.PX);
+        if (cssMaxWidth > 0) {
+            CssUtils.setPropertyValue(cssStyles, ECSSProperty.MAX_WIDTH, (int) (cssMaxWidth / exceedingRatio) + Measure.PX);
         }
-        if (adjustedMaxWidth > 0) {
-            CssUtils.setPropertyValue(cssStyles, ECSSProperty.MAX_WIDTH, (int) adjustedMaxWidth + Measure.PX);
-        }
-        if (adjustedHeight > 0) {
-            CssUtils.setPropertyValue(cssStyles, ECSSProperty.HEIGHT, (int) adjustedHeight + Measure.PX);
+        if (cssHeight > 0) {
+            CssUtils.setPropertyValue(cssStyles, ECSSProperty.HEIGHT, (int) (cssHeight / exceedingRatio) + Measure.PX);
         }
 
         img.attr(HtmlTagAttr.STYLE, cssStyles.getAsCSSString());
@@ -130,9 +115,5 @@ public class ImageSizeAdjuster extends AbstractAdjuster {
             }
         }
         return 0;
-    }
-
-    private float divide(float value, float divisor) {
-        return divisor != 0 ? value / divisor : value;
     }
 }

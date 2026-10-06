@@ -79,6 +79,27 @@ class ImageSizeAdjusterTest {
         assertEquals("874px", propertyOf(document, ECSSProperty.MAX_HEIGHT));
     }
 
+    @Test
+    void leavesAnImageNarrowerThanThePageWhoseLimitIsWider() {
+        // A limit wider than the page beside a width narrower than it, as pasted HTML can carry (#1180)
+        Document document = Jsoup.parse("<img id='test' style='max-width: 650px; width: 121px; height: 41px;'/>");
+        new ImageSizeAdjuster(document, ConversionParams.builder().build()).execute();
+
+        assertEquals("121px", propertyOf(document, ECSSProperty.WIDTH));
+        assertEquals("41px", propertyOf(document, ECSSProperty.HEIGHT));
+    }
+
+    @Test
+    void shrinksAnImageWiderThanThePageKeepingItsShape() {
+        // Drawn 650 px wide, its width held to its limit, so every length shrinks by 650 / 592
+        Document document = Jsoup.parse("<img id='test' style='max-width: 650px; width: 1300px; height: 325px;'/>");
+        new ImageSizeAdjuster(document, ConversionParams.builder().build()).execute();
+
+        assertEquals("1184px", propertyOf(document, ECSSProperty.WIDTH));
+        assertEquals("592px", propertyOf(document, ECSSProperty.MAX_WIDTH));
+        assertEquals("296px", propertyOf(document, ECSSProperty.HEIGHT));
+    }
+
     private String objectFitOf(String html) {
         Document document = Jsoup.parse(html);
         new ImageSizeAdjuster(document, ConversionParams.builder().build()).execute();
