@@ -26,7 +26,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
-import java.util.ArrayList;
 import java.util.Deque;
 import java.util.HashSet;
 import java.util.List;
@@ -60,7 +59,8 @@ public class PdfUa2Processor {
     /**
      * Processes a PDF/UA-2 document to fix compliance issues according to ISO 14289-2:2024.
      * <p>
-     * Currently only fixes the pdfuaid:rev metadata value to "2024".
+     * It fixes the pdfuaid:rev metadata value to "2024", gives the Document element under the structure tree root the
+     * PDF 2.0 namespace where a merge dropped it, and writes the document as PDF 2.0.
      *
      * @param pdfBytes the original PDF content
      * @return the processed PDF content with compliance fixes applied
@@ -96,12 +96,12 @@ public class PdfUa2Processor {
         if (root == null) {
             return;
         }
-        List<COSDictionary> documents = new ArrayList<>();
-        for (Object kid : root.getKids()) {
-            if (kid instanceof PDStructureElement element && STRUCTURE_TYPE_DOCUMENT.equals(element.getStructureType())) {
-                documents.add(element.getCOSObject());
-            }
-        }
+        List<COSDictionary> documents = root.getKids().stream()
+                .filter(PDStructureElement.class::isInstance)
+                .map(PDStructureElement.class::cast)
+                .filter(element -> STRUCTURE_TYPE_DOCUMENT.equals(element.getStructureType()))
+                .map(PDStructureElement::getCOSObject)
+                .toList();
         if (documents.isEmpty() || documents.stream().allMatch(element -> element.containsKey(NS))) {
             return;
         }
