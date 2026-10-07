@@ -305,6 +305,15 @@ decide whether it works:
   `Polarion token`), so extension and service are best upgraded together. If no token could be issued at all, the message says that instead.
 - The key which signs the tokens is the one Polarion also uses for tokens of its own license and cluster handling. The extension
   therefore fixes the names of the claims and only puts values it works out itself into them.
+- The token is **not a credential for Polarion**. Polarion's own bearer authentication (`JwtAuthenticator`/`JwtProcessor`)
+  looks a token up by its `iss` claim in the issuers an administrator configured, and refuses a token without one or with an
+  unknown one before the signature is looked at; `JwtTokenProvider` sets no `iss`, and the extension does not add one. The
+  internal token of the real-time communication (`JwtTokenHelper`) is an HS256 token with a shared secret, which an RS256 token
+  of this key is not. (Checked against Polarion 2606.) A token can only be replayed to the bulk processing service, for the
+  one job it names and for five minutes.
+- Unlike the API key, which the extension refuses to send over plain `http`, the token is sent whatever the address of the
+  service is. Over plain `http` it can be read by whoever can read the traffic, who can also read the documents, so use `https`
+  for the service where the network is not trusted.
 
 ### Renderable image extensions
 

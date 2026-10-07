@@ -4,6 +4,8 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 class PolarionTokenIssuerTest {
@@ -49,9 +51,8 @@ class PolarionTokenIssuerTest {
     @Test
     void shouldFixTheClaimNames() {
         // the key also signs Polarion's own license and cluster tokens: the claims are ours, and their names are fixed
-        assertThat(PolarionTokenIssuer.SERVICE_CLAIM).isEqualTo("svc");
-        assertThat(PolarionTokenIssuer.JOB_CLAIM).isEqualTo("job");
-        assertThat(PolarionTokenIssuer.SERVICE_NAME).isEqualTo("bulk-processing-service");
-        assertThat(PolarionTokenIssuer.LIFETIME_MILLIS).isEqualTo(5 * 60 * 1000L);
+        assertThat(List.of(PolarionTokenIssuer.SERVICE_CLAIM, PolarionTokenIssuer.JOB_CLAIM, PolarionTokenIssuer.SERVICE_NAME))
+                .containsExactly("svc", "job", "bulk-processing-service");
+        assertThat(PolarionTokenIssuer.LIFETIME.toMinutes()).isEqualTo(5L);
     }
 }

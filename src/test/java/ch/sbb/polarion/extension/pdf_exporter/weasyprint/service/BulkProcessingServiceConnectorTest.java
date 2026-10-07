@@ -354,10 +354,10 @@ class BulkProcessingServiceConnectorTest {
                 .thenReturn(finishResponse);
         when(invocationBuilder.delete()).thenReturn(deleteResponse);
 
-        BulkProcessingServiceConnector connector = connectorForUser(() -> "alice");
+        BulkProcessingServiceConnector userConnector = connectorForUser(() -> "alice");
         List<MergeDocumentData> documents = List.of(doc("<html></html>", null));
         MergeJobStartParams params = MergeJobStartParams.builder().build();
-        assertThatThrownBy(() -> connector.convertMergedToPdf(documents, params)).isInstanceOf(IllegalStateException.class);
+        assertThatThrownBy(() -> userConnector.convertMergedToPdf(documents, params)).isInstanceOf(IllegalStateException.class);
 
         // add, finish and the delete which cleans up all name the job
         verify(invocationBuilder, times(3)).header("X-Polarion-Token", "token-for-job-1");
@@ -394,12 +394,12 @@ class BulkProcessingServiceConnectorTest {
         Response refused = mockResponse(401, "{\"detail\":\"Invalid Polarion token\"}");
         when(invocationBuilder.post(any(Entity.class))).thenReturn(refused);
 
-        BulkProcessingServiceConnector connector = connectorForUser(() -> "alice");
+        BulkProcessingServiceConnector userConnector = connectorForUser(() -> "alice");
         List<MergeDocumentData> documents = List.of(doc("<html></html>", null));
         MergeJobStartParams params = MergeJobStartParams.builder().build();
 
         // not the message about the API key: its fix is elsewhere
-        assertThatThrownBy(() -> connector.convertMergedToPdf(documents, params))
+        assertThatThrownBy(() -> userConnector.convertMergedToPdf(documents, params))
                 .isInstanceOf(UserFriendlyRuntimeException.class)
                 .hasMessageContaining("refused the Polarion token")
                 .hasMessageContaining("POLARION_JWKS_URL")

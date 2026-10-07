@@ -6,6 +6,8 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Date;
 
 /**
@@ -36,7 +38,7 @@ public class PolarionTokenIssuer {
     @VisibleForTesting
     static final String SERVICE_NAME = "bulk-processing-service";
     @VisibleForTesting
-    static final long LIFETIME_MILLIS = 5 * 60 * 1000L;
+    static final Duration LIFETIME = Duration.ofMinutes(5);
 
     /**
      * @param user  the user the merge is made for
@@ -59,6 +61,6 @@ public class PolarionTokenIssuer {
         if (jobId != null) {
             builder = builder.withClaim(JOB_CLAIM, jobId);
         }
-        return builder.withExpiration(new Date(System.currentTimeMillis() + LIFETIME_MILLIS)).signFor(user);
+        return builder.withExpiration(Date.from(Instant.now().plus(LIFETIME))).signFor(user);
     }
 }
