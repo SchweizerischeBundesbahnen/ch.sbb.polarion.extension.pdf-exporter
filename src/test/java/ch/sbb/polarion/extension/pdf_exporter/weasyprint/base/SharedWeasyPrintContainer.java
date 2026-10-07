@@ -1,5 +1,6 @@
 package ch.sbb.polarion.extension.pdf_exporter.weasyprint.base;
 
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
@@ -14,7 +15,9 @@ import java.time.Duration;
 public final class SharedWeasyPrintContainer {
 
     private static final Logger logger = LoggerFactory.getLogger(SharedWeasyPrintContainer.class);
-    private static final String DOCKER_IMAGE_NAME = "ghcr.io/schweizerischebundesbahnen/weasyprint-service:latest";
+    /** The system property naming the WeasyPrint image the tests start, for example a candidate built from a branch. */
+    public static final String WEASYPRINT_IMAGE_PROPERTY = "weasyprint.image";
+    private static final String DEFAULT_WEASYPRINT_IMAGE = "ghcr.io/schweizerischebundesbahnen/weasyprint-service:latest";
 
     private SharedWeasyPrintContainer() {
         // Private constructor to prevent instantiation
@@ -29,7 +32,7 @@ public final class SharedWeasyPrintContainer {
 
         private static GenericContainer<?> createAndStartContainer() {
             try {
-                GenericContainer<?> container = new GenericContainer<>(DOCKER_IMAGE_NAME)
+                GenericContainer<?> container = new GenericContainer<>(weasyPrintImage())
                         .withExposedPorts(9080)
                         .waitingFor(
                                 Wait.forHttp("/version").forPort(9080)
@@ -49,6 +52,17 @@ public final class SharedWeasyPrintContainer {
                 throw new RuntimeException("Failed to start WeasyPrint container", e);
             }
         }
+    }
+
+    /** The WeasyPrint image every container of the tests is started from. */
+    public static @NotNull String weasyPrintImage() {
+        return imageNamedBy(WEASYPRINT_IMAGE_PROPERTY, DEFAULT_WEASYPRINT_IMAGE);
+    }
+
+    /** The image the system property names, or the default one where it names none. */
+    public static @NotNull String imageNamedBy(@NotNull String property, @NotNull String defaultImage) {
+        String image = System.getProperty(property, "").trim();
+        return image.isEmpty() ? defaultImage : image;
     }
 
     /**

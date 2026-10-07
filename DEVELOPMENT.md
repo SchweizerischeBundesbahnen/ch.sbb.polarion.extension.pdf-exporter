@@ -100,6 +100,41 @@ The project uses JUnit for testing. Run tests with:
 mvn test
 ```
 
+### Tests with WeasyPrint
+
+The tests which export through WeasyPrint run in the `tests-with-weasyprint-docker` profile. Testcontainers starts
+the WeasyPrint and bulk processing services for them:
+
+```bash
+mvn clean install -P tests-with-weasyprint-docker
+```
+
+These system properties select what the tests run against:
+
+| Property | Default | Effect |
+| --- | --- | --- |
+| `weasyprint.image` | `ghcr.io/schweizerischebundesbahnen/weasyprint-service:latest` | The WeasyPrint image of every container the tests start, the bulk processing one included. |
+| `bulk-processing.image` | `ghcr.io/schweizerischebundesbahnen/bulk-processing-service:latest` | The bulk processing image. |
+| `weasyprint.service.url` | - | A running WeasyPrint service for the single exports, instead of a container. |
+| `bulk-processing.service.url` | - | A running bulk processing service for the merges, instead of the containers. It must run without an API key. |
+
+To test a WeasyPrint image built from a branch, name it:
+
+```bash
+mvn clean install -P tests-with-weasyprint-docker -Dweasyprint.image=weasyprint-service:candidate
+```
+
+To test running candidates, name both services. The tests then start no container:
+
+```bash
+mvn clean install -P tests-with-weasyprint-docker \
+  -Dweasyprint.service.url=http://localhost:9080 \
+  -Dbulk-processing.service.url=http://localhost:9070
+```
+
+The tests which count the jobs in the storage of the bulk processing service are skipped against a running service.
+They read the storage inside the container.
+
 ### Test Coverage
 
 Code coverage reports can be generated with:
