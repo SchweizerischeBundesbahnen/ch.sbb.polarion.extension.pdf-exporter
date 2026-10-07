@@ -75,7 +75,7 @@ this app supplies only its data.
   [`src/main.tsx`](src/main.tsx) resumes the stashed target before the first render.
 - **The search index** `src/docs/search-index.json` is a build artifact and is **not committed**.
   [`scripts/build-docs-index.mjs`](scripts/build-docs-index.mjs) builds it from the rendered articles, one
-  record per h2/h3 with the heading id the article carries, before every build (`prebuild`, where a missing
+  record per h2/h3/h4 with the heading id the article carries, before every build (`prebuild`, where a missing
   article fails the build), dev server (`predev`), typecheck (`pretypecheck`) and test run (Vitest
   `globalSetup`). Without rendered articles it writes an empty index, and the search box is simply hidden -
   run the Maven build once to get the articles, and with them the search, into `npm run dev`. A plain
