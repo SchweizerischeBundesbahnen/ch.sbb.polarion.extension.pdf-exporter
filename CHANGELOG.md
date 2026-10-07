@@ -1,5 +1,27 @@
 # Changelog
 
+## [13.10.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v13.9.1...v13.10.0) (2026-10-07)
+
+
+### Features
+
+* embed the files of each document in a merge ([#1179](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/1179)) ([e0d502a](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/e0d502a624b3214575c14bfce92b722acef8c2a1))
+
+
+### Bug Fixes
+
+* build the style package page from the export form ([#1182](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/1182)) ([fce928d](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/fce928dde15c1228fb3f094666a97fc3e0b7a9b3))
+* count each stage once in the time by category ([#1173](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/1173)) ([10ae8ce](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/10ae8ce7134c198f54031218cde737a4f5dc427f))
+* **deps:** update dependency eslint to v10.12.0 ([ea212c9](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/ea212c92f52bc4eb5e4bda2b1f43423cca819fd5))
+* keep the PDF 2.0 structure of a merged PDF/UA-2 ([#1174](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/1174)) ([14dd4bc](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/14dd4bc6a32665d18b2b49fbcf84ffa886a43832))
+* keep the size of an image fitted to the page ([#1181](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/1181)) ([34ab503](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/34ab503ff4741352e6ff5bb54f5368e5cb8c8708))
+* mark the icons Polarion draws without alt decorative ([#1172](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/1172)) ([08ac93c](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/08ac93c1489dd90f02be473c91b7d026011c264c))
+
+
+### Documentation
+
+* group the test run attachments under one title ([#1186](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/1186)) ([536a655](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/536a65560c5eaa8165c31b06c2dfa790c9406af6))
+
 ## [13.9.1](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v13.9.0...v13.9.1) (2026-10-05)
 
 
