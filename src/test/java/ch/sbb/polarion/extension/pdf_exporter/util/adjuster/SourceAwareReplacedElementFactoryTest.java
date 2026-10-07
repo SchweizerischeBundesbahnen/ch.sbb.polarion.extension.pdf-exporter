@@ -2,6 +2,8 @@ package ch.sbb.polarion.extension.pdf_exporter.util.adjuster;
 
 import ch.sbb.polarion.extension.pdf_exporter.util.adjuster.TableAnalyzer.SourceAwareReplacedElementFactory;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.xhtmlrenderer.extend.NamespaceHandler;
 import org.xhtmlrenderer.extend.ReplacedElement;
 import org.xhtmlrenderer.extend.ReplacedElementFactory;
@@ -10,6 +12,7 @@ import org.xhtmlrenderer.layout.LayoutContext;
 import org.xhtmlrenderer.render.BlockBox;
 import org.xhtmlrenderer.simple.extend.FormSubmissionListener;
 import org.xhtmlrenderer.swing.EmptyReplacedElement;
+import org.xhtmlrenderer.swing.InstantImageReplacedElement;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
@@ -62,17 +65,34 @@ class SourceAwareReplacedElementFactoryTest {
     }
 
     @Test
-    void delegatesForImageWithUsableSource() {
+    void delegatesForImageEmbeddedInItsSource() {
         ReplacedElement delegated = mock(ReplacedElement.class);
         when(box.getElement()).thenReturn(element);
         when(context.getNamespaceHandler()).thenReturn(namespaceHandler);
         when(namespaceHandler.isImageElement(element)).thenReturn(true);
-        when(namespaceHandler.getImageSourceURI(element)).thenReturn("image.png");
+        when(namespaceHandler.getImageSourceURI(element)).thenReturn("data:image/png;base64,iVBORw0KGgo=");
         when(delegate.createReplacedElement(context, box, uac, 100, 80)).thenReturn(delegated);
 
         ReplacedElement result = factory.createReplacedElement(context, box, uac, 100, 80);
 
         assertSame(delegated, result);
+    }
+
+    /** The default factory would load the image, so it lays the image out as one which failed to load instead. */
+    @ParameterizedTest
+    @ValueSource(strings = {"image.png", "https://example.com/image.png", "file:///etc/hosts"})
+    void laysOutAnImageToLoadAsOneWhichFailedToLoad(String source) {
+        when(box.getElement()).thenReturn(element);
+        when(context.getNamespaceHandler()).thenReturn(namespaceHandler);
+        when(namespaceHandler.isImageElement(element)).thenReturn(true);
+        when(namespaceHandler.getImageSourceURI(element)).thenReturn(source);
+
+        ReplacedElement result = factory.createReplacedElement(context, box, uac, 100, 80);
+
+        assertInstanceOf(InstantImageReplacedElement.class, result);
+        assertEquals(100, result.getIntrinsicWidth());
+        assertEquals(80, result.getIntrinsicHeight());
+        verifyNoInteractions(delegate);
     }
 
     @Test

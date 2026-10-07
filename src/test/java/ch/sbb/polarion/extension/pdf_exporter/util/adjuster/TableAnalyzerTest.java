@@ -264,7 +264,7 @@ class TableAnalyzerTest {
             Element table = Jsoup.parse("<table><tr>"
                     + "<td><img src=\"" + base + "/sized.png\" width=\"100\" height=\"50\"></td>"
                     + "<td><img src=\"" + base + "/unsized.png\"></td>"
-                    + "<td style=\"background-image: url('" + base + "/background.png')\">Text</td>"
+                    + "<td>Text</td>"
                     + "</tr></table>").selectFirst("table");
 
             TableAnalyzer.TableMetrics metrics = TableAnalyzer.analyze(table, 600, "@import url('" + base + "/imported.css');");

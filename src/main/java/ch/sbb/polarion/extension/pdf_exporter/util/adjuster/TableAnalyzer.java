@@ -27,8 +27,12 @@ import org.xhtmlrenderer.render.LineBox;
 import org.xhtmlrenderer.simple.XHTMLPanel;
 import org.xhtmlrenderer.simple.extend.FormSubmissionListener;
 import org.xhtmlrenderer.simple.extend.XhtmlNamespaceHandler;
+import org.xhtmlrenderer.swing.AWTFSImage;
 import org.xhtmlrenderer.swing.EmptyReplacedElement;
+import org.xhtmlrenderer.swing.ImageResourceLoader;
+import org.xhtmlrenderer.swing.InstantImageReplacedElement;
 import org.xhtmlrenderer.swing.NaiveUserAgent;
+import org.xhtmlrenderer.util.ImageUtil;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
@@ -215,12 +219,9 @@ public class TableAnalyzer {
         panel.setDocument(doc, "");
         SharedContext sharedContext = panel.getSharedContext();
 
-        // This is a throwaway measurement-only layout over an isolated shell document with an empty base URL, and its
-        // user agent loads nothing, so only images embedded in their source are drawn. Source-less images would
-        // otherwise drive flying-saucer into building a -1x-1 placeholder image, which throws internally and gets
-        // logged at ERROR (see SwingReplacedElementFactory#newIrreplaceableImageElement). Short-circuit those images
-        // to an empty element while delegating the others to the default factory, which draws an embedded image at
-        // its intrinsic size and any other as an image which failed to load. Must be set before the layout.
+        // This is a throwaway measurement-only layout over an isolated shell document with an empty base URL, which loads
+        // nothing: only images embedded in their source are drawn (see SourceAwareReplacedElementFactory). Must be set
+        // before the layout.
         ReplacedElementFactory defaultFactory = sharedContext.getReplacedElementFactory();
         sharedContext.setReplacedElementFactory(new SourceAwareReplacedElementFactory(defaultFactory));
 
@@ -386,14 +387,20 @@ public class TableAnalyzer {
     }
 
     /**
-     * A {@link ReplacedElementFactory} for the measurement-only pre-render that neutralises source-less images.
+     * A {@link ReplacedElementFactory} for the measurement-only pre-render which loads no image.
+     * <p>
+     * The default factory loads an image from its source itself, over the network and without a timeout. Here only an
+     * image embedded in its source goes to it, and is drawn at its size. Any other image is laid out as the default
+     * factory lays out one which failed to load, at the size its CSS states, without an attempt to load it.
+     * </p>
      * <p>
      * flying-saucer's default factory tries to build a "missing image" placeholder for an {@code <img>} whose
      * source is absent/empty. When the element additionally has no explicit width/height both CSS dimensions
      * resolve to {@code -1}, and the placeholder construction throws {@code IllegalArgumentException} internally,
      * which is swallowed but logged at ERROR with a full stacktrace. Such images are returned as an empty
-     * element here so that buggy path is never reached. Everything else (healthy images, form controls, ...)
-     * is delegated to the default factory so it still contributes its real intrinsic width to the measurement.
+     * element here so that buggy path is never reached. Everything else which is not an image (form controls, ...)
+     * is delegated to the default factory.
+     * </p>
      */
     static class SourceAwareReplacedElementFactory implements ReplacedElementFactory {
         private final ReplacedElementFactory delegate;
@@ -410,6 +417,12 @@ public class TableAnalyzer {
                 if (src == null || src.isBlank()) {
                     // No usable source in this measurement-only pass: avoid the -1x-1 placeholder attempt.
                     return new EmptyReplacedElement(Math.max(cssWidth, 0), Math.max(cssHeight, 0));
+                }
+                if (!ImageUtil.isEmbeddedBase64Image(src)) {
+                    // What the default factory makes of an image it could not load, without loading it: the transparent
+                    // image of a failed load, at the size the CSS states
+                    AWTFSImage unloaded = (AWTFSImage) ImageResourceLoader.createImageResource(src, null).getImage();
+                    return new InstantImageReplacedElement(unloaded.getImage(), cssWidth, cssHeight);
                 }
             }
             return delegate.createReplacedElement(c, box, uac, cssWidth, cssHeight);
@@ -432,27 +445,12 @@ public class TableAnalyzer {
     }
 
     /**
-     * A user agent which loads nothing but the stylesheet flying-saucer ships, which makes a table a table. The measure
-     * lays out a table alone, so an image or a stylesheet the table refers to is not loaded, over the network or from
-     * a file.
-     * <p>
-     * The images are loaded by the factory of replaced elements, not by the user agent, from the address the user agent
-     * resolves. So every address is resolved to one of a scheme no protocol handler knows: its image fails to load
-     * as an image which cannot be reached does, at once and taking the same room. Images embedded in their source
-     * are drawn before any address is resolved.
-     * </p>
+     * A user agent which opens nothing but the stylesheet flying-saucer ships, which makes a table a table. The measure
+     * lays out a table alone, so a stylesheet the table imports is not loaded, over the network or from a file. The
+     * images are left out by {@link SourceAwareReplacedElementFactory}, as the factory loads them itself.
      */
     static class OfflineUserAgent extends NaiveUserAgent {
         private static final String DEFAULT_STYLESHEET = new XhtmlNamespaceHandler().getDefaultStylesheet().map(StylesheetInfo::getUri).orElse("");
-        private static final String UNLOADABLE_SCHEME = "unloaded-in-table-measurement:";
-
-        @Override
-        public String resolveURI(String uri) {
-            if (uri == null || isDefaultStylesheet(uri)) {
-                return uri;
-            }
-            return UNLOADABLE_SCHEME + uri;
-        }
 
         @Override
         protected InputStream openStream(String uri) throws IOException {
