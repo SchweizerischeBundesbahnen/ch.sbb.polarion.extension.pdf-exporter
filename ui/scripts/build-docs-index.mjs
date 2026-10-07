@@ -6,7 +6,7 @@
 //
 // The plugin renders each article to the shipped `webapp/pdf-exporter-app/html/<id>.html` in generate-sources
 // (before this frontend build, with the Table of contents excluded); this reads those same shipped files -
-// there is no separate render - parsing each into one record per h2/h3 heading (its anchor id, title and the
+// there is no separate render - parsing each into one record per h2/h3/h4 heading (its anchor id, title and the
 // plain text beneath it up to the next heading) and concatenates them in the docs.config.json reading order
 // into src/docs/search-index.json.
 //
