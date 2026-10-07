@@ -41,7 +41,9 @@ const outFile = resolve(uiDir, 'src/docs/search-index.json');
 const clean = (text) => text.replace(/\s+/g, ' ').trim();
 
 /**
- * One record per h2/h3 heading: its anchor id, title, and the plain text beneath it up to the next heading.
+ * One record per h2/h3/h4 heading: its anchor id, title, and the plain text beneath it up to the next heading. An h4
+ * is a subsection of its own, such as the two options under "Test Run attachments"; leaving it out would drop its
+ * text from the search.
  * The text is kept whole: the search matches on it and never displays it (results show the titles), so a cap
  * would only hide terms further down a section. All articles together are some 60 KB of text.
  */
@@ -57,11 +59,11 @@ function sectionsOf(html) {
   let current = null;
   for (const element of elements) {
     const tag = element.tagName?.toLowerCase() ?? '';
-    if (tag === 'h2' || tag === 'h3') {
+    if (tag === 'h2' || tag === 'h3' || tag === 'h4') {
       current = { anchor: element.getAttribute('id') ?? '', title: clean(element.text), body: [] };
       sections.push(current);
     } else if (/^h[1-6]$/.test(tag)) {
-      current = null; // h1 / h4-h6 end the current section but are not indexed themselves
+      current = null; // h1 / h5-h6 end the current section but are not indexed themselves
     } else if (current) {
       current.body.push(element.text);
     }
