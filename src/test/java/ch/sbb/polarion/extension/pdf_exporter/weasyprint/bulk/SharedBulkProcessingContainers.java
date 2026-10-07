@@ -71,12 +71,12 @@ final class SharedBulkProcessingContainers {
     }
 
     /**
-     * The WeasyPrint the connector is given. A service started elsewhere renders with the WeasyPrint it is configured
-     * with, and the connector only carries this address, so it is the one {@code weasyprint.service.url} names, if any.
+     * The WeasyPrint address the connector is given. The connector keeps it and the service renders with its own, so for
+     * a service started elsewhere the address {@code weasyprint.service.url} names is given, and no container started.
      */
     static @NotNull String weasyPrintUrl() {
         if (!startedByTheTests()) {
-            return System.getProperty(BaseWeasyPrintTest.WEASYPRINT_SERVICE_URL_PROPERTY, "").trim();
+            return BaseWeasyPrintTest.stripTrailingSlashes(System.getProperty(BaseWeasyPrintTest.WEASYPRINT_SERVICE_URL_PROPERTY, "").trim());
         }
         return "http://" + Holder.WEASYPRINT.getHost() + ":" + Holder.WEASYPRINT.getMappedPort(WEASYPRINT_PORT);
     }

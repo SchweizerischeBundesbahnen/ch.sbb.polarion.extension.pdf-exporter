@@ -49,7 +49,6 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -232,14 +231,24 @@ abstract class BaseBulkProcessingTest extends BasePdfConverterTest {
     /**
      * The jobs the service keeps in its storage, which a failed merge must not add to. A storage which cannot be listed
      * fails, as counting it as empty would let a check of a deleted job pass without checking anything. The storage of
-     * a service started elsewhere cannot be listed, so a test which counts the jobs is skipped there.
+     * a service started elsewhere cannot be listed, so there the count is null, and {@link #assertStoredJobs} checks
+     * nothing.
      */
     @SneakyThrows
-    protected static int storedJobs() {
-        assumeTrue(SharedBulkProcessingContainers.startedByTheTests(), "The job storage of a bulk processing service started elsewhere cannot be listed");
+    protected static @Nullable Integer storedJobs() {
+        if (!SharedBulkProcessingContainers.startedByTheTests()) {
+            return null;
+        }
         Container.ExecResult listing = SharedBulkProcessingContainers.bulkProcessing().execInContainer("ls", "-1", JOB_STORAGE_DIR);
         assertEquals(0, listing.getExitCode(), "Cannot list the job storage of the service: " + listing.getStderr());
         String jobs = listing.getStdout().trim();
         return jobs.isEmpty() ? 0 : jobs.split("\n").length;
+    }
+
+    /** Asserts that the storage holds the jobs it held before and the added ones, where the storage can be listed. */
+    protected static void assertStoredJobs(@Nullable Integer before, int added, @NotNull String message) {
+        if (before != null) {
+            assertEquals(before + added, storedJobs(), message);
+        }
     }
 }

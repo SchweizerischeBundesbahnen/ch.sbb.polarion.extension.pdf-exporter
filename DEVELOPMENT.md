@@ -132,8 +132,8 @@ mvn clean install -P tests-with-weasyprint-docker \
   -Dbulk-processing.service.url=http://localhost:9070
 ```
 
-The tests which count the jobs in the storage of the bulk processing service are skipped against a running service.
-They read the storage inside the container.
+Against a running bulk processing service, the tests leave out their checks of its job storage. They read the storage
+inside the container.
 
 ### Test Coverage
 

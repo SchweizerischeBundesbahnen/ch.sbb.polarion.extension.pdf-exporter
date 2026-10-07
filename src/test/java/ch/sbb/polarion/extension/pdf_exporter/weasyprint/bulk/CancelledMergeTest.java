@@ -7,7 +7,6 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -17,7 +16,7 @@ class CancelledMergeTest extends BaseBulkProcessingTest {
 
     @Test
     void deletesTheJobOfACancelledMerge() {
-        int jobsBefore = storedJobs();
+        Integer jobsBefore = storedJobs();
         BulkProcessingServiceConnector connector = connector();
         List<MergeDocumentData> documents = List.of(rendered("Alpha", "Never rendered."));
         MergeJobStartParams params = startParams();
@@ -27,6 +26,6 @@ class CancelledMergeTest extends BaseBulkProcessingTest {
 
         assertTrue(failure.getMessage().contains("was cancelled"), failure.getMessage());
         assertFalse(Thread.currentThread().isInterrupted(), "The flag is cleared, so that a reused worker thread is not cancelled too");
-        assertEquals(jobsBefore, storedJobs(), "The job of the cancelled merge is deleted");
+        assertStoredJobs(jobsBefore, 0, "The job of the cancelled merge is deleted");
     }
 }
