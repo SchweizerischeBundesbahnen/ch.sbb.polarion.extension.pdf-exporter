@@ -2,7 +2,9 @@ package ch.sbb.polarion.extension.pdf_exporter.util.adjuster;
 
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ConversionParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.Orientation;
+import ch.sbb.polarion.extension.pdf_exporter.util.MediaUtils;
 import ch.sbb.polarion.extension.pdf_exporter.util.PaperSizeUtils;
+import com.sun.net.httpserver.HttpServer;
 import lombok.SneakyThrows;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Element;
@@ -10,11 +12,17 @@ import org.jsoup.parser.Tag;
 import org.junit.jupiter.api.Test;
 
 import java.awt.*;
+import java.awt.image.BufferedImage;
 import java.lang.reflect.Field;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Base64;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -237,6 +245,46 @@ class TableAnalyzerTest {
 
         // Measurement must still succeed and yield both columns.
         assertEquals(2, columnWidths.size(), "Both columns should still be measured");
+    }
+
+    /** The measure lays a table out alone: it loads none of the images or stylesheets the table refers to. */
+    @Test
+    @SneakyThrows
+    void loadsNoResourceTheTableRefersTo() {
+        List<String> requested = new CopyOnWriteArrayList<>();
+        HttpServer server = HttpServer.create(new InetSocketAddress(InetAddress.getLoopbackAddress(), 0), 0);
+        server.createContext("/", exchange -> {
+            requested.add(exchange.getRequestURI().getPath());
+            exchange.sendResponseHeaders(404, -1);
+            exchange.close();
+        });
+        server.start();
+        try {
+            String base = "http://" + server.getAddress().getHostString() + ":" + server.getAddress().getPort();
+            Element table = Jsoup.parse("<table><tr>"
+                    + "<td><img src=\"" + base + "/sized.png\" width=\"100\" height=\"50\"></td>"
+                    + "<td><img src=\"" + base + "/unsized.png\"></td>"
+                    + "<td style=\"background-image: url('" + base + "/background.png')\">Text</td>"
+                    + "</tr></table>").selectFirst("table");
+
+            TableAnalyzer.TableMetrics metrics = TableAnalyzer.analyze(table, 600, "@import url('" + base + "/imported.css');");
+
+            assertEquals(List.of(), requested, "The measure must not load what the table refers to");
+            assertEquals(3, metrics.columnWidths().size(), "The table is measured all the same");
+        } finally {
+            server.stop(0);
+        }
+    }
+
+    /** An image embedded in its source needs no loading, so the measure still draws it at its size. */
+    @Test
+    void drawsAnImageEmbeddedInItsSource() {
+        Element table = Jsoup.parse("<table><tr><td><img src=\"" + embeddedImage(300, 200) + "\"></td></tr></table>").selectFirst("table");
+
+        List<Integer> rowHeights = TableAnalyzer.analyze(table, 600).rowHeights();
+
+        assertEquals(1, rowHeights.size());
+        assertTrue(rowHeights.getFirst() >= 200, "The row takes the height of the image, but measured " + rowHeights.getFirst());
     }
 
     @Test
@@ -592,4 +640,9 @@ class TableAnalyzerTest {
         assertTrue(hyphenated <= 592, "Hyphenated, the words fit, but the table measured " + hyphenated);
     }
 
+    /** An image of the given size, embedded in its source. */
+    private static String embeddedImage(int width, int height) {
+        byte[] png = MediaUtils.toPng(new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB));
+        return "data:image/png;base64," + Base64.getEncoder().encodeToString(png);
+    }
 }

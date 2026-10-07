@@ -14,6 +14,7 @@ import org.jsoup.nodes.Element;
 import org.w3c.dom.Document;
 import org.xhtmlrenderer.context.AWTFontResolver;
 import org.xhtmlrenderer.css.constants.IdentValue;
+import org.xhtmlrenderer.css.sheet.StylesheetInfo;
 import org.xhtmlrenderer.extend.ReplacedElement;
 import org.xhtmlrenderer.extend.ReplacedElementFactory;
 import org.xhtmlrenderer.extend.UserAgentCallback;
@@ -23,12 +24,15 @@ import org.xhtmlrenderer.newtable.TableSectionBox;
 import org.xhtmlrenderer.render.BlockBox;
 import org.xhtmlrenderer.render.Box;
 import org.xhtmlrenderer.render.LineBox;
-import org.xhtmlrenderer.simple.Graphics2DRenderer;
+import org.xhtmlrenderer.simple.XHTMLPanel;
 import org.xhtmlrenderer.simple.extend.FormSubmissionListener;
+import org.xhtmlrenderer.simple.extend.XhtmlNamespaceHandler;
 import org.xhtmlrenderer.swing.EmptyReplacedElement;
+import org.xhtmlrenderer.swing.NaiveUserAgent;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -204,30 +208,35 @@ public class TableAnalyzer {
     }
 
     private Box render(@NotNull Document doc, int pageWidth) {
-        Graphics2DRenderer renderer = new Graphics2DRenderer(doc, "");
+        // What Graphics2DRenderer does, with a user agent of our own: it reads the stylesheets as the document is set,
+        // so one set afterwards comes too late for them.
+        XHTMLPanel panel = new XHTMLPanel(new OfflineUserAgent());
+        panel.setInteractive(false);
+        panel.setDocument(doc, "");
+        SharedContext sharedContext = panel.getSharedContext();
 
-        // This is a throwaway measurement-only layout over an isolated shell document with an empty base URL,
-        // so image sources are not resolvable here anyway. Source-less images would otherwise drive
-        // flying-saucer into building a -1x-1 placeholder image, which throws internally and gets logged at
-        // ERROR (see SwingReplacedElementFactory#newIrreplaceableImageElement). Short-circuit those images to
-        // an empty element while delegating healthy images to the default factory so they still contribute
-        // their intrinsic width to the measurement. Must be set before layout().
-        ReplacedElementFactory defaultFactory = renderer.getSharedContext().getReplacedElementFactory();
-        renderer.getSharedContext().setReplacedElementFactory(new SourceAwareReplacedElementFactory(defaultFactory));
+        // This is a throwaway measurement-only layout over an isolated shell document with an empty base URL, and its
+        // user agent loads nothing, so only images embedded in their source are drawn. Source-less images would
+        // otherwise drive flying-saucer into building a -1x-1 placeholder image, which throws internally and gets
+        // logged at ERROR (see SwingReplacedElementFactory#newIrreplaceableImageElement). Short-circuit those images
+        // to an empty element while delegating the others to the default factory, which draws an embedded image at
+        // its intrinsic size and any other as an image which failed to load. Must be set before the layout.
+        ReplacedElementFactory defaultFactory = sharedContext.getReplacedElementFactory();
+        sharedContext.setReplacedElementFactory(new SourceAwareReplacedElementFactory(defaultFactory));
 
-        useMeasurementFont(renderer.getSharedContext());
+        useMeasurementFont(sharedContext);
         // A size in points becomes pixels at the resolution of the screen, which is 72 dpi on a headless server and
         // anything on a desktop. WeasyPrint, as CSS, counts 96 pixels to an inch.
-        renderer.getSharedContext().setDPI(CSS_DPI);
+        sharedContext.setDPI(CSS_DPI);
 
         BufferedImage image = new BufferedImage(pageWidth, PAGE_HEIGHT, BufferedImage.TYPE_BYTE_GRAY);
         Graphics2D g2d = image.createGraphics();
         try {
             g2d.setFont(EMBEDDED_FONT);
 
-            Dimension dim = new Dimension(pageWidth, PAGE_HEIGHT);
-            renderer.layout(g2d, dim);
-            return renderer.getPanel().getRootBox();
+            panel.setSize(new Dimension(pageWidth, PAGE_HEIGHT));
+            panel.doDocumentLayout(g2d);
+            return panel.getRootBox();
         } finally {
             // Explicitly dispose the Graphics2D and flush the BufferedImage to release resources
             g2d.dispose();
@@ -419,6 +428,42 @@ public class TableAnalyzer {
         @Override
         public void setFormSubmissionListener(FormSubmissionListener listener) {
             delegate.setFormSubmissionListener(listener);
+        }
+    }
+
+    /**
+     * A user agent which loads nothing but the stylesheet flying-saucer ships, which makes a table a table. The measure
+     * lays out a table alone, so an image or a stylesheet the table refers to is not loaded, over the network or from
+     * a file.
+     * <p>
+     * The images are loaded by the factory of replaced elements, not by the user agent, from the address the user agent
+     * resolves. So every address is resolved to one of a scheme no protocol handler knows: its image fails to load
+     * as an image which cannot be reached does, at once and taking the same room. Images embedded in their source
+     * are drawn before any address is resolved.
+     * </p>
+     */
+    static class OfflineUserAgent extends NaiveUserAgent {
+        private static final String DEFAULT_STYLESHEET = new XhtmlNamespaceHandler().getDefaultStylesheet().map(StylesheetInfo::getUri).orElse("");
+        private static final String UNLOADABLE_SCHEME = "unloaded-in-table-measurement:";
+
+        @Override
+        public String resolveURI(String uri) {
+            if (uri == null || isDefaultStylesheet(uri)) {
+                return uri;
+            }
+            return UNLOADABLE_SCHEME + uri;
+        }
+
+        @Override
+        protected InputStream openStream(String uri) throws IOException {
+            if (isDefaultStylesheet(uri)) {
+                return super.openStream(uri);
+            }
+            throw new IOException("The table measurement loads no resources: " + uri);
+        }
+
+        private static boolean isDefaultStylesheet(String uri) {
+            return !DEFAULT_STYLESHEET.isEmpty() && DEFAULT_STYLESHEET.equals(uri);
         }
     }
 }
