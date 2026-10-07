@@ -33,9 +33,14 @@ export interface StylePackageSettingsViewProps {
   /** The named configurations the child dropdowns offer, null until they are read. */
   childNames: ChildNames | null;
   childNamesLoading?: boolean;
-  /** The link roles of the project. None, and not loading, means the roles row is not offered. */
+  /** The link roles of the project. None, and not loading, means the roles row is not offered, unless {@link rolesAlwaysOffered}. */
   roles: SelectOption[];
   rolesLoading?: boolean;
+  /**
+   * The roles row is offered even without a role to pick: the administration page, where the global scope has no
+   * project to read roles from and a package can still store them, and has to be able to switch them off.
+   */
+  rolesAlwaysOffered?: boolean;
   webhooksEnabled: boolean;
   /** Whether a row is offered: an export asks the document type, the administration page offers every row. */
   shows: (field: ExportFieldName) => boolean;
@@ -60,6 +65,7 @@ export default function StylePackageSettingsView({
   childNamesLoading,
   roles,
   rolesLoading,
+  rolesAlwaysOffered,
   webhooksEnabled,
   shows,
   busy,
@@ -67,7 +73,7 @@ export default function StylePackageSettingsView({
 }: Readonly<StylePackageSettingsViewProps>) {
   const id = (name: string): string => `${ids}${name}`;
   const childOptions = (setting: ChildSetting): SelectOption[] => childNames?.[setting] ?? [];
-  const rolesShown = shows('roles') && (roles.length > 0 || !!rolesLoading);
+  const rolesShown = shows('roles') && (roles.length > 0 || !!rolesLoading || !!rolesAlwaysOffered);
   const valueFieldsShown = shows('specificChapters') || shows('workItemsQuery') || shows('metadataFields');
 
   return (

@@ -620,6 +620,7 @@ export default function StylePackages() {
               childNamesLoading={childNamesLoading}
               roles={roleOptions}
               rolesLoading={rolesLoading}
+              rolesAlwaysOffered
               webhooksEnabled={!!webhooksEnabled}
               shows={() => true}
               busy={false}

@@ -617,6 +617,20 @@ describe('Style Packages page', () => {
     await vi.waitFor(() => expect(document.body.textContent).toContain('error loading link role names'));
     // The rest of the page still works: only the role picker is short of its options.
     await loaded();
+    expect(input('selected-roles').checked).toBe(true);
+  });
+
+  it('offers the link roles where there are none to pick, as on the global scope', async () => {
+    // The global scope has no project to read link roles from, and a package stored there can still carry them
+    const fetchMock = open(routesWith({ method: 'GET', match: /\/link-role-names/, json: [] }));
+    await loaded();
+
+    expect(input('selected-roles').checked).toBe(true);
+    expect(select('roles-direction-selector')).not.toBeNull();
+
+    await userEvent.click(input('selected-roles'));
+    await clickButton('Save');
+    expect((await savedBody(fetchMock)).linkedWorkitemRoles).toBeNull();
   });
 
   it('loads the built-in values when the default is confirmed', async () => {
