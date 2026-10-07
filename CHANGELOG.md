@@ -1,5 +1,12 @@
 # Changelog
 
+## [13.10.1](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v13.10.0...v13.10.1) (2026-10-07)
+
+
+### Bug Fixes
+
+* **deps:** update dependency jsdom to v30.1.2 ([6b6eadb](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/6b6eadbf62f4fac952e203ada62fe6c502475de1))
+
 ## [13.10.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v13.9.1...v13.10.0) (2026-10-07)
 
 
