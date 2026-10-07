@@ -5,17 +5,18 @@ import {
   type ConfigurationsPaneHandle,
   PageLayout,
   RevisionsTable,
-  SearchableSelect,
   type SelectOption,
   type SettingName,
   useConfirm,
 } from '@sbb-polarion/react-sbb-polarion';
 import { toast } from 'sonner';
+import StylePackageSettingsView from '../export/StylePackageSettingsView';
+import '../export/export-form-layout.css';
+import { FieldCell, FieldRow, SwitchRow } from '../export/formRows';
 import { getScope } from '../services/scope';
 import useNamedSettings from '../services/settings';
 import {
   CHILD_SETTINGS,
-  COMMENTS_RENDER_TYPES,
   type ChildNames,
   type ChildSetting,
   DEFAULT_HEADERS_COLOR,
@@ -25,18 +26,9 @@ import {
   DEFAULT_PAPER_SIZE,
   DEFAULT_PDF_VARIANT,
   DEFAULT_RENDER_COMMENTS,
-  FULL_FONTS_HELP,
-  IMAGE_DENSITIES,
-  LANGUAGES,
-  LINK_ROLE_DIRECTIONS,
-  NATIVE_COMMENTS_HELP,
   NO_CHILD_NAMES,
-  ORIENTATIONS,
-  PAPER_SIZES,
-  PDF_VARIANTS,
   type StylePackageSettings,
   type StylePackageVisibility,
-  UNREFERENCED_COMMENTS_HELP,
   VISIBILITY_FEATURE,
 } from '../services/stylePackage';
 import useRemote from '../services/useRemote';
@@ -51,10 +43,6 @@ const MATCHING_QUERY_HELP =
   'A query to select documents to which this style package will be relevant. For documents not matching ' +
   "this query the style package won't be visible. If you want to make this style package be available to " +
   'all documents, just leave this field empty.';
-
-const WORK_ITEMS_QUERY_HELP =
-  "Lucene query applied to filter work items within the document, e.g. 'type:requirement'. Leave empty to " +
-  'include all work items.';
 
 const LANGUAGE_CUSTOM_FIELD_HELP =
   'ID of the LiveDoc custom field that holds the document language. Its value is used as-is as the ISO 639-1 ' +
@@ -562,605 +550,175 @@ export default function StylePackages() {
       />
 
       <fieldset className="style-packages-page" disabled={editingName}>
-        {/* Weight and matching query: what decides the order of the list and which documents see it. */}
-        <div className="flex-container section">
-          <div className="flex-column">
-            <div className="input-group flex-centered">
-              <label htmlFor="style-package-weight">Weight:</label>
-              <span className="more-info" title={WEIGHT_HELP} />
-              <input
-                id="style-package-weight"
-                className="weight-input"
-                type="number"
-                min="1"
-                max="100"
-                step="0.1"
-                value={form.weight}
-                onChange={(e) => patch({ weight: e.target.value })}
-                onBlur={() => patch({ weight: adjustWeight(form.weight) })}
-              />
-            </div>
-          </div>
-          {matchingQueryShown && (
-            <div className="flex-grow" id="matching-query-container">
-              <div className="input-group flex-centered">
-                <label htmlFor="matching-query">Matching query:</label>
-                <span className="more-info" title={MATCHING_QUERY_HELP} />
+        {/* The rows of the export form, so that a style package reads here as it does where it is used (#1178). */}
+        <div className="pdf-export-form pdf-exporter">
+          {/* Weight and matching query: what decides the order of the list and which documents see it. */}
+          <div className="pdf-section single-column group-start">
+            <FieldRow
+              label={
+                <>
+                  Weight:
+                  <span className="more-info" title={WEIGHT_HELP} />
+                </>
+              }
+              labelFor="style-package-weight"
+            >
+              <FieldCell>
                 <input
-                  id="matching-query"
-                  className="flex-grow matching-query-input"
-                  type="text"
-                  value={form.matchingQuery}
-                  onChange={(e) => patch({ matchingQuery: e.target.value })}
+                  id="style-package-weight"
+                  className="weight-input"
+                  type="number"
+                  min="1"
+                  max="100"
+                  step="0.1"
+                  value={form.weight}
+                  onChange={(e) => patch({ weight: e.target.value })}
+                  onBlur={() => patch({ weight: adjustWeight(form.weight) })}
                 />
-              </div>
-            </div>
-          )}
-        </div>
-
-        <div className="flex-container section">
-          <div className="flex-column">
-            <div className="checkbox input-group">
-              <label htmlFor="exposeSettings">
-                <input
-                  id="exposeSettings"
-                  type="checkbox"
-                  checked={form.exposeSettings}
-                  onChange={(e) => patch({ exposeSettings: e.target.checked })}
-                />
-                Expose style package settings to be redefined on UI
-              </label>
-            </div>
-          </div>
-        </div>
-
-        {/* The other named settings this style package points at. */}
-        <div className="flex-container">
-          <div className="flex-column">
-            <div className="checkbox input-group">
-              <label htmlFor="cover-page-checkbox" className="cover-page-label">
-                <input
-                  id="cover-page-checkbox"
-                  type="checkbox"
-                  checked={form.coverPageEnabled}
-                  onChange={(e) => patch({ coverPageEnabled: e.target.checked })}
-                />
-                Cover page
-              </label>
-              {form.coverPageEnabled && (
-                <SearchableSelect
-                  id="cover-page-select"
-                  ariaLabel="Cover page"
-                  options={childNames['cover-page']}
-                  loading={childNamesLoading}
-                  value={childValue('cover-page', form.coverPage)}
-                  onChange={(value) => patch({ coverPage: value })}
-                />
-              )}
-            </div>
-            <div className="input-group">
-              <label htmlFor="css-select">CSS:</label>
-              <SearchableSelect
-                id="css-select"
-                options={childNames.css}
-                loading={childNamesLoading}
-                value={childValue('css', form.css)}
-                onChange={(value) => patch({ css: value })}
-              />
-            </div>
-          </div>
-          <div className="flex-column">
-            <div className="input-group">
-              <label htmlFor="header-footer-select">Header/Footer:</label>
-              <SearchableSelect
-                id="header-footer-select"
-                options={childNames['header-footer']}
-                loading={childNamesLoading}
-                value={childValue('header-footer', form.headerFooter)}
-                onChange={(value) => patch({ headerFooter: value })}
-              />
-            </div>
-            <div className="checkbox input-group">
-              <label htmlFor="first-page-header-footer-checkbox" className="first-page-header-footer-label">
-                <input
-                  id="first-page-header-footer-checkbox"
-                  type="checkbox"
-                  checked={form.firstPageHeaderFooterEnabled}
-                  onChange={(e) => patch({ firstPageHeaderFooterEnabled: e.target.checked })}
-                />
-                First page header/footer
-              </label>
-              {form.firstPageHeaderFooterEnabled && (
-                <div className="first-page-header-footer-select">
-                  <SearchableSelect
-                    id="first-page-header-footer-select"
-                    ariaLabel="First page header/footer"
-                    options={childNames['header-footer']}
-                    loading={childNamesLoading}
-                    value={childValue('header-footer', form.firstPageHeaderFooter)}
-                    onChange={(value) => patch({ firstPageHeaderFooter: value })}
-                  />
-                </div>
-              )}
-            </div>
-            <div className="input-group">
-              <label htmlFor="localization-select">Localization:</label>
-              <SearchableSelect
-                id="localization-select"
-                options={childNames.localization}
-                loading={childNamesLoading}
-                value={childValue('localization', form.localization)}
-                onChange={(value) => patch({ localization: value })}
-              />
-            </div>
-          </div>
-        </div>
-
-        {webhooksEnabled && (
-          <div className="flex-container section">
-            <div className="flex-column">
-              <div className="checkbox input-group">
-                <label htmlFor="webhooks-checkbox" className="webhooks-label">
+              </FieldCell>
+            </FieldRow>
+            {matchingQueryShown && (
+              <FieldRow
+                rowId="matching-query-container"
+                label={
+                  <>
+                    Matching query:
+                    <span className="more-info" title={MATCHING_QUERY_HELP} />
+                  </>
+                }
+                labelFor="matching-query"
+              >
+                <FieldCell grows>
                   <input
-                    id="webhooks-checkbox"
-                    type="checkbox"
-                    checked={form.webhooksEnabled}
-                    onChange={(e) => patch({ webhooksEnabled: e.target.checked })}
+                    id="matching-query"
+                    type="text"
+                    value={form.matchingQuery}
+                    onChange={(e) => patch({ matchingQuery: e.target.value })}
                   />
-                  Use webhooks
-                </label>
-                {form.webhooksEnabled && (
-                  <SearchableSelect
-                    id="webhooks-select"
-                    ariaLabel="Webhooks"
-                    options={childNames.webhooks}
-                    loading={childNamesLoading}
-                    value={childValue('webhooks', form.webhooks)}
-                    onChange={(value) => patch({ webhooks: value })}
-                  />
-                )}
-              </div>
-            </div>
+                </FieldCell>
+              </FieldRow>
+            )}
           </div>
-        )}
 
-        {/* How the page is printed, what the renderer does with the content and the switches carrying a
-            value of their own: one container with two continuous columns, not three stacked ones. A flex
-            row is as tall as its taller column, so while these were three containers a short column could
-            never be filled from the block below it - "Headings color" alone on the left against five rows
-            on the right left a four-row hole under it. The colour picker now takes a line of its own above
-            the columns, which is what lets the four dropdowns line up as a block. The export dialogs had
-            the same problem and answered it with a grid whose rows flow across rather than down, which
-            needs no balancing at all: see ui/src/export/export-form.css. */}
-        <div className="flex-container section">
-          <div className="input-group full-row">
-            <label htmlFor="headers-color">Headings color:</label>
-            <input
-              id="headers-color"
-              type="color"
-              value={form.headersColor}
-              onChange={(e) => patch({ headersColor: e.target.value })}
+          <div className="pdf-section single-column group-start">
+            <SwitchRow
+              id="exposeSettings"
+              label="Expose style package settings to be redefined on UI"
+              checked={form.exposeSettings}
+              onChange={(checked) => patch({ exposeSettings: checked })}
             />
           </div>
-          <div className="flex-column">
-            <div className="input-group">
-              <label htmlFor="paper-size-select">Paper Size:</label>
-              <SearchableSelect
-                id="paper-size-select"
-                options={PAPER_SIZES}
-                value={form.paperSize}
-                onChange={(value) => patch({ paperSize: value })}
-              />
-            </div>
-            <div className="input-group">
-              <label htmlFor="orientation-select">Orientation:</label>
-              <SearchableSelect
-                id="orientation-select"
-                options={ORIENTATIONS}
-                value={form.orientation}
-                onChange={(value) => patch({ orientation: value })}
-              />
-            </div>
-            <div className="checkbox input-group">
-              <label htmlFor="fit-to-page">
-                <input
-                  id="fit-to-page"
-                  type="checkbox"
-                  checked={form.fitToPage}
-                  onChange={(e) => patch({ fitToPage: e.target.checked })}
-                />
-                Fit images and tables to page
-              </label>
-            </div>
-            <div className="checkbox input-group">
-              <label htmlFor="presentational-hints">
-                <input
-                  id="presentational-hints"
-                  type="checkbox"
-                  checked={form.followHTMLPresentationalHints}
-                  onChange={(e) => patch({ followHTMLPresentationalHints: e.target.checked })}
-                />
-                Follow HTML presentational hints
-              </label>
-            </div>
-            <div className="checkbox input-group">
-              <label htmlFor="render-comments">
-                <input
-                  id="render-comments"
-                  type="checkbox"
-                  checked={form.renderCommentsEnabled}
-                  onChange={(e) => patch({ renderCommentsEnabled: e.target.checked })}
-                />
-                Comments rendering
-              </label>
-              {/* Kept in the layout while it is off, as the JSP page did: the row below it would jump
-                  otherwise. */}
-              <span className={form.renderCommentsEnabled ? 'render-comments-select' : 'render-comments-select hidden'}>
-                <SearchableSelect
-                  id="render-comments-select"
-                  ariaLabel="Comments rendering"
-                  options={COMMENTS_RENDER_TYPES}
-                  disabled={!form.renderCommentsEnabled}
-                  value={form.renderComments}
-                  onChange={(value) => patch({ renderComments: value })}
-                />
-              </span>
-            </div>
-            {form.renderCommentsEnabled && (
-              <div className="checkbox input-group render-comments-options">
-                <label htmlFor="include-unreferenced-comments" title={UNREFERENCED_COMMENTS_HELP}>
-                  <input
-                    id="include-unreferenced-comments"
-                    type="checkbox"
-                    checked={form.includeUnreferencedComments}
-                    onChange={(e) => patch({ includeUnreferencedComments: e.target.checked })}
-                  />
-                  include unreferenced
-                </label>
-                <label htmlFor="render-native-comments" title={NATIVE_COMMENTS_HELP}>
-                  <input
-                    id="render-native-comments"
-                    type="checkbox"
-                    checked={form.renderNativeComments}
-                    onChange={(e) => patch({ renderNativeComments: e.target.checked })}
-                  />
-                  as sticky notes
-                </label>
-              </div>
-            )}
-            <div className="checkbox input-group">
-              <label htmlFor="watermark">
-                <input
-                  id="watermark"
-                  type="checkbox"
-                  checked={form.watermark}
-                  onChange={(e) => patch({ watermark: e.target.checked })}
-                />
-                Watermark
-              </label>
-            </div>
-            {/* Switches that carry a value of their own. */}
-            <div className="checkbox input-group with-value">
-              <label htmlFor="custom-list-styles">
-                <input
-                  id="custom-list-styles"
-                  type="checkbox"
-                  checked={form.customListStylesEnabled}
-                  onChange={(e) => patch({ customListStylesEnabled: e.target.checked })}
-                />
-                Custom styles of numbered lists
-              </label>
-              <input
-                id="numbered-list-styles"
-                className={form.customListStylesEnabled ? 'grows' : 'grows hidden'}
-                type="text"
-                placeholder="eg. 1ai"
-                disabled={!form.customListStylesEnabled}
-                value={form.customNumberedListStyles}
-                onChange={(e) => patch({ customNumberedListStyles: e.target.value })}
-              />
-            </div>
-            <div className="checkbox input-group with-value">
-              <label htmlFor="specific-chapters">
-                <input
-                  id="specific-chapters"
-                  type="checkbox"
-                  checked={form.specificChaptersEnabled}
-                  onChange={(e) => patch({ specificChaptersEnabled: e.target.checked })}
-                />
-                Specific higher level chapters
-              </label>
-              <input
-                id="chapters"
-                className={form.specificChaptersEnabled ? 'grows' : 'grows hidden'}
-                type="text"
-                placeholder="eg. 1,2,4 etc."
-                disabled={!form.specificChaptersEnabled}
-                value={form.specificChapters}
-                onChange={(e) => patch({ specificChapters: e.target.value })}
-              />
-            </div>
-            <div className="checkbox input-group with-value">
-              <label htmlFor="metadata-fields">
-                <input
-                  id="metadata-fields"
-                  type="checkbox"
-                  checked={form.metadataFieldsEnabled}
-                  onChange={(e) => patch({ metadataFieldsEnabled: e.target.checked })}
-                />
-                Metadata fields
-              </label>
-              <input
-                id="metadata-fields-input"
-                className={form.metadataFieldsEnabled ? 'grows' : 'grows hidden'}
-                type="text"
-                placeholder="e.g. docOwner, docLanguage, customField*"
-                disabled={!form.metadataFieldsEnabled}
-                value={form.metadataFields}
-                onChange={(e) => patch({ metadataFields: e.target.value })}
-              />
-            </div>
-            <div className="input-group with-value">
-              <label htmlFor="language-custom-field" className="nowrap">
-                Document Language custom field
-              </label>
-              <span className="more-info" title={LANGUAGE_CUSTOM_FIELD_HELP} />
-              <input
-                id="language-custom-field"
-                className="grows"
-                type="text"
-                placeholder="docLanguage"
-                value={form.languageCustomField}
-                onChange={(e) => patch({ languageCustomField: e.target.value })}
-              />
-            </div>
+
+          {/* The settings themselves, as the export dialog and the Document Properties pane show them. Every row
+              is offered: a style package serves every document type, whichever of them shows a row. */}
+          <div className="settings-block group-start">
+            <StylePackageSettingsView
+              ids=""
+              form={form}
+              onPatch={patch}
+              childNames={childNames}
+              childNamesLoading={childNamesLoading}
+              roles={roleOptions}
+              rolesLoading={rolesLoading}
+              rolesAlwaysOffered
+              webhooksEnabled={!!webhooksEnabled}
+              shows={() => true}
+              busy={false}
+            />
           </div>
-          <div className="flex-column">
-            <div className="input-group">
-              <label htmlFor="pdf-variant-select">PDF Variant:</label>
-              <SearchableSelect
-                id="pdf-variant-select"
-                options={PDF_VARIANTS}
-                value={form.pdfVariant}
-                onChange={(value) => patch({ pdfVariant: value })}
-              />
-            </div>
-            <div className="input-group">
-              <label htmlFor="image-density-select">Image density:</label>
-              <SearchableSelect
-                id="image-density-select"
-                options={IMAGE_DENSITIES}
-                value={form.imageDensity}
-                onChange={(value) => patch({ imageDensity: value })}
-              />
-            </div>
-            {/* `flex-centered` for the same reason the weight and query rows have it: it is what centers
-                the info icon against the text next to it. */}
-            <div className="checkbox input-group flex-centered">
-              <label htmlFor="full-fonts">
-                <input
-                  id="full-fonts"
-                  type="checkbox"
-                  checked={form.fullFonts}
-                  onChange={(e) => patch({ fullFonts: e.target.checked })}
-                />
-                Embed full fonts (no subsetting)
-              </label>
-              <span className="more-info" title={FULL_FONTS_HELP} />
-            </div>
-            <div className="checkbox input-group">
-              <label htmlFor="cut-empty-chapters">
-                <input
-                  id="cut-empty-chapters"
-                  type="checkbox"
-                  checked={form.cutEmptyChapters}
-                  onChange={(e) => patch({ cutEmptyChapters: e.target.checked })}
-                />
-                Cut empty chapters (any level)
-              </label>
-            </div>
-            <div className="checkbox input-group">
-              <label htmlFor="cut-empty-wi-attributes">
-                <input
-                  id="cut-empty-wi-attributes"
-                  type="checkbox"
-                  checked={form.cutEmptyWorkitemAttributes}
-                  onChange={(e) => patch({ cutEmptyWorkitemAttributes: e.target.checked })}
-                />
-                Cut empty Workitem attributes
-              </label>
-            </div>
-            <div className="checkbox input-group">
-              <label htmlFor="cut-urls">
-                <input
-                  id="cut-urls"
-                  type="checkbox"
-                  checked={form.cutLocalURLs}
-                  onChange={(e) => patch({ cutLocalURLs: e.target.checked })}
-                />
-                Cut local Polarion URLs
-              </label>
-            </div>
-            <div className="checkbox input-group">
-              <label htmlFor="mark-referenced-workitems">
-                <input
-                  id="mark-referenced-workitems"
-                  type="checkbox"
-                  checked={form.markReferencedWorkitems}
-                  onChange={(e) => patch({ markReferencedWorkitems: e.target.checked })}
-                />
-                Mark referenced Workitems
-              </label>
-            </div>
-            <div className="checkbox input-group">
-              <label htmlFor="localization">
-                <input
-                  id="localization"
-                  type="checkbox"
-                  checked={form.localizeEnums}
-                  onChange={(e) => patch({ localizeEnums: e.target.checked })}
-                />
-                Localize enums
-              </label>
-              <span className={form.localizeEnums ? 'language-select' : 'language-select hidden'}>
-                <SearchableSelect
-                  id="language-select"
-                  ariaLabel="Language"
-                  options={LANGUAGES}
-                  disabled={!form.localizeEnums}
-                  value={form.language}
-                  onChange={(value) => patch({ language: value })}
-                />
-              </span>
-            </div>
-            <div className="checkbox input-group roles-group">
-              <label htmlFor="selected-roles">
-                <input
-                  id="selected-roles"
-                  type="checkbox"
-                  checked={form.rolesEnabled}
-                  onChange={(e) => patch({ rolesEnabled: e.target.checked })}
-                />
-                Specific Workitem roles
-              </label>
-              {form.rolesEnabled && (
+
+          {/* Which language a document is written in: a field of the document, rather than a setting of the export */}
+          <div className="pdf-section single-column group-start group-end">
+            <FieldRow
+              className="tight"
+              label={
                 <>
-                  <div className="roles-select">
-                    <SearchableSelect
-                      id="roles-select"
-                      ariaLabel="Workitem roles"
-                      multiple
-                      options={roleOptions}
-                      loading={rolesLoading}
-                      value={form.linkedWorkitemRoles}
-                      onChange={(values) => patch({ linkedWorkitemRoles: values })}
-                    />
-                  </div>
-                  <div className="roles-select">
-                    <SearchableSelect
-                      id="roles-direction-select"
-                      ariaLabel="Link role direction"
-                      options={LINK_ROLE_DIRECTIONS}
-                      value={form.linkRoleDirection}
-                      onChange={(value) => patch({ linkRoleDirection: value })}
-                    />
-                  </div>
+                  Document Language custom field
+                  <span className="more-info" title={LANGUAGE_CUSTOM_FIELD_HELP} />
                 </>
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div className="flex-container section">
-          <div className="flex-grow">
-            <div className="input-group flex-centered work-items-query-group">
-              <label htmlFor="work-items-query-checkbox">
+              }
+              labelFor="language-custom-field"
+            >
+              <FieldCell grows>
                 <input
-                  id="work-items-query-checkbox"
-                  type="checkbox"
-                  checked={form.workItemsQueryEnabled}
-                  onChange={(e) => patch({ workItemsQueryEnabled: e.target.checked })}
-                />
-                Work items query
-              </label>
-              <span className="more-info" title={WORK_ITEMS_QUERY_HELP} />
-              <input
-                id="work-items-query"
-                className={form.workItemsQueryEnabled ? 'grows' : 'grows hidden'}
-                type="text"
-                placeholder="e.g. type:requirement"
-                disabled={!form.workItemsQueryEnabled}
-                value={form.workItemsQuery}
-                onChange={(e) => patch({ workItemsQuery: e.target.value })}
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* A test run's own attachments. No other document type is exported with any. */}
-        <h2 className="align-left">Test Run attachments</h2>
-        <p>
-          These options apply to the export of a Test Run only. Its attachments are downloaded next to the PDF, or
-          embedded into it, and the mask and the test case field below say which of them. An export of a Live Document,
-          a Live Report or a Wiki page carries no attachments, whatever is chosen here.
-        </p>
-        <div className="flex-container section">
-          <div className="flex-column">
-            <div className="checkbox input-group">
-              <label htmlFor="download-attachments">
-                <input
-                  id="download-attachments"
-                  type="checkbox"
-                  checked={form.downloadAttachments}
-                  onChange={(e) =>
-                    patch({
-                      downloadAttachments: e.target.checked,
-                      // Switching it on with no filter yet means "every attachment", which the legacy
-                      // page wrote into the field so the stored value says the same thing.
-                      attachmentsFilter: e.target.checked && !form.attachmentsFilter ? '*.*' : form.attachmentsFilter,
-                    })
-                  }
-                />
-                Download attachments
-              </label>
-            </div>
-            {form.downloadAttachments && (
-              <div className="input-group">
-                <label htmlFor="attachments-filter">Attachments filter:</label>
-                <input
-                  id="attachments-filter"
+                  id="language-custom-field"
                   type="text"
-                  title="Filter for attachments to be downloaded, example: '*.pdf'"
-                  placeholder="*.*"
-                  value={form.attachmentsFilter}
-                  onChange={(e) => patch({ attachmentsFilter: e.target.value })}
+                  placeholder="docLanguage"
+                  value={form.languageCustomField}
+                  onChange={(e) => patch({ languageCustomField: e.target.value })}
                 />
-              </div>
-            )}
+              </FieldCell>
+            </FieldRow>
           </div>
-          <div className="flex-column">
+
+          {/* A test run's own attachments. No other document type is exported with any. */}
+          <h2 className="align-left">Test Run attachments</h2>
+          <p>
+            These options apply to the export of a Test Run only. Its attachments are downloaded next to the PDF, or
+            embedded into it, and the mask and the test case field below say which of them. An export of a Live
+            Document, a Live Report or a Wiki page carries no attachments, whatever is chosen here.
+          </p>
+          {/* Download and embed side by side, the mask and the test case field under them, as before */}
+          <div className="pdf-section group-end">
+            <SwitchRow
+              id="download-attachments"
+              label="Download attachments"
+              checked={form.downloadAttachments}
+              onChange={(checked) =>
+                patch({
+                  downloadAttachments: checked,
+                  // Switching it on with no filter yet means "every attachment", which the legacy page wrote
+                  // into the field so the stored value says the same thing.
+                  attachmentsFilter: checked && !form.attachmentsFilter ? '*.*' : form.attachmentsFilter,
+                })
+              }
+            />
             {form.downloadAttachments && (
               <>
-                <div className="checkbox input-group">
-                  <label htmlFor="embed-attachments">
+                <SwitchRow
+                  id="embed-attachments"
+                  label="Embed attachments into resulted PDF"
+                  checked={form.embedAttachments}
+                  onChange={(checked) => patch({ embedAttachments: checked })}
+                />
+                <FieldRow label="Attachments filter:" labelFor="attachments-filter">
+                  <FieldCell grows>
                     <input
-                      id="embed-attachments"
-                      type="checkbox"
-                      checked={form.embedAttachments}
-                      onChange={(e) => patch({ embedAttachments: e.target.checked })}
+                      id="attachments-filter"
+                      type="text"
+                      title="Filter for attachments to be downloaded, example: '*.pdf'"
+                      placeholder="*.*"
+                      value={form.attachmentsFilter}
+                      onChange={(e) => patch({ attachmentsFilter: e.target.value })}
                     />
-                    Embed attachments into resulted PDF
-                  </label>
-                </div>
-                <div className="input-group">
-                  <label htmlFor="testcase-field-id">Custom field ID:</label>
-                  <input
-                    id="testcase-field-id"
-                    type="text"
-                    title="A boolean testcase field ID. Attachments will be downloaded only from the testcases which have True value in the provided field. Leaving field empty will process all testcases."
-                    value={form.testcaseFieldId}
-                    onChange={(e) => patch({ testcaseFieldId: e.target.value })}
-                  />
-                </div>
+                  </FieldCell>
+                </FieldRow>
+                <FieldRow
+                  label="Custom field ID:"
+                  labelFor="testcase-field-id"
+                  title="A boolean testcase field ID. Attachments will be downloaded only from the testcases which have True value in the provided field. Leaving field empty will process all testcases."
+                >
+                  <FieldCell grows>
+                    <input
+                      id="testcase-field-id"
+                      type="text"
+                      value={form.testcaseFieldId}
+                      onChange={(e) => patch({ testcaseFieldId: e.target.value })}
+                    />
+                  </FieldCell>
+                </FieldRow>
               </>
             )}
           </div>
-        </div>
 
-        <h2 className="align-left">PDF Exporter dialog configuration</h2>
-        <div className="flex-container">
-          <div className="flex-column">
-            <div className="checkbox input-group">
-              <label htmlFor="expose-page-width-validation">
-                <input
-                  id="expose-page-width-validation"
-                  type="checkbox"
-                  checked={form.exposePageWidthValidation}
-                  onChange={(e) => patch({ exposePageWidthValidation: e.target.checked })}
-                />
-                Expose page width validation controls
-              </label>
-            </div>
+          <h2 className="align-left">PDF Exporter dialog configuration</h2>
+          <div className="pdf-section single-column">
+            <SwitchRow
+              id="expose-page-width-validation"
+              label="Expose page width validation controls"
+              checked={form.exposePageWidthValidation}
+              onChange={(checked) => patch({ exposePageWidthValidation: checked })}
+            />
           </div>
         </div>
 

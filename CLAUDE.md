@@ -68,7 +68,9 @@
   `ExportParams.js` were ported into the app: `ui/src/export/` (the shared export model **and the form
   itself** - which rows a document type shows, a style package read into a form, a form turned into a
   request, and `ExportFormView.tsx`, which the dialog and the side panel both render: they differ only in
-  the chrome around it, and its layout follows the width it is given through a container query),
+  the chrome around it, and its layout follows the width it is given through a container query). Its
+  settings block is `StylePackageSettingsView.tsx`, which the Style Packages administration page renders
+  too, with the row layout of `export-form-layout.css`, so a style package reads the same in all three),
   `ui/src/services/exportContext.ts` (the location hash) and `ui/src/services/conversion.ts` (the convert-job
   protocol). Nothing is loaded across webapps at runtime any more. What is left in `webapp/pdf-exporter` is
   the four injector scripts, the empty `css/starter.css` trigger and the three HTML templates the Java
