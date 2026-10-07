@@ -38,10 +38,13 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -63,6 +66,8 @@ class BulkProcessingServiceConnectorTest {
     private Invocation.Builder invocationBuilder;
     @Mock
     private ApiKeyProvider apiKeyProvider;
+    @Mock
+    private PolarionTokenIssuer tokenIssuer;
 
     private MockedStatic<ClientBuilder> clientBuilderMockedStatic;
     private BulkProcessingServiceConnector connector;
@@ -295,6 +300,119 @@ class BulkProcessingServiceConnectorTest {
         verify(invocationBuilder, atLeastOnce()).header("X-API-Key", "secret");
     }
 
+    private BulkProcessingServiceConnector connectorForUser(java.util.function.Supplier<String> user) {
+        return new BulkProcessingServiceConnector(BULK_SERVICE_URL, WEASYPRINT_URL, apiKeyProvider, tokenIssuer, user);
+    }
+
+    private void stubSuccessfulMerge() {
+        Response startResponse = mockResponse(201, "{\"jobId\":\"job-1\"}");
+        Response addResponse = mockResponse(202, "{\"status\":\"accepted\"}");
+        Response finishResponse = mockPdfResponse(200, "merged-pdf-content".getBytes());
+        when(invocationBuilder.post(any(Entity.class)))
+                .thenReturn(startResponse)
+                .thenReturn(addResponse)
+                .thenReturn(finishResponse);
+    }
+
+    @Test
+    void shouldSendPolarionTokenOfTheUserOnEveryCall() {
+        when(tokenIssuer.issue(eq("alice"), isNull())).thenReturn("token-of-start");
+        when(tokenIssuer.issue("alice", "job-1")).thenReturn("token-of-job-1");
+        lenient().when(invocationBuilder.header(anyString(), any())).thenReturn(invocationBuilder);
+        stubSuccessfulMerge();
+
+        connectorForUser(() -> "alice").convertMergedToPdf(List.of(doc("<html></html>", null)), MergeJobStartParams.builder().build());
+
+        // start has no job yet and carries none, add and finish carry the job they address
+        verify(invocationBuilder, times(1)).header("X-Polarion-Token", "token-of-start");
+        verify(invocationBuilder, times(2)).header("X-Polarion-Token", "token-of-job-1");
+    }
+
+    @Test
+    void shouldMakeANewTokenForEveryCall() {
+        when(tokenIssuer.issue(anyString(), any())).thenReturn("token");
+        lenient().when(invocationBuilder.header(anyString(), any())).thenReturn(invocationBuilder);
+        stubSuccessfulMerge();
+
+        connectorForUser(() -> "alice").convertMergedToPdf(List.of(doc("<html></html>", null)), MergeJobStartParams.builder().build());
+
+        // start, add, finish: a token lives for minutes, a long export must not run out of it
+        verify(tokenIssuer, times(3)).issue(anyString(), any());
+    }
+
+    @Test
+    void shouldSendPolarionTokenWhenCleaningUpAFailedJob() {
+        when(tokenIssuer.issue(anyString(), any())).thenAnswer(invocation -> "token-for-" + invocation.getArgument(1));
+        lenient().when(invocationBuilder.header(anyString(), any())).thenReturn(invocationBuilder);
+        Response startResponse = mockResponse(201, "{\"jobId\":\"job-1\"}");
+        Response addResponse = mockResponse(202, "{\"status\":\"accepted\"}");
+        Response finishResponse = mockResponse(500, "boom");
+        Response deleteResponse = mockResponse(204, "");
+        when(invocationBuilder.post(any(Entity.class)))
+                .thenReturn(startResponse)
+                .thenReturn(addResponse)
+                .thenReturn(finishResponse);
+        when(invocationBuilder.delete()).thenReturn(deleteResponse);
+
+        BulkProcessingServiceConnector connector = connectorForUser(() -> "alice");
+        List<MergeDocumentData> documents = List.of(doc("<html></html>", null));
+        MergeJobStartParams params = MergeJobStartParams.builder().build();
+        assertThatThrownBy(() -> connector.convertMergedToPdf(documents, params)).isInstanceOf(IllegalStateException.class);
+
+        // add, finish and the delete which cleans up all name the job
+        verify(invocationBuilder, times(3)).header("X-Polarion-Token", "token-for-job-1");
+    }
+
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.NullSource
+    @org.junit.jupiter.params.provider.ValueSource(strings = {" "})
+    void shouldSendNoPolarionTokenWithoutUser(String noUser) {
+        stubSuccessfulMerge();
+
+        connectorForUser(() -> noUser).convertMergedToPdf(List.of(doc("<html></html>", null)), MergeJobStartParams.builder().build());
+
+        verify(tokenIssuer, never()).issue(anyString(), any());
+        verify(invocationBuilder, never()).header(eq("X-Polarion-Token"), any());
+    }
+
+    @Test
+    void shouldGoOnWithoutTokenWhenPolarionGivesNone() {
+        when(tokenIssuer.issue(anyString(), any())).thenReturn(null);
+        stubSuccessfulMerge();
+
+        MergeResult result = connectorForUser(() -> "alice").convertMergedToPdf(List.of(doc("<html></html>", null)), MergeJobStartParams.builder().build());
+
+        // a service which does not check tokens needs none: the export is not stopped for the lack of one
+        assertThat(result.pdfBytes()).isEqualTo("merged-pdf-content".getBytes());
+        verify(invocationBuilder, never()).header(eq("X-Polarion-Token"), any());
+    }
+
+    @Test
+    void shouldNameTheTokenWhenTheServiceRefusesIt() {
+        when(tokenIssuer.issue(anyString(), any())).thenReturn("token");
+        lenient().when(invocationBuilder.header(anyString(), any())).thenReturn(invocationBuilder);
+        Response refused = mockResponse(401, "{\"detail\":\"Invalid Polarion token\"}");
+        when(invocationBuilder.post(any(Entity.class))).thenReturn(refused);
+
+        BulkProcessingServiceConnector connector = connectorForUser(() -> "alice");
+        List<MergeDocumentData> documents = List.of(doc("<html></html>", null));
+        MergeJobStartParams params = MergeJobStartParams.builder().build();
+
+        // not the message about the API key: its fix is elsewhere
+        assertThatThrownBy(() -> connector.convertMergedToPdf(documents, params))
+                .isInstanceOf(UserFriendlyRuntimeException.class)
+                .hasMessageContaining("refused the Polarion token")
+                .hasMessageContaining("POLARION_JWKS_URL")
+                .hasMessageNotContaining("API key");
+    }
+
+    @Test
+    void shouldKeepTheApiKeyMessageWhenTheKeyIsWhatTheServiceRefuses() {
+        assertThat(BulkProcessingServiceConnector.unauthorizedMessage(true, "{\"detail\":\"Invalid or missing API key\"}")).contains("rejected the configured API key");
+        assertThat(BulkProcessingServiceConnector.unauthorizedMessage(false, "{\"detail\":\"Invalid or missing API key\"}")).contains("requires an API key");
+        assertThat(BulkProcessingServiceConnector.unauthorizedMessage(true)).contains("rejected the configured API key");
+    }
+
     @Test
     void shouldRejectApiKeyOverPlainHttp() {
         when(apiKeyProvider.getApiKey()).thenReturn("secret");
@@ -324,6 +442,41 @@ class BulkProcessingServiceConnectorTest {
     void unauthorizedMessageDistinguishesTheTwoCases() {
         assertThat(BulkProcessingServiceConnector.unauthorizedMessage(true)).contains("rejected the configured API key");
         assertThat(BulkProcessingServiceConnector.unauthorizedMessage(false)).contains("requires an API key");
+    }
+
+    @Test
+    void unauthorizedMessageSaysWhenNoTokenCouldBeIssued() {
+        String missing = "{\"detail\":\"Missing Polarion token\"}";
+        assertThat(BulkProcessingServiceConnector.unauthorizedMessage(true, false, missing)).contains("none could be issued");
+        assertThat(BulkProcessingServiceConnector.unauthorizedMessage(true, true, missing)).contains("POLARION_JWKS_URL");
+    }
+
+    @Test
+    void shouldGoOnWithoutTokenWhenTheCurrentUserCannotBeFoundOut() {
+        lenient().when(invocationBuilder.header(anyString(), any())).thenReturn(invocationBuilder);
+        stubSuccessfulMerge();
+
+        connectorForUser(() -> {
+            throw new IllegalStateException("no platform");
+        }).convertMergedToPdf(List.of(doc("<html></html>", null)), MergeJobStartParams.builder().build());
+
+        verify(invocationBuilder, never()).header(eq("X-Polarion-Token"), any());
+    }
+
+    @Test
+    void shouldSendTheTokenOfTheJobWithADocumentWhichEmbedsFiles(@TempDir Path tempDir) throws IOException {
+        Path notes = Files.writeString(tempDir.resolve("notes.txt"), "notes");
+        when(tokenIssuer.issue(eq("alice"), isNull())).thenReturn("token-of-start");
+        when(tokenIssuer.issue("alice", "job-1")).thenReturn("token-of-job-1");
+        lenient().when(invocationBuilder.header(anyString(), any())).thenReturn(invocationBuilder);
+        stubSuccessfulMerge();
+
+        connectorForUser(() -> "alice").convertMergedToPdf(
+                List.of(new MergeDocumentData("<html>with files</html>", null, DEFAULT_PARAMS, List.of(notes))), MergeJobStartParams.builder().build());
+
+        verify(client).target(BULK_SERVICE_URL + "/api/convert/job-1/add-with-attachments");
+        verify(invocationBuilder, times(1)).header("X-Polarion-Token", "token-of-start");
+        verify(invocationBuilder, times(2)).header("X-Polarion-Token", "token-of-job-1");
     }
 
     @Test
