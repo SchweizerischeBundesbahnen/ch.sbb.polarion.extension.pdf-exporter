@@ -78,6 +78,24 @@ class ImageSizeTest extends BasePdfConverterTest {
         assertFalse(compareContentUsingReferenceImages(getCurrentMethodName(), pdf), "The pages differ from the reference images");
     }
 
+    /**
+     * Fit to page used to stretch each of them to the width of the page: their limit, wider than the page, was taken
+     * for the width they are drawn at (#1180).
+     */
+    @Test
+    @SneakyThrows
+    void keepsTheSizeTheDocumentGivesAnSvgFittedToThePage() {
+        String html = withAttachments("""
+                <p><img src="attachment:drawio-actors.svg" style="max-width: 650px; width: 121px; height: 41px;"/></p>
+                <p><img src="attachment:drawio-actors.svg" style="max-width: 650px; width: 242px; height: 82px;"/></p>
+                <p><img src="attachment:drawio-actors.svg" style="max-width: 650px; width: 484px; height: 164px;"/></p>""");
+
+        byte[] pdf = export(html, true);
+
+        // half of its own 242x82 px, its own size, and twice it
+        assertEquals(List.of(DrawnImages.size(121, 41), DrawnImages.size(242, 82), DrawnImages.size(484, 164)), DrawnImages.sizesIn(pdf));
+    }
+
     @Test
     @SneakyThrows
     void keepsTheRatioOfADiagramWhichIsTallerThanThePage() {
