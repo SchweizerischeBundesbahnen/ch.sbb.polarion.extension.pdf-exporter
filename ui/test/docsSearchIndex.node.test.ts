@@ -50,6 +50,14 @@ describe.skipIf(RECORDS.length === 0)('documentation search index', () => {
     expect(configuration.some((text) => text.includes('pdf-exporter.weasyprint.service=http'))).toBe(true);
   });
 
+  it('indexes a subsection under an h4 heading with its own text', () => {
+    // The two options under "Test Run attachments" are h4 headings. Indexing h2 and h3 alone dropped their text
+    // from the search: a search for the mask or the embedded files found nothing.
+    const userGuide = RECORDS.filter((r) => r.doc === 'user-guide');
+    expect(userGuide.find((r) => r.anchor === 'download-attachments')?.text).toContain('mask');
+    expect(userGuide.find((r) => r.anchor === 'embed-attachments-into-resulted-pdf')?.text).toContain('embedded files');
+  });
+
   it('keeps the whole text of long sections', () => {
     // No section is cut short: a term further down a long section must stay searchable. Several sections of
     // the configuration reference run to thousands of characters; the former 400-character cap stayed below this.
