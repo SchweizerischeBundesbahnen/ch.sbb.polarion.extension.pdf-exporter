@@ -7,8 +7,6 @@ import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
 
 import java.time.Duration;
-import java.time.Instant;
-import java.util.Date;
 
 /**
  * Asks Polarion for the token which tells the bulk processing service who a merge is made for.
@@ -61,6 +59,6 @@ public class PolarionTokenIssuer {
         if (jobId != null) {
             builder = builder.withClaim(JOB_CLAIM, jobId);
         }
-        return builder.withExpiration(Date.from(Instant.now().plus(LIFETIME))).signFor(user);
+        return builder.withExpiration(LIFETIME.toSeconds()).signFor(user);
     }
 }
