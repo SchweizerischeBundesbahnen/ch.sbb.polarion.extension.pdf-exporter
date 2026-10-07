@@ -83,6 +83,6 @@ final class SharedBulkProcessingContainers {
 
     private static @Nullable String externalBulkProcessingUrl() {
         String url = System.getProperty(BULK_PROCESSING_SERVICE_URL_PROPERTY, "").trim();
-        return url.isEmpty() ? null : url.replaceAll("/+$", "");
+        return url.isEmpty() ? null : BaseWeasyPrintTest.stripTrailingSlashes(url);
     }
 }
