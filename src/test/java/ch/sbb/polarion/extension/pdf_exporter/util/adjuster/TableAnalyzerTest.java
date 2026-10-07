@@ -246,55 +246,55 @@ class TableAnalyzerTest {
 
         Element row1 = tbody.appendElement("tr");
         row1.appendElement("td").appendElement("img")
-                .attr("src", "https://via.placeholder.com/100x100")
+                .attr("src", "missing/100x100.png")
                 .attr("width", "100")
                 .attr("height", "100");
         row1.appendElement("td").appendElement("img")
-                .attr("src", "https://via.placeholder.com/120x80")
+                .attr("src", "missing/120x80.png")
                 .attr("width", "120")
                 .attr("height", "80");
         row1.appendElement("td").appendElement("img")
-                .attr("src", "https://via.placeholder.com/150x100")
+                .attr("src", "missing/150x100.png")
                 .attr("width", "150")
                 .attr("height", "100");
         row1.appendElement("td").appendElement("img")
-                .attr("src", "https://via.placeholder.com/100x120")
+                .attr("src", "missing/100x120.png")
                 .attr("width", "100")
                 .attr("height", "120");
 
         Element row2 = tbody.appendElement("tr");
         row2.appendElement("td").appendElement("img")
-                .attr("src", "https://via.placeholder.com/200x150")
+                .attr("src", "missing/200x150.png")
                 .attr("width", "200")
                 .attr("height", "150");
         row2.appendElement("td").appendElement("img")
-                .attr("src", "https://via.placeholder.com/250x200")
+                .attr("src", "missing/250x200.png")
                 .attr("width", "250")
                 .attr("height", "200");
         row2.appendElement("td").appendElement("img")
-                .attr("src", "https://via.placeholder.com/300x200")
+                .attr("src", "missing/300x200.png")
                 .attr("width", "300")
                 .attr("height", "200");
         row2.appendElement("td").appendElement("img")
-                .attr("src", "https://via.placeholder.com/180x180")
+                .attr("src", "missing/180x180.png")
                 .attr("width", "180")
                 .attr("height", "180");
 
         Element row3 = tbody.appendElement("tr");
         row3.appendElement("td").appendElement("img")
-                .attr("src", "https://via.placeholder.com/400x300")
+                .attr("src", "missing/400x300.png")
                 .attr("width", "400")
                 .attr("height", "300");
         row3.appendElement("td").appendElement("img")
-                .attr("src", "https://via.placeholder.com/500x350")
+                .attr("src", "missing/500x350.png")
                 .attr("width", "500")
                 .attr("height", "350");
         row3.appendElement("td").appendElement("img")
-                .attr("src", "https://via.placeholder.com/450x300")
+                .attr("src", "missing/450x300.png")
                 .attr("width", "450")
                 .attr("height", "300");
         row3.appendElement("td").appendElement("img")
-                .attr("src", "https://via.placeholder.com/350x400")
+                .attr("src", "missing/350x400.png")
                 .attr("width", "350")
                 .attr("height", "400");
 
@@ -322,15 +322,15 @@ class TableAnalyzerTest {
 
         Element row1 = tbody.appendElement("tr");
         row1.appendElement("td").appendElement("img")
-                .attr("src", "https://via.placeholder.com/100x100")
+                .attr("src", "missing/100x100.png")
                 .attr("width", "100")
                 .attr("height", "100");
         row1.appendElement("td").appendElement("img")
-                .attr("src", "https://via.placeholder.com/700x300")
+                .attr("src", "missing/700x300.png")
                 .attr("width", "700")
                 .attr("height", "300");
         row1.appendElement("td").appendElement("img")
-                .attr("src", "https://via.placeholder.com/250x200")
+                .attr("src", "missing/250x200.png")
                 .attr("width", "250")
                 .attr("height", "200");
 
@@ -338,17 +338,17 @@ class TableAnalyzerTest {
         row2.appendElement("td").text("Small&nbsp;text");
         row2.appendElement("td").text("This column has a very long text description instead of an image, which should make the analyzer work differently");
         row2.appendElement("td").appendElement("img")
-                .attr("src", "https://via.placeholder.com/300x300")
+                .attr("src", "missing/300x300.png")
                 .attr("width", "300")
                 .attr("height", "300");
 
         Element row3 = tbody.appendElement("tr");
         row3.appendElement("td").appendElement("img")
-                .attr("src", "https://via.placeholder.com/150x100")
+                .attr("src", "missing/150x100.png")
                 .attr("width", "150")
                 .attr("height", "100");
         row3.appendElement("td").appendElement("img")
-                .attr("src", "https://via.placeholder.com/200x150")
+                .attr("src", "missing/200x150.png")
                 .attr("width", "200")
                 .attr("height", "150");
         row3.appendElement("td").text("Short");
@@ -370,20 +370,20 @@ class TableAnalyzerTest {
 
         Element row1 = table.appendElement("tr");
         row1.appendElement("td").appendElement("img")
-                .attr("src", "https://via.placeholder.com/100x100");
+                .attr("src", "missing/100x100.png");
         row1.appendElement("td").appendElement("img")
-                .attr("src", "https://via.placeholder.com/300x200");
+                .attr("src", "missing/300x200.png");
         row1.appendElement("td").text("Text content");
         row1.appendElement("td").appendElement("img")
-                .attr("src", "https://via.placeholder.com/500x300");
+                .attr("src", "missing/500x300.png");
 
         // Row 2
         Element row2 = table.appendElement("tr");
         row2.appendElement("td").text("A");
         row2.appendElement("td").appendElement("img")
-                .attr("src", "https://via.placeholder.com/400x250");
+                .attr("src", "missing/400x250.png");
         row2.appendElement("td").appendElement("img")
-                .attr("src", "https://via.placeholder.com/150x150");
+                .attr("src", "missing/150x150.png");
         row2.appendElement("td").text("Very long text that should influence column width significantly");
 
         Map<Integer, Integer> columnWidths = TableAnalyzer.getColumnWidths(table, PaperSizeUtils.getMaxWidth(ConversionParams.builder().build()));
@@ -406,19 +406,19 @@ class TableAnalyzerTest {
         // First row: 4 regular columns
         Element row1 = tbody.appendElement("tr");
         row1.appendElement("td").appendElement("img")
-                .attr("src", "https://via.placeholder.com/100x100")
+                .attr("src", "missing/100x100.png")
                 .attr("width", "100")
                 .attr("height", "100");
         row1.appendElement("td").appendElement("img")
-                .attr("src", "https://via.placeholder.com/150x100")
+                .attr("src", "missing/150x100.png")
                 .attr("width", "250")
                 .attr("height", "100");
         row1.appendElement("td").appendElement("img")
-                .attr("src", "https://via.placeholder.com/120x100")
+                .attr("src", "missing/120x100.png")
                 .attr("width", "120")
                 .attr("height", "100");
         row1.appendElement("td").appendElement("img")
-                .attr("src", "https://via.placeholder.com/130x100")
+                .attr("src", "missing/130x100.png")
                 .attr("width", "330")
                 .attr("height", "100");
 
@@ -427,15 +427,15 @@ class TableAnalyzerTest {
         row2.appendElement("td")
                 .attr("colspan", "2")
                 .appendElement("img")
-                .attr("src", "https://via.placeholder.com/300x150")
+                .attr("src", "missing/300x150.png")
                 .attr("width", "300")
                 .attr("height", "150");
         row2.appendElement("td").appendElement("img")
-                .attr("src", "https://via.placeholder.com/200x150")
+                .attr("src", "missing/200x150.png")
                 .attr("width", "200")
                 .attr("height", "150");
         row2.appendElement("td").appendElement("img")
-                .attr("src", "https://via.placeholder.com/180x150")
+                .attr("src", "missing/180x150.png")
                 .attr("width", "180")
                 .attr("height", "150");
 
@@ -467,27 +467,27 @@ class TableAnalyzerTest {
         // First row: 6 regular columns
         Element row1 = tbody.appendElement("tr");
         row1.appendElement("td").appendElement("img")
-                .attr("src", "https://via.placeholder.com/80x80")
+                .attr("src", "missing/80x80.png")
                 .attr("width", "80")
                 .attr("height", "80");
         row1.appendElement("td").appendElement("img")
-                .attr("src", "https://via.placeholder.com/90x80")
+                .attr("src", "missing/90x80.png")
                 .attr("width", "90")
                 .attr("height", "80");
         row1.appendElement("td").appendElement("img")
-                .attr("src", "https://via.placeholder.com/100x80")
+                .attr("src", "missing/100x80.png")
                 .attr("width", "100")
                 .attr("height", "80");
         row1.appendElement("td").appendElement("img")
-                .attr("src", "https://via.placeholder.com/85x80")
+                .attr("src", "missing/85x80.png")
                 .attr("width", "85")
                 .attr("height", "80");
         row1.appendElement("td").appendElement("img")
-                .attr("src", "https://via.placeholder.com/95x80")
+                .attr("src", "missing/95x80.png")
                 .attr("width", "95")
                 .attr("height", "80");
         row1.appendElement("td").appendElement("img")
-                .attr("src", "https://via.placeholder.com/110x80")
+                .attr("src", "missing/110x80.png")
                 .attr("width", "110")
                 .attr("height", "80");
 
@@ -496,15 +496,15 @@ class TableAnalyzerTest {
         row2.appendElement("td")
                 .attr("colspan", "4")
                 .appendElement("img")
-                .attr("src", "https://via.placeholder.com/400x150")
+                .attr("src", "missing/400x150.png")
                 .attr("width", "400")
                 .attr("height", "150");
         row2.appendElement("td").appendElement("img")
-                .attr("src", "https://via.placeholder.com/120x150")
+                .attr("src", "missing/120x150.png")
                 .attr("width", "120")
                 .attr("height", "150");
         row2.appendElement("td").appendElement("img")
-                .attr("src", "https://via.placeholder.com/130x150")
+                .attr("src", "missing/130x150.png")
                 .attr("width", "130")
                 .attr("height", "150");
 
