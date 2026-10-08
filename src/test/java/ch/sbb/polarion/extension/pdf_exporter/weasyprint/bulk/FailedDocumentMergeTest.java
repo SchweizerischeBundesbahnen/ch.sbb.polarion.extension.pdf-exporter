@@ -34,17 +34,17 @@ class FailedDocumentMergeTest extends BaseBulkProcessingTest {
     void failsAndDeletesTheJobWhereNoDocumentRenders() {
         BulkProcessingServiceConnector connector = connector();
         // A merge which succeeds keeps its job until the time to live of the service, which shows where the jobs are kept
-        int jobsBeforeSuccess = storedJobs();
+        Integer jobsBeforeSuccess = storedJobs();
         connector.convertMergedToPdf(List.of(rendered("Alpha", "Rendered and merged.")), startParams());
-        assertEquals(jobsBeforeSuccess + 1, storedJobs(), "A completed job is kept where the jobs are counted");
+        assertStoredJobs(jobsBeforeSuccess, 1, "A completed job is kept where the jobs are counted");
 
-        int jobsBefore = storedJobs();
+        Integer jobsBefore = storedJobs();
         List<MergeDocumentData> documents = List.of(failing(), failing());
         MergeJobStartParams params = startParams();
 
         IllegalStateException failure = assertThrows(IllegalStateException.class, () -> connector.convertMergedToPdf(documents, params));
 
         assertTrue(failure.getMessage().contains("All 2 documents failed to convert"), failure.getMessage());
-        assertEquals(jobsBefore, storedJobs(), "The job of the failed merge is deleted, not left for the time to live of the service");
+        assertStoredJobs(jobsBefore, 0, "The job of the failed merge is deleted, not left for the time to live of the service");
     }
 }

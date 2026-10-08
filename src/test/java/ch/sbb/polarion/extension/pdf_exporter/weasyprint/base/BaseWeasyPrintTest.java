@@ -147,7 +147,7 @@ public abstract class BaseWeasyPrintTest {
         return "http://" + weasyPrintService.getHost() + ":" + weasyPrintService.getFirstMappedPort();
     }
 
-    static @NotNull String stripTrailingSlashes(@NotNull String value) {
+    public static @NotNull String stripTrailingSlashes(@NotNull String value) {
         int end = value.length();
         while (end > 0 && value.charAt(end - 1) == '/') {
             end--;
