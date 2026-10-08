@@ -85,18 +85,32 @@ function byPagePosition(first: OfferedWidget, second: OfferedWidget): number {
   return position & Node.DOCUMENT_POSITION_PRECEDING ? 1 : 0;
 }
 
+/** The element a widget gives, or null where it gives none or fails: a widget of another extension cannot stop the button. */
+function anchorOf(target: WidgetExportTarget): Element | null {
+  try {
+    return target.anchor();
+  } catch (error) {
+    console.error(`The widget '${target.title}' could not say where it is`, error);
+    return null;
+  }
+}
+
 /**
  * The widgets on the page which offered themselves, in the order the page shows them, one per widget of the report.
  *
- * A widget whose element has left the page is dropped for good: nothing unmounts a widget in Polarion, its element is
- * discarded with the report when the user moves on. A widget outside any widget of the report has nothing to export.
+ * A widget which has not rendered yet gives no element and is asked again on the next click. A widget whose element
+ * has left the page is dropped for good: nothing unmounts a widget in Polarion, its element is discarded with the report
+ * when the user moves on. A widget outside any widget of the report has nothing to export.
  */
 export function offeredWidgets(): OfferedWidget[] {
   const all = targets();
   const offered = new Map<string, OfferedWidget>();
   for (const target of [...all]) {
-    const anchor = target.anchor();
-    if (!anchor?.isConnected) {
+    const anchor = anchorOf(target);
+    if (!anchor) {
+      continue;
+    }
+    if (!anchor.isConnected) {
       all.delete(target);
       continue;
     }

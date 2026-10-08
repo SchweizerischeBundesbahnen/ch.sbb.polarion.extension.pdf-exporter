@@ -60,9 +60,10 @@ const samePick = (first: Pick, second: Pick): boolean =>
  *
  * Shown only where there is something to choose; a report without either opens its export dialog straight
  * away, as before. A selection is preselected, since the selection is what says the user may mean it; the
- * report is preselected otherwise. A widget picked here opens the export dialog of the report, for that widget
- * only. A widget picked here opens that widget's own export dialog, so a selection is exported the same
- * way whichever button started it - with the widget's progress dialog, its stop and its merge option.
+ * report is preselected otherwise. A selection picked here opens its Bulk PDF Export widget's own export dialog,
+ * so it is exported the same way whichever button started it - with the widget's progress dialog, its stop and
+ * its merge option. A widget of another extension picked here opens the export dialog of the report, for that
+ * widget only.
  */
 export default function ExportTargetChooser({
   targets,

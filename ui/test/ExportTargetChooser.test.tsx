@@ -102,6 +102,7 @@ afterEach(() => {
     if (element.shadowRoot) element.remove();
   });
   vi.unstubAllGlobals();
+  vi.restoreAllMocks();
   document.cookie = 'selected-style-package=; path=/; max-age=0';
 });
 
@@ -178,10 +179,29 @@ describe('the widgets of other extensions a report button can offer', () => {
     expect(offeredWidgets().map((widget) => widget.title)).toEqual(['Timesheet']);
   });
 
-  it('waits for a widget which has not rendered yet', () => {
-    unregister.push(registerWidgetExportTarget({ title: 'Later', anchor: () => null }));
-
+  it('waits for a widget which has not rendered yet, and offers it once it has', () => {
+    let rendered: Element | null = null;
+    unregister.push(registerWidgetExportTarget({ title: 'Later', anchor: () => rendered }));
     expect(offeredWidgets()).toEqual([]);
+
+    const part = reportWidget('Timesheet', 'polarion_client2');
+    rendered = part.firstElementChild;
+    expect(offeredWidgets().map((widget) => widget.title)).toEqual(['Later']);
+  });
+
+  it('offers the other widgets where one fails to say where it is', () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    unregister.push(
+      registerWidgetExportTarget({
+        title: 'Broken',
+        anchor: () => {
+          throw new Error('not mounted');
+        },
+      }),
+    );
+    reportWidget('Timesheet', 'polarion_client2');
+
+    expect(offeredWidgets().map((widget) => widget.title)).toEqual(['Timesheet']);
   });
 });
 

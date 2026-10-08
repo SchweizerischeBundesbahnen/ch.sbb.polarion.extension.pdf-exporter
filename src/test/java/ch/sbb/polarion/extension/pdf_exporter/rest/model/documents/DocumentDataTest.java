@@ -225,8 +225,9 @@ class DocumentDataTest {
                 MockedStatic<RpeModelAspect> rpeModelAspectMockedStatic = mockStatic(RpeModelAspect.class);
                 MockedConstruction<ProxyRichPage> proxyRichPageMockedConstruction = mockConstruction(ProxyRichPage.class, (mock, context) -> {
                     RichPageReference referenceRichPageMock = mock(RichPageReference.class);
+                    Scope scope = mock(Scope.class);
                     when(mock.getReference()).thenReturn(referenceRichPageMock);
-                    when(referenceRichPageMock.scope()).thenReturn(mock(Scope.class));
+                    when(referenceRichPageMock.scope()).thenReturn(scope);
                 });
                 MockedConstruction<RpeRenderer> rendererMockedConstruction = mockConstruction(RpeRenderer.class, (mock, context) -> {
                     rendered.add((String) context.arguments().get(1));
