@@ -458,8 +458,37 @@ const top = window.top ?? window;
 - An element in a shadow root works too.
 
 The widget needs no ID of its own. Polarion puts every widget of a report in an element of the class
-`polarion-rp-widget-part`, and the export asks for the ID of that element. The server renders the report and keeps
-only that widget. The widget must render on the server too, as every widget of an exported report does.
+`polarion-rp-widget-part`, and the export asks for the ID of that element.
 
 An entry whose element has left the page is dropped. A widget therefore needs no clean-up when the user opens another
 report.
+
+The export does not capture the page in the browser. The server renders the report again, with only that widget kept:
+
+1. Polarion calls `renderHtml` of the widget, with the target `PDF_EXPORT` and as the exporting user.
+2. The PDF shows exactly the HTML that `renderHtml` returns.
+3. WeasyPrint makes the PDF from it and runs no JavaScript.
+
+What reaches the PDF:
+
+- HTML built on the server: tables, text, images, inline SVG.
+- Styles inline or in a `<style>` element of the returned HTML. The stylesheets of the page do not reach the PDF.
+- Only the saved parameters of the widget and the query parameters of the page. Browser state, like a selection or an
+  unsaved filter, does not.
+
+What does not reach the PDF:
+
+- Content that JavaScript adds in the browser, for example a React app or a chart drawn on a canvas.
+- The content of an iframe.
+
+A widget drawn in the browser needs HTML of its own for the PDF. Check the target in `renderHtml`:
+
+```java
+RichTextRenderTarget target = renderingContext.target();
+if (target.isPdf() || target.isPrint()) {
+    return staticHtml(renderingContext); // the content as plain HTML, without controls
+}
+```
+
+To check a widget, export the whole report. The widget looks the same when it is exported alone, at the full width of
+the page.
