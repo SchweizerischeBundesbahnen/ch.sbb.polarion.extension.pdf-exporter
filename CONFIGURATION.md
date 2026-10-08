@@ -19,6 +19,7 @@ overview and installation, the [quick start page](QUICK_START.md) for the most i
   - [Enabling webhooks](#enabling-webhooks)
   - [Bulk export (merge into single PDF)](#bulk-export-merge-into-single-pdf)
     - [Bulk Processing API key](#bulk-processing-api-key)
+    - [Bulk Processing Polarion token](#bulk-processing-polarion-token)
   - [Renderable image extensions](#renderable-image-extensions)
   - [External resources](#external-resources)
   - [Debug option](#debug-option)
@@ -265,6 +266,54 @@ To serve the bulk processing service over `https` (required whenever an API key 
 `TLS_CERT_FILE` and `TLS_KEY_FILE` (and `TLS_KEY_PASSWORD` where the key is encrypted), then name it with an
 `https` address in `bulk.processing.service`. See the [HTTPS section of the service's
 README](https://github.com/SchweizerischeBundesbahnen/bulk-processing-service#https) for the full setup.
+
+<a id="bulk-processing-polarion-token"></a>
+#### Bulk Processing Polarion token
+
+A bulk processing service has no users of its own, so a merge job is protected by its ID alone. The extension can
+tell the service who a job is made for: with every call it sends a short-lived token which **Polarion itself issues**
+for the signed-in user (`X-Polarion-Token`). Nothing has to be configured in the extension and no secret is shared with
+the service: Polarion signs the token with a key whose public half it publishes as a JWKS, and the service verifies the
+signature against that key set.
+
+The token names the user (`sub`), the job it is for (`job`, absent for the call which starts a job, so a token cannot be used
+for another job), the service (`svc`) and when it expires (`exp`, five minutes). A new one is made for every call. The key
+never reaches the extension, Polarion signs; it is generated in memory by each Polarion JVM (every node of a cluster has its own)
+and is therefore new after a restart of Polarion, which the service picks up by re-reading the key set. A merge without a signed-in user, or a Polarion which cannot issue a token, sends
+none, and the export goes on: a service which does not check tokens does not need one.
+
+The service checks tokens as soon as it is started with `POLARION_JWKS_URL` set to the key set of this Polarion:
+
+```bash
+docker run --detach \
+  --name bulk-processing-service \
+  --publish 9070:9070 \
+  --env WEASYPRINT_SERVICE_URL=http://weasyprint-service:9080 \
+  --env POLARION_JWKS_URL=https://polarion.example.com/polarion/.well-known/jwks.json \
+  ghcr.io/schweizerischebundesbahnen/bulk-processing-service:latest
+```
+
+It then lets a job be used only by the user it was started for. See the [Polarion token section of the service's
+README](https://github.com/SchweizerischeBundesbahnen/bulk-processing-service#polarion-token) for the details. A few things
+decide whether it works:
+
+- The service has to reach that address by **the name Polarion knows itself by** (its base URL): a Polarion behind a web
+  server which accepts other names only will answer 400.
+- The clocks of Polarion and of the service have to agree to within seconds, since tokens live for minutes.
+- If the service refuses a token, the export fails with a message which says so and names `POLARION_JWKS_URL`, apart from the
+  message about the API key. The extension tells the two apart by the wording of the service's answer (it has to contain
+  `Polarion token`), so extension and service are best upgraded together. If no token could be issued at all, the message says that instead.
+- The key which signs the tokens is the one Polarion also uses for tokens of its own license and cluster handling. The extension
+  therefore fixes the names of the claims and only puts values it works out itself into them.
+- The token is **not a credential for Polarion**. Polarion's own bearer authentication (`JwtAuthenticator`/`JwtProcessor`)
+  looks a token up by its `iss` claim in the issuers an administrator configured, and refuses a token without one or with an
+  unknown one before the signature is looked at; `JwtTokenProvider` sets no `iss`, and the extension does not add one. The
+  internal token of the real-time communication (`JwtTokenHelper`) is an HS256 token with a shared secret, which an RS256 token
+  of this key is not. (Checked against Polarion 2606.) A token can only be replayed to the bulk processing service, for the
+  one job it names and for five minutes.
+- Unlike the API key, which the extension refuses to send over plain `http`, the token is sent whatever the address of the
+  service is. Over plain `http` it can be read by whoever can read the traffic, who can also read the documents, so use `https`
+  for the service where the network is not trusted.
 
 ### Renderable image extensions
 

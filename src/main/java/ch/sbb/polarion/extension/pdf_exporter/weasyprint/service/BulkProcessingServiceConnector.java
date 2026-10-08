@@ -10,6 +10,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.polarion.core.util.exceptions.UserFriendlyRuntimeException;
 import com.polarion.core.util.logging.Logger;
+import com.polarion.platform.core.PlatformContext;
+import com.polarion.platform.security.ISecurityService;
 import org.glassfish.jersey.media.multipart.FormDataBodyPart;
 import org.glassfish.jersey.media.multipart.FormDataMultiPart;
 import org.glassfish.jersey.media.multipart.MultiPartFeature;
@@ -31,18 +33,22 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.function.Supplier;
 
 public class BulkProcessingServiceConnector implements BulkProcessingConnector {
     private static final Logger logger = Logger.getLogger(BulkProcessingServiceConnector.class);
 
     private static final String MERGE_API_PREFIX = "/api/convert/";
     private static final String API_KEY_HEADER = "X-API-Key";
+    private static final String POLARION_TOKEN_HEADER = "X-Polarion-Token";
     private static final int CONNECT_TIMEOUT_MS = 10_000;
     private static final int READ_TIMEOUT_MS = 600_000;
 
     private final @NotNull String bulkProcessingServiceBaseUrl;
     private final @NotNull String weasyPrintServiceBaseUrl;
     private final @NotNull ApiKeyProvider apiKeyProvider;
+    private final @NotNull PolarionTokenIssuer tokenIssuer;
+    private final @NotNull Supplier<@Nullable String> userSupplier;
     private final PdfPostProcessor pdfPostProcessor = new PdfPostProcessor();
 
     public BulkProcessingServiceConnector() {
@@ -52,13 +58,33 @@ public class BulkProcessingServiceConnector implements BulkProcessingConnector {
 
     public BulkProcessingServiceConnector(@NotNull String bulkProcessingServiceBaseUrl, @NotNull String weasyPrintServiceBaseUrl) {
         this(bulkProcessingServiceBaseUrl, weasyPrintServiceBaseUrl,
-                new ApiKeyProvider(() -> PdfExporterExtensionConfiguration.getInstance().getBulkProcessingApiKeySecret(), "bulk processing service"));
+                new ApiKeyProvider(() -> PdfExporterExtensionConfiguration.getInstance().getBulkProcessingApiKeySecret(), "bulk processing service"),
+                new PolarionTokenIssuer(), BulkProcessingServiceConnector::currentUser);
     }
 
     public BulkProcessingServiceConnector(@NotNull String bulkProcessingServiceBaseUrl, @NotNull String weasyPrintServiceBaseUrl, @NotNull ApiKeyProvider apiKeyProvider) {
+        this(bulkProcessingServiceBaseUrl, weasyPrintServiceBaseUrl, apiKeyProvider, new PolarionTokenIssuer(), () -> null);
+    }
+
+    /**
+     * @param tokenIssuer  asks Polarion for the token which tells the service who a merge is made for
+     * @param userSupplier the user a merge is made for, {@code null} where there is none (no token is sent then)
+     */
+    public BulkProcessingServiceConnector(@NotNull String bulkProcessingServiceBaseUrl, @NotNull String weasyPrintServiceBaseUrl, @NotNull ApiKeyProvider apiKeyProvider,
+                                          @NotNull PolarionTokenIssuer tokenIssuer, @NotNull Supplier<@Nullable String> userSupplier) {
         this.bulkProcessingServiceBaseUrl = bulkProcessingServiceBaseUrl;
         this.weasyPrintServiceBaseUrl = weasyPrintServiceBaseUrl;
         this.apiKeyProvider = apiKeyProvider;
+        this.tokenIssuer = tokenIssuer;
+        this.userSupplier = userSupplier;
+    }
+
+    /**
+     * Looked up when a merge asks for it, not when the connector is built: the user is the one the merge thread
+     * runs as, which the thread which built the connector need not be.
+     */
+    private static @Nullable String currentUser() {
+        return PlatformContext.getPlatform().lookupService(ISecurityService.class).getCurrentUser();
     }
 
     private static @NotNull Client createClient() {
@@ -104,9 +130,61 @@ public class BulkProcessingServiceConnector implements BulkProcessingConnector {
      */
     @VisibleForTesting
     static @NotNull String unauthorizedMessage(boolean apiKeySent) {
+        return unauthorizedMessage(apiKeySent, null);
+    }
+
+    /**
+     * The service says which of its two checks refused the call: a refusal of the Polarion token has nothing to do with
+     * the API key, and its fix is in the service's access to the key set of Polarion, or in the clocks, not in a secret.
+     */
+    @VisibleForTesting
+    static @NotNull String unauthorizedMessage(boolean apiKeySent, @Nullable String serviceAnswer) {
+        return unauthorizedMessage(apiKeySent, true, serviceAnswer);
+    }
+
+    /**
+     * @param tokenSent whether a Polarion token went along with the call: if none did, the service cannot be blamed for not
+     *                  finding the key set - no token could be issued (no user, or Polarion could not sign one)
+     */
+    @VisibleForTesting
+    static @NotNull String unauthorizedMessage(boolean apiKeySent, boolean tokenSent, @Nullable String serviceAnswer) {
+        if (!tokenSent && serviceAnswer != null && serviceAnswer.contains("Missing Polarion token")) {
+            return "Bulk processing service requires a Polarion token, but none could be issued for this export (no current user, or Polarion could not sign one)."
+                    + " See the Polarion log. The service answered: " + serviceAnswer;
+        }
+        if (serviceAnswer != null && serviceAnswer.contains("Polarion token")) {
+            return "Bulk processing service refused the Polarion token of this export. Check that the service fetches the key set of this Polarion"
+                    + " (POLARION_JWKS_URL) and that the clocks of Polarion and the service agree. The service answered: " + serviceAnswer;
+        }
         return apiKeySent
                 ? "Bulk processing service rejected the configured API key. Check that the Polarion secret named in '" + PdfExporterExtensionConfiguration.BULK_PROCESSING_API_KEY_SECRET + "' holds the key the service was started with."
                 : "Bulk processing service requires an API key, none is configured. Name the Polarion secret holding it in '" + PdfExporterExtensionConfiguration.BULK_PROCESSING_API_KEY_SECRET + "'.";
+    }
+
+    /**
+     * Tells the service who the merge is made for: a token Polarion issued for this very call. The token of the call which
+     * starts a job names no job, every other one names the job it addresses, so no token can be used for another job.
+     * A merge without a user, or a Polarion which gives no token, sends none.
+     */
+    @VisibleForTesting
+    boolean applyPolarionToken(@NotNull Invocation.Builder builder, @Nullable String jobId) {
+        String user;
+        try {
+            user = userSupplier.get();
+        } catch (Exception | LinkageError e) {
+            // no user is no token, never a broken export: the service decides whether it can do without
+            logger.warn("Could not find out the current user for the Polarion token: " + e.getClass().getName());
+            return false;
+        }
+        if (user == null || user.isBlank()) {
+            return false;
+        }
+        String token = tokenIssuer.issue(user, jobId);
+        if (token == null) {
+            return false;
+        }
+        builder.header(POLARION_TOKEN_HEADER, token);
+        return true;
     }
 
     /**
@@ -177,6 +255,7 @@ public class BulkProcessingServiceConnector implements BulkProcessingConnector {
 
             Invocation.Builder builder = webTarget.request(MediaType.APPLICATION_JSON);
             boolean apiKeySent = applyApiKey(builder) != null;
+            boolean tokenSent = applyPolarionToken(builder, null);
             try (Response response = builder.post(Entity.entity(jsonBody, MediaType.APPLICATION_JSON))) {
                 if (response.getStatus() == Response.Status.OK.getStatusCode()
                         || response.getStatus() == Response.Status.CREATED.getStatusCode()) {
@@ -188,7 +267,7 @@ public class BulkProcessingServiceConnector implements BulkProcessingConnector {
                     }
                 } else if (response.getStatus() == Response.Status.UNAUTHORIZED.getStatusCode()) {
                     // user friendly on purpose: the reason has to reach the export dialog, not only the log
-                    throw new UserFriendlyRuntimeException(unauthorizedMessage(apiKeySent));
+                    throw new UserFriendlyRuntimeException(unauthorizedMessage(apiKeySent, tokenSent, response.readEntity(String.class)));
                 } else {
                     String errorMessage = response.readEntity(String.class);
                     throw new IllegalStateException(String.format(
@@ -270,9 +349,10 @@ public class BulkProcessingServiceConnector implements BulkProcessingConnector {
     private void postDocument(@NotNull String jobId, @NotNull WebTarget webTarget, @NotNull Entity<?> entity) {
         Invocation.Builder builder = webTarget.request(MediaType.APPLICATION_JSON);
         boolean apiKeySent = applyApiKey(builder) != null;
+        boolean tokenSent = applyPolarionToken(builder, jobId);
         try (Response response = builder.post(entity)) {
             if (response.getStatus() == Response.Status.UNAUTHORIZED.getStatusCode()) {
-                throw new UserFriendlyRuntimeException(unauthorizedMessage(apiKeySent));
+                throw new UserFriendlyRuntimeException(unauthorizedMessage(apiKeySent, tokenSent, response.readEntity(String.class)));
             }
             if (response.getStatus() != Response.Status.OK.getStatusCode()
                     && response.getStatus() != Response.Status.ACCEPTED.getStatusCode()) {
@@ -292,6 +372,7 @@ public class BulkProcessingServiceConnector implements BulkProcessingConnector {
 
             Invocation.Builder builder = webTarget.request("application/pdf");
             boolean apiKeySent = applyApiKey(builder) != null;
+            boolean tokenSent = applyPolarionToken(builder, jobId);
             try (Response response = builder.post(Entity.entity("", MediaType.TEXT_PLAIN))) {
                 if (response.getStatus() == Response.Status.OK.getStatusCode()) {
                     InputStream inputStream = response.readEntity(InputStream.class);
@@ -310,7 +391,7 @@ public class BulkProcessingServiceConnector implements BulkProcessingConnector {
                         throw new IllegalStateException("Could not read merged PDF response stream", e);
                     }
                 } else if (response.getStatus() == Response.Status.UNAUTHORIZED.getStatusCode()) {
-                    throw new UserFriendlyRuntimeException(unauthorizedMessage(apiKeySent));
+                    throw new UserFriendlyRuntimeException(unauthorizedMessage(apiKeySent, tokenSent, response.readEntity(String.class)));
                 } else {
                     String errorMessage = response.readEntity(String.class);
                     throw new IllegalStateException(String.format(
@@ -358,6 +439,7 @@ public class BulkProcessingServiceConnector implements BulkProcessingConnector {
             WebTarget webTarget = client.target(bulkProcessingServiceBaseUrl + MERGE_API_PREFIX + jobId);
             Invocation.Builder builder = webTarget.request();
             applyApiKey(builder);
+            applyPolarionToken(builder, jobId);
             builder.delete().close();
         } catch (Exception cleanup) {
             logger.warn(String.format("Failed to delete merge job '%s': %s", jobId, cleanup.getMessage()));
