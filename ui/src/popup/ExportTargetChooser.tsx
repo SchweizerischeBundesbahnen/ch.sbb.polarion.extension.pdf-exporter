@@ -1,15 +1,18 @@
 import { useState } from 'react';
 import type { ReactNode } from 'react';
 import { Modal } from '@sbb-polarion/react-sbb-polarion';
+import type { OfferedWidget } from '../export/widgetExportTargets';
 import type { BulkExportTarget } from '../widget/exportTargets';
 
 export interface ExportTargetChooserProps {
-  /** The Bulk PDF Export widgets with rows selected. The chooser is only shown when there is one at least. */
+  /** The Bulk PDF Export widgets with rows selected. */
   targets: BulkExportTarget[];
+  /** The widgets of other extensions which offered to be exported alone. */
+  widgets?: OfferedWidget[];
   /** What the page itself is called in the choice: a report, or the test run a test run page shows. */
   pageLabel: string;
-  /** The export dialog for the report itself, shown in place of the chooser when the report is picked. */
-  report: ReactNode;
+  /** The export dialog shown in place of the chooser: for the report, or for the one widget of it given. */
+  dialog: (widgetId?: string) => ReactNode;
   onClose: () => void;
 }
 
@@ -33,55 +36,81 @@ export function describeTargets(targets: BulkExportTarget[]): string[] {
 }
 
 /**
+ * "Only Timesheet" per widget offered to be exported alone. Widgets of the same title are told apart as the
+ * Bulk PDF Export widgets are.
+ */
+export function describeWidgets(widgets: OfferedWidget[]): string[] {
+  const name = (widget: OfferedWidget) => widget.title || 'the widget';
+  return widgets.map((widget) => {
+    const label = `Only ${name(widget)}`;
+    const namesakes = widgets.filter((other) => name(other) === name(widget));
+    return namesakes.length > 1 ? `${label} (widget ${namesakes.indexOf(widget) + 1} of ${namesakes.length})` : label;
+  });
+}
+
+/** Which option is picked: the page, a Bulk PDF Export selection or a widget, by its index. */
+type Pick = { kind: 'page' } | { kind: 'bulk'; index: number } | { kind: 'widget'; index: number };
+
+const samePick = (first: Pick, second: Pick): boolean =>
+  first.kind === second.kind && (first.kind === 'page' || first.index === (second as { index: number }).index);
+
+/**
  * Asks what a report's own "Export to PDF" button exports: the report, or the rows selected in a Bulk PDF
- * Export widget on it.
+ * Export widget on it, or one widget of another extension which offered itself (#1183).
  *
- * Shown only where a widget has a selection, since the selection is what says the user may mean it; a report
- * without one opens its export dialog straight away, as before. The selection is preselected for the same
- * reason. A widget picked here opens that widget's own export dialog, so a selection is exported the same
+ * Shown only where there is something to choose; a report without either opens its export dialog straight
+ * away, as before. A selection is preselected, since the selection is what says the user may mean it; the
+ * report is preselected otherwise. A widget picked here opens the export dialog of the report, for that widget
+ * only. A widget picked here opens that widget's own export dialog, so a selection is exported the same
  * way whichever button started it - with the widget's progress dialog, its stop and its merge option.
  */
 export default function ExportTargetChooser({
   targets,
+  widgets = [],
   pageLabel,
-  report,
+  dialog,
   onClose,
 }: Readonly<ExportTargetChooserProps>) {
-  /** Which option is picked: the index of a widget in `targets`, or -1 for the report. */
-  const [picked, setPicked] = useState(0);
-  const [reportChosen, setReportChosen] = useState(false);
+  const [picked, setPicked] = useState<Pick>(targets.length > 0 ? { kind: 'bulk', index: 0 } : { kind: 'page' });
+  /** Where the dialog was chosen: undefined while choosing, null for the whole report, or a widget's ID. */
+  const [chosen, setChosen] = useState<string | null>();
 
-  if (reportChosen) {
-    return report;
+  if (chosen !== undefined) {
+    return dialog(chosen ?? undefined);
   }
 
   const labels = describeTargets(targets);
+  const widgetLabels = describeWidgets(widgets);
 
   const proceed = () => {
-    if (picked < 0) {
-      setReportChosen(true);
-      return;
+    if (picked.kind === 'page') {
+      setChosen(null);
+    } else if (picked.kind === 'widget') {
+      setChosen(widgets[picked.index].widgetId);
+    } else {
+      // Closed first: the widget's dialog opens in the widget's own root, not in this one.
+      onClose();
+      targets[picked.index].startExport();
     }
-    // Closed first: the widget's dialog opens in the widget's own root, not in this one.
-    onClose();
-    targets[picked].startExport();
   };
+
+  const option = (pick: Pick, key: string, label: string) => (
+    <label key={key}>
+      <input type="radio" name="export-target" checked={samePick(picked, pick)} onChange={() => setPicked(pick)} />
+      {label}
+    </label>
+  );
 
   return (
     <Modal open title="Export to PDF" okText="Continue" cancelText="Close" onOk={proceed} onCancel={onClose}>
       <div className="export-target-chooser">
         <p id="export-target-question">What do you want to export?</p>
         <div className="export-target-options" role="radiogroup" aria-labelledby="export-target-question">
-          <label>
-            <input type="radio" name="export-target" checked={picked < 0} onChange={() => setPicked(-1)} />
-            {pageLabel}
-          </label>
-          {targets.map((target, index) => (
-            <label key={target.id}>
-              <input type="radio" name="export-target" checked={picked === index} onChange={() => setPicked(index)} />
-              {labels[index]}
-            </label>
-          ))}
+          {option({ kind: 'page' }, 'page', pageLabel)}
+          {targets.map((target, index) => option({ kind: 'bulk', index }, `bulk:${target.id}`, labels[index]))}
+          {widgets.map((widget, index) =>
+            option({ kind: 'widget', index }, `widget:${widget.widgetId}`, widgetLabels[index]),
+          )}
         </div>
       </div>
     </Modal>

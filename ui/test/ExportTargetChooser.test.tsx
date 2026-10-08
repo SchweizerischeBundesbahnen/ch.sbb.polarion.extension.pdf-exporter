@@ -2,10 +2,12 @@ import type { Root } from 'react-dom/client';
 import { a11yViolations } from '@sbb-polarion/react-sbb-polarion/testing';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { DocumentType } from '../src/export/documentType';
+import { offeredWidgets, registerWidgetExportTarget, widgetIdOf } from '../src/export/widgetExportTargets';
+import type { ExportPopupDependencies } from '../src/popup/ExportPopupModal';
 import { openExportPopup } from '../src/popup/mount';
 import type { BulkExportTarget } from '../src/widget/exportTargets';
 import { registerBulkExportTarget, selectedBulkExportTargets } from '../src/widget/exportTargets';
-import { popupRoutes } from './exportPopupSamples';
+import { pdfResult, popupDependencies, popupRoutes } from './exportPopupSamples';
 import { installFetchMock } from './mockFetch';
 import { clearToasts } from './toasts';
 
@@ -53,7 +55,25 @@ function widget(title: string, count: number, before?: HTMLElement): StandIn {
   return target;
 }
 
-function open(documentType: DocumentType = 'LIVE_REPORT', exportType?: 'BULK') {
+/**
+ * A widget of another extension, offered to be exported alone: a widget part of the report as Polarion renders
+ * it, with the widget's own element mounted in a shadow root inside, the way a React widget mounts.
+ */
+function reportWidget(title: string, id: string): HTMLElement {
+  const part = document.createElement('div');
+  part.id = id;
+  part.className = 'polarion-rp-widget-part';
+  const host = document.createElement('div');
+  part.appendChild(host);
+  const element = document.createElement('div');
+  host.attachShadow({ mode: 'open' }).appendChild(element);
+  document.body.appendChild(part);
+  anchors.push(part);
+  unregister.push(registerWidgetExportTarget({ title, anchor: () => element }));
+  return part;
+}
+
+function open(documentType: DocumentType = 'LIVE_REPORT', exportType?: 'BULK', deps?: ExportPopupDependencies) {
   installFetchMock(popupRoutes());
   roots.push(
     openExportPopup({
@@ -68,6 +88,7 @@ function open(documentType: DocumentType = 'LIVE_REPORT', exportType?: 'BULK') {
       },
       exportType,
       identifiers: exportType === 'BULK' ? [{ projectId: 'elibrary', documentName: 'One' }] : undefined,
+      deps,
     }),
   );
 }
@@ -118,6 +139,49 @@ describe('the widgets a report button can offer', () => {
     unregister.splice(0).forEach((remove) => remove());
 
     expect(selectedBulkExportTargets()).toEqual([]);
+  });
+});
+
+describe('the widgets of other extensions a report button can offer', () => {
+  it('names the widget of the report a widget stands in, through the shadow root it is mounted in', () => {
+    reportWidget('Timesheet', 'polarion_client2');
+
+    expect(offeredWidgets().map(({ title, widgetId }) => ({ title, widgetId }))).toEqual([
+      { title: 'Timesheet', widgetId: 'polarion_client2' },
+    ]);
+  });
+
+  it('names nothing for an element outside every widget of the report', () => {
+    const element = document.createElement('span');
+    document.body.appendChild(element);
+    anchors.push(element);
+    unregister.push(registerWidgetExportTarget({ title: 'Loose', anchor: () => element }));
+
+    expect(widgetIdOf(element)).toBeNull();
+    expect(offeredWidgets()).toEqual([]);
+  });
+
+  it('lists them in the order the page shows them, and drops one which has left the page', () => {
+    const second = reportWidget('Timesheet', 'polarion_client2');
+    const first = reportWidget('Budget', 'polarion_client1');
+    second.before(first);
+    expect(offeredWidgets().map((widget) => widget.widgetId)).toEqual(['polarion_client1', 'polarion_client2']);
+
+    first.remove();
+    expect(offeredWidgets().map((widget) => widget.widgetId)).toEqual(['polarion_client2']);
+  });
+
+  it('offers a widget once, however often it registered', () => {
+    const part = reportWidget('Timesheet', 'polarion_client2');
+    unregister.push(registerWidgetExportTarget({ title: 'Timesheet again', anchor: () => part.firstElementChild }));
+
+    expect(offeredWidgets().map((widget) => widget.title)).toEqual(['Timesheet']);
+  });
+
+  it('waits for a widget which has not rendered yet', () => {
+    unregister.push(registerWidgetExportTarget({ title: 'Later', anchor: () => null }));
+
+    expect(offeredWidgets()).toEqual([]);
   });
 });
 
@@ -235,6 +299,103 @@ describe('choosing what a report button exports', () => {
     ]);
   });
 
+  it('asks where a widget offered itself, with the report preselected', async () => {
+    reportWidget('Timesheet', 'polarion_client2');
+    reportWidget('Timesheet', 'polarion_client3');
+    open();
+
+    await vi.waitFor(() => expect(chooser()).not.toBeNull());
+    expect(options().map((label) => label.textContent?.trim())).toEqual([
+      'This report',
+      'Only Timesheet (widget 1 of 2)',
+      'Only Timesheet (widget 2 of 2)',
+    ]);
+    expect(radio(options()[0]).checked).toBe(true);
+  });
+
+  it('lists the widgets after the selections, and preselects a selection', async () => {
+    reportWidget('Timesheet', 'polarion_client2');
+    widget('Documents', 3);
+    open();
+
+    await vi.waitFor(() => expect(chooser()).not.toBeNull());
+    expect(options().map((label) => label.textContent?.trim())).toEqual([
+      'This report',
+      '3 selected items from Documents',
+      'Only Timesheet',
+    ]);
+    expect(radio(options()[1]).checked).toBe(true);
+  });
+
+  it('exports the picked widget alone, through the export dialog of the report', async () => {
+    reportWidget('Timesheet', 'polarion_client2');
+    const requests: string[] = [];
+    open(
+      'LIVE_REPORT',
+      undefined,
+      popupDependencies({
+        convert: (request) => {
+          requests.push(request);
+          return Promise.resolve(pdfResult());
+        },
+      }),
+    );
+    await vi.waitFor(() => expect(chooser()).not.toBeNull());
+
+    radio(options()[1]).click();
+    continueButton().click();
+    await vi.waitFor(() => expect(form()).not.toBeNull());
+    continueButton().click();
+
+    await vi.waitFor(() => expect(requests).toHaveLength(1));
+    const sent = JSON.parse(requests[0]) as Record<string, unknown>;
+    expect(sent.documentType).toBe('LIVE_REPORT');
+    expect(sent.locationPath).toBe('_default/Dashboard');
+    expect(sent.widgetId).toBe('polarion_client2');
+  });
+
+  it('exports the whole report when the report is picked', async () => {
+    reportWidget('Timesheet', 'polarion_client2');
+    const requests: string[] = [];
+    open(
+      'LIVE_REPORT',
+      undefined,
+      popupDependencies({
+        convert: (request) => {
+          requests.push(request);
+          return Promise.resolve(pdfResult());
+        },
+      }),
+    );
+    await vi.waitFor(() => expect(chooser()).not.toBeNull());
+
+    continueButton().click();
+    await vi.waitFor(() => expect(form()).not.toBeNull());
+    continueButton().click();
+
+    await vi.waitFor(() => expect(requests).toHaveLength(1));
+    expect(JSON.parse(requests[0])).not.toHaveProperty('widgetId');
+  });
+
+  it('offers no widget on a test run page, which is no report to take one out of', async () => {
+    reportWidget('Timesheet', 'polarion_client2');
+    installFetchMock(popupRoutes());
+    roots.push(
+      openExportPopup({
+        documentType: 'LIVE_REPORT',
+        location: {
+          documentType: 'TEST_RUN',
+          scope: 'project/elibrary/',
+          projectId: 'elibrary',
+          urlQueryParameters: { id: 'run_1' },
+        },
+      }),
+    );
+
+    await vi.waitFor(() => expect(form()).not.toBeNull());
+    expect(chooser()).toBeNull();
+  });
+
   it('does not ask for anything but a report', async () => {
     widget('Documents', 3);
     open('LIVE_DOC');
@@ -259,6 +420,7 @@ describe('accessibility', () => {
   it('has no WCAG A/AA violations while asking what a report button exports', async () => {
     widget('Documents', 3);
     widget('Test Runs', 1);
+    reportWidget('Timesheet', 'polarion_client2');
     open();
     await vi.waitFor(() => expect(chooser()).not.toBeNull());
     expect(await a11yViolations(host())).toEqual([]);

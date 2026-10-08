@@ -6,6 +6,7 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.id.DocumentId;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.id.DocumentProject;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.id.LiveReportId;
+import ch.sbb.polarion.extension.pdf_exporter.util.LiveReportWidget;
 import com.polarion.alm.projects.model.IUniqueObject;
 import com.polarion.alm.server.api.model.rp.ProxyRichPage;
 import com.polarion.alm.shared.api.transaction.ReadOnlyTransaction;
@@ -59,6 +60,10 @@ public class LiveReportAdapter extends CommonUniqueObjectAdapter {
             ProxyRichPage proxyRichPage = new ProxyRichPage(richPage, (InternalReadOnlyTransaction) transaction);
 
             String html = RpeModelAspect.getPageHtml(proxyRichPage);
+            String widgetId = exportParams.getWidgetId();
+            if (widgetId != null && !widgetId.isBlank()) {
+                html = LiveReportWidget.keepOnly(html, widgetId.trim(), getTitle());
+            }
             Map<String, String> liveReportParameters = exportParams.getUrlQueryParameters() == null ? Map.of() : exportParams.getUrlQueryParameters();
             StrictMap<String, String> urlParameters = new StrictMapImpl<>(liveReportParameters);
             RpeRenderer richPageRenderer = new RpeRenderer((InternalReadOnlyTransaction) transaction, html, RichTextRenderTarget.PDF_EXPORT, proxyRichPage.getReference(), proxyRichPage.getReference().scope(), urlParameters);

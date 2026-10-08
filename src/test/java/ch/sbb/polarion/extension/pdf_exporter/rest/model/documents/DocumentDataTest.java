@@ -33,6 +33,7 @@ import com.polarion.alm.tracker.spi.model.IInternalModule;
 import com.polarion.platform.persistence.IDataService;
 import com.polarion.platform.persistence.model.IPObjectList;
 import com.polarion.platform.persistence.spi.PObjectList;
+import lombok.SneakyThrows;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -41,10 +42,16 @@ import org.mockito.MockedConstruction;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Objects;
+import java.util.ArrayList;
+import java.io.InputStream;
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -196,6 +203,48 @@ class DocumentDataTest {
                     .withExportParams(exportParams)
                     .toDocumentData();
             assertEquals("test content", documentDataWithContent.getContent());
+        }
+    }
+
+    /** A widget of the report exported alone: the renderer gets the stored page with the title and that widget only (#1183). */
+    @Test
+    @SneakyThrows
+    void testLiveReportWidgetContent() {
+        ITrackerProject project = mock(ITrackerProject.class);
+        when(richPageInProject.getProject()).thenReturn(project);
+        when(richPageInProject.getTitleOrName()).thenReturn("Bulk processing");
+        when(richPageInProject.getId()).thenReturn("rich page id");
+        when(richPageInProject.getLastRevision()).thenReturn("12345");
+        String page;
+        try (InputStream stream = Objects.requireNonNull(getClass().getResourceAsStream("/liveReportWithTwoWidgets.html"))) {
+            page = new String(stream.readAllBytes(), StandardCharsets.UTF_8);
+        }
+        List<String> rendered = new ArrayList<>();
+
+        try (
+                MockedStatic<RpeModelAspect> rpeModelAspectMockedStatic = mockStatic(RpeModelAspect.class);
+                MockedConstruction<ProxyRichPage> proxyRichPageMockedConstruction = mockConstruction(ProxyRichPage.class, (mock, context) -> {
+                    RichPageReference referenceRichPageMock = mock(RichPageReference.class);
+                    when(mock.getReference()).thenReturn(referenceRichPageMock);
+                    when(referenceRichPageMock.scope()).thenReturn(mock(Scope.class));
+                });
+                MockedConstruction<RpeRenderer> rendererMockedConstruction = mockConstruction(RpeRenderer.class, (mock, context) -> {
+                    rendered.add((String) context.arguments().get(1));
+                    when(mock.render(null)).thenReturn("widget content");
+                })
+        ) {
+            rpeModelAspectMockedStatic.when(() -> RpeModelAspect.getPageHtml(any())).thenReturn(page);
+
+            DocumentData<IRichPage> documentData = new UniqueObjectConverter(richPageInProject)
+                    .withContent(true)
+                    .withExportParams(ExportParams.builder().locationPath("location path").widgetId("polarion_client2").build())
+                    .toDocumentData();
+
+            assertEquals("widget content", documentData.getContent());
+            assertEquals(1, rendered.size());
+            assertTrue(rendered.getFirst().contains("id=\"polarion_client2\""), rendered.getFirst());
+            assertFalse(rendered.getFirst().contains("polarion_client1"), "The other widget is left out");
+            assertTrue(rendered.getFirst().contains("<h1>Bulk processing</h1>"), rendered.getFirst());
         }
     }
 

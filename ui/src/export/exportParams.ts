@@ -53,6 +53,8 @@ export interface ExportParamsJson {
   linkRoleDirection?: string | null;
   fileName?: string;
   urlQueryParameters?: Record<string, string>;
+  /** A report only: the one widget of it to export. */
+  widgetId?: string;
   attachmentsFilter?: string | null;
   testcaseFieldId?: string | null;
   embedAttachments?: boolean | null;
@@ -66,6 +68,8 @@ export interface DocumentContext {
   baselineRevision?: string | null;
   revision?: string | null;
   urlQueryParameters?: Record<string, string>;
+  /** A report only: the one widget of it to export, left out where the whole report is. */
+  widgetId?: string;
 }
 
 /** What is being exported, and how - which together decide the fields the request carries. */
@@ -172,6 +176,7 @@ export function buildExportParams(form: ExportForm, context: DocumentContext, ta
       linkRoleDirection: roles.length > 0 ? form.linkRoleDirection : null,
       fileName: target.fileName,
       urlQueryParameters: urlQueryParameters(form, context, documentType),
+      ...(documentType === 'LIVE_REPORT' && context.widgetId ? { widgetId: context.widgetId } : {}),
       // The three test run fields and the bulk auto-select switch are left out entirely where they do not
       // apply. The legacy popup sent the two booleans as `false` there instead; both are primitive booleans
       // on the Java side, where an absent one is already `false`, so the request means the same - and the

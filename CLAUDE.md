@@ -56,6 +56,9 @@
   always exported through the widget's own dialog and progress run. Nothing ever unmounts a widget: moving
   to another report removes its host and keeps the page, so the list drops an entry whose `anchor` (the
   host) has left the page, and the widget's title is only the item type - hence "(widget 1 of 2)".
+  Widgets of other extensions offer themselves the same way, in `__pdfExporterExportTargets`
+  (`ui/src/export/widgetExportTargets.ts`): picking one exports the report with `ExportParams.widgetId`, and
+  `LiveReportWidget` keeps only that `polarion-rp-widget-part` of the rendered page.
 - **A toast inside a shadow root needs its stylesheet brought in, and one host.** `sonner` (through RSP's
   `Toaster`) injects its CSS into `document.head` when its module loads, which none of the three
   shadow-mounted surfaces can see - so `ui/src/export/export-form.css` imports `sonner/dist/styles.css` and

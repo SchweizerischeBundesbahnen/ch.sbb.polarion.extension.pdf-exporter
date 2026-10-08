@@ -3,6 +3,7 @@ import type { Root } from 'react-dom/client';
 import type { DocumentType, ExportType } from '../export/documentType';
 import formStyle from '../export/export-form.css?inline';
 import type { DocIdentifier } from '../export/exportData';
+import { offeredWidgets } from '../export/widgetExportTargets';
 import type { DocumentIdentity } from '../services/exportContext';
 import { currentDocumentLocation, toDocumentIdentity } from '../services/exportContext';
 import { mountInShadow } from '../services/shadowMount';
@@ -60,8 +61,8 @@ let closeOpenPopup: (() => void) | null = null;
 /**
  * Opens the dialog. Returns the React root so the dev harness and the tests can unmount it.
  *
- * For a report, where a Bulk PDF Export widget on the page has rows selected, it asks first whether to export
- * the report or that selection - see `ExportTargetChooser`.
+ * For a report, where a Bulk PDF Export widget on the page has rows selected or a widget offered to be exported
+ * alone, it asks first what to export - see `ExportTargetChooser`.
  */
 export function openExportPopup(options: OpenExportPopupOptions = {}): Root {
   closeOpenPopup?.();
@@ -89,9 +90,9 @@ export function openExportPopup(options: OpenExportPopupOptions = {}): Root {
     host.remove();
   };
   closeOpenPopup = close;
-  const dialog = (
+  const dialog = (widgetId?: string) => (
     <ExportPopupModal
-      document={location}
+      document={widgetId ? { ...location, widgetId } : location}
       exportType={options.exportType}
       identifiers={options.identifiers}
       onBulkExport={options.onBulkExport}
@@ -105,13 +106,16 @@ export function openExportPopup(options: OpenExportPopupOptions = {}): Root {
   // asked for decides, not what the location resolved to: a test run page is a report page too, and carries
   // the same buttons and widgets, but its location resolves to TEST_RUN.
   const asked = options.documentType ?? location.documentType;
-  const targets = asked === 'LIVE_REPORT' && options.exportType !== 'BULK' ? selectedBulkExportTargets() : [];
+  // A widget alone is exported out of a report only, so not on a test run page.
+  const fromReport = asked === 'LIVE_REPORT' && options.exportType !== 'BULK';
+  const targets = fromReport ? selectedBulkExportTargets() : [];
+  const widgets = fromReport && location.documentType === 'LIVE_REPORT' ? offeredWidgets() : [];
   const pageLabel = location.documentType === 'TEST_RUN' ? 'This test run' : 'This report';
   root.render(
-    targets.length > 0 ? (
-      <ExportTargetChooser targets={targets} pageLabel={pageLabel} report={dialog} onClose={close} />
+    targets.length > 0 || widgets.length > 0 ? (
+      <ExportTargetChooser targets={targets} widgets={widgets} pageLabel={pageLabel} dialog={dialog} onClose={close} />
     ) : (
-      dialog
+      dialog()
     ),
   );
   return root;

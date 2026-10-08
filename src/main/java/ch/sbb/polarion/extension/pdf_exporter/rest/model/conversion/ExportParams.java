@@ -110,6 +110,10 @@ public class ExportParams extends ConversionParams {
     @Schema(description = "Map of attributes extracted from the URL")
     private Map<String, String> urlQueryParameters;
 
+    @Schema(description = "A Live Report only: the ID of the one widget to export, under the title of the report, instead of the whole report. "
+            + "It is the ID of the widget's element on the page, the one with the class polarion-rp-widget-part, for example 'polarion_client1'.")
+    private String widgetId;
+
     @Schema(description = "Filter for attachments to be downloaded, example: '*.pdf'")
     private String attachmentsFilter;
 
