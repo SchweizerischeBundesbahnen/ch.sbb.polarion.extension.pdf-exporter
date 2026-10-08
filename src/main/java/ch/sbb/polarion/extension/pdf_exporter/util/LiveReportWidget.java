@@ -26,9 +26,10 @@ public class LiveReportWidget {
     /**
      * The stored HTML of a Live Report reduced to its title and the widget of the given ID, laid out in one column the
      * width of the page as a report's own column is.
-     *
-     * @throws UserFriendlyRuntimeException where the report holds no widget of that ID: it was removed, or the page
-     *                                      the export was started from is not the one stored
+     * <p>
+     * Fails with a {@link UserFriendlyRuntimeException} where the report holds no widget of that ID: it was removed, or
+     * the page the export was started from is not the one stored.
+     * </p>
      */
     public static @NotNull String keepOnly(@NotNull String pageHtml, @NotNull String widgetId, @NotNull String title) {
         Document page = Jsoup.parseBodyFragment(pageHtml);
