@@ -145,6 +145,10 @@ describe('the widgets a report button can offer', () => {
 });
 
 describe('the widgets of other extensions a report button can offer', () => {
+  it('reads them under the key the User Guide gives widgets without the library', () => {
+    expect(PDF_EXPORT_TARGETS_KEY).toBe('__pdfExporterExportTargets');
+  });
+
   it('names the widget of the report a widget stands in, through the shadow root it is mounted in', () => {
     reportWidget('Timesheet', 'polarion_client2');
 
