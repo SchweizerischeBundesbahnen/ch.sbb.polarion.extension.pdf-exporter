@@ -28,6 +28,8 @@ import org.jetbrains.annotations.NotNull;
  */
 public class ModifiedServerFieldRichTextRenderer extends ServerFieldRichTextRenderer {
 
+    private static final String RENDER_TARGET = "renderTarget";
+
     public ModifiedServerFieldRichTextRenderer(@NotNull ReadOnlyTransaction transaction) {
         super(transaction);
     }
@@ -36,11 +38,11 @@ public class ModifiedServerFieldRichTextRenderer extends ServerFieldRichTextRend
     @SneakyThrows
     public boolean renderDescription(@NotNull HtmlContentBuilder builder, @NotNull WorkItemReference workItem, boolean withNA) {
         RichTextRenderTarget backupTarget = this.context.getRenderTarget();
-        FieldUtils.writeField(context, "renderTarget", RichTextRenderTarget.PREVIEW, true);
+        FieldUtils.writeField(context, RENDER_TARGET, RichTextRenderTarget.PREVIEW, true);
         try {
             return super.renderDescription(builder, workItem, withNA);
         } finally {
-            FieldUtils.writeField(context, "renderTarget", backupTarget, true);
+            FieldUtils.writeField(context, RENDER_TARGET, backupTarget, true);
         }
     }
 
@@ -48,11 +50,11 @@ public class ModifiedServerFieldRichTextRenderer extends ServerFieldRichTextRend
     @SneakyThrows
     public @NotNull ImmutableStrictList<String> renderReferredCommentMarkers(@NotNull HtmlContentBuilder builder, @NotNull DocumentReference documentReference, @NotNull WorkItemReference workItemReference) {
         RichTextRenderTarget backupTarget = this.context.getRenderTarget();
-        FieldUtils.writeField(context, "renderTarget", RichTextRenderTarget.PREVIEW, true);
+        FieldUtils.writeField(context, RENDER_TARGET, RichTextRenderTarget.PREVIEW, true);
         try {
             return super.renderReferredCommentMarkers(builder, documentReference, workItemReference);
         } finally {
-            FieldUtils.writeField(context, "renderTarget", backupTarget, true);
+            FieldUtils.writeField(context, RENDER_TARGET, backupTarget, true);
         }
     }
 }
