@@ -32,8 +32,13 @@ type TargetWindow = Window & { [PDF_EXPORT_TARGETS_KEY]?: Set<PdfExportTarget> }
  * window there; a test runs in an iframe of its runner, as a widget app does in a report.
  */
 function targets(): Set<PdfExportTarget> {
-  const holder = (window.top ?? window) as TargetWindow;
-  return holder[PDF_EXPORT_TARGETS_KEY] ?? new Set();
+  try {
+    const holder = (window.top ?? window) as TargetWindow;
+    return holder[PDF_EXPORT_TARGETS_KEY] ?? new Set();
+  } catch {
+    // A page of another origin embeds Polarion, whose top window cannot be read: no widget can have offered itself
+    return new Set();
+  }
 }
 
 /** The report's widget an element stands in, through any shadow root it is mounted in, or null. */

@@ -1,5 +1,5 @@
 import type { Root } from 'react-dom/client';
-import { offerForPdfExport } from '@sbb-polarion/react-sbb-polarion';
+import { PDF_EXPORT_TARGETS_KEY, offerForPdfExport } from '@sbb-polarion/react-sbb-polarion';
 import { a11yViolations } from '@sbb-polarion/react-sbb-polarion/testing';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { DocumentType } from '../src/export/documentType';
@@ -188,6 +188,24 @@ describe('the widgets of other extensions a report button can offer', () => {
     const part = reportWidget('Timesheet', 'polarion_client2');
     rendered = part.firstElementChild;
     expect(offeredWidgets().map((widget) => widget.title)).toEqual(['Later']);
+  });
+
+  it('offers none where a page of another origin embeds Polarion', () => {
+    reportWidget('Timesheet', 'polarion_client2');
+    // What reading the top window does there. The runner's top window stands in, window.top cannot be replaced.
+    const top = window.top!;
+    const offers = Object.getOwnPropertyDescriptor(top, PDF_EXPORT_TARGETS_KEY);
+    Object.defineProperty(top, PDF_EXPORT_TARGETS_KEY, {
+      configurable: true,
+      get: () => {
+        throw new DOMException('Blocked a frame from accessing a cross-origin frame', 'SecurityError');
+      },
+    });
+    try {
+      expect(offeredWidgets()).toEqual([]);
+    } finally {
+      Object.defineProperty(top, PDF_EXPORT_TARGETS_KEY, offers!);
+    }
   });
 
   it('offers the other widgets where one fails to say where it is', () => {
