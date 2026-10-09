@@ -56,8 +56,9 @@
   always exported through the widget's own dialog and progress run. Nothing ever unmounts a widget: moving
   to another report removes its host and keeps the page, so the list drops an entry whose `anchor` (the
   host) has left the page, and the widget's title is only the item type - hence "(widget 1 of 2)".
-  Widgets of other extensions offer themselves the same way, in `__pdfExporterExportTargets`
-  (`ui/src/export/widgetExportTargets.ts`): picking one exports the report with `ExportParams.widgetId`, and
+  Widgets of other extensions offer themselves the same way, in `__pdfExporterExportTargets` on the **top**
+  window, through `useOfferForPdfExport` of react-sbb-polarion, which owns the key and the type
+  (`ui/src/export/widgetExportTargets.ts` only reads them): picking one exports the report with `ExportParams.widgetId`, and
   `LiveReportWidget` reduces the stored page to its title and that `polarion-rp-widget-part` before `RpeRenderer` runs.
 - **A toast inside a shadow root needs its stylesheet brought in, and one host.** `sonner` (through RSP's
   `Toaster`) injects its CSS into `document.head` when its module loads, which none of the three

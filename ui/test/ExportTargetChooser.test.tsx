@@ -1,8 +1,9 @@
 import type { Root } from 'react-dom/client';
+import { PDF_EXPORT_TARGETS_KEY, offerForPdfExport } from '@sbb-polarion/react-sbb-polarion';
 import { a11yViolations } from '@sbb-polarion/react-sbb-polarion/testing';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { DocumentType } from '../src/export/documentType';
-import { offeredWidgets, registerWidgetExportTarget, widgetIdOf } from '../src/export/widgetExportTargets';
+import { offeredWidgets, widgetIdOf } from '../src/export/widgetExportTargets';
 import type { ExportPopupDependencies } from '../src/popup/ExportPopupModal';
 import { openExportPopup } from '../src/popup/mount';
 import type { BulkExportTarget } from '../src/widget/exportTargets';
@@ -69,7 +70,7 @@ function reportWidget(title: string, id: string): HTMLElement {
   host.attachShadow({ mode: 'open' }).appendChild(element);
   document.body.appendChild(part);
   anchors.push(part);
-  unregister.push(registerWidgetExportTarget({ title, anchor: () => element }));
+  unregister.push(offerForPdfExport(title, () => element));
   return part;
 }
 
@@ -144,6 +145,10 @@ describe('the widgets a report button can offer', () => {
 });
 
 describe('the widgets of other extensions a report button can offer', () => {
+  it('reads them under the key the User Guide gives widgets without the library', () => {
+    expect(PDF_EXPORT_TARGETS_KEY).toBe('__pdfExporterExportTargets');
+  });
+
   it('names the widget of the report a widget stands in, through the shadow root it is mounted in', () => {
     reportWidget('Timesheet', 'polarion_client2');
 
@@ -156,7 +161,7 @@ describe('the widgets of other extensions a report button can offer', () => {
     const element = document.createElement('span');
     document.body.appendChild(element);
     anchors.push(element);
-    unregister.push(registerWidgetExportTarget({ title: 'Loose', anchor: () => element }));
+    unregister.push(offerForPdfExport('Loose', () => element));
 
     expect(widgetIdOf(element)).toBeNull();
     expect(offeredWidgets()).toEqual([]);
@@ -174,14 +179,14 @@ describe('the widgets of other extensions a report button can offer', () => {
 
   it('offers a widget once, however often it registered', () => {
     const part = reportWidget('Timesheet', 'polarion_client2');
-    unregister.push(registerWidgetExportTarget({ title: 'Timesheet again', anchor: () => part.firstElementChild }));
+    unregister.push(offerForPdfExport('Timesheet again', () => part.firstElementChild));
 
     expect(offeredWidgets().map((widget) => widget.title)).toEqual(['Timesheet']);
   });
 
   it('waits for a widget which has not rendered yet, and offers it once it has', () => {
     let rendered: Element | null = null;
-    unregister.push(registerWidgetExportTarget({ title: 'Later', anchor: () => rendered }));
+    unregister.push(offerForPdfExport('Later', () => rendered));
     expect(offeredWidgets()).toEqual([]);
 
     const part = reportWidget('Timesheet', 'polarion_client2');
@@ -189,14 +194,29 @@ describe('the widgets of other extensions a report button can offer', () => {
     expect(offeredWidgets().map((widget) => widget.title)).toEqual(['Later']);
   });
 
+  it('offers none where a page of another origin embeds Polarion', () => {
+    reportWidget('Timesheet', 'polarion_client2');
+    // What reading the top window does there. The runner's top window stands in, window.top cannot be replaced.
+    const top = window.top!;
+    const offers = Object.getOwnPropertyDescriptor(top, PDF_EXPORT_TARGETS_KEY);
+    Object.defineProperty(top, PDF_EXPORT_TARGETS_KEY, {
+      configurable: true,
+      get: () => {
+        throw new DOMException('Blocked a frame from accessing a cross-origin frame', 'SecurityError');
+      },
+    });
+    try {
+      expect(offeredWidgets()).toEqual([]);
+    } finally {
+      Object.defineProperty(top, PDF_EXPORT_TARGETS_KEY, offers!);
+    }
+  });
+
   it('offers the other widgets where one fails to say where it is', () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
     unregister.push(
-      registerWidgetExportTarget({
-        title: 'Broken',
-        anchor: () => {
-          throw new Error('not mounted');
-        },
+      offerForPdfExport('Broken', () => {
+        throw new Error('not mounted');
       }),
     );
     reportWidget('Timesheet', 'polarion_client2');

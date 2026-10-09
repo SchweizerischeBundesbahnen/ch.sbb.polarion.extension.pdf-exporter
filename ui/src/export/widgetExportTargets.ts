@@ -1,31 +1,18 @@
+import { PDF_EXPORT_TARGETS_KEY } from '@sbb-polarion/react-sbb-polarion';
+import type { PdfExportTarget } from '@sbb-polarion/react-sbb-polarion';
+
 /**
  * The widgets of other extensions which a report's own "Export to PDF" button can export alone (#1183).
  *
- * A widget offers itself by adding an entry to a set on the top window, which the button reads when it is clicked.
- * The set is a plain `window` property rather than a module both import, for the reason the Bulk PDF Export targets
- * are (see `widget/exportTargets.ts`): a widget of another extension shares no module with this one at all.
- *
- * ```js
- * const top = window.top ?? window;
- * (top.__pdfExporterExportTargets ??= new Set()).add({
- *   title: 'Timesheet report',
- *   // An element of the widget on the report page. A widget drawn in an iframe gives the iframe: window.frameElement
- *   anchor: () => element,
- * });
- * ```
+ * A widget offers itself with `useOfferForPdfExport` or `offerForPdfExport` of react-sbb-polarion, which add an
+ * entry to a set on the top window; the key and the type of the entry come from there too. The set is a plain
+ * `window` property rather than module state, for the reason the Bulk PDF Export targets are (see
+ * `widget/exportTargets.ts`): a widget of another extension shares no module with this one at all.
  *
  * The widget needs no ID of its own. Polarion puts every widget of a report in an element of the class
  * `polarion-rp-widget-part`, whose ID is kept with the page (`polarion_client1`), and the server exports the widget of
  * that ID: what the anchor stands in is what the user picks.
  */
-
-/** A widget as it offers itself. */
-export interface WidgetExportTarget {
-  /** What the choice calls the widget. */
-  title: string;
-  /** An element of the widget on the report page, or null before it rendered. */
-  anchor: () => Element | null;
-}
 
 /** A widget the choice offers: one on the page, inside a widget of the report. */
 export interface OfferedWidget {
@@ -36,24 +23,22 @@ export interface OfferedWidget {
   part: Element;
 }
 
-export const WIDGET_EXPORT_TARGETS_KEY = '__pdfExporterExportTargets';
-
 const WIDGET_PART_CLASS = 'polarion-rp-widget-part';
 
-type TargetWindow = Window & { [WIDGET_EXPORT_TARGETS_KEY]?: Set<WidgetExportTarget> };
+type TargetWindow = Window & { [PDF_EXPORT_TARGETS_KEY]?: Set<PdfExportTarget> };
 
-function targets(): Set<WidgetExportTarget> {
-  const holder = window as TargetWindow;
-  holder[WIDGET_EXPORT_TARGETS_KEY] ??= new Set();
-  return holder[WIDGET_EXPORT_TARGETS_KEY];
-}
-
-/** Adds a widget to the set, as a widget of another extension does by hand. Returns what removes it again. */
-export function registerWidgetExportTarget(target: WidgetExportTarget): () => void {
-  targets().add(target);
-  return () => {
-    targets().delete(target);
-  };
+/**
+ * The offers, read where the widgets put them. The dialog runs in the top window in Polarion, so it is the same
+ * window there; a test runs in an iframe of its runner, as a widget app does in a report.
+ */
+function targets(): Set<PdfExportTarget> {
+  try {
+    const holder = (window.top ?? window) as TargetWindow;
+    return holder[PDF_EXPORT_TARGETS_KEY] ?? new Set();
+  } catch {
+    // A page of another origin embeds Polarion, whose top window cannot be read: no widget can have offered itself
+    return new Set();
+  }
 }
 
 /** The report's widget an element stands in, through any shadow root it is mounted in, or null. */
@@ -86,7 +71,7 @@ function byPagePosition(first: OfferedWidget, second: OfferedWidget): number {
 }
 
 /** The element a widget gives, or null where it gives none or fails: a widget of another extension cannot stop the button. */
-function anchorOf(target: WidgetExportTarget): Element | null {
+function anchorOf(target: PdfExportTarget): Element | null {
   try {
     return target.anchor();
   } catch (error) {

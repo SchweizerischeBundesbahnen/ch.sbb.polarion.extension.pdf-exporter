@@ -442,20 +442,33 @@ preselected, unless a Bulk PDF Export widget has rows selected. Choose the widge
 export popup. The PDF then holds the title of the report and that widget, at the full width of the page.
 
 ### For widget developers
-A widget offers itself through a set on the top window. Add an entry when the widget renders:
+A widget offers itself while it is shown. A widget whose app uses
+[react-sbb-polarion](https://github.com/SchweizerischeBundesbahnen/react-sbb-polarion) 2.6.0 or later calls its hook:
+
+```tsx
+import { useOfferForPdfExport } from '@sbb-polarion/react-sbb-polarion';
+
+useOfferForPdfExport('Timesheet Report');
+```
+
+- The title is the name the choice shows: "Only Timesheet Report".
+- An app shown in an iframe of the widget passes nothing more. The iframe is the widget's element then.
+- A widget mounted in the report page passes a function that returns an element of the widget:
+  `useOfferForPdfExport('Timesheet Report', () => element)`. An element in a shadow root works too.
+- Outside React, `offerForPdfExport(title, anchor?)` does the same and returns what withdraws the offer.
+
+A widget without the library adds an entry to a set on the top window itself:
 
 ```js
 const top = window.top ?? window;
-(top.__pdfExporterExportTargets ??= new Set()).add({
-  title: 'Timesheet',
+(top.__pdfExporterExportTargets ??= new top.Set()).add({
+  title: 'Timesheet Report',
   anchor: () => element,
 });
 ```
 
-- `title` is the name the choice shows: "Only Timesheet".
-- `anchor` returns an element of the widget on the report page, or `null` before the widget has rendered.
-- A widget drawn in an iframe returns the iframe: `() => window.frameElement`.
-- An element in a shadow root works too.
+`anchor` returns an element of the widget on the report page, or `null` before the widget has rendered. A widget drawn
+in an iframe returns the iframe: `() => window.frameElement`.
 
 The widget needs no ID of its own. Polarion puts every widget of a report in an element of the class
 `polarion-rp-widget-part`, and the export asks for the ID of that element.
