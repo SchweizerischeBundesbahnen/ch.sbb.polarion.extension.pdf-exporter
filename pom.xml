@@ -46,7 +46,7 @@
     <properties>
         <pdfbox.version>3.0.8</pdfbox.version>
         <okapi.xliff.version>1.48.0</okapi.xliff.version>
-        <flying-saucer.version>10.5.0</flying-saucer.version>
+        <flying-saucer.version>10.6.0</flying-saucer.version>
         <!-- 1.8.0 reads markdown2html.skip, which the performance profile sets; the generic parent pins 1.7.1 -->
         <markdown2html-maven-plugin.version>1.8.0</markdown2html-maven-plugin.version>
 
