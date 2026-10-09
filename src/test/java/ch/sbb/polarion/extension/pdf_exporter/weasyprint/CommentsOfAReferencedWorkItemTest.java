@@ -34,9 +34,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 /**
- * A comment of the document placed in the description of a work item which the document references from another one is
- * exported where it stands, as one in the text of the document or in the description of a work item of its own. The
- * document is the one of the issue (#1118).
+ * A comment of the document which refers to a work item the document references from another one is exported after its
+ * description, as one in the text of the document or in the description of a work item of its own is exported where it
+ * stands. The document is the one of the issue (#1118).
  * <p>
  * The document is given as the renderer gives it. A comment on the text of a referenced work item, class
  * {@code polarion-dle-workitem-basic-external}, is not stored in its description: it refers to the work item, and
@@ -46,7 +46,7 @@ import static org.mockito.Mockito.when;
  */
 class CommentsOfAReferencedWorkItemTest extends BasePdfConverterTest {
 
-    /** The icon Polarion renders for a comment in the description of a work item. */
+    /** The icon Polarion renders for a comment in the description of a work item, or after it for a comment which refers to it. */
     private static final String ICON = "<img id=\"polarion-comment:%s\" title=\"%s\" contenteditable=\"false\" src=\"/polarion/ria/images/control/comment.png\" class=\"polarion-dle-comment-icon\"/>";
 
     /** The attribute table Polarion renders at the end of a work item, with its status and its type. */
