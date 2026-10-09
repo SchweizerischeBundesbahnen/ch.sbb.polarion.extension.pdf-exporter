@@ -106,3 +106,49 @@ export function offeredWidgets(): OfferedWidget[] {
   }
   return [...offered.values()].sort(byPagePosition);
 }
+
+const HEADINGS = 'h1, h2, h3, h4, h5, h6';
+
+/** What the report shows as it is, rather than as content a widget export would drop. */
+const NOT_CONTENT = `${HEADINGS}, script, style`;
+
+/**
+ * Characters which show nothing. Polarion keeps two zero width spaces in every empty line of a report, which `trim()`
+ * leaves where they are.
+ */
+const INVISIBLE = /[\s\u200b-\u200d\u2060\ufeff]/g;
+
+/** Elements which show something without a word of text. */
+const MEDIA = 'img, svg, canvas, video, audio, iframe, object, embed, table, .polarion-rp-inline-widget';
+
+/**
+ * Whether the widget is all the report shows, so that exporting the report means exporting the widget.
+ *
+ * Strict on purpose: the button then exports the widget without asking, and a report reduced to one widget by mistake
+ * loses the rest without a word. Anything else on the page keeps the choice - another widget of the report, an inline
+ * widget, a picture or a table, any text but one heading. One heading is allowed: a report names itself in one, and the
+ * export of a widget carries the title of the report in its place. A second one would be lost.
+ */
+export function isAloneOnReport(widget: OfferedWidget): boolean {
+  const content = widget.part.closest('.polarion-rpe-content');
+  if (!content || content.querySelectorAll(`.${WIDGET_PART_CLASS}`).length !== 1) {
+    return false;
+  }
+  const outside = (node: Node) => !widget.part.contains(node);
+  if ([...content.querySelectorAll(MEDIA)].some(outside)) {
+    return false;
+  }
+  const headings = [...content.querySelectorAll(HEADINGS)].filter(
+    (heading) => outside(heading) && heading.textContent?.replace(INVISIBLE, ''),
+  );
+  if (headings.length > 1) {
+    return false;
+  }
+  const texts = document.createTreeWalker(content, NodeFilter.SHOW_TEXT);
+  for (let text = texts.nextNode(); text; text = texts.nextNode()) {
+    if (outside(text) && text.textContent?.replace(INVISIBLE, '') && !text.parentElement?.closest(NOT_CONTENT)) {
+      return false;
+    }
+  }
+  return true;
+}
