@@ -38,9 +38,10 @@ import static org.mockito.Mockito.when;
  * exported where it stands, as one in the text of the document or in the description of a work item of its own. The
  * document is the one of the issue (#1118).
  * <p>
- * The document is given as the renderer gives it: Polarion renders the icon of a comment in the description of a
- * referenced work item, class {@code polarion-dle-workitem-basic-external}, as of any other work item once the export lets
- * it. Each comment is placed at its icon, and none is left for the comments the document does not place.
+ * The document is given as the renderer gives it. A comment on the text of a referenced work item, class
+ * {@code polarion-dle-workitem-basic-external}, is not stored in its description: it refers to the work item, and
+ * Polarion renders its icon after the description once the export lets it. Each comment is placed at its icon, and none
+ * is left for the comments the document does not place.
  * </p>
  */
 class CommentsOfAReferencedWorkItemTest extends BasePdfConverterTest {
@@ -57,7 +58,7 @@ class CommentsOfAReferencedWorkItemTest extends BasePdfConverterTest {
 
     /**
      * The document of the issue as the renderer gives it: a work item with a comment in its description, a comment in a
-     * line of text, the referenced work item with a comment in its description, and a work item after it.
+     * line of text, the referenced work item with a comment which refers to it, and a work item after it.
      */
     private static final String RENDERED_DOCUMENT = """
             <div id="polarion_wiki macro name=module-workitem;params=id=CHUD-30743" class="polarion-dle-workitem-basic-0 polarion-dle-workitem-basic-internal" title="Design Statement: CHUD-30743">
@@ -67,7 +68,7 @@ class CommentsOfAReferencedWorkItemTest extends BasePdfConverterTest {
             <p>A<span id="polarion-comment:2"></span> text</p>
             <div id="polarion_wiki macro name=module-workitem;params=id=CHUD-30741|external=true" class="polarion-dle-workitem-basic-0 polarion-dle-workitem-basic-external" title="Requirement: CHUD-30741">
             <span class="polarion-dle-workitem-title">CHUD-30741 - The refinement</span>
-            <p>Refinement of the URS requirement%s</p>%s
+            <p>Refinement of the URS requirement</p>%s%s
             </div>
             <div id="polarion_wiki macro name=module-workitem;params=id=CHUD-30742" class="polarion-dle-workitem-basic-0 polarion-dle-workitem-basic-internal" title="Design Statement: CHUD-30742">
             <span class="polarion-dle-workitem-title">CHUD-30742 - Statement for the refinement</span>
