@@ -1,5 +1,12 @@
 # Changelog
 
+## [13.7.1](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v13.7.0...v13.7.1) (2026-10-09)
+
+
+### Bug Fixes
+
+* backport removing the comment icon to release-v13.7 ([#1202](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/1202)) ([#1212](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/1212)) ([62d8975](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/62d8975ac4f0bbcd7f1eec34bcde7f1e81efed27))
+
 ## [13.7.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v13.6.1...v13.7.0) (2026-08-31)
 
 
