@@ -441,8 +441,9 @@ report's own "Export to PDF" button first asks what to export: the report, or on
 preselected, unless a Bulk PDF Export widget has rows selected. Choose the widget and click Continue to get the usual
 export popup. The PDF then holds the title of the report and that widget, at the full width of the page.
 
-A report which shows nothing but that widget asks nothing: the button opens the export popup for the widget. Headings and
-empty lines do not count. Any text, picture, table or other widget on the report brings the question back.
+A report which shows nothing but that widget asks nothing: the button opens the export popup for the widget. One heading and
+empty lines do not count: the PDF carries the title of the report in place of the heading. Any other text, a second
+heading, a picture, a table or another widget on the report brings the question back.
 
 ### For widget developers
 A widget offers itself while it is shown. A widget whose app uses

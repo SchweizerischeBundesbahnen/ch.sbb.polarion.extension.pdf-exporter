@@ -107,8 +107,10 @@ export function offeredWidgets(): OfferedWidget[] {
   return [...offered.values()].sort(byPagePosition);
 }
 
+const HEADINGS = 'h1, h2, h3, h4, h5, h6';
+
 /** What the report shows as it is, rather than as content a widget export would drop. */
-const NOT_CONTENT = 'h1, h2, h3, h4, h5, h6, script, style';
+const NOT_CONTENT = `${HEADINGS}, script, style`;
 
 /**
  * Characters which show nothing. Polarion keeps two zero width spaces in every empty line of a report, which `trim()`
@@ -124,8 +126,8 @@ const MEDIA = 'img, svg, canvas, video, audio, iframe, object, embed, table, .po
  *
  * Strict on purpose: the button then exports the widget without asking, and a report reduced to one widget by mistake
  * loses the rest without a word. Anything else on the page keeps the choice - another widget of the report, an inline
- * widget, a picture or a table, any text outside the headings. The headings are allowed: a report names itself in one,
- * and the export of a widget carries the title of the report instead.
+ * widget, a picture or a table, any text but one heading. One heading is allowed: a report names itself in one, and the
+ * export of a widget carries the title of the report in its place. A second one would be lost.
  */
 export function isAloneOnReport(widget: OfferedWidget): boolean {
   const content = widget.part.closest('.polarion-rpe-content');
@@ -134,6 +136,12 @@ export function isAloneOnReport(widget: OfferedWidget): boolean {
   }
   const outside = (node: Node) => !widget.part.contains(node);
   if ([...content.querySelectorAll(MEDIA)].some(outside)) {
+    return false;
+  }
+  const headings = [...content.querySelectorAll(HEADINGS)].filter(
+    (heading) => outside(heading) && heading.textContent?.replace(INVISIBLE, ''),
+  );
+  if (headings.length > 1) {
     return false;
   }
   const texts = document.createTreeWalker(content, NodeFilter.SHOW_TEXT);

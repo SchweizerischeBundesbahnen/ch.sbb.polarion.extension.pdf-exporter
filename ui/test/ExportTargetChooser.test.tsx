@@ -514,6 +514,14 @@ describe('a report which shows nothing but one widget', () => {
     expect(await asks()).toBe(false);
   });
 
+  it('asks where the report has a second heading, which the export of the widget would lose', async () => {
+    reportPage(
+      '<h1 id="polarion_client9">Timesheet</h1><h2 id="polarion_client3">Billable hours only</h2><widget></widget>',
+    );
+
+    expect(await asks()).toBe(true);
+  });
+
   it('asks where the report has text besides the widget', async () => {
     reportPage('<p id="polarion_client3">Hours of the team, per month.</p><widget></widget>');
 
