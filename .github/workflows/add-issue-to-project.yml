@@ -6,6 +6,7 @@ on:
 permissions: {}
 jobs:
   add-to-project:
+    cache-mode: none
     uses: SchweizerischeBundesbahnen/github-workflows-polarion/.github/workflows/reusable-add-issue-to-project.yml@main
     secrets:
       POLARION_GITHUB_APP_ID: ${{ secrets.POLARION_GITHUB_APP_ID }}
