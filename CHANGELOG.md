@@ -1,5 +1,12 @@
 # Changelog
 
+## [13.11.1](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v13.11.0...v13.11.1) (2026-10-09)
+
+
+### Bug Fixes
+
+* release 13.11.1 ([#1208](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/1208)) ([a4d39b8](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/a4d39b8874b9ecaecdc72337fad4615334447052))
+
 ## [13.11.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v13.10.1...v13.11.0) (2026-10-09)
 
 
