@@ -25,6 +25,8 @@ export interface DocumentLocation {
   revision?: string;
   /** The hash's own query parameters, which an export has to carry: the renderer reads the item as the page does. */
   urlQueryParameters?: Record<string, string>;
+  /** A report only: the one widget of it to export, by the ID of its element on the page (`polarion_client1`). */
+  widgetId?: string;
 }
 
 /** {@link DocumentLocation} plus what the endpoints want spelled out separately. */

@@ -2,6 +2,7 @@ import type { Root } from 'react-dom/client';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { page, userEvent } from 'vitest/browser';
 import type { DocumentType, ExportType } from '../src/export/documentType';
+import { registerWidgetExportTarget } from '../src/export/widgetExportTargets';
 import { openExportPopup } from '../src/popup/mount';
 import type { DocumentIdentity } from '../src/services/exportContext';
 import { registerBulkExportTarget } from '../src/widget/exportTargets';
@@ -174,6 +175,40 @@ describe.skipIf(!__PIXEL_REFERENCES__)('export dialog visual', () => {
       await settled(shadow, '.export-target-chooser');
 
       await snapshotDialog(shadow, 'popup-choose-target');
+    } finally {
+      unregister.forEach((remove) => remove());
+    }
+  });
+
+  it('the choice a report button asks for where widgets of other extensions offered to be exported alone', async () => {
+    const offer = (id: string, title: string) => {
+      const part = document.body.appendChild(document.createElement('div'));
+      part.id = id;
+      part.className = 'polarion-rp-widget-part';
+      const remove = registerWidgetExportTarget({ title, anchor: () => part });
+      return () => {
+        remove();
+        part.remove();
+      };
+    };
+    const anchor = document.body.appendChild(document.createElement('div'));
+    const unregister = [
+      registerBulkExportTarget({
+        id: 'a',
+        title: 'Documents',
+        anchor: () => anchor,
+        selectedCount: () => 3,
+        startExport: () => {},
+      }),
+      () => anchor.remove(),
+      offer('polarion_client2', 'Timesheet'),
+      offer('polarion_client3', 'Budget'),
+    ];
+    try {
+      const shadow = mounted({ document: { ...SAMPLE_DOCUMENT, documentType: 'LIVE_REPORT' as DocumentType } });
+      await settled(shadow, '.export-target-chooser');
+
+      await snapshotDialog(shadow, 'popup-choose-target-widgets');
     } finally {
       unregister.forEach((remove) => remove());
     }

@@ -37,6 +37,8 @@
 * [Page breaks on Live Report page](#page-breaks-on-live-report-page)
 * [No Page Break of a work item](#no-page-break-of-a-work-item)
 * [Bulk PDF Export](#bulk-pdf-export)
+* [Export one widget of a Live Report](#export-one-widget-of-a-live-report)
+    * [For widget developers](#for-widget-developers)
 
 ## Export panel layout
 As the extension is installed and configured to appear on Document Properties pane, you can open any document in a project where you configured PDF exporter, open Document Properties sidebar and you will see following section added there:
@@ -432,3 +434,61 @@ As a result, you will see a table listing all Live Documents in the current proj
 When you are ready with filtering, sorting etc. of documents you can select multiple documents to be exported, ticking appropriate checkboxes and click Export to PDF button, a popup with export configuration will be opened. Select the appropriate configuration and click the Export button. A new popup will be opened showing progress of exporting. When the export is finished, click the Close button to hide the popup. You can also click the Stop button when the export is in progress. In this case, the document that is being exported at the moment will finish and the rest that were pending will be cancelled.
 
 The report's own "Export to PDF" button, in the report toolbar or as the "Export to PDF Button" widget, can export the selection too. When rows are selected in a Bulk PDF Export widget, the button first asks what to export: the report itself (or the test run, on a test run page) or the selected items of that widget. The selection is preselected. Choose it and click Continue to get the widget's export popup, as if its own button was clicked. Without a selection, the button exports the report straight away.
+
+## Export one widget of a Live Report
+A widget of another extension can offer itself for export on its own. When a widget on a Live Report does that, the
+report's own "Export to PDF" button first asks what to export: the report, or only that widget. The report is
+preselected, unless a Bulk PDF Export widget has rows selected. Choose the widget and click Continue to get the usual
+export popup. The PDF then holds the title of the report and that widget, at the full width of the page.
+
+### For widget developers
+A widget offers itself through a set on the top window. Add an entry when the widget renders:
+
+```js
+const top = window.top ?? window;
+(top.__pdfExporterExportTargets ??= new Set()).add({
+  title: 'Timesheet',
+  anchor: () => element,
+});
+```
+
+- `title` is the name the choice shows: "Only Timesheet".
+- `anchor` returns an element of the widget on the report page, or `null` before the widget has rendered.
+- A widget drawn in an iframe returns the iframe: `() => window.frameElement`.
+- An element in a shadow root works too.
+
+The widget needs no ID of its own. Polarion puts every widget of a report in an element of the class
+`polarion-rp-widget-part`, and the export asks for the ID of that element.
+
+An entry whose element has left the page is dropped. A widget therefore needs no clean-up when the user opens another
+report.
+
+The export does not capture the page in the browser. The server renders the report again, with only that widget kept:
+
+1. Polarion calls `renderHtml` of the widget, with the target `PDF_EXPORT` and as the exporting user.
+2. The PDF shows exactly the HTML that `renderHtml` returns.
+3. WeasyPrint makes the PDF from it and runs no JavaScript.
+
+What reaches the PDF:
+
+- HTML built on the server: tables, text, images, inline SVG.
+- Styles inline or in a `<style>` element of the returned HTML. The stylesheets of the page do not reach the PDF.
+- Only the saved parameters of the widget and the query parameters of the page. Browser state, like a selection or an
+  unsaved filter, does not.
+
+What does not reach the PDF:
+
+- Content that JavaScript adds in the browser, for example a React app or a chart drawn on a canvas.
+- The content of an iframe.
+
+A widget drawn in the browser needs HTML of its own for the PDF. Check the target in `renderHtml`:
+
+```java
+RichTextRenderTarget target = renderingContext.target();
+if (target.isPdf() || target.isPrint()) {
+    return staticHtml(renderingContext); // the content as plain HTML, without controls
+}
+```
+
+To check a widget, export the whole report. The widget looks the same when it is exported alone, at the full width of
+the page.
