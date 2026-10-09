@@ -1,5 +1,23 @@
 # Changelog
 
+## [13.11.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v13.10.1...v13.11.0) (2026-10-09)
+
+
+### Features
+
+* export one widget of a Live Report ([#1200](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/1200)) ([4192a31](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/4192a31be84569872225eb9095d0d207f17fe091))
+* send a Polarion-issued user token to the bulk processing service ([#1185](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/1185)) ([7510831](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/75108310a30876471c74f3ca7c9b4f422dbeec76)), closes [#1184](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/1184)
+
+
+### Bug Fixes
+
+* **deps:** update dependency @vitejs/plugin-react to v6.1.2 ([962d90f](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/962d90f3801c7120655bf1c8f46c00b9ab244b15))
+* **deps:** update dependency axe-core to v4.14.0 ([a82807e](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/a82807ec3a31eb0d00dc306d9cf83d1d04291769))
+* **deps:** update dependency typescript-eslint to v8.71.1 ([4b33489](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/4b3348941091e4a02dfbd4f61a26efb710f9a5b7))
+* **deps:** update dependency vite to v8.3.3 ([b2f7eec](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/b2f7eec243b1e8d4406d471e1a06d283840ea686))
+* measure tables without loading resources ([#1197](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/1197)) ([d334de6](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/d334de658b34d607fab6fea734469d4f725f5cb5))
+* remove the icon of a comment with several paragraphs ([#1202](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/1202)) ([ddfabf8](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/ddfabf8744d029b33ea6506f8ec9f159160ac6ef)), closes [#1201](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/1201)
+
 ## [13.10.1](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v13.10.0...v13.10.1) (2026-10-07)
 
 
