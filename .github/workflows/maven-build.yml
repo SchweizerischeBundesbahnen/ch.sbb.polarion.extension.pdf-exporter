@@ -118,6 +118,8 @@ jobs:
       COM_SONATYPE_CENTRAL_POLARION_OPENSOURCE_USERNAME: ${{ secrets.COM_SONATYPE_CENTRAL_POLARION_OPENSOURCE_USERNAME }}
       COM_SONATYPE_CENTRAL_POLARION_OPENSOURCE_TOKEN: ${{ secrets.COM_SONATYPE_CENTRAL_POLARION_OPENSOURCE_TOKEN }}
       COM_SONATYPE_CENTRAL_POLARION_OPENSOURCE_GPG_PASSPHRASE: ${{ secrets.COM_SONATYPE_CENTRAL_POLARION_OPENSOURCE_GPG_PASSPHRASE }}
+      # The deploy rebuilds the project, and the Maven cache does not always spare it the Polarion artifacts of JFrog
+      IO_JFROG_SBB_POLARION_TOKEN: ${{ secrets.IO_JFROG_SBB_POLARION_TOKEN }}
       GITHUB_TOKEN: ${{ github.token }}  # Providing this prevents reaching the GitHub request limits
     steps:
       - name: 📄 Checkout the repository
