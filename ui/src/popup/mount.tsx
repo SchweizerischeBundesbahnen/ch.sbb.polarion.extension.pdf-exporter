@@ -3,7 +3,7 @@ import type { Root } from 'react-dom/client';
 import type { DocumentType, ExportType } from '../export/documentType';
 import formStyle from '../export/export-form.css?inline';
 import type { DocIdentifier } from '../export/exportData';
-import { offeredWidgets } from '../export/widgetExportTargets';
+import { isAloneOnReport, offeredWidgets } from '../export/widgetExportTargets';
 import type { DocumentIdentity } from '../services/exportContext';
 import { currentDocumentLocation, toDocumentIdentity } from '../services/exportContext';
 import { mountInShadow } from '../services/shadowMount';
@@ -111,13 +111,18 @@ export function openExportPopup(options: OpenExportPopupOptions = {}): Root {
   const targets = fromReport ? selectedBulkExportTargets() : [];
   const widgets = fromReport && location.documentType === 'LIVE_REPORT' ? offeredWidgets() : [];
   const pageLabel = location.documentType === 'TEST_RUN' ? 'This test run' : 'This report';
-  root.render(
-    targets.length > 0 || widgets.length > 0 ? (
-      <ExportTargetChooser targets={targets} widgets={widgets} pageLabel={pageLabel} dialog={dialog} onClose={close} />
-    ) : (
-      dialog()
-    ),
-  );
+  // A report which shows nothing but one widget asks nothing: the report and the widget are the same export, and the
+  // widget's own fills the width of the page.
+  const only = targets.length === 0 && widgets.length === 1 && isAloneOnReport(widgets[0]) ? widgets[0] : null;
+  if (only) {
+    root.render(dialog(only.widgetId));
+  } else if (targets.length > 0 || widgets.length > 0) {
+    root.render(
+      <ExportTargetChooser targets={targets} widgets={widgets} pageLabel={pageLabel} dialog={dialog} onClose={close} />,
+    );
+  } else {
+    root.render(dialog());
+  }
   return root;
 }
 

@@ -74,6 +74,24 @@ function reportWidget(title: string, id: string): HTMLElement {
   return part;
 }
 
+/**
+ * A report page as Polarion renders it, with `html` in its column and the widget offered where `<widget></widget>`
+ * stands.
+ */
+function reportPage(html: string): HTMLElement {
+  const content = document.createElement('div');
+  content.className = 'polarion-rpe-view polarion-rpe-content';
+  content.innerHTML = `<div class="polarion-rp-column" style="width: 100%;"><div class="polarion-rp-column-container">${html.replace(
+    '<widget></widget>',
+    '<div class="slot"></div>',
+  )}</div></div>`;
+  document.body.appendChild(content);
+  anchors.push(content);
+  const part = reportWidget('Timesheet Report', 'polarion_client2');
+  content.querySelector('.slot')!.replaceWith(part);
+  return part;
+}
+
 function open(documentType: DocumentType = 'LIVE_REPORT', exportType?: 'BULK', deps?: ExportPopupDependencies) {
   installFetchMock(popupRoutes());
   roots.push(
@@ -450,6 +468,87 @@ describe('choosing what a report button exports', () => {
 
     await vi.waitFor(() => expect(form()).not.toBeNull());
     expect(chooser()).toBeNull();
+  });
+});
+
+describe('a report which shows nothing but one widget', () => {
+  /** Opens the dialog and exports, and resolves to the request it sent. */
+  async function exported(): Promise<Record<string, unknown>> {
+    const requests: string[] = [];
+    open(
+      'LIVE_REPORT',
+      undefined,
+      popupDependencies({
+        convert: (request) => {
+          requests.push(request);
+          return Promise.resolve(pdfResult());
+        },
+      }),
+    );
+    await vi.waitFor(() => expect(form()).not.toBeNull());
+    expect(chooser()).toBeNull();
+    continueButton().click();
+    await vi.waitFor(() => expect(requests).toHaveLength(1));
+    return JSON.parse(requests[0]) as Record<string, unknown>;
+  }
+
+  /** Opens the dialog, and says whether it asked first. */
+  async function asks(): Promise<boolean> {
+    open();
+    await vi.waitFor(() => expect(chooser() ?? form()).not.toBeNull());
+    return chooser() !== null;
+  }
+
+  it('exports the widget without asking', async () => {
+    // An empty line as Polarion renders it, with two zero width spaces
+    reportPage(
+      '<h1 id="polarion_client9">Timesheet</h1><p id="polarion_client3"><br>\u200b\u200b</p><widget></widget><p id="polarion_client4"> </p>',
+    );
+
+    expect((await exported()).widgetId).toBe('polarion_client2');
+  });
+
+  it('counts nothing the widget shows itself', async () => {
+    reportPage('<widget></widget>').append('Steve Developer - total: 8 h');
+
+    expect(await asks()).toBe(false);
+  });
+
+  it('asks where the report has text besides the widget', async () => {
+    reportPage('<p id="polarion_client3">Hours of the team, per month.</p><widget></widget>');
+
+    expect(await asks()).toBe(true);
+  });
+
+  it('asks where the report has another widget, which offered nothing', async () => {
+    reportPage(
+      '<widget></widget><div id="polarion_client5" class="polarion-rp-widget-part" data-widget="com.polarion.pageBreak"><span class="polarion-rp-widget-parameters"></span></div>',
+    );
+
+    expect(await asks()).toBe(true);
+  });
+
+  it('asks where the report has a picture besides the widget', async () => {
+    reportPage(
+      '<p id="polarion_client3"><img src="data:image/gif;base64,R0lGODlhAQABAAAAACw=" alt=""></p><widget></widget>',
+    );
+
+    expect(await asks()).toBe(true);
+  });
+
+  it('asks where the report has an inline widget, however empty', async () => {
+    reportPage(
+      '<p id="polarion_client3"><span id="polarion_client3_iw_1" class="polarion-rp-inline-widget"><span class="polarion-rp-widget-parameters"></span></span></p><widget></widget>',
+    );
+
+    expect(await asks()).toBe(true);
+  });
+
+  it('asks where a Bulk PDF Export widget has rows selected', async () => {
+    reportPage('<widget></widget>');
+    widget('Documents', 2);
+
+    expect(await asks()).toBe(true);
   });
 });
 
