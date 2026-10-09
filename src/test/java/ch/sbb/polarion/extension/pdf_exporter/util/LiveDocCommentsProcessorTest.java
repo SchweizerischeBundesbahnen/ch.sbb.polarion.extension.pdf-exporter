@@ -226,6 +226,23 @@ class LiveDocCommentsProcessorTest {
     }
 
     @Test
+    void addLiveDocCommentsRemovesIconOfCommentWithSeveralParagraphs() {
+        // For the PDF Polarion escapes the plain text of the comment into the title, which turns a line break into a raw <br/>
+        String html = """
+                <p>Optional values<img id="polarion-comment:240" title="Major: first paragraph?<br/><br/>Second &quot;paragraph&quot;" \
+                contenteditable="false" src="/polarion/ria/images/control/comment_resolved.png" class="polarion-dle-comment-resolved-icon"/></p>
+                """;
+
+        Set<String> renderedCommentIds = new HashSet<>();
+        String result = new LiveDocCommentsProcessor().addLiveDocComments(html, Map.of(), false, renderedCommentIds);
+
+        assertEquals("""
+                <p>Optional values</p>
+                """, result);
+        assertEquals(Set.of("240"), renderedCommentIds);
+    }
+
+    @Test
     @SuppressWarnings("unchecked")
     void addUnreferencedCommentsAppendsWhenUnreferencedExist() {
         ProxyDocument document = mock(ProxyDocument.class, RETURNS_DEEP_STUBS);
