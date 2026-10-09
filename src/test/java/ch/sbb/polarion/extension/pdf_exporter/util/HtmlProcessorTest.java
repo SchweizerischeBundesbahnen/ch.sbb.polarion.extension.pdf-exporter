@@ -1630,6 +1630,29 @@ class HtmlProcessorTest {
     }
 
     @ParameterizedTest
+    @MethodSource("providePd4mlPageTestCases")
+    void removePd4mlPageTagsTest(String input, String expected) {
+        assertEquals(expected, HtmlProcessor.removePd4mlPageTags(input));
+    }
+
+    private static Stream<Arguments> providePd4mlPageTestCases() {
+        return Stream.of(
+                // The tag Polarion puts before a heading, the heading ending the line
+                Arguments.of("<div><pd4ml:page.break ifSpaceBelowLessThan=\"200\"><h1 id=\"x\">\nTitle</h1>", "<div><h1 id=\"x\">\nTitle</h1>"),
+                // The content after the tag on the same line stays
+                Arguments.of("<p>a<pd4ml:page.break pageformat=\"rotate\"></p><p>Important</p><p>More</p>", "<p>a</p><p>Important</p><p>More</p>"),
+                // Each tag of a line is removed
+                Arguments.of("<pd4ml:page.break><p>a</p><pd4ml:page.break/><p>b</p>", "<p>a</p><p>b</p>"),
+                // A quoted value may contain '>'
+                Arguments.of("<pd4ml:page.header title=\"a > b\"><p>a</p>", "<p>a</p>"),
+                // A tag at the end of the HTML is removed too
+                Arguments.of("<p>a</p><pd4ml:page.break>", "<p>a</p>"),
+                // Other pd4ml tags stay
+                Arguments.of("<pd4ml:toc></pd4ml:toc>", "<pd4ml:toc></pd4ml:toc>")
+        );
+    }
+
+    @ParameterizedTest
     @MethodSource("provideHtmlTestCases")
     void processHtmlForPDFTest(String inputHtml, String expectedResult) {
         String result = processor.processHtmlForPDF(inputHtml, getExportParams(), List.of());

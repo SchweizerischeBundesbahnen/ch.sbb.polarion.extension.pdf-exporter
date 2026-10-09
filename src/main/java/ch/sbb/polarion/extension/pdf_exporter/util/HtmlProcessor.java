@@ -282,8 +282,10 @@ public class HtmlProcessor {
     }
 
     @NotNull
-    private String removePd4mlPageTags(@NotNull String html) {
-        return RegexMatcher.get("(<pd4ml:page.*>)(.)").replace(html, regexEngine -> regexEngine.group(2));
+    @VisibleForTesting
+    static String removePd4mlPageTags(@NotNull String html) {
+        // The tag alone: a quoted value may contain '>', and the content after the tag stays
+        return RegexMatcher.get("<pd4ml:page(?:[^>\"]|\"[^\"]*\")*>").removeAll(html);
     }
 
     /**
