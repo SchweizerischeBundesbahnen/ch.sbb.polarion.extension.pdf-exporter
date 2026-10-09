@@ -1,8 +1,8 @@
 import type { Root } from 'react-dom/client';
+import { offerForPdfExport } from '@sbb-polarion/react-sbb-polarion';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { page, userEvent } from 'vitest/browser';
 import type { DocumentType, ExportType } from '../src/export/documentType';
-import { registerWidgetExportTarget } from '../src/export/widgetExportTargets';
 import { openExportPopup } from '../src/popup/mount';
 import type { DocumentIdentity } from '../src/services/exportContext';
 import { registerBulkExportTarget } from '../src/widget/exportTargets';
@@ -185,7 +185,7 @@ describe.skipIf(!__PIXEL_REFERENCES__)('export dialog visual', () => {
       const part = document.body.appendChild(document.createElement('div'));
       part.id = id;
       part.className = 'polarion-rp-widget-part';
-      const remove = registerWidgetExportTarget({ title, anchor: () => part });
+      const remove = offerForPdfExport(title, () => part);
       return () => {
         remove();
         part.remove();
