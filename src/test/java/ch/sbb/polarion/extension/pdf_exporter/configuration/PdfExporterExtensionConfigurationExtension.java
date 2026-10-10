@@ -9,31 +9,36 @@ import org.mockito.MockedStatic;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 
+/**
+ * Mocks {@link PdfExporterExtensionConfiguration#getInstance()} for each test. The mock belongs to the thread of the
+ * test, so that test classes may run in parallel: a class's tests run in one thread, from before to after each.
+ */
 public class PdfExporterExtensionConfigurationExtension implements BeforeEachCallback, AfterEachCallback {
 
-    private MockedStatic<PdfExporterExtensionConfiguration> pdfExporterExtensionConfigurationMockedStatic;
-
-    private static PdfExporterExtensionConfiguration pdfExporterExtensionConfiguration;
+    private static final ThreadLocal<PdfExporterExtensionConfiguration> CONFIGURATION = new ThreadLocal<>();
+    private static final ExtensionContext.Namespace NAMESPACE = ExtensionContext.Namespace.create(PdfExporterExtensionConfigurationExtension.class);
 
     public static void setPdfExporterExtensionConfigurationMock(PdfExporterExtensionConfiguration mock) {
-        pdfExporterExtensionConfiguration = mock;
+        CONFIGURATION.set(mock);
     }
 
     @Override
     public void beforeEach(ExtensionContext extensionContext) throws Exception {
-        if (pdfExporterExtensionConfiguration == null) {
-            pdfExporterExtensionConfiguration = mock(PdfExporterExtensionConfiguration.class);
+        if (CONFIGURATION.get() == null) {
+            CONFIGURATION.set(mock(PdfExporterExtensionConfiguration.class));
         }
-
-        pdfExporterExtensionConfigurationMockedStatic = mockStatic(PdfExporterExtensionConfiguration.class);
-        pdfExporterExtensionConfigurationMockedStatic.when(PdfExporterExtensionConfiguration::getInstance).thenReturn(pdfExporterExtensionConfiguration);
+        PdfExporterExtensionConfiguration configuration = CONFIGURATION.get();
+        MockedStatic<PdfExporterExtensionConfiguration> mockedStatic = mockStatic(PdfExporterExtensionConfiguration.class);
+        mockedStatic.when(PdfExporterExtensionConfiguration::getInstance).thenReturn(configuration);
+        extensionContext.getStore(NAMESPACE).put(MockedStatic.class, mockedStatic);
     }
 
     @Override
     public void afterEach(ExtensionContext extensionContext) throws Exception {
-        if (pdfExporterExtensionConfigurationMockedStatic != null) {
-            pdfExporterExtensionConfigurationMockedStatic.close();
+        MockedStatic<?> mockedStatic = extensionContext.getStore(NAMESPACE).remove(MockedStatic.class, MockedStatic.class);
+        if (mockedStatic != null) {
+            mockedStatic.close();
         }
-        pdfExporterExtensionConfiguration = null;
+        CONFIGURATION.remove();
     }
 }
