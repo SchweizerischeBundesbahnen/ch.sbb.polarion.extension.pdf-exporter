@@ -38,6 +38,8 @@ import org.apache.pdfbox.text.PDFTextStripper;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.ResourceLock;
+import org.junit.jupiter.api.parallel.ResourceAccessMode;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.testcontainers.containers.Container;
 import org.mockito.quality.Strictness;
@@ -74,7 +76,12 @@ import static org.mockito.Mockito.when;
 @ExtendWith({CurrentContextExtension.class, TransactionalExecutorExtension.class})
 @CurrentContextConfig("pdf-exporter")
 @MockitoSettings(strictness = Strictness.LENIENT)
+// The bulk tests share the job storage of one service: they may run together, but not beside a test which counts the jobs
+@ResourceLock(value = BaseBulkProcessingTest.JOB_STORAGE, mode = ResourceAccessMode.READ)
 abstract class BaseBulkProcessingTest extends BasePdfConverterTest {
+
+    /** The lock of the job storage of the bulk processing service. */
+    static final String JOB_STORAGE = "bulk-processing-job-storage";
 
     protected static final String PAGE_BREAK = "<!--PAGE_BREAK--><!--PORTRAIT_ABOVE-->";
     protected static final String LANDSCAPE_PAGE_BREAK = "<!--PAGE_BREAK--><!--LANDSCAPE_ABOVE-->";

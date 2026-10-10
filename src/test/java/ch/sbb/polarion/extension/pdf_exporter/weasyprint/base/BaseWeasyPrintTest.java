@@ -11,6 +11,7 @@ import lombok.SneakyThrows;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.jetbrains.annotations.NotNull;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.slf4j.Logger;
@@ -29,6 +30,8 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+// The tests of the service: they run with several classes at once, in an execution of surefire of their own
+@Tag("service")
 @ExtendWith({MockitoExtension.class, PdfExporterExtensionConfigurationExtension.class})
 @SkipTestWhenParamNotSet
 public abstract class BaseWeasyPrintTest {

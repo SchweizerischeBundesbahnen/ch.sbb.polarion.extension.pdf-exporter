@@ -4,6 +4,8 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.MergeJobStar
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.BulkProcessingConnector.MergeDocumentData;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.service.BulkProcessingServiceConnector;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.ResourceAccessMode;
+import org.junit.jupiter.api.parallel.ResourceLock;
 
 import java.util.List;
 
@@ -12,6 +14,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** A merge cancelled while it runs, as an interrupted worker thread cancels it. */
+// It counts the jobs the service stores, so no other bulk test runs beside it
+@ResourceLock(value = BaseBulkProcessingTest.JOB_STORAGE, mode = ResourceAccessMode.READ_WRITE)
 class CancelledMergeTest extends BaseBulkProcessingTest {
 
     @Test

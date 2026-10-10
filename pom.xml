@@ -89,6 +89,8 @@
         -->
         <maven-jar-plugin.Require-Bundle.extension>com.polarion.alm.wiki,org.jsoup,net.bytebuddy.byte-buddy,org.apache.tika.patched;resolution:=optional,org.apache.tika;resolution:=optional,org.apache.httpcomponents.httpclient,org.apache.httpcomponents.httpcore</maven-jar-plugin.Require-Bundle.extension>
         <maven-jar-plugin.Require-Bundle>${maven-jar-plugin.Require-Bundle.common},${maven-jar-plugin.Require-Bundle.extension}</maven-jar-plugin.Require-Bundle>
+        <!-- How many test classes run at once with WeasyPrint -->
+        <tests.parallelism>4</tests.parallelism>
     </properties>
 
 
@@ -108,12 +110,44 @@
                             <!-- Reuse JVM for all tests to enable container sharing -->
                             <forkCount>1</forkCount>
                             <reuseForks>true</reuseForks>
-                            <!-- Run tests sequentially to ensure container is shared -->
                             <parallel>none</parallel>
                             <systemPropertyVariables>
                                 <wpExporterImpl>docker</wpExporterImpl>
                             </systemPropertyVariables>
                         </configuration>
+                        <executions>
+                            <!-- The unit tests run one after another, as they always did: several of them change state of the whole
+                                 JVM, as its proxy settings, which a test running beside them would pick up. -->
+                            <execution>
+                                <id>default-test</id>
+                                <configuration>
+                                    <excludedGroups>performance,service</excludedGroups>
+                                </configuration>
+                            </execution>
+                            <!-- The tests of the service, tagged "service" by their base class, take most of the time. JUnit runs their
+                                 classes in parallel, in one JVM, so they share the container; the methods of a class still run
+                                 one after another. A group, unlike a path, still applies where -Dtest names a test. -->
+                            <execution>
+                                <id>service-tests</id>
+                                <phase>test</phase>
+                                <goals>
+                                    <goal>test</goal>
+                                </goals>
+                                <configuration>
+                                    <groups>service</groups>
+                                    <excludedGroups>performance</excludedGroups>
+                                    <properties>
+                                        <configurationParameters>
+                                            junit.jupiter.execution.parallel.enabled = true
+                                            junit.jupiter.execution.parallel.mode.default = same_thread
+                                            junit.jupiter.execution.parallel.mode.classes.default = concurrent
+                                            junit.jupiter.execution.parallel.config.strategy = fixed
+                                            junit.jupiter.execution.parallel.config.fixed.parallelism = ${tests.parallelism}
+                                        </configurationParameters>
+                                    </properties>
+                                </configuration>
+                            </execution>
+                        </executions>
                     </plugin>
                 </plugins>
             </build>
