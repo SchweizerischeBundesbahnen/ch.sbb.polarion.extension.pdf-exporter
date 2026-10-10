@@ -118,6 +118,8 @@ jobs:
       COM_SONATYPE_CENTRAL_POLARION_OPENSOURCE_USERNAME: ${{ secrets.COM_SONATYPE_CENTRAL_POLARION_OPENSOURCE_USERNAME }}
       COM_SONATYPE_CENTRAL_POLARION_OPENSOURCE_TOKEN: ${{ secrets.COM_SONATYPE_CENTRAL_POLARION_OPENSOURCE_TOKEN }}
       COM_SONATYPE_CENTRAL_POLARION_OPENSOURCE_GPG_PASSPHRASE: ${{ secrets.COM_SONATYPE_CENTRAL_POLARION_OPENSOURCE_GPG_PASSPHRASE }}
+      # The deploy rebuilds the project, and the Maven cache does not always spare it the Polarion artifacts of JFrog
+      IO_JFROG_SBB_POLARION_TOKEN: ${{ secrets.IO_JFROG_SBB_POLARION_TOKEN }}
       GITHUB_TOKEN: ${{ github.token }}  # Providing this prevents reaching the GitHub request limits
     steps:
       - name: 📄 Checkout the repository
@@ -132,11 +134,23 @@ jobs:
           java-version: ${{ env.JAVA_VERSION }}
           cache: maven
           gpg-private-key: ${{ secrets.COM_SONATYPE_CENTRAL_POLARION_OPENSOURCE_GPG_PRIVATE_KEY }}
+      - name: 🧱 Set up Maven 3.9.16
+        # Maven 3.10 makes the staging of central-publishing-maven-plugin 0.11.0 write maven-metadata-local.xml and
+        # _remote.repositories, which the plugin bundles and Central rejects. Drop this step once the plugin copes.
+        env:
+          MAVEN_VERSION: 3.9.16
+          MAVEN_SHA512: 831a8591fe20c8243b1dbe7d71e3244f31d1665b0804b2e825e38cbbe5ce0cafb8338851f90780735568773e0a6cd07bbec107cda0b896b008b861075358b6f6
+        run: |
+          curl -fsSL -o "${RUNNER_TEMP}/maven.tar.gz" "https://repo1.maven.org/maven2/org/apache/maven/apache-maven/${MAVEN_VERSION}/apache-maven-${MAVEN_VERSION}-bin.tar.gz"
+          echo "${MAVEN_SHA512}  ${RUNNER_TEMP}/maven.tar.gz" | sha512sum -c -
+          tar -xzf "${RUNNER_TEMP}/maven.tar.gz" -C "${RUNNER_TEMP}"
+          echo "${RUNNER_TEMP}/apache-maven-${MAVEN_VERSION}/bin" >> "${GITHUB_PATH}"
       - name: 📦 Deploy to Maven Central
         # This cannot be implemented using deploy:deploy-file
         # The central-publishing-maven-plugin must be used instead due to specific deployment requirements
         # Additionally, timeouts are set to 1 hour to avoid issues with the connection to Sonatype Central during deployment
         run: |
+          mvn --version
           mvn --batch-mode -s "${SETTINGS_XML}" clean deploy \
             -Dmaven.test.skip=true \
             -P gpg-sign \

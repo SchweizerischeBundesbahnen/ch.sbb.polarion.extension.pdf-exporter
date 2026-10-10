@@ -96,7 +96,8 @@ public class LiveDocCommentsProcessor {
         //Polarion document keeps comments position in span/img marked with id 'polarion-comment:commentId'.
         //<span id="polarion-comment:1"></span> or <img id="polarion-comment:1" class="polarion-dle-comment-icon"/> (for comments inside workitem description)
         //Note that resolved comments have class 'polarion-dle-comment-resolved-icon' so we have to take care of them too.
-        return RegexMatcher.get("(?s)((<img id=\"polarion-comment:(?<imgCommentId>\\d+)\"[^>]*class=\"polarion-dle-comment(?:-resolved)?-icon\"/>)|(<span id=\"polarion-comment:(?<spanCommentId>\\d+)\"></span>))")
+        //The title holds the comment text, where Polarion writes a line break as a raw <br/>, so a quoted value may contain '>'.
+        return RegexMatcher.get("(?s)((<img id=\"polarion-comment:(?<imgCommentId>\\d+)\"(?:[^>\"]|\"[^\"]*\")*?class=\"polarion-dle-comment(?:-resolved)?-icon\"/>)|(<span id=\"polarion-comment:(?<spanCommentId>\\d+)\"></span>))")
                 .replace(html, regexEngine -> {
                     String commentId = Optional.ofNullable(regexEngine.group("imgCommentId")).orElse(regexEngine.group("spanCommentId"));
                     renderedCommentIds.add(commentId);
