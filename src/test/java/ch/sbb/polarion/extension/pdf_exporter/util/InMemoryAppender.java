@@ -11,8 +11,8 @@ import org.apache.logging.log4j.core.config.plugins.PluginFactory;
 import org.apache.logging.log4j.core.layout.PatternLayout;
 
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Allows to check which data was logged by the Polarion logger.
@@ -22,7 +22,8 @@ import java.util.List;
 @Plugin(name = "InMemoryAppender", category = Core.CATEGORY_NAME, elementType = Appender.ELEMENT_TYPE, printObject = true)
 public class InMemoryAppender extends AbstractAppender {
 
-    private static final List<String> logMessages = new ArrayList<>();
+    // Test classes run in parallel and log from several threads at once
+    private static final List<String> logMessages = new CopyOnWriteArrayList<>();
 
     protected InMemoryAppender(String name, Layout<? extends Serializable> layout, boolean ignoreExceptions) {
         super(name, null, layout, ignoreExceptions, null);
