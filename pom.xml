@@ -121,13 +121,13 @@
                             <execution>
                                 <id>default-test</id>
                                 <configuration>
-                                    <excludes>
-                                        <exclude>**/weasyprint/**</exclude>
-                                    </excludes>
+                                    <failIfNoSpecifiedTests>false</failIfNoSpecifiedTests>
+                                    <excludedGroups>performance,service</excludedGroups>
                                 </configuration>
                             </execution>
-                            <!-- The tests of the service take most of the time, and JUnit runs their classes in parallel, in one JVM, so
-                                 they share the container. The methods of a class still run one after another. -->
+                            <!-- The tests of the service, tagged "service" by their base class, take most of the time. JUnit runs their
+                                 classes in parallel, in one JVM, so they share the container; the methods of a class still run
+                                 one after another. A group, unlike a path, still applies where -Dtest names a test. -->
                             <execution>
                                 <id>service-tests</id>
                                 <phase>test</phase>
@@ -135,16 +135,9 @@
                                     <goal>test</goal>
                                 </goals>
                                 <configuration>
-                                    <includes>
-                                        <include>**/weasyprint/Test*.java</include>
-                                        <include>**/weasyprint/**/Test*.java</include>
-                                        <include>**/weasyprint/*Test.java</include>
-                                        <include>**/weasyprint/**/*Test.java</include>
-                                        <include>**/weasyprint/*Tests.java</include>
-                                        <include>**/weasyprint/**/*Tests.java</include>
-                                        <include>**/weasyprint/*TestCase.java</include>
-                                        <include>**/weasyprint/**/*TestCase.java</include>
-                                    </includes>
+                                    <failIfNoSpecifiedTests>false</failIfNoSpecifiedTests>
+                                    <groups>service</groups>
+                                    <excludedGroups>performance</excludedGroups>
                                     <properties>
                                         <configurationParameters>
                                             junit.jupiter.execution.parallel.enabled = true
