@@ -1,5 +1,18 @@
 # Changelog
 
+## [13.12.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v13.11.1...v13.12.0) (2026-10-10)
+
+
+### Features
+
+* export the only widget of a report without asking ([#1221](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/1221)) ([6e51cfd](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/6e51cfdf21d8f2ae08880c75a13c0977a11a6f93))
+
+
+### Bug Fixes
+
+* place a comment on a referenced work item ([#1216](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/1216)) ([f0c2bc0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/f0c2bc0d5ebf68bc7a1dcdf08f5384833b8f8c7f)), closes [#1118](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/1118)
+* remove only the pd4ml:page tag itself ([#1207](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/1207)) ([b63e0a3](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/b63e0a3d20457929d1dc4bdc9432ebe35e9d3b9a)), closes [#1203](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/1203)
+
 ## [13.11.1](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v13.11.0...v13.11.1) (2026-10-09)
 
 
