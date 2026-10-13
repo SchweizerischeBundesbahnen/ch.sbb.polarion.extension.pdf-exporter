@@ -108,6 +108,25 @@ class HtmlProcessorTest {
     }
 
     @Test
+    void richTextCommentStaysInsideCommentTest() {
+        String commentText = CommentTextRenderer.toInlineHtml("<p>First</p><ol><li>111</li><li>222</li></ol><ul><li>aaaa</li></ul>");
+        String initialHtml = "<p>[span class=comment level-0][span class=meta][span class=date]2026-10-13 09:27[/span][span class=details][span class=author]System Administrator[/span][/span][/span]"
+                + "[span class=text]" + commentText + "[/span][/span] Advanced:</p><p>Next</p>";
+
+        Document document = JSoupUtils.parseHtml(processor.processComments(initialHtml));
+
+        Elements paragraphs = document.body().children();
+        assertEquals(2, paragraphs.size());
+        assertEquals("p", paragraphs.get(0).normalName());
+        Element text = paragraphs.get(0).selectFirst("span.comment span.text");
+        assertNotNull(text);
+        assertEquals(List.of("First", "1. 111", "2. 222", "• aaaa"), text.textNodes().stream().map(textNode -> textNode.text().strip()).toList());
+        assertEquals(3, text.select("br").size());
+        assertEquals("Advanced:", paragraphs.get(0).ownText());
+        assertEquals("Next", paragraphs.get(1).text());
+    }
+
+    @Test
     @SneakyThrows
     void cutLocalUrlsWithRolesFilteringTest() {
         when(localizationSettings.load(any(), any(SettingId.class))).thenReturn(new LocalizationModel(Collections.emptyMap(), Collections.emptyMap(), Collections.emptyMap()));
