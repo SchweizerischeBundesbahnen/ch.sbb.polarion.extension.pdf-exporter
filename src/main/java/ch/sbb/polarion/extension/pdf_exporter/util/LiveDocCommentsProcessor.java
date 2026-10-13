@@ -166,7 +166,7 @@ public class LiveDocCommentsProcessor {
     private CommentData getCommentData(LiveDocComment liveDocComment) {
         User user = liveDocComment.getAuthor().get();
         String authorName = user != null ? getUserName(user) : null;
-        String commentText = liveDocComment.getText().persistedHtml();
+        String commentText = CommentTextRenderer.toInlineHtml(liveDocComment.getText().persistedHtml());
         boolean resolved = liveDocComment.getResolved().get();
         return CommentData.builder()
                 .date(dateFormat.format(liveDocComment.getCreated().get().toInstant()))
