@@ -1,5 +1,29 @@
 # Changelog
 
+## [13.12.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v13.11.1...v13.12.0) (2026-10-16)
+
+
+### Features
+
+* export the only widget of a report without asking ([#1221](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/1221)) ([6e51cfd](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/6e51cfdf21d8f2ae08880c75a13c0977a11a6f93))
+
+
+### Bug Fixes
+
+* deploy to Maven Central with the Maven of the runner ([#1231](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/1231)) ([b4f999d](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/b4f999d9ded2601255378c3ed6038b3ee76b15b2))
+* **deps:** update dependency @types/node to v24.19.2 ([05ae661](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/05ae6610a03432119036c6fb85eaafa61e4f371d))
+* **deps:** update dependency org.apache.tika:tika-core to v3.3.3 ([68c68ed](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/68c68ed49f7cfc53559891dccde418124cd1e6a3))
+* **deps:** update dependency org.verapdf:validation-model-jakarta to v1.30.3 ([9025a03](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/9025a0347c617089d8274acf25e26e52cdaef4ed))
+* **deps:** update dependency playwright to v1.64.0 ([0fed81c](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/0fed81c07b0df25c48d6883889eebfaa5cd5bae1))
+* **deps:** update dependency prettier to v3.9.10 ([11e0307](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/11e030735a936e4f91c49e72156440188ddeecf7))
+* **deps:** update dependency typescript-eslint to v8.71.2 ([2ef57c7](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/2ef57c73bba6cf778fc98a5f0e86a2f34ca46a62))
+* **deps:** update dependency vite to v8.3.4 ([f14dbbf](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/f14dbbfbccb18e39946d7f4e88050b4d11a9fbe0))
+* **deps:** update vitest monorepo to v5.0.4 ([43966b7](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/43966b7f1effdd9848aa5dc17936f973f2c4c1e0))
+* drop msg.png of the old wiki skin from the CSS ([#1230](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/1230)) ([2d02089](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/2d0208977e1510c9ea14b7f7968872bdfc275da5))
+* keep rich-text comment content inside the comment ([#1228](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/1228)) ([906856c](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/906856ca60ec55378e14caffa9cb7687fc838d98)), closes [#1227](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/1227)
+* place a comment on a referenced work item ([#1216](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/1216)) ([f0c2bc0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/f0c2bc0d5ebf68bc7a1dcdf08f5384833b8f8c7f)), closes [#1118](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/1118)
+* remove only the pd4ml:page tag itself ([#1207](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/1207)) ([b63e0a3](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/b63e0a3d20457929d1dc4bdc9432ebe35e9d3b9a)), closes [#1203](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/1203)
+
 ## [13.11.1](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v13.11.0...v13.11.1) (2026-10-09)
 
 
