@@ -602,7 +602,7 @@ html {
     text-align: left;
     margin: 4px 5px;
     padding: 16px 4px 16px 36px;
-    background: #F5F5F5 url("/polarion/wiki/skins/sidecar/msg.png") 10px 18px no-repeat;
+    background: #F5F5F5 10px 18px no-repeat;
 }
 
 .polarion-infomessage, .polarion-infomessage-noSideMargin {
