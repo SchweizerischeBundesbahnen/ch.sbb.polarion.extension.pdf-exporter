@@ -1,5 +1,12 @@
 # Changelog
 
+## [13.12.1](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v13.12.0...v13.12.1) (2026-10-16)
+
+
+### Bug Fixes
+
+* **deps:** update dependency com.helger:ph-css to v8.2.3 ([#1232](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/1232)) ([cfdc39c](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/cfdc39c9a600ba5b51dc53da466e61ff80df7e22))
+
 ## [13.12.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v13.11.1...v13.12.0) (2026-10-16)
 
 
