@@ -107,7 +107,7 @@ class SvgAlignmentInTableTest extends BasePdfConverterTest {
             assertThat(leftGap).as("The diagram stands in the middle of its column: %s", measured).isCloseTo(rightGap, within(TOLERANCE_PT));
         } else if (diagram == Diagram.TALL && !drawnByWeasysvg(pdf)) {
             // Known defect of the chromium SVG renderer: SvgProcessor gives the image the width of the SVG, and object-fit: contain
-            // centers the shortened drawing in that wider box, short of the right edge by half the width it lost (weasyprint-service#TBD)
+            // centers the shortened drawing in that wider box, short of the right edge by half the width it lost (SchweizerischeBundesbahnen/weasyprint-service#409)
             float shortOfTheEdge = (diagram.ownWidthPx * PT_PER_PX - drawn.width()) / 2;
             assertThat(rightGap).as("Chromium draws the diagram in the middle of a box as wide as the SVG, which stands flush right: %s", measured)
                     .isCloseTo(shortOfTheEdge, within(TOLERANCE_PT));
@@ -116,7 +116,7 @@ class SvgAlignmentInTableTest extends BasePdfConverterTest {
         }
 
         // The shared reference of RIGHT TALL is the page Chromium draws, short of the right edge, and png/weasysvg holds the right one.
-        // Known defect of the chromium SVG renderer: the shortened drawing is centered in a box as wide as the SVG (weasyprint-service#TBD)
+        // Known defect of the chromium SVG renderer: the shortened drawing is centered in a box as wide as the SVG (SchweizerischeBundesbahnen/weasyprint-service#409)
         assertFalse(compareContentUsingReferenceImages("alignsAnSvgAsItsColumnDoes_" + alignment + "_" + diagram, pdf), "The pages differ from the reference images");
     }
 
