@@ -41,9 +41,15 @@ public class PdfTemplateProcessor {
         }
 
         if (exportParams.isFitToPage()) {
+            // An image narrowed to its column keeps its shape: a height its attribute states is for the width it no longer has.
+            // An inline SVG, as the chart of a Live Report, fits its column the same way. Its own nested <svg> elements are left alone.
             css += """
                 img {
                     max-width: 100%;
+                }
+                img[width][height], :not(svg) > svg {
+                    max-width: 100%;
+                    height: auto;
                 }
             """;
         }
