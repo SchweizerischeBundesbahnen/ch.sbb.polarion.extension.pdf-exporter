@@ -41,6 +41,11 @@ jobs:
           distribution: ${{ env.JAVA_DISTRIBUTION }}
           java-version: ${{ env.JAVA_VERSION }}
           cache: maven
+      - name: 🔎 Check that the service draws SVG with weasysvg
+        # weasysvg is the default renderer of the service, and the shared reference images are what it draws
+        run: |
+          curl --fail --silent --show-error "${WEASYPRINT_SERVICE_URL}/version" | tee /dev/stderr \
+            | jq --exit-status '.svgRenderer == "weasysvg"'
       - name: 📝 Extract project metadata
         id: project_metadata
         run: |
@@ -103,10 +108,10 @@ jobs:
             target/*.pom
           retention-days: 1
           if-no-files-found: error
-  # The WeasyPrint tests once more, with the service drawing SVG through weasysvg
-  # (SVG_RENDERER=weasysvg). A page it draws differently compares with its own
-  # reference image in src/test/resources/weasyprint/png/weasysvg.
-  build-weasysvg:
+  # The WeasyPrint tests once more, with the service drawing SVG through Chromium,
+  # its fallback renderer (SVG_RENDERER=chromium). A page it draws differently
+  # compares with its own reference image in src/test/resources/weasyprint/png/chromium.
+  build-chromium:
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -115,7 +120,7 @@ jobs:
         image: ghcr.io/schweizerischebundesbahnen/weasyprint-service:latest@sha256:6bb88bfe45210aa031e92573a2533c8341bd8f93e538c31dcd6b54da3844c5f0  # zizmor: ignore[unpinned-images]
         ports: [9080:9080]
         env:
-          SVG_RENDERER: weasysvg
+          SVG_RENDERER: chromium
     env:
       IO_JFROG_SBB_POLARION_TOKEN: ${{ secrets.IO_JFROG_SBB_POLARION_TOKEN }}
       GITHUB_TOKEN: ${{ github.token }}  # Providing this prevents reaching the GitHub request limits
@@ -132,12 +137,12 @@ jobs:
           distribution: ${{ env.JAVA_DISTRIBUTION }}
           java-version: ${{ env.JAVA_VERSION }}
           cache: maven
-      - name: 🔎 Check that the service draws SVG with weasysvg
-        # An image without SVG_RENDERER would ignore it, and every test would compare with the Chromium images
+      - name: 🔎 Check that the service draws SVG with Chromium
+        # A service which ignored SVG_RENDERER would draw with weasysvg, and every page would compare with the shared images
         run: |
           curl --fail --silent --show-error "${WEASYPRINT_SERVICE_URL}/version" | tee /dev/stderr \
-            | jq --exit-status '.svgRenderer == "weasysvg"'
-      - name: 🧪 Test with weasysvg
+            | jq --exit-status '.svgRenderer == "chromium"'
+      - name: 🧪 Test with Chromium
         run: mvn --batch-mode -s "${SETTINGS_XML}" clean verify -P tests-with-weasyprint-docker -Dweasyprint.service.url="${WEASYPRINT_SERVICE_URL}"
   # Deploy releases to Maven Central from main and LTS branches (release-v*)
   # See RELEASE.md for LTS branch documentation
