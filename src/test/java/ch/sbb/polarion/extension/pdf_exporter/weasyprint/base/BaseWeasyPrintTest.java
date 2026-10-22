@@ -47,8 +47,11 @@ public abstract class BaseWeasyPrintTest {
     public static final String PAGE_SUFFIX = "_page_";
     public static final String WEASYPRINT_TEST_RESOURCES_FOLDER = "/weasyprint/html/";
     public static final String WEASYPRINT_TEST_PNG_RESOURCES_FOLDER = "/weasyprint/png/";
-    /** The reference images of the pages the weasysvg plugin draws differently from Chromium. A page missing here is the same in both. */
-    public static final String WEASYPRINT_TEST_WEASYSVG_PNG_RESOURCES_FOLDER = WEASYPRINT_TEST_PNG_RESOURCES_FOLDER + "weasysvg/";
+    /**
+     * The reference images of the pages Chromium, the fallback SVG renderer of WeasyPrint service, draws differently from
+     * weasysvg, its default. A page missing here is the same in both. The folder goes when the service drops Chromium.
+     */
+    public static final String WEASYPRINT_TEST_CHROMIUM_PNG_RESOURCES_FOLDER = WEASYPRINT_TEST_PNG_RESOURCES_FOLDER + "chromium/";
     public static final String WEASYPRINT_TEST_CSS_RESOURCES_FOLDER = "/weasyprint/css/";
     public static final String WEASYPRINT_TEST_FONT_RESOURCES_FOLDER = "/weasyprint/font/";
     public static final String FONT_BASE64_REPLACE_PARAM = "{FONT_BASE64}";
@@ -97,14 +100,14 @@ public abstract class BaseWeasyPrintTest {
     }
 
     /**
-     * The reference image of a page: the one of weasysvg where the pdf holds an SVG it drew and it has one of its own,
-     * the shared one otherwise.
+     * The reference image of a page: the one of Chromium where weasysvg drew no SVG of the pdf and Chromium has one of its
+     * own, the shared one otherwise.
      */
     public static InputStream readReferencePngResource(String resourceName, boolean drawnByWeasysvg) {
-        if (drawnByWeasysvg) {
-            InputStream weasysvgImage = BaseWeasyPrintTest.class.getResourceAsStream(WEASYPRINT_TEST_WEASYSVG_PNG_RESOURCES_FOLDER + resourceName + EXT_PNG);
-            if (weasysvgImage != null) {
-                return weasysvgImage;
+        if (!drawnByWeasysvg) {
+            InputStream chromiumImage = BaseWeasyPrintTest.class.getResourceAsStream(WEASYPRINT_TEST_CHROMIUM_PNG_RESOURCES_FOLDER + resourceName + EXT_PNG);
+            if (chromiumImage != null) {
+                return chromiumImage;
             }
         }
         return readPngResource(resourceName);
@@ -259,9 +262,9 @@ public abstract class BaseWeasyPrintTest {
      * simply copy &amp; replace the reference resource images with the new ones from the reports folder.
      * </p>
      * <p>
-     * A page the weasysvg plugin of WeasyPrint service drew is compared with its image in
-     * {@value #WEASYPRINT_TEST_WEASYSVG_PNG_RESOURCES_FOLDER} where there is one: it draws an SVG as vector, where Chromium
-     * rasterized it, so its edges and text differ, and it places a diagram as a browser does, at the left of its box.
+     * The shared reference images are what weasysvg, the default SVG renderer of WeasyPrint service, draws. A page of a pdf
+     * in which it drew no SVG is compared with its image in {@value #WEASYPRINT_TEST_CHROMIUM_PNG_RESOURCES_FOLDER} where
+     * there is one: Chromium rasterizes an SVG, so its edges and its text differ from the vector weasysvg draws.
      * </p>
      */
     @SneakyThrows

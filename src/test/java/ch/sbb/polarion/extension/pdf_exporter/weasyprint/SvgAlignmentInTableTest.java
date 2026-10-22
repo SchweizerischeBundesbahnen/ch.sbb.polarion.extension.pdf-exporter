@@ -91,7 +91,6 @@ class SvgAlignmentInTableTest extends BasePdfConverterTest {
 
         List<DrawnImages.Box> boxes = DrawnImages.boxesIn(pdf).stream().sorted(Comparator.comparing(DrawnImages.Box::left)).toList();
         assertThat(boxes).as("Each column draws its diagram once").hasSize(Alignment.values().length);
-        boolean chromiumShortens = diagram == Diagram.TALL && !drawnByWeasysvg(pdf);
         for (Alignment alignment : Alignment.values()) {
             DrawnImages.Box drawn = boxes.get(alignment.ordinal());
             float columnLeft = edgeOf(pdf, alignment.startMark(), false);
@@ -109,18 +108,13 @@ class SvgAlignmentInTableTest extends BasePdfConverterTest {
             assertThat(leftGap).as("The diagram stays inside its column on the left: %s", measured).isGreaterThan(-TOLERANCE_PT);
             assertThat(rightGap).as("The diagram stays inside its column on the right: %s", measured).isGreaterThan(-TOLERANCE_PT);
 
-            // Known defect of the chromium SVG renderer: SvgProcessor gives the image the width of the SVG, and object-fit: contain
-            // centers the shortened drawing in that wider box, off the edge it is aligned to by half the width it lost (SchweizerischeBundesbahnen/weasyprint-service#409)
-            float offTheEdge = chromiumShortens ? (diagram.ownWidthPx * PT_PER_PX - drawn.width()) / 2 : 0f;
             switch (alignment) {
-                case LEFT -> assertThat(leftGap).as("The diagram stands flush left in its column: %s", measured).isCloseTo(offTheEdge, within(TOLERANCE_PT));
+                case LEFT -> assertThat(leftGap).as("The diagram stands flush left in its column: %s", measured).isCloseTo(0f, within(TOLERANCE_PT));
                 case CENTER -> assertThat(leftGap).as("The diagram stands in the middle of its column: %s", measured).isCloseTo(rightGap, within(TOLERANCE_PT));
-                case RIGHT -> assertThat(rightGap).as("The diagram stands flush right in its column: %s", measured).isCloseTo(offTheEdge, within(TOLERANCE_PT));
+                case RIGHT -> assertThat(rightGap).as("The diagram stands flush right in its column: %s", measured).isCloseTo(0f, within(TOLERANCE_PT));
             }
         }
 
-        // The shared reference of TALL is the page Chromium draws, off the left and the right edge, and png/weasysvg holds the right one.
-        // Known defect of the chromium SVG renderer: the shortened drawing is centered in a box as wide as the SVG (SchweizerischeBundesbahnen/weasyprint-service#409)
         assertFalse(compareContentUsingReferenceImages(testName, pdf), "The pages differ from the reference images");
     }
 
@@ -180,13 +174,6 @@ class SvgAlignmentInTableTest extends BasePdfConverterTest {
     private static byte @NotNull [] readImageResource(@NotNull String name) {
         try (InputStream resource = SvgAlignmentInTableTest.class.getResourceAsStream("/weasyprint/img/" + name)) {
             return Objects.requireNonNull(resource, name).readAllBytes();
-        }
-    }
-
-    @SneakyThrows
-    private static boolean drawnByWeasysvg(byte @NotNull [] pdf) {
-        try (PDDocument document = Loader.loadPDF(pdf)) {
-            return isDrawnByWeasysvg(document);
         }
     }
 }
