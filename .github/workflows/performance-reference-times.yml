@@ -1,0 +1,86 @@
+---
+name: Performance Reference Times
+# Averages the times of the last runs of the performance tests on main into new reference times of amd64, the
+# architecture of the runners. It commits nothing: the summary shows the change and the file is an artifact, which a
+# pull request takes into src/test/resources/performance/. A run counts only if it ran after the last change of what the
+# tests measure: the workflow, which pins the image of WeasyPrint, and the sources and resources of the tests.
+on:
+  workflow_dispatch:
+    inputs:
+      runs:
+        description: The number of runs to average, the most recent first
+        default: '20'
+      minimum:
+        description: Fail when fewer runs than this count
+        default: '10'
+  schedule:
+    - cron: 0 5 * * 1
+permissions: {}
+jobs:
+  average:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      actions: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RUNS: ${{ inputs.runs || '20' }}
+      MINIMUM: ${{ inputs.minimum || '10' }}
+      JAVA_VERSION: 21
+      JAVA_DISTRIBUTION: temurin
+      REFERENCE_TIMES: src/test/resources/performance/reference-times-amd64.properties
+    steps:
+      - name: 📄 Checkout the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+        with:
+          # the reports come from main, so the averaging and the cutoff come from main too, whichever branch dispatched it
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+      - name: 🧱 Set up JDK
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad  # v6.1.0
+        with:
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+          java-version: ${{ env.JAVA_VERSION }}
+      - name: 📥 Download the times of the last runs on main
+        run: |
+          # What the tests measure last changed here; the reference times themselves do not count
+          since="$(git log -1 --format=%ct -- .github/workflows/performance-tests.yml \
+            src/test/java/ch/sbb/polarion/extension/pdf_exporter/weasyprint/performance \
+            src/test/resources/performance ':(exclude)src/test/resources/performance/reference-times-*.properties')"
+          echo "Runs of main since $(date -u -d "@${since}" +%FT%TZ)"
+          # newest first; written whole before it is cut, so that no pipe closes early on gh
+          gh api --paginate "repos/${GITHUB_REPOSITORY}/actions/workflows/performance-tests.yml/runs?branch=main&event=push&status=success&per_page=100" \
+            --jq ".workflow_runs[] | select((.created_at | fromdate) > ${since}) | .id" > all-run-ids.txt
+          head -n "${RUNS}" all-run-ids.txt > run-ids.txt
+          mkdir -p runs
+          while read -r id; do
+            gh run download "${id}" --repo "${GITHUB_REPOSITORY}" --name performance-reports --dir "runs/${id}" || echo "::warning::Run ${id} has no reports any more"
+          done < run-ids.txt
+          count="$(find runs -name performance-reference-times.properties | wc -l)"
+          echo "COUNT=${count}" >> "${GITHUB_ENV}"
+          if [ "${count}" -lt "${MINIMUM}" ]; then
+            echo "::error::Only ${count} runs of main since the last change of the tests, fewer than ${MINIMUM}: wait for more runs, or lower the minimum"
+            exit 1
+          fi
+      - name: 🧮 Average them into reference times
+        run: |
+          find runs -name performance-reference-times.properties -print0 \
+            | xargs -0 java src/test/java/ch/sbb/polarion/extension/pdf_exporter/weasyprint/performance/AverageReferenceTimes.java \
+            > reference-times-amd64.properties
+          {
+            echo "### Reference times of amd64, from ${COUNT} runs of main"
+            echo
+            echo "Copy the artifact \`reference-times-amd64\` to \`${REFERENCE_TIMES}\` in a pull request."
+            echo
+            echo '```diff'
+            diff -u "${REFERENCE_TIMES}" reference-times-amd64.properties || true
+            echo '```'
+          } >> "${GITHUB_STEP_SUMMARY}"
+      - name: 📤 Upload the reference times
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
+        with:
+          name: reference-times-amd64
+          path: reference-times-amd64.properties
+          retention-days: 30
