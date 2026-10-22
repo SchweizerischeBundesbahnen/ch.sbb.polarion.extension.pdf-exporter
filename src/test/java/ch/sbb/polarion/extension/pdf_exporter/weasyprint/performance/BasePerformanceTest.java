@@ -28,6 +28,7 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.Objects;
 
@@ -42,7 +43,7 @@ import static org.mockito.Mockito.lenient;
  * it does today. They run in the profile {@code performance-tests-with-weasyprint-docker} alone.
  * <p>
  * The exporter and WeasyPrint are timed apart, read from the timings of the generation log, so a failure says which side
- * became slow. Each document is exported {@link #RUNS} times, and the time of each part is the average. Each part has a
+ * became slow. Each document is exported {@link #RUNS} times, and the time of each part is the median. Each part has a
  * reference time in {@code performance/reference-times-<architecture>.properties}, its average over runs on a machine of
  * that architecture. {@link PerformanceRun}
  * expects each part to take its reference time scaled by how the small document went in this run, which absorbs how
@@ -62,7 +63,7 @@ public abstract class BasePerformanceTest extends BasePdfConverterTest {
 
     private static final String WEASYPRINT_STAGE = "WeasyPrint conversion";
 
-    /** How many times each document is exported, the time of a part being the average of all. */
+    /** How many times each document is exported, the time of a part being the median of all. */
     protected static final int RUNS = 3;
 
     protected static final String SMALL_DOCUMENT_TITLE = "Small document";
@@ -143,9 +144,10 @@ public abstract class BasePerformanceTest extends BasePdfConverterTest {
     }
 
     /**
-     * Exports the content as a LiveDoc {@link #RUNS} times and returns the average time of each part: one export of a
-     * document takes too little for one run to tell a slower exporter from a busy machine. The timing report of each
-     * export is written to the reports folder at once, so that it is there whichever check fails.
+     * Exports the content as a LiveDoc {@link #RUNS} times and returns the median time of each part: one export of a
+     * document takes too little for one run to tell a slower exporter from a busy machine, and one export which a pause
+     * of the runner slows does not move the median, as it moves an average. The timing report of each export is written
+     * to the reports folder at once, so that it is there whichever check fails.
      * <p>
      * Before the first export of a run of the tests, {@link #RUNS} exports which are not timed warm the JVM and the service
      * up, and the small document is timed as the baseline of the run, which {@link PerformanceRun} scales the other
@@ -155,7 +157,7 @@ public abstract class BasePerformanceTest extends BasePdfConverterTest {
      */
     protected @NotNull Timing export(@NotNull String name, @NotNull String title, @NotNull String content, @NotNull ExportParams params) {
         timeTheBaseline();
-        return PerformanceRun.SMALL_DOCUMENT.equals(name) ? baseline : average(name, title, content, params);
+        return PerformanceRun.SMALL_DOCUMENT.equals(name) ? baseline : median(name, title, content, params);
     }
 
     /** Warms the JVM and the service up and times the small document, once for the run, before the first export is timed. */
@@ -164,7 +166,7 @@ public abstract class BasePerformanceTest extends BasePdfConverterTest {
             for (int run = 1; run <= RUNS; run++) {
                 exportOnce("warmup-" + run, "Warm-up", smallDocument(), portraitA4().build());
             }
-            baseline = average(PerformanceRun.SMALL_DOCUMENT, SMALL_DOCUMENT_TITLE, smallDocument(), portraitA4().build());
+            baseline = median(PerformanceRun.SMALL_DOCUMENT, SMALL_DOCUMENT_TITLE, smallDocument(), portraitA4().build());
             PerformanceRun.current().baseline(baseline.exporterMs(), baseline.weasyPrintMs());
         }
     }
@@ -174,16 +176,26 @@ public abstract class BasePerformanceTest extends BasePdfConverterTest {
         return readHtmlResource("performance/reference");
     }
 
-    private @NotNull Timing average(@NotNull String name, @NotNull String title, @NotNull String content, @NotNull ExportParams params) {
-        long totalMs = 0;
-        long weasyPrintMs = 0;
+    /** The median of each part: of the exporter and of WeasyPrint apart, which may come from different exports. */
+    private @NotNull Timing median(@NotNull String name, @NotNull String title, @NotNull String content, @NotNull ExportParams params) {
+        long[] exporterMs = new long[RUNS];
+        long[] weasyPrintMs = new long[RUNS];
         Timing last = null;
         for (int run = 1; run <= RUNS; run++) {
             last = exportOnce(name + "-" + run, title, content, params);
-            totalMs += last.totalMs();
-            weasyPrintMs += last.weasyPrintMs();
+            exporterMs[run - 1] = last.exporterMs();
+            weasyPrintMs[run - 1] = last.weasyPrintMs();
         }
-        return new Timing(name, last.pdf(), Math.round((double) totalMs / RUNS), Math.round((double) weasyPrintMs / RUNS), last.report());
+        long weasyPrintMedian = median(weasyPrintMs);
+        return new Timing(name, last.pdf(), median(exporterMs) + weasyPrintMedian, weasyPrintMedian, last.report());
+    }
+
+    /** The middle of the times, or the mean of the two middle ones where their number is even. */
+    protected static long median(long @NotNull [] timesMs) {
+        long[] sorted = timesMs.clone();
+        Arrays.sort(sorted);
+        int middle = sorted.length / 2;
+        return sorted.length % 2 == 1 ? sorted[middle] : Math.round((sorted[middle - 1] + sorted[middle]) / 2.0);
     }
 
     private @NotNull Timing exportOnce(@NotNull String name, @NotNull String title, @NotNull String content, @NotNull ExportParams params) {
@@ -223,7 +235,7 @@ public abstract class BasePerformanceTest extends BasePdfConverterTest {
         run.add(timing.name(), PerformanceRun.WEASYPRINT, timing.weasyPrintMs());
         long exporterLimit = run.limit(timing.name(), PerformanceRun.EXPORTER);
         long weasyPrintLimit = run.limit(timing.name(), PerformanceRun.WEASYPRINT);
-        String summary = "%s: exporter %d ms of %d, WeasyPrint %d ms of %d, average of %d exports".formatted(
+        String summary = "%s: exporter %d ms of %d, WeasyPrint %d ms of %d, median of %d exports".formatted(
                 timing.name(), timing.exporterMs(), exporterLimit, timing.weasyPrintMs(), weasyPrintLimit, RUNS);
         writeReport(timing.name(), summary + System.lineSeparator() + timing.report());
 

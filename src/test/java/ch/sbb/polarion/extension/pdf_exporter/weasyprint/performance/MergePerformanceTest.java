@@ -72,7 +72,7 @@ class MergePerformanceTest extends BasePerformanceTest {
     }
 
     /**
-     * Merges the documents {@link #RUNS} times and returns the average time of each part, after a merge of two of them
+     * Merges the documents {@link #RUNS} times and returns the median time of each part, after a merge of two of them
      * which is not timed: the first merge of a run warms the service up as the first export warms WeasyPrint.
      * <p>
      * The time grows with the number of documents, each uploaded and rendered in turn, so a few documents show a slower
@@ -91,21 +91,17 @@ class MergePerformanceTest extends BasePerformanceTest {
         }
 
         mergeOnce(name + "-warmup", params.subList(0, 2));
-        long exporterMs = 0;
-        long weasyPrintMs = 0;
-        long bpsMs = 0;
+        long[] exporterMs = new long[RUNS];
+        long[] weasyPrintMs = new long[RUNS];
+        long[] bpsMs = new long[RUNS];
         MergeTiming last = null;
         for (int run = 1; run <= RUNS; run++) {
             last = mergeOnce(name + "-" + run, params);
-            exporterMs += last.exporterMs();
-            weasyPrintMs += last.weasyPrintMs();
-            bpsMs += last.bpsMs();
+            exporterMs[run - 1] = last.exporterMs();
+            weasyPrintMs[run - 1] = last.weasyPrintMs();
+            bpsMs[run - 1] = last.bpsMs();
         }
-        return new MergeTiming(name, last.pdf(), average(exporterMs), average(weasyPrintMs), average(bpsMs));
-    }
-
-    private static long average(long totalMs) {
-        return Math.round((double) totalMs / RUNS);
+        return new MergeTiming(name, last.pdf(), median(exporterMs), median(weasyPrintMs), median(bpsMs));
     }
 
     private @NotNull MergeTiming mergeOnce(@NotNull String name, @NotNull List<ExportParams> params) {
@@ -143,7 +139,7 @@ class MergePerformanceTest extends BasePerformanceTest {
         long exporterLimit = run.limit(timing.name(), PerformanceRun.EXPORTER);
         long weasyPrintLimit = run.limit(timing.name(), PerformanceRun.WEASYPRINT);
         long bpsLimit = run.limit(timing.name(), PerformanceRun.BPS);
-        String summary = "%s: exporter %d ms of %d, WeasyPrint %d ms of %d, BPS %d ms of %d, average of %d merges".formatted(
+        String summary = "%s: exporter %d ms of %d, WeasyPrint %d ms of %d, BPS %d ms of %d, median of %d merges".formatted(
                 timing.name(), timing.exporterMs(), exporterLimit, timing.weasyPrintMs(), weasyPrintLimit, timing.bpsMs(), bpsLimit, RUNS);
         writeReport(timing.name(), summary);
 

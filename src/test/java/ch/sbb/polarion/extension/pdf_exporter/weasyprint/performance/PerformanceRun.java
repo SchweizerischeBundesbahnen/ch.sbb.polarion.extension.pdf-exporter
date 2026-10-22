@@ -235,7 +235,7 @@ public final class PerformanceRun implements AutoCloseable {
             report.append("| %s | %s | %d | %.2f | %d |%n".formatted(row.export(), row.part(), row.referenceMs(), row.scale(), row.expectedMs()));
         }
         report.append("%n#### Results%n%n".formatted())
-                .append(("Each time is the average of %d exports. The exporter is a warning above %s times its expected time and fails above %s times, "
+                .append(("Each time is the median of %d exports. The exporter is a warning above %s times its expected time and fails above %s times, "
                         + "WeasyPrint and the bulk processing service of a merge a warning above %s times and fails above %s times.%n%n")
                         .formatted(BasePerformanceTest.RUNS, times(EXPORTER_TOLERANCE.warning()), times(EXPORTER_TOLERANCE.limit()),
                                 times(WEASYPRINT_TOLERANCE.warning()), times(WEASYPRINT_TOLERANCE.limit())))
