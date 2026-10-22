@@ -121,6 +121,10 @@ class PdfTemplateProcessorTest {
                                 img {
                                     max-width: 100%;
                                 }
+                                img[width][height], :not(svg) > svg {
+                                    max-width: 100%;
+                                    height: auto;
+                                }
                             </style>
                         </head>
                         <body class="">
@@ -142,6 +146,10 @@ class PdfTemplateProcessorTest {
                                 @page {size: A4 landscape;}
                                 img {
                                     max-width: 100%;
+                                }
+                                img[width][height], :not(svg) > svg {
+                                    max-width: 100%;
+                                    height: auto;
                                 }
                             </style>
                         </head>

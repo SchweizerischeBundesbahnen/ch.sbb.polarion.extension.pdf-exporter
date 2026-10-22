@@ -103,6 +103,42 @@ jobs:
             target/*.pom
           retention-days: 1
           if-no-files-found: error
+  # The WeasyPrint tests once more, with the service drawing SVG through weasysvg
+  # (SVG_RENDERER=weasysvg). A page it draws differently compares with its own
+  # reference image in src/test/resources/weasyprint/png/weasysvg.
+  build-weasysvg:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    services:
+      weasyprint:
+        image: ghcr.io/schweizerischebundesbahnen/weasyprint-service:latest@sha256:6bb88bfe45210aa031e92573a2533c8341bd8f93e538c31dcd6b54da3844c5f0  # zizmor: ignore[unpinned-images]
+        ports: [9080:9080]
+        env:
+          SVG_RENDERER: weasysvg
+    env:
+      IO_JFROG_SBB_POLARION_TOKEN: ${{ secrets.IO_JFROG_SBB_POLARION_TOKEN }}
+      GITHUB_TOKEN: ${{ github.token }}  # Providing this prevents reaching the GitHub request limits
+      WEASYPRINT_SERVICE_URL: http://localhost:9080
+    steps:
+      - name: 📄 Checkout the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+      - name: 🧱 Set up JDK and Maven
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad  # v6.1.0
+        with:
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: maven
+      - name: 🔎 Check that the service draws SVG with weasysvg
+        # An image without SVG_RENDERER would ignore it, and every test would compare with the Chromium images
+        run: |
+          curl --fail --silent --show-error "${WEASYPRINT_SERVICE_URL}/version" | tee /dev/stderr \
+            | jq --exit-status '.svgRenderer == "weasysvg"'
+      - name: 🧪 Test with weasysvg
+        run: mvn --batch-mode -s "${SETTINGS_XML}" clean verify -P tests-with-weasyprint-docker -Dweasyprint.service.url="${WEASYPRINT_SERVICE_URL}"
   # Deploy releases to Maven Central from main and LTS branches (release-v*)
   # See RELEASE.md for LTS branch documentation
   deploy-maven-central:
