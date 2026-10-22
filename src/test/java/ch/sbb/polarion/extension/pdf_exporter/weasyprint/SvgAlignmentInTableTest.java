@@ -123,8 +123,8 @@ class SvgAlignmentInTableTest extends BasePdfConverterTest {
     private byte @NotNull [] export(@NotNull Alignment alignment, @NotNull Diagram diagram) {
         String align = alignment.name().toLowerCase();
         String html = """
-                <table style="width: 100%%;">
-                  <tr><td style="text-align: %3$s;">
+                <table style="width: 100%%;border: 1px solid #CCCCCC;border-collapse: collapse;">
+                  <tr><td style="text-align: %3$s;vertical-align: top;border: 1px solid #CCCCCC;padding: 5px;">
                     <div style="text-align: left;">%1$s</div>
                     <div style="text-align: right;">%2$s</div>
                     <img src="%4$s" style="max-width: 650px;"/>
