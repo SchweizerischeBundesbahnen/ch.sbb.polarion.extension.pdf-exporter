@@ -35,6 +35,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -199,6 +200,15 @@ public abstract class BasePerformanceTest extends BasePdfConverterTest {
     protected @NotNull Timing export(@NotNull BasketExport export) {
         timeTheBasket();
         return basket.get(export.name());
+    }
+
+    /** The basket as a whole: the geometric mean of the times of its exports, which {@link PerformanceRun} scales by the fixed piece of work. */
+    protected @NotNull Timing wholeBasket() {
+        timeTheBasket();
+        PerformanceRun run = PerformanceRun.current();
+        long weasyPrintMs = run.basket(PerformanceRun.WEASYPRINT);
+        return new Timing(PerformanceRun.BASKET, new byte[0], run.basket(PerformanceRun.EXPORTER) + weasyPrintMs, weasyPrintMs,
+                "The geometric mean of " + BASKET.stream().map(BasketExport::name).collect(Collectors.joining(", ")));
     }
 
     /**

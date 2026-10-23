@@ -64,11 +64,21 @@ public final class PerformanceRun implements AutoCloseable {
     /** The export of the basket which is scaled by the fixed piece of work itself. */
     static final String SMALL_DOCUMENT = "smallDocument";
 
+    /**
+     * The basket as a whole, its times and reference times the geometric mean of its exports: scaled by the fixed piece of
+     * work, as the small document, so that a regression of every large document, which the basket would absorb in the
+     * other exports, still shows.
+     */
+    static final String BASKET = "basket";
+
     /** How the exporter may deviate from its expected time: it is our code, and varies by a few percent in CI. */
     private static final Tolerance EXPORTER_TOLERANCE = new Tolerance(1.2, 1.5);
 
     /** How WeasyPrint may deviate from its expected time: scaled by the basket, it varies by a few percent in CI, as the exporter. */
     private static final Tolerance WEASYPRINT_TOLERANCE = new Tolerance(1.2, 1.5);
+
+    /** How the basket may deviate from the fixed piece of work: by up to a fifth in CI, as runners differ in more than the JDK. */
+    private static final Tolerance BASKET_TOLERANCE = new Tolerance(1.3, 1.5);
 
     /** The reference times of the architecture of this machine, as runs of the tests on such a machine averaged them. */
     private static final String REFERENCE_TIMES = "/performance/reference-times-%s.properties";
@@ -175,16 +185,24 @@ public final class PerformanceRun implements AutoCloseable {
 
     /** The reference time of a part of an export, from the reference times of this architecture. */
     long reference(@NotNull String export, @NotNull String part) {
+        if (BASKET.equals(export)) {
+            return Math.round(Math.exp(basketMs.keySet().stream().mapToDouble(member -> Math.log(reference(member, part))).average().orElseThrow()));
+        }
         return milliseconds(key(export, part));
     }
 
+    /** The time of a part of the basket as a whole in this run: the geometric mean of its exports. */
+    long basket(@NotNull String part) {
+        return Math.round(Math.exp(basketMs.values().stream().mapToDouble(timesMs -> Math.log(timesMs.get(part))).average().orElseThrow()));
+    }
+
     /**
-     * What the reference time of a part is multiplied by in this run: for the small document the factor of the fixed
-     * work, for the bulk processing service the factor of the network, for any other export the geometric mean of how
+     * What the reference time of a part is multiplied by in this run: for the small document and the basket as a whole
+     * the factor of the fixed work, for the bulk processing service the factor of the network, for any other export the geometric mean of how
      * much longer than its reference time each other export of the basket took here.
      */
     double scale(@NotNull String export, @NotNull String part) {
-        if (SMALL_DOCUMENT.equals(export)) {
+        if (SMALL_DOCUMENT.equals(export) || BASKET.equals(export)) {
             return machineFactor;
         }
         if (BPS.equals(part) && networkMs != null && referenceNetworkMs != null) {
@@ -216,14 +234,14 @@ public final class PerformanceRun implements AutoCloseable {
 
     /** The time a part of an export may take in this run before it fails. */
     long limit(@NotNull String export, @NotNull String part) {
-        return Math.round(expected(export, part) * tolerance(part).limit());
+        return Math.round(expected(export, part) * tolerance(export, part).limit());
     }
 
     /** Records a part of an export for the report, before it is checked against its limit. */
     synchronized void add(@NotNull String export, @NotNull String part, long timeMs) {
         long expected = expected(export, part);
         rows.add(new Row(export, part, reference(export, part), scale(export, part), expected, timeMs,
-                Math.round(expected * tolerance(part).warning()), limit(export, part)));
+                Math.round(expected * tolerance(export, part).warning()), limit(export, part)));
     }
 
     @Override
@@ -254,9 +272,11 @@ public final class PerformanceRun implements AutoCloseable {
         }
         report.append("%n#### Results%n%n".formatted())
                 .append(("Each time is the median of %d exports. The exporter is a warning above %s times its expected time and fails above %s times, "
-                        + "WeasyPrint and the bulk processing service of a merge a warning above %s times and fails above %s times.%n%n")
+                        + "WeasyPrint and the bulk processing service of a merge a warning above %s times and fails above %s times, "
+                        + "the basket as a whole a warning above %s times and fails above %s times.%n%n")
                         .formatted(BasePerformanceTest.RUNS, times(EXPORTER_TOLERANCE.warning()), times(EXPORTER_TOLERANCE.limit()),
-                                times(WEASYPRINT_TOLERANCE.warning()), times(WEASYPRINT_TOLERANCE.limit())))
+                                times(WEASYPRINT_TOLERANCE.warning()), times(WEASYPRINT_TOLERANCE.limit()),
+                                times(BASKET_TOLERANCE.warning()), times(BASKET_TOLERANCE.limit())))
                 .append("| Export | Part | Expected, ms | Time, ms | Against expected | Warning above, ms | Limit, ms | Result |%n|---|---|---:|---:|---:|---:|---:|---|%n".formatted());
         for (Row row : rows) {
             report.append("| %s | %s | %d | %d | %s | %d | %d | %s |%n".formatted(row.export(), row.part(), row.expectedMs(), row.timeMs(),
@@ -291,7 +311,8 @@ public final class PerformanceRun implements AutoCloseable {
         Map<String, Long> sorted = new TreeMap<>();
         // The basket of the run is written whether its own tests ran or not, as every other export is scaled by it
         basketMs.forEach((export, timesMs) -> timesMs.forEach((part, timeMs) -> sorted.put(key(export, part), timeMs)));
-        rows.forEach(row -> sorted.put(key(row.export(), row.part()), row.timeMs()));
+        // The basket as a whole has no reference times of its own: they are those of its exports
+        rows.stream().filter(row -> !BASKET.equals(row.export())).forEach(row -> sorted.put(key(row.export(), row.part()), row.timeMs()));
         StringBuilder times = new StringBuilder("# The times of a run of the performance tests on %s, in the form of %s%n".formatted(architecture, referenceTimesFile.substring(1)))
                 .append("%s=%d%n".formatted(CALIBRATION_KEY, calibrationMs));
         if (networkMs != null) {
@@ -301,7 +322,10 @@ public final class PerformanceRun implements AutoCloseable {
         return times.toString();
     }
 
-    private static @NotNull Tolerance tolerance(@NotNull String part) {
+    private static @NotNull Tolerance tolerance(@NotNull String export, @NotNull String part) {
+        if (BASKET.equals(export)) {
+            return BASKET_TOLERANCE;
+        }
         return EXPORTER.equals(part) ? EXPORTER_TOLERANCE : WEASYPRINT_TOLERANCE;
     }
 

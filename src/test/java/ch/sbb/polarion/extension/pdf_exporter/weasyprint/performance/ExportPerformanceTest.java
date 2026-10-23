@@ -31,6 +31,15 @@ class ExportPerformanceTest extends BasePerformanceTest {
         assertWithinReference(timing);
     }
 
+    /**
+     * The basket as a whole, against the fixed piece of JDK work: the other exports are scaled by the basket, so a
+     * regression of every large document slows the basket as well and shows only here.
+     */
+    @Test
+    void exportsTheBasketAsTheFixedWorkExpects() {
+        assertWithinReference(wholeBasket());
+    }
+
     @Test
     void exportsALargeTable() {
         Timing timing = export(LARGE_TABLE);
