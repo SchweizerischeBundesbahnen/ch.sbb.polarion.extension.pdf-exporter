@@ -34,8 +34,7 @@ import java.util.regex.Pattern;
  * shapes, timed first, which whatever makes this machine or this moment faster or slower makes so too. One document alone
  * tells it worse: a small document spends its time on what every export costs, a large one on layout, and a runner can
  * be slower at one than at the other. The scale of an export is the geometric mean of how much longer than its reference
- * time each export of the basket took, the export itself left out, raised to the elasticity of the export where the
- * reference times give one: how far its time moves when the basket moves, as {@link AverageReferenceTimes} fits it.
+ * time each export of the basket took, the export itself left out.
  * </p>
  * <p>
  * A change which slows every export would slow the basket as well and go unseen that way, so the small document is scaled
@@ -75,8 +74,6 @@ public final class PerformanceRun implements AutoCloseable {
     private static final String REFERENCE_TIMES = "/performance/reference-times-%s.properties";
     private static final String CALIBRATION_KEY = "machine.calibration";
     private static final String NETWORK_CALIBRATION_KEY = "network.calibration";
-    /** Appended to the key of a reference time, the elasticity of that part of that export: 1 where it is not given. */
-    private static final String ELASTICITY_SUFFIX = ".elasticity";
 
     private static final String REPORTS = "target/surefire-reports/";
     private static final String SUMMARY_FILE = REPORTS + "performance-summary.md";
@@ -173,7 +170,7 @@ public final class PerformanceRun implements AutoCloseable {
                 ? "Performance tests: a document of a merge took %d ms on the network here; %s has no %s, so the bulk processing service is scaled as WeasyPrint"
                 .formatted(ms, referenceTimesFile, NETWORK_CALIBRATION_KEY)
                 : "Performance tests: a document of a merge took %d ms on the network here and %d ms where the reference times were taken, so the bulk processing service is expected to take %.2f times its reference times"
-                .formatted(ms, referenceNetworkMs, machine("", BPS)));
+                .formatted(ms, referenceNetworkMs, scale("", BPS)));
     }
 
     /** The reference time of a part of an export, from the reference times of this architecture. */
@@ -181,17 +178,12 @@ public final class PerformanceRun implements AutoCloseable {
         return milliseconds(key(export, part));
     }
 
-    /** What the reference time of a part is multiplied by in this run: how fast the run is for it, to its elasticity. */
-    double scale(@NotNull String export, @NotNull String part) {
-        return Math.pow(machine(export, part), elasticity(export, part));
-    }
-
     /**
-     * How much longer than where the reference times were taken a part takes in this run: for the small document the
-     * factor of the fixed work, for the bulk processing service the factor of the network, for any other export the
-     * geometric mean of how much longer than its reference time each other export of the basket took here.
+     * What the reference time of a part is multiplied by in this run: for the small document the factor of the fixed
+     * work, for the bulk processing service the factor of the network, for any other export the geometric mean of how
+     * much longer than its reference time each other export of the basket took here.
      */
-    private double machine(@NotNull String export, @NotNull String part) {
+    double scale(@NotNull String export, @NotNull String part) {
         if (SMALL_DOCUMENT.equals(export)) {
             return machineFactor;
         }
@@ -215,23 +207,6 @@ public final class PerformanceRun implements AutoCloseable {
     /** How many times its reference time a part of an export of the basket took in this run. */
     private double basketRatio(@NotNull String export, @NotNull String part) {
         return (double) basketMs.get(export).get(part) / reference(export, part);
-    }
-
-    /**
-     * How far the time of a part moves when the basket moves, from the reference times: 1 where they give none, as for
-     * the small document and the bulk processing service, which are scaled by a measure of their own.
-     */
-    private double elasticity(@NotNull String export, @NotNull String part) {
-        String key = key(export, part) + ELASTICITY_SUFFIX;
-        String value = referenceTimes.getProperty(key);
-        if (value == null) {
-            return 1;
-        }
-        try {
-            return Double.parseDouble(value.trim());
-        } catch (NumberFormatException e) {
-            throw new IllegalStateException("The elasticity " + key + " in " + referenceTimesFile + " is no number: '" + value + "'", e);
-        }
     }
 
     /** The time a part of an export is expected to take in this run: its reference time times its scale. */
@@ -269,8 +244,7 @@ public final class PerformanceRun implements AutoCloseable {
                 .append("### Performance tests%n%n#### Reference times%n%n".formatted())
                 .append(("The reference times are those of %s, the geometric mean of runs on that architecture. The small document is expected at its reference time times %.2f: "
                         + "the fixed work took %d ms here and %d ms there. The other exports are expected at their reference times scaled by the basket of this run: "
-                        + "the geometric mean of how much longer than its reference time each export of the basket took, the export itself left out, "
-                        + "raised to the elasticity of the export where the reference times give one.%n%n")
+                        + "the geometric mean of how much longer than its reference time each export of the basket took, the export itself left out.%n%n")
                         .formatted(architecture, machineFactor, calibrationMs, referenceCalibrationMs))
                 .append(basketReport())
                 .append(networkReport())
@@ -309,13 +283,13 @@ public final class PerformanceRun implements AutoCloseable {
                     .formatted(networkMs, NETWORK_CALIBRATION_KEY);
         }
         return "The bulk processing service is expected at its reference times times %.2f: a document of a merge took %d ms on the network here and %d ms there.%n%n"
-                .formatted(machine("", BPS), networkMs, referenceNetworkMs);
+                .formatted(scale("", BPS), networkMs, referenceNetworkMs);
     }
 
     /** The times of this run in the form of the reference times, which {@link AverageReferenceTimes} averages over runs. */
     private @NotNull String times() {
         Map<String, Long> sorted = new TreeMap<>();
-        // The basket of the run is written whether its own tests ran or not, as the elasticity of every other export is fitted against it
+        // The basket of the run is written whether its own tests ran or not, as every other export is scaled by it
         basketMs.forEach((export, timesMs) -> timesMs.forEach((part, timeMs) -> sorted.put(key(export, part), timeMs)));
         rows.forEach(row -> sorted.put(key(row.export(), row.part()), row.timeMs()));
         StringBuilder times = new StringBuilder("# The times of a run of the performance tests on %s, in the form of %s%n".formatted(architecture, referenceTimesFile.substring(1)))
