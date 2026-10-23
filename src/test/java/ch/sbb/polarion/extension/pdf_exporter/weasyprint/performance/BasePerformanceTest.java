@@ -30,7 +30,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Base64;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.function.Supplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -46,9 +50,10 @@ import static org.mockito.Mockito.lenient;
  * became slow. Each document is exported {@link #RUNS} times, and the time of each part is the median. Each part has a
  * reference time in {@code performance/reference-times-<architecture>.properties}, its average over runs on a machine of
  * that architecture. {@link PerformanceRun}
- * expects each part to take its reference time scaled by how the small document went in this run, which absorbs how
- * fast this machine and this moment are; the small document itself it scales by a fixed piece of JDK work, so that a
- * change which slows every export still shows. It writes a report of every export after the last test.
+ * expects each part to take its reference time scaled by how the basket went in this run, a few exports of different
+ * shapes timed first, which absorbs how fast this machine and this moment are; the small document it scales by a fixed
+ * piece of JDK work, so that a change which slows every export still shows. It writes a report of every export after the
+ * last test.
  * </p>
  * <p>
  * The CSS of an export carries its fonts as Polarion gives them, embedded as data URLs, as a real export does. A cost
@@ -57,7 +62,7 @@ import static org.mockito.Mockito.lenient;
  */
 @Tag("performance")
 @ExtendWith(PerformanceRun.Extension.class)
-// The test of the small document takes the timing of the baseline and exports nothing, leaving the stubs of its set-up unused
+// The tests of the basket take its timings and export nothing, leaving the stubs of their set-up unused
 @MockitoSettings(strictness = Strictness.LENIENT)
 public abstract class BasePerformanceTest extends BasePdfConverterTest {
 
@@ -66,7 +71,27 @@ public abstract class BasePerformanceTest extends BasePdfConverterTest {
     /** How many times each document is exported, the time of a part being the median of all. */
     protected static final int RUNS = 3;
 
-    protected static final String SMALL_DOCUMENT_TITLE = "Small document";
+    /** The small document, which takes the exporter little but what every export costs. */
+    protected static final BasketExport SMALL_DOCUMENT = new BasketExport(PerformanceRun.SMALL_DOCUMENT, "Small document",
+            BasePerformanceTest::smallDocument, () -> portraitA4().build());
+
+    /** A table of many rows, where WeasyPrint spends its time on the layout of a table. */
+    protected static final BasketExport LARGE_TABLE = new BasketExport("largeTable", "A large table",
+            () -> Documents.largeTable(400), () -> portraitA4().fitToPage(true).build());
+
+    /** Sections which page breaks turn, where WeasyPrint spends its time on pages. */
+    protected static final BasketExport PAGE_BREAK_SECTIONS = new BasketExport("pageBreakSections", "Page breaks",
+            () -> Documents.pageBreakSections(40), () -> portraitA4().fitToPage(true).build());
+
+    /** Cells running across pages, where WeasyPrint spends its time on breaking text. */
+    protected static final BasketExport LONG_CELLS = new BasketExport("longCells", "Long cells",
+            () -> Documents.longCells(3, 10_000), () -> portraitA4().fitToPage(true).build());
+
+    /**
+     * The exports which {@link PerformanceRun} scales every other export by. Each spends its time on something else, so a
+     * runner which is slower at one thing than at another moves the basket by less than it moves one of them.
+     */
+    private static final List<BasketExport> BASKET = List.of(SMALL_DOCUMENT, LARGE_TABLE, PAGE_BREAK_SECTIONS, LONG_CELLS);
 
     /** The fonts of the default CSS, which Polarion serves and the export embeds, in place of fonts of a like size. */
     private static final String POLARION_FONTS = "/polarion/ria/fonts/";
@@ -75,8 +100,8 @@ public abstract class BasePerformanceTest extends BasePdfConverterTest {
     /** Font Awesome 6.2.0 as Polarion 2606 serves it: the stylesheet the template links, and its fonts. */
     private static final String FONT_AWESOME_FILES = "/performance/fontawesome-";
 
-    /** The small document as the run timed it first, after warming the JVM and the service up. */
-    private static Timing baseline;
+    /** The exports of the basket as the run timed them first, after warming the JVM and the service up, by name. */
+    private static final Map<String, Timing> basket = new HashMap<>();
 
     private static String embeddedFont;
 
@@ -85,6 +110,10 @@ public abstract class BasePerformanceTest extends BasePdfConverterTest {
         long exporterMs() {
             return totalMs - weasyPrintMs;
         }
+    }
+
+    /** An export of the basket: its name in the reference times, its title, its content and the parameters of its export. */
+    protected record BasketExport(@NotNull String name, @NotNull String title, @NotNull Supplier<String> content, @NotNull Supplier<ExportParams> params) {
     }
 
     /**
@@ -150,24 +179,41 @@ public abstract class BasePerformanceTest extends BasePdfConverterTest {
      * to the reports folder at once, so that it is there whichever check fails.
      * <p>
      * Before the first export of a run of the tests, {@link #RUNS} exports which are not timed warm the JVM and the service
-     * up, and the small document is timed as the baseline of the run, which {@link PerformanceRun} scales the other
-     * reference times by. Its own test takes that same timing rather than one of its own: the reference times hold each
-     * export against the small document of its run, so the run must scale by the very sample it reports.
+     * up, and the exports of the basket are timed, which {@link PerformanceRun} scales the other reference times by. An
+     * export of the basket is not taken here: {@link #export(BasketExport)} takes it.
      * </p>
      */
     protected @NotNull Timing export(@NotNull String name, @NotNull String title, @NotNull String content, @NotNull ExportParams params) {
-        timeTheBaseline();
-        return PerformanceRun.SMALL_DOCUMENT.equals(name) ? baseline : median(name, title, content, params);
+        timeTheBasket();
+        if (basket.containsKey(name)) {
+            throw new IllegalArgumentException(name + " is an export of the basket, which the run timed before its other exports");
+        }
+        return median(name, title, content, params);
     }
 
-    /** Warms the JVM and the service up and times the small document, once for the run, before the first export is timed. */
-    protected void timeTheBaseline() {
-        if (baseline == null) {
+    /**
+     * The timing of an export of the basket, which the run took before its first other export rather than one of its own:
+     * the reference times hold each export against the basket of its run, so the run must scale by the very sample it
+     * reports.
+     */
+    protected @NotNull Timing export(@NotNull BasketExport export) {
+        timeTheBasket();
+        return basket.get(export.name());
+    }
+
+    /** Warms the JVM and the service up and times the basket, once for the run, before the first other export is timed. */
+    protected void timeTheBasket() {
+        if (basket.isEmpty()) {
             for (int run = 1; run <= RUNS; run++) {
                 exportOnce("warmup-" + run, "Warm-up", smallDocument(), portraitA4().build());
             }
-            baseline = median(PerformanceRun.SMALL_DOCUMENT, SMALL_DOCUMENT_TITLE, smallDocument(), portraitA4().build());
-            PerformanceRun.current().baseline(baseline.exporterMs(), baseline.weasyPrintMs());
+            Map<String, Timing> timed = new HashMap<>();
+            for (BasketExport export : BASKET) {
+                Timing timing = median(export.name(), export.title(), export.content().get(), export.params().get());
+                timed.put(export.name(), timing);
+                PerformanceRun.current().baseline(export.name(), timing.exporterMs(), timing.weasyPrintMs());
+            }
+            basket.putAll(timed);
         }
     }
 
