@@ -178,8 +178,8 @@ public abstract class BasePerformanceTest extends BasePdfConverterTest {
      * of the runner slows does not move the median, as it moves an average. The timing report of each export is written
      * to the reports folder at once, so that it is there whichever check fails.
      * <p>
-     * Before the first export of a run of the tests, {@link #RUNS} exports which are not timed warm the JVM and the service
-     * up, and the exports of the basket are timed, which {@link PerformanceRun} scales the other reference times by. An
+     * Before the first export of a run of the tests, exports which are not timed warm the JVM and the service up, see
+     * {@link #timeTheBasket()}, and the exports of the basket are timed, which {@link PerformanceRun} scales the other reference times by. An
      * export of the basket is not taken here: {@link #export(BasketExport)} takes it.
      * </p>
      */
@@ -201,11 +201,20 @@ public abstract class BasePerformanceTest extends BasePdfConverterTest {
         return basket.get(export.name());
     }
 
-    /** Warms the JVM and the service up and times the basket, once for the run, before the first other export is timed. */
+    /**
+     * Warms the JVM and the service up and times the basket, once for the run, before the first other export is timed.
+     * The first exports of a large document after the small one take the exporter up to half as long again, over all of
+     * their {@link #RUNS}, so each document of the basket is exported once untimed first.
+     */
     protected void timeTheBasket() {
         if (basket.isEmpty()) {
             for (int run = 1; run <= RUNS; run++) {
                 exportOnce("warmup-" + run, "Warm-up", smallDocument(), portraitA4().build());
+            }
+            for (BasketExport export : BASKET) {
+                if (export != SMALL_DOCUMENT) {
+                    exportOnce("warmup-" + export.name(), export.title(), export.content().get(), export.params().get());
+                }
             }
             Map<String, Timing> timed = new HashMap<>();
             for (BasketExport export : BASKET) {
