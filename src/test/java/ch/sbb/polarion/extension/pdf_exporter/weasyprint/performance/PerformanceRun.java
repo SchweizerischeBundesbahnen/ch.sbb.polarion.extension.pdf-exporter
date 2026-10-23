@@ -68,8 +68,8 @@ public final class PerformanceRun implements AutoCloseable {
     /** How the exporter may deviate from its expected time: it is our code, and varies by a few percent in CI. */
     private static final Tolerance EXPORTER_TOLERANCE = new Tolerance(1.2, 1.5);
 
-    /** How WeasyPrint may deviate from its expected time: a service of its own, which varies by up to a fifth in CI. */
-    private static final Tolerance WEASYPRINT_TOLERANCE = new Tolerance(1.35, 2);
+    /** How WeasyPrint may deviate from its expected time: scaled by the basket, it varies by a few percent in CI, as the exporter. */
+    private static final Tolerance WEASYPRINT_TOLERANCE = new Tolerance(1.2, 1.5);
 
     /** The reference times of the architecture of this machine, as runs of the tests on such a machine averaged them. */
     private static final String REFERENCE_TIMES = "/performance/reference-times-%s.properties";
