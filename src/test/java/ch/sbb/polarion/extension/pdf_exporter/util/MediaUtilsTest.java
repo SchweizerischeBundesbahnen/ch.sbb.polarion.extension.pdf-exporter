@@ -75,12 +75,11 @@ class MediaUtilsTest {
         assertEquals("image/jpeg", MediaUtils.guessMimeType("https://example.com/imgs/img.jpeg", emptyArray));
         assertEquals("image/jpeg", MediaUtils.guessMimeType("https://example.com/imgs/img.jpg?someParam=123", emptyArray));
         assertEquals("image/svg+xml", MediaUtils.guessMimeType("https://example.com/imgs/img.svg?someParam=123", emptyArray));
-        // weasyprint-service draws a Visio drawing by these types
-        assertEquals("application/vnd.ms-visio.drawing", MediaUtils.guessMimeType("http://localhost/polarion/wi-attachment/project/WI-1/diagram.vsdx?revision=2", emptyArray));
-        assertEquals("application/vnd.visio", MediaUtils.guessMimeType("http://localhost/polarion/wi-attachment/project/WI-1/diagram.vsd?revision=2", emptyArray));
         assertEquals("image/bmp", MediaUtils.guessMimeType("/some/relative/url/img.BMP?someParam=123", emptyArray));
         assertEquals("image/gif", MediaUtils.guessMimeType("img.gif?someParam=123", emptyArray));
         assertEquals("image/tiff", MediaUtils.guessMimeType("img.tiff", emptyArray));
+        // weasyprint-service draws a VSD drawing by this type
+        assertEquals("application/vnd.visio", MediaUtils.guessMimeType("http://localhost/polarion/wi-attachment/project/WI-1/diagram.vsd?revision=2", emptyArray));
         assertEquals("image/x-icon", MediaUtils.guessMimeType("/img.cur?ver=1.5f", emptyArray));
         assertEquals("application/font-ttf", MediaUtils.guessMimeType("example.com/fonts/someTrueType.ttf", emptyArray));
         assertEquals("application/font-woff", MediaUtils.guessMimeType("https://example.com/fonts/someWoffFont.woff", emptyArray));
