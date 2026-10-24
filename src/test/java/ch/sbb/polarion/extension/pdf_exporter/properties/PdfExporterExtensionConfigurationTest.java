@@ -88,6 +88,8 @@ class PdfExporterExtensionConfigurationTest {
         Set<String> extensions = configuration.getRenderableImageExtensions();
 
         assertEquals(PdfExporterExtensionConfiguration.RENDERABLE_IMAGE_EXTENSIONS_DEFAULT_VALUE, extensions);
+        // weasyprint-service draws both formats of Visio
+        assertTrue(extensions.containsAll(Set.of("vsd", "vsdx")));
     }
 
     static Stream<Arguments> renderableImageExtensionsParsingProvider() {
