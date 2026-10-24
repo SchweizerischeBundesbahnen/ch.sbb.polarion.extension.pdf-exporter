@@ -1,5 +1,21 @@
 # Changelog
 
+## [13.12.1](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v13.12.0...v13.12.1) (2026-10-24)
+
+
+### Bug Fixes
+
+* **deps:** update dependency com.helger:ph-css to v8.2.3 ([#1232](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/1232)) ([cfdc39c](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/cfdc39c9a600ba5b51dc53da466e61ff80df7e22))
+* **deps:** update dependency eslint to v10.13.0 ([4a39e30](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/4a39e30e48efe4c5e148822b39bc735114fc160d))
+* **deps:** update dependency jsdom to v30.1.3 ([a60bbb5](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/a60bbb588526191f98d5cdcef05c22cc579f4c61))
+* **deps:** update dependency node-html-parser to v9.0.5 ([4d2aaf4](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/4d2aaf48626e45304cf4cb59d947bcff21c41bf1))
+* **deps:** update dependency playwright to v1.64.1 ([b4846a1](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/b4846a1cb9f4074587d1068974aae23882b6066f))
+* **deps:** update dependency typescript-eslint to v8.72.0 ([fa1dda7](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/fa1dda761c464fc62a49f2e5c15c6dea2c1093de))
+* **deps:** update dependency vite to v8.3.5 ([572db5b](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/572db5b02dca7bce4d42122a8d8c2582d333a688))
+* **deps:** update npm to v12.2.1 ([a586914](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/a58691413b16f492abdef47e097f7b0d332a38bd))
+* **deps:** update vitest monorepo to v5.0.5 ([8d6c8d0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/8d6c8d01258f59b6936ae5851e0536c92f2a6222))
+* fit an inline SVG to its column and test both SVG renderers ([#1236](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/1236)) ([e53cb12](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/e53cb12cf965dd7c93ee9b0168021b850b7b3b2c))
+
 ## [13.12.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v13.11.1...v13.12.0) (2026-10-16)
 
 
