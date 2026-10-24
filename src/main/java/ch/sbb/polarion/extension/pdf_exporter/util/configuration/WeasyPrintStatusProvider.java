@@ -12,6 +12,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.function.Supplier;
@@ -49,14 +50,20 @@ public class WeasyPrintStatusProvider extends ConfigurationStatusProvider {
         VERSION,
         PYTHON,
         WEASYPRINT,
-        CHROMIUM
+        CHROMIUM,
+        SVG_RENDERER,
+        VISIO
     }
+
+    private static final String WEASYSVG = "weasysvg";
 
     private static final Map<WeasyPrintServiceInfo, String> WEASY_PRINT_SERVICE_INFO = Map.of(
             WeasyPrintServiceInfo.VERSION, "WeasyPrint Service",
             WeasyPrintServiceInfo.PYTHON, "WeasyPrint Service: Python",
             WeasyPrintServiceInfo.WEASYPRINT, "WeasyPrint Service: WeasyPrint",
-            WeasyPrintServiceInfo.CHROMIUM, "WeasyPrint Service: Chromium"
+            WeasyPrintServiceInfo.CHROMIUM, "WeasyPrint Service: Chromium",
+            WeasyPrintServiceInfo.SVG_RENDERER, "WeasyPrint Service: SVG renderer",
+            WeasyPrintServiceInfo.VISIO, "WeasyPrint Service: Visio drawings"
     );
 
     @Override
@@ -71,7 +78,7 @@ public class WeasyPrintStatusProvider extends ConfigurationStatusProvider {
             WeasyPrintInfo weasyPrintInfo = weasyPrintServiceConnector.getWeasyPrintInfo();
             String expectedApiVersionStr = VersionUtils.getValueFromProperties(VERSION_FILE, "weasyprint-service.api-version");
             Integer expectedApiVersion = parseExpectedApiVersion(expectedApiVersionStr);
-            return List.of(
+            List<ConfigurationStatus> statuses = new ArrayList<>(List.of(
                     createWeasyPrintVersionStatus(
                             WEASY_PRINT_SERVICE_INFO.get(WeasyPrintServiceInfo.VERSION),
                             weasyPrintInfo.getWeasyprintService(),
@@ -79,9 +86,18 @@ public class WeasyPrintStatusProvider extends ConfigurationStatusProvider {
                             weasyPrintInfo.getApiVersion(),
                             expectedApiVersion),
                     createWeasyPrintStatus(WEASY_PRINT_SERVICE_INFO.get(WeasyPrintServiceInfo.PYTHON), weasyPrintInfo.getPython()),
-                    createWeasyPrintStatus(WEASY_PRINT_SERVICE_INFO.get(WeasyPrintServiceInfo.WEASYPRINT), weasyPrintInfo.getWeasyprint()),
-                    createWeasyPrintStatus(WEASY_PRINT_SERVICE_INFO.get(WeasyPrintServiceInfo.CHROMIUM), weasyPrintInfo.getChromium())
-            );
+                    createWeasyPrintStatus(WEASY_PRINT_SERVICE_INFO.get(WeasyPrintServiceInfo.WEASYPRINT), weasyPrintInfo.getWeasyprint())));
+            String svgRenderer = weasyPrintInfo.getSvgRenderer();
+            // with weasysvg the service starts no browser and reports no Chromium, which is no error
+            if (!WEASYSVG.equals(svgRenderer)) {
+                statuses.add(createWeasyPrintStatus(WEASY_PRINT_SERVICE_INFO.get(WeasyPrintServiceInfo.CHROMIUM), weasyPrintInfo.getChromium()));
+            }
+            // a service which names its SVG renderer is recent enough to also report what draws Visio drawings
+            if (svgRenderer != null) {
+                statuses.add(createSvgRendererStatus(svgRenderer, weasyPrintInfo.getWeasysvg()));
+                statuses.add(createVisioStatus(weasyPrintInfo.getWeasyvsdx(), weasyPrintInfo.getLibvisio()));
+            }
+            return statuses;
         } catch (Exception e) {
             return List.of(new ConfigurationStatus(WEASY_PRINT_SERVICE_INFO.get(WeasyPrintServiceInfo.VERSION), Status.ERROR, e.getMessage()));
         }
@@ -115,6 +131,24 @@ public class WeasyPrintStatusProvider extends ConfigurationStatusProvider {
                     nfe
             );
         }
+    }
+
+    private static @NotNull ConfigurationStatus createSvgRendererStatus(@NotNull String svgRenderer, @Nullable String weasysvg) {
+        String name = WEASY_PRINT_SERVICE_INFO.get(WeasyPrintServiceInfo.SVG_RENDERER);
+        if (WEASYSVG.equals(svgRenderer) && weasysvg != null && !weasysvg.isBlank()) {
+            return new ConfigurationStatus(name, Status.OK, WEASYSVG + " " + weasysvg);
+        }
+        return new ConfigurationStatus(name, Status.OK, svgRenderer);
+    }
+
+    private static @NotNull ConfigurationStatus createVisioStatus(@Nullable String weasyvsdx, @Nullable String libvisio) {
+        String name = WEASY_PRINT_SERVICE_INFO.get(WeasyPrintServiceInfo.VISIO);
+        if (weasyvsdx == null || weasyvsdx.isBlank()) {
+            return new ConfigurationStatus(name, Status.WARNING,
+                    "<span style='color: orange;'>not available: Visio drawings are left out of the PDF. weasyprint-service draws them from 70.0.7 on, with libvisio-tools in its image</span>");
+        }
+        String libvisioVersion = libvisio != null && !libvisio.isBlank() ? libvisio : "unknown";
+        return new ConfigurationStatus(name, Status.OK, "weasyvsdx " + weasyvsdx + ", libvisio " + libvisioVersion);
     }
 
     private static @NotNull ConfigurationStatus createWeasyPrintStatus(@NotNull String name, @Nullable String version) {
