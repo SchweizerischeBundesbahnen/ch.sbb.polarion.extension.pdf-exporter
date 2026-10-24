@@ -3,6 +3,16 @@
 Version-specific upgrade notes for the PDF Exporter extension. See the [README](README.md) for
 installation and the [configuration reference](CONFIGURATION.md) for all settings.
 
+## Upgrade from version 13.12.x to 13.13.0
+
+### weasyprint-service 70.0.7 or later
+
+Use weasyprint-service 70.0.7 or later. `vsd` joins the default renderable image extensions, so the extension sends a
+VSD attachment to the service as a drawing, no longer as the thumbnail Polarion makes of it. 70.0.7 draws VSD and VSDX
+through weasyvsdx. An earlier version leaves such a drawing out, where the PDF used to show the thumbnail. To keep the
+thumbnails with an earlier service, leave `vsd` out of `renderable.image.extensions`, see the
+[configuration reference](CONFIGURATION.md#renderable-image-extensions).
+
 ## Upgrade from version 13.9.x to 13.10.0
 
 ### bulk-processing-service 1.2.0 or later
