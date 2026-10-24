@@ -7,17 +7,23 @@ import ch.sbb.polarion.extension.pdf_exporter.weasyprint.base.BasePdfConverterTe
 import lombok.SneakyThrows;
 import org.apache.commons.io.IOUtils;
 import org.apache.pdfbox.Loader;
+import org.apache.pdfbox.cos.COSBase;
 import org.apache.pdfbox.cos.COSName;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDResources;
+import org.apache.pdfbox.pdmodel.graphics.PDXObject;
+import org.apache.pdfbox.pdmodel.graphics.form.PDFormXObject;
+import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -65,20 +71,34 @@ class VsdxImageTest extends BasePdfConverterTest {
         return exportLiveDoc("Visio drawing", content, params);
     }
 
-    /** The names of the image XObjects the pages draw directly. */
+    /** The names of the image XObjects the pages draw, directly or inside a form, as a vector SVG is drawn in one. */
     @SneakyThrows
     private static @NotNull List<String> rasterImagesIn(byte @NotNull [] pdf) {
         try (PDDocument document = Loader.loadPDF(pdf)) {
             List<String> images = new ArrayList<>();
+            Set<COSBase> seen = new HashSet<>();
             for (PDPage page : document.getPages()) {
-                PDResources resources = page.getResources();
-                for (COSName name : resources.getXObjectNames()) {
-                    if (resources.isImageXObject(name)) {
-                        images.add(name.getName());
-                    }
-                }
+                collectRasterImages(page.getResources(), images, seen);
             }
             return images;
+        }
+    }
+
+    @SneakyThrows
+    private static void collectRasterImages(PDResources resources, @NotNull List<String> images, @NotNull Set<COSBase> seen) {
+        if (resources == null) {
+            return;
+        }
+        for (COSName name : resources.getXObjectNames()) {
+            PDXObject xObject = resources.getXObject(name);
+            if (!seen.add(xObject.getCOSObject())) {
+                continue;
+            }
+            if (xObject instanceof PDImageXObject) {
+                images.add(name.getName());
+            } else if (xObject instanceof PDFormXObject form) {
+                collectRasterImages(form.getResources(), images, seen);
+            }
         }
     }
 
