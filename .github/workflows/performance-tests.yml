@@ -19,7 +19,7 @@ jobs:
       contents: read
     services:
       weasyprint:
-        image: ghcr.io/schweizerischebundesbahnen/weasyprint-service:latest@sha256:a803eed6b2cd5609c992423d45dce04ebe0e42f64c6e97c7f632c518e00553d0  # zizmor: ignore[unpinned-images]
+        image: ghcr.io/schweizerischebundesbahnen/weasyprint-service:latest@sha256:f92dfdc019e551f9f3bd74434185542be1519ee1af0a2bef52df1a0d970cebd6  # zizmor: ignore[unpinned-images]
         ports: [9080:9080]
     env:
       IO_JFROG_SBB_POLARION_TOKEN: ${{ secrets.IO_JFROG_SBB_POLARION_TOKEN }}
