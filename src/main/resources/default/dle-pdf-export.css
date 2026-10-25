@@ -919,6 +919,11 @@ tr:hover {
     margin-right: 2px;
 }
 
+/* An enum value in the fields after a work item is its icon and its label, which a line may not part: after a wide image the icon stayed and the label went to the next line. In a table cell a label of several words still wraps. */
+.polarion-dle-workitem-fields-end .polarion-JSEnumOption {
+    white-space: nowrap;
+}
+
 /* Polarion writes "vertical-align: bottom" into the icon of an enum value, so only !important overrides it. */
 .polarion-JSEnumOption img {
     vertical-align: middle !important;
