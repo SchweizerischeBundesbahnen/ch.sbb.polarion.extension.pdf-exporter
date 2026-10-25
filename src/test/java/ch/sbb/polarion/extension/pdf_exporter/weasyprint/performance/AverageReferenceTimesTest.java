@@ -39,8 +39,11 @@ class AverageReferenceTimesTest {
     }
 
     private static @NotNull Properties run(@NotNull String... keysAndValues) {
+        if (keysAndValues.length % 2 != 0) {
+            throw new IllegalArgumentException("Keys and values come in pairs");
+        }
         Properties run = new Properties();
-        for (int i = 0; i < keysAndValues.length; i += 2) {
+        for (int i = 0; i + 1 < keysAndValues.length; i += 2) {
             run.setProperty(keysAndValues[i], keysAndValues[i + 1]);
         }
         return run;
