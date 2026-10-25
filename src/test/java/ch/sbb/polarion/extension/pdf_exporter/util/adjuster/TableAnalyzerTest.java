@@ -43,7 +43,7 @@ class TableAnalyzerTest {
         assertTrue(metrics.headerHeight() > 0, "The head is repeated on every page, so it takes its height there");
     }
 
-    /** WeasyPrint breaks no word between a hyphen and a digit, as Unicode wants it (UAX #14, LB25). */
+    /** WeasyPrint breaks no word between a hyphen and a digit, by the default rule of UAX #14 (LB25). */
     @ParameterizedTest
     @ValueSource(strings = {"TMSPRG-13164", "2022-01-05", "ТРБ-3001"})
     void keepsAWordWholeWhereADigitFollowsItsHyphen(String word) {

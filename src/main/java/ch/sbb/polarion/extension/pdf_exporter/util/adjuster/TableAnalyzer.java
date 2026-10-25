@@ -473,10 +473,10 @@ public class TableAnalyzer {
     }
 
     /**
-     * The places a line of the measure may break at: those flying-saucer finds, but none between a hyphen and a digit.
-     * Unicode allows no break there (UAX #14, LB25), so WeasyPrint lays out an ID or a date such as {@code REQ-1001} or
-     * {@code 2022-01-05} whole, while the line iterator of the JDK, which flying-saucer asks, breaks after the hyphen and
-     * finds its column narrower than it prints.
+     * The places a line of the measure may break at: those flying-saucer finds, but none between a hyphen and a digit, as
+     * the PDF is laid out by WeasyPrint. WeasyPrint follows the default rule of UAX #14 (LB25, {@code HY × NU}) and lays
+     * out an ID or a date such as {@code REQ-1001} or {@code 2022-01-05} whole. flying-saucer breaks after the hyphen, as
+     * CSS Text 3 (5.2) suggests for browsers, and finds the column narrower than it prints.
      */
     static final class MeasureLineBreakingStrategy implements LineBreakingStrategy {
         @Override
