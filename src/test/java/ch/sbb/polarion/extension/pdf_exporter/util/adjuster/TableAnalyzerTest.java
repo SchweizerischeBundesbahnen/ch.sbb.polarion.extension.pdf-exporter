@@ -85,7 +85,7 @@ class TableAnalyzerTest {
     /** The width of a table of one cell with the given content, laid out as narrow as it goes. */
     private static float narrowestWidth(String content) {
         Element table = Jsoup.parse("<table><tr><td>" + content + "</td></tr></table>").selectFirst("table");
-        return TableAnalyzer.analyze(table, 10).tableWidth();
+        return (float) TableAnalyzer.analyze(table, 10).tableWidth();
     }
 
     @Test
