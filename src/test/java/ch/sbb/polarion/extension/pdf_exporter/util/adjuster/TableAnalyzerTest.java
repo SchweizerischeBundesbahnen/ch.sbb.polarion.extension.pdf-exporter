@@ -60,6 +60,33 @@ class TableAnalyzerTest {
         assertTrue(narrowestWidth("TMSPRG-<wbr>13164") < narrowestWidth("TMSPRG-13164"), "A break point the document gives a word is still one");
     }
 
+    /** A zero width space and a soft hyphen are places to break a document gives a word. */
+    @ParameterizedTest
+    @ValueSource(strings = {"TMSPRG​-13164", "TMSPRG­-13164"})
+    void breaksAWordWhereItsTextLetsItBreak(String word) {
+        assertTrue(narrowestWidth(word) < narrowestWidth("TMSPRG-13164"), "The word breaks where its text lets it");
+    }
+
+    @Test
+    void breaksAWordWhereTheCellLetsItBreakAnywhere() {
+        assertTrue(narrowestWidth("<span style=\"overflow-wrap: anywhere\">TMSPRG-13164</span>") < narrowestWidth("TMSPRG-13164"),
+                "A word which may break anywhere breaks after its hyphen as well");
+    }
+
+    /** {@code break-word} breaks a word only where it overflows its line, which leaves the narrowest width of its column as it is. */
+    @ParameterizedTest
+    @ValueSource(strings = {"overflow-wrap: break-word", "word-wrap: break-word"})
+    void keepsAWordWholeWhereTheCellBreaksItOnlyToFit(String style) {
+        assertEquals(narrowestWidth("TMSPRG-13164"), narrowestWidth("<span style=\"" + style + "\">TMSPRG-13164</span>"), 2,
+                "\"%s\" keeps the narrowest width of the word".formatted(style));
+    }
+
+    @Test
+    void keepsAWordWholeWhereItsCellHyphenates() {
+        assertEquals(narrowestWidth("TMSPRG-13164"), narrowestWidth("<span style=\"hyphens: auto\">TMSPRG-13164</span>"), 2,
+                "A word of digits has no syllables to break at");
+    }
+
     @Test
     void keepsTheTextAroundAWordItKeepsWhole() {
         String text = "Anforderungsverwaltung REQ-1001 of 2022-01-05, approved";

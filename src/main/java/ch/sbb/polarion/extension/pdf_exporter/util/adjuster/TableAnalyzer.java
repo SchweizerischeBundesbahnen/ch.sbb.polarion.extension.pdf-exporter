@@ -9,8 +9,10 @@ import com.helger.css.propertyvalue.CCSSValue;
 import com.polarion.core.util.logging.Logger;
 import lombok.experimental.UtilityClass;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.jsoup.helper.W3CDom;
 import org.jsoup.nodes.Element;
+import org.jsoup.nodes.Node;
 import org.jsoup.nodes.TextNode;
 import org.w3c.dom.Document;
 import org.xhtmlrenderer.context.AWTFontResolver;
@@ -77,10 +79,11 @@ public class TableAnalyzer {
 
     /** The text styles which decide how tall a line of a cell is, and which a table inherits from around it. */
     /**
-     * A part of a word with a hyphen a digit follows: from the space or the hyphen before it, where a line may break, to
-     * the next one. The measure breaks a line where an element starts, so the part ends where a line may break anyway.
+     * A part of a word with a hyphen a digit follows: from the space, the hyphen, the zero width space or the soft hyphen
+     * before it, where a line may break, to the next one. The measure breaks a line where an element starts, so the part ends where a line may break anyway.
      */
-    private static final Pattern HYPHEN_BEFORE_DIGIT_WORD = Pattern.compile("[^\\s-]*(?:-\\p{N}[^\\s-]*)+");
+    private static final Pattern HYPHEN_BEFORE_DIGIT_WORD = Pattern.compile("[^\\s\\u200B\\u00AD-]*(?:-\\p{N}[^\\s\\u200B\\u00AD-]*)+");
+    private static final String BREAK_ALL = "break-all";
     private static final List<ECSSProperty> INHERITED_TEXT_PROPERTIES = List.of(ECSSProperty.FONT_SIZE, ECSSProperty.LINE_HEIGHT, ECSSProperty.FONT_WEIGHT, ECSSProperty.LETTER_SPACING);
 
     // Doesn't really matter, our concern here are widths
@@ -179,8 +182,8 @@ public class TableAnalyzer {
         // Inject CSS to force the embedded font for consistent column width calculation across platforms
         tempDoc.head().appendElement("style").text("* { font-family: '" + MEASUREMENT_FONT_FAMILY + "', sans-serif !important; }");
         Element table = tableElement.clone();
-        measureBreakableWords(table);
         keepHyphensBeforeDigits(table);
+        measureBreakableWords(table);
         tempDoc.body().appendElement("div").attr(HtmlTagAttr.STYLE, inheritedTextStyle(tableElement)).appendChild(table);
         return new W3CDom().fromJsoup(tempDoc);
     }
@@ -206,7 +209,8 @@ public class TableAnalyzer {
      * Keeps a word whole where a digit follows its hyphen, as {@code REQ-1001} or {@code 2022-01-05}. Unicode allows no
      * break between a hyphen and a digit (UAX #14, LB25), so WeasyPrint lays such a word out whole, while the measure
      * breaks it after the hyphen and finds its column narrower than it prints. A break point a document gives the word
-     * splits its text, and the word breaks there still.
+     * splits its text, or the part of it kept whole, and the word breaks there still, as it does where its cell lets it
+     * break anywhere.
      */
     private static void keepHyphensBeforeDigits(@NotNull Element table) {
         List<TextNode> texts = new ArrayList<>();
@@ -214,6 +218,9 @@ public class TableAnalyzer {
             texts.addAll(element.textNodes());
         }
         for (TextNode text : texts) {
+            if (breaksAnywhere(text.parentNode())) {
+                continue;
+            }
             String value = text.getWholeText();
             Matcher word = HYPHEN_BEFORE_DIGIT_WORD.matcher(value);
             int start = 0;
@@ -227,6 +234,30 @@ public class TableAnalyzer {
                 text.remove();
             }
         }
+    }
+
+    /**
+     * Whether the words of an element may break at any character: by {@code overflow-wrap: anywhere} or
+     * {@code word-break: break-all}, as the nearest element which states each lets them.
+     */
+    private static boolean breaksAnywhere(@Nullable Node node) {
+        String overflowWrap = "";
+        String wordBreak = "";
+        for (Node current = node; current != null; current = current.parentNode()) {
+            if (current instanceof Element element) {
+                CSSDeclarationList style = CssUtils.parseDeclarations(element.attr(HtmlTagAttr.STYLE));
+                if (overflowWrap.isEmpty()) {
+                    overflowWrap = CssUtils.getPropertyValue(style, ECSSProperty.OVERFLOW_WRAP);
+                }
+                if (overflowWrap.isEmpty()) {
+                    overflowWrap = CssUtils.getPropertyValue(style, ECSSProperty.WORD_WRAP);
+                }
+                if (wordBreak.isEmpty()) {
+                    wordBreak = CssUtils.getPropertyValue(style, ECSSProperty.WORD_BREAK);
+                }
+            }
+        }
+        return CssProp.OVERFLOW_WRAP_ANYWHERE_VALUE.equals(overflowWrap) || BREAK_ALL.equals(wordBreak);
     }
 
     /**
