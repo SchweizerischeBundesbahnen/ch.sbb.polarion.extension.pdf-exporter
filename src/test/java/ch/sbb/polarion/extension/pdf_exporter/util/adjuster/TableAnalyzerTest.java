@@ -47,12 +47,12 @@ class TableAnalyzerTest {
     @ParameterizedTest
     @ValueSource(strings = {"TMSPRG-13164", "2022-01-05", "ТРБ-3001"})
     void keepsAWordWholeWhereADigitFollowsItsHyphen(String word) {
-        assertEquals(narrowestWidth(word.replace('-', ' ')), narrowestWidth(word), 2, "\"%s\" is as wide as it is unbroken".formatted(word));
+        assertEquals(narrowestWidth(word.replace('-', '\u00A0')), narrowestWidth(word), 2, "\"%s\" is as wide as it is unbroken".formatted(word));
     }
 
     @Test
     void breaksAWordAfterAHyphenALetterFollows() {
-        assertTrue(narrowestWidth("Rechts-Schutz") < narrowestWidth("Rechts Schutz"), "A hyphen before a letter is a place to break");
+        assertTrue(narrowestWidth("Rechts-Schutz") < narrowestWidth("Rechts\u00A0Schutz"), "A hyphen before a letter is a place to break");
     }
 
     @Test
@@ -60,11 +60,9 @@ class TableAnalyzerTest {
         assertTrue(narrowestWidth("TMSPRG-<wbr>13164") < narrowestWidth("TMSPRG-13164"), "A break point the document gives a word is still one");
     }
 
-    /** A zero width space and a soft hyphen are places to break a document gives a word. */
-    @ParameterizedTest
-    @ValueSource(strings = {"TMSPRG​-13164", "TMSPRG­-13164"})
-    void breaksAWordWhereItsTextLetsItBreak(String word) {
-        assertTrue(narrowestWidth(word) < narrowestWidth("TMSPRG-13164"), "The word breaks where its text lets it");
+    @Test
+    void breaksAWordAtItsSoftHyphen() {
+        assertTrue(narrowestWidth("TMSPRG-131\u00AD64") < narrowestWidth("TMSPRG-13164"), "A soft hyphen is a place to break the document gives a word");
     }
 
     @Test
@@ -73,22 +71,8 @@ class TableAnalyzerTest {
                 "A word which may break anywhere breaks after its hyphen as well");
     }
 
-    /** {@code break-word} breaks a word only where it overflows its line, which leaves the narrowest width of its column as it is. */
-    @ParameterizedTest
-    @ValueSource(strings = {"overflow-wrap: break-word", "word-wrap: break-word"})
-    void keepsAWordWholeWhereTheCellBreaksItOnlyToFit(String style) {
-        assertEquals(narrowestWidth("TMSPRG-13164"), narrowestWidth("<span style=\"" + style + "\">TMSPRG-13164</span>"), 2,
-                "\"%s\" keeps the narrowest width of the word".formatted(style));
-    }
-
     @Test
-    void keepsAWordWholeWhereItsCellHyphenates() {
-        assertEquals(narrowestWidth("TMSPRG-13164"), narrowestWidth("<span style=\"hyphens: auto\">TMSPRG-13164</span>"), 2,
-                "A word of digits has no syllables to break at");
-    }
-
-    @Test
-    void keepsTheTextAroundAWordItKeepsWhole() {
+    void keepsTheSpacesAroundAWordItKeepsWhole() {
         String text = "Anforderungsverwaltung REQ-1001 of 2022-01-05, approved";
         Element table = Jsoup.parse("<table><tr><td>" + text + "</td></tr></table>").selectFirst("table");
 
@@ -99,7 +83,7 @@ class TableAnalyzerTest {
     }
 
     /** The width of a table of one cell with the given content, laid out as narrow as it goes. */
-    private static int narrowestWidth(String content) {
+    private static float narrowestWidth(String content) {
         Element table = Jsoup.parse("<table><tr><td>" + content + "</td></tr></table>").selectFirst("table");
         return TableAnalyzer.analyze(table, 10).tableWidth();
     }

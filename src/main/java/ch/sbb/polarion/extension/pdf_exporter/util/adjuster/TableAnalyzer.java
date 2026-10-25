@@ -9,20 +9,22 @@ import com.helger.css.propertyvalue.CCSSValue;
 import com.polarion.core.util.logging.Logger;
 import lombok.experimental.UtilityClass;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.jsoup.helper.W3CDom;
 import org.jsoup.nodes.Element;
-import org.jsoup.nodes.Node;
-import org.jsoup.nodes.TextNode;
 import org.w3c.dom.Document;
 import org.xhtmlrenderer.context.AWTFontResolver;
 import org.xhtmlrenderer.css.constants.IdentValue;
 import org.xhtmlrenderer.css.sheet.StylesheetInfo;
+import org.xhtmlrenderer.css.style.CalculatedStyle;
 import org.xhtmlrenderer.extend.ReplacedElement;
 import org.xhtmlrenderer.extend.ReplacedElementFactory;
 import org.xhtmlrenderer.extend.UserAgentCallback;
 import org.xhtmlrenderer.layout.LayoutContext;
 import org.xhtmlrenderer.layout.SharedContext;
+import org.xhtmlrenderer.layout.breaker.BreakPoint;
+import org.xhtmlrenderer.layout.breaker.BreakPointsProvider;
+import org.xhtmlrenderer.layout.breaker.LineBreakingStrategy;
+import org.xhtmlrenderer.layout.breaker.UrlAwareLineBreakIterator;
 import org.xhtmlrenderer.newtable.TableSectionBox;
 import org.xhtmlrenderer.render.BlockBox;
 import org.xhtmlrenderer.render.Box;
@@ -41,6 +43,7 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
+import java.text.BreakIterator;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -48,8 +51,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 @UtilityClass
 public class TableAnalyzer {
@@ -78,12 +79,6 @@ public class TableAnalyzer {
     private static final String TH = "th";
 
     /** The text styles which decide how tall a line of a cell is, and which a table inherits from around it. */
-    /**
-     * A part of a word with a hyphen a digit follows: from the space, the hyphen, the zero width space or the soft hyphen
-     * before it, where a line may break, to the next one. The measure breaks a line where an element starts, so the part ends where a line may break anyway.
-     */
-    private static final Pattern HYPHEN_BEFORE_DIGIT_WORD = Pattern.compile("[^\\s\\u200B\\u00AD-]*(?:-\\p{N}[^\\s\\u200B\\u00AD-]*)+");
-    private static final String BREAK_ALL = "break-all";
     private static final List<ECSSProperty> INHERITED_TEXT_PROPERTIES = List.of(ECSSProperty.FONT_SIZE, ECSSProperty.LINE_HEIGHT, ECSSProperty.FONT_WEIGHT, ECSSProperty.LETTER_SPACING);
 
     // Doesn't really matter, our concern here are widths
@@ -182,7 +177,6 @@ public class TableAnalyzer {
         // Inject CSS to force the embedded font for consistent column width calculation across platforms
         tempDoc.head().appendElement("style").text("* { font-family: '" + MEASUREMENT_FONT_FAMILY + "', sans-serif !important; }");
         Element table = tableElement.clone();
-        keepHyphensBeforeDigits(table);
         measureBreakableWords(table);
         tempDoc.body().appendElement("div").attr(HtmlTagAttr.STYLE, inheritedTextStyle(tableElement)).appendChild(table);
         return new W3CDom().fromJsoup(tempDoc);
@@ -203,61 +197,6 @@ public class TableAnalyzer {
                 element.attr(HtmlTagAttr.STYLE, style.getAsCSSString());
             }
         }
-    }
-
-    /**
-     * Keeps a word whole where a digit follows its hyphen, as {@code REQ-1001} or {@code 2022-01-05}. Unicode allows no
-     * break between a hyphen and a digit (UAX #14, LB25), so WeasyPrint lays such a word out whole, while the measure
-     * breaks it after the hyphen and finds its column narrower than it prints. A break point a document gives the word
-     * splits its text, or the part of it kept whole, and the word breaks there still, as it does where its cell lets it
-     * break anywhere.
-     */
-    private static void keepHyphensBeforeDigits(@NotNull Element table) {
-        List<TextNode> texts = new ArrayList<>();
-        for (Element element : table.getAllElements()) {
-            texts.addAll(element.textNodes());
-        }
-        for (TextNode text : texts) {
-            if (breaksAnywhere(text.parentNode())) {
-                continue;
-            }
-            String value = text.getWholeText();
-            Matcher word = HYPHEN_BEFORE_DIGIT_WORD.matcher(value);
-            int start = 0;
-            while (word.find()) {
-                text.before(new TextNode(value.substring(start, word.start())));
-                text.before(new Element("span").attr(HtmlTagAttr.STYLE, "white-space: nowrap;").text(word.group()));
-                start = word.end();
-            }
-            if (start > 0) {
-                text.before(new TextNode(value.substring(start)));
-                text.remove();
-            }
-        }
-    }
-
-    /**
-     * Whether the words of an element may break at any character: by {@code overflow-wrap: anywhere} or
-     * {@code word-break: break-all}, as the nearest element which states each lets them.
-     */
-    private static boolean breaksAnywhere(@Nullable Node node) {
-        String overflowWrap = "";
-        String wordBreak = "";
-        for (Node current = node; current != null; current = current.parentNode()) {
-            if (current instanceof Element element) {
-                CSSDeclarationList style = CssUtils.parseDeclarations(element.attr(HtmlTagAttr.STYLE));
-                if (overflowWrap.isEmpty()) {
-                    overflowWrap = CssUtils.getPropertyValue(style, ECSSProperty.OVERFLOW_WRAP);
-                }
-                if (overflowWrap.isEmpty()) {
-                    overflowWrap = CssUtils.getPropertyValue(style, ECSSProperty.WORD_WRAP);
-                }
-                if (wordBreak.isEmpty()) {
-                    wordBreak = CssUtils.getPropertyValue(style, ECSSProperty.WORD_BREAK);
-                }
-            }
-        }
-        return CssProp.OVERFLOW_WRAP_ANYWHERE_VALUE.equals(overflowWrap) || BREAK_ALL.equals(wordBreak);
     }
 
     /**
@@ -293,6 +232,7 @@ public class TableAnalyzer {
         sharedContext.setReplacedElementFactory(new SourceAwareReplacedElementFactory(defaultFactory));
 
         useMeasurementFont(sharedContext);
+        sharedContext.setLineBreakingStrategy(new MeasureLineBreakingStrategy());
         // A size in points becomes pixels at the resolution of the screen, which is 72 dpi on a headless server and
         // anything on a desktop. WeasyPrint, as CSS, counts 96 pixels to an inch.
         sharedContext.setDPI(CSS_DPI);
@@ -529,6 +469,30 @@ public class TableAnalyzer {
 
         private static boolean isDefaultStylesheet(String uri) {
             return !DEFAULT_STYLESHEET.isEmpty() && DEFAULT_STYLESHEET.equals(uri);
+        }
+    }
+
+    /**
+     * The places a line of the measure may break at: those flying-saucer finds, but none between a hyphen and a digit.
+     * Unicode allows no break there (UAX #14, LB25), so WeasyPrint lays out an ID or a date such as {@code REQ-1001} or
+     * {@code 2022-01-05} whole, while the line iterator of the JDK, which flying-saucer asks, breaks after the hyphen and
+     * finds its column narrower than it prints.
+     */
+    static final class MeasureLineBreakingStrategy implements LineBreakingStrategy {
+        @Override
+        public BreakPointsProvider getBreakPointsProvider(String text, String lang, CalculatedStyle style) {
+            BreakIterator iterator = new UrlAwareLineBreakIterator(text);
+            return () -> {
+                int next = iterator.next();
+                while (next != BreakIterator.DONE && isBetweenHyphenAndDigit(text, next)) {
+                    next = iterator.next();
+                }
+                return next == BreakIterator.DONE ? BreakPoint.DONE : new BreakPoint(next);
+            };
+        }
+
+        private static boolean isBetweenHyphenAndDigit(@NotNull String text, int offset) {
+            return offset > 0 && offset < text.length() && text.charAt(offset - 1) == '-' && Character.isDigit(text.codePointAt(offset));
         }
     }
 }
