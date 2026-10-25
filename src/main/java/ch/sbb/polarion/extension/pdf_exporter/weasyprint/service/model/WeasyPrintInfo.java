@@ -19,4 +19,10 @@ public class WeasyPrintInfo {
     private @Nullable String timestamp;
     private @Nullable String weasyprint;
     private @Nullable String weasyprintService;
+    /** Who draws SVG: chromium or weasysvg. Older services leave it out. */
+    private @Nullable String svgRenderer;
+    private @Nullable String weasysvg;
+    /** weasyvsdx and the libvisio it runs, which draw Visio drawings. Older services leave them out. */
+    private @Nullable String weasyvsdx;
+    private @Nullable String libvisio;
 }
