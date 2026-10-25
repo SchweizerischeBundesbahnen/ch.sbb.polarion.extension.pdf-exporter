@@ -80,6 +80,8 @@ class MediaUtilsTest {
         assertEquals("image/bmp", MediaUtils.guessMimeType("/some/relative/url/img.BMP?someParam=123", emptyArray));
         assertEquals("image/gif", MediaUtils.guessMimeType("img.gif?someParam=123", emptyArray));
         assertEquals("image/tiff", MediaUtils.guessMimeType("img.tiff", emptyArray));
+        // weasyprint-service draws a VSD drawing by this type
+        assertEquals("application/vnd.visio", MediaUtils.guessMimeType("http://localhost/polarion/wi-attachment/project/WI-1/diagram.vsd?revision=2", emptyArray));
         assertEquals("image/x-icon", MediaUtils.guessMimeType("/img.cur?ver=1.5f", emptyArray));
         assertEquals("application/font-ttf", MediaUtils.guessMimeType("example.com/fonts/someTrueType.ttf", emptyArray));
         assertEquals("application/font-woff", MediaUtils.guessMimeType("https://example.com/fonts/someWoffFont.woff", emptyArray));
@@ -189,7 +191,7 @@ class MediaUtilsTest {
     @Test
     void isRenderableImageUrlTest() {
         when(PdfExporterExtensionConfiguration.getInstance().getRenderableImageExtensions())
-                .thenReturn(Set.of("png", "jpg", "jpeg", "gif", "bmp", "svg", "webp", "avif", "ico", "cur", "tif", "tiff", "vsdx"));
+                .thenReturn(Set.of("png", "jpg", "jpeg", "gif", "bmp", "svg", "webp", "avif", "ico", "cur", "tif", "tiff", "vsd", "vsdx"));
         // Image formats — renderable (thumbnail stripped)
         assertTrue(MediaUtils.isRenderableImageUrl("http://localhost/polarion/wi-attachment/project/WI-1/photo.png"));
         assertTrue(MediaUtils.isRenderableImageUrl("http://localhost/polarion/wi-attachment/project/WI-1/tw.svg?revision=123&view=true"));
@@ -197,6 +199,7 @@ class MediaUtilsTest {
         assertTrue(MediaUtils.isRenderableImageUrl("http://localhost/polarion/wi-attachment/project/WI-1/photo.avif"));
         // Convertible diagram formats — renderable
         assertTrue(MediaUtils.isRenderableImageUrl("http://localhost/polarion/wi-attachment/project/WI-1/diagram.vsdx?revision=2&thumbnail=true"));
+        assertTrue(MediaUtils.isRenderableImageUrl("http://localhost/polarion/wi-attachment/project/WI-1/diagram.vsd?revision=2&thumbnail=true"));
         // Non-renderable attachments — keep thumbnail (icon preview)
         assertFalse(MediaUtils.isRenderableImageUrl("http://localhost/polarion/wi-attachment/project/WI-1/Book1.xlsx?thumbnail=true"));
         assertFalse(MediaUtils.isRenderableImageUrl("http://localhost/polarion/wi-attachment/project/WI-1/doc.docx?thumbnail=true"));

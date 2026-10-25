@@ -317,16 +317,16 @@ decide whether it works:
 
 ### Renderable image extensions
 
-The exporter can embed certain file types as full-size images (raster formats, SVG, convertible diagrams like Visio).
+The exporter can embed certain file types as full-size images (raster formats, SVG, Visio drawings in VSD and VSDX, which WeasyPrint service draws as vector).
 For these file extensions the `thumbnail` query parameter is stripped so Polarion returns the full-size resource instead of an icon preview.
 All other attachment types (spreadsheets, documents, archives, unknown formats) keep `thumbnail` so Polarion returns a small icon that can be shown inside an `<img>` tag.
 
-The default set of renderable image extensions is: `png, jpg, jpeg, gif, bmp, svg, webp, avif, ico, cur, tif, tiff, vsdx`.
+The default set of renderable image extensions is: `png, jpg, jpeg, gif, bmp, svg, webp, avif, ico, cur, tif, tiff, vsd, vsdx`.
 
 To override this list, adjust the following property in the `polarion.properties` file:
 
 ```properties
-ch.sbb.polarion.extension.pdf-exporter.renderable.image.extensions=png, jpg, jpeg, gif, bmp, svg, webp, avif, ico, cur, tif, tiff, vsdx
+ch.sbb.polarion.extension.pdf-exporter.renderable.image.extensions=png, jpg, jpeg, gif, bmp, svg, webp, avif, ico, cur, tif, tiff, vsd, vsdx
 ```
 
 ### External resources
