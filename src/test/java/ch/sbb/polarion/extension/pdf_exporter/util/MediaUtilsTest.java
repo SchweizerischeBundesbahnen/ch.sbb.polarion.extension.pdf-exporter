@@ -75,6 +75,8 @@ class MediaUtilsTest {
         assertEquals("image/jpeg", MediaUtils.guessMimeType("https://example.com/imgs/img.jpeg", emptyArray));
         assertEquals("image/jpeg", MediaUtils.guessMimeType("https://example.com/imgs/img.jpg?someParam=123", emptyArray));
         assertEquals("image/svg+xml", MediaUtils.guessMimeType("https://example.com/imgs/img.svg?someParam=123", emptyArray));
+        // weasyprint-service draws a Visio drawing by this type
+        assertEquals("application/vnd.ms-visio.drawing", MediaUtils.guessMimeType("http://localhost/polarion/wi-attachment/project/WI-1/diagram.vsdx?revision=2", emptyArray));
         assertEquals("image/bmp", MediaUtils.guessMimeType("/some/relative/url/img.BMP?someParam=123", emptyArray));
         assertEquals("image/gif", MediaUtils.guessMimeType("img.gif?someParam=123", emptyArray));
         assertEquals("image/tiff", MediaUtils.guessMimeType("img.tiff", emptyArray));
