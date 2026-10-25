@@ -10,6 +10,8 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Element;
 import org.jsoup.parser.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
@@ -39,6 +41,51 @@ class TableAnalyzerTest {
 
         assertEquals(3, metrics.rowHeights().size(), "The row of the head is a row of the table as well");
         assertTrue(metrics.headerHeight() > 0, "The head is repeated on every page, so it takes its height there");
+    }
+
+    /** WeasyPrint breaks no word between a hyphen and a digit, by the default rule of UAX #14 (LB25). */
+    @ParameterizedTest
+    @ValueSource(strings = {"TMSPRG-13164", "2022-01-05", "ТРБ-3001"})
+    void keepsAWordWholeWhereADigitFollowsItsHyphen(String word) {
+        assertEquals(narrowestWidth(word.replace('-', '\u00A0')), narrowestWidth(word), 2, "\"%s\" is as wide as it is unbroken".formatted(word));
+    }
+
+    @Test
+    void breaksAWordAfterAHyphenALetterFollows() {
+        assertTrue(narrowestWidth("Rechts-Schutz") < narrowestWidth("Rechts\u00A0Schutz"), "A hyphen before a letter is a place to break");
+    }
+
+    @Test
+    void breaksAWordWhereTheDocumentLetsItBreak() {
+        assertTrue(narrowestWidth("TMSPRG-<wbr>13164") < narrowestWidth("TMSPRG-13164"), "A break point the document gives a word is still one");
+    }
+
+    @Test
+    void breaksAWordAtItsSoftHyphen() {
+        assertTrue(narrowestWidth("TMSPRG-131\u00AD64") < narrowestWidth("TMSPRG-13164"), "A soft hyphen is a place to break the document gives a word");
+    }
+
+    @Test
+    void breaksAWordWhereTheCellLetsItBreakAnywhere() {
+        assertTrue(narrowestWidth("<span style=\"overflow-wrap: anywhere\">TMSPRG-13164</span>") < narrowestWidth("TMSPRG-13164"),
+                "A word which may break anywhere breaks after its hyphen as well");
+    }
+
+    @Test
+    void keepsTheSpacesAroundAWordItKeepsWhole() {
+        String text = "Anforderungsverwaltung REQ-1001 of 2022-01-05, approved";
+        Element table = Jsoup.parse("<table><tr><td>" + text + "</td></tr></table>").selectFirst("table");
+
+        TableAnalyzer.analyze(table, 650);
+
+        assertEquals(text, table.text(), "The measure works on a copy of the table");
+        assertTrue(narrowestWidth(text) < narrowestWidth(text.replace(" ", "")), "The spaces around stay places to break");
+    }
+
+    /** The width of a table of one cell with the given content, laid out as narrow as it goes. */
+    private static float narrowestWidth(String content) {
+        Element table = Jsoup.parse("<table><tr><td>" + content + "</td></tr></table>").selectFirst("table");
+        return (float) TableAnalyzer.analyze(table, 10).tableWidth();
     }
 
     @Test
