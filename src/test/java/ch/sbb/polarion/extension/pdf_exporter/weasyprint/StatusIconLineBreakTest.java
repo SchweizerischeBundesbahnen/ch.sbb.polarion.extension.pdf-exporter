@@ -19,6 +19,7 @@ import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 /**
  * The icon of an enum value stays on the line of its label.
@@ -35,6 +36,9 @@ class StatusIconLineBreakTest extends BasePdfConverterTest {
 
     /** The widths of the image before the fields, in pixels: from a line with room to spare to one with none, past the width of the column. */
     private static final List<Integer> IMAGE_WIDTHS = IntStream.rangeClosed(0, 40).map(step -> 520 + step * 4).boxed().toList();
+
+    /** A few of the widths, for a page to compare with its reference image. */
+    private static final List<Integer> REFERENCE_IMAGE_WIDTHS = List.of(520, 552, 584, 616, 648, 680);
 
     /** An icon is 12 pt, the images before the fields are far wider. */
     private static final float MAX_ICON_WIDTH_PT = 20f;
@@ -63,6 +67,15 @@ class StatusIconLineBreakTest extends BasePdfConverterTest {
                     .as("The label after an image of %d px follows its icon", IMAGE_WIDTHS.get(item))
                     .isGreaterThan(icon.left());
         }
+    }
+
+    @Test
+    void drawsTheStatusesAfterWideImagesAsTheReferenceImageShows() {
+        String html = REFERENCE_IMAGE_WIDTHS.stream().map(StatusIconLineBreakTest::workItem).collect(Collectors.joining("\n"));
+
+        byte[] pdf = export(html);
+
+        assertFalse(compareContentUsingReferenceImages(getCurrentMethodName(), pdf), "The pages differ from the reference images");
     }
 
     /** A work item as Polarion writes it: a description ending in an image, and its status in brackets. */
