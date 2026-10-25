@@ -56,9 +56,10 @@ public class TableRowsAdjuster extends AbstractAdjuster {
     /**
      * How much wider than its room the measure may find a table before its words get more places to break. The measure
      * lays text out with no kerning, so a table whose words just fit measures a few percent wider than it prints. Once
-     * they get them, they get as many as it takes for the measure to find the table no wider than its room.
+     * they get them, they get as many as it takes for the measure to find the table no wider than its room. A table of
+     * Cyrillic text which prints whole measures 5 % wider than its room.
      */
-    private static final float TOO_WIDE = 1.05f;
+    private static final float TOO_WIDE = 1.06f;
 
     /** A cell of no more text than this may break a word anywhere, should the table have no room otherwise. */
     private static final int SHORT_CELL = 100;

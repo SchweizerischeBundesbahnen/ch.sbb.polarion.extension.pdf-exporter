@@ -15,11 +15,16 @@ import org.w3c.dom.Document;
 import org.xhtmlrenderer.context.AWTFontResolver;
 import org.xhtmlrenderer.css.constants.IdentValue;
 import org.xhtmlrenderer.css.sheet.StylesheetInfo;
+import org.xhtmlrenderer.css.style.CalculatedStyle;
 import org.xhtmlrenderer.extend.ReplacedElement;
 import org.xhtmlrenderer.extend.ReplacedElementFactory;
 import org.xhtmlrenderer.extend.UserAgentCallback;
 import org.xhtmlrenderer.layout.LayoutContext;
 import org.xhtmlrenderer.layout.SharedContext;
+import org.xhtmlrenderer.layout.breaker.BreakPoint;
+import org.xhtmlrenderer.layout.breaker.BreakPointsProvider;
+import org.xhtmlrenderer.layout.breaker.LineBreakingStrategy;
+import org.xhtmlrenderer.layout.breaker.UrlAwareLineBreakIterator;
 import org.xhtmlrenderer.newtable.TableSectionBox;
 import org.xhtmlrenderer.render.BlockBox;
 import org.xhtmlrenderer.render.Box;
@@ -38,6 +43,7 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
+import java.text.BreakIterator;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -226,6 +232,7 @@ public class TableAnalyzer {
         sharedContext.setReplacedElementFactory(new SourceAwareReplacedElementFactory(defaultFactory));
 
         useMeasurementFont(sharedContext);
+        sharedContext.setLineBreakingStrategy(new MeasureLineBreakingStrategy());
         // A size in points becomes pixels at the resolution of the screen, which is 72 dpi on a headless server and
         // anything on a desktop. WeasyPrint, as CSS, counts 96 pixels to an inch.
         sharedContext.setDPI(CSS_DPI);
@@ -462,6 +469,30 @@ public class TableAnalyzer {
 
         private static boolean isDefaultStylesheet(String uri) {
             return !DEFAULT_STYLESHEET.isEmpty() && DEFAULT_STYLESHEET.equals(uri);
+        }
+    }
+
+    /**
+     * The places a line of the measure may break at: those flying-saucer finds, but none between a hyphen and a digit, as
+     * the PDF is laid out by WeasyPrint. WeasyPrint follows the default rule of UAX #14 (LB25, {@code HY × NU}) and lays
+     * out an ID or a date such as {@code REQ-1001} or {@code 2022-01-05} whole. flying-saucer breaks after the hyphen, as
+     * CSS Text 3 (5.2) suggests for browsers, and finds the column narrower than it prints.
+     */
+    static final class MeasureLineBreakingStrategy implements LineBreakingStrategy {
+        @Override
+        public BreakPointsProvider getBreakPointsProvider(String text, String lang, CalculatedStyle style) {
+            BreakIterator iterator = new UrlAwareLineBreakIterator(text);
+            return () -> {
+                int next = iterator.next();
+                while (next != BreakIterator.DONE && isBetweenHyphenAndDigit(text, next)) {
+                    next = iterator.next();
+                }
+                return next == BreakIterator.DONE ? BreakPoint.DONE : new BreakPoint(next);
+            };
+        }
+
+        private static boolean isBetweenHyphenAndDigit(@NotNull String text, int offset) {
+            return offset > 0 && offset < text.length() && text.charAt(offset - 1) == '-' && Character.isDigit(text.codePointAt(offset));
         }
     }
 }

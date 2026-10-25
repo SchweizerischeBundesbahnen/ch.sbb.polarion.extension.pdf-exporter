@@ -59,6 +59,84 @@ class WeasyPrintStatusProviderTest {
     }
 
     @Test
+    void testWeasysvgWithVisio() {
+        WeasyPrintInfo weasyPrintInfo = WeasyPrintInfo.builder()
+                .apiVersion(1)
+                .python("3.15.1")
+                .weasyprint("70.0")
+                .weasyprintService("70.0.7")
+                .svgRenderer("weasysvg")
+                .weasysvg("0.3.1")
+                .weasyvsdx("0.2.0")
+                .libvisio("0.1.7")
+                .build();
+
+        List<ConfigurationStatus> configurationStatuses = statusesOf(weasyPrintInfo);
+
+        // weasysvg starts no browser, so the missing Chromium is no error and has no line
+        assertThat(configurationStatuses).containsExactly(
+                new ConfigurationStatus("WeasyPrint Service", Status.OK, "70.0.7"),
+                new ConfigurationStatus("WeasyPrint Service: Python", Status.OK, "3.15.1"),
+                new ConfigurationStatus("WeasyPrint Service: WeasyPrint", Status.OK, "70.0"),
+                new ConfigurationStatus("WeasyPrint Service: SVG renderer", Status.OK, "weasysvg 0.3.1"),
+                new ConfigurationStatus("WeasyPrint Service: Visio drawings", Status.OK, "weasyvsdx 0.2.0, libvisio 0.1.7")
+        );
+    }
+
+    @Test
+    void testChromiumWithoutVisio() {
+        WeasyPrintInfo weasyPrintInfo = WeasyPrintInfo.builder()
+                .apiVersion(1)
+                .chromium("156.0.8078.4")
+                .python("3.15.1")
+                .weasyprint("70.0")
+                .weasyprintService("70.0.6")
+                .svgRenderer("chromium")
+                .build();
+
+        List<ConfigurationStatus> configurationStatuses = statusesOf(weasyPrintInfo);
+
+        assertThat(configurationStatuses).containsExactly(
+                new ConfigurationStatus("WeasyPrint Service", Status.OK, "70.0.6"),
+                new ConfigurationStatus("WeasyPrint Service: Python", Status.OK, "3.15.1"),
+                new ConfigurationStatus("WeasyPrint Service: WeasyPrint", Status.OK, "70.0"),
+                new ConfigurationStatus("WeasyPrint Service: Chromium", Status.OK, "156.0.8078.4"),
+                new ConfigurationStatus("WeasyPrint Service: SVG renderer", Status.OK, "chromium"),
+                new ConfigurationStatus("WeasyPrint Service: Visio drawings", Status.WARNING,
+                        "<span style='color: orange;'>not available: Visio drawings are left out of the PDF. weasyprint-service draws them from 70.0.7 on, with libvisio-tools in its image</span>")
+        );
+    }
+
+    @Test
+    void testVisioWithUnknownLibvisio() {
+        WeasyPrintInfo weasyPrintInfo = WeasyPrintInfo.builder()
+                .apiVersion(1)
+                .python("3.15.1")
+                .weasyprint("70.0")
+                .weasyprintService("70.0.7")
+                .svgRenderer("weasysvg")
+                .weasyvsdx("0.2.0")
+                .build();
+
+        List<ConfigurationStatus> configurationStatuses = statusesOf(weasyPrintInfo);
+
+        assertThat(configurationStatuses).contains(
+                new ConfigurationStatus("WeasyPrint Service: SVG renderer", Status.OK, "weasysvg"),
+                new ConfigurationStatus("WeasyPrint Service: Visio drawings", Status.OK, "weasyvsdx 0.2.0, libvisio unknown")
+        );
+    }
+
+    private static List<ConfigurationStatus> statusesOf(WeasyPrintInfo weasyPrintInfo) {
+        WeasyPrintServiceConnector weasyPrintServiceConnector = mock(WeasyPrintServiceConnector.class);
+        when(weasyPrintServiceConnector.getWeasyPrintInfo()).thenReturn(weasyPrintInfo);
+        WeasyPrintStatusProvider weasyPrintStatusProvider = new WeasyPrintStatusProvider(weasyPrintServiceConnector);
+        try (MockedStatic<VersionUtils> versionsUtilsMockedStatic = mockStatic(VersionUtils.class)) {
+            versionsUtilsMockedStatic.when(() -> VersionUtils.getValueFromProperties(VERSION_FILE, "weasyprint-service.api-version")).thenReturn("1");
+            return weasyPrintStatusProvider.getStatuses(ConfigurationStatusProvider.Context.builder().build());
+        }
+    }
+
+    @Test
     void testConnectionRefused() {
         WeasyPrintServiceConnector weasyPrintServiceConnector = mock(WeasyPrintServiceConnector.class);
         when(weasyPrintServiceConnector.getWeasyPrintInfo()).thenThrow(new ProcessingException("java.net.ConnectException: Connection refused"));
