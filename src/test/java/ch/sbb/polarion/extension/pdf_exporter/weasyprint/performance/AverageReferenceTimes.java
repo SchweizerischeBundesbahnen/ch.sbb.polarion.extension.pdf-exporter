@@ -24,6 +24,7 @@ public final class AverageReferenceTimes {
 
     private static final String CALIBRATION = "machine.calibration";
     private static final String NETWORK_CALIBRATION = "network.calibration";
+    private static final String BPS_SUFFIX = ".bps";
 
     private AverageReferenceTimes() {
     }
@@ -47,10 +48,19 @@ public final class AverageReferenceTimes {
 
     /** The reference times of the given runs, in the form of {@code reference-times-<architecture>.properties}. */
     static String average(List<Properties> runs) {
-        // The mean of the logarithm of each time, over the runs which have it: the logarithm of its geometric mean
+        // The mean of the logarithm of each time, over the runs which have it: the logarithm of its geometric mean. The bulk
+        // processing service of a merge is scaled by the network, so where some run measured the network, its time and the
+        // network both come from the runs which measured it.
+        boolean networkMeasured = runs.stream().anyMatch(run -> run.containsKey(NETWORK_CALIBRATION));
         Map<String, Double> logs = new TreeMap<>();
-        runs.forEach(run -> run.stringPropertyNames().forEach(key -> logs.computeIfAbsent(key, k -> runs.stream()
-                .filter(other -> other.containsKey(k)).mapToDouble(other -> Math.log(value(other, k))).average().orElseThrow())));
+        runs.forEach(run -> run.stringPropertyNames().forEach(key -> {
+            boolean byNetwork = networkMeasured && (key.equals(NETWORK_CALIBRATION) || key.endsWith(BPS_SUFFIX));
+            runs.stream()
+                    .filter(other -> other.containsKey(key) && (!byNetwork || other.containsKey(NETWORK_CALIBRATION)))
+                    .mapToDouble(other -> Math.log(value(other, key)))
+                    .average()
+                    .ifPresent(log -> logs.putIfAbsent(key, log));
+        }));
         Map<String, String> references = new TreeMap<>();
         logs.forEach((key, log) -> references.put(key, String.valueOf(Math.round(Math.exp(log)))));
         StringBuilder text = new StringBuilder()
