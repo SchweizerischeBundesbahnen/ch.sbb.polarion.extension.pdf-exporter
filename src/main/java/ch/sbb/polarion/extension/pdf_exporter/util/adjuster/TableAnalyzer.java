@@ -11,6 +11,7 @@ import lombok.experimental.UtilityClass;
 import org.jetbrains.annotations.NotNull;
 import org.jsoup.helper.W3CDom;
 import org.jsoup.nodes.Element;
+import org.jsoup.nodes.TextNode;
 import org.w3c.dom.Document;
 import org.xhtmlrenderer.context.AWTFontResolver;
 import org.xhtmlrenderer.css.constants.IdentValue;
@@ -45,6 +46,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @UtilityClass
 public class TableAnalyzer {
@@ -73,6 +76,11 @@ public class TableAnalyzer {
     private static final String TH = "th";
 
     /** The text styles which decide how tall a line of a cell is, and which a table inherits from around it. */
+    /**
+     * A part of a word with a hyphen a digit follows: from the space or the hyphen before it, where a line may break, to
+     * the next one. The measure breaks a line where an element starts, so the part ends where a line may break anyway.
+     */
+    private static final Pattern HYPHEN_BEFORE_DIGIT_WORD = Pattern.compile("[^\\s-]*(?:-\\p{N}[^\\s-]*)+");
     private static final List<ECSSProperty> INHERITED_TEXT_PROPERTIES = List.of(ECSSProperty.FONT_SIZE, ECSSProperty.LINE_HEIGHT, ECSSProperty.FONT_WEIGHT, ECSSProperty.LETTER_SPACING);
 
     // Doesn't really matter, our concern here are widths
@@ -172,6 +180,7 @@ public class TableAnalyzer {
         tempDoc.head().appendElement("style").text("* { font-family: '" + MEASUREMENT_FONT_FAMILY + "', sans-serif !important; }");
         Element table = tableElement.clone();
         measureBreakableWords(table);
+        keepHyphensBeforeDigits(table);
         tempDoc.body().appendElement("div").attr(HtmlTagAttr.STYLE, inheritedTextStyle(tableElement)).appendChild(table);
         return new W3CDom().fromJsoup(tempDoc);
     }
@@ -189,6 +198,33 @@ public class TableAnalyzer {
                     || CCSSValue.AUTO.equals(CssUtils.getPropertyValue(style, ECSSProperty.HYPHENS))) {
                 CssUtils.setPropertyValue(style, ECSSProperty.WORD_WRAP, CssProp.WORD_WRAP_BREAK_WORD_VALUE);
                 element.attr(HtmlTagAttr.STYLE, style.getAsCSSString());
+            }
+        }
+    }
+
+    /**
+     * Keeps a word whole where a digit follows its hyphen, as {@code REQ-1001} or {@code 2022-01-05}. Unicode allows no
+     * break between a hyphen and a digit (UAX #14, LB25), so WeasyPrint lays such a word out whole, while the measure
+     * breaks it after the hyphen and finds its column narrower than it prints. A break point a document gives the word
+     * splits its text, and the word breaks there still.
+     */
+    private static void keepHyphensBeforeDigits(@NotNull Element table) {
+        List<TextNode> texts = new ArrayList<>();
+        for (Element element : table.getAllElements()) {
+            texts.addAll(element.textNodes());
+        }
+        for (TextNode text : texts) {
+            String value = text.getWholeText();
+            Matcher word = HYPHEN_BEFORE_DIGIT_WORD.matcher(value);
+            int start = 0;
+            while (word.find()) {
+                text.before(new TextNode(value.substring(start, word.start())));
+                text.before(new Element("span").attr(HtmlTagAttr.STYLE, "white-space: nowrap;").text(word.group()));
+                start = word.end();
+            }
+            if (start > 0) {
+                text.before(new TextNode(value.substring(start)));
+                text.remove();
             }
         }
     }
