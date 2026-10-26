@@ -20,7 +20,6 @@ import com.polarion.alm.shared.api.model.rp.parameter.impl.dataset.FieldsParamet
 import com.polarion.alm.shared.api.model.rp.parameter.impl.dataset.WidgetContextScope;
 import com.polarion.alm.shared.api.model.rp.widget.RichPageWidgetCommonContext;
 import com.polarion.alm.shared.api.transaction.internal.InternalReadOnlyTransaction;
-import com.polarion.alm.shared.api.utils.SharedLocalization;
 import com.polarion.alm.shared.api.utils.html.HtmlAttributesBuilder;
 import com.polarion.alm.shared.api.utils.html.HtmlContentBuilder;
 import com.polarion.alm.shared.api.utils.html.HtmlFragmentBuilder;
@@ -36,9 +35,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -48,7 +45,6 @@ import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
