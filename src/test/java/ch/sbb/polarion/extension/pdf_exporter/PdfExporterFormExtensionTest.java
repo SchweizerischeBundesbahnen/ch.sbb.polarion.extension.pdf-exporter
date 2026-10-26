@@ -7,7 +7,7 @@ import ch.sbb.polarion.extension.generic.test_extensions.PlatformContextMockExte
 import ch.sbb.polarion.extension.generic.test_extensions.TransactionalExecutorExtension;
 import ch.sbb.polarion.extension.generic.util.VersionUtils;
 import ch.sbb.polarion.extension.pdf_exporter.configuration.PdfExporterExtensionConfigurationExtension;
-import ch.sbb.polarion.extension.pdf_exporter.util.BundleCacheKey;
+import ch.sbb.polarion.extension.generic.util.BundleCacheKey;
 import com.polarion.alm.shared.UiContext;
 import com.polarion.alm.shared.api.SharedContext;
 import com.polarion.alm.shared.api.transaction.internal.InternalWriteTransaction;

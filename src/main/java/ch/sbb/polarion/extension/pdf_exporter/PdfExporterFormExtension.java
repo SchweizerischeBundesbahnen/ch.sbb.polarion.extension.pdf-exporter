@@ -2,7 +2,7 @@ package ch.sbb.polarion.extension.pdf_exporter;
 
 import ch.sbb.polarion.extension.generic.service.PolarionBaselineExecutor;
 import ch.sbb.polarion.extension.generic.util.ScopeUtils;
-import ch.sbb.polarion.extension.pdf_exporter.util.BundleCacheKey;
+import ch.sbb.polarion.extension.generic.util.BundleCacheKey;
 import com.polarion.alm.shared.api.SharedContext;
 import com.polarion.alm.shared.api.transaction.TransactionalExecutor;
 import com.polarion.alm.shared.api.utils.html.HtmlFragmentBuilder;

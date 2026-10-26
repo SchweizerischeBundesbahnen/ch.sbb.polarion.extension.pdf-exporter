@@ -2,7 +2,7 @@ package ch.sbb.polarion.extension.pdf_exporter.widgets;
 
 import ch.sbb.polarion.extension.generic.rest.model.Version;
 import ch.sbb.polarion.extension.generic.util.VersionUtils;
-import ch.sbb.polarion.extension.pdf_exporter.util.BundleCacheKey;
+import ch.sbb.polarion.extension.generic.util.BundleCacheKey;
 import com.polarion.alm.shared.api.SharedContext;
 import com.polarion.alm.shared.api.model.rp.parameter.ParameterFactory;
 import com.polarion.alm.shared.api.model.rp.parameter.RichPageParameter;

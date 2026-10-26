@@ -3,10 +3,8 @@ package ch.sbb.polarion.extension.pdf_exporter.widgets;
 import ch.sbb.polarion.extension.generic.rest.model.Version;
 import ch.sbb.polarion.extension.generic.util.VersionUtils;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.DocumentType;
-import ch.sbb.polarion.extension.pdf_exporter.rest.model.widgets.BulkExportColumn;
-import ch.sbb.polarion.extension.pdf_exporter.rest.model.widgets.BulkExportWidgetDescriptor;
-import ch.sbb.polarion.extension.pdf_exporter.util.BundleCacheKey;
-import ch.sbb.polarion.extension.pdf_exporter.util.WidgetDescriptorSigner;
+import ch.sbb.polarion.extension.generic.util.BundleCacheKey;
+import ch.sbb.polarion.extension.generic.widgets.WidgetDescriptorSigner;
 import com.polarion.alm.shared.api.Scope;
 import com.polarion.alm.shared.api.model.PrototypeEnum;
 import com.polarion.alm.shared.api.model.baselinecollection.BaselineCollectionReference;
@@ -66,72 +64,6 @@ class BulkPdfExportWidgetRendererTest {
     }
 
     @Test
-    void descriptorCarriesTheResolvedDataSet() {
-        RichPageWidgetCommonContext context = mock(RichPageWidgetCommonContext.class, RETURNS_DEEP_STUBS);
-        BulkPdfExportWidgetRenderer renderer = mockRenderer(context);
-
-        BulkExportWidgetDescriptor descriptor = renderer.buildDescriptor();
-
-        // The query the widget resolved, not the one the page author typed: scope and subtype are folded in
-        assertEquals("type:testrun AND project.id:elibrary", descriptor.getQuery());
-        assertEquals("id", descriptor.getSort());
-        assertEquals("BaselineCollection", descriptor.getPrototype());
-        assertEquals(DocumentType.BASELINE_COLLECTION, descriptor.getDocumentType());
-        assertEquals(50, descriptor.getTop());
-        assertEquals("elibrary", descriptor.getProjectId());
-        assertFalse(descriptor.isSqlQuery());
-        assertEquals(List.of(new BulkExportColumn("elements", "elements")), descriptor.getColumns());
-    }
-
-    @Test
-    void descriptorCarriesTheBaselineThePageIsOpenedIn() {
-        RichPageWidgetCommonContext context = mock(RichPageWidgetCommonContext.class, RETURNS_DEEP_STUBS);
-        InternalReadOnlyTransaction transaction = mock(InternalReadOnlyTransaction.class, RETURNS_DEEP_STUBS);
-        when(context.transaction()).thenReturn(transaction);
-        when(transaction.context().baselineRevision()).thenReturn("4711");
-
-        assertEquals("4711", mockRenderer(context).buildDescriptor().getRevision());
-    }
-
-    @Test
-    void descriptorCarriesTheCollectionOfACollectionScopedWidget() {
-        RichPageWidgetCommonContext context = mock(RichPageWidgetCommonContext.class, RETURNS_DEEP_STUBS);
-        BulkPdfExportWidgetRenderer renderer = mockRenderer(context, WidgetContextScope.Collection, new BaselineCollectionReference("elibrary", "C1"));
-
-        BulkExportWidgetDescriptor descriptor = renderer.buildDescriptor();
-
-        assertEquals("elibrary", descriptor.getCollectionProjectId());
-        assertEquals("C1", descriptor.getCollectionId());
-    }
-
-    @Test
-    void descriptorHasNoCollectionOutsideACollectionScope() {
-        RichPageWidgetCommonContext context = mock(RichPageWidgetCommonContext.class, RETURNS_DEEP_STUBS);
-        BulkPdfExportWidgetRenderer renderer = mockRenderer(context, WidgetContextScope.Default, new BaselineCollectionReference("elibrary", "C1"));
-
-        BulkExportWidgetDescriptor descriptor = renderer.buildDescriptor();
-
-        assertNull(descriptor.getCollectionProjectId());
-        assertNull(descriptor.getCollectionId());
-    }
-
-    @Test
-    void aCollectionScopedWidgetFallsBackToTheCollectionOfThePage() {
-        // The parameter carries no reference of its own, so the one the page is opened in is used - which is
-        // what Polarion's own data set accessor does
-        RichPageWidgetCommonContext context = mock(RichPageWidgetCommonContext.class, RETURNS_DEEP_STUBS);
-        InternalReadOnlyTransaction transaction = mock(InternalReadOnlyTransaction.class, RETURNS_DEEP_STUBS);
-        when(context.transaction()).thenReturn(transaction);
-        when(transaction.context().contextCollection()).thenReturn(new BaselineCollectionReference("library", "C7"));
-        BulkPdfExportWidgetRenderer renderer = mockRenderer(context, WidgetContextScope.Collection, null);
-
-        BulkExportWidgetDescriptor descriptor = renderer.buildDescriptor();
-
-        assertEquals("library", descriptor.getCollectionProjectId());
-        assertEquals("C7", descriptor.getCollectionId());
-    }
-
-    @Test
     void theLoaderCarriesTheCacheKeyOfTheModule() {
         RichPageWidgetCommonContext context = mock(RichPageWidgetCommonContext.class, RETURNS_DEEP_STUBS);
         CapturingBuilder builder = new CapturingBuilder();
@@ -165,6 +97,7 @@ class BulkPdfExportWidgetRendererTest {
                 "the shim's signature must be the one this server issues for its descriptor");
         // Read by the app before the rows arrive, so that the widget's frame does not wait for the REST call
         assertEquals("Collections", attributes.get("data-title"));
+        assertEquals("polarion-PdfExporter-BulkExportWidget sbb-ui", builder.className());
         assertEquals("BASELINE_COLLECTION", attributes.get("data-document-type"));
         assertEquals("true", attributes.get("data-export-pages"));
     }
@@ -185,36 +118,6 @@ class BulkPdfExportWidgetRendererTest {
     }
 
     @Test
-    void aNegativeTopValueRendersAWarningInsteadOfTheWidget() {
-        RichPageWidgetCommonContext context = mock(RichPageWidgetCommonContext.class, RETURNS_DEEP_STUBS);
-        SharedLocalization localization = mock(SharedLocalization.class);
-        when(context.localization()).thenReturn(localization);
-        when(localization.getString("richpages.widget.table.invalidTopValue")).thenReturn("Invalid top value");
-        when(context.renderWarning("Invalid top value")).thenReturn("<div>Invalid top value</div>");
-        BulkPdfExportWidgetRenderer renderer = mockRenderer(context, WidgetContextScope.Default, null, -1);
-        CapturingBuilder builder = new CapturingBuilder();
-
-        renderer.render(builder.fragmentBuilder);
-
-        verify(builder.fragmentBuilder).html("<div>Invalid top value</div>");
-        verify(builder.attributesBuilder, never()).byName(anyString(), anyString());
-    }
-
-    @Test
-    void noStylesheetIsPutOnThePageForTheWidget() {
-        // Everything the widget renders - the table, the export dialog and the progress dialog - lives in the shadow
-        // root the widget app attaches to the shim, styled by the stylesheets that app injects into it. Four
-        // stylesheets used to be inlined next to the shim for the two dialogs, which were the product's own markup in
-        // the report page's body; the shim and the loader script are all that is emitted now.
-        RichPageWidgetCommonContext context = mock(RichPageWidgetCommonContext.class, RETURNS_DEEP_STUBS);
-        CapturingBuilder builder = new CapturingBuilder();
-
-        mockRenderer(context).render(builder.fragmentBuilder);
-
-        verify(builder.tagSelector, never()).style();
-    }
-
-    @Test
     void testGetItemsType() {
         BulkPdfExportWidgetRenderer renderer = mock(BulkPdfExportWidgetRenderer.class);
         when(renderer.getItemsType(any())).thenCallRealMethod();
@@ -224,18 +127,6 @@ class BulkPdfExportWidgetRendererTest {
         assertEquals(DocumentType.TEST_RUN, renderer.getItemsType(PrototypeEnum.TestRun));
         assertEquals(DocumentType.BASELINE_COLLECTION, renderer.getItemsType(PrototypeEnum.BaselineCollection));
         assertThrows(IllegalArgumentException.class, () -> renderer.getItemsType(PrototypeEnum.WorkItem));
-    }
-
-    @Test
-    void testGetWidgetItemsType() {
-        BulkPdfExportWidgetRenderer renderer = mock(BulkPdfExportWidgetRenderer.class);
-        when(renderer.getWidgetItemsType(any())).thenCallRealMethod();
-
-        assertEquals("Documents", renderer.getWidgetItemsType(PrototypeEnum.Document));
-        assertEquals("Pages", renderer.getWidgetItemsType(PrototypeEnum.RichPage));
-        assertEquals("Test Runs", renderer.getWidgetItemsType(PrototypeEnum.TestRun));
-        assertEquals("Collections", renderer.getWidgetItemsType(PrototypeEnum.BaselineCollection));
-        assertThrows(IllegalArgumentException.class, () -> renderer.getWidgetItemsType(PrototypeEnum.WorkItem));
     }
 
     private static BulkPdfExportWidgetRenderer mockRenderer(RichPageWidgetCommonContext context) {
@@ -312,6 +203,12 @@ class BulkPdfExportWidgetRendererTest {
             // The loader is a sibling of the shim, so that the shim can become a shadow host
             when(tagSelector.script()).thenReturn(script);
             when(script.append()).thenReturn(scriptContent);
+        }
+
+        private String className() {
+            ArgumentCaptor<String> name = ArgumentCaptor.forClass(String.class);
+            verify(attributesBuilder).className(name.capture());
+            return name.getValue();
         }
 
         private Map<String, String> attributes() {

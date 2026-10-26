@@ -21,11 +21,13 @@
 - **`pdf-exporter-app` also serves three surfaces that are not administration pages**, each a Vite entry of
   its own with a **fixed** file name (their importers name them by URL) kept exporting by
   `preserveEntrySignatures: 'strict'` and guarded by `ui/scripts/check-runtime-entries.mjs`:
-  - **Bulk PDF Export widget** - `BulkPdfExportWidgetRenderer` emits a shim on the report page and imports
-    `assets/bulk-widget.js`, which mounts React into a shadow root of that shim. The rows come from
-    `POST /widgets/bulk-export/items`, carrying the signed descriptor the renderer resolved - see
-    `WidgetDescriptorSigner` for why it is signed. Its CSS is `ui/src/widget/widget.css`, which also styles
-    the bulk progress dialog. The renderer puts **nothing** else on the page. Its container carries no
+  - **Bulk PDF Export widget** - built on generic's `AbstractBulkExportWidget` and RSP's `BulkExportWidget`;
+    the shared part lives there, not here. `BulkPdfExportWidgetRenderer` emits a shim on the report page and
+    imports `assets/bulk-widget.js`, which mounts React into a shadow root of that shim. The rows come from
+    generic's `POST /widgets/bulk-export/items`, carrying the signed descriptor the renderer resolved - see
+    generic's `WidgetDescriptorSigner` for why it is signed. The table's CSS is RSP's
+    `bulkExportWidgetStyles`; `ui/src/widget/widget.css` styles only the bulk progress dialog. The renderer
+    puts **nothing** else on the page. Its container carries no
     `form-wrapper` on purpose - RSP scopes its control system to that class and the widget's markup is
     Polarion's own table - so the export dialog it renders is wrapped in one of its own, without which the
     same dialog looks different here than from a toolbar button.
@@ -33,7 +35,7 @@
     `#pdf-exporter-panel` div plus a `<link>` to `css/starter.css` whose `onload` fires the import) and
     `assets/side-panel.js` mounts React into a shadow root of it. It reads its data from the same internal
     REST endpoints the export dialog uses; the Java side substitutes nothing but the cache key
-    (`BundleCacheKey`: the version plus a hash of the module, so that a rebuild that changed it is fetched anew).
+    (generic's `BundleCacheKey`: the version plus a hash of the module, so that a rebuild that changed it is fetched anew).
     Its CSS is the shared `ui/src/export/export-form.css` plus `ui/src/sidepanel/side-panel.css` for the
     pane's own chrome.
   - **"Export to PDF" dialog** - `assets/export-popup.js` exporting `openExportPopup({documentType})`,
