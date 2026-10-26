@@ -1,6 +1,6 @@
 package ch.sbb.polarion.extension.pdf_exporter.widgets;
 
-import ch.sbb.polarion.extension.pdf_exporter.util.BundleCacheKey;
+import ch.sbb.polarion.extension.generic.util.BundleCacheKey;
 import com.polarion.alm.server.api.model.rp.widget.AbstractWidgetRenderer;
 import com.polarion.alm.server.api.model.rp.widget.OpenInTableButtonWidgetRenderer;
 import com.polarion.alm.shared.api.model.rp.widget.RichPageWidgetCommonContext;
