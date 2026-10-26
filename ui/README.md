@@ -252,20 +252,25 @@ shows the parameters it hands back instead of running one.
 
 ## The Bulk PDF Export widget
 
+The widget is built on the shared bulk export widget: generic's `AbstractBulkExportWidget` and
+`AbstractBulkExportWidgetRenderer` on the server, RSP's `BulkExportWidget` in the browser. What lives here is
+what only PDF export needs: the prototypes, the Export Pages flag, the loader of the widget app and the two
+dialogs.
+
 The widget a report page can carry is `src/widget/main.tsx`, built to the
 fixed name `assets/bulk-widget.js`. `BulkPdfExportWidgetRenderer` renders a shim element carrying the
-widget's resolved data set (signed, see `WidgetDescriptorSigner`) and imports that file, appending the
-extension version to bust the browser cache — which is why the file name may not be hashed.
+widget's resolved data set (signed, see generic's `WidgetDescriptorSigner`) and imports that file, appending
+generic's `BundleCacheKey` to bust the browser cache — which is why the file name may not be hashed.
 
-The widget mounts into a **shadow root** of the shim: the report page around it is Polarion's, so the
-widget's own stylesheet (`src/widget/widget.css`) and RSP's tokens are injected into that root, and the
-page's own stylesheets are cloned into it so that the table and the button keep the native look. The
-rows come from `POST /widgets/bulk-export/items`, cells included: those are the HTML Polarion rendered
-for each field.
+The widget mounts into a **shadow root** of the shim with RSP's `mountInShadowRoot`: the report page around
+it is Polarion's, so RSP's tokens, the table's stylesheet (RSP's `bulkExportWidgetStyles`) and
+`src/widget/widget.css` are injected into that root, and the page's own stylesheets are cloned into it so
+that the table and the button keep the native look. The rows come from generic's
+`POST /widgets/bulk-export/items`, cells included: those are the HTML Polarion rendered for each field.
 
 Both dialogs the widget owns are inside that shadow root too: the export parameters dialog
 (`src/popup/ExportPopupModal.tsx`, rendered directly rather than imported at runtime) and the progress
-dialog, which is RSP's shared `Modal` styled by `widget.css`. Both used to be micromodal markup in the
+dialog, which is RSP's shared `Modal` styled by `widget.css`, the only rules that stylesheet still holds. Both used to be micromodal markup in the
 report page's body, styled by stylesheets the renderer inlined next to the shim; nothing is inlined there
 now.
 
@@ -273,8 +278,8 @@ The export dialog is wrapped in a `form-wrapper` div, and that is not decoration
 control system - text field metrics, the colour picker, checkbox states - to `.form-wrapper` /
 `.standard-admin-page` / `.modal__container`, and the widget's own container carries none of them on purpose,
 its markup being Polarion's table and buttons which that system would restyle. Without the wrapper the very
-same dialog looks different here than it does from a toolbar button; `widget.css` re-applies the checkbox
-styling for the widget's own rows for the same reason.
+same dialog looks different here than it does from a toolbar button; RSP's `bulkExportWidgetStyles`
+re-applies the checkbox styling for the widget's own rows for the same reason.
 
 The progress dialog offers exactly one action at a time - Stop while the run is going, Close once it is
 over - while the shared `Modal` always renders both of its footer buttons, so `widget.css` hides the one
