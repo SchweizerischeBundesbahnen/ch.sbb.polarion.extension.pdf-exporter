@@ -1551,6 +1551,32 @@ class HtmlProcessorTest {
     }
 
     @Test
+    void laysFormulaTextOverTheFormulasOfABlockOnceItIsFitted() {
+        HtmlProcessor spyHtmlProcessor = spy(processor);
+        ExportParams exportParams = getExportParams();
+        exportParams.setFitToPage(true);
+        String formula = "<table><tbody><tr><td><img class=\"polarion-rte-formula\" src=\"data:image/svg+xml;base64,abc\" data-source=\"x^2\"/></td></tr></tbody></table>";
+
+        String html = spyHtmlProcessor.processHtmlForPDF(formula + "<!--PAGE_BREAK--><!--LANDSCAPE_ABOVE-->" + formula, exportParams, List.of());
+
+        // The text of a cell decides how a block is fitted to its page, and the text of a formula is not the text of its cell
+        verify(spyHtmlProcessor, times(2)).adjustContentToFitPage(argThat((String area) -> !area.contains(FormulaTextLayer.LAYER_CLASS)), any(ConversionParams.class), any(PageLayout.class));
+        verify(spyHtmlProcessor, times(2)).keepTableRowsWhole(argThat((String area) -> !area.contains(FormulaTextLayer.LAYER_CLASS)), any(ConversionParams.class));
+        assertEquals(2, Jsoup.parse(html).select("span." + FormulaTextLayer.LAYER_CLASS).size(), "Each formula gets its text once");
+    }
+
+    @Test
+    void laysFormulaTextOverTheFormulasBetweenPageBreaksNotFitted() {
+        ExportParams exportParams = getExportParams();
+        exportParams.setFitToPage(false);
+        String formula = "<p><img class=\"polarion-rte-formula\" src=\"data:image/svg+xml;base64,abc\" data-source=\"x^2\"/></p>";
+
+        String html = processor.processHtmlForPDF(formula + "<!--PAGE_BREAK--><!--LANDSCAPE_ABOVE-->" + formula, exportParams, List.of());
+
+        assertEquals(2, Jsoup.parse(html).select("span." + FormulaTextLayer.LAYER_CLASS).size(), "Each formula gets its text once");
+    }
+
+    @Test
     void fitsABlockToThePageOfItsOrientation() {
         HtmlProcessor spyHtmlProcessor = spy(processor);
         ExportParams exportParams = getExportParams();
