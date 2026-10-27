@@ -253,6 +253,11 @@ public class HtmlProcessor {
         }
         timedIfNotNull(generationLog, "Break long words in table cells", () -> LongWordsAdjuster.addBreakPoints(document, hyphenation));
         timedIfNotNull(generationLog, "Keep table rows whole", () -> keepTableRowsWholeUnlessFittedBetweenPageBreaks(document, exportParams, customPageBreaks));
+        // Last, as the text of a cell decides how the steps above treat it, and the layer is not the text of its cell. Fitted
+        // between page breaks, a block is fitted to its page below, and its formulas get their text after it (BOOKMARK 2)
+        if (!(exportParams.isFitToPage() && customPageBreaks)) {
+            timedIfNotNull(generationLog, "Lay formula text over formulas", () -> FormulaTextLayer.addTo(document, exportParams.getPdfVariant()));
+        }
 
         html = document.body().html();
 
@@ -875,6 +880,7 @@ public class HtmlProcessor {
                             .build();
                     area = adjustContentToFitPage(area, page, pageLayout.on(PageLayout.Pages.NAMED_PAGE));
                     area = keepTableRowsWhole(area, page);
+                    area = layFormulaText(area, exportParams);
                 }
 
                 String orientationClass = (landscape ? "land" : "port") + exportParams.getPaperSize();
@@ -889,6 +895,17 @@ public class HtmlProcessor {
             firstArea = false;
         }
         return resultBuf.toString();
+    }
+
+    /** Lays the text of the formulas of a block over them, once the block is fitted to its page. */
+    private @NotNull String layFormulaText(@NotNull String area, @NotNull ExportParams exportParams) {
+        if (!area.contains(FormulaTextLayer.FORMULA_CLASS)) {
+            return area;
+        }
+        // Written out as the fitting wrote the block: not pretty printed, which would change its spaces and its lines
+        Document block = JSoupUtils.parseHtml(area);
+        FormulaTextLayer.addTo(block, exportParams.getPdfVariant());
+        return encodeDollarSigns(block.body().html());
     }
 
     @VisibleForTesting
