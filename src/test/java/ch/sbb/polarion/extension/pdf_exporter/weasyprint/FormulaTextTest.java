@@ -4,6 +4,7 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.Orientation;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PaperSize;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PdfVariant;
+import ch.sbb.polarion.extension.pdf_exporter.util.MediaUtils;
 import ch.sbb.polarion.extension.pdf_exporter.weasyprint.base.BasePdfConverterTest;
 import lombok.SneakyThrows;
 import org.apache.pdfbox.Loader;
@@ -13,7 +14,10 @@ import org.apache.pdfbox.text.TextPosition;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
+import java.awt.image.BufferedImage;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Base64;
@@ -69,15 +73,37 @@ class FormulaTextTest extends BasePdfConverterTest {
         assertThat(textOf(pdf)).doesNotContain("\\frac").contains("Before", "after", "Below");
     }
 
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void drawsThePagesAsTheyAreWithoutTheText(boolean fitToPage) {
+        byte[] withText = export(null, fitToPage, CONTENT);
+        // A formula without its source gets no text: the same page, without the layer
+        byte[] withoutText = export(null, fitToPage, CONTENT.replace("data-source=", "data-no-source="));
+
+        assertThat(textOf(withoutText)).doesNotContain("\\frac");
+        assertThat(DrawnImages.boxesIn(withText)).as("The formulas stand where they stand without the text").isEqualTo(DrawnImages.boxesIn(withoutText));
+        List<BufferedImage> pages = getAllPagesAsImagesAndLogAsReports(getCurrentMethodName() + "_with_text", withText);
+        List<BufferedImage> pagesWithoutText = getAllPagesAsImagesAndLogAsReports(getCurrentMethodName() + "_without_text", withoutText);
+        assertThat(pages).as("The text adds no page").hasSameSizeAs(pagesWithoutText);
+        for (int page = 0; page < pages.size(); page++) {
+            assertThat(MediaUtils.diffImages(pagesWithoutText.get(page), pages.get(page))).as("Page %d draws as it does without the text", page).isEmpty();
+        }
+    }
+
     private byte @NotNull [] export(@Nullable PdfVariant variant) {
+        return export(variant, false, CONTENT);
+    }
+
+    private byte @NotNull [] export(@Nullable PdfVariant variant, boolean fitToPage, @NotNull String content) {
         ExportParams params = ExportParams.builder()
                 .projectId("test")
                 .locationPath("testLocation")
                 .orientation(Orientation.PORTRAIT)
                 .paperSize(PaperSize.A4)
                 .pdfVariant(variant)
+                .fitToPage(fitToPage)
                 .build();
-        return exportLiveDoc("Formulas", CONTENT.formatted(FORMULA, SOURCE), params);
+        return exportLiveDoc("Formulas", content.formatted(FORMULA, SOURCE), params);
     }
 
     @SneakyThrows
