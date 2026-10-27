@@ -9,13 +9,7 @@ import com.polarion.alm.projects.model.IUniqueObject;
 import com.polarion.core.util.StringUtils;
 import lombok.SneakyThrows;
 import org.apache.pdfbox.Loader;
-import org.apache.pdfbox.cos.COSName;
 import org.apache.pdfbox.pdmodel.PDDocument;
-import org.apache.pdfbox.pdmodel.PDPage;
-import org.apache.pdfbox.pdmodel.PDResources;
-import org.apache.pdfbox.pdmodel.graphics.PDXObject;
-import org.apache.pdfbox.pdmodel.graphics.form.PDFormXObject;
-import org.apache.pdfbox.pdmodel.graphics.form.PDTransparencyGroup;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -47,11 +41,6 @@ public abstract class BaseWeasyPrintTest {
     public static final String PAGE_SUFFIX = "_page_";
     public static final String WEASYPRINT_TEST_RESOURCES_FOLDER = "/weasyprint/html/";
     public static final String WEASYPRINT_TEST_PNG_RESOURCES_FOLDER = "/weasyprint/png/";
-    /**
-     * The reference images of the pages Chromium, the fallback SVG renderer of WeasyPrint service, draws differently from
-     * weasysvg, its default. A page missing here is the same in both. The folder goes when the service drops Chromium.
-     */
-    public static final String WEASYPRINT_TEST_CHROMIUM_PNG_RESOURCES_FOLDER = WEASYPRINT_TEST_PNG_RESOURCES_FOLDER + "chromium/";
     public static final String WEASYPRINT_TEST_CSS_RESOURCES_FOLDER = "/weasyprint/css/";
     public static final String WEASYPRINT_TEST_FONT_RESOURCES_FOLDER = "/weasyprint/font/";
     public static final String FONT_BASE64_REPLACE_PARAM = "{FONT_BASE64}";
@@ -70,9 +59,6 @@ public abstract class BaseWeasyPrintTest {
     protected static final String EXT_CSS = ".css";
     protected static final String EXT_WOFF = ".woff";
     protected static final String EXT_TTF = ".ttf";
-
-    /** The depth of transparency groups searched, which a PDF of WeasyPrint never reaches. */
-    private static final int MAX_GROUP_DEPTH = 16;
 
     private static final Logger logger = LoggerFactory.getLogger(BaseWeasyPrintTest.class);
 
@@ -97,52 +83,6 @@ public abstract class BaseWeasyPrintTest {
     @SneakyThrows
     public static InputStream readPngResource(String resourceName) {
         return BaseWeasyPrintTest.class.getResourceAsStream(WEASYPRINT_TEST_PNG_RESOURCES_FOLDER + resourceName + EXT_PNG);
-    }
-
-    /**
-     * The reference image of a page: the one of Chromium where weasysvg drew no SVG of the pdf and Chromium has one of its
-     * own, the shared one otherwise.
-     */
-    public static InputStream readReferencePngResource(String resourceName, boolean drawnByWeasysvg) {
-        if (!drawnByWeasysvg) {
-            InputStream chromiumImage = BaseWeasyPrintTest.class.getResourceAsStream(WEASYPRINT_TEST_CHROMIUM_PNG_RESOURCES_FOLDER + resourceName + EXT_PNG);
-            if (chromiumImage != null) {
-                return chromiumImage;
-            }
-        }
-        return readPngResource(resourceName);
-    }
-
-    /**
-     * Whether the weasysvg plugin drew an SVG of the document. It draws each one as a form XObject without a transparency
-     * group, while Chromium rasterizes an SVG to an image XObject, and the forms WeasyPrint makes itself all carry a group.
-     */
-    @SneakyThrows
-    public static boolean isDrawnByWeasysvg(@NotNull PDDocument document) {
-        for (PDPage page : document.getPages()) {
-            if (holdsFormWithoutGroup(page.getResources(), 0)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    @SneakyThrows
-    private static boolean holdsFormWithoutGroup(PDResources resources, int depth) {
-        if (resources == null || depth > MAX_GROUP_DEPTH) {
-            return false;
-        }
-        for (COSName name : resources.getXObjectNames()) {
-            PDXObject xObject = resources.getXObject(name);
-            if (xObject instanceof PDTransparencyGroup group) {
-                if (holdsFormWithoutGroup(group.getResources(), depth + 1)) {
-                    return true;
-                }
-            } else if (xObject instanceof PDFormXObject) {
-                return true;
-            }
-        }
-        return false;
     }
 
     @SneakyThrows
@@ -261,23 +201,14 @@ public abstract class BaseWeasyPrintTest {
      * NOTE: if something changes in the future and the images are no longer identical,
      * simply copy &amp; replace the reference resource images with the new ones from the reports folder.
      * </p>
-     * <p>
-     * The shared reference images are what weasysvg, the default SVG renderer of WeasyPrint service, draws. A page of a pdf
-     * in which it drew no SVG is compared with its image in {@value #WEASYPRINT_TEST_CHROMIUM_PNG_RESOURCES_FOLDER} where
-     * there is one: Chromium rasterizes an SVG, so its edges and its text differ from the vector weasysvg draws.
-     * </p>
      */
     @SneakyThrows
     protected boolean compareContentUsingReferenceImages(String testName, byte[] pdf) {
         writeReportPdf(testName, "generated", pdf);
         List<BufferedImage> resultImages = getAllPagesAsImagesAndLogAsReports(testName, pdf);
-        boolean drawnByWeasysvg;
-        try (PDDocument document = Loader.loadPDF(pdf)) {
-            drawnByWeasysvg = isDrawnByWeasysvg(document);
-        }
         boolean hasDiff = false;
         for (int i = 0; i < resultImages.size(); i++) {
-            BufferedImage expectedImage = ImageIO.read(readReferencePngResource(testName + PAGE_SUFFIX + i, drawnByWeasysvg));
+            BufferedImage expectedImage = ImageIO.read(readPngResource(testName + PAGE_SUFFIX + i));
             BufferedImage resultImage = resultImages.get(i);
             List<Point> diffPoints = MediaUtils.diffImages(expectedImage, resultImage);
             if (!diffPoints.isEmpty()) {

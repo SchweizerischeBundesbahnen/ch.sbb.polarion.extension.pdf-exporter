@@ -19,10 +19,9 @@ import java.util.List;
 /**
  * The size every image of a pdf is drawn at, which is what a reader of the page sees.
  * <p>
- * WeasyPrint service draws an SVG in one of two ways, as its {@code SVG_RENDERER} states. Chromium rasterizes it to a
- * PNG, an image XObject like any other picture. The weasysvg plugin draws it as vector, a form XObject of its own
- * without a transparency group: the forms WeasyPrint itself makes, for a page or for opacity, all carry one. Both
- * count as an image here, so a test checks the same number, size and place of its images whichever renderer drew them.
+ * A raster picture is an image XObject. WeasyPrint service draws an SVG with the weasysvg plugin, as vector, a form
+ * XObject of its own without a transparency group: the forms WeasyPrint itself makes, for a page or for opacity, all
+ * carry one. Both count as an image here, so a test checks the number, size and place of every image it shows.
  * A form counted as an image is not read further, so a picture inside an SVG is not counted a second time.
  * </p>
  */
