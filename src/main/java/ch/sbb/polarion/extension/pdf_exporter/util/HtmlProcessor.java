@@ -899,7 +899,11 @@ public class HtmlProcessor {
 
     /** Lays the text of the formulas of a block over them, once the block is fitted to its page. */
     private @NotNull String layFormulaText(@NotNull String area, @NotNull ExportParams exportParams) {
-        Document block = Jsoup.parse(area);
+        if (!area.contains(FormulaTextLayer.FORMULA_CLASS)) {
+            return area;
+        }
+        // Written out as the fitting wrote the block: not pretty printed, which would change its spaces and its lines
+        Document block = JSoupUtils.parseHtml(area);
         FormulaTextLayer.addTo(block, exportParams.getPdfVariant());
         return encodeDollarSigns(block.body().html());
     }

@@ -27,8 +27,11 @@ public class FormulaTextLayer {
     /** The attribute of a formula which holds its LaTeX source. */
     private static final String SOURCE = "data-source";
 
+    /** The class of the images Polarion draws its formulas as. */
+    public static final String FORMULA_CLASS = "polarion-rte-formula";
+
     /** The formulas Polarion draws, with their LaTeX source. */
-    private static final String FORMULA = "img.polarion-rte-formula[" + SOURCE + "]";
+    private static final String FORMULA = "img." + FORMULA_CLASS + "[" + SOURCE + "]";
 
     /** The class of the text laid over a formula. */
     public static final String LAYER_CLASS = "pdf-exporter-formula-text";

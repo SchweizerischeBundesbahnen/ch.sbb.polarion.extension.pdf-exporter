@@ -1566,6 +1566,21 @@ class HtmlProcessorTest {
     }
 
     @Test
+    void writesABlockFittedBetweenPageBreaksAsItsFittingWroteIt() {
+        ExportParams exportParams = getExportParams();
+        exportParams.setFitToPage(true);
+        String text = "<p>Kept <span style=\"white-space: pre\">a   b</span></p><div style=\"display: inline-block\">c</div><div style=\"display: inline-block\">d</div>";
+        String formula = "<p><img class=\"polarion-rte-formula\" src=\"data:image/svg+xml;base64,abc\" data-source=\"x^2\"/></p>";
+
+        String html = processor.processPageBrakes(text + "<!--PAGE_BREAK--><!--LANDSCAPE_ABOVE-->" + text + formula, exportParams);
+
+        // The text of a formula changes nothing else of a block: its spaces stay, and no line breaks come between its blocks
+        assertEquals(2, html.split("<span style=\"white-space: pre\">a   b</span>", -1).length - 1, html);
+        assertEquals(2, html.split("c</div><div style=\"display: inline-block\">d", -1).length - 1, html);
+        assertEquals(1, Jsoup.parse(html).select("span." + FormulaTextLayer.LAYER_CLASS).size());
+    }
+
+    @Test
     void laysFormulaTextOverTheFormulasBetweenPageBreaksNotFitted() {
         ExportParams exportParams = getExportParams();
         exportParams.setFitToPage(false);
