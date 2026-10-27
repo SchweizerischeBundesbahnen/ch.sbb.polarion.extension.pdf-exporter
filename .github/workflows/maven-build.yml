@@ -19,7 +19,7 @@ jobs:
       contents: read
     services:
       weasyprint:
-        image: ghcr.io/schweizerischebundesbahnen/weasyprint-service:latest@sha256:f92dfdc019e551f9f3bd74434185542be1519ee1af0a2bef52df1a0d970cebd6  # zizmor: ignore[unpinned-images]
+        image: ghcr.io/schweizerischebundesbahnen/weasyprint-service:latest@sha256:bea2981a487ede4e032c855bd2751a7151c5cf4e6529d9f472868c33009c772d  # zizmor: ignore[unpinned-images]
         ports: [9080:9080]
     outputs:
       project_version: ${{ steps.project_metadata.outputs.version }}
@@ -117,7 +117,7 @@ jobs:
       contents: read
     services:
       weasyprint:
-        image: ghcr.io/schweizerischebundesbahnen/weasyprint-service:latest@sha256:f92dfdc019e551f9f3bd74434185542be1519ee1af0a2bef52df1a0d970cebd6  # zizmor: ignore[unpinned-images]
+        image: ghcr.io/schweizerischebundesbahnen/weasyprint-service:latest@sha256:bea2981a487ede4e032c855bd2751a7151c5cf4e6529d9f472868c33009c772d  # zizmor: ignore[unpinned-images]
         ports: [9080:9080]
         env:
           SVG_RENDERER: chromium
