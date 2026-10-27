@@ -253,6 +253,8 @@ public class HtmlProcessor {
         }
         timedIfNotNull(generationLog, "Break long words in table cells", () -> LongWordsAdjuster.addBreakPoints(document, hyphenation));
         timedIfNotNull(generationLog, "Keep table rows whole", () -> keepTableRowsWholeUnlessFittedBetweenPageBreaks(document, exportParams, customPageBreaks));
+        // Last, as the text of a cell decides how the steps above treat it, and the layer is not the text of its cell
+        timedIfNotNull(generationLog, "Lay formula text over formulas", () -> FormulaTextLayer.addTo(document, exportParams.getPdfVariant()));
 
         html = document.body().html();
 
