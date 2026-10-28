@@ -19,9 +19,10 @@ import java.util.Map;
  * @param widths         the width each page leaves its content, of the page every page is and of each named page
  * @param pages          the pages the content is printed on
  * @param roomUnderAnImage the room a paragraph takes under an image, which an image filling a page gives up
+ * @param bodySides      the width the body takes beside its content: its side margins and paddings
  */
 public record PageLayout(@NotNull String tableHeaderCss, @NotNull PageRules.Heights heights, @NotNull PageRules.Widths widths, @NotNull Pages pages,
-                         int roomUnderAnImage) {
+                         int roomUnderAnImage, int bodySides) {
 
     /** The pages content is printed on, which state margins of their own. */
     public enum Pages {
@@ -34,18 +35,19 @@ public record PageLayout(@NotNull String tableHeaderCss, @NotNull PageRules.Heig
     }
 
     /** Nothing of the CSS: the measure reads inline styles alone, and a page is as high and wide as its paper size makes it. */
-    public static final PageLayout NONE = new PageLayout("", PageRules.Heights.NONE, PageRules.Widths.NONE, Pages.EVERY_PAGE, ParagraphRules.DEFAULT_ROOM_PX);
+    public static final PageLayout NONE = new PageLayout("", PageRules.Heights.NONE, PageRules.Widths.NONE, Pages.EVERY_PAGE, ParagraphRules.DEFAULT_ROOM_PX,
+            BodyRules.DEFAULT_SIDES_PX);
 
     /** The layout the CSS of an export gives, read from one stylesheet: the parse of the CSS is most of what this takes. */
     public static @NotNull PageLayout of(@NotNull String css) {
         CascadingStyleSheet stylesheet = ExportStylesheet.read(css);
         return new PageLayout(TableHeaderRules.measuredBy(stylesheet), PageRules.contentHeights(stylesheet), PageRules.contentWidths(stylesheet), Pages.EVERY_PAGE,
-                ParagraphRules.roomUnderAnImage(stylesheet));
+                ParagraphRules.roomUnderAnImage(stylesheet), BodyRules.sides(stylesheet));
     }
 
     /** The same layout on the given pages. */
     public @NotNull PageLayout on(@NotNull Pages printedOn) {
-        return new PageLayout(tableHeaderCss, heights, widths, printedOn, roomUnderAnImage);
+        return new PageLayout(tableHeaderCss, heights, widths, printedOn, roomUnderAnImage, bodySides);
     }
 
     /** The height the page leaves its content, as the CSS gives it, or as its paper size makes it where the CSS gives none. */
@@ -73,8 +75,22 @@ public record PageLayout(@NotNull String tableHeaderCss, @NotNull PageRules.Heig
      * none.
      */
     public int contentWidth(@NotNull ConversionParams page) {
-        Integer width = lengthOf(nameOf(page), widths.ofEveryPage(), widths.ofNamedPage());
+        Integer width = widthOf(page);
         return width != null ? width : PaperSizeUtils.getMaxWidth(page);
+    }
+
+    /**
+     * The width a table of the content may take on the page: the width the CSS gives the page less what the body takes
+     * beside its content. Where the CSS gives no width, the one of the paper size, which is narrower than any page by more
+     * than that.
+     */
+    public int widthForATable(@NotNull ConversionParams page) {
+        Integer width = widthOf(page);
+        return width != null ? width - bodySides : PaperSizeUtils.getMaxWidth(page);
+    }
+
+    private @Nullable Integer widthOf(@NotNull ConversionParams page) {
+        return lengthOf(nameOf(page), widths.ofEveryPage(), widths.ofNamedPage());
     }
 
     private @Nullable Integer heightOf(@NotNull ConversionParams page) {

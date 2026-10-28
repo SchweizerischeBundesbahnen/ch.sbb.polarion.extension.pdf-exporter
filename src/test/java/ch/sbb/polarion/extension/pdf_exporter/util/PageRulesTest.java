@@ -74,6 +74,7 @@ class PageRulesTest {
 
         assertThat(PageLayout.NONE.contentHeight(a4)).isEqualTo(PaperSizeUtils.getMaxHeight(a4));
         assertThat(PageLayout.NONE.contentWidth(a4)).isEqualTo(PaperSizeUtils.getMaxWidth(a4));
+        assertThat(PageLayout.NONE.widthForATable(a4)).isEqualTo(PaperSizeUtils.getMaxWidth(a4));
     }
 
     @Test
@@ -95,6 +96,63 @@ class PageRulesTest {
     })
     void takesTheSideMarginsAsTheShorthandStatesThem(String css, int width) {
         assertThat(PageRules.contentWidths(css).ofEveryPage()).containsEntry("portA4", width);
+    }
+
+    @ParameterizedTest
+    @CsvSource(delimiter = '|', value = {
+            "@page { margin: 2cm; }                  | 642",
+            "@page { margin: 10mm 15mm 10mm 20mm; }  | 661",
+            "@page { margin: 0.5in 1in; }            | 601",
+            "@page { margin: 36pt; }                 | 697",
+            "@page { margin: 3pc 2pc; }              | 729",
+            "@page { margin: 0; }                    | 793"
+    })
+    void takesTheSideMarginsInAnyAbsoluteUnit(String css, int width) {
+        // A portrait A4 is 793.7 px wide
+        assertThat(PageRules.contentWidths(css).ofEveryPage()).containsEntry("portA4", width);
+    }
+
+    @Test
+    void takesTheSideMarginsANamedLandscapePageStates() {
+        PageLayout layout = PageLayout.of("@page { margin: 1in; } @page landLETTER { size: letter landscape; margin: 0.5in; }");
+        ConversionParams letter = ConversionParams.builder().paperSize(PaperSize.LETTER).orientation(Orientation.LANDSCAPE).build();
+
+        // A landscape letter is 11 in, 1056 px wide
+        assertThat(layout.contentWidth(letter)).isEqualTo(864);
+        assertThat(layout.on(PageLayout.Pages.NAMED_PAGE).contentWidth(letter)).isEqualTo(960);
+        assertThat(layout.on(PageLayout.Pages.EITHER_PAGE).contentWidth(letter)).as("Of either page, the narrower one counts").isEqualTo(864);
+    }
+
+    /**
+     * The width of the page every page is and of the page of its own name, portrait and landscape. A5, B5 and JIS-B5 state
+     * side margins of 60 and 40 px, A3, legal and ledger of 100 and 80 px, which only their named pages have. The rest
+     * have those of every page, 80 and 60 px.
+     */
+    @ParameterizedTest
+    @CsvSource(delimiter = '|', value = {
+            "A5     | 419 | 653  | 459 | 693",
+            "A4     | 653 | 982  | 653 | 982",
+            "A3     | 982 | 1447 | 942 | 1407",
+            "B5     | 525 | 804  | 565 | 844",
+            "B4     | 804 | 1194 | 804 | 1194",
+            "JIS_B5 | 547 | 831  | 587 | 871",
+            "JIS_B4 | 831 | 1235 | 831 | 1235",
+            "LETTER | 676 | 916  | 676 | 916",
+            "LEGAL  | 676 | 1204 | 636 | 1164",
+            "LEDGER | 916 | 1492 | 876 | 1452"
+    })
+    @SneakyThrows
+    void readsTheWidthOfEveryPaperSizeAndOrientationFromTheDefaultCss(PaperSize size, int portrait, int landscape, int namedPortrait, int namedLandscape) {
+        try (InputStream css = PageRulesTest.class.getResourceAsStream("/default/dle-pdf-export.css")) {
+            PageLayout layout = PageLayout.of(new String(Objects.requireNonNull(css).readAllBytes(), StandardCharsets.UTF_8));
+            ConversionParams upright = ConversionParams.builder().paperSize(size).orientation(Orientation.PORTRAIT).build();
+            ConversionParams turned = ConversionParams.builder().paperSize(size).orientation(Orientation.LANDSCAPE).build();
+
+            assertThat(layout.contentWidth(upright)).isEqualTo(portrait);
+            assertThat(layout.contentWidth(turned)).isEqualTo(landscape);
+            assertThat(layout.on(PageLayout.Pages.NAMED_PAGE).contentWidth(upright)).isEqualTo(namedPortrait);
+            assertThat(layout.on(PageLayout.Pages.NAMED_PAGE).contentWidth(turned)).isEqualTo(namedLandscape);
+        }
     }
 
     @Test
@@ -126,6 +184,8 @@ class PageRulesTest {
             assertThat(layout.contentWidth(a5)).isEqualTo(419);
             assertThat(layout.on(PageLayout.Pages.NAMED_PAGE).contentWidth(a5)).isEqualTo(459);
             assertThat(layout.on(PageLayout.Pages.EITHER_PAGE).contentWidth(a5)).isEqualTo(419);
+            // A table has the page less the margins of 8px WeasyPrint gives the body and its padding of 10px on the right
+            assertThat(layout.widthForATable(ConversionParams.builder().paperSize(PaperSize.A4).orientation(Orientation.PORTRAIT).build())).isEqualTo(627);
         }
     }
 }
