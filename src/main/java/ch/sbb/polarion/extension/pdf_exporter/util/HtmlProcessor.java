@@ -242,17 +242,19 @@ public class HtmlProcessor {
         timedIfNotNull(generationLog, "Generate table of content", () -> getTocGenerator(exportParams.getDocumentType()).addTableOfContent(document));
 
         boolean customPageBreaks = hasCustomPageBreaks(html);
+        // The page break widgets of a Live Report print their sections on named pages, the rest on the page every page is
+        PageLayout printedOn = document.select("div." + PAGE_BREAK_SECTION_CLASS).isEmpty() ? pageLayout : pageLayout.on(PageLayout.Pages.EITHER_PAGE);
         if (exportParams.isFitToPage() && !customPageBreaks) {
             // ---- BOOKMARK 1
             // In case of custom page breaks adjustContentToFitPage() will be called separately for each HTML block between
             // page breaks separately (see BOOKMARK 2 below), as paper orientation can be changed by page break
-            // The page break widgets of a Live Report print their sections on named pages, the rest on the page every page is
-            PageLayout printedOn = document.select("div." + PAGE_BREAK_SECTION_CLASS).isEmpty() ? pageLayout : pageLayout.on(PageLayout.Pages.EITHER_PAGE);
             timedIfNotNull(generationLog, "Adjust content to fit page", () -> adjustContentToFitPage(document, exportParams, printedOn));
             // ----
         }
         timedIfNotNull(generationLog, "Break long words in table cells", () -> LongWordsAdjuster.addBreakPoints(document, hyphenation));
-        timedIfNotNull(generationLog, "Keep table rows whole", () -> keepTableRowsWholeUnlessFittedBetweenPageBreaks(document, exportParams, customPageBreaks));
+        // Page breaks print every area on a page of its own name (see processPageBrakes), fitted to the page or not
+        PageLayout rowsPrintedOn = customPageBreaks ? pageLayout.on(PageLayout.Pages.NAMED_PAGE) : printedOn;
+        timedIfNotNull(generationLog, "Keep table rows whole", () -> keepTableRowsWholeUnlessFittedBetweenPageBreaks(document, exportParams, customPageBreaks, rowsPrintedOn));
         // Last, as the text of a cell decides how the steps above treat it, and the layer is not the text of its cell. Fitted
         // between page breaks, a block is fitted to its page below, and its formulas get their text after it (BOOKMARK 2)
         if (!(exportParams.isFitToPage() && customPageBreaks)) {
@@ -879,7 +881,7 @@ public class HtmlProcessor {
                             .orientation(landscape ? Orientation.LANDSCAPE : Orientation.PORTRAIT)
                             .build();
                     area = adjustContentToFitPage(area, page, pageLayout.on(PageLayout.Pages.NAMED_PAGE));
-                    area = keepTableRowsWhole(area, page);
+                    area = keepTableRowsWhole(area, page, pageLayout.on(PageLayout.Pages.NAMED_PAGE));
                     area = layFormulaText(area, exportParams);
                 }
 
@@ -1330,24 +1332,26 @@ public class HtmlProcessor {
      * The rows are measured at the widths their tables end up with. Fitted between page breaks, a table gets its width in
      * the block it is in, so its rows are measured there (see BOOKMARK 2), once its images are embedded.
      */
-    private void keepTableRowsWholeUnlessFittedBetweenPageBreaks(@NotNull Document document, @NotNull ExportParams exportParams, boolean customPageBreaks) {
+    private void keepTableRowsWholeUnlessFittedBetweenPageBreaks(@NotNull Document document, @NotNull ExportParams exportParams, boolean customPageBreaks,
+                                                                 @NotNull PageLayout pageLayout) {
         if (exportParams.isFitToPage() && customPageBreaks) {
             // By then an embedded icon is no longer known by its address
             TableRowsAdjuster.markIcons(document);
         } else {
-            keepTableRowsWhole(document, exportParams, customPageBreaks);
+            keepTableRowsWhole(document, exportParams, customPageBreaks, pageLayout);
         }
     }
 
     /**
      * Keeps each short table row on one page. A document with page breaks which may turn the page, marked in its HTML or
      * already made sections of their own as the page break widget of a Live Report makes them, may lay a table out in
-     * either orientation, so its rows are measured against the lower of the two pages.
+     * either orientation, so its rows are measured against the lower of the two pages. Its tables are measured against
+     * the width the CSS leaves a table on the page.
      */
-    public void keepTableRowsWhole(@NotNull Document document, @NotNull ConversionParams conversionParams, boolean customPageBreaks) {
+    public void keepTableRowsWhole(@NotNull Document document, @NotNull ConversionParams conversionParams, boolean customPageBreaks, @NotNull PageLayout pageLayout) {
         ConversionParams page = pageOf(conversionParams);
         int pageHeight = pageHeight(page, customPageBreaks || !document.select("div." + PAGE_BREAK_SECTION_CLASS).isEmpty());
-        new TableRowsAdjuster(document, page, pageHeight).execute();
+        new TableRowsAdjuster(document, page, pageLayout.widthForATable(page), pageHeight).execute();
     }
 
     /** The height of the page, or of the lower of its two orientations where a page break may turn it. */
@@ -1366,9 +1370,9 @@ public class HtmlProcessor {
     }
 
     /** Keeps each short table row of a block between page breaks on one page, measured on the page of the block. */
-    @NotNull String keepTableRowsWhole(@NotNull String html, @NotNull ConversionParams conversionParams) {
+    @NotNull String keepTableRowsWhole(@NotNull String html, @NotNull ConversionParams conversionParams, @NotNull PageLayout pageLayout) {
         PageWidthAdjuster block = new PageWidthAdjuster(html, conversionParams);
-        keepTableRowsWhole(block.getDocument(), conversionParams, false);
+        keepTableRowsWhole(block.getDocument(), conversionParams, false, pageLayout);
         return block.toHTML();
     }
 

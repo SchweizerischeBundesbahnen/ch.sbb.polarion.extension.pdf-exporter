@@ -40,6 +40,7 @@ import org.xhtmlrenderer.swing.NaiveUserAgent;
 import org.xhtmlrenderer.util.ImageUtil;
 
 import java.awt.*;
+import java.awt.font.TextAttribute;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
@@ -373,8 +374,14 @@ public class TableAnalyzer {
     /**
      * Lays the measurement font out in the face its weight and style ask for. The resolver of flying-saucer derives a
      * bold or an italic face from the one font it is given, and a derived bold is wider or narrower than the real one.
+     * <p>
+     * The font kerns, as WeasyPrint does: a pair as "AV" takes less than its letters added up. Without kerning a line
+     * measures up to 5 % wider than it prints.
+     * </p>
      */
     static class MeasurementFontResolver extends AWTFontResolver {
+        private static final Map<TextAttribute, Object> KERNING = Map.of(TextAttribute.KERNING, TextAttribute.KERNING_ON);
+
         @Override
         protected Font resolveFont(SharedContext ctx, String font, float size, IdentValue weight, IdentValue style, IdentValue variant) {
             if (!MEASUREMENT_FONT_FAMILY.equals(font.replace("'", "").replace("\"", ""))) {
@@ -382,7 +389,7 @@ public class TableAnalyzer {
             }
             boolean bold = weight == IdentValue.BOLD || weight == IdentValue.FONT_WEIGHT_700 || weight == IdentValue.FONT_WEIGHT_800 || weight == IdentValue.FONT_WEIGHT_900;
             boolean italic = style == IdentValue.ITALIC || style == IdentValue.OBLIQUE;
-            return face(bold, italic).deriveFont(size * ctx.getTextRenderer().getFontScale());
+            return face(bold, italic).deriveFont(size * ctx.getTextRenderer().getFontScale()).deriveFont(KERNING);
         }
 
         private static @NotNull Font face(boolean bold, boolean italic) {

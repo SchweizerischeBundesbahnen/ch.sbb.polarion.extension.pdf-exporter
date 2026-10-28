@@ -50,7 +50,7 @@ class HtmlToPdfConverterTest {
 
         // Without the default CSS nothing keeps a header row with the rows below it
         verify(htmlProcessor).adjustContentToFitPage(any(Document.class), eq(conversionParams));
-        verify(htmlProcessor, never()).keepTableRowsWhole(any(), any(), anyBoolean());
+        verify(htmlProcessor, never()).keepTableRowsWhole(any(), any(), anyBoolean(), any());
     }
 
     @Test
