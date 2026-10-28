@@ -1,6 +1,7 @@
 package ch.sbb.polarion.extension.pdf_exporter.util;
 
 import ch.sbb.polarion.extension.pdf_exporter.util.adjuster.Hyphenation;
+import ch.sbb.polarion.extension.pdf_exporter.util.adjuster.TableAnalyzer;
 import ch.sbb.polarion.extension.generic.settings.SettingId;
 import ch.sbb.polarion.extension.generic.test_extensions.BundleJarsPrioritizingRunnableMockExtension;
 import ch.sbb.polarion.extension.pdf_exporter.configuration.PdfExporterExtensionConfigurationExtension;
@@ -1431,17 +1432,37 @@ class HtmlProcessorTest {
         Document withSection = JSoupUtils.parseHtml(table + "<div class=\"sbb_page_break landA4\"><p>Landscape</p></div>");
         ConversionParams a4 = ConversionParams.builder().paperSize(PaperSize.A4).orientation(Orientation.PORTRAIT).build();
 
-        processor.keepTableRowsWhole(portrait, a4, false);
-        processor.keepTableRowsWhole(withSection, a4, false);
+        processor.keepTableRowsWhole(portrait, a4, false, PageLayout.NONE);
+        processor.keepTableRowsWhole(withSection, a4, false, PageLayout.NONE);
 
         assertEquals("break-inside:avoid;", portrait.selectFirst("tr").attr("style"));
         assertFalse(withSection.selectFirst("tr").hasAttr("style"));
     }
 
+    /** A table is measured against the width the CSS gives the page of its paper size and orientation. */
+    @ParameterizedTest
+    @CsvSource({"A4, PORTRAIT", "A4, LANDSCAPE", "A5, PORTRAIT", "A3, LANDSCAPE", "LETTER, LANDSCAPE", "LEDGER, PORTRAIT"})
+    void measuresATableAgainstTheWidthTheCssGivesItsPage(PaperSize size, Orientation orientation) {
+        String table = "<table><tbody><tr><td>Electromagneticcompatibilitytesting</td></tr></tbody></table>";
+        ConversionParams page = ConversionParams.builder().paperSize(size).orientation(orientation).build();
+        int narrowest = TableAnalyzer.analyze(JSoupUtils.parseHtml(table).selectFirst("table"), 1).tableWidth();
+        int paper = PageLayout.of("@page { margin: 0; }").contentWidth(page);
+        String body = "body { margin: 0; } ";
+        Document fits = JSoupUtils.parseHtml(table);
+        Document tooWide = JSoupUtils.parseHtml(table);
+
+        // The right margin leaves the content one pixel more than the table needs, or five pixels less
+        processor.keepTableRowsWhole(fits, page, false, PageLayout.of(body + "@page { margin: 0 " + (paper - narrowest - 1) + "px 0 0; }"));
+        processor.keepTableRowsWhole(tooWide, page, false, PageLayout.of(body + "@page { margin: 0 " + (paper - narrowest + 5) + "px 0 0; }"));
+
+        assertTrue(fits.select("wbr").isEmpty(), "A table which fits keeps its words whole");
+        assertFalse(tooWide.select("wbr").isEmpty(), "The words of a table too wide get places to break");
+    }
+
     @Test
     void keepsTheTableRowsOfABlockBetweenPageBreaks() {
         String block = processor.keepTableRowsWhole("<table><tbody><tr><td>Patron</td><td>Can access the library.</td></tr></tbody></table>",
-                ConversionParams.builder().paperSize(PaperSize.A4).orientation(Orientation.PORTRAIT).build());
+                ConversionParams.builder().paperSize(PaperSize.A4).orientation(Orientation.PORTRAIT).build(), PageLayout.NONE);
 
         assertTrue(block.replace(" ", "").contains("<trstyle=\"break-inside:avoid;\">"), block);
     }
@@ -1512,7 +1533,7 @@ class HtmlProcessorTest {
 
         InOrder inOrder = inOrder(spyHtmlProcessor);
         inOrder.verify(spyHtmlProcessor).adjustContentToFitPage(any(Document.class), eq(exportParams), any(PageLayout.class));
-        inOrder.verify(spyHtmlProcessor).keepTableRowsWhole(any(Document.class), eq(exportParams), eq(false));
+        inOrder.verify(spyHtmlProcessor).keepTableRowsWhole(any(Document.class), eq(exportParams), eq(false), any(PageLayout.class));
     }
 
     @Test
@@ -1546,8 +1567,8 @@ class HtmlProcessorTest {
                 + "<table><tbody><tr><td>Portrait</td></tr></tbody></table>", exportParams);
 
         InOrder inOrder = inOrder(spyHtmlProcessor);
-        inOrder.verify(spyHtmlProcessor).keepTableRowsWhole(anyString(), argThat(page -> page.getOrientation() == Orientation.LANDSCAPE));
-        inOrder.verify(spyHtmlProcessor).keepTableRowsWhole(anyString(), argThat(page -> page.getOrientation() == Orientation.PORTRAIT));
+        inOrder.verify(spyHtmlProcessor).keepTableRowsWhole(anyString(), argThat(page -> page.getOrientation() == Orientation.LANDSCAPE), any(PageLayout.class));
+        inOrder.verify(spyHtmlProcessor).keepTableRowsWhole(anyString(), argThat(page -> page.getOrientation() == Orientation.PORTRAIT), any(PageLayout.class));
     }
 
     @Test
@@ -1561,7 +1582,7 @@ class HtmlProcessorTest {
 
         // The text of a cell decides how a block is fitted to its page, and the text of a formula is not the text of its cell
         verify(spyHtmlProcessor, times(2)).adjustContentToFitPage(argThat((String area) -> !area.contains(FormulaTextLayer.LAYER_CLASS)), any(ConversionParams.class), any(PageLayout.class));
-        verify(spyHtmlProcessor, times(2)).keepTableRowsWhole(argThat((String area) -> !area.contains(FormulaTextLayer.LAYER_CLASS)), any(ConversionParams.class));
+        verify(spyHtmlProcessor, times(2)).keepTableRowsWhole(argThat((String area) -> !area.contains(FormulaTextLayer.LAYER_CLASS)), any(ConversionParams.class), any(PageLayout.class));
         assertEquals(2, Jsoup.parse(html).select("span." + FormulaTextLayer.LAYER_CLASS).size(), "Each formula gets its text once");
     }
 
@@ -1625,7 +1646,7 @@ class HtmlProcessorTest {
         Document document = JSoupUtils.parseHtml("<table><tbody><tr><td>Patron</td><td>Can access the library.</td></tr></tbody></table>");
         ConversionParams noPageSize = ConversionParams.builder().paperSize(null).orientation(null).build();
 
-        assertDoesNotThrow(() -> processor.keepTableRowsWhole(document, noPageSize, false));
+        assertDoesNotThrow(() -> processor.keepTableRowsWhole(document, noPageSize, false, PageLayout.NONE));
         assertEquals("break-inside:avoid;", document.selectFirst("tr").attr("style"));
     }
 
@@ -1640,7 +1661,7 @@ class HtmlProcessorTest {
             ExportParams exportParams = getExportParams();
             // to avoid changing input html and check with regular equals
             doNothing().when(spyHtmlProcessor).adjustCellWidth(any(), any());
-            doNothing().when(spyHtmlProcessor).keepTableRowsWhole(any(), any(), anyBoolean());
+            doNothing().when(spyHtmlProcessor).keepTableRowsWhole(any(), any(), anyBoolean(), any());
             exportParams.setCutEmptyChapters(false);
             exportParams.setCutEmptyWIAttributes(false);
 

@@ -53,14 +53,6 @@ public class TableRowsAdjuster extends AbstractAdjuster {
      */
     private static final String ICON = "img.polarion-Icons, .polarion-JSEnumOption img, img[src*=/icons/], img[src*=/ria/images/], img[" + ICON_MARK + "]";
 
-    /**
-     * How much wider than its room the measure may find a table before its words get more places to break. The measure
-     * lays text out with no kerning, so a table whose words just fit measures a few percent wider than it prints. Once
-     * they get them, they get as many as it takes for the measure to find the table no wider than its room. A table of
-     * Cyrillic text which prints whole measures 5 % wider than its room.
-     */
-    private static final float TOO_WIDE = 1.06f;
-
     /** A cell of no more text than this may break a word anywhere, should the table have no room otherwise. */
     private static final int SHORT_CELL = 100;
 
@@ -68,25 +60,29 @@ public class TableRowsAdjuster extends AbstractAdjuster {
 
     private static final String CELL = "td, th";
 
+    /** The width the page leaves the content, which a table of its own is measured against. */
+    private final int pageWidth;
+
     /** The height of the page the rows are measured against. */
     private final int pageHeight;
 
     public TableRowsAdjuster(@NotNull Document document, @NotNull ConversionParams conversionParams) {
-        this(document, conversionParams, PaperSizeUtils.getMaxHeight(conversionParams));
+        this(document, conversionParams, PaperSizeUtils.getMaxWidth(conversionParams), PaperSizeUtils.getMaxHeight(conversionParams));
     }
 
     /**
+     * @param pageWidth  the width the page leaves the content, as the CSS of the export states it
      * @param pageHeight the height of the page the rows are measured against, lower than the one the parameters name
      *                   where a part of the document may be laid out in the other orientation
      */
-    public TableRowsAdjuster(@NotNull Document document, @NotNull ConversionParams conversionParams, int pageHeight) {
+    public TableRowsAdjuster(@NotNull Document document, @NotNull ConversionParams conversionParams, int pageWidth, int pageHeight) {
         super(document, conversionParams);
+        this.pageWidth = pageWidth;
         this.pageHeight = pageHeight;
     }
 
     @Override
     public void execute() {
-        int pageWidth = PaperSizeUtils.getMaxWidth(conversionParams);
         // The tables come in document order, so a table around another one is measured before it
         Map<Element, TableAnalyzer.TableMetrics> measured = new IdentityHashMap<>();
         for (Element table : document.select(HtmlTag.TABLE)) {
@@ -94,7 +90,7 @@ public class TableRowsAdjuster extends AbstractAdjuster {
             Integer width = widthOf(table, measured, pageWidth);
             if (!rows.isEmpty() && width != null) {
                 TableAnalyzer.TableMetrics metrics = TableAnalyzer.analyze(table, width);
-                if (metrics.tableWidth() > width * TOO_WIDE) {
+                if (metrics.tableWidth() > width) {
                     metrics = breakWordsToFit(table, width);
                 }
                 measured.put(table, metrics);
@@ -126,7 +122,7 @@ public class TableRowsAdjuster extends AbstractAdjuster {
             LongWordsAdjuster.addBreakPointsToFit(table, LongWordsAdjuster.CRAMPED_PARTS.get(step++));
             metrics = TableAnalyzer.analyze(table, width);
         } while (metrics.tableWidth() > width && step < LongWordsAdjuster.CRAMPED_PARTS.size());
-        if (metrics.tableWidth() > width * TOO_WIDE) {
+        if (metrics.tableWidth() > width) {
             breakAnywhere(table);
             metrics = TableAnalyzer.analyze(table, width);
         }

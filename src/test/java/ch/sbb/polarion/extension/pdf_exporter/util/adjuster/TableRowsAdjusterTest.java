@@ -3,6 +3,7 @@ package ch.sbb.polarion.extension.pdf_exporter.util.adjuster;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ConversionParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.Orientation;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PaperSize;
+import ch.sbb.polarion.extension.pdf_exporter.util.PaperSizeUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -15,6 +16,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 class TableRowsAdjusterTest {
 
     private static final ConversionParams A4_PORTRAIT = ConversionParams.builder().paperSize(PaperSize.A4).orientation(Orientation.PORTRAIT).build();
+
+    /** A table of words longer than a word which keeps whole, so a table too wide breaks them into parts. */
+    private static final String LONG_WORDS = "<table><tbody><tr>" + "<td>Electromagneticcompatibilitytesting</td>".repeat(3) + "</tr></tbody></table>";
 
     /** Text enough for a cell far taller than a page. */
     private static final String TALLER_THAN_A_PAGE = "A sentence of a cell which no page can hold whole. ".repeat(400);
@@ -179,6 +183,27 @@ class TableRowsAdjusterTest {
         new TableRowsAdjuster(document, A4_PORTRAIT).execute();
 
         assertThat(document.select("td").eachAttr("style")).isEmpty();
+    }
+
+    @Test
+    void keepsTheWordsOfATableWhichFitsItsRoomWhole() {
+        Document document = Jsoup.parse(LONG_WORDS);
+        int narrowest = TableAnalyzer.analyze(document.selectFirst("table"), 1).tableWidth();
+
+        new TableRowsAdjuster(document, A4_PORTRAIT, narrowest + 1, PaperSizeUtils.getMaxHeight(A4_PORTRAIT)).execute();
+
+        assertThat(document.select("wbr")).isEmpty();
+    }
+
+    @Test
+    void givesTheWordsOfATableJustWiderThanItsRoomPlacesToBreak() {
+        // The measure kerns and is given the room the page leaves, so a table a few pixels too wide has no room
+        Document document = Jsoup.parse(LONG_WORDS);
+        int narrowest = TableAnalyzer.analyze(document.selectFirst("table"), 1).tableWidth();
+
+        new TableRowsAdjuster(document, A4_PORTRAIT, narrowest - 5, PaperSizeUtils.getMaxHeight(A4_PORTRAIT)).execute();
+
+        assertThat(document.select("wbr")).isNotEmpty();
     }
 
     @Test
