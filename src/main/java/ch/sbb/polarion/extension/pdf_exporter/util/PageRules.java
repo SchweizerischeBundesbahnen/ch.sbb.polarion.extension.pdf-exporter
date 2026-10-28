@@ -90,6 +90,30 @@ public class PageRules {
             float left = values.length > 3 ? stated(values[3]) : right;
             return new Margins(stated(values[0]), right, stated(values[values.length > 2 ? 2 : 0]), left);
         }
+
+        /** The length in pixels of a margin the CSS states, or {@link #UNREADABLE} where it is not in an absolute unit. */
+        private static float stated(@NotNull String value) {
+            Float length = pixels(value);
+            return length != null ? length : UNREADABLE;
+        }
+
+        /** The length in pixels where it is stated in an absolute unit, or nothing. */
+        private static @Nullable Float pixels(@NotNull String value) {
+            String length = value.toLowerCase(Locale.ROOT);
+            if ("0".equals(length)) {
+                return 0F;
+            }
+            for (Map.Entry<String, Float> unit : Measure.ABSOLUTE_UNITS_IN_PX.entrySet()) {
+                if (length.endsWith(unit.getKey())) {
+                    try {
+                        return Float.parseFloat(length.substring(0, length.length() - unit.getKey().length())) * unit.getValue();
+                    } catch (NumberFormatException e) {
+                        return null;
+                    }
+                }
+            }
+            return null;
+        }
     }
 
     /**
@@ -216,29 +240,5 @@ public class PageRules {
             }
         }
         return margins;
-    }
-
-    /** The length in pixels of a margin the CSS states, or {@link #UNREADABLE} where it is not in an absolute unit. */
-    private static float stated(@NotNull String value) {
-        Float length = pixels(value);
-        return length != null ? length : UNREADABLE;
-    }
-
-    /** The length in pixels where it is stated in an absolute unit, or nothing. */
-    private static @Nullable Float pixels(@NotNull String value) {
-        String length = value.toLowerCase(Locale.ROOT);
-        if ("0".equals(length)) {
-            return 0F;
-        }
-        for (Map.Entry<String, Float> unit : Measure.ABSOLUTE_UNITS_IN_PX.entrySet()) {
-            if (length.endsWith(unit.getKey())) {
-                try {
-                    return Float.parseFloat(length.substring(0, length.length() - unit.getKey().length())) * unit.getValue();
-                } catch (NumberFormatException e) {
-                    return null;
-                }
-            }
-        }
-        return null;
     }
 }
