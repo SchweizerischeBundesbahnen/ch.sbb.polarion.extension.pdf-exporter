@@ -18,7 +18,6 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Locale;
 import java.util.Map;
-import java.util.regex.Pattern;
 
 /**
  * Reads from the CSS of an export how much of the width of a page the body takes beside its content: its left and right
@@ -58,12 +57,6 @@ public class BodyRules {
         private static final int PADDING_LEFT = 2;
         private static final int PADDING_RIGHT = 3;
 
-        /**
-         * A selector which matches the body of an export whatever the document: the body, alone or after the root element,
-         * as {@code html > body} or {@code :root body}. The body of an export has no other ancestor.
-         */
-        private static final Pattern BODY = Pattern.compile("((html|:root)(\\s*>\\s*|\\s+))*body");
-
         /** The weight of {@code !important} over any specificity. */
         private static final int IMPORTANT = 1_000_000;
 
@@ -99,7 +92,7 @@ public class BodyRules {
             int specificity = USER_AGENT;
             for (CSSSelector selector : styleRule.getAllSelectors()) {
                 String text = selector.getAsCSSString(writerSettings, 0).trim().toLowerCase(Locale.ROOT);
-                if (BODY.matcher(text).matches()) {
+                if (matchesTheBody(text)) {
                     specificity = Math.max(specificity, specificity(text));
                 }
             }
@@ -107,6 +100,20 @@ public class BodyRules {
                 int weight = specificity;
                 styleRule.getAllDeclarations().forEach(declaration -> read(declaration, weight));
             }
+        }
+
+        /**
+         * Whether the selector matches the body of an export whatever the document: the body, alone or after the root
+         * element, as {@code html > body} or {@code :root body}. The body of an export has no other ancestor.
+         */
+        private static boolean matchesTheBody(@NotNull String selector) {
+            String[] parts = selector.replace(">", " ").trim().split("\\s+");
+            for (int index = 0; index < parts.length - 1; index++) {
+                if (!"html".equals(parts[index]) && !":root".equals(parts[index])) {
+                    return false;
+                }
+            }
+            return "body".equals(parts[parts.length - 1]);
         }
 
         /** The specificity of a selector of the body: its pseudo-classes, then its type selectors. */
