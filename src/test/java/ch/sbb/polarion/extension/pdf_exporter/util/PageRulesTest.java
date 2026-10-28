@@ -78,6 +78,15 @@ class PageRulesTest {
     }
 
     @Test
+    void leavesATableTheDefaultsOfWeasyPrintWhereTheCssStatesNoSideMargins() {
+        ConversionParams a4 = ConversionParams.builder().paperSize(PaperSize.A4).orientation(Orientation.PORTRAIT).build();
+
+        // A page margin of 75px and a body margin of 8px on each side leave a portrait A4 793.7 - 150 - 16 = 627px
+        assertThat(PageLayout.of("p { margin: 0; }").widthForATable(a4)).isEqualTo(627);
+        assertThat(PageLayout.of("@page { margin: 5%; }").widthForATable(a4)).as("Margins it cannot read leave the paper").isEqualTo(PaperSizeUtils.getMaxWidth(a4));
+    }
+
+    @Test
     void fallsBackToThePaperWhereTheCssLeavesATableNoRoom() {
         ConversionParams a4 = ConversionParams.builder().paperSize(PaperSize.A4).orientation(Orientation.PORTRAIT).build();
 
@@ -175,10 +184,17 @@ class PageRulesTest {
     }
 
     @Test
-    void leavesAPageWhoseSideMarginsItDoesNotStateOut() {
-        assertThat(PageRules.contentWidths("@page { margin-top: 1in; margin-bottom: 1in; }").ofEveryPage()).isEmpty();
+    void takesTheSideMarginsOfWeasyPrintWhereTheCssStatesNone() {
+        // WeasyPrint gives a page a margin of 75px, which leaves a portrait A4 643px
+        assertThat(PageRules.contentWidths("@page { margin-top: 1in; margin-bottom: 1in; }").ofEveryPage()).containsEntry("portA4", 643);
+        assertThat(PageRules.contentWidths("p { margin: 0; }").ofEveryPage()).containsEntry("portA4", 643);
+        assertThat(PageRules.contentWidths("@page { margin-left: 0; }").ofEveryPage()).containsEntry("portA4", 718);
+    }
+
+    @Test
+    void leavesAPageWhoseSideMarginsItCannotReadOut() {
         assertThat(PageRules.contentWidths("@page { margin: 5%; }").ofEveryPage()).isEmpty();
-        assertThat(PageRules.contentWidths("")).isEqualTo(PageRules.Widths.NONE);
+        assertThat(PageRules.contentWidths("@page { margin: 0; margin-right: 2em; }").ofEveryPage()).isEmpty();
     }
 
     @Test

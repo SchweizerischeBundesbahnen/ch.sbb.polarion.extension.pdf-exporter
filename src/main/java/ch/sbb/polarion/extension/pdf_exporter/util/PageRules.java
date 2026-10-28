@@ -29,6 +29,12 @@ public class PageRules {
 
     private static final float PX_PER_MM = 96F / 25.4F;
 
+    /** The margin WeasyPrint gives each side of a page where the CSS states none. */
+    private static final float DEFAULT_PAGE_MARGIN_PX = 75;
+
+    /** A margin the CSS states in a unit the page does not lay out, as a percentage, which says nothing of the content. */
+    private static final float UNREADABLE = Float.NaN;
+
     /** The height of each paper size, in pixels, upright. */
     private static final Map<PaperSize, Float> PAPER_HEIGHTS = new EnumMap<>(Map.of(
             PaperSize.A5, 210 * PX_PER_MM,
@@ -105,7 +111,7 @@ public class PageRules {
 
     /** The width each page leaves its content, as the {@code @page} rules of the CSS state it. */
     public @NotNull Widths contentWidths(@NotNull String css) {
-        return css.contains("@page") ? contentWidths(ExportStylesheet.read(css)) : Widths.NONE;
+        return contentWidths(ExportStylesheet.read(css));
     }
 
     /** The width each page leaves its content, as the {@code @page} rules of the stylesheet state it. */
@@ -161,11 +167,18 @@ public class PageRules {
         return longSide ? PAPER_HEIGHTS.get(size) : PAPER_WIDTHS.get(size);
     }
 
-    /** The paper less the two margins across the direction, where both are stated. */
+    /**
+     * The paper less the two margins across the direction. A height needs both margins stated. A width takes the margin
+     * of WeasyPrint for a side the CSS states none of, as the content always has the margins of its page beside it.
+     */
     private static @Nullable Integer content(float paper, @NotNull Margins margins, @NotNull Direction direction) {
-        Float before = direction == Direction.DOWN ? margins.top() : margins.left();
-        Float after = direction == Direction.DOWN ? margins.bottom() : margins.right();
-        return before != null && after != null ? (int) (paper - before - after) : null;
+        Float before = direction == Direction.DOWN ? margins.top() : orDefault(margins.left());
+        Float after = direction == Direction.DOWN ? margins.bottom() : orDefault(margins.right());
+        return before != null && after != null && !before.isNaN() && !after.isNaN() ? (int) (paper - before - after) : null;
+    }
+
+    private static @NotNull Float orDefault(@Nullable Float margin) {
+        return margin != null ? margin : DEFAULT_PAGE_MARGIN_PX;
     }
 
     private static void putLength(@NotNull Map<String, Integer> lengths, @NotNull String name, @Nullable Integer length) {
@@ -186,15 +199,15 @@ public class PageRules {
                 switch (property) {
                     case "margin" -> {
                         // One value for all sides, two for top and bottom then the sides, three or four clockwise from the top
-                        top = pixels(values[0]);
-                        right = pixels(values[values.length > 1 ? 1 : 0]);
-                        bottom = pixels(values[values.length > 2 ? 2 : 0]);
-                        left = values.length > 3 ? pixels(values[3]) : right;
+                        top = stated(values[0]);
+                        right = stated(values[values.length > 1 ? 1 : 0]);
+                        bottom = stated(values[values.length > 2 ? 2 : 0]);
+                        left = values.length > 3 ? stated(values[3]) : right;
                     }
-                    case "margin-top" -> top = pixels(values[0]);
-                    case "margin-right" -> right = pixels(values[0]);
-                    case "margin-bottom" -> bottom = pixels(values[0]);
-                    case "margin-left" -> left = pixels(values[0]);
+                    case "margin-top" -> top = stated(values[0]);
+                    case "margin-right" -> right = stated(values[0]);
+                    case "margin-bottom" -> bottom = stated(values[0]);
+                    case "margin-left" -> left = stated(values[0]);
                     default -> {
                         // Other declarations of a page change no length of its content
                     }
@@ -202,6 +215,12 @@ public class PageRules {
             }
         }
         return new Margins(top, right, bottom, left);
+    }
+
+    /** The length in pixels of a margin the CSS states, or {@link #UNREADABLE} where it is not in an absolute unit. */
+    private static float stated(@NotNull String value) {
+        Float length = pixels(value);
+        return length != null ? length : UNREADABLE;
     }
 
     /** The length in pixels where it is stated in an absolute unit, or nothing. */
