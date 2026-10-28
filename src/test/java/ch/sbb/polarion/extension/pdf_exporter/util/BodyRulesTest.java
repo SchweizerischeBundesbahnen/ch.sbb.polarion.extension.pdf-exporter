@@ -35,9 +35,24 @@ class BodyRulesTest {
             "html > body { margin: 0; }            | 0",
             ":root body { margin: 0 30px; }        | 60",
             "body.watermark { margin: 0 50px; }    | 16",
-            "body p { margin: 0 50px; }            | 16"
+            "body p { margin: 0 50px; }            | 16",
+            // The exported body has no ancestor but the root element
+            ".preview body { margin: 0 50px; }     | 16",
+            "body { margin: 0 100px; } .preview body { margin: 0; } | 200"
     })
-    void takesTheRulesWhoseSelectorEndsInTheBody(String css, int sides) {
+    void takesTheRulesWhichMatchTheExportedBody(String css, int sides) {
+        assertThat(BodyRules.sides(css)).isEqualTo(sides);
+    }
+
+    @ParameterizedTest
+    @CsvSource(delimiter = '|', value = {
+            ":root body { margin: 0; } html body { margin: 0 100px; }        | 0",
+            "html body { margin: 0 100px; } body { margin: 0; }              | 200",
+            "body { margin: 0; } html body { margin: 0 100px; }              | 200",
+            "body { margin: 0 100px !important; } :root body { margin: 0; } | 200",
+            "html, :root body { margin: 0 30px; } body { margin: 0; }        | 60"
+    })
+    void takesTheDeclarationOfTheMoreSpecificSelector(String css, int sides) {
         assertThat(BodyRules.sides(css)).isEqualTo(sides);
     }
 

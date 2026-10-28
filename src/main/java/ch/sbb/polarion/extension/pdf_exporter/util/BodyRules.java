@@ -48,22 +48,37 @@ public class BodyRules {
         return declarations.sum();
     }
 
-    /** The side margins and paddings of the body, as the last rule for print which states each states it. */
+    /**
+     * The side margins and paddings of the body, as the cascade of the rules for print gives each: an {@code !important}
+     * declaration over one which is not, then the one of the more specific selector, then the later one.
+     */
     private static final class Declarations extends DefaultCSSVisitor {
         private static final int MARGIN_LEFT = 0;
         private static final int MARGIN_RIGHT = 1;
         private static final int PADDING_LEFT = 2;
         private static final int PADDING_RIGHT = 3;
 
-        /** A selector of the body itself, alone or after its ancestors, as {@code html > body}. */
-        private static final Pattern BODY = Pattern.compile("(^|.*[\\s>+~])body");
+        /**
+         * A selector which matches the body of an export whatever the document: the body, alone or after the root element,
+         * as {@code html > body} or {@code :root body}. The body of an export has no other ancestor.
+         */
+        private static final Pattern BODY = Pattern.compile("((html|:root)(\\s*>\\s*|\\s+))*body");
+
+        /** The weight of {@code !important} over any specificity. */
+        private static final int IMPORTANT = 1_000_000;
+
+        /** The weight of a pseudo-class, as {@code :root}, over a type selector. */
+        private static final int PSEUDO_CLASS = 1_000;
+
+        /** The weight of what WeasyPrint gives the body, below any rule of the CSS. */
+        private static final int USER_AGENT = -1;
 
         private final CSSWriterSettings writerSettings = new CSSWriterSettings();
         /** Whether each media rule the visit is in applies to print. */
         private final Deque<Boolean> media = new ArrayDeque<>();
         private final float[] lengths = {DEFAULT_MARGIN_PX, DEFAULT_MARGIN_PX, 0, 0};
-        /** Whether the length of each side was stated {@code !important}, which a later declaration does not override. */
-        private final boolean[] important = new boolean[lengths.length];
+        /** The weight of the declaration which stated the length of each side, which a lighter one does not override. */
+        private final int[] weights = {USER_AGENT, USER_AGENT, USER_AGENT, USER_AGENT};
 
         @Override
         public void onBeginMediaRule(@NotNull CSSMediaRule mediaRule) {
@@ -80,11 +95,25 @@ public class BodyRules {
             if (media.contains(Boolean.FALSE)) {
                 return;
             }
+            // Of the selectors of the rule which match the body, the most specific one counts
+            int specificity = USER_AGENT;
             for (CSSSelector selector : styleRule.getAllSelectors()) {
-                if (BODY.matcher(selector.getAsCSSString(writerSettings, 0).trim().toLowerCase(Locale.ROOT)).matches()) {
-                    styleRule.getAllDeclarations().forEach(this::read);
+                String text = selector.getAsCSSString(writerSettings, 0).trim().toLowerCase(Locale.ROOT);
+                if (BODY.matcher(text).matches()) {
+                    specificity = Math.max(specificity, specificity(text));
                 }
             }
+            if (specificity != USER_AGENT) {
+                int weight = specificity;
+                styleRule.getAllDeclarations().forEach(declaration -> read(declaration, weight));
+            }
+        }
+
+        /** The specificity of a selector of the body: its pseudo-classes, then its type selectors. */
+        private static int specificity(@NotNull String selector) {
+            int pseudoClasses = selector.split(":root", -1).length - 1;
+            int types = selector.replace(":root", "").split("html|body", -1).length - 1;
+            return pseudoClasses * PSEUDO_CLASS + types;
         }
 
         private static boolean appliesToPrint(@NotNull CSSMediaQuery query) {
@@ -97,23 +126,23 @@ public class BodyRules {
             return Math.round(lengths[MARGIN_LEFT] + lengths[MARGIN_RIGHT] + lengths[PADDING_LEFT] + lengths[PADDING_RIGHT]);
         }
 
-        private void read(@NotNull CSSDeclaration declaration) {
+        private void read(@NotNull CSSDeclaration declaration, int specificity) {
             String property = declaration.getProperty().toLowerCase(Locale.ROOT);
             String[] values = declaration.getExpressionAsCSSString().trim().toLowerCase(Locale.ROOT).split("\\s+");
-            boolean isImportant = declaration.isImportant();
+            int weight = declaration.isImportant() ? IMPORTANT + specificity : specificity;
             switch (property) {
                 case "margin" -> {
-                    set(MARGIN_RIGHT, right(values), isImportant);
-                    set(MARGIN_LEFT, left(values), isImportant);
+                    set(MARGIN_RIGHT, right(values), weight);
+                    set(MARGIN_LEFT, left(values), weight);
                 }
-                case "margin-left" -> set(MARGIN_LEFT, values[0], isImportant);
-                case "margin-right" -> set(MARGIN_RIGHT, values[0], isImportant);
+                case "margin-left" -> set(MARGIN_LEFT, values[0], weight);
+                case "margin-right" -> set(MARGIN_RIGHT, values[0], weight);
                 case "padding" -> {
-                    set(PADDING_RIGHT, right(values), isImportant);
-                    set(PADDING_LEFT, left(values), isImportant);
+                    set(PADDING_RIGHT, right(values), weight);
+                    set(PADDING_LEFT, left(values), weight);
                 }
-                case "padding-left" -> set(PADDING_LEFT, values[0], isImportant);
-                case "padding-right" -> set(PADDING_RIGHT, values[0], isImportant);
+                case "padding-left" -> set(PADDING_LEFT, values[0], weight);
+                case "padding-right" -> set(PADDING_RIGHT, values[0], weight);
                 default -> {
                     // Other declarations of the body take no width beside its content
                 }
@@ -121,16 +150,16 @@ public class BodyRules {
         }
 
         /**
-         * States the length of a side, unless an earlier declaration stated it {@code !important} and this one does not. A
-         * length in a unit the page does not lay out, as a percentage, leaves the one before it.
+         * States the length of a side, unless an earlier declaration of more weight stated it. A length in a unit the page
+         * does not lay out, as a percentage, leaves the one before it.
          */
-        private void set(int side, @NotNull String value, boolean isImportant) {
+        private void set(int side, @NotNull String value, int weight) {
             Float length = pixels(value);
-            if (length == null || important[side] && !isImportant) {
+            if (length == null || weight < weights[side]) {
                 return;
             }
             lengths[side] = length;
-            important[side] = isImportant;
+            weights[side] = weight;
         }
 
         /** The right side of a shorthand: its only value, or its second one. */
