@@ -142,22 +142,22 @@ public class BodyRules {
         private static @NotNull String left(@NotNull String[] values) {
             return values.length > 3 ? values[3] : right(values);
         }
-    }
 
-    /** The length in pixels where it is stated in an absolute unit, or nothing. */
-    private static @Nullable Float pixels(@NotNull String value) {
-        if ("0".equals(value)) {
-            return 0F;
-        }
-        for (Map.Entry<String, Float> unit : Measure.ABSOLUTE_UNITS_IN_PX.entrySet()) {
-            if (value.endsWith(unit.getKey()) && !Measure.EX.equals(unit.getKey())) {
-                try {
-                    return Float.parseFloat(value.substring(0, value.length() - unit.getKey().length())) * unit.getValue();
-                } catch (NumberFormatException e) {
-                    return null;
+        /** The length in pixels where it is stated in an absolute unit, or nothing. */
+        private static @Nullable Float pixels(@NotNull String value) {
+            if ("0".equals(value)) {
+                return 0F;
+            }
+            for (Map.Entry<String, Float> unit : Measure.ABSOLUTE_UNITS_IN_PX.entrySet()) {
+                if (value.endsWith(unit.getKey()) && !Measure.EX.equals(unit.getKey())) {
+                    try {
+                        return Float.parseFloat(value.substring(0, value.length() - unit.getKey().length())) * unit.getValue();
+                    } catch (NumberFormatException e) {
+                        return null;
+                    }
                 }
             }
+            return null;
         }
-        return null;
     }
 }

@@ -69,6 +69,27 @@ public class PageRules {
             return new Margins(top != null ? top : base.top, right != null ? right : base.right,
                     bottom != null ? bottom : base.bottom, left != null ? left : base.left);
         }
+
+        /** These margins with the ones the declaration states. */
+        Margins with(@NotNull CSSDeclaration declaration) {
+            String[] values = declaration.getExpressionAsCSSString().trim().split("\\s+");
+            return switch (declaration.getProperty().toLowerCase(Locale.ROOT)) {
+                case "margin" -> ofShorthand(values);
+                case "margin-top" -> new Margins(stated(values[0]), right, bottom, left);
+                case "margin-right" -> new Margins(top, stated(values[0]), bottom, left);
+                case "margin-bottom" -> new Margins(top, right, stated(values[0]), left);
+                case "margin-left" -> new Margins(top, right, bottom, stated(values[0]));
+                // Other declarations of a page change no length of its content
+                default -> this;
+            };
+        }
+
+        /** One value for all sides, two for top and bottom then the sides, three or four clockwise from the top. */
+        private static Margins ofShorthand(@NotNull String[] values) {
+            Float right = stated(values[values.length > 1 ? 1 : 0]);
+            Float left = values.length > 3 ? stated(values[3]) : right;
+            return new Margins(stated(values[0]), right, stated(values[values.length > 2 ? 2 : 0]), left);
+        }
     }
 
     /**
@@ -188,33 +209,13 @@ public class PageRules {
     }
 
     private static @NotNull Margins marginsOf(@NotNull CSSPageRule rule) {
-        Float top = null;
-        Float right = null;
-        Float bottom = null;
-        Float left = null;
+        Margins margins = Margins.NONE;
         for (ICSSPageRuleMember member : rule.getAllMembers()) {
             if (member instanceof CSSDeclaration declaration) {
-                String property = declaration.getProperty().toLowerCase(Locale.ROOT);
-                String[] values = declaration.getExpressionAsCSSString().trim().split("\\s+");
-                switch (property) {
-                    case "margin" -> {
-                        // One value for all sides, two for top and bottom then the sides, three or four clockwise from the top
-                        top = stated(values[0]);
-                        right = stated(values[values.length > 1 ? 1 : 0]);
-                        bottom = stated(values[values.length > 2 ? 2 : 0]);
-                        left = values.length > 3 ? stated(values[3]) : right;
-                    }
-                    case "margin-top" -> top = stated(values[0]);
-                    case "margin-right" -> right = stated(values[0]);
-                    case "margin-bottom" -> bottom = stated(values[0]);
-                    case "margin-left" -> left = stated(values[0]);
-                    default -> {
-                        // Other declarations of a page change no length of its content
-                    }
-                }
+                margins = margins.with(declaration);
             }
         }
-        return new Margins(top, right, bottom, left);
+        return margins;
     }
 
     /** The length in pixels of a margin the CSS states, or {@link #UNREADABLE} where it is not in an absolute unit. */
