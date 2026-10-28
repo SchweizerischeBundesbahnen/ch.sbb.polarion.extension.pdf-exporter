@@ -1460,6 +1460,15 @@ class HtmlProcessorTest {
     }
 
     @Test
+    void keepsTableRowsWholeWhereTheCssLeavesATableNoRoom() {
+        Document document = JSoupUtils.parseHtml("<table><tbody><tr><td>Patron</td><td>Can access the library.</td></tr></tbody></table>");
+        ConversionParams a4 = ConversionParams.builder().paperSize(PaperSize.A4).orientation(Orientation.PORTRAIT).build();
+
+        assertDoesNotThrow(() -> processor.keepTableRowsWhole(document, a4, false, PageLayout.of("@page { margin: 0 450px; }")));
+        assertEquals("break-inside:avoid;", document.selectFirst("tr").attr("style"));
+    }
+
+    @Test
     void keepsTheTableRowsOfABlockBetweenPageBreaks() {
         String block = processor.keepTableRowsWhole("<table><tbody><tr><td>Patron</td><td>Can access the library.</td></tr></tbody></table>",
                 ConversionParams.builder().paperSize(PaperSize.A4).orientation(Orientation.PORTRAIT).build(), PageLayout.NONE);

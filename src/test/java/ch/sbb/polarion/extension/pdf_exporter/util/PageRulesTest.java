@@ -78,6 +78,16 @@ class PageRulesTest {
     }
 
     @Test
+    void fallsBackToThePaperWhereTheCssLeavesATableNoRoom() {
+        ConversionParams a4 = ConversionParams.builder().paperSize(PaperSize.A4).orientation(Orientation.PORTRAIT).build();
+
+        // A portrait A4 is 793.7 px wide: margins of 450px leave it none, and of 390px less than the body takes
+        assertThat(PageLayout.of("@page { margin: 0 450px; }").widthForATable(a4)).isEqualTo(PaperSizeUtils.getMaxWidth(a4));
+        assertThat(PageLayout.of("@page { margin: 0 390px; }").widthForATable(a4)).isEqualTo(PaperSizeUtils.getMaxWidth(a4));
+        assertThat(PageLayout.of("@page { margin: 0 450px; }").contentWidth(a4)).isEqualTo(PaperSizeUtils.getMaxWidth(a4));
+    }
+
+    @Test
     void takesTheSideMarginsEveryPageStates() {
         PageRules.Widths widths = PageRules.contentWidths("@page { margin: 120px 60px 90px 80px; }");
 

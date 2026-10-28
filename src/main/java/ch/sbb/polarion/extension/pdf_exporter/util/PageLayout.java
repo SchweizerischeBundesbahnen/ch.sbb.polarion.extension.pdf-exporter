@@ -72,21 +72,21 @@ public record PageLayout(@NotNull String tableHeaderCss, @NotNull PageRules.Heig
 
     /**
      * The width the page leaves its content, as the CSS gives it, or the narrower one of its paper size where the CSS gives
-     * none.
+     * none, or margins which leave the content no width.
      */
     public int contentWidth(@NotNull ConversionParams page) {
         Integer width = widthOf(page);
-        return width != null ? width : PaperSizeUtils.getMaxWidth(page);
+        return width != null && width > 0 ? width : PaperSizeUtils.getMaxWidth(page);
     }
 
     /**
      * The width a table of the content may take on the page: the width the CSS gives the page less what the body takes
-     * beside its content. Where the CSS gives no width, the one of the paper size, which is narrower than any page by more
-     * than that.
+     * beside its content. Where the CSS gives no width, or one which leaves a table none, the one of the paper size, which
+     * is narrower than any page by more than what the body takes.
      */
     public int widthForATable(@NotNull ConversionParams page) {
         Integer width = widthOf(page);
-        return width != null ? width - bodySides : PaperSizeUtils.getMaxWidth(page);
+        return width != null && width > bodySides ? width - bodySides : PaperSizeUtils.getMaxWidth(page);
     }
 
     private @Nullable Integer widthOf(@NotNull ConversionParams page) {
