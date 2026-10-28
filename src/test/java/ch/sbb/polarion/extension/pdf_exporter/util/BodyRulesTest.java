@@ -29,10 +29,30 @@ class BodyRulesTest {
         assertThat(BodyRules.sides(css)).isEqualTo(sides);
     }
 
+    @ParameterizedTest
+    @CsvSource(delimiter = '|', value = {
+            "html body { margin: 0 100px; }        | 200",
+            "html > body { margin: 0; }            | 0",
+            ":root body { margin: 0 30px; }        | 60",
+            "body.watermark { margin: 0 50px; }    | 16",
+            "body p { margin: 0 50px; }            | 16"
+    })
+    void takesTheRulesWhoseSelectorEndsInTheBody(String css, int sides) {
+        assertThat(BodyRules.sides(css)).isEqualTo(sides);
+    }
+
+    @Test
+    void keepsAnImportantDeclarationOverALaterOne() {
+        assertThat(BodyRules.sides("body { margin: 0 100px !important; } body { margin: 0; }")).isEqualTo(200);
+        assertThat(BodyRules.sides("body { margin: 0 100px !important; } body { margin-left: 0 !important; }")).isEqualTo(100);
+        assertThat(BodyRules.sides("body { padding-right: 10px !important; } body { padding: 0; margin: 0; }")).isEqualTo(10);
+    }
+
     @Test
     void takesTheRulesForPrint() {
         assertThat(BodyRules.sides("body { margin: 0; } @media print { body { padding-right: 10px; } }")).isEqualTo(10);
         assertThat(BodyRules.sides("body { margin: 0; } @media all { body { padding-right: 10px; } }")).isEqualTo(10);
+        assertThat(BodyRules.sides("body { margin: 0; } @media not screen { body { padding-right: 100px; } }")).isEqualTo(100);
     }
 
     @Test

@@ -18,6 +18,7 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Locale;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 /**
  * Reads from the CSS of an export how much of the width of a page the body takes beside its content: its left and right
@@ -44,18 +45,25 @@ public class BodyRules {
         }
         Declarations declarations = new Declarations();
         CSSVisitor.visitCSS(stylesheet, declarations);
-        return Math.round(declarations.marginLeft + declarations.marginRight + declarations.paddingLeft + declarations.paddingRight);
+        return declarations.sum();
     }
 
     /** The side margins and paddings of the body, as the last rule for print which states each states it. */
     private static final class Declarations extends DefaultCSSVisitor {
+        private static final int MARGIN_LEFT = 0;
+        private static final int MARGIN_RIGHT = 1;
+        private static final int PADDING_LEFT = 2;
+        private static final int PADDING_RIGHT = 3;
+
+        /** A selector of the body itself, alone or after its ancestors, as {@code html > body}. */
+        private static final Pattern BODY = Pattern.compile("(^|.*[\\s>+~])body");
+
         private final CSSWriterSettings writerSettings = new CSSWriterSettings();
         /** Whether each media rule the visit is in applies to print. */
         private final Deque<Boolean> media = new ArrayDeque<>();
-        private float marginLeft = DEFAULT_MARGIN_PX;
-        private float marginRight = DEFAULT_MARGIN_PX;
-        private float paddingLeft;
-        private float paddingRight;
+        private final float[] lengths = {DEFAULT_MARGIN_PX, DEFAULT_MARGIN_PX, 0, 0};
+        /** Whether the length of each side was stated {@code !important}, which a later declaration does not override. */
+        private final boolean[] important = new boolean[lengths.length];
 
         @Override
         public void onBeginMediaRule(@NotNull CSSMediaRule mediaRule) {
@@ -73,7 +81,7 @@ public class BodyRules {
                 return;
             }
             for (CSSSelector selector : styleRule.getAllSelectors()) {
-                if ("body".equals(selector.getAsCSSString(writerSettings, 0).trim().toLowerCase(Locale.ROOT))) {
+                if (BODY.matcher(selector.getAsCSSString(writerSettings, 0).trim().toLowerCase(Locale.ROOT)).matches()) {
                     styleRule.getAllDeclarations().forEach(this::read);
                 }
             }
@@ -82,29 +90,47 @@ public class BodyRules {
         private static boolean appliesToPrint(@NotNull CSSMediaQuery query) {
             String medium = query.getMedium();
             String name = medium != null ? medium.toLowerCase(Locale.ROOT) : "all";
-            return !query.isNot() && ("all".equals(name) || "print".equals(name));
+            return query.isNot() != ("all".equals(name) || "print".equals(name));
+        }
+
+        private int sum() {
+            return Math.round(lengths[MARGIN_LEFT] + lengths[MARGIN_RIGHT] + lengths[PADDING_LEFT] + lengths[PADDING_RIGHT]);
         }
 
         private void read(@NotNull CSSDeclaration declaration) {
             String property = declaration.getProperty().toLowerCase(Locale.ROOT);
             String[] values = declaration.getExpressionAsCSSString().trim().toLowerCase(Locale.ROOT).split("\\s+");
+            boolean isImportant = declaration.isImportant();
             switch (property) {
                 case "margin" -> {
-                    marginRight = orKept(pixels(right(values)), marginRight);
-                    marginLeft = orKept(pixels(left(values)), marginLeft);
+                    set(MARGIN_RIGHT, right(values), isImportant);
+                    set(MARGIN_LEFT, left(values), isImportant);
                 }
-                case "margin-left" -> marginLeft = orKept(pixels(values[0]), marginLeft);
-                case "margin-right" -> marginRight = orKept(pixels(values[0]), marginRight);
+                case "margin-left" -> set(MARGIN_LEFT, values[0], isImportant);
+                case "margin-right" -> set(MARGIN_RIGHT, values[0], isImportant);
                 case "padding" -> {
-                    paddingRight = orKept(pixels(right(values)), paddingRight);
-                    paddingLeft = orKept(pixels(left(values)), paddingLeft);
+                    set(PADDING_RIGHT, right(values), isImportant);
+                    set(PADDING_LEFT, left(values), isImportant);
                 }
-                case "padding-left" -> paddingLeft = orKept(pixels(values[0]), paddingLeft);
-                case "padding-right" -> paddingRight = orKept(pixels(values[0]), paddingRight);
+                case "padding-left" -> set(PADDING_LEFT, values[0], isImportant);
+                case "padding-right" -> set(PADDING_RIGHT, values[0], isImportant);
                 default -> {
                     // Other declarations of the body take no width beside its content
                 }
             }
+        }
+
+        /**
+         * States the length of a side, unless an earlier declaration stated it {@code !important} and this one does not. A
+         * length in a unit the page does not lay out, as a percentage, leaves the one before it.
+         */
+        private void set(int side, @NotNull String value, boolean isImportant) {
+            Float length = pixels(value);
+            if (length == null || important[side] && !isImportant) {
+                return;
+            }
+            lengths[side] = length;
+            important[side] = isImportant;
         }
 
         /** The right side of a shorthand: its only value, or its second one. */
@@ -115,11 +141,6 @@ public class BodyRules {
         /** The left side of a shorthand: its fourth value, or the one of the right side. */
         private static @NotNull String left(@NotNull String[] values) {
             return values.length > 3 ? values[3] : right(values);
-        }
-
-        /** A length the CSS states in a unit the page does not lay out, as a percentage, leaves the one before it. */
-        private static float orKept(@Nullable Float length, float kept) {
-            return length != null ? length : kept;
         }
     }
 
