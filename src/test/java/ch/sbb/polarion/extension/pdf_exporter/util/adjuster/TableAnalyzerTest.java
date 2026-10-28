@@ -14,6 +14,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.awt.*;
+import java.awt.font.FontRenderContext;
+import java.awt.font.TextAttribute;
 import java.awt.image.BufferedImage;
 import java.lang.reflect.Field;
 import java.net.InetAddress;
@@ -665,6 +667,22 @@ class TableAnalyzerTest {
         int inPixels = TableAnalyzer.analyze(Jsoup.parse("<table><tr><td style=\"font-size: 12px\">" + words + "</td></tr></table>").selectFirst("table"), 2000).tableWidth();
 
         assertEquals(inPixels, inPoints);
+    }
+
+    /** WeasyPrint kerns text, so a pair as "AV" is narrower than its letters added up, and the measure kerns it too. */
+    @Test
+    void measuresTextWithKerning() {
+        String text = "AVAVAVAVAVAVAVAVAVAV";
+        Font font = TableAnalyzer.loadFontFromPath("/fonts/LiberationSans-Regular.ttf").deriveFont(16f);
+        FontRenderContext context = new FontRenderContext(null, true, true);
+        double kerned = font.deriveFont(Map.of(TextAttribute.KERNING, TextAttribute.KERNING_ON)).getStringBounds(text, context).getWidth();
+        double unkerned = font.getStringBounds(text, context).getWidth();
+
+        int measured = TableAnalyzer.analyze(Jsoup.parse("<table style=\"border-collapse: collapse\"><tr><td style=\"padding: 0; border: 0\">" + text + "</td></tr></table>")
+                .selectFirst("table"), 2000).tableWidth();
+
+        assertTrue(unkerned - kerned > 10, "Kerning makes the text narrower: " + unkerned + " against " + kerned);
+        assertEquals(Math.round(kerned), measured);
     }
 
     @Test
