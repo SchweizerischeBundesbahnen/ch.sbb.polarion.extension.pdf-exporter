@@ -86,8 +86,8 @@ public class PageRules {
 
         /** One value for all sides, two for top and bottom then the sides, three or four clockwise from the top. */
         private static Margins ofShorthand(@NotNull String[] values) {
-            Float right = stated(values[values.length > 1 ? 1 : 0]);
-            Float left = values.length > 3 ? stated(values[3]) : right;
+            float right = stated(values[values.length > 1 ? 1 : 0]);
+            float left = values.length > 3 ? stated(values[3]) : right;
             return new Margins(stated(values[0]), right, stated(values[values.length > 2 ? 2 : 0]), left);
         }
     }
