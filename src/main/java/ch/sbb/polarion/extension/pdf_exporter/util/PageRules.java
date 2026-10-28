@@ -17,10 +17,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.function.BiFunction;
 
 /**
- * Reads from the {@code @page} rules of the CSS of an export how high a page leaves its content: the height of the paper
- * less the top and the bottom margins, as the page of each paper size and orientation states them.
+ * Reads from the {@code @page} rules of the CSS of an export how high and how wide a page leaves its content: the height
+ * of the paper less the top and the bottom margins, and its width less the left and the right margins, as the page of
+ * each paper size and orientation states them.
  */
 @UtilityClass
 public class PageRules {
@@ -54,11 +56,12 @@ public class PageRules {
             PaperSize.LEDGER, 11 * 96F));
 
     /** The margins a page states, the ones it leaves unstated taken from the page every page is. */
-    private record Margins(@Nullable Float top, @Nullable Float bottom) {
-        private static final Margins NONE = new Margins(null, null);
+    private record Margins(@Nullable Float top, @Nullable Float right, @Nullable Float bottom, @Nullable Float left) {
+        private static final Margins NONE = new Margins(null, null, null, null);
 
         Margins over(@NotNull Margins base) {
-            return new Margins(top != null ? top : base.top, bottom != null ? bottom : base.bottom);
+            return new Margins(top != null ? top : base.top, right != null ? right : base.right,
+                    bottom != null ? bottom : base.bottom, left != null ? left : base.left);
         }
     }
 
@@ -73,6 +76,20 @@ public class PageRules {
         public static final Heights NONE = new Heights(Map.of(), Map.of());
     }
 
+    /**
+     * The widths each paper size and orientation leaves the content, by the name the export gives that page, as
+     * {@code portA4}. A page whose side margins the CSS does not state is not in them.
+     *
+     * @param ofEveryPage of the page every page is, which a document without page breaks is printed on
+     * @param ofNamedPage of the page of its own name, which the export gives each area between page breaks
+     */
+    public record Widths(@NotNull Map<String, Integer> ofEveryPage, @NotNull Map<String, Integer> ofNamedPage) {
+        public static final Widths NONE = new Widths(Map.of(), Map.of());
+    }
+
+    /** The length of the content a page gives: its height, between the top and the bottom margins, or its width. */
+    private enum Direction { DOWN, ACROSS }
+
     /** The height each page leaves its content, as the {@code @page} rules of the CSS state it. */
     public @NotNull Heights contentHeights(@NotNull String css) {
         return css.contains("@page") ? contentHeights(ExportStylesheet.read(css)) : Heights.NONE;
@@ -83,6 +100,25 @@ public class PageRules {
         if (stylesheet == null) {
             return Heights.NONE;
         }
+        return contentLengths(stylesheet, Direction.DOWN, Heights::new);
+    }
+
+    /** The width each page leaves its content, as the {@code @page} rules of the CSS state it. */
+    public @NotNull Widths contentWidths(@NotNull String css) {
+        return css.contains("@page") ? contentWidths(ExportStylesheet.read(css)) : Widths.NONE;
+    }
+
+    /** The width each page leaves its content, as the {@code @page} rules of the stylesheet state it. */
+    public @NotNull Widths contentWidths(@Nullable CascadingStyleSheet stylesheet) {
+        if (stylesheet == null) {
+            return Widths.NONE;
+        }
+        return contentLengths(stylesheet, Direction.ACROSS, Widths::new);
+    }
+
+    /** One length of the content of each page, of the page every page is and of each named page. */
+    private static <T> @NotNull T contentLengths(@NotNull CascadingStyleSheet stylesheet, @NotNull Direction direction,
+                                                 @NotNull BiFunction<Map<String, Integer>, Map<String, Integer>, T> lengths) {
         Map<String, Margins> named = new HashMap<>();
         Margins base = marginsOfThePages(stylesheet, named);
         Map<String, Integer> ofEveryPage = new HashMap<>();
@@ -90,12 +126,12 @@ public class PageRules {
         for (PaperSize size : PaperSize.values()) {
             for (Orientation orientation : Orientation.values()) {
                 String name = (orientation == Orientation.LANDSCAPE ? "land" : "port") + size.name();
-                float paper = orientation == Orientation.LANDSCAPE ? PAPER_WIDTHS.get(size) : PAPER_HEIGHTS.get(size);
-                putHeight(ofEveryPage, name, paper, base);
-                putHeight(ofNamedPage, name, paper, named.getOrDefault(name, Margins.NONE).over(base));
+                float paper = paper(size, orientation, direction);
+                putLength(ofEveryPage, name, content(paper, base, direction));
+                putLength(ofNamedPage, name, content(paper, named.getOrDefault(name, Margins.NONE).over(base), direction));
             }
         }
-        return new Heights(ofEveryPage, ofNamedPage);
+        return lengths.apply(ofEveryPage, ofNamedPage);
     }
 
     /**
@@ -112,40 +148,60 @@ public class PageRules {
             if (selectors.isEmpty()) {
                 base = marginsOf(pageRule).over(base);
             } else if (selectors.size() == 1 && !selectors.getFirst().startsWith(":")) {
-                // A page of its own name, as portA4; :first, :left and :right change no height of the content
+                // A page of its own name, as portA4; :first, :left and :right change no length of the content
                 named.merge(selectors.getFirst(), marginsOf(pageRule), (earlier, later) -> later.over(earlier));
             }
         }
         return base;
     }
 
-    private static void putHeight(@NotNull Map<String, Integer> heights, @NotNull String name, float paper, @NotNull Margins margins) {
-        if (margins.top() != null && margins.bottom() != null) {
-            heights.put(name, (int) (paper - margins.top() - margins.bottom()));
+    /** The length of the paper in the direction: the height of a portrait page is the long side of the paper. */
+    private static float paper(@NotNull PaperSize size, @NotNull Orientation orientation, @NotNull Direction direction) {
+        boolean longSide = (direction == Direction.DOWN) == (orientation == Orientation.PORTRAIT);
+        return longSide ? PAPER_HEIGHTS.get(size) : PAPER_WIDTHS.get(size);
+    }
+
+    /** The paper less the two margins across the direction, where both are stated. */
+    private static @Nullable Integer content(float paper, @NotNull Margins margins, @NotNull Direction direction) {
+        Float before = direction == Direction.DOWN ? margins.top() : margins.left();
+        Float after = direction == Direction.DOWN ? margins.bottom() : margins.right();
+        return before != null && after != null ? (int) (paper - before - after) : null;
+    }
+
+    private static void putLength(@NotNull Map<String, Integer> lengths, @NotNull String name, @Nullable Integer length) {
+        if (length != null) {
+            lengths.put(name, length);
         }
     }
 
     private static @NotNull Margins marginsOf(@NotNull CSSPageRule rule) {
         Float top = null;
+        Float right = null;
         Float bottom = null;
+        Float left = null;
         for (ICSSPageRuleMember member : rule.getAllMembers()) {
             if (member instanceof CSSDeclaration declaration) {
                 String property = declaration.getProperty().toLowerCase(Locale.ROOT);
                 String[] values = declaration.getExpressionAsCSSString().trim().split("\\s+");
                 switch (property) {
                     case "margin" -> {
+                        // One value for all sides, two for top and bottom then the sides, three or four clockwise from the top
                         top = pixels(values[0]);
+                        right = pixels(values[values.length > 1 ? 1 : 0]);
                         bottom = pixels(values[values.length > 2 ? 2 : 0]);
+                        left = values.length > 3 ? pixels(values[3]) : right;
                     }
                     case "margin-top" -> top = pixels(values[0]);
+                    case "margin-right" -> right = pixels(values[0]);
                     case "margin-bottom" -> bottom = pixels(values[0]);
+                    case "margin-left" -> left = pixels(values[0]);
                     default -> {
-                        // Other declarations of a page change no height of its content
+                        // Other declarations of a page change no length of its content
                     }
                 }
             }
         }
-        return new Margins(top, bottom);
+        return new Margins(top, right, bottom, left);
     }
 
     /** The length in pixels where it is stated in an absolute unit, or nothing. */

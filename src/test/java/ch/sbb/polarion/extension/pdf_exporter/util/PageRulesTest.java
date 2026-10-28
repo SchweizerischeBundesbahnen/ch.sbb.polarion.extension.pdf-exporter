@@ -5,6 +5,8 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.Orientation;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PaperSize;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -71,5 +73,59 @@ class PageRulesTest {
         ConversionParams a4 = ConversionParams.builder().paperSize(PaperSize.A4).orientation(Orientation.PORTRAIT).build();
 
         assertThat(PageLayout.NONE.contentHeight(a4)).isEqualTo(PaperSizeUtils.getMaxHeight(a4));
+        assertThat(PageLayout.NONE.contentWidth(a4)).isEqualTo(PaperSizeUtils.getMaxWidth(a4));
+    }
+
+    @Test
+    void takesTheSideMarginsEveryPageStates() {
+        PageRules.Widths widths = PageRules.contentWidths("@page { margin: 120px 60px 90px 80px; }");
+
+        // A portrait A4 is 793.7 px wide, a landscape one 1122.5 px
+        assertThat(widths.ofEveryPage()).containsEntry("portA4", 653).containsEntry("landA4", 982);
+        assertThat(widths.ofNamedPage()).containsEntry("portA4", 653).containsEntry("landA4", 982);
+    }
+
+    @ParameterizedTest
+    @CsvSource(delimiter = '|', value = {
+            "@page { margin: 50px; }                         | 693",
+            "@page { margin: 10px 50px; }                    | 693",
+            "@page { margin: 10px 50px 20px; }               | 693",
+            "@page { margin: 10px 60px 20px 40px; }          | 693",
+            "@page { margin: 0; margin-left: 1in; margin-right: 4px; } | 693"
+    })
+    void takesTheSideMarginsAsTheShorthandStatesThem(String css, int width) {
+        assertThat(PageRules.contentWidths(css).ofEveryPage()).containsEntry("portA4", width);
+    }
+
+    @Test
+    void takesTheSideMarginsAPageOfItsOwnNameStates() {
+        PageRules.Widths widths = PageRules.contentWidths("@page { margin: 120px 60px 90px 80px; } @page portA3 { size: A3 portrait; margin: 140px 80px 110px 100px; }");
+
+        // A portrait A3 is 1122.5 px wide: its own page has its own margins, the page every page is has those of all
+        assertThat(widths.ofNamedPage()).containsEntry("portA3", 942).containsEntry("portA4", 653);
+        assertThat(widths.ofEveryPage()).containsEntry("portA3", 982);
+    }
+
+    @Test
+    void leavesAPageWhoseSideMarginsItDoesNotStateOut() {
+        assertThat(PageRules.contentWidths("@page { margin-top: 1in; margin-bottom: 1in; }").ofEveryPage()).isEmpty();
+        assertThat(PageRules.contentWidths("@page { margin: 5%; }").ofEveryPage()).isEmpty();
+        assertThat(PageRules.contentWidths("")).isEqualTo(PageRules.Widths.NONE);
+    }
+
+    @Test
+    @SneakyThrows
+    void readsTheWidthsOfTheDefaultCss() {
+        try (InputStream css = PageRulesTest.class.getResourceAsStream("/default/dle-pdf-export.css")) {
+            PageLayout layout = PageLayout.of(new String(Objects.requireNonNull(css).readAllBytes(), StandardCharsets.UTF_8));
+
+            assertThat(layout.contentWidth(ConversionParams.builder().paperSize(PaperSize.A4).orientation(Orientation.PORTRAIT).build())).isEqualTo(653);
+            assertThat(layout.contentWidth(ConversionParams.builder().paperSize(PaperSize.A4).orientation(Orientation.LANDSCAPE).build())).isEqualTo(982);
+            // A5 states margins of its own, 60 and 40 px, which only its named page in an area between page breaks has
+            ConversionParams a5 = ConversionParams.builder().paperSize(PaperSize.A5).orientation(Orientation.PORTRAIT).build();
+            assertThat(layout.contentWidth(a5)).isEqualTo(419);
+            assertThat(layout.on(PageLayout.Pages.NAMED_PAGE).contentWidth(a5)).isEqualTo(459);
+            assertThat(layout.on(PageLayout.Pages.EITHER_PAGE).contentWidth(a5)).isEqualTo(419);
+        }
     }
 }
