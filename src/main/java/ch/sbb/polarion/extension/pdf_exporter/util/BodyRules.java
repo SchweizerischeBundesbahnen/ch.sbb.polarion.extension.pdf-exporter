@@ -80,8 +80,9 @@ public class BodyRules {
         }
 
         private static boolean appliesToPrint(@NotNull CSSMediaQuery query) {
-            String medium = query.getMedium() != null ? query.getMedium().toLowerCase(Locale.ROOT) : "all";
-            return !query.isNot() && ("all".equals(medium) || "print".equals(medium));
+            String medium = query.getMedium();
+            String name = medium != null ? medium.toLowerCase(Locale.ROOT) : "all";
+            return !query.isNot() && ("all".equals(name) || "print".equals(name));
         }
 
         private void read(@NotNull CSSDeclaration declaration) {
