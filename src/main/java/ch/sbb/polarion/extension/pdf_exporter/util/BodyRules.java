@@ -57,6 +57,9 @@ public class BodyRules {
         private static final int PADDING_LEFT = 2;
         private static final int PADDING_RIGHT = 3;
 
+        /** The pseudo-class of the root element, which the body of an export is a child of. */
+        private static final String ROOT_PSEUDO_CLASS = ":root";
+
         /** The weight of {@code !important} over any specificity. */
         private static final int IMPORTANT = 1_000_000;
 
@@ -109,7 +112,7 @@ public class BodyRules {
         private static boolean matchesTheBody(@NotNull String selector) {
             String[] parts = selector.replace(">", " ").trim().split("\\s+");
             for (int index = 0; index < parts.length - 1; index++) {
-                if (!"html".equals(parts[index]) && !":root".equals(parts[index])) {
+                if (!"html".equals(parts[index]) && !ROOT_PSEUDO_CLASS.equals(parts[index])) {
                     return false;
                 }
             }
@@ -118,8 +121,8 @@ public class BodyRules {
 
         /** The specificity of a selector of the body: its pseudo-classes, then its type selectors. */
         private static int specificity(@NotNull String selector) {
-            int pseudoClasses = selector.split(":root", -1).length - 1;
-            int types = selector.replace(":root", "").split("html|body", -1).length - 1;
+            int pseudoClasses = selector.split(ROOT_PSEUDO_CLASS, -1).length - 1;
+            int types = selector.replace(ROOT_PSEUDO_CLASS, "").split("html|body", -1).length - 1;
             return pseudoClasses * PSEUDO_CLASS + types;
         }
 
