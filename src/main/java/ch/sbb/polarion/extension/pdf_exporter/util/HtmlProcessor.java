@@ -252,7 +252,9 @@ public class HtmlProcessor {
             // ----
         }
         timedIfNotNull(generationLog, "Break long words in table cells", () -> LongWordsAdjuster.addBreakPoints(document, hyphenation));
-        timedIfNotNull(generationLog, "Keep table rows whole", () -> keepTableRowsWholeUnlessFittedBetweenPageBreaks(document, exportParams, customPageBreaks, printedOn));
+        // Page breaks print every area on a page of its own name (see processPageBrakes), fitted to the page or not
+        PageLayout rowsPrintedOn = customPageBreaks ? pageLayout.on(PageLayout.Pages.NAMED_PAGE) : printedOn;
+        timedIfNotNull(generationLog, "Keep table rows whole", () -> keepTableRowsWholeUnlessFittedBetweenPageBreaks(document, exportParams, customPageBreaks, rowsPrintedOn));
         // Last, as the text of a cell decides how the steps above treat it, and the layer is not the text of its cell. Fitted
         // between page breaks, a block is fitted to its page below, and its formulas get their text after it (BOOKMARK 2)
         if (!(exportParams.isFitToPage() && customPageBreaks)) {

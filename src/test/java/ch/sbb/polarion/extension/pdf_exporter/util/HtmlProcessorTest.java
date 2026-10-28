@@ -1566,6 +1566,20 @@ class HtmlProcessorTest {
         assertEquals(html, document.body().html().replace("\n", ""));
     }
 
+    /** Page breaks print every area on a page of its own name, which may state other margins than the page every page is. */
+    @Test
+    void measuresTheTablesOfADocumentWithPageBreaksOnTheNamedPage() {
+        HtmlProcessor spyHtmlProcessor = spy(processor);
+        ExportParams exportParams = getExportParams();
+        exportParams.setFitToPage(false);
+        String table = "<table><tbody><tr><td>Patron</td></tr></tbody></table>";
+
+        spyHtmlProcessor.processHtmlForPDF(table + "<!--PAGE_BREAK--><!--LANDSCAPE_ABOVE-->" + table, exportParams, List.of(), Hyphenation.NONE,
+                PageLayout.of("@page { margin: 50px; } @page portA4 { margin: 50px 100px; }"), null);
+
+        verify(spyHtmlProcessor).keepTableRowsWhole(any(Document.class), eq(exportParams), eq(true), argThat(layout -> layout.pages() == PageLayout.Pages.NAMED_PAGE));
+    }
+
     @Test
     void measuresTheTableRowsOfABlockOnThePageOfItsOrientation() {
         HtmlProcessor spyHtmlProcessor = spy(processor);
