@@ -15,6 +15,8 @@ import org.jsoup.select.Elements;
 
 public class TableSizeAdjuster extends AbstractAdjuster {
 
+    private static final float FULL_WIDTH_PERCENT = 100;
+
     public TableSizeAdjuster(@NotNull Document document, @NotNull ConversionParams conversionParams) {
         super(document, conversionParams);
     }
@@ -48,7 +50,8 @@ public class TableSizeAdjuster extends AbstractAdjuster {
             if (value.endsWith(Measure.PX)) {
                 return Float.parseFloat(value.replace(Measure.PX, "").trim());
             } else if (value.endsWith(Measure.PERCENT)) {
-                return PaperSizeUtils.getMaxWidth(conversionParams) * Float.parseFloat(value.replace(Measure.PERCENT, "").trim());
+                // A percentage is of the width the table sits in, so the table outgrows it only above 100%
+                return PaperSizeUtils.getMaxWidth(conversionParams) * Float.parseFloat(value.replace(Measure.PERCENT, "").trim()) / FULL_WIDTH_PERCENT;
             }
         } catch (NumberFormatException e) {
             return 0; // A width which is no number says nothing about the size of the table
