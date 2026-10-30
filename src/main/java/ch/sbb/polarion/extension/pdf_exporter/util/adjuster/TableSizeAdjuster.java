@@ -44,10 +44,14 @@ public class TableSizeAdjuster extends AbstractAdjuster {
         }
 
         value = value.trim();
-        if (value.endsWith(Measure.PX)) {
-            return Float.parseFloat(value.replace(Measure.PX, "").trim());
-        } else if (value.endsWith(Measure.PERCENT)) {
-            return PaperSizeUtils.getMaxWidth(conversionParams) * Float.parseFloat(value.replace(Measure.PERCENT, "").trim());
+        try {
+            if (value.endsWith(Measure.PX)) {
+                return Float.parseFloat(value.replace(Measure.PX, "").trim());
+            } else if (value.endsWith(Measure.PERCENT)) {
+                return PaperSizeUtils.getMaxWidth(conversionParams) * Float.parseFloat(value.replace(Measure.PERCENT, "").trim());
+            }
+        } catch (NumberFormatException e) {
+            return 0; // A width which is no number says nothing about the size of the table
         }
         return 0;
     }
