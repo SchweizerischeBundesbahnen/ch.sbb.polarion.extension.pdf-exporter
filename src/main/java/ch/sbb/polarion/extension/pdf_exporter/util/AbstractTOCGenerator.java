@@ -75,7 +75,7 @@ public abstract class AbstractTOCGenerator implements DocumentTOCGenerator {
             }
 
             TocLeaf newLeaf = new TocLeaf(parent, level, id, number, text);
-            parent.getChildren().add(newLeaf);
+            parent.addChild(newLeaf);
             current.set(newLeaf);
         }
 

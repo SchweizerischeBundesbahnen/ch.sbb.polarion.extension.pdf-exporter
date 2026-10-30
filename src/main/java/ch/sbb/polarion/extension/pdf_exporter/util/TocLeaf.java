@@ -1,6 +1,7 @@
 package ch.sbb.polarion.extension.pdf_exporter.util;
 
 import ch.sbb.polarion.extension.pdf_exporter.constants.HtmlTag;
+import lombok.AccessLevel;
 import lombok.Getter;
 import org.jsoup.nodes.Element;
 
@@ -14,6 +15,7 @@ public class TocLeaf {
     private final String id;
     private final String number;
     private final String text;
+    @Getter(AccessLevel.NONE)
     private final List<TocLeaf> children = new ArrayList<>();
 
     TocLeaf(TocLeaf parent, int level, String id, String number, String text) {
@@ -22,6 +24,10 @@ public class TocLeaf {
         this.id = id;
         this.number = number;
         this.text = text;
+    }
+
+    void addChild(TocLeaf child) {
+        children.add(child);
     }
 
     public Element asTableOfContent(int startLevel, int maxLevel) {

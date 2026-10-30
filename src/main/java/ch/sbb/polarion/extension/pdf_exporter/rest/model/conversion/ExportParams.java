@@ -176,9 +176,9 @@ public class ExportParams extends ConversionParams {
         if (defaultQuery == null || defaultQuery.isEmpty()) {
             return;
         }
-        if (urlQueryParameters == null) {
-            urlQueryParameters = new HashMap<>();
-        }
-        urlQueryParameters.putIfAbsent(URL_QUERY_PARAM_QUERY, defaultQuery);
+        // Copy instead of changing the map in place: the caller may share it, or it may be immutable
+        Map<String, String> parameters = urlQueryParameters == null ? new HashMap<>() : new HashMap<>(urlQueryParameters);
+        parameters.putIfAbsent(URL_QUERY_PARAM_QUERY, defaultQuery);
+        urlQueryParameters = parameters;
     }
 }

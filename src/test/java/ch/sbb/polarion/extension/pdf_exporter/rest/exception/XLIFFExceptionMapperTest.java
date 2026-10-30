@@ -13,6 +13,7 @@ import jakarta.ws.rs.core.Response;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.params.provider.Arguments.argumentSet;
 
 class XLIFFExceptionMapperTest {
 
@@ -25,15 +26,15 @@ class XLIFFExceptionMapperTest {
 
     static Stream<Arguments> provideErrorMessages() {
         return Stream.of(
-                Arguments.of("Valid exception with simple message", "XLIFF format error: Invalid structure"),
-                Arguments.of("Long error message", "XLIFF format error: The document structure is invalid. Expected element 'xliff' but found 'invalid'. Please ensure the XLIFF document follows the XLIFF 2.0 specification"),
-                Arguments.of("Special characters in message", "XLIFF error: Invalid char '<>&\"' at line 42")
+                argumentSet("Valid exception with simple message", "XLIFF format error: Invalid structure"),
+                argumentSet("Long error message", "XLIFF format error: The document structure is invalid. Expected element 'xliff' but found 'invalid'. Please ensure the XLIFF document follows the XLIFF 2.0 specification"),
+                argumentSet("Special characters in message", "XLIFF error: Invalid char '<>&\"' at line 42")
         );
     }
 
-    @ParameterizedTest(name = "{0}")
+    @ParameterizedTest(name = "{argumentSetName}")
     @MethodSource("provideErrorMessages")
-    void testToResponse_WithVariousMessages(String testName, String errorMessage) {
+    void testToResponse_WithVariousMessages(String errorMessage) {
         // Given
         XLIFFException exception = new XLIFFException(errorMessage);
 
