@@ -161,6 +161,8 @@
                 <groups>performance</groups>
                 <excludedGroups/>
                 <markdown2html.skip>true</markdown2html.skip>
+                <!-- A heap of fixed size, as Polarion has: G1 shrank a default heap, and each large HTML of a smaller one started a marking cycle, which slowed some exports by up to 40 % -->
+                <argLine>-Xms4g -Xmx4g</argLine>
             </properties>
 
             <build>
