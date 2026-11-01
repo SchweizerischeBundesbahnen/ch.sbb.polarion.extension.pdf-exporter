@@ -26,7 +26,6 @@ import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -77,7 +76,7 @@ class ModelObjectProviderTest {
 
     @ParameterizedTest
     @MethodSource("paramsForModelObjectProviderGetDocument")
-    void testModelObjectProviderGetDocument(@NotNull ExportParams exportParams, ExtensionContext extensionContext) {
+    void testModelObjectProviderGetDocument(@NotNull ExportParams exportParams) {
         InternalDocuments internalDocumentsMock = mock(InternalDocuments.class);
         DocumentSelector documentSelectorMock = mock(DocumentSelector.class);
         Document documentMock = mock(Document.class);
@@ -113,7 +112,7 @@ class ModelObjectProviderTest {
 
     @ParameterizedTest
     @MethodSource("paramsForModelObjectProviderGetRichPage")
-    void testModelObjectProviderGetRichPage(@NotNull ExportParams exportParams, ExtensionContext extensionContext) {
+    void testModelObjectProviderGetRichPage(@NotNull ExportParams exportParams) {
         InternalRichPages richPagesMock = mock(InternalRichPages.class);
         RichPageSelector richPagesSelectorMock = mock(RichPageSelector.class);
         RichPage richPageMock = mock(RichPage.class);
@@ -146,7 +145,7 @@ class ModelObjectProviderTest {
 
     @ParameterizedTest
     @MethodSource("paramsForModelObjectProviderGetTestRun")
-    void testModelObjectProviderGetTestRun(@NotNull ExportParams exportParams, ExtensionContext extensionContext) {
+    void testModelObjectProviderGetTestRun(@NotNull ExportParams exportParams) {
         InternalTestRuns testRunsMock = mock(InternalTestRuns.class);
         TestRunSelector testRunsSelectorMock = mock(TestRunSelector.class);
         TestRun testRunMock = mock(TestRun.class);
@@ -183,7 +182,7 @@ class ModelObjectProviderTest {
 
     @ParameterizedTest
     @MethodSource("paramsForModelObjectProviderGetWikiPage")
-    void testModelObjectProviderGetWikiPage(@NotNull ExportParams exportParams, ExtensionContext extensionContext) {
+    void testModelObjectProviderGetWikiPage(@NotNull ExportParams exportParams) {
         WikiPages wikiPagesMock = mock(WikiPages.class);
         WikiPageSelector wikiPagesSelectorMock = mock(WikiPageSelector.class);
         WikiPage wikiPageMock = mock(WikiPage.class);
@@ -209,17 +208,6 @@ class ModelObjectProviderTest {
                         .projectId("testProjectId")
                         .documentType(DocumentType.LIVE_DOC)
                         .build(), IllegalArgumentException.class),
-//                Arguments.of(ExportParams.builder()
-//                        .projectId("testProjectId")
-//                        .locationPath("wrongLocationPath")
-//                        .documentType(DocumentType.LIVE_DOC)
-//                        .build(), IllegalArgumentException.class),
-//                Arguments.of(ExportParams.builder()
-//                        .projectId("testProjectId")
-//                        .locationPath("_default/nonExistingLocationPath")
-//                        .documentType(DocumentType.LIVE_DOC)
-//                        .build(), IllegalArgumentException.class),
-
                 Arguments.of(ExportParams.builder()
                         .projectId("nonExistingProjectId")
                         .locationPath("_default/testLocationPath")

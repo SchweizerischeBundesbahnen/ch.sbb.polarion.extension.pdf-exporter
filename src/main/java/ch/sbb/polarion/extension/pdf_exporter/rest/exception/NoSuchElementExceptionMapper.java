@@ -11,6 +11,7 @@ import java.util.NoSuchElementException;
 public class NoSuchElementExceptionMapper implements ExceptionMapper<NoSuchElementException> {
     private final Logger logger = Logger.getLogger(NoSuchElementExceptionMapper.class);
 
+    @Override
     public Response toResponse(NoSuchElementException e) {
         logger.error("Unknown element: " + e.getMessage(), e);
         return Response.status(Response.Status.NOT_FOUND.getStatusCode())

@@ -10,9 +10,9 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Stream;
 
 @Data
@@ -150,8 +150,7 @@ public class StylePackageModel extends SettingsModel {
     @Override
     protected void deserializeModelData(String serializedString) {
         matchingQuery = deserializeEntry(MATCHING_QUERY_ENTRY_NAME, serializedString);
-        weight = Optional.ofNullable(deserializeEntry(WEIGHT_ENTRY_NAME, serializedString)).map(Float::parseFloat)
-                .orElse(NamedSettings.DEFAULT_NAME.equals(name) ? DEFAULT_INITIAL_WEIGHT : DEFAULT_WEIGHT);
+        weight = parseWeight(deserializeEntry(WEIGHT_ENTRY_NAME, serializedString));
         exposeSettings = Boolean.parseBoolean(deserializeEntry(EXPOSE_SETTINGS_ENTRY_NAME, serializedString));
         coverPage = deserializeEntry(COVER_PAGE_ENTRY_NAME, serializedString);
         headerFooter = deserializeEntry(HEADER_FOOTER_ENTRY_NAME, serializedString);
@@ -187,6 +186,20 @@ public class StylePackageModel extends SettingsModel {
         embedAttachments = Boolean.parseBoolean(deserializeEntry(EMBED_ATTACHMENTS, serializedString));
         imageDensity = deserializeEntry(IMAGE_DENSITY_ENTRY_NAME, serializedString);
         fullFonts = Boolean.parseBoolean(deserializeEntry(FULL_FONTS_ENTRY_NAME, serializedString));
+    }
+
+    /**
+     * A weight which is no number reads as none, so a style package edited by hand stays readable.
+     */
+    private Float parseWeight(@Nullable String value) {
+        if (value != null) {
+            try {
+                return Float.parseFloat(value);
+            } catch (NumberFormatException e) {
+                // the default below applies
+            }
+        }
+        return NamedSettings.DEFAULT_NAME.equals(name) ? DEFAULT_INITIAL_WEIGHT : DEFAULT_WEIGHT;
     }
 
     /**

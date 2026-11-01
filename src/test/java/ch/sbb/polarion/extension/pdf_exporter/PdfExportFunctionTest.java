@@ -101,7 +101,7 @@ class PdfExportFunctionTest {
     }
 
     @Test
-    void testWorkItemsQueryFromStylePackageIsPropagatedAsMutableMap() {
+    void testWorkItemsQueryFromStylePackageIsPropagated() {
         IArguments args = new Arguments(Map.of());
         StylePackageSettings stylePackageSettings = spy(new StylePackageSettings(settingsService));
         StylePackageModel withQuery = stylePackageSettings.defaultValues();
@@ -112,8 +112,6 @@ class PdfExportFunctionTest {
         ExportParams exportParams = pdfExportFunction.getExportParams(module, args);
         assertNotNull(exportParams.getUrlQueryParameters());
         assertEquals("type:requirement", exportParams.getUrlQueryParameters().get(ExportParams.URL_QUERY_PARAM_QUERY));
-        // Must be mutable: applyDefaultWorkItemsQuery would put-if-absent on it later.
-        assertDoesNotThrow(() -> exportParams.getUrlQueryParameters().put("k", "v"));
     }
 
     @Test

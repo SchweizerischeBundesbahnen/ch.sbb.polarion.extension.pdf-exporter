@@ -43,12 +43,14 @@ public class PdfWidthValidationService {
             invalidPages = findInvalidPages(pdfBytes, Integer.MAX_VALUE);
             if (!invalidPages.isEmpty()) {
                 List<Integer> wiPositions = getPreparedContentWiPositions(pdfBytes);
+                List<WorkItemRefData> suspiciousWorkItems = new ArrayList<>();
                 for (WidthValidationResult.PageInfo page : invalidPages) {
                     Integer wiPos = wiPositions.get(page.getNumber());
                     if (wiPos != -1) {
-                        result.getSuspiciousWorkItems().add(metaInfoCallback.getLinkedWorkItems().get(wiPos));
+                        suspiciousWorkItems.add(metaInfoCallback.getLinkedWorkItems().get(wiPos));
                     }
                 }
+                result.setSuspiciousWorkItems(suspiciousWorkItems);
             }
         }
         return result;

@@ -132,6 +132,22 @@ class ExportParamsTest {
     }
 
     @Test
+    void overwriteByStylePackageDoesNotChangeCallersMap() {
+        Map<String, String> existing = Map.of("id", "testRunId");
+        ExportParams params = ExportParams.builder()
+                .urlQueryParameters(existing)
+                .build();
+        StylePackageModel stylePackageModel = StylePackageModel.builder()
+                .workItemsQuery("type:requirement")
+                .build();
+
+        params.overwriteByStylePackage(stylePackageModel);
+
+        assertEquals(Map.of("id", "testRunId"), existing);
+        assertEquals(Map.of("id", "testRunId", ExportParams.URL_QUERY_PARAM_QUERY, "type:requirement"), params.getUrlQueryParameters());
+    }
+
+    @Test
     void overwriteByStylePackageWithoutWorkItemsQueryLeavesUrlQueryParametersUntouched() {
         ExportParams params = ExportParams.builder().build();
         StylePackageModel stylePackageModel = StylePackageModel.builder().build();

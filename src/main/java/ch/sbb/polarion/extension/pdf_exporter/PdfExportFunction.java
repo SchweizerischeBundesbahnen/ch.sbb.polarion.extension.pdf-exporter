@@ -37,7 +37,6 @@ import org.jetbrains.annotations.VisibleForTesting;
 
 import java.io.ByteArrayInputStream;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -145,7 +144,7 @@ public class PdfExportFunction implements IFunction<IModule> {
                 .testcaseFieldId(stylePackage.getTestcaseFieldId())
                 .urlQueryParameters(stylePackage.getWorkItemsQuery() == null || stylePackage.getWorkItemsQuery().isEmpty()
                         ? null
-                        : new HashMap<>(Map.of(ExportParams.URL_QUERY_PARAM_QUERY, stylePackage.getWorkItemsQuery())))
+                        : Map.of(ExportParams.URL_QUERY_PARAM_QUERY, stylePackage.getWorkItemsQuery()))
                 .build();
     }
 

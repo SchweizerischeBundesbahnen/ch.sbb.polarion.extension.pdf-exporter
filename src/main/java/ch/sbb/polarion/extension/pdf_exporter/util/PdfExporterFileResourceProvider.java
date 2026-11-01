@@ -118,6 +118,7 @@ public class PdfExporterFileResourceProvider implements FileResourceProvider {
         return null;
     }
 
+    @Override
     public byte[] getResourceAsBytes(@NotNull String resource) {
         // Non-default icons are getting via project and thus requires open transaction
         return TransactionalExecutor.executeSafelyInReadOnlyTransaction(transaction -> {

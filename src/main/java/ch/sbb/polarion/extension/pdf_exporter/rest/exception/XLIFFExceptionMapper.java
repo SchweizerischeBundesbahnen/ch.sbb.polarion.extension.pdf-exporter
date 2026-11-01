@@ -13,6 +13,7 @@ import jakarta.ws.rs.ext.Provider;
 public class XLIFFExceptionMapper implements ExceptionMapper<XLIFFException> {
     private final Logger logger = Logger.getLogger(XLIFFExceptionMapper.class);
 
+    @Override
     public Response toResponse(XLIFFException e) {
         logger.error("XLIFF format error: " + e.getMessage(), e);
         return Response.status(Response.Status.BAD_REQUEST.getStatusCode())
