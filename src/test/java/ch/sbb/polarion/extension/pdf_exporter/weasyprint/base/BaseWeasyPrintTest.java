@@ -82,7 +82,11 @@ public abstract class BaseWeasyPrintTest {
 
     @SneakyThrows
     public static InputStream readPngResource(String resourceName) {
-        return BaseWeasyPrintTest.class.getResourceAsStream(WEASYPRINT_TEST_PNG_RESOURCES_FOLDER + resourceName + EXT_PNG);
+        return BaseWeasyPrintTest.class.getResourceAsStream(pngResourcePath(resourceName));
+    }
+
+    private static String pngResourcePath(String resourceName) {
+        return WEASYPRINT_TEST_PNG_RESOURCES_FOLDER + resourceName + EXT_PNG;
     }
 
     @SneakyThrows
@@ -206,6 +210,11 @@ public abstract class BaseWeasyPrintTest {
     protected boolean compareContentUsingReferenceImages(String testName, byte[] pdf) {
         writeReportPdf(testName, "generated", pdf);
         List<BufferedImage> resultImages = getAllPagesAsImagesAndLogAsReports(testName, pdf);
+        int expectedPageCount = countReferencePages(testName);
+        if (resultImages.size() != expectedPageCount) {
+            logger.warn("Page count mismatch for '{}': generated={}, expected={}", testName, resultImages.size(), expectedPageCount);
+            return true;
+        }
         boolean hasDiff = false;
         for (int i = 0; i < resultImages.size(); i++) {
             BufferedImage expectedImage = ImageIO.read(readPngResource(testName + PAGE_SUFFIX + i));
@@ -218,6 +227,15 @@ public abstract class BaseWeasyPrintTest {
             }
         }
         return hasDiff;
+    }
+
+    protected int countReferencePages(String testName) {
+        int count = 0;
+        // Look the resource up without opening it, so no stream is left to close
+        while (BaseWeasyPrintTest.class.getResource(pngResourcePath(testName + PAGE_SUFFIX + count)) != null) {
+            count++;
+        }
+        return count;
     }
 
     @SneakyThrows

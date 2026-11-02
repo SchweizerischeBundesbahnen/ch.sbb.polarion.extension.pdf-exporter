@@ -80,7 +80,7 @@ public class PdfWidthValidationService {
     }
 
     /**
-     * Inserts special mark before and page brake after internal content of each work item.
+     * Inserts special mark before and page break after internal content of each work item.
      * This means that there will be no more than one work item on the page.
      */
     private String generateValidationPreparedContent(List<WorkItemRefData> items) {

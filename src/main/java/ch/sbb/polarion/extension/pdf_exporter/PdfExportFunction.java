@@ -7,6 +7,7 @@ import ch.sbb.polarion.extension.generic.util.ScopeUtils;
 import ch.sbb.polarion.extension.pdf_exporter.converter.PdfConverter;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.DocumentType;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.LinkRoleDirection;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.Orientation;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PaperSize;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PdfVariant;
@@ -122,12 +123,17 @@ public class PdfExportFunction implements IFunction<IModule> {
                 .localization(stylePackage.getLocalization())
                 .webhooks(stylePackage.getWebhooks())
                 .headersColor(stylePackage.getHeadersColor())
-                .orientation(Orientation.valueOf(stylePackage.getOrientation()))
-                .paperSize(PaperSize.valueOf(stylePackage.getPaperSize()))
-                .pdfVariant(PdfVariant.valueOf(stylePackage.getPdfVariant()))
-                .imageDensity(ImageDensity.valueOf(stylePackage.getImageDensity()))
+                .orientation(Orientation.fromString(stylePackage.getOrientation()))
+                .paperSize(PaperSize.fromString(stylePackage.getPaperSize()))
+                .pdfVariant(PdfVariant.fromString(stylePackage.getPdfVariant()))
+                .imageDensity(ImageDensity.fromString(stylePackage.getImageDensity()))
                 .fitToPage(stylePackage.isFitToPage())
                 .renderComments(stylePackage.getRenderComments())
+                .renderNativeComments(stylePackage.isRenderNativeComments())
+                .includeUnreferencedComments(stylePackage.isIncludeUnreferencedComments())
+                .linkRoleDirection(LinkRoleDirection.fromString(stylePackage.getLinkRoleDirection()))
+                .embedAttachments(stylePackage.isEmbedAttachments())
+                .fullFonts(stylePackage.isFullFonts())
                 .watermark(stylePackage.isWatermark())
                 .markReferencedWorkitems(stylePackage.isMarkReferencedWorkitems())
                 .cutEmptyChapters(stylePackage.isCutEmptyChapters())

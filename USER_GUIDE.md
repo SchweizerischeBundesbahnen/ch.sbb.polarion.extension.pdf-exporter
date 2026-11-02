@@ -15,6 +15,7 @@
     * [Orientation](#orientation)
     * [PDF variant](#pdf-variant)
     * [Image density](#image-density)
+    * [Embed full fonts (no subsetting)](#embed-full-fonts-no-subsetting)
     * [Fit images and tables to page width](#fit-images-and-tables-to-page-width)
     * [Follow HTML presentational hints](#follow-html-presentational-hints)
     * [Comments rendering](#comments-rendering)

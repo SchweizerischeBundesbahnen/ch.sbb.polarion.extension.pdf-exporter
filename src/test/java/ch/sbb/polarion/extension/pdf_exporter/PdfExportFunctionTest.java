@@ -4,7 +4,13 @@ import ch.sbb.polarion.extension.generic.context.CurrentContextExtension;
 import ch.sbb.polarion.extension.generic.settings.NamedSettingsRegistry;
 import ch.sbb.polarion.extension.generic.settings.SettingsService;
 import ch.sbb.polarion.extension.pdf_exporter.converter.PdfConverter;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.CommentsRenderType;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ImageDensity;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.LinkRoleDirection;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.Orientation;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PaperSize;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PdfVariant;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.stylepackage.StylePackageModel;
 import ch.sbb.polarion.extension.pdf_exporter.service.PdfExporterPolarionService;
 import ch.sbb.polarion.extension.pdf_exporter.settings.StylePackageSettings;
@@ -124,6 +130,110 @@ class PdfExportFunctionTest {
         NamedSettingsRegistry.INSTANCE.register(List.of(stylePackageSettings));
 
         assertEquals("Title page", pdfExportFunction.getExportParams(module, args).getFirstPageHeaderFooter());
+    }
+
+    @Test
+    void testCommentsLinksAttachmentsAndFontsFromStylePackageArePropagated() {
+        IArguments args = new Arguments(Map.of());
+        StylePackageSettings stylePackageSettings = spy(new StylePackageSettings(settingsService));
+        // Values other than the defaults, so that a setting which is not passed on fails the test
+        StylePackageModel stylePackage = stylePackageSettings.defaultValues();
+        stylePackage.setRenderNativeComments(true);
+        stylePackage.setIncludeUnreferencedComments(true);
+        stylePackage.setLinkRoleDirection("reverse");
+        stylePackage.setEmbedAttachments(true);
+        stylePackage.setFullFonts(true);
+        doReturn(stylePackage).when(stylePackageSettings).read(any(), any(), any());
+        NamedSettingsRegistry.INSTANCE.register(List.of(stylePackageSettings));
+
+        ExportParams exportParams = pdfExportFunction.getExportParams(module, args);
+        assertTrue(exportParams.isRenderNativeComments());
+        assertTrue(exportParams.isIncludeUnreferencedComments());
+        assertEquals(LinkRoleDirection.REVERSE, exportParams.getLinkRoleDirection());
+        assertTrue(exportParams.isEmbedAttachments());
+        assertTrue(exportParams.isFullFonts());
+    }
+
+    @Test
+    @SuppressWarnings("java:S5961") // Suppress "Refactor this method to reduce the number of assertions" warning
+    void testOtherSettingsFromStylePackageArePropagated() {
+        when(module.getProjectId()).thenReturn("testProject");
+        when(module.getModuleLocation().getLocationPath()).thenReturn("Space/Document");
+        IArguments args = new Arguments(Map.of());
+        StylePackageSettings stylePackageSettings = spy(new StylePackageSettings(settingsService));
+        // Values other than the defaults, so that a setting which is not passed on fails the test
+        StylePackageModel stylePackage = stylePackageSettings.defaultValues();
+        stylePackage.setCoverPage("coverPage1");
+        stylePackage.setHeaderFooter("headerFooter1");
+        stylePackage.setLocalization("localization1");
+        stylePackage.setWebhooks("webhooks1");
+        stylePackage.setHeadersColor("#123456");
+        stylePackage.setOrientation("landscape");
+        stylePackage.setPaperSize("a3");
+        stylePackage.setPdfVariant("pdf_ua_1");
+        stylePackage.setImageDensity("dpi_300");
+        stylePackage.setFitToPage(false);
+        stylePackage.setRenderComments(CommentsRenderType.ALL);
+        stylePackage.setWatermark(true);
+        stylePackage.setMarkReferencedWorkitems(true);
+        stylePackage.setCutEmptyChapters(true);
+        stylePackage.setCutEmptyWorkitemAttributes(false);
+        stylePackage.setCutLocalURLs(true);
+        stylePackage.setFollowHTMLPresentationalHints(false);
+        stylePackage.setCustomNumberedListStyles("numberedListStyles1");
+        stylePackage.setSpecificChapters("1,2");
+        stylePackage.setMetadataFields("field1,field2");
+        stylePackage.setLanguage("de");
+        stylePackage.setLanguageCustomField("languageField");
+        stylePackage.setLinkedWorkitemRoles(List.of("role1", "role2"));
+        stylePackage.setAttachmentsFilter("*.pdf");
+        stylePackage.setTestcaseFieldId("testcaseField");
+        doReturn(stylePackage).when(stylePackageSettings).read(any(), any(), any());
+        NamedSettingsRegistry.INSTANCE.register(List.of(stylePackageSettings));
+
+        ExportParams exportParams = pdfExportFunction.getExportParams(module, args);
+        assertEquals("testProject", exportParams.getProjectId());
+        assertEquals("Space/Document", exportParams.getLocationPath());
+        assertEquals("coverPage1", exportParams.getCoverPage());
+        assertEquals("headerFooter1", exportParams.getHeaderFooter());
+        assertEquals("localization1", exportParams.getLocalization());
+        assertEquals("webhooks1", exportParams.getWebhooks());
+        assertEquals("#123456", exportParams.getHeadersColor());
+        assertEquals(Orientation.LANDSCAPE, exportParams.getOrientation());
+        assertEquals(PaperSize.A3, exportParams.getPaperSize());
+        assertEquals(PdfVariant.PDF_UA_1, exportParams.getPdfVariant());
+        assertEquals(ImageDensity.DPI_300, exportParams.getImageDensity());
+        assertFalse(exportParams.isFitToPage());
+        assertEquals(CommentsRenderType.ALL, exportParams.getRenderComments());
+        assertTrue(exportParams.isWatermark());
+        assertTrue(exportParams.isMarkReferencedWorkitems());
+        assertTrue(exportParams.isCutEmptyChapters());
+        assertFalse(exportParams.isCutEmptyWIAttributes());
+        assertTrue(exportParams.isCutLocalUrls());
+        assertFalse(exportParams.isFollowHTMLPresentationalHints());
+        assertEquals("numberedListStyles1", exportParams.getNumberedListStyles());
+        assertEquals(List.of("1", "2"), exportParams.getChapters());
+        assertEquals(List.of("field1", "field2"), exportParams.getMetadataFields());
+        assertEquals("de", exportParams.getLanguage());
+        assertEquals("languageField", exportParams.getLanguageCustomField());
+        assertEquals(List.of("role1", "role2"), exportParams.getLinkedWorkitemRoles());
+        assertEquals("*.pdf", exportParams.getAttachmentsFilter());
+        assertEquals("testcaseField", exportParams.getTestcaseFieldId());
+    }
+
+    @Test
+    void testMissingChaptersAndMetadataFieldsYieldNull() {
+        IArguments args = new Arguments(Map.of());
+        StylePackageSettings stylePackageSettings = spy(new StylePackageSettings(settingsService));
+        StylePackageModel stylePackage = stylePackageSettings.defaultValues();
+        stylePackage.setSpecificChapters(null);
+        stylePackage.setMetadataFields(null);
+        doReturn(stylePackage).when(stylePackageSettings).read(any(), any(), any());
+        NamedSettingsRegistry.INSTANCE.register(List.of(stylePackageSettings));
+
+        ExportParams exportParams = pdfExportFunction.getExportParams(module, args);
+        assertNull(exportParams.getChapters());
+        assertNull(exportParams.getMetadataFields());
     }
 
     @Test
