@@ -59,7 +59,7 @@
   },
   "overrides": {
     "@trivago/prettier-plugin-sort-imports": {
-      "minimatch": "^10.2.6"
+      "minimatch": "^11.0.0"
     },
     "eslint-plugin-jsx-a11y": {
       "eslint": "$eslint"
