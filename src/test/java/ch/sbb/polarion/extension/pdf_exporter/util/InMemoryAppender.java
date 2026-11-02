@@ -41,6 +41,13 @@ public class InMemoryAppender extends AbstractAppender {
         return logMessages.get().stream().anyMatch(m -> m.contains(messagePart));
     }
 
+    /**
+     * Discards the messages captured on the current thread. Call it before and after each test which checks them.
+     */
+    public static void clear() {
+        logMessages.remove();
+    }
+
     @Override
     public void append(LogEvent event) {
         logMessages.get().add(getLayout() != null ? new String(getLayout().toByteArray(event)) : event.getMessage().getFormattedMessage());
