@@ -28,16 +28,25 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
  * A cross-reference looks as it does in Polarion: in the color of a link, with a dashed gray line below.
  * <p>
  * The default CSS drew it black and underlined, while every other link of the document is blue. Cutting local URLs
- * removes the link around the label, and the label keeps its look.
+ * removes the link around the label, and the label keeps its look. A link to a Polarion object with a label of its own
+ * looks the same.
  * </p>
  */
 class CrossReferenceStyleTest extends BasePdfConverterTest {
 
-    private static final String LABEL = "EL-1 - Object 1";
+    /** No letter of the labels reaches below the baseline, where the dashed line runs. */
+    private static final String LABEL = "EL-1 - Item 1";
 
     /** A cross-reference as Polarion renders it, with a link "Cut local Polarion URLs" removes. */
     private static final String CONTENT = """
-            <div class="polarion-dle-workitem-basic-0">to Object 1 : <span class="polarion-rte-link" data-type="crossReference" data-item-id="EL-1" data-option-id="long"><span class="polarion-no-style-cleanup" style="white-space:nowrap;" title="EL-1 - Object 1 (Scroll in document)"><a style="font-size:1em;" target="_top" class="polarion-Hyperlink" href="http://localhost/polarion/#/project/test/workitem?id=EL-1"><span class="polarion-cross-reference-label">EL-1<span style="white-space: normal"> - Object 1</span></span></a></span></span></div>""";
+            <div class="polarion-dle-workitem-basic-0">to Item 1 : <span class="polarion-rte-link" data-type="crossReference" data-item-id="EL-1" data-option-id="long"><span class="polarion-no-style-cleanup" style="white-space:nowrap;" title="EL-1 - Item 1 (Scroll in document)"><a style="font-size:1em;" target="_top" class="polarion-Hyperlink" href="http://localhost/polarion/#/project/test/workitem?id=EL-1"><span class="polarion-cross-reference-label">EL-1<span style="white-space: normal"> - Item 1</span></span></a></span></span></div>""";
+
+    private static final String EXTERNAL_LABEL = "Item 2";
+
+    /** A link to a Polarion object with a label of its own, as Polarion renders it: the link carries the class. */
+    private static final String EXTERNAL = """
+            <div class="polarion-dle-workitem-basic-0">to the second item : <span class="polarion-rte-link" data-type="polarion"><a href="http://localhost/polarion/#/project/test/workitem?id=EL-2" class="polarion-cross-reference-link-external">%s</a></span></div>"""
+            .formatted(EXTERNAL_LABEL);
 
     /** The color of a link in Polarion and in the default CSS. */
     private static final Color LINK = new Color(0x007993);
@@ -48,16 +57,26 @@ class CrossReferenceStyleTest extends BasePdfConverterTest {
     /** How far an antialiased pixel may be from the color it draws, per channel. */
     private static final int TOLERANCE = 40;
 
+    /** How far the channels of a gray pixel may be from each other. */
+    private static final int NEUTRAL = 8;
+
     /** The pages are rendered at 300 DPI, a point is 300 / 72 pixels. */
     private static final float PIXELS_PER_POINT = 300f / 72f;
 
     @ParameterizedTest
     @ValueSource(booleans = {false, true})
     void drawsACrossReferenceAsPolarionDoes(boolean cutLocalUrls) {
-        byte[] pdf = export(cutLocalUrls);
+        assertDrawnAsPolarionDoes(export(CONTENT, cutLocalUrls), LABEL);
+    }
 
+    @Test
+    void drawsALinkWithALabelOfItsOwnAsPolarionDoes() {
+        assertDrawnAsPolarionDoes(export(EXTERNAL, false), EXTERNAL_LABEL);
+    }
+
+    private static void assertDrawnAsPolarionDoes(byte @NotNull [] pdf, @NotNull String text) {
         BufferedImage page = pageOf(pdf);
-        Rectangle label = boxOf(pdf);
+        Rectangle label = boxOf(pdf, text);
         assertThat(pixels(page, label, LINK)).as("The label is in the color of a link").isPositive();
         assertThat(pixels(page, label, Color.BLACK)).as("The label is not black").isZero();
 
@@ -68,20 +87,20 @@ class CrossReferenceStyleTest extends BasePdfConverterTest {
 
     @Test
     void drawsACrossReferenceAsTheReferenceImageShows() {
-        byte[] pdf = export(false);
+        byte[] pdf = export(CONTENT, false);
 
         assertFalse(compareContentUsingReferenceImages(getCurrentMethodName(), pdf), "The pages differ from the reference images");
     }
 
     @Test
     void drawsACrossReferenceWithoutItsLinkAsWithIt() {
-        BufferedImage linked = pageOf(export(false));
-        BufferedImage cut = pageOf(export(true));
+        BufferedImage linked = pageOf(export(CONTENT, false));
+        BufferedImage cut = pageOf(export(CONTENT, true));
 
         assertThat(MediaUtils.diffImages(linked, cut)).as("Cutting local URLs leaves the page as it is").isEmpty();
     }
 
-    private byte @NotNull [] export(boolean cutLocalUrls) {
+    private byte @NotNull [] export(@NotNull String content, boolean cutLocalUrls) {
         ExportParams params = ExportParams.builder()
                 .projectId("test")
                 .locationPath("testLocation")
@@ -89,7 +108,7 @@ class CrossReferenceStyleTest extends BasePdfConverterTest {
                 .paperSize(PaperSize.A4)
                 .cutLocalUrls(cutLocalUrls)
                 .build();
-        return exportLiveDoc("Cross-references", CONTENT, params);
+        return exportLiveDoc("Cross-references", content, params);
     }
 
     @SneakyThrows
@@ -99,22 +118,22 @@ class CrossReferenceStyleTest extends BasePdfConverterTest {
         }
     }
 
-    /** The box of the label on the first page, in pixels, from the top of its letters to its baseline. */
+    /** The box of a label on the first page, in pixels, from the top of its letters to its baseline. */
     @SneakyThrows
-    private static @NotNull Rectangle boxOf(byte @NotNull [] pdf) {
+    private static @NotNull Rectangle boxOf(byte @NotNull [] pdf, @NotNull String label) {
         List<TextPosition> letters = new ArrayList<>();
         try (PDDocument document = Loader.loadPDF(pdf)) {
             new PDFTextStripper() {
                 @Override
                 protected void writeString(String text, List<TextPosition> positions) {
-                    int start = text.indexOf(LABEL);
+                    int start = text.indexOf(label);
                     if (start >= 0) {
-                        letters.addAll(positions.subList(start, start + LABEL.length()));
+                        letters.addAll(positions.subList(start, start + label.length()));
                     }
                 }
             }.getText(document);
         }
-        assertThat(letters).as("The label is in the PDF").hasSize(LABEL.length());
+        assertThat(letters).as("The label is in the PDF").hasSize(label.length());
         TextPosition first = letters.get(0);
         TextPosition last = letters.get(letters.size() - 1);
         int left = Math.round(first.getXDirAdj() * PIXELS_PER_POINT);
@@ -143,7 +162,7 @@ class CrossReferenceStyleTest extends BasePdfConverterTest {
             int dashes = 0;
             boolean inDash = false;
             for (int x = box.x; x < box.x + box.width; x++) {
-                boolean gray = isClose(new Color(page.getRGB(x, y)), LINE);
+                boolean gray = isGray(new Color(page.getRGB(x, y)));
                 if (gray && !inDash) {
                     dashes++;
                 }
@@ -152,6 +171,13 @@ class CrossReferenceStyleTest extends BasePdfConverterTest {
             most = Math.max(most, dashes);
         }
         return most;
+    }
+
+    /** The color of the line, and neutral: the edges of a letter in the color of a link are not gray. */
+    private static boolean isGray(@NotNull Color color) {
+        return isClose(color, LINE)
+                && Math.abs(color.getRed() - color.getGreen()) <= NEUTRAL
+                && Math.abs(color.getGreen() - color.getBlue()) <= NEUTRAL;
     }
 
     private static boolean isClose(@NotNull Color actual, @NotNull Color expected) {
