@@ -8,9 +8,12 @@ import lombok.SneakyThrows;
 import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -64,6 +67,18 @@ class PdfWidthValidationServiceTest {
             List<WidthValidationResult.PageInfo> invalidPages = service.findInvalidPages(IOUtils.toByteArray(is), 2);
             assertEquals(2, invalidPages.size());
         }
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {0, -1, Integer.MIN_VALUE})
+    void nonPositiveMaxResultsReturnsEmptyWithoutLoadingPdfTest(int maxResults) {
+        // invalid PDF bytes fail on loading, so an empty result proves the method returns before it
+        byte[] invalidPdf = "not a pdf".getBytes(StandardCharsets.UTF_8);
+        PdfWidthValidationService service = new PdfWidthValidationService(mock(PdfConverter.class));
+
+        List<WidthValidationResult.PageInfo> invalidPages = service.findInvalidPages(invalidPdf, maxResults);
+
+        assertTrue(invalidPages.isEmpty());
     }
 
     @Test

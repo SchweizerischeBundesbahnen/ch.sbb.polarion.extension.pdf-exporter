@@ -255,7 +255,7 @@ class PdfExportFunctionTest {
         NamedSettingsRegistry.INSTANCE.register(List.of(new StylePackageSettings(settingsService)));
 
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> pdfExportFunction.getExportParams(module, args));
-        assertEquals("Styled package 'Specific' is unavailable. Please contact system administrator.", exception.getMessage());
+        assertEquals("Style package 'Specific' is unavailable. Please contact system administrator.", exception.getMessage());
     }
 
     @Test

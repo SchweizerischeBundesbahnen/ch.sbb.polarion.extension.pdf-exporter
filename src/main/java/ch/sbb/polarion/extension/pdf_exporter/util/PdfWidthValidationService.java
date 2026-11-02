@@ -60,6 +60,9 @@ public class PdfWidthValidationService {
     @VisibleForTesting
     public List<WidthValidationResult.PageInfo> findInvalidPages(byte[] pdf, int maxResults) {
         List<WidthValidationResult.PageInfo> result = new ArrayList<>();
+        if (maxResults <= 0) {
+            return result;
+        }
         try (PDDocument document = Loader.loadPDF(pdf)) {
             int currentIssuesFound = 0;
             for (int page = 0; page < document.getNumberOfPages(); page++) {
