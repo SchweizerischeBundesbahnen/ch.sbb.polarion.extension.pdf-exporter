@@ -33,11 +33,11 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
  */
 class CrossReferenceStyleTest extends BasePdfConverterTest {
 
-    private static final String LABEL = "1 - Object 1";
+    private static final String LABEL = "EL-1 - Object 1";
 
+    /** A cross-reference as Polarion renders it, with a link "Cut local Polarion URLs" removes. */
     private static final String CONTENT = """
-            <div class="polarion-dle-workitem-basic-0">to Object 1 : <span class="polarion-rte-link" data-type="crossReference" data-item-id="EL-1" data-option-id="long"><a href="http://localhost/polarion/#/project/test/workitem?id=EL-1"><span class="polarion-cross-reference-label">%s</span></a></span></div>"""
-            .formatted(LABEL);
+            <div class="polarion-dle-workitem-basic-0">to Object 1 : <span class="polarion-rte-link" data-type="crossReference" data-item-id="EL-1" data-option-id="long"><span class="polarion-no-style-cleanup" style="white-space:nowrap;" title="EL-1 - Object 1 (Scroll in document)"><a style="font-size:1em;" target="_top" class="polarion-Hyperlink" href="http://localhost/polarion/#/project/test/workitem?id=EL-1"><span class="polarion-cross-reference-label">EL-1<span style="white-space: normal"> - Object 1</span></span></a></span></span></div>""";
 
     /** The color of a link in Polarion and in the default CSS. */
     private static final Color LINK = new Color(0x007993);
