@@ -426,9 +426,8 @@ Two gates, both from react-sbb-polarion; its README section "Accessibility check
 reference.
 
 - **Lint.** [`eslint.config.js`](eslint.config.js) is RSP's shared `polarionEslintConfig`, which adds
-  `eslint-plugin-jsx-a11y`'s recommended rules for `src/`. The `overrides` entry for that plugin in
-  `package.json` lets it install next to ESLint 10, which its peer range does not include yet. Remove the
-  entry once [jsx-a11y supports ESLint 10](https://github.com/jsx-eslint/eslint-plugin-jsx-a11y/issues/1075).
+  the recommended rules of [`eslint-plugin-jsx-a11y-x`](https://github.com/eslint-community/eslint-plugin-jsx-a11y-x)
+  for `src/`. The rules are named `jsx-a11y-x/...`. The plugin supports ESLint 10 and needs no override.
 - **axe.** Each page's own test file has an `accessibility` block that scans the rendered page with
   `pageViolations()` (WCAG 2.0-2.2 A/AA; `color-contrast` and `target-size` are off in RSP). A surface in a
   shadow root is scanned through its host with `a11yViolations(host)`, as in the `*Mount.test.tsx` files. Do
