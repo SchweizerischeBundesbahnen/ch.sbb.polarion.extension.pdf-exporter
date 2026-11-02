@@ -23,7 +23,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 public class InMemoryAppender extends AbstractAppender {
 
     // Test classes run in parallel and log from several threads at once
-    private static final List<String> logMessages = new CopyOnWriteArrayList<>();
+    private static final ThreadLocal<List<String>> logMessages = ThreadLocal.withInitial(CopyOnWriteArrayList::new);
 
     protected InMemoryAppender(String name, Layout<? extends Serializable> layout, boolean ignoreExceptions) {
         super(name, null, layout, ignoreExceptions, null);
@@ -38,11 +38,11 @@ public class InMemoryAppender extends AbstractAppender {
     }
 
     public static boolean anyMessageContains(String messagePart) {
-        return logMessages.stream().anyMatch(m -> m.contains(messagePart));
+        return logMessages.get().stream().anyMatch(m -> m.contains(messagePart));
     }
 
     @Override
     public void append(LogEvent event) {
-        logMessages.add(getLayout() != null ? new String(getLayout().toByteArray(event)) : event.getMessage().getFormattedMessage());
+        logMessages.get().add(getLayout() != null ? new String(getLayout().toByteArray(event)) : event.getMessage().getFormattedMessage());
     }
 }
