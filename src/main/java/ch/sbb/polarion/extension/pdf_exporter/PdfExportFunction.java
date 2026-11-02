@@ -108,7 +108,7 @@ public class PdfExportFunction implements IFunction<IModule> {
             stylePackage = ((StylePackageSettings) NamedSettingsRegistry.INSTANCE.getByFeatureName(StylePackageSettings.FEATURE_NAME))
                     .read(ScopeUtils.getScopeFromProject(projectId), SettingId.fromName(stylePackageName), null);
         } catch (ObjectNotFoundException notFoundException) {
-            throw new IllegalArgumentException("Styled package '%s' is unavailable. Please contact system administrator.".formatted(stylePackageName));
+            throw new IllegalArgumentException("Style package '%s' is unavailable. Please contact system administrator.".formatted(stylePackageName));
         }
 
         return ExportParams.builder()
