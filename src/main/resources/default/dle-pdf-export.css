@@ -895,14 +895,17 @@ tr:hover {
     padding-bottom: 4px;
 }
 
-.polarion-cross-reference-label {
-    color: black !important;
-    text-decoration: underline !important;
+/* A cross-reference looks as in Polarion: in the color of a link, with a dashed gray line below. It keeps that look
+   when cutting local URLs removes its link. */
+.polarion-cross-reference-label,
+.polarion-cross-reference-link-external {
+    color: #007993 !important;
+    text-decoration: none !important;
 }
 
-.polarion-cross-reference-link-external {
-    color: black !important;
-    text-decoration: underline !important;
+.polarion-cross-reference-label,
+.polarion-rte-link[data-type="polarion"] .polarion-cross-reference-link-external {
+    border-bottom: 1px dashed #A9A9A9;
 }
 
 .polarion-dle-pdf {
