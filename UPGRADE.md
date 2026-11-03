@@ -3,6 +3,21 @@
 Version-specific upgrade notes for the PDF Exporter extension. See the [README](README.md) for
 installation and the [configuration reference](CONFIGURATION.md) for all settings.
 
+## Upgrade from version 13.13.x to 13.14.0
+
+### weasyprint-service 70.0.8 or later
+
+Use weasyprint-service 70.0.8 or later. It draws every SVG as vector, so an SVG stays sharp at any zoom. 70.0.6 and
+70.0.7 do the same by default. Only their Chromium mode (`SVG_RENDERER=chromium`) converts SVG to PNG images at the
+selected image density, and 70.0.8 removes that mode.
+
+### Image density is deprecated
+
+The **Image density** of the export settings and of the style packages is deprecated. weasyprint-service 70.0.8 and
+later ignores it. The next major version removes it, and then the REST API answers 400 to a request that sends
+`imageDensity`. Stop sending `imageDensity` in REST API clients now. Style packages stored with an image density stay
+readable.
+
 ## Upgrade from version 13.12.x to 13.13.0
 
 ### weasyprint-service 70.0.7 or later

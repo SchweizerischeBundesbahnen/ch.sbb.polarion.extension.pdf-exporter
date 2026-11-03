@@ -7,7 +7,13 @@ import lombok.Getter;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
 
-@Schema(description = "Quality of PNG images converted from SVG")
+/**
+ * Deprecated: weasyprint-service draws SVG as vector since 70.0.8 and ignores the image density.
+ * The next major version removes it. The OpenAPI schema marks it, not {@code @Deprecated}: the REST
+ * clients are the ones to act, and the extension itself keeps using it until then.
+ */
+@Schema(description = "Quality of PNG images converted from SVG. Deprecated: weasyprint-service 70.0.8 and later draws SVG as vector and ignores it",
+        deprecated = true)
 @Getter
 public enum ImageDensity {
     DPI_96(1.0),

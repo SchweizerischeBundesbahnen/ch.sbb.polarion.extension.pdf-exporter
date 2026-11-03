@@ -36,7 +36,13 @@ public class ConversionParams {
     @Schema(description = "Target file name of exported document")
     protected String fileName;
 
-    @Schema(description = "Quality of PNG images converted from SVG, by default 96 dpi")
+    /**
+     * Deprecated: weasyprint-service draws SVG as vector since 70.0.8 and ignores the image density.
+     * The next major version removes it. The OpenAPI schema marks it, not {@code @Deprecated}: the REST
+     * clients are the ones to act, and the extension itself keeps using it until then.
+     */
+    @Schema(description = "Quality of PNG images converted from SVG, by default 96 dpi. " +
+            "Deprecated: weasyprint-service 70.0.8 and later draws SVG as vector and ignores it", deprecated = true)
     @Builder.Default
     protected ImageDensity imageDensity = ImageDensity.DPI_96;
 
