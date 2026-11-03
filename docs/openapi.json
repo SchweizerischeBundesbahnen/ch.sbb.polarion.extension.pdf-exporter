@@ -2377,7 +2377,8 @@
             "type": "string"
           },
           "imageDensity": {
-            "description": "Quality of PNG images converted from SVG",
+            "deprecated": true,
+            "description": "Quality of PNG images converted from SVG. Deprecated: weasyprint-service 70.0.8 and later draws SVG as vector and ignores it",
             "enum": [
               "DPI_96",
               "DPI_192",

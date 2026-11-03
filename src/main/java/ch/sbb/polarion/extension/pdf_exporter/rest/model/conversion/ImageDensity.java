@@ -7,7 +7,13 @@ import lombok.Getter;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
 
-@Schema(description = "Quality of PNG images converted from SVG")
+/**
+ * @deprecated weasyprint-service draws SVG as vector since 70.0.8 and ignores the image density.
+ * It will be removed in the next major version.
+ */
+@Deprecated(since = "13.14.0", forRemoval = true)
+@Schema(description = "Quality of PNG images converted from SVG. Deprecated: weasyprint-service 70.0.8 and later draws SVG as vector and ignores it",
+        deprecated = true)
 @Getter
 public enum ImageDensity {
     DPI_96(1.0),

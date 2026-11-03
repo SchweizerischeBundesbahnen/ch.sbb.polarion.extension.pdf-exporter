@@ -157,6 +157,9 @@ The default value is `pdf/a-2b`.
 
 ### Image density
 
+> **Deprecated.** weasyprint-service 70.0.8 and later draws SVG as vector and ignores this property.
+> The next major version removes it.
+
 This configuration property allows selecting the density (DPI) for PNG images converted from SVG. The following options are supported:
 
 | Density (DPI) | Scale Factor | Description                                |

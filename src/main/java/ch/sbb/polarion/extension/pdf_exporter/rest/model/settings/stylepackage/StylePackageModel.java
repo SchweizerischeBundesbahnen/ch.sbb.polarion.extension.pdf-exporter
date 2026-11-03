@@ -103,6 +103,11 @@ public class StylePackageModel extends SettingsModel {
     private String attachmentsFilter;
     private String testcaseFieldId;
     private boolean embedAttachments;
+    /**
+     * @deprecated weasyprint-service draws SVG as vector since 70.0.8 and ignores the image density.
+     * It will be removed in the next major version.
+     */
+    @Deprecated(since = "13.14.0", forRemoval = true)
     private String imageDensity;
     private boolean fullFonts;
 
