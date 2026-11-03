@@ -8,10 +8,10 @@ import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
 
 /**
- * @deprecated weasyprint-service draws SVG as vector since 70.0.8 and ignores the image density.
- * It will be removed in the next major version.
+ * Deprecated: weasyprint-service draws SVG as vector since 70.0.8 and ignores the image density.
+ * The next major version removes it. The OpenAPI schema marks it, not {@code @Deprecated}: the REST
+ * clients are the ones to act, and the extension itself keeps using it until then.
  */
-@Deprecated(since = "13.14.0", forRemoval = true)
 @Schema(description = "Quality of PNG images converted from SVG. Deprecated: weasyprint-service 70.0.8 and later draws SVG as vector and ignores it",
         deprecated = true)
 @Getter
