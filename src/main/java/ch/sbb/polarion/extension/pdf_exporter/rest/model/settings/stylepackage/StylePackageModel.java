@@ -105,8 +105,8 @@ public class StylePackageModel extends SettingsModel {
     private boolean embedAttachments;
     /**
      * Deprecated: weasyprint-service draws SVG as vector since 70.0.8 and ignores the image density.
-     * The next major version removes it. The OpenAPI schema marks it, not {@code @Deprecated}: the REST
-     * clients are the ones to act, and the extension itself keeps using it until then.
+     * The next major version removes it, and UPGRADE.md announces it. Not {@code @Deprecated}: the extension
+     * itself keeps using it until then, and style packages stored with it stay readable.
      */
     private String imageDensity;
     private boolean fullFonts;
