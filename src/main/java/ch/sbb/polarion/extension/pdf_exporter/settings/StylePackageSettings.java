@@ -8,7 +8,6 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.CommentsRend
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.Orientation;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PaperSize;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PdfVariant;
-import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ImageDensity;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.stylepackage.StylePackageModel;
 import com.polarion.core.util.StringUtils;
 import org.jetbrains.annotations.NotNull;
@@ -106,7 +105,6 @@ public class StylePackageSettings extends GenericNamedSettings<StylePackageModel
                 .paperSize(PaperSize.A4.name())
                 .orientation(Orientation.PORTRAIT.name())
                 .pdfVariant(PdfVariant.PDF_A_2B.name())
-                .imageDensity(ImageDensity.DPI_96.name())
                 .fitToPage(true)
                 .renderComments(CommentsRenderType.OPEN)
                 .cutEmptyWorkitemAttributes(true)

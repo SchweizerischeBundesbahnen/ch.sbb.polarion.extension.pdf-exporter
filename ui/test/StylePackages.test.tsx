@@ -33,7 +33,6 @@ const STORED = {
   paperSize: 'A3',
   orientation: 'LANDSCAPE',
   pdfVariant: 'PDF_A_2U',
-  imageDensity: 'DPI_300',
   fullFonts: true,
   fitToPage: true,
   renderComments: 'ALL',
@@ -210,7 +209,6 @@ describe('Style Packages page', () => {
     expect(select('paper-size-selector')!.value).toBe('A3');
     expect(select('orientation-selector')!.value).toBe('LANDSCAPE');
     expect(select('pdf-variant-selector')!.value).toBe('PDF_A_2U');
-    expect(select('image-density-selector')!.value).toBe('DPI_300');
     expect(input('full-fonts').checked).toBe(true);
     expect(input('render-comments').checked).toBe(true);
     expect(select('render-comments-selector')!.value).toBe('ALL');
@@ -356,7 +354,6 @@ describe('Style Packages page', () => {
       paperSize: 'A3',
       orientation: 'LANDSCAPE',
       pdfVariant: 'PDF_A_2U',
-      imageDensity: 'DPI_300',
       fitToPage: true,
       renderComments: 'ALL',
       renderNativeComments: false,
@@ -448,7 +445,6 @@ describe('Style Packages page', () => {
 
     await pick('paper-size-selector', 'LETTER');
     await pick('pdf-variant-selector', 'PDF_UA_2');
-    await pick('image-density-selector', 'DPI_600');
     await userEvent.click(input('watermark'));
     await userEvent.click(input('cut-urls'));
     await clickButton('Save');
@@ -456,7 +452,6 @@ describe('Style Packages page', () => {
     expect(await savedBody(fetchMock)).toMatchObject({
       paperSize: 'LETTER',
       pdfVariant: 'PDF_UA_2',
-      imageDensity: 'DPI_600',
       watermark: true,
       cutLocalURLs: true,
     });
@@ -550,7 +545,6 @@ describe('Style Packages page', () => {
       paperSize: 'A4',
       orientation: 'LANDSCAPE',
       pdfVariant: 'PDF_A_2B',
-      imageDensity: 'DPI_96',
       fitToPage: true,
       renderComments: 'ALL',
       renderNativeComments: true,

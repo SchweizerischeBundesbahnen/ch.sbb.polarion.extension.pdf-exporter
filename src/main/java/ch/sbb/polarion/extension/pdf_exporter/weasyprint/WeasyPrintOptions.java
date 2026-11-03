@@ -1,6 +1,5 @@
 package ch.sbb.polarion.extension.pdf_exporter.weasyprint;
 
-import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ImageDensity;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PdfVariant;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -11,7 +10,6 @@ public class WeasyPrintOptions {
     private boolean followHTMLPresentationalHints;
     private PdfVariant pdfVariant;
     private boolean customMetadata;
-    private ImageDensity imageDensity;
     private boolean fullFonts;
 
     public static WeasyPrintOptionsBuilder builder() {
@@ -22,7 +20,6 @@ public class WeasyPrintOptions {
         private boolean followHTMLPresentationalHints = false;
         private PdfVariant pdfVariant = PdfVariant.PDF_A_2B;
         private boolean customMetadata = false;
-        private ImageDensity imageDensity = ImageDensity.DPI_96;
         private boolean fullFonts = false;
 
         public WeasyPrintOptionsBuilder followHTMLPresentationalHints(boolean followHTMLPresentationalHints) {
@@ -40,18 +37,13 @@ public class WeasyPrintOptions {
             return this;
         }
 
-        public WeasyPrintOptionsBuilder imageDensity(ImageDensity imageDensity) {
-            this.imageDensity = imageDensity != null ? imageDensity : ImageDensity.DPI_96;
-            return this;
-        }
-
         public WeasyPrintOptionsBuilder fullFonts(boolean fullFonts) {
             this.fullFonts = fullFonts;
             return this;
         }
 
         public WeasyPrintOptions build() {
-            return new WeasyPrintOptions(followHTMLPresentationalHints, pdfVariant, customMetadata, imageDensity, fullFonts);
+            return new WeasyPrintOptions(followHTMLPresentationalHints, pdfVariant, customMetadata, fullFonts);
         }
     }
 }

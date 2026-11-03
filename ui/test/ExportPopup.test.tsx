@@ -136,7 +136,6 @@ describe('what the style package puts on screen', () => {
 
     expect(selected('popup-paper-size-selector')).toBe('A4');
     expect(selected('popup-pdf-variant-selector')).toBe('PDF_A_2B');
-    expect(selected('popup-image-density-selector')).toBe('DPI_96');
     expect(checkbox('popup-fit-to-page').checked).toBe(true);
     expect(checkbox('popup-watermark').checked).toBe(true);
     expect(checkbox('popup-cut-empty-chapters').checked).toBe(true);
@@ -457,7 +456,6 @@ describe('exporting', () => {
       ['popup-paper-size-selector', 'A3'],
       ['popup-orientation-selector', 'LANDSCAPE'],
       ['popup-pdf-variant-selector', 'PDF_UA_2'],
-      ['popup-image-density-selector', 'DPI_300'],
       ['popup-css-selector', 'SBB'],
       ['popup-header-footer-selector', 'SBB'],
       ['popup-localization-selector', 'SBB'],
@@ -484,7 +482,7 @@ describe('exporting', () => {
     expect(sent.paperSize).toBe('A3');
     expect(sent.orientation).toBe('LANDSCAPE');
     expect(sent.pdfVariant).toBe('PDF_UA_2');
-    expect(sent.imageDensity).toBe('DPI_300');
+    expect(sent).not.toHaveProperty('imageDensity');
     expect(sent.fullFonts).toBe(true);
     // The package had these two on, so a click turns them off
     expect(sent.fitToPage).toBe(false);

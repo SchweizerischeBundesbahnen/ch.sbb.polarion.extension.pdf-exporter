@@ -53,7 +53,6 @@ const routes = (content: Record<string, unknown> = {}) => [
       paperSize: 'A4',
       orientation: 'PORTRAIT',
       pdfVariant: 'PDF_A_2B',
-      imageDensity: 'DPI_96',
       fitToPage: true,
       followHTMLPresentationalHints: true,
       renderComments: 'OPEN',

@@ -75,7 +75,6 @@ describe('what the style package puts on screen', () => {
 
     expect(selected('paper-size-selector')).toBe('A4');
     expect(selected('pdf-variant-selector')).toBe('PDF_A_2B');
-    expect(selected('image-density-selector')).toBe('DPI_96');
     expect(checkbox('fit-to-page').checked).toBe(true);
     expect(checkbox('watermark').checked).toBe(true);
     expect(checkbox('cut-empty-chapters').checked).toBe(true);
@@ -247,7 +246,6 @@ describe('what the style package puts on screen', () => {
       ['paper-size-selector', 'A3'],
       ['orientation-selector', 'LANDSCAPE'],
       ['pdf-variant-selector', 'PDF_UA_2'],
-      ['image-density-selector', 'DPI_300'],
       ['css-selector', 'SBB'],
       ['header-footer-selector', 'SBB'],
       ['localization-selector', 'SBB'],
@@ -264,7 +262,7 @@ describe('what the style package puts on screen', () => {
     expect(sent.paperSize).toBe('A3');
     expect(sent.orientation).toBe('LANDSCAPE');
     expect(sent.pdfVariant).toBe('PDF_UA_2');
-    expect(sent.imageDensity).toBe('DPI_300');
+    expect(sent).not.toHaveProperty('imageDensity');
     expect(sent.css).toBe('SBB');
     expect(sent.headerFooter).toBe('SBB');
     expect(sent.localization).toBe('SBB');

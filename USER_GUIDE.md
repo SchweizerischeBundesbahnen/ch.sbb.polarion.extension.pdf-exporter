@@ -14,7 +14,6 @@
     * [Paper size](#paper-size)
     * [Orientation](#orientation)
     * [PDF variant](#pdf-variant)
-    * [Image density](#image-density)
     * [Embed full fonts (no subsetting)](#embed-full-fonts-no-subsetting)
     * [Fit images and tables to page width](#fit-images-and-tables-to-page-width)
     * [Follow HTML presentational hints](#follow-html-presentational-hints)
@@ -154,19 +153,6 @@ The default value is `pdf/a-2b`.
   - ListNumbering attribute for lists
 
   If full PDF/UA compliance is required, use **pdf/ua-1** instead.
-
-### Image density
-
-This configuration property allows selecting the density (DPI) for PNG images converted from SVG. The following options are supported:
-
-| Density (DPI) | Scale Factor | Description                                |
-|---------------|--------------|--------------------------------------------|
-| 96            | 1.0          | Standard screen density (default)          |
-| 192           | 2.0          | High density, suitable for retina displays |
-| 300           | 3.125        | Print quality, good for most printers      |
-| 600           | 6.25         | High print quality, for professional output|
-
-The default value is 96.
 
 ### Embed full fonts (no subsetting)
 

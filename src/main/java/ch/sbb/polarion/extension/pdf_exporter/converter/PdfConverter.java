@@ -152,7 +152,6 @@ public class PdfConverter {
                 DocumentConversionParams docParams = DocumentConversionParams.builder()
                         .presentationalHints(exportParams.isFollowHTMLPresentationalHints())
                         .pdfVariant(exportParams.getPdfVariant() != null ? exportParams.getPdfVariant().toWeasyPrintParameter() : null)
-                        .scaleFactor(exportParams.getImageDensity() != null ? String.valueOf(exportParams.getImageDensity().getScale()) : null)
                         .customMetadata(metaTagsPresent(htmlContent))
                         .fullFonts(exportParams.isFullFonts())
                         .build();
@@ -423,7 +422,6 @@ public class PdfConverter {
                 .followHTMLPresentationalHints(exportParams.isFollowHTMLPresentationalHints())
                 .pdfVariant(exportParams.getPdfVariant())
                 .customMetadata(metaTagsPresent(htmlPage))
-                .imageDensity(exportParams.getImageDensity())
                 .fullFonts(exportParams.isFullFonts())
                 .build();
 

@@ -36,10 +36,6 @@ public class ConversionParams {
     @Schema(description = "Target file name of exported document")
     protected String fileName;
 
-    @Schema(description = "Quality of PNG images converted from SVG, by default 96 dpi")
-    @Builder.Default
-    protected ImageDensity imageDensity = ImageDensity.DPI_96;
-
     @Schema(description = "Embed full fonts instead of subsetting. When true, fonts are embedded completely " +
             "without optimization, which gives full glyph coverage and keeps the resulting PDF easier to edit " +
             "downstream, at the cost of a larger file. This is not a robustness switch: subsetting already keeps " +

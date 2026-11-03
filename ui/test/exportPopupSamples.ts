@@ -71,7 +71,6 @@ export const SAMPLE_STYLE_PACKAGE: StylePackageSettings = {
   paperSize: 'A4',
   orientation: 'PORTRAIT',
   pdfVariant: 'PDF_A_2B',
-  imageDensity: 'DPI_96',
   fitToPage: true,
   followHTMLPresentationalHints: true,
   cutEmptyWorkitemAttributes: true,

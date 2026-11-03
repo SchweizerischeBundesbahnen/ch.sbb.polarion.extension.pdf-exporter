@@ -46,7 +46,6 @@ describe('reading a style package into the form', () => {
     expect(form.paperSize).toBe('A4');
     expect(form.orientation).toBe('PORTRAIT');
     expect(form.pdfVariant).toBe('PDF_A_2B');
-    expect(form.imageDensity).toBe('DPI_96');
     expect(form.renderComments).toBe('OPEN');
     expect(form.linkRoleDirection).toBe('BOTH');
     expect(form.headersColor).toBe('#004d73');
