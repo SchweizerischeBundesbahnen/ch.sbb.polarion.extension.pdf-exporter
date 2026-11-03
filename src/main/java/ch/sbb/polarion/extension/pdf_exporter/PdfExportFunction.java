@@ -11,7 +11,6 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.LinkRoleDire
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.Orientation;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PaperSize;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PdfVariant;
-import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ImageDensity;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.stylepackage.StylePackageModel;
 import ch.sbb.polarion.extension.pdf_exporter.service.PdfExporterPolarionService;
 import ch.sbb.polarion.extension.pdf_exporter.settings.StylePackageSettings;
@@ -126,7 +125,6 @@ public class PdfExportFunction implements IFunction<IModule> {
                 .orientation(Orientation.fromString(stylePackage.getOrientation()))
                 .paperSize(PaperSize.fromString(stylePackage.getPaperSize()))
                 .pdfVariant(PdfVariant.fromString(stylePackage.getPdfVariant()))
-                .imageDensity(ImageDensity.fromString(stylePackage.getImageDensity()))
                 .fitToPage(stylePackage.isFitToPage())
                 .renderComments(stylePackage.getRenderComments())
                 .renderNativeComments(stylePackage.isRenderNativeComments())

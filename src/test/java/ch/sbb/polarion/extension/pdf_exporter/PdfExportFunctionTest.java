@@ -6,7 +6,6 @@ import ch.sbb.polarion.extension.generic.settings.SettingsService;
 import ch.sbb.polarion.extension.pdf_exporter.converter.PdfConverter;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.CommentsRenderType;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
-import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ImageDensity;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.LinkRoleDirection;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.Orientation;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PaperSize;
@@ -171,7 +170,6 @@ class PdfExportFunctionTest {
         stylePackage.setOrientation("landscape");
         stylePackage.setPaperSize("a3");
         stylePackage.setPdfVariant("pdf_ua_1");
-        stylePackage.setImageDensity("dpi_300");
         stylePackage.setFitToPage(false);
         stylePackage.setRenderComments(CommentsRenderType.ALL);
         stylePackage.setWatermark(true);
@@ -202,7 +200,6 @@ class PdfExportFunctionTest {
         assertEquals(Orientation.LANDSCAPE, exportParams.getOrientation());
         assertEquals(PaperSize.A3, exportParams.getPaperSize());
         assertEquals(PdfVariant.PDF_UA_1, exportParams.getPdfVariant());
-        assertEquals(ImageDensity.DPI_300, exportParams.getImageDensity());
         assertFalse(exportParams.isFitToPage());
         assertEquals(CommentsRenderType.ALL, exportParams.getRenderComments());
         assertTrue(exportParams.isWatermark());

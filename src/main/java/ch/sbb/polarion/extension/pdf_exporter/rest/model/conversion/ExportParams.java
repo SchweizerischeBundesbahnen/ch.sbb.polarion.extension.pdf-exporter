@@ -147,7 +147,6 @@ public class ExportParams extends ConversionParams {
         paperSize = PaperSize.fromString(stylePackageModel.getPaperSize());
         orientation = Orientation.fromString(stylePackageModel.getOrientation());
         setPdfVariant(PdfVariant.fromString(stylePackageModel.getPdfVariant()));
-        imageDensity = ImageDensity.fromString(stylePackageModel.getImageDensity());
         fitToPage = stylePackageModel.isFitToPage();
         renderComments = stylePackageModel.getRenderComments();
         renderNativeComments = stylePackageModel.isRenderNativeComments();

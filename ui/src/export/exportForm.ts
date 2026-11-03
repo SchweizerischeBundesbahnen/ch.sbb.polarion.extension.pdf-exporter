@@ -1,7 +1,6 @@
 import type { SelectOption } from '@sbb-polarion/react-sbb-polarion';
 import {
   DEFAULT_HEADERS_COLOR,
-  DEFAULT_IMAGE_DENSITY,
   DEFAULT_LINK_ROLE_DIRECTION,
   DEFAULT_NAME,
   DEFAULT_ORIENTATION,
@@ -36,7 +35,6 @@ export interface ExportForm {
   paperSize: string;
   orientation: string;
   pdfVariant: string;
-  imageDensity: string;
   fullFonts: boolean;
   fitToPage: boolean;
   followHTMLPresentationalHints: boolean;
@@ -124,7 +122,6 @@ export function toExportForm(content: StylePackageSettings, context: ExportFormC
     paperSize: content.paperSize ?? DEFAULT_PAPER_SIZE,
     orientation: content.orientation ?? DEFAULT_ORIENTATION,
     pdfVariant: content.pdfVariant ?? DEFAULT_PDF_VARIANT,
-    imageDensity: content.imageDensity ?? DEFAULT_IMAGE_DENSITY,
     fullFonts: !!content.fullFonts,
     fitToPage: !!content.fitToPage,
     followHTMLPresentationalHints: !!content.followHTMLPresentationalHints,

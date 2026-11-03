@@ -20,7 +20,6 @@ import {
   type ChildNames,
   type ChildSetting,
   DEFAULT_HEADERS_COLOR,
-  DEFAULT_IMAGE_DENSITY,
   DEFAULT_NAME,
   DEFAULT_ORIENTATION,
   DEFAULT_PAPER_SIZE,
@@ -72,7 +71,6 @@ interface Form {
   paperSize: string;
   orientation: string;
   pdfVariant: string;
-  imageDensity: string;
   fullFonts: boolean;
   fitToPage: boolean;
   followHTMLPresentationalHints: boolean;
@@ -151,7 +149,6 @@ function toForm(content: StylePackageSettings): Form {
     paperSize: content.paperSize ?? DEFAULT_PAPER_SIZE,
     orientation: content.orientation ?? DEFAULT_ORIENTATION,
     pdfVariant: content.pdfVariant ?? DEFAULT_PDF_VARIANT,
-    imageDensity: content.imageDensity ?? DEFAULT_IMAGE_DENSITY,
     fullFonts: !!content.fullFonts,
     fitToPage: !!content.fitToPage,
     followHTMLPresentationalHints: !!content.followHTMLPresentationalHints,
@@ -418,7 +415,6 @@ export default function StylePackages() {
       paperSize: form.paperSize,
       orientation: form.orientation,
       pdfVariant: form.pdfVariant,
-      imageDensity: form.imageDensity,
       fitToPage: form.fitToPage,
       renderComments: form.renderCommentsEnabled ? form.renderComments : null,
       renderNativeComments: form.renderNativeComments,

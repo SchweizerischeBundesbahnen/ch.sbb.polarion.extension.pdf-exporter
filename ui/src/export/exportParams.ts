@@ -32,7 +32,6 @@ export interface ExportParamsJson {
   paperSize?: string;
   orientation?: string;
   pdfVariant?: string;
-  imageDensity?: string;
   fullFonts?: boolean;
   fitToPage?: boolean;
   renderComments?: string | null;
@@ -153,7 +152,6 @@ export function buildExportParams(form: ExportForm, context: DocumentContext, ta
       paperSize: form.paperSize,
       orientation: form.orientation,
       pdfVariant: form.pdfVariant,
-      imageDensity: form.imageDensity,
       fullFonts: form.fullFonts,
       fitToPage: sent('fitToPage') && form.fitToPage,
       renderComments: sent('renderComments') && form.renderCommentsEnabled ? form.renderComments : null,

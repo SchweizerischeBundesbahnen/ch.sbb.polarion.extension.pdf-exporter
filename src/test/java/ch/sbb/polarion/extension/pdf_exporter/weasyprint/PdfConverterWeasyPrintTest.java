@@ -2,7 +2,6 @@ package ch.sbb.polarion.extension.pdf_exporter.weasyprint;
 
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.DocumentType;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
-import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ImageDensity;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.Orientation;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.PaperSize;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.DocumentData;
@@ -180,7 +179,6 @@ class PdfConverterWeasyPrintTest extends BasePdfConverterTest {
                 .locationPath("testLocation")
                 .orientation(Orientation.PORTRAIT)
                 .paperSize(PaperSize.A4)
-                .imageDensity(ImageDensity.DPI_192)
                 .build();
 
         DocumentData<IModule> liveDoc4 = DocumentData.creator(DocumentType.LIVE_DOC, module)
@@ -203,7 +201,6 @@ class PdfConverterWeasyPrintTest extends BasePdfConverterTest {
                 .locationPath("testLocation")
                 .orientation(Orientation.PORTRAIT)
                 .paperSize(PaperSize.A4)
-                .imageDensity(ImageDensity.DPI_192)
                 .build();
 
         DocumentData<IModule> liveDoc4 = DocumentData.creator(DocumentType.LIVE_DOC, module)

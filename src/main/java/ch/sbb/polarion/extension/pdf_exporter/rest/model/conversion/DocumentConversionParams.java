@@ -30,9 +30,6 @@ public class DocumentConversionParams {
     @Schema(description = "Base URL for resolving relative URLs in the HTML document")
     private String baseUrl;
 
-    @Schema(description = "Scale factor for images")
-    private String scaleFactor;
-
     @Schema(description = "PDF variant to be used for conversion (e.g. pdf/a-2b)")
     private String pdfVariant;
 

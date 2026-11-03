@@ -37,7 +37,6 @@ export interface StylePackageSettings {
   paperSize?: string | null;
   orientation?: string | null;
   pdfVariant?: string | null;
-  imageDensity?: string | null;
   fullFonts?: boolean;
   fitToPage?: boolean;
   renderComments?: string | null;
@@ -73,7 +72,6 @@ export const DEFAULT_HEADERS_COLOR = '#004d73';
 export const DEFAULT_PAPER_SIZE = 'A4';
 export const DEFAULT_ORIENTATION = 'PORTRAIT';
 export const DEFAULT_PDF_VARIANT = 'PDF_A_2B';
-export const DEFAULT_IMAGE_DENSITY = 'DPI_96';
 export const DEFAULT_RENDER_COMMENTS = 'OPEN';
 export const DEFAULT_LINK_ROLE_DIRECTION = 'BOTH';
 
@@ -125,13 +123,6 @@ export const PDF_VARIANTS: SelectOption[] = [
   { id: 'PDF_A_4U', name: 'pdf/a-4u' },
   { id: 'PDF_UA_1', name: 'pdf/ua-1' },
   { id: 'PDF_UA_2', name: 'pdf/ua-2' },
-];
-
-export const IMAGE_DENSITIES: SelectOption[] = [
-  { id: 'DPI_96', name: '96 dpi' },
-  { id: 'DPI_192', name: '192 dpi' },
-  { id: 'DPI_300', name: '300 dpi' },
-  { id: 'DPI_600', name: '600 dpi' },
 ];
 
 export const COMMENTS_RENDER_TYPES: SelectOption[] = [

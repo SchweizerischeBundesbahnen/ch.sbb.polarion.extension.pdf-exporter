@@ -5,7 +5,6 @@ import {
   type ChildNames,
   type ChildSetting,
   FULL_FONTS_HELP,
-  IMAGE_DENSITIES,
   LANGUAGES,
   LINK_ROLE_DIRECTIONS,
   NATIVE_COMMENTS_HELP,
@@ -215,17 +214,6 @@ export default function StylePackageSettingsView({
               options={PDF_VARIANTS}
               value={form.pdfVariant}
               onChange={(value) => onPatch({ pdfVariant: value })}
-              disabled={busy}
-            />
-          </FieldCell>
-        </FieldRow>
-        <FieldRow label="Image density:" labelFor={id('image-density-selector')}>
-          <FieldCell>
-            <SearchableSelect
-              id={id('image-density-selector')}
-              options={IMAGE_DENSITIES}
-              value={form.imageDensity}
-              onChange={(value) => onPatch({ imageDensity: value })}
               disabled={busy}
             />
           </FieldCell>

@@ -25,7 +25,6 @@ class ExportParamsTest {
                 .paperSize(PaperSize.A4)
                 .orientation(Orientation.LANDSCAPE)
                 .pdfVariant(PdfVariant.PDF_A_2B)
-                .imageDensity(ImageDensity.DPI_96)
                 .fitToPage(true)
                 .renderComments(CommentsRenderType.ALL)
                 .includeUnreferencedComments(true)
@@ -56,7 +55,6 @@ class ExportParamsTest {
                 .paperSize("A5")
                 .orientation("PORTRAIT")
                 .pdfVariant("PDF_A_3B")
-                .imageDensity("DPI_300")
                 .metadataFields("meta3,meta4")
                 .customNumberedListStyles("numberedListStyle2")
                 .specificChapters("3,4")
@@ -81,7 +79,6 @@ class ExportParamsTest {
         assertEquals(PaperSize.A5, params.getPaperSize());
         assertEquals(Orientation.PORTRAIT, params.getOrientation());
         assertEquals(PdfVariant.PDF_A_3B, params.getPdfVariant());
-        assertEquals(ImageDensity.DPI_300, params.getImageDensity());
         assertNull(params.getRenderComments());
         assertFalse(params.isIncludeUnreferencedComments());
         assertFalse(params.isFitToPage());
