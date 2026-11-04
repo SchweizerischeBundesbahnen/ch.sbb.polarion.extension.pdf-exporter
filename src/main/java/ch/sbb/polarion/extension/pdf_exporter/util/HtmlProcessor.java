@@ -159,14 +159,11 @@ public class HtmlProcessor {
         // Polarion ends a document with an empty paragraph, which prints nothing and can take a page of its own
         timedIfNotNull(generationLog, "Cut trailing empty paragraphs", () -> cutTrailingEmptyParagraphs(document));
 
-        if (exportParams.isCutEmptyChapters()) {
-            // Cut empty chapters if explicitly requested by user
-            timedIfNotNull(generationLog, "Cut empty chapters", () -> cutEmptyChapters(document));
-        }
-        if (exportParams.getChapters() != null) {
-            // Leave only chapters explicitly selected by user
-            timedIfNotNull(generationLog, "Cut not needed chapters", () -> cutNotNeededChapters(document, exportParams.getChapters()));
-        }
+        // Cut empty chapters if explicitly requested by user
+        boolean emptyChaptersCut = exportParams.isCutEmptyChapters() && timedIfNotNull(generationLog, "Cut empty chapters", () -> cutEmptyChapters(document));
+        // Leave only chapters explicitly selected by user
+        boolean notNeededChaptersCut = exportParams.getChapters() != null && timedIfNotNull(generationLog, "Cut not needed chapters", () -> cutNotNeededChapters(document, exportParams.getChapters()));
+        boolean chaptersCut = emptyChaptersCut || notNeededChaptersCut;
 
         if (exportParams.getDocumentType() == LIVE_DOC || exportParams.getDocumentType() == WIKI_PAGE) {
             // Moves WorkItem content out of table wrapping it
@@ -273,7 +270,7 @@ public class HtmlProcessor {
             // ---- BOOKMARK 2
             // processPageBrakes() contains its own adjustContentToFitPage() calls, see BOOKMARK 1 for same logic without custom page breaks
             String htmlBeforePageBreaks = html;
-            html = timedIfNotNull(generationLog, "Process page breaks", () -> processPageBrakes(htmlBeforePageBreaks, exportParams, pageLayout));
+            html = timedIfNotNull(generationLog, "Process page breaks", () -> processPageBrakes(htmlBeforePageBreaks, exportParams, pageLayout, chaptersCut));
             // ----
         }
 
@@ -323,10 +320,11 @@ public class HtmlProcessor {
         }
     }
 
-    /** Whether the paragraph prints nothing: no text but spaces, and no element but line breaks. */
+    /** Whether the paragraph prints nothing: no text but spaces, no element but line breaks, and no background or border of its own. */
     private static boolean isEmptyParagraph(@NotNull Element paragraph) {
         return paragraph.text().replace('\u00A0', ' ').isBlank()
-                && paragraph.select("*").stream().allMatch(element -> element == paragraph || HtmlTag.BR.equals(element.tagName()));
+                && paragraph.select("*").stream().allMatch(element -> element == paragraph || HtmlTag.BR.equals(element.tagName()))
+                && JSoupUtils.isVisuallyEmpty(paragraph);
     }
 
     /** Whether anything which prints follows the element up to the end of the body. */
@@ -343,17 +341,20 @@ public class HtmlProcessor {
     }
 
     @VisibleForTesting
-    void cutEmptyChapters(@NotNull Document document) {
+    boolean cutEmptyChapters(@NotNull Document document) {
         // 'Empty chapter' is a heading tag which doesn't have any visible content "under it",
         // i.e. there are only not visible or whitespace elements between itself and next heading of same/higher level or end of parent/document.
 
         // Process from lowest to highest priority (h6 to h1), otherwise logic can be broken
+        boolean chaptersCut = false;
         for (int headingLevel = H_TAG_MIN_PRIORITY; headingLevel >= 1; headingLevel--) {
-            removeEmptyHeadings(document, headingLevel);
+            chaptersCut |= removeEmptyHeadings(document, headingLevel);
         }
+        return chaptersCut;
     }
 
-    private void removeEmptyHeadings(@NotNull Document document, int headingLevel) {
+    /** Removes the empty headings of the level, and tells whether there were any. */
+    private boolean removeEmptyHeadings(@NotNull Document document, int headingLevel) {
         List<Element> headingsToRemove = JSoupUtils.selectEmptyHeadings(document, headingLevel);
         for (Element heading : headingsToRemove) {
 
@@ -374,10 +375,12 @@ public class HtmlProcessor {
 
             heading.remove();
         }
+        return !headingsToRemove.isEmpty();
     }
 
+    /** Leaves only the selected chapters, and tells whether any other was there to cut. */
     @VisibleForTesting
-    void cutNotNeededChapters(@NotNull Document document, @NotNull List<String> selectedChapters) {
+    boolean cutNotNeededChapters(@NotNull Document document, @NotNull List<String> selectedChapters) {
         List<ChapterInfo> chapters = getChaptersInfo(document, selectedChapters);
 
         // Process chapters to remove unwanted ones
@@ -405,6 +408,7 @@ public class HtmlProcessor {
                 }
             }
         }
+        return chapters.stream().anyMatch(chapter -> !chapter.shouldKeep());
     }
 
     @NotNull
@@ -839,13 +843,17 @@ public class HtmlProcessor {
         return processPageBrakes(html, exportParams, PageLayout.NONE);
     }
 
-    @SuppressWarnings("java:S3776")
     String processPageBrakes(@NotNull String html, ExportParams exportParams, @NotNull PageLayout pageLayout) {
+        return processPageBrakes(html, exportParams, pageLayout, false);
+    }
+
+    @VisibleForTesting
+    @SuppressWarnings("java:S3776")
+    String processPageBrakes(@NotNull String html, ExportParams exportParams, @NotNull PageLayout pageLayout, boolean chaptersCut) {
         StringBuilder resultBuf = new StringBuilder();
         LinkedList<String> areas = new LinkedList<>(Arrays.asList(html.split(PAGE_BREAK_MARK)));
         //we start by using global orientation setting
         Iterator<Boolean> landscapeOfAreas = landscapeOfAreas(areas, exportParams.getOrientation() == Orientation.LANDSCAPE).iterator();
-        boolean skipEmptyAreas = exportParams.isCutEmptyChapters() || exportParams.getChapters() != null && !exportParams.getChapters().isEmpty(); //avoid having empty pages in some cases
         boolean firstArea = true;
 
         //the idea here is to wrap areas with different orientation into divs with correspondent class
@@ -854,11 +862,11 @@ public class HtmlProcessor {
             String nextArea = areas.isEmpty() ? null : areas.getFirst();
             boolean landscape = landscapeOfAreas.next();
 
-            // A page break the document ends with leaves an area with nothing in it, and nothing is worth a page.
-            // Whether an area holds anything is asked of the areas which can be dropped, and of those alone.
-            boolean lastArea = areas.isEmpty();
-            boolean droppableArea = skipEmptyAreas || (lastArea && !firstArea);
-            if (!(droppableArea && com.polarion.alm.shared.util.HtmlUtils.isHtmlEmpty(area, true))) {
+            // A page break the document ends with leaves an area which shows nothing, and that is not worth a page.
+            // Cut chapters leave such areas anywhere. Without a cut any other area is the page the document asks for, blank or not.
+            // Whether anything of an area shows is asked of the areas which can be dropped, and of those alone.
+            boolean droppableArea = chaptersCut || (areas.isEmpty() && !firstArea);
+            if (!(droppableArea && JSoupUtils.isVisuallyEmpty(area))) {
                 boolean startsWithWikiBlock = area.startsWith(ROTATE_BELOW_MARK) || area.startsWith(RESET_BELOW_MARK) || area.startsWith(BREAK_BELOW_MARK);
                 boolean endsWithWikiBlock = nextArea != null && (nextArea.startsWith(ROTATE_BELOW_MARK) || nextArea.startsWith(RESET_BELOW_MARK) || nextArea.startsWith(BREAK_BELOW_MARK));
 

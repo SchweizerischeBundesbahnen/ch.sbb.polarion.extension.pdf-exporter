@@ -47,12 +47,29 @@ class PageBreakAtTheEndTest extends BasePdfConverterTest {
         export("pageBreakLeavingAPageEmpty", getCurrentMethodName(), 3);
     }
 
+    /** An empty table, an empty list and spaces with a background show on the page: they are the user's, not an empty page. */
+    @Test
+    void keepsThePageOfWhatShowsWithoutTextAfterALastPageBreak() {
+        export("pageBreakBeforeWhatShows", getCurrentMethodName(), 2);
+    }
+
+    /** Blank paragraphs between two breaks are a blank page the user asks for, also when empty chapters are cut. */
+    @Test
+    void keepsThePageOfBlankParagraphsWhenEmptyChaptersAreCut() {
+        export("pageBreakLeavingAPageEmptyBeforeALine", getCurrentMethodName(), 4, true);
+    }
+
     private void export(@NotNull String resource, @NotNull String testName, int expectedPages) {
+        export(resource, testName, expectedPages, false);
+    }
+
+    private void export(@NotNull String resource, @NotNull String testName, int expectedPages, boolean cutEmptyChapters) {
         ExportParams params = ExportParams.builder()
                 .projectId("test")
                 .locationPath("testLocation")
                 .orientation(Orientation.PORTRAIT)
                 .paperSize(PaperSize.A4)
+                .cutEmptyChapters(cutEmptyChapters)
                 .build();
 
         DocumentData<IModule> liveDoc = DocumentData.creator(DocumentType.LIVE_DOC, module)

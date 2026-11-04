@@ -1,6 +1,9 @@
 package ch.sbb.polarion.extension.pdf_exporter.util;
 
 import ch.sbb.polarion.extension.pdf_exporter.constants.HtmlTag;
+import ch.sbb.polarion.extension.pdf_exporter.constants.HtmlTagAttr;
+import com.helger.css.decl.CSSDeclarationList;
+import com.helger.css.property.ECSSProperty;
 import lombok.experimental.UtilityClass;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -13,6 +16,7 @@ import org.jsoup.nodes.TextNode;
 import org.jsoup.select.Elements;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.stream.IntStream;
 
@@ -51,6 +55,22 @@ public class JSoupUtils {
             HtmlTag.VIDEO
     );
 
+    /** A list item shows its marker, with text or not. A list without items shows nothing. */
+    private static final List<String> LIST_TAGS = List.of(HtmlTag.LI);
+
+    /** The tags which draw a line or a background on the spaces they hold. */
+    private static final List<String> TAGS_SHOWN_ON_SPACES = List.of(HtmlTag.DEL, HtmlTag.INS, HtmlTag.MARK, HtmlTag.S, HtmlTag.STRIKE, HtmlTag.U);
+
+    private static final List<ECSSProperty> BORDER_PROPERTIES = List.of(ECSSProperty.BORDER, ECSSProperty.BORDER_TOP, ECSSProperty.BORDER_RIGHT,
+            ECSSProperty.BORDER_BOTTOM, ECSSProperty.BORDER_LEFT, ECSSProperty.BORDER_STYLE);
+    private static final List<ECSSProperty> BACKGROUND_PROPERTIES = List.of(ECSSProperty.BACKGROUND, ECSSProperty.BACKGROUND_COLOR);
+    private static final List<ECSSProperty> TEXT_LINE_PROPERTIES = List.of(ECSSProperty.TEXT_DECORATION, ECSSProperty.TEXT_DECORATION_LINE);
+    private static final List<String> TEXT_LINES = List.of("underline", "line-through", "overline");
+    private static final List<String> NO_BACKGROUND = List.of("none", "transparent");
+
+    /** Characters which show nothing and which are no spaces either: Polarion leaves zero-width spaces behind. */
+    private static final String INVISIBLE_CHARACTERS = "\u200B\u200C\u200D\u2060\uFEFF";
+
     @NotNull
     public Document parseHtml(@NotNull String html) {
         Document document = Jsoup.parse(html);
@@ -59,6 +79,75 @@ public class JSoupUtils {
                 .escapeMode(Entities.EscapeMode.base)
                 .prettyPrint(false);
         return document;
+    }
+
+    /** Whether nothing of the HTML shows on the page. See {@link #isVisuallyEmpty(Element)}. */
+    public boolean isVisuallyEmpty(@NotNull String html) {
+        return isVisuallyEmpty(parseHtml(html).body());
+    }
+
+    /**
+     * Whether nothing of the element shows on the page, on a screen or in print. Only what shows nothing is empty:
+     * no text but spaces, line breaks, empty elements, comments and anchors. An empty table, an empty list or spaces
+     * with a background show, and a user who leaves them in a document means them. The inline style alone is read:
+     * a style which comes from a class stays unseen.
+     * <p>
+     * pandoc-service decides the same way for a DOCX, in _holds_page_content of app/docx_post_process.py.
+     * </p>
+     */
+    public boolean isVisuallyEmpty(@NotNull Element element) {
+        return element.select("*").stream().noneMatch(JSoupUtils::showsOnThePage);
+    }
+
+    private boolean showsOnThePage(@NotNull Element element) {
+        String tagName = element.tagName();
+        if (WITHOUT_TEXT_BUT_VISIBLE.contains(tagName) || LIST_TAGS.contains(tagName) || element.textNodes().stream().anyMatch(JSoupUtils::hasVisibleText)) {
+            return true;
+        }
+        CSSDeclarationList styles = CssUtils.parseDeclarations(element.attr(HtmlTagAttr.STYLE));
+        if (hasBorder(styles)) {
+            return true;
+        }
+        boolean hasBackground = hasBackground(styles);
+        if (hasBackground && element.isBlock() && !element.select(HtmlTag.BR).isEmpty()) {
+            return true; // A line break gives the block a height, so its background shows
+        }
+        return (hasBackground || TAGS_SHOWN_ON_SPACES.contains(tagName) || hasTextLine(styles)) && holdsSpaces(element);
+    }
+
+    private boolean hasVisibleText(@NotNull TextNode text) {
+        return text.getWholeText().codePoints().anyMatch(character ->
+                !Character.isWhitespace(character) && !Character.isSpaceChar(character) && INVISIBLE_CHARACTERS.indexOf(character) < 0);
+    }
+
+    private boolean holdsSpaces(@NotNull Element element) {
+        return element.select("*").stream().anyMatch(inner -> inner.textNodes().stream().anyMatch(JSoupUtils::isSpaces));
+    }
+
+    /** Whether the text takes room: spaces do, the line break and the indent which lay out the HTML source do not. */
+    private boolean isSpaces(@NotNull TextNode text) {
+        String wholeText = text.getWholeText();
+        boolean takesRoom = wholeText.codePoints().anyMatch(character -> INVISIBLE_CHARACTERS.indexOf(character) < 0);
+        return takesRoom && !(text.isBlank() && wholeText.contains("\n"));
+    }
+
+    private boolean hasBorder(@NotNull CSSDeclarationList styles) {
+        return BORDER_PROPERTIES.stream().map(property -> lowerCaseValue(styles, property))
+                .anyMatch(value -> !value.isEmpty() && !value.contains("none") && !value.contains("hidden") && !value.matches("0[a-z]*( .*)?"));
+    }
+
+    private boolean hasBackground(@NotNull CSSDeclarationList styles) {
+        return BACKGROUND_PROPERTIES.stream().map(property -> lowerCaseValue(styles, property))
+                .anyMatch(value -> !value.isEmpty() && !NO_BACKGROUND.contains(value));
+    }
+
+    private boolean hasTextLine(@NotNull CSSDeclarationList styles) {
+        return TEXT_LINE_PROPERTIES.stream().map(property -> lowerCaseValue(styles, property))
+                .anyMatch(value -> TEXT_LINES.stream().anyMatch(value::contains));
+    }
+
+    private @NotNull String lowerCaseValue(@NotNull CSSDeclarationList styles, @NotNull ECSSProperty property) {
+        return CssUtils.getPropertyValue(styles, property).toLowerCase(Locale.ROOT);
     }
 
     /**
