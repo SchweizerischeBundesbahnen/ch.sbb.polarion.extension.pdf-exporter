@@ -165,28 +165,30 @@ public class JSoupUtils {
 
     /**
      * Whether a side of the border has both a style which draws a line and a width. The declarations apply in their
-     * order, side by side, as a later one overrides what an earlier one set: a style or a width alone decides nothing.
+     * order, side by side, as a later one overrides what an earlier one set, unless that was important: a style or a
+     * width alone decides nothing.
      */
     private boolean hasBorder(@NotNull CSSDeclarationList styles) {
-        boolean[] styled = new boolean[BORDER_SIDES.size()];
-        boolean[] withoutWidth = new boolean[BORDER_SIDES.size()];
+        List<BorderSide> borderSides = BORDER_SIDES.stream().map(side -> new BorderSide()).toList();
         for (CSSDeclaration declaration : styles.getAllDeclarations()) {
             String property = declaration.getProperty().toLowerCase(Locale.ROOT);
+            boolean important = declaration.isImportant();
             List<String> parts = List.of(declaration.getExpressionAsCSSString().toLowerCase(Locale.ROOT).replaceAll(CSS_FUNCTION_ARGUMENTS, "()").split("\\s+"));
             for (int side = 0; side < BORDER_SIDES.size(); side++) {
                 String sideProperty = "border-" + BORDER_SIDES.get(side);
+                BorderSide borderSide = borderSides.get(side);
                 if (property.equals("border") || property.equals(sideProperty)) {
                     // The shorthand resets what it leaves out: a color or a width alone leaves the style at "none"
-                    styled[side] = parts.stream().anyMatch(VISIBLE_BORDER_STYLES::contains);
-                    withoutWidth[side] = parts.stream().anyMatch(JSoupUtils::isZeroLength);
+                    borderSide.setStyled(parts.stream().anyMatch(VISIBLE_BORDER_STYLES::contains), important);
+                    borderSide.setWithoutWidth(parts.stream().anyMatch(JSoupUtils::isZeroLength), important);
                 } else if (property.equals("border-style") || property.equals(sideProperty + "-style")) {
-                    styled[side] = VISIBLE_BORDER_STYLES.contains(valueOfSide(parts, side));
+                    borderSide.setStyled(VISIBLE_BORDER_STYLES.contains(valueOfSide(parts, side)), important);
                 } else if (property.equals("border-width") || property.equals(sideProperty + "-width")) {
-                    withoutWidth[side] = isZeroLength(valueOfSide(parts, side));
+                    borderSide.setWithoutWidth(isZeroLength(valueOfSide(parts, side)), important);
                 }
             }
         }
-        return IntStream.range(0, BORDER_SIDES.size()).anyMatch(side -> styled[side] && !withoutWidth[side]);
+        return borderSides.stream().anyMatch(BorderSide::drawsLine);
     }
 
     /** The value of a side in a list of one to four values: a side the list leaves out takes the value of the opposite side, and the right side that of the top. */
@@ -285,6 +287,32 @@ public class JSoupUtils {
                     .anyMatch(caption -> readCaptionEntry(caption) != null);
         }
         return false;
+    }
+
+    /** The style and the width of one side of a border. A value set as important gives way to an important one only. */
+    private static final class BorderSide {
+        private boolean styled;
+        private boolean styleImportant;
+        private boolean withoutWidth;
+        private boolean widthImportant;
+
+        void setStyled(boolean styled, boolean important) {
+            if (important || !styleImportant) {
+                this.styled = styled;
+                styleImportant = important;
+            }
+        }
+
+        void setWithoutWidth(boolean withoutWidth, boolean important) {
+            if (important || !widthImportant) {
+                this.withoutWidth = withoutWidth;
+                widthImportant = important;
+            }
+        }
+
+        boolean drawsLine() {
+            return styled && !withoutWidth;
+        }
     }
 
     /** The number and the title of a caption, as a table of figures or of tables lists them. */

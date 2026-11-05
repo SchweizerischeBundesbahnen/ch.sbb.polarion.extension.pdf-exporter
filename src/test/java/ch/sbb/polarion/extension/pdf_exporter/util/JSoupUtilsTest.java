@@ -50,6 +50,10 @@ class JSoupUtilsTest {
             "<p style=\"border-top: 1px solid black; border-top-width: 0\"><br/></p>",
             "<p style=\"border-style: solid none; border-width: 0 1px\"><br/></p>",
             "<p style=\"border-top-style: solid; border-top-width: 0\"><br/></p>",
+            "<p style=\"border: 1px solid black; border-width: 0 !important\"><br/></p>",
+            "<p style=\"border: 1px solid black !important; border-width: 0 !important\"><br/></p>",
+            "<p style=\"border-width: 0 !important; border: 1px solid black\"><br/></p>",
+            "<p style=\"border-style: none !important; border: 1px solid black\"><br/></p>",
             "<p style=\"text-decoration: none\">&nbsp;</p>",
             "<span style=\"background-color: #ffff00\"></span>",
             "<span style=\"background-color: #ffff00\"><br/></span>",
@@ -128,6 +132,11 @@ class JSoupUtilsTest {
             "<p style=\"border-width: 0; border-top: 1px solid black\"><br/></p>",
             "<p style=\"border: none; border-left: 1px solid black\"><br/></p>",
             "<p style=\"border-top-style: solid\"><br/></p>",
+            "<p style=\"border: 1px solid black !important; border-width: 0\"><br/></p>",
+            "<p style=\"border: 1px solid black !important; border-style: none\"><br/></p>",
+            "<p style=\"border: 1px solid black !important; border: none\"><br/></p>",
+            "<p style=\"border-top: 1px solid black !important; border-width: 0\"><br/></p>",
+            "<p style=\"border-style: solid !important; border-style: none; border-width: 1px\"><br/></p>",
     })
     void shows(String html) {
         assertFalse(JSoupUtils.isVisuallyEmpty(html));

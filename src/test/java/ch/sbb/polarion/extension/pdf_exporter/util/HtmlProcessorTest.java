@@ -242,7 +242,8 @@ class HtmlProcessorTest {
             "<ul><li><br/></li></ul>",
             "<hr/>",
             "<p><span style=\"background-color: #ffff00\">&nbsp;&nbsp;</span></p>",
-            "<div style=\"height: 40px; background-color: yellow\"></div>"
+            "<div style=\"height: 40px; background-color: yellow\"></div>",
+            "<p style=\"border: 1px solid black !important; border-width: 0\"><br/></p>"
     })
     void keepsThePageOfWhatShowsAfterTheLastPageBreak(String content) {
         String html = "<h2>Chapter 1</h2><!--PAGE_BREAK--><!--LANDSCAPE_ABOVE-->" + content;
@@ -1609,6 +1610,15 @@ class HtmlProcessorTest {
         processor.cutTrailingEmptyParagraphs(document);
 
         assertEquals(1, document.body().select("p").size(), "A border needs a style and a width to draw a line");
+    }
+
+    @Test
+    void keepsATrailingParagraphWithAnImportantBorder() {
+        Document document = JSoupUtils.parseHtml("<p>Text</p><p id=\"bordered\" style=\"border: 1px solid black !important; border-width: 0\"><br /></p>");
+
+        processor.cutTrailingEmptyParagraphs(document);
+
+        assertEquals(1, document.select("p#bordered").size(), "The later width does not override an important border");
     }
 
     @Test
