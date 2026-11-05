@@ -144,7 +144,7 @@ public class JSoupUtils {
 
     /** Whether the value holds a digit other than zero: "auto", "0" and "0px" take no room. */
     private boolean isNonZeroLength(@NotNull String value) {
-        return value.matches(".*[1-9].*");
+        return value.chars().anyMatch(character -> character >= '1' && character <= '9');
     }
 
     private boolean hasVisibleText(@NotNull TextNode text) {
