@@ -43,6 +43,13 @@ class JSoupUtilsTest {
             "<p style=\"border: 1px red\"><br/></p>",
             "<p style=\"border-top: 1px red\"><br/></p>",
             "<p style=\"border: 1px hidden red\"><br/></p>",
+            "<p style=\"border-style: solid; border-width: 0\"><br/></p>",
+            "<p style=\"border-width: 0px; border-style: solid\"><br/></p>",
+            "<p style=\"border: 1px solid black; border-width: 0\"><br/></p>",
+            "<p style=\"border: 1px solid black; border-style: none\"><br/></p>",
+            "<p style=\"border-top: 1px solid black; border-top-width: 0\"><br/></p>",
+            "<p style=\"border-style: solid none; border-width: 0 1px\"><br/></p>",
+            "<p style=\"border-top-style: solid; border-top-width: 0\"><br/></p>",
             "<p style=\"text-decoration: none\">&nbsp;</p>",
             "<span style=\"background-color: #ffff00\"></span>",
             "<span style=\"background-color: #ffff00\"><br/></span>",
@@ -115,6 +122,12 @@ class JSoupUtilsTest {
             "<p style=\"border: solid\"><br/></p>",
             "<p style=\"border: 1px dotted red\"><br/></p>",
             "<p style=\"border: 1px solid rgb(0 0 0)\"><br/></p>",
+            "<p style=\"border-style: solid; border-width: 0 0 1px 0\"><br/></p>",
+            "<p style=\"border-style: solid; border-width: 0 1px\"><br/></p>",
+            "<p style=\"border-style: solid; border-width: 0; border-left-width: 1px\"><br/></p>",
+            "<p style=\"border-width: 0; border-top: 1px solid black\"><br/></p>",
+            "<p style=\"border: none; border-left: 1px solid black\"><br/></p>",
+            "<p style=\"border-top-style: solid\"><br/></p>",
     })
     void shows(String html) {
         assertFalse(JSoupUtils.isVisuallyEmpty(html));

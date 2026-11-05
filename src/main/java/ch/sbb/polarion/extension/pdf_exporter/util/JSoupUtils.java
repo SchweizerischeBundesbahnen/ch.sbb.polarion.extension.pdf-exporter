@@ -2,6 +2,7 @@ package ch.sbb.polarion.extension.pdf_exporter.util;
 
 import ch.sbb.polarion.extension.pdf_exporter.constants.HtmlTag;
 import ch.sbb.polarion.extension.pdf_exporter.constants.HtmlTagAttr;
+import com.helger.css.decl.CSSDeclaration;
 import com.helger.css.decl.CSSDeclarationList;
 import com.helger.css.property.ECSSProperty;
 import lombok.experimental.UtilityClass;
@@ -62,8 +63,8 @@ public class JSoupUtils {
     /** The tags which draw a line or a background on the spaces they hold. */
     private static final List<String> TAGS_SHOWN_ON_SPACES = List.of(HtmlTag.DEL, HtmlTag.INS, HtmlTag.MARK, HtmlTag.S, HtmlTag.STRIKE, HtmlTag.U);
 
-    private static final List<ECSSProperty> BORDER_PROPERTIES = List.of(ECSSProperty.BORDER, ECSSProperty.BORDER_TOP, ECSSProperty.BORDER_RIGHT,
-            ECSSProperty.BORDER_BOTTOM, ECSSProperty.BORDER_LEFT, ECSSProperty.BORDER_STYLE);
+    /** The sides of a border, in the order the values of border-style and border-width name them. */
+    private static final List<String> BORDER_SIDES = List.of("top", "right", "bottom", "left");
     private static final List<String> VISIBLE_BORDER_STYLES = List.of("solid", "dashed", "dotted", "double", "groove", "ridge", "inset", "outset");
     private static final List<ECSSProperty> BACKGROUND_PROPERTIES = List.of(ECSSProperty.BACKGROUND, ECSSProperty.BACKGROUND_COLOR);
     private static final List<ECSSProperty> HEIGHT_PROPERTIES = List.of(ECSSProperty.HEIGHT, ECSSProperty.MIN_HEIGHT, ECSSProperty.PADDING_TOP, ECSSProperty.PADDING_BOTTOM);
@@ -162,16 +163,43 @@ public class JSoupUtils {
         return takesRoom && !(text.isBlank() && wholeText.contains("\n"));
     }
 
+    /**
+     * Whether a side of the border has both a style which draws a line and a width. The declarations apply in their
+     * order, side by side, as a later one overrides what an earlier one set: a style or a width alone decides nothing.
+     */
     private boolean hasBorder(@NotNull CSSDeclarationList styles) {
-        return BORDER_PROPERTIES.stream().map(property -> lowerCaseValue(styles, property))
-                .anyMatch(JSoupUtils::drawsBorder);
+        boolean[] styled = new boolean[BORDER_SIDES.size()];
+        boolean[] withoutWidth = new boolean[BORDER_SIDES.size()];
+        for (CSSDeclaration declaration : styles.getAllDeclarations()) {
+            String property = declaration.getProperty().toLowerCase(Locale.ROOT);
+            List<String> parts = List.of(declaration.getExpressionAsCSSString().toLowerCase(Locale.ROOT).replaceAll(CSS_FUNCTION_ARGUMENTS, "()").split("\\s+"));
+            for (int side = 0; side < BORDER_SIDES.size(); side++) {
+                String sideProperty = "border-" + BORDER_SIDES.get(side);
+                if (property.equals("border") || property.equals(sideProperty)) {
+                    // The shorthand resets what it leaves out: a color or a width alone leaves the style at "none"
+                    styled[side] = parts.stream().anyMatch(VISIBLE_BORDER_STYLES::contains);
+                    withoutWidth[side] = parts.stream().anyMatch(JSoupUtils::isZeroLength);
+                } else if (property.equals("border-style") || property.equals(sideProperty + "-style")) {
+                    styled[side] = VISIBLE_BORDER_STYLES.contains(valueOfSide(parts, side));
+                } else if (property.equals("border-width") || property.equals(sideProperty + "-width")) {
+                    withoutWidth[side] = isZeroLength(valueOfSide(parts, side));
+                }
+            }
+        }
+        return IntStream.range(0, BORDER_SIDES.size()).anyMatch(side -> styled[side] && !withoutWidth[side]);
     }
 
-    /** Whether the border value names a style which draws a line and no zero width. A color or a width alone leaves the style at "none". */
-    private boolean drawsBorder(@NotNull String value) {
-        List<String> parts = List.of(value.replaceAll(CSS_FUNCTION_ARGUMENTS, "()").split("\\s+"));
-        return parts.stream().anyMatch(VISIBLE_BORDER_STYLES::contains)
-                && parts.stream().noneMatch(part -> part.matches(CSS_LENGTH) && !isNonZeroLength(part));
+    /** The value of a side in a list of one to four values: a side the list leaves out takes the value of the opposite side, and the right side that of the top. */
+    private @NotNull String valueOfSide(@NotNull List<String> values, int side) {
+        int index = side;
+        while (index >= values.size()) {
+            index = Math.max(index - 2, 0);
+        }
+        return values.get(index);
+    }
+
+    private boolean isZeroLength(@NotNull String value) {
+        return value.matches(CSS_LENGTH) && !isNonZeroLength(value);
     }
 
     private boolean hasBackground(@NotNull CSSDeclarationList styles) {

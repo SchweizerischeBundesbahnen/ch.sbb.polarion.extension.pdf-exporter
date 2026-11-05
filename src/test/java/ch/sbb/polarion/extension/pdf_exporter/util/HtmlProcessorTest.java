@@ -1602,13 +1602,13 @@ class HtmlProcessorTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"border: red", "border: 1px"})
-    void cutsATrailingParagraphWhoseBorderHasNoStyle(String style) {
+    @ValueSource(strings = {"border: red", "border: 1px", "border-style: solid; border-width: 0"})
+    void cutsATrailingParagraphWhoseBorderDrawsNoLine(String style) {
         Document document = JSoupUtils.parseHtml("<p>Text</p><p style=\"" + style + "\"><br/></p>");
 
         processor.cutTrailingEmptyParagraphs(document);
 
-        assertEquals(1, document.body().select("p").size(), "A border without a style draws no line");
+        assertEquals(1, document.body().select("p").size(), "A border needs a style and a width to draw a line");
     }
 
     @Test
