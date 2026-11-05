@@ -1,6 +1,10 @@
 package ch.sbb.polarion.extension.pdf_exporter.util;
 
 import ch.sbb.polarion.extension.pdf_exporter.constants.HtmlTag;
+import ch.sbb.polarion.extension.pdf_exporter.constants.HtmlTagAttr;
+import com.helger.css.decl.CSSDeclaration;
+import com.helger.css.decl.CSSDeclarationList;
+import com.helger.css.property.ECSSProperty;
 import lombok.experimental.UtilityClass;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -12,7 +16,9 @@ import org.jsoup.nodes.Node;
 import org.jsoup.nodes.TextNode;
 import org.jsoup.select.Elements;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.stream.IntStream;
 
@@ -51,6 +57,33 @@ public class JSoupUtils {
             HtmlTag.VIDEO
     );
 
+    /** A list item shows its marker, with text or not. A list without items shows nothing. */
+    private static final List<String> LIST_TAGS = List.of(HtmlTag.LI);
+
+    /** The tags which draw a line or a background on the spaces they hold. */
+    private static final List<String> TAGS_SHOWN_ON_SPACES = List.of(HtmlTag.DEL, HtmlTag.INS, HtmlTag.MARK, HtmlTag.S, HtmlTag.STRIKE, HtmlTag.U);
+
+    /** The sides of a border, in the order the values of border-style and border-width name them. */
+    private static final List<String> BORDER_SIDES = List.of("top", "right", "bottom", "left");
+    private static final List<String> VISIBLE_BORDER_STYLES = List.of("solid", "dashed", "dotted", "double", "groove", "ridge", "inset", "outset");
+    private static final List<ECSSProperty> BACKGROUND_PROPERTIES = List.of(ECSSProperty.BACKGROUND, ECSSProperty.BACKGROUND_COLOR);
+    private static final List<ECSSProperty> HEIGHT_PROPERTIES = List.of(ECSSProperty.HEIGHT, ECSSProperty.MIN_HEIGHT, ECSSProperty.PADDING_TOP, ECSSProperty.PADDING_BOTTOM);
+    private static final List<ECSSProperty> TEXT_LINE_PROPERTIES = List.of(ECSSProperty.TEXT_DECORATION, ECSSProperty.TEXT_DECORATION_LINE);
+    private static final List<String> TEXT_LINES = List.of("underline", "line-through", "overline");
+    /** The parts of a background value which paint nothing: no color, no image, and the repeat, attachment, position, size and box of them. */
+    private static final List<String> BACKGROUND_PARTS_WITHOUT_PAINT = List.of("none", "transparent",
+            "repeat", "repeat-x", "repeat-y", "no-repeat", "space", "round",
+            "scroll", "fixed", "local",
+            "left", "right", "top", "bottom", "center",
+            "auto", "cover", "contain",
+            "border-box", "padding-box", "content-box");
+    private static final String BACKGROUND_PARTS_SEPARATOR = "[\\s,/]+";
+    private static final String CSS_LENGTH = "[-+]?[0-9.]+[a-z%]*";
+    private static final String CSS_FUNCTION_ARGUMENTS = "\\([^)]*\\)";
+
+    /** Characters which show nothing and which are no spaces either: Polarion leaves zero-width spaces behind. */
+    private static final String INVISIBLE_CHARACTERS = "\u200B\u200C\u200D\u2060\uFEFF";
+
     @NotNull
     public Document parseHtml(@NotNull String html) {
         Document document = Jsoup.parse(html);
@@ -59,6 +92,144 @@ public class JSoupUtils {
                 .escapeMode(Entities.EscapeMode.base)
                 .prettyPrint(false);
         return document;
+    }
+
+    /** Whether nothing of the HTML shows on the page. See {@link #isVisuallyEmpty(Element)}. */
+    public boolean isVisuallyEmpty(@NotNull String html) {
+        return isVisuallyEmpty(parseHtml(html).body());
+    }
+
+    /**
+     * Whether nothing of the element shows on the page, on a screen or in print. Only what shows nothing is empty:
+     * no text but spaces, line breaks, empty elements, comments and anchors. An empty table, an empty list, spaces
+     * with a background or a block with a background and a height show, and a user who leaves them in a document
+     * means them. The inline style alone is read: a style which comes from a class stays unseen.
+     * <p>
+     * pandoc-service decides the same way for a DOCX, in _holds_page_content of app/docx_post_process.py.
+     * </p>
+     */
+    public boolean isVisuallyEmpty(@NotNull Element element) {
+        return element.select("*").stream().noneMatch(JSoupUtils::showsOnThePage);
+    }
+
+    private boolean showsOnThePage(@NotNull Element element) {
+        String tagName = element.tagName();
+        if (WITHOUT_TEXT_BUT_VISIBLE.contains(tagName) || LIST_TAGS.contains(tagName) || element.textNodes().stream().anyMatch(JSoupUtils::hasVisibleText)) {
+            return true;
+        }
+        CSSDeclarationList styles = CssUtils.parseDeclarations(element.attr(HtmlTagAttr.STYLE));
+        if (hasBorder(styles)) {
+            return true;
+        }
+        boolean hasBackground = hasBackground(styles);
+        if (hasBackground && element.isBlock() && takesHeight(element)) {
+            return true; // The block has a height, so its background shows
+        }
+        return (hasBackground || TAGS_SHOWN_ON_SPACES.contains(tagName) || hasTextLine(styles)) && holdsSpaces(element);
+    }
+
+    /** Whether a line break or the style of the block or of a block inside it gives the block a height. */
+    private boolean takesHeight(@NotNull Element block) {
+        return !block.select(HtmlTag.BR).isEmpty()
+                || block.select("*").stream().anyMatch(inner -> inner.isBlock() && hasHeight(CssUtils.parseDeclarations(inner.attr(HtmlTagAttr.STYLE))));
+    }
+
+    private boolean hasHeight(@NotNull CSSDeclarationList styles) {
+        // The first value of the shorthand is the top padding and the third, if any, the bottom one. The others are horizontal.
+        String[] padding = lowerCaseValue(styles, ECSSProperty.PADDING).split("\\s+");
+        return HEIGHT_PROPERTIES.stream().map(property -> lowerCaseValue(styles, property)).anyMatch(JSoupUtils::isNonZeroLength)
+                || isNonZeroLength(padding[0])
+                || (padding.length > 2 && isNonZeroLength(padding[2]));
+    }
+
+    /** Whether the value holds a digit other than zero: "auto", "0" and "0px" take no room. */
+    private boolean isNonZeroLength(@NotNull String value) {
+        return value.chars().anyMatch(character -> character >= '1' && character <= '9');
+    }
+
+    private boolean hasVisibleText(@NotNull TextNode text) {
+        return text.getWholeText().codePoints().anyMatch(character ->
+                !Character.isWhitespace(character) && !Character.isSpaceChar(character) && INVISIBLE_CHARACTERS.indexOf(character) < 0);
+    }
+
+    private boolean holdsSpaces(@NotNull Element element) {
+        return element.select("*").stream().anyMatch(inner -> inner.textNodes().stream().anyMatch(JSoupUtils::isSpaces));
+    }
+
+    /** Whether the text takes room: spaces do, the line break and the indent which lay out the HTML source do not. */
+    private boolean isSpaces(@NotNull TextNode text) {
+        String wholeText = text.getWholeText();
+        boolean takesRoom = wholeText.codePoints().anyMatch(character -> INVISIBLE_CHARACTERS.indexOf(character) < 0);
+        return takesRoom && !(text.isBlank() && wholeText.contains("\n"));
+    }
+
+    /**
+     * Whether a side of the border has both a style which draws a line and a width. The declarations apply in their
+     * order, side by side, as a later one overrides what an earlier one set, unless that was important: a style or a
+     * width alone decides nothing.
+     */
+    private boolean hasBorder(@NotNull CSSDeclarationList styles) {
+        List<BorderSide> borderSides = BORDER_SIDES.stream().map(side -> new BorderSide()).toList();
+        for (CSSDeclaration declaration : styles.getAllDeclarations()) {
+            String property = declaration.getProperty().toLowerCase(Locale.ROOT);
+            boolean important = declaration.isImportant();
+            List<String> parts = List.of(declaration.getExpressionAsCSSString().toLowerCase(Locale.ROOT).replaceAll(CSS_FUNCTION_ARGUMENTS, "()").split("\\s+"));
+            for (int side = 0; side < BORDER_SIDES.size(); side++) {
+                String sideProperty = "border-" + BORDER_SIDES.get(side);
+                BorderSide borderSide = borderSides.get(side);
+                if (property.equals("border") || property.equals(sideProperty)) {
+                    // The shorthand resets what it leaves out: a color or a width alone leaves the style at "none"
+                    borderSide.setStyled(parts.stream().anyMatch(VISIBLE_BORDER_STYLES::contains), important);
+                    borderSide.setWithoutWidth(parts.stream().anyMatch(JSoupUtils::isZeroLength), important);
+                } else if (property.equals("border-style") || property.equals(sideProperty + "-style")) {
+                    borderSide.setStyled(VISIBLE_BORDER_STYLES.contains(valueOfSide(parts, side)), important);
+                } else if (property.equals("border-width") || property.equals(sideProperty + "-width")) {
+                    borderSide.setWithoutWidth(isZeroLength(valueOfSide(parts, side)), important);
+                }
+            }
+        }
+        return borderSides.stream().anyMatch(BorderSide::drawsLine);
+    }
+
+    /** The value of a side in a list of one to four values: a side the list leaves out takes the value of the opposite side, and the right side that of the top. */
+    private @NotNull String valueOfSide(@NotNull List<String> values, int side) {
+        int index = side;
+        while (index >= values.size()) {
+            index = Math.max(index - 2, 0);
+        }
+        return values.get(index);
+    }
+
+    private boolean isZeroLength(@NotNull String value) {
+        return value.matches(CSS_LENGTH) && !isNonZeroLength(value);
+    }
+
+    private boolean hasBackground(@NotNull CSSDeclarationList styles) {
+        return BACKGROUND_PROPERTIES.stream().map(property -> lowerCaseValue(styles, property))
+                .anyMatch(value -> !value.isEmpty() && Arrays.stream(value.split(BACKGROUND_PARTS_SEPARATOR)).anyMatch(JSoupUtils::paintsBackground));
+    }
+
+    /** Whether the part of a background value is a color or an image. Anything unknown counts as one: what shows must stay. */
+    private boolean paintsBackground(@NotNull String part) {
+        return !BACKGROUND_PARTS_WITHOUT_PAINT.contains(part) && !part.matches(CSS_LENGTH);
+    }
+
+    private boolean hasTextLine(@NotNull CSSDeclarationList styles) {
+        return TEXT_LINE_PROPERTIES.stream().map(property -> lowerCaseValue(styles, property))
+                .anyMatch(value -> TEXT_LINES.stream().anyMatch(value::contains));
+    }
+
+    /** The value of the declaration of the property which applies: the last one, or the last important one if there is any. */
+    private @NotNull String lowerCaseValue(@NotNull CSSDeclarationList styles, @NotNull ECSSProperty property) {
+        String value = "";
+        boolean important = false;
+        for (CSSDeclaration declaration : styles.getAllDeclarations()) {
+            if (declaration.getProperty().equalsIgnoreCase(property.getName()) && (declaration.isImportant() || !important)) {
+                value = declaration.getExpressionAsCSSString();
+                important = declaration.isImportant();
+            }
+        }
+        return value.toLowerCase(Locale.ROOT);
     }
 
     /**
@@ -125,6 +296,32 @@ public class JSoupUtils {
                     .anyMatch(caption -> readCaptionEntry(caption) != null);
         }
         return false;
+    }
+
+    /** The style and the width of one side of a border. A value set as important gives way to an important one only. */
+    private static final class BorderSide {
+        private boolean styled;
+        private boolean styleImportant;
+        private boolean withoutWidth;
+        private boolean widthImportant;
+
+        void setStyled(boolean styled, boolean important) {
+            if (important || !styleImportant) {
+                this.styled = styled;
+                styleImportant = important;
+            }
+        }
+
+        void setWithoutWidth(boolean withoutWidth, boolean important) {
+            if (important || !widthImportant) {
+                this.withoutWidth = withoutWidth;
+                widthImportant = important;
+            }
+        }
+
+        boolean drawsLine() {
+            return styled && !withoutWidth;
+        }
     }
 
     /** The number and the title of a caption, as a table of figures or of tables lists them. */

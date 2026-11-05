@@ -193,24 +193,25 @@ class HtmlProcessorTest {
         cutEmptyExportParams.setCutEmptyChapters(true);
 
         return Stream.of(
-                Arguments.of("/pageBreaksAfterProcessing.html", new ExportParams()),
-                Arguments.of("/pageBreaksLandscapeAfterProcessing.html", landscapeExportParams),
-                Arguments.of("/pageBreaksSpecificChaptersAfterProcessing.html", specificChaptersExportParams),
-                Arguments.of("/pageBreaksCutEmptyAfterProcessing.html", cutEmptyExportParams)
+                Arguments.of("/pageBreaksAfterProcessing.html", new ExportParams(), false),
+                Arguments.of("/pageBreaksLandscapeAfterProcessing.html", landscapeExportParams, false),
+                Arguments.of("/pageBreaksSpecificChaptersAfterProcessing.html", specificChaptersExportParams, true),
+                Arguments.of("/pageBreaksCutEmptyAfterProcessing.html", cutEmptyExportParams, true),
+                Arguments.of("/pageBreaksAfterProcessing.html", cutEmptyExportParams, false)
         );
     }
 
     @ParameterizedTest
     @MethodSource("providePageBreakTestCases")
     @SneakyThrows
-    void processPageBreaksTest(String expectedHtmlFilePath, ExportParams exportParams) {
+    void processPageBreaksTest(String expectedHtmlFilePath, ExportParams exportParams, boolean chaptersCut) {
         try (InputStream isInvalidHtml = this.getClass().getResourceAsStream("/pageBreaksBeforeProcessing.html");
              InputStream isValidHtml = this.getClass().getResourceAsStream(expectedHtmlFilePath)) {
 
             String invalidHtml = new String(isInvalidHtml.readAllBytes(), StandardCharsets.UTF_8);
 
             // Spaces and new lines are removed to exclude difference in space characters
-            String fixedHtml = processor.processPageBrakes(invalidHtml, exportParams);
+            String fixedHtml = processor.processPageBrakes(invalidHtml, exportParams, PageLayout.NONE, chaptersCut);
             String validHtml = new String(isValidHtml.readAllBytes(), StandardCharsets.UTF_8);
             assertEquals(TestStringUtils.removeNonsensicalSymbols(validHtml), TestStringUtils.removeNonsensicalSymbols(fixedHtml));
         }
@@ -223,6 +224,87 @@ class HtmlProcessorTest {
         String processed = processor.processPageBrakes(html, new ExportParams());
 
         assertFalse(processed.contains("sbb_page_break"), "A break the document ends with leaves nothing to put on a page of its own");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"<p><br/></p>", "<p>&nbsp;</p>", "<div><a id=\"anchor\"></a></div>", "<p style=\"border: red\"><br/></p>", "<p style=\"border: 1px\"><br/></p>"})
+    void dropsThePageOfWhatShowsNothingAfterTheLastPageBreak(String content) {
+        String html = "<h2>Chapter 1</h2><!--PAGE_BREAK--><!--LANDSCAPE_ABOVE-->" + content;
+
+        String processed = processor.processPageBrakes(html, new ExportParams());
+
+        assertFalse(processed.contains("sbb_page_break"), "Nothing of the area shows");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "<table><tr><td></td></tr></table>",
+            "<ul><li><br/></li></ul>",
+            "<hr/>",
+            "<p><span style=\"background-color: #ffff00\">&nbsp;&nbsp;</span></p>",
+            "<div style=\"height: 40px; background-color: yellow\"></div>",
+            "<p style=\"border: 1px solid black !important; border-width: 0\"><br/></p>",
+            "<p style=\"background-color: transparent; background-color: yellow\"><br/></p>"
+    })
+    void keepsThePageOfWhatShowsAfterTheLastPageBreak(String content) {
+        String html = "<h2>Chapter 1</h2><!--PAGE_BREAK--><!--LANDSCAPE_ABOVE-->" + content;
+
+        String processed = processor.processPageBrakes(html, new ExportParams());
+
+        assertTrue(processed.contains("sbb_page_break"), "What shows is the user's, not an empty page");
+    }
+
+    @Test
+    void keepsAnAreaOfAnEmptyTableWhenAChapterIsCut() {
+        String html = "<h2>Chapter 1</h2><!--PAGE_BREAK--><!--LANDSCAPE_ABOVE--><table><tr><td></td></tr></table><!--PAGE_BREAK--><!--PORTRAIT_ABOVE--><p><br/></p><!--PAGE_BREAK--><!--LANDSCAPE_ABOVE--><h2>Chapter 2</h2>";
+
+        String processed = processor.processPageBrakes(html, new ExportParams(), PageLayout.NONE, true);
+
+        assertEquals(2, processed.split("sbb_page_break", -1).length - 1, "The area of the table stays, the one of the empty paragraph goes");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"", "<p><br/></p>"})
+    void keepsABlankPageInTheMiddleWhenNoChapterIsEmpty(String middleArea) {
+        String html = "<h2>Chapter 1</h2><p>Text</p><!--PAGE_BREAK--><!--LANDSCAPE_ABOVE-->" + middleArea + "<!--PAGE_BREAK--><!--PORTRAIT_ABOVE--><hr/>";
+        Document document = JSoupUtils.parseHtml(html);
+
+        boolean chaptersCut = processor.cutEmptyChapters(document);
+        String processed = processor.processPageBrakes(document.body().html(), new ExportParams(), PageLayout.NONE, chaptersCut);
+
+        assertFalse(chaptersCut, "The only chapter holds text");
+        assertEquals(2, processed.split("sbb_page_break", -1).length - 1, "Nothing was cut, so only the last page can go: " + processed);
+    }
+
+    @Test
+    void givesNoPageToWhatACutEmptyChapterLeaves() {
+        String html = "<h2>Chapter 1</h2><p>Text</p><!--PAGE_BREAK--><!--LANDSCAPE_ABOVE--><h2>Empty</h2><!--PAGE_BREAK--><!--PORTRAIT_ABOVE--><h2>Chapter 2</h2><p>Text</p>";
+        Document document = JSoupUtils.parseHtml(html);
+
+        boolean chaptersCut = processor.cutEmptyChapters(document);
+        String processed = processor.processPageBrakes(document.body().html(), new ExportParams(), PageLayout.NONE, chaptersCut);
+
+        assertTrue(chaptersCut);
+        assertEquals(1, processed.split("sbb_page_break", -1).length - 1, "Only the page of the second chapter follows the first: " + processed);
+    }
+
+    @Test
+    void givesNoPageToWhatAChapterLeftOutLeaves() {
+        String html = "<h1><span><span>1</span></span>Chapter 1</h1><p>Text</p><!--PAGE_BREAK--><!--LANDSCAPE_ABOVE--><h1><span><span>2</span></span>Chapter 2</h1><p>Text</p><!--PAGE_BREAK--><!--PORTRAIT_ABOVE--><h1><span><span>3</span></span>Chapter 3</h1><p>Text</p>";
+        Document document = JSoupUtils.parseHtml(html);
+
+        boolean chaptersCut = processor.cutNotNeededChapters(document, List.of("1", "3"));
+        String processed = processor.processPageBrakes(document.body().html(), new ExportParams(), PageLayout.NONE, chaptersCut);
+
+        assertTrue(chaptersCut);
+        assertEquals(1, processed.split("sbb_page_break", -1).length - 1, "Only the page of the third chapter follows the first: " + processed);
+    }
+
+    @Test
+    void tellsThatNoChapterWasLeftOutWhenAllAreSelected() {
+        Document document = JSoupUtils.parseHtml("<h1><span><span>1</span></span>Chapter 1</h1><p>Text</p>");
+
+        assertFalse(processor.cutNotNeededChapters(document, List.of("1")));
     }
 
     @Test
@@ -1519,6 +1601,34 @@ class HtmlProcessorTest {
                 "An icon without alt takes its title or an empty one, an icon with one keeps it");
         assertFalse(document.select("img[title=Diagram]").hasAttr("alt"), "An image which is not an icon of Polarion is left as it is");
         assertTrue(document.body().html().contains("alt=\"\""), "The empty alt is written out, not dropped as a boolean attribute");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"border: red", "border: 1px", "border-style: solid; border-width: 0"})
+    void cutsATrailingParagraphWhoseBorderDrawsNoLine(String style) {
+        Document document = JSoupUtils.parseHtml("<p>Text</p><p style=\"" + style + "\"><br/></p>");
+
+        processor.cutTrailingEmptyParagraphs(document);
+
+        assertEquals(1, document.body().select("p").size(), "A border needs a style and a width to draw a line");
+    }
+
+    @Test
+    void keepsATrailingParagraphWithAnImportantBorder() {
+        Document document = JSoupUtils.parseHtml("<p>Text</p><p id=\"bordered\" style=\"border: 1px solid black !important; border-width: 0\"><br /></p>");
+
+        processor.cutTrailingEmptyParagraphs(document);
+
+        assertEquals(1, document.select("p#bordered").size(), "The later width does not override an important border");
+    }
+
+    @Test
+    void keepsATrailingParagraphWithABackground() {
+        Document document = JSoupUtils.parseHtml("<p>Text</p><p id=\"painted\" style=\"background-color: #ffff00\"><br /></p>");
+
+        processor.cutTrailingEmptyParagraphs(document);
+
+        assertEquals(1, document.select("p#painted").size(), "The background of the paragraph shows");
     }
 
     @Test

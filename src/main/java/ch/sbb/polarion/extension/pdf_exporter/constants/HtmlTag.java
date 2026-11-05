@@ -8,20 +8,25 @@ public class HtmlTag {
     public static final String BR = "br";
     public static final String BUTTON = "button";
     public static final String CANVAS = "canvas";
+    public static final String DEL = "del";
     public static final String DIV = "div";
     public static final String EMBED = "embed";
     public static final String IMG = "img";
     public static final String INPUT = "input";
+    public static final String INS = "ins";
     public static final String H1 = "h1";
     public static final String HR = "hr";
     public static final String LI = "li";
     public static final String MAP = "map";
+    public static final String MARK = "mark";
     public static final String METER = "meter";
     public static final String OBJECT = "object";
     public static final String OL = "ol";
     public static final String P = "p";
     public static final String PICTURE = "picture";
     public static final String PROGRESS = "progress";
+    public static final String S = "s";
+    public static final String STRIKE = "strike";
     public static final String STYLE = "style"; // This constant specifies HTML's style-tag (not tag's attribute)
     public static final String TABLE = "table";
     public static final String TBODY = "tbody";
@@ -33,6 +38,7 @@ public class HtmlTag {
     public static final String SELECT = "select";
     public static final String SPAN = "span";
     public static final String SVG = "svg";
+    public static final String U = "u";
     public static final String UL = "ul";
     public static final String VIDEO = "video";
 }
