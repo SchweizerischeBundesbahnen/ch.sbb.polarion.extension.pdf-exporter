@@ -15,6 +15,7 @@ import org.jsoup.nodes.Node;
 import org.jsoup.nodes.TextNode;
 import org.jsoup.select.Elements;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
@@ -64,9 +65,18 @@ public class JSoupUtils {
     private static final List<ECSSProperty> BORDER_PROPERTIES = List.of(ECSSProperty.BORDER, ECSSProperty.BORDER_TOP, ECSSProperty.BORDER_RIGHT,
             ECSSProperty.BORDER_BOTTOM, ECSSProperty.BORDER_LEFT, ECSSProperty.BORDER_STYLE);
     private static final List<ECSSProperty> BACKGROUND_PROPERTIES = List.of(ECSSProperty.BACKGROUND, ECSSProperty.BACKGROUND_COLOR);
+    private static final List<ECSSProperty> HEIGHT_PROPERTIES = List.of(ECSSProperty.HEIGHT, ECSSProperty.MIN_HEIGHT, ECSSProperty.PADDING_TOP, ECSSProperty.PADDING_BOTTOM);
     private static final List<ECSSProperty> TEXT_LINE_PROPERTIES = List.of(ECSSProperty.TEXT_DECORATION, ECSSProperty.TEXT_DECORATION_LINE);
     private static final List<String> TEXT_LINES = List.of("underline", "line-through", "overline");
-    private static final List<String> NO_BACKGROUND = List.of("none", "transparent");
+    /** The parts of a background value which paint nothing: no color, no image, and the repeat, attachment, position, size and box of them. */
+    private static final List<String> BACKGROUND_PARTS_WITHOUT_PAINT = List.of("none", "transparent",
+            "repeat", "repeat-x", "repeat-y", "no-repeat", "space", "round",
+            "scroll", "fixed", "local",
+            "left", "right", "top", "bottom", "center",
+            "auto", "cover", "contain",
+            "border-box", "padding-box", "content-box");
+    private static final String BACKGROUND_PARTS_SEPARATOR = "[\\s,/]+";
+    private static final String CSS_LENGTH = "[-+]?[0-9.]+[a-z%]*";
 
     /** Characters which show nothing and which are no spaces either: Polarion leaves zero-width spaces behind. */
     private static final String INVISIBLE_CHARACTERS = "\u200B\u200C\u200D\u2060\uFEFF";
@@ -88,9 +98,9 @@ public class JSoupUtils {
 
     /**
      * Whether nothing of the element shows on the page, on a screen or in print. Only what shows nothing is empty:
-     * no text but spaces, line breaks, empty elements, comments and anchors. An empty table, an empty list or spaces
-     * with a background show, and a user who leaves them in a document means them. The inline style alone is read:
-     * a style which comes from a class stays unseen.
+     * no text but spaces, line breaks, empty elements, comments and anchors. An empty table, an empty list, spaces
+     * with a background or a block with a background and a height show, and a user who leaves them in a document
+     * means them. The inline style alone is read: a style which comes from a class stays unseen.
      * <p>
      * pandoc-service decides the same way for a DOCX, in _holds_page_content of app/docx_post_process.py.
      * </p>
@@ -109,10 +119,29 @@ public class JSoupUtils {
             return true;
         }
         boolean hasBackground = hasBackground(styles);
-        if (hasBackground && element.isBlock() && !element.select(HtmlTag.BR).isEmpty()) {
-            return true; // A line break gives the block a height, so its background shows
+        if (hasBackground && element.isBlock() && takesHeight(element)) {
+            return true; // The block has a height, so its background shows
         }
         return (hasBackground || TAGS_SHOWN_ON_SPACES.contains(tagName) || hasTextLine(styles)) && holdsSpaces(element);
+    }
+
+    /** Whether a line break or the style of the block or of a block inside it gives the block a height. */
+    private boolean takesHeight(@NotNull Element block) {
+        return !block.select(HtmlTag.BR).isEmpty()
+                || block.select("*").stream().anyMatch(inner -> inner.isBlock() && hasHeight(CssUtils.parseDeclarations(inner.attr(HtmlTagAttr.STYLE))));
+    }
+
+    private boolean hasHeight(@NotNull CSSDeclarationList styles) {
+        // The first value of the shorthand is the top padding and the third, if any, the bottom one. The others are horizontal.
+        String[] padding = lowerCaseValue(styles, ECSSProperty.PADDING).split("\\s+");
+        return HEIGHT_PROPERTIES.stream().map(property -> lowerCaseValue(styles, property)).anyMatch(JSoupUtils::isNonZeroLength)
+                || isNonZeroLength(padding[0])
+                || (padding.length > 2 && isNonZeroLength(padding[2]));
+    }
+
+    /** Whether the value holds a digit other than zero: "auto", "0" and "0px" take no room. */
+    private boolean isNonZeroLength(@NotNull String value) {
+        return value.matches(".*[1-9].*");
     }
 
     private boolean hasVisibleText(@NotNull TextNode text) {
@@ -138,7 +167,12 @@ public class JSoupUtils {
 
     private boolean hasBackground(@NotNull CSSDeclarationList styles) {
         return BACKGROUND_PROPERTIES.stream().map(property -> lowerCaseValue(styles, property))
-                .anyMatch(value -> !value.isEmpty() && !NO_BACKGROUND.contains(value));
+                .anyMatch(value -> !value.isEmpty() && Arrays.stream(value.split(BACKGROUND_PARTS_SEPARATOR)).anyMatch(JSoupUtils::paintsBackground));
+    }
+
+    /** Whether the part of a background value is a color or an image. Anything unknown counts as one: what shows must stay. */
+    private boolean paintsBackground(@NotNull String part) {
+        return !BACKGROUND_PARTS_WITHOUT_PAINT.contains(part) && !part.matches(CSS_LENGTH);
     }
 
     private boolean hasTextLine(@NotNull CSSDeclarationList styles) {
