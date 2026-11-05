@@ -64,6 +64,7 @@ public class JSoupUtils {
 
     private static final List<ECSSProperty> BORDER_PROPERTIES = List.of(ECSSProperty.BORDER, ECSSProperty.BORDER_TOP, ECSSProperty.BORDER_RIGHT,
             ECSSProperty.BORDER_BOTTOM, ECSSProperty.BORDER_LEFT, ECSSProperty.BORDER_STYLE);
+    private static final List<String> VISIBLE_BORDER_STYLES = List.of("solid", "dashed", "dotted", "double", "groove", "ridge", "inset", "outset");
     private static final List<ECSSProperty> BACKGROUND_PROPERTIES = List.of(ECSSProperty.BACKGROUND, ECSSProperty.BACKGROUND_COLOR);
     private static final List<ECSSProperty> HEIGHT_PROPERTIES = List.of(ECSSProperty.HEIGHT, ECSSProperty.MIN_HEIGHT, ECSSProperty.PADDING_TOP, ECSSProperty.PADDING_BOTTOM);
     private static final List<ECSSProperty> TEXT_LINE_PROPERTIES = List.of(ECSSProperty.TEXT_DECORATION, ECSSProperty.TEXT_DECORATION_LINE);
@@ -77,6 +78,7 @@ public class JSoupUtils {
             "border-box", "padding-box", "content-box");
     private static final String BACKGROUND_PARTS_SEPARATOR = "[\\s,/]+";
     private static final String CSS_LENGTH = "[-+]?[0-9.]+[a-z%]*";
+    private static final String CSS_FUNCTION_ARGUMENTS = "\\([^)]*\\)";
 
     /** Characters which show nothing and which are no spaces either: Polarion leaves zero-width spaces behind. */
     private static final String INVISIBLE_CHARACTERS = "\u200B\u200C\u200D\u2060\uFEFF";
@@ -162,7 +164,14 @@ public class JSoupUtils {
 
     private boolean hasBorder(@NotNull CSSDeclarationList styles) {
         return BORDER_PROPERTIES.stream().map(property -> lowerCaseValue(styles, property))
-                .anyMatch(value -> !value.isEmpty() && !value.contains("none") && !value.contains("hidden") && !value.matches("0[a-z]*( .*)?"));
+                .anyMatch(JSoupUtils::drawsBorder);
+    }
+
+    /** Whether the border value names a style which draws a line and no zero width. A color or a width alone leaves the style at "none". */
+    private boolean drawsBorder(@NotNull String value) {
+        List<String> parts = List.of(value.replaceAll(CSS_FUNCTION_ARGUMENTS, "()").split("\\s+"));
+        return parts.stream().anyMatch(VISIBLE_BORDER_STYLES::contains)
+                && parts.stream().noneMatch(part -> part.matches(CSS_LENGTH) && !isNonZeroLength(part));
     }
 
     private boolean hasBackground(@NotNull CSSDeclarationList styles) {

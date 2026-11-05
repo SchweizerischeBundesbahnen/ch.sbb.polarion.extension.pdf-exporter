@@ -227,7 +227,7 @@ class HtmlProcessorTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"<p><br/></p>", "<p>&nbsp;</p>", "<div><a id=\"anchor\"></a></div>"})
+    @ValueSource(strings = {"<p><br/></p>", "<p>&nbsp;</p>", "<div><a id=\"anchor\"></a></div>", "<p style=\"border: red\"><br/></p>", "<p style=\"border: 1px\"><br/></p>"})
     void dropsThePageOfWhatShowsNothingAfterTheLastPageBreak(String content) {
         String html = "<h2>Chapter 1</h2><!--PAGE_BREAK--><!--LANDSCAPE_ABOVE-->" + content;
 
@@ -1599,6 +1599,16 @@ class HtmlProcessorTest {
                 "An icon without alt takes its title or an empty one, an icon with one keeps it");
         assertFalse(document.select("img[title=Diagram]").hasAttr("alt"), "An image which is not an icon of Polarion is left as it is");
         assertTrue(document.body().html().contains("alt=\"\""), "The empty alt is written out, not dropped as a boolean attribute");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"border: red", "border: 1px"})
+    void cutsATrailingParagraphWhoseBorderHasNoStyle(String style) {
+        Document document = JSoupUtils.parseHtml("<p>Text</p><p style=\"" + style + "\"><br/></p>");
+
+        processor.cutTrailingEmptyParagraphs(document);
+
+        assertEquals(1, document.body().select("p").size(), "A border without a style draws no line");
     }
 
     @Test

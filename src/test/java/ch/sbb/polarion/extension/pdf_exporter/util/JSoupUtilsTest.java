@@ -37,6 +37,12 @@ class JSoupUtilsTest {
             "<p style=\"border: none\"><br/></p>",
             "<p style=\"border: 0\"></p>",
             "<p style=\"border: 0px solid black\"></p>",
+            "<p style=\"border: solid 0\"></p>",
+            "<p style=\"border: red\"><br/></p>",
+            "<p style=\"border: 1px\"><br/></p>",
+            "<p style=\"border: 1px red\"><br/></p>",
+            "<p style=\"border-top: 1px red\"><br/></p>",
+            "<p style=\"border: 1px hidden red\"><br/></p>",
             "<p style=\"text-decoration: none\">&nbsp;</p>",
             "<span style=\"background-color: #ffff00\"></span>",
             "<span style=\"background-color: #ffff00\"><br/></span>",
@@ -104,6 +110,11 @@ class JSoupUtilsTest {
             "<div style=\"border: 1px solid black\"></div>",
             "<div style=\"border-left: 2px solid black\"></div>",
             "<p style=\"border-style: solid\"><br/></p>",
+            "<p style=\"border-style: none solid\"><br/></p>",
+            "<p style=\"border: 1px; border-style: dashed\"><br/></p>",
+            "<p style=\"border: solid\"><br/></p>",
+            "<p style=\"border: 1px dotted red\"><br/></p>",
+            "<p style=\"border: 1px solid rgb(0 0 0)\"><br/></p>",
     })
     void shows(String html) {
         assertFalse(JSoupUtils.isVisuallyEmpty(html));
