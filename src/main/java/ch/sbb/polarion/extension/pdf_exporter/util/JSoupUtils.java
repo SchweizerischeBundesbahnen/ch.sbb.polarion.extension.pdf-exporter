@@ -219,8 +219,17 @@ public class JSoupUtils {
                 .anyMatch(value -> TEXT_LINES.stream().anyMatch(value::contains));
     }
 
+    /** The value of the declaration of the property which applies: the last one, or the last important one if there is any. */
     private @NotNull String lowerCaseValue(@NotNull CSSDeclarationList styles, @NotNull ECSSProperty property) {
-        return CssUtils.getPropertyValue(styles, property).toLowerCase(Locale.ROOT);
+        String value = "";
+        boolean important = false;
+        for (CSSDeclaration declaration : styles.getAllDeclarations()) {
+            if (declaration.getProperty().equalsIgnoreCase(property.getName()) && (declaration.isImportant() || !important)) {
+                value = declaration.getExpressionAsCSSString();
+                important = declaration.isImportant();
+            }
+        }
+        return value.toLowerCase(Locale.ROOT);
     }
 
     /**

@@ -243,7 +243,8 @@ class HtmlProcessorTest {
             "<hr/>",
             "<p><span style=\"background-color: #ffff00\">&nbsp;&nbsp;</span></p>",
             "<div style=\"height: 40px; background-color: yellow\"></div>",
-            "<p style=\"border: 1px solid black !important; border-width: 0\"><br/></p>"
+            "<p style=\"border: 1px solid black !important; border-width: 0\"><br/></p>",
+            "<p style=\"background-color: transparent; background-color: yellow\"><br/></p>"
     })
     void keepsThePageOfWhatShowsAfterTheLastPageBreak(String content) {
         String html = "<h2>Chapter 1</h2><!--PAGE_BREAK--><!--LANDSCAPE_ABOVE-->" + content;
