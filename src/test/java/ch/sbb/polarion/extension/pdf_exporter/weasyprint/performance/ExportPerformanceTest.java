@@ -10,7 +10,8 @@ import static org.mockito.Mockito.lenient;
  * Documents of the shapes which make an export slow, each timed against a reference time of the exporter and of WeasyPrint.
  * <p>
  * The reference times of each part are in {@code performance/reference-times-<architecture>.properties}: three cells of 10,000
- * characters take WeasyPrint under a second, and took it minutes when the cells could break anywhere (#1101).
+ * characters take WeasyPrint under a second, and took it minutes when the cells could break anywhere (#1101). The small
+ * document, the large table, the page breaks and the long cells are the basket, which the run timed first.
  * </p>
  */
 class ExportPerformanceTest extends BasePerformanceTest {
@@ -20,19 +21,28 @@ class ExportPerformanceTest extends BasePerformanceTest {
     /**
      * A small document, which takes the exporter little but what every export costs: a cost added to every export, as a
      * parse of the CSS with its fonts (#1139), shows here as a multiple of its time. It is judged against the fixed piece
-     * of JDK work, the other documents against it.
+     * of JDK work, the other documents against the basket it belongs to.
      */
     @Test
     void exportsASmallDocument() {
-        Timing timing = export(PerformanceRun.SMALL_DOCUMENT, SMALL_DOCUMENT_TITLE, smallDocument(), portraitA4().build());
+        Timing timing = export(SMALL_DOCUMENT);
 
         assertThat(pageCount(timing.pdf())).isEqualTo(1);
         assertWithinReference(timing);
     }
 
+    /**
+     * The basket as a whole, against the fixed piece of JDK work: the other exports are scaled by the basket, so a
+     * regression of every large document slows the basket as well and shows only here.
+     */
+    @Test
+    void exportsTheBasketAsTheFixedWorkExpects() {
+        assertWithinReference(wholeBasket());
+    }
+
     @Test
     void exportsALargeTable() {
-        Timing timing = export("largeTable", "A large table", Documents.largeTable(400), portraitA4().fitToPage(true).build());
+        Timing timing = export(LARGE_TABLE);
 
         assertThat(pageCount(timing.pdf())).isGreaterThan(10);
         assertWithinReference(timing);
@@ -40,7 +50,7 @@ class ExportPerformanceTest extends BasePerformanceTest {
 
     @Test
     void exportsCellsRunningAcrossPages() {
-        Timing timing = export("longCells", "Long cells", Documents.longCells(3, 10_000), portraitA4().fitToPage(true).build());
+        Timing timing = export(LONG_CELLS);
 
         assertThat(pageCount(timing.pdf())).isGreaterThan(5);
         assertWithinReference(timing);
@@ -64,7 +74,7 @@ class ExportPerformanceTest extends BasePerformanceTest {
 
     @Test
     void exportsSectionsWhichPageBreaksTurn() {
-        Timing timing = export("pageBreakSections", "Page breaks", Documents.pageBreakSections(40), portraitA4().fitToPage(true).build());
+        Timing timing = export(PAGE_BREAK_SECTIONS);
 
         assertThat(pageCount(timing.pdf())).isGreaterThanOrEqualTo(40);
         assertWithinReference(timing);
