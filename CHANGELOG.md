@@ -1,5 +1,22 @@
 # Changelog
 
+## [13.14.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v13.13.0...v13.14.0) (2026-11-06)
+
+
+### Features
+
+* deprecate the image density ([#1277](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/1277)) ([bed5bd6](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/bed5bd68dfa1f190f370d2d28f95a321ade307b7))
+
+
+### Bug Fixes
+
+* **deps:** update dependency @vitejs/plugin-react to v6.2.1 ([06a9b1d](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/06a9b1d532a7de7abc75e2ad257e8162e2254545))
+* **deps:** update dependency com.helger:ph-css to v8.3.0 ([3774431](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/3774431413c1f84b8b0ec37e9da60e5c414ada0e))
+* **deps:** update dependency com.helger:ph-css to v8.4.0 ([cb5b9dc](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/cb5b9dc001395acc2a169bff127d923aaffa810d))
+* **deps:** update dependency globals to v17.14.0 ([aeb96c9](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/aeb96c9c89e2af1bbcb225f0223842780b247666))
+* **deps:** update vitest monorepo to v5.1.0 ([c270dc2](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/c270dc2323216a0ccb852fd8be509456b45e60db))
+* enhance empty content handling, refine chapter cutting logic and improve page break processing tests ([#1280](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/1280)) ([66fe0d6](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/66fe0d676741d2e3c9de6a6d9db08849c2b1ee02))
+
 ## [13.13.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v13.12.0...v13.13.0) (2026-11-02)
 
 
