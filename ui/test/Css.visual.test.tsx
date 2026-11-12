@@ -14,6 +14,13 @@ afterEach(() => {
   document.cookie = 'selected-configuration-css=; path=/; max-age=0';
 });
 
+// The editor is 60vh tall, and snapshotFeature grows the viewport to the page height. The editor then
+// grows with it and overflows the new viewport, so a scrollbar narrows the capture. Pin its height first.
+async function pinEditorHeight(): Promise<void> {
+  const editor = document.querySelector('.css-editor') as HTMLElement;
+  editor.style.height = `${editor.getBoundingClientRect().height}px`;
+}
+
 describe.skipIf(!__PIXEL_REFERENCES__)('CSS page visual', () => {
   it('a configuration loaded, custom stylesheet on screen', async () => {
     await snapshotFeature(
@@ -33,6 +40,8 @@ describe.skipIf(!__PIXEL_REFERENCES__)('CSS page visual', () => {
       ],
       filled('#custom-css-input'),
       'css-loaded',
+      undefined,
+      pinEditorHeight,
     );
     expect(true).toBe(true);
   });
