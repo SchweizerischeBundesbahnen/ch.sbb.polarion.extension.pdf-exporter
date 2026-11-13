@@ -242,8 +242,14 @@ A webhook which answers with an empty body gets a message from the extension ins
 Export stopped by webhook 1 of configuration 'Default', which returned HTTP 422
 ```
 
-The same message, with the reason in place of the status, is used when the webhook cannot be called at all.
-Neither message contains the webhook URL, which may carry credentials. The Polarion log does.
+A webhook which cannot be called at all is reported the same way, naming the kind of the failure:
+
+```
+Export stopped by webhook 1 of configuration 'Default', which could not be called (ConnectException)
+```
+
+Neither message contains the webhook URL, which may carry credentials, nor the text of the exception, which
+can be built from that URL. The Polarion log holds both.
 
 This applies to every way of export:
 

@@ -74,6 +74,8 @@ import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -332,7 +334,8 @@ public class PdfConverter {
         }
     }
 
-    private @NotNull String applyWebhooks(@NotNull ExportParams exportParams, @NotNull String htmlContent) {
+    @VisibleForTesting
+    @NotNull String applyWebhooks(@NotNull ExportParams exportParams, @NotNull String htmlContent) {
         // Skip webhooks processing among other if this functionality is not enabled by system administrator
         if (!PdfExporterExtensionConfiguration.getInstance().getWebhooksEnabled() || exportParams.getWebhooks() == null) {
             return htmlContent;
@@ -382,14 +385,18 @@ public class PdfConverter {
                         }
                     } else {
                         logger.error(String.format("Could not get proper response from webhook [%s]: response status %s", webhookConfig.getUrl(), response.getStatus()));
-                        String body = readErrorBody(response);
+                        // Read only where the body is the message: an export which carries on regardless would
+                        // otherwise pull a whole error page over the wire for a string it drops.
+                        String body = webhookConfig.isFailExportOnError() ? readErrorBody(response) : "";
                         failure = body.isEmpty() ? describeWebhook(position, exportParams) + " returned HTTP " + response.getStatus() : body;
                     }
                 }
             }
         } catch (Exception e) {
             logger.error(String.format("Could not get response from webhook [%s]", webhookConfig.getUrl()), e);
-            failure = describeWebhook(position, exportParams) + " could not be called: " + e.getMessage();
+            // The kind of the failure, never its message: this catch covers building the target as well, and a
+            // malformed URL fails there with the URL - credentials and all - inside the message of the exception.
+            failure = describeWebhook(position, exportParams) + " could not be called (" + rootCauseOf(e).getClass().getSimpleName() + ")";
         } finally {
             if (client != null) {
                 client.close();
@@ -408,15 +415,40 @@ public class PdfConverter {
         return "Export stopped by webhook " + position + " of configuration '" + exportParams.getWebhooks() + "', which";
     }
 
+    /**
+     * The innermost cause, which is what names the kind of a connection failure: Jersey reports one as a
+     * {@code ProcessingException} wrapping the {@code ConnectException} or {@code UnknownHostException} that says
+     * what actually went wrong.
+     */
+    private static @NotNull Throwable rootCauseOf(@NotNull Throwable throwable) {
+        Throwable cause = throwable;
+        while (cause.getCause() != null && cause.getCause() != cause) {
+            cause = cause.getCause();
+        }
+        return cause;
+    }
+
+    /**
+     * The first {@value #MAX_WEBHOOK_ERROR_BODY_LENGTH} characters of the response, as the stream gives them: a
+     * webhook which answers with a whole error page should not be read into memory whole for a message that shows
+     * a fraction of it.
+     */
     @SuppressWarnings("java:S1166") // the status alone still explains the failure
     private static @NotNull String readErrorBody(@NotNull Response response) {
-        try {
-            String body = response.readEntity(String.class);
-            if (body == null) {
-                return "";
+        try (InputStream inputStream = response.readEntity(InputStream.class);
+             Reader reader = new InputStreamReader(inputStream, StandardCharsets.UTF_8)) {
+            char[] buffer = new char[MAX_WEBHOOK_ERROR_BODY_LENGTH + 1];
+            int read = 0;
+            int chunk;
+            while (read < buffer.length && (chunk = reader.read(buffer, read, buffer.length - read)) != -1) {
+                read += chunk;
             }
-            body = body.strip();
-            return body.length() > MAX_WEBHOOK_ERROR_BODY_LENGTH ? body.substring(0, MAX_WEBHOOK_ERROR_BODY_LENGTH) + "..." : body;
+            String body = new String(buffer, 0, read).strip();
+            boolean more = read > MAX_WEBHOOK_ERROR_BODY_LENGTH;
+            if (body.length() > MAX_WEBHOOK_ERROR_BODY_LENGTH) {
+                body = body.substring(0, MAX_WEBHOOK_ERROR_BODY_LENGTH);
+            }
+            return more ? body + "..." : body;
         } catch (Exception e) {
             return "";
         }
