@@ -26,6 +26,7 @@ interface WebhookConfig {
   url?: string;
   authType?: AuthType | null;
   authTokenName?: string | null;
+  failExportOnError?: boolean;
 }
 
 /** Content of one named `webhooks` configuration. */
@@ -40,6 +41,7 @@ interface WebhookRow {
   auth: boolean;
   authType: AuthType;
   authTokenName: string;
+  failExportOnError: boolean;
 }
 
 const FEATURE = 'webhooks';
@@ -108,6 +110,7 @@ export default function Webhooks() {
         auth: !!config.authType,
         authType: config.authType ?? 'BEARER_TOKEN',
         authTokenName: config.authTokenName ?? '',
+        failExportOnError: !!config.failExportOnError,
       })),
     );
     // A load that succeeded after an earlier failure would otherwise keep the banner up over good data.
@@ -126,6 +129,7 @@ export default function Webhooks() {
       // nothing reads, exactly as the legacy page did.
       authType: row.auth ? row.authType : null,
       authTokenName: row.auth ? row.authTokenName : null,
+      failExportOnError: row.failExportOnError,
     }));
     try {
       await settings.saveContent(selectedConfig, scope, { webhookConfigs });
@@ -211,52 +215,62 @@ export default function Webhooks() {
           <fieldset className="webhooks-page" disabled={editingName}>
             <h2 className="align-left">List of webhooks</h2>
 
-            <table className="webhooks-table">
-              <tbody>
-                {rows.map((row) => (
-                  <tr key={row.id} className="webhook-row">
-                    <td className="row-actions">
-                      <button
-                        type="button"
-                        className="toolbar-button"
-                        title="Delete this webhook"
-                        aria-label={`Delete webhook ${row.url || '(no URL)'}`}
-                        onClick={() => setRows((current) => current.filter((r) => r.id !== row.id))}
-                      >
-                        <span className="sbb-icon-table-minus" role="img" aria-label="Delete" />
-                      </button>
-                    </td>
-                    <td>
-                      <label htmlFor={`webhook-url-${row.id}`}>URL:</label>
-                    </td>
-                    <td className="webhook-url">
+            {/* A list of rows rather than a table: the cells of a table share their width across every
+                row, so switching auth off resized the columns and moved the controls of the other rows
+                with them. Each row now wraps on its own once the window is too narrow for it. */}
+            <div className="webhooks-list">
+              {rows.map((row) => (
+                <div key={row.id} className="webhook-row">
+                  <button
+                    type="button"
+                    className="toolbar-button"
+                    title="Delete this webhook"
+                    aria-label={`Delete webhook ${row.url || '(no URL)'}`}
+                    onClick={() => setRows((current) => current.filter((r) => r.id !== row.id))}
+                  >
+                    <span className="sbb-icon-table-minus" role="img" aria-label="Delete" />
+                  </button>
+                  <div className="webhook-url">
+                    <label htmlFor={`webhook-url-${row.id}`}>URL:</label>
+                    <input
+                      id={`webhook-url-${row.id}`}
+                      type="text"
+                      className="fs-14"
+                      placeholder="https://my.domain.com/my-webhook"
+                      value={row.url}
+                      onChange={(e) => patchRow(row.id, { url: e.target.value })}
+                    />
+                    {row.url && !URL_PATTERN.test(row.url) && (
+                      <div className="invalid-webhook">WARNING: Entered value doesn&apos;t seem to be a valid URL</div>
+                    )}
+                  </div>
+                  <label
+                    className="webhook-fail-export"
+                    htmlFor={`webhook-fail-export-${row.id}`}
+                    title="Stop the export if this webhook answers with anything but HTTP 200 or cannot be called"
+                  >
+                    <input
+                      id={`webhook-fail-export-${row.id}`}
+                      type="checkbox"
+                      checked={row.failExportOnError}
+                      onChange={(e) => patchRow(row.id, { failExportOnError: e.target.checked })}
+                    />
+                    Fail export on error
+                  </label>
+                  {/* Last in the row, because it is the only part whose width changes: its controls
+                      appear and disappear with the checkbox, and nothing follows them to be moved. */}
+                  <div className="webhook-auth">
+                    <label htmlFor={`webhook-auth-${row.id}`}>
                       <input
-                        id={`webhook-url-${row.id}`}
-                        type="text"
-                        className="fs-14"
-                        placeholder="https://my.domain.com/my-webhook"
-                        value={row.url}
-                        onChange={(e) => patchRow(row.id, { url: e.target.value })}
+                        id={`webhook-auth-${row.id}`}
+                        type="checkbox"
+                        checked={row.auth}
+                        onChange={(e) => patchRow(row.id, { auth: e.target.checked })}
                       />
-                      {row.url && !URL_PATTERN.test(row.url) && (
-                        <div className="invalid-webhook">
-                          WARNING: Entered value doesn&apos;t seem to be a valid URL
-                        </div>
-                      )}
-                    </td>
-                    <td>
-                      <label htmlFor={`webhook-auth-${row.id}`}>
-                        <input
-                          id={`webhook-auth-${row.id}`}
-                          type="checkbox"
-                          checked={row.auth}
-                          onChange={(e) => patchRow(row.id, { auth: e.target.checked })}
-                        />
-                        Auth
-                      </label>
-                    </td>
-                    <td className="webhook-auth-type">
-                      {row.auth && (
+                      Auth
+                    </label>
+                    {row.auth && (
+                      <div className="webhook-auth-type">
                         <SearchableSelect
                           id={`webhook-auth-type-${row.id}`}
                           ariaLabel="Authentication type"
@@ -264,23 +278,22 @@ export default function Webhooks() {
                           value={row.authType}
                           onChange={(value) => patchRow(row.id, { authType: value as AuthType })}
                         />
-                      )}
-                    </td>
-                    <td>
-                      {row.auth && (
-                        <input
-                          type="text"
-                          aria-label="Polarion Vault entry name"
-                          placeholder="Polarion Vault entry name"
-                          value={row.authTokenName}
-                          onChange={(e) => patchRow(row.id, { authTokenName: e.target.value })}
-                        />
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                      </div>
+                    )}
+                    {row.auth && (
+                      <input
+                        className="webhook-token-name"
+                        type="text"
+                        aria-label="Polarion Vault entry name"
+                        placeholder="Polarion Vault entry name"
+                        value={row.authTokenName}
+                        onChange={(e) => patchRow(row.id, { authTokenName: e.target.value })}
+                      />
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
 
             <button
               type="button"
@@ -290,7 +303,14 @@ export default function Webhooks() {
               onClick={() =>
                 setRows((current) => [
                   ...current,
-                  { id: nextRowId.current++, url: '', auth: false, authType: 'BEARER_TOKEN', authTokenName: '' },
+                  {
+                    id: nextRowId.current++,
+                    url: '',
+                    auth: false,
+                    authType: 'BEARER_TOKEN',
+                    authTokenName: '',
+                    failExportOnError: false,
+                  },
                 ])
               }
             >
@@ -342,6 +362,13 @@ export default function Webhooks() {
             Webhooks to run they should be selected in appropriate style package, or during PDF exporting. They are
             invoked in an order they entered on this page. If certain webhook fails with an error, it&apos;s just
             skipped, remaining webhooks will still be invoked.
+          </p>
+          <p>
+            Check &quot;Fail export on error&quot; to stop the whole export instead, if the webhook answers with
+            anything but HTTP 200 or cannot be called. Use it for a webhook which validates the exported entity. The
+            user is then shown the response body of the webhook, which is where it says what is wrong; a webhook which
+            answers with an empty body is reported by its position and the status instead. In a merged bulk export, one
+            refused document stops the merged PDF. In a workflow function, it stops the status change.
           </p>
         </div>
       </div>

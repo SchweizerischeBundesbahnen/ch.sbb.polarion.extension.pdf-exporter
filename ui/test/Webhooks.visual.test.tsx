@@ -38,7 +38,7 @@ describe.skipIf(!__PIXEL_REFERENCES__)('Webhooks page visual', () => {
         { method: 'GET', match: /\/settings\/webhooks\/default-content/, json: { webhookConfigs: [] } },
         { method: 'GET', match: /\/settings\/webhooks\/names\/[^/]+\/revisions/, json: [] },
       ],
-      found('.webhooks-table tbody tr'),
+      found('.webhooks-list .webhook-row'),
       'webhooks-loaded',
     );
     expect(true).toBe(true);

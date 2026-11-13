@@ -17,6 +17,7 @@ overview and installation, the [quick start page](QUICK_START.md) for the most i
   - [Configuring logs](#configuring-logs)
   - [Enabling CORS](#enabling-cors)
   - [Enabling webhooks](#enabling-webhooks)
+    - [Failing the export on a webhook error](#failing-the-export-on-a-webhook-error)
   - [Bulk export (merge into single PDF)](#bulk-export-merge-into-single-pdf)
     - [Bulk Processing API key](#bulk-processing-api-key)
     - [Bulk Processing Polarion token](#bulk-processing-polarion-token)
@@ -222,6 +223,37 @@ By default, webhooks functionality is not enabled in PDF Exporter. If you want t
 ```properties
 ch.sbb.polarion.extension.pdf-exporter.webhooks.enabled=true
 ```
+
+#### Failing the export on a webhook error
+
+By default, a failed webhook is skipped and the export continues with the unchanged HTML.
+A webhook fails if it answers with a status other than HTTP 200 or cannot be called.
+
+Check **Fail export on error** for a webhook on the Webhooks administration page to stop the export instead.
+Use it for a webhook which validates the exported entity, for example through the Polarion REST API.
+
+The message the user then sees is the response body of the webhook, up to its first 500 characters.
+Write there what the user must do, for example which work items are broken.
+The text is shown as it is. No surface renders it as HTML, so do not escape it.
+
+A webhook which answers with an empty body gets a message from the extension instead:
+
+```
+Export stopped by webhook 1 of configuration 'Default', which returned HTTP 422
+```
+
+The same message, with the reason in place of the status, is used when the webhook cannot be called at all.
+Neither message contains the webhook URL, which may carry credentials. The Polarion log does.
+
+This applies to every way of export:
+
+| Export | Result of a failed webhook |
+|---|---|
+| Export dialog, side panel, REST API | The export fails with the message. |
+| Bulk export, one PDF per document | Only that document fails. The other documents are exported. |
+| Bulk export, merged into one PDF | The merged PDF fails. |
+| PDF width validation | The validation fails with the message. |
+| Workflow function | The status change fails with the message. |
 
 ### Bulk export (merge into single PDF)
 

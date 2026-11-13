@@ -11,4 +11,9 @@ public class WebhookConfig {
     private String url;
     private AuthType authType;
     private String authTokenName;
+    private boolean failExportOnError;
+
+    public WebhookConfig(String url, AuthType authType, String authTokenName) {
+        this(url, authType, authTokenName, false);
+    }
 }

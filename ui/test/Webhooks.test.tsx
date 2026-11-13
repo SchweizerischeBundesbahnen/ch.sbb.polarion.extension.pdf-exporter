@@ -1,16 +1,17 @@
 import { pageViolations } from '@sbb-polarion/react-sbb-polarion/testing';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render } from 'vitest-browser-react';
-import { userEvent } from 'vitest/browser';
+import { page, userEvent } from 'vitest/browser';
 import App from '../src/App';
 import { installFetchMock } from './mockFetch';
 import type { Route } from './mockFetch';
 import { dropdownsUpgraded } from './visualHelpers';
 
-// The Webhooks page: the installation-wide switch that decides whether it exists at all, the table of
+// The Webhooks page: the installation-wide switch that decides whether it exists at all, the list of
 // endpoints it stores, and the auth block each row can carry.
 
 const origUrl = window.location.pathname + window.location.search;
+const VIEWPORT = { width: window.innerWidth, height: window.innerHeight };
 
 const STORED = {
   webhookConfigs: [
@@ -38,9 +39,15 @@ const open = (routes = baseRoutes()) => {
   return fetchMock;
 };
 
-const rows = () => Array.from(document.querySelectorAll('.webhooks-table tbody tr'));
+const rows = () => Array.from(document.querySelectorAll('.webhooks-list .webhook-row'));
 const urlInput = (row: number) => rows()[row].querySelector<HTMLInputElement>('.webhook-url input')!;
-const authCheckbox = (row: number) => rows()[row].querySelector<HTMLInputElement>('input[type="checkbox"]')!;
+// By id, not by "the first checkbox of the row": the fail-export one comes before it.
+const authCheckbox = (row: number) =>
+  rows()[row].querySelector<HTMLInputElement>('input[type="checkbox"][id^="webhook-auth-"]')!;
+const failExportCheckbox = (row: number) =>
+  rows()[row].querySelector<HTMLInputElement>('input[id^="webhook-fail-export-"]')!;
+const authGroup = (row: number) => rows()[row].querySelector<HTMLElement>('.webhook-auth')!;
+const failLabel = (row: number) => rows()[row].querySelector<HTMLElement>('.webhook-fail-export')!;
 const tokenNameInput = (row: number) =>
   rows()[row].querySelector<HTMLInputElement>('input[aria-label="Polarion Vault entry name"]');
 
@@ -60,11 +67,13 @@ const answerDialog = async (label: string) => {
 
 const loaded = async () => vi.waitFor(() => expect(rows().length).toBe(2));
 
-afterEach(() => {
+afterEach(async () => {
   cleanup();
   vi.unstubAllGlobals();
   window.history.replaceState({}, '', origUrl);
   document.cookie = 'selected-configuration-webhooks=; path=/; max-age=0';
+  // A viewport set by a layout test stays with the runner, so the tests after it would measure that one.
+  await page.viewport(VIEWPORT.width, VIEWPORT.height);
 });
 
 describe('Webhooks page', () => {
@@ -73,7 +82,7 @@ describe('Webhooks page', () => {
 
     await vi.waitFor(() => expect(document.querySelector('.webhooks-disabled')).not.toBeNull());
     expect(document.body.textContent).toContain('Webhooks are not enabled');
-    expect(document.querySelector('.webhooks-table')).toBeNull();
+    expect(document.querySelector('.webhooks-list')).toBeNull();
   });
 
   it('says so when it cannot read whether webhooks are enabled', async () => {
@@ -83,7 +92,7 @@ describe('Webhooks page', () => {
     // Not "the feature is off": a failed read is not an answer, and claiming one would be a lie the
     // page cannot back up.
     expect(document.querySelector('.webhooks-disabled')).toBeNull();
-    expect(document.querySelector('.webhooks-table')).toBeNull();
+    expect(document.querySelector('.webhooks-list')).toBeNull();
   });
 
   it('says so when the status is not JSON at all', async () => {
@@ -118,7 +127,7 @@ describe('Webhooks page', () => {
   it('shows an empty table when the setting has no webhooks entry', async () => {
     open(routesWith({ method: 'GET', match: /\/settings\/webhooks\/names\/[^/]+\/content/, json: {} }));
 
-    await vi.waitFor(() => expect(document.querySelector('.webhooks-table')).not.toBeNull());
+    await vi.waitFor(() => expect(document.querySelector('.webhooks-list')).not.toBeNull());
     expect(rows().length).toBe(0);
   });
 
@@ -142,6 +151,64 @@ describe('Webhooks page', () => {
     await userEvent.click(authCheckbox(1));
 
     await vi.waitFor(() => expect(tokenNameInput(1)).not.toBeNull());
+  });
+
+  it('leaves the rest of the row in place when auth is switched on', async () => {
+    await page.viewport(1400, 800);
+    open();
+    await loaded();
+
+    const before = failExportCheckbox(1).getBoundingClientRect();
+    await userEvent.click(authCheckbox(1));
+    await vi.waitFor(() => expect(tokenNameInput(1)).not.toBeNull());
+
+    // The auth controls are the last part of the row, so revealing them moves nothing before them.
+    const after = failExportCheckbox(1).getBoundingClientRect();
+    expect(after.left).toBe(before.left);
+    expect(after.top).toBe(before.top);
+  });
+
+  it('leaves the same gap between every control of a row', async () => {
+    await page.viewport(1400, 800);
+    open();
+    await loaded();
+
+    const box = (selector: string) => rows()[0].querySelector(selector)!.getBoundingClientRect();
+    const url = box('.webhook-url input');
+    const fail = box('.webhook-fail-export');
+    const authLabel = box('.webhook-auth > label');
+    // The element the user sees, not the select kept for assistive technology.
+    const dropdown = box('.webhook-auth-type > :not([aria-hidden="true"])');
+    const tokenName = box('.webhook-token-name');
+
+    // The dropdown fills the width reserved for it, so no leftover widens the gap after it.
+    expect(dropdown.width).toBe(box('.webhook-auth-type').width);
+
+    const gaps = [
+      fail.left - url.right,
+      authLabel.left - fail.right,
+      dropdown.left - authLabel.right,
+      tokenName.left - dropdown.right,
+    ];
+    expect(gaps.map(Math.round)).toEqual([8, 8, 8, 8]);
+  });
+
+  it('wraps a row that does not fit instead of squeezing its controls', async () => {
+    await page.viewport(1400, 800);
+    open();
+    await loaded();
+    const wideAuthTop = authCheckbox(0).getBoundingClientRect().top;
+    const wideAuthWidth = authGroup(0).getBoundingClientRect().width;
+    const wideFailWidth = failLabel(0).getBoundingClientRect().width;
+    expect(failExportCheckbox(0).getBoundingClientRect().top).toBe(wideAuthTop);
+
+    await page.viewport(700, 800);
+    await vi.waitFor(() => expect(authCheckbox(0).getBoundingClientRect().top).toBeGreaterThan(wideAuthTop));
+
+    // The auth controls moved to a line of their own rather than everything shrinking to fit.
+    expect(failLabel(0).getBoundingClientRect().width).toBe(wideFailWidth);
+    expect(authGroup(0).getBoundingClientRect().width).toBe(wideAuthWidth);
+    expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(700);
   });
 
   it('warns about a URL that is not one, without blocking the edit', async () => {
@@ -168,8 +235,8 @@ describe('Webhooks page', () => {
       expect(JSON.parse(String(put![1]!.body))).toEqual({
         webhookConfigs: [
           // Unchecking Auth clears the stored credentials rather than keeping values nothing reads.
-          { url: 'https://my.domain.com/rewrite', authType: null, authTokenName: null },
-          { url: 'https://my.domain.com/renamed', authType: null, authTokenName: null },
+          { url: 'https://my.domain.com/rewrite', authType: null, authTokenName: null, failExportOnError: false },
+          { url: 'https://my.domain.com/renamed', authType: null, authTokenName: null, failExportOnError: false },
         ],
       });
     });
@@ -200,7 +267,39 @@ describe('Webhooks page', () => {
         url: 'https://my.domain.com/new',
         authType: 'BASIC_AUTH',
         authTokenName: 'basic-entry',
+        failExportOnError: false,
       });
+    });
+  });
+
+  it('reads and saves whether a webhook fails the export on error', async () => {
+    const fetchMock = open(
+      routesWith({
+        method: 'GET',
+        match: /\/settings\/webhooks\/names\/[^/]+\/content/,
+        json: {
+          webhookConfigs: [
+            { url: 'https://my.domain.com/validate', failExportOnError: true },
+            { url: 'https://my.domain.com/plain' },
+          ],
+        },
+      }),
+    );
+    await loaded();
+
+    expect(failExportCheckbox(0).checked).toBe(true);
+    // A webhook stored before the option existed keeps the old behavior.
+    expect(failExportCheckbox(1).checked).toBe(false);
+
+    await userEvent.click(failExportCheckbox(0));
+    await userEvent.click(failExportCheckbox(1));
+    await clickButton('Save');
+
+    await vi.waitFor(() => {
+      const put = fetchMock.mock.calls.find(([, init]) => init?.method === 'PUT');
+      expect(put).toBeDefined();
+      const configs = JSON.parse(String(put![1]!.body)).webhookConfigs as { failExportOnError: boolean }[];
+      expect(configs.map((c) => c.failExportOnError)).toEqual([false, true]);
     });
   });
 
@@ -208,7 +307,7 @@ describe('Webhooks page', () => {
     open();
     await loaded();
 
-    await userEvent.click(rows()[0].querySelector<HTMLElement>('.row-actions button')!);
+    await userEvent.click(rows()[0].querySelector<HTMLElement>('.toolbar-button')!);
 
     await vi.waitFor(() => expect(rows().length).toBe(1));
     expect(urlInput(0).value).toBe('https://my.domain.com/plain');
@@ -299,7 +398,7 @@ describe('Webhooks page', () => {
 
   it('writes nothing while the scope has no configuration at all', async () => {
     const fetchMock = open(routesWith({ method: 'GET', match: /\/settings\/webhooks\/names\?/, json: [] }));
-    await vi.waitFor(() => expect(document.querySelector('.webhooks-table')).not.toBeNull());
+    await vi.waitFor(() => expect(document.querySelector('.webhooks-list')).not.toBeNull());
 
     await clickButton('Save');
 

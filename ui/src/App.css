@@ -327,27 +327,74 @@
 
 /* --- Webhooks ---------------------------------------------------------------------------------- */
 
-.webhooks-table {
-  border-collapse: collapse;
+.webhooks-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
-.webhooks-table td {
-  padding: 3px 6px 3px 0;
-  vertical-align: top;
+/* Each control keeps its own width and wraps to the next line when the row runs out of room,
+   instead of being squeezed until it is unreadable. One gap for the whole row, groups included, so
+   that no space between two controls reads as wider than the rest. */
+.webhook-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
 }
 
-.webhooks-table .webhook-url input {
+.webhook-url {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+}
+
+.webhook-url input {
   width: 420px;
+  max-width: 100%;
 }
 
-.webhooks-table .webhook-auth-type {
+.webhook-auth {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+}
+
+.webhook-auth > label,
+.webhook-fail-export {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.webhook-row input[type='checkbox'] {
+  flex: none;
+  margin: 0;
+}
+
+.webhook-auth-type {
   width: 160px;
+}
+
+/* The dropdown is narrower than the width reserved for it, and the leftover made the space before the
+   vault entry field wider than every other gap of the row. The width is held by the element around it,
+   so that choosing a shorter authentication type does not move the field. */
+.webhook-auth-type > * {
+  width: 100%;
+}
+
+.webhook-token-name {
+  width: 190px;
 }
 
 .invalid-webhook {
   color: #c1272d;
   font-size: 12px;
-  padding-top: 2px;
+  /* Its own line under the field it belongs to, rather than beside it. */
+  flex-basis: 100%;
 }
 
 .add-webhook {

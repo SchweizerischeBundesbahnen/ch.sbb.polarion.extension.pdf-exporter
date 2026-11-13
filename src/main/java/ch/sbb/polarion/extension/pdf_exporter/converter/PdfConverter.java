@@ -52,6 +52,7 @@ import com.polarion.alm.projects.model.IUniqueObject;
 import com.polarion.alm.tracker.model.IModule;
 import com.polarion.alm.tracker.model.ITrackerProject;
 import com.polarion.core.util.StringUtils;
+import com.polarion.core.util.exceptions.UserFriendlyRuntimeException;
 import com.polarion.core.util.logging.Logger;
 import com.polarion.platform.internal.security.UserAccountVault;
 import lombok.AllArgsConstructor;
@@ -85,6 +86,7 @@ import java.util.List;
 public class PdfConverter {
     public static final String CUSTOM_METADATA_TAG = "CUSTOM_METADATA";
 
+    private static final int MAX_WEBHOOK_ERROR_BODY_LENGTH = 500;
     private final Logger logger = Logger.getLogger(PdfConverter.class);
     private final PdfExporterPolarionService pdfExporterPolarionService;
 
@@ -338,13 +340,27 @@ public class PdfConverter {
 
         WebhooksModel webhooksModel = new WebhooksSettings().load(exportParams.getProjectId(), SettingId.fromName(exportParams.getWebhooks()));
         String result = htmlContent;
-        for (WebhookConfig webhookConfig : webhooksModel.getWebhookConfigs()) {
-            result = applyWebhook(webhookConfig, exportParams, result);
+        List<WebhookConfig> webhookConfigs = webhooksModel.getWebhookConfigs();
+        for (int i = 0; i < webhookConfigs.size(); i++) {
+            result = applyWebhook(webhookConfigs.get(i), i + 1, exportParams, result);
         }
         return result;
     }
 
-    private @NotNull String applyWebhook(@NotNull WebhookConfig webhookConfig, @NotNull ExportParams exportParams, @NotNull String htmlContent) {
+    /**
+     * A webhook which refuses an export explains why in its response body, and that text is what the user is shown.
+     * Only a refusal which explains nothing is reported by this extension instead, naming the webhook by its
+     * position in its configuration and not by its URL, which may carry credentials in its query.
+     * <p>
+     * The body is passed on as it is. Nothing renders it as HTML: the REST response carries it as JSON, and the
+     * surfaces which show it set it as text, so escaping it here would show the escapes themselves to the user.
+     *
+     * @param position the 1-based position of the webhook in its configuration
+     * @throws UserFriendlyRuntimeException if the webhook fails and is configured to fail the export
+     */
+    @VisibleForTesting
+    @NotNull String applyWebhook(@NotNull WebhookConfig webhookConfig, int position, @NotNull ExportParams exportParams, @NotNull String htmlContent) {
+        String failure;
         Client client = null;
         try {
             client = ClientBuilder.newClient();
@@ -366,19 +382,44 @@ public class PdfConverter {
                         }
                     } else {
                         logger.error(String.format("Could not get proper response from webhook [%s]: response status %s", webhookConfig.getUrl(), response.getStatus()));
+                        String body = readErrorBody(response);
+                        failure = body.isEmpty() ? describeWebhook(position, exportParams) + " returned HTTP " + response.getStatus() : body;
                     }
                 }
             }
         } catch (Exception e) {
             logger.error(String.format("Could not get response from webhook [%s]", webhookConfig.getUrl()), e);
+            failure = describeWebhook(position, exportParams) + " could not be called: " + e.getMessage();
         } finally {
             if (client != null) {
                 client.close();
             }
         }
 
+        if (webhookConfig.isFailExportOnError()) {
+            throw new UserFriendlyRuntimeException(failure);
+        }
+
         // In case of errors return initial HTML without modification
         return htmlContent;
+    }
+
+    private static @NotNull String describeWebhook(int position, @NotNull ExportParams exportParams) {
+        return "Export stopped by webhook " + position + " of configuration '" + exportParams.getWebhooks() + "', which";
+    }
+
+    @SuppressWarnings("java:S1166") // the status alone still explains the failure
+    private static @NotNull String readErrorBody(@NotNull Response response) {
+        try {
+            String body = response.readEntity(String.class);
+            if (body == null) {
+                return "";
+            }
+            body = body.strip();
+            return body.length() > MAX_WEBHOOK_ERROR_BODY_LENGTH ? body.substring(0, MAX_WEBHOOK_ERROR_BODY_LENGTH) + "..." : body;
+        } catch (Exception e) {
+            return "";
+        }
     }
 
     private static void addAuthHeader(@NotNull WebhookConfig webhookConfig, @NotNull Invocation.Builder requestBuilder) {
