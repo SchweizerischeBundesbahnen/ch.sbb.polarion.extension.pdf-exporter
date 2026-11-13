@@ -251,6 +251,10 @@ Export stopped by webhook 1 of configuration 'Default', which could not be calle
 Neither message contains the webhook URL, which may carry credentials, nor the text of the exception, which
 can be built from that URL. The Polarion log holds both.
 
+A webhook which does not accept the connection within 10 seconds counts as a call which could not be made.
+How long it takes to answer afterwards is not limited: a webhook may wait on purpose, for example until a
+second user has approved the export.
+
 This applies to every way of export:
 
 | Export | Result of a failed webhook |

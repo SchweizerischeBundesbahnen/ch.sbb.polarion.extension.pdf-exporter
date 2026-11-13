@@ -30,10 +30,12 @@ import java.io.InputStream;
 import java.net.ConnectException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
@@ -50,6 +52,8 @@ class PdfConverterWebhookTest {
     private static final String URL = "https://example.com/webhook?token=secret";
     private static final String HTML = "<html>initial</html>";
 
+    @Mock
+    private ClientBuilder clientBuilder;
     @Mock
     private Client client;
     @Mock
@@ -69,7 +73,9 @@ class PdfConverterWebhookTest {
         lenient().when(configuration.getWebhooksEnabled()).thenReturn(true);
 
         clientBuilderMockedStatic = mockStatic(ClientBuilder.class);
-        clientBuilderMockedStatic.when(ClientBuilder::newClient).thenReturn(client);
+        clientBuilderMockedStatic.when(ClientBuilder::newBuilder).thenReturn(clientBuilder);
+        lenient().when(clientBuilder.connectTimeout(anyLong(), any(TimeUnit.class))).thenReturn(clientBuilder);
+        lenient().when(clientBuilder.build()).thenReturn(client);
         lenient().when(client.target(anyString())).thenReturn(webTarget);
         lenient().when(webTarget.register(any(Class.class))).thenReturn(webTarget);
         lenient().when(webTarget.request(anyString())).thenReturn(invocationBuilder);
@@ -130,6 +136,8 @@ class PdfConverterWebhookTest {
         String result = pdfConverter.applyWebhook(new WebhookConfig(URL, null, null, true), 1, exportParams, HTML);
 
         assertThat(result).isEqualTo("<html>changed</html>");
+        // Only the connection is bounded: a webhook may take as long as it likes to answer.
+        verify(clientBuilder).connectTimeout(10, TimeUnit.SECONDS);
     }
 
     @Test
