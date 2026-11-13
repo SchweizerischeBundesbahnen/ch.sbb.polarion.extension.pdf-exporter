@@ -37,6 +37,16 @@ class WebhooksModelTest {
                                 new WebhookConfig("https://example.com/webhook1", AuthType.BASIC_AUTH, "token1"),
                                 new WebhookConfig("https://example.com/webhook2", AuthType.BEARER_TOKEN, "token2")
                         )),
+                Arguments.of(String.format("fail export on error" +
+                                        "-----BEGIN WEBHOOKS-----%1$s" +
+                                        "[{\"url\":\"https://example.com/webhook1\",\"failExportOnError\":true}," +
+                                        "{\"url\":\"https://example.com/webhook2\",\"failExportOnError\":false}]%1$s" +
+                                        "-----END WEBHOOKS-----%1$s",
+                                System.lineSeparator()),
+                        List.of(
+                                new WebhookConfig("https://example.com/webhook1", null, null, true),
+                                new WebhookConfig("https://example.com/webhook2", null, null, false)
+                        )),
                 Arguments.of(String.format("empty array" +
                                 "-----BEGIN WEBHOOKS-----%1$s" +
                                 "[]%1$s" +

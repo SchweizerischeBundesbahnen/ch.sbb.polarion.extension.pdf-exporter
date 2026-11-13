@@ -157,7 +157,7 @@ describe.skipIf(!__PIXEL_REFERENCES__)('Bulk PDF Export widget visual', () => {
    */
   async function startRun(
     items = SAMPLE_ITEMS,
-  ): Promise<{ host: HTMLElement; finish: (fail?: boolean, warning?: string) => void }> {
+  ): Promise<{ host: HTMLElement; finish: (fail?: boolean | string, warning?: string) => void }> {
     const pending: { resolve: (warning: string | null) => void; reject: (error: Error) => void }[] = [];
     const host = mounted(items, {
       popup: popupDependencies(),
@@ -182,10 +182,14 @@ describe.skipIf(!__PIXEL_REFERENCES__)('Bulk PDF Export widget visual', () => {
     await pressExport(host);
     await vi.waitFor(() => expect(host.shadowRoot!.querySelector('.bulk-export-progress')).not.toBeNull());
 
-    const finish = (fail = false, warning?: string) => {
+    // `fail` as a string is the message of the failure, for a reference about what the message looks like.
+    const finish = (fail: boolean | string = false, warning?: string) => {
       const next = pending.shift();
-      if (fail) next?.reject(new Error('Conversion failed: the document has no content'));
-      else next?.resolve(warning ?? null);
+      if (fail) {
+        next?.reject(new Error(typeof fail === 'string' ? fail : 'Conversion failed: the document has no content'));
+      } else {
+        next?.resolve(warning ?? null);
+      }
     };
     return { host, finish };
   }
@@ -240,6 +244,33 @@ describe.skipIf(!__PIXEL_REFERENCES__)('Bulk PDF Export widget visual', () => {
     await vi.waitFor(() => expect(host.shadowRoot!.querySelector('.bulk-export-outcome .result')).not.toBeNull());
 
     await dialogSnapshot(host, 'widget-progress-finished-with-errors');
+  });
+
+  /**
+   * The two shapes a refusal by a webhook takes, in one run.
+   *
+   * A webhook which explains itself owns the whole message: a validating one names every problem it found, so
+   * the text is far longer than a conversion error and arrives with newlines in it. A webhook which answers
+   * with an empty body is reported by the extension instead, in one line naming the webhook and the status.
+   */
+  it('a bulk export with both kinds of refusal by a webhook', async () => {
+    const WEBHOOK_MESSAGES: Record<number, string> = {
+      1:
+        "Test run 'elibrary/UAT' has 2 broken work item link(s). The export would silently " +
+        "leave the affected content out.\n- Test case 'elibrary/EL-384' of a test record does not exist\n" +
+        "- Test case 'elibrary/EL-385' of a test record does not exist",
+      2: "Export stopped by webhook 1 of configuration 'Default', which returned HTTP 422",
+    };
+    const { host, finish } = await startRun();
+    for (let index = 0; index < SAMPLE_ITEMS.items.length; index++) {
+      finish(WEBHOOK_MESSAGES[index] ?? false);
+      await vi.waitFor(() =>
+        expect(host.shadowRoot!.querySelectorAll('.export-item.finished, .export-item.error').length).toBe(index + 1),
+      );
+    }
+    await vi.waitFor(() => expect(host.shadowRoot!.querySelector('.bulk-export-outcome .result')).not.toBeNull());
+
+    await dialogSnapshot(host, 'widget-progress-webhook-refused');
   });
 
   it('a bulk export that finished with something to know about an item', async () => {

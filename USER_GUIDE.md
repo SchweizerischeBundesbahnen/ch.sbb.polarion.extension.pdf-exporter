@@ -96,6 +96,9 @@ In this section, you can choose a specific webhook for custom HTML processing be
 
 ![Webhooks](docs/user_guide/img/webhooks.png)
 
+A webhook can be configured to stop the export if it fails, for example when it validates the document and finds a problem.
+The export then shows the message of the webhook. See [Failing the export on a webhook error](CONFIGURATION.md#failing-the-export-on-a-webhook-error).
+
 ### Headings color
 By default, dark blue color (Polarion's default) is used for headings, but you can change this by selecting any other color:
 
