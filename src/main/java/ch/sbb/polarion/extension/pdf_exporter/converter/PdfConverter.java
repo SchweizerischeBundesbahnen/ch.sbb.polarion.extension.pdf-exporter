@@ -82,6 +82,7 @@ import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 @AllArgsConstructor
 @SuppressWarnings("java:S1200")
@@ -89,6 +90,7 @@ public class PdfConverter {
     public static final String CUSTOM_METADATA_TAG = "CUSTOM_METADATA";
 
     private static final int MAX_WEBHOOK_ERROR_BODY_LENGTH = 500;
+    private static final int WEBHOOK_CONNECT_TIMEOUT_SECONDS = 10;
     private final Logger logger = Logger.getLogger(PdfConverter.class);
     private final PdfExporterPolarionService pdfExporterPolarionService;
 
@@ -366,7 +368,11 @@ public class PdfConverter {
         String failure;
         Client client = null;
         try {
-            client = ClientBuilder.newClient();
+            // A connect timeout only. A webhook may wait for something slow on purpose, a second user
+            // approving the export among others, so the time it takes to answer is not limited here.
+            client = ClientBuilder.newBuilder()
+                    .connectTimeout(WEBHOOK_CONNECT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                    .build();
             WebTarget webTarget = client.target(webhookConfig.getUrl()).register(MultiPartFeature.class);
 
             try (FormDataMultiPart multipart = new FormDataMultiPart()) {
