@@ -37,6 +37,11 @@ public class ExportParams extends ConversionParams {
     @Schema(description = "The specific revision of the document")
     private @Nullable String revision;
 
+    @Schema(description = "The collection the document is exported from, as Polarion names it: its id, preceded by its project and a slash where that is not the project of the document, and followed by ~revision where the collection itself is opened at a revision. "
+            + "The document is exported at the revision the collection holds it at unless a revision is given, and work items it links to are rendered at the revisions the collection holds their documents at",
+            example = "42")
+    private @Nullable String collection;
+
     @Schema(description = "The type of document", example = "LIVE_DOC")
     private DocumentType documentType;
 

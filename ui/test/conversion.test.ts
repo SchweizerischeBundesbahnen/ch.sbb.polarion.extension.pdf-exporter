@@ -256,8 +256,18 @@ describe('convertCollectionDocuments', () => {
     const submitted = fetchMock.mock.calls
       .filter((call) => String(call[0]).endsWith('/convert/jobs'))
       .map((call) => JSON.parse(String(call[1]?.body)) as Record<string, unknown>);
-    expect(submitted[0]).toMatchObject({ projectId: 'elibrary', locationPath: 'Specs/One', watermark: true });
-    expect(submitted[1]).toMatchObject({ projectId: 'other', locationPath: '_default/Two' });
+    // Each document is rendered inside its collection, which a document of another project names by project
+    expect(submitted[0]).toMatchObject({
+      projectId: 'elibrary',
+      locationPath: 'Specs/One',
+      collection: '144',
+      watermark: true,
+    });
+    expect(submitted[1]).toMatchObject({
+      projectId: 'other',
+      locationPath: '_default/Two',
+      collection: 'elibrary/144',
+    });
   });
 
   it('skips Live Reports unless the widget exports pages too', async () => {

@@ -21,6 +21,7 @@ export interface ExportParamsJson {
   locationPath?: string | null;
   baselineRevision?: string | null;
   revision?: string | null;
+  collection?: string | null;
   coverPage?: string | null;
   css?: string;
   headerFooter?: string;
@@ -67,6 +68,12 @@ export interface DocumentContext {
   locationPath?: string | null;
   baselineRevision?: string | null;
   revision?: string | null;
+  /**
+   * The collection the document was opened from. The server exports the document the way Polarion shows
+   * it there: at the revision the collection holds it at, and a linked work item at the revision the
+   * collection holds its document at.
+   */
+  collection?: string | null;
   urlQueryParameters?: Record<string, string>;
   /** A report only: the one widget of it to export, left out where the whole report is. */
   widgetId?: string;
@@ -143,6 +150,7 @@ export function buildExportParams(form: ExportForm, context: DocumentContext, ta
       locationPath: context.locationPath,
       baselineRevision: context.baselineRevision,
       revision: context.revision,
+      collection: context.collection,
       coverPage: form.coverPageEnabled ? form.coverPage : null,
       css: form.css,
       headerFooter: form.headerFooter,

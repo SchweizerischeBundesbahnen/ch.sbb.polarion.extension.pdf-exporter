@@ -21,6 +21,7 @@ interface Expected {
   locationPath?: string;
   baselineRevision?: string;
   revision?: string;
+  collection?: string;
   urlQueryParameters?: Record<string, string>;
   spaceId?: string;
   documentName?: string;
@@ -33,6 +34,7 @@ const check = (hash: string, documentType: DocumentType, expected: Expected) => 
   expect(location.locationPath).toBe(expected.locationPath);
   expect(location.baselineRevision).toBe(expected.baselineRevision);
   expect(location.revision).toBe(expected.revision);
+  expect(location.collection).toBe(expected.collection);
   expect(location.urlQueryParameters).toEqual(expected.urlQueryParameters);
   expect(spaceIdOf(location)).toBe(expected.spaceId);
   expect(documentNameOf(location)).toBe(expected.documentName);
@@ -167,6 +169,7 @@ describe('parseDocumentLocation', () => {
       documentType: 'LIVE_DOC',
       projectId: 'elibrary',
       locationPath: '_default/live_doc',
+      collection: '145',
       spaceId: '_default',
       documentName: 'live_doc',
     });
@@ -177,6 +180,8 @@ describe('parseDocumentLocation', () => {
       documentType: 'LIVE_DOC',
       projectId: 'drivepilot',
       locationPath: 'Requirements/live doc',
+      // Polarion doubles the slash between the project of the collection and its id; the server wants one
+      collection: 'elibrary/144',
       spaceId: 'Requirements',
       documentName: 'live doc',
     });
@@ -191,6 +196,7 @@ describe('parseDocumentLocation', () => {
         projectId: 'drivepilot',
         locationPath: 'Requirements/System Requirement Specification',
         revision: '112',
+        collection: '1',
         urlQueryParameters: { revision: '112' },
         spaceId: 'Requirements',
         documentName: 'System Requirement Specification',

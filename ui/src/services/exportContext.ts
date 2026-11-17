@@ -23,6 +23,16 @@ export interface DocumentLocation {
   locationPath?: string;
   baselineRevision?: string;
   revision?: string;
+  /**
+   * The collection the document was opened from, as Polarion names one: its id, preceded by its project
+   * and a slash where that is not the project of the document (`drivepilot/3`), and followed by `~revision`
+   * where the collection itself is opened at one. The server reads it with Polarion's own converter, so
+   * none of these forms is taken apart here - see {@link collectionOf} for the one thing that is undone.
+   *
+   * A collection decides what its document looks like - the revision it is shown at, which the hash does
+   * not repeat, and the revisions of the work items it links to - so an export has to name it.
+   */
+  collection?: string;
   /** The hash's own query parameters, which an export has to carry: the renderer reads the item as the page does. */
   urlQueryParameters?: Record<string, string>;
   /** A report only: the one widget of it to export, by the ID of its element on the page (`polarion_client1`). */
@@ -81,6 +91,16 @@ const projectIdOf = (scope: string): string | null => /project\/(.*)\//.exec(sco
 const baselineRevisionOf = (path: string): string | undefined => /baseline\/([^/]+)\//.exec(path)?.[1];
 
 /**
+ * What the hash names between `/collection/` and `/wiki/`, with the slash Polarion doubles there undone.
+ *
+ * A collection of another project is `drivepilot/3` to Polarion, and the hash, where a slash separates
+ * the segments of the path, writes it `drivepilot//3`. Passed on doubled, the server finds no such
+ * collection and refuses the export.
+ */
+const collectionOf = (path: string): string | undefined =>
+  /\/collection\/(.+?)\/wiki\//.exec(path)?.[1].replace(/\/\//g, '/');
+
+/**
  * A location path Polarion left the space out of gets `_default/` back, which is where such a document
  * lives. A test run path is returned untouched - the caller recognizes it by that prefix.
  */
@@ -135,6 +155,7 @@ export function parseDocumentLocation(hash: string, options: ParseOptions = {}):
     documentType,
     projectId: projectIdOf(scope),
     baselineRevision: baselineRevisionOf(path),
+    collection: collectionOf(path),
     urlQueryParameters,
     revision: urlQueryParameters?.revision,
   };

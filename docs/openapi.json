@@ -773,6 +773,14 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "description": "The collection the document is opened from: its id, preceded by its project and a slash where that is not the project of the document; decides the revision where none is given",
+            "in": "query",
+            "name": "collection",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -2307,6 +2315,11 @@
               "type": "string"
             },
             "type": "array"
+          },
+          "collection": {
+            "description": "The collection the document is exported from, as Polarion names it: its id, preceded by its project and a slash where that is not the project of the document, and followed by ~revision where the collection itself is opened at a revision. The document is exported at the revision the collection holds it at unless a revision is given, and work items it links to are rendered at the revisions the collection holds their documents at",
+            "example": "42",
+            "type": "string"
           },
           "coverPage": {
             "description": "Cover page settings name",
