@@ -41,7 +41,7 @@
     "@vitejs/plugin-react": "6.3.0",
     "@vitest/browser-playwright": "5.1.0",
     "@vitest/coverage-istanbul": "5.1.0",
-    "axe-core": "4.14.0",
+    "axe-core": "4.14.1",
     "eslint": "10.15.0",
     "eslint-config-prettier": "10.1.8",
     "eslint-plugin-jsx-a11y-x": "0.2.0",
