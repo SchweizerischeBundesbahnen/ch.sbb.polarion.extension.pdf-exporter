@@ -5,6 +5,7 @@ import type { Remote } from '../services/conversion';
 import {
   ConversionInterrupted,
   cancelJob,
+  collectionOfMember,
   convertCollectionDocuments,
   convertMergePdf,
   convertPdf,
@@ -214,6 +215,7 @@ export default function useBulkExport(exportPages: boolean, remote: Remote, deps
                 projectId: member.projectId,
                 locationPath: `${member.spaceId}/${member.documentName}`,
                 revision: member.revision,
+                collection: collectionOfMember(member, item.projectId ?? '', item.id ?? ''),
                 documentType: member.documentType,
               });
             }

@@ -1,6 +1,11 @@
 package ch.sbb.polarion.extension.pdf_exporter.util.placeholder;
 
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.DocumentType;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.DocumentData;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.id.DocumentId;
 import ch.sbb.polarion.extension.pdf_exporter.service.PdfExporterPolarionService;
+import com.polarion.alm.projects.model.IUniqueObject;
 import com.polarion.alm.projects.IProjectService;
 import com.polarion.alm.tracker.ITestManagementService;
 import com.polarion.alm.tracker.ITrackerService;
@@ -25,6 +30,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class PlaceholderProcessorTest {
@@ -105,6 +111,32 @@ class PlaceholderProcessorTest {
     void testEmptySource(String source) {
         final String result = placeholderProcessor.processPlaceholders(source, placeholderValues);
         assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void revisionPlaceholderIsTheRevisionTheDocumentIsExportedAt() {
+        DocumentId documentId = mock(DocumentId.class);
+        when(documentId.getDocumentId()).thenReturn("testDocId");
+        // Read from a collection which holds the document at revision 100, while its last revision is 123
+        DocumentData<IUniqueObject> documentData = DocumentData.creator(DocumentType.LIVE_DOC, mock(IUniqueObject.class))
+                .id(documentId)
+                .title("testTitle")
+                .revision("100")
+                .lastRevision("123")
+                .revisionPlaceholder("123")
+                .build();
+
+        // The request names the collection and no revision: the collection decided it
+        ExportParams fromCollection = ExportParams.builder().collection("42").build();
+        assertEquals("100", placeholderProcessor.getPlaceholderValues(documentData, fromCollection, "{{ REVISION }}").getAllVariables().get("REVISION"));
+
+        // A revision asked for goes before the collection, as it does when the document is read
+        ExportParams withRevision = ExportParams.builder().collection("42").revision("77").build();
+        assertEquals("77", placeholderProcessor.getPlaceholderValues(documentData, withRevision, "{{ REVISION }}").getAllVariables().get("REVISION"));
+
+        // Without a collection nothing changed: the last revision of the document
+        ExportParams onItsOwn = ExportParams.builder().build();
+        assertEquals("123", placeholderProcessor.getPlaceholderValues(documentData, onItsOwn, "{{ REVISION }}").getAllVariables().get("REVISION"));
     }
 
     @Test

@@ -2,6 +2,7 @@ package ch.sbb.polarion.extension.pdf_exporter.rest.model.documents;
 
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
 import ch.sbb.polarion.extension.pdf_exporter.service.PdfExporterPolarionService;
+import ch.sbb.polarion.extension.generic.service.PolarionCollectionExecutor;
 import com.polarion.alm.projects.model.IProject;
 import com.polarion.alm.shared.api.model.ModelObject;
 import com.polarion.alm.shared.api.model.document.Document;
@@ -92,6 +93,9 @@ public class ModelObjectProvider {
         DocumentReference documentReference = DocumentReference.fromPath(createPath(projectId, locationPath));
         if (exportParams.getRevision() != null) {
             documentReference = documentReference.getWithRevision(exportParams.getRevision());
+        } else {
+            // A document opened from a collection is the one of the revision the collection holds it at
+            documentReference = PolarionCollectionExecutor.resolveDocument(projectId, exportParams.getCollection(), documentReference, transaction);
         }
 
         return documentReference.getOriginal(transaction);

@@ -4,11 +4,13 @@ import ch.sbb.polarion.extension.generic.exception.ObjectNotFoundException;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.DocumentType;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
 import ch.sbb.polarion.extension.pdf_exporter.service.PdfExporterPolarionService;
+import ch.sbb.polarion.extension.generic.service.PolarionCollectionExecutor;
 import ch.sbb.polarion.extension.generic.test_extensions.CustomExtensionMock;
 import ch.sbb.polarion.extension.generic.test_extensions.TransactionalExecutorExtension;
 import com.polarion.alm.projects.model.IProject;
 import com.polarion.alm.shared.api.model.ModelObject;
 import com.polarion.alm.shared.api.model.document.Document;
+import com.polarion.alm.shared.api.model.document.DocumentReference;
 import com.polarion.alm.shared.api.model.document.DocumentSelector;
 import com.polarion.alm.shared.api.model.document.internal.InternalDocuments;
 import com.polarion.alm.shared.api.model.rp.RichPage;
@@ -30,6 +32,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Map;
@@ -89,6 +92,55 @@ class ModelObjectProviderTest {
         ModelObject modelObject = TransactionalExecutor.executeSafelyInReadOnlyTransaction(modelObjectProvider::getModelObject);
 
         assertEquals(documentMock, modelObject);
+    }
+
+    @Test
+    void aDocumentOfACollectionIsReadAtTheRevisionTheCollectionHoldsItAt() {
+        Document documentOfCollection = mock(Document.class);
+        DocumentReference atCollectionRevision = mock(DocumentReference.class);
+        when(atCollectionRevision.getOriginal(internalReadOnlyTransactionMock)).thenReturn(documentOfCollection);
+        ExportParams exportParams = ExportParams.builder()
+                .projectId("testProjectId")
+                .locationPath("_default/testLocationPath")
+                .documentType(DocumentType.LIVE_DOC)
+                .collection("42")
+                .build();
+
+        try (MockedStatic<PolarionCollectionExecutor> collectionExecutor = mockStatic(PolarionCollectionExecutor.class)) {
+            collectionExecutor.when(() -> PolarionCollectionExecutor.resolveDocument(eq("testProjectId"), eq("42"), any(), eq(internalReadOnlyTransactionMock)))
+                    .thenReturn(atCollectionRevision);
+
+            ModelObject modelObject = TransactionalExecutor.executeSafelyInReadOnlyTransaction(
+                    transaction -> new ModelObjectProvider(exportParams, pdfExporterPolarionService).getModelObject(transaction));
+
+            assertEquals(documentOfCollection, modelObject);
+        }
+    }
+
+    @Test
+    void aRevisionAskedForGoesBeforeTheOneOfTheCollection() {
+        InternalDocuments internalDocumentsMock = mock(InternalDocuments.class);
+        DocumentSelector documentSelectorMock = mock(DocumentSelector.class);
+        Document documentMock = mock(Document.class);
+        when(documentSelectorMock.reference(any())).thenReturn(documentMock);
+        when(internalDocumentsMock.getBy()).thenReturn(documentSelectorMock);
+        doReturn(internalDocumentsMock).when(internalReadOnlyTransactionMock).byEnum(any());
+        ExportParams exportParams = ExportParams.builder()
+                .projectId("testProjectId")
+                .locationPath("_default/testLocationPath")
+                .documentType(DocumentType.LIVE_DOC)
+                .revision("12345")
+                .collection("42")
+                .build();
+
+        try (MockedStatic<PolarionCollectionExecutor> collectionExecutor = mockStatic(PolarionCollectionExecutor.class)) {
+            ModelObject modelObject = TransactionalExecutor.executeSafelyInReadOnlyTransaction(
+                    transaction -> new ModelObjectProvider(exportParams, pdfExporterPolarionService).getModelObject(transaction));
+
+            assertEquals(documentMock, modelObject);
+            collectionExecutor.verifyNoInteractions();
+            verify(documentSelectorMock).reference(argThat(reference -> "12345".equals(reference.requestedRevision())));
+        }
     }
 
     public static Stream<Arguments> paramsForModelObjectProviderGetRichPage() {

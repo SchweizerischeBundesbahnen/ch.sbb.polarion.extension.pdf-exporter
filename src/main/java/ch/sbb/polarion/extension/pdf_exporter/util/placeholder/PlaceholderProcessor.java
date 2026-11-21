@@ -7,6 +7,7 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.headerfooter.P
 import ch.sbb.polarion.extension.pdf_exporter.service.PdfExporterPolarionService;
 import com.polarion.alm.projects.model.IUniqueObject;
 import com.polarion.alm.tracker.model.IModule;
+import com.polarion.core.util.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -44,8 +45,23 @@ public class PlaceholderProcessor {
         return processPlaceholders(templates, placeholderValues);
     }
 
+    /**
+     * The revision the document is exported at: the one asked for, or the one a collection holds the document at, which
+     * the request does not name and the document read for it carries. Otherwise the document is exported at HEAD, which
+     * is its last revision.
+     */
+    private @NotNull String revisionOf(@NotNull DocumentData<? extends IUniqueObject> documentData, @NotNull ExportParams exportParams) {
+        if (exportParams.getRevision() != null) {
+            return exportParams.getRevision();
+        }
+        if (!StringUtils.isEmpty(exportParams.getCollection()) && documentData.getRevision() != null) {
+            return documentData.getRevision();
+        }
+        return documentData.getLastRevision();
+    }
+
     public @NotNull PlaceholderValues getPlaceholderValues(@NotNull DocumentData<? extends IUniqueObject> documentData, @NotNull ExportParams exportParams, @NotNull List<String> templates) {
-        String revision = exportParams.getRevision() != null ? exportParams.getRevision() : documentData.getLastRevision();
+        String revision = revisionOf(documentData, exportParams);
         String baselineName = documentData.getBaseline() != null ? documentData.getBaseline().asPlaceholder() : "";
         String documentFilter = exportParams.getUrlQueryParameters() != null ? exportParams.getUrlQueryParameters().get(ExportParams.URL_QUERY_PARAM_QUERY) : null;
 
