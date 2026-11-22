@@ -82,7 +82,7 @@ class TableAnalyzerTest {
      * the rest, they are the break points of that rest.
      */
     @ParameterizedTest
-    @ValueSource(strings = {"Anforderung REQ-1001 vom 2022-01-05, siehe https://example.com/a/b?c=d", "Rechts-Schutz TMSPRG-13164", "a​b c"})
+    @ValueSource(strings = {"Anforderung REQ-1001 vom 2022-01-05, siehe https://example.com/a/b?c=d", "Rechts-Schutz TMSPRG-13164", "a\u200Bb c"})
     void findsTheBreakPointsOfTheRestOfATextFromWhereItStarts(String text) {
         TableAnalyzer.MeasureLineBreakingStrategy strategy = new TableAnalyzer.MeasureLineBreakingStrategy();
         for (int start = 0; start <= text.length(); start++) {
