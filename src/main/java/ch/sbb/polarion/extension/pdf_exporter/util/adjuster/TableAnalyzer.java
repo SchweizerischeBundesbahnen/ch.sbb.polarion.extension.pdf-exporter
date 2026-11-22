@@ -488,18 +488,28 @@ public class TableAnalyzer {
     static final class MeasureLineBreakingStrategy implements LineBreakingStrategy {
         @Override
         public BreakPointsProvider getBreakPointsProvider(String text, String lang, CalculatedStyle style) {
-            BreakIterator iterator = new UrlAwareLineBreakIterator(text);
+            return getBreakPointsProvider(text, 0, lang, style);
+        }
+
+        /**
+         * The break points of the text from {@code start} on, at offsets from {@code start}. Found without a copy of the
+         * rest of the text, which flying-saucer asks for at the start of each line: the copies cost a long cell time
+         * quadratic in its length.
+         */
+        @Override
+        public BreakPointsProvider getBreakPointsProvider(String text, int start, String lang, CalculatedStyle style) {
+            BreakIterator iterator = new UrlAwareLineBreakIterator(text, start);
             return () -> {
                 int next = iterator.next();
-                while (next != BreakIterator.DONE && isBetweenHyphenAndDigit(text, next)) {
+                while (next != BreakIterator.DONE && isBetweenHyphenAndDigit(text, start, next)) {
                     next = iterator.next();
                 }
-                return next == BreakIterator.DONE ? BreakPoint.DONE : new BreakPoint(next);
+                return next == BreakIterator.DONE ? BreakPoint.DONE : new BreakPoint(next - start);
             };
         }
 
-        private static boolean isBetweenHyphenAndDigit(@NotNull String text, int offset) {
-            return offset > 0 && offset < text.length() && text.charAt(offset - 1) == '-' && Character.isDigit(text.codePointAt(offset));
+        private static boolean isBetweenHyphenAndDigit(@NotNull String text, int start, int offset) {
+            return offset > start && offset < text.length() && text.charAt(offset - 1) == '-' && Character.isDigit(text.codePointAt(offset));
         }
     }
 }

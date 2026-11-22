@@ -12,6 +12,8 @@ import org.jsoup.parser.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.xhtmlrenderer.layout.breaker.BreakPoint;
+import org.xhtmlrenderer.layout.breaker.BreakPointsProvider;
 
 import java.awt.*;
 import java.awt.font.FontRenderContext;
@@ -23,6 +25,8 @@ import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.text.BreakIterator;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
@@ -71,6 +75,28 @@ class TableAnalyzerTest {
     void breaksAWordWhereTheCellLetsItBreakAnywhere() {
         assertTrue(narrowestWidth("<span style=\"overflow-wrap: anywhere\">TMSPRG-13164</span>") < narrowestWidth("TMSPRG-13164"),
                 "A word which may break anywhere breaks after its hyphen as well");
+    }
+
+    /**
+     * flying-saucer asks for the break points of the rest of a text from where each line starts. Found without a copy of
+     * the rest, they are the break points of that rest.
+     */
+    @ParameterizedTest
+    @ValueSource(strings = {"Anforderung REQ-1001 vom 2022-01-05, siehe https://example.com/a/b?c=d", "Rechts-Schutz TMSPRG-13164", "a​b c"})
+    void findsTheBreakPointsOfTheRestOfATextFromWhereItStarts(String text) {
+        TableAnalyzer.MeasureLineBreakingStrategy strategy = new TableAnalyzer.MeasureLineBreakingStrategy();
+        for (int start = 0; start <= text.length(); start++) {
+            assertEquals(breakPoints(strategy.getBreakPointsProvider(text.substring(start), null, null)),
+                    breakPoints(strategy.getBreakPointsProvider(text, start, null, null)), "From %d on".formatted(start));
+        }
+    }
+
+    private static List<Integer> breakPoints(BreakPointsProvider provider) {
+        List<Integer> points = new ArrayList<>();
+        for (BreakPoint point = provider.next(); point.position() != BreakIterator.DONE; point = provider.next()) {
+            points.add(point.position());
+        }
+        return points;
     }
 
     @Test
