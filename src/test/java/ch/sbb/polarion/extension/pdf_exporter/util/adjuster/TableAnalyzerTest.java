@@ -365,14 +365,9 @@ class TableAnalyzerTest {
     @Test
     @SneakyThrows
     void antiAliasRenderingHintResolvesToRealConstant() {
-        // Force TableAnalyzer's static initializer to run, pinning xr.text.aa-rendering-hint before
-        // flying-saucer's Configuration singleton is first read.
-        Class.forName(TableAnalyzer.class.getName());
-
-        // flying-saucer's own default ("RenderingHints.VALUE_TEXT_ANTIALIAS_HGRB") is unresolvable, so without
-        // the fix this returns the sentinel and Java2DTextRenderer falls back to the AWT desktop hints - null on
-        // a headless server - which throws an NPE logged at WARN for every renderer (one per table). Verify the
-        // hint instead resolves to a real constant so that path is never taken.
+        // Until 10.6.0 the default of flying-saucer ("RenderingHints.VALUE_TEXT_ANTIALIAS_HGRB") resolved to nothing.
+        // Java2DTextRenderer then fell back to the AWT desktop hints, null on a headless server, and logged an NPE
+        // at WARN for every table measured. The default must stay a real constant.
         Object sentinel = new Object();
         Object hint = org.xhtmlrenderer.util.Configuration.valueFromClassConstant("xr.text.aa-rendering-hint", sentinel);
 
