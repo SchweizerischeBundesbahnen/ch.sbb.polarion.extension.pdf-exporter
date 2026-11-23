@@ -337,7 +337,10 @@ public class TableAnalyzer {
          */
         private static void dropStartSpace(@NotNull Element element) {
             for (Node node : element.nodeStream().toList()) {
-                if (node instanceof Element image && IMG.equals(image.normalName()) && !isHidden(image)) {
+                if (isHiddenWithin(node, element)) {
+                    continue;
+                }
+                if (node instanceof Element image && IMG.equals(image.normalName())) {
                     return;
                 }
                 if (!(node instanceof TextNode text)) {
@@ -352,6 +355,16 @@ public class TableAnalyzer {
                     return;
                 }
             }
+        }
+
+        /** Whether the node is hidden, by itself or by an element between it and the given one around it. */
+        private static boolean isHiddenWithin(@NotNull Node node, @NotNull Element around) {
+            for (Node current = node; current != null && current != around; current = current.parent()) {
+                if (current instanceof Element element && isHidden(element)) {
+                    return true;
+                }
+            }
+            return false;
         }
 
         /** Whether an element between the text and the given one around it states a {@code white-space} which keeps spaces. */
@@ -459,15 +472,22 @@ public class TableAnalyzer {
                     return null;
                 }
                 Matcher length = CSS_LENGTH.matcher(value);
-                return length.matches() ? Math.round(Float.parseFloat(length.group(1)) * PIXELS_PER_UNIT.get(length.group(2).toLowerCase(Locale.ROOT))) : RELATIVE;
+                Float number = length.matches() ? number(length.group(1)) : null;
+                return number != null ? Math.round(number * PIXELS_PER_UNIT.get(length.group(2).toLowerCase(Locale.ROOT))) : RELATIVE;
             }
             if (attribute.isBlank()) {
                 return null;
             }
+            Float number = number(attribute.trim());
+            return number != null ? Math.round(number) : RELATIVE;
+        }
+
+        /** The number the text states, if it is one. */
+        private static @Nullable Float number(@NotNull String text) {
             try {
-                return Math.round(Float.parseFloat(attribute.trim()));
+                return Float.parseFloat(text);
             } catch (NumberFormatException e) {
-                return RELATIVE;
+                return null;
             }
         }
     }

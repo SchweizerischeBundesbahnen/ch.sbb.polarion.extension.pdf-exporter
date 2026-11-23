@@ -254,6 +254,13 @@ class TableAnalyzerTest {
     }
 
     @Test
+    void collapsesTheSpacesAroundAHiddenImageOfAnElementWhichWrapsAgain() {
+        String wrapped = "<span style=\"white-space: normal\"><b style=\"display: none\"><img width=\"16\" height=\"16\" src=\"icon.png\"/>x </b> B</span>";
+        assertEquals(widestWidth("<span style=\"white-space: nowrap\">A <span style=\"white-space: normal\">B</span></span>"),
+                widestWidth("<span style=\"white-space: nowrap\">A " + wrapped + "</span>"), "A hidden image separates no spaces");
+    }
+
+    @Test
     void keepsTheTextWhichMayNotWrapOfTheTable() {
         Element table = Jsoup.parse("<table><tr><td><span style=\"white-space: nowrap\">" + ICON + "EL-17</span></td></tr></table>").selectFirst("table");
         String html = table.outerHtml();
