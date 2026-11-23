@@ -308,17 +308,17 @@ public class TableAnalyzer {
             } else if (whiteSpace.isEmpty() || INHERITED.contains(whiteSpace) || CssProp.WHITE_SPACE_NOWRAP_VALUE.equals(whiteSpace)) {
                 mark(child);
             } else {
-                wrapsAgain(child);
+                wrapsAgain(child, whiteSpace);
             }
         }
 
-        private void wrapsAgain(@NotNull Element child) {
+        private void wrapsAgain(@NotNull Element child, @NotNull String whiteSpace) {
             CSSDeclarationList style = CssUtils.parseDeclarations(child.attr(HtmlTagAttr.STYLE));
             if (!wordWrap.isEmpty() && CssUtils.getPropertyValue(style, ECSSProperty.WORD_WRAP).isEmpty()) {
                 CssUtils.setPropertyValue(style, ECSSProperty.WORD_WRAP, wordWrap);
                 child.attr(HtmlTagAttr.STYLE, style.getAsCSSString());
             }
-            if (afterSpace) {
+            if (afterSpace && CssProp.WHITE_SPACE_NORMAL_VALUE.equals(whiteSpace)) {
                 dropStartSpace(child);
             }
             String wrapped = child.wholeText();
@@ -327,7 +327,7 @@ public class TableAnalyzer {
             }
         }
 
-        /** Drops the space the element starts with, which collapses with the space before it. */
+        /** Drops the space the element starts with, which collapses with the space before it, as its text wraps as normal. */
         private static void dropStartSpace(@NotNull Element element) {
             for (TextNode text : element.nodeStream(TextNode.class).toList()) {
                 String rest = LEADING_WHITESPACE.matcher(text.getWholeText()).replaceFirst("");

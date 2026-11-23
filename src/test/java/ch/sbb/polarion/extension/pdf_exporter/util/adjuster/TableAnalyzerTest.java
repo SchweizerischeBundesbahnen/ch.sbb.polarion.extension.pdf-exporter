@@ -193,6 +193,25 @@ class TableAnalyzerTest {
     }
 
     @Test
+    void keepsTheLineBreakOfAnElementWhichWrapsAgainInATextWhichMayNotWrap() {
+        String wrapped = "<span style=\"white-space: pre-line\">\nB\nC</span>";
+        assertEquals(rowHeight("<span>A " + wrapped + "</span>", 650), rowHeight("<span style=\"white-space: nowrap\">A " + wrapped + "</span>", 650),
+                "A line break is no space to collapse");
+    }
+
+    @Test
+    void keepsATextWhichMayNotWrapOnOneLineWhereWordsBreakAnywhere() {
+        String text = "xxxx <span style=\"white-space: nowrap\">EL-17890123</span>";
+        int width = (int) widestWidth("<span style=\"white-space: nowrap\">EL-17890123</span>");
+        assertEquals(rowHeight(text, width), rowHeight("<span style=\"word-break: break-all\">" + text + "</span>", width), "On a line of its own");
+    }
+
+    private static int rowHeight(String content, int width) {
+        Element table = Jsoup.parse("<table><tr><td>" + content + "</td></tr></table>").selectFirst("table");
+        return TableAnalyzer.analyze(table, width).rowHeights().getFirst();
+    }
+
+    @Test
     void keepsTheTextWhichMayNotWrapOfTheTable() {
         Element table = Jsoup.parse("<table><tr><td><span style=\"white-space: nowrap\">" + ICON + "EL-17</span></td></tr></table>").selectFirst("table");
         String html = table.outerHtml();
