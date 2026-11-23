@@ -181,6 +181,18 @@ class TableAnalyzerTest {
     }
 
     @Test
+    void breaksTheTitleOfALinkWhichWrapsAgainAnywhereAsTheElementAroundInTheText() {
+        String link = "<span style=\"white-space:nowrap;\">" + ICON + "<span>REQ-200</span><b%s><span style=\"white-space: normal\"> Averyveryverylongtitle</span></b></span>";
+        assertTrue(narrowestWidth(link.formatted(" style=\"overflow-wrap: anywhere\"")) < narrowestWidth(link.formatted("")), "The title breaks anywhere");
+    }
+
+    @Test
+    void collapsesTheSpacesOfATextWhichMayNotWrapIntoAnElementWhichWrapsAgain() {
+        assertEquals(widestWidth("<span style=\"white-space: nowrap\">A <span style=\"white-space: normal\">B</span>C</span>"),
+                widestWidth("<span style=\"white-space: nowrap\">A <span style=\"white-space: normal\"> B</span>C</span>"), "Two spaces in a row are one");
+    }
+
+    @Test
     void keepsTheTextWhichMayNotWrapOfTheTable() {
         Element table = Jsoup.parse("<table><tr><td><span style=\"white-space: nowrap\">" + ICON + "EL-17</span></td></tr></table>").selectFirst("table");
         String html = table.outerHtml();

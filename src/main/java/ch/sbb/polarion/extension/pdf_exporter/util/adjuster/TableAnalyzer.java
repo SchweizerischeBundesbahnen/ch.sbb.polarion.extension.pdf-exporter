@@ -80,6 +80,7 @@ public class TableAnalyzer {
     /** The values of {@code white-space} by which an element takes it from the element around. */
     private static final Set<String> INHERITED = Set.of("inherit", "unset");
     private static final Pattern WHITESPACE = Pattern.compile("[ \\t\\n\\r\\f]+");
+    private static final Pattern LEADING_WHITESPACE = Pattern.compile("^[ \\t\\n\\r\\f]+");
     private static final Pattern CSS_LENGTH = Pattern.compile("(\\d+(?:\\.\\d+)?|\\.\\d+)(px|pt|pc|in|cm|mm|q)", Pattern.CASE_INSENSITIVE);
     /** The pixels of the absolute units of CSS (CSS Values 3, 6.2). */
     private static final Map<String, Float> PIXELS_PER_UNIT = Map.of("px", 1f, "pt", 96f / 72, "pc", 16f, "in", 96f, "cm", 96f / 2.54f, "mm", 9.6f / 2.54f, "q", 2.4f / 2.54f);
@@ -234,8 +235,8 @@ public class TableAnalyzer {
      * an element which wraps its text again gets back the {@code word-wrap} it inherits from around the text.
      */
     private static final class OneWord {
-        /** The {@code word-wrap} the text inherits. */
-        private final @NotNull String wordWrap;
+        /** The {@code word-wrap} the text so far inherits, from around it or from an element in it. */
+        private @NotNull String wordWrap;
         /** Whether the text so far ends in a space. */
         private boolean afterSpace;
         /** Whether the word has started: a space before it is at its start. */
@@ -252,7 +253,12 @@ public class TableAnalyzer {
             if (CssProp.WHITE_SPACE_NOWRAP_VALUE.equals(CssUtils.getPropertyValue(style, ECSSProperty.WHITE_SPACE))) {
                 CssUtils.setPropertyValue(style, ECSSProperty.WHITE_SPACE, CssProp.WHITE_SPACE_NORMAL_VALUE);
             }
-            if (!wordWrap.isEmpty() || !CssUtils.getPropertyValue(style, ECSSProperty.WORD_WRAP).isEmpty()) {
+            String around = wordWrap;
+            String own = CssUtils.getPropertyValue(style, ECSSProperty.WORD_WRAP);
+            if (!own.isEmpty()) {
+                wordWrap = CssProp.WORD_WRAP_NORMAL_VALUE.equals(own) ? "" : own;
+            }
+            if (!wordWrap.isEmpty() || !own.isEmpty()) {
                 CssUtils.setPropertyValue(style, ECSSProperty.WORD_WRAP, CssProp.WORD_WRAP_NORMAL_VALUE);
             }
             if (!style.getAllDeclarations().isEmpty()) {
@@ -266,6 +272,7 @@ public class TableAnalyzer {
                     child(child);
                 }
             }
+            wordWrap = around;
             return this;
         }
 
@@ -311,9 +318,23 @@ public class TableAnalyzer {
                 CssUtils.setPropertyValue(style, ECSSProperty.WORD_WRAP, wordWrap);
                 child.attr(HtmlTagAttr.STYLE, style.getAsCSSString());
             }
+            if (afterSpace) {
+                dropStartSpace(child);
+            }
             String wrapped = child.wholeText();
             if (!wrapped.isBlank()) {
                 content(Character.isWhitespace(wrapped.charAt(wrapped.length() - 1)));
+            }
+        }
+
+        /** Drops the space the element starts with, which collapses with the space before it. */
+        private static void dropStartSpace(@NotNull Element element) {
+            for (TextNode text : element.nodeStream(TextNode.class).toList()) {
+                String rest = LEADING_WHITESPACE.matcher(text.getWholeText()).replaceFirst("");
+                text.text(rest);
+                if (!rest.isEmpty()) {
+                    return;
+                }
             }
         }
 
