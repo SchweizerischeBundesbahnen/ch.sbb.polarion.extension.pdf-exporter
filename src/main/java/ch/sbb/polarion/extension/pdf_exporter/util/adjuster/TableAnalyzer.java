@@ -379,7 +379,8 @@ public class TableAnalyzer {
 
     /**
      * The width and the height the measure lays an image out at: those its CSS states, else those of an image embedded in
-     * its source, scaled to the one its CSS states. None when a size is relative, as to the font.
+     * its source, scaled to the one its CSS states. None when a size is relative, as to the font, or when neither states
+     * one, as a stylesheet may.
      */
     private static int @Nullable [] imageSize(@NotNull Element image) {
         CSSDeclarationList style = CssUtils.parseDeclarations(image.attr(HtmlTagAttr.STYLE));
@@ -391,7 +392,7 @@ public class TableAnalyzer {
         String src = image.attr(HtmlTagAttr.SRC);
         BufferedImage embedded = ImageUtil.isEmbeddedBase64Image(src) ? ImageUtil.loadEmbeddedBase64Image(src) : null;
         if (embedded == null || embedded.getWidth() <= 0 || embedded.getHeight() <= 0 || width != null && height != null) {
-            return new int[] {width != null ? width : 0, height != null ? height : 0};
+            return width == null && height == null ? null : new int[] {width != null ? width : 0, height != null ? height : 0};
         }
         if (width != null) {
             return new int[] {width, Math.round((float) embedded.getHeight() * width / embedded.getWidth())};

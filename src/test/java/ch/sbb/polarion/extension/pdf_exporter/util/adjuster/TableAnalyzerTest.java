@@ -87,6 +87,7 @@ class TableAnalyzerTest {
             "<span style=\"white-space: nowrap\">EL <b style=\"white-space: inherit\">17 18</b></span>",
             "<span style=\"white-space: nowrap; overflow-wrap: anywhere\">" + ICON + "EL-17</span>",
             "<span style=\"hyphens: auto\"><span style=\"white-space: nowrap\">" + ICON + "EL-17</span></span>",
+            "<span style=\"word-break: break-all\"><span style=\"white-space: nowrap\">" + ICON + "EL-17</span></span>",
             // a work item link as Polarion renders it
             "<span class=\"polarion-rte-link\"><span style=\"white-space:nowrap;\"><a class=\"polarion-Hyperlink\"><span style=\"white-space:nowrap;\">" + ICON + "</span><span>EL-17</span></a></span></span>"
     })
@@ -154,6 +155,13 @@ class TableAnalyzerTest {
     void measuresTheMarginOfAnImageOfATextWhichMayNotWrap() {
         String image = "<img style=\"width: 16px; height: 16px; margin-right: 24px; padding-left: 3px; border: 2px solid black\" src=\"icon.png\"/>";
         assertEquals(widestWidth(image + "EL-17"), narrowestWidth("<span style=\"white-space: nowrap\">" + image + "EL-17</span>"), "As wide as the image with its box");
+    }
+
+    /** An image whose size its own style does not state is left to the measure, which may size it by a stylesheet. */
+    @Test
+    void leavesAnImageOfAnUnknownSizeToTheMeasure() {
+        Element table = Jsoup.parse("<table><tr><td><span style=\"white-space: nowrap\"><img src=\"icon.png\"/>EL-17</span></td></tr></table>").selectFirst("table");
+        assertTrue(TableAnalyzer.analyze(table, 10, "img { width: 120px; height: 40px; }").tableWidth() >= 120, "As wide as the stylesheet states");
     }
 
     /** Polarion wraps the title of a linked work item again, in the element which may not wrap. */
