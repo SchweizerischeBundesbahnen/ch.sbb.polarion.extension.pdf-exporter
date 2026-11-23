@@ -245,6 +245,14 @@ class TableAnalyzerTest {
                 widestWidth("<span style=\"white-space: nowrap\">A<span style=\"white-space: normal\"> </span> B</span>"), "Two spaces in a row are one");
     }
 
+    /** The space before the element becomes a no-break space, a pixel wider in the measure than a regular one. */
+    @Test
+    void keepsTheSpaceAfterAnImageOfAnElementWhichWrapsAgain() {
+        String wrapped = "<span style=\"white-space: normal\"><img width=\"16\" height=\"16\" src=\"icon.png\"/> B</span>";
+        assertEquals(widestWidth("<span>A\u00A0" + wrapped + "</span>"), widestWidth("<span style=\"white-space: nowrap\">A " + wrapped + "</span>"),
+                "The image separates the spaces around it");
+    }
+
     @Test
     void keepsTheTextWhichMayNotWrapOfTheTable() {
         Element table = Jsoup.parse("<table><tr><td><span style=\"white-space: nowrap\">" + ICON + "EL-17</span></td></tr></table>").selectFirst("table");

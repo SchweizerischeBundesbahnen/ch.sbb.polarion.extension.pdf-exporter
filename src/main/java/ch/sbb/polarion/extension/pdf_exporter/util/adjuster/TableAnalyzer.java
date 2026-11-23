@@ -333,10 +333,16 @@ public class TableAnalyzer {
 
         /**
          * Drops the space the element starts with, which collapses with the space before it, as its text wraps as normal.
-         * An element in it which preserves its spaces keeps them.
+         * An element in it which preserves its spaces keeps them, and an image ends the space before it.
          */
         private static void dropStartSpace(@NotNull Element element) {
-            for (TextNode text : element.nodeStream(TextNode.class).toList()) {
+            for (Node node : element.nodeStream().toList()) {
+                if (node instanceof Element image && IMG.equals(image.normalName()) && !isHidden(image)) {
+                    return;
+                }
+                if (!(node instanceof TextNode text)) {
+                    continue;
+                }
                 if (preservesSpaces(text, element)) {
                     return;
                 }
@@ -374,6 +380,96 @@ public class TableAnalyzer {
                 endSpace.text(text.substring(0, text.length() - 1) + " ");
             }
         }
+
+        private static boolean isHidden(@NotNull Element element) {
+            return CssProp.DISPLAY_NONE_VALUE.equals(CssUtils.getPropertyValue(CssUtils.parseDeclarations(element.attr(HtmlTagAttr.STYLE)), ECSSProperty.DISPLAY));
+        }
+
+        /**
+         * An element which takes the room of the image in a word. It keeps the style of the image, as its margin, border and
+         * padding, and holds an empty element as wide as the image through its padding, which goes with the word, and as tall
+         * through its line height. None for an image whose size the measure only knows as it lays it out, which then stays as
+         * it is and breaks the word.
+         */
+        private static @Nullable Element imageSpace(@NotNull Element image) {
+            int[] size = imageSize(image);
+            if (size == null) {
+                return null;
+            }
+            String content = CssUtils.declaration(ECSSProperty.PADDING_LEFT, size[0] + "px");
+            if (size[1] > 0) {
+                content += " " + CssUtils.declaration(ECSSProperty.LINE_HEIGHT, size[1] + "px");
+            }
+            CSSDeclarationList box = CssUtils.parseDeclarations(image.attr(HtmlTagAttr.STYLE));
+            CssUtils.removeProperty(box, ECSSProperty.WIDTH);
+            CssUtils.removeProperty(box, ECSSProperty.HEIGHT);
+            Element space = new Element("span").attr(LANG, NO_BREAK_LANGUAGE);
+            if (!box.getAllDeclarations().isEmpty()) {
+                space.attr(HtmlTagAttr.STYLE, box.getAsCSSString());
+            }
+            return space.appendChild(new Element("span").attr(HtmlTagAttr.STYLE, content).attr(LANG, NO_BREAK_LANGUAGE));
+        }
+
+        /**
+         * The width and the height the measure lays an image out at: those its CSS states, else those of an image embedded in
+         * its source, scaled to the one its CSS states. None when a size is relative, as to the font, or when neither states
+         * one, as a stylesheet may.
+         */
+        private static int @Nullable [] imageSize(@NotNull Element image) {
+            CSSDeclarationList style = CssUtils.parseDeclarations(image.attr(HtmlTagAttr.STYLE));
+            Integer width = pixels(CssUtils.getPropertyValue(style, ECSSProperty.WIDTH), image.attr(HtmlTagAttr.WIDTH));
+            Integer height = pixels(CssUtils.getPropertyValue(style, ECSSProperty.HEIGHT), image.attr(HtmlTagAttr.HEIGHT));
+            if (Objects.equals(width, RELATIVE) || Objects.equals(height, RELATIVE)) {
+                return null;
+            }
+            String src = image.attr(HtmlTagAttr.SRC);
+            BufferedImage embedded = embeddedImage(src);
+            if (embedded == null || embedded.getWidth() <= 0 || embedded.getHeight() <= 0 || width != null && height != null) {
+                if (width == null && height == null) {
+                    return null;
+                }
+                return new int[] {Objects.requireNonNullElse(width, 0), Objects.requireNonNullElse(height, 0)};
+            }
+            if (width != null) {
+                return new int[] {width, Math.round((float) embedded.getHeight() * width / embedded.getWidth())};
+            }
+            if (height != null) {
+                return new int[] {Math.round((float) embedded.getWidth() * height / embedded.getHeight()), height};
+            }
+            return new int[] {embedded.getWidth(), embedded.getHeight()};
+        }
+
+        /** The image embedded in the source, if it holds one which decodes. */
+        private static @Nullable BufferedImage embeddedImage(@NotNull String src) {
+            try {
+                return ImageUtil.isEmbeddedBase64Image(src) ? ImageUtil.loadEmbeddedBase64Image(src) : null;
+            } catch (IllegalArgumentException e) {
+                return null;
+            }
+        }
+
+        /**
+         * A length in pixels, from CSS in an absolute unit or else from an attribute, which states it without a unit: none
+         * when neither states it, {@link #RELATIVE} when it is relative or unknown.
+         */
+        private static @Nullable Integer pixels(@NotNull String css, @NotNull String attribute) {
+            String value = css.trim();
+            if (!value.isEmpty()) {
+                if (CCSSValue.AUTO.equalsIgnoreCase(value)) {
+                    return null;
+                }
+                Matcher length = CSS_LENGTH.matcher(value);
+                return length.matches() ? Math.round(Float.parseFloat(length.group(1)) * PIXELS_PER_UNIT.get(length.group(2).toLowerCase(Locale.ROOT))) : RELATIVE;
+            }
+            if (attribute.isBlank()) {
+                return null;
+            }
+            try {
+                return Math.round(Float.parseFloat(attribute.trim()));
+            } catch (NumberFormatException e) {
+                return RELATIVE;
+            }
+        }
     }
 
     /** The {@code word-wrap} the element has, of itself or of the nearest element around which states one. */
@@ -387,95 +483,8 @@ public class TableAnalyzer {
         return "";
     }
 
-    private static boolean isHidden(@NotNull Element element) {
-        return CssProp.DISPLAY_NONE_VALUE.equals(CssUtils.getPropertyValue(CssUtils.parseDeclarations(element.attr(HtmlTagAttr.STYLE)), ECSSProperty.DISPLAY));
-    }
-
     private static @NotNull String whiteSpace(@NotNull Element element) {
         return CssUtils.getPropertyValue(CssUtils.parseDeclarations(element.attr(HtmlTagAttr.STYLE)), ECSSProperty.WHITE_SPACE);
-    }
-
-    /**
-     * An element which takes the room of the image in a word. It keeps the style of the image, as its margin, border and
-     * padding, and holds an empty element as wide as the image through its padding, which goes with the word, and as tall
-     * through its line height. None for an image whose size the measure only knows as it lays it out, which then stays as
-     * it is and breaks the word.
-     */
-    private static @Nullable Element imageSpace(@NotNull Element image) {
-        int[] size = imageSize(image);
-        if (size == null) {
-            return null;
-        }
-        String content = CssUtils.declaration(ECSSProperty.PADDING_LEFT, size[0] + "px");
-        if (size[1] > 0) {
-            content += " " + CssUtils.declaration(ECSSProperty.LINE_HEIGHT, size[1] + "px");
-        }
-        CSSDeclarationList box = CssUtils.parseDeclarations(image.attr(HtmlTagAttr.STYLE));
-        CssUtils.removeProperty(box, ECSSProperty.WIDTH);
-        CssUtils.removeProperty(box, ECSSProperty.HEIGHT);
-        Element space = new Element("span").attr(LANG, NO_BREAK_LANGUAGE);
-        if (!box.getAllDeclarations().isEmpty()) {
-            space.attr(HtmlTagAttr.STYLE, box.getAsCSSString());
-        }
-        return space.appendChild(new Element("span").attr(HtmlTagAttr.STYLE, content).attr(LANG, NO_BREAK_LANGUAGE));
-    }
-
-    /**
-     * The width and the height the measure lays an image out at: those its CSS states, else those of an image embedded in
-     * its source, scaled to the one its CSS states. None when a size is relative, as to the font, or when neither states
-     * one, as a stylesheet may.
-     */
-    private static int @Nullable [] imageSize(@NotNull Element image) {
-        CSSDeclarationList style = CssUtils.parseDeclarations(image.attr(HtmlTagAttr.STYLE));
-        Integer width = pixels(CssUtils.getPropertyValue(style, ECSSProperty.WIDTH), image.attr(HtmlTagAttr.WIDTH));
-        Integer height = pixels(CssUtils.getPropertyValue(style, ECSSProperty.HEIGHT), image.attr(HtmlTagAttr.HEIGHT));
-        if (Objects.equals(width, RELATIVE) || Objects.equals(height, RELATIVE)) {
-            return null;
-        }
-        String src = image.attr(HtmlTagAttr.SRC);
-        BufferedImage embedded = embeddedImage(src);
-        if (embedded == null || embedded.getWidth() <= 0 || embedded.getHeight() <= 0 || width != null && height != null) {
-            return width == null && height == null ? null : new int[] {width != null ? width : 0, height != null ? height : 0};
-        }
-        if (width != null) {
-            return new int[] {width, Math.round((float) embedded.getHeight() * width / embedded.getWidth())};
-        }
-        if (height != null) {
-            return new int[] {Math.round((float) embedded.getWidth() * height / embedded.getHeight()), height};
-        }
-        return new int[] {embedded.getWidth(), embedded.getHeight()};
-    }
-
-    /** The image embedded in the source, if it holds one which decodes. */
-    private static @Nullable BufferedImage embeddedImage(@NotNull String src) {
-        try {
-            return ImageUtil.isEmbeddedBase64Image(src) ? ImageUtil.loadEmbeddedBase64Image(src) : null;
-        } catch (IllegalArgumentException e) {
-            return null;
-        }
-    }
-
-    /**
-     * A length in pixels, from CSS in an absolute unit or else from an attribute, which states it without a unit: none
-     * when neither states it, {@link #RELATIVE} when it is relative or unknown.
-     */
-    private static @Nullable Integer pixels(@NotNull String css, @NotNull String attribute) {
-        String value = css.trim();
-        if (!value.isEmpty()) {
-            if (CCSSValue.AUTO.equalsIgnoreCase(value)) {
-                return null;
-            }
-            Matcher length = CSS_LENGTH.matcher(value);
-            return length.matches() ? Math.round(Float.parseFloat(length.group(1)) * PIXELS_PER_UNIT.get(length.group(2).toLowerCase(Locale.ROOT))) : RELATIVE;
-        }
-        if (attribute.isBlank()) {
-            return null;
-        }
-        try {
-            return Math.round(Float.parseFloat(attribute.trim()));
-        } catch (NumberFormatException e) {
-            return RELATIVE;
-        }
     }
 
     /**
