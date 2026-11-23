@@ -8,4 +8,7 @@ public class CssProp {
     public static final String OVERFLOW_WRAP_ANYWHERE_VALUE = "anywhere";
     public static final String WORD_WRAP_BREAK_WORD_VALUE = "break-word";
     public static final String PAGE_BREAK_INSIDE_AVOID_VALUE = "avoid";
+    public static final String WHITE_SPACE_NOWRAP_VALUE = "nowrap";
+    public static final String WHITE_SPACE_NORMAL_VALUE = "normal";
+    public static final String DISPLAY_NONE_VALUE = "none";
 }

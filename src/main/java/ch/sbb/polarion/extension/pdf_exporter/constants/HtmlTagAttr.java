@@ -10,4 +10,5 @@ public class HtmlTagAttr {
     public static final String HEIGHT = "height";
     public static final String ALT = "alt";
     public static final String TITLE = "title";
+    public static final String SRC = "src";
 }
