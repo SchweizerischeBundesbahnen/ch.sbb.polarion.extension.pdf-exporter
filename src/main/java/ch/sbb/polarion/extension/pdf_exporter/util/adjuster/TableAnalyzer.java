@@ -11,6 +11,7 @@ import lombok.experimental.UtilityClass;
 import org.jetbrains.annotations.NotNull;
 import org.jsoup.helper.W3CDom;
 import org.jsoup.nodes.Element;
+import org.jsoup.nodes.TextNode;
 import org.w3c.dom.Document;
 import org.xhtmlrenderer.context.AWTFontResolver;
 import org.xhtmlrenderer.css.constants.IdentValue;
@@ -62,6 +63,7 @@ public class TableAnalyzer {
     private static final String TR = "tr";
     private static final String TD = "td";
     private static final String TH = "th";
+    private static final String ZERO_WIDTH_SPACE = "\u200B";
 
     /** The text styles which decide how tall a line of a cell is, and which a table inherits from around it. */
     private static final List<ECSSProperty> INHERITED_TEXT_PROPERTIES = List.of(ECSSProperty.FONT_SIZE, ECSSProperty.LINE_HEIGHT, ECSSProperty.FONT_WEIGHT, ECSSProperty.LETTER_SPACING);
@@ -163,8 +165,22 @@ public class TableAnalyzer {
         tempDoc.head().appendElement("style").text("* { font-family: '" + MEASUREMENT_FONT_FAMILY + "', sans-serif !important; }");
         Element table = tableElement.clone();
         measureBreakableWords(table);
+        measureWordBreakOpportunitiesAsText(table);
         tempDoc.body().appendElement("div").attr(HtmlTagAttr.STYLE, inheritedTextStyle(tableElement)).appendChild(table);
-        return new W3CDom().fromJsoup(tempDoc);
+        Document document = new W3CDom().fromJsoup(tempDoc);
+        // Joins each zero width space to the text around it: the measure lays out each text node as a box of its own
+        document.getDocumentElement().normalize();
+        return document;
+    }
+
+    /**
+     * Puts a zero width space in place of each {@code <wbr>}. The measure breaks a line at both alike, but lays out a
+     * {@code <wbr>} as a box of its own, which takes time in a table of many long words.
+     */
+    private static void measureWordBreakOpportunitiesAsText(@NotNull Element table) {
+        for (Element wbr : table.select("wbr")) {
+            wbr.replaceWith(new TextNode(ZERO_WIDTH_SPACE));
+        }
     }
 
     /**
