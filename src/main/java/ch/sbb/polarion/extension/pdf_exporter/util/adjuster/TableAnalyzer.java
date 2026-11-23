@@ -314,7 +314,8 @@ public class TableAnalyzer {
 
         private void wrapsAgain(@NotNull Element child, @NotNull String whiteSpace) {
             CSSDeclarationList style = CssUtils.parseDeclarations(child.attr(HtmlTagAttr.STYLE));
-            if (!wordWrap.isEmpty() && CssUtils.getPropertyValue(style, ECSSProperty.WORD_WRAP).isEmpty()) {
+            String own = CssUtils.getPropertyValue(style, ECSSProperty.WORD_WRAP);
+            if (!wordWrap.isEmpty() && (own.isEmpty() || INHERITED.contains(own))) {
                 CssUtils.setPropertyValue(style, ECSSProperty.WORD_WRAP, wordWrap);
                 child.attr(HtmlTagAttr.STYLE, style.getAsCSSString());
             }
@@ -324,6 +325,9 @@ public class TableAnalyzer {
             String wrapped = child.wholeText();
             if (!wrapped.isBlank()) {
                 content(Character.isWhitespace(wrapped.charAt(wrapped.length() - 1)));
+            } else if (!wrapped.isEmpty()) {
+                afterSpace = true;
+                endSpace = null;
             }
         }
 
