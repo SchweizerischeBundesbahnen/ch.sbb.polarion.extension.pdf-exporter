@@ -66,6 +66,13 @@ class TableAnalyzerTest {
         assertTrue(narrowestWidth("TMSPRG-<wbr>13164") < narrowestWidth("TMSPRG-13164"), "A break point the document gives a word is still one");
     }
 
+    /** A word with a formatted part is one word, as WeasyPrint lays it out: the measure breaks it nowhere. */
+    @ParameterizedTest
+    @ValueSource(strings = {"Gleisfreimelde<span style=\"color: red\">anlage</span>", "Gleisfreim<b>elde</b>anlage", "Gleis<a href=\"#x\">freimelde</a>anlage"})
+    void keepsAWordWithAFormattedPartWhole(String content) {
+        assertEquals(widestWidth(content), narrowestWidth(content), "As narrow as it is wide");
+    }
+
     /** The measure lays out a {@code <wbr>} as a zero width space, which breaks a word at the same place and takes no room. */
     @ParameterizedTest
     @ValueSource(strings = {"Gleisfreim<wbr>eldeanlage", "<b>Gleisfreim<wbr>elde</b>anlage", "Gleis<wbr>frei<wbr>melde<wbr>anlage"})
