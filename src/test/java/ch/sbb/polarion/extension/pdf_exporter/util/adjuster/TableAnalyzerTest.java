@@ -84,6 +84,9 @@ class TableAnalyzerTest {
             "<span style=\"white-space: nowrap\"><img style=\"width: 16px\" src=\"icon.png\"/>EL-17</span>",
             "<span style=\"white-space: nowrap\"><img style=\"width: 12pt\" src=\"icon.png\"/>EL-17</span>",
             "<span lang=\"de\" style=\"white-space: nowrap\">" + ICON + "EL-17</span>",
+            "<span style=\"white-space: nowrap\">EL <b style=\"white-space: inherit\">17 18</b></span>",
+            "<span style=\"white-space: nowrap; overflow-wrap: anywhere\">" + ICON + "EL-17</span>",
+            "<span style=\"hyphens: auto\"><span style=\"white-space: nowrap\">" + ICON + "EL-17</span></span>",
             // a work item link as Polarion renders it
             "<span class=\"polarion-rte-link\"><span style=\"white-space:nowrap;\"><a class=\"polarion-Hyperlink\"><span style=\"white-space:nowrap;\">" + ICON + "</span><span>EL-17</span></a></span></span>"
     })
@@ -147,6 +150,12 @@ class TableAnalyzerTest {
         assertTrue(narrowestWidth("<span style=\"white-space: nowrap\">" + image + "EL-17</span>") < 100, "As wide as 1em, not as the image");
     }
 
+    @Test
+    void measuresTheMarginOfAnImageOfATextWhichMayNotWrap() {
+        String image = "<img style=\"width: 16px; height: 16px; margin-right: 24px; padding-left: 3px; border: 2px solid black\" src=\"icon.png\"/>";
+        assertEquals(widestWidth(image + "EL-17"), narrowestWidth("<span style=\"white-space: nowrap\">" + image + "EL-17</span>"), "As wide as the image with its box");
+    }
+
     /** Polarion wraps the title of a linked work item again, in the element which may not wrap. */
     @Test
     void breaksTheTitleOfALinkWhichWrapsAgain() {
@@ -154,6 +163,13 @@ class TableAnalyzerTest {
                 + "<span style=\"white-space: normal\"> - A title of it</span></a></span>";
         assertEquals(narrowestWidth("<span style=\"white-space: nowrap\">" + ICON + "REQ-200</span> -"), narrowestWidth(link),
                 "As narrow as the icon and the ID");
+    }
+
+    @Test
+    void breaksTheTitleOfALinkWhichWrapsAgainAnywhereAsTheTextAround() {
+        String link = "<span style=\"white-space:nowrap;\">" + ICON + "<span>REQ-200</span><span style=\"white-space: normal\"> Averyveryverylongtitle</span></span>";
+        assertTrue(narrowestWidth("<span style=\"overflow-wrap: anywhere\">" + link + "</span>") < narrowestWidth(link), "The title breaks anywhere");
+        assertTrue(narrowestWidth("<span style=\"overflow-wrap: anywhere\">" + link + "</span>") >= widestWidth(ICON + "REQ-200"), "but not the icon and the ID");
     }
 
     @Test

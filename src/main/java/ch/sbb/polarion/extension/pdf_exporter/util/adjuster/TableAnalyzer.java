@@ -77,6 +77,8 @@ public class TableAnalyzer {
     private static final String NO_BREAK_SPACE = "\u00A0";
     /** A length relative to something the measure knows only as it lays the table out, as the font. */
     private static final int RELATIVE = -1;
+    /** The values of {@code white-space} by which an element takes it from the element around. */
+    private static final Set<String> INHERITED = Set.of("inherit", "unset");
     private static final Pattern WHITESPACE = Pattern.compile("[ \\t\\n\\r\\f]+");
     private static final Pattern CSS_LENGTH = Pattern.compile("(\\d+(?:\\.\\d+)?|\\.\\d+)(px|pt|pc|in|cm|mm|q)", Pattern.CASE_INSENSITIVE);
     /** The pixels of the absolute units of CSS (CSS Values 3, 6.2). */
@@ -219,7 +221,7 @@ public class TableAnalyzer {
     private static void measureNoWrapTextAsOneWord(@NotNull Element table) {
         for (Element noWrap : table.select("[style*=nowrap]")) {
             if (!NO_BREAK_LANGUAGE.equals(noWrap.attr(LANG)) && CssProp.WHITE_SPACE_NOWRAP_VALUE.equals(whiteSpace(noWrap))) {
-                new OneWord().mark(noWrap).end();
+                new OneWord(wordWrap(noWrap)).mark(noWrap).end();
             }
         }
     }
@@ -227,9 +229,13 @@ public class TableAnalyzer {
     /**
      * Marks a text as one word, but for the elements in it which wrap their text again. Its spaces collapse as CSS
      * collapses them, across the boundaries of its elements, before they become no-break spaces, which do not collapse.
-     * A space at its start or end stays a regular one, which the measure drops at the edge of a line.
+     * A space at its start or end stays a regular one, which the measure drops at the edge of a line. A word which may
+     * break anywhere would break there all the same, as the measure lets it break where it wraps, so it may not here, and
+     * an element which wraps its text again gets back the {@code word-wrap} it inherits from around the text.
      */
     private static final class OneWord {
+        /** The {@code word-wrap} the text inherits. */
+        private final @NotNull String wordWrap;
         /** Whether the text so far ends in a space. */
         private boolean afterSpace;
         /** Whether the word has started: a space before it is at its start. */
@@ -237,10 +243,19 @@ public class TableAnalyzer {
         /** The text node whose space ends the word so far, if one does. */
         private @Nullable TextNode endSpace;
 
+        private OneWord(@NotNull String wordWrap) {
+            this.wordWrap = wordWrap;
+        }
+
         private @NotNull OneWord mark(@NotNull Element element) {
-            if (CssProp.WHITE_SPACE_NOWRAP_VALUE.equals(whiteSpace(element))) {
-                CSSDeclarationList style = CssUtils.parseDeclarations(element.attr(HtmlTagAttr.STYLE));
+            CSSDeclarationList style = CssUtils.parseDeclarations(element.attr(HtmlTagAttr.STYLE));
+            if (CssProp.WHITE_SPACE_NOWRAP_VALUE.equals(CssUtils.getPropertyValue(style, ECSSProperty.WHITE_SPACE))) {
                 CssUtils.setPropertyValue(style, ECSSProperty.WHITE_SPACE, CssProp.WHITE_SPACE_NORMAL_VALUE);
+            }
+            if (!wordWrap.isEmpty() || !CssUtils.getPropertyValue(style, ECSSProperty.WORD_WRAP).isEmpty()) {
+                CssUtils.setPropertyValue(style, ECSSProperty.WORD_WRAP, CssProp.WORD_WRAP_NORMAL_VALUE);
+            }
+            if (!style.getAllDeclarations().isEmpty()) {
                 element.attr(HtmlTagAttr.STYLE, style.getAsCSSString());
             }
             element.attr(LANG, NO_BREAK_LANGUAGE);
@@ -283,10 +298,21 @@ public class TableAnalyzer {
                     child.replaceWith(space);
                 }
                 content(false);
-            } else if (whiteSpace.isEmpty() || CssProp.WHITE_SPACE_NOWRAP_VALUE.equals(whiteSpace)) {
+            } else if (whiteSpace.isEmpty() || INHERITED.contains(whiteSpace) || CssProp.WHITE_SPACE_NOWRAP_VALUE.equals(whiteSpace)) {
                 mark(child);
-            } else if (!child.wholeText().isBlank()) {
-                String wrapped = child.wholeText();
+            } else {
+                wrapsAgain(child);
+            }
+        }
+
+        private void wrapsAgain(@NotNull Element child) {
+            CSSDeclarationList style = CssUtils.parseDeclarations(child.attr(HtmlTagAttr.STYLE));
+            if (!wordWrap.isEmpty() && CssUtils.getPropertyValue(style, ECSSProperty.WORD_WRAP).isEmpty()) {
+                CssUtils.setPropertyValue(style, ECSSProperty.WORD_WRAP, wordWrap);
+                child.attr(HtmlTagAttr.STYLE, style.getAsCSSString());
+            }
+            String wrapped = child.wholeText();
+            if (!wrapped.isBlank()) {
                 content(Character.isWhitespace(wrapped.charAt(wrapped.length() - 1)));
             }
         }
@@ -307,6 +333,17 @@ public class TableAnalyzer {
         }
     }
 
+    /** The {@code word-wrap} the element has, of itself or of the nearest element around which states one. */
+    private static @NotNull String wordWrap(@NotNull Element element) {
+        for (Element current = element; current != null; current = current.parent()) {
+            String wordWrap = CssUtils.getPropertyValue(CssUtils.parseDeclarations(current.attr(HtmlTagAttr.STYLE)), ECSSProperty.WORD_WRAP);
+            if (!wordWrap.isEmpty()) {
+                return CssProp.WORD_WRAP_NORMAL_VALUE.equals(wordWrap) ? "" : wordWrap;
+            }
+        }
+        return "";
+    }
+
     private static boolean isHidden(@NotNull Element element) {
         return CssProp.DISPLAY_NONE_VALUE.equals(CssUtils.getPropertyValue(CssUtils.parseDeclarations(element.attr(HtmlTagAttr.STYLE)), ECSSProperty.DISPLAY));
     }
@@ -316,20 +353,28 @@ public class TableAnalyzer {
     }
 
     /**
-     * An empty element which takes the room of the image in a word: as wide as the image through its padding, which goes
-     * with the word, and as tall through its line height. None for an image whose size the measure only knows as it lays
-     * it out, which then stays as it is and breaks the word.
+     * An element which takes the room of the image in a word. It keeps the style of the image, as its margin, border and
+     * padding, and holds an empty element as wide as the image through its padding, which goes with the word, and as tall
+     * through its line height. None for an image whose size the measure only knows as it lays it out, which then stays as
+     * it is and breaks the word.
      */
     private static @Nullable Element imageSpace(@NotNull Element image) {
         int[] size = imageSize(image);
         if (size == null) {
             return null;
         }
-        String style = CssUtils.declaration(ECSSProperty.PADDING_LEFT, size[0] + "px");
+        String content = CssUtils.declaration(ECSSProperty.PADDING_LEFT, size[0] + "px");
         if (size[1] > 0) {
-            style += " " + CssUtils.declaration(ECSSProperty.LINE_HEIGHT, size[1] + "px");
+            content += " " + CssUtils.declaration(ECSSProperty.LINE_HEIGHT, size[1] + "px");
         }
-        return new Element("span").attr(HtmlTagAttr.STYLE, style).attr(LANG, NO_BREAK_LANGUAGE);
+        CSSDeclarationList box = CssUtils.parseDeclarations(image.attr(HtmlTagAttr.STYLE));
+        CssUtils.removeProperty(box, ECSSProperty.WIDTH);
+        CssUtils.removeProperty(box, ECSSProperty.HEIGHT);
+        Element space = new Element("span").attr(LANG, NO_BREAK_LANGUAGE);
+        if (!box.getAllDeclarations().isEmpty()) {
+            space.attr(HtmlTagAttr.STYLE, box.getAsCSSString());
+        }
+        return space.appendChild(new Element("span").attr(HtmlTagAttr.STYLE, content).attr(LANG, NO_BREAK_LANGUAGE));
     }
 
     /**
