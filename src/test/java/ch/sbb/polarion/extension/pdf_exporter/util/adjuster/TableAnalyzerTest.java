@@ -211,6 +211,27 @@ class TableAnalyzerTest {
         return TableAnalyzer.analyze(table, width).rowHeights().getFirst();
     }
 
+    /** The measure lays out no hidden element, so a malformed image in one does not keep it from measuring the table. */
+    @Test
+    void measuresAHiddenTextWhichMayNotWrapWithAMalformedEmbeddedImage() {
+        assertEquals(narrowestWidth("EL-17"),
+                narrowestWidth("EL-17<span style=\"display: none\"><span style=\"white-space: nowrap\"><img src=\"data:image/png;base64,%%%\"/>EL-17</span></span>"),
+                "As wide as the text shown");
+    }
+
+    @Test
+    void breaksTheTitleOfALinkWhichWrapsAgainAnywhereAsItInheritsIt() {
+        String link = "<span style=\"white-space:nowrap;%s\">" + ICON + "<span>REQ-200</span><span style=\"white-space: normal\"> Averyveryverylongtitle</span></span>";
+        assertEquals(narrowestWidth("<span style=\"overflow-wrap: anywhere\">" + link.formatted("") + "</span>"),
+                narrowestWidth("<span style=\"overflow-wrap: anywhere\">" + link.formatted(" word-wrap: inherit") + "</span>"), "As without inherit");
+    }
+
+    @Test
+    void keepsTheSpacesOfAnElementWhichPreservesThemInAnElementWhichWrapsAgain() {
+        String pre = "<span style=\"white-space: normal\"><span style=\"white-space: pre\">   B</span></span>";
+        assertEquals(widestWidth("<span>A " + pre + "</span>"), widestWidth("<span style=\"white-space: nowrap\">A " + pre + "</span>"), "As without nowrap");
+    }
+
     @Test
     void keepsTheTextWhichMayNotWrapOfTheTable() {
         Element table = Jsoup.parse("<table><tr><td><span style=\"white-space: nowrap\">" + ICON + "EL-17</span></td></tr></table>").selectFirst("table");

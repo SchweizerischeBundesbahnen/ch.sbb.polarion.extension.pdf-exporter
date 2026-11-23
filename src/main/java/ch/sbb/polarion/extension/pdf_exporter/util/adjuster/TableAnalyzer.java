@@ -77,7 +77,7 @@ public class TableAnalyzer {
     private static final String NO_BREAK_SPACE = "\u00A0";
     /** A length relative to something the measure knows only as it lays the table out, as the font. */
     private static final int RELATIVE = -1;
-    /** The values of {@code white-space} by which an element takes it from the element around. */
+    /** The values by which an element takes an inherited property, as {@code white-space}, from the element around. */
     private static final Set<String> INHERITED = Set.of("inherit", "unset");
     private static final Pattern WHITESPACE = Pattern.compile("[ \\t\\n\\r\\f]+");
     private static final Pattern LEADING_WHITESPACE = Pattern.compile("^[ \\t\\n\\r\\f]+");
@@ -255,7 +255,7 @@ public class TableAnalyzer {
             }
             String around = wordWrap;
             String own = CssUtils.getPropertyValue(style, ECSSProperty.WORD_WRAP);
-            if (!own.isEmpty()) {
+            if (!own.isEmpty() && !INHERITED.contains(own)) {
                 wordWrap = CssProp.WORD_WRAP_NORMAL_VALUE.equals(own) ? "" : own;
             }
             if (!wordWrap.isEmpty() || !own.isEmpty()) {
@@ -327,15 +327,33 @@ public class TableAnalyzer {
             }
         }
 
-        /** Drops the space the element starts with, which collapses with the space before it, as its text wraps as normal. */
+        /**
+         * Drops the space the element starts with, which collapses with the space before it, as its text wraps as normal.
+         * An element in it which preserves its spaces keeps them.
+         */
         private static void dropStartSpace(@NotNull Element element) {
             for (TextNode text : element.nodeStream(TextNode.class).toList()) {
+                if (preservesSpaces(text, element)) {
+                    return;
+                }
                 String rest = LEADING_WHITESPACE.matcher(text.getWholeText()).replaceFirst("");
                 text.text(rest);
                 if (!rest.isEmpty()) {
                     return;
                 }
             }
+        }
+
+        /** Whether an element between the text and the given one around it states a {@code white-space} which keeps spaces. */
+        private static boolean preservesSpaces(@NotNull TextNode text, @NotNull Element around) {
+            for (Element current = text.parent() instanceof Element parent ? parent : null; current != null && current != around; current = current.parent()) {
+                String whiteSpace = whiteSpace(current);
+                if (!whiteSpace.isEmpty() && !INHERITED.contains(whiteSpace) && !CssProp.WHITE_SPACE_NORMAL_VALUE.equals(whiteSpace)
+                        && !CssProp.WHITE_SPACE_NOWRAP_VALUE.equals(whiteSpace)) {
+                    return true;
+                }
+            }
+            return false;
         }
 
         /** Content other than the text of the word follows, which ends in a space or not. */
@@ -358,7 +376,7 @@ public class TableAnalyzer {
     private static @NotNull String wordWrap(@NotNull Element element) {
         for (Element current = element; current != null; current = current.parent()) {
             String wordWrap = CssUtils.getPropertyValue(CssUtils.parseDeclarations(current.attr(HtmlTagAttr.STYLE)), ECSSProperty.WORD_WRAP);
-            if (!wordWrap.isEmpty()) {
+            if (!wordWrap.isEmpty() && !INHERITED.contains(wordWrap)) {
                 return CssProp.WORD_WRAP_NORMAL_VALUE.equals(wordWrap) ? "" : wordWrap;
             }
         }
@@ -411,7 +429,7 @@ public class TableAnalyzer {
             return null;
         }
         String src = image.attr(HtmlTagAttr.SRC);
-        BufferedImage embedded = ImageUtil.isEmbeddedBase64Image(src) ? ImageUtil.loadEmbeddedBase64Image(src) : null;
+        BufferedImage embedded = embeddedImage(src);
         if (embedded == null || embedded.getWidth() <= 0 || embedded.getHeight() <= 0 || width != null && height != null) {
             return width == null && height == null ? null : new int[] {width != null ? width : 0, height != null ? height : 0};
         }
@@ -422,6 +440,15 @@ public class TableAnalyzer {
             return new int[] {Math.round((float) embedded.getWidth() * height / embedded.getHeight()), height};
         }
         return new int[] {embedded.getWidth(), embedded.getHeight()};
+    }
+
+    /** The image embedded in the source, if it holds one which decodes. */
+    private static @Nullable BufferedImage embeddedImage(@NotNull String src) {
+        try {
+            return ImageUtil.isEmbeddedBase64Image(src) ? ImageUtil.loadEmbeddedBase64Image(src) : null;
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
     }
 
     /**
