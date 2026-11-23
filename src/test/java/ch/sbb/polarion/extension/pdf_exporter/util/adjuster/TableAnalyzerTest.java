@@ -83,6 +83,7 @@ class TableAnalyzerTest {
             "<span style=\"white-space: nowrap\">" + ICON + "EL-17</span>",
             "<span style=\"white-space: nowrap\"><img style=\"width: 16px\" src=\"icon.png\"/>EL-17</span>",
             "<span style=\"white-space: nowrap\"><img style=\"width: 12pt\" src=\"icon.png\"/>EL-17</span>",
+            "<span lang=\"de\" style=\"white-space: nowrap\">" + ICON + "EL-17</span>",
             // a work item link as Polarion renders it
             "<span class=\"polarion-rte-link\"><span style=\"white-space:nowrap;\"><a class=\"polarion-Hyperlink\"><span style=\"white-space:nowrap;\">" + ICON + "</span><span>EL-17</span></a></span></span>"
     })
@@ -125,6 +126,25 @@ class TableAnalyzerTest {
     void collapsesTheSpacesOfATextWhichMayNotWrapAcrossItsElements() {
         assertEquals(narrowestWidth("<span style=\"white-space: nowrap\">aaa <b>bbb</b></span>"), narrowestWidth("<span style=\"white-space: nowrap\">aaa <b> bbb</b></span>"),
                 "Two spaces in a row are one");
+    }
+
+    @Test
+    void leavesOutTheHiddenTextOfATextWhichMayNotWrap() {
+        assertEquals(narrowestWidth("<span style=\"white-space: nowrap\">A B</span>"),
+                narrowestWidth("<span style=\"white-space: nowrap\">A<b style=\"display: none\">x </b> B</span>"), "A hidden text takes no room and leaves the spaces around");
+    }
+
+    /** A space at the edge of a line takes no room in print, so it stays one the measure handles as such. */
+    @Test
+    void measuresTheSpacesAtTheEdgesOfATextWhichMayNotWrapAsRegularOnes() {
+        assertEquals(narrowestWidth("<span> EL-17 </span>"), narrowestWidth("<span style=\"white-space: nowrap\"> EL-17 </span>"), "As wide as the text which may wrap");
+    }
+
+    /** The measure lays out an image whose size depends on the font, as it does without nowrap. */
+    @Test
+    void measuresAnImageOfARelativeSizeAsTheMeasureDoes() {
+        String image = "<img style=\"width: 1em\" src=\"" + embeddedImage(100, 10) + "\"/>";
+        assertTrue(narrowestWidth("<span style=\"white-space: nowrap\">" + image + "EL-17</span>") < 100, "As wide as 1em, not as the image");
     }
 
     /** Polarion wraps the title of a linked work item again, in the element which may not wrap. */
