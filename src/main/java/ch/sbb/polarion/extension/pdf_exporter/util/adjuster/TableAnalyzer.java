@@ -9,8 +9,10 @@ import com.helger.css.propertyvalue.CCSSValue;
 import com.polarion.core.util.logging.Logger;
 import lombok.experimental.UtilityClass;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.jsoup.helper.W3CDom;
 import org.jsoup.nodes.Element;
+import org.jsoup.nodes.Node;
 import org.jsoup.nodes.TextNode;
 import org.w3c.dom.Document;
 import org.xhtmlrenderer.context.AWTFontResolver;
@@ -51,8 +53,12 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @UtilityClass
 public class TableAnalyzer {
@@ -64,6 +70,20 @@ public class TableAnalyzer {
     private static final String TD = "td";
     private static final String TH = "th";
     private static final String ZERO_WIDTH_SPACE = "\u200B";
+    private static final String IMG = "img";
+    private static final String LANG = "lang";
+    /** The language which marks a text the measure must not break, see {@link #measureNoWrapTextAsOneWord(Element)}. */
+    static final String NO_BREAK_LANGUAGE = "x-pdf-exporter-nowrap";
+    private static final String NO_BREAK_SPACE = "\u00A0";
+    /** A length relative to something the measure knows only as it lays the table out, as the font. */
+    private static final int RELATIVE = -1;
+    /** The values by which an element takes an inherited property, as {@code white-space}, from the element around. */
+    private static final Set<String> INHERITED = Set.of("inherit", "unset");
+    private static final Pattern WHITESPACE = Pattern.compile("[ \\t\\n\\r\\f]+");
+    private static final Pattern LEADING_WHITESPACE = Pattern.compile("^[ \\t\\n\\r\\f]+");
+    private static final Pattern CSS_LENGTH = Pattern.compile("(\\d+(?:\\.\\d+)?|\\.\\d+)(px|pt|pc|in|cm|mm|q)", Pattern.CASE_INSENSITIVE);
+    /** The pixels of the absolute units of CSS (CSS Values 3, 6.2). */
+    private static final Map<String, Float> PIXELS_PER_UNIT = Map.of("px", 1f, "pt", 96f / 72, "pc", 16f, "in", 96f, "cm", 96f / 2.54f, "mm", 9.6f / 2.54f, "q", 2.4f / 2.54f);
 
     /** The text styles which decide how tall a line of a cell is, and which a table inherits from around it. */
     private static final List<ECSSProperty> INHERITED_TEXT_PROPERTIES = List.of(ECSSProperty.FONT_SIZE, ECSSProperty.LINE_HEIGHT, ECSSProperty.FONT_WEIGHT, ECSSProperty.LETTER_SPACING);
@@ -166,6 +186,7 @@ public class TableAnalyzer {
         Element table = tableElement.clone();
         measureBreakableWords(table);
         measureWordBreakOpportunitiesAsText(table);
+        measureNoWrapTextAsOneWord(table);
         tempDoc.body().appendElement("div").attr(HtmlTagAttr.STYLE, inheritedTextStyle(tableElement)).appendChild(table);
         Document document = new W3CDom().fromJsoup(tempDoc);
         // Joins each zero width space to the text around it: the measure lays out each text node as a box of its own
@@ -181,6 +202,309 @@ public class TableAnalyzer {
         for (Element wbr : table.select("wbr")) {
             wbr.replaceWith(new TextNode(ZERO_WIDTH_SPACE));
         }
+    }
+
+    /**
+     * Lets the measure lay out a text which may not wrap as one word. flying-saucer finds the narrowest width of each of
+     * its inline boxes alone, so {@code <span style="white-space: nowrap">EL <b>17</b></span>} or the icon and the ID of
+     * a linked work item measure as narrow as their widest part. A word across inline boxes it measures whole since 10.8.0,
+     * so the text is turned into one: it wraps as normal text here, but its language makes
+     * {@link MeasureLineBreakingStrategy} give it no place to break. Its spaces become no-break spaces, so that a space
+     * before it, of the text around, stays a place to break. An image breaks a word in any case, so it gives way to an
+     * empty element as wide, whose padding goes with the word. An element in it which wraps its text again, as Polarion
+     * wraps the title of a linked work item, is left as it is.
+     * <p>
+     * Only the styles of the elements themselves are read, which is where Polarion states {@code white-space} and the size
+     * of an icon: a text which a stylesheet keeps from wrapping is measured as flying-saucer measures it. To be dropped
+     * once flying-saucer measures such a text whole itself (flyingsaucerproject/flyingsaucer#795).
+     * </p>
+     */
+    private static void measureNoWrapTextAsOneWord(@NotNull Element table) {
+        for (Element noWrap : table.select("[style*=nowrap]")) {
+            if (!NO_BREAK_LANGUAGE.equals(noWrap.attr(LANG)) && CssProp.WHITE_SPACE_NOWRAP_VALUE.equals(whiteSpace(noWrap))) {
+                new OneWord(wordWrap(noWrap)).mark(noWrap).end();
+            }
+        }
+    }
+
+    /**
+     * Marks a text as one word, but for the elements in it which wrap their text again. Its spaces collapse as CSS
+     * collapses them, across the boundaries of its elements, before they become no-break spaces, which do not collapse.
+     * A space at its start or end stays a regular one, which the measure drops at the edge of a line. A word which may
+     * break anywhere would break there all the same, as the measure lets it break where it wraps, so it may not here, and
+     * an element which wraps its text again gets back the {@code word-wrap} it inherits from around the text.
+     */
+    private static final class OneWord {
+        /** The {@code word-wrap} the text so far inherits, from around it or from an element in it. */
+        private @NotNull String wordWrap;
+        /** Whether the text so far ends in a space. */
+        private boolean afterSpace;
+        /** Whether the word has started: a space before it is at its start. */
+        private boolean started;
+        /** The text node whose space ends the word so far, if one does. */
+        private @Nullable TextNode endSpace;
+
+        private OneWord(@NotNull String wordWrap) {
+            this.wordWrap = wordWrap;
+        }
+
+        private @NotNull OneWord mark(@NotNull Element element) {
+            CSSDeclarationList style = CssUtils.parseDeclarations(element.attr(HtmlTagAttr.STYLE));
+            if (CssProp.WHITE_SPACE_NOWRAP_VALUE.equals(CssUtils.getPropertyValue(style, ECSSProperty.WHITE_SPACE))) {
+                CssUtils.setPropertyValue(style, ECSSProperty.WHITE_SPACE, CssProp.WHITE_SPACE_NORMAL_VALUE);
+            }
+            String around = wordWrap;
+            String own = CssUtils.getPropertyValue(style, ECSSProperty.WORD_WRAP);
+            if (!own.isEmpty() && !INHERITED.contains(own)) {
+                wordWrap = CssProp.WORD_WRAP_NORMAL_VALUE.equals(own) ? "" : own;
+            }
+            if (!wordWrap.isEmpty() || !own.isEmpty()) {
+                CssUtils.setPropertyValue(style, ECSSProperty.WORD_WRAP, CssProp.WORD_WRAP_NORMAL_VALUE);
+            }
+            if (!style.getAllDeclarations().isEmpty()) {
+                element.attr(HtmlTagAttr.STYLE, style.getAsCSSString());
+            }
+            element.attr(LANG, NO_BREAK_LANGUAGE);
+            for (Node node : new ArrayList<>(element.childNodes())) {
+                if (node instanceof TextNode text) {
+                    text(text);
+                } else if (node instanceof Element child) {
+                    child(child);
+                }
+            }
+            wordWrap = around;
+            return this;
+        }
+
+        private void text(@NotNull TextNode text) {
+            String collapsed = WHITESPACE.matcher(text.getWholeText()).replaceAll(" ");
+            if (afterSpace && collapsed.startsWith(" ")) {
+                collapsed = collapsed.substring(1);
+            }
+            if (collapsed.isEmpty()) {
+                text.text("");
+                return;
+            }
+            String startSpace = !started && collapsed.startsWith(" ") ? " " : "";
+            String word = collapsed.substring(startSpace.length());
+            text.text(startSpace + word.replace(" ", NO_BREAK_SPACE));
+            afterSpace = collapsed.endsWith(" ");
+            started |= !word.isBlank();
+            endSpace = afterSpace ? text : null;
+        }
+
+        private void child(@NotNull Element child) {
+            if (isHidden(child)) {
+                child.remove();
+                return;
+            }
+            String whiteSpace = whiteSpace(child);
+            if (IMG.equals(child.normalName())) {
+                Element space = imageSpace(child);
+                if (space != null) {
+                    child.replaceWith(space);
+                }
+                content(false);
+            } else if (whiteSpace.isEmpty() || INHERITED.contains(whiteSpace) || CssProp.WHITE_SPACE_NOWRAP_VALUE.equals(whiteSpace)) {
+                mark(child);
+            } else {
+                wrapsAgain(child, whiteSpace);
+            }
+        }
+
+        private void wrapsAgain(@NotNull Element child, @NotNull String whiteSpace) {
+            CSSDeclarationList style = CssUtils.parseDeclarations(child.attr(HtmlTagAttr.STYLE));
+            String own = CssUtils.getPropertyValue(style, ECSSProperty.WORD_WRAP);
+            if (!wordWrap.isEmpty() && (own.isEmpty() || INHERITED.contains(own))) {
+                CssUtils.setPropertyValue(style, ECSSProperty.WORD_WRAP, wordWrap);
+                child.attr(HtmlTagAttr.STYLE, style.getAsCSSString());
+            }
+            if (afterSpace && CssProp.WHITE_SPACE_NORMAL_VALUE.equals(whiteSpace)) {
+                dropStartSpace(child);
+            }
+            String wrapped = child.wholeText();
+            if (!wrapped.isBlank()) {
+                content(Character.isWhitespace(wrapped.charAt(wrapped.length() - 1)));
+            } else if (!wrapped.isEmpty()) {
+                afterSpace = true;
+                endSpace = null;
+            }
+        }
+
+        /**
+         * Drops the space the element starts with, which collapses with the space before it, as its text wraps as normal.
+         * An element in it which preserves its spaces keeps them, and an image ends the space before it.
+         */
+        private static void dropStartSpace(@NotNull Element element) {
+            for (Node node : element.nodeStream().toList()) {
+                if (isHiddenWithin(node, element)) {
+                    continue;
+                }
+                if (node instanceof Element image && IMG.equals(image.normalName())) {
+                    return;
+                }
+                if (!(node instanceof TextNode text)) {
+                    continue;
+                }
+                if (preservesSpaces(text, element)) {
+                    return;
+                }
+                String rest = LEADING_WHITESPACE.matcher(text.getWholeText()).replaceFirst("");
+                text.text(rest);
+                if (!rest.isEmpty()) {
+                    return;
+                }
+            }
+        }
+
+        /** Whether the node is hidden, by itself or by an element between it and the given one around it. */
+        private static boolean isHiddenWithin(@NotNull Node node, @NotNull Element around) {
+            for (Node current = node; current != null && current != around; current = current.parent()) {
+                if (current instanceof Element element && isHidden(element)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /** Whether an element between the text and the given one around it states a {@code white-space} which keeps spaces. */
+        private static boolean preservesSpaces(@NotNull TextNode text, @NotNull Element around) {
+            for (Element current = text.parent() instanceof Element parent ? parent : null; current != null && current != around; current = current.parent()) {
+                String whiteSpace = whiteSpace(current);
+                if (!whiteSpace.isEmpty() && !INHERITED.contains(whiteSpace) && !CssProp.WHITE_SPACE_NORMAL_VALUE.equals(whiteSpace)
+                        && !CssProp.WHITE_SPACE_NOWRAP_VALUE.equals(whiteSpace)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /** Content other than the text of the word follows, which ends in a space or not. */
+        private void content(boolean endsInSpace) {
+            afterSpace = endsInSpace;
+            started = true;
+            endSpace = null;
+        }
+
+        /** Turns a space which ends the word back into a regular one. */
+        private void end() {
+            if (endSpace != null) {
+                String text = endSpace.getWholeText();
+                endSpace.text(text.substring(0, text.length() - 1) + " ");
+            }
+        }
+
+        private static boolean isHidden(@NotNull Element element) {
+            return CssProp.DISPLAY_NONE_VALUE.equals(CssUtils.getPropertyValue(CssUtils.parseDeclarations(element.attr(HtmlTagAttr.STYLE)), ECSSProperty.DISPLAY));
+        }
+
+        /**
+         * An element which takes the room of the image in a word. It keeps the style of the image, as its margin, border and
+         * padding, and holds an empty element as wide as the image through its padding, which goes with the word, and as tall
+         * through its line height. None for an image whose size the measure only knows as it lays it out, which then stays as
+         * it is and breaks the word.
+         */
+        private static @Nullable Element imageSpace(@NotNull Element image) {
+            int[] size = imageSize(image);
+            if (size == null) {
+                return null;
+            }
+            String content = CssUtils.declaration(ECSSProperty.PADDING_LEFT, size[0] + "px");
+            if (size[1] > 0) {
+                content += " " + CssUtils.declaration(ECSSProperty.LINE_HEIGHT, size[1] + "px");
+            }
+            CSSDeclarationList box = CssUtils.parseDeclarations(image.attr(HtmlTagAttr.STYLE));
+            CssUtils.removeProperty(box, ECSSProperty.WIDTH);
+            CssUtils.removeProperty(box, ECSSProperty.HEIGHT);
+            Element space = new Element("span").attr(LANG, NO_BREAK_LANGUAGE);
+            if (!box.getAllDeclarations().isEmpty()) {
+                space.attr(HtmlTagAttr.STYLE, box.getAsCSSString());
+            }
+            return space.appendChild(new Element("span").attr(HtmlTagAttr.STYLE, content).attr(LANG, NO_BREAK_LANGUAGE));
+        }
+
+        /**
+         * The width and the height the measure lays an image out at: those its CSS states, else those of an image embedded in
+         * its source, scaled to the one its CSS states. None when a size is relative, as to the font, or when neither states
+         * one, as a stylesheet may.
+         */
+        private static int @Nullable [] imageSize(@NotNull Element image) {
+            CSSDeclarationList style = CssUtils.parseDeclarations(image.attr(HtmlTagAttr.STYLE));
+            Integer width = pixels(CssUtils.getPropertyValue(style, ECSSProperty.WIDTH), image.attr(HtmlTagAttr.WIDTH));
+            Integer height = pixels(CssUtils.getPropertyValue(style, ECSSProperty.HEIGHT), image.attr(HtmlTagAttr.HEIGHT));
+            if (Objects.equals(width, RELATIVE) || Objects.equals(height, RELATIVE)) {
+                return null;
+            }
+            String src = image.attr(HtmlTagAttr.SRC);
+            BufferedImage embedded = embeddedImage(src);
+            if (embedded == null || embedded.getWidth() <= 0 || embedded.getHeight() <= 0 || width != null && height != null) {
+                if (width == null && height == null) {
+                    return null;
+                }
+                return new int[] {Objects.requireNonNullElse(width, 0), Objects.requireNonNullElse(height, 0)};
+            }
+            if (width != null) {
+                return new int[] {width, Math.round((float) embedded.getHeight() * width / embedded.getWidth())};
+            }
+            if (height != null) {
+                return new int[] {Math.round((float) embedded.getWidth() * height / embedded.getHeight()), height};
+            }
+            return new int[] {embedded.getWidth(), embedded.getHeight()};
+        }
+
+        /** The image embedded in the source, if it holds one which decodes. */
+        private static @Nullable BufferedImage embeddedImage(@NotNull String src) {
+            try {
+                return ImageUtil.isEmbeddedBase64Image(src) ? ImageUtil.loadEmbeddedBase64Image(src) : null;
+            } catch (IllegalArgumentException e) {
+                return null;
+            }
+        }
+
+        /**
+         * A length in pixels, from CSS in an absolute unit or else from an attribute, which states it without a unit: none
+         * when neither states it, {@link #RELATIVE} when it is relative or unknown.
+         */
+        private static @Nullable Integer pixels(@NotNull String css, @NotNull String attribute) {
+            String value = css.trim();
+            if (!value.isEmpty()) {
+                if (CCSSValue.AUTO.equalsIgnoreCase(value)) {
+                    return null;
+                }
+                Matcher length = CSS_LENGTH.matcher(value);
+                Float number = length.matches() ? number(length.group(1)) : null;
+                return number != null ? Math.round(number * PIXELS_PER_UNIT.get(length.group(2).toLowerCase(Locale.ROOT))) : RELATIVE;
+            }
+            if (attribute.isBlank()) {
+                return null;
+            }
+            Float number = number(attribute.trim());
+            return number != null ? Math.round(number) : RELATIVE;
+        }
+
+        /** The number the text states, if it is one. */
+        private static @Nullable Float number(@NotNull String text) {
+            try {
+                return Float.parseFloat(text);
+            } catch (NumberFormatException e) {
+                return null;
+            }
+        }
+    }
+
+    /** The {@code word-wrap} the element has, of itself or of the nearest element around which states one. */
+    private static @NotNull String wordWrap(@NotNull Element element) {
+        for (Element current = element; current != null; current = current.parent()) {
+            String wordWrap = CssUtils.getPropertyValue(CssUtils.parseDeclarations(current.attr(HtmlTagAttr.STYLE)), ECSSProperty.WORD_WRAP);
+            if (!wordWrap.isEmpty() && !INHERITED.contains(wordWrap)) {
+                return CssProp.WORD_WRAP_NORMAL_VALUE.equals(wordWrap) ? "" : wordWrap;
+            }
+        }
+        return "";
+    }
+
+    private static @NotNull String whiteSpace(@NotNull Element element) {
+        return CssUtils.getPropertyValue(CssUtils.parseDeclarations(element.attr(HtmlTagAttr.STYLE)), ECSSProperty.WHITE_SPACE);
     }
 
     /**
@@ -498,6 +822,9 @@ public class TableAnalyzer {
          */
         @Override
         public BreakPointsProvider getBreakPointsProvider(String text, int start, String lang, CalculatedStyle style) {
+            if (NO_BREAK_LANGUAGE.equals(lang)) {
+                return afterSpaces(text, start);
+            }
             BreakIterator iterator = new UrlAwareLineBreakIterator(text, start);
             return () -> {
                 int next = iterator.next();
@@ -505,6 +832,22 @@ public class TableAnalyzer {
                     next = iterator.next();
                 }
                 return next == BreakIterator.DONE ? BreakPoint.DONE : new BreakPoint(next - start);
+            };
+        }
+
+        /**
+         * The places after the spaces of a text which may not wrap, at offsets from {@code start}. Its own spaces are
+         * no-break spaces in the measure, so a space is one of the text before it, where the line may break.
+         */
+        private static @NotNull BreakPointsProvider afterSpaces(@NotNull String text, int start) {
+            int[] offset = {start};
+            return () -> {
+                while (offset[0] < text.length()) {
+                    if (text.charAt(offset[0]++) == ' ' && (offset[0] == text.length() || text.charAt(offset[0]) != ' ')) {
+                        return new BreakPoint(offset[0] - start);
+                    }
+                }
+                return BreakPoint.DONE;
             };
         }
 

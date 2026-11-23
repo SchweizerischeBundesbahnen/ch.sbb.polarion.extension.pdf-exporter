@@ -73,6 +73,203 @@ class TableAnalyzerTest {
         assertEquals(widestWidth(content), narrowestWidth(content), "As narrow as it is wide");
     }
 
+    private static final String ICON = "<img class=\"polarion-Icons\" src=\"data:image/gif;base64,R0lGODlhEAAQAIAAAP///wAAACH5BAEAAAAALAAAAAAQABAAAAIOhI+py+0Po5y02ouzPgUAOw==\"/>";
+
+    /** A text which may not wrap measures whole, across its inline boxes and with its images, as WeasyPrint lays it out. */
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "<span style=\"white-space: nowrap\">EL <b>17</b></span>",
+            "<span style=\"white-space: nowrap\">Rechts-Schutz TMSPRG-13164</span>",
+            "<span style=\"white-space: nowrap\">" + ICON + "EL-17</span>",
+            "<span style=\"white-space: nowrap\"><img style=\"width: 16px\" src=\"icon.png\"/>EL-17</span>",
+            "<span style=\"white-space: nowrap\"><img style=\"width: 12pt\" src=\"icon.png\"/>EL-17</span>",
+            "<span lang=\"de\" style=\"white-space: nowrap\">" + ICON + "EL-17</span>",
+            "<span style=\"white-space: nowrap\">EL <b style=\"white-space: inherit\">17 18</b></span>",
+            "<span style=\"white-space: nowrap; overflow-wrap: anywhere\">" + ICON + "EL-17</span>",
+            "<span style=\"hyphens: auto\"><span style=\"white-space: nowrap\">" + ICON + "EL-17</span></span>",
+            "<span style=\"word-break: break-all\"><span style=\"white-space: nowrap\">" + ICON + "EL-17</span></span>",
+            // a work item link as Polarion renders it
+            "<span class=\"polarion-rte-link\"><span style=\"white-space:nowrap;\"><a class=\"polarion-Hyperlink\"><span style=\"white-space:nowrap;\">" + ICON + "</span><span>EL-17</span></a></span></span>"
+    })
+    void keepsATextWhichMayNotWrapWhole(String content) {
+        assertEquals(widestWidth(content), narrowestWidth(content), "As narrow as it is wide");
+    }
+
+    @Test
+    void measuresTheIconOfALinkInATextWhichMayNotWrap() {
+        assertEquals(widestWidth(ICON + "EL-17"), narrowestWidth("<span style=\"white-space: nowrap\">" + ICON + "EL-17</span>"), "As wide as the icon and the ID");
+    }
+
+    @Test
+    void breaksALineAroundATextWhichMayNotWrap() {
+        assertEquals(narrowestWidth("<span style=\"white-space: nowrap\">yy zz</span>"), narrowestWidth("xx <span style=\"white-space: nowrap\">yy zz</span>"),
+                "The space before it is a place to break");
+        // flying-saucer counts the space after a word with the word
+        assertEquals(narrowestWidth("<span>yy\u00A0zz</span> xx"), narrowestWidth("<span style=\"white-space: nowrap\">yy zz</span> xx"),
+                "The space after it is a place to break");
+        String link = "<span style=\"white-space:nowrap;\">" + ICON + "<span>EL-1%d</span></span>";
+        assertEquals(narrowestWidth(link.formatted(8) + ", " + link.formatted(9)), narrowestWidth(link.formatted(8) + ", " + link.formatted(9) + ", " + link.formatted(7)),
+                "A list of links breaks after each comma");
+        assertTrue(narrowestWidth(link.formatted(8) + ", " + link.formatted(9)) < widestWidth(link.formatted(8) + ", " + link.formatted(9)), "and so lies on two lines");
+        assertTrue(narrowestWidth(ICON + "EL-17") < widestWidth(ICON + "EL-17"), "A line may break after an image of a text which may wrap");
+    }
+
+    @Test
+    void measuresTheImageOfATextWhichMayNotWrapAtTheWidthItsCssStates() {
+        assertEquals(widestWidth("<img style=\"width: 16px\" src=\"icon.png\"/>EL-17"),
+                narrowestWidth("<span style=\"white-space: nowrap\"><img style=\"width: 12pt\" src=\"icon.png\"/>EL-17</span>"), "12pt are 16px");
+    }
+
+    @Test
+    void leavesOutAHiddenImageOfATextWhichMayNotWrap() {
+        assertEquals(narrowestWidth("<span style=\"white-space: nowrap\">EL-17</span>"),
+                narrowestWidth("<span style=\"white-space: nowrap\"><img style=\"display: none; width: 300px\" src=\"icon.png\"/>EL-17</span>"), "A hidden image takes no room");
+    }
+
+    @Test
+    void collapsesTheSpacesOfATextWhichMayNotWrapAcrossItsElements() {
+        assertEquals(narrowestWidth("<span style=\"white-space: nowrap\">aaa <b>bbb</b></span>"), narrowestWidth("<span style=\"white-space: nowrap\">aaa <b> bbb</b></span>"),
+                "Two spaces in a row are one");
+    }
+
+    @Test
+    void leavesOutTheHiddenTextOfATextWhichMayNotWrap() {
+        assertEquals(narrowestWidth("<span style=\"white-space: nowrap\">A B</span>"),
+                narrowestWidth("<span style=\"white-space: nowrap\">A<b style=\"display: none\">x </b> B</span>"), "A hidden text takes no room and leaves the spaces around");
+    }
+
+    /** A space at the edge of a line takes no room in print, so it stays one the measure handles as such. */
+    @Test
+    void measuresTheSpacesAtTheEdgesOfATextWhichMayNotWrapAsRegularOnes() {
+        assertEquals(narrowestWidth("<span> EL-17 </span>"), narrowestWidth("<span style=\"white-space: nowrap\"> EL-17 </span>"), "As wide as the text which may wrap");
+    }
+
+    /** The measure lays out an image whose size depends on the font, as it does without nowrap. */
+    @Test
+    void measuresAnImageOfARelativeSizeAsTheMeasureDoes() {
+        String image = "<img style=\"width: 1em\" src=\"" + embeddedImage(100, 10) + "\"/>";
+        assertTrue(narrowestWidth("<span style=\"white-space: nowrap\">" + image + "EL-17</span>") < 100, "As wide as 1em, not as the image");
+    }
+
+    @Test
+    void measuresTheMarginOfAnImageOfATextWhichMayNotWrap() {
+        String image = "<img style=\"width: 16px; height: 16px; margin-right: 24px; padding-left: 3px; border: 2px solid black\" src=\"icon.png\"/>";
+        assertEquals(widestWidth(image + "EL-17"), narrowestWidth("<span style=\"white-space: nowrap\">" + image + "EL-17</span>"), "As wide as the image with its box");
+    }
+
+    /** An image whose size its own style does not state is left to the measure, which may size it by a stylesheet. */
+    @Test
+    void leavesAnImageOfAnUnknownSizeToTheMeasure() {
+        Element table = Jsoup.parse("<table><tr><td><span style=\"white-space: nowrap\"><img src=\"icon.png\"/>EL-17</span></td></tr></table>").selectFirst("table");
+        assertTrue(TableAnalyzer.analyze(table, 10, "img { width: 120px; height: 40px; }").tableWidth() >= 120, "As wide as the stylesheet states");
+    }
+
+    /** Polarion wraps the title of a linked work item again, in the element which may not wrap. */
+    @Test
+    void breaksTheTitleOfALinkWhichWrapsAgain() {
+        String link = "<span style=\"white-space:nowrap;\"><a><span style=\"white-space:nowrap;\">" + ICON + "</span><span>REQ-200</span>"
+                + "<span style=\"white-space: normal\"> - A title of it</span></a></span>";
+        assertEquals(narrowestWidth("<span style=\"white-space: nowrap\">" + ICON + "REQ-200</span> -"), narrowestWidth(link),
+                "As narrow as the icon and the ID");
+    }
+
+    @Test
+    void breaksTheTitleOfALinkWhichWrapsAgainAnywhereAsTheTextAround() {
+        String link = "<span style=\"white-space:nowrap;\">" + ICON + "<span>REQ-200</span><span style=\"white-space: normal\"> Averyveryverylongtitle</span></span>";
+        assertTrue(narrowestWidth("<span style=\"overflow-wrap: anywhere\">" + link + "</span>") < narrowestWidth(link), "The title breaks anywhere");
+        assertTrue(narrowestWidth("<span style=\"overflow-wrap: anywhere\">" + link + "</span>") >= widestWidth(ICON + "REQ-200"), "but not the icon and the ID");
+    }
+
+    @Test
+    void breaksTheTitleOfALinkWhichWrapsAgainAnywhereAsTheElementAroundInTheText() {
+        String link = "<span style=\"white-space:nowrap;\">" + ICON + "<span>REQ-200</span><b%s><span style=\"white-space: normal\"> Averyveryverylongtitle</span></b></span>";
+        assertTrue(narrowestWidth(link.formatted(" style=\"overflow-wrap: anywhere\"")) < narrowestWidth(link.formatted("")), "The title breaks anywhere");
+    }
+
+    @Test
+    void collapsesTheSpacesOfATextWhichMayNotWrapIntoAnElementWhichWrapsAgain() {
+        assertEquals(widestWidth("<span style=\"white-space: nowrap\">A <span style=\"white-space: normal\">B</span>C</span>"),
+                widestWidth("<span style=\"white-space: nowrap\">A <span style=\"white-space: normal\"> B</span>C</span>"), "Two spaces in a row are one");
+    }
+
+    @Test
+    void keepsTheLineBreakOfAnElementWhichWrapsAgainInATextWhichMayNotWrap() {
+        String wrapped = "<span style=\"white-space: pre-line\">\nB\nC</span>";
+        assertEquals(rowHeight("<span>A " + wrapped + "</span>", 650), rowHeight("<span style=\"white-space: nowrap\">A " + wrapped + "</span>", 650),
+                "A line break is no space to collapse");
+    }
+
+    @Test
+    void keepsATextWhichMayNotWrapOnOneLineWhereWordsBreakAnywhere() {
+        String text = "xxxx <span style=\"white-space: nowrap\">EL-17890123</span>";
+        int width = (int) widestWidth("<span style=\"white-space: nowrap\">EL-17890123</span>");
+        assertEquals(rowHeight(text, width), rowHeight("<span style=\"word-break: break-all\">" + text + "</span>", width), "On a line of its own");
+    }
+
+    private static int rowHeight(String content, int width) {
+        Element table = Jsoup.parse("<table><tr><td>" + content + "</td></tr></table>").selectFirst("table");
+        return TableAnalyzer.analyze(table, width).rowHeights().getFirst();
+    }
+
+    /** The measure lays out no hidden element, so a malformed image in one does not keep it from measuring the table. */
+    @Test
+    void measuresAHiddenTextWhichMayNotWrapWithAMalformedEmbeddedImage() {
+        assertEquals(narrowestWidth("EL-17"),
+                narrowestWidth("EL-17<span style=\"display: none\"><span style=\"white-space: nowrap\"><img src=\"data:image/png;base64,%%%\"/>EL-17</span></span>"),
+                "As wide as the text shown");
+    }
+
+    @Test
+    void breaksTheTitleOfALinkWhichWrapsAgainAnywhereAsItInheritsIt() {
+        String link = "<span style=\"white-space:nowrap;%s\">" + ICON + "<span>REQ-200</span><span style=\"white-space: normal\"> Averyveryverylongtitle</span></span>";
+        assertEquals(narrowestWidth("<span style=\"overflow-wrap: anywhere\">" + link.formatted("") + "</span>"),
+                narrowestWidth("<span style=\"overflow-wrap: anywhere\">" + link.formatted(" word-wrap: inherit") + "</span>"), "As without inherit");
+    }
+
+    @Test
+    void keepsTheSpacesOfAnElementWhichPreservesThemInAnElementWhichWrapsAgain() {
+        String pre = "<span style=\"white-space: normal\"><span style=\"white-space: pre\">   B</span></span>";
+        assertEquals(widestWidth("<span>A " + pre + "</span>"), widestWidth("<span style=\"white-space: nowrap\">A " + pre + "</span>"), "As without nowrap");
+    }
+
+    @Test
+    void breaksTheTitleOfALinkWhichWrapsAgainAnywhereAsItInheritsItItself() {
+        String link = "<span style=\"white-space:nowrap;\">" + ICON + "<span>REQ-200</span><span style=\"white-space: normal%s\"> Averyveryverylongtitle</span></span>";
+        assertEquals(narrowestWidth("<span style=\"overflow-wrap: anywhere\">" + link.formatted("") + "</span>"),
+                narrowestWidth("<span style=\"overflow-wrap: anywhere\">" + link.formatted("; word-wrap: inherit") + "</span>"), "As without inherit");
+    }
+
+    @Test
+    void collapsesTheSpaceOfAnElementWhichWrapsAgainWithTheSpaceAfter() {
+        assertEquals(widestWidth("<span style=\"white-space: nowrap\">A<span style=\"white-space: normal\"> </span>B</span>"),
+                widestWidth("<span style=\"white-space: nowrap\">A<span style=\"white-space: normal\"> </span> B</span>"), "Two spaces in a row are one");
+    }
+
+    /** The space before the element becomes a no-break space, a pixel wider in the measure than a regular one. */
+    @Test
+    void keepsTheSpaceAfterAnImageOfAnElementWhichWrapsAgain() {
+        String wrapped = "<span style=\"white-space: normal\"><img width=\"16\" height=\"16\" src=\"icon.png\"/> B</span>";
+        assertEquals(widestWidth("<span>A\u00A0" + wrapped + "</span>"), widestWidth("<span style=\"white-space: nowrap\">A " + wrapped + "</span>"),
+                "The image separates the spaces around it");
+    }
+
+    @Test
+    void collapsesTheSpacesAroundAHiddenImageOfAnElementWhichWrapsAgain() {
+        String wrapped = "<span style=\"white-space: normal\"><b style=\"display: none\"><img width=\"16\" height=\"16\" src=\"icon.png\"/>x </b> B</span>";
+        assertEquals(widestWidth("<span style=\"white-space: nowrap\">A <span style=\"white-space: normal\">B</span></span>"),
+                widestWidth("<span style=\"white-space: nowrap\">A " + wrapped + "</span>"), "A hidden image separates no spaces");
+    }
+
+    @Test
+    void keepsTheTextWhichMayNotWrapOfTheTable() {
+        Element table = Jsoup.parse("<table><tr><td><span style=\"white-space: nowrap\">" + ICON + "EL-17</span></td></tr></table>").selectFirst("table");
+        String html = table.outerHtml();
+
+        TableAnalyzer.analyze(table, 10);
+
+        assertEquals(html, table.outerHtml(), "The measure works on a copy of the table");
+    }
+
     /** The measure lays out a {@code <wbr>} as a zero width space, which breaks a word at the same place and takes no room. */
     @ParameterizedTest
     @ValueSource(strings = {"Gleisfreim<wbr>eldeanlage", "<b>Gleisfreim<wbr>elde</b>anlage", "Gleis<wbr>frei<wbr>melde<wbr>anlage"})
@@ -392,6 +589,19 @@ class TableAnalyzerTest {
 
         assertEquals(1, rowHeights.size());
         assertTrue(rowHeights.getFirst() >= 200, "The row takes the height of the image, but measured " + rowHeights.getFirst());
+    }
+
+    /** An image in a text which may not wrap takes its height in the row as well. */
+    @Test
+    void takesTheHeightOfAnImageInATextWhichMayNotWrap() {
+        String content = "<img src=\"" + embeddedImage(30, 200) + "\">EL-17";
+        Element table = Jsoup.parse("<table><tr><td>" + content + "</td></tr></table>").selectFirst("table");
+        Element noWrap = Jsoup.parse("<table><tr><td><span style=\"white-space: nowrap\">" + content + "</span></td></tr></table>").selectFirst("table");
+
+        // An image stands on the baseline, while the line height which takes its place spreads around the text: they
+        // differ by the descent of the font
+        assertEquals(TableAnalyzer.analyze(table, 600).rowHeights().getFirst(), TableAnalyzer.analyze(noWrap, 600).rowHeights().getFirst(), 5,
+                "As tall as without nowrap");
     }
 
     @Test
