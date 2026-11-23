@@ -66,6 +66,25 @@ class TableAnalyzerTest {
         assertTrue(narrowestWidth("TMSPRG-<wbr>13164") < narrowestWidth("TMSPRG-13164"), "A break point the document gives a word is still one");
     }
 
+    /** The measure lays out a {@code <wbr>} as a zero width space, which breaks a word at the same place and takes no room. */
+    @ParameterizedTest
+    @ValueSource(strings = {"Gleisfreim<wbr>eldeanlage", "<b>Gleisfreim<wbr>elde</b>anlage", "Gleis<wbr>frei<wbr>melde<wbr>anlage"})
+    void measuresAWordBreakOpportunityAsAZeroWidthSpace(String content) {
+        String zeroWidthSpaces = content.replace("<wbr>", "\u200B");
+        assertEquals(narrowestWidth(zeroWidthSpaces), narrowestWidth(content), "As narrow");
+        assertEquals(widestWidth(zeroWidthSpaces), widestWidth(content), "As wide");
+        assertEquals(widestWidth(content.replace("<wbr>", "")), widestWidth(content), "A break point takes no room");
+    }
+
+    @Test
+    void keepsTheWordBreakOpportunitiesOfTheTable() {
+        Element table = Jsoup.parse("<table><tr><td>Gleisfreim<wbr>eldeanlage</td></tr></table>").selectFirst("table");
+
+        TableAnalyzer.analyze(table, 10);
+
+        assertEquals(1, table.select("wbr").size(), "The measure works on a copy of the table");
+    }
+
     @Test
     void breaksAWordAtItsSoftHyphen() {
         assertTrue(narrowestWidth("TMSPRG-131\u00AD64") < narrowestWidth("TMSPRG-13164"), "A soft hyphen is a place to break the document gives a word");
@@ -114,6 +133,12 @@ class TableAnalyzerTest {
     private static float narrowestWidth(String content) {
         Element table = Jsoup.parse("<table><tr><td>" + content + "</td></tr></table>").selectFirst("table");
         return (float) TableAnalyzer.analyze(table, 10).tableWidth();
+    }
+
+    /** The width of a table of one cell with the given content, laid out on one line. */
+    private static float widestWidth(String content) {
+        Element table = Jsoup.parse("<table><tr><td>" + content + "</td></tr></table>").selectFirst("table");
+        return (float) TableAnalyzer.analyze(table, 650).tableWidth();
     }
 
     @Test
