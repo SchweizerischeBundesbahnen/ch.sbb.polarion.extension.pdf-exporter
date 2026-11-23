@@ -12,6 +12,8 @@ import org.jsoup.parser.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.xhtmlrenderer.layout.breaker.BreakPoint;
+import org.xhtmlrenderer.layout.breaker.BreakPointsProvider;
 
 import java.awt.*;
 import java.awt.font.FontRenderContext;
@@ -23,6 +25,8 @@ import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.text.BreakIterator;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
@@ -62,6 +66,32 @@ class TableAnalyzerTest {
         assertTrue(narrowestWidth("TMSPRG-<wbr>13164") < narrowestWidth("TMSPRG-13164"), "A break point the document gives a word is still one");
     }
 
+    /** A word with a formatted part is one word, as WeasyPrint lays it out: the measure breaks it nowhere. */
+    @ParameterizedTest
+    @ValueSource(strings = {"Gleisfreimelde<span style=\"color: red\">anlage</span>", "Gleisfreim<b>elde</b>anlage", "Gleis<a href=\"#x\">freimelde</a>anlage"})
+    void keepsAWordWithAFormattedPartWhole(String content) {
+        assertEquals(widestWidth(content), narrowestWidth(content), "As narrow as it is wide");
+    }
+
+    /** The measure lays out a {@code <wbr>} as a zero width space, which breaks a word at the same place and takes no room. */
+    @ParameterizedTest
+    @ValueSource(strings = {"Gleisfreim<wbr>eldeanlage", "<b>Gleisfreim<wbr>elde</b>anlage", "Gleis<wbr>frei<wbr>melde<wbr>anlage"})
+    void measuresAWordBreakOpportunityAsAZeroWidthSpace(String content) {
+        String zeroWidthSpaces = content.replace("<wbr>", "\u200B");
+        assertEquals(narrowestWidth(zeroWidthSpaces), narrowestWidth(content), "As narrow");
+        assertEquals(widestWidth(zeroWidthSpaces), widestWidth(content), "As wide");
+        assertEquals(widestWidth(content.replace("<wbr>", "")), widestWidth(content), "A break point takes no room");
+    }
+
+    @Test
+    void keepsTheWordBreakOpportunitiesOfTheTable() {
+        Element table = Jsoup.parse("<table><tr><td>Gleisfreim<wbr>eldeanlage</td></tr></table>").selectFirst("table");
+
+        TableAnalyzer.analyze(table, 10);
+
+        assertEquals(1, table.select("wbr").size(), "The measure works on a copy of the table");
+    }
+
     @Test
     void breaksAWordAtItsSoftHyphen() {
         assertTrue(narrowestWidth("TMSPRG-131\u00AD64") < narrowestWidth("TMSPRG-13164"), "A soft hyphen is a place to break the document gives a word");
@@ -71,6 +101,28 @@ class TableAnalyzerTest {
     void breaksAWordWhereTheCellLetsItBreakAnywhere() {
         assertTrue(narrowestWidth("<span style=\"overflow-wrap: anywhere\">TMSPRG-13164</span>") < narrowestWidth("TMSPRG-13164"),
                 "A word which may break anywhere breaks after its hyphen as well");
+    }
+
+    /**
+     * flying-saucer asks for the break points of the rest of a text from where each line starts. Found without a copy of
+     * the rest, they are the break points of that rest.
+     */
+    @ParameterizedTest
+    @ValueSource(strings = {"Anforderung REQ-1001 vom 2022-01-05, siehe https://example.com/a/b?c=d", "Rechts-Schutz TMSPRG-13164", "a\u200Bb c"})
+    void findsTheBreakPointsOfTheRestOfATextFromWhereItStarts(String text) {
+        TableAnalyzer.MeasureLineBreakingStrategy strategy = new TableAnalyzer.MeasureLineBreakingStrategy();
+        for (int start = 0; start <= text.length(); start++) {
+            assertEquals(breakPoints(strategy.getBreakPointsProvider(text.substring(start), null, null)),
+                    breakPoints(strategy.getBreakPointsProvider(text, start, null, null)), "From %d on".formatted(start));
+        }
+    }
+
+    private static List<Integer> breakPoints(BreakPointsProvider provider) {
+        List<Integer> points = new ArrayList<>();
+        for (BreakPoint point = provider.next(); point.position() != BreakIterator.DONE; point = provider.next()) {
+            points.add(point.position());
+        }
+        return points;
     }
 
     @Test
@@ -88,6 +140,12 @@ class TableAnalyzerTest {
     private static float narrowestWidth(String content) {
         Element table = Jsoup.parse("<table><tr><td>" + content + "</td></tr></table>").selectFirst("table");
         return (float) TableAnalyzer.analyze(table, 10).tableWidth();
+    }
+
+    /** The width of a table of one cell with the given content, laid out on one line. */
+    private static float widestWidth(String content) {
+        Element table = Jsoup.parse("<table><tr><td>" + content + "</td></tr></table>").selectFirst("table");
+        return (float) TableAnalyzer.analyze(table, 650).tableWidth();
     }
 
     @Test
@@ -339,14 +397,9 @@ class TableAnalyzerTest {
     @Test
     @SneakyThrows
     void antiAliasRenderingHintResolvesToRealConstant() {
-        // Force TableAnalyzer's static initializer to run, pinning xr.text.aa-rendering-hint before
-        // flying-saucer's Configuration singleton is first read.
-        Class.forName(TableAnalyzer.class.getName());
-
-        // flying-saucer's own default ("RenderingHints.VALUE_TEXT_ANTIALIAS_HGRB") is unresolvable, so without
-        // the fix this returns the sentinel and Java2DTextRenderer falls back to the AWT desktop hints - null on
-        // a headless server - which throws an NPE logged at WARN for every renderer (one per table). Verify the
-        // hint instead resolves to a real constant so that path is never taken.
+        // Until 10.6.0 the default of flying-saucer ("RenderingHints.VALUE_TEXT_ANTIALIAS_HGRB") resolved to nothing.
+        // Java2DTextRenderer then fell back to the AWT desktop hints, null on a headless server, and logged an NPE
+        // at WARN for every table measured. The default must stay a real constant.
         Object sentinel = new Object();
         Object hint = org.xhtmlrenderer.util.Configuration.valueFromClassConstant("xr.text.aa-rendering-hint", sentinel);
 

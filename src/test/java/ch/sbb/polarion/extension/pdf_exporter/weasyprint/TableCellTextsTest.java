@@ -44,7 +44,11 @@ class TableCellTextsTest extends BasePdfConverterTest {
                 Arguments.of("technical", List.of("URL with a query and a fragment", "Windows path", "Java class", "13.9.0-SNAPSHOT,")),
                 // Nine columns leave no room either, so its words longer than 10 characters break into parts
                 Arguments.of("narrowColumns", List.of("Approved", "2022-01-05", "Priorität", "Testfall", "Betrieb", "13.10.0")),
-                Arguments.of("emoji", List.of("Accepted", "Rejected", "Closed"))
+                Arguments.of("emoji", List.of("Accepted", "Rejected", "Closed")),
+                // Words with formatted parts measure whole, so they break into parts. WeasyPrint still overflows
+                // "Gleisfreim<wbr>elde</b>anlage" into the next column: it skips a break point inside an inline box
+                // once the box fits (Kozea/WeasyPrint#1614)
+                Arguments.of("formattedWords", List.of("EL-207", "EL-215"))
         );
     }
 

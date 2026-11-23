@@ -11,6 +11,7 @@ import lombok.experimental.UtilityClass;
 import org.jetbrains.annotations.NotNull;
 import org.jsoup.helper.W3CDom;
 import org.jsoup.nodes.Element;
+import org.jsoup.nodes.TextNode;
 import org.w3c.dom.Document;
 import org.xhtmlrenderer.context.AWTFontResolver;
 import org.xhtmlrenderer.css.constants.IdentValue;
@@ -57,27 +58,12 @@ import java.util.Set;
 public class TableAnalyzer {
     private static final Logger logger = Logger.getLogger(TableAnalyzer.class);
 
-    static {
-        // flying-saucer ships a broken default for "xr.text.aa-rendering-hint"
-        // ("RenderingHints.VALUE_TEXT_ANTIALIAS_HGRB" - unqualified class name, non-existent constant), so
-        // Java2DTextRenderer can never resolve it and instead queries the AWT desktop font hints. On a headless
-        // server those are null, the subsequent map lookup throws an NPE which flying-saucer swallows but logs at
-        // WARN with a full stack trace - once per renderer, i.e. once per table we measure. Pin a valid,
-        // fully-qualified constant before flying-saucer's Configuration singleton is first read (it absorbs xr.*
-        // system properties at init, and TableAnalyzer is this project's only flying-saucer entry point) so the
-        // desktop-hints path - and its noise - is never reached, keeping anti-aliasing deterministic too.
-        System.setProperty("xr.text.aa-rendering-hint", "java.awt.RenderingHints.VALUE_TEXT_ANTIALIAS_ON");
-        // Without fractional metrics each glyph is as wide as the rasterizer of the platform hints it, rounded to a
-        // pixel: the same font measures narrower on Linux than on macOS. Fractional metrics take the widths of the
-        // font itself, as WeasyPrint does.
-        System.setProperty("xr.text.fractional-font-metrics", "true");
-    }
-
     private static final String TABLE = "table";
     private static final String TBODY = "tbody";
     private static final String TR = "tr";
     private static final String TD = "td";
     private static final String TH = "th";
+    private static final String ZERO_WIDTH_SPACE = "\u200B";
 
     /** The text styles which decide how tall a line of a cell is, and which a table inherits from around it. */
     private static final List<ECSSProperty> INHERITED_TEXT_PROPERTIES = List.of(ECSSProperty.FONT_SIZE, ECSSProperty.LINE_HEIGHT, ECSSProperty.FONT_WEIGHT, ECSSProperty.LETTER_SPACING);
@@ -179,8 +165,22 @@ public class TableAnalyzer {
         tempDoc.head().appendElement("style").text("* { font-family: '" + MEASUREMENT_FONT_FAMILY + "', sans-serif !important; }");
         Element table = tableElement.clone();
         measureBreakableWords(table);
+        measureWordBreakOpportunitiesAsText(table);
         tempDoc.body().appendElement("div").attr(HtmlTagAttr.STYLE, inheritedTextStyle(tableElement)).appendChild(table);
-        return new W3CDom().fromJsoup(tempDoc);
+        Document document = new W3CDom().fromJsoup(tempDoc);
+        // Joins each zero width space to the text around it: the measure lays out each text node as a box of its own
+        document.getDocumentElement().normalize();
+        return document;
+    }
+
+    /**
+     * Puts a zero width space in place of each {@code <wbr>}. The measure breaks a line at both alike, but lays out a
+     * {@code <wbr>} as a box of its own, which takes time in a table of many long words.
+     */
+    private static void measureWordBreakOpportunitiesAsText(@NotNull Element table) {
+        for (Element wbr : table.select("wbr")) {
+            wbr.replaceWith(new TextNode(ZERO_WIDTH_SPACE));
+        }
     }
 
     /**
@@ -488,18 +488,28 @@ public class TableAnalyzer {
     static final class MeasureLineBreakingStrategy implements LineBreakingStrategy {
         @Override
         public BreakPointsProvider getBreakPointsProvider(String text, String lang, CalculatedStyle style) {
-            BreakIterator iterator = new UrlAwareLineBreakIterator(text);
+            return getBreakPointsProvider(text, 0, lang, style);
+        }
+
+        /**
+         * The break points of the text from {@code start} on, at offsets from {@code start}. Found without a copy of the
+         * rest of the text, which flying-saucer asks for at the start of each line: the copies cost a long cell time
+         * quadratic in its length.
+         */
+        @Override
+        public BreakPointsProvider getBreakPointsProvider(String text, int start, String lang, CalculatedStyle style) {
+            BreakIterator iterator = new UrlAwareLineBreakIterator(text, start);
             return () -> {
                 int next = iterator.next();
-                while (next != BreakIterator.DONE && isBetweenHyphenAndDigit(text, next)) {
+                while (next != BreakIterator.DONE && isBetweenHyphenAndDigit(text, start, next)) {
                     next = iterator.next();
                 }
-                return next == BreakIterator.DONE ? BreakPoint.DONE : new BreakPoint(next);
+                return next == BreakIterator.DONE ? BreakPoint.DONE : new BreakPoint(next - start);
             };
         }
 
-        private static boolean isBetweenHyphenAndDigit(@NotNull String text, int offset) {
-            return offset > 0 && offset < text.length() && text.charAt(offset - 1) == '-' && Character.isDigit(text.codePointAt(offset));
+        private static boolean isBetweenHyphenAndDigit(@NotNull String text, int start, int offset) {
+            return offset > start && offset < text.length() && text.charAt(offset - 1) == '-' && Character.isDigit(text.codePointAt(offset));
         }
     }
 }
