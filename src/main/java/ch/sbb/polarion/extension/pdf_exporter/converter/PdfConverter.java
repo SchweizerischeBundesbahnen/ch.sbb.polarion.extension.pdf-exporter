@@ -76,6 +76,7 @@ import jakarta.ws.rs.core.Response;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -390,7 +391,8 @@ public class PdfConverter {
                             return new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
                         }
                     } else {
-                        logger.error(String.format("Could not get proper response from webhook [%s]: response status %s", webhookConfig.getUrl(), response.getStatus()));
+                        logger.error(String.format("Could not get proper response from %s [%s]: response status %s",
+                                identifyWebhook(position, exportParams), redactUrlForLogs(webhookConfig.getUrl()), response.getStatus()));
                         // Read only where the body is the message: an export which carries on regardless would
                         // otherwise pull a whole error page over the wire for a string it drops.
                         String body = webhookConfig.isFailExportOnError() ? readErrorBody(response) : "";
@@ -399,9 +401,10 @@ public class PdfConverter {
                 }
             }
         } catch (Exception e) {
-            logger.error(String.format("Could not get response from webhook [%s]", webhookConfig.getUrl()), e);
             // The kind of the failure, never its message: this catch covers building the target as well, and a
             // malformed URL fails there with the URL - credentials and all - inside the message of the exception.
+            logger.error(String.format("Could not get response from %s [%s]",
+                    identifyWebhook(position, exportParams), redactUrlForLogs(webhookConfig.getUrl())), withoutMessage(e));
             failure = describeWebhook(position, exportParams) + " could not be called (" + rootCauseOf(e).getClass().getSimpleName() + ")";
         } finally {
             if (client != null) {
@@ -417,8 +420,42 @@ public class PdfConverter {
         return htmlContent;
     }
 
+    /**
+     * The scheme, the host and the port of a webhook URL. The other parts can carry credentials: the user info,
+     * the query, and the path, where some services put the secret itself.
+     */
+    @VisibleForTesting
+    static @NotNull String redactUrlForLogs(@Nullable String rawUrl) {
+        if (rawUrl == null || rawUrl.isBlank()) {
+            return "<empty>";
+        }
+        try {
+            URI uri = URI.create(rawUrl);
+            // Not getHost(): it is null for a host name with an underscore, which container names often have
+            String authority = uri.getRawAuthority();
+            if (uri.getScheme() == null || authority == null) {
+                return "<redacted-url>";
+            }
+            return uri.getScheme() + "://" + authority.substring(authority.lastIndexOf('@') + 1);
+        } catch (IllegalArgumentException e) {
+            return "<malformed-url>";
+        }
+    }
+
+    /** The type and the stack trace of the root cause, without its message: that can contain the URL. */
+    private static @NotNull Throwable withoutMessage(@NotNull Throwable throwable) {
+        Throwable root = rootCauseOf(throwable);
+        RuntimeException result = new RuntimeException(root.getClass().getName());
+        result.setStackTrace(root.getStackTrace());
+        return result;
+    }
+
+    private static @NotNull String identifyWebhook(int position, @NotNull ExportParams exportParams) {
+        return "webhook " + position + " of configuration '" + exportParams.getWebhooks() + "'";
+    }
+
     private static @NotNull String describeWebhook(int position, @NotNull ExportParams exportParams) {
-        return "Export stopped by webhook " + position + " of configuration '" + exportParams.getWebhooks() + "', which";
+        return "Export stopped by " + identifyWebhook(position, exportParams) + ", which";
     }
 
     /**

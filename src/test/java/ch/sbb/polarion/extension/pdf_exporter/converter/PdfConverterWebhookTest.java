@@ -8,6 +8,7 @@ import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.webhooks.Webho
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.webhooks.WebhooksModel;
 import ch.sbb.polarion.extension.pdf_exporter.settings.WebhooksSettings;
 import com.polarion.core.util.exceptions.UserFriendlyRuntimeException;
+import com.polarion.core.util.logging.Logger;
 import jakarta.ws.rs.ProcessingException;
 import jakarta.ws.rs.client.Client;
 import jakarta.ws.rs.client.ClientBuilder;
@@ -20,6 +21,10 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.NullSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.MockedConstruction;
@@ -30,6 +35,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.ConnectException;
+import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -39,6 +45,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockConstruction;
@@ -257,6 +264,61 @@ class PdfConverterWebhookTest {
                 .hasMessage("Export stopped by webhook 1 of configuration 'Validation', which could not be called (IllegalArgumentException)")
                 .message().doesNotContain("secret", "example.com");
         verifyNoInteractions(invocationBuilder);
+    }
+
+    @Test
+    void logsAnErrorStatusWithoutTheCredentialsOfTheUrl() {
+        Response response = mockResponse(422);
+        when(invocationBuilder.post(any(Entity.class))).thenReturn(response);
+        Logger logger = mock(Logger.class);
+
+        converterLoggingTo(logger).applyWebhook(new WebhookConfig(URL, null, null, false), 2, exportParams, HTML);
+
+        verify(logger).error("Could not get proper response from webhook 2 of configuration 'Validation' [https://example.com]: response status 422");
+    }
+
+    @Test
+    void logsACallFailureWithItsStackTraceButWithoutItsMessage() {
+        URISyntaxException cause = new URISyntaxException(URL, "Illegal character in query");
+        when(client.target(URL)).thenThrow(new IllegalArgumentException(cause.getMessage(), cause));
+        Logger logger = mock(Logger.class);
+
+        converterLoggingTo(logger).applyWebhook(new WebhookConfig(URL, null, null, false), 2, exportParams, HTML);
+
+        ArgumentCaptor<Throwable> logged = ArgumentCaptor.forClass(Throwable.class);
+        verify(logger).error(eq("Could not get response from webhook 2 of configuration 'Validation' [https://example.com]"), logged.capture());
+        assertThat(logged.getValue()).hasMessage("java.net.URISyntaxException").hasNoCause();
+        assertThat(logged.getValue().getStackTrace()).isEqualTo(cause.getStackTrace());
+    }
+
+    @ParameterizedTest
+    @CsvSource(delimiter = ' ', value = {
+            "https://example.com/webhook?token=secret https://example.com",
+            "https://example.com:8443/webhook?sig=secret#secret https://example.com:8443",
+            "https://user:secret@example.com/webhook https://example.com",
+            "https://example.com/services/secret https://example.com",
+            "http://my_service:8080/webhook http://my_service:8080",
+            "http://user:secret@my_service:8080/webhook http://my_service:8080",
+            "https://example.com/webhook?code=secret|x <malformed-url>",
+            "//example.com/secret <redacted-url>",
+            "mailto:secret <redacted-url>"
+    })
+    void redactsEverythingOfTheUrlButSchemeHostAndPort(String url, String expected) {
+        assertThat(PdfConverter.redactUrlForLogs(url)).isEqualTo(expected);
+    }
+
+    @ParameterizedTest
+    @NullSource
+    @ValueSource(strings = {"", " "})
+    void saysSoWhenThereIsNoUrlToRedact(String url) {
+        assertThat(PdfConverter.redactUrlForLogs(url)).isEqualTo("<empty>");
+    }
+
+    private static PdfConverter converterLoggingTo(Logger logger) {
+        try (MockedStatic<Logger> loggerMockedStatic = mockStatic(Logger.class)) {
+            loggerMockedStatic.when(() -> Logger.getLogger(PdfConverter.class)).thenReturn(logger);
+            return new PdfConverter(null, null, null, null, null, null, null, null, null, null);
+        }
     }
 
     private List<String> postedHtml(int calls) {
