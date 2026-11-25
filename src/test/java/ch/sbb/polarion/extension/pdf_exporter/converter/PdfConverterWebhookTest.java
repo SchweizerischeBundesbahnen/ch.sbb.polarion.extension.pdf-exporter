@@ -248,7 +248,7 @@ class PdfConverterWebhookTest {
     @Test
     void keepsTheWebhookUrlOutOfTheMessageOfACallFailure() {
         // A malformed URL fails while the target is built, and that exception carries the URL it was given.
-        when(invocationBuilder.post(any(Entity.class)))
+        when(client.target(URL))
                 .thenThrow(new IllegalArgumentException("Illegal character in query at index 32: " + URL));
         WebhookConfig webhookConfig = new WebhookConfig(URL, null, null, true);
 
@@ -256,6 +256,7 @@ class PdfConverterWebhookTest {
                 .isInstanceOf(UserFriendlyRuntimeException.class)
                 .hasMessage("Export stopped by webhook 1 of configuration 'Validation', which could not be called (IllegalArgumentException)")
                 .message().doesNotContain("secret", "example.com");
+        verifyNoInteractions(invocationBuilder);
     }
 
     private List<String> postedHtml(int calls) {
