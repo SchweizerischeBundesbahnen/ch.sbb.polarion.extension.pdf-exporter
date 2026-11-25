@@ -6,6 +6,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
 
+import java.util.Locale;
+
 @Schema(description = "Orientation of the output document")
 public enum Orientation {
     @Schema(description = "Portrait orientation")
@@ -17,7 +19,7 @@ public enum Orientation {
     @JsonCreator
     public static Orientation fromString(String name) {
         try {
-            return (name != null) ? valueOf(name.toUpperCase()) : null;
+            return (name != null) ? valueOf(name.toUpperCase(Locale.ROOT)) : null;
         } catch (IllegalArgumentException e) {
             // Necessary to return correct HTTP error code by query parameters conversion
             throw new WebApplicationException(Response
@@ -28,6 +30,6 @@ public enum Orientation {
     }
 
     public String toCssString() {
-        return toString().toLowerCase();
+        return toString().toLowerCase(Locale.ROOT);
     }
 }

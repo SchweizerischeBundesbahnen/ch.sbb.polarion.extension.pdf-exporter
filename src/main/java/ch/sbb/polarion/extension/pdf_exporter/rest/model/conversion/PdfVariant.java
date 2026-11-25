@@ -6,6 +6,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
 
+import java.util.Locale;
+
 /**
  * PDF Variants
  */
@@ -28,7 +30,7 @@ public enum PdfVariant {
     @JsonCreator
     public static PdfVariant fromString(String name) {
         try {
-            return (name != null) ? valueOf(name.toUpperCase()) : null;
+            return (name != null) ? valueOf(name.toUpperCase(Locale.ROOT)) : null;
         } catch (IllegalArgumentException e) {
             // Necessary to return correct HTTP error code by query parameters conversion
             throw new WebApplicationException(Response
