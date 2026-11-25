@@ -487,6 +487,9 @@ public class PdfConverter {
                 read += chunk;
             }
             String body = new String(buffer, 0, read).strip();
+            if (body.isEmpty()) {
+                return "";
+            }
             boolean more = read > MAX_WEBHOOK_ERROR_BODY_LENGTH;
             if (body.length() > MAX_WEBHOOK_ERROR_BODY_LENGTH) {
                 body = body.substring(0, MAX_WEBHOOK_ERROR_BODY_LENGTH);
