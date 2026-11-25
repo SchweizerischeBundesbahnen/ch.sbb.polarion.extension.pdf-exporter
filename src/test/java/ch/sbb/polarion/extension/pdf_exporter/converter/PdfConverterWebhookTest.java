@@ -15,10 +15,12 @@ import jakarta.ws.rs.client.Entity;
 import jakarta.ws.rs.client.Invocation;
 import jakarta.ws.rs.client.WebTarget;
 import jakarta.ws.rs.core.Response;
+import org.glassfish.jersey.media.multipart.FormDataMultiPart;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.MockedConstruction;
 import org.mockito.MockedStatic;
@@ -42,6 +44,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockConstruction;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -106,6 +109,7 @@ class PdfConverterWebhookTest {
             String result = pdfConverter.applyWebhooks(exportParams, HTML);
 
             // The HTML of each webhook is what the next one is given, so the last one decides the result.
+            assertThat(postedHtml(2)).containsExactly(HTML, "<html>first</html>");
             assertThat(result).isEqualTo("<html>second</html>");
             assertThat(settings.constructed()).hasSize(1);
         }
@@ -252,6 +256,15 @@ class PdfConverterWebhookTest {
                 .isInstanceOf(UserFriendlyRuntimeException.class)
                 .hasMessage("Export stopped by webhook 1 of configuration 'Validation', which could not be called (IllegalArgumentException)")
                 .message().doesNotContain("secret", "example.com");
+    }
+
+    private List<String> postedHtml(int calls) {
+        ArgumentCaptor<Entity<?>> captor = ArgumentCaptor.captor();
+        verify(invocationBuilder, times(calls)).post(captor.capture());
+        return captor.getAllValues().stream()
+                .map(entity -> (FormDataMultiPart) entity.getEntity())
+                .map(multipart -> new String((byte[]) multipart.getField("html").getEntity(), StandardCharsets.UTF_8))
+                .toList();
     }
 
     private static Response mockResponse(int status) {
