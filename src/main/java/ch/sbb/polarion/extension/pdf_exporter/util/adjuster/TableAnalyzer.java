@@ -663,7 +663,7 @@ public class TableAnalyzer {
             // When no tbody exists and rows are included directly to table element, rows are enclosed into artificial TableSectionBox which we should just skip and go deeper into hierarchy
             if (child instanceof TableSectionBox tableSectionBox) {
                 result.addAll(findChildrenByTag(tableSectionBox, tagNames));
-            } else if (child.getElement() != null && tags.contains(child.getElement().getNodeName().toLowerCase())) {
+            } else if (child.getElement() != null && tags.contains(child.getElement().getNodeName().toLowerCase(Locale.ROOT))) {
                 result.add(child);
             }
         }

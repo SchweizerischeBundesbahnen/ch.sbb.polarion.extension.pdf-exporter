@@ -7,6 +7,8 @@ import com.polarion.core.util.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.VisibleForTesting;
 
+import java.util.Locale;
+
 import static ch.sbb.polarion.extension.pdf_exporter.util.exporter.Constants.*;
 
 public class CustomWikiBlockPart extends WikiBlockPart {
@@ -27,7 +29,7 @@ public class CustomWikiBlockPart extends WikiBlockPart {
         // Case-insensitive for both attribute name and value (using (?i) flag)
         return RegexMatcher.get("(?i)<pd4ml:page\\.break(?:[^>]*pageformat\\s*=\\s*[\"']?(?<format>rotate|reset)[\"']?[^>]*)?[^>]*>")
                 .replace(html, regexEngine -> {
-                    String pageFormat = StringUtils.getEmptyIfNull(regexEngine.group("format")).toLowerCase();
+                    String pageFormat = StringUtils.getEmptyIfNull(regexEngine.group("format")).toLowerCase(Locale.ROOT);
                     if ("rotate".equals(pageFormat)) {
                         return PAGE_BREAK_MARK + ROTATE_BELOW_MARK;
                     } else if ("reset".equals(pageFormat)) {
