@@ -4,6 +4,8 @@ import org.junit.jupiter.api.Test;
 
 import jakarta.ws.rs.WebApplicationException;
 
+import java.util.Locale;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 class ImageDensityTest {
@@ -17,6 +19,18 @@ class ImageDensityTest {
     }
 
     @Test
+    void testFromStringIgnoresDefaultLocale() {
+        Locale defaultLocale = Locale.getDefault();
+        try {
+            // Upper-cases "i" to a dotted capital "I", which no constant name contains.
+            Locale.setDefault(Locale.forLanguageTag("tr"));
+            assertEquals(ImageDensity.DPI_96, ImageDensity.fromString("dpi_96"));
+        } finally {
+            Locale.setDefault(defaultLocale);
+        }
+    }
+
+    @Test
     void testFromStringNull() {
         assertNull(ImageDensity.fromString(null), "Should return null for null input");
     }
@@ -26,7 +40,7 @@ class ImageDensityTest {
         String invalid = "dpi_999";
         WebApplicationException ex = assertThrows(WebApplicationException.class, () -> ImageDensity.fromString(invalid));
         assertEquals(400, ex.getResponse().getStatus());
-        assertTrue(ex.getResponse().getEntity().toString().contains(invalid));
+        assertEquals("Unsupported value for imageDensity parameter: " + invalid, ex.getResponse().getEntity());
     }
 
     @Test
