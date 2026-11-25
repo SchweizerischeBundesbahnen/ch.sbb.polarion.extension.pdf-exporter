@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, it, vi } from 'vitest';
 import { cleanup } from 'vitest-browser-react';
 import { snapshotFeature } from './visualHelpers';
 
@@ -96,7 +96,6 @@ const loaded = () =>
 describe.skipIf(!__PIXEL_REFERENCES__)('Style Packages page visual', () => {
   it('a style package loaded, every section on screen', async () => {
     await snapshotFeature('style-package', routes(), loaded, 'style-packages-loaded');
-    expect(true).toBe(true);
   });
 
   it('a style package which gives the first page a header and footer of its own', async () => {
@@ -106,6 +105,5 @@ describe.skipIf(!__PIXEL_REFERENCES__)('Style Packages page visual', () => {
       () => loaded() && document.querySelector('#first-page-header-footer-selector') !== null,
       'style-packages-first-page',
     );
-    expect(true).toBe(true);
   });
 });

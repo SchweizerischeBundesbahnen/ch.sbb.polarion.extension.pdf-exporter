@@ -44,6 +44,7 @@ import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -1500,7 +1501,7 @@ public class HtmlProcessor {
             } else {
                 // Generate new anchor and insert it into the span
                 // Include label in anchor id to avoid conflicts between different sequences (Figure, Table, etc.)
-                anchorId = label.toLowerCase() + "_generated_" + generatedAnchorIndex++;
+                anchorId = label.toLowerCase(Locale.ROOT) + "_generated_" + generatedAnchorIndex++;
                 Element newAnchor = new Element(HtmlTag.A);
                 newAnchor.attr("name", TABLE_OF_FIGURES_ANCHOR_ID_PREFIX + anchorId);
                 captionSpan.appendChild(newAnchor);

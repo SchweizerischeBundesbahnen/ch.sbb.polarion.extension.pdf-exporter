@@ -5,6 +5,8 @@ import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Locale;
+
 public enum Language {
     EN("English"),
     DE("Deutsch"),
@@ -24,6 +26,6 @@ public enum Language {
         if (StringUtils.isEmptyTrimmed(value)) {
             return EN;
         }
-        return valueOf(value.toUpperCase());
+        return valueOf(value.toUpperCase(Locale.ROOT));
     }
 }

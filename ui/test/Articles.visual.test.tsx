@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, it, vi } from 'vitest';
 import { cleanup } from 'vitest-browser-react';
 import { found, snapshotFeature } from './visualHelpers';
 
@@ -37,7 +37,6 @@ describe.skipIf(!__PIXEL_REFERENCES__)('Article pages visual', () => {
       found('article.markdown-body'),
       'disclaimer-loaded',
     );
-    expect(true).toBe(true);
   });
 
   it('user guide', async () => {
@@ -50,6 +49,5 @@ describe.skipIf(!__PIXEL_REFERENCES__)('Article pages visual', () => {
       found('article.markdown-body'),
       'user-guide-loaded',
     );
-    expect(true).toBe(true);
   });
 });

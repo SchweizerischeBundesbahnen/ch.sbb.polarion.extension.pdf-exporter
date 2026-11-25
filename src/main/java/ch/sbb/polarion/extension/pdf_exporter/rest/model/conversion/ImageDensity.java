@@ -7,6 +7,8 @@ import lombok.Getter;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
 
+import java.util.Locale;
+
 /**
  * Deprecated: weasyprint-service draws SVG as vector since 70.0.8 and ignores the image density.
  * The next major version removes it. The OpenAPI schema marks it, not {@code @Deprecated}: the REST
@@ -30,12 +32,12 @@ public enum ImageDensity {
     @JsonCreator
     public static ImageDensity fromString(String name) {
         try {
-            return (name != null) ? valueOf(name.toUpperCase()) : null;
+            return (name != null) ? valueOf(name.toUpperCase(Locale.ROOT)) : null;
         } catch (IllegalArgumentException e) {
             // Necessary to return correct HTTP error code by query parameters conversion
             throw new WebApplicationException(Response
                     .status(Response.Status.BAD_REQUEST)
-                    .entity("Unsupported value for paperSize parameter: " + name)
+                    .entity("Unsupported value for imageDensity parameter: " + name)
                     .build());
         }
     }

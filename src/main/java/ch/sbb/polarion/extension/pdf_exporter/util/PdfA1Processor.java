@@ -19,6 +19,7 @@ import org.jetbrains.annotations.VisibleForTesting;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -92,7 +93,7 @@ public class PdfA1Processor {
 
             // Log conformance level if specified
             if (conformance != null) {
-                logger.debug("Processing PDF/A-1" + conformance.toLowerCase() + " document");
+                logger.debug("Processing PDF/A-1" + conformance.toLowerCase(Locale.ROOT) + " document");
             }
 
             // Process all pages to remove transparency from images

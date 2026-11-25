@@ -313,7 +313,7 @@
 * **deps:** update dependency org.xhtmlrenderer:flying-saucer-core to v10.4.0 ([bf2e1a7](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/bf2e1a7e582ae51cba0c6168512073aeafdaf37a))
 * handle null spaceId in style package matching for Test Runs ([#936](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/936)) ([e3d6b84](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/e3d6b846e56376073139491fb295cc3adf5b86c9)), closes [#935](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/935)
 * handle suspect linked work items in HTML processing ([#928](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/928)) ([d3afb9a](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/d3afb9a01a5b0bd9dba4b1c32f7d0a159b9fdd11)), closes [#927](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/927)
-* remove [@import](https://github.com/import) rules from inline CSS in PDF export widget ([#938](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/938)) ([89f7e38](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/89f7e3847deb2973cfec32a26734b31a8de74815)), closes [#937](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/937)
+* remove `@import` rules from inline CSS in PDF export widget ([#938](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/938)) ([89f7e38](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/89f7e3847deb2973cfec32a26734b31a8de74815)), closes [#937](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/937)
 * update fullFonts option description for clarity ([#939](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/939)) ([c5702a1](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/c5702a1f4ea85e87d67a85d932a8835b6b51a29c)), closes [#875](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/875)
 
 ## [13.3.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v13.2.0...v13.3.0) (2026-07-16)
@@ -723,7 +723,7 @@
 
 ### Bug Fixes
 
-* all export jobs acessible for any user via /jobs endpoints ([#505](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/505)) ([6df031e](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/6df031edce9b46e30285f9107f1c498ecd3238b5)), closes [#504](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/504)
+* all export jobs accessible for any user via /jobs endpoints ([#505](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/505)) ([6df031e](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/6df031edce9b46e30285f9107f1c498ecd3238b5)), closes [#504](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/504)
 * bump weasyprint-service to 66.0.1 to support chinese characters ([#499](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/499)) ([d4cd65b](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/d4cd65b2ffa82634485ec72147eb6432a6f60d95)), closes [#491](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/491)
 
 ## [9.3.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v9.2.0...v9.3.0) (2025-08-22)
@@ -835,7 +835,7 @@
 
 ### Features
 
-* weasypring-service v65.0.0 support ([#410](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/410)) ([35c9b4c](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/35c9b4c63208fd95893e7d894cc3849a2ddba13a)), closes [#409](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/409)
+* weasyprint-service v65.0.0 support ([#410](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/410)) ([35c9b4c](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/35c9b4c63208fd95893e7d894cc3849a2ddba13a)), closes [#409](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/409)
 
 
 ### Bug Fixes
@@ -999,7 +999,7 @@
 
 ### Documentation
 
-* Add missing step for extension installation when restarting Polarion and clearify sections element a bit. ([#233](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/233)) ([55f2359](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/55f2359b3576f1e532e171864f67670bc0500915))
+* Add missing step for extension installation when restarting Polarion and clarify sections element a bit. ([#233](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/233)) ([55f2359](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/55f2359b3576f1e532e171864f67670bc0500915))
 * README.md updated with info about removed/obsolete configuration properties ([#260](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/260)) ([51fe1f2](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/commit/51fe1f23ac5529b882b35ca4b3c8030ae2a0a5f9)), closes [#259](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/issues/259)
 
 ## [7.2.0](https://github.com/SchweizerischeBundesbahnen/ch.sbb.polarion.extension.pdf-exporter/compare/v7.1.2...v7.2.0) (2024-10-02)

@@ -6,6 +6,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
 
+import java.util.Locale;
+
 /**
  * Enumeration of paper sizes <a href="https://developer.mozilla.org/en-US/docs/Web/CSS/@page/size">supported by CSS</a>
  */
@@ -25,7 +27,7 @@ public enum PaperSize {
     @JsonCreator
     public static PaperSize fromString(String name) {
         try {
-            return (name != null) ? valueOf(name.toUpperCase()) : null;
+            return (name != null) ? valueOf(name.toUpperCase(Locale.ROOT)) : null;
         } catch (IllegalArgumentException e) {
             // Necessary to return correct HTTP error code by query parameters conversion
             throw new WebApplicationException(Response
@@ -39,7 +41,7 @@ public enum PaperSize {
         return switch (this) {
             case JIS_B5 -> "JIS-B5";
             case JIS_B4 -> "JIS-B4";
-            case LETTER, LEGAL, LEDGER -> toString().toLowerCase();
+            case LETTER, LEGAL, LEDGER -> toString().toLowerCase(Locale.ROOT);
             default -> toString();
         };
     }

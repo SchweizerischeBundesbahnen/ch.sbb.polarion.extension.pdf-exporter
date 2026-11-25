@@ -44,6 +44,7 @@ import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -2042,6 +2043,25 @@ class HtmlProcessorTest {
             // Spaces and new lines are removed to exclude difference in space characters
             assertEquals(TestStringUtils.removeNonsensicalSymbols(validHtml), TestStringUtils.removeNonsensicalSymbols(fixedHtml));
         }
+    }
+
+    @Test
+    void generatedCaptionAnchorIgnoresDefaultLocale() {
+        Document document = JSoupUtils.parseHtml("""
+                <div id="polarion_wiki macro name=tof" data-sequence="Illustration"></div>
+                <p class="polarion-rte-caption-paragraph">Illustration <span data-sequence="Illustration" class="polarion-rte-caption">1</span> Title</p>
+                """);
+        Locale defaultLocale = Locale.getDefault();
+        try {
+            // Lower-cases "I" to a dotless "i".
+            Locale.setDefault(Locale.forLanguageTag("tr"));
+            processor.addTableOfFigures(document);
+        } finally {
+            Locale.setDefault(defaultLocale);
+        }
+
+        assertEquals("#dlecaption_illustration_generated_0", document.select("ul.tof > li > a").attr("href"));
+        assertEquals("dlecaption_illustration_generated_0", document.select("span.polarion-rte-caption > a").attr("name"));
     }
 
     @Test

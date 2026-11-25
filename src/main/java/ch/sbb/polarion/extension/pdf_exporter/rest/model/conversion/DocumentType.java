@@ -3,6 +3,8 @@ package ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import io.swagger.v3.oas.annotations.media.Schema;
 
+import java.util.Locale;
+
 @Schema(description = "Type of the document")
 public enum DocumentType {
     @Schema(description = "Baseline collection")
@@ -23,6 +25,6 @@ public enum DocumentType {
     @SuppressWarnings("unused")
     @JsonCreator
     public static DocumentType fromString(String name) {
-        return valueOf(name.toUpperCase());
+        return valueOf(name.toUpperCase(Locale.ROOT));
     }
 }

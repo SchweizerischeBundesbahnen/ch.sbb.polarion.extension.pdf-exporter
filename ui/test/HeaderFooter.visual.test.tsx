@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, it, vi } from 'vitest';
 import { cleanup } from 'vitest-browser-react';
 import { filled, snapshotFeature } from './visualHelpers';
 
@@ -55,6 +55,5 @@ describe.skipIf(!__PIXEL_REFERENCES__)('Header and footer page visual', () => {
       filled('#custom-headerLeft'),
       'header-footer-loaded',
     );
-    expect(true).toBe(true);
   });
 });

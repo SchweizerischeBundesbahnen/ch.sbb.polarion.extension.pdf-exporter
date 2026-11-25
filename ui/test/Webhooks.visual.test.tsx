@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, it, vi } from 'vitest';
 import { cleanup } from 'vitest-browser-react';
 import { found, snapshotFeature } from './visualHelpers';
 
@@ -41,6 +41,5 @@ describe.skipIf(!__PIXEL_REFERENCES__)('Webhooks page visual', () => {
       found('.webhooks-list .webhook-row'),
       'webhooks-loaded',
     );
-    expect(true).toBe(true);
   });
 });
