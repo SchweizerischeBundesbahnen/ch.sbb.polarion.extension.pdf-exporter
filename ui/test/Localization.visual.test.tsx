@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, it, vi } from 'vitest';
 import { cleanup } from 'vitest-browser-react';
 import { found, snapshotFeature } from './visualHelpers';
 
@@ -48,6 +48,5 @@ describe.skipIf(!__PIXEL_REFERENCES__)('Localization page visual', () => {
       found('.translations-table tbody tr'),
       'localization-loaded',
     );
-    expect(true).toBe(true);
   });
 });
