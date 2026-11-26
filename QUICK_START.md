@@ -29,11 +29,7 @@ Start Polarion.
 
 ## Configure PDF Exporter for Live Reports
 
-On admin pane of Default Repository select menu Configuration Properties, add following line and save your changes:
-
-```properties
-scriptInjection.mainHead=<script src="/polarion/pdf-exporter/js/starter.js"></script>
-```
+Nothing to configure: the "Export to PDF" button appears in the Live Report toolbar by itself, once Polarion has been restarted after the installation. To switch it off, or to switch off the document editor or Classic Wiki button, use the Appearance administration page — see [Configuration](CONFIGURATION.md).
 
 ## Configure PDF Exporter for Live Documents
 

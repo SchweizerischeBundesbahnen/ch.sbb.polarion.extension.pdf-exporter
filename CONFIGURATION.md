@@ -10,10 +10,8 @@ overview and installation, the [quick start page](QUICK_START.md) for the most i
   - [WeasyPrint configuration](#weasyprint-configuration)
   - [WeasyPrint API key](#weasyprint-api-key)
   - [PDF exporter extension to appear on a Document's properties pane](#pdf-exporter-extension-to-appear-on-a-documents-properties-pane)
-  - [PDF Exporter view to open via button in toolbar](#pdf-exporter-view-to-open-via-button-in-toolbar)
-    - [Deprecated configuration](#deprecated-configuration)
-  - [PDF Exporter view to open in Live Reports](#pdf-exporter-view-to-open-in-live-reports)
-  - [PDF Exporter view to open in Classic Wiki pages](#pdf-exporter-view-to-open-in-classic-wiki-pages)
+  - ["Export to PDF" toolbar buttons](#export-to-pdf-toolbar-buttons)
+    - [Removed in v14.0.0: the scriptInjection configuration](#removed-in-v1400-the-scriptinjection-configuration)
   - [Configuring logs](#configuring-logs)
   - [Enabling CORS](#enabling-cors)
   - [Enabling webhooks](#enabling-webhooks)
@@ -100,90 +98,39 @@ Five failures are reported apart, since each one has a different fix:
    ```
 6. Save changes by clicking 💾 Save
 
-### PDF Exporter view to open via button in toolbar
+### "Export to PDF" toolbar buttons
 
-Alternatively you can configure PDF Exporter such a way that a button to open the PDF Exporter view appears in the document editor's toolbar.
+The extension adds its "Export to PDF" button to three Polarion toolbars by itself: the document editor's toolbar, the Live Report toolbar (the one behind "Expand Tools") and the Classic Wiki toolbar. No `scriptInjection` property is needed — the plugin registers its script with Polarion directly. The extension registry is read at startup, so the buttons appear after the first Polarion restart which follows the installation.
 
-1. Open "Default Repository".
-2. On the top of its navigation pane click ⚙ (Actions) ➙ 🔧 Administration. Global administration page will be opened.
-3. On the administration's navigation pane select Configuration Properties.
-4. In editor of opened page add following line:
-   ```properties
-   scriptInjection.dleEditorHead=<script src="/polarion/pdf-exporter/js/dle-toolbar.js"></script>
-   ```
-   This adds the button into Polarion's native document toolbar. The button is re-injected automatically when Polarion re-renders the toolbar (for example when the document is saved), so it stays in place.
-5. Save changes by clicking 💾 Save
+Which of the three buttons are displayed is configured on the **Appearance** administration page. All three are displayed by default.
 
-> [!TIP]
-> **Adding more than one toolbar button.** `scriptInjection.dleEditorHead` is a single Polarion-wide property that holds exactly one value. To show several buttons in the document editor (for example the PDF, DOCX and StrictDoc exporters together, or this button alongside any other injected script), do **not** add separate `scriptInjection.dleEditorHead=` lines — the last one overrides the rest. Concatenate all the `<script>` tags into that single value instead:
-> ```properties
-> scriptInjection.dleEditorHead=<script src="/polarion/pdf-exporter/js/dle-toolbar.js"></script><script src="/polarion/docx-exporter/js/dle-toolbar.js"></script><script src="/polarion/strictdoc-exporter/js/dle-toolbar.js"></script>
-> ```
+1. Open "Default Repository", or a project to configure that project alone.
+2. On the top of its navigation pane click ⚙ (Actions) ➙ 🔧 Administration.
+3. On the administration's navigation pane select PDF Export ➙ Appearance.
+4. Tick or untick a button and click 💾 Save.
 
-#### Deprecated configuration
+What you save in the Default Repository applies to every project which has no configuration of its own. A project administrator opens the same page inside the project to override it, and returns to the global configuration by ticking "Use the configuration from the Default Repository" and saving.
 
-The explicit `PdfExporterStarter.injectToolbar(...)` configuration still works but is **deprecated** in favor of the single-tag `dle-toolbar.js` form above (removal is planned for a future major version):
+Polarion collapses the Live Report and Classic Wiki toolbars again on every page open. Tick "Keep the tools toolbar expanded" for either of them and the extension expands it for you, so the button is visible without a click.
 
-```properties
-# Button in Polarion's native document toolbar — equivalent to the recommended dle-toolbar.js form above.
-scriptInjection.dleEditorHead=<script src="/polarion/pdf-exporter/js/starter.js"></script><script>PdfExporterStarter.injectToolbar({alternate: true});</script>
-```
-```properties
-# A separate toolbar with the button placed above the document editing area.
-scriptInjection.dleEditorHead=<script src="/polarion/pdf-exporter/js/starter.js"></script><script>PdfExporterStarter.injectToolbar();</script>
-```
+A button which is switched off is not drawn at all. The export itself stays available through the Document Properties side panel, the report widgets and the REST API. Who may export is a separate setting — see the Authorization administration page.
 
-### PDF Exporter view to open in Live Reports
-
-Live Reports also can be converted to PDF with help of this extension.
-
-First of all you need to inject appropriate JavaScript code into Polarion:
-
-1. Open "Default Repository".
-2. On the top of its navigation pane click ⚙ (Actions) ➙ 🔧 Administration. Global administration page will be opened.
-3. On the administration's navigation pane select Configuration Properties.
-4. In editor of opened page add following line:
-   ```properties
-   scriptInjection.mainHead=<script src="/polarion/pdf-exporter/js/live-reports.js"></script>
-   ```
-5. Save changes by clicking 💾 Save
-
-> [!NOTE]
-> `scriptInjection.mainHead` is a single Polarion-wide property that holds exactly one value. If you also inject other scripts through it, concatenate all the `<script>` tags into that one value rather than adding separate `scriptInjection.mainHead=` lines — the last one overrides the rest.
-
-The explicit `starter.js` form still works but is **deprecated** in favor of the single-tag `live-reports.js` form above (removal is planned for a future major version):
-
-```properties
-scriptInjection.mainHead=<script src="/polarion/pdf-exporter/js/starter.js"></script>
-```
-
-With the script injected, open a project and the Live Report you wish to export, then click "Expand Tools" on top of the page. An "Export to PDF" button appears in the report's toolbar (view mode only) — click it to open the PDF Exporter view in a popup and proceed with exporting the report. Be aware that in report's context limited set of properties are available for configuration in PDF popup, the rest of them are relevant only in Live Document context.
+With the Live Report button displayed, open a project and the Live Report you wish to export, then click "Expand Tools" on top of the page. An "Export to PDF" button appears in the report's toolbar (view mode only) — click it to open the PDF Exporter view in a popup and proceed with exporting the report. Be aware that in report's context limited set of properties are available for configuration in PDF popup, the rest of them are relevant only in Live Document context.
 
 If a Bulk PDF Export widget on the report has rows selected, the button first asks whether to export the report or the selected items. See [Bulk PDF Export](USER_GUIDE.md#bulk-pdf-export) in the user guide.
 
-Polarion collapses the report toolbar again on every page open. To keep it always expanded (so the "Export to PDF" button is permanently visible), opt in with the `data-expand-tools` attribute:
-
-```properties
-scriptInjection.mainHead=<script src="/polarion/pdf-exporter/js/live-reports.js" data-expand-tools="true"></script>
-```
-
 Alternatively (the pre-v13.5 way, still supported), the "Export to PDF Button" widget can be embedded into the report itself: click "Edit" in the report's toolbar, add an empty region on top of the report, place the cursor there, choose "PDF Export" tag on "Widgets" sidebar on right hand side of the page, find "Export to PDF Button" widget there and click it to add to the report. Then save the report clicking 💾 in a toolbar and return to view mode clicking "Back". The widget's button opens the same popup as the toolbar button.
 
-### PDF Exporter view to open in Classic Wiki pages
+A Classic Wiki page works the same way: open it, click "Expand Tools", and the button appears in the page's toolbar.
 
-Classic Wiki pages can be converted to PDF too. Inject the `classic-wiki.js` script the same way as for Live Reports, in step 4 above:
+#### Removed in v14.0.0: the scriptInjection configuration
 
-```properties
-scriptInjection.mainHead=<script src="/polarion/pdf-exporter/js/classic-wiki.js"></script>
-```
+Until v14.0.0 each button was switched on by pasting a `<script>` tag into Configuration Properties, and the scripts it named were `js/dle-toolbar.js`, `js/live-reports.js`, `js/classic-wiki.js` and `js/starter.js`. Those scripts no longer exist, and neither does the `PdfExporterStarter.injectToolbar()` global.
 
-Open a Classic Wiki page and click "Expand Tools" on top of the page. An "Export to PDF" button appears in the page's toolbar. It opens the same popup as the Live Report button.
+Delete the `scriptInjection.dleEditorHead` and `scriptInjection.mainHead` lines that name them. A line left behind makes the browser request a file that is not there, which shows up as a 404 in the browser console on every page load and nowhere else: the buttons themselves come from the extension and are not affected.
 
-To keep the wiki toolbar always expanded, add `data-expand-tools="true"`, as for Live Reports. Both scripts share the one `scriptInjection.mainHead` value:
-
-```properties
-scriptInjection.mainHead=<script src="/polarion/pdf-exporter/js/live-reports.js" data-expand-tools="true"></script><script src="/polarion/pdf-exporter/js/classic-wiki.js" data-expand-tools="true"></script>
-```
+> [!NOTE]
+> `scriptInjection.dleEditorHead` and `scriptInjection.mainHead` are single Polarion-wide properties which hold exactly one value each, so delete only the `<script>` tags of this extension from them. A tag that belongs to another extension stays, and separate `scriptInjection.mainHead=` lines do not add up — the last one overrides the rest.
 
 ### Configuring logs
 

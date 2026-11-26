@@ -73,6 +73,7 @@ describe('App router', () => {
       '?feature=webhooks',
       '?feature=style-package',
       '?feature=style-package-weights',
+      '?feature=appearance',
       '?feature=authorization',
       // Last, and the only entries no administration page points at: the three development harnesses, for
       // the report page widget, the document editor's export panel and the toolbar export dialog

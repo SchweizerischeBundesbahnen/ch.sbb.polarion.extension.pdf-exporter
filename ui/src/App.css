@@ -262,6 +262,7 @@
 /* --- Localization ------------------------------------------------------------------------------ */
 
 .localization-page:disabled,
+.appearance-options:disabled,
 .webhooks-page:disabled {
   opacity: 0.5;
 }
@@ -448,4 +449,33 @@
   padding: 16px;
   border: 1px dashed #c9c9c9;
   background: #fff;
+}
+
+/* --- Appearance -------------------------------------------------------------------------------- */
+
+/* A borderless fieldset: it is here to disable the whole group while the project inherits the global
+   configuration, not to draw a frame around it. */
+.appearance-options {
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+
+/* One option per line. The selector is deliberately longer than the markup needs: RSP lays an admin
+   page's checkbox label out as `:is(... .standard-admin-page label:has(input[type="checkbox"]) ...)`,
+   and anything shorter than this loses on specificity and leaves the options side by side. */
+.standard-admin-page .appearance-page label:has(input[type='checkbox']) {
+  display: flex;
+  width: fit-content;
+  margin: 4px 0;
+}
+
+/* Indented under the display checkbox it depends on. */
+.standard-admin-page .appearance-page label.appearance-sub-option:has(input[type='checkbox']) {
+  margin-left: 20px;
+}
+
+.standard-admin-page .appearance-page label.appearance-inherit:has(input[type='checkbox']) {
+  margin-bottom: 10px;
+  font-weight: 600;
 }

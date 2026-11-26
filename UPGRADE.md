@@ -3,6 +3,21 @@
 Version-specific upgrade notes for the PDF Exporter extension. See the [README](README.md) for
 installation and the [configuration reference](CONFIGURATION.md) for all settings.
 
+## Upgrade from version 13.x.x to 14.0.0
+
+### The toolbar buttons are configured on the Appearance page, not in Configuration Properties
+
+Until now, every "Export to PDF" toolbar button had to be switched on by pasting a `scriptInjection.*`
+line into the administrator's **Configuration Properties**, one `<script>` tag per toolbar. That is
+gone. The extension puts its button on the document editor, Live Report and Classic Wiki toolbars by
+itself, through a Polarion extension point, and the new **Appearance** administration page says which
+of the three are drawn.
+
+Delete the `scriptInjection.dleEditorHead` and `scriptInjection.mainHead` lines that name
+`/polarion/pdf-exporter/js/...` from Configuration Properties, globally and in every project that has
+its own. Keep any `<script>` tag in those properties that belongs to another extension: both properties
+hold exactly one value, so delete only our tags, not the whole line.
+
 ## Upgrade from version 13.13.x to 13.14.0
 
 ### weasyprint-service 70.0.8 or later

@@ -27,16 +27,6 @@ public class ConfigurationApiController extends ConfigurationInternalController 
     }
 
     @Override
-    public @NotNull ConfigurationStatus checkDleToolbarConfig() {
-        return polarionService.callPrivileged(super::checkDleToolbarConfig);
-    }
-
-    @Override
-    public @NotNull ConfigurationStatus checkLiveReportConfig() {
-        return polarionService.callPrivileged(super::checkLiveReportConfig);
-    }
-
-    @Override
     public @NotNull ConfigurationStatus checkCORSConfig() {
         return polarionService.callPrivileged(super::checkCORSConfig);
     }

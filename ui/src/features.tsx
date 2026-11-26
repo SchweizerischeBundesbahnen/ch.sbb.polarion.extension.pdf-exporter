@@ -1,6 +1,7 @@
 import { DocPage, type Feature as RoutedFeature, findFeature as findIn } from '@sbb-polarion/react-sbb-polarion';
 import { DOC_ORDER } from './docs/manifest';
 import About from './pages/About';
+import Appearance from './pages/Appearance';
 import Authorization from './pages/Authorization';
 import CoverPage from './pages/CoverPage';
 import Css from './pages/Css';
@@ -113,6 +114,12 @@ export const FEATURES: Feature[] = [
     label: 'Style Package Weights',
     description: 'Order the style packages; the top one is preselected on the export panel.',
     component: StylePackageWeights,
+  },
+  {
+    id: 'appearance',
+    label: 'Appearance',
+    description: 'Which "Export to PDF" toolbar buttons are displayed.',
+    component: Appearance,
   },
   {
     id: 'authorization',

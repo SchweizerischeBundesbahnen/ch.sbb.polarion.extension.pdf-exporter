@@ -3,6 +3,7 @@ package ch.sbb.polarion.extension.pdf_exporter;
 import ch.sbb.polarion.extension.generic.GenericBundleActivator;
 import ch.sbb.polarion.extension.generic.settings.NamedSettingsRegistry;
 import ch.sbb.polarion.extension.pdf_exporter.converter.PdfConverterJobsService;
+import ch.sbb.polarion.extension.pdf_exporter.settings.AppearanceSettings;
 import ch.sbb.polarion.extension.pdf_exporter.settings.AuthorizationSettings;
 import ch.sbb.polarion.extension.pdf_exporter.settings.CoverPageSettings;
 import ch.sbb.polarion.extension.pdf_exporter.settings.CssSettings;
@@ -51,6 +52,7 @@ public class ExtensionBundleActivator extends GenericBundleActivator {
                             new WebhooksSettings(),
                             new FileNameTemplateSettings(),
                             new AuthorizationSettings(),
+                            new AppearanceSettings(),
                             new StylePackageVisibilitySettings()
                     )
             );

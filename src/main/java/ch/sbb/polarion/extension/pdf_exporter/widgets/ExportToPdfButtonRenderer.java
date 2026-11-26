@@ -14,7 +14,8 @@ import org.jetbrains.annotations.VisibleForTesting;
  * <p>
  * The dialog is a React module of the {@code pdf-exporter-app} webapp, imported on click. It mounts itself into a
  * shadow root of its own, so nothing else has to be on the page for it - unlike its predecessor, which needed the
- * micromodal library and the generic control stylesheets injected by {@code js/live-reports.js} first.
+ * micromodal library and the generic control stylesheets to have been injected into the page first, by a
+ * scriptInjection script the administrator had to configure.
  */
 public class ExportToPdfButtonRenderer extends AbstractWidgetRenderer {
 

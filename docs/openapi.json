@@ -5,6 +5,37 @@
     "version": "v1"
   },
   "paths": {
+    "/api/appearance": {
+      "get": {
+        "operationId": "getToolbarAppearance",
+        "parameters": [
+          {
+            "description": "Project to read the appearance of, empty for the global scope",
+            "in": "query",
+            "name": "projectId",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ToolbarAppearance"
+                }
+              }
+            },
+            "description": "Toolbar appearance"
+          }
+        },
+        "summary": "Gets which toolbar buttons to display in the given project, and whether the current user may export",
+        "tags": [
+          "Utility resources"
+        ]
+      }
+    },
     "/api/bulk-processing/status": {
       "get": {
         "operationId": "getBulkProcessingServiceStatus",
@@ -159,27 +190,6 @@
         ]
       }
     },
-    "/api/configuration/dle-toolbar-config": {
-      "get": {
-        "operationId": "checkDleToolbarConfig",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ConfigurationStatus"
-                }
-              }
-            },
-            "description": "Successfully retrieved DLE Toolbar configuration"
-          }
-        },
-        "summary": "Checks DLE Toolbar configuration",
-        "tags": [
-          "Configuration status"
-        ]
-      }
-    },
     "/api/configuration/document-properties-pane-config": {
       "get": {
         "operationId": "checkDocumentPropertiesPaneConfig",
@@ -206,27 +216,6 @@
           }
         },
         "summary": "Checks document properties pane configuration",
-        "tags": [
-          "Configuration status"
-        ]
-      }
-    },
-    "/api/configuration/live-report-config": {
-      "get": {
-        "operationId": "checkLiveReportConfig",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ConfigurationStatus"
-                }
-              }
-            },
-            "description": "Successfully retrieved Live Report configuration"
-          }
-        },
-        "summary": "Checks Live Report configuration",
         "tags": [
           "Configuration status"
         ]
@@ -2687,6 +2676,29 @@
           },
           "revision": {
             "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "ToolbarAppearance": {
+        "properties": {
+          "classicWikiAutoExpandTools": {
+            "type": "boolean"
+          },
+          "classicWikiButton": {
+            "type": "boolean"
+          },
+          "liveDocButton": {
+            "type": "boolean"
+          },
+          "liveReportAutoExpandTools": {
+            "type": "boolean"
+          },
+          "liveReportButton": {
+            "type": "boolean"
+          },
+          "permitted": {
+            "type": "boolean"
           }
         },
         "type": "object"

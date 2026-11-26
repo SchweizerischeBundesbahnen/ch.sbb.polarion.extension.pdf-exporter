@@ -131,6 +131,15 @@
                   projectGroupScope="false"
                   repositoryScope="true"/>
 
+        <extender id="appearance"
+                  name="Appearance"
+                  parentNodeId="pdf-export"
+                  iconUrl="/polarion/pdf-exporter-app/ui/images/menu/16x16/appearance.svg"
+                  pageUrl="/polarion/pdf-exporter-app/ui/app/index.html?feature=appearance&amp;embedded=true&amp;scope=$scope$"
+                  projectScope="true"
+                  projectGroupScope="false"
+                  repositoryScope="true"/>
+
         <extender id="authorization"
                   name="Authorization"
                   parentNodeId="pdf-export"
