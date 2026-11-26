@@ -44,6 +44,12 @@
     const LIVE_REPORT_MARKER = 'pdf-exporter-rp-toolbar-injected';
     const WIKI_MARKER = 'pdf-exporter-wiki-toolbar-injected';
 
+    // The position of these buttons among the buttons other extensions put into the same toolbar row.
+    // The engine sorts by this number, and on equal numbers by whichever button injects first, which
+    // changes between page loads. So each extension on the engine keeps a number of its own:
+    // pdf-exporter 10, docx-exporter 20, the next one 30.
+    const TOOLBAR_ORDER = 10;
+
     const WIKI_VIEW_PATH = '/polarion/wiki/bin/view/';
     // The hash of a wiki page, in a project, in the global repository or in a baseline. Polarion
     // renders plan and test run pages of the Classic Wiki kind with the same toolbar, but their hash
@@ -307,7 +313,7 @@
                         .catch(console.error);`
                 }),
                 target: 'dleEditor',
-                order: 0,
+                order: TOOLBAR_ORDER,
                 // Already answered by the same request the appearance came from, so the engine gets a
                 // function rather than a URL it would call a second time. Fail-closed is kept: a
                 // request which did not answer never reaches this point, and the button is not built.
@@ -321,7 +327,7 @@
                 markerId: LIVE_REPORT_MARKER,
                 html: LIVE_REPORT_HTML,
                 target: 'richPagePreview',
-                order: 0
+                order: TOOLBAR_ORDER
             });
             liveReportStarter.injectToolbar();
             if (appearance.liveReportAutoExpandTools) {

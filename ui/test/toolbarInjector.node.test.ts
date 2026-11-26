@@ -116,6 +116,15 @@ describe('toolbar-injector.js', () => {
     expect(configFor(LIVE_REPORT_MARKER)?.html).toContain("documentType: 'LIVE_REPORT'");
   });
 
+  it('takes a toolbar position of its own, so the buttons of other extensions do not swap places with them', async () => {
+    await load();
+
+    // On equal numbers the engine orders by whichever button injects first, which differs per page load.
+    // pdf-exporter takes 10; docx-exporter 20.
+    expect(configFor(LIVE_DOC_MARKER)?.order).toBe(10);
+    expect(configFor(LIVE_REPORT_MARKER)?.order).toBe(10);
+  });
+
   it('answers the permission check from the same response the appearance came from', async () => {
     appearances.elibrary = { ...ALL_ON, permitted: false };
     await load();
