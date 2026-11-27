@@ -412,14 +412,21 @@ describe('Bulk export run', () => {
   it('expands a collection into its member documents before merging', async () => {
     collectionDocuments = [
       { projectId: 'elibrary', spaceId: 'Requirements', documentName: 'Specification', documentType: 'LIVE_DOC' },
-      { projectId: 'elibrary', spaceId: 'Design', documentName: 'Overview', documentType: 'LIVE_DOC' },
+      { projectId: 'drivepilot', spaceId: 'Design', documentName: 'Overview', documentType: 'LIVE_DOC' },
     ];
     await startExport(withItems([collectionItem('C1', 'Release 1.0')]), [0], async () => {}, {});
 
     await vi.waitFor(() => expect(mergeConversions.length).toBe(1));
     expect(mergeConversions[0].request).toHaveLength(2);
-    expect(mergeConversions[0].request[0]).toMatchObject({ locationPath: 'Requirements/Specification' });
-    expect(mergeConversions[0].request[1]).toMatchObject({ locationPath: 'Design/Overview' });
+    // Each member is rendered inside the collection, which a document of another project names by project
+    expect(mergeConversions[0].request[0]).toMatchObject({
+      locationPath: 'Requirements/Specification',
+      collection: 'C1',
+    });
+    expect(mergeConversions[0].request[1]).toMatchObject({
+      locationPath: 'Design/Overview',
+      collection: 'elibrary/C1',
+    });
   });
 
   it('cancels the backend merge job when the user stops, and keeps the interruption', async () => {

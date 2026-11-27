@@ -146,6 +146,25 @@ describe('loading the panel data', () => {
     expect(url).toContain('projectId=elibrary');
     expect(url).toContain('documentName=Cross+Link+Issue');
     expect(url).toContain('revision=4711');
+    expect(url).not.toContain('collection=');
+  });
+
+  it('names the collection the document was opened from, which decides its revision', async () => {
+    const fetchMock = installFetchMock(baseRoutes());
+
+    await loadDocumentLanguage(sendRequest, { ...SAMPLE_DOCUMENT, collection: 'drivepilot/3' });
+
+    const url = String(fetchMock.mock.calls.find(([called]) => String(called).includes('document-language'))![0]);
+    expect(url).toContain('collection=drivepilot%2F3');
+  });
+
+  it('asks for the file name of the document of the collection', async () => {
+    const fetchMock = installFetchMock(baseRoutes());
+
+    await loadPanelData(sendRequest, { ...SAMPLE_DOCUMENT, collection: 'drivepilot/3' });
+
+    const call = fetchMock.mock.calls.find(([url]) => String(url).includes('export-filename'))!;
+    expect(JSON.parse(String(call[1]!.body))).toMatchObject({ collection: 'drivepilot/3' });
   });
 
   it('reports a document with no language as having none', async () => {
@@ -284,7 +303,12 @@ describe('loading the export popup data', () => {
     await loadPopupData(
       sendRequest,
       request({
-        document: { ...SAMPLE_DOCUMENT, baselineRevision: '6749', urlQueryParameters: { revision: '112' } },
+        document: {
+          ...SAMPLE_DOCUMENT,
+          baselineRevision: '6749',
+          collection: '42',
+          urlQueryParameters: { revision: '112' },
+        },
       }),
     );
 
@@ -294,6 +318,7 @@ describe('loading the export popup data', () => {
       projectId: 'elibrary',
       locationPath: 'Default Space/Cross Link Issue',
       baselineRevision: '6749',
+      collection: '42',
       urlQueryParameters: { revision: '112' },
     });
   });

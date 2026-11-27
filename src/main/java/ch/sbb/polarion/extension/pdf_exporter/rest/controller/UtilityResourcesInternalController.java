@@ -4,11 +4,16 @@ import ch.sbb.polarion.extension.pdf_exporter.model.BulkProcessingServiceStatus;
 import ch.sbb.polarion.extension.pdf_exporter.model.WebhooksStatus;
 import ch.sbb.polarion.extension.pdf_exporter.properties.PdfExporterExtensionConfiguration;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.ModelObjectProvider;
 import ch.sbb.polarion.extension.pdf_exporter.service.PdfExporterPolarionService;
+import ch.sbb.polarion.extension.generic.service.PolarionCollectionExecutor;
 import ch.sbb.polarion.extension.pdf_exporter.util.DocumentFileNameHelper;
 import ch.sbb.polarion.extension.pdf_exporter.util.EnumValuesProvider;
+import com.polarion.alm.shared.api.model.document.DocumentReference;
+import com.polarion.alm.shared.api.transaction.TransactionalExecutor;
 import com.polarion.alm.tracker.model.IModule;
 import com.polarion.alm.tracker.model.ITrackerProject;
+import com.polarion.core.util.StringUtils;
 import com.polarion.platform.persistence.IEnumOption;
 import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
@@ -19,6 +24,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+
+import org.jetbrains.annotations.Nullable;
 
 import jakarta.inject.Singleton;
 import jakarta.ws.rs.Consumes;
@@ -86,10 +93,26 @@ public class UtilityResourcesInternalController {
             }
     )
     public String getDocumentLanguage(@QueryParam("projectId") String projectId, @QueryParam("spaceId") String spaceId,
-                                      @QueryParam("documentName") String documentName, @QueryParam("revision") String revision) {
-        IModule module = pdfExporterPolarionService.getModule(projectId, spaceId, documentName, revision);
+                                      @QueryParam("documentName") String documentName, @QueryParam("revision") String revision,
+                                      @Parameter(description = "The collection the document is opened from: its id, preceded by its project and a slash where that is not the project of the document; decides the revision where none is given")
+                                      @QueryParam("collection") String collection) {
+        String documentRevision = revision != null ? revision : revisionInCollection(projectId, spaceId, documentName, collection);
+        IModule module = pdfExporterPolarionService.getModule(projectId, spaceId, documentName, documentRevision);
         Object documentLanguageField = module.getCustomField(DOC_LANGUAGE_FIELD);
         return (documentLanguageField instanceof IEnumOption option) ? option.getId() : null;
+    }
+
+    /**
+     * The revision a collection holds the document at, which the language has to be read from as well: the export
+     * dialog offers the language of the document it is about to export, not the one of its HEAD.
+     */
+    private @Nullable String revisionInCollection(String projectId, String spaceId, String documentName, @Nullable String collection) {
+        if (StringUtils.isEmpty(collection)) {
+            return null;
+        }
+        DocumentReference document = DocumentReference.fromPath(ModelObjectProvider.createPath(projectId, spaceId + "/" + documentName));
+        return TransactionalExecutor.executeSafelyInReadOnlyTransaction(
+                transaction -> PolarionCollectionExecutor.resolveDocument(projectId, collection, document, transaction).requestedRevision());
     }
 
     @GET

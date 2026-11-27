@@ -22,8 +22,8 @@ public class UtilityResourcesApiController extends UtilityResourcesInternalContr
     }
 
     @Override
-    public String getDocumentLanguage(String projectId, String spaceId, String documentName, String revision) {
-        return polarionService.callPrivileged(() -> super.getDocumentLanguage(projectId, spaceId, documentName, revision));
+    public String getDocumentLanguage(String projectId, String spaceId, String documentName, String revision, String collection) {
+        return polarionService.callPrivileged(() -> super.getDocumentLanguage(projectId, spaceId, documentName, revision, collection));
     }
 
     @Override

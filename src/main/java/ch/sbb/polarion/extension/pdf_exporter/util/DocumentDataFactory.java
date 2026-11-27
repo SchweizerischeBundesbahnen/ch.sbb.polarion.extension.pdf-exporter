@@ -1,12 +1,14 @@
 package ch.sbb.polarion.extension.pdf_exporter.util;
 
 import ch.sbb.polarion.extension.generic.service.PolarionBaselineExecutor;
+import ch.sbb.polarion.extension.generic.service.PolarionCollectionExecutor;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.DocumentData;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.ModelObjectProvider;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.documents.UniqueObjectConverter;
 import com.polarion.alm.projects.model.IUniqueObject;
 import com.polarion.alm.shared.api.model.ModelObject;
+import com.polarion.alm.shared.api.transaction.ReadOnlyTransaction;
 import com.polarion.alm.shared.api.transaction.TransactionalExecutor;
 import lombok.experimental.UtilityClass;
 import org.jetbrains.annotations.NotNull;
@@ -18,16 +20,19 @@ public class DocumentDataFactory {
 
     public @NotNull <T extends IUniqueObject> DocumentData<T> getDocumentData(@NotNull ExportParams exportParams, boolean withContent) {
         return Objects.requireNonNull(TransactionalExecutor.executeSafelyInReadOnlyTransaction(
-                transaction -> PolarionBaselineExecutor.executeInBaseline(exportParams.getBaselineRevision(), transaction, () -> {
+                transaction -> PolarionCollectionExecutor.executeInCollection(exportParams.getProjectId(), exportParams.getCollection(), transaction,
+                        () -> PolarionBaselineExecutor.executeInBaseline(exportParams.getBaselineRevision(), transaction,
+                                () -> DocumentDataFactory.<T>readDocumentData(exportParams, withContent, transaction)))));
+    }
 
-                    ModelObject modelObject = new ModelObjectProvider(exportParams)
-                            .getModelObject(transaction);
+    private <T extends IUniqueObject> DocumentData<T> readDocumentData(@NotNull ExportParams exportParams, boolean withContent, @NotNull ReadOnlyTransaction transaction) {
+        ModelObject modelObject = new ModelObjectProvider(exportParams)
+                .getModelObject(transaction);
 
-                    return new UniqueObjectConverter(modelObject)
-                            .withExportParams(exportParams)
-                            .withContent(withContent)
-                            .toDocumentData(transaction);
-                })));
+        return new UniqueObjectConverter(modelObject)
+                .withExportParams(exportParams)
+                .withContent(withContent)
+                .toDocumentData(transaction);
     }
 
 }

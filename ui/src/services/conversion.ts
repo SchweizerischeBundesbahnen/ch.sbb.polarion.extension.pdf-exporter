@@ -329,6 +329,18 @@ export interface CollectionDocument {
   fileName?: string | null;
 }
 
+/**
+ * How a collection is named to the server for one of its documents: its id, preceded by its project and a
+ * slash where the document lives in another project. A document exported as part of its collection is
+ * rendered the way the collection shows it - a linked work item at the revision the collection holds its
+ * document at, and none of an item whose document the collection does not contain.
+ */
+export const collectionOfMember = (
+  member: Pick<CollectionDocument, 'projectId'>,
+  collectionProjectId: string,
+  collectionId: string,
+): string => (member.projectId === collectionProjectId ? collectionId : `${collectionProjectId}/${collectionId}`);
+
 /** Lists the documents of a baseline collection without converting them - what a merge run expands into. */
 export async function listCollectionDocuments(
   remote: Remote,
@@ -388,6 +400,7 @@ export async function convertCollectionDocuments(
           projectId: document.projectId,
           locationPath: `${document.spaceId}/${document.documentName}`,
           revision: document.revision,
+          collection: collectionOfMember(document, options.projectId, options.collectionId),
           documentType: document.documentType,
         }),
         options.pollInterval,
