@@ -100,7 +100,7 @@ Five failures are reported apart, since each one has a different fix:
 
 ### "Export to PDF" toolbar buttons
 
-The extension adds its "Export to PDF" button to three Polarion toolbars by itself: the document editor's toolbar, the Live Report toolbar (the one behind "Expand Tools") and the Classic Wiki toolbar. No `scriptInjection` property is needed — the plugin registers its script with Polarion directly. The extension registry is read at startup, so the buttons appear after the first Polarion restart which follows the installation.
+The extension adds its "Export to PDF" button to three Polarion toolbars by itself: the document editor's toolbar, the Live Report toolbar (the one behind "Expand Tools") and the Classic Wiki toolbar. No `scriptInjection` property is needed. The plugin registers its script with Polarion directly. The extension registry is read at startup, so the buttons appear after the first Polarion restart which follows the installation.
 
 Which of the three buttons are displayed is configured on the **Appearance** administration page. All three are displayed by default.
 
@@ -113,7 +113,7 @@ What you save in the Default Repository applies to every project which has no co
 
 Polarion collapses the Live Report and Classic Wiki toolbars again on every page open. Tick "Keep the tools toolbar expanded" for either of them and the extension expands it for you, so the button is visible without a click.
 
-A button which is switched off is not drawn at all. The export itself stays available through the Document Properties side panel, the report widgets and the REST API. Who may export is a separate setting — see the Authorization administration page.
+A button which is switched off is not drawn at all. The export itself stays available through the Document Properties side panel, the report widgets and the REST API. Who may export is a separate setting on the Authorization administration page.
 
 With the Live Report button displayed, open a project and the Live Report you wish to export, then click "Expand Tools" on top of the page. An "Export to PDF" button appears in the report's toolbar (view mode only) — click it to open the PDF Exporter view in a popup and proceed with exporting the report. Be aware that in report's context limited set of properties are available for configuration in PDF popup, the rest of them are relevant only in Live Document context.
 
@@ -130,7 +130,7 @@ Until v14.0.0 each button was switched on by pasting a `<script>` tag into Confi
 Delete the `scriptInjection.dleEditorHead` and `scriptInjection.mainHead` lines that name them. A line left behind makes the browser request a file that is not there, which shows up as a 404 in the browser console on every page load and nowhere else: the buttons themselves come from the extension and are not affected.
 
 > [!NOTE]
-> `scriptInjection.dleEditorHead` and `scriptInjection.mainHead` are single Polarion-wide properties which hold exactly one value each, so delete only the `<script>` tags of this extension from them. A tag that belongs to another extension stays, and separate `scriptInjection.mainHead=` lines do not add up — the last one overrides the rest.
+> `scriptInjection.dleEditorHead` and `scriptInjection.mainHead` are single Polarion-wide properties which hold exactly one value each, so delete only the `<script>` tags of this extension from them. A tag that belongs to another extension stays, and separate `scriptInjection.mainHead=` lines do not add up: the last one overrides the rest.
 
 ### Configuring logs
 

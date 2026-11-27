@@ -23,7 +23,6 @@ export const resetInjectorGlobals = (): void => {
   document.body.innerHTML = '';
   delete globals().CommonDleToolbarStarter;
   delete globals().__commonDleToolbarEnginePromise;
-  delete globals().__genericDleToolbarSeq;
   delete globals().__pdfExporterToolbarInstall;
   window.location.hash = '';
 };

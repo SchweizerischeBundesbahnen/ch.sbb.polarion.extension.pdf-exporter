@@ -141,11 +141,10 @@ export function loadExportFileName(sendRequest: SendRequest, params: Record<stri
 /**
  * Whether the current user may export this project at all.
  *
- * Fails closed, the way the DLE toolbar's export button already does: generic's `dle-toolbar-starter.js`
- * documents `permitted !== true (or a non-OK status / error) disables the button (fail-closed)` and
- * pdf-exporter drives it with this very endpoint. Anything but an explicit `true` - a malformed body
- * included - is therefore not a grant, and a read that failed is `unknown` rather than `denied` so the
- * dialog does not claim a reason it does not have.
+ * Fails closed, the way the toolbar buttons already do: `js/toolbar-injector.js` draws no button when the
+ * appearance read fails, and the engine disables it unless that read answered `permitted: true`. Anything
+ * but an explicit `true` - a malformed body included - is therefore not a grant, and a read that failed is
+ * `unknown` rather than `denied` so the dialog does not claim a reason it does not have.
  */
 export function loadExportPermission(sendRequest: SendRequest, projectId: string | null): Promise<ExportPermission> {
   return readJson<{ permitted?: boolean }>(

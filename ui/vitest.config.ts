@@ -11,19 +11,20 @@ import { defaultExclude, defineConfig } from 'vitest/config';
 //             screenshots are committed and MUST be generated in the pinned Playwright Docker image
 //             (npm run test:update:docker) so Windows-dev and Linux-CI produce identical pixels.
 //
-//   node    - the product injector scripts under src/main/resources/webapp/pdf-exporter/js/, which are
-//             plain page scripts, not part of the app bundle. They used to have their own mocha suite,
+//   node    - the toolbar injector script under src/main/resources/webapp/pdf-exporter/js/, which is a
+//             plain page script, not part of the app bundle. They used to have their own mocha suite,
 //             their own package.json and their own node/ + node_modules/ at the repository root; that
 //             whole second toolchain is gone and the tests live here.
 //
-//             jsdom, NOT browser mode, and the reason is specific: those scripts are written against the
-//             TOP frame (top.document, top.__genericDleToolbarEnginePromise, top.__genericDleToolbarSeq).
-//             Vitest browser mode runs each test file in an iframe and keeps `top` for its own runner
-//             page, which is never reloaded between files - so the engine promise would leak across the
-//             whole run and the injections would land in the runner's DOM instead of the test's. In
-//             production these scripts run via scriptInjection.mainHead, where top === self, which is
-//             what jsdom reproduces. The assertions are element ids, markup and a promise race: no
-//             layout, no CSS, no paint, so browser mode would add the frame problem and no signal.
+//             jsdom, NOT browser mode, and the reason is specific: that script is written against the
+//             TOP frame (top.document, top.__commonDleToolbarEnginePromise, and the engine's registries
+//             on top). Vitest browser mode runs each test file in an iframe and keeps `top` for its own
+//             runner page, which is never reloaded between files - so the engine promise would leak
+//             across the whole run and the injections would land in the runner's DOM instead of the
+//             test's. In production external-js/pdf-exporter-ui-loader.js loads it into the main
+//             Polarion page, where top === self, which is what jsdom reproduces. The assertions are
+//             engine calls, fetch URLs and markup: no layout, no CSS, no paint, so browser mode would add
+//             the frame problem and no signal.
 
 // Per-component subfolder derived from the test file name (e.g. "Panel.visual.test.tsx" -> "Panel").
 const componentDir = (testFileName: string): string => testFileName.split(/[\\/]/).pop()!.split('.')[0];

@@ -29,7 +29,7 @@ Start Polarion.
 
 ## Configure PDF Exporter for Live Reports
 
-Nothing to configure: the "Export to PDF" button appears in the Live Report toolbar by itself, once Polarion has been restarted after the installation. To switch it off, or to switch off the document editor or Classic Wiki button, use the Appearance administration page — see [Configuration](CONFIGURATION.md).
+Nothing to configure: the "Export to PDF" button appears in the Live Report toolbar by itself, once Polarion has been restarted after the installation. To switch it off, or to switch off the document editor or Classic Wiki button, use the Appearance administration page. See [Configuration](CONFIGURATION.md).
 
 ## Configure PDF Exporter for Live Documents
 

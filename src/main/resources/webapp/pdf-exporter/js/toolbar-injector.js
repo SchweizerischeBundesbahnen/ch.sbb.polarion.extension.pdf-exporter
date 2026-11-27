@@ -160,9 +160,8 @@
     /* State                                                                                       */
     /* ---------------------------------------------------------------------------------------- */
 
-    // Only the newest load of this script drives the page. The loader appends it once, but a server
-    // which also still configures the deprecated scriptInjection injectors, or a user who re-runs it,
-    // would otherwise end up with two copies racing to build and tear down the same buttons.
+    // Only the newest load of this script drives the page. The loader appends it once, but a user who
+    // re-runs it would otherwise end up with two copies racing to build and tear down the same buttons.
     const installToken = {};
     window.__pdfExporterToolbarInstall = installToken;
     const installed = () => window.__pdfExporterToolbarInstall === installToken;

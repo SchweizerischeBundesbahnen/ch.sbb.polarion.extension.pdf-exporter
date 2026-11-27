@@ -234,8 +234,8 @@ The chrome is RSP's shared `Modal` - a native `<dialog>`, so the top layer, the 
 free. That replaced micromodal: `openExportPopup` appends a host to the page body, mounts into a **shadow
 root** of it with RSP's stylesheet, the shared `src/export/export-form.css` and the dialog's own
 `src/popup/export-popup.css` injected, and removes the host on close. Nothing is put on the page for it any
-more, which is why the scriptInjection injectors no longer had to inject the micromodal library and the six
-generic control stylesheets before v14.0.0 removed them, and why `BulkPdfExportWidgetRenderer` no longer
+more, which is why `js/toolbar-injector.js` injects neither the micromodal library nor the six generic
+control stylesheets, and why `BulkPdfExportWidgetRenderer` no longer
 inlines four stylesheets next to its shim.
 
 `export-popup.css` is now only what a dialog has that a pane does not: its size, and the overlay that covers
