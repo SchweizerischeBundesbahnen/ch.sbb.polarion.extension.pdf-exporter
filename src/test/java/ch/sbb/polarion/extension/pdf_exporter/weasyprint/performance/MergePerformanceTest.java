@@ -80,7 +80,7 @@ class MergePerformanceTest extends BasePerformanceTest {
      * </p>
      */
     private @NotNull MergeTiming merge(@NotNull String name, int documents, @NotNull IntFunction<String> content) {
-        timeTheBaseline();
+        timeTheBasket();
         Long networkMs = TimedBulkProcessingService.networkMs();
         if (networkMs != null) {
             PerformanceRun.current().network(networkMs);
