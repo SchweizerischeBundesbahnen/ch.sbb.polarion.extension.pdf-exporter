@@ -39,10 +39,10 @@
     Its CSS is the shared `ui/src/export/export-form.css` plus `ui/src/sidepanel/side-panel.css` for the
     pane's own chrome.
   - **"Export to PDF" dialog** - `assets/export-popup.js` exporting `openExportPopup({documentType})`,
-    imported on click by `js/starter.js` (document editor toolbar), `js/live-reports.js` (report toolbar),
-    `js/classic-wiki.js` (Classic Wiki toolbar) and `ExportToPdfButtonRenderer` (the report widget button).
+    imported on click by `js/toolbar-injector.js` (the document editor, Live Report and Classic Wiki
+    toolbar buttons) and by `ExportToPdfButtonRenderer` (the report widget button).
     It appends its own host to the page body and mounts into a shadow root of it. The Bulk PDF Export
-    widget is the fifth caller and renders `ExportPopupModal` directly instead, being part of the same
+    widget is the third caller and renders `ExportPopupModal` directly instead, being part of the same
     app. Its CSS is the shared
     `ui/src/export/export-form.css` plus `ui/src/popup/export-popup.css` for the dialog's own chrome.
 
@@ -79,14 +79,36 @@
   too, with the row layout of `export-form-layout.css`, so a style package reads the same in all three),
   `ui/src/services/exportContext.ts` (the location hash) and `ui/src/services/conversion.ts` (the convert-job
   protocol). Nothing is loaded across webapps at runtime any more. What is left in `webapp/pdf-exporter` is
-  the four injector scripts, the empty `css/starter.css` trigger and the three HTML templates the Java
+  `js/toolbar-injector.js`, the empty `css/starter.css` trigger and the three HTML templates the Java
   renderer reads server-side (`sidePanelContent.html`, `pdfTemplate.html`, `headerAndFooter.html`).
-- **A Classic Wiki page lives in an iframe no scriptInjection reaches.** Polarion renders it server-side
-  into a same-origin `/polarion/wiki/bin/view/...` iframe, and the toolbar is inside it. So `js/classic-wiki.js`
-  runs from `mainHead` and injects into that iframe from outside: a `load` listener per iframe (Polarion reloads
-  it between wiki pages) and an observer for new ones (it is replaced when the user leaves the wiki). The click
-  handler stays a function of the main page, so the dialog reads the main page's hash, which is what addresses
-  the page.
+- **The toolbar buttons come from `plugin.xml`, not from `scriptInjection`.** The
+  `com.polarion.portal.tomcat.externalJsFile` extension point makes Polarion render a `<script>` tag for
+  `external-js/pdf-exporter-ui-loader.js` into `authapp/index.jsp`, the main portal page - and **only**
+  there: `ria/pages/dle_init.jsp`, the document content iframe, reads `scriptInjection.dleEditorHead`
+  and includes no external file. That is enough, because all three toolbars live in the main page or in
+  a same-origin iframe of it. The served path is `/polarion/codemirror-modes/<basename>` with
+  `Cache-Control: immutable`, so the loader is frozen and only loads
+  `webapp/pdf-exporter/js/toolbar-injector.js`, which holds the buttons. The registry is read at
+  startup: a change to `plugin.xml` needs a Polarion restart.
+  `toolbar-injector.js` reads `/rest/internal/appearance?projectId=` **per project** and rebuilds the
+  buttons on every `hashchange`, because Polarion is an SPA and the script loads once. Two consequences
+  it handles: Polarion fires its own `hashchange` next to the one the script already acted on (hence
+  `requestedFor`, set synchronously), and only the newest load drives the page (hence
+  `window.__pdfExporterToolbarInstall`). `CommonDleToolbarStarter.destroy()` does **not** remove the
+  button from the DOM, so a teardown removes the element itself. `autoExpandRichPageTools()` has no
+  teardown at all: once a project turns it on it stays on for the session.
+  v14.0.0 deleted the four scriptInjection injectors (`js/dle-toolbar.js`, `js/live-reports.js`,
+  `js/classic-wiki.js`, `js/starter.js`) and the `PdfExporterStarter.injectToolbar()` global with them; a
+  `scriptInjection` line an administrator forgot now only 404s in the browser console. Their marker ids
+  live on in `toolbar-injector.js`, so a button one of them left on a cached page is recognised instead
+  of being drawn twice.
+- **A Classic Wiki page lives in an iframe nothing injected into the main page reaches.** Polarion renders
+  it server-side into a same-origin `/polarion/wiki/bin/view/...` iframe, and the toolbar is inside it. So
+  `toolbar-injector.js` runs in the main page and injects into that iframe from outside: a `load` listener per
+  iframe (Polarion reloads it between wiki pages) and an observer for new ones (it is replaced when the user
+  leaves the wiki), with the injection itself repeated on every scan, because a project change tears the button
+  down and the iframe raises no second `load`. The click handler stays a function of the main page, so the
+  dialog reads the main page's hash, which is what addresses the page.
 - **The UI build comes from the generic parent**, activated by the presence of `ui/package.json` (its
   `ui-build-react-app` profile): `npm ci` + `npm run build`, the bundle copied into `webapp/pdf-exporter-app/`, and
   the JS suite in the Maven `test` phase. This pom adds nothing for it beyond pinning
@@ -100,11 +122,17 @@
   [`ui/README.md`](ui/README.md#the-documentation-site).
 - **There is one JS toolchain, and it lives in `ui/`.** The root `package.json`, `package-lock.json`,
   `node/`, `node_modules/`, `src/test/js/` and this pom's own `frontend-maven-plugin` block are gone. The
-  mocha suite that tested the toolbar injectors is now `ui/test/liveReportsInjector.node.test.ts`, run by
+  mocha suite that tested the toolbar injectors is now `ui/test/toolbarInjector.node.test.ts`, run by
   the **`node`** project of `ui/vitest.config.ts` (jsdom) next to the **`browser`** project that tests the
   app. Injector tests must stay in the `node` project: those scripts drive the top frame, and Vitest
   browser mode runs each file in an iframe and keeps `top` for its own runner page. Name them
   `*.node.test.ts` - that suffix is what routes a file between the two projects.
+- **A scope-inherited setting is a missing file, not a flag.** `GenericNamedSettings.read` falls back to
+  `DEFAULT_SCOPE` when the project scope has no file, which is what makes the Default Repository
+  configure every project at once (`appearance` is the first setting built on this on purpose). So a
+  project returns to inheriting by **deleting** its own setting, and the Appearance page detects which
+  state it is in through `readNames`: `SettingName.equals` compares by name alone, so the one `Default`
+  entry the list carries names the scope the file was actually found in.
 - **A custom setting value remembers what it was copied from.** CSS, cover page, header and footer, and filename template
   store the hash of the built-in values a custom value was copied from (`defaultHash`) and compare it with the current built-in
   values on reading. A cover page also stores the predefined template it was copied from (`defaultSource`), so it is compared with that

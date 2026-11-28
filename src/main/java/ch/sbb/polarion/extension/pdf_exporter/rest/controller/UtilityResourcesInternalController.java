@@ -1,6 +1,13 @@
 package ch.sbb.polarion.extension.pdf_exporter.rest.controller;
 
+import ch.sbb.polarion.extension.generic.settings.NamedSettings;
+import ch.sbb.polarion.extension.generic.settings.NamedSettingsRegistry;
+import ch.sbb.polarion.extension.generic.settings.SettingId;
+import ch.sbb.polarion.extension.generic.util.ScopeUtils;
 import ch.sbb.polarion.extension.pdf_exporter.model.BulkProcessingServiceStatus;
+import ch.sbb.polarion.extension.pdf_exporter.model.ToolbarAppearance;
+import ch.sbb.polarion.extension.pdf_exporter.rest.model.settings.appearance.AppearanceModel;
+import ch.sbb.polarion.extension.pdf_exporter.settings.AppearanceSettings;
 import ch.sbb.polarion.extension.pdf_exporter.model.WebhooksStatus;
 import ch.sbb.polarion.extension.pdf_exporter.properties.PdfExporterExtensionConfiguration;
 import ch.sbb.polarion.extension.pdf_exporter.rest.model.conversion.ExportParams;
@@ -121,6 +128,32 @@ public class UtilityResourcesInternalController {
     )
     public String getFileName(ExportParams exportParams) {
         return new DocumentFileNameHelper().getDocumentFileName(exportParams);
+    }
+
+    @GET
+    @Path("/appearance")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Tag(name = "Utility resources")
+    @Operation(summary = "Gets which toolbar buttons to display in the given project, and whether the current user may export",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Toolbar appearance",
+                            content = @Content(schema = @Schema(implementation = ToolbarAppearance.class)))
+            }
+    )
+    public ToolbarAppearance getToolbarAppearance(@Parameter(description = "Project to read the appearance of, empty for the global scope") @QueryParam("projectId") String projectId) {
+        // An absent parameter and an empty one mean the same here - no project - and the authorization
+        // check below looks a project up by this id, so the empty string must not reach it.
+        String project = (projectId == null || projectId.isBlank()) ? null : projectId;
+        AppearanceModel appearanceModel = (AppearanceModel) NamedSettingsRegistry.INSTANCE.getByFeatureName(AppearanceSettings.FEATURE_NAME)
+                .read(ScopeUtils.getScopeFromProject(project), SettingId.fromName(NamedSettings.DEFAULT_NAME), null);
+        return ToolbarAppearance.builder()
+                .liveDocButton(appearanceModel.isLiveDocButton())
+                .liveReportButton(appearanceModel.isLiveReportButton())
+                .liveReportAutoExpandTools(appearanceModel.isLiveReportAutoExpandTools())
+                .classicWikiButton(appearanceModel.isClassicWikiButton())
+                .classicWikiAutoExpandTools(appearanceModel.isClassicWikiAutoExpandTools())
+                .permitted(pdfExporterPolarionService.userAuthorizedForExport(project))
+                .build();
     }
 
     @GET

@@ -92,7 +92,7 @@ Vite would emit:
 | ------------------------- | ------------------------ | -------------------------------------------------------------------------------------- | --------------------------- |
 | `src/widget/main.tsx`     | `assets/bulk-widget.js`  | `BulkPdfExportWidgetRenderer`                                                          | `default(selector)`         |
 | `src/sidepanel/mount.tsx` | `assets/side-panel.js`   | `webapp/pdf-exporter/html/sidePanelContent.html`                                       | `mountSidePanel(selector)`  |
-| `src/popup/mount.tsx`     | `assets/export-popup.js` | `webapp/pdf-exporter/js/starter.js`, `js/live-reports.js`, `js/classic-wiki.js`, `ExportToPdfButtonRenderer` | `openExportPopup(options)`  |
+| `src/popup/mount.tsx`     | `assets/export-popup.js` | `webapp/pdf-exporter/js/toolbar-injector.js`, `ExportToPdfButtonRenderer`              | `openExportPopup(options)`  |
 
 All three need `rollupOptions.preserveEntrySignatures: 'strict'` to keep that export, which a Vite app
 build otherwise drops. Nothing in the Vitest suites sees the built files, so
@@ -234,9 +234,9 @@ The chrome is RSP's shared `Modal` - a native `<dialog>`, so the top layer, the 
 free. That replaced micromodal: `openExportPopup` appends a host to the page body, mounts into a **shadow
 root** of it with RSP's stylesheet, the shared `src/export/export-form.css` and the dialog's own
 `src/popup/export-popup.css` injected, and removes the host on close. Nothing is put on the page for it any
-more, which is why `starter.js` and `live-reports.js` no longer inject the micromodal library and the six
-generic control stylesheets, and why `BulkPdfExportWidgetRenderer` no longer inlines four stylesheets next
-to its shim.
+more, which is why `js/toolbar-injector.js` injects neither the micromodal library nor the six generic
+control stylesheets, and why `BulkPdfExportWidgetRenderer` no longer
+inlines four stylesheets next to its shim.
 
 `export-popup.css` is now only what a dialog has that a pane does not: its size, and the overlay that covers
 the form while an operation runs. The size is `min(732px, 100vw - 32px)`, which raises the shared modal's

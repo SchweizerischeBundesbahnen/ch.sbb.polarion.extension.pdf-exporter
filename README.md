@@ -27,7 +27,7 @@ The extension uses [WeasyPrint](https://weasyprint.org/) as a PDF engine and req
 | Page | Contents |
 | --- | --- |
 | [Quick start](QUICK_START.md) | The most important steps and configurations, briefly summarized |
-| [Configuration](CONFIGURATION.md) | Full configuration reference: WeasyPrint, toolbar and Live Report injection, bulk export, external resources, logging, workflow function, style packages and more |
+| [Configuration](CONFIGURATION.md) | Full configuration reference: WeasyPrint, the toolbar buttons and the Appearance page, bulk export, external resources, logging, workflow function, style packages and more |
 | [User guide](USER_GUIDE.md) | The export options in the PDF Exporter dialog |
 | [Limitations and workarounds](LIMITATIONS.md) | By-design behaviour (rendering and PDF/A · PDF/UA compliance) and how to adjust it |
 | [Upgrade notes](UPGRADE.md) | Version-specific upgrade instructions |
